@@ -1,0 +1,2222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<class_catalog title="111C-ACKS Players Companion-Classes-3" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <class name="Paladin">
+    <identity>
+      <name>Paladin</name>
+      <ancestry_category default="human">human</ancestry_category>
+      <source_label>111C-ACKS Players Companion-Classes-3</source_label>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>martial</tag>
+        <tag>divine_champion</tag>
+        <tag>lawful</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>fighter_magic_items</tag>
+        <tag>lay_on_hands</tag>
+        <tag>detect_evil</tag>
+        <tag>disease_immunity</tag>
+        <tag>stronghold</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>STR</ability>
+        <ability>CHA</ability>
+      </prime_requisites>
+      <minimum_abilities/>
+      <xp_adjustment_basis/>
+      <entry_restrictions>
+        <restriction type="alignment">Must be Lawful.</restriction>
+      </entry_restrictions>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>fighter</primary_progression_family>
+      <attack_throw_progression family="fighter"/>
+      <cleave_progression family="fighter"/>
+      <saving_throw_progression family="fighter"/>
+      <damage_bonus_progression family="fighter"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d6</hit_die>
+      <maximum_level>14</maximum_level>
+      <baseline_title>Bulwark</baseline_title>
+      <post_max_hit_dice_rule>After 9th level, hit dice do not increase; add +2 hit points per level.</post_max_hit_dice_rule>
+      <general_notes>
+        <rule>May use any magic item usable by fighters.</rule>
+        <rule>If the paladin changes to Neutral or Chaotic alignment, he loses class powers.</rule>
+        <rule>If he later reverts to Lawful alignment and atones for misdeeds, possibly by quest or atonement spell, he can regain lost powers.</rule>
+      </general_notes>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>Any armor.</armor>
+        <shields>Allowed.</shields>
+        <weapons>
+          <rule>Permitted weapons: battle axe, flail, lance, mace, morning star, pole arm, spear, sword, two-handed sword, war hammer.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>May fight with weapon and shield.</rule>
+          <rule>May fight with a weapon two-handed.</rule>
+          <rule>May fight with a weapon in each hand.</rule>
+        </fighting_styles>
+      </permissions>
+      <restrictions>
+        <restriction>None beyond weapon list and Lawful alignment requirement.</restriction>
+      </restrictions>
+      <combat_rules>
+        <rule>Attack throw starts at 10+ against AC 0.</rule>
+        <rule>Attack throws and saving throws improve by 2 every 3 levels.</rule>
+        <rule>Base melee and missile damage bonus is +1 at 1st level, with an additional +1 at 3rd, 6th, 9th, and 12th level.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <special_abilities>
+      <ability name="aura_of_protection" level="1">
+        <summary>Protection against evil creatures.</summary>
+        <rules>
+          <rule>Gain +1 bonus to AC against attacks made by evil creatures.</rule>
+          <rule>Gain +1 bonus on saving throws against effects created by evil creatures.</rule>
+          <rule>The aura appears as a golden halo when viewed with detect good, detect magic, or true seeing.</rule>
+        </rules>
+      </ability>
+
+      <ability name="sanctified_body" level="1">
+        <summary>Complete immunity to disease.</summary>
+        <rules>
+          <rule>Immune to all disease, including magical disease.</rule>
+        </rules>
+      </ability>
+
+      <ability name="detect_evil" level="1">
+        <summary>Detect evil by concentration.</summary>
+        <procedure>
+          <step order="1">Concentrate for 1 turn.</step>
+          <step order="2">Detect evil up to 60' away.</step>
+        </procedure>
+        <rules>
+          <rule>For this power and the paladin's aura, evil creatures include all undead, all summoned creatures, and any Chaotic creatures intending harm to the paladin.</rule>
+          <rule>Sinkholes of evil and magic items harmful to Lawful creatures are also detected.</rule>
+        </rules>
+      </ability>
+
+      <ability name="lay_on_hands" level="1">
+        <summary>Heal by touch.</summary>
+        <rules>
+          <rule>May heal self or another creature.</rule>
+          <rule>Heals 2 points of damage per class level per use.</rule>
+        </rules>
+        <limits>
+          <limit>Usable once per day.</limit>
+          <limit>The Laying on Hands proficiency grants additional daily uses.</limit>
+        </limits>
+      </ability>
+
+      <ability name="holy_fervor" level="5">
+        <summary>Inspires followers of the same religion.</summary>
+        <rules>
+          <rule>Hirelings of the same religion gain +1 morale while the paladin is present.</rule>
+          <rule>This bonus stacks with bonuses from Charisma and proficiencies.</rule>
+        </rules>
+      </ability>
+
+      <ability name="paladin_lord" level="9">
+        <summary>May found or capture a fortress and attract followers.</summary>
+        <rules>
+          <rule>When a fortress is founded or captured, up to 1d4+1x10 0th level mercenaries and 1d6 paladins of 1st-3rd level come seeking jobs and training.</rule>
+          <rule>If hired, mercenary followers must be paid standard mercenary rates.</rule>
+          <rule>The class stronghold is otherwise mechanically identical to a fighter's castle.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Bulwark</title>
+        <hit_dice>1d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+1</value>
+        </values>
+        <features_gained>
+          <feature_ref>aura_of_protection</feature_ref>
+          <feature_ref>sanctified_body</feature_ref>
+          <feature_ref>detect_evil</feature_ref>
+          <feature_ref>lay_on_hands</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="2">
+        <xp_required>1,850</xp_required>
+        <title>Warder</title>
+        <hit_dice>2d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+1</value>
+        </values>
+      </entry>
+      <entry level="3">
+        <xp_required>3,700</xp_required>
+        <title>Defender</title>
+        <hit_dice>3d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+      </entry>
+      <entry level="4">
+        <xp_required>7,400</xp_required>
+        <title>Protector</title>
+        <hit_dice>4d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+      </entry>
+      <entry level="5">
+        <xp_required>14,800</xp_required>
+        <title>Guardian</title>
+        <hit_dice>5d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+        <features_gained>
+          <feature_ref>holy_fervor</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="6">
+        <xp_required>29,600</xp_required>
+        <title>Sentinel</title>
+        <hit_dice>6d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="7">
+        <xp_required>60,000</xp_required>
+        <title>Justiciar</title>
+        <hit_dice>7d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="8">
+        <xp_required>120,000</xp_required>
+        <title>Paladin</title>
+        <hit_dice>8d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="9">
+        <xp_required>240,000</xp_required>
+        <title>Paladin Lord</title>
+        <hit_dice>9d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+        <features_gained>
+          <feature_ref>paladin_lord</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>360,000</xp_required>
+        <title>Paladin Lord, 10th level</title>
+        <hit_dice>9d6+2</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+      </entry>
+      <entry level="11">
+        <xp_required>480,000</xp_required>
+        <title>Paladin Lord, 11th level</title>
+        <hit_dice>9d6+4</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+      </entry>
+      <entry level="12">
+        <xp_required>600,000</xp_required>
+        <title>Paladin Lord, 12th level</title>
+        <hit_dice>9d6+6</hit_dice>
+        <values>
+          <value name="damage_bonus">+5</value>
+        </values>
+      </entry>
+      <entry level="13">
+        <xp_required>720,000</xp_required>
+        <title>Paladin Lord, 13th level</title>
+        <hit_dice>9d6+8</hit_dice>
+        <values>
+          <value name="damage_bonus">+5</value>
+        </values>
+      </entry>
+      <entry level="14">
+        <xp_required>840,000</xp_required>
+        <title>Lord Protector</title>
+        <hit_dice>9d6+10</hit_dice>
+        <values>
+          <value name="damage_bonus">+5</value>
+        </values>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">15+</value>
+          <value name="poison_death">14+</value>
+          <value name="blast_breath">16+</value>
+          <value name="staffs_wands">16+</value>
+          <value name="spells">17+</value>
+        </row>
+        <row>
+          <value name="level_range">2-3</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">14+</value>
+          <value name="poison_death">13+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">15+</value>
+          <value name="spells">16+</value>
+        </row>
+        <row>
+          <value name="level_range">4</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">13+</value>
+          <value name="poison_death">12+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">14+</value>
+          <value name="spells">15+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">11+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">13+</value>
+          <value name="spells">14+</value>
+        </row>
+        <row>
+          <value name="level_range">7</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">12+</value>
+          <value name="spells">13+</value>
+        </row>
+        <row>
+          <value name="level_range">8-9</value>
+          <value name="attack_throw">5+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">10</value>
+          <value name="attack_throw">4+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">10+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">11-12</value>
+          <value name="attack_throw">3+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">7+</value>
+          <value name="blast_breath">9+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">13</value>
+          <value name="attack_throw">2+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">6+</value>
+          <value name="blast_breath">8+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">9+</value>
+        </row>
+        <row>
+          <value name="level_range">14</value>
+          <value name="attack_throw">1+</value>
+          <value name="petrification_paralysis">6+</value>
+          <value name="poison_death">5+</value>
+          <value name="blast_breath">7+</value>
+          <value name="staffs_wands">7+</value>
+          <value name="spells">8+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>fortress</structure_type>
+      <acquisition_rules>
+        <rule>May found or capture a fortress and become a protector of men.</rule>
+        <rule>The class stronghold is otherwise identical to a fighter's castle.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="0th_level_mercenaries" number="1d4+1x10"/>
+        <follower type="paladins_1st_to_3rd_level" number="1d6"/>
+      </followers>
+      <cost_rules>
+        <rule>If hired, mercenaries must be paid standard rates.</rule>
+      </cost_rules>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="fighter"/>
+      <general_rule_reference type="detect_evil"/>
+      <general_rule_reference type="laying_on_hands"/>
+      <general_rule_reference type="fighter_magic_items"/>
+      <general_rule_reference type="fighter_stronghold"/>
+    </references>
+  </class>
+
+  <class name="Priestess">
+    <identity>
+      <name>Priestess</name>
+      <ancestry_category default="human">human</ancestry_category>
+      <source_label>111C-ACKS Players Companion-Classes-3</source_label>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>divine_caster</tag>
+        <tag>support</tag>
+        <tag>undead_turner</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>divine_spellcasting</tag>
+        <tag>turn_undead</tag>
+        <tag>ritual_magic</tag>
+        <tag>stronghold</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>WIS</ability>
+        <ability>CHA</ability>
+      </prime_requisites>
+      <minimum_abilities/>
+      <xp_adjustment_basis/>
+      <entry_restrictions>
+        <restriction type="gender">Human women.</restriction>
+        <restriction type="religious_service">Must be dedicated to the service of a goddess through an order.</restriction>
+      </entry_restrictions>
+    </requirements>
+
+    <progression_mapping>
+      <attack_throw_progression family="mage"/>
+      <cleave_progression family="mage"/>
+      <saving_throw_progression family="cleric"/>
+      <damage_bonus_progression family="mage"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d4</hit_die>
+      <maximum_level>14</maximum_level>
+      <baseline_title>Novice</baseline_title>
+      <post_max_hit_dice_rule>After 9th level, hit dice do not increase; add +1 hit point per level.</post_max_hit_dice_rule>
+      <general_notes>
+        <rule>Hit point modifiers from Constitution are ignored.</rule>
+        <rule>May use any magic item usable by clerics.</rule>
+      </general_notes>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>None.</armor>
+        <shields>Not allowed.</shields>
+        <weapons>
+          <rule>Permitted weapons: quarterstaff, club, dagger, dart.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>Cannot fight with two weapons.</rule>
+        </fighting_styles>
+      </permissions>
+      <restrictions>
+        <restriction>Cannot wear armor.</restriction>
+      </restrictions>
+      <combat_rules>
+        <rule>Attack throw starts at 10+ against AC 0.</rule>
+        <rule>Attack throws improve by 2 every 6 levels.</rule>
+        <rule>Saving throws improve by 2 every 4 levels.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <spellcasting_profile>
+      <tradition>Divine</tradition>
+      <access_rules>
+        <rule>Begins casting divine spells at 1st level.</rule>
+        <rule>Spells are granted through prayer and worship.</rule>
+        <rule>Spell availability by level is determined by the class spell progression table.</rule>
+      </access_rules>
+      <ritual_access>
+        <rule>At 11th level, may learn and cast 6th and 7th level ritual divine spells.</rule>
+      </ritual_access>
+      <casting_limits>
+        <rule>To use spells and turn undead, the priestess must uphold the strictures of her order and goddess.</rule>
+        <rule>If the Judge has not specified orders, the default order is the Keepers of the Hearth Fire devoted to Mityara.</rule>
+        <rule>Default strictures: wear the order's white mantles and shawls in public; keep a flame lit throughout every seventh night; refrain from taking human or demi-human life; remain chaste and celibate until reaching 7th level.</rule>
+        <rule>Beastmen, undead, and other monsters are not protected by the non-killing stricture.</rule>
+        <rule>If the priestess falls from favor, the Judge may impose penalties such as attack penalties or reduced spell access.</rule>
+      </casting_limits>
+    </spellcasting_profile>
+
+    <class_subsystems>
+      <turning>
+        <definition>Turn undead as a cleric of equal level.</definition>
+        <rules>
+          <rule>There is no daily limit on turning attempts.</rule>
+          <rule>If a turning attempt fails during an encounter, the priestess cannot attempt to turn undead again for the rest of that encounter.</rule>
+        </rules>
+      </turning>
+    </class_subsystems>
+
+    <special_abilities>
+      <ability name="turn_undead" level="1">
+        <summary>Turn undead as a cleric of equal level.</summary>
+        <rules>
+          <rule>No daily limit.</rule>
+          <rule>A failed turning attempt blocks further turning attempts for the remainder of that encounter.</rule>
+        </rules>
+      </ability>
+
+      <ability name="magic_research_minor" level="5">
+        <summary>May research spells, scribe scrolls, and brew potions.</summary>
+      </ability>
+
+      <ability name="matriarchal_magic_item_creation" level="9">
+        <summary>May create magic items such as weapons, rings, and staffs.</summary>
+      </ability>
+
+      <ability name="ritual_divine_magic_and_constructs" level="11">
+        <summary>May access higher divine ritual practice and advanced crafting.</summary>
+        <rules>
+          <rule>May learn and cast 6th and 7th level ritual divine spells.</rule>
+          <rule>May craft magical constructs such as golems and animated statues.</rule>
+          <rule>May perform necromancy if Chaotic.</rule>
+        </rules>
+      </ability>
+
+      <ability name="cloister_foundation" level="9">
+        <summary>May establish or build a cloister.</summary>
+        <rules>
+          <rule>If the priestess has had a good and noble adventuring career, the matriarch of her present cloister may pay up to 100% of the construction cost of a modest cloister.</rule>
+          <rule>The new cloister usually remains a branch of the original cloister until the priestess reaches 12th level, then becomes independent.</rule>
+          <rule>When founded, the cloister attracts 1d2x10 1st level priestesses and 1d6x30 normal women who wish to become priestesses.</rule>
+          <rule>Each year, 80% of the previous year's trainees leave, and 1d6x20 normal women arrive as replacements.</rule>
+          <rule>A normal woman in training usually requires 2 years to become a 1st level priestess.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Novice</title>
+        <hit_dice>1d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">1</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>turn_undead</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="2">
+        <xp_required>2,000</xp_required>
+        <title>Daughter</title>
+        <hit_dice>2d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="3">
+        <xp_required>4,000</xp_required>
+        <title>Sister-Initiate</title>
+        <hit_dice>3d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+        </spell_slots>
+      </entry>
+      <entry level="4">
+        <xp_required>8,000</xp_required>
+        <title>Sister</title>
+        <hit_dice>4d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="5">
+        <xp_required>16,000</xp_required>
+        <title>Sister-Disciple</title>
+        <hit_dice>5d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>magic_research_minor</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="6">
+        <xp_required>32,000</xp_required>
+        <title>Priestess</title>
+        <hit_dice>6d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">2</slot>
+          <slot spell_level="4">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="7">
+        <xp_required>65,000</xp_required>
+        <title>Mother</title>
+        <hit_dice>7d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">2</slot>
+          <slot spell_level="5">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="8">
+        <xp_required>130,000</xp_required>
+        <title>Revered Mother</title>
+        <hit_dice>8d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">5</slot>
+          <slot spell_level="2">5</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="9">
+        <xp_required>230,000</xp_required>
+        <title>Matriarch</title>
+        <hit_dice>9d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">5</slot>
+          <slot spell_level="2">5</slot>
+          <slot spell_level="3">5</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">3</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>matriarchal_magic_item_creation</feature_ref>
+          <feature_ref>cloister_foundation</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>330,000</xp_required>
+        <title>Matriarch, 10th level</title>
+        <hit_dice>9d4+1</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">6</slot>
+          <slot spell_level="2">6</slot>
+          <slot spell_level="3">5</slot>
+          <slot spell_level="4">5</slot>
+          <slot spell_level="5">3</slot>
+        </spell_slots>
+      </entry>
+      <entry level="11">
+        <xp_required>430,000</xp_required>
+        <title>Matriarch, 11th level</title>
+        <hit_dice>9d4+2</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">6</slot>
+          <slot spell_level="2">6</slot>
+          <slot spell_level="3">6</slot>
+          <slot spell_level="4">5</slot>
+          <slot spell_level="5">5</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>ritual_divine_magic_and_constructs</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="12">
+        <xp_required>530,000</xp_required>
+        <title>Matriarch, 12th level</title>
+        <hit_dice>9d4+3</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">8</slot>
+          <slot spell_level="2">8</slot>
+          <slot spell_level="3">6</slot>
+          <slot spell_level="4">6</slot>
+          <slot spell_level="5">5</slot>
+        </spell_slots>
+      </entry>
+      <entry level="13">
+        <xp_required>630,000</xp_required>
+        <title>Matriarch, 13th level</title>
+        <hit_dice>9d4+4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">8</slot>
+          <slot spell_level="2">8</slot>
+          <slot spell_level="3">8</slot>
+          <slot spell_level="4">6</slot>
+          <slot spell_level="5">5</slot>
+        </spell_slots>
+      </entry>
+      <entry level="14">
+        <xp_required>730,000</xp_required>
+        <title>High Priestess</title>
+        <hit_dice>9d4+5</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">9</slot>
+          <slot spell_level="2">8</slot>
+          <slot spell_level="3">8</slot>
+          <slot spell_level="4">8</slot>
+          <slot spell_level="5">6</slot>
+        </spell_slots>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1-2</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">13+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">16+</value>
+          <value name="staffs_wands">13+</value>
+          <value name="spells">15+</value>
+        </row>
+        <row>
+          <value name="level_range">3-4</value>
+          <value name="attack_throw">10+ / 9+ at level 4</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">12+</value>
+          <value name="spells">14+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">13+</value>
+        </row>
+        <row>
+          <value name="level_range">7-8</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">7+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">9-10</value>
+          <value name="attack_throw">8+ / 7+ at level 10</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">6+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">11-12</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">5+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">13-14</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">4+</value>
+          <value name="blast_breath">10+</value>
+          <value name="staffs_wands">7+</value>
+          <value name="spells">9+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>cloister</structure_type>
+      <acquisition_rules>
+        <rule>May establish or build a cloister.</rule>
+        <rule>If the priestess has had a good and noble adventuring career, her current matriarch may fund up to 100% of the construction cost of a modest cloister.</rule>
+        <rule>The new cloister usually remains a branch of the older cloister until 12th level, then becomes independent.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="1st_level_priestesses" number="1d2x10"/>
+        <follower type="normal_women_trainees" number="1d6x30"/>
+        <follower type="annual_replacement_normal_women" number="1d6x20"/>
+      </followers>
+      <cost_rules>
+        <rule>80% of the previous year's trainees leave each year.</rule>
+        <rule>A normal woman in training usually requires 2 years to become a 1st level priestess.</rule>
+      </cost_rules>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="mage"/>
+      <progression_reference family="cleric"/>
+      <general_rule_reference type="divine_magic"/>
+      <general_rule_reference type="turn_undead"/>
+      <general_rule_reference type="cleric_magic_items"/>
+    </references>
+  </class>
+
+  <class name="Shaman">
+    <identity>
+      <name>Shaman</name>
+      <ancestry_category default="human">human</ancestry_category>
+      <source_label>111C-ACKS Players Companion-Classes-3</source_label>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>divine_caster</tag>
+        <tag>tribal_priest</tag>
+        <tag>shapechanger</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>totem_animal</tag>
+        <tag>ancestral_communion</tag>
+        <tag>spiritwalk</tag>
+        <tag>divine_spellcasting</tag>
+        <tag>stronghold</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>WIS</ability>
+      </prime_requisites>
+      <minimum_abilities/>
+      <xp_adjustment_basis/>
+      <entry_restrictions/>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>cleric</primary_progression_family>
+      <attack_throw_progression family="cleric"/>
+      <cleave_progression family="cleric"/>
+      <saving_throw_progression family="cleric"/>
+      <damage_bonus_progression family="cleric"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d6</hit_die>
+      <maximum_level>14</maximum_level>
+      <baseline_title>Spirit Whisperer</baseline_title>
+      <post_max_hit_dice_rule>After 9th level, hit dice do not increase; add +1 hit point per level.</post_max_hit_dice_rule>
+      <general_notes>
+        <rule>Hit point modifiers from Constitution are ignored.</rule>
+        <rule>May use any magic item usable by clerics.</rule>
+      </general_notes>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>Leather armor.</armor>
+        <shields>Allowed.</shields>
+        <weapons>
+          <rule>Permitted weapons: club, dagger, hand axe, short sword, staff, spear.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>May fight with a weapon two-handed.</rule>
+          <rule>May fight with weapon and shield.</rule>
+        </fighting_styles>
+      </permissions>
+      <restrictions>
+        <restriction>Cannot fight with a weapon in each hand.</restriction>
+      </restrictions>
+      <combat_rules>
+        <rule>Attack throw starts at 10+ against AC 0.</rule>
+        <rule>Attack throws and saving throws improve by 2 every 4 levels.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <spellcasting_profile>
+      <tradition>Divine</tradition>
+      <access_rules>
+        <rule>Begins casting divine spells at 2nd level.</rule>
+        <rule>Spells are granted through careful morning rituals.</rule>
+        <rule>Spell availability by level is determined by the class spell progression table.</rule>
+      </access_rules>
+      <ritual_access>
+        <rule>At 11th level, may learn and cast 6th and 7th level ritual divine spells.</rule>
+      </ritual_access>
+      <casting_limits>
+        <rule>At 3rd level and higher, spiritual ritual can recover one expended spell level, but the same spell level cannot be recovered more than once per day.</rule>
+      </casting_limits>
+    </spellcasting_profile>
+
+    <class_subsystems>
+      <custom_subsystem name="totem_animal">
+        <definition>A totem animal physically represents the shaman's relationship with sacred powers.</definition>
+        <rules>
+          <rule>At 1st level, choose a totem animal appropriate to the character's tribe and abilities.</rule>
+          <rule>The shaman must have at least 9 in the totem animal's key ability score.</rule>
+          <rule>The totem animal's Intelligence equals half the shaman's Intelligence.</rule>
+          <rule>The totem animal understands the shaman's speech, and the shaman understands the totem animal's speech.</rule>
+          <rule>Others cannot understand the totem animal without speak with animals.</rule>
+          <rule>So long as the shaman upholds tribal traditions, the totem animal is utterly loyal and will fight, perform services, and obey commands.</rule>
+          <rule>While the totem animal is alive, the shaman gains its totem benefit.</rule>
+          <rule>Because the totem animal is partly the shaman's own spirit, it always has HD and maximum hit points equal to half the shaman's own.</rule>
+          <rule>If the totem animal has fewer HD than normal for its species, it appears smaller or younger and deals 1 less point on each damage die, minimum 1.</rule>
+          <rule>If the totem animal has more HD than normal for its species, it appears larger and stronger, up to twice normal size, and deals +1 damage on each damage die.</rule>
+          <rule>The totem animal saves as a cleric of half the shaman's level.</rule>
+          <rule>If the totem animal is killed, the shaman must save versus Death or immediately take damage equal to the totem animal's maximum hit points.</rule>
+          <rule>A slain totem animal cannot be restored to life or reincarnated.</rule>
+          <rule>If a totem animal is slain, a new totem animal of the same type appears the next time the shaman gains a level.</rule>
+          <rule>Except where modified by class rules, the totem animal otherwise has the characteristics of a normal animal of its type.</rule>
+          <rule>The source's example indicates at least some totem benefits function while the shaman is within 30' of the totem animal.</rule>
+        </rules>
+        <tables>
+          <table name="totem_animals">
+            <columns>
+              <column>totem_animal</column>
+              <column>key_ability</column>
+              <column>totem_benefit</column>
+              <column>characteristics</column>
+            </columns>
+            <row>
+              <value name="totem_animal">Bear</value>
+              <value name="key_ability">STR</value>
+              <value name="totem_benefit">Berserkergang</value>
+              <value name="characteristics">Move 120', AC 3, HD 4, #AT 3, Dmg 1d3/1d3/1d6, bear hug</value>
+            </row>
+            <row>
+              <value name="totem_animal">Crow/Raven</value>
+              <value name="key_ability">INT</value>
+              <value name="totem_benefit">Divine Blessing</value>
+              <value name="characteristics">Move 330' fly, AC 1, HD 1/4, #AT 1, Dmg 1d3-1</value>
+            </row>
+            <row>
+              <value name="totem_animal">Dog</value>
+              <value name="key_ability">CON</value>
+              <value name="totem_benefit">Alertness</value>
+              <value name="characteristics">Move 180', AC 2, HD 1+1, #AT 1, Dmg 1d4, tracking</value>
+            </row>
+            <row>
+              <value name="totem_animal">Eagle/Hawk</value>
+              <value name="key_ability">CHA</value>
+              <value name="totem_benefit">Command</value>
+              <value name="characteristics">Move 480' fly, AC 1, HD 1, #AT 2, Dmg 1d2/1d2, swoop attack</value>
+            </row>
+            <row>
+              <value name="totem_animal">Horse</value>
+              <value name="key_ability">DEX</value>
+              <value name="totem_benefit">Running</value>
+              <value name="characteristics">Move 240', AC 2, HD 2, #AT 2, Dmg 1d4/1d4, can be ridden</value>
+            </row>
+            <row>
+              <value name="totem_animal">Lion</value>
+              <value name="key_ability">CHA</value>
+              <value name="totem_benefit">Divine Health</value>
+              <value name="characteristics">Move 150', AC 3, HD 5, #AT 3, Dmg 1d4+1/1d4+1/1d10</value>
+            </row>
+            <row>
+              <value name="totem_animal">Monkey</value>
+              <value name="key_ability">INT</value>
+              <value name="totem_benefit">Prestidigitation</value>
+              <value name="characteristics">Move 120', AC 2, HD 1, #AT 1, Dmg 1d3, climbing</value>
+            </row>
+            <row>
+              <value name="totem_animal">Rat</value>
+              <value name="key_ability">DEX</value>
+              <value name="totem_benefit">Quiet Magic</value>
+              <value name="characteristics">Move 60'/40' swim, AC 0, HD 1/4, #AT 1, Dmg 1d3-1</value>
+            </row>
+            <row>
+              <value name="totem_animal">Owl</value>
+              <value name="key_ability">WIS</value>
+              <value name="totem_benefit">Sensing Power</value>
+              <value name="characteristics">Move 300', AC 1, HD 1/2, #AT 1, Dmg 1d2, night vision, +3 to surprise</value>
+            </row>
+            <row>
+              <value name="totem_animal">Python</value>
+              <value name="key_ability">WIS</value>
+              <value name="totem_benefit">Laying on Hands</value>
+              <value name="characteristics">Move 90', AC 3, HD 4, #AT 2, Dmg 1d3/2d6+constriction</value>
+            </row>
+            <row>
+              <value name="totem_animal">Cobra</value>
+              <value name="key_ability">DEX</value>
+              <value name="totem_benefit">Combat Reflexes</value>
+              <value name="characteristics">Move 90', AC 3, HD 2, #AT 1, Dmg 1d4+poison, always has initiative</value>
+            </row>
+            <row>
+              <value name="totem_animal">Wolf</value>
+              <value name="key_ability">CON</value>
+              <value name="totem_benefit">Ambushing</value>
+              <value name="characteristics">Move 180', AC 2, HD 2+2, #AT 1, Dmg 1d6</value>
+            </row>
+          </table>
+        </tables>
+      </custom_subsystem>
+    </class_subsystems>
+
+    <special_abilities>
+      <ability name="commune_with_ancestral_spirits" level="1">
+        <summary>Ask ancestral spirits questions.</summary>
+        <procedure>
+          <step order="1">Perform a 1 turn ritual.</step>
+          <step order="2">During the ritual, the shaman is out of body and helpless.</step>
+          <step order="3">Ask three yes-or-no questions.</step>
+        </procedure>
+        <rules>
+          <rule>The spirits answer to the best of their ability.</rule>
+          <rule>The spirits are wise but not omniscient, and may answer inaccurately.</rule>
+          <rule>Once each year on a sacred day determined by the Judge, the shaman may ask twice the normal number of questions without angering the spirits.</rule>
+        </rules>
+        <limits>
+          <limit>Usable once per week.</limit>
+        </limits>
+      </ability>
+
+      <ability name="divine_spellcasting" level="2">
+        <summary>Begins casting divine spells.</summary>
+      </ability>
+
+      <ability name="spiritual_ritual" level="3">
+        <summary>Recover one expended spell level.</summary>
+        <procedure>
+          <step order="1">Perform an ecstatic ritual lasting 1 hour (6 turns).</step>
+          <step order="2">Recover the ability to cast one spell level that has already been expended.</step>
+        </procedure>
+        <limits>
+          <limit>May be performed as often as desired.</limit>
+          <limit>The same spell level cannot be regained more than once per day.</limit>
+        </limits>
+      </ability>
+
+      <ability name="shapechange" level="5">
+        <summary>Assume totem animal form.</summary>
+        <rules>
+          <rule>Begins at 5th level.</rule>
+          <rule>The shaman remains in the new form until changing back.</rule>
+          <rule>A 5th level shaman can shapechange once per day.</rule>
+          <rule>Each additional class level grants one additional shapechange per day.</rule>
+          <rule>Changing shape can be done in combat in place of making an attack.</rule>
+          <rule>In totem form, use the movement, AC, attacks, damage, and powers from the Totem Animals table.</rule>
+          <rule>The shaman retains normal hit dice, hit points, attack throws, and saving throws.</rule>
+          <rule>If the shaman has more HD than the normal animal type, the form appears larger and stronger, up to twice normal size, and each damage die increases by +1.</rule>
+          <rule>Apart from size, the form is indistinguishable from a normal animal.</rule>
+          <rule>The form does not detect as magical, is not detected by illusion-revealing spells, and cannot be dispelled.</rule>
+        </rules>
+      </ability>
+
+      <ability name="spiritwalk" level="7">
+        <summary>Send spirit from body.</summary>
+        <procedure>
+          <step order="1">Chant for 1 turn (10 minutes).</step>
+          <step order="2">Enter a trance and release the spirit from the body.</step>
+          <step order="3">Remain spiritwalking until the spirit returns or until 1 hour per level has elapsed.</step>
+        </procedure>
+        <rules>
+          <rule>The spirit may assume human or totem animal shape.</rule>
+          <rule>In either shape, the spirit sees and hears normally, moves at that shape's normal movement rate, and passes through solid objects.</rule>
+          <rule>The spirit cannot see into, hear from, or move through areas warded by antimagic shell, protection from evil, or similar effects.</rule>
+          <rule>The spirit is incorporeal and invisible.</rule>
+          <rule>The spirit can be detected by detect invisible or true seeing.</rule>
+          <rule>If detected, the spirit can be harmed by spells and magic weapons.</rule>
+          <rule>Dispel evil forces the spirit to return to the body.</rule>
+          <rule>If the body is destroyed, the shaman dies at the end of the spiritwalk.</rule>
+          <rule>If the spirit is destroyed, the body falls into a catatonic slumber that can be ended only by restore life and limb, resurrection, or wish.</rule>
+        </rules>
+        <limits>
+          <limit>Usable once per week.</limit>
+        </limits>
+      </ability>
+
+      <ability name="medicine_lodge" level="9">
+        <summary>May establish or build a medicine lodge and attract tribal followers.</summary>
+        <rules>
+          <rule>If currently in favor with tribal powers, may buy or build the medicine lodge at half the normal price due to divine intervention.</rule>
+          <rule>Once established, attracts 5d6x10 0th level tribesmen armed with various weapons and 1d6 shamans of 1st-3rd level of the same tribe.</rule>
+          <rule>Followers are completely loyal, with morale +4.</rule>
+          <rule>Followers must be provided food and lodging but need not be paid wages.</rule>
+        </rules>
+      </ability>
+
+      <ability name="magic_research_minor" level="5">
+        <summary>May research spells, scribe scrolls, and brew potions.</summary>
+      </ability>
+
+      <ability name="magic_research_major" level="9">
+        <summary>May create more powerful magic items such as weapons, rings, and staffs.</summary>
+      </ability>
+
+      <ability name="ritual_divine_magic_and_constructs" level="11">
+        <summary>May access higher divine ritual practice and craft constructs.</summary>
+        <rules>
+          <rule>May learn and cast 6th and 7th level ritual divine spells.</rule>
+          <rule>May craft magical constructs.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Spirit Whisperer</title>
+        <hit_dice>1d6</hit_dice>
+        <features_gained>
+          <feature_ref>commune_with_ancestral_spirits</feature_ref>
+          <feature_ref>totem_animal</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="2">
+        <xp_required>1,500</xp_required>
+        <title>Village Healer</title>
+        <hit_dice>2d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">1</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>divine_spellcasting</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="3">
+        <xp_required>3,000</xp_required>
+        <title>Tribal Priest</title>
+        <hit_dice>3d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>spiritual_ritual</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="4">
+        <xp_required>6,000</xp_required>
+        <title>Medicine Man</title>
+        <hit_dice>4d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">1</slot>
+        </spell_slots>
+      </entry>
+      <entry level="5">
+        <xp_required>12,000</xp_required>
+        <title>Totem Bearer</title>
+        <hit_dice>5d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>shapechange</feature_ref>
+          <feature_ref>magic_research_minor</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="6">
+        <xp_required>24,000</xp_required>
+        <title>Witch Doctor</title>
+        <hit_dice>6d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">1</slot>
+          <slot spell_level="4">1</slot>
+        </spell_slots>
+      </entry>
+      <entry level="7">
+        <xp_required>50,000</xp_required>
+        <title>Spirit Walker</title>
+        <hit_dice>7d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">2</slot>
+          <slot spell_level="4">1</slot>
+          <slot spell_level="5">1</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>spiritwalk</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="8">
+        <xp_required>100,000</xp_required>
+        <title>Tribal Elder</title>
+        <hit_dice>8d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">2</slot>
+          <slot spell_level="4">2</slot>
+          <slot spell_level="5">1</slot>
+        </spell_slots>
+      </entry>
+      <entry level="9">
+        <xp_required>200,000</xp_required>
+        <title>Shaman</title>
+        <hit_dice>9d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">2</slot>
+          <slot spell_level="5">2</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>medicine_lodge</feature_ref>
+          <feature_ref>magic_research_major</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>300,000</xp_required>
+        <title>Shaman, 10th level</title>
+        <hit_dice>9d6+1</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">4</slot>
+          <slot spell_level="2">4</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="11">
+        <xp_required>400,000</xp_required>
+        <title>Shaman, 11th level</title>
+        <hit_dice>9d6+2</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">4</slot>
+          <slot spell_level="2">4</slot>
+          <slot spell_level="3">4</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">3</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>ritual_divine_magic_and_constructs</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="12">
+        <xp_required>500,000</xp_required>
+        <title>Shaman, 12th level</title>
+        <hit_dice>9d6+3</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">5</slot>
+          <slot spell_level="2">5</slot>
+          <slot spell_level="3">4</slot>
+          <slot spell_level="4">4</slot>
+          <slot spell_level="5">3</slot>
+        </spell_slots>
+      </entry>
+      <entry level="13">
+        <xp_required>600,000</xp_required>
+        <title>Shaman, 13th level</title>
+        <hit_dice>9d6+4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">5</slot>
+          <slot spell_level="2">5</slot>
+          <slot spell_level="3">5</slot>
+          <slot spell_level="4">4</slot>
+          <slot spell_level="5">3</slot>
+        </spell_slots>
+      </entry>
+      <entry level="14">
+        <xp_required>700,000</xp_required>
+        <title>Grandfather of Totem</title>
+        <hit_dice>9d6+5</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">6</slot>
+          <slot spell_level="2">5</slot>
+          <slot spell_level="3">5</slot>
+          <slot spell_level="4">5</slot>
+          <slot spell_level="5">4</slot>
+        </spell_slots>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1-2</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">13+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">16+</value>
+          <value name="staffs_wands">13+</value>
+          <value name="spells">15+</value>
+        </row>
+        <row>
+          <value name="level_range">3-4</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">12+</value>
+          <value name="spells">14+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">13+</value>
+        </row>
+        <row>
+          <value name="level_range">7-8</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">7+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">9-10</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">6+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">11-12</value>
+          <value name="attack_throw">5+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">5+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">13-14</value>
+          <value name="attack_throw">4+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">4+</value>
+          <value name="blast_breath">10+</value>
+          <value name="staffs_wands">7+</value>
+          <value name="spells">9+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>medicine_lodge</structure_type>
+      <acquisition_rules>
+        <rule>If in favor with tribal powers, may buy or build the medicine lodge at half normal price due to divine intervention.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="0th_level_tribesmen" number="5d6x10"/>
+        <follower type="shamans_1st_to_3rd_level_of_same_tribe" number="1d6"/>
+      </followers>
+      <cost_rules>
+        <rule>Followers must be provided food and lodging but need not be paid wages.</rule>
+      </cost_rules>
+      <loyalty_or_morale_rules>
+        <rule>Followers are completely loyal and have morale +4.</rule>
+      </loyalty_or_morale_rules>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="cleric"/>
+      <general_rule_reference type="divine_magic"/>
+      <general_rule_reference type="cleric_magic_items"/>
+      <general_rule_reference type="animal_form"/>
+    </references>
+  </class>
+
+  <class name="Warlock">
+    <identity>
+      <name>Warlock</name>
+      <ancestry_category default="human">human</ancestry_category>
+      <source_label>111C-ACKS Players Companion-Classes-3</source_label>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>arcane_caster</tag>
+        <tag>necromancer</tag>
+        <tag>undead_controller</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>familiar</tag>
+        <tag>arcane_spellcasting</tag>
+        <tag>hex</tag>
+        <tag>alter_shape</tag>
+        <tag>stronghold</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>INT</ability>
+      </prime_requisites>
+      <minimum_abilities/>
+      <xp_adjustment_basis/>
+      <entry_restrictions/>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>mage</primary_progression_family>
+      <attack_throw_progression family="mage"/>
+      <cleave_progression family="mage"/>
+      <saving_throw_progression family="mage"/>
+      <damage_bonus_progression family="mage"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d4</hit_die>
+      <maximum_level>14</maximum_level>
+      <baseline_title>Medium</baseline_title>
+      <post_max_hit_dice_rule>After 9th level, hit dice do not increase; add +1 hit point per level.</post_max_hit_dice_rule>
+      <general_notes>
+        <rule>Hit point modifiers from Constitution are ignored.</rule>
+        <rule>May use any magic item usable by mages.</rule>
+      </general_notes>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>None.</armor>
+        <shields>Not allowed.</shields>
+        <weapons>
+          <rule>Permitted weapons: dagger, dart, staff, whip.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>Cannot use a weapon two-handed.</rule>
+          <rule>Cannot fight with two weapons.</rule>
+        </fighting_styles>
+      </permissions>
+      <restrictions>
+        <restriction>Cannot wear armor.</restriction>
+      </restrictions>
+      <combat_rules>
+        <rule>Attack throw starts at 10+ against AC 0.</rule>
+        <rule>Attack throws and saving throws improve by 2 every 6 levels.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <spellcasting_profile>
+      <tradition>Arcane</tradition>
+      <access_rules>
+        <rule>Begins casting arcane spells at 1st level.</rule>
+        <rule>Cast spells as a mage of two thirds class level.</rule>
+        <rule>Spell selection is limited to the warlock's repertoire.</rule>
+      </access_rules>
+      <repertoire_rules>
+        <rule>The repertoire may contain a number of spells up to the number and level of spells listed for the warlock's class level, increased by Intelligence bonus.</rule>
+      </repertoire_rules>
+      <casting_limits>
+        <rule>Per-day spell slots are determined by the Warlock spell progression table.</rule>
+        <rule>The spell progression table in the provided source excerpt is malformed, so individual slot values cannot be recovered from the excerpt with confidence.</rule>
+      </casting_limits>
+    </spellcasting_profile>
+
+    <class_subsystems>
+      <custom_subsystem name="familiar">
+        <definition>Each warlock begins play with a familiar appropriate to alignment and spell signature.</definition>
+        <rules>
+          <rule>The familiar's HD and maximum hit points equal half the warlock's.</rule>
+          <rule>The familiar's Intelligence equals the warlock's Intelligence.</rule>
+          <rule>The familiar has as many general and class proficiencies as the warlock, selected from the warlock's class list.</rule>
+          <rule>The familiar understands any languages spoken by the warlock.</rule>
+          <rule>The warlock understands the familiar's speech.</rule>
+          <rule>Others cannot understand the familiar without speak with animals.</rule>
+          <rule>The familiar is utterly loyal and will fight, perform services, and obey commands.</rule>
+          <rule>While the familiar is within 30', the warlock gains +1 on saving throws.</rule>
+          <rule>If the familiar is killed, the warlock must save versus Death or immediately take damage equal to the familiar's maximum total hit points.</rule>
+          <rule>If the familiar is slain, a new familiar is gained the next time the warlock earns a level.</rule>
+        </rules>
+      </custom_subsystem>
+    </class_subsystems>
+
+    <special_abilities>
+      <ability name="familiar" level="1">
+        <summary>Gain a loyal familiar.</summary>
+      </ability>
+
+      <ability name="secrets_of_the_dark_arts" level="2">
+        <summary>Unlock dark magical advantages.</summary>
+        <rules>
+          <rule>May control undead as a Chaotic cleric of half class level.</rule>
+          <rule>Targets of the warlock's spells that allow a saving throw versus Death suffer a -2 penalty on the save.</rule>
+          <rule>Necromantic spell effects are calculated as though the warlock were 2 levels higher than actual caster level.</rule>
+        </rules>
+      </ability>
+
+      <ability name="hex" level="4">
+        <summary>Place a curse on a visible target within 30'.</summary>
+        <procedure>
+          <step order="1">Choose a target creature the warlock can see within 30'.</step>
+          <step order="2">Target makes a saving throw versus Spells.</step>
+          <step order="3">If the save fails, choose one hex effect.</step>
+        </procedure>
+        <rules>
+          <rule>Hex options: -4 to one ability score, minimum 1; -4 on attack throws and saving throws; halve prime requisite, minimum 1; or each combat round, 50% chance to act normally and otherwise take no action.</rule>
+          <rule>A hex cannot be dispelled.</rule>
+          <rule>Remove curse removes the hex.</rule>
+        </rules>
+        <limits>
+          <limit>Usable once per day.</limit>
+        </limits>
+      </ability>
+
+      <ability name="contact_dark_powers" level="6">
+        <summary>Contact demons and evil spirits.</summary>
+        <procedure>
+          <step order="1">Spend 1 turn contacting dark powers.</step>
+          <step order="2">Resolve the effect as contact other plane.</step>
+        </procedure>
+        <rules>
+          <rule>The beings contacted possess near-omniscience but the contact can be mind-shattering.</rule>
+        </rules>
+        <limits>
+          <limit>Usable once per week.</limit>
+        </limits>
+      </ability>
+
+      <ability name="magic_research_minor" level="7">
+        <summary>May research spells, scribe scrolls, and brew potions as a 5th level mage.</summary>
+      </ability>
+
+      <ability name="alter_shape" level="8">
+        <summary>Assume the shape of any humanoid creature.</summary>
+        <rules>
+          <rule>May alter physical qualities such as height, weight, gender, hair color, hair texture, and skin color within the normal range for the chosen humanoid kind.</rule>
+          <rule>Equipment remains worn or held where possible and otherwise melds into the new form.</rule>
+          <rule>The form lasts 6 turns plus 1 turn per level above 8th.</rule>
+          <rule>Changing shape can be performed during combat in place of making an attack.</rule>
+        </rules>
+        <limits>
+          <limit>May be used no more than once every 8 hours.</limit>
+        </limits>
+      </ability>
+
+      <ability name="coterie" level="9">
+        <summary>May establish a coterie and attract apprentices.</summary>
+        <rules>
+          <rule>A coterie is usually established in a remote and desolate location.</rule>
+          <rule>Attracts 1d6 apprentices of 1st-3rd level and 2d6 normal men seeking to become warlocks.</rule>
+          <rule>Prospective warlocks have above-average Intelligence.</rule>
+          <rule>Many quit after 1d6 months due to fear of the required sacrifices.</rule>
+          <rule>Apprentices must be provided food and lodging but need not be paid wages.</rule>
+          <rule>If the warlock builds a dungeon beneath or near the coterie, monsters begin arriving to dwell there, followed by adventurers seeking them.</rule>
+          <rule>The coterie is otherwise mechanically identical to a mage's sanctum.</rule>
+        </rules>
+      </ability>
+
+      <ability name="summon_infernal_creature" level="10">
+        <summary>Summon a Chaotic servant.</summary>
+        <procedure>
+          <step order="1">Spend 1 turn summoning.</step>
+          <step order="2">Summon an invisible stalker or another Chaotic creature devised by the Judge.</step>
+          <step order="3">Assign a task.</step>
+        </procedure>
+        <rules>
+          <rule>The summoned creature serves until dispel evil is cast on it, it is slain, or its task is fulfilled.</rule>
+          <rule>Infernal creatures resent being summoned and may pervert instructions if the task is lengthy or dangerous.</rule>
+        </rules>
+        <limits>
+          <limit>Usable once per month.</limit>
+        </limits>
+      </ability>
+
+      <ability name="magic_research_and_necromancy" level="13">
+        <summary>Advanced magic item creation and necromancy.</summary>
+        <rules>
+          <rule>May create items such as weapons, rings, and staffs as a 9th level mage.</rule>
+          <rule>May cast ritual spells of a necromantic nature and create necromantic servants as an 11th level mage.</rule>
+        </rules>
+      </ability>
+
+      <ability name="forbidden_spells" level="14">
+        <summary>Add forbidden spells to the warlock class list.</summary>
+        <rules>
+          <rule>Add to class spell list: 3rd level cause disease and speak with dead; 4th level cause serious wounds; 5th level finger of death.</rule>
+          <rule>These spells are arcane for warlocks but otherwise identical to their divine counterparts.</rule>
+          <rule>A scroll containing one of these spells is usable only by divine casters who have the spell on their class list, or by 14th level warlocks.</rule>
+          <rule>Lower-level warlocks and standard mages cannot use such scrolls or cast these spells, because they are not on their class spell list.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Medium</title>
+        <hit_dice>1d4</hit_dice>
+        <features_gained>
+          <feature_ref>familiar</feature_ref>
+          <feature_ref>spellcasting</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="2">
+        <xp_required>2,075</xp_required>
+        <title>Occultist</title>
+        <hit_dice>2d4</hit_dice>
+        <features_gained>
+          <feature_ref>secrets_of_the_dark_arts</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="3">
+        <xp_required>4,150</xp_required>
+        <title>Spiritualist</title>
+        <hit_dice>3d4</hit_dice>
+      </entry>
+      <entry level="4">
+        <xp_required>8,300</xp_required>
+        <title>Hexgiver</title>
+        <hit_dice>4d4</hit_dice>
+        <features_gained>
+          <feature_ref>hex</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="5">
+        <xp_required>16,600</xp_required>
+        <title>Cursebringer</title>
+        <hit_dice>5d4</hit_dice>
+      </entry>
+      <entry level="6">
+        <xp_required>33,200</xp_required>
+        <title>Necromancer</title>
+        <hit_dice>6d4</hit_dice>
+        <features_gained>
+          <feature_ref>contact_dark_powers</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="7">
+        <xp_required>65,000</xp_required>
+        <title>Incantationist</title>
+        <hit_dice>7d4</hit_dice>
+        <features_gained>
+          <feature_ref>magic_research_minor</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="8">
+        <xp_required>130,000</xp_required>
+        <title>Warlock</title>
+        <hit_dice>8d4</hit_dice>
+        <features_gained>
+          <feature_ref>alter_shape</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="9">
+        <xp_required>280,000</xp_required>
+        <title>Dread Lord</title>
+        <hit_dice>9d4</hit_dice>
+        <features_gained>
+          <feature_ref>coterie</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>430,000</xp_required>
+        <title>Dread Lord, 10th level</title>
+        <hit_dice>9d4+1</hit_dice>
+        <features_gained>
+          <feature_ref>summon_infernal_creature</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="11">
+        <xp_required>580,000</xp_required>
+        <title>Dread Lord, 11th level</title>
+        <hit_dice>9d4+2</hit_dice>
+      </entry>
+      <entry level="12">
+        <xp_required>730,000</xp_required>
+        <title>Dread Lord, 12th level</title>
+        <hit_dice>9d4+3</hit_dice>
+      </entry>
+      <entry level="13">
+        <xp_required>880,000</xp_required>
+        <title>Dread Lord, 13th level</title>
+        <hit_dice>9d4+4</hit_dice>
+        <features_gained>
+          <feature_ref>magic_research_and_necromancy</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="14">
+        <xp_required>1,030,000</xp_required>
+        <title>Dread King</title>
+        <hit_dice>9d4+5</hit_dice>
+        <features_gained>
+          <feature_ref>forbidden_spells</feature_ref>
+        </features_gained>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1-3</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">13+</value>
+          <value name="poison_death">13+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">4-6</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">12+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">7-9</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">11+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">10-12</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">9+</value>
+        </row>
+        <row>
+          <value name="level_range">13-14</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">7+</value>
+          <value name="spells">8+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>coterie</structure_type>
+      <acquisition_rules>
+        <rule>A coterie is usually established in a remote and desolate location.</rule>
+        <rule>If a dungeon is built beneath or near the coterie, monsters begin arriving there, followed by adventurers seeking them.</rule>
+        <rule>The coterie is otherwise identical to a mage's sanctum.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="apprentices_1st_to_3rd_level" number="1d6"/>
+        <follower type="normal_men_seekers" number="2d6"/>
+      </followers>
+      <cost_rules>
+        <rule>Apprentices must be provided food and lodging but need not be paid wages.</rule>
+        <rule>Many normal men quit after 1d6 months.</rule>
+      </cost_rules>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="mage"/>
+      <general_rule_reference type="arcane_magic"/>
+      <general_rule_reference type="chaotic_turning_or_control_undead"/>
+      <general_rule_reference type="mage_magic_items"/>
+      <general_rule_reference type="contact_other_plane"/>
+    </references>
+  </class>
+
+  <class name="Witch">
+    <identity>
+      <name>Witch</name>
+      <ancestry_category default="human">human</ancestry_category>
+      <source_label>111C-ACKS Players Companion-Classes-3</source_label>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>divine_caster</tag>
+        <tag>tradition_caster</tag>
+        <tag>ritualist</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>divine_spellcasting</tag>
+        <tag>traditions</tag>
+        <tag>potion_brewing</tag>
+        <tag>magic_item_creation</tag>
+        <tag>stronghold</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>WIS</ability>
+        <ability>CHA</ability>
+      </prime_requisites>
+      <minimum_abilities/>
+      <xp_adjustment_basis/>
+      <entry_restrictions/>
+    </requirements>
+
+    <progression_mapping>
+      <attack_throw_progression family="mage"/>
+      <cleave_progression family="mage"/>
+      <saving_throw_progression family="cleric"/>
+      <damage_bonus_progression family="mage"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d4</hit_die>
+      <maximum_level>14</maximum_level>
+      <baseline_title>Initiate</baseline_title>
+      <post_max_hit_dice_rule>After 9th level, hit dice do not increase; add +1 hit point per level.</post_max_hit_dice_rule>
+      <general_notes>
+        <rule>May use any magic item usable by clerics.</rule>
+      </general_notes>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>None.</armor>
+        <shields>Not allowed.</shields>
+        <weapons>
+          <rule>Permitted weapons: club, dagger, dart, staff.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>Cannot fight with two weapons.</rule>
+        </fighting_styles>
+      </permissions>
+      <restrictions>
+        <restriction>Cannot wear armor.</restriction>
+      </restrictions>
+      <combat_rules>
+        <rule>Attack throw starts at 10+ against AC 0.</rule>
+        <rule>Attack throws improve by 2 every 6 levels.</rule>
+        <rule>Saving throws improve by 2 every 4 levels.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <spellcasting_profile>
+      <tradition>Divine</tradition>
+      <access_rules>
+        <rule>Begins casting divine spells at 1st level.</rule>
+        <rule>Spells are granted through esoteric nighttime rituals.</rule>
+        <rule>Spell availability by level is determined by the class spell progression table.</rule>
+      </access_rules>
+      <ritual_access>
+        <rule>At 11th level, may learn and cast 6th and 7th level ritual divine spells.</rule>
+      </ritual_access>
+      <casting_limits>
+        <rule>Each witch must belong to a tradition chosen at character creation.</rule>
+        <rule>Each tradition adds spells to the witch class list and grants abilities at 1st, 3rd, 5th, and 7th level.</rule>
+        <rule>Magic research is performed as a cleric of equal level.</rule>
+      </casting_limits>
+    </spellcasting_profile>
+
+    <class_subsystems>
+      <custom_subsystem name="traditions">
+        <definition>Each witch selects one tradition at creation; the tradition modifies spell access and grants level-based powers.</definition>
+        <rules>
+          <rule>Record the selected tradition and all granted spells and powers when the character is created.</rule>
+        </rules>
+        <option name="antiquarian">
+          <rule>Add bonus spells: 1st detect poison; 2nd delay poison; 3rd cure disease; 4th cure serious wounds.</rule>
+          <rule>1st level: gain one rank of Healing proficiency.</rule>
+          <rule>3rd level: may cure moderate wounds by touch once every 8 hours; each use takes 1 turn.</rule>
+          <rule>5th level: gain one rank of Alchemy proficiency.</rule>
+          <rule>7th level: may neutralize poison once per day; each use takes 1 turn.</rule>
+        </option>
+        <option name="chthonic">
+          <rule>Add bonus spells: 1st detect undead; 2nd spiritual weapon; 3rd necromantic potence; 4th animate dead.</rule>
+          <rule>1st level: gain Seduction proficiency.</rule>
+          <rule>3rd level: gain Black Lore of Zahar proficiency.</rule>
+          <rule>5th level: gain Mystic Aura proficiency.</rule>
+          <rule>7th level: may charm person once per day; each use takes 1 round.</rule>
+        </option>
+        <option name="sylvan">
+          <rule>Add bonus spells: 2nd obscuring cloud and silent step; 3rd glitterdust; 4th summon animals.</rule>
+          <rule>1st level: gain Beast Friendship proficiency.</rule>
+          <rule>3rd level: may change shape as a warlock once per day; each use takes 1 turn.</rule>
+          <rule>5th level: gain Passing Without Trace proficiency.</rule>
+          <rule>7th level: may polymorph self once per week; each use takes 1 turn.</rule>
+        </option>
+        <option name="voudon">
+          <rule>Add bonus spells: 1st detect undead; 2nd holy chant; 3rd prayer; 4th smite undead.</rule>
+          <rule>1st level: gain one Craft proficiency of choice.</rule>
+          <rule>3rd level: may turn undead as a cleric of half class level.</rule>
+          <rule>3rd level: fear-inflicting spells are calculated as though the witch were 2 class levels higher, and are resisted with a -2 penalty on the saving throw.</rule>
+          <rule>5th level: may perform spiritual rituals as a shaman.</rule>
+          <rule>7th level: gain mastery of charms and illusions identical to an elven enchanter.</rule>
+        </option>
+      </custom_subsystem>
+    </class_subsystems>
+
+    <special_abilities>
+      <ability name="tradition_choice" level="1">
+        <summary>Select one tradition at character creation.</summary>
+      </ability>
+
+      <ability name="brew_potions" level="3">
+        <summary>May brew potions.</summary>
+      </ability>
+
+      <ability name="research_spells" level="5">
+        <summary>May research spells.</summary>
+      </ability>
+
+      <ability name="scribe_scrolls" level="7">
+        <summary>May scribe magical scrolls.</summary>
+      </ability>
+
+      <ability name="magic_item_creation" level="9">
+        <summary>May create items such as weapons, rings, and staffs.</summary>
+      </ability>
+
+      <ability name="ritual_divine_magic_and_constructs" level="11">
+        <summary>May access higher divine ritual practice and construct crafting.</summary>
+        <rules>
+          <rule>May learn and cast 6th and 7th level ritual divine spells.</rule>
+          <rule>May craft magical constructs.</rule>
+        </rules>
+      </ability>
+
+      <ability name="coven" level="9">
+        <summary>May establish a coven and attract apprentices.</summary>
+        <rules>
+          <rule>A coven is usually established in a remote and desolate location.</rule>
+          <rule>Attracts 1d6 apprentices of the witch's tradition of 1st-3rd level plus 2d6 normal women seeking to become witches.</rule>
+          <rule>Prospective witches have above-average Wisdom.</rule>
+          <rule>Many quit after 1d6 months due to fear of the required sacrifices.</rule>
+          <rule>Apprentices must be provided food and lodging but need not be paid wages.</rule>
+          <rule>If the witch builds a dungeon beneath or near the coven, monsters begin arriving there, followed by adventurers seeking them.</rule>
+          <rule>The coven is otherwise mechanically identical to a mage's sanctum.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Initiate</title>
+        <hit_dice>1d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">1</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>tradition_choice</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="2">
+        <xp_required>2,000</xp_required>
+        <title>Seeress</title>
+        <hit_dice>2d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="3">
+        <xp_required>4,000</xp_required>
+        <title>Siren</title>
+        <hit_dice>3d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>brew_potions</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="4">
+        <xp_required>8,000</xp_required>
+        <title>Pythoness</title>
+        <hit_dice>4d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="5">
+        <xp_required>16,000</xp_required>
+        <title>Sibyl</title>
+        <hit_dice>5d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>research_spells</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="6">
+        <xp_required>32,000</xp_required>
+        <title>Enchantress</title>
+        <hit_dice>6d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">2</slot>
+          <slot spell_level="4">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="7">
+        <xp_required>65,000</xp_required>
+        <title>Sorceress</title>
+        <hit_dice>7d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">2</slot>
+          <slot spell_level="5">2</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>scribe_scrolls</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="8">
+        <xp_required>130,000</xp_required>
+        <title>Incantrix</title>
+        <hit_dice>8d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">5</slot>
+          <slot spell_level="2">5</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="9">
+        <xp_required>230,000</xp_required>
+        <title>Witch</title>
+        <hit_dice>9d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">5</slot>
+          <slot spell_level="2">5</slot>
+          <slot spell_level="3">5</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">3</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>magic_item_creation</feature_ref>
+          <feature_ref>coven</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>330,000</xp_required>
+        <title>Witch, 10th level</title>
+        <hit_dice>9d4+1</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">6</slot>
+          <slot spell_level="2">6</slot>
+          <slot spell_level="3">5</slot>
+          <slot spell_level="4">5</slot>
+          <slot spell_level="5">3</slot>
+        </spell_slots>
+      </entry>
+      <entry level="11">
+        <xp_required>430,000</xp_required>
+        <title>Witch, 11th level</title>
+        <hit_dice>9d4+2</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">6</slot>
+          <slot spell_level="2">6</slot>
+          <slot spell_level="3">6</slot>
+          <slot spell_level="4">5</slot>
+          <slot spell_level="5">5</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>ritual_divine_magic_and_constructs</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="12">
+        <xp_required>530,000</xp_required>
+        <title>Witch, 12th level</title>
+        <hit_dice>9d4+3</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">8</slot>
+          <slot spell_level="2">8</slot>
+          <slot spell_level="3">6</slot>
+          <slot spell_level="4">6</slot>
+          <slot spell_level="5">5</slot>
+        </spell_slots>
+      </entry>
+      <entry level="13">
+        <xp_required>630,000</xp_required>
+        <title>Witch, 13th level</title>
+        <hit_dice>9d4+4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">8</slot>
+          <slot spell_level="2">8</slot>
+          <slot spell_level="3">8</slot>
+          <slot spell_level="4">6</slot>
+          <slot spell_level="5">5</slot>
+        </spell_slots>
+      </entry>
+      <entry level="14">
+        <xp_required>730,000</xp_required>
+        <title>Witch Queen</title>
+        <hit_dice>9d4+5</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">9</slot>
+          <slot spell_level="2">8</slot>
+          <slot spell_level="3">8</slot>
+          <slot spell_level="4">8</slot>
+          <slot spell_level="5">6</slot>
+        </spell_slots>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1-2</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">13+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">16+</value>
+          <value name="staffs_wands">13+</value>
+          <value name="spells">15+</value>
+        </row>
+        <row>
+          <value name="level_range">3-4</value>
+          <value name="attack_throw">10+ / 9+ at level 4</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">12+</value>
+          <value name="spells">14+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">13+</value>
+        </row>
+        <row>
+          <value name="level_range">7-8</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">7+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">9-10</value>
+          <value name="attack_throw">8+ / 7+ at level 10</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">6+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">11-12</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">5+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">13-14</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">4+</value>
+          <value name="blast_breath">10+</value>
+          <value name="staffs_wands">7+</value>
+          <value name="spells">9+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>coven</structure_type>
+      <acquisition_rules>
+        <rule>A coven is usually established in a remote and desolate location.</rule>
+        <rule>If the witch builds a dungeon beneath or near the coven, monsters begin arriving there, followed by adventurers seeking them.</rule>
+        <rule>The coven is otherwise identical to a mage's sanctum.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="apprentices_of_same_tradition_1st_to_3rd_level" number="1d6"/>
+        <follower type="normal_women_seekers" number="2d6"/>
+      </followers>
+      <cost_rules>
+        <rule>Apprentices must be provided food and lodging but need not be paid wages.</rule>
+        <rule>Many seekers quit after 1d6 months.</rule>
+      </cost_rules>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="mage"/>
+      <progression_reference family="cleric"/>
+      <general_rule_reference type="divine_magic"/>
+      <general_rule_reference type="cleric_magic_items"/>
+      <general_rule_reference type="warlock_alter_shape"/>
+      <general_rule_reference type="shaman_spiritual_ritual"/>
+      <general_rule_reference type="elven_enchanter_charms_and_illusions"/>
+    </references>
+  </class>
+</class_catalog>

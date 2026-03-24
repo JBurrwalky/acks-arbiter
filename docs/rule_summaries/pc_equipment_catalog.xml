@@ -1,0 +1,248 @@
+<equipment_catalog>
+  <catalog_tables>
+    <table name="equipment_costs">
+      <columns>
+        <column>category</column>
+        <column>item</column>
+        <column>cost</column>
+      </columns>
+
+      <row>
+        <category>clothing</category>
+        <item>Belt / Sash (embossed leather)</item>
+        <cost>1gp</cost>
+      </row>
+      <row>
+        <category>clothing</category>
+        <item>Belt / Sash (silk)</item>
+        <cost>1gp</cost>
+      </row>
+      <row>
+        <category>clothing</category>
+        <item>Breastwrap (wool or linen)</item>
+        <cost>4sp</cost>
+      </row>
+      <row>
+        <category>clothing</category>
+        <item>Breastwrap (silk)</item>
+        <cost>1gp</cost>
+      </row>
+      <row>
+        <category>clothing</category>
+        <item>Chiton (wool or linen)</item>
+        <cost>4gp</cost>
+      </row>
+      <row>
+        <category>clothing</category>
+        <item>Chiton (silk)</item>
+        <cost>20gp</cost>
+      </row>
+      <row>
+        <category>clothing</category>
+        <item>Cloak (embroidered, hooded)</item>
+        <cost>4gp</cost>
+      </row>
+      <row>
+        <category>clothing</category>
+        <item>Cloak (leather, hooded)</item>
+        <cost>10gp</cost>
+      </row>
+      <row>
+        <category>clothing</category>
+        <item>Cloak (silk, hooded)</item>
+        <cost>25gp</cost>
+      </row>
+      <row>
+        <category>clothing</category>
+        <item>Gloves (long, leather)</item>
+        <cost>1gp</cost>
+      </row>
+      <row>
+        <category>clothing</category>
+        <item>Loincloth</item>
+        <cost>1sp</cost>
+      </row>
+      <row>
+        <category>clothing</category>
+        <item>Sandals (high)</item>
+        <cost>6sp</cost>
+      </row>
+      <row>
+        <category>clothing</category>
+        <item>Skullcap (metal)</item>
+        <cost>3gp</cost>
+      </row>
+      <row>
+        <category>clothing</category>
+        <item>Veil (silk)</item>
+        <cost>1gp</cost>
+      </row>
+
+      <row>
+        <category>adventuring_equipment</category>
+        <item>Craftsman's tools (any)</item>
+        <cost>25gp</cost>
+      </row>
+      <row>
+        <category>adventuring_equipment</category>
+        <item>Craftsman's workshop (any)</item>
+        <cost>350gp</cost>
+      </row>
+      <row>
+        <category>adventuring_equipment</category>
+        <item>Dice (pair)</item>
+        <cost>5sp</cost>
+      </row>
+      <row>
+        <category>adventuring_equipment</category>
+        <item>Holy Book</item>
+        <cost>20gp</cost>
+      </row>
+      <row>
+        <category>adventuring_equipment</category>
+        <item>Journal</item>
+        <cost>10gp</cost>
+      </row>
+      <row>
+        <category>adventuring_equipment</category>
+        <item>Machinist's tools</item>
+        <cost>25gp</cost>
+      </row>
+      <row>
+        <category>adventuring_equipment</category>
+        <item>Manacles</item>
+        <cost>2gp</cost>
+      </row>
+
+      <row>
+        <category>armor</category>
+        <item>Heavy Helmet</item>
+        <cost>20gp</cost>
+      </row>
+      <row>
+        <category>armor</category>
+        <item>Light Helmet</item>
+        <cost>0gp (5gp)</cost>
+      </row>
+
+      <row>
+        <category>foodstuffs</category>
+        <item>Ale/Beer (strong, 1 pint)</item>
+        <cost>1sp</cost>
+      </row>
+      <row>
+        <category>foodstuffs</category>
+        <item>Armor</item>
+        <cost>Cost</cost>
+      </row>
+      <row>
+        <category>foodstuffs</category>
+        <item>Foodstuffs</item>
+        <cost>Cost</cost>
+      </row>
+    </table>
+  </catalog_tables>
+
+  <descriptions>
+    <item name="Belt / Sash">
+      <description>Embossed leather or silk belt or sash.</description>
+    </item>
+
+    <item name="Breastwrap">
+      <description>Band of wool, linen, or silk wrapped across the breasts for support.</description>
+    </item>
+
+    <item name="Chiton">
+      <description>Linen, wool, or silk garment formed from a single rectangle of fabric, draped over the shoulders and girdled at the waist to fasten a blouse and skirt.</description>
+    </item>
+
+    <item name="Cloak">
+      <description>Hooded cloak available in embroidered, leather, or silk versions.</description>
+    </item>
+
+    <item name="Craftsman's tools">
+      <description>Implements used by a tradesman in a specific craft.</description>
+      <rules>
+        <rule>Required to make Craft proficiency throws.</rule>
+        <rule>Each craft uses its own specific tools.</rule>
+        <rule>Weight: 1 stone.</rule>
+      </rules>
+    </item>
+
+    <item name="Craftsman's workshop">
+      <description>Full complement of a craft's tools and furnishings.</description>
+      <rules>
+        <rule>Supports up to 8 craftsmen working together.</rule>
+        <rule>A master craftsman must have access to a workshop to increase the productivity of journeymen and apprentices.</rule>
+        <rule>Each craft uses its own specific workshop.</rule>
+        <rule>Setup space required: 20' x 20'.</rule>
+      </rules>
+    </item>
+
+    <item name="Dice">
+      <description>Common dice made in various shapes and sizes from materials such as bone, ivory, talus, or wood.</description>
+    </item>
+
+    <item name="Gloves">
+      <description>Long gloves tightly covering hands, forearms, and elbows.</description>
+      <rules>
+        <rule>Do not protect against curses.</rule>
+        <rule>Do not protect against slime.</rule>
+        <rule>Thief abilities such as picking pockets, opening locks, and removing traps cannot be performed while wearing gloves.</rule>
+      </rules>
+    </item>
+
+    <item name="Heavy Helmet">
+      <description>Metal close-faced or visored helmet covering face, head, and neck.</description>
+      <rules>
+        <rule>Must be purchased separately from a suit of armor.</rule>
+        <rule>Imposes a -1 penalty to surprise rolls.</rule>
+        <rule>Imposes a -4 penalty to proficiency throws to hear noise.</rule>
+        <rule>Provides a +2 bonus on d20 rolls made on the Mortal Wounds table.</rule>
+      </rules>
+    </item>
+
+    <item name="Light Helmet">
+      <description>Leather or metal open-faced helmet protecting head and neck while maintaining sight and breathing.</description>
+      <rules>
+        <rule>Included in the cost of any suit of armor.</rule>
+        <rule>If armor is worn without a helmet, decrease the character's armor class by 1 point.</rule>
+        <rule>May be purchased separately for 5gp.</rule>
+        <rule>A separately purchased light helmet provides no in-game benefit.</rule>
+      </rules>
+    </item>
+
+    <item name="Holy Book">
+      <description>Parchment, papyrus, or vellum codex or scroll of religious writings.</description>
+      <rules>
+        <rule>Access grants a +1 bonus on Theology proficiency throws.</rule>
+      </rules>
+    </item>
+
+    <item name="Journal">
+      <description>Folded parchment or papyrus notebook for logs, maps, illustrations, and bookkeeping entries.</description>
+      <rules>
+        <rule>Contains 50 pages.</rule>
+        <rule>Considerably less sturdy than a spell book.</rule>
+      </rules>
+    </item>
+
+    <item name="Machinist's tools">
+      <description>Set of implements used to design, build, and repair automatons.</description>
+      <rules>
+        <rule>Required to make proficiency throws to design, build, and repair automatons.</rule>
+        <rule>Weight: 1 stone.</rule>
+      </rules>
+    </item>
+
+    <item name="Manacles">
+      <description>Metal fetters for shackling hands or ankles.</description>
+      <escape_rules>
+        <rule>Contortionism proficiency allows escape in 1 turn with a proficiency throw of 18+.</rule>
+        <rule>Breaking free by brute strength requires 1 turn and a proficiency throw of 24+ on 1d20.</rule>
+        <rule>Bonuses and penalties that apply to proficiency throws to open doors also apply when breaking free by brute strength.</rule>
+        <rule>Unusual material or size may impose a penalty on the brute-strength throw.</rule>
+      </escape_rules>
+    </item>
+  </descriptions>
+</equipment_catalog>

@@ -1,0 +1,654 @@
+<acks_rules_summary title="Wounds and Woe" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <source>138-Wounds and Woe.html</source>
+
+  <mortal_wounds>
+    <overview>
+      <rule>When a creature drops to 0 hp or less, it becomes unconscious and may be dead.</rule>
+      <rule>Its actual condition is not determined until an ally treats its wounds.</rule>
+      <rule>An ally may treat the creature by applying healing magic or by being within 5' and spending an action instead of attacking to apply aid.</rule>
+      <rule>Once treated, the creature rolls 1d20+1d6 on the Mortal Wounds table for the damage type that reduced it to 0 hp or less.</rule>
+      <rule>The modified 1d20 determines condition and recovery. The modified 1d6 determines the permanent wound suffered.</rule>
+      <rule>If the creature is not treated within 24 hours, it rolls with no treatment bonus and with the full -10 penalty for treatment more than 1 day late.</rule>
+      <rule>Healing magic used for treatment does not restore hp. It only adds its bonus to the Mortal Wounds roll.</rule>
+      <rule>If the condition result is mortally wounded, grievously wounded, or critically wounded, the creature remains at its current hp and must still be healed to 1 hp within the listed time or die.</rule>
+      <rule>If the condition result is shocked, knocked out, or dazed, the creature recovers to 1 hp. Further healing then works normally.</rule>
+    </overview>
+
+    <modifiers>
+      <modifier type="constitution">Apply the unconscious creature's CON modifier to the d20 roll.</modifier>
+      <modifier type="hit_dice_value">+2 if HD Value 1 (1d6 HD); +4 if HD Value 2 (1d8 HD); +6 if HD Value 3 (1d10 HD); +8 if HD Value 4 (1d12 HD).</modifier>
+      <modifier type="current_hit_points">+5 if hp are exactly 0; -2 if hp are negative from 1/4 to 1/2 max hp; -5 if hp are negative from 1/2 to max hp; -10 if hp are negative from max to 2x max hp; -20 if hp are negative beyond 2x max hp.</modifier>
+      <modifier type="healing_magic">+1 per Base Healing Rate of healing magic applied.</modifier>
+      <modifier type="healing_proficiency">+1 per rank of Healing proficiency.</modifier>
+      <modifier type="healing_herbs">+2 if horsetail is applied.</modifier>
+      <modifier type="treatment_timing">+2 if treated within 1 round; -3 if treated within 1 turn; -5 if treated within 1 hour; -8 if treated within 1 day; -10 if treated more than 1 day after injury.</modifier>
+      <rule>Other modifiers from race, class, spells, and items may apply to the d20 or d6 roll.</rule>
+    </modifiers>
+
+    <condition_table>
+      <entry d20_total="-6 or less">
+        <condition>instantly_killed</condition>
+      </entry>
+      <entry d20_total="-5 to 0">
+        <condition>instantly_killed</condition>
+      </entry>
+      <entry d20_total="1 to 5">
+        <condition>mortally_wounded</condition>
+        <rule>Dies unless healed to 1 hp within 1 round.</rule>
+        <rule>If healed in time, requires 1 month of bed rest.</rule>
+      </entry>
+      <entry d20_total="6 to 10">
+        <condition>grievously_wounded</condition>
+        <rule>Dies unless healed to 1 hp within 1 turn.</rule>
+        <rule>If healed in time, requires 2 weeks of bed rest.</rule>
+      </entry>
+      <entry d20_total="11 to 15">
+        <condition>critically_wounded</condition>
+        <rule>Dies unless healed to 1 hp within 1 day.</rule>
+        <rule>If healed in time, requires 1 week of bed rest.</rule>
+      </entry>
+      <entry d20_total="16 to 20">
+        <condition>shock</condition>
+        <rule>Recovers to 1 hp.</rule>
+        <rule>Requires magical healing and 1 night of bed rest, or 1 week of bed rest.</rule>
+      </entry>
+      <entry d20_total="21 to 25">
+        <condition>knocked_out</condition>
+        <rule>Recovers to 1 hp.</rule>
+        <rule>Requires magical healing or 1 night of bed rest.</rule>
+      </entry>
+      <entry d20_total="26+">
+        <condition>dazed</condition>
+        <rule>Recovers immediately to 1 hp.</rule>
+        <rule>No bed rest required.</rule>
+      </entry>
+    </condition_table>
+
+    <damage_type_tables>
+      <damage_type name="bludgeoning">
+        <row d6="1">
+          <result d20_total="-6 or less">body crushed into pulp.</result>
+          <result d20_total="-5 to 0">body shattered into a flattened mass.</result>
+          <result d20_total="1 to 5">permanently unconscious coma; spine shattered at waist; cannot reproduce; save vs Death each year or die from complications.</result>
+          <result d20_total="6 to 10">shattered ribs and lung injury; must rest 2 turns of every 6; wilderness movement reduced by 1/3; cannot force march; CON reduced by 1/3.</result>
+          <result d20_total="11 to 15">gruesome facial scarring.</result>
+          <result d20_total="16 to 20">-1 to all initiative rolls.</result>
+          <result d20_total="21 to 25">-1 to initiative on cold or rainy days.</result>
+          <result d20_total="26+">no additional permanent wound.</result>
+        </row>
+        <row d6="2">
+          <result d20_total="-6 or less">body shattered.</result>
+          <result d20_total="-5 to 0">skull crushed.</result>
+          <result d20_total="1 to 5">spine broken at neck; DEX 3; cannot move, fight, use items, or cast spells; save vs Death each month or die from complications.</result>
+          <result d20_total="6 to 10">both legs badly broken; crutch required; movement reduced by 60'; DEX reduced by 2/3 for AC purposes.</result>
+          <result d20_total="11 to 15">one leg badly broken; movement reduced by 30'; DEX reduced by 1/3 for AC purposes.</result>
+          <result d20_total="16 to 20">scrotum crushed or womb ruptured; cannot reproduce; -3 reaction if known.</result>
+          <result d20_total="21 to 25">1d3 toes on one foot smashed; losing 3 toes on one foot makes the leg lame.</result>
+          <result d20_total="26+">notable facial scarring.</result>
+        </row>
+        <row d6="3">
+          <result d20_total="-6 or less">skull crushed.</result>
+          <result d20_total="-5 to 0">rib cage collapsed and lungs ruptured.</result>
+          <result d20_total="1 to 5">both legs crushed and amputated; DEX 3 for AC; two crutches required; movement reduced by 60'; cannot force march.</result>
+          <result d20_total="6 to 10">one leg crushed and amputated; crutch required; movement reduced by 30'; DEX reduced by 1/3 for AC purposes.</result>
+          <result d20_total="11 to 15">one knee damaged; carrying capacity permanently reduced by 6 stone; cannot force march.</result>
+          <result d20_total="16 to 20">hips fractured and heal poorly; cannot force march.</result>
+          <result d20_total="21 to 25">lower back pain; carrying capacity reduced by 3 stone.</result>
+          <result d20_total="26+">minor facial scarring.</result>
+        </row>
+        <row d6="4">
+          <result d20_total="-6 or less">rib cage collapse and lung rupture.</result>
+          <result d20_total="-5 to 0">crushed bones and splattered brain; body ruined.</result>
+          <result d20_total="1 to 5">both arms crushed and amputated; cannot climb, use weapons or items, open locks, remove traps, or similar actions.</result>
+          <result d20_total="6 to 10">one arm crushed and amputated; cannot climb, use shields, dual wield, or use two-handed weapons.</result>
+          <result d20_total="11 to 15">one hand crushed and amputated; cannot dual wield or use two-handed weapons.</result>
+          <result d20_total="16 to 20">1d3 fingers on one hand smashed; losing 3 fingers on one hand makes the hand useless.</result>
+          <result d20_total="21 to 25">1d3 nails on one hand blackened and ruined; minor scarring.</result>
+          <result d20_total="26+">ghostly visions of lost companions.</result>
+        </row>
+        <row d6="5">
+          <result d20_total="-6 or less">body ruined by crushing trauma.</result>
+          <result d20_total="-5 to 0">bone-shattering fatal injury.</result>
+          <result d20_total="1 to 5">permanently addled; -2 on magical research and proficiency throws; -10% earned XP.</result>
+          <result d20_total="6 to 10">partly deaf with ringing headaches; -2 hear noise, -2 surprise, -1 initiative.</result>
+          <result d20_total="11 to 15">one eardrum popped; -1 hear noise, -1 surprise.</result>
+          <result d20_total="16 to 20">cauliflower ear; minor scarring.</result>
+          <result d20_total="21 to 25">ghostly visions of lost companions.</result>
+          <result d20_total="26+">vision of the afterlife, then it fades.</result>
+        </row>
+        <row d6="6">
+          <result d20_total="-6 or less">bone-shattering fatal injury.</result>
+          <result d20_total="-5 to 0">corpse largely intact.</result>
+          <result d20_total="1 to 5">jaw irreparably broken and all teeth destroyed; cannot speak clearly, cast spells, or use speech-based magic items; -4 reaction.</result>
+          <result d20_total="6 to 10">3d6 teeth broken inward; slurred speech; -4 reaction; -1 initiative when spellcasting.</result>
+          <result d20_total="11 to 15">1d6 teeth knocked out; -2 reaction with opposite sex and upper-class NPCs.</result>
+          <result d20_total="16 to 20">ghostly visions of lost companions.</result>
+          <result d20_total="21 to 25">vision of the afterlife, then it fades.</result>
+          <result d20_total="26+">the Choosers of the Slain pass by; awaken.</result>
+        </row>
+      </damage_type>
+
+      <damage_type name="fire">
+        <row d6="1">
+          <result d20_total="-6 or less">cremated alive; body reduced to ash.</result>
+          <result d20_total="-5 to 0">flesh burned away to scorched bone.</result>
+          <result d20_total="1 to 5">all limbs burned off, lungs scorched, face hideously scarred; combines both arms burned off, both legs burned off, lung injury, and gruesome scarring.</result>
+          <result d20_total="6 to 10">one leg and one arm burned off; remaining half of body heavily scarred.</result>
+          <result d20_total="11 to 15">lungs scorched; must rest 2 turns of every 6; wilderness movement reduced by 1/3; cannot force march; CON reduced by 1/3.</result>
+          <result d20_total="16 to 20">gruesome facial scarring.</result>
+          <result d20_total="21 to 25">-1 to all initiative rolls.</result>
+          <result d20_total="26+">-1 to initiative on cold or rainy days.</result>
+        </row>
+        <row d6="2">
+          <result d20_total="-6 or less">body reduced to scorched bone.</result>
+          <result d20_total="-5 to 0">body blackened beyond recovery.</result>
+          <result d20_total="1 to 5">eyes, ears, nose, lips destroyed; combines both eyes lost, both ears lost, lips and tongue lost, and gruesome scarring.</result>
+          <result d20_total="6 to 10">both ears and most of face burned away; -2 hear noise, -2 surprise, gruesome scarring.</result>
+          <result d20_total="11 to 15">genitals destroyed; cannot reproduce; -3 reaction if known.</result>
+          <result d20_total="16 to 20">one ear burned off; -1 hear noise, -1 surprise.</result>
+          <result d20_total="21 to 25">hair burned away plus notable torso/arm scarring.</result>
+          <result d20_total="26+">two notable burn scars or one notable burn scar, depending on exact hit location.</result>
+        </row>
+        <row d6="3">
+          <result d20_total="-6 or less">body blackened beyond recovery.</result>
+          <result d20_total="-5 to 0">friends may identify body by smell only; severe burning.</result>
+          <result d20_total="1 to 5">both legs burned off; DEX 3 for AC; two crutches required; movement reduced by 60'; cannot force march.</result>
+          <result d20_total="6 to 10">one leg burned off; crutch required; movement reduced by 30'; DEX reduced by 1/3 for AC purposes.</result>
+          <result d20_total="11 to 15">one foot burned off; peg required; movement reduced by 30'; DEX reduced by 1/3 for AC purposes.</result>
+          <result d20_total="16 to 20">1d3 toes on one foot burned off; losing 3 toes on one foot makes the foot useless.</result>
+          <result d20_total="21 to 25">hair burned away; scalp blackened; notable scarring.</result>
+          <result d20_total="26+">shoulder scar; minor scarring.</result>
+        </row>
+        <row d6="4">
+          <result d20_total="-6 or less">body roasted.</result>
+          <result d20_total="-5 to 0">scarred ruin of flesh.</result>
+          <result d20_total="1 to 5">both arms burned off; cannot climb, use weapons or items, open locks, remove traps, or similar actions.</result>
+          <result d20_total="6 to 10">one arm burned off; cannot climb, use shields, dual wield, or use two-handed weapons.</result>
+          <result d20_total="11 to 15">one hand burned off; cannot dual wield or use two-handed weapons.</result>
+          <result d20_total="16 to 20">1d3 fingers on one hand burned off; losing 3 fingers on one hand makes the hand useless.</result>
+          <result d20_total="21 to 25">hand scarred; minor scarring.</result>
+          <result d20_total="26+">ghostly visions of lost companions.</result>
+        </row>
+        <row d6="5">
+          <result d20_total="-6 or less">scarred ruin of flesh.</result>
+          <result d20_total="-5 to 0">ghastly burns.</result>
+          <result d20_total="1 to 5">both eyes melted; blinded; -4 attack throws; no line of sight; movement reduced to 1/4 normal; -2 surprise.</result>
+          <result d20_total="6 to 10">one eye melted; -2 to missile attack throws.</result>
+          <result d20_total="11 to 15">large burn scar on one cheek; notable scarring.</result>
+          <result d20_total="16 to 20">smallest finger on one hand burned off; losing 3 fingers on one hand makes the hand useless.</result>
+          <result d20_total="21 to 25">ghostly visions of lost companions.</result>
+          <result d20_total="26+">vision of the afterlife, then it fades.</result>
+        </row>
+        <row d6="6">
+          <result d20_total="-6 or less">ghastly burns.</result>
+          <result d20_total="-5 to 0">corpse largely intact.</result>
+          <result d20_total="1 to 5">lips and tongue burned away; cannot speak, cast spells, or use speech-based magic items; -4 reaction.</result>
+          <result d20_total="6 to 10">lips and jaw burned white; notable scarring.</result>
+          <result d20_total="11 to 15">fingernails blackened; minor scarring.</result>
+          <result d20_total="16 to 20">ghostly visions of lost companions.</result>
+          <result d20_total="21 to 25">vision of the afterlife, then it fades.</result>
+          <result d20_total="26+">the Choosers of the Slain pass by; awaken.</result>
+        </row>
+      </damage_type>
+
+      <damage_type name="penetrating">
+        <row d6="1">
+          <result d20_total="-6 or less">impaled through body.</result>
+          <result d20_total="-5 to 0">brain-piercing fatal wound.</result>
+          <result d20_total="1 to 5">spinal cord severed at neck; DEX 3; cannot move, fight, use items, or cast spells; save vs Death each month or die from complications.</result>
+          <result d20_total="6 to 10">permanently addled; -2 on magical research and proficiency throws; -10% earned XP.</result>
+          <result d20_total="11 to 15">impulsive and angry; shift alignment one step toward Chaotic; 1 in 6 chance each combat round to go berserk.</result>
+          <result d20_total="16 to 20">gruesome puncture scarring.</result>
+          <result d20_total="21 to 25">deep wound aches; -1 to all initiative rolls.</result>
+          <result d20_total="26+">-1 to initiative on cold or rainy days.</result>
+        </row>
+        <row d6="2">
+          <result d20_total="-6 or less">brain-piercing fatal wound.</result>
+          <result d20_total="-5 to 0">groin-destroying fatal wound.</result>
+          <result d20_total="1 to 5">spinal cord severed at waist; as legs crushed; cannot reproduce; save vs Death each year or die from complications.</result>
+          <result d20_total="6 to 10">punctured lung; must rest 2 turns of every 6; wilderness movement reduced by 1/3; cannot force march; CON reduced by 1/3.</result>
+          <result d20_total="11 to 15">genitals destroyed; cannot reproduce; -3 reaction if known.</result>
+          <result d20_total="16 to 20">pair of ribs shattered; cannot force march.</result>
+          <result d20_total="21 to 25">pectoral muscle injury; carrying capacity reduced by 3 stone.</result>
+          <result d20_total="26+">large ragged facial scar; notable scarring.</result>
+        </row>
+        <row d6="3">
+          <result d20_total="-6 or less">groin-destroying fatal wound.</result>
+          <result d20_total="-5 to 0">lungs punctured; fatal.</result>
+          <result d20_total="1 to 5">heart-adjacent puncture leaves invalid; CON reduced by 1/3; movement reduced by 30'; save vs Death each year or die from complications.</result>
+          <result d20_total="6 to 10">one leg lamed; movement reduced by 30'; DEX reduced by 1/3 for AC purposes.</result>
+          <result d20_total="11 to 15">weapon fragment lodged in innards; constant pain; -2 to all initiative rolls.</result>
+          <result d20_total="16 to 20">one ear torn off; -1 hear noise, -1 surprise.</result>
+          <result d20_total="21 to 25">upper ear puncture; notable scarring.</result>
+          <result d20_total="26+">minor puncture scar.</result>
+        </row>
+        <row d6="4">
+          <result d20_total="-6 or less">lungs punctured; fatal.</result>
+          <result d20_total="-5 to 0">guts spilled out; body ruined.</result>
+          <result d20_total="1 to 5">abdominal puncture leaves victim infection-prone and weak; CON reduced by 1/3; -4 saves vs disease and poison.</result>
+          <result d20_total="6 to 10">one arm lamed; cannot climb, dual wield, use shield, or use two-handed weapon.</result>
+          <result d20_total="11 to 15">one hand ruined; cannot dual wield or use two-handed weapons.</result>
+          <result d20_total="16 to 20">jawline scar; noticeable scarring.</result>
+          <result d20_total="21 to 25">minor puncture scar.</result>
+          <result d20_total="26+">ghostly visions of lost companions.</result>
+        </row>
+        <row d6="5">
+          <result d20_total="-6 or less">guts spilled out; fatal.</result>
+          <result d20_total="-5 to 0">deep stab wound; fatal.</result>
+          <result d20_total="1 to 5">eye-to-brain strike; blinded; -4 attack throws; no line of sight; movement reduced to 1/4 normal; -2 surprise.</result>
+          <result d20_total="6 to 10">one eye punctured and ruined; -2 missile attack throws.</result>
+          <result d20_total="11 to 15">one eye damaged; -2 missile attack throws at medium and long range.</result>
+          <result d20_total="16 to 20">minor puncture scar.</result>
+          <result d20_total="21 to 25">ghostly visions of lost companions.</result>
+          <result d20_total="26+">vision of the afterlife, then it fades.</result>
+        </row>
+        <row d6="6">
+          <result d20_total="-6 or less">deep stab wound; fatal.</result>
+          <result d20_total="-5 to 0">corpse largely intact.</result>
+          <result d20_total="1 to 5">throat puncture leaves victim mute and breathing through a hole; cannot speak, cast spells, or use speech-based magic items; -4 reaction.</result>
+          <result d20_total="6 to 10">throat puncture severs vocal cords; raspy voice; -2 to throws involving speech.</result>
+          <result d20_total="11 to 15">minor puncture scar.</result>
+          <result d20_total="16 to 20">ghostly visions of lost companions.</result>
+          <result d20_total="21 to 25">vision of the afterlife, then it fades.</result>
+          <result d20_total="26+">the Choosers of the Slain pass by; awaken.</result>
+        </row>
+      </damage_type>
+
+      <damage_type name="savage">
+        <row d6="1">
+          <result d20_total="-6 or less">body largely consumed or digested.</result>
+          <result d20_total="-5 to 0">body butchered beyond recognition.</result>
+          <result d20_total="1 to 5">spine broken at neck; DEX 3; cannot move, fight, use items, or cast spells; save vs Death each month or die from complications.</result>
+          <result d20_total="6 to 10">more than half the face gnawed away, including one eye, one ear, and all of nose.</result>
+          <result d20_total="11 to 15">almost half the face mauled, including one eye and one ear.</result>
+          <result d20_total="16 to 20">nose bitten off and lips ruined; gruesome scarring.</result>
+          <result d20_total="21 to 25">ragged wounds heal stiff and scarred; -1 to all initiative rolls.</result>
+          <result d20_total="26+">-1 to initiative on cold or rainy days.</result>
+        </row>
+        <row d6="2">
+          <result d20_total="-6 or less">body butchered and chewed apart.</result>
+          <result d20_total="-5 to 0">body heavily consumed.</result>
+          <result d20_total="1 to 5">spinal cord snapped at waist; as legs torn off; cannot reproduce; save vs Death each year or die from complications.</result>
+          <result d20_total="6 to 10">intestines mangled; must rest 2 turns of every 6; CON reduced by 1/3; -4 save vs Poison; chronic indigestion and flatulence impose -4 reaction.</result>
+          <result d20_total="11 to 15">scrotum chewed off or womb gnawed; cannot reproduce; -3 reaction if known.</result>
+          <result d20_total="16 to 20">ear bitten off; -1 hear noise, -1 surprise.</result>
+          <result d20_total="21 to 25">calf nearly chewed through; cannot force march unless mounted.</result>
+          <result d20_total="26+">notable cheek scarring.</result>
+        </row>
+        <row d6="3">
+          <result d20_total="-6 or less">body reduced to cracked bone and gristle.</result>
+          <result d20_total="-5 to 0">body savaged beyond butchery.</result>
+          <result d20_total="1 to 5">both legs torn off; DEX 3 for AC; two crutches required; movement reduced by 60'; cannot force march.</result>
+          <result d20_total="6 to 10">one leg torn off; crutch required; movement reduced by 30'; DEX reduced by 1/3 for AC purposes.</result>
+          <result d20_total="11 to 15">one foot chewed off; peg required; movement reduced by 30'; DEX reduced by 1/3 for AC purposes.</result>
+          <result d20_total="16 to 20">1d3 toes on one foot bitten off; losing 3 toes on one foot makes the foot useless.</result>
+          <result d20_total="21 to 25">neck marked by terrible bites; notable scarring.</result>
+          <result d20_total="26+">minor cheek scar.</result>
+        </row>
+        <row d6="4">
+          <result d20_total="-6 or less">body torn open and disemboweled.</result>
+          <result d20_total="-5 to 0">body reduced to cracked bone and gristle.</result>
+          <result d20_total="1 to 5">both arms torn off; cannot climb, use weapons or items, open locks, remove traps, or similar actions.</result>
+          <result d20_total="6 to 10">one arm ripped off; cannot climb, use shields, dual wield, or use two-handed weapons.</result>
+          <result d20_total="11 to 15">one hand bitten off; cannot dual wield or use two-handed weapons.</result>
+          <result d20_total="16 to 20">1d3 fingers on one hand bitten off; losing 3 fingers on one hand makes the hand useless.</result>
+          <result d20_total="21 to 25">hand nearly bitten off; minor scarring.</result>
+          <result d20_total="26+">ghostly visions of lost companions.</result>
+        </row>
+        <row d6="5">
+          <result d20_total="-6 or less">belly torn open; fatal.</result>
+          <result d20_total="-5 to 0">fatal tooth-and-claw trauma.</result>
+          <result d20_total="1 to 5">eyes eaten or clawed out; blinded; -4 attack throws; no line of sight; movement reduced to 1/4 normal; -2 surprise.</result>
+          <result d20_total="6 to 10">one eye clawed or pecked out; -2 missile attack throws.</result>
+          <result d20_total="11 to 15">neck marked by terrible bites; notable scarring.</result>
+          <result d20_total="16 to 20">smallest finger on one hand bitten off; losing 3 fingers on one hand makes the hand useless.</result>
+          <result d20_total="21 to 25">ghostly visions of lost companions.</result>
+          <result d20_total="26+">vision of the afterlife, then it fades.</result>
+        </row>
+        <row d6="6">
+          <result d20_total="-6 or less">fatal tooth-and-claw trauma.</result>
+          <result d20_total="-5 to 0">corpse largely intact.</result>
+          <result d20_total="1 to 5">lips and tongue chewed off; cannot speak, cast spells, or use speech-based magic items; -4 reaction.</result>
+          <result d20_total="6 to 10">throat nearly torn out; raspy voice; -2 to throws involving speech.</result>
+          <result d20_total="11 to 15">fang marks on neck; minor scarring.</result>
+          <result d20_total="16 to 20">ghostly visions of lost companions.</result>
+          <result d20_total="21 to 25">vision of the afterlife, then it fades.</result>
+          <result d20_total="26+">the Choosers of the Slain pass by; awaken.</result>
+        </row>
+      </damage_type>
+
+      <damage_type name="slashing">
+        <row d6="1">
+          <result d20_total="-6 or less">body cleaved into many pieces.</result>
+          <result d20_total="-5 to 0">body cleaved in two.</result>
+          <result d20_total="1 to 5">all arms and legs sliced off; DEX 3; cannot move, fight, use items, or cast spells; save vs Death each year or die from complications.</result>
+          <result d20_total="6 to 10">intestines mangled; must rest 2 turns of every 6; CON reduced by 1/3; -4 save vs Poison; chronic indigestion and flatulence impose -4 reaction.</result>
+          <result d20_total="11 to 15">skull cut into; brain injury; -2 magical research and proficiency throws; -10% earned XP.</result>
+          <result d20_total="16 to 20">nose cut off and palate cleft; gruesome scarring.</result>
+          <result d20_total="21 to 25">wounds heal stiff and scarred; -1 to all initiative rolls.</result>
+          <result d20_total="26+">-1 to initiative on cold or rainy days.</result>
+        </row>
+        <row d6="2">
+          <result d20_total="-6 or less">body cleaved in two.</result>
+          <result d20_total="-5 to 0">decapitation-level trauma.</result>
+          <result d20_total="1 to 5">body severed at waist; as legs sliced off; cannot reproduce; -3 reaction; save vs Death each year or die from complications.</result>
+          <result d20_total="6 to 10">genitals completely sliced off or womb shredded; as loss of scrotum/womb plus yearly save vs Death or die from complications.</result>
+          <result d20_total="11 to 15">scrotum sliced away or womb cut open; cannot reproduce; -3 reaction if known.</result>
+          <result d20_total="16 to 20">ear sliced off; -1 hear noise, -1 surprise.</result>
+          <result d20_total="21 to 25">hamstring partly severed; cannot force march unless mounted.</result>
+          <result d20_total="26+">notable brow scar.</result>
+        </row>
+        <row d6="3">
+          <result d20_total="-6 or less">decapitation-level trauma.</result>
+          <result d20_total="-5 to 0">jowls sliced open.</result>
+          <result d20_total="1 to 5">both legs hacked off; DEX 3 for AC; two crutches required; movement reduced by 60'; cannot force march.</result>
+          <result d20_total="6 to 10">one leg hacked off; crutch required; movement reduced by 30'; DEX reduced by 1/3 for AC purposes.</result>
+          <result d20_total="11 to 15">one foot sliced off; peg required; movement reduced by 30'; DEX reduced by 1/3 for AC purposes.</result>
+          <result d20_total="16 to 20">1d3 toes on one foot sliced away; losing 3 toes on one foot makes the foot useless.</result>
+          <result d20_total="21 to 25">slice through lips leaves permanent sneer; notable scarring.</result>
+          <result d20_total="26+">minor cheek scar.</result>
+        </row>
+        <row d6="4">
+          <result d20_total="-6 or less">jowls sliced open.</result>
+          <result d20_total="-5 to 0">belly cut open; fatal.</result>
+          <result d20_total="1 to 5">both arms cut off; cannot climb, use weapons or items, open locks, remove traps, or similar actions.</result>
+          <result d20_total="6 to 10">one arm cut off; cannot climb, use shields, dual wield, or use two-handed weapons.</result>
+          <result d20_total="11 to 15">one hand cut off; cannot dual wield or use two-handed weapons.</result>
+          <result d20_total="16 to 20">1d3 fingers on one hand sliced away; losing 3 fingers on one hand makes the hand useless.</result>
+          <result d20_total="21 to 25">sharp cut on back of hand; minor scarring.</result>
+          <result d20_total="26+">ghostly visions of lost companions.</result>
+        </row>
+        <row d6="5">
+          <result d20_total="-6 or less">belly cut open; fatal.</result>
+          <result d20_total="-5 to 0">ghastly belly wound; fatal.</result>
+          <result d20_total="1 to 5">eyes slashed; blinded; -4 attack throws; no line of sight; movement reduced to 1/4 normal; -2 surprise.</result>
+          <result d20_total="6 to 10">one eye ruined; -2 missile attack throws.</result>
+          <result d20_total="11 to 15">one eye damaged; -2 missile attack throws at medium and long range.</result>
+          <result d20_total="16 to 20">smallest finger on one hand sliced off; losing 3 fingers on one hand makes the hand useless.</result>
+          <result d20_total="21 to 25">ghostly visions of lost companions.</result>
+          <result d20_total="26+">vision of the afterlife, then it fades.</result>
+        </row>
+        <row d6="6">
+          <result d20_total="-6 or less">ghastly belly wound; fatal.</result>
+          <result d20_total="-5 to 0">corpse largely intact.</result>
+          <result d20_total="1 to 5">lips and tongue severed; cannot speak, cast spells, or use speech-based magic items; -4 reaction.</result>
+          <result d20_total="6 to 10">near decapitation cuts vocal cords; raspy voice; -2 to throws involving speech.</result>
+          <result d20_total="11 to 15">thin scar below throat; minor scarring.</result>
+          <result d20_total="16 to 20">ghostly visions of lost companions.</result>
+          <result d20_total="21 to 25">vision of the afterlife, then it fades.</result>
+          <result d20_total="26+">the Choosers of the Slain pass by; awaken.</result>
+        </row>
+      </damage_type>
+    </damage_type_tables>
+  </mortal_wounds>
+
+  <tampering_with_mortality>
+    <overview>
+      <rule>If a creature suffers a permanent wound, repair permanent wound, restore life and limb, regeneration, a ring of regeneration, or similar magic can heal the wound.</rule>
+      <rule>If a creature is killed, restore life and limb, reincarnation, or similar magic that restores the dead to life can revive it.</rule>
+      <rule>Creatures healed or restored in these ways often require long recovery and may suffer permanent side effects.</rule>
+      <rule>Roll 1d20+1d6 on the Tampering with Mortality table matching the creature's alignment.</rule>
+      <rule>The modified 1d20 determines the restoration condition and recovery period. The modified 1d6 determines the side effect.</rule>
+      <rule>Side effects are permanent and can only be removed with wish.</rule>
+    </overview>
+
+    <modifiers>
+      <modifier type="life_span">+2 if youthful; 0 if adult; -5 if middle aged; -10 if old; -20 if ancient.</modifier>
+      <modifier type="spellcaster_power">+1/2 caster level of spellcaster; +2 if cast in the temple of the spellcaster's god.</modifier>
+      <modifier type="state_of_body">-10 if instantly killed; -5 per spine severing; -2 per limb destroyed; -1 per hand, foot, ear, eye, tongue, or genitalia destroyed.</modifier>
+      <modifier type="state_of_soul">Apply creature's WIS modifier; -1 for each full day dead; -1 for each side effect already suffered.</modifier>
+      <rule>The maximum penalty for state of the creature's body is -10.</rule>
+      <rule>For state of body, "instantly killed" includes death by disease or poison, being slain while helpless, or rolling instantly killed on the Mortal Wounds table.</rule>
+      <rule>Other modifiers from race, class, spells, and items may apply to the d20 or d6 roll.</rule>
+    </modifiers>
+
+    <condition_table>
+      <entry d20_total="-6 or less">
+        <condition>spell_fails</condition>
+        <rule>The spell fails to restore life.</rule>
+      </entry>
+      <entry d20_total="-5 to 0">
+        <condition>spell_fails</condition>
+        <rule>The spell fails to restore life.</rule>
+      </entry>
+      <entry d20_total="1 to 5">
+        <condition>restored_at_great_cost</condition>
+        <rule>Requires 1 month of bed rest.</rule>
+      </entry>
+      <entry d20_total="6 to 10">
+        <condition>restored_with_lingering_effects</condition>
+        <rule>Requires 14 + 1d20 days of rest.</rule>
+      </entry>
+      <entry d20_total="11 to 15">
+        <condition>restoration_intense</condition>
+        <rule>Requires 2 weeks of bed rest.</rule>
+      </entry>
+      <entry d20_total="16 to 20">
+        <condition>body_made_whole</condition>
+        <rule>Requires 2 weeks of bed rest.</rule>
+      </entry>
+      <entry d20_total="21 to 25">
+        <condition>health_restored</condition>
+        <rule>Requires 1 week of bed rest.</rule>
+      </entry>
+      <entry d20_total="26+">
+        <condition>instantly_recovered</condition>
+        <rule>No rest required.</rule>
+      </entry>
+    </condition_table>
+
+    <alignment_tables>
+      <alignment_table alignment="lawful">
+        <row d6="1">
+          <result d20_total="-6 or less">soul illuminated in the light of the Logos; no additional attempts permitted.</result>
+          <result d20_total="-5 to 0">spirit dwells in paradise; no additional attempts permitted.</result>
+          <result d20_total="1 to 5">returns as incorporeal blue spirit; can see, hear, speak, and cast spells; cannot otherwise interact with world; harmed only by spells, magic weapons, or incorporeal creatures; touch deals 1d10 to Chaotic creatures; use CHA instead of STR and add Fighter damage bonus.</result>
+          <result d20_total="6 to 10">soul marked; all extraplanar beings target victim; 1 in 6 weekly chance an 8 HD cacodemon is sent to destroy victim.</result>
+          <result d20_total="11 to 15">on a natural 1 attack throw, hit an adjacent ally instead.</result>
+          <result d20_total="16 to 20">changes sex; -2 reaction with those who knew prior gender unless CHA 13+.</result>
+          <result d20_total="21 to 25">ages early; age 1d10 years if human or 5d10 years if demi-human.</result>
+          <result d20_total="26+">becomes vegetarian only; cannot eat flesh without vomiting.</result>
+        </row>
+        <row d6="2">
+          <result d20_total="-6 or less">surrounded by admiring ghostly figures; no additional attempts permitted.</result>
+          <result d20_total="-5 to 0">all additional attempts at -5.</result>
+          <result d20_total="1 to 5">sprouts angel wings; CON halved; takes double damage from bludgeoning attacks and falls; weight reduced by 30%; gains 30' flight.</result>
+          <result d20_total="6 to 10">permanently connected to spiritual plane; all undead sense victim within 60'.</result>
+          <result d20_total="11 to 15">connection to Divine lessened; cast 1 fewer Divine spell per level per day; WIS reduced by 1d3.</result>
+          <result d20_total="16 to 20">ascetic appetite; food tastes like porridge, drink like vinegar; -2 saves vs ingested poison.</result>
+          <result d20_total="21 to 25">whispers from beyond; -2 hear noise; -1 initiative and surprise.</result>
+          <result d20_total="26+">10% XP penalty until next level.</result>
+        </row>
+        <row d6="3">
+          <result d20_total="-6 or less">all additional attempts at -5.</result>
+          <result d20_total="-5 to 0">all additional attempts at -3.</result>
+          <result d20_total="1 to 5">ages instantly to halfway to racial maximum age, or to 1 year from racial maximum if already beyond halfway.</result>
+          <result d20_total="6 to 10">gain body of a Lawful creature from reincarnation table; -4 reaction with normal humans.</result>
+          <result d20_total="11 to 15">voice like thunder; cannot whisper; spellcasting is loud; Quiet Magic reduces to ordinary speaking volume.</result>
+          <result d20_total="16 to 20">bronze skin, golden eyes, or halo; -2 reaction with Chaotic creatures.</result>
+          <result d20_total="21 to 25">10% XP penalty until next level.</result>
+          <result d20_total="26+">no side effects.</result>
+        </row>
+        <row d6="4">
+          <result d20_total="-6 or less">all additional attempts at -3.</result>
+          <result d20_total="-5 to 0">additional attempts permitted at -1.</result>
+          <result d20_total="1 to 5">CHA +4 to maximum 18, STR -4 to minimum 3.</result>
+          <result d20_total="6 to 10">lose 1 point of Wisdom permanently.</result>
+          <result d20_total="11 to 15">bright lights or loud sounds in battle require save vs Paralysis or stunned 1 round; each trigger imposes cumulative -2 on the save.</result>
+          <result d20_total="16 to 20">10% XP penalty until next level.</result>
+          <result d20_total="21 to 25">gain benefits of Heroism potion for 1 day; all negative side effects removed.</result>
+          <result d20_total="26+">no side effects.</result>
+        </row>
+        <row d6="5">
+          <result d20_total="-6 or less">deity may allow second attempt, but must perform a quest upon revival.</result>
+          <result d20_total="-5 to 0">deity's embrace; additional attempts permitted at -1.</result>
+          <result d20_total="1 to 5">lose 1 point of Constitution permanently.</result>
+          <result d20_total="6 to 10">hair grows 1 inch by sunset unless shaved twice daily; untrimmed hair gives -1 attacks.</result>
+          <result d20_total="11 to 15">10% XP penalty until next level.</result>
+          <result d20_total="16 to 20">no side effects.</result>
+          <result d20_total="21 to 25">recover 1d6 days quicker than normal; all negative side effects removed.</result>
+          <result d20_total="26+">gain a true or possibly true prophecy from the Judge.</result>
+        </row>
+        <row d6="6">
+          <result d20_total="-6 or less">deity may allow return on a second attempt after a second attempt is permitted.</result>
+          <result d20_total="-5 to 0">second attempt permitted.</result>
+          <result d20_total="1 to 5">carry permanent marks of faith; -4 reaction with those outside pantheon, +2 with those who share the faith.</result>
+          <result d20_total="6 to 10">domestic animals, fuzzy herbivores, and songbirds react favorably; +4 reaction with them; -4 Move Silently and Hide in Shadows when any are within 30'.</result>
+          <result d20_total="11 to 15">no side effects.</result>
+          <result d20_total="16 to 20">feel blessed; recover 1d6 days quicker than normal; all negative side effects removed.</result>
+          <result d20_total="21 to 25">gain speak with dead once per week; all negative side effects removed.</result>
+          <result d20_total="26+">gain +2 to class prime requisite; all negative side effects removed.</result>
+        </row>
+      </alignment_table>
+
+      <alignment_table alignment="neutral">
+        <row d6="1">
+          <result d20_total="-6 or less">soul extinguished or spirit wanders in emptiness; no additional attempts permitted.</result>
+          <result d20_total="-5 to 0">CON and WIS reduced by 1d4 each.</result>
+          <result d20_total="1 to 5">soul marked; all extraplanar beings target victim; 1 in 6 weekly chance an invisible stalker is sent to destroy victim.</result>
+          <result d20_total="6 to 10">on a natural 1 attack throw, hit an adjacent ally instead.</result>
+          <result d20_total="11 to 15">changes sex; -2 reaction with those who knew prior gender unless CHA 13+.</result>
+          <result d20_total="16 to 20">sterile.</result>
+          <result d20_total="21 to 25">flavors reverse; ordinary food becomes inedible unless specially prepared.</result>
+          <result d20_total="26+">no side effects.</result>
+        </row>
+        <row d6="2">
+          <result d20_total="-6 or less">tormenting ghosts or falling into nothingness; no additional attempts, or additional attempts at -5.</result>
+          <result d20_total="-5 to 0">blind in full daylight; -4 attack throws, no line of sight for spells, movement 1/4 normal, -2 surprise; can see invisible once per day.</result>
+          <result d20_total="1 to 5">daily save vs Spells upon awakening or forget identity for 1d6 days.</result>
+          <result d20_total="6 to 10">5% cumulative daily chance of madness; act as under confusion for 1d6 days, then chance resets.</result>
+          <result d20_total="11 to 15">bottomless hungers; casual smoking or alcohol use causes full addiction; cumulative -1 to all saves after each hour without consumption.</result>
+          <result d20_total="16 to 20">whispers from beyond; -2 hear noise; -1 initiative and surprise.</result>
+          <result d20_total="21 to 25">10% XP penalty until next level.</result>
+          <result d20_total="26+">no side effects.</result>
+        </row>
+        <row d6="3">
+          <result d20_total="-6 or less">all additional attempts at -5 or -3.</result>
+          <result d20_total="-5 to 0">50% shrink as diminution or grow as growth; DEX immediately 3, then rises by 1 per week until normal.</result>
+          <result d20_total="1 to 5">gain body of a Neutral creature from reincarnation table; -4 reaction with normal humans.</result>
+          <result d20_total="6 to 10">gain alien eye in forehead; may use ESP 3/day; normal people react at -3.</result>
+          <result d20_total="11 to 15">gain minor animal trait associated with culture or religion; -2 reaction with those outside that culture.</result>
+          <result d20_total="16 to 20">10% XP penalty until next level.</result>
+          <result d20_total="21 to 25">no side effects.</result>
+          <result d20_total="26+">no side effects.</result>
+        </row>
+        <row d6="4">
+          <result d20_total="-6 or less">all additional attempts at -3 or permitted at -1.</result>
+          <result d20_total="-5 to 0">permanently forget 1 general proficiency and no longer recognize one random henchman; that henchman suffers -2 morale.</result>
+          <result d20_total="1 to 5">lose 1 point of Wisdom permanently.</result>
+          <result d20_total="6 to 10">whenever resting, sleep for random 2d6+2 hours; cannot be awakened except by damage, and then sleeps again after 1 round.</result>
+          <result d20_total="11 to 15">10% XP penalty until next level.</result>
+          <result d20_total="16 to 20">no side effects.</result>
+          <result d20_total="21 to 25">gain Heroism potion benefits for 1 day; all negative side effects removed.</result>
+          <result d20_total="26+">gain Heroism potion benefits for 1 day; all negative side effects removed.</result>
+        </row>
+        <row d6="5">
+          <result d20_total="-6 or less">additional attempts permitted at -1, or deity may require quest on second attempt.</result>
+          <result d20_total="-5 to 0">lose 1 point of Constitution permanently.</result>
+          <result d20_total="1 to 5">need only half normal rations, but gain 1d10 lbs immediately and 1d10 lbs per year regardless of activity.</result>
+          <result d20_total="6 to 10">10% XP penalty until next level.</result>
+          <result d20_total="11 to 15">no side effects.</result>
+          <result d20_total="16 to 20">recover 1d6 days quicker than normal; all negative side effects removed.</result>
+          <result d20_total="21 to 25">gain a true or possibly true prophecy from the Judge.</result>
+          <result d20_total="26+">gain a true or possibly true prophecy from the Judge.</result>
+        </row>
+        <row d6="6">
+          <result d20_total="-6 or less">quest required on second attempt, or second attempt permitted.</result>
+          <result d20_total="-5 to 0">smell of the wild; -4 reaction with normal humans, but animals treat victim as one of them unless victim attacks them or behaves civilly in their presence.</result>
+          <result d20_total="1 to 5">small demon or imp becomes familiar as the proficiency, but does not always obey.</result>
+          <result d20_total="6 to 10">no side effects.</result>
+          <result d20_total="11 to 15">recover 1d6 days quicker than normal; all negative side effects removed.</result>
+          <result d20_total="16 to 20">gain speak with dead once per week; all negative side effects removed.</result>
+          <result d20_total="21 to 25">gain +2 to class prime requisite; all negative side effects removed.</result>
+          <result d20_total="26+">gain +2 to class prime requisite; all negative side effects removed.</result>
+        </row>
+      </alignment_table>
+
+      <alignment_table alignment="chaotic">
+        <row d6="1">
+          <result d20_total="-6 or less">soul damned to the Outer Darkness; no additional attempts permitted.</result>
+          <result d20_total="-5 to 0">spirit wanders pathways of the dead; no additional attempts permitted; or body degenerates into rotting meat with maggots and flies, CHA reduced to 3, movement halved, and no natural healing.</result>
+          <result d20_total="1 to 5">soul marked; all extraplanar beings target victim; 1 in 6 weekly chance a lamassu is sent to destroy victim.</result>
+          <result d20_total="6 to 10">on a natural 1 attack throw, hit an adjacent ally instead.</result>
+          <result d20_total="11 to 15">each time victim attempts to rest, on 1 on 1d6 victim gets no rest, no hp, and no spell recovery.</result>
+          <result d20_total="16 to 20">children are monstrous; roll on Magical Mutations or Reincarnation table for each child.</result>
+          <result d20_total="21 to 25">all rations must contain meat.</result>
+          <result d20_total="26+">all rations must contain meat.</result>
+        </row>
+        <row d6="2">
+          <result d20_total="-6 or less">tormenting ghosts or cold darkness; no additional attempts, or additional attempts at -5.</result>
+          <result d20_total="-5 to 0">body afflicted with wasting disease; CHA and CON reduced by 1d3 immediately and by another 1 each month unless victim sacrifices and consumes a sapient Lawful creature; cure disease suppresses for 1 day only.</result>
+          <result d20_total="1 to 5">dead flesh no longer satisfies hunger; only living flesh and blood of a struggling sapient creature satiates.</result>
+          <result d20_total="6 to 10">cannot stop muttering nonsense; impossible to move silently; spellcasting initiative -1.</result>
+          <result d20_total="11 to 15">must drink blood; animal blood suffices but fresh sapient blood is preferred.</result>
+          <result d20_total="16 to 20">whispers from beyond; -2 hear noise; -1 initiative and surprise.</result>
+          <result d20_total="21 to 25">10% XP penalty until next level.</result>
+          <result d20_total="26+">10% XP penalty until next level.</result>
+        </row>
+        <row d6="3">
+          <result d20_total="-6 or less">all additional attempts at -5.</result>
+          <result d20_total="-5 to 0">one arm becomes hideous tentacle; may attack for 1d8 damage; CHA reduced by 3; -4 on fine manipulation, weapon use, and similar actions; cannot use bows or two-handed weapons.</result>
+          <result d20_total="1 to 5">gain body of a Chaotic creature from reincarnation table; -4 reaction with normal humans.</result>
+          <result d20_total="6 to 10">mouth enlarges and fangs grow; bite for 1d6 damage; cannot speak human or demi-human languages intelligibly; can still cast spells.</result>
+          <result d20_total="11 to 15">gain disfigurement such as misshapen limbs or strange eyes; each disfigurement imposes -2 reaction with sapient Lawful or Neutral creatures.</result>
+          <result d20_total="16 to 20">10% XP penalty until next level.</result>
+          <result d20_total="21 to 25">whispers from beyond; -2 hear noise; -2 surprise.</result>
+          <result d20_total="26+">whispers from beyond; -2 hear noise; -2 surprise.</result>
+        </row>
+        <row d6="4">
+          <result d20_total="-6 or less">all additional attempts at -3.</result>
+          <result d20_total="-5 to 0">dark power leaked in during restoration; holy water and turning affect victim as a wight; Destroy results charm victim.</result>
+          <result d20_total="1 to 5">lose 1 point of Wisdom permanently.</result>
+          <result d20_total="6 to 10">must sleep by day and be active by night; cannot regain spells unless resting during the day; -2 to all throws in sunlight.</result>
+          <result d20_total="11 to 15">10% XP penalty until next level.</result>
+          <result d20_total="16 to 20">no side effects.</result>
+          <result d20_total="21 to 25">gain Heroism potion benefits for 1 day; all negative side effects removed.</result>
+          <result d20_total="26+">gain Heroism potion benefits for 1 day; all negative side effects removed.</result>
+        </row>
+        <row d6="5">
+          <result d20_total="-6 or less">deity's embrace; additional attempts permitted at -1, or quest required.</result>
+          <result d20_total="-5 to 0">lose 1 point of Constitution permanently.</result>
+          <result d20_total="1 to 5">long sharp nails; claw attacks for 1d4 damage; -1 on throws involving fine manipulation; regrow in 1 turn if cut.</result>
+          <result d20_total="6 to 10">10% XP penalty until next level.</result>
+          <result d20_total="11 to 15">no side effects.</result>
+          <result d20_total="16 to 20">recover 1d6 days quicker than normal; all negative side effects removed.</result>
+          <result d20_total="21 to 25">gain a true or possibly true prophecy from the Judge.</result>
+          <result d20_total="26+">gain a true or possibly true prophecy from the Judge.</result>
+        </row>
+        <row d6="6">
+          <result d20_total="-6 or less">quest required on second attempt, or second attempt permitted.</result>
+          <result d20_total="-5 to 0">CHA reduced by 4 but gain +2 reaction with unintelligent undead.</result>
+          <result d20_total="1 to 5">animals react poorly within 10'; -4 reaction with animals; cannot ride normal mounts; Beast Friendship users find victim unsettling.</result>
+          <result d20_total="6 to 10">no side effects.</result>
+          <result d20_total="11 to 15">recover 1d6 days quicker than normal; all negative side effects removed.</result>
+          <result d20_total="16 to 20">gain speak with dead once per week; all negative side effects removed.</result>
+          <result d20_total="21 to 25">gain +2 to class prime requisite; all negative side effects removed.</result>
+          <result d20_total="26+">gain +2 to class prime requisite; all negative side effects removed.</result>
+        </row>
+      </alignment_table>
+    </alignment_tables>
+  </tampering_with_mortality>
+
+  <bed_rest>
+    <rule>Some Mortal Wounds and Tampering with Mortality results require bed rest.</rule>
+    <rule>During bed rest, the creature is capped at 1 hp.</rule>
+    <rule>During bed rest, the creature cannot gain hp from natural or magical healing.</rule>
+    <rule>During bed rest, the creature cannot take actions other than speaking and moving at half speed.</rule>
+    <rule>If the character is killed again before completing the required rest, the character cannot be treated or restored to life by anything less than ritual magic.</rule>
+    <rule>Magical healing can shorten recovery from mortal wounds by 1 day per day (BHR) of healing applied.</rule>
+    <rule>Shortening recovery from mortal wounds risks side effects from tampering with mortality.</rule>
+    <procedure name="shortened_mortal_wound_recovery">
+      <step order="1">When the character finishes recovering, roll 1d20+20.</step>
+      <step order="2">Subtract the number of days by which healing magic shortened the recovery time.</step>
+      <step order="3">If the total is 20 or less, roll 1d6 and consult the appropriate alignment-based Tampering with Mortality table.</step>
+      <step order="4">Cross-index the d20 total and d6 total to determine the side effect suffered.</step>
+    </procedure>
+    <rule>Magical healing cannot shorten recovery from tampering with mortality because that exhaustion is spiritual rather than physical.</rule>
+  </bed_rest>
+
+  <confidence_notes>
+    <note>Several table cells in the uploaded HTML are OCR-corrupted or merged across adjacent columns. I preserved the recoverable mechanics and normalized obviously intended table structure, but the following entries are below 0.90 confidence: some lawful, neutral, and chaotic tampering table cells at d6 rows 1, 4, 5, and 6; several corpse-condition cells in the fatal-result columns; and a few savage/fire row cells where descriptive text appears split across neighboring columns.</note>
+    <note>I normalized the attack-type label "savage" from OCR text reading "s aVage"; confidence is high that this is the intended label for tooth-and-claw mauling wounds.</note>
+    <note>I treated flavor-only death narration as compressed body-condition summaries where that seemed mechanically relevant to later resurrection penalties. Exact prose wording for those fatal cells was intentionally omitted.</note>
+  </confidence_notes>
+</acks_rules_summary>

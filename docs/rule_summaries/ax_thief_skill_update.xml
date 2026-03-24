@@ -1,0 +1,227 @@
+<thief_skill_update_summary source="129-Axioms - Thief Skill Update.md" flavor_excluded="true">
+  <thief_skill_modifiers>
+    <dexterity_modifier>
+      <rule>Apply DEX modifier to proficiency throws for: open_locks, pick_pockets, find_traps, remove_traps, hide_in_shadows, move_silently, climb_walls.</rule>
+      <rule>DEX modifier does not apply to hijinks.</rule>
+    </dexterity_modifier>
+    <encumbrance>
+      <rule condition="encumbrance <= 5_stone">+2 bonus to climb_walls, hide_in_shadows, move_silently.</rule>
+      <rule condition="encumbrance <= 2_stone">+4 bonus to climb_walls, hide_in_shadows, move_silently.</rule>
+      <rule>Encumbrance bonuses do not apply to hijinks.</rule>
+    </encumbrance>
+  </thief_skill_modifiers>
+
+  <revised_thief_skills>
+    <skill name="open_locks">
+      <rule>Requires 1 turn and a successful proficiency throw.</rule>
+      <rule>May attempt in 1 round at -10 penalty (-4 with Lockpicking proficiency).</rule>
+      <rule>Retries allowed.</rule>
+      <rule condition="failure_by >= 10 OR natural_1">Thieves' tools break and become unusable.</rule>
+    </skill>
+
+    <skill name="find_traps">
+      <rule>Requires 1 turn per 10 square feet and a successful proficiency throw.</rule>
+      <rule>May attempt in 1 round at -10 penalty (-4 with Trap Finding proficiency).</rule>
+      <rule>Retries allowed.</rule>
+      <rule condition="failure_by <= 4">Detects presence of trap (if present) but not details.</rule>
+      <rule condition="failure_by >= 10 OR natural_1">
+        <result condition="trap_exists">Trap triggered.</result>
+        <result condition="no_trap">Believes trap exists but lacks details.</result>
+      </rule>
+    </skill>
+
+    <skill name="remove_traps">
+      <rule>May only remove traps that are found (not merely suspected).</rule>
+      <rule>Requires 1 turn and a successful proficiency throw.</rule>
+      <rule>May attempt in 1 round at -10 penalty.</rule>
+      <rule>Retries allowed.</rule>
+      <rule condition="failure_by >= 10 OR natural_1">Trap triggered.</rule>
+    </skill>
+
+    <skill name="pick_pockets">
+      <rule condition="in_crowd">+4 bonus to proficiency throw.</rule>
+      <rule condition="failure_by >= 10 OR natural_1">Target notices attempt.</rule>
+      <rule>Contents determined randomly.</rule>
+    </skill>
+  </revised_thief_skills>
+
+  <hideouts_and_syndicates>
+    <rules>
+      <rule>Hideouts are secret strongholds; do not secure domains or attract families.</rule>
+      <rule condition="level >= 9">Gain 2d6 level 1 followers (same class); must be paid.</rule>
+      <rule>Additional ruffians may be hired.</rule>
+      <rule condition="level <= 8">No automatic followers until level 9.</rule>
+      <rule>Hideouts must be within 6 miles of an urban settlement.</rule>
+    </rules>
+
+    <table name="hideout_size_and_cost">
+      <columns>
+        <column>market_class</column>
+        <column>max_syndicate</column>
+        <column>minimum_cost_gp</column>
+      </columns>
+      <row><market_class>VI</market_class><max_syndicate>25</max_syndicate><minimum_cost_gp>5000</minimum_cost_gp></row>
+      <row><market_class>V</market_class><max_syndicate>50</max_syndicate><minimum_cost_gp>10000</minimum_cost_gp></row>
+      <row><market_class>IV</market_class><max_syndicate>100</max_syndicate><minimum_cost_gp>20000</minimum_cost_gp></row>
+      <row><market_class>III</market_class><max_syndicate>375</max_syndicate><minimum_cost_gp>75000</minimum_cost_gp></row>
+      <row><market_class>II</market_class><max_syndicate>750</max_syndicate><minimum_cost_gp>150000</minimum_cost_gp></row>
+      <row><market_class>I</market_class><max_syndicate>3000</max_syndicate><minimum_cost_gp>600000</minimum_cost_gp></row>
+    </table>
+  </hideouts_and_syndicates>
+
+  <hijink_core_rules>
+    <general>
+      <rule>Resolved with proficiency (or attack) throws.</rule>
+      <rule condition="success">Hijink succeeds.</rule>
+      <rule condition="failure_by >= 14 OR natural_1">Perpetrator is caught.</rule>
+      <rule>Total time ~1 month including planning, execution, and laying low.</rule>
+    </general>
+
+    <assignment>
+      <rule>Assigning hijinks to all members at base = 1 major activity.</rule>
+      <rule>Assigning via underboss = 1 major activity.</rule>
+      <rule>Assigning to ≤1/6 members = 1 minor activity.</rule>
+      <rule>Normally 1 hijink per member per month.</rule>
+      <rule condition="extra_or_rushed_hijinks">Triggers loyalty roll.</rule>
+    </assignment>
+  </hijink_core_rules>
+
+  <planning>
+    <rule>Required for: arson, assassinating, escaping, infiltrating, kidnapping, sabotaging, smuggling, stealing.</rule>
+    <rule>Duration: 2d8+3 days (5th+: 2d6+3, 9th+: 2d4+3).</rule>
+    <rule>Unknown duration until completed.</rule>
+    <rule condition="incomplete">-1 penalty per missing day.</rule>
+    <rule>May plan for another perpetrator.</rule>
+  </planning>
+
+  <performing>
+    <rule>Requires appropriate thief skill.</rule>
+    <rule condition="planned_hijinks">1 day major activity.</rule>
+    <rule condition="ongoing_hijinks">3d6+10 days (5th+: 3d4+8, 9th+: 2d6+5).</rule>
+    <rule>Unknown duration until completed.</rule>
+    <rule condition="rushed">-1 penalty per missing day.</rule>
+  </performing>
+
+  <laying_low>
+    <rule>Required after: arson, assassinating, escaping, infiltrating, sabotaging, smuggling, subverting, stealing.</rule>
+    <rule>Duration: 2d8+3 days.</rule>
+    <rule>Cannot perform hijinks in same base during this time.</rule>
+    <rule condition="skipped">Caught on next hijink if failure_by ≥11 OR natural 1-3.</rule>
+  </laying_low>
+
+  <crews>
+    <rules>
+      <rule>Multiple perpetrators may act as a crew.</rule>
+      <rule>Honcho = highest level (tie: highest CHA).</rule>
+      <rule>Max crew = honcho henchmen slots; excess members impose -1 each.</rule>
+      <rule>Time determined by honcho level.</rule>
+      <rule>Each member rolls separately.</rule>
+      <rule condition="any_success">Hijink succeeds.</rule>
+      <rule>Effective level = sum of successful members’ levels.</rule>
+      <rule condition="failure_and_caught">Failing members caught; successful may escape.</rule>
+      <rule>Rewards split pro rata among uncaught members.</rule>
+    </rules>
+  </crews>
+
+  <hasty_hijinks>
+    <rule>Applies to: carousing, racketeering, soliciting.</rule>
+    <rule>Duration: 1d6+3 days (5th+: 1d4+3, 9th+: 1d3+2).</rule>
+    <rule>No penalty to throw.</rule>
+    <rule condition="success">Reduced rewards.</rule>
+    <rule condition="failure_by >= 14 OR natural_1">Second roll required to determine capture.</rule>
+    <rule>Cannot be performed by crews.</rule>
+  </hasty_hijinks>
+
+  <getting_caught>
+    <rule>Triggered on failure_by ≥14 or natural 1.</rule>
+    <procedure>
+      <step order="1">Roll 2d6 on Crime and Punishment table.</step>
+      <step order="2">Apply modifiers: CHA, proficiencies, attorney, bribery, evidence, interpleader, prior crimes, severity.</step>
+    </procedure>
+
+    <table name="crime_and_punishment">
+      <columns>
+        <column>roll</column>
+        <column>result</column>
+      </columns>
+      <row><roll>2-</roll><result>punitive_conviction</result></row>
+      <row><roll>3-5</roll><result>conviction</result></row>
+      <row><roll>6-8</roll><result>lesser_conviction</result></row>
+      <row><roll>9-11</roll><result>acquittal</result></row>
+      <row><roll>12+</roll><result>acquittal_with_damages</result></row>
+    </table>
+
+    <rules>
+      <rule>Fines unpaid → indentured at 3gp/month.</rule>
+      <rule>Paying 3x fine avoids other punishment.</rule>
+      <rule>Boss expected to cover legal costs.</rule>
+    </rules>
+  </getting_caught>
+
+  <awaiting_trial>
+    <rule>Occurs before punishment resolution.</rule>
+    <rule>Counts as ongoing major activity.</rule>
+    <rule>May plead guilty to receive lesser punishment.</rule>
+
+    <table name="trial_delay">
+      <columns>
+        <column>crime</column>
+        <column>time</column>
+      </columns>
+      <row><crime>minor</crime><time>1d2-1d8 days</time></row>
+      <row><crime>moderate</crime><time>1d4 weeks</time></row>
+      <row><crime>serious</crime><time>1d4-1d6 months</time></row>
+      <row><crime>major</crime><time>1d12-2d12 months</time></row>
+    </table>
+  </awaiting_trial>
+
+  <criminal_guilds>
+    <creation_methods>
+      <method>New base of operations</method>
+      <method>Henchman reaches level 9</method>
+      <method>Recruit existing syndicate leader</method>
+      <method>Take over syndicate</method>
+    </creation_methods>
+
+    <management>
+      <rule>Can directly manage one syndicate.</rule>
+      <rule>Others managed by underbosses.</rule>
+      <rule condition="interference > 20_percent">Underboss loyalty roll (-1 per additional 10%).</rule>
+      <rule>Underboss controls 20% of subordinates for assignment purposes.</rule>
+    </management>
+  </criminal_guilds>
+
+  <experience>
+    <rules>
+      <rule>Boss gains XP from net monthly hijink income exceeding threshold.</rule>
+      <rule>Members gain XP equal to 50% of hijink value.</rule>
+      <rule>0-level characters can advance via hijinks (typically carousing).</rule>
+      <rule>Crew XP split pro rata among uncaught members.</rule>
+    </rules>
+
+    <table name="monthly_hijink_income">
+      <columns>
+        <column>level</column>
+        <column>income_gp</column>
+      </columns>
+      <row><level>0</level><income_gp>1</income_gp></row>
+      <row><level>1</level><income_gp>5</income_gp></row>
+      <row><level>2</level><income_gp>30</income_gp></row>
+      <row><level>3</level><income_gp>200</income_gp></row>
+      <row><level>4</level><income_gp>425</income_gp></row>
+      <row><level>5</level><income_gp>650</income_gp></row>
+      <row><level>6</level><income_gp>835</income_gp></row>
+      <row><level>7</level><income_gp>1500</income_gp></row>
+      <row><level>8</level><income_gp>2000</income_gp></row>
+    </table>
+  </experience>
+
+  <source_reference>
+    <file>:contentReference[oaicite:0]{index=0}</file>
+  </source_reference>
+
+  <confidence_notes>
+    <note>Trial delay table grouped categories inferred due to formatting ambiguity.</note>
+    <note>Some hijink-specific numeric rewards generalized where redundant table data overlapped.</note>
+  </confidence_notes>
+</thief_skill_update_summary>

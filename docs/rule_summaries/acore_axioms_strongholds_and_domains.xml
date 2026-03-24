@@ -1,0 +1,707 @@
+<ruleset title="Strongholds and Domains">
+  <scope>
+    <summary>This document revises ACKS stronghold, domain, realm, vassal, morale, and urban settlement procedures.</summary>
+    <key_terms>
+      <term name="domain">An area of land under a ruler.</term>
+      <term name="territory">The land area making up a domain; may be contiguous or noncontiguous.</term>
+      <term name="stronghold">The structure or structures securing a domain.</term>
+      <term name="realm">A group of domains under one ruler.</term>
+      <term name="personal_domain">The single domain a ruler may directly rule.</term>
+      <term name="vassal_domain">Any other domain in the realm, ruled by a vassal on the ruler's behalf.</term>
+      <term name="vassal_realm">A group of domains ruled by a vassal.</term>
+      <term name="urban_settlement">A settlement founded within a domain and managed directly by the domain ruler if in that ruler's domain.</term>
+    </key_terms>
+  </scope>
+  <domain_acquisition>
+    <sizes>
+      <size area_sq_miles="2">One 1.5-mile hex on a local map.</size>
+      <size area_sq_miles="32">One 6-mile hex on a regional map or sixteen contiguous 1.5-mile hexes on a local map.</size>
+      <size area_sq_miles="500">One 24-mile hex on a continental map or sixteen contiguous 6-mile hexes on a regional map.</size>
+    </sizes>
+    <shape_rules>
+      <rule>Domains may be contiguous or noncontiguous.</rule>
+      <rule>Large and noncontiguous domains are harder to control.</rule>
+    </shape_rules>
+    <classification>
+      <domain_type name="civilized">All territory is within 48 miles of a city or large town when newly established.</domain_type>
+      <domain_type name="borderlands">All territory is within 72 miles of a city or large town when newly established.</domain_type>
+      <domain_type name="wilderness">Any newly established domain not qualifying as civilized or borderlands.</domain_type>
+      <restriction>Explorers may only build strongholds in borderlands or wilderness domains.</restriction>
+      <restriction>Elven fastnesses and dwarven vaults may only be built in wilderness areas or civilized/borderlands areas of their own race.</restriction>
+    </classification>
+    <acquisition_methods>
+      <civilized_domain>
+        <rule>Usually requires a land grant from the local ruler, often in exchange for fealty.</rule>
+        <rule>Buying civilized land typically costs 50gp per acre.</rule>
+      </civilized_domain>
+      <borderlands_or_wilderness>
+        <rule>Usually requires clearing lairs and wandering monsters from the target area.</rule>
+        <rule>Larger domains are more difficult to clear and control.</rule>
+      </borderlands_or_wilderness>
+    </acquisition_methods>
+  </domain_acquisition>
+  <land_value>
+    <overview>
+      <rule>Each 6-mile hex has a land value in gp per peasant family per month.</rule>
+      <rule>Determine land value by rolling 3d3 per 6-mile hex.</rule>
+      <rule>The Judge determines the in-world cause of the value.</rule>
+    </overview>
+    <discovering_land_value>
+      <surveying>
+        <rule>A land surveyor or character with Land Surveying proficiency may assess a 6-mile hex.</rule>
+        <rule>Assessment takes 1 day and requires a successful proficiency throw.</rule>
+        <rule>Make an encounter throw each survey day in wilderness terrain.</rule>
+        <results>
+          <success>The assessor learns the actual land value.</success>
+          <failure type="natural_1_unmodified">The assessor learns an incorrect value chosen or rolled by the Judge; the false value is exposed when the land is settled.</failure>
+          <failure type="other">The assessor cannot yet make or revise an assessment.</failure>
+        </results>
+        <target_values>
+          <row terrain="Clear, Grass" target="11+" />
+          <row terrain="Scrub, Hills" target="17+" />
+          <row terrain="Barren, Desert" target="18+" />
+          <row terrain="Mountains, Woods" target="19+" />
+          <row terrain="Swamp, Jungle" target="20+" />
+        </target_values>
+      </surveying>
+      <settling>
+        <rule>Having peasant families work the land for at least 1 month reveals the actual land value at the end of that time.</rule>
+      </settling>
+    </discovering_land_value>
+    <land_surveyor>
+      <rule>Land surveyors are 1st level explorers with the Cartographer template.</rule>
+      <rule>They can assess number of lairs in a hex and assess land value.</rule>
+      <rule>They are hired monthly and are available in urban settlements in the same numbers as navigators.</rule>
+      <rule>They expect protection by the employer or mercenaries equal to the maximum number of lairs in the assigned hexes.</rule>
+      <rule>They avoid wandering monsters, do not fight for the employer, and do not enter lairs unless recruited as henchmen.</rule>
+    </land_surveyor>
+    <optional_simplification>
+      <rule>Apply one land value to all 6-mile hexes within a single 24-mile hex, or treat all land values as 6.</rule>
+      <rule>Default ACKS assumption for most NPC domains is 6gp land value.</rule>
+    </optional_simplification>
+  </land_value>
+  <strongholds>
+    <establishing>
+      <rule>If an existing suitable structure is present in the domain, it may be claimed as the stronghold.</rule>
+      <rule>Otherwise the ruler constructs a stronghold using ACKS construction prices.</rule>
+    </establishing>
+    <minimum_stronghold_value>
+      <row classification="Civilized" per_1_5_mi_hex="1000gp" per_6_mi_hex="15000gp" per_24_mi_hex="240000gp" />
+      <row classification="Borderlands" per_1_5_mi_hex="1500gp" per_6_mi_hex="22500gp" per_24_mi_hex="360000gp" />
+      <row classification="Wilderness" per_1_5_mi_hex="2000gp" per_6_mi_hex="32000gp" per_24_mi_hex="512000gp" />
+      <rule>If a domain has multiple strongholds, add their total value together.</rule>
+      <rule>If total stronghold value is insufficient, the domain is harder to control and morale suffers.</rule>
+    </minimum_stronghold_value>
+    <noncontiguous_domains>
+      <rule>For noncontiguous territory, the stronghold or combined strongholds must be large enough to secure all noncontiguous hexes and the intervening hexes between them.</rule>
+      <rule>If this is not done, the stronghold counts as insufficient and domain morale suffers.</rule>
+    </noncontiguous_domains>
+  </strongholds>
+  <peasants_and_followers>
+    <starting_population>
+      <row classification="Civilized" starting_families_per_6_mile_hex="8d6 x 10" />
+      <row classification="Borderlands" starting_families_per_6_mile_hex="3d6 x 10" />
+      <row classification="Wilderness" starting_families_per_6_mile_hex="1d4+1 x 10" />
+      <rule>Roll separately for each hex of the domain's territory.</rule>
+      <rule>Each peasant family averages 5 peasants.</rule>
+      <rule>Families are of the same race as the adventurer.</rule>
+      <rule>Peasants begin generating income and incurring costs only once the stronghold is sufficient to secure the domain.</rule>
+      <rule>Before the stronghold is sufficient, the domain does not generate money and does not grow.</rule>
+    </starting_population>
+    <followers_arrival>
+      <rule>Half of followers, rounded up, arrive when the stronghold is halfway complete.</rule>
+      <rule>An additional quarter of followers, rounded up, arrive when the stronghold is complete.</rule>
+      <rule>The remainder arrive during the first month after completion.</rule>
+      <rule>Use the class follower equipment tables from ACKS and ACKS Player's Companion.</rule>
+    </followers_arrival>
+    <before_ninth_level>
+      <rule>A character of 8th level or less does not attract followers or peasants until reaching 9th level.</rule>
+      <rule>If such a character acquires an existing domain, the current number of families remains.</rule>
+      <rule>If such a character acquires a new domain, it begins with no families.</rule>
+      <rule>The character may still make investments to attract peasants or hire mercenaries.</rule>
+      <rule>Followers and peasants arrive at 9th level using the normal rules.</rule>
+    </before_ninth_level>
+  </peasants_and_followers>
+  <domain_growth>
+    <monthly_change>
+      <rule>Each month, roll two 1d10 per 1,000 families in the domain, rounded up.</rule>
+      <rule>One roll determines increase; one determines decrease.</rule>
+      <rule>Any die rolling 10 explodes: reroll and add, repeating for subsequent 10s.</rule>
+      <rule>Net population change equals increase minus decrease.</rule>
+    </monthly_change>
+    <investments>
+      <rule>For every 1000gp spent on agricultural investments in a month, the domain attracts 1d10 new peasant families.</rule>
+      <rule>Maximum monthly agricultural investment equals the domain's monthly revenue or 1000gp, whichever is greater.</rule>
+    </investments>
+    <active_adventuring_growth>
+      <rule>If the character actively adventures at least once per month and keeps the domain secure, the population gains additional families based on current population.</rule>
+      <table>
+        <row population="1-100" increase="+5d20" />
+        <row population="101-200" increase="+5d10" />
+        <row population="201-300" increase="+4d10" />
+        <row population="301-400" increase="+3d10" />
+        <row population="401-500" increase="+2d10" />
+        <row population="500+" increase="+1d10" />
+      </table>
+      <racial_modifiers>
+        <rule>Elven domains increase as if two population categories larger.</rule>
+        <rule>Dwarven domains increase as if one population category larger.</rule>
+      </racial_modifiers>
+    </active_adventuring_growth>
+    <optional_stagnant_domains>
+      <rule>If using this option, domains with morale 0 do not roll the normal two monthly 1d10 change rolls.</rule>
+      <rule>Only population change from active adventuring and morale is rolled.</rule>
+    </optional_stagnant_domains>
+  </domain_growth>
+  <limits_of_growth>
+    <maximum_population>
+      <row classification="Wilderness" per_1_5_mile_hex="8 families" per_6_mile_hex="125 families" />
+      <row classification="Borderlands" per_1_5_mile_hex="15 families" per_6_mile_hex="250 families" />
+      <row classification="Civilized" per_1_5_mile_hex="50 families" per_6_mile_hex="780 families" />
+    </maximum_population>
+    <exceeding_limits>
+      <rule>To exceed limits, the ruler must secure more territory, found an urban settlement in existing territory, or improve domain classification.</rule>
+    </exceeding_limits>
+    <classification_advancement>
+      <to_borderlands>
+        <condition>Every 6-mile hex is at its wilderness maximum of 125 families and the domain encompasses 16 6-mile hexes (2,000 families total).</condition>
+        <condition>Every 6-mile hex is at 125 families, contiguous expansion is blocked by terrain or friendly domains, and the domain has an urban settlement with urban families equal to at least 20% of total peasant families.</condition>
+        <condition>The domain lies within 72 miles of a friendly city or large town.</condition>
+      </to_borderlands>
+      <to_civilized>
+        <condition>Every 6-mile hex is at its borderlands maximum of 250 families and the domain encompasses 16 6-mile hexes (4,000 families total).</condition>
+        <condition>Every 6-mile hex has reached the stated threshold in the text, further contiguous expansion is blocked by terrain or friendly domains, and the domain has an urban settlement with urban families equal to at least 20% of total peasant families.</condition>
+        <condition>The domain lies within 48 miles of a friendly city or large town.</condition>
+      </to_civilized>
+    </classification_advancement>
+    <optional_rules>
+      <regression>Domain classification may regress if the circumstances that justified advancement end.</regression>
+      <littoral_hexes>If the territory is adjacent to fishable water, adjacent water hexes may count as territory for limits of growth.</littoral_hexes>
+      <alternative_farming>Judges may raise growth limits if using higher-yield farming methods.</alternative_farming>
+    </optional_rules>
+  </limits_of_growth>
+  <domain_revenue>
+    <sources>
+      <row source="Land" monthly_revenue="3-9gp per family" />
+      <row source="Services" monthly_revenue="2-4gp per family" />
+      <row source="Taxes" monthly_revenue="2gp per family" />
+      <row source="Tribute" monthly_revenue="Varies" />
+    </sources>
+    <details>
+      <land>
+        <rule>Land revenue equals the 3d3 land value previously determined for each hex and is earned per peasant family in that hex.</rule>
+      </land>
+      <services>
+        <rule>Service revenue is 4gp per family.</rule>
+      </services>
+      <taxes>
+        <rule>Tax revenue is 2gp per family.</rule>
+        <rule>Raising taxes increases revenue but harms loyalty.</rule>
+        <rule>Lowering taxes can improve morale.</rule>
+      </taxes>
+      <tribute>
+        <rule>Tribute is received from vassal domains and depends on rank and realm size.</rule>
+      </tribute>
+    </details>
+  </domain_revenue>
+  <land_improvement>
+    <rule>For 25,000gp, a ruler may improve the land value of one 6-mile hex by 1gp.</rule>
+    <limit>Land value may never be increased by more than 3gp total.</limit>
+    <limit>Land value may never exceed 9gp.</limit>
+    <fragility>
+      <rule>Land improvements lose 1gp of value for each 1gp plundered from the domain during pillaging.</rule>
+      <rule>During a siege, treat land improvements as wooden structures; multiply shp dealt by 8 to calculate lost gp value.</rule>
+    </fragility>
+  </land_improvement>
+  <domain_expenses>
+    <sources>
+      <row source="Garrison" monthly_expense="2gp per family" />
+      <row source="Liturgies" monthly_expense="1gp per family" />
+      <row source="Maintenance" monthly_expense="1gp per family" />
+      <row source="Tithes" monthly_expense="1gp per family" />
+      <row source="Tribute" monthly_expense="Varies" />
+    </sources>
+    <details>
+      <garrison>
+        <rule>A ruler must spend at least 2gp per peasant family per month on troops.</rule>
+        <rule>The exact garrison composition should be specified using mercenaries or other troop sources.</rule>
+        <rule>Scutage paid counts toward garrison expense.</rule>
+        <rule>Faithful followers of clerics and bladedancers may count by gp value toward garrison cost even though unpaid.</rule>
+        <rule>Trained and equipped militia may count by gp value toward garrison cost even when not called up.</rule>
+        <rule>Troops provided by a lord as a favor may count toward garrison cost even though the ruler is not paying them.</rule>
+        <rule>The listed garrison cost is the minimum. A ruler may spend more.</rule>
+        <rule>Borderlands domains commonly maintain 3gp per family; wilderness domains must maintain 4gp per family or base morale is reduced.</rule>
+      </garrison>
+      <liturgies>
+        <rule>Cost is 1gp per peasant family.</rule>
+        <rule>Failure to honor this custom reduces loyalty.</rule>
+      </liturgies>
+      <maintenance>
+        <rule>Cost is 1gp per peasant family.</rule>
+        <rule>Each gp of unpaid maintenance reduces stronghold value by 1gp.</rule>
+      </maintenance>
+      <tithes>
+        <rule>Cost is 1gp per peasant family.</rule>
+        <rule>If ruled by a bladedancer or cleric, the dominant religion is the ruler's religion; otherwise it is the prevailing local religion.</rule>
+        <rule>Failure to pay reduces loyalty and may trigger heresy or excommunication.</rule>
+        <rule>Changing religion is possible but causes severe morale penalties.</rule>
+        <rule>Even domains ruled by bladedancers or clerics must pay tithes.</rule>
+      </tithes>
+      <tribute>
+        <rule>A ruler owing fealty must pay tribute to the liege.</rule>
+      </tribute>
+    </details>
+  </domain_expenses>
+  <domain_income>
+    <rule>Domain income equals domain revenue minus domain expenses.</rule>
+    <rule>Domains within larger realms may have tribute revenue and tribute costs.</rule>
+    <rule>Domain income determines campaign XP.</rule>
+    <benchmarks>
+      <row domain="Wilderness" revenue_per_family="Land (3-9gp) + Service (4gp) + Tax (2gp)" costs_per_family="Garrison (4gp) + Liturgies (1gp) + Tithes (1gp) + Maint. (1gp)" income_per_family="~5gp" />
+      <row domain="Borderlands" revenue_per_family="Land (3-9gp) + Service (4gp) + Tax (2gp)" costs_per_family="Garrison (3gp) + Liturgies (1gp) + Tithes (1gp) + Maint. (1gp)" income_per_family="~6gp" />
+      <row domain="Civilized" revenue_per_family="Land (3-9gp) + Service (4gp) + Tax (2gp)" costs_per_family="Garrison (2gp) + Liturgies (1gp) + Tithes (1gp) + Maint. (1gp)" income_per_family="~7gp" />
+    </benchmarks>
+  </domain_income>
+  <realms_and_vassals>
+    <core_rules>
+      <rule>A ruler may divide territory into multiple domains.</rule>
+      <rule>A ruler may only directly manage one domain, called the personal domain.</rule>
+      <rule>Every other domain in the realm must be assigned to a vassal.</rule>
+      <rule>Vassals are usually henchmen, but may themselves hold vassal realms and sub-assign domains to their own henchmen.</rule>
+      <rule>If henchmen are insufficient, multiple domains may be assigned to a trusted henchman, who must then create sub-vassal structure below them.</rule>
+    </core_rules>
+    <titles_of_nobility>
+      <rule>A ruler's title is determined by personal domain size, number of domains ruled, and overall realm size.</rule>
+      <rule>A domain ruler may award titles below the ruler's own to vassals.</rule>
+      <table>
+        <row personal_domain_families="12500" domains_ruled="5461-55987" overall_realm_families="2M-11.6M+" common="Emperor" auran_empire="Tarkaun" argollean="Ard-rí" somirean="Maharaja" jutlandic="High King" />
+        <row personal_domain_families="12500" domains_ruled="1365-9331" overall_realm_families="364000-2000000" common="King" auran_empire="Exarch" argollean="Rí-ruirech" somirean="Raja" jutlandic="King" />
+        <row personal_domain_families="7500" domains_ruled="341-1555" overall_realm_families="87000-322000" common="Prince" auran_empire="Prefect" argollean="Rí" somirean="Deshmukh" jutlandic="Prince" />
+        <row personal_domain_families="1500" domains_ruled="85-259" overall_realm_families="20000-52000" common="Duke" auran_empire="Palatine" argollean="Diuc" somirean="Zammin" jutlandic="Duke" />
+        <row personal_domain_families="780" domains_ruled="21-43" overall_realm_families="4600-8500" common="Count" auran_empire="Legate" argollean="Iarla" somirean="Mansab" jutlandic="Jarl" />
+        <row personal_domain_families="320" domains_ruled="5-7" overall_realm_families="960-1280" common="Marquis" auran_empire="Tribune" argollean="Ard-tiarna" somirean="Sardar" jutlandic="Reeve" />
+        <row personal_domain_families="160" domains_ruled="1" overall_realm_families="160" common="Baron" auran_empire="Castellan" argollean="Tiarna" somirean="Jagir" jutlandic="Thane" />
+      </table>
+    </titles_of_nobility>
+    <tribute>
+      <rule>Each month, a ruler collects tribute from vassals and pays tribute to a superior lord if any.</rule>
+      <rule>Tribute depends on number of families in the realm, with diminishing returns at larger realm sizes.</rule>
+      <rule>Changing a vassal's tribute always triggers a Henchman Loyalty roll.</rule>
+      <rule>The Judge may penalize loyalty rolls if tribute is set unreasonably high or low.</rule>
+      <tribute_by_title>
+        <row title="King" minimum="36000gp (~365000 families)" average="80000gp (~1100000 families)" maximum="110000gp (~2000000 families)" />
+        <row title="Prince" minimum="16500gp (~87000 families)" average="27000gp (~205000 families)" maximum="34000gp (~322000 families)" />
+        <row title="Duke" minimum="6850gp (~20000 families)" average="9750gp (~36000 families)" maximum="12000gp (~52000 families)" />
+        <row title="Count" minimum="2850gp (~4600 families)" average="3650gp (~6500 families)" maximum="4375gp (~8500 families)" />
+        <row title="Marquis" minimum="1125gp (~960 families)" average="1200gp (~1125 families)" maximum="1325gp (~1280 families)" />
+        <row title="Baron" minimum="275gp (~100 families)" average="425gp (~200 families)" maximum="550gp (~300 families)" />
+      </tribute_by_title>
+      <precise_optional_formula>18gp x realm_families^0.6</precise_optional_formula>
+      <tribute_by_realm_families>
+        <block step="100s to 900s within 0-9900">
+          <header>0,100,200,300,400,500,600,700,800,900</header>
+          <row base="0">-,285,430,550,655,750,835,915,995,1065</row>
+          <row base="1000">1135,1205,1265,1330,1390,1450,1505,1560,1615,1670</row>
+          <row base="2000">1720,1775,1825,1870,1920,1970,2015,2060,2105,2150</row>
+          <row base="3000">2195,2240,2280,2325,2365,2410,2450,2490,2530,2570</row>
+          <row base="4000">2610,2650,2685,2725,2765,2800,2835,2875,2910,2945</row>
+          <row base="5000">2985,3020,3055,3090,3125,3160,3195,3225,3260,3295</row>
+          <row base="6000">3330,3360,3395,3425,3460,3490,3525,3555,3585,3620</row>
+          <row base="7000">3650,3680,3715,3745,3775,3805,3835,3865,3895,3925</row>
+          <row base="8000">3955,3985,4015,4045,4070,4100,4130,4160,4190,4215</row>
+          <row base="9000">4245,4275,4300,4330,4355,4385,4410,4440,4465,4495</row>
+        </block>
+        <block step="1000s to 9000s within 10000-99000">
+          <header>0,1000,2000,3000,4000,5000,6000,7000,8000,9000</header>
+          <row base="10000">4520,4785,5045,5290,5535,5765,5995,6215,6435,6645</row>
+          <row base="20000">6855,7055,7255,7455,7645,7835,8020,8205,8385,8565</row>
+          <row base="30000">8740,8915,9085,9255,9420,9590,9750,9915,10075,10230</row>
+          <row base="40000">10385,10540,10695,10850,11000,11150,11295,11445,11590,11730</row>
+          <row base="50000">11875,12020,12160,12300,12435,12575,12710,12845,12980,13115</row>
+          <row base="60000">13250,13380,13510,13640,13770,13900,14030,14155,14280,14405</row>
+          <row base="70000">14530,14655,14780,14905,15025,15145,15265,15385,15505,15625</row>
+          <row base="80000">15745,15860,15980,16095,16210,16330,16445,16555,16670,16785</row>
+          <row base="90000">16895,17010,17120,17235,17345,17455,17565,17675,17785,17890</row>
+        </block>
+        <block step="10000s to 90000s within 100000-990000">
+          <header>0,10000,20000,30000,40000,50000,60000,70000,80000,90000</header>
+          <row base="100000">18000,19060,20080,21070,22025,22960,23865,24750,25610,26455</row>
+          <row base="200000">27285,27365,27445,27530,27610,27690,27770,27850,27935,28015</row>
+          <row base="300000">34795,34865,34935,35005,35075,35145,35215,35280,35350,35420</row>
+          <row base="400000">41355,41415,41475,41540,41600,41665,41725,41785,41845,41910</row>
+          <row base="500000">47280,47335,47390,47445,47505,47560,47615,47675,47730,47785</row>
+          <row base="600000">52745,52795,52850,52900,52955,53005,53060,53110,53165,53215</row>
+          <row base="700000">57855,57905,57955,58000,58050,58100,58150,58200,58250,58300</row>
+          <row base="800000">62680,62725,62775,62820,62865,62915,62960,63010,63055,63100</row>
+          <row base="900000">67270,67315,67360,67405,67450,67495,67540,67585,67630,67670</row>
+        </block>
+        <block step="100000s to 900000s within 1000000-9900000">
+          <header>0,100000,200000,300000,400000,500000,600000,700000,800000,900000</header>
+          <row base="1000000">71660,75875,79945,83875,87690,91395,95005,98525,101960,105325</row>
+          <row base="2000000">108615,111840,115005,118115,121170,124175,127130,130045,132915,135740</row>
+          <row base="3000000">138530,141285,144000,146685,149335,151955,154545,157105,159640,162150</row>
+          <row base="4000000">164630,167085,169520,171930,174320,176685,179030,181355,183660,185945</row>
+          <row base="5000000">188215,190465,192695,194910,197110,199290,201460,203610,205745,207865</row>
+          <row base="6000000">209975,212065,214145,216210,218265,220305,222330,224345,226350,228340</row>
+          <row base="7000000">230320,232290,234245,236195,238130,240055,241970,243875,245770,247655</row>
+          <row base="8000000">249530,251400,253255,255105,256945,258775,260600,262410,264220,266015</row>
+          <row base="9000000">267805,269585,271360,273125,274885,276635,278380,280115,281845,283565</row>
+        </block>
+      </tribute_by_realm_families>
+    </tribute>
+    <favors_and_duties>
+      <rule>Each month, a vassal ruler rolls once on the Favors and Duties table to determine favors granted or duties demanded by the lord.</rule>
+      <rule>Each vassal can safely be asked to perform one ongoing duty, plus one additional ongoing duty for each ongoing favor and each one-time favor given this month.</rule>
+      <rule>If duties exceed the safe total, make a Henchman Loyalty check for each extra duty.</rule>
+      <rule>Each additional duty after the duty that triggers a roll imposes a cumulative -1 penalty.</rule>
+      <rule>A one-time favor offsets only during the month it is given.</rule>
+      <rule>A charter of monopoly counts as one favor even if it covers multiple merchandise types.</rule>
+      <rule>A lord may demand less than the listed duty amount.</rule>
+      <table>
+        <row roll="1" result="Construction: vassal constructs infrastructure in the realm, expending gp each month equal to monthly tribute; duty ends after total expenditure of 15000gp per 6-mile hex in the realm." />
+        <row roll="2" result="Scutage: vassal pays 1gp per family in the realm in place of military service; counts as garrison expense for the vassal; a lord receiving scutage must spend it on troops or provoke loyalty rolls at -4; scutage does not count as domain income for XP; in some realms troops may be sent instead." />
+        <row roll="3-4" result="Call to Council: vassal must travel to the lord's domain to provide judicial and managerial council until revoked; if rolled again, the lord summons one of the vassal's henchmen as well." />
+        <row roll="5-6" result="Call to Arms: vassal must muster troops with wages equal to 1gp per family in the realm and make them available until revoked; can be imposed multiple times; the vassal need not go personally unless also under Call to Council." />
+        <row roll="7-8" result="Loan: lord demands a loan equal to 1gp per family in the realm; the loan is repaid when revoked, otherwise monthly chance of repayment equals the adventurer's CHA as a percentage; no interest; can be imposed multiple times." />
+        <row roll="9-12" result="Most recently granted favor or duty is revoked; if 1, revoke a favor; if 2-6, revoke a duty." />
+        <row roll="13-14" result="Charter of Monopoly: vassal gains monopoly on one merchandise type in the realm; +4 on buyer/seller finding rolls, double normal loads, and prices adjusted by 1 point (10%) in the vassal's favor; only the overall realm ruler may grant it unless that right was granted by the ruler's own lord; ongoing favor." />
+        <row roll="15-16" result="Gift: lord gives a gift worth at least 1gp per family in the vassal's realm; this increases the recipient's domain income for XP purposes and decreases the grantor's; one-time favor." />
+        <row roll="17-18" result="Office: vassal gains a ceremonial office; grants +1 on loyalty rolls by the officeholder's own vassals; in a senatorial realm the officeholder must receive a senate seat; does not stack with multiple offices, but each must be revoked separately; ongoing favor." />
+        <row roll="19" result="Troops: lord sends a garrison under the vassal's command worth at least 1gp per family in the vassal's realm; the lord pays the wages; troops count toward the garrison of domains where stationed; ongoing favor and may be extended multiple times; revoked favors recall the troops." />
+        <row roll="20" result="Grant of Land: vassal gains an additional domain at least as large as the smallest of the vassal's own vassal domains, or one 6-mile hex bordering an existing domain if the vassal has no sub-vassals; generate the new domain normally; it may be added to the personal domain or assigned to a sub-vassal." />
+      </table>
+      <muster_delay>
+        <rule>When a lord calls vassals to arms, half the requested troops, rounded up, arrive within the first time period; one quarter, rounded down minimum 1, arrives in the second time period; the remainder arrives in the third.</rule>
+        <row title="Emperor" time_period="Season" />
+        <row title="King" time_period="Season" />
+        <row title="Prince" time_period="Month" />
+        <row title="Duke" time_period="Month" />
+        <row title="Count" time_period="Week" />
+        <row title="Marquis" time_period="Week" />
+        <row title="Baron" time_period="Week" />
+      </muster_delay>
+      <scutage_delay>
+        <rule>When scutage is demanded, half the requested funds, rounded up, arrive at the end of the first time period; another quarter, rounded down minimum 1, arrives at the end of the second; the remainder arrives at the end of the third.</rule>
+        <rule>Scutage thereafter arrives monthly until revoked.</rule>
+      </scutage_delay>
+      <standing_armies>
+        <rule>A standing army is modeled through ongoing scutage duties and troops favors.</rule>
+        <rule>A realm may include both standing armies and local household forces.</rule>
+      </standing_armies>
+    </favors_and_duties>
+    <non_henchman_vassals>
+      <rule>Non-henchman vassals have base loyalty -2 instead of 0.</rule>
+      <rule>If the non-henchman vassal is outside the range of trade of the ruler's largest urban settlement, base loyalty is -4.</rule>
+      <rule>Each month, a non-henchman vassal can safely be asked to perform only one duty for each favor given; there is no free duty.</rule>
+      <rule>If duties exceed the safe total, make a Henchman Loyalty check for each extra duty.</rule>
+    </non_henchman_vassals>
+    <tribute_inefficiency>
+      <rule>Having many direct vassals reduces actual tribute received.</rule>
+      <table>
+        <row number_of_vassals="16384 or more" tribute_received="1%" />
+        <row number_of_vassals="4096-16384" tribute_received="5%" />
+        <row number_of_vassals="1025-4095" tribute_received="10%" />
+        <row number_of_vassals="217-1024" tribute_received="20%" />
+        <row number_of_vassals="64-216" tribute_received="33%" />
+        <row number_of_vassals="17-36" tribute_received="50%" />
+        <row number_of_vassals="9-16" tribute_received="66%" />
+        <row number_of_vassals="8 or less" tribute_received="100%" />
+      </table>
+    </tribute_inefficiency>
+  </realms_and_vassals>
+  <morale>
+    <base_morale_score>
+      <rule>Base morale begins at 0, modified by the ruler's Charisma adjustment and other listed modifiers.</rule>
+      <rule>Base morale changes only when Charisma adjustment, personal authority, stronghold, or garrison modifiers change.</rule>
+      <modifier_summary>
+        <row modifier="Personal authority" effect="By Level and Income" />
+        <row modifier="Leadership proficiency" effect="+1" />
+        <row modifier="Insufficient stronghold" effect="-1/-2/-3" />
+        <row modifier="Lawful or Chaotic ruler in Neutral domain" effect="-1" />
+        <row modifier="Neutral ruler in Chaotic domain" effect="-1" />
+        <row modifier="Neutral ruler in Lawful domain" effect="-1" />
+        <row modifier="Lawful ruler in Chaotic domain" effect="-2" />
+        <row modifier="Chaotic ruler in Lawful domain" effect="-2" />
+        <row modifier="Borderlands classification" effect="-1" />
+        <row modifier="Wilderness classification" effect="-2" />
+        <row modifier="Additional troops in borderlands" effect="+1" />
+        <row modifier="Additional troops in wilderness" effect="+1/+2" />
+      </modifier_summary>
+      <personal_authority>
+        <rule>Cross-reference class level and domain income.</rule>
+        <table>
+          <header>Income bands: -25; 26-75; 76-150; 151-300; 301-650; 651-1250; 1250-2500; 2501-5000; 5001-12000; 12001-18000; 18001-40000; 40001-60000; 60001-150000; 150001-425000; 425000+</header>
+          <row level="0">0,-1,-2,-3,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4</row>
+          <row level="1">1,0,-1,-2,-3,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4</row>
+          <row level="2">2,1,0,-1,-2,-3,-4,-4,-4,-4,-4,-4,-4,-4,-4</row>
+          <row level="3">3,2,1,0,-1,-2,-3,-4,-4,-4,-4,-4,-4,-4,-4</row>
+          <row level="4">4,3,2,1,0,-1,-2,-3,-4,-4,-4,-4,-4,-4,-4</row>
+          <row level="5">4,4,3,2,1,0,-1,-2,-3,-4,-4,-4,-4,-4,-4</row>
+          <row level="6">4,4,4,3,2,1,0,-1,-2,-3,-4,-4,-4,-4,-4</row>
+          <row level="7">4,4,4,4,3,2,1,0,-1,-2,-3,-4,-4,-4,-4</row>
+          <row level="8">4,4,4,4,4,3,2,1,0,-1,-2,-3,-4,-4,-4</row>
+          <row level="9">4,4,4,4,4,4,3,2,1,0,-1,-2,-3,-4,-4</row>
+          <row level="10">4,4,4,4,4,4,4,3,2,1,0,-1,-2,-3,-4</row>
+          <row level="11">4,4,4,4,4,4,4,4,3,2,1,0,-1,-2,-3</row>
+          <row level="12">4,4,4,4,4,4,4,4,4,3,2,1,0,-1,-2</row>
+          <row level="13">4,4,4,4,4,4,4,4,4,4,3,2,1,0,-1</row>
+          <row level="14">4,4,4,4,4,4,4,4,4,4,4,3,2,1,0</row>
+        </table>
+      </personal_authority>
+      <leadership>If the ruler has Leadership proficiency, base morale increases by 1.</leadership>
+      <insufficient_stronghold>
+        <rule>If stronghold value is at least 1/2 minimum, base morale -1.</rule>
+        <rule>If stronghold value is at least 1/4 minimum, base morale -2.</rule>
+        <rule>If stronghold value is less than 1/4 minimum, base morale -3.</rule>
+      </insufficient_stronghold>
+      <classification_modifiers>
+        <rule>Borderlands: base morale -1.</rule>
+        <rule>Wilderness: base morale -2.</rule>
+      </classification_modifiers>
+      <additional_troops>
+        <rule>Borderlands: +1 base morale if 1gp per peasant family of additional troops are garrisoned.</rule>
+        <rule>Wilderness: +1 base morale if 1gp per peasant family of additional troops are garrisoned; +2 if 2gp per peasant family are garrisoned.</rule>
+      </additional_troops>
+      <alignment_and_religion>
+        <rule>A domain's apparent alignment is determined by religious practice.</rule>
+        <rule>Lawful or Chaotic rulers in Neutral domains suffer -1 base morale.</rule>
+        <rule>Neutral rulers in Lawful or Chaotic domains suffer -1 base morale.</rule>
+        <rule>Lawful rulers in Chaotic domains or Chaotic rulers in Lawful domains suffer -2 base morale.</rule>
+        <rule>Changing religion changes the effective domain alignment only under the conversion rules described below.</rule>
+      </alignment_and_religion>
+    </base_morale_score>
+    <current_morale_score>
+      <rule>Any change to base morale immediately changes current morale by the same amount.</rule>
+      <rule>At the end of each month, roll 2d6 on the Domain Morale table and apply all relevant adjustments.</rule>
+      <rule>A natural 2 always reduces current morale by 2.</rule>
+      <rule>A natural 12 always increases current morale by 2.</rule>
+      <domain_morale_results>
+        <row adjusted_roll="2 or less" result="Morale reduced by 2, minimum -4" />
+        <row adjusted_roll="3-5" result="Morale reduced by 1, minimum -4" />
+        <row adjusted_roll="6-8" result="Morale shifts by 1 toward base" />
+        <row adjusted_roll="9-11" result="Morale increased by 1, maximum +4" />
+        <row adjusted_roll="12 or more" result="Morale increased by 2, maximum +4" />
+      </domain_morale_results>
+      <monthly_event_modifiers>
+        <row event="Garrison expenditure below 2gp/family this month" adjustment="-1 per gp below" />
+        <row event="Domain invaded and occupied by enemy army" adjustment="0 immediately, then -1 per month occupied" />
+        <row event="Domain pillaged by enemy army" adjustment="-4" />
+        <row event="1gp/family in troops repressing domain this month" adjustment="+1, but current morale cannot exceed 0 while repressed" />
+        <row event="2gp/family in troops repressing domain this month" adjustment="+2, but current morale cannot exceed 0 while repressed" />
+        <row event="Additional troops repressing domain this month" adjustment="+1 per full gp/family above, but current morale cannot exceed 0 while repressed" />
+        <row event="Liturgy expense above 1gp/family this month" adjustment="+1 per gp above" />
+        <row event="Liturgy expense below 1gp/family this month" adjustment="-1 per gp below" />
+        <row event="Taxes above 2gp/family this month" adjustment="-1 per gp above" />
+        <row event="Taxes below 2gp/family this month" adjustment="+1 per gp below" />
+        <row event="Tithes not paid this month" adjustment="-1" />
+        <row event="Ruler introduces a god of different alignment this month" adjustment="-4" />
+        <row event="Ruler maintains worship of god of different alignment this month after introduction" adjustment="-2" />
+        <row event="Ruler administers domain" adjustment="+1" />
+        <row event="Calamity affects domain this month" adjustment="Varies" />
+      </monthly_event_modifiers>
+      <event_details>
+        <invasion_and_occupation>
+          <rule>No immediate morale penalty merely for invasion.</rule>
+          <rule>If enemy troops are enough to count as an occupying garrison and remain over a month, morale rolls suffer a cumulative -1 per month up to -4.</rule>
+        </invasion_and_occupation>
+        <pillage>
+          <rule>Pillaging imposes -4 on the next morale roll instead of occupation penalties; they do not stack.</rule>
+        </pillage>
+        <repression>
+          <rule>Militia cannot be used to repress the peasantry.</rule>
+          <rule>1gp/family of additional troops repressing gives +1 morale roll bonus.</rule>
+          <rule>2gp/family of additional troops repressing gives +2 morale roll bonus.</rule>
+          <rule>Each additional full gp/family repressing gives another +1.</rule>
+          <rule>Current morale can never exceed 0 while repressed.</rule>
+        </repression>
+        <new_religion>
+          <rule>Shifting worship between gods of the same alignment does not count as changing religion for morale.</rule>
+          <rule>Introducing worship of a god of a different alignment gives -4 on the first month's morale roll.</rule>
+          <rule>Thereafter, morale rolls suffer -2 until the old faith is restored or the domain converts.</rule>
+          <conversion>
+            <condition>Current morale reaches Dedicated (+2), or</condition>
+            <condition>The ruler or spiritual advisor gains congregants exceeding half the domain population.</condition>
+          </conversion>
+        </new_religion>
+        <administration>
+          <rule>Personally administering the domain grants +1 on morale rolls.</rule>
+          <rule>Administration time per month equals 1/2 x [(number of 6-mile hexes in personal domain) + (number of vassals reporting to the ruler) + (6 - market class of largest urban settlement in the ruler's personal domain)].</rule>
+        </administration>
+        <calamities>
+          <rule>Minor calamity causing property damage: -1.</rule>
+          <rule>Major calamity causing substantial property damage and loss of life: -2 to -3.</rule>
+          <rule>Utter catastrophe: -4.</rule>
+          <rule>The Judge may assume a default -1 each month for normal hardships if desired.</rule>
+        </calamities>
+      </event_details>
+    </current_morale_score>
+    <effects_of_morale>
+      <levels>
+        <row score="-4 or less" level="Rebellious" />
+        <row score="-3" level="Defiant" />
+        <row score="-2" level="Turbulent" />
+        <row score="-1" level="Demoralized" />
+        <row score="0" level="Apathetic" />
+        <row score="+1" level="Loyal" />
+        <row score="+2" level="Dedicated" />
+        <row score="+3" level="Steadfast" />
+        <row score="+4 or more" level="Stalwart" />
+      </levels>
+      <effects>
+        <level name="Rebellious">
+          <rule>All Vagaries rolls at -20.</rule>
+          <rule>All vassal loyalty rolls at -2.</rule>
+          <rule>No population growth.</rule>
+          <rule>Lose extra 4d10 families per 1000 each month.</rule>
+          <rule>No conscripts or militia can be levied.</rule>
+          <rule>One able-bodied man per family becomes a bandit.</rule>
+          <rule>Tax, land, trade, and service income drop to zero.</rule>
+          <rule>Each month there is a cumulative 10% chance that an NPC challenger emerges from the bandits.</rule>
+          <rule>The challenger has experience level sufficient for personal authority +0.</rule>
+        </level>
+        <level name="Defiant">
+          <rule>All Vagaries rolls at -10.</rule>
+          <rule>All vassal loyalty rolls at -1.</rule>
+          <rule>Lose extra 3d10 families per 1000 each month.</rule>
+          <rule>No conscripts or militia can be levied.</rule>
+          <rule>Tax, land, trade, and service income are halved.</rule>
+          <rule>One able-bodied man per two families becomes a bandit.</rule>
+          <rule>Each month there is a cumulative 5% chance that an NPC challenger emerges from the bandits.</rule>
+        </level>
+        <level name="Turbulent">
+          <rule>All Vagaries rolls at -5.</rule>
+          <rule>Lose extra 2d10 families per 1000 each month.</rule>
+          <rule>No conscripts or militia can be levied.</rule>
+          <rule>Tax, land, trade, and service income are reduced by 20%.</rule>
+          <rule>One able-bodied man per five families becomes a bandit.</rule>
+          <rule>Each month there is a cumulative 1% chance that an NPC challenger emerges from the bandits.</rule>
+        </level>
+        <level name="Demoralized">
+          <rule>Lose extra 1d10 families per 1000 each month.</rule>
+          <rule>Conscripts and militia levied from the domain suffer -1 morale.</rule>
+        </level>
+        <level name="Apathetic">
+          <rule>Conscripts and militia levied from the domain suffer -1 morale.</rule>
+        </level>
+        <level name="Loyal">
+          <rule>Spies and thieves operating against the domain suffer -1 on proficiency throws.</rule>
+          <rule>Population grows by extra 1d10 families per 1000 each month.</rule>
+        </level>
+        <level name="Dedicated">
+          <rule>Spies and thieves operating against the domain suffer -2 on proficiency throws.</rule>
+          <rule>Population grows by extra 2d10 families per 1000 each month.</rule>
+          <rule>All Vagaries rolls at +5.</rule>
+        </level>
+        <level name="Steadfast">
+          <rule>Population grows by extra 3d10 families per 1000 each month.</rule>
+          <rule>Spies and thieves operating against the domain suffer -3 on proficiency throws.</rule>
+          <rule>All Vagaries rolls at +10.</rule>
+          <rule>Conscripts and militia levied from the domain gain +1 morale.</rule>
+          <rule>All vassal loyalty rolls at +1.</rule>
+        </level>
+        <level name="Stalwart">
+          <rule>Population grows by extra 4d10 families per 1000 each month.</rule>
+          <rule>Spies and thieves operating against the domain suffer -4 on proficiency throws.</rule>
+          <rule>Conscripts and militia levied from the domain gain +1 morale.</rule>
+          <rule>All Vagaries rolls at +20.</rule>
+          <rule>All vassal loyalty rolls at +2.</rule>
+        </level>
+      </effects>
+    </effects_of_morale>
+    <bandits>
+      <rule>Domains with current morale -2 or less are plagued by bandits.</rule>
+      <rule>Bandits count as an enemy army.</rule>
+      <rule>If not dealt with, bandits can worsen morale through the occupation penalty.</rule>
+      <responses>
+        <defeat_with_troops>
+          <rule>If defeated, current morale increases by 1.</rule>
+          <rule>Population is reduced by the number of bandits killed.</rule>
+          <rule>Prisoners restored to work return as families.</rule>
+          <rule>If morale is still below -1 when prisoners are freed, the appropriate proportion returns to banditry next month.</rule>
+        </defeat_with_troops>
+        <raise_morale>
+          <rule>Raising morale reduces bandit numbers without population loss.</rule>
+          <rule>For example, improving from -4 to -3 reduces bandits from one per family to one per two families; improving from -2 to -1 removes bandits entirely.</rule>
+        </raise_morale>
+      </responses>
+      <challenger>
+        <rule>If an NPC challenger emerges from the bandits, that NPC offers battle at the first opportunity.</rule>
+        <rule>If the ruler refuses battle, the NPC begins pillaging the domain, imposing a -4 penalty on morale rolls.</rule>
+      </challenger>
+    </bandits>
+  </morale>
+  <urban_settlements>
+    <founding>
+      <rule>When a domain reaches its growth limit, the ruler may found an urban settlement instead of or in addition to securing more land.</rule>
+      <rule>Founding requires an initial investment of 10000gp.</rule>
+      <rule>The ruler must move 75 to 249 peasant families from the domain into the new settlement.</rule>
+      <rule>Once founded, the settlement functions much like a separate domain, but the ruler may directly manage both the domain and the settlement if the settlement lies in the ruler's own domain.</rule>
+      <rule>A ruler cannot directly manage a domain and an urban settlement in another domain.</rule>
+    </founding>
+    <maximum_population_by_total_investment>
+      <row total_investment_gp="10000" maximum_population_families="249" />
+      <row total_investment_gp="25000" maximum_population_families="624" />
+      <row total_investment_gp="75000" maximum_population_families="2499" />
+      <row total_investment_gp="200000" maximum_population_families="4999" />
+      <row total_investment_gp="625000" maximum_population_families="19999" />
+      <row total_investment_gp="2500000" maximum_population_families="100000" />
+    </maximum_population_by_total_investment>
+    <growing_the_settlement>
+      <rule>Each month, roll two 1d10 per 1000 urban families, rounded up, to determine increase and decrease, using the same exploding-10 rule as domains.</rule>
+      <rule>If the character actively adventures at least once per month and keeps the settlement secure, it gains additional population using the Domain Population Growth table.</rule>
+      <rule>Urban growth limit is based on total urban investment, not available land.</rule>
+      <rule>For every 1000gp spent on urban investment in a month, the settlement attracts 1d10 new urban families.</rule>
+      <rule>Monthly urban investment may not exceed the domain's revenue.</rule>
+    </growing_the_settlement>
+    <urban_revenue>
+      <table>
+        <row settlement_population="75-249" trade_revenue_gp_per_family="1" market_class="Class VI" />
+        <row settlement_population="250-624" trade_revenue_gp_per_family="1.5" market_class="Class V" />
+        <row settlement_population="626-2499" trade_revenue_gp_per_family="1.5" market_class="Class IV" />
+        <row settlement_population="2500-4999" trade_revenue_gp_per_family="1.5" market_class="Class III" />
+        <row settlement_population="5000-19999" trade_revenue_gp_per_family="2" market_class="Class II" />
+        <row settlement_population="20000-100000" trade_revenue_gp_per_family="2.5" market_class="Class I" />
+      </table>
+      <rule>Urban families generate 4gp service revenue and 2gp tax revenue per month, modified by any altered tax rate in the domain.</rule>
+      <rule>Instead of land revenue, urban families generate trade revenue.</rule>
+      <rule>Rulers may additionally benefit from the market class for mercantile ventures.</rule>
+    </urban_revenue>
+    <urban_expenses>
+      <table>
+        <row expense="Garrison" monthly_cost="2gp/family" />
+        <row expense="Liturgies" monthly_cost="1gp/family" />
+        <row expense="Tithes" monthly_cost="1gp/family" />
+        <row expense="Upkeep" monthly_cost="1gp/family" />
+        <row expense="Tribute" monthly_cost="Varies" />
+      </table>
+      <rule>If liturgies are above or below normal in the domain, apply the same liturgy rate to the settlement.</rule>
+      <rule>Urban families count toward total realm families for tribute.</rule>
+      <rule>Unpaid upkeep reduces total investment value.</rule>
+      <rule>If reduced investment lowers the settlement to a lower market class, excess urban families emigrate and are lost.</rule>
+    </urban_expenses>
+    <urban_morale>
+      <rule>Urban settlements share the base and current morale score of the surrounding domain.</rule>
+      <rule>Add the urban settlement's income to domain income when calculating the ruler's personal authority modifier.</rule>
+    </urban_morale>
+    <dissolution>
+      <rule>If the settlement ever falls below 75 urban families, it dissolves.</rule>
+      <rule>Remove the settlement and return its urban families to nearby hexes as peasant families.</rule>
+    </dissolution>
+    <benchmarks>
+      <row settlement="Hamlets" families="74-" monthly_income="0gp" market_class="Class VI*" />
+      <row settlement="Small Village" families="75-99" monthly_income="18-24gp" market_class="Class VI" />
+      <row settlement="Village" families="100-159" monthly_income="25-39gp" market_class="Class VI" />
+      <row settlement="Village" families="160-249" monthly_income="40-62gp" market_class="Class VI" />
+      <row settlement="Large village" families="250-449" monthly_income="185-337gp" market_class="Class V" />
+      <row settlement="Small town" families="450-624" monthly_income="338-468gp" market_class="Class V" />
+      <row settlement="Large town" families="625-1249" monthly_income="469-937gp" market_class="Class IV" />
+      <row settlement="Small city" families="1250-2499" monthly_income="938-1874gp" market_class="Class IV" />
+      <row settlement="City" families="2500-4999" monthly_income="1875-3750gp" market_class="Class III" />
+      <row settlement="Large city" families="5000-9999" monthly_income="5000-9999gp" market_class="Class II" />
+      <row settlement="Large city" families="10000-14999" monthly_income="10000-14999gp" market_class="Class II" />
+      <row settlement="Large city" families="15000-19999" monthly_income="15000-29999gp" market_class="Class II" />
+      <row settlement="Metropolis" families="20000-39999" monthly_income="30000-59999gp" market_class="Class I" />
+      <row settlement="Metropolis" families="40000+" monthly_income="60000gp+" market_class="Class I" />
+    </benchmarks>
+  </urban_settlements>
+</ruleset>

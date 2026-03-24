@@ -1,0 +1,126 @@
+{
+  "culture_id": "talreni",
+  "display_name": "Talreni",
+  "race": "human",
+  "terrain_affinity": {
+    "primary": "plains",
+    "secondary": "river_valley",
+    "avoidance": "swamp"
+  },
+  "climate_preference": {
+    "temperature": "temperate",
+    "moisture": "moderate"
+  },
+  "alignment_tendency": {
+    "dominant": "Neutral",
+    "secondary": "Lawful",
+    "distribution": {
+      "Lawful": 0.28,
+      "Neutral": 0.5,
+      "Chaotic": 0.22
+    },
+    "notes": "The dominant alignment must have the highest distribution value and must be ≥ 0.40. A culture's LLM-generated history may describe past alignment shifts, but at runtime the culture IS its dominant alignment. This is a hard constraint."
+  },
+  "values": {
+    "core_values": [
+      "community",
+      "tradition",
+      "hospitality"
+    ],
+    "taboos": [
+      "withholding grain in famine",
+      "breaking guest-right",
+      "moving boundary stones"
+    ],
+    "social_structure": "egalitarian",
+    "gender_roles": "egalitarian",
+    "attitude_toward_outsiders": "tolerant"
+  },
+  "personality_weight_biases": {
+    "temperament": {
+      "stoic": 0.1,
+      "jovial": 0.08,
+      "nervous": -0.1,
+      "aggressive": -0.1,
+      "melancholic": 0.0,
+      "cunning": 0.04,
+      "passionate": -0.06,
+      "serene": 0.12,
+      "paranoid": -0.08,
+      "gregarious": 0.0
+    },
+    "motivation": {
+      "wealth": 0.0,
+      "power": -0.08,
+      "knowledge": 0.0,
+      "security": 0.14,
+      "revenge": -0.08,
+      "faith": 0.0,
+      "legacy": 0.08,
+      "freedom": -0.14,
+      "pleasure": -0.08,
+      "duty": 0.12,
+      "survival": 0.0,
+      "redemption": 0.04
+    },
+    "social_style": {
+      "formal": 0.08,
+      "blunt": -0.08,
+      "flattering": 0.0,
+      "laconic": 0.0,
+      "verbose": 0.06,
+      "evasive": -0.06,
+      "warm": 0.1,
+      "intimidating": -0.08,
+      "scholarly": 0.04,
+      "streetwise": -0.06
+    },
+    "moral_compass": {
+      "righteous": 0.1,
+      "honorable": 0.08,
+      "pragmatic": 0.06,
+      "opportunistic": -0.08,
+      "ruthless": -0.1,
+      "conflicted": -0.06
+    }
+  },
+  "military_tradition": {
+    "preferred_troop_types": [
+      "pikemen",
+      "archers",
+      "militia"
+    ],
+    "fighting_style": "defensive",
+    "military_culture": "citizen_militia"
+  },
+  "economy": {
+    "primary_livelihood": "agriculture",
+    "secondary_livelihood": "trade",
+    "trade_goods": [
+      "barley flour",
+      "flax linen",
+      "apple cider",
+      "river clay crockery"
+    ],
+    "currency_attitude": "mixed"
+  },
+  "magic_attitude": {
+    "arcane": "regulated",
+    "divine": "respected",
+    "notes": "Village councils license hedge-mages; miracle workers are trusted when they serve the commons."
+  },
+  "architecture_style": {
+    "primary_material": "timber",
+    "aesthetic": "utilitarian",
+    "signature_feature": "broad communal granaries around a green"
+  },
+  "language": {
+    "language_name": "Talren",
+    "language_family": "Talric",
+    "script": "shared_regional"
+  },
+  "flavor_text": {
+    "one_line": "Talreni villages prize measured custom, open tables, and the quiet strength of shared labor.",
+    "one_paragraph": "The Talreni are settled grain-farmers of broad meadows and slow rivers, governed less by lords than by councils, harvest customs, and public reckonings. They admire steadiness over brilliance, welcome guests who honor the common table, and mistrust zeal of any stripe. Their fields are prosperous, their militias disciplined, and their speech full of proverbs about balance, weather, and fair measure."
+  }
+}

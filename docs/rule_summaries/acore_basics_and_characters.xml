@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<acks_summary>
+  <scope>
+    <documents>
+      <document>101-ACKS Core-Basics</document>
+      <document>102-ACKS Core-Characters</document>
+      <document>102B-ACKS Core-Characters-Core-Classes</document>
+    </documents>
+    <coverage>
+      <item>Definitions</item>
+      <item>Core mechanics</item>
+      <item>Character creation procedures</item>
+      <item>Ability rules</item>
+      <item>Class rules for Fighter, Mage, Cleric, and Thief</item>
+      <item>All mechanical tables present in the provided documents</item>
+    </coverage>
+  </scope>
+
+  <core_definitions>
+    <term name="player">A participant who controls one or more characters.</term>
+    <term name="character">A persona used by a player in the game world.</term>
+    <term name="player_character" abbreviation="PC">A character controlled by a player.</term>
+    <term name="adventurer">Another term for a player character.</term>
+    <term name="game_judge" abbreviation="Judge">The referee who prepares adventures, adjudicates rules, narrates the world, and controls NPCs and monsters.</term>
+    <term name="non_player_character" abbreviation="NPC">A character controlled by the Judge.</term>
+    <term name="creature">A collective term for PCs, NPCs, and monsters.</term>
+    <term name="ability_scores">Numerical measures of a character's talents and aptitudes.</term>
+    <term name="class">A character's profession or training type; determines development and abilities.</term>
+    <term name="class_level">A measure of a character's advancement and power within a class.</term>
+    <term name="normal_person">Generally a 0th level character.</term>
+    <term name="experience_points" abbreviation="XP">Advancement currency earned partly from defeated monsters and mostly from treasure returned to civilization.</term>
+    <term name="monster_level">A relative measure of a monster's challenge.</term>
+    <term name="spell_level">A relative measure of a spell's power; does not directly correspond to class level.</term>
+    <term name="hit_points" abbreviation="hp">A measure of survivability. At 0 or fewer hp, a being is incapacitated and possibly dead.</term>
+    <term name="encounter">A situation where PCs and monsters interact, with time and movement measured in detail.</term>
+    <term name="initiative">The order in which actions are resolved during an encounter.</term>
+    <term name="adventure">A series of connected encounters; may be one session or a larger scenario.</term>
+    <term name="campaign">A sequence of adventures, often involving the same characters.</term>
+    <term name="dungeon">A monster-filled underground complex containing monsters, treasure, and secrets.</term>
+    <term name="dungeon_level">A floor or depth of a dungeon; deeper levels are more dangerous.</term>
+    <term name="stronghold">A major structure such as a castle or tower that can attract followers.</term>
+    <term name="domain">Territory under a character's sovereign control.</term>
+    <term name="realm">A larger political entity formed from one or more domains.</term>
+  </core_definitions>
+
+  <dice>
+    <general>
+      <rule>ACKS primarily uses d4, d6, d8, d10, d12, and d20.</rule>
+      <rule>d20 is used for attack throws and saving throws.</rule>
+      <rule>d10 is numbered 0-9; a roll of 0 counts as 10.</rule>
+      <rule>Two differently designated d10s can be rolled as percentile dice (d100). Declare tens and ones before rolling. 00 counts as 100.</rule>
+      <rule>d4 is effectively flipped rather than rolled; the upright number is the result.</rule>
+      <rule>Multiple dice are written as XdY, such as 2d6.</rule>
+      <rule>Modifiers are appended, such as 2d8+2.</rule>
+    </general>
+    <die_notation_table>
+      <entry notation="d2">Roll 1d6; 1-3 = 1, 4-6 = 2.</entry>
+      <entry notation="d3">Roll 1d6; 1-2 = 1, 3-4 = 2, 5-6 = 3.</entry>
+      <entry notation="d4">Four-sided die.</entry>
+      <entry notation="d6">Six-sided die.</entry>
+      <entry notation="d8">Eight-sided die.</entry>
+      <entry notation="d10">Ten-sided die; 0 indicates 10.</entry>
+      <entry notation="d12">Twelve-sided die.</entry>
+      <entry notation="d20">Twenty-sided die.</entry>
+      <entry notation="d100">Roll two different d10s; one is tens, one is ones; 00 = 100.</entry>
+    </die_notation_table>
+  </dice>
+
+  <resolution_mechanics>
+    <rolling_dice>
+      <definition>A roll is used to determine which of several possible outcomes occurs.</definition>
+      <procedure>
+        <step>Roll the appropriate die for the situation.</step>
+        <step>Add any relevant modifiers.</step>
+        <step>Apply the total as required by the situation.</step>
+      </procedure>
+      <uses>
+        <item>Surprise roll</item>
+        <item>Reaction roll</item>
+        <item>Initiative roll</item>
+        <item>Damage roll</item>
+        <item>Morale roll</item>
+      </uses>
+      <notes>
+        <note>Some rolls produce absolute results, such as damage dealt.</note>
+        <note>Some rolls are compared to other rolls, such as initiative.</note>
+        <note>Some rolls are compared to tables.</note>
+      </notes>
+    </rolling_dice>
+
+    <throws>
+      <definition>A throw is a roll made when an action may succeed or fail.</definition>
+      <common_types>
+        <type>Attack throw</type>
+        <type>Saving throw</type>
+        <type>Proficiency throw</type>
+      </common_types>
+      <default_die>1d20</default_die>
+      <procedure>
+        <step>Throw the appropriate die for the action.</step>
+        <step>Add any relevant modifiers.</step>
+        <step>Compare the total to the target value, usually written as a value such as 12+.</step>
+        <step>If the total equals or exceeds the target value, the outcome is favorable; otherwise it is unfavorable.</step>
+      </procedure>
+      <target_value_rule>
+        <rule>Throw target values are usually based on class and level.</rule>
+        <rule>Bonuses can be recorded as reductions to the target value instead of additions to the die roll.</rule>
+        <rule>Penalties can be recorded as increases to the target value instead of subtractions from the die roll.</rule>
+      </target_value_rule>
+    </throws>
+
+    <die_selection_guidelines>
+      <rule die="1d20">Use when outcomes are strongly influenced by both skill and fortune. Typical target values are 10-20. Modifiers have significant but not overwhelming impact.</rule>
+      <rule die="1d6">Use when skill or innate ability matters strongly and randomness is lower. Used for surprise, initiative, and many damage rolls. Modifiers matter greatly because the range is small.</rule>
+      <rule die="2d6">Use when many outcomes are possible but middle results should be most common. Produces a bell curve centered on 6-8. Used for reaction rolls and morale rolls.</rule>
+    </die_selection_guidelines>
+  </resolution_mechanics>
+
+  <common_abbreviations>
+    <entry abbreviation="STR">Strength</entry>
+    <entry abbreviation="INT">Intelligence</entry>
+    <entry abbreviation="WIS">Wisdom</entry>
+    <entry abbreviation="DEX">Dexterity</entry>
+    <entry abbreviation="CON">Constitution</entry>
+    <entry abbreviation="CHA">Charisma</entry>
+    <entry abbreviation="hp">Hit points</entry>
+    <entry abbreviation="shp">Structural hit points</entry>
+    <entry abbreviation="HD">Hit Dice / Hit Die</entry>
+    <entry abbreviation="AC">Armor Class</entry>
+    <entry abbreviation="XP">Experience points</entry>
+    <entry abbreviation="PC">Player character</entry>
+    <entry abbreviation="NPC">Non-player character</entry>
+    <entry abbreviation="cp">Copper pieces</entry>
+    <entry abbreviation="sp">Silver pieces</entry>
+    <entry abbreviation="ep">Electrum pieces</entry>
+    <entry abbreviation="gp">Gold pieces</entry>
+    <entry abbreviation="pp">Platinum pieces</entry>
+    <entry abbreviation="TT">Treasure Type</entry>
+  </common_abbreviations>
+
+  <character_creation>
+    <standard_procedure>
+      <step number="1">Start with a fresh character sheet.</step>
+      <step number="2">Roll 3d6 in order for ability scores and record both scores and their bonuses or penalties.</step>
+      <step number="3">Choose a class that fits the character's ability scores. Check prime requisites and minimum requirements. Record class special abilities.</step>
+      <step number="4">Record 0 XP and optionally record the XP needed for 2nd level.</step>
+      <step number="5">Roll hit points using the class Hit Die and add Constitution modifier. A Constitution penalty cannot reduce any Hit Die roll below 1. At Judge discretion, 1st-level characters may begin with maximum hp.</step>
+      <step number="6">Record attack throws and saving throws for the class. Apply Strength to melee attacks and Dexterity to missile attacks.</step>
+      <step number="7">Choose starting proficiencies. Apply all proficiency-based modifiers. If the character is a mage or elven spellsword, roll starting spells as described in the Spells chapter.</step>
+      <step number="8">Roll starting wealth as 3d6 x 10 gp. Purchase equipment. Record remaining money. Obey class weapon and armor restrictions. Record AC including Dexterity modifier. Record weapon damage including Strength modifier. Calculate encumbrance.</step>
+      <step number="9">Choose name, description, and alignment.</step>
+    </standard_procedure>
+
+    <optional_multiple_character_generation>
+      <procedure>
+        <step>Each player generates five characters.</step>
+        <step>Select one primary and two backups.</step>
+        <step>Give the remaining two to the Judge as NPCs.</step>
+        <step>If the primary and both backups die, repeat the procedure with five new characters.</step>
+      </procedure>
+    </optional_multiple_character_generation>
+  </character_creation>
+
+  <abilities>
+    <generation>
+      <standard_method>Roll 3d6 for each ability in order.</standard_method>
+      <optional_method>The Judge may allow six scores to be rolled and assigned to abilities in any order.</optional_method>
+      <score_range>3-18</score_range>
+    </generation>
+
+    <ability_bonus_table>
+      <entry score="3" modifier="-3"/>
+      <entry score="4-5" modifier="-2"/>
+      <entry score="6-8" modifier="-1"/>
+      <entry score="9-12" modifier="0"/>
+      <entry score="13-15" modifier="+1"/>
+      <entry score="16-17" modifier="+2"/>
+      <entry score="18" modifier="+3"/>
+    </ability_bonus_table>
+
+    <ability_rules>
+      <ability name="Strength" abbreviation="STR">
+        <prime_requisite_for>
+          <class>Assassin</class>
+          <class>Explorer</class>
+          <class>Dwarven Vaultguard</class>
+          <class>Elven Spellsword</class>
+          <class>Fighter</class>
+        </prime_requisite_for>
+        <effects>
+          <effect>Apply modifier to melee attack throws.</effect>
+          <effect>Apply modifier to melee damage rolls.</effect>
+          <effect>A Strength penalty cannot reduce damage from a successful attack below 1, unless the target is otherwise invulnerable to the attack.</effect>
+        </effects>
+      </ability>
+
+      <ability name="Intelligence" abbreviation="INT">
+        <prime_requisite_for>
+          <class>Elven Nightblade</class>
+          <class>Elven Spellsword</class>
+          <class>Mage</class>
+        </prime_requisite_for>
+        <effects>
+          <effect>Add Intelligence bonus to starting number of proficiencies.</effect>
+          <effect>Add Intelligence bonus to the number of languages the character can learn to read and write.</effect>
+          <effect>Mages, elven nightblades, and elven spellswords increase the number of spells of each level in their repertoire by their Intelligence bonus.</effect>
+        </effects>
+        <language_rules>
+          <rule>All characters begin knowing their native language.</rule>
+          <rule>Most humans also speak a common human language.</rule>
+          <rule>Demi-humans normally begin with their racial language, Common (or local equivalent), and certain other race-based languages.</rule>
+          <rule>A character with an Intelligence penalty knows only the native language and cannot read more than a word or two.</rule>
+          <rule>Characters with Intelligence 9-12 are literate in languages they can speak.</rule>
+          <rule>Characters with an Intelligence bonus may begin with additional languages equal to the bonus.</rule>
+          <rule>A player may leave one or more bonus language slots unassigned for later selection during play.</rule>
+          <rule>Possible languages include demi-human languages, beastman dialects, and Judge-approved ancient or exotic tongues.</rule>
+        </language_rules>
+      </ability>
+
+      <ability name="Wisdom" abbreviation="WIS">
+        <prime_requisite_for>
+          <class>Bladedancer</class>
+          <class>Cleric</class>
+          <class>Dwarven Craftpriest</class>
+        </prime_requisite_for>
+        <effects>
+          <effect>Apply modifier to all saving throws, regardless of cause.</effect>
+        </effects>
+      </ability>
+
+      <ability name="Dexterity" abbreviation="DEX">
+        <prime_requisite_for>
+          <class>Assassin</class>
+          <class>Bard</class>
+          <class>Bladedancer</class>
+          <class>Elven Nightblade</class>
+          <class>Explorer</class>
+          <class>Thief</class>
+        </prime_requisite_for>
+        <effects>
+          <effect>Apply modifier to missile attack throws.</effect>
+          <effect>Apply modifier to Armor Class.</effect>
+          <effect>Apply modifier to initiative rolls.</effect>
+        </effects>
+      </ability>
+
+      <ability name="Constitution" abbreviation="CON">
+        <effects>
+          <effect>Apply modifier to each Hit Die rolled.</effect>
+          <effect>A Constitution penalty cannot reduce any Hit Die roll below 1.</effect>
+        </effects>
+      </ability>
+
+      <ability name="Charisma" abbreviation="CHA">
+        <prime_requisite_for>
+          <class>Bard</class>
+        </prime_requisite_for>
+        <effects>
+          <effect>Apply modifier to reaction rolls.</effect>
+          <effect>Maximum henchmen = 4 + Charisma modifier, producing a range of 1 to 7.</effect>
+          <effect>Average henchman morale is 0, modified by the character's Charisma bonus or penalty.</effect>
+        </effects>
+      </ability>
+    </ability_rules>
+  </abilities>
+
+  <classes_and_ability_scores>
+    <selection_rules>
+      <rule>A character must have at least 9 in each prime requisite to choose a class.</rule>
+      <rule>Some classes also have additional minimum ability requirements; these must be met.</rule>
+    </selection_rules>
+
+    <prime_requisite_xp_adjustment_table>
+      <entry score="9-12" xp_adjustment="0"/>
+      <entry score="13-15" xp_adjustment="+5%"/>
+      <entry score="16-18" xp_adjustment="+10%"/>
+    </prime_requisite_xp_adjustment_table>
+
+    <xp_adjustment_rule>
+      <rule>If a class has two prime requisites, use the lower of the two scores to determine the XP adjustment.</rule>
+    </xp_adjustment_rule>
+
+    <ability_trade_rule>
+      <rule>After choosing a class, the player may raise the class's prime requisite ability or abilities by sacrificing other ability points.</rule>
+      <rule>Two points from another ability raise a prime requisite by one point.</rule>
+      <rule>This can be done more than once.</rule>
+      <rule>No ability can be reduced below 9.</rule>
+      <rule>No ability can be lowered if it is also a prime requisite for the class, even if above the minimum requirement.</rule>
+    </ability_trade_rule>
+  </classes_and_ability_scores>
+
+  <hit_points>
+    <rules>
+      <rule>Hit points measure survivability in combat.</rule>
+      <rule>At 0 or fewer hp, a character or other being is incapacitated and possibly dead.</rule>
+      <rule>Hit points are not a direct measure of physical injury only; they abstract fighting skill, stamina, luck, and divine favor.</rule>
+      <rule>Each class uses a different Hit Die.</rule>
+      <rule>One Hit Die is rolled at 1st level, and additional dice are rolled and added at later levels unless otherwise noted.</rule>
+      <rule>Optional rule: the Judge may allow 1st-level hp to be treated as the maximum result of the class Hit Die.</rule>
+    </rules>
+  </hit_points>
+
+  <alignment>
+    <choices>
+      <alignment_option name="Lawful">
+        <definition>Supports civilization against those who would destroy it.</definition>
+      </alignment_option>
+      <alignment_option name="Neutral">
+        <definition>Generally pursues personal ends and does not strongly commit to Law or Chaos.</definition>
+      </alignment_option>
+      <alignment_option name="Chaotic">
+        <definition>Actively seeks to destroy civil society.</definition>
+      </alignment_option>
+    </choices>
+    <mechanical_note>These sections provide allegiance definitions; no direct mechanical modifiers are given in the provided text.</mechanical_note>
+  </alignment>
+
+  <adventuring_parties>
+    <rules>
+      <rule>Characters usually form parties to survive dangerous adventures.</rule>
+      <rule>Different classes contribute different capabilities.</rule>
+      <rule>Parties may hire NPCs such as henchmen or mercenaries when extra manpower is needed.</rule>
+      <rule>If there are few players, the Judge may allow one player to run multiple characters.</rule>
+      <rule>Characters controlled by the same player may not give each other special treatment, such as trading or gifting wealth or magic items, unless the Judge allows it.</rule>
+    </rules>
+  </adventuring_parties>
+</acks_summary>

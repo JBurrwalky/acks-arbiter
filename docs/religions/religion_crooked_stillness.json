@@ -1,0 +1,57 @@
+{
+  "religion_id": "crooked_stillness",
+  "display_name": "The Crooked Stillness",
+  "theology": {
+    "type": "non_theist",
+    "syncretism": "inclusivist",
+    "afterlife_belief": "unknown"
+  },
+  "alignment": "Chaotic",
+  "associated_cultures": [
+    "uthmori"
+  ],
+  "clergy": {
+    "title_hierarchy": [
+      "Pool Tender",
+      "Mire Guide",
+      "Crooked Elder",
+      "Stillmaster",
+      "Speaker for the Deep Quiet"
+    ],
+    "title_level_mapping": {
+      "1": "Pool Tender",
+      "3": "Mire Guide",
+      "5": "Crooked Elder",
+      "7": "Stillmaster",
+      "9": "Speaker for the Deep Quiet"
+    },
+    "gender_restriction": "none",
+    "special_class": null,
+    "vestments": "dark reed cloaks, frog-bone beads, and masks painted with white mud",
+    "holy_symbol": "bent reed over a black pool"
+  },
+  "practices": {
+    "holy_days_per_year": 3,
+    "holy_day_character": "mystical",
+    "worship_style": "meditative",
+    "dietary_restrictions": "no cooked food during the still nights",
+    "funerary_practice": "burial",
+    "stance_on_undead": "natural_cycle"
+  },
+  "political_role": {
+    "church_state_relationship": "independent",
+    "temporal_authority": "minimal",
+    "military_involvement": "none"
+  },
+  "cosmology": {
+    "opposing_view": "misguided",
+    "opposing_view_detail": "The school treats Lawful heavens and their gods as misguided abstractions invented by dry-land minds that fear adaptation.",
+    "notes": "See §3.3 Alignment Cosmology Rules for the hard constraints governing this field."
+  },
+  "flavor_text": {
+    "one_line": "A marsh philosophy of patience, adaptation, and violence that arrives without warning.",
+    "one_paragraph": "The Crooked Stillness is less worship than discipline. Its elders teach that straight lines are for dry lands and doomed people, while survival belongs to those who bend with the current, vanish under scum, and rise only when advantage is certain. Outsiders often mistake it for simple superstition until they discover how deeply it shapes clan justice, warfare, and mourning.",
+    "creation_myth_summary": "The first people survived by crouching in warm mud while louder creatures fought over the world above them; wisdom is remembering that lesson.",
+    "moral_code_summary": "Keep the clan hidden when needed, strike only with advantage, waste nothing, and distrust every creed that demands open obedience or rigid form."
+  }
+}

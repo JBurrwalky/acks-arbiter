@@ -1,0 +1,135 @@
+{
+  "religion_id": "ledger_of_the_lantern_tide",
+  "display_name": "The Ledger of the Lantern Tide",
+  "theology": {
+    "type": "henotheist",
+    "syncretism": "syncretist",
+    "afterlife_belief": "judgment_and_rebirth"
+  },
+  "alignment": "Lawful",
+  "associated_cultures": [
+    "merethi"
+  ],
+  "clergy": {
+    "title_hierarchy": [
+      "Dock Reader",
+      "Lantern Clerk",
+      "Harbor Canon",
+      "Tidemark Justiciar",
+      "First Beacon"
+    ],
+    "title_level_mapping": {
+      "1": "Dock Reader",
+      "3": "Lantern Clerk",
+      "5": "Harbor Canon",
+      "7": "Tidemark Justiciar",
+      "9": "First Beacon"
+    },
+    "gender_restriction": "none",
+    "special_class": null,
+    "vestments": "sea-green mantles over white coats, trimmed with copper chain and shell seals",
+    "holy_symbol": "a lantern hanging above a wave-mark"
+  },
+  "practices": {
+    "holy_days_per_year": 8,
+    "holy_day_character": "festival",
+    "worship_style": "congregational",
+    "dietary_restrictions": null,
+    "funerary_practice": "sea_burial",
+    "stance_on_undead": "abomination"
+  },
+  "political_role": {
+    "church_state_relationship": "influential",
+    "temporal_authority": "moderate",
+    "military_involvement": "chaplains_only"
+  },
+  "cosmology": {
+    "opposing_view": "demons",
+    "opposing_view_detail": "Chaotic powers are named deepwater demons that delight in shipwreck, mutiny, broken contracts, and drowned memory.",
+    "notes": "See §3.3 Alignment Cosmology Rules for the hard constraints governing this field."
+  },
+  "pantheon": [
+    {
+      "deity_id": "thalor",
+      "display_name": "Thalor of the Beacons",
+      "epithets": [
+        "Lantern King",
+        "Master of Soundings"
+      ],
+      "alignment": "Lawful",
+      "portfolios": [
+        "sea",
+        "trade",
+        "protection"
+      ],
+      "holy_symbol": "a lantern above three wave lines",
+      "favored_weapon": "spear",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "albatross",
+      "domains_summary": "Thalor rules lawful commerce at sea, safe harbors, and the beacons that lead vessels home."
+    },
+    {
+      "deity_id": "meras",
+      "display_name": "Meras",
+      "epithets": [
+        "Counter of Cords",
+        "The Fair Tide"
+      ],
+      "alignment": "Lawful",
+      "portfolios": [
+        "water",
+        "justice",
+        "luck"
+      ],
+      "holy_symbol": "a knotted cord over a water drop",
+      "favored_weapon": "mace",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "seal",
+      "domains_summary": "Meras judges contracts, tolls, and chance upon the water, rewarding honest reckoning."
+    },
+    {
+      "deity_id": "velis",
+      "display_name": "Velis of the Quays",
+      "epithets": [
+        "Harbor Mother",
+        "Lady of the Common Net"
+      ],
+      "alignment": "Neutral",
+      "portfolios": [
+        "harvest",
+        "mercy",
+        "fertility"
+      ],
+      "holy_symbol": "a fish basket beneath an open hand",
+      "favored_weapon": "staff",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "dolphin",
+      "domains_summary": "Velis blesses shared plenty, dockside relief, and the mutual aid that keeps ports alive."
+    },
+    {
+      "deity_id": "orun_sailor",
+      "display_name": "Orun Sailor",
+      "epithets": [
+        "Watcher of Horizons",
+        "He Who Returns"
+      ],
+      "alignment": "Lawful",
+      "portfolios": [
+        "travel",
+        "knowledge",
+        "moon"
+      ],
+      "holy_symbol": "a crescent over a masthead eye",
+      "favored_weapon": "bow",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "tern",
+      "domains_summary": "Orun grants charts, celestial knowledge, and the disciplined patience required for long voyages."
+    }
+  ],
+  "flavor_text": {
+    "one_line": "A maritime faith of beacon-law, honest contracts, and shared rescue beneath the lanterns.",
+    "one_paragraph": "The Ledger teaches that the sea is survivable only when people hold to witnessed duty: pilot to ship, city to sailor, wealthy guild to hungry dock, and captain to charter. While Thalor is honored above the other powers, the whole lantern-tide is venerated through harbor rites, rescue funds, and public accounting of wreck losses. Chaotic forces are cast as abyssal demons that thrive on mutiny, hidden cargo, and the deliberate extinguishing of guiding lights.",
+    "creation_myth_summary": "When the first coast drowned in darkness, Thalor raised lanterns from the surf and taught mortals to mark depth, debt, and safe return.",
+    "moral_code_summary": "Honor contracts, aid the shipwrecked, pay due tithe, keep public lights burning, and resist Chaos in mutiny, piracy, and fraudulent gain."
+  }
+}

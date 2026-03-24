@@ -1,0 +1,694 @@
+<campaigns_troop_and_creature_tables_summary title="Domains at War - Campaigns Troop Tables" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <troop_characteristics_summary>
+    <overview>
+      <rule>These tables summarize common demi-human, human, and beastman troops, including mercenaries and followers presented in ACKS core rules, Player&#8217;s Companion, and Domains at War: Campaigns.</rule>
+    </overview>
+    <notes>
+      <rule>When several equipment loadouts exist for a troop type, the default mercenary loadout is listed as A; variants are listed as B, C, and so on. Availability of variants is at the Judge&#8217;s discretion.</rule>
+      <rule>Cavalry characteristics separated by "/" distinguish rider and mount values for AC, HD, hp, number of attacks, and damage.</rule>
+      <rule>Battle Rating is listed per creature.</rule>
+    </notes>
+    <military_specialist_availability_by_market_class>
+      <entry specialist_type="Artillerist" class_i="5d10" class_ii="2d6" class_iii="1d6" class_iv="1d2" class_v="1 (65%)" class_vi="1 (20%)"/>
+      <entry specialist_type="Armorer" class_i="3d10" class_ii="2d4" class_iii="1d4" class_iv="1" class_v="1 (40%)" class_vi="1 (15%)"/>
+      <entry specialist_type="Creature Handler – Domestic" class_i="5d10" class_ii="2d6" class_iii="1d6" class_iv="1d2" class_v="1 (65%)" class_vi="1 (20%)"/>
+      <entry specialist_type="Creature Handler – Wild" class_i="3d10" class_ii="2d4" class_iii="1d4" class_iv="1" class_v="1 (40%)" class_vi="1 (15%)"/>
+      <entry specialist_type="Creature Handler – Giant/Prehistoric" class_i="2d10" class_ii="1d6" class_iii="1d3" class_iv="1 (65%)" class_v="1 (25%)" class_vi="1 (10%)"/>
+      <entry specialist_type="Creature Handler - Fantastic" class_i="1d10" class_ii="1d3" class_iii="1" class_iv="1 (33%)" class_v="1 (15%)" class_vi="1 (5%)"/>
+      <entry specialist_type="Marshal – Light Infantry" class_i="5d10" class_ii="2d6" class_iii="1d6" class_iv="1d2" class_v="1 (65%)" class_vi="1 (20%)"/>
+      <entry specialist_type="Marshal – Bow, Hvy. Inf., or Light Cavalry" class_i="3d10" class_ii="2d4" class_iii="1d4" class_iv="1" class_v="1 (40%)" class_vi="1 (15%)"/>
+      <entry specialist_type="Marshal – Heavy Cavalry or Horse Archer" class_i="2d10" class_ii="1d6" class_iii="1d2" class_iv="1 (85%)" class_v="1 (25%)" class_vi="1 (10%)"/>
+      <entry specialist_type="Marshal – Cataphract" class_i="1d10" class_ii="1d3" class_iii="1" class_iv="1 (33%)" class_v="1 (15%)" class_vi="1 (5%)"/>
+      <entry specialist_type="Mercenary Officer – Lieutenant" class_i="1d10" class_ii="1d3" class_iii="1" class_iv="1 (33%)" class_v="1 (15%)" class_vi="1 (5%)"/>
+      <entry specialist_type="Mercenary Officer – Captain" class_i="1d6" class_ii="1d2" class_iii="1 (45%)" class_iv="1 (15%)" class_v="1 (5%)" class_vi="-"/>
+      <entry specialist_type="Mercenary Officer – Colonel" class_i="1d2" class_ii="1 (25%)" class_iii="1 (15%)" class_iv="1 (5%)" class_v="-" class_vi="-"/>
+      <entry specialist_type="Mercenary Officer – General" class_i="1 (15%)" class_ii="-" class_iii="-" class_iv="-" class_v="-" class_vi="-"/>
+      <entry specialist_type="Quartermaster" class_i="3d10" class_ii="2d4" class_iii="1d4" class_iv="1" class_v="1 (40%)" class_vi="1 (15%)"/>
+      <entry specialist_type="Siege Engineer" class_i="3d10" class_ii="2d4" class_iii="1d4" class_iv="1" class_v="1 (40%)" class_vi="1 (15%)"/>
+    </military_specialist_availability_by_market_class>
+    <military_specialist_availability_by_realm_size>
+      <realm_sizes>
+        <realm_size name="continent" population_families="16,000,000" time_period="Year"/>
+        <realm_size name="empire" population_families="1,500,000" time_period="Season"/>
+        <realm_size name="kingdom" population_families="364,000" time_period="Season"/>
+        <realm_size name="principality" population_families="87,000" time_period="Month"/>
+        <realm_size name="duchy" population_families="20,000" time_period="Month"/>
+        <realm_size name="county" population_families="4,600" time_period="Week"/>
+        <realm_size name="march" population_families="960" time_period="Week"/>
+        <realm_size name="barony" population_families="160" time_period="Week"/>
+      </realm_sizes>
+      <entry specialist_type="Artillerist" continent="45,000" empire="3,700" kingdom="905" principality="215" duchy="50" county="10" march="2" barony="-"/>
+      <entry specialist_type="Armorer" continent="28,000" empire="2,200" kingdom="540" principality="130" duchy="30" county="7" march="1" barony="-"/>
+      <entry specialist_type="Creature Handler – Domestic" continent="45,000" empire="3,700" kingdom="905" principality="215" duchy="50" county="10" march="2" barony="-"/>
+      <entry specialist_type="Creature Handler – Wild" continent="28,000" empire="2,200" kingdom="540" principality="130" duchy="30" county="7" march="1" barony="-"/>
+      <entry specialist_type="Creature Handler – Giant/Prehistoric" continent="19,000" empire="1,450" kingdom="360" principality="85" duchy="20" county="5" march="1" barony="-"/>
+      <entry specialist_type="Creature Handler - Fantastic" continent="9,300" empire="725" kingdom="180" principality="45" duchy="10" county="3" march="-" barony="-"/>
+      <entry specialist_type="Marshal – Light Infantry" continent="45,000" empire="3,700" kingdom="905" principality="215" duchy="50" county="10" march="2" barony="-"/>
+      <entry specialist_type="Marshal – Bow, Hvy. Inf., or Light Cavalry" continent="28,000" empire="2,200" kingdom="540" principality="130" duchy="30" county="7" march="1" barony="-"/>
+      <entry specialist_type="Marshal – Heavy Cavalry or Horse Archer" continent="19,000" empire="1,450" kingdom="360" principality="85" duchy="20" county="5" march="1" barony="-"/>
+      <entry specialist_type="Marshal – Cataphract" continent="9,300" empire="725" kingdom="180" principality="45" duchy="10" county="3" march="-" barony="-"/>
+      <entry specialist_type="Mercenary Officer – Lieutenant" continent="9,300" empire="725" kingdom="180" principality="45" duchy="10" county="5" march="1" barony="-"/>
+      <entry specialist_type="Mercenary Officer – Captain" continent="3,500" empire="275" kingdom="25" principality="16" duchy="3" county="1" march="-" barony="-"/>
+      <entry specialist_type="Mercenary Officer – Colonel" continent="1,000" empire="75" kingdom="20" principality="4" duchy="1" county="-" march="-" barony="-"/>
+      <entry specialist_type="Mercenary Officer – General" continent="125" empire="10" kingdom="3" principality="1" duchy="-" county="-" march="-" barony="-"/>
+      <entry specialist_type="Quartermaster" continent="28,000" empire="2,200" kingdom="540" principality="130" duchy="30" county="7" march="1" barony="-"/>
+      <entry specialist_type="Siege Engineer" continent="28,000" empire="2,200" kingdom="540" principality="130" duchy="30" county="7" march="1" barony="-"/>
+    </military_specialist_availability_by_realm_size>
+    <demi_human_troops>
+      <troop group="Dwarven Troops" type="Heavy Infantry A" ac="6" move="60’" hd="1" hp="5" attacks="1" damage="BW+1" save="D1" morale="0" battle_rating="0.025" wage="18gp">
+        <equipment>spear, hand axe, shield, banded plate</equipment>
+      </troop>
+      <troop group="Dwarven Troops" type="Heavy Infantry B" ac="6" move="60’" hd="1" hp="5" attacks="1" damage="BW+1" save="D1" morale="0" battle_rating="0.029" wage="21gp">
+        <equipment>great axe, plate</equipment>
+      </troop>
+      <troop group="Dwarven Troops" type="Heavy Infantry C" ac="6" move="90’" hd="1" hp="5" attacks="1" damage="BW+1" save="D1" morale="0" battle_rating="0.021" wage="15gp">
+        <equipment>war hammer, shield, banded plate</equipment>
+      </troop>
+      <troop group="Dwarven Troops" type="Heavy Infantry D" ac="5" move="90’" hd="1" hp="5" attacks="1" damage="BW+1" save="D1" morale="0" battle_rating="0.017" wage="12gp">
+        <equipment>battle axe, shield, chain mail</equipment>
+      </troop>
+      <troop group="Dwarven Troops" type="Crossbowmen" ac="4" move="90’" hd="1" hp="5" attacks="1" damage="BW+1" save="D1" morale="0" battle_rating="0.033" wage="24gp">
+        <equipment>arbalest, dagger, chain mail</equipment>
+      </troop>
+      <troop group="Dwarven Troops" type="Mounted Crossbowmen" ac="4/2" move="120’" hd="1/2" hp="5/9" attacks="1" damage="BW+1" save="D1" morale="+1" battle_rating="0.082" wage="45gp">
+        <equipment>crossbow, hand axe, chain mail, mule</equipment>
+      </troop>
+      <troop group="Elven Troops" type="Light Infantry" ac="3" move="120’" hd="1+1" hp="6" attacks="1" damage="BW+1" save="E1" morale="-1" battle_rating="0.014" wage="10gp">
+        <equipment>spear, short sword, shield, leather</equipment>
+      </troop>
+      <troop group="Elven Troops" type="Heavy Infantry A" ac="5" move="90’" hd="1+1" hp="6" attacks="1" damage="BW+1" save="E1" morale="0" battle_rating="0.033" wage="24gp">
+        <equipment>spear, sword, shield, chain mail</equipment>
+      </troop>
+      <troop group="Elven Troops" type="Heavy Infantry B" ac="6" move="90’" hd="1+1" hp="6" attacks="1" damage="BW+1" save="E1" morale="0" battle_rating="0.038" wage="27gp">
+        <equipment>spear, sword, shield, lamellar</equipment>
+      </troop>
+      <troop group="Elven Troops" type="Bowmen" ac="2" move="120’" hd="1+1" hp="6" attacks="1" damage="BW+1" save="E1" morale="-1" battle_rating="0.029" wage="21gp">
+        <equipment>shortbow, dagger, leather</equipment>
+      </troop>
+      <troop group="Elven Troops" type="Longbowmen" ac="4" move="90’" hd="1+1" hp="6" attacks="1" damage="BW+1" save="E1" morale="0" battle_rating="0.058" wage="42gp">
+        <equipment>longbow, sword, chain mail</equipment>
+      </troop>
+      <troop group="Elven Troops" type="Light Cavalry" ac="3/2" move="240’" hd="1+1/2" hp="6/9" attacks="1" damage="BW+1" save="E1" morale="+1" battle_rating="0.103" wage="60gp">
+        <equipment>lance, sword, shield, leather, light warhorse</equipment>
+      </troop>
+      <troop group="Elven Troops" type="Horse Archers" ac="3/2" move="240’" hd="1+1/2" hp="6/9" attacks="1" damage="BW+1" save="E1" morale="+1" battle_rating="0.145" wage="90gp">
+        <equipment>composite bow, scimitar, shield, leather, light warhorse</equipment>
+      </troop>
+      <troop group="Elven Troops" type="Cataphract Cavalry" ac="7/6" move="180’" hd="1+2/3" hp="6/14" attacks="1 / 2" damage="BW+1" save="E1" morale="+2" battle_rating="0.229" wage="150gp">
+        <equipment>composite bow, lance, sword, shield, plate, lamellar barded medium warhorse</equipment>
+      </troop>
+    </demi_human_troops>
+    <human_troops>
+      <troop group="" type="Untrained Conscripts/Militia" ac="0" move="120’" hd=".5" hp="3" attacks="1" damage="BW" save="NM" morale="-2" battle_rating="0.003" wage="3gp">
+        <equipment>spear, club</equipment>
+      </troop>
+      <troop group="" type="Light Infantry A" ac="3" move="120’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="-1" battle_rating="0.008" wage="6gp">
+        <equipment>3 javelins, short sword, shield, leather</equipment>
+      </troop>
+      <troop group="" type="Light Infantry B" ac="3" move="120’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="-1" battle_rating="0.008" wage="6gp">
+        <equipment>spear, scimitar or battle axe, shield, leather</equipment>
+      </troop>
+      <troop group="" type="Light Infantry C" ac="2" move="120’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="-1" battle_rating="0.008" wage="6gp">
+        <equipment>great axe, leather</equipment>
+      </troop>
+      <troop group="" type="Light Infantry D" ac="2" move="120’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="-1" battle_rating="0.008" wage="6gp">
+        <equipment>pair of swords, dagger, leather</equipment>
+      </troop>
+      <troop group="" type="Light Infantry E / Hunters" ac="3" move="120’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="-1" battle_rating="0.008" wage="6gp">
+        <equipment>spear, hand axe, shield, leather</equipment>
+      </troop>
+      <troop group="" type="Light Infantry F / Hunters" ac="2" move="120’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="-1" battle_rating="0.006" wage="4gp">
+        <equipment>bola, net, 3 javelins, hand axe, leather</equipment>
+      </troop>
+      <troop group="" type="Light Infantry G / Hunters" ac="2" move="120’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="-1" battle_rating="0.006" wage="4gp">
+        <equipment>spear, club, shield, hide</equipment>
+      </troop>
+      <troop group="" type="Light Infantry H / Hunters" ac="1" move="120’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="-1" battle_rating="0.006" wage="4gp">
+        <equipment>bola, hand axe, 5 darts, hide</equipment>
+      </troop>
+      <troop group="" type="Heavy Infantry A" ac="6" move="60’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="0" battle_rating="0.017" wage="12gp">
+        <equipment>spear, sword, shield, banded</equipment>
+      </troop>
+      <troop group="" type="Heavy Infantry B" ac="5 or 6" move="60’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="0" battle_rating="0.021" wage="15gp">
+        <equipment>pole arm, sword, shield, banded</equipment>
+      </troop>
+      <troop group="" type="Heavy Infantry C" ac="5" move="90’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="0" battle_rating="0.017" wage="12gp">
+        <equipment>spear, sword, shield, chain</equipment>
+      </troop>
+      <troop group="" type="Heavy Infantry D" ac="4" move="90’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="0" battle_rating="0.013" wage="9gp">
+        <equipment>two-handed sword, chain</equipment>
+      </troop>
+      <troop group="" type="Slingers" ac="3" move="120’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="-1" battle_rating="0.008" wage="6gp">
+        <equipment>sling, short sword, shield, leather</equipment>
+      </troop>
+      <troop group="" type="Bowmen" ac="2" move="120’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="-1" battle_rating="0.013" wage="9gp">
+        <equipment>shortbow, short sword or hand axe, leather</equipment>
+      </troop>
+      <troop group="" type="Crossbowmen A" ac="4" move="90’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="0" battle_rating="0.025" wage="18gp">
+        <equipment>arbalest, short sword, chain</equipment>
+      </troop>
+      <troop group="" type="Longbowmen A" ac="4" move="90’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="0" battle_rating="0.025" wage="18gp">
+        <equipment>longbow, sword, chain</equipment>
+      </troop>
+      <troop group="" type="Longbowmen B" ac="2 or 3" move="120’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="0" battle_rating="0.025" wage="18gp">
+        <equipment>composite bow, scimitar, shield, leather</equipment>
+      </troop>
+      <troop group="" type="Light Cavalry A" ac="3/2" move="240’" hd="1-1/2" hp="4/9" attacks="1" damage="BW" save="NM" morale="+1" battle_rating="0.061" wage="30gp">
+        <equipment>3 javelins, sword, shield, leather, light warhorse</equipment>
+      </troop>
+      <troop group="" type="Light Cavalry B" ac="2/2" move="240’" hd="1-1/2" hp="4/9" attacks="1" damage="BW" save="NM" morale="+1" battle_rating="0.061" wage="30gp">
+        <equipment>3 javelins, pair of swords, leather, light warhorse</equipment>
+      </troop>
+      <troop group="" type="Light Cavalry C" ac="3/2" move="240’" hd="1-1/2" hp="4/9" attacks="1 / 2" damage="BW" save="NM" morale="+1" battle_rating="0.061" wage="30gp">
+        <equipment>lance, sword, shield, leather, light warhorse</equipment>
+      </troop>
+      <troop group="" type="Horse Archers" ac="3/2" move="240’" hd="1-1/2" hp="4/9" attacks="1 / 2" damage="BW" save="NM" morale="+1" battle_rating="0.082" wage="45gp">
+        <equipment>composite bow, scimitar, shield, leather, light warhorse</equipment>
+      </troop>
+      <troop group="" type="Medium Cavalry" ac="6/2" move="180’" hd="1-1/3" hp="4/14" attacks="1 / 2" damage="BW" save="NM" morale="+1" battle_rating="0.082" wage="45gp">
+        <equipment>lance, sword, shield, lamellar, medium warhorse</equipment>
+      </troop>
+      <troop group="" type="Heavy Cavalry" ac="7/5" move="180’" hd="1-1/3" hp="4/14" attacks="1 / 2" damage="BW" save="NM" morale="+2" battle_rating="0.103" wage="60gp">
+        <equipment>lance, sword, shield, plate, chain-barded medium warhorse</equipment>
+      </troop>
+      <troop group="" type="Cataphracts" ac="7/6" move="180’" hd="1-1/3" hp="4/14" attacks="1 / 2" damage="BW" save="NM" morale="+2" battle_rating="0.124" wage="75gp">
+        <equipment>composite bow, lance, sword, shield, plate, lamellar- barded medium warhorse</equipment>
+      </troop>
+      <troop group="" type="Camel Archers" ac="3/2" move="150’" hd="1-1/2" hp="4/9" attacks="1/ 1" damage="BW" save="NM" morale="+1" battle_rating="0.042" wage="30gp">
+        <equipment>composite bow, scimitar, shield, leather, camel</equipment>
+      </troop>
+      <troop group="" type="Camel Lancers" ac="5/3" move="150’" hd="1-1/2" hp="4/9" attacks="1/ 1" damage="BW" save="NM" morale="+2" battle_rating="0.069" wage="45gp">
+        <equipment>composite bow, lance, scimitar, shield, chain, leather- barded camel</equipment>
+      </troop>
+      <troop group="" type="War Elephant" ac="6/7" move="120’" hd="1-1x4/9" hp="4/40" attacks="4 / 2" damage="BW/2d4" save="NM" morale="+2" battle_rating="0.777" wage="360gp">
+        <equipment>6 riders with composite bow, lances, and leather armor in gigantic war howdah on lamellar-barded elephant</equipment>
+      </troop>
+    </human_troops>
+      <beastman_troops>
+      <troop group="Kobold Troops" type="Light Infantry" ac="2" move="60’" hd=".5" hp="3" attacks="1" damage="BW-1" save="NM" morale="-2" battle_rating="0.003" wage="2gp">
+        <equipment>3 javelins, spiked club, hand axe, leather</equipment>
+      </troop>
+      <troop group="Goblin Troops" type="Light Infantry" ac="3" move="60’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="-1" battle_rating="0.004" wage="3gp">
+        <equipment>spear, short sword, shield, leather</equipment>
+      </troop>
+      <troop group="Goblin Troops" type="Slingers" ac="3" move="60’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="-1" battle_rating="0.004" wage="3gp">
+        <equipment>sling, short sword, shield, leather</equipment>
+      </troop>
+      <troop group="Goblin Troops" type="Bowmen" ac="2" move="60’" hd="1-1" hp="4" attacks="1" damage="BW" save="NM" morale="-1" battle_rating="0.004" wage="3gp">
+        <equipment>short bow, short sword, leather</equipment>
+      </troop>
+      <troop group="Goblin Troops" type="Wolf Riders" ac="3/3" move="150’" hd="1-1/4+1" hp="4/21" attacks="1 / 1" damage="BW/ 2d4" save="F1" morale="+2" battle_rating="0.107" wage="15gp">
+        <equipment>spear, short sword, shield, leather, dire wolf</equipment>
+      </troop>
+      <troop group="Orc Troops" type="Light Infantry" ac="3" move="120’" hd="1" hp="5" attacks="1" damage="BW" save="F1" morale="0" battle_rating="0.008" wage="6gp">
+        <equipment>spear, scimitar, shield, leather</equipment>
+      </troop>
+      <troop group="Orc Troops" type="Heavy Infantry" ac="3" move="120’" hd="1" hp="5" attacks="1" damage="BW" save="F1" morale="0" battle_rating="0.013" wage="9gp">
+        <equipment>pole arm, scale</equipment>
+      </troop>
+      <troop group="Orc Troops" type="Bowmen" ac="2" move="120’" hd="1" hp="5" attacks="1" damage="BW" save="F1" morale="0" battle_rating="0.008" wage="6gp">
+        <equipment>short bow, scimitar, leather</equipment>
+      </troop>
+      <troop group="Orc Troops" type="Crossbowmen" ac="3" move="120’" hd="1" hp="5" attacks="1" damage="BW" save="F1" morale="0" battle_rating="0.017" wage="12gp">
+        <equipment>crossbow, scimitar, scale</equipment>
+      </troop>
+      <troop group="Orc Troops" type="Boar Riders" ac="4/3" move="120’" hd="1/5" hp="5/26" attacks="1 / 1" damage="BW/ 3d4" save="F1" morale="+2" battle_rating="0.131" wage="33gp">
+        <equipment>spear, scimitar, shield, scale, giant boar</equipment>
+      </troop>
+      <troop group="Hobgoblin Troops" type="Light Infantry" ac="3" move="90’" hd="1+1" hp="6" attacks="1" damage="BW" save="F1" morale="0" battle_rating="0.017" wage="12gp">
+        <equipment>spear, sword, shield, leather</equipment>
+      </troop>
+      <troop group="Hobgoblin Troops" type="Heavy Infantry" ac="3" move="90’" hd="1+1" hp="6" attacks="1" damage="BW" save="F1" morale="0" battle_rating="0.021" wage="15gp">
+        <equipment>pole arm, scale</equipment>
+      </troop>
+      <troop group="Hobgoblin Troops" type="Longbowmen" ac="3" move="90’" hd="1+1" hp="6" attacks="1" damage="BW" save="F1" morale="0" battle_rating="0.035" wage="25gp">
+        <equipment>composite bow, sword, scale</equipment>
+      </troop>
+      <troop group="Hobgoblin Troops" type="Light Cavalry" ac="3/2" move="240’" hd="1+1/2" hp="6/9" attacks="1" damage="BW" save="F1" morale="+1" battle_rating="0.082" wage="45gp">
+        <equipment>3 javelins, sword, leather, shield, light warhorse</equipment>
+      </troop>
+      <troop group="Hobgoblin Troops" type="Medium Cavalry" ac="5/2" move="180’" hd="1+1/3" hp="6/14" attacks="1" damage="BW" save="F1" morale="+1" battle_rating="0.095" wage="55gp">
+        <equipment>lance, sword, shield, lamellar, medium warhorse</equipment>
+      </troop>
+      <troop group="Hobgoblin Troops" type="Horse Archers" ac="3/2" move="240’" hd="1+1/2" hp="6/9" attacks="1" damage="BW" save="F1" morale="+1" battle_rating="0.124" wage="75gp">
+        <equipment>comp. bow, sword, shield, leather, light warhorse</equipment>
+      </troop>
+      <troop group="Gnoll Troops" type="Light Infantry" ac="4" move="90’" hd="2" hp="10" attacks="1" damage="BW+1" save="F2" morale="0" battle_rating="0.025" wage="18gp">
+        <equipment>spear, shield, leather</equipment>
+      </troop>
+      <troop group="Gnoll Troops" type="Heavy Infantry" ac="4" move="90’" hd="2" hp="10" attacks="1" damage="BW+1" save="F2" morale="0" battle_rating="0.033" wage="24gp">
+        <equipment>pole arm, scale</equipment>
+      </troop>
+      <troop group="Gnoll Troops" type="Longbowmen" ac="4" move="90’" hd="2" hp="10" attacks="1" damage="BW+1" save="F2" morale="0" battle_rating="0.055" wage="40gp">
+        <equipment>long bow, battle axe, scale</equipment>
+      </troop>
+      <troop group="Lizardman Troops" type="Light Infantry" ac="4" move="60’" hd="2+1" hp="11" attacks="1/3" damage="BW+1/d3, d8" save="F2" morale="+2" battle_rating="0.036" wage="27gp">
+        <equipment>5 darts, spiked club, shield</equipment>
+      </troop>
+      <troop group="Lizardman Troops" type="Heavy Infantry" ac="6" move="60’" hd="2+1" hp="11" attacks="1/3" damage="BW+1/d3, d8" save="F2" morale="+2" battle_rating="0.061" wage="45gp">
+        <equipment>3 javelins, spiked club, shield, leather</equipment>
+      </troop>
+      <troop group="Bugbear Troops" type="Light Infantry" ac="4" move="90’" hd="3+1" hp="16" attacks="1" damage="BW+1" save="F3" morale="+2" battle_rating="0.050" wage="36gp">
+        <equipment>spear, shield</equipment>
+      </troop>
+      <troop group="Bugbear Troops" type="Heavy Infantry" ac="4" move="90’" hd="3+1" hp="16" attacks="1" damage="BW+1" save="F3" morale="+2" battle_rating="0.069" wage="50gp">
+        <equipment>morning star, hand axe, hide</equipment>
+      </troop>
+      <troop group="Ogre Troops" type="Light Infantry" ac="4" move="90’" hd="4+1" hp="21" attacks="1" damage="BW +3" save="F4" morale="+2" battle_rating="0.077" wage="40gp">
+        <equipment>large club, hide</equipment>
+      </troop>
+      <troop group="Ogre Troops" type="Heavy Infantry" ac="6" move="90’" hd="4+1" hp="21" attacks="1" damage="BW +3" save="F4" morale="+2" battle_rating="0.131" wage="80gp">
+        <equipment>great axe, scale</equipment>
+      </troop>
+    </beastman_troops>
+    <human_veteran_rule>
+      <rule>25% of human units are veterans (1st level fighters).</rule>
+      <rule>Veterans have 1 HD, 5 hp, +1 morale, and +1 to damage rolls.</rule>
+    </human_veteran_rule>
+  </troop_characteristics_summary>
+  <unit_characteristics_summary>
+    <overview>
+      <rule>These tables summarize common demi-human, human, and beastman units.</rule>
+      <rule>Daily and weekly movement use the moving armies rules.</rule>
+      <rule>Monthly wage for a unit equals troop monthly wage multiplied by 120 for infantry or by 60 for cavalry or large creatures.</rule>
+      <rule>Supply cost is generally 60gp per week for infantry units and 240gp per week for cavalry units; units without quartermasters and carnivorous units pay more.</rule>
+      <rule>For all units except untrained conscripts and militia, assumed specialists are 1 quartermaster per unit and 1 armorer, 2 journeymen, and 4 apprentices per 240 troops.</rule>
+      <rule>Specialist cost assumptions above contribute 50gp per unit for a quartermaster and 160gp per 240 troops for armorers, journeymen, and apprentices.</rule>
+      <rule>Total monthly cost equals monthly wage cost plus monthly specialist cost plus four times weekly supply cost.</rule>
+      <rule>Battle Rating is per unit in these tables.</rule>
+    </overview>
+    <demi_human_units>
+      <unit group="Dwarven Troops" type="120 Heavy Infantry A" daily_move_miles="12" weekly_move_miles="48" monthly_wage_gp="2,160" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="2,530" battle_rating="3"/>
+      <unit group="Dwarven Troops" type="120 Heavy Infantry B" daily_move_miles="12" weekly_move_miles="48" monthly_wage_gp="2,520" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="2,890" battle_rating="3.5"/>
+      <unit group="Dwarven Troops" type="120 Heavy Infantry C" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="1,800" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="2,170" battle_rating="2.5"/>
+      <unit group="Dwarven Troops" type="120 Heavy Infantry D" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="1,440" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="1,810" battle_rating="2"/>
+      <unit group="Dwarven Troops" type="120 Crossbowmen" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="2,880" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="3,250" battle_rating="4"/>
+      <unit group="Dwarven Troops" type="60 Mounted Crossbowmen" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="2,700" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="3,750" battle_rating="5"/>
+      <unit group="Elven Troops" type="120 Light Infantry" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="1,200" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="1,570" battle_rating="1.5"/>
+      <unit group="Elven Troops" type="120 Heavy Infantry A" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="2,880" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="3,250" battle_rating="4"/>
+      <unit group="Elven Troops" type="120 Heavy Infantry B" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="3,240" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="3,610" battle_rating="4.5"/>
+      <unit group="Elven Troops" type="120 Bowmen" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="2,520" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="2,890" battle_rating="3.5"/>
+      <unit group="Elven Troops" type="120 Longbowmen" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="5,040" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="5,410" battle_rating="7"/>
+      <unit group="Elven Troops" type="60 Light Cavalry" daily_move_miles="48" weekly_move_miles="192" monthly_wage_gp="3,600" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="4,650" battle_rating="6"/>
+      <unit group="Elven Troops" type="60 Horse Archers" daily_move_miles="48" weekly_move_miles="192" monthly_wage_gp="5,400" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="6,450" battle_rating="8.5"/>
+      <unit group="Elven Troops" type="60 Cataphract Cavalry" daily_move_miles="36" weekly_move_miles="144" monthly_wage_gp="9,000" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="10,050" battle_rating="13.5"/>
+    </demi_human_units>
+    <human_units>
+      <unit group="" type="120 Untrained Conscripts/Militia" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="360" supply_cost_gp_per_week="120" specialist_cost_gp_per_month="0" total_cost_gp_per_month="840" battle_rating="0.5"/>
+      <unit group="" type="120 Light Infantry A/B/C/D/E" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="720" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="1,090" battle_rating="1"/>
+      <unit group="" type="120 Veteran Light Infantry A/B/C/D/E" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="2,160" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="2,530" battle_rating="3"/>
+      <unit group="" type="120 Light Infantry F/G/H" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="480" supply_cost_gp_per_week="120" specialist_cost_gp_per_month="130" total_cost_gp_per_month="850" battle_rating="0.5"/>
+      <unit group="" type="120 Veteran Light Infantry F/G/H" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="1,920" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="2,290" battle_rating="2.5"/>
+      <unit group="" type="120 Heavy Infantry A/C" daily_move_miles="12" weekly_move_miles="48" monthly_wage_gp="1,440" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="1,810" battle_rating="2"/>
+      <unit group="" type="120 Veteran Heavy Infantry A/C" daily_move_miles="12" weekly_move_miles="48" monthly_wage_gp="2,880" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="3,250" battle_rating="4"/>
+      <unit group="" type="120 Heavy Infantry B" daily_move_miles="12" weekly_move_miles="48" monthly_wage_gp="1,800" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="2,170" battle_rating="2.5"/>
+      <unit group="" type="120 Veteran Heavy Infantry B" daily_move_miles="12" weekly_move_miles="48" monthly_wage_gp="3,240" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="3,610" battle_rating="4.5"/>
+      <unit group="" type="120 Heavy Infantry D" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="1,080" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="1,450" battle_rating="1.5"/>
+      <unit group="" type="120 Veteran Heavy Infantry D" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="2,520" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="2,890" battle_rating="3.5"/>
+      <unit group="" type="120 Slingers" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="720" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="1,090" battle_rating="1"/>
+      <unit group="" type="120 Veteran Slingers" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="2,160" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="2,530" battle_rating="3"/>
+      <unit group="" type="120 Bowmen" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="1,080" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="1,450" battle_rating="1.5"/>
+      <unit group="" type="120 Veteran Bowmen" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="2,520" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="2,890" battle_rating="3.5"/>
+      <unit group="" type="120 Crossbowmen" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="2,160" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="2,530" battle_rating="3"/>
+      <unit group="" type="120 Veteran Crossbowmen" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="3,600" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="3,970" battle_rating="5"/>
+      <unit group="" type="120 Longbowmen A" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="2,160" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="2,530" battle_rating="3"/>
+      <unit group="" type="120 Veteran Longbowmen A" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="3,600" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="3,970" battle_rating="5"/>
+      <unit group="" type="60 Light Cavalry A/B" daily_move_miles="48" weekly_move_miles="192" monthly_wage_gp="1,800" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="2,850" battle_rating="3.5"/>
+      <unit group="" type="120 Longbowmen B" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="2,160" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="2,530" battle_rating="3"/>
+      <unit group="" type="120 Veteran Longbowmen B" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="3,600" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="3,970" battle_rating="5"/>
+      <unit group="" type="60 Veteran Light Cavalry" daily_move_miles="48" weekly_move_miles="192" monthly_wage_gp="2,520" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="3,570" battle_rating="4.5"/>
+      <unit group="" type="60 Horse Archers" daily_move_miles="48" weekly_move_miles="192" monthly_wage_gp="2,700" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="3,750" battle_rating="5"/>
+      <unit group="" type="60 Veteran Horse Archers" daily_move_miles="48" weekly_move_miles="192" monthly_wage_gp="3,420" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="4,470" battle_rating="6"/>
+      <unit group="" type="60 Medium Cavalry" daily_move_miles="36" weekly_move_miles="144" monthly_wage_gp="2,700" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="3,750" battle_rating="5"/>
+      <unit group="" type="60 Veteran Medium Cavalry" daily_move_miles="36" weekly_move_miles="144" monthly_wage_gp="3,420" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="4,470" battle_rating="6"/>
+      <unit group="" type="60 Heavy Cavalry" daily_move_miles="36" weekly_move_miles="144" monthly_wage_gp="3,600" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="4,650" battle_rating="6"/>
+      <unit group="" type="60 Veteran Heavy Cavalry" daily_move_miles="36" weekly_move_miles="144" monthly_wage_gp="4,320" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="5,370" battle_rating="7"/>
+      <unit group="" type="60 Cataphract Cavalry" daily_move_miles="36" weekly_move_miles="144" monthly_wage_gp="4,500" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="5,550" battle_rating="7.5"/>
+      <unit group="" type="60 Veteran Cataphract Cavalry" daily_move_miles="36" weekly_move_miles="144" monthly_wage_gp="5,720" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="6,270" battle_rating="8.5"/>
+      <unit group="" type="60 Camel Archers" daily_move_miles="30" weekly_move_miles="120" monthly_wage_gp="1,800" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="2,850" battle_rating="2.5"/>
+      <unit group="" type="60 Veteran Camel Archers" daily_move_miles="30" weekly_move_miles="120" monthly_wage_gp="2,520" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="3,570" battle_rating="3.5"/>
+      <unit group="" type="60 Camel Lancers" daily_move_miles="30" weekly_move_miles="120" monthly_wage_gp="2,700" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="3,750" battle_rating="4"/>
+      <unit group="" type="60 Veteran Camel Lancers" daily_move_miles="30" weekly_move_miles="120" monthly_wage_gp="3,420" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="4,470" battle_rating="5"/>
+      <unit group="" type="5 War Elephants (w/ 30 Riders)" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="1,800" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="70" total_cost_gp_per_month="2,830" battle_rating="4"/>
+      <unit group="" type="5 Vet. War Elephants (w/ 30 Riders)" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="2,160*" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="70" total_cost_gp_per_month="3,190" battle_rating="5"/>
+    </human_units>
+    <beastman_units>
+      <unit group="Kobold Troops" type="120 Light Infantry" daily_move_miles="12" weekly_move_miles="48" monthly_wage_gp="240" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="610" battle_rating="0.25"/>
+      <unit group="Goblin Troops" type="120 Light Infantry" daily_move_miles="12" weekly_move_miles="48" monthly_wage_gp="360" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="730" battle_rating="0.5"/>
+      <unit group="Goblin Troops" type="120 Slingers" daily_move_miles="12" weekly_move_miles="48" monthly_wage_gp="360" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="730" battle_rating="0.5"/>
+      <unit group="Goblin Troops" type="120 Bowmen" daily_move_miles="12" weekly_move_miles="48" monthly_wage_gp="360" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="730" battle_rating="0.5"/>
+      <unit group="Goblin Troops" type="60 Wolf Riders" daily_move_miles="30" weekly_move_miles="120" monthly_wage_gp="900" supply_cost_gp_per_week="960" specialist_cost_gp_per_month="90" total_cost_gp_per_month="4,830" battle_rating="6.5"/>
+      <unit group="Orc Troops" type="120 Light Infantry" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="720" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="1,090" battle_rating="1"/>
+      <unit group="Orc Troops" type="120 Heavy Infantry" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="1,080" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="1,450" battle_rating="1.5"/>
+      <unit group="Orc Troops" type="120 Bowmen" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="720" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="1,090" battle_rating="1"/>
+      <unit group="Orc Troops" type="120 Crossbowmen" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="1,440" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="1,810" battle_rating="2"/>
+      <unit group="Orc Troops" type="60 Boar Riders" daily_move_miles="24" weekly_move_miles="96" monthly_wage_gp="1,980" supply_cost_gp_per_week="960" specialist_cost_gp_per_month="90" total_cost_gp_per_month="5,910" battle_rating="8"/>
+      <unit group="Hobgoblin Troops" type="120 Light Infantry" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="1,440" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="1,810" battle_rating="2"/>
+      <unit group="Hobgoblin Troops" type="120 Heavy Infantry" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="1,800" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="2,170" battle_rating="2.5"/>
+      <unit group="Hobgoblin Troops" type="120 Longbowman" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="2,880" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="3,250" battle_rating="4"/>
+      <unit group="Hobgoblin Troops" type="60 Light Cavalry" daily_move_miles="48" weekly_move_miles="192" monthly_wage_gp="2,700" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="3,750" battle_rating="5"/>
+      <unit group="Hobgoblin Troops" type="60 Horse Archers" daily_move_miles="48" weekly_move_miles="192" monthly_wage_gp="4,500" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="5,550" battle_rating="7.5"/>
+      <unit group="Hobgoblin Troops" type="60 Medium Cavalry" daily_move_miles="36" weekly_move_miles="144" monthly_wage_gp="3,120" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="4,350" battle_rating="5.5"/>
+      <unit group="Gnoll Troops" type="120 Light Infantry" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="2,160" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="2,530" battle_rating="3"/>
+      <unit group="Gnoll Troops" type="120 Heavy Infantry" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="2,880" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="3,250" battle_rating="4"/>
+      <unit group="Gnoll Troops" type="120 Longbowmen" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="4,680" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="5,050" battle_rating="6.5"/>
+      <unit group="Lizardmen Troops" type="120 Light Infantry" daily_move_miles="12" weekly_move_miles="48" monthly_wage_gp="3,240" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="3,610" battle_rating="4.5"/>
+      <unit group="Lizardmen Troops" type="120 Heavy Infantry" daily_move_miles="12" weekly_move_miles="48" monthly_wage_gp="5,400" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="5,770" battle_rating="7.5"/>
+      <unit group="Bugbear Troops" type="120 Light Infantry" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="4,320" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="4,690" battle_rating="6"/>
+      <unit group="Bugbear Troops" type="120 Heavy Infantry" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="6,000" supply_cost_gp_per_week="60" specialist_cost_gp_per_month="130" total_cost_gp_per_month="6,370" battle_rating="8"/>
+      <unit group="Ogre Troops" type="60 Light Infantry" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="2,400" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="3,450" battle_rating="4"/>
+      <unit group="Ogre Troops" type="60 Heavy Infantry" daily_move_miles="18" weekly_move_miles="72" monthly_wage_gp="4,800" supply_cost_gp_per_week="240" specialist_cost_gp_per_month="90" total_cost_gp_per_month="5,850" battle_rating="8"/>
+    </beastman_units>
+    <war_elephant_note>
+      <rule>For a unit of 5 veteran war elephants with 30 riders, monthly wages increase by 360gp because each of the 5 elephants is accompanied by 6 veteran troops.</rule>
+    </war_elephant_note>
+  </unit_characteristics_summary>
+  <exotic_creatures_roster>
+    <overview>
+      <rule>These tables give Domains at War-specific characteristics for animals, constructs, fantastic creatures, oozes, undead, vermin, and other monsters. Standard creature characteristics are taken from the ACKS core monster listings unless modified here.</rule>
+    </overview>
+    <size_category_table>
+      <entry characteristic="Relative Size" man_sized="Counts as 1 man" large="Counts as 2 men" huge="Counts as 6 men" gigantic="Counts as 24 men" colossal="Counts as 120 men"/>
+      <entry characteristic="Max No. per Unit" man_sized="120 per unit" large="60 per unit" huge="20 per unit" gigantic="5 per unit" colossal="1 per unit"/>
+      <entry characteristic="Length/Height" man_sized="Less than 8’ long/tall" large="8’ to 12’ long/tall" huge="12’ to 20’ long/tall" gigantic="20’ to 32’ long/tall" colossal="32’ or more long/tall"/>
+      <entry characteristic="Weight" man_sized="Up to 400lbs" large="401 to 2,000lbs" huge="2,001 to 8,000lbs" gigantic="8,001 to 32,000lbs" colossal="More than 32,000lbs"/>
+    </size_category_table>
+    <role_definitions>
+      <role name="controlled">
+        <rule>Mindless creatures cannot be trained or led; they must be magically controlled.</rule>
+        <rule>Controlled troops can form a unit only if a lieutenant capable of controlling them is available.</rule>
+        <rule>Automatons, gargoyles, golems, and statues can be controlled by their creator or by special magic.</rule>
+        <rule>Mindless undead can be controlled by the spellcaster that animated them, by control undead magic, or by chaotic clerics that turn them with a D result.</rule>
+        <rule>Oozes can be controlled by charm monster or similar magic.</rule>
+      </role>
+      <role name="guards">
+        <rule>Guards are animal-intelligence creatures trained to attack designated targets and defend designated characters or locations.</rule>
+        <rule>Guards accompany handlers when requested and remain loyally in place when handlers are absent.</rule>
+        <rule>A unit of guards requires 1 creature handler specialist per 20 guard creatures.</rule>
+        <rule>Creature handlers for guard units do not fight and do not count as officers.</rule>
+        <rule>Guard training raises morale by 2 to a maximum of +2.</rule>
+        <rule>Guard training is equivalent to learning 7 tricks from an animal trainer.</rule>
+        <rule>Creatures lacking sufficient intelligence or temperament are usually trained as hunters instead of guards.</rule>
+      </role>
+      <role name="hunters">
+        <rule>Hunters are animal-intelligence creatures trained to accompany handlers on hunts, track designated targets, and kill them.</rule>
+        <rule>A unit of hunters requires 1 creature handler specialist per 6 hunter creatures.</rule>
+        <rule>Hunter training requires learning 2 tricks.</rule>
+        <rule>Hunters require constant monitoring and discipline to stay under control.</rule>
+      </role>
+      <role name="livestock">
+        <rule>Livestock are raised for food and receive only enough training to be safely handled.</rule>
+        <rule>Livestock are not useful in war except as supply.</rule>
+        <rule>Livestock cannot be formed into battlefield units except under exceptional circumstances or with magic, at Judge discretion.</rule>
+      </role>
+      <role name="mounts">
+        <rule>Mounts are creatures of animal or sentient intelligence trained to serve as steeds for irregular cavalry units.</rule>
+        <rule>Mount training counts as 5 tricks.</rule>
+        <rule>Even sentient rider-bearing creatures must be trained as mounts to communicate properly with riders and move while carrying them.</rule>
+        <rule>Creatures noted as Mount (S) are sentient and can also fight as troops.</rule>
+        <rule>Mounts without troops to ride them cannot be organized into units unless otherwise noted.</rule>
+      </role>
+      <role name="troops">
+        <rule>Troops are sentient creatures capable of fighting on the battlefield and are organized into units using standard rules.</rule>
+      </role>
+      <role name="war_mounts">
+        <rule>War mounts are animal-intelligence fighting steeds used with troops to form cavalry units.</rule>
+        <rule>War mount training counts as 8 tricks.</rule>
+        <rule>War mount training raises morale by 2 to a maximum of +2.</rule>
+        <rule>War mounts without riders can be organized into units as if they were guard creatures.</rule>
+      </role>
+      <role name="war_mount_troops">
+        <rule>War Mount/Troops are sentient creatures trained to fight both as troops and as war mounts.</rule>
+        <rule>Sentient creatures do not gain a morale increase from war mount training.</rule>
+        <rule>All sentient creatures capable of bearing riders are assumed to be trained in this manner because training cost is usually low relative to price.</rule>
+      </role>
+      <role name="workbeasts">
+        <rule>Workbeasts are trained to pull heavy loads or carry burdens.</rule>
+        <rule>Workbeasts cannot be formed into battlefield units except under exceptional circumstances or with magic, at Judge discretion.</rule>
+        <rule>Workbeast battle ratings are shown in parentheses.</rule>
+      </role>
+    </role_definitions>
+    <normal_load_rules>
+      <rule>Normal load is the listed stone weight a creature can carry at full movement.</rule>
+      <rule>Most creatures can carry up to twice normal load at half movement.</rule>
+      <rule>Humanoids carry normal load at full movement, up to 1.5 times normal load at three-quarters movement, up to twice normal load at half movement, and up to four times normal load at one-quarter movement.</rule>
+    </normal_load_rules>
+    <other_characteristics>
+      <rule>Price is the typical market purchase price in gp.</rule>
+      <rule>Animals, constructs, oozes, vermin, and other animal-intelligence creatures can usually be bought and sold as property in most realms.</rule>
+      <rule>Sentient creatures can be bought and sold as property only in chaotic realms where slavery is permitted; otherwise they must be hired as mercenaries.</rule>
+      <rule>Price varies by training; guards and war mounts often cost more.</rule>
+      <rule>Only free, sentient creatures normally hire themselves out as mercenaries.</rule>
+      <rule>Owned or enslaved sentient creatures can sometimes be rented from their owner; the listed wage then represents the rental fee.</rule>
+      <rule>A character pays no wage to creatures personally owned or enslaved.</rule>
+      <rule>If wages are 0, wage is low enough to be treated as included in supply cost.</rule>
+      <rule>Supply cost is per creature per week and reflects size and diet; carnivores cost more than herbivores, and larger creatures cost more than smaller creatures.</rule>
+      <rule>A normal man costs 0.5gp per week to supply for comparison.</rule>
+      <rule>Guard and hunter units require creature handlers: 1 handler per 20 guards or per 6 hunters.</rule>
+      <rule>Constructs, troops, mounts, and war mounts do not require creature handlers.</rule>
+      <rule>Constructs instead require lieutenants capable of controlling them.</rule>
+      <rule>Mounts are handled by their riders; troops use officers as normal.</rule>
+      <rule>Total monthly cost equals monthly wage cost plus monthly specialist cost plus four weeks of supply cost.</rule>
+      <rule>Owned or enslaved creatures cost less than listed total cost because no wage is paid.</rule>
+      <rule>Creature battle ratings in the roster are per creature; unit battle rating equals the sum of constituent creature battle ratings.</rule>
+      <rule>For comparison, a solitary human heavy infantryman has battle rating 0.017.</rule>
+    </other_characteristics>
+    <animals>
+      <creature name="Ape, White" size="Man-sized" role="Guard" normal_load_stone="22" price_gp="465" monthly_wages_gp="15" weekly_supplies_gp="0.5" handler_cost_gp_per_month="20.6" total_cost_gp_per_month="37.6" battle_rating="0.034"/>
+      <creature name="Baboon, Rock" size="Man-sized" role="Guard" normal_load_stone="14" price_gp="250" monthly_wages_gp="9" weekly_supplies_gp="0.5" handler_cost_gp_per_month="20.6" total_cost_gp_per_month="31.6" battle_rating="0.014"/>
+      <creature name="Bat, Giant" size="Large" role="War Mount" normal_load_stone="9" price_gp="2,250" monthly_wages_gp="6" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="70" battle_rating="0.094"/>
+      <creature name="Bear, Black" size="Large" role="Hunter" normal_load_stone="18" price_gp="435" monthly_wages_gp="0" weekly_supplies_gp="4" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="84.8" battle_rating="0.010"/>
+      <creature name="Bear, Cave" size="Large" role="Hunter" normal_load_stone="36" price_gp="1,165" monthly_wages_gp="15" weekly_supplies_gp="4" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="99.8" battle_rating="0.032"/>
+      <creature name="Bear, Cave, Riding" size="Large" role="War Mount" normal_load_stone="36" price_gp="11,750" monthly_wages_gp="230" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="246" battle_rating="0.036"/>
+      <creature name="Bear, Grizzly" size="Large" role="Hunter" normal_load_stone="25" price_gp="766" monthly_wages_gp="15" weekly_supplies_gp="4" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="99.8" battle_rating="0.019"/>
+      <creature name="Bear, Grizzly, Riding" size="Large" role="War Mount" normal_load_stone="25" price_gp="3000" monthly_wages_gp="115" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="131" battle_rating="0.021"/>
+      <creature name="Bear, Polar" size="Large" role="Hunter" normal_load_stone="45" price_gp="1,650" monthly_wages_gp="36" weekly_supplies_gp="4" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="120.8" battle_rating="0.073"/>
+      <creature name="Bear, Polar, Riding" size="Large" role="War Mount" normal_load_stone="45" price_gp="5,750" monthly_wages_gp="160" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="176" battle_rating="0.077"/>
+      <creature name="Boar, Giant" size="Large" role="War Mount" normal_load_stone="30" price_gp="1,400" monthly_wages_gp="0" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="64" battle_rating="0.026"/>
+      <creature name="Boar, Ordinary" size="Man-sized" role="Livestock" normal_load_stone="12" price_gp="3" monthly_wages_gp="0" weekly_supplies_gp="0.5" handler_cost_gp_per_month="0" total_cost_gp_per_month="2" battle_rating="0.010"/>
+      <creature name="Camel" size="Large" role="Mount" normal_load_stone="30" price_gp="100" monthly_wages_gp="0" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="16" battle_rating="0.002"/>
+      <creature name="Cat, Lion" size="Large" role="Hunter" normal_load_stone="25" price_gp="750" monthly_wages_gp="0" weekly_supplies_gp="16" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="132.8" battle_rating="0.035"/>
+      <creature name="Cat, Mountain Lion" size="Man-sized" role="Hunter" normal_load_stone="12" price_gp="425" monthly_wages_gp="6" weekly_supplies_gp="2" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="82.8" battle_rating="0.017"/>
+      <creature name="Cat, Panther" size="Man-sized" role="Hunter" normal_load_stone="18" price_gp="1,150" monthly_wages_gp="30" weekly_supplies_gp="2" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="106.8" battle_rating="0.052"/>
+      <creature name="Cat, Saber-Tooth" size="Large" role="Hunter" normal_load_stone="48" price_gp="2,475" monthly_wages_gp="1" weekly_supplies_gp="16" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="144.8" battle_rating="0.107"/>
+      <creature name="Cat, Saber-Tooth, Riding" size="Large" role="War Mount" normal_load_stone="48" price_gp="8,500" monthly_wages_gp="195" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="259" battle_rating="0.107"/>
+      <creature name="Cat, Tiger" size="Large" role="Hunter" normal_load_stone="30" price_gp="1,250" monthly_wages_gp="0" weekly_supplies_gp="16" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="132.8" battle_rating="0.050"/>
+      <creature name="Crocodile, Giant" size="Gigantic" role="Hunter" normal_load_stone="400" price_gp="21,000" monthly_wages_gp="0" weekly_supplies_gp="192" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="905.5" battle_rating="0.095"/>
+      <creature name="Crocodile, Large" size="Huge" role="Hunter" normal_load_stone="65" price_gp="4,275" monthly_wages_gp="0" weekly_supplies_gp="48" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="260.8" battle_rating="0.020"/>
+      <creature name="Crocodile, Ordinary" size="Large" role="Hunter" normal_load_stone="8" price_gp="600" monthly_wages_gp="0" weekly_supplies_gp="16" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="132.8" battle_rating="0.003"/>
+      <creature name="Dog, Hunting" size="Man-sized" role="Hunter" normal_load_stone="2" price_gp="10" monthly_wages_gp="0" weekly_supplies_gp="0.5" handler_cost_gp_per_month="2.8" total_cost_gp_per_month="4.8" battle_rating="0.002"/>
+      <creature name="Dog, War" size="Man-sized" role="Guard" normal_load_stone="6" price_gp="75" monthly_wages_gp="3" weekly_supplies_gp="0.5" handler_cost_gp_per_month="6.9" total_cost_gp_per_month="11.9" battle_rating="0.008"/>
+      <creature name="Donkey" size="Large" role="Workbeast" normal_load_stone="10" price_gp="8" monthly_wages_gp="0" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="16" battle_rating="0.001"/>
+      <creature name="Elephant" size="Gigantic" role="Workbeast" normal_load_stone="180" price_gp="1,500" monthly_wages_gp="0" weekly_supplies_gp="48" handler_cost_gp_per_month="0" total_cost_gp_per_month="192" battle_rating="(0.038)"/>
+      <creature name="Elephant, War" size="Gigantic" role="War Mount" normal_load_stone="180" price_gp="3,500" monthly_wages_gp="0" weekly_supplies_gp="48" handler_cost_gp_per_month="0" total_cost_gp_per_month="192" battle_rating="0.087"/>
+      <creature name="Fish, Giant Catfish" size="Large" role="Hunter" normal_load_stone="55" price_gp="4,100" monthly_wages_gp="110" weekly_supplies_gp="4" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="263.5" battle_rating="0.062"/>
+      <creature name="Fish, Giant Piranha" size="Man-sized" role="Hunter" normal_load_stone="15" price_gp="1,875" monthly_wages_gp="50" weekly_supplies_gp="2" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="195.5" battle_rating="0.015"/>
+      <creature name="Fish, Giant Rockfish" size="Huge" role="Hunter" normal_load_stone="135" price_gp="5,150" monthly_wages_gp="110" weekly_supplies_gp="12" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="295.5" battle_rating="0.011"/>
+      <creature name="Fish, Giant Sturgeon" size="Gigantic" role="Hunter" normal_load_stone="400" price_gp="13,500" monthly_wages_gp="0" weekly_supplies_gp="192" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="905.5" battle_rating="0.110"/>
+      <creature name="Hawk, Giant" size="Large" role="War Mount" normal_load_stone="30" price_gp="15,175" monthly_wages_gp="400" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="464" battle_rating="0.639"/>
+      <creature name="Hawk, Ordinary" size="Man-sized" role="Hunter" normal_load_stone="2" price_gp="20" monthly_wages_gp="0" weekly_supplies_gp="0.5" handler_cost_gp_per_month="22.9" total_cost_gp_per_month="24.9" battle_rating="0.005"/>
+      <creature name="Herd Animal, 1HD" size="Man-sized" role="Livestock" normal_load_stone="2" price_gp="2" monthly_wages_gp="0" weekly_supplies_gp="0.5" handler_cost_gp_per_month="0" total_cost_gp_per_month="2" battle_rating="0.001"/>
+      <creature name="Herd Animal, 2HD" size="Large" role="Livestock" normal_load_stone="7" price_gp="3" monthly_wages_gp="0" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="16" battle_rating="0.003"/>
+      <creature name="Herd Animal, 3HD" size="Large" role="Livestock" normal_load_stone="16" price_gp="10" monthly_wages_gp="0" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="16" battle_rating="0.005"/>
+      <creature name="Herd Animal, 4HD" size="Large" role="Livestock" normal_load_stone="28" price_gp="25" monthly_wages_gp="0" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="16" battle_rating="0.010"/>
+      <creature name="Horse, Heavy" size="Large" role="Workbeast" normal_load_stone="40" price_gp="40" monthly_wages_gp="0" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="16" battle_rating="(0.005)"/>
+      <creature name="Horse, Heavy War" size="Large" role="War Mount" normal_load_stone="40" price_gp="700" monthly_wages_gp="6" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="22" battle_rating="0.009"/>
+      <creature name="Horse, Light" size="Large" role="Mount" normal_load_stone="20" price_gp="75" monthly_wages_gp="0" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="16" battle_rating="0.002"/>
+      <creature name="Horse, Light War" size="Large" role="War Mount" normal_load_stone="20" price_gp="150" monthly_wages_gp="0" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="16" battle_rating="0.005"/>
+      <creature name="Horse, Medium" size="Large" role="Mount" normal_load_stone="30" price_gp="40" monthly_wages_gp="0" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="16" battle_rating="0.005"/>
+      <creature name="Horse, Medium Draft" size="Large" role="Workbeast" normal_load_stone="30" price_gp="30" monthly_wages_gp="0" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="16" battle_rating="(0.005)"/>
+      <creature name="Horse, Medium War" size="Large" role="War Mount" normal_load_stone="30" price_gp="250" monthly_wages_gp="0" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="16" battle_rating="0.009"/>
+      <creature name="Lizard, Giant Draco" size="Man-sized" role="Hunter" normal_load_stone="3" price_gp="1,000" monthly_wages_gp="30" weekly_supplies_gp="0.5" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="169.5" battle_rating="0.041"/>
+      <creature name="Lizard, Giant Gecko" size="Man-sized" role="Hunter" normal_load_stone="2" price_gp="875" monthly_wages_gp="27" weekly_supplies_gp="0.5" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="166.5" battle_rating="0.013"/>
+      <creature name="Lizard, Giant Horned" size="Man-sized" role="Hunter" normal_load_stone="4" price_gp="1,625" monthly_wages_gp="50" weekly_supplies_gp="0.5" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="189.5" battle_rating="0.054"/>
+      <creature name="Lizard, Giant Tuatara" size="Large" role="Hunter" normal_load_stone="5" price_gp="1,950" monthly_wages_gp="45" weekly_supplies_gp="4" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="198.5" battle_rating="0.028"/>
+      <creature name="Mastodon" size="Gigantic" role="War Mount" normal_load_stone="360" price_gp="20,500" monthly_wages_gp="430" weekly_supplies_gp="48" handler_cost_gp_per_month="0" total_cost_gp_per_month="622" battle_rating="0.151"/>
+      <creature name="Mule" size="Large" role="Workbeast" normal_load_stone="20" price_gp="20" monthly_wages_gp="0" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="16" battle_rating="(0.001)"/>
+      <creature name="Octopus, Giant" size="Huge" role="Guard" normal_load_stone="4" price_gp="6,000" monthly_wages_gp="135" weekly_supplies_gp="12" handler_cost_gp_per_month="41.3" total_cost_gp_per_month="224.3" battle_rating="0.010"/>
+      <creature name="Pteranodon" size="Large" role="Hunter" normal_load_stone="6" price_gp="4,350" monthly_wages_gp="70" weekly_supplies_gp="16" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="271.5" battle_rating="0.195"/>
+      <creature name="Pterodactyl" size="Man-sized" role="Hunter" normal_load_stone="2" price_gp="350" monthly_wages_gp="6" weekly_supplies_gp="2" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="151.5" battle_rating="0.005"/>
+      <creature name="Rhinoceros" size="Huge" role="Hunter" normal_load_stone="100" price_gp="3,000" monthly_wages_gp="45" weekly_supplies_gp="12" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="161.8" battle_rating="0.019"/>
+      <creature name="Shark, Bull" size="Man-sized" role="Hunter" normal_load_stone="6" price_gp="850" monthly_wages_gp="21" weekly_supplies_gp="2" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="166.5" battle_rating="0.013"/>
+      <creature name="Shark, Great White" size="Huge" role="Hunter" normal_load_stone="80" price_gp="7,500" monthly_wages_gp="36" weekly_supplies_gp="48" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="365.5" battle_rating="0.082"/>
+      <creature name="Shark, Mako" size="Large" role="Hunter" normal_load_stone="21" price_gp="2,500" monthly_wages_gp="15" weekly_supplies_gp="16" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="216.5" battle_rating="0.034"/>
+      <creature name="Snake, Giant Python" size="Large" role="Hunter" normal_load_stone="10" price_gp="325" monthly_wages_gp="0" weekly_supplies_gp="16" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="132.8" battle_rating="0.016"/>
+      <creature name="Snake, Giant Rattler" size="Large" role="Hunter" normal_load_stone="2" price_gp="180" monthly_wages_gp="0" weekly_supplies_gp="16" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="132.8" battle_rating="0.015"/>
+      <creature name="Snake, Pit Viper" size="Man-sized" role="Hunter" normal_load_stone="1" price_gp="170" monthly_wages_gp="0" weekly_supplies_gp="2" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="76.8" battle_rating="0.006"/>
+      <creature name="Snake, Sea Snake" size="Man-sized" role="Hunter" normal_load_stone="1" price_gp="170" monthly_wages_gp="0" weekly_supplies_gp="2" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="76.8" battle_rating="0.006"/>
+      <creature name="Snake, Spitting Cobra" size="Man-sized" role="Hunter" normal_load_stone="1" price_gp="165" monthly_wages_gp="0" weekly_supplies_gp="2" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="76.8" battle_rating="0.005"/>
+      <creature name="Squid, Giant" size="Huge" role="Guard" normal_load_stone="80" price_gp="4,750" monthly_wages_gp="100" weekly_supplies_gp="12" handler_cost_gp_per_month="41.3" total_cost_gp_per_month="189.3" battle_rating="0.018"/>
+      <creature name="Stegosaurus" size="Gigantic" role="Hunter" normal_load_stone="220" price_gp="3,250" monthly_wages_gp="0" weekly_supplies_gp="48" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="329.5" battle_rating="0.023"/>
+      <creature name="Stegosaurus, Riding" size="Gigantic" role="Mount" normal_load_stone="220" price_gp="5,000" monthly_wages_gp="0" weekly_supplies_gp="48" handler_cost_gp_per_month="0" total_cost_gp_per_month="192" battle_rating="0.023"/>
+      <creature name="Titanothere" size="Gigantic" role="Hunter" normal_load_stone="250" price_gp="3,500" monthly_wages_gp="0" weekly_supplies_gp="48" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="329.5" battle_rating="0.033"/>
+      <creature name="Toad, Giant" size="Man-sized" role="Hunter" normal_load_stone="8" price_gp="650" monthly_wages_gp="21" weekly_supplies_gp="0.5" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="160.5" battle_rating="0.002"/>
+      <creature name="Triceratops" size="Gigantic" role="Hunter" normal_load_stone="260" price_gp="3,500" monthly_wages_gp="0" weekly_supplies_gp="48" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="329.5" battle_rating="0.044"/>
+      <creature name="Triceratops, Riding" size="Gigantic" role="Mount" normal_load_stone="260" price_gp="5,500" monthly_wages_gp="0" weekly_supplies_gp="48" handler_cost_gp_per_month="0" total_cost_gp_per_month="192" battle_rating="0.044"/>
+      <creature name="Tyrannosaurus Rex" size="Gigantic" role="Hunter" normal_load_stone="300" price_gp="35,000" monthly_wages_gp="295" weekly_supplies_gp="192" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="1200.5" battle_rating="0.235"/>
+      <creature name="Tyrannosaurus Rex, Riding" size="Gigantic" role="Mount" normal_load_stone="300" price_gp="48,500" monthly_wages_gp="705" weekly_supplies_gp="192" handler_cost_gp_per_month="0" total_cost_gp_per_month="1473" battle_rating="0.235"/>
+      <creature name="Varmint, Giant Ferret" size="Man-sized" role="Hunter" normal_load_stone="3" price_gp="165" monthly_wages_gp="0" weekly_supplies_gp="2" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="76.8" battle_rating="0.006"/>
+      <creature name="Varmint, Giant Rat" size="Man-sized" role="Hunter" normal_load_stone="1" price_gp="90" monthly_wages_gp="3" weekly_supplies_gp="0.5" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="73.8" battle_rating="0.000"/>
+      <creature name="Varmint, Giant Shrew" size="Man-sized" role="Hunter" normal_load_stone="4" price_gp="150" monthly_wages_gp="6" weekly_supplies_gp="0.5" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="76.8" battle_rating="0.009"/>
+      <creature name="Varmint, Giant Weasel" size="Large" role="Hunter" normal_load_stone="40" price_gp="1,000" monthly_wages_gp="15" weekly_supplies_gp="4" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="99.8" battle_rating="0.013"/>
+      <creature name="Whale, Killer" size="Huge" role="Hunter" normal_load_stone="150" price_gp="3,750" monthly_wages_gp="0" weekly_supplies_gp="48" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="329.5" battle_rating="0.044"/>
+      <creature name="Whale, Narwhal" size="Huge" role="Hunter" normal_load_stone="70" price_gp="3,250" monthly_wages_gp="50" weekly_supplies_gp="12" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="235.5" battle_rating="0.054"/>
+      <creature name="Whale, Sperm" size="Colossal" role="Hunter" normal_load_stone="2,400" price_gp="60,000" monthly_wages_gp="0" weekly_supplies_gp="960" handler_cost_gp_per_month="137.5" total_cost_gp_per_month="3977.5" battle_rating="0.155"/>
+      <creature name="Wolf" size="Man-sized" role="Guard" normal_load_stone="6" price_gp="150" monthly_wages_gp="0" weekly_supplies_gp="2" handler_cost_gp_per_month="20.6" total_cost_gp_per_month="28.6" battle_rating="0.006"/>
+      <creature name="Wolf, Dire" size="Large" role="Guard" normal_load_stone="20" price_gp="415" monthly_wages_gp="0" weekly_supplies_gp="16" handler_cost_gp_per_month="20.6" total_cost_gp_per_month="84.6" battle_rating="0.019"/>
+      <creature name="Wolf, Dire, Riding" size="Large" role="War Mount" normal_load_stone="20" price_gp="700" monthly_wages_gp="0" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="64" battle_rating="0.019"/>
+    </animals>
+    <beastmen_and_humanoids>
+      <creature name="Bugbear" size="Man-sized" role="Troop" normal_load_stone="13" price_gp="" monthly_wages_gp="Based on type; see Mercenary and Slave Soldier tables" weekly_supplies_gp="Based on type; see Mercenary and Slave Soldier tables" handler_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" total_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" battle_rating=""/>
+      <creature name="Centaur" size="Large" role="Troop" normal_load_stone="42" price_gp="4,500" monthly_wages_gp="120" weekly_supplies_gp="4.0" handler_cost_gp_per_month="0" total_cost_gp_per_month="136" battle_rating="0.189"/>
+      <creature name="Dwarf" size="Man-sized" role="Troop" normal_load_stone="5" price_gp="" monthly_wages_gp="Based on type; see Mercenary and Slave Soldier tables" weekly_supplies_gp="Based on type; see Mercenary and Slave Soldier tables" handler_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" total_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" battle_rating=""/>
+      <creature name="Elf" size="Man-sized" role="Troop" normal_load_stone="5" price_gp="" monthly_wages_gp="Based on type; see Mercenary and Slave Soldier tables" weekly_supplies_gp="Based on type; see Mercenary and Slave Soldier tables" handler_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" total_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" battle_rating=""/>
+      <creature name="Faerie, Pixie" size="Man-sized" role="Troop" normal_load_stone="1" price_gp="2,050" monthly_wages_gp="60" weekly_supplies_gp="0.5" handler_cost_gp_per_month="0" total_cost_gp_per_month="62" battle_rating="0.086"/>
+      <creature name="Faerie, Sprite" size="Man-sized" role="Troop" normal_load_stone="1/2" price_gp="250" monthly_wages_gp="9" weekly_supplies_gp="0.5" handler_cost_gp_per_month="0" total_cost_gp_per_month="11" battle_rating="0.011"/>
+      <creature name="Gnoll" size="Man-sized" role="Troop" normal_load_stone="10" price_gp="" monthly_wages_gp="Based on type; see Mercenary and Slave Soldier tables" weekly_supplies_gp="Based on type; see Mercenary and Slave Soldier tables" handler_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" total_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" battle_rating=""/>
+      <creature name="Gnome" size="Man-sized" role="Troop" normal_load_stone="2" price_gp="350" monthly_wages_gp="12" weekly_supplies_gp="0.5" handler_cost_gp_per_month="0" total_cost_gp_per_month="14" battle_rating="0.015"/>
+      <creature name="Goblin" size="Man-sized" role="Troop" normal_load_stone="3" price_gp="" monthly_wages_gp="Based on type; see Mercenary and Slave Soldier tables" weekly_supplies_gp="Based on type; see Mercenary and Slave Soldier tables" handler_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" total_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" battle_rating=""/>
+      <creature name="Halfling" size="Man-sized" role="Troop" normal_load_stone="1" price_gp="145" monthly_wages_gp="4" weekly_supplies_gp="0.5" handler_cost_gp_per_month="0" total_cost_gp_per_month="6" battle_rating="0.006"/>
+      <creature name="Human" size="Man-sized" role="Troop" normal_load_stone="5" price_gp="" monthly_wages_gp="Based on type; see Mercenary and Slave Soldier tables" weekly_supplies_gp="Based on type; see Mercenary and Slave Soldier tables" handler_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" total_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" battle_rating=""/>
+      <creature name="Hobgoblin" size="Man-sized" role="Troop" normal_load_stone="7" price_gp="" monthly_wages_gp="Based on type; see Mercenary and Slave Soldier tables" weekly_supplies_gp="Based on type; see Mercenary and Slave Soldier tables" handler_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" total_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" battle_rating=""/>
+      <creature name="Kobold" size="Man-sized" role="Troop" normal_load_stone="3" price_gp="" monthly_wages_gp="Based on type; see Mercenary and Slave Soldier tables" weekly_supplies_gp="Based on type; see Mercenary and Slave Soldier tables" handler_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" total_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" battle_rating=""/>
+      <creature name="Lizardman" size="Man-sized" role="Troop" normal_load_stone="8" price_gp="" monthly_wages_gp="Based on type; see Mercenary and Slave Soldier tables" weekly_supplies_gp="Based on type; see Mercenary and Slave Soldier tables" handler_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" total_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" battle_rating=""/>
+      <creature name="Merman" size="Man-sized" role="Troop" normal_load_stone="12" price_gp="130" monthly_wages_gp="3" weekly_supplies_gp="0.5" handler_cost_gp_per_month="0" total_cost_gp_per_month="5" battle_rating="0.005"/>
+      <creature name="Minotaur" size="Large" role="Troop" normal_load_stone="25" price_gp="1,850" monthly_wages_gp="40" weekly_supplies_gp="4.0" handler_cost_gp_per_month="0" total_cost_gp_per_month="56" battle_rating="0.077"/>
+      <creature name="Morlock" size="Man-sized" role="Troop" normal_load_stone="5" price_gp="70" monthly_wages_gp="0" weekly_supplies_gp="2.0" handler_cost_gp_per_month="0" total_cost_gp_per_month="8" battle_rating="0.003"/>
+      <creature name="Neanderthal" size="Man-sized" role="Troop" normal_load_stone="7" price_gp="130" monthly_wages_gp="3" weekly_supplies_gp="0.5" handler_cost_gp_per_month="0" total_cost_gp_per_month="5" battle_rating="0.005"/>
+      <creature name="Nymph, Dryad" size="Man-sized" role="Troop" normal_load_stone="3" price_gp="1,000" monthly_wages_gp="30" weekly_supplies_gp="0.5" handler_cost_gp_per_month="0" total_cost_gp_per_month="32" battle_rating="0.042"/>
+      <creature name="Nymph, Naiad" size="Man-sized" role="Troop" normal_load_stone="3" price_gp="550" monthly_wages_gp="18" weekly_supplies_gp="0.5" handler_cost_gp_per_month="0" total_cost_gp_per_month="20" battle_rating="0.023"/>
+      <creature name="Ogre" size="Large" role="Troop" normal_load_stone="40" price_gp="" monthly_wages_gp="Based on type; see Mercenary and Slave Soldier tables" weekly_supplies_gp="Based on type; see Mercenary and Slave Soldier tables" handler_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" total_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" battle_rating=""/>
+      <creature name="Orc" size="Man-sized" role="Troop" normal_load_stone="7" price_gp="" monthly_wages_gp="Based on type; see Mercenary and Slave Soldier tables" weekly_supplies_gp="Based on type; see Mercenary and Slave Soldier tables" handler_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" total_cost_gp_per_month="Based on type; see Mercenary and Slave Soldier tables" battle_rating=""/>
+      <creature name="Troglodyte" size="Man-sized" role="Troop" normal_load_stone="5" price_gp="700" monthly_wages_gp="21" weekly_supplies_gp="0.5" handler_cost_gp_per_month="0" total_cost_gp_per_month="23" battle_rating="0.029"/>
+    </beastmen_and_humanoids>
+    <fantastic_creatures>
+      <creature name="Basilisk" size="Man-sized" role="Hunter" normal_load_stone="20" price_gp="15,000" monthly_wages_gp="450" weekly_supplies_gp="2" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="687.2" battle_rating="0.637"/>
+      <creature name="Blink Dog" size="Man-sized" role="Troop" normal_load_stone="4" price_gp="8,500" monthly_wages_gp="260" weekly_supplies_gp="0.5" handler_cost_gp_per_month="0" total_cost_gp_per_month="262" battle_rating="0.359"/>
+      <creature name="Chimera" size="Huge" role="War Mount / Troop" normal_load_stone="80" price_gp="36,500" monthly_wages_gp="915" weekly_supplies_gp="48" handler_cost_gp_per_month="0" total_cost_gp_per_month="1,107" battle_rating="1.539"/>
+      <creature name="Cockatrice" size="Man-sized" role="Hunter" normal_load_stone="1" price_gp="5,000" monthly_wages_gp="145" weekly_supplies_gp="2" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="382.2" battle_rating="0.221"/>
+      <creature name="Demon Boar" size="Large" role="Troop" normal_load_stone="30" price_gp="18,500" monthly_wages_gp="500" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="564" battle_rating="0.779"/>
+      <creature name="Doppelganger" size="Man-sized" role="Troop" normal_load_stone="5" price_gp="13,500" monthly_wages_gp="405" weekly_supplies_gp="2" handler_cost_gp_per_month="0" total_cost_gp_per_month="413" battle_rating="0.573"/>
+      <creature name="Dragon Turtle" size="Colossal" role="War Mount / Troop" normal_load_stone="2,300" price_gp="130,000" monthly_wages_gp="100" weekly_supplies_gp="960" handler_cost_gp_per_month="0" total_cost_gp_per_month="2,940" battle_rating="5.384"/>
+      <creature name="Dragon, Huge Venerable" size="Colossal" role="War Mount / Troop" normal_load_stone="1,200" price_gp="450,000" monthly_wages_gp="9,800" weekly_supplies_gp="960" handler_cost_gp_per_month="0" total_cost_gp_per_month="13,640" battle_rating="18.762"/>
+      <creature name="Dragon, Venerable" size="Colossal" role="War Mount / Troop" normal_load_stone="720" price_gp="360,000" monthly_wages_gp="7,070" weekly_supplies_gp="960" handler_cost_gp_per_month="0" total_cost_gp_per_month="10,910" battle_rating="14.968"/>
+      <creature name="Dragon, Ancient" size="Colossal" role="War Mount / Troop" normal_load_stone="585" price_gp="310,000" monthly_wages_gp="5,555" weekly_supplies_gp="960" handler_cost_gp_per_month="0" total_cost_gp_per_month="9,395" battle_rating="12.842"/>
+      <creature name="Dragon, Very Old" size="Colossal" role="War Mount / Troop" normal_load_stone="460" price_gp="290,000" monthly_wages_gp="4,950" weekly_supplies_gp="960" handler_cost_gp_per_month="0" total_cost_gp_per_month="8,790" battle_rating="11.849"/>
+      <creature name="Dragon, Old" size="Gigantic" role="War Mount / Troop" normal_load_stone="350" price_gp="185,000" monthly_wages_gp="4,840" weekly_supplies_gp="192" handler_cost_gp_per_month="0" total_cost_gp_per_month="5,608" battle_rating="8.047"/>
+      <creature name="Dragon, Mature Adult" size="Gigantic" role="War Mount / Troop" normal_load_stone="260" price_gp="140,000" monthly_wages_gp="3,475" weekly_supplies_gp="192" handler_cost_gp_per_month="0" total_cost_gp_per_month="4,243" battle_rating="5.930"/>
+      <creature name="Dragon, Adult" size="Gigantic" role="War Mount / Troop" normal_load_stone="180" price_gp="115,000" monthly_wages_gp="2,720" weekly_supplies_gp="192" handler_cost_gp_per_month="0" total_cost_gp_per_month="3,488" battle_rating="4.931"/>
+      <creature name="Dragon, Juvenile" size="Huge" role="War Mount / Troop" normal_load_stone="120" price_gp="65,000" monthly_wages_gp="1,780" weekly_supplies_gp="48" handler_cost_gp_per_month="0" total_cost_gp_per_month="1,972" battle_rating="2.749"/>
+      <creature name="Dragon, Young" size="Huge" role="War Mount / Troop" normal_load_stone="65" price_gp="50,000" monthly_wages_gp="1,325" weekly_supplies_gp="48" handler_cost_gp_per_month="0" total_cost_gp_per_month="1,517" battle_rating="2.057"/>
+      <creature name="Dragon, Very Young" size="Huge" role="War Mount / Troop" normal_load_stone="30" price_gp="35,000" monthly_wages_gp="870" weekly_supplies_gp="48" handler_cost_gp_per_month="0" total_cost_gp_per_month="1,062" battle_rating="1.490"/>
+      <creature name="Dragon, Spawn" size="Large" role="War Mount / Troop" normal_load_stone="8" price_gp="20,000" monthly_wages_gp="545" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="609" battle_rating="0.755"/>
+      <creature name="Gorgon" size="Huge" role="Guard" normal_load_stone="80" price_gp="36,000" monthly_wages_gp="900" weekly_supplies_gp="48" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="1,160.8" battle_rating="1.238"/>
+      <creature name="Griffon" size="Large" role="War Mount" normal_load_stone="45" price_gp="30,000" monthly_wages_gp="845" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="909" battle_rating="1.124"/>
+      <creature name="Harpy" size="Man-sized" role="Troop" normal_load_stone="9" price_gp="15,000" monthly_wages_gp="465" weekly_supplies_gp="2" handler_cost_gp_per_month="0" total_cost_gp_per_month="473" battle_rating="0.655"/>
+      <creature name="Hellhound, Greater" size="Large" role="War Mount / Troop" normal_load_stone="45" price_gp="5,250" monthly_wages_gp="95" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="159" battle_rating="0.216"/>
+      <creature name="Hellhound, Lesser" size="Man-sized" role="Troop" normal_load_stone="10" price_gp="2,100" monthly_wages_gp="60" weekly_supplies_gp="2" handler_cost_gp_per_month="0" total_cost_gp_per_month="68" battle_rating="0.088"/>
+      <creature name="Hippogriff" size="Large" role="War Mount" normal_load_stone="45" price_gp="17,250" monthly_wages_gp="510" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="526" battle_rating="0.724"/>
+      <creature name="Hydra, 12 Head" size="Huge" role="Guard" normal_load_stone="96" price_gp="12,150" monthly_wages_gp="180" weekly_supplies_gp="48" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="440.8" battle_rating="0.206"/>
+      <creature name="Hydra, 11 Head" size="Huge" role="Guard" normal_load_stone="92" price_gp="10,500" monthly_wages_gp="130" weekly_supplies_gp="48" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="390.8" battle_rating="0.177"/>
+      <creature name="Hydra, 10 Head" size="Huge" role="Guard" normal_load_stone="88" price_gp="9,250" monthly_wages_gp="90" weekly_supplies_gp="48" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="350.8" battle_rating="0.141"/>
+      <creature name="Hydra, 9 Head" size="Huge" role="Guard" normal_load_stone="84" price_gp="8,000" monthly_wages_gp="50" weekly_supplies_gp="48" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="310.8" battle_rating="0.112"/>
+      <creature name="Hydra, 8 Head" size="Huge" role="Guard" normal_load_stone="80" price_gp="7,000" monthly_wages_gp="21" weekly_supplies_gp="48" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="281.8" battle_rating="0.086"/>
+      <creature name="Hydra, 7 Head" size="Huge" role="Guard" normal_load_stone="76" price_gp="5,450" monthly_wages_gp="0" weekly_supplies_gp="48" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="260.8" battle_rating="0.065"/>
+      <creature name="Hydra, 6 Head" size="Huge" role="Guard" normal_load_stone="72" price_gp="4,300" monthly_wages_gp="0" weekly_supplies_gp="48" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="260.8" battle_rating="0.047"/>
+      <creature name="Hydra, 5 Head" size="Huge" role="Guard" normal_load_stone="68" price_gp="3,175" monthly_wages_gp="0" weekly_supplies_gp="48" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="260.8" battle_rating="0.032"/>
+      <creature name="Lamia" size="Large" role="Troop" normal_load_stone="30" price_gp="41,200" monthly_wages_gp="1,185" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="1,249" battle_rating="1.733"/>
+      <creature name="Lammasu" size="Large" role="Troop" normal_load_stone="25" price_gp="43,500" monthly_wages_gp="1,255" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="1,319" battle_rating="1.832"/>
+      <creature name="Lycanthrope, Werebear" size="Large" role="Troop" normal_load_stone="36" price_gp="9,000" monthly_wages_gp="210" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="274" battle_rating="0.380"/>
+      <creature name="Lycanthrope, Wereboar" size="Large" role="Troop" normal_load_stone="22" price_gp="5,000" monthly_wages_gp="140" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="156" battle_rating="0.211"/>
+      <creature name="Lycanthrope, Wererat" size="Man-sized" role="Troop" normal_load_stone="5" price_gp="3,150" monthly_wages_gp="90" weekly_supplies_gp="2" handler_cost_gp_per_month="0" total_cost_gp_per_month="98" battle_rating="0.133"/>
+      <creature name="Lycanthrope, Weretiger" size="Large" role="Troop" normal_load_stone="30" price_gp="6,725" monthly_wages_gp="140" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="204" battle_rating="0.283"/>
+      <creature name="Lycanthrope, Werewolf" size="Man-sized" role="Troop" normal_load_stone="6" price_gp="4,350" monthly_wages_gp="125" weekly_supplies_gp="2" handler_cost_gp_per_month="0" total_cost_gp_per_month="133" battle_rating="0.183"/>
+      <creature name="Manticore" size="Large" role="War Mount / Troop" normal_load_stone="20" price_gp="55,500" monthly_wages_gp="1,620" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="1,684" battle_rating="2.334"/>
+      <creature name="Medusa" size="Man-sized" role="Troop" normal_load_stone="5" price_gp="14,250" monthly_wages_gp="425" weekly_supplies_gp="2" handler_cost_gp_per_month="0" total_cost_gp_per_month="433" battle_rating="0.598"/>
+      <creature name="Owl Bear" size="Large" role="Guard" normal_load_stone="50" price_gp="2,325" monthly_wages_gp="9" weekly_supplies_gp="16" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="141.8" battle_rating="0.046"/>
+      <creature name="Pegasus" size="Large" role="War Mount / Troop" normal_load_stone="30" price_gp="20,000" monthly_wages_gp="590" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="606" battle_rating="0.845"/>
+      <creature name="Phase Tiger" size="Large" role="War Mount / Troop" normal_load_stone="30" price_gp="4,352" monthly_wages_gp="70" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="134" battle_rating="0.182"/>
+      <creature name="Remorhaz, 10HD" size="Gigantic" role="Hunter" normal_load_stone="200" price_gp="12,850" monthly_wages_gp="0" weekly_supplies_gp="192" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="997.2" battle_rating="0.219"/>
+      <creature name="Roc, Giant" size="Colossal" role="War Mount / Troop" normal_load_stone="300" price_gp="485,000" monthly_wages_gp="10,860" weekly_supplies_gp="960" handler_cost_gp_per_month="0" total_cost_gp_per_month="14,700" battle_rating="20.530"/>
+      <creature name="Roc, Large" size="Gigantic" role="War Mount / Troop" normal_load_stone="60" price_gp="138,000" monthly_wages_gp="3,415" weekly_supplies_gp="192" handler_cost_gp_per_month="0" total_cost_gp_per_month="4,183" battle_rating="5.802"/>
+      <creature name="Roc, Small" size="Huge" role="War Mount / Troop" normal_load_stone="15" price_gp="50,000" monthly_wages_gp="1,325" weekly_supplies_gp="48" handler_cost_gp_per_month="0" total_cost_gp_per_month="1,517" battle_rating="2.023"/>
+      <creature name="Rust Monster" size="Man-sized" role="Hunter" normal_load_stone="4" price_gp="2,250" monthly_wages_gp="70" weekly_supplies_gp="0" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="299.2" battle_rating="0.107"/>
+      <creature name="Sea Serpent" size="Huge" role="Hunter" normal_load_stone="130" price_gp="11,350" monthly_wages_gp="155" weekly_supplies_gp="48" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="576.2" battle_rating="0.020"/>
+      <creature name="Shadow" size="Man-sized" role="Troop" normal_load_stone="0" price_gp="7,000" monthly_wages_gp="215" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="215" battle_rating="0.293"/>
+      <creature name="Skittering Maw" size="Huge" role="Hunter" normal_load_stone="96" price_gp="18,500" monthly_wages_gp="370" weekly_supplies_gp="48" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="791.2" battle_rating="0.153"/>
+      <creature name="Stirge" size="Man-sized" role="Hunter" normal_load_stone="0" price_gp="1,000" monthly_wages_gp="30" weekly_supplies_gp="0.5" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="261.2" battle_rating="0.004"/>
+      <creature name="Throghrin" size="Man-sized" role="Troop" normal_load_stone="7" price_gp="5,600" monthly_wages_gp="170" weekly_supplies_gp="0.5" handler_cost_gp_per_month="0" total_cost_gp_per_month="172" battle_rating="0.236"/>
+      <creature name="Treant" size="Huge" role="Troop" normal_load_stone="0" price_gp="27,000" monthly_wages_gp="770" weekly_supplies_gp="12" handler_cost_gp_per_month="0" total_cost_gp_per_month="818" battle_rating="1.131"/>
+      <creature name="Unicorn" size="Large" role="War Mount / Troop" normal_load_stone="30" price_gp="28,500" monthly_wages_gp="850" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="866" battle_rating="1.143"/>
+      <creature name="Wyvern" size="Huge" role="War Mount" normal_load_stone="30" price_gp="35,500" monthly_wages_gp="885" weekly_supplies_gp="48" handler_cost_gp_per_month="0" total_cost_gp_per_month="1,077" battle_rating="1.497"/>
+    </fantastic_creatures>
+    <constructs>
+      <creature name="Gargoyle" size="Large" role="Controlled" normal_load_stone="50" price_gp="13,000" monthly_wages_gp="395" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="395" battle_rating="0.211"/>
+      <creature name="Golem, Amber" size="Large" role="Controlled" normal_load_stone="12" price_gp="25,000" monthly_wages_gp="760" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="760" battle_rating="0.214"/>
+      <creature name="Golem, Bone" size="Man-sized" role="Controlled" normal_load_stone="10" price_gp="21,000" monthly_wages_gp="640" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="640" battle_rating="0.305"/>
+      <creature name="Golem, Bronze" size="Large" role="Controlled" normal_load_stone="300" price_gp="45,000" monthly_wages_gp="1,365" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="1,365" battle_rating="1.834"/>
+      <creature name="Golem, Wood" size="Man-sized" role="Controlled" normal_load_stone="3" price_gp="10,000" monthly_wages_gp="305" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="305" battle_rating="0.009"/>
+      <creature name="Statue, Animated Crystal" size="Man-sized" role="Controlled" normal_load_stone="20" price_gp="6,000" monthly_wages_gp="185" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="185" battle_rating="0.031"/>
+      <creature name="Statue, Animated Iron" size="Man-sized" role="Controlled" normal_load_stone="25" price_gp="13,000" monthly_wages_gp="400" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="400" battle_rating="0.036"/>
+      <creature name="Statue, Animated Stone" size="Man-sized" role="Controlled" normal_load_stone="15" price_gp="10,000" monthly_wages_gp="305" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="305" battle_rating="0.109"/>
+    </constructs>
+    <giants>
+      <creature name="Cyclops" size="Huge" role="Troop" normal_load_stone="90" price_gp="12,750" monthly_wages_gp="340" weekly_supplies_gp="12" handler_cost_gp_per_month="0" total_cost_gp_per_month="388" battle_rating="0.533"/>
+      <creature name="Ettin" size="Huge" role="Troop" normal_load_stone="75" price_gp="10,200" monthly_wages_gp="265" weekly_supplies_gp="12" handler_cost_gp_per_month="0" total_cost_gp_per_month="313" battle_rating="0.430"/>
+      <creature name="Giant, Hill" size="Huge" role="Troop" normal_load_stone="35" price_gp="6,750" monthly_wages_gp="160" weekly_supplies_gp="12" handler_cost_gp_per_month="0" total_cost_gp_per_month="208" battle_rating="0.284"/>
+      <creature name="Giant, Stone" size="Huge" role="Troop" normal_load_stone="50" price_gp="9,500" monthly_wages_gp="240" weekly_supplies_gp="12" handler_cost_gp_per_month="0" total_cost_gp_per_month="288" battle_rating="0.402"/>
+      <creature name="Giant, Frost" size="Huge" role="Troop" normal_load_stone="75" price_gp="12,500" monthly_wages_gp="335" weekly_supplies_gp="12" handler_cost_gp_per_month="0" total_cost_gp_per_month="383" battle_rating="0.529"/>
+      <creature name="Giant, Fire" size="Huge" role="Troop" normal_load_stone="85" price_gp="19,500" monthly_wages_gp="545" weekly_supplies_gp="12" handler_cost_gp_per_month="0" total_cost_gp_per_month="593" battle_rating="0.817"/>
+      <creature name="Giant, Cloud" size="Huge" role="Troop" normal_load_stone="90" price_gp="26,250" monthly_wages_gp="750" weekly_supplies_gp="12" handler_cost_gp_per_month="0" total_cost_gp_per_month="798" battle_rating="1.103"/>
+      <creature name="Giant, Storm" size="Gigantic" role="Troop" normal_load_stone="155" price_gp="46,850" monthly_wages_gp="1,230" weekly_supplies_gp="48" handler_cost_gp_per_month="0" total_cost_gp_per_month="1,422" battle_rating="1.971"/>
+      <creature name="Troll" size="Large" role="Troop" normal_load_stone="28" price_gp="8,725" monthly_wages_gp="200" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="264" battle_rating="0.367"/>
+    </giants>
+    <oozes>
+      <creature name="Black Pudding" size="Gigantic" role="Controlled" normal_load_stone="0" price_gp="9,435" monthly_wages_gp="95" weekly_supplies_gp="48" handler_cost_gp_per_month="0" total_cost_gp_per_month="287" battle_rating="0.397"/>
+      <creature name="Gelatinous Cube" size="Huge" role="Controlled" normal_load_stone="0" price_gp="550" monthly_wages_gp="0" weekly_supplies_gp="12" handler_cost_gp_per_month="0" total_cost_gp_per_month="48" battle_rating="0.018"/>
+      <creature name="Green Slime" size="Huge" role="Controlled" normal_load_stone="0" price_gp="300" monthly_wages_gp="0" weekly_supplies_gp="12" handler_cost_gp_per_month="0" total_cost_gp_per_month="48" battle_rating="0.013"/>
+      <creature name="Grey Ooze" size="Huge" role="Controlled" normal_load_stone="0" price_gp="465" monthly_wages_gp="0" weekly_supplies_gp="12" handler_cost_gp_per_month="0" total_cost_gp_per_month="48" battle_rating="0.019"/>
+    </oozes>
+    <summoned_creatures>
+      <creature name="Djinni" size="Large" role="Troop" normal_load_stone="60" price_gp="77,350" monthly_wages_gp="2,345" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="2,345" battle_rating="3.256"/>
+      <creature name="Efreeti" size="Large" role="Troop" normal_load_stone="100" price_gp="145,000" monthly_wages_gp="4,395" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="4,395" battle_rating="6.039"/>
+      <creature name="Invisible Stalker" size="Large" role="Troop" normal_load_stone="75" price_gp="14,500" monthly_wages_gp="440" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="440" battle_rating="0.613"/>
+      <creature name="Salamander, Flame" size="Huge" role="Guard" normal_load_stone="25" price_gp="22,000" monthly_wages_gp="475" weekly_supplies_gp="48" handler_cost_gp_per_month="0" total_cost_gp_per_month="667" battle_rating="0.930"/>
+      <creature name="Salamander, Frost" size="Huge" role="Guard" normal_load_stone="50" price_gp="36,000" monthly_wages_gp="910" weekly_supplies_gp="48" handler_cost_gp_per_month="0" total_cost_gp_per_month="1102" battle_rating="1.529"/>
+    </summoned_creatures>
+    <undead>
+      <rule>Any undead can be treated as controlled troops if sufficiently powerful controllers are available.</rule>
+      <creature name="Ghoul" size="Man-sized" role="Troop*" normal_load_stone="5" price_gp="9,000" monthly_wages_gp="265" weekly_supplies_gp="2" handler_cost_gp_per_month="0" total_cost_gp_per_month="273" battle_rating="0.289"/>
+      <creature name="Mummy" size="Man-sized" role="Troop*" normal_load_stone="4" price_gp="25,000" monthly_wages_gp="760" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="760" battle_rating="1.037"/>
+      <creature name="Skeleton" size="Man-sized" role="Controlled" normal_load_stone="5" price_gp="72" monthly_wages_gp="3" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="3" battle_rating="0.005"/>
+      <creature name="Spectre" size="Man-sized" role="Troop*" normal_load_stone="0" price_gp="51,000" monthly_wages_gp="1,545" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="1,545" battle_rating="2.143"/>
+      <creature name="Vampire" size="Man-sized" role="Troop*" normal_load_stone="5" price_gp="82,000" monthly_wages_gp="2,480" weekly_supplies_gp="2" handler_cost_gp_per_month="0" total_cost_gp_per_month="2,488" battle_rating="3.450"/>
+      <creature name="Wight" size="Man-sized" role="Troop*" normal_load_stone="5" price_gp="16,000" monthly_wages_gp="485" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="485" battle_rating="0.305"/>
+      <creature name="Wraith" size="Man-sized" role="Troop*" normal_load_stone="0" price_gp="18,000" monthly_wages_gp="545" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="545" battle_rating="0.636"/>
+      <creature name="Zombie" size="Man-sized" role="Controlled" normal_load_stone="5" price_gp="143" monthly_wages_gp="6" weekly_supplies_gp="0" handler_cost_gp_per_month="0" total_cost_gp_per_month="6" battle_rating="0.010"/>
+    </undead>
+    <vermin>
+      <creature name="Ankheg" size="Large" role="Workbeast" normal_load_stone="72" price_gp="2,785" monthly_wages_gp="21" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="85" battle_rating="(0.052)"/>
+      <creature name="Ankheg, Hunting" size="Large" role="Hunter" normal_load_stone="72" price_gp="3,125" monthly_wages_gp="33" weekly_supplies_gp="16" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="326.2" battle_rating="0.052"/>
+      <creature name="Ant, Giant" size="Man-sized" role="Hunter" normal_load_stone="3" price_gp="1,275" monthly_wages_gp="39" weekly_supplies_gp="0.5" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="270.2" battle_rating="0.064"/>
+      <creature name="Bee, Giant" size="Man-sized" role="Hunter" normal_load_stone="0" price_gp="275" monthly_wages_gp="9" weekly_supplies_gp="0.5" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="240.2" battle_rating="0.012"/>
+      <creature name="Beetle, Gt. Bombardier" size="Man-sized" role="Workbeast" normal_load_stone="55" price_gp="600" monthly_wages_gp="18" weekly_supplies_gp="0.5" handler_cost_gp_per_month="0" total_cost_gp_per_month="20" battle_rating="(0.010)"/>
+      <creature name="Beetle, Gt. Bomb., Hunt." size="Man-sized" role="Hunter" normal_load_stone="55" price_gp="630" monthly_wages_gp="18" weekly_supplies_gp="0.5" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="249.2" battle_rating="0.010"/>
+      <creature name="Beetle, Giant Fire" size="Man-sized" role="Workbeast" normal_load_stone="30" price_gp="585" monthly_wages_gp="18" weekly_supplies_gp="0.5" handler_cost_gp_per_month="0" total_cost_gp_per_month="20" battle_rating="(0.010)"/>
+      <creature name="Beetle, Giant Fire, Hunt." size="Man-sized" role="Hunter" normal_load_stone="30" price_gp="600" monthly_wages_gp="18" weekly_supplies_gp="0.5" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="249.2" battle_rating="0.010"/>
+      <creature name="Beetle, Giant Tiger" size="Man-sized" role="Workbeast" normal_load_stone="250" price_gp="1,365" monthly_wages_gp="36" weekly_supplies_gp="2" handler_cost_gp_per_month="0" total_cost_gp_per_month="44" battle_rating="(0.057)"/>
+      <creature name="Beetle, Giant Tiger, Hunt." size="Man-sized" role="Hunter" normal_load_stone="250" price_gp="1,365" monthly_wages_gp="36" weekly_supplies_gp="2" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="273.2" battle_rating="0.057"/>
+      <creature name="Caecilian" size="Huge" role="Hunter" normal_load_stone="10" price_gp="4,350" monthly_wages_gp="85" weekly_supplies_gp="12" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="362.2" battle_rating="0.004"/>
+      <creature name="Carcass Scavenger" size="Large" role="Hunter" normal_load_stone="4" price_gp="1,700" monthly_wages_gp="0" weekly_supplies_gp="16" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="293.2" battle_rating="0.040"/>
+      <creature name="Centipede, Giant" size="Man-sized" role="Hunter" normal_load_stone="0" price_gp="550" monthly_wages_gp="18" weekly_supplies_gp="0.5" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="249.2" battle_rating="0.001"/>
+      <creature name="Crab, Giant" size="Large" role="Workbeast" normal_load_stone="210" price_gp="1,200" monthly_wages_gp="21" weekly_supplies_gp="4" handler_cost_gp_per_month="0" total_cost_gp_per_month="37" battle_rating="(0.017)"/>
+      <creature name="Crab, Giant, Hunting" size="Large" role="Hunter" normal_load_stone="210" price_gp="1,300" monthly_wages_gp="24" weekly_supplies_gp="4" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="269.2" battle_rating="0.017"/>
+      <creature name="Fly, Giant Carnivorous" size="Man-sized" role="Hunter" normal_load_stone="0" price_gp="600" monthly_wages_gp="12" weekly_supplies_gp="2" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="249.2" battle_rating="0.025"/>
+      <creature name="Locust, Cavern" size="Man-sized" role="Hunter" normal_load_stone="5" price_gp="1,185" monthly_wages_gp="36" weekly_supplies_gp="0.5" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="267.2" battle_rating="0.035"/>
+      <creature name="Purple Worm" size="Colossal" role="Hunter" normal_load_stone="320" price_gp="43,000" monthly_wages_gp="0" weekly_supplies_gp="960" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="4069.2" battle_rating="0.069"/>
+      <creature name="Rhagodessa, Giant" size="Large" role="Hunter" normal_load_stone="90" price_gp="1,450" monthly_wages_gp="0" weekly_supplies_gp="16" handler_cost_gp_per_month="229.2" total_cost_gp_per_month="293.2" battle_rating="0.046"/>
+      <creature name="Scorpion, Giant" size="Large" role="Guard" normal_load_stone="96" price_gp="4,250" monthly_wages_gp="65" weekly_supplies_gp="16" handler_cost_gp_per_month="68.8" total_cost_gp_per_month="197.8" battle_rating="0.130"/>
+      <creature name="Spider, Black Widow" size="Large" role="War Mount" normal_load_stone="100" price_gp="3,750" monthly_wages_gp="50" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="114" battle_rating="0.052"/>
+      <creature name="Spider, Crab" size="Large" role="War Mount" normal_load_stone="50" price_gp="3,150" monthly_wages_gp="33" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="97" battle_rating="0.034"/>
+      <creature name="Spider, Tarantula" size="Large" role="War Mount" normal_load_stone="100" price_gp="5,250" monthly_wages_gp="95" weekly_supplies_gp="16" handler_cost_gp_per_month="0" total_cost_gp_per_month="159" battle_rating="0.078"/>
+    </vermin>
+  </exotic_creatures_roster>
+</campaigns_troop_and_creature_tables_summary>

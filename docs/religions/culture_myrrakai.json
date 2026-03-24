@@ -1,0 +1,126 @@
+{
+  "culture_id": "myrrakai",
+  "display_name": "Myrrakai",
+  "race": "human",
+  "terrain_affinity": {
+    "primary": "coast",
+    "secondary": "island",
+    "avoidance": "mountains"
+  },
+  "climate_preference": {
+    "temperature": "subtropical",
+    "moisture": "moderate"
+  },
+  "alignment_tendency": {
+    "dominant": "Chaotic",
+    "secondary": "Neutral",
+    "distribution": {
+      "Lawful": 0.13,
+      "Neutral": 0.29,
+      "Chaotic": 0.58
+    },
+    "notes": "The dominant alignment must have the highest distribution value and must be ≥ 0.40. A culture's LLM-generated history may describe past alignment shifts, but at runtime the culture IS its dominant alignment. This is a hard constraint."
+  },
+  "values": {
+    "core_values": [
+      "wealth",
+      "freedom",
+      "glory"
+    ],
+    "taboos": [
+      "withholding salvage shares",
+      "burying a sailor ashore",
+      "sailing under a land-king's tax flag"
+    ],
+    "social_structure": "mercantile_republic",
+    "gender_roles": "egalitarian",
+    "attitude_toward_outsiders": "cosmopolitan"
+  },
+  "personality_weight_biases": {
+    "temperament": {
+      "stoic": -0.1,
+      "jovial": 0.15,
+      "nervous": -0.1,
+      "aggressive": 0.15,
+      "melancholic": -0.18,
+      "cunning": 0.15,
+      "passionate": -0.02,
+      "serene": -0.1,
+      "paranoid": -0.02,
+      "gregarious": 0.07
+    },
+    "motivation": {
+      "wealth": 0.18,
+      "power": 0.05,
+      "knowledge": -0.02,
+      "security": -0.16,
+      "revenge": -0.02,
+      "faith": -0.02,
+      "legacy": 0.05,
+      "freedom": 0.11,
+      "pleasure": 0.11,
+      "duty": -0.16,
+      "survival": -0.02,
+      "redemption": -0.1
+    },
+    "social_style": {
+      "formal": -0.12,
+      "blunt": -0.01,
+      "flattering": 0.05,
+      "laconic": -0.06,
+      "verbose": 0.05,
+      "evasive": -0.06,
+      "warm": 0.05,
+      "intimidating": -0.01,
+      "scholarly": -0.06,
+      "streetwise": 0.17
+    },
+    "moral_compass": {
+      "righteous": -0.14,
+      "honorable": 0.04,
+      "pragmatic": 0.1,
+      "opportunistic": 0.16,
+      "ruthless": -0.08,
+      "conflicted": -0.08
+    }
+  },
+  "military_tradition": {
+    "preferred_troop_types": [
+      "marines",
+      "archers",
+      "light_infantry"
+    ],
+    "fighting_style": "naval",
+    "military_culture": "mercenary_tradition"
+  },
+  "economy": {
+    "primary_livelihood": "trade",
+    "secondary_livelihood": "fishing",
+    "trade_goods": [
+      "black coral",
+      "salted eel",
+      "stormglass beads",
+      "violet sailcloth"
+    ],
+    "currency_attitude": "coin_economy"
+  },
+  "magic_attitude": {
+    "arcane": "commonplace",
+    "divine": "respected",
+    "notes": "Sea-charms, storm lots, and navigational cantrips are treated as practical necessities."
+  },
+  "architecture_style": {
+    "primary_material": "coral",
+    "aesthetic": "ornate",
+    "signature_feature": "stormhook wharves"
+  },
+  "language": {
+    "language_name": "Myrric",
+    "language_family": "Pelagant",
+    "script": "shared_regional"
+  },
+  "flavor_text": {
+    "one_line": "Corsair merchants who treat law as another commodity to buy, dodge, or sink.",
+    "one_paragraph": "The Myrrakai build harbors like marketplaces and marketplaces like traps. Their captains court fortune, fame, and scandal with equal appetite, and their councils are forever rewriting maritime custom to favor whichever fleet has returned richest. Even so, they honor salvage shares, sea oaths, and the freedom of any ship that can outrun the harbor guns."
+  }
+}

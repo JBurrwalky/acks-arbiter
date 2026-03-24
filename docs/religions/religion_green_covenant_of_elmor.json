@@ -1,0 +1,79 @@
+{
+  "religion_id": "green_covenant_of_elmor",
+  "display_name": "The Green Covenant of Elmor",
+  "theology": {
+    "type": "monotheist",
+    "syncretism": "exclusivist",
+    "afterlife_belief": "judgment_and_rebirth"
+  },
+  "alignment": "Lawful",
+  "associated_cultures": [
+    "nemedran"
+  ],
+  "clergy": {
+    "title_hierarchy": [
+      "Leaf Novice",
+      "Bough Keeper",
+      "Grove Priest",
+      "Covenant Warden",
+      "High Rootspeaker"
+    ],
+    "title_level_mapping": {
+      "1": "Leaf Novice",
+      "3": "Bough Keeper",
+      "5": "Grove Priest",
+      "7": "Covenant Warden",
+      "9": "High Rootspeaker"
+    },
+    "gender_restriction": "none",
+    "special_class": null,
+    "vestments": "green-brown robes sewn with white bark-thread and beadwork of acorns",
+    "holy_symbol": "an oak leaf over a bound knot"
+  },
+  "practices": {
+    "holy_days_per_year": 5,
+    "holy_day_character": "solemn",
+    "worship_style": "meditative",
+    "dietary_restrictions": "ritual abstinence from game before planting",
+    "funerary_practice": "entombment",
+    "stance_on_undead": "abomination"
+  },
+  "political_role": {
+    "church_state_relationship": "theocratic_ruler",
+    "temporal_authority": "extensive",
+    "military_involvement": "chaplains_only"
+  },
+  "cosmology": {
+    "opposing_view": "demons",
+    "opposing_view_detail": "Chaotic beings are called root-rot demons that whisper appetite without duty and growth without limit.",
+    "notes": "See §3.3 Alignment Cosmology Rules for the hard constraints governing this field."
+  },
+  "pantheon": [
+    {
+      "deity_id": "elmor",
+      "display_name": "Elmor the Shelterer",
+      "epithets": [
+        "Lord of the Canopy",
+        "The Bound Root"
+      ],
+      "alignment": "Lawful",
+      "portfolios": [
+        "nature",
+        "protection",
+        "mercy",
+        "justice"
+      ],
+      "holy_symbol": "an oak canopy above a hearth",
+      "favored_weapon": "staff",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "stag",
+      "domains_summary": "Elmor shelters kin, blesses just refuge, and teaches restraint so the strong do not devour the weak."
+    }
+  ],
+  "flavor_text": {
+    "one_line": "A forest monotheism of sacred shelter, honest witness, and disciplined mercy.",
+    "one_paragraph": "Elmor is worshiped as the single root of all rightful shelter, the god who made law not as chains but as living support. Nemedran villages gather under consecrated trees to confess wrongs, renew guest-right, and receive judgments intended to mend the grove rather than merely punish the branch. The faith is severe toward Chaos, portraying dark powers as rot that promises wild strength while hollowing kinship, memory, and trust.",
+    "creation_myth_summary": "Elmor raised the first tree from barren mud and bound its roots into law so every creature beneath the canopy might live by shared shelter.",
+    "moral_code_summary": "Give refuge in need, speak true in witness, guard kin and grove, submit impulse to covenant, and oppose Chaos that turns hunger into creed."
+  }
+}

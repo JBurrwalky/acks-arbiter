@@ -1,0 +1,510 @@
+<monster_catalog title="126D Lairs and Encounters Monster Catalog 8" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <monster>
+    <identity>
+      <name>ANKHEG</name>
+      <source_label>126D-Lairs_And_Encounters-Monster-Catalog-8.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>burrower</tag>
+        <tag>acid</tag>
+        <tag>grab</tag>
+        <tag>ambush_predator</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>15%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Cluster" number="1d6"/>
+        <in_lair collective_noun="Nest" number="1d8"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Cluster" number="1d6"/>
+        <in_lair collective_noun="Nest" number="1d8"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="burrow" exploration="60'" combat="20'"/>
+      </movement>
+      <armor_class>8</armor_class>
+      <hit_dice printed="5**" special_ability_markers="**"/>
+      <attacks>1 (bite)</attacks>
+      <damage>3d6 (+ 1d4)</damage>
+      <save>F5</save>
+      <morale>-1</morale>
+      <treasure_type>M</treasure_type>
+      <xp>500</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Cluster" number="1d6"/>
+        <group environment="dungeon_in_lair" noun="Nest" number="1d8"/>
+        <group environment="wilderness_outside_lair" noun="Cluster" number="1d6"/>
+        <group environment="wilderness_in_lair" noun="Nest" number="1d8"/>
+      </collective_nouns>
+      <population_rules>
+        <rule>Clusters share the same territory but do not cooperate.</rule>
+        <rule>A usable tunnel is a 5' diameter tube, 60' to 150' long ([1d10 + 5] × 10).</rule>
+      </population_rules>
+      <terrain>
+        <primary>rich soil of forests</primary>
+        <secondary>rich soil of farmlands</secondary>
+      </terrain>
+      <reaction_or_pursuit_behavior>
+        <rule>An ankheg usually lies 5' to 10' below the surface until its antennae detect approaching prey, then burrows up to attack.</rule>
+      </reaction_or_pursuit_behavior>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="bite">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="bite" count="1" damage="3d6 (+ 1d4)"/>
+          </attack_sequence>
+        </attack_routine>
+        <attack_routine name="acid_spit">
+          <usage>conditional</usage>
+          <attack_sequence>
+            <attack type="acid line" count="1" damage="4d8"/>
+          </attack_sequence>
+          <notes>30' line.</notes>
+        </attack_routine>
+      </attack_routines>
+      <attack_effects>
+        <attack_effect attack_name="bite">
+          <damage>3d6 bite damage plus 1d4 digestive acid damage.</damage>
+          <save type="Paralysis" on_success="not grabbed" on_failure="grabbed"/>
+          <effect>On a hit, the target must save versus Paralysis or be grabbed.</effect>
+          <termination>Grabbed victims remain helpless until they succeed on a saving throw versus Paralysis on their turn.</termination>
+          <follow_up>Once it has grabbed prey, the ankheg retreats down its tunnel, dragging the victim.</follow_up>
+        </attack_effect>
+        <attack_effect attack_name="acid_spit">
+          <trigger>Used only when desperate or frustrated.</trigger>
+          <damage>4d8</damage>
+          <save type="Blast" on_success="half damage" on_failure="full damage"/>
+          <effect>Spits acid in a 30' line.</effect>
+          <limitations>
+            <limitation>After one acid spit, the ankheg's acid supply is depleted for 6 hours.</limitation>
+            <limitation>It will only spit acid when reduced to fewer than half its hit points or when it has not successfully grabbed an opponent.</limitation>
+          </limitations>
+        </attack_effect>
+      </attack_effects>
+      <mobility_rules>
+        <rule>An ankheg burrows with legs and mandibles.</rule>
+        <rule>A burrowing ankheg usually does not make a usable tunnel.</rule>
+        <rule>When constructing a usable tunnel, it burrows at half speed.</rule>
+        <rule>If damaged after grabbing prey, it retreats backward down its tunnel at land speed instead of burrow speed.</rule>
+      </mobility_rules>
+      <targeting_constraints>
+        <constraint>Acid spit affects a 30' line.</constraint>
+      </targeting_constraints>
+    </combat_profile>
+    <special_abilities>
+      <ability name="grab">
+        <trigger>The ankheg hits with its bite.</trigger>
+        <effect>The target must save versus Paralysis or be grabbed and rendered helpless.</effect>
+        <save type="Paralysis" on_success="not grabbed" on_failure="grabbed and helpless"/>
+        <termination>The victim escapes by making a successful saving throw versus Paralysis on its turn.</termination>
+      </ability>
+      <ability name="acid_spit">
+        <trigger>The ankheg is desperate or frustrated.</trigger>
+        <effect>The ankheg spits a 30' line of acid for 4d8 damage.</effect>
+        <save type="Blast" on_success="half damage" on_failure="full damage"/>
+        <limitation>One use depletes the acid supply for 6 hours.</limitation>
+        <exception>It only uses this when reduced to fewer than half its hit points or when it has not successfully grabbed an opponent.</exception>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Commonly tunnels up to 40' below the surface in the rich soil of forests or farmlands.</rule>
+      </habitat>
+      <diet>
+        <rule>Eats fresh meat.</rule>
+      </diet>
+      <social_structure>
+        <rule>Clusters share territory but do not cooperate.</rule>
+      </social_structure>
+      <behavior_rules>
+        <rule>Ambushes prey from below ground after detecting approach with its antennae.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>M</treasure_type>
+    </treasure_and_rewards>
+    <procedures>
+      <procedure name="tunnel_ambush">
+        <condition>The ankheg is waiting in a prepared tunnel.</condition>
+        <steps>
+          <step number="1">The ankheg lies in its tunnel, usually 5' to 10' below the surface.</step>
+          <step number="2">It detects approaching prey with its antennae.</step>
+          <step number="3">It burrows up to attack.</step>
+        </steps>
+        <outcome>The ankheg engages prey from an ambush position.</outcome>
+      </procedure>
+      <procedure name="drag_grabbed_prey">
+        <condition>The ankheg has successfully grabbed a victim.</condition>
+        <steps>
+          <step number="1">The ankheg retreats down its tunnel at burrow speed, dragging the victim.</step>
+          <step number="2">If the ankheg is damaged after grabbing prey, it instead retreats backward at land speed.</step>
+        </steps>
+        <outcome>The victim is dragged into the tunnel while helpless.</outcome>
+        <follow_up>The victim remains helpless until escaping with a successful save versus Paralysis on its turn.</follow_up>
+      </procedure>
+    </procedures>
+    <tables/>
+    <references>
+      <general_rule_reference type="acid"/>
+      <general_rule_reference type="grab"/>
+      <general_rule_reference type="paralysis"/>
+      <notation_reference>Hit Dice 5** includes special abilities described in the entry.</notation_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>ANT, GIANT</name>
+      <source_label>126D-Lairs_And_Encounters-Monster-Catalog-8.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>vermin</monster_type>
+      <tags>
+        <tag>nest_defender</tag>
+        <tag>omnivore</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>10%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Scourge" number="2d4"/>
+        <in_lair collective_noun="Nest" number="4d6"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Swarm" number="4d6"/>
+        <in_lair collective_noun="Nest" number="4d6"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="180'" combat="60'"/>
+      </movement>
+      <armor_class>6</armor_class>
+      <hit_dice printed="4" special_ability_markers=""/>
+      <attacks>1 (bite)</attacks>
+      <damage>2d6</damage>
+      <save>F2</save>
+      <morale>-1</morale>
+      <treasure_type>I plus special</treasure_type>
+      <xp>80</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Scourge" number="2d4"/>
+        <group environment="dungeon_in_lair" noun="Nest" number="4d6"/>
+        <group environment="wilderness_outside_lair" noun="Swarm" number="4d6"/>
+        <group environment="wilderness_in_lair" noun="Nest" number="4d6"/>
+      </collective_nouns>
+      <lair_composition>
+        <member role="worker" number="encountered individuals are workers unless otherwise specified"/>
+        <member role="queen" number="queen may be immense"/>
+      </lair_composition>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="bite">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="bite" count="1" damage="2d6"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+      <morale_modifiers>
+        <modifier condition="defending the nest" value="+4"/>
+      </morale_modifiers>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <diet>
+        <rule>Omnivorous and eats almost anything.</rule>
+      </diet>
+      <social_structure>
+        <rule>Workers are about 6' long; the queen may be immense.</rule>
+      </social_structure>
+      <behavior_rules>
+        <rule>Never retreat if defending the nest.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>I plus special</treasure_type>
+      <treasure_rules>
+        <rule>Nests tend to contain incidental treasure left from past opponents.</rule>
+        <rule>In about 30% of nests, giant ants have mined precious metals.</rule>
+        <rule>Such nests contain as much as 1d10x1000 gp worth of raw gold nuggets.</rule>
+      </treasure_rules>
+      <harvest_or_resource_value>
+        <resource name="raw gold nuggets" value="1d10x1000 gp" condition="about 30% of nests"/>
+      </harvest_or_resource_value>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="morale"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>APE, WHITE</name>
+      <source_label>126D-Lairs_And_Encounters-Monster-Catalog-8.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>rock_thrower</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>10%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Troop" number="1d6"/>
+        <in_lair collective_noun="Den" number="2d4"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Band" number="2d4"/>
+        <in_lair collective_noun="Den" number="2d4"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+      </movement>
+      <armor_class>3</armor_class>
+      <hit_dice printed="4" special_ability_markers=""/>
+      <attacks>2 (claw, claw) or 1 (rock)</attacks>
+      <damage>1d4/1d4 or 1d6</damage>
+      <save>F2</save>
+      <morale>-1</morale>
+      <treasure_type>None</treasure_type>
+      <xp>80</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Troop" number="1d6"/>
+        <group environment="dungeon_in_lair" noun="Den" number="2d4"/>
+        <group environment="wilderness_outside_lair" noun="Band" number="2d4"/>
+        <group environment="wilderness_in_lair" noun="Den" number="2d4"/>
+      </collective_nouns>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="claws">
+          <usage>alternative</usage>
+          <attack_sequence>
+            <attack type="claw" count="2" damage="1d4"/>
+          </attack_sequence>
+        </attack_routine>
+        <attack_routine name="rock">
+          <usage>alternative</usage>
+          <attack_sequence>
+            <attack type="rock" count="1" damage="1d6"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior/>
+    <treasure_and_rewards>
+      <treasure_type>None</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>BABOON, ROCK</name>
+      <source_label>126D-Lairs_And_Encounters-Monster-Catalog-8.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>pack_hunter</tag>
+        <tag>club_user</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>10%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Troop" number="2d6"/>
+        <in_lair collective_noun="Den" number="5d6"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Band" number="5d6"/>
+        <in_lair collective_noun="Den" number="5d6"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+      </movement>
+      <armor_class>3</armor_class>
+      <hit_dice printed="2" special_ability_markers=""/>
+      <attacks>2 (bite, club)</attacks>
+      <damage>1d3/1d6</damage>
+      <save>F2</save>
+      <morale>0</morale>
+      <treasure_type>None</treasure_type>
+      <xp>20</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Troop" number="2d6"/>
+        <group environment="dungeon_in_lair" noun="Den" number="5d6"/>
+        <group environment="wilderness_outside_lair" noun="Band" number="5d6"/>
+        <group environment="wilderness_in_lair" noun="Den" number="5d6"/>
+      </collective_nouns>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="bite_and_club">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="bite" count="1" damage="1d3"/>
+            <attack type="club" count="1" damage="1d6"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <diet>
+        <rule>Omnivorous and often hunts for meat.</rule>
+      </diet>
+      <social_structure>
+        <rule>Lives in packs led by the biggest, strongest male.</rule>
+      </social_structure>
+      <communication>
+        <rule>Does not have a true language but can communicate threats and warnings with simple screams.</rule>
+      </communication>
+      <behavior_rules>
+        <rule>Aggressive and easily stimulated to fight.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>None</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>BASILISK</name>
+      <source_label>126D-Lairs_And_Encounters-Monster-Catalog-8.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>gaze</tag>
+        <tag>petrification</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>40%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Bask" number="1d6"/>
+        <in_lair collective_noun="Nest" number="1d6"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Bask" number="1d6"/>
+        <in_lair collective_noun="Nest" number="1d6"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="60'" combat="20'"/>
+      </movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="6 + 1**" special_ability_markers="**"/>
+      <attacks>2 (bite, gaze)</attacks>
+      <damage>1d10/petrify</damage>
+      <save>F6</save>
+      <morale>+1</morale>
+      <treasure_type>K</treasure_type>
+      <xp>980</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Bask" number="1d6"/>
+        <group environment="dungeon_in_lair" noun="Nest" number="1d6"/>
+        <group environment="wilderness_outside_lair" noun="Bask" number="1d6"/>
+        <group environment="wilderness_in_lair" noun="Nest" number="1d6"/>
+      </collective_nouns>
+      <terrain>
+        <primary>dense woods</primary>
+        <secondary>dungeons</secondary>
+      </terrain>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="bite_and_gaze">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="bite" count="1" damage="1d10"/>
+            <attack type="gaze" count="1" damage="petrify"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+      <attack_effects>
+        <attack_effect attack_name="bite">
+          <damage>1d10</damage>
+          <save type="Petrification" on_success="not petrified" on_failure="turns to stone"/>
+          <effect>A creature bitten by a basilisk must save versus Petrification or turn to stone.</effect>
+        </attack_effect>
+        <attack_effect attack_name="gaze">
+          <save type="Petrification" on_success="not petrified" on_failure="turns to stone"/>
+          <effect>A creature that meets the basilisk's gaze must save versus Petrification or turn to stone.</effect>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities>
+      <ability name="petrifying_gaze">
+        <trigger>A living creature meets the basilisk's gaze.</trigger>
+        <effect>The target turns to stone.</effect>
+        <save type="Petrification" on_success="not petrified" on_failure="turns to stone"/>
+      </ability>
+      <ability name="petrifying_bite">
+        <trigger>The basilisk bites a living creature.</trigger>
+        <effect>The target turns to stone.</effect>
+        <save type="Petrification" on_success="not petrified" on_failure="turns to stone"/>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Often lives in dense woods or dungeons.</rule>
+      </habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>K</treasure_type>
+      <treasure_rules>
+        <rule>Treasure in a basilisk's nest will be on petrified victims.</rule>
+        <rule>Such treasure is only accessible if the victims are restored to flesh.</rule>
+      </treasure_rules>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="gaze"/>
+      <general_rule_reference type="petrification"/>
+      <notation_reference>Hit Dice 6 + 1** includes special abilities described in the entry.</notation_reference>
+    </references>
+  </monster>
+
+  <confidence_notes>
+    <note>Giant ant stat block reconstruction is below 0.90 confidence because the source table is corrupted. I interpreted Armor Class as 6, Movement as 180' (60'), and Treasure Type as I plus special.</note>
+    <note>Monster type assignments for ankheg and basilisk as fantastic_creature, and white ape and rock baboon as animal, are inferred from the catalog context rather than explicitly printed.</note>
+  </confidence_notes>
+</monster_catalog>

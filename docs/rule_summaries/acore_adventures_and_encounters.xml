@@ -1,0 +1,1092 @@
+<acks_rules_summary>
+  <source_documents>
+    <document id="106" title="ACKS Core - Adventures"/>
+    <document id="106B" title="ACKS Core - Encounters"/>
+  </source_documents>
+
+  <adventures>
+    <overview>
+      <adventure_environments>
+        <environment name="dungeon">
+          <definition>Underground adventure locations such as crypts, tombs, labyrinths, and caverns.</definition>
+        </environment>
+        <environment name="wilderness">
+          <definition>Unsettled lands beyond civilization.</definition>
+        </environment>
+        <environment name="sea">
+          <definition>Adventures on rivers, lakes, coasts, and open sea using vessels.</definition>
+        </environment>
+      </adventure_environments>
+    </overview>
+
+    <dungeon_adventures>
+      <marching_and_mapping>
+        <marching_order>
+          <rule>Establish party marching order when entering the dungeon.</rule>
+          <rule>Marching order depends largely on passage width.</rule>
+          <rule>Characters generally march in pairs, side by side, forming a line of pairs.</rule>
+          <rule>Marching order should be written down so position is always clear.</rule>
+          <rule>If using a large map, dice, tokens, or miniatures may represent positions.</rule>
+        </marching_order>
+        <mapping>
+          <rule>One player should be designated as mapper.</rule>
+          <rule>The mapper records explored areas so the group does not get lost and knows what has been explored.</rule>
+          <rule>Dungeons are typically mapped on graph paper with 1/4 inch square grids at a scale of 10 feet per square.</rule>
+          <rule>If the mapper's character dies, mapping duties pass to a player with a living character; in-game, the surviving character takes the dead character's map.</rule>
+        </mapping>
+      </marching_and_mapping>
+
+      <time_and_movement>
+        <time_units>
+          <turn>10 minutes of game time.</turn>
+          <round>10 seconds of game time.</round>
+          <rounds_per_turn>60</rounds_per_turn>
+        </time_units>
+        <movement_types>
+          <movement type="exploration">
+            <rate>Full dungeon exploration movement rate, normally 120 feet per turn unless heavily encumbered.</rate>
+            <uses>
+              <use>Moving while mapping.</use>
+              <use>Searching a 10' x 10' area for secret doors or traps.</use>
+            </uses>
+          </movement>
+          <movement type="combat">
+            <rate>One-third of exploration movement per round, normally 40 feet per round unless heavily encumbered.</rate>
+          </movement>
+          <movement type="charging_running">
+            <rate>Full character speed per round, normally 120 feet unless heavily encumbered.</rate>
+          </movement>
+        </movement_types>
+        <map_scale>
+          <rule>On large play maps, one square commonly equals 5 feet.</rule>
+          <rule>All distances may be measured precisely on the map grid.</rule>
+        </map_scale>
+        <authority>
+          <rule>The Judge is the final authority on what may be accomplished in a given period of time.</rule>
+        </authority>
+      </time_and_movement>
+
+      <rest>
+        <rule>Characters may remain active for 5 turns before needing 1 turn of rest.</rule>
+        <penalty_for_skipping_rest>
+          <rule>If characters continue without resting, all suffer -1 to attack throws and damage rolls.</rule>
+          <duration>Until they have rested for 1 turn.</duration>
+        </penalty_for_skipping_rest>
+      </rest>
+
+      <light_and_darkness>
+        <light_sources>
+          <light_source name="torch">
+            <bright_light_radius>30 feet</bright_light_radius>
+            <dim_light_extension>Approximately 20 additional feet</dim_light_extension>
+            <duration>6 turns</duration>
+          </light_source>
+          <light_source name="lantern">
+            <bright_light_radius>30 feet</bright_light_radius>
+            <dim_light_extension>Approximately 20 additional feet</dim_light_extension>
+            <fuel>1 flask of oil</fuel>
+            <duration_per_flask>24 turns</duration_per_flask>
+          </light_source>
+        </light_sources>
+        <light_effects>
+          <rule>Characters or monsters carrying a light source cannot surprise opponents.</rule>
+        </light_effects>
+        <infravision>
+          <definition>Ability to see in darkness to a limited distance, usually 60 feet.</definition>
+          <limitations>
+            <rule>Does not allow reading or seeing fine detail.</rule>
+            <rule>Functions only in darkness.</rule>
+            <rule>Any visible light, normal or magical, disrupts infravision.</rule>
+          </limitations>
+        </infravision>
+        <attack_penalty_for_no_sight>
+          <rule>Creatures unable to see due to darkness, blindness, or invisibility of target suffer -4 on attacks.</rule>
+        </attack_penalty_for_no_sight>
+      </light_and_darkness>
+
+      <doors>
+        <standard_door>
+          <definition>Heavy wooden door reinforced with iron banding.</definition>
+          <common_states>
+            <state>Closed</state>
+            <state>Locked</state>
+            <state>Stuck</state>
+          </common_states>
+        </standard_door>
+
+        <locked_doors>
+          <opening_methods>
+            <method>Find the key.</method>
+            <method>Pick the lock.</method>
+            <method>Batter the door down.</method>
+          </opening_methods>
+          <pick_lock>
+            <rule>A thief may pick a lock in 1 turn with a successful open locks proficiency throw.</rule>
+          </pick_lock>
+          <batter_down>
+            <rule>Any character with an axe can batter down a standard dungeon door in 3 turns.</rule>
+            <simple_wooden_door>1 turn to batter down.</simple_wooden_door>
+            <sturdy_metal_or_stone_door>Cannot generally be battered down without heavy equipment.</sturdy_metal_or_stone_door>
+          </batter_down>
+        </locked_doors>
+
+        <stuck_doors>
+          <opening_throw>
+            <base_requirement>Proficiency throw of 18+ on 1d20.</base_requirement>
+            <modifiers>
+              <rule>Unusual size or material may impose a penalty.</rule>
+              <rule>For each point of Strength adjustment, modify the die roll by +/-4.</rule>
+              <rule>If two characters cooperate, use the stronger character's Strength adjustment and add +4.</rule>
+            </modifiers>
+            <automatic_failure>A roll of 1 always fails.</automatic_failure>
+          </opening_throw>
+          <time_cost>1 combat round per attempt.</time_cost>
+          <retry>Characters may try again if they fail.</retry>
+        </stuck_doors>
+
+        <evil_doors>
+          <rule>Evil doors automatically swing shut when released unless spiked or wedged open.</rule>
+          <rule>Evil doors always open easily for monsters unless spiked shut, held firm, or magically closed.</rule>
+        </evil_doors>
+
+        <secret_doors>
+          <definition>Concealed or hidden doors such as sliding panels or trapdoors.</definition>
+          <search_requirements>
+            <rule>Characters must specifically declare they are looking for secret doors.</rule>
+            <rule>The Judge rolls secretly.</rule>
+            <rule>Searching a 10' x 10' area takes 1 turn.</rule>
+            <rule>Each character gets only one chance to find each secret door.</rule>
+          </search_requirements>
+          <detection_chances>
+            <general_active_search>18+ on 1d20.</general_active_search>
+            <elf_active_search>8+ on 1d20.</elf_active_search>
+            <elf_casual_inspection>14+ on 1d20.</elf_casual_inspection>
+          </detection_chances>
+        </secret_doors>
+
+        <listening_at_doors_or_intersections>
+          <rule>The Judge rolls secretly.</rule>
+          <general_chance>18+ on 1d20.</general_chance>
+          <dwarf_or_elf_chance>14+ on 1d20.</dwarf_or_elf_chance>
+          <thief_note>Thieves use their own hear noise chance from thief skills.</thief_note>
+          <attempt_limit>One attempt per character per door or intersection.</attempt_limit>
+          <exception>Some creatures, such as undead, do not make noise.</exception>
+        </listening_at_doors_or_intersections>
+      </doors>
+
+      <traps_and_trap_detection>
+        <searching_for_traps>
+          <scope>All classes can search for non-magical traps.</scope>
+          <requirements>
+            <rule>Players must declare active searching.</rule>
+            <rule>They must search the correct location.</rule>
+            <rule>The Judge rolls secretly.</rule>
+            <rule>Searching takes 1 turn per 10' x 10' area.</rule>
+            <rule>One roll per character per location.</rule>
+          </requirements>
+          <detection_chances>
+            <general>18+ on 1d20.</general>
+            <dwarf>14+ on 1d20.</dwarf>
+          </detection_chances>
+        </searching_for_traps>
+
+        <trap_triggering>
+          <rule>Traps have specific triggers such as opening a door or stepping on a specific area.</rule>
+          <trigger_check>Whenever an action could trigger a trap, the Judge rolls 1d6.</trigger_check>
+          <springs_on>1-2 on 1d6.</springs_on>
+        </trap_triggering>
+
+        <trap_effects>
+          <general_rule>Each trap has a specific effect depending on type.</general_rule>
+          <pit_trap>
+            <damage>1d6 damage per 10 feet fallen.</damage>
+          </pit_trap>
+          <other_traps>
+            <rule>Some traps allow a saving throw to reduce or avoid effects.</rule>
+            <rule>Some traps only deal damage on a successful attack throw.</rule>
+          </other_traps>
+        </trap_effects>
+      </traps_and_trap_detection>
+    </dungeon_adventures>
+
+    <wilderness_adventures>
+      <marching_and_mapping>
+        <rule>Wilderness marching and mapping function like other adventures.</rule>
+        <rule>The party travels in an established marching order.</rule>
+        <rule>The mapper records progress in unexplored areas, unless the party already has a map.</rule>
+        <rule>The Judge uses a prepared map.</rule>
+        <mapping_scales>
+          <scale>Standard wilderness map: 6 miles per hex.</scale>
+          <scale>Larger area map: 24 miles per hex.</scale>
+        </mapping_scales>
+      </marching_and_mapping>
+
+      <time_and_wilderness_movement>
+        <distance_scale>
+          <rule>Distances are measured in yards rather than feet.</rule>
+          <conversion>A character who moves 120 feet per turn in a dungeon moves 120 yards per turn in the wilderness.</conversion>
+          <rule>Weapon and spell ranges are measured in yards in the wilderness.</rule>
+          <rule>Areas of effect remain unchanged.</rule>
+        </distance_scale>
+
+        <wilderness_movement_table>
+          <table name="Wilderness Movement by Exploration Rate">
+            <columns>
+              <column>Exploration Movement (Feet per Turn)</column>
+              <column>Wilderness Movement (Miles per Day)</column>
+            </columns>
+            <rows>
+              <row><cell>30'</cell><cell>6</cell></row>
+              <row><cell>60'</cell><cell>12</cell></row>
+              <row><cell>90'</cell><cell>18</cell></row>
+              <row><cell>120'</cell><cell>24</cell></row>
+              <row><cell>150'</cell><cell>30</cell></row>
+              <row><cell>180'</cell><cell>36</cell></row>
+              <row><cell>210'</cell><cell>42</cell></row>
+              <row><cell>240'</cell><cell>48</cell></row>
+              <row><cell>270'</cell><cell>54</cell></row>
+              <row><cell>300'</cell><cell>60</cell></row>
+              <row><cell>330'</cell><cell>66</cell></row>
+              <row><cell>360'</cell><cell>72</cell></row>
+            </rows>
+          </table>
+        </wilderness_movement_table>
+
+        <party_rate>
+          <rule>A traveling party moves at the rate of its slowest member.</rule>
+        </party_rate>
+
+        <terrain_multipliers>
+          <table name="Terrain Movement Multipliers">
+            <columns>
+              <column>Terrain</column>
+              <column>Movement Multiplier</column>
+            </columns>
+            <rows>
+              <row><cell>Desert, hills, wooded areas</cell><cell>x 2/3</cell></row>
+              <row><cell>Thick jungle, swamps, mountains</cell><cell>x 1/2</cell></row>
+              <row><cell>Road travel, clear wide trails</cell><cell>x 3/2</cell></row>
+            </rows>
+          </table>
+          <rule>The listed miles per day assume an 8-hour day through open, clear terrain before modifiers.</rule>
+          <rule>Other terrain features such as canyons or large rivers may further slow travel at the Judge's discretion.</rule>
+        </terrain_multipliers>
+
+        <forced_march>
+          <definition>Traveling 12 hours in a day.</definition>
+          <benefit>Increase miles traveled that day by 50%.</benefit>
+          <cost>Characters must rest for 24 hours afterward.</cost>
+        </forced_march>
+
+        <routine_rest>
+          <rule>During normal wilderness travel, characters must rest one day per six days of travel.</rule>
+        </routine_rest>
+
+        <penalty_for_insufficient_rest>
+          <rule>Characters who do not get proper rest suffer a cumulative -1 penalty on attack throws and damage rolls per day.</rule>
+          <duration>Until they rest.</duration>
+        </penalty_for_insufficient_rest>
+
+        <time_scale>
+          <rule>While traveling in the wilderness, time is usually tracked in days unless an encounter occurs.</rule>
+          <rule>Encounters are resolved in rounds.</rule>
+          <rule>Turns are not commonly used in wilderness adventures.</rule>
+        </time_scale>
+      </time_and_wilderness_movement>
+
+      <getting_lost>
+        <safe_travel>
+          <rule>Following trails, roads, and clear landmarks prevents becoming lost.</rule>
+        </safe_travel>
+        <lost_check>
+          <timing>At the start of each day of overland travel.</timing>
+          <procedure>The Judge makes a proficiency throw against the terrain's navigation target.</procedure>
+          <navigation_bonus>If any party member has Navigation proficiency, the party gains +4 on the throw.</navigation_bonus>
+        </lost_check>
+        <navigation_table>
+          <table name="Wilderness Navigation">
+            <columns>
+              <column>Terrain</column>
+              <column>Navigation</column>
+            </columns>
+            <rows>
+              <row><cell>Plains</cell><cell>4+</cell></row>
+              <row><cell>Mountains or Hills</cell><cell>7+</cell></row>
+              <row><cell>Forest or Coast</cell><cell>7+</cell></row>
+              <row><cell>Open Sea</cell><cell>11+</cell></row>
+              <row><cell>Desert</cell><cell>11+</cell></row>
+              <row><cell>Jungle or Swamp</cell><cell>11+</cell></row>
+            </rows>
+          </table>
+        </navigation_table>
+        <when_lost>
+          <rule>If the party becomes lost, the Judge decides their actual direction of travel and how far off course they are.</rule>
+        </when_lost>
+      </getting_lost>
+
+      <rations_and_foraging>
+        <daily_consumption>
+          <rule>Each character must consume 1 stone of food and drink per day.</rule>
+          <breakdown>
+            <food>2 lb food</food>
+            <water>1 gallon water, about 8 lb</water>
+          </breakdown>
+        </daily_consumption>
+
+        <lack_of_food>
+          <rule>No significant effect for the first two days without sufficient food.</rule>
+          <after_two_days>
+            <damage>Lose 1 hit point per day.</damage>
+            <healing>Cannot heal naturally.</healing>
+            <magic_healing>Still functions.</magic_healing>
+          </after_two_days>
+          <recovery>
+            <rule>Eating enough food for one day restores natural healing.</rule>
+            <rule>Lost hit points then recover at the normal rate.</rule>
+          </recovery>
+        </lack_of_food>
+
+        <lack_of_water>
+          <after_one_day>
+            <damage>Lose 1d4 hit points.</damage>
+            <continued_damage>Lose an additional 1d4 hit points per day thereafter.</continued_damage>
+            <healing_loss>Healing ability is lost when the first die of damage is rolled.</healing_loss>
+          </after_one_day>
+        </lack_of_water>
+
+        <foraging>
+          <activity>Can be done while traveling.</activity>
+          <check>Proficiency throw 18+ on 1d20 per day of travel.</check>
+          <success>Food for 1d6 man-sized creatures.</success>
+        </foraging>
+
+        <hunting>
+          <activity>Must be the only activity for the day; no travel is possible.</activity>
+          <check>Proficiency throw 14+ on 1d20.</check>
+          <success>Food for 2d6 man-sized creatures.</success>
+          <additional_rule>One wandering monster check is made during the day of hunting using the appropriate terrain table.</additional_rule>
+        </hunting>
+
+        <survival_proficiency_bonus>
+          <rule>Characters with Survival proficiency gain +4 on hunt and forage throws.</rule>
+        </survival_proficiency_bonus>
+      </rations_and_foraging>
+
+      <air_travel>
+        <movement>
+          <rule>Long-distance air movement equals normal land miles per day multiplied by 2.</rule>
+          <example_equivalent>120' normal movement corresponds to 48 miles per day by air.</example_equivalent>
+          <possible_slowing_factors>
+            <factor>Very high mountains</factor>
+            <factor>Storms</factor>
+            <factor>Thick fog</factor>
+          </possible_slowing_factors>
+        </movement>
+        <carrying_capacity_by_hd>
+          <rule>Winged beasts may carry riders or burdens in size increments based on Hit Dice multiples of 3.</rule>
+          <capacity_examples_as_rules>
+            <entry hd="3">May carry a dwarf or human child.</entry>
+            <entry hd="6">May carry an adult human or elf, or two dwarves.</entry>
+            <entry hd="12">May carry large animals such as horses, or four adult humans.</entry>
+            <entry hd="24">May carry a very large animal, or four horses, or eight humans.</entry>
+          </capacity_examples_as_rules>
+        </carrying_capacity_by_hd>
+      </air_travel>
+    </wilderness_adventures>
+
+    <sea_adventures>
+      <sea_vessels>
+        <general_rules>
+          <rule>Characters do not map or march at sea; they sail or row on vessels.</rule>
+          <rule>Some vessels can be handled by an adventuring party; others require many sailors or rowers.</rule>
+          <rule>Structural hit points function like normal hit points for creatures.</rule>
+          <rule>If a vessel is reduced to 0 or fewer structural hit points, it can no longer move and ship weapons no longer function.</rule>
+          <rule>A ship sinks 1d10 rounds after being reduced to 0 structural hit points.</rule>
+        </general_rules>
+
+        <sea_vessels_table>
+          <table name="Sea Vessels">
+            <columns>
+              <column>Vessel</column>
+              <column>Crew Sailors</column>
+              <column>Crew Rowers</column>
+              <column>Crew Marines</column>
+              <column>Feet per Round Sailing</column>
+              <column>Feet per Round Rowing</column>
+              <column>Miles per Day Sailing</column>
+              <column>Miles per Day Rowing</column>
+              <column>Cargo (stone)</column>
+              <column>Armor Class</column>
+              <column>Structural Hit Points</column>
+            </columns>
+            <rows>
+              <row><cell>Boat, river</cell><cell>-</cell><cell>1</cell><cell>1</cell><cell>-</cell><cell>60'</cell><cell>-</cell><cell>36</cell><cell>600</cell><cell>1</cell><cell>20-45</cell></row>
+              <row><cell>Boat, sailing</cell><cell>1</cell><cell>-</cell><cell>-</cell><cell>45'</cell><cell>-</cell><cell>72</cell><cell>-</cell><cell>400</cell><cell>1</cell><cell>20-45</cell></row>
+              <row><cell>Canoe</cell><cell>-</cell><cell>1</cell><cell>-</cell><cell>-</cell><cell>60'</cell><cell>-</cell><cell>18</cell><cell>60</cell><cell>0</cell><cell>5-10</cell></row>
+              <row><cell>Galley, large</cell><cell>20</cell><cell>180</cell><cell>50</cell><cell>60'</cell><cell>120'</cell><cell>90</cell><cell>50</cell><cell>4000</cell><cell>2</cell><cell>95-120</cell></row>
+              <row><cell>Galley, small</cell><cell>10</cell><cell>60</cell><cell>20</cell><cell>60'</cell><cell>150'</cell><cell>90</cell><cell>60</cell><cell>2000</cell><cell>1</cell><cell>75-100</cell></row>
+              <row><cell>Galley, war</cell><cell>30</cell><cell>300</cell><cell>75</cell><cell>45'</cell><cell>120'</cell><cell>72</cell><cell>50</cell><cell>6000</cell><cell>2</cell><cell>125-150</cell></row>
+              <row><cell>Lifeboat</cell><cell>-</cell><cell>1</cell><cell>-</cell><cell>-</cell><cell>30'</cell><cell>-</cell><cell>18</cell><cell>150</cell><cell>0</cell><cell>12-18</cell></row>
+              <row><cell>Longship</cell><cell>75</cell><cell>(60)</cell><cell>(75)</cell><cell>60'</cell><cell>150'</cell><cell>90</cell><cell>60</cell><cell>2000</cell><cell>1</cell><cell>65-80</cell></row>
+              <row><cell>Raft</cell><cell>1</cell><cell>-</cell><cell>-</cell><cell>-</cell><cell>30'</cell><cell>-</cell><cell>12</cell><cell>2.5 per sq. foot</cell><cell>0</cell><cell>5 per sq. foot</cell></row>
+              <row><cell>Sailing Ship, large</cell><cell>20</cell><cell>-</cell><cell>-</cell><cell>45'</cell><cell>-</cell><cell>72</cell><cell>-</cell><cell>30000</cell><cell>2</cell><cell>125-180</cell></row>
+              <row><cell>Sailing Ship, small</cell><cell>12</cell><cell>-</cell><cell>-</cell><cell>60'</cell><cell>-</cell><cell>90</cell><cell>-</cell><cell>10000</cell><cell>1</cell><cell>65-90</cell></row>
+              <row><cell>Troop Transport, large</cell><cell>20</cell><cell>-</cell><cell>50</cell><cell>45'</cell><cell>-</cell><cell>72</cell><cell>-</cell><cell>30000</cell><cell>2</cell><cell>150-200</cell></row>
+              <row><cell>Troop Transport, small</cell><cell>12</cell><cell>-</cell><cell>25</cell><cell>60'</cell><cell>-</cell><cell>90</cell><cell>-</cell><cell>10000</cell><cell>1</cell><cell>90-110</cell></row>
+            </rows>
+          </table>
+        </sea_vessels_table>
+      </sea_vessels>
+
+      <sea_movement>
+        <general_rules>
+          <rule>Long-distance sea movement depends on vessel type and weather.</rule>
+          <rule>Miles per day on the Sea Vessels table assume a 12-hour day of travel.</rule>
+          <rule>Ships under sail may travel 24 hours per day if a qualified navigator is aboard, potentially doubling distance per day.</rule>
+          <rule>This 24-hour sailing multiplier is in addition to weather modifiers.</rule>
+          <rule>The 24-hour multiplier does not apply if the ship stops each night, if it is under oar, if it is traveling along a coastline, or if it lacks the minimum number of regular crewmen.</rule>
+          <rule>Sailing against the wind requires tacking and reduces movement rates by two rows on the wind conditions table.</rule>
+        </general_rules>
+
+        <wind_conditions_table>
+          <table name="Wind Conditions and Sailing Modifiers">
+            <columns>
+              <column>d20</column>
+              <column>Wind Conditions</column>
+              <column>Sailing Modifier</column>
+            </columns>
+            <rows>
+              <row><cell>1</cell><cell>Becalmed</cell><cell>x0</cell></row>
+              <row><cell>2-4</cell><cell>Light Breeze</cell><cell>x 1/3</cell></row>
+              <row><cell>5-8</cell><cell>Moderate Breeze</cell><cell>x 2/3</cell></row>
+              <row><cell>9-12</cell><cell>Average Winds</cell><cell>x1</cell></row>
+              <row><cell>13-16</cell><cell>Strong Winds</cell><cell>x1 1/3</cell></row>
+              <row><cell>17-19</cell><cell>Very Strong Winds</cell><cell>x1 2/3</cell></row>
+              <row><cell>20</cell><cell>Gale</cell><cell>x2</cell></row>
+            </rows>
+          </table>
+        </wind_conditions_table>
+
+        <wind_direction_table>
+          <table name="Wind Direction">
+            <columns>
+              <column>d12</column>
+              <column>Wind Direction</column>
+            </columns>
+            <rows>
+              <row><cell>1</cell><cell>Northerly</cell></row>
+              <row><cell>2</cell><cell>Northeasterly</cell></row>
+              <row><cell>3</cell><cell>Easterly</cell></row>
+              <row><cell>4</cell><cell>Southeasterly</cell></row>
+              <row><cell>5</cell><cell>Southerly</cell></row>
+              <row><cell>6</cell><cell>Southwesterly</cell></row>
+              <row><cell>7</cell><cell>Westerly</cell></row>
+              <row><cell>8</cell><cell>Northwesterly</cell></row>
+              <row><cell>9-12</cell><cell>Prevailing wind direction for this locale</cell></row>
+            </rows>
+          </table>
+        </wind_direction_table>
+
+        <wind_effects>
+          <becalmed>
+            <rule>Sailing ships cannot move.</rule>
+            <rule>Oared ships may still move at rowing rate.</rule>
+          </becalmed>
+          <very_strong_winds>
+            <rule>Sailing against the wind is not possible.</rule>
+          </very_strong_winds>
+          <gale>
+            <rule>Sailing against the wind is not possible.</rule>
+            <rule>Ships exposed to a gale may be damaged or sunk.</rule>
+            <damage>2d8 damage per hour sailed.</damage>
+            <rowed_vessels>
+              <rule>Galleys and other rowed vessels must make a saving throw of 16+ each hour or be sunk.</rule>
+              <rule>Even on a successful saving throw, the vessel takes double gale damage.</rule>
+              <coastal_escape>
+                <rule>Galleys in sight of a coastline may beach to avoid the gale.</rule>
+                <rule>If the coast is clear terrain, they beach automatically.</rule>
+                <rule>Otherwise they need a navigation throw of 14+ to find a safe beach or cove.</rule>
+              </coastal_escape>
+            </rowed_vessels>
+          </gale>
+        </wind_effects>
+      </sea_movement>
+
+      <sea_getting_lost>
+        <lost_check>
+          <timing>At the start of each day of sea travel.</timing>
+          <procedure>The Judge makes a proficiency throw against the listed navigation value.</procedure>
+          <navigation_bonus>If any party member has Navigation proficiency, the party gets +4.</navigation_bonus>
+        </lost_check>
+        <navigation_table>
+          <table name="Sea Navigation">
+            <columns>
+              <column>Terrain</column>
+              <column>Navigation</column>
+            </columns>
+            <rows>
+              <row><cell>River or lake</cell><cell>4+</cell></row>
+              <row><cell>Coast</cell><cell>7+</cell></row>
+              <row><cell>Open Sea</cell><cell>11+</cell></row>
+            </rows>
+          </table>
+        </navigation_table>
+        <when_lost>
+          <rule>If the party becomes lost, the Judge decides its actual direction and how far it is off the intended course.</rule>
+          <rule>The Judge should describe wind direction according to the direction the group believes it is traveling until they discover the error.</rule>
+        </when_lost>
+      </sea_getting_lost>
+
+      <rations_and_fishing>
+        <food_and_water>
+          <rule>Sea voyages use wilderness food and water rules.</rule>
+          <rowers>
+            <water_requirement>3 gallons of water per day rather than 1 gallon.</water_requirement>
+            <encumbrance>3 stone per day of water supplies.</encumbrance>
+          </rowers>
+        </food_and_water>
+
+        <rations>
+          <rule>Standard rations are perishable and become inedible after one week.</rule>
+          <rule>Long sea voyages therefore commonly rely on iron rations.</rule>
+        </rations>
+
+        <scurvy>
+          <trigger>One month at sea eating iron rations without fresh fruit, onions, or potatoes.</trigger>
+          <effect>Lose 1 point of STR and 1 point of CON each week.</effect>
+          <death>If either ability reaches 0, the character dies.</death>
+          <recovery>Eating fresh food restores 3 points each of STR and CON per week.</recovery>
+        </scurvy>
+
+        <fishing>
+          <requirement>Ship must be becalmed or anchored.</requirement>
+          <check>Each fishing character may attempt a proficiency throw of 14+ on 1d20 each day.</check>
+          <survival_bonus>+4 if the character has Survival proficiency.</survival_bonus>
+          <success>Food for 2d6 man-sized creatures.</success>
+        </fishing>
+      </rations_and_fishing>
+    </sea_adventures>
+
+    <experience_from_adventures>
+      <general_rule>
+        <rule>Only characters who survive an adventure receive XP.</rule>
+        <sources>
+          <source>Treasure</source>
+          <source>Monsters</source>
+        </sources>
+      </general_rule>
+
+      <experience_from_treasure>
+        <civilization_requirement>
+          <rule>Treasure XP is awarded only for treasure recovered from the dungeon or wilderness and brought back to civilization.</rule>
+          <definition_of_civilization>Nearest friendly town or stronghold.</definition_of_civilization>
+        </civilization_requirement>
+        <award_rate>
+          <rule>Characters gain 1 XP per 1 gp value of coin, gems, jewelry, and special treasure recovered on adventures.</rule>
+        </award_rate>
+        <equipment_recovered>
+          <rule>Recovered equipment must be sold immediately for coin to grant XP.</rule>
+          <rule>If kept for later use, it grants no XP.</rule>
+        </equipment_recovered>
+        <magic_items>
+          <rule>If a recovered magic item is sold without being used, it grants 1 XP per 1 gp earned in sale.</rule>
+          <rule>If the item is used, it grants no XP, even if later sold.</rule>
+        </magic_items>
+        <non_qualifying_sources>
+          <rule>Wages and business transactions do not grant treasure XP.</rule>
+          <rule>Recovering monster parts does not grant treasure XP; that counts under monster experience.</rule>
+        </non_qualifying_sources>
+      </experience_from_treasure>
+
+      <experience_from_monsters>
+        <qualifying_defeats>
+          <rule>Defeated monsters grant XP whether outsmarted, captured, or killed.</rule>
+        </qualifying_defeats>
+        <calculation>
+          <rule>Each monster has a base XP by Hit Dice and a bonus XP per special ability.</rule>
+          <rule>Count special abilities by the number of asterisks next to the monster's Hit Dice in its listing.</rule>
+          <formula>Total monster XP = base XP + (bonus XP per ability x number of special abilities).</formula>
+        </calculation>
+        <monster_xp_table>
+          <table name="Monster Experience Points">
+            <columns>
+              <column>Monster HD</column>
+              <column>Monster Base XP</column>
+              <column>Monster Bonus XP per Ability</column>
+            </columns>
+            <rows>
+              <row><cell>Less than 1</cell><cell>5</cell><cell>1</cell></row>
+              <row><cell>1</cell><cell>10</cell><cell>3</cell></row>
+              <row><cell>1+</cell><cell>15</cell><cell>6</cell></row>
+              <row><cell>2</cell><cell>20</cell><cell>9</cell></row>
+              <row><cell>2+</cell><cell>35</cell><cell>12</cell></row>
+              <row><cell>3</cell><cell>50</cell><cell>15</cell></row>
+              <row><cell>3+</cell><cell>65</cell><cell>35</cell></row>
+              <row><cell>4</cell><cell>80</cell><cell>55</cell></row>
+              <row><cell>4+</cell><cell>140</cell><cell>75</cell></row>
+              <row><cell>5</cell><cell>200</cell><cell>150</cell></row>
+              <row><cell>5+</cell><cell>260</cell><cell>200</cell></row>
+              <row><cell>6</cell><cell>320</cell><cell>250</cell></row>
+              <row><cell>6+</cell><cell>380</cell><cell>300</cell></row>
+              <row><cell>7</cell><cell>440</cell><cell>350</cell></row>
+              <row><cell>7+</cell><cell>500</cell><cell>400</cell></row>
+              <row><cell>8</cell><cell>600</cell><cell>500</cell></row>
+              <row><cell>9</cell><cell>700</cell><cell>600</cell></row>
+              <row><cell>10</cell><cell>850</cell><cell>700</cell></row>
+              <row><cell>11</cell><cell>1,000</cell><cell>800</cell></row>
+              <row><cell>12</cell><cell>1,200</cell><cell>900</cell></row>
+              <row><cell>13</cell><cell>1,400</cell><cell>1,000</cell></row>
+              <row><cell>14</cell><cell>1,600</cell><cell>1,100</cell></row>
+              <row><cell>15</cell><cell>1,800</cell><cell>1,200</cell></row>
+              <row><cell>16</cell><cell>2,000</cell><cell>1,300</cell></row>
+              <row><cell>17</cell><cell>2,200</cell><cell>1,400</cell></row>
+              <row><cell>18</cell><cell>2,400</cell><cell>1,500</cell></row>
+              <row><cell>19</cell><cell>2,600</cell><cell>1,600</cell></row>
+              <row><cell>20</cell><cell>2,800</cell><cell>1,800</cell></row>
+              <row><cell>21*</cell><cell>3,000</cell><cell>2,000</cell></row>
+            </rows>
+            <notes>
+              <note>For monsters of HD 22 and higher, add a cumulative 250 XP to both Base and Bonus categories for each additional HD step.</note>
+            </notes>
+          </table>
+        </monster_xp_table>
+      </experience_from_monsters>
+
+      <allocating_xp>
+        <rule>Total treasure XP and monster XP are added together.</rule>
+        <rule>The total is divided evenly among all surviving party members and henchmen.</rule>
+        <henchmen_share>Each henchman receives one-half share.</henchmen_share>
+        <eligibility>
+          <rule>Only characters alive when the party returns to civilization receive XP.</rule>
+          <rule>Characters slain during the adventure but raised before returning to civilization do receive XP.</rule>
+        </eligibility>
+      </allocating_xp>
+
+      <adjustments_to_xp>
+        <rule>Prime requisite XP bonuses or penalties are applied to the individual character's final XP award.</rule>
+      </adjustments_to_xp>
+
+      <character_advancement>
+        <procedure>
+          <step number="1">Record the new level, title, and XP needed for the next level.</step>
+          <step number="2">Roll additional hit points using the appropriate hit die and Constitution modifier; gain at least 1 hp regardless of Constitution.</step>
+          <step number="3">Record any new or improved class abilities.</step>
+          <step number="4">Choose any new proficiencies and spells for which the character is eligible.</step>
+          <step number="5">Update attack throws and saving throws.</step>
+        </procedure>
+        <restriction>
+          <rule>A character can never gain enough XP from one adventure to advance two or more levels.</rule>
+        </restriction>
+      </character_advancement>
+
+      <character_death>
+        <after_death_options>
+          <option>Begin playing a surviving henchman.</option>
+          <option>Bring in a back-up character.</option>
+          <option>Create a new character.</option>
+        </after_death_options>
+
+        <heirs_and_inheritance>
+          <rule>With the Judge's permission, a new character may be the heir of the dead character.</rule>
+          <rule>The Judge may allow a will leaving treasure to an heir.</rule>
+          <banking_requirement>
+            <rule>If treasure is left formally through a bank, it must be stored with a reputable bank.</rule>
+            <cost>The bank charges 10% of the treasure.</cost>
+          </banking_requirement>
+          <default_heir_level>
+            <rule>Unless the player begins as an existing henchman, an heir starts as a new 1st level character.</rule>
+            <rule>A player may leave a character inheritance only one time.</rule>
+          </default_heir_level>
+        </heirs_and_inheritance>
+
+        <reserve_xp_fund>
+          <definition>A reserve fund of experience points that an heir may use if the original character is permanently killed.</definition>
+          <value>90% of the gold piece value of money allocated to the reserve.</value>
+          <allocation_requirement>
+            <rule>Money must be spent for no tangible in-game benefit whatsoever.</rule>
+          </allocation_requirement>
+        </reserve_xp_fund>
+      </character_death>
+
+      <zero_level_characters_and_adventuring_xp>
+        <rule>A 0th level character can earn adventuring XP.</rule>
+        <advancement_threshold>At 100 XP, the character becomes a 1st level fighter.</advancement_threshold>
+        <on_becoming_fighter>
+          <rule>Gain fighter class proficiency, powers, attack throws, and saving throws.</rule>
+          <rule>Re-roll hit points using 1d8, keeping either the new total or the old total, whichever is higher.</rule>
+          <rule>Retain existing general proficiencies.</rule>
+        </on_becoming_fighter>
+        <erosion_of_general_proficiencies>
+          <rule>At 2nd, 3rd, and 4th level, remove one of the pre-existing general proficiencies each time.</rule>
+        </erosion_of_general_proficiencies>
+        <adventuring_proficiency_gain>
+          <rule>At 4th level, the character gains Adventuring proficiency.</rule>
+        </adventuring_proficiency_gain>
+        <class_restriction>
+          <rule>Under normal circumstances, 0th level characters advancing from adventuring XP become fighters, not other classes.</rule>
+        </class_restriction>
+      </zero_level_characters_and_adventuring_xp>
+    </experience_from_adventures>
+  </adventures>
+
+  <encounters>
+    <general_definition>
+      <encounter>Any meeting between adventurers and potential enemies during adventures.</encounter>
+    </general_definition>
+
+    <dungeon_encounters>
+      <time_scale>
+        <round>10 seconds.</round>
+        <rounds_per_minute>6</rounds_per_minute>
+        <rounds_per_turn>60</rounds_per_turn>
+        <rule>Any encounter lasting 60 rounds or less counts as one full turn for adventure timekeeping.</rule>
+      </time_scale>
+
+      <encounter_sequence>
+        <step number="1">Encounter begins when the Judge places or rolls an encounter.</step>
+        <step number="2">Judge determines encounter distance, usually 2d6 x 10 feet unless already known.</step>
+        <step number="3">Judge determines surprise for the characters and/or monsters.</step>
+        <step number="4">Judge checks monster reaction.</step>
+        <step number="5">Judge decides monster action; players decide character action such as fight, flee, or talk.</step>
+        <step number="6">If either side fights, combat begins and time proceeds in rounds.</step>
+        <step number="7">Unsurprised characters roll initiative and act in initiative order.</step>
+        <step number="8">Initiative is rolled again at the start of each round.</step>
+        <step number="9">Encounter usually ends when one side dies or flees.</step>
+      </encounter_sequence>
+
+      <encounter_distance_limitations>
+        <rule>Dungeon layout and available light sources may limit encounter distance.</rule>
+      </encounter_distance_limitations>
+    </dungeon_encounters>
+
+    <wilderness_encounters>
+      <general_rules>
+        <rule>Wilderness encounters follow the same general sequence as dungeon encounters.</rule>
+        <rule>Distances are measured in yards.</rule>
+      </general_rules>
+
+      <encounter_distance_table>
+        <table name="Wilderness Encounter Distance">
+          <columns>
+            <column>Terrain</column>
+            <column>Encounter Distance (yards)</column>
+          </columns>
+          <rows>
+            <row><cell>Badlands</cell><cell>2d6 x 10</cell></row>
+            <row><cell>Desert</cell><cell>4d6 x 10</cell></row>
+            <row><cell>Fields, Fallow</cell><cell>4d6 x 10</cell></row>
+            <row><cell>Fields, Ripe</cell><cell>5d10</cell></row>
+            <row><cell>Fields, Wild</cell><cell>3d6 x 5</cell></row>
+            <row><cell>Forest, Heavy or Jungle</cell><cell>5d4</cell></row>
+            <row><cell>Forest, Light</cell><cell>5d8</cell></row>
+            <row><cell>Marsh</cell><cell>8d10</cell></row>
+            <row><cell>Mountains</cell><cell>4d6 x 10</cell></row>
+            <row><cell>Plains</cell><cell>5d20 x 10</cell></row>
+          </rows>
+        </table>
+      </encounter_distance_table>
+
+      <visibility_rules>
+        <rule>Man-sized targets are visible from up to 1,000 yards over flat plains.</rule>
+        <rule>Larger creatures can see and be seen at proportionally greater distances.</rule>
+        <rule>Elevation such as towers or hills also increases spotting distance proportionally relative to a 6-foot person.</rule>
+      </visibility_rules>
+    </wilderness_encounters>
+
+    <sea_encounters>
+      <general_rules>
+        <rule>Sea encounters are similar to wilderness encounters.</rule>
+        <rule>Monsters can surprise a ship.</rule>
+        <rule>A ship can never surprise a monster native to the water.</rule>
+      </general_rules>
+      <distances>
+        <monster_distance>Use plains encounter distance: 5d20 x 10 yards, modified by monster size.</monster_distance>
+        <other_ship_visibility>Up to 6 miles in normal weather.</other_ship_visibility>
+        <land_visibility>Up to 24 miles in normal weather.</land_visibility>
+        <visibility_reduction>
+          <rule>Harsh weather or dense fog may reduce normal visibility distances by 90%.</rule>
+          <rule>The Judge may instead apply another penalty depending on conditions.</rule>
+        </visibility_reduction>
+      </distances>
+    </sea_encounters>
+
+    <monsters_encountered>
+      <number_encountered>
+        <definition>Monster entries list a Number Encountered range for one meeting.</definition>
+        <rule>The actual number encountered depends on whether monsters are wandering or in lair, and whether the encounter is in wilderness or dungeon.</rule>
+        <rule>In dungeons, the number encountered also varies by dungeon level.</rule>
+      </number_encountered>
+    </monsters_encountered>
+
+    <surprise>
+      <when_used>
+        <rule>Used when characters and monsters encounter each other unexpectedly.</rule>
+        <rule>The Judge may roll for one side, both sides, or only the side that could reasonably be surprised.</rule>
+      </when_used>
+
+      <procedure>
+        <step number="1">Judge rolls 1d6 for the group.</step>
+        <step number="2">Apply relevant adjustments.</step>
+        <step number="3">Consult the Surprise table.</step>
+      </procedure>
+
+      <surprise_table>
+        <table name="Surprise">
+          <columns>
+            <column>Adjusted Die Roll</column>
+            <column>Result</column>
+          </columns>
+          <rows>
+            <row><cell>2-</cell><cell>Surprised</cell></row>
+            <row><cell>3-6+</cell><cell>Ready</cell></row>
+          </rows>
+        </table>
+      </surprise_table>
+
+      <effects>
+        <surprised>
+          <duration>1 round</duration>
+          <rule>Surprised opponents are caught off guard for one round.</rule>
+          <rule>Attacks against them gain +2 to the attack throw.</rule>
+          <rule>They do not receive shield benefit, if any.</rule>
+          <rule>Thieves may backstab surprised opponents.</rule>
+        </surprised>
+        <both_sides_surprised>
+          <rule>If all participants on both sides are surprised, no one acts in the first round.</rule>
+          <rule>Second round initiative is rolled normally.</rule>
+        </both_sides_surprised>
+        <ready>
+          <rule>Ready creatures may act in the first round.</rule>
+        </ready>
+      </effects>
+
+      <modifiers>
+        <rule>Well-hidden or naturally stealthy creatures may impose a penalty on the other side's surprise roll.</rule>
+        <rule>Some creatures or classes are less likely to be surprised and may gain a bonus on the roll.</rule>
+      </modifiers>
+    </surprise>
+
+    <surprise_and_sneaking>
+      <general_rule>
+        <rule>Sneaking is resolved using surprise rolls and hearing noises throws, depending on how alert the observers are.</rule>
+      </general_rule>
+
+      <observer_state type="actively_watching">
+        <rule>Characters attempting to sneak through are detected automatically.</rule>
+        <duration_limit>Most monsters cannot maintain this level of alertness for more than one turn.</duration_limit>
+        <exceptions>Constructs and undead are always actively alert.</exceptions>
+      </observer_state>
+
+      <observer_state type="passively_watching">
+        <procedure>
+          <step number="1">Judge makes a surprise roll for the monsters when characters attempt to sneak.</step>
+          <step number="2">If monsters are surprised, characters move for one round undetected.</step>
+          <step number="3">If monsters are ready, the sneaking characters are detected.</step>
+        </procedure>
+      </observer_state>
+
+      <observer_state type="distracted_or_not_looking">
+        <procedure>
+          <step number="1">Judge makes hearing noises throws for the monsters, normally 18+ on 1d20.</step>
+          <step number="2">If all fail, characters move for one round undetected.</step>
+          <step number="3">If at least one succeeds, that monster hears something.</step>
+          <step number="4">Judge then makes a surprise roll to determine whether the sneaking characters are actually detected.</step>
+        </procedure>
+      </observer_state>
+
+      <probabilities_from_text>
+        <passive_monster>Under normal circumstances, a passive monster can be snuck up on 33% of the time.</passive_monster>
+        <distracted_monster>Under normal circumstances, a distracted monster can be snuck up on 90% of the time.</distracted_monster>
+      </probabilities_from_text>
+
+      <alertness_proficiency_effect>
+        <rule>A monster with Alertness is surprised only on 1 in 6.</rule>
+        <rule>A monster with Alertness gains +4 to Hear Noise.</rule>
+        <resulting_probabilities>
+          <passive_monster_with_alertness>Chance of sneaking up drops to 16%.</passive_monster_with_alertness>
+          <distracted_monster_with_alertness>Chance of sneaking up drops to 75%.</distracted_monster_with_alertness>
+        </resulting_probabilities>
+      </alertness_proficiency_effect>
+
+      <thief_interaction>
+        <rule>If a dimly lit area or concealment exists, a thief or similar class may attempt to hide in shadows.</rule>
+        <rule>If successful, monsters do not see the thief and are treated as distracted for detection purposes.</rule>
+        <rule>The thief is then detected only if the monsters hear him make noise.</rule>
+        <rule>If the thief also successfully moves silently, he cannot be heard.</rule>
+      </thief_interaction>
+
+      <monsters_sneaking>
+        <rule>Monsters may sneak using the same mechanics.</rule>
+        <rule>Characters then rely on surprise rolls and/or hear noise throws to detect them.</rule>
+      </monsters_sneaking>
+    </surprise_and_sneaking>
+
+    <reactions>
+      <when_used>
+        <rule>Use a reaction roll when monster response to the party is not obvious.</rule>
+      </when_used>
+
+      <procedure>
+        <step number="1">Judge rolls 2d6.</step>
+        <step number="2">Apply the lead character's Charisma bonus or penalty.</step>
+        <step number="3">Apply any other relevant adjustments.</step>
+        <step number="4">Consult the Monster Reaction table.</step>
+      </procedure>
+
+      <monster_reaction_table>
+        <table name="Monster Reaction">
+          <columns>
+            <column>Adjusted Die Roll</column>
+            <column>Result</column>
+          </columns>
+          <rows>
+            <row><cell>2-</cell><cell>Hostile, attacks</cell></row>
+            <row><cell>3-5</cell><cell>Unfriendly, may attack</cell></row>
+            <row><cell>6-8</cell><cell>Neutral, uncertain</cell></row>
+            <row><cell>9-11</cell><cell>Indifferent, uninterested</cell></row>
+            <row><cell>12+</cell><cell>Friendly, helpful</cell></row>
+          </rows>
+        </table>
+      </monster_reaction_table>
+
+      <reaction_results>
+        <hostile>Attack immediately.</hostile>
+        <unfriendly>Dislike the adventurers and will attack if it is reasonable to do so.</unfriendly>
+        <neutral>Will consider letting adventurers live if they parley; not necessarily friendly.</neutral>
+        <indifferent>Will ignore adventurers if possible and negotiate if necessary.</indifferent>
+        <friendly>Likes the adventurers and may cooperate in mutually beneficial ways.</friendly>
+      </reaction_results>
+
+      <friendly_monsters>
+        <rule>Friendly monsters may be recruited as hirelings with a successful roll on the Reaction to Hiring Offer table.</rule>
+      </friendly_monsters>
+
+      <judge_interpretation>
+        <rule>The Judge must interpret results in context.</rule>
+        <rule>The Judge may alter the rolled reaction if another result is more plausible in the circumstances.</rule>
+      </judge_interpretation>
+    </reactions>
+
+    <evasion_and_pursuit>
+      <general_rule>
+        <rule>When one side flees and the other chases, a chase begins.</rule>
+        <rule>Characters choose when to flee and whether to pursue fleeing monsters.</rule>
+        <rule>Whether monsters pursue fleeing characters is determined by a Monster Reaction roll; a result of 2-8 means they pursue.</rule>
+      </general_rule>
+    </evasion_and_pursuit>
+
+    <chases_in_the_dungeon>
+      <automatic_escape_before_combat>
+        <rule>If combat has not commenced and the fleeing side has higher movement, it can always escape.</rule>
+      </automatic_escape_before_combat>
+
+      <chase_start>
+        <rule>Otherwise the chase begins when the fleeing side starts moving on its initiative number.</rule>
+      </chase_start>
+
+      <movement_hazards>
+        <rule>During pursuit, when a character passes through a doorway, makes a hard turn, or similar maneuver, the Judge may require a saving throw versus Paralysis with Dexterity bonus added.</rule>
+        <failure_effect>
+          <rule>On failure, the character falls, moves no further that round, and may stand and make a full move on next round's initiative.</rule>
+        </failure_effect>
+      </movement_hazards>
+
+      <catching_up>
+        <rule>If pursuers are within 5 feet at the start of a round, they may begin melee combat.</rule>
+        <rule>If the fleeing side continues fleeing after pursuers reach melee range, use Defensive Movement rules.</rule>
+      </catching_up>
+
+      <ending_pursuit>
+        <adventurers>Players decide when adventurers stop pursuing monsters.</adventurers>
+        <monsters>
+          <rule>A monster stops chasing if adventurers get out of its line of sight.</rule>
+          <rule>If monsters value treasure, there is a 50% chance they stop to collect treasure the party drops (4-6 on 1d6).</rule>
+          <rule>Hungry or less intelligent monsters may similarly stop for dropped food.</rule>
+        </monsters>
+      </ending_pursuit>
+    </chases_in_the_dungeon>
+
+    <chases_in_the_wilderness>
+      <automatic_escape_on_surprise>
+        <rule>If one side is surprised in a wilderness encounter, the other side can automatically flee successfully.</rule>
+      </automatic_escape_on_surprise>
+
+      <evasion_check>
+        <rule>Otherwise, the fleeing party must succeed on the Wilderness Evasion table.</rule>
+        <rule>The larger the pursuing group relative to the fleeing group, the easier it is for the fleeing side to escape.</rule>
+        <minimum_escape_chance>5%</minimum_escape_chance>
+      </evasion_check>
+
+      <wilderness_evasion_table>
+        <table name="Wilderness Evasion">
+          <columns>
+            <column>Evading Party Size</column>
+            <column>Base Evasion Throw</column>
+            <column>Modifier if Pursuers are Up to 25% of Evading Group</column>
+            <column>Modifier if Pursuers are 26-75%</column>
+            <column>Modifier if Pursuers are 76%+</column>
+          </columns>
+          <rows>
+            <row><cell>Up to 4</cell><cell>11+</cell><cell>0</cell><cell>+4</cell><cell>+8</cell></row>
+            <row><cell>5 to 12</cell><cell>14+</cell><cell>0</cell><cell>+3</cell><cell>+5</cell></row>
+            <row><cell>13 to 24</cell><cell>16+</cell><cell>0</cell><cell>+3</cell><cell>+5</cell></row>
+            <row><cell>25+</cell><cell>19+</cell><cell>0</cell><cell>+3</cell><cell>+5</cell></row>
+          </rows>
+        </table>
+      </wilderness_evasion_table>
+
+      <judge_modifiers>
+        <rule>The Judge may modify the probabilities for conditions and environment.</rule>
+        <examples_converted_to_rules>
+          <rule>Densely wooded terrain may give a bonus to flee.</rule>
+          <rule>A much faster pursuing party may gain a bonus to catch the fleeing side.</rule>
+        </examples_converted_to_rules>
+      </judge_modifiers>
+
+      <if_evasion_fails>
+        <rule>The pursuers keep the fleeing party within sight.</rule>
+        <rule>If the pursuers have greater movement, they have a 50% chance (11+ on d20) to catch up close.</rule>
+        <rule>If that catch-up roll fails, the fleeing side may attempt to escape again.</rule>
+        <rule>This cycle repeats daily until either the fleeing side escapes or the pursuers catch them.</rule>
+      </if_evasion_fails>
+    </chases_in_the_wilderness>
+
+    <chases_at_sea>
+      <general_rule>
+        <rule>When sea vessels or sea monsters meet, one side may try to flee.</rule>
+        <rule>Initial distance is determined as a normal encounter.</rule>
+        <rule>Escape depends primarily on speed difference.</rule>
+      </general_rule>
+
+      <sea_evasion_table>
+        <table name="Sea Evasion">
+          <columns>
+            <column>Evading Vessel Compared to Pursuer</column>
+            <column>Evasion Throw</column>
+          </columns>
+          <rows>
+            <row><cell>Faster than pursuer</cell><cell>5+</cell></row>
+            <row><cell>0'-30'/round slower</cell><cell>11+</cell></row>
+            <row><cell>31'-60'/round slower</cell><cell>13+</cell></row>
+            <row><cell>61'-91'/round slower</cell><cell>15+</cell></row>
+            <row><cell>91'-120'/round slower</cell><cell>17+</cell></row>
+            <row><cell>121'+/round slower</cell><cell>19+</cell></row>
+          </rows>
+        </table>
+      </sea_evasion_table>
+
+      <outcomes>
+        <successful_evasion>
+          <rule>If evasion succeeds, pursuers cannot try again for 24 hours, and then only if a random encounter roll produces an encounter.</rule>
+        </successful_evasion>
+        <failed_evasion>
+          <rule>If evasion fails, the pursuer begins at the spotted distance and starts gaining.</rule>
+          <gain_rate>
+            <rule>If the pursuer is slower than the fleeing party, or no more than 30 feet per round faster, it gains at 30 feet (10 yards) per round.</rule>
+            <rule>If the pursuer is more than 30 feet per round faster, it gains by the full speed difference each round.</rule>
+          </gain_rate>
+        </failed_evasion>
+      </outcomes>
+    </chases_at_sea>
+  </encounters>
+</acks_rules_summary>

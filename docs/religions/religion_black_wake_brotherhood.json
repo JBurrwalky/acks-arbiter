@@ -1,0 +1,154 @@
+{
+  "religion_id": "black_wake_brotherhood",
+  "display_name": "The Black Wake Brotherhood",
+  "theology": {
+    "type": "polytheist",
+    "syncretism": "syncretist",
+    "afterlife_belief": "oblivion"
+  },
+  "alignment": "Chaotic",
+  "associated_cultures": [
+    "myrrakai"
+  ],
+  "clergy": {
+    "title_hierarchy": [
+      "Wakehand",
+      "Harbor Priest",
+      "Tide Broker",
+      "Black Admiral",
+      "Voice Below the Foam"
+    ],
+    "title_level_mapping": {
+      "1": "Wakehand",
+      "3": "Harbor Priest",
+      "5": "Tide Broker",
+      "7": "Black Admiral",
+      "9": "Voice Below the Foam"
+    },
+    "gender_restriction": "none",
+    "special_class": null,
+    "vestments": "oil-dark coats with shell charms, coin chains, and sharkskin cuffs",
+    "holy_symbol": "black coin cast into a breaking wave"
+  },
+  "practices": {
+    "holy_days_per_year": 7,
+    "holy_day_character": "sacrificial",
+    "worship_style": "ritual_sacrifice",
+    "dietary_restrictions": "no fresh water at sea on tithe days",
+    "funerary_practice": "sea_burial",
+    "stance_on_undead": "tool_of_faith"
+  },
+  "political_role": {
+    "church_state_relationship": "independent",
+    "temporal_authority": "moderate",
+    "military_involvement": "holy_warriors"
+  },
+  "cosmology": {
+    "opposing_view": "misguided",
+    "opposing_view_detail": "Lawful sea and sun gods are mocked as harbor masters who confuse taxes, charts, and chains for civilization.",
+    "notes": "See §3.3 Alignment Cosmology Rules for the hard constraints governing this field."
+  },
+  "pantheon": [
+    {
+      "deity_id": "mael_vark",
+      "display_name": "Mael Vark",
+      "epithets": [
+        "Breaker of Hulls",
+        "King of the Squall Teeth"
+      ],
+      "alignment": "Chaotic",
+      "portfolios": [
+        "sea",
+        "storms",
+        "destruction"
+      ],
+      "holy_symbol": "jagged wave biting a mast",
+      "favored_weapon": "axe",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "shark",
+      "domains_summary": "Mael Vark commands tempests, wrecks, and the brutal freedom of deep water."
+    },
+    {
+      "deity_id": "coin_eater",
+      "display_name": "The Coin-Eater",
+      "epithets": [
+        "Patron of Risk",
+        "He Who Smiles at Loaded Dice"
+      ],
+      "alignment": "Neutral",
+      "portfolios": [
+        "trade",
+        "luck",
+        "darkness"
+      ],
+      "holy_symbol": "bitten coin on black cord",
+      "favored_weapon": "dagger",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "eel",
+      "domains_summary": "The Coin-Eater governs speculation, smuggling, midnight bargains, and profits won from peril."
+    },
+    {
+      "deity_id": "sister_sable",
+      "display_name": "Sister Sable",
+      "epithets": [
+        "Lady of Velvet Knives",
+        "Bride of the Last Port"
+      ],
+      "alignment": "Chaotic",
+      "portfolios": [
+        "night",
+        "beauty",
+        "trickery"
+      ],
+      "holy_symbol": "black veil pinned with a knife",
+      "favored_weapon": "sword",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "gull",
+      "domains_summary": "She rules seduction, disguises, nighttime harbors, and every lie told with style."
+    },
+    {
+      "deity_id": "brinefather_oth",
+      "display_name": "Brinefather Oth",
+      "epithets": [
+        "Keeper of Sunk Names",
+        "The Salt-Coffin Lord"
+      ],
+      "alignment": "Neutral",
+      "portfolios": [
+        "water",
+        "death",
+        "protection"
+      ],
+      "holy_symbol": "closed eye in a droplet shield",
+      "favored_weapon": "mace",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "seal",
+      "domains_summary": "Oth keeps drowned souls, guards ships against the worst depths, and sanctifies sea graves."
+    },
+    {
+      "deity_id": "red_keel",
+      "display_name": "Red Keel",
+      "epithets": [
+        "The Burning Oar",
+        "Captain of No Home Port"
+      ],
+      "alignment": "Chaotic",
+      "portfolios": [
+        "war",
+        "travel",
+        "fire"
+      ],
+      "holy_symbol": "red keel over crossed oars",
+      "favored_weapon": "spear",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "albatross",
+      "domains_summary": "Red Keel blesses boarding actions, long voyages, mutiny against tyrants, and ships that return aflame with victory."
+    }
+  ],
+  "flavor_text": {
+    "one_line": "A hard-bitten sea religion that blesses daring profits, brutal storms, and deaths paid back to the depths.",
+    "one_paragraph": "The Black Wake Brotherhood treats the sea as the truest measure of freedom because no decree can stop a storm or command a current. Its priests tithe cargo by lot, bless piracy against overreaching powers, and maintain a grim peace between captains through shared ritual and fear of divine wreckage. To die unburied in the deep is not tragedy but settlement of a debt.",
+    "creation_myth_summary": "Before land hardened, Mael Vark rolled over the world and shook loose the first islands like broken teeth.",
+    "moral_code_summary": "Honor salvage shares, never deny the sea its due, strike first at any tyrant fleet, and accept risk as the only honest price of freedom."
+  }
+}

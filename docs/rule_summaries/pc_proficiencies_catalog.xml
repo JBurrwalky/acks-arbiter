@@ -1,0 +1,102 @@
+<proficiencies_catalog>
+  <scope>
+    <rule>These proficiencies are added to the class lists of the anti-paladin, barbarian, dwarven machinist, and dwarven delver.</rule>
+  </scope>
+
+  <proficiency name="Armor Training">
+    <rules>
+      <rule>The character may fight wearing armor up to 2 points heavier than normally permitted by class without penalty.</rule>
+      <rule>Does not grant the ability to cast spells in armor.</rule>
+      <rule>Does not grant the ability to use thief skills in armor heavier than leather.</rule>
+      <rule>Does not allow benefit from proficiencies or class powers that forbid use of certain armor.</rule>
+    </rules>
+  </proficiency>
+
+  <proficiency name="Inventing">
+    <rules>
+      <rule>The character may design automatons as if two class levels higher than actual level.</rule>
+      <rule>Time required to design automatons is reduced by 20%.</rule>
+    </rules>
+  </proficiency>
+
+  <proficiency name="Jury-Rigging">
+    <rules>
+      <rule>The character may repair automatons as if two class levels higher than actual level.</rule>
+      <rule>The character may perform hasty repairs in 10 minutes (1 turn) instead of 1 hour.</rule>
+      <rule>Hasty repairs last 4d6 turns.</rule>
+      <rule>Any hp repaired by hasty repairs are lost when the duration ends.</rule>
+      <rule>The Judge secretly determines how long the hasty repairs last.</rule>
+    </rules>
+  </proficiency>
+
+  <proficiency name="Kin-Slaying">
+    <rules>
+      <rule>Gain +1 on attack throws against humans, elves, dwarves, halflings, gnomes, and Nobiran.</rule>
+      <rule>At level 7, the bonus increases to +2.</rule>
+      <rule>At level 13, the bonus increases to +3.</rule>
+    </rules>
+  </proficiency>
+
+  <proficiency name="Mechanical Engineering">
+    <rules>
+      <rule>Gain +1 to throws to design, repair, and build automatons.</rule>
+      <rule>Can recognize most common automatons after careful investigation with a proficiency throw of 11+.</rule>
+      <rule>Cannot recognize uncommon or unique automatons.</rule>
+      <rule>Cannot discern command words.</rule>
+      <rule>Cannot assess the specific abilities of an item.</rule>
+      <rule>This proficiency can be selected multiple times.</rule>
+      <rule>Each additional selection adds another +1 bonus to design, repair, and build throws.</rule>
+      <rule>Each additional selection reduces the throw required to recognize common automatons by 4.</rule>
+    </rules>
+  </proficiency>
+
+  <proficiency name="Personal Automaton">
+    <rules>
+      <rule>The machinist is focused on one customized personal automaton.</rule>
+      <rule>When first taken, the character immediately gains a personal automaton of the character's own design worth up to 7,000gp.</rule>
+      <rule>If the personal automaton is destroyed or disassembled, the character may design and/or build a new one.</rule>
+      <rule>The character may never have more than one personal automaton at a time.</rule>
+      <rule>Designing a personal automaton costs 7,000gp less than normal, with equivalent reductions in design time and library requirements.</rule>
+      <rule>A personal-automaton design can only be used by the character and only to build a personal automaton.</rule>
+      <rule>Building a personal automaton costs 7,000gp less than normal, with equivalent reductions in building time and workshop requirements.</rule>
+      <rule>A personal automaton requires daily maintenance from its builder of at least 1 turn per day.</rule>
+      <rule>If daily maintenance is not performed, the automaton is nonfunctional until 3d6 turns are spent returning it to working order.</rule>
+      <rule>Any proficiency throws to design and build personal automatons are always successful.</rule>
+      <rule>The character may disassemble the personal automaton for materials worth up to 50% of the unadjusted build cost.</rule>
+      <rule>Disassembly takes 1 day per 1,000gp of returned value.</rule>
+      <rule>Recovered materials may only offset the cost of constructing another personal automaton.</rule>
+      <rule>Personal automatons may be sold only for scrap value equal to 1/100 of build cost.</rule>
+      <rule>A personal automaton may not be controlled or operated by anyone other than the character.</rule>
+    </rules>
+  </proficiency>
+
+  <proficiency name="Scavenging">
+    <rules>
+      <rule>The character can salvage spare parts and components from dwarven ruins, wrecked machines, and remnants of old automatons.</rule>
+      <rule>Reduces the cost to build or design automatons by 10%.</rule>
+      <rule>This proficiency can be selected multiple times.</rule>
+      <rule>Each additional selection reduces the cost to build or design automatons by an additional 10% of base cost.</rule>
+    </rules>
+  </proficiency>
+
+  <proficiency name="Tinkering">
+    <rules>
+      <rule>The character may build automatons as if two class levels higher than actual level.</rule>
+      <rule>Time required to build an automaton is reduced by 20%.</rule>
+    </rules>
+  </proficiency>
+
+  <proficiency name="Unarmed Fighting">
+    <rules>
+      <rule>When brawling, the character may deal lethal damage.</rule>
+      <rule>The character can punch or kick characters in metal armor without taking damage.</rule>
+    </rules>
+  </proficiency>
+
+  <proficiency name="Vermin-Slaying">
+    <rules>
+      <rule>With a proficiency throw of 11+, the character can identify the abilities and vulnerabilities of various vermin from physical appearance.</rule>
+      <rule>The character receives a +1 bonus when making saving throws against special attacks by vermin.</rule>
+    </rules>
+  </proficiency>
+</proficiencies_catalog>

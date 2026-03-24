@@ -1,0 +1,1283 @@
+<class_catalog title="ACKS Players Companion Classes 4" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <class name="Elven Courtier">
+    <identity>
+      <name>Elven Courtier</name>
+      <ancestry_category>elven</ancestry_category>
+      <source_label>111D-ACKS Players Companion-Classes-4.md</source_label>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>courtly_adventurer</tag>
+        <tag>arcane_dabbler</tag>
+        <tag>social_specialist</tag>
+        <tag>support</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>arcane_spellcasting</tag>
+        <tag>inspiring_courage</tag>
+        <tag>performance_magic</tag>
+        <tag>reaction_bonus</tag>
+        <tag>elven_traits</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>INT</ability>
+        <ability>CHA</ability>
+      </prime_requisites>
+      <minimum_abilities>
+        <requirement ability="INT" score="9"/>
+      </minimum_abilities>
+      <entry_restrictions>
+        <restriction type="ancestry">elven</restriction>
+      </entry_restrictions>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>thief</primary_progression_family>
+      <attack_throw_progression family="thief"/>
+      <cleave_progression family="thief"/>
+      <saving_throw_progression family="thief"/>
+      <damage_bonus_progression family="thief"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d6</hit_die>
+      <maximum_level>12</maximum_level>
+      <baseline_title>Attendant</baseline_title>
+      <post_max_hit_dice_rule>After 9d6 hit dice, gains +1 hit point per level at 10th-12th level. Hit point modifiers from Constitution are ignored.</post_max_hit_dice_rule>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>chain mail or lighter armor</armor>
+        <shields>may use a weapon and shield</shields>
+        <weapons>
+          <rule>May fight with swords, shortswords, daggers, composite bows, spears, and lances.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>May wield a weapon and shield.</rule>
+          <rule>May wield a weapon in each hand.</rule>
+        </fighting_styles>
+      </permissions>
+      <restrictions>
+        <restriction>May not wield a weapon two-handed.</restriction>
+      </restrictions>
+      <combat_rules>
+        <rule>Attack throw against AC 0 is 10+ at 1st level.</rule>
+        <rule>Attack throws and saving throws improve by 2 points every 4 class levels, as thieves.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <spellcasting_profile>
+      <tradition>arcane</tradition>
+      <access_rules>
+        <rule>Casts arcane spells as a mage of one-half class level.</rule>
+        <rule>Uses the mage spell list.</rule>
+        <rule>Uses the same rules as mages for learning and casting spells.</rule>
+        <rule>May cast spells while wearing armor.</rule>
+        <rule>May use magic items usable by mages or thieves.</rule>
+      </access_rules>
+    </spellcasting_profile>
+
+    <class_subsystems>
+      <custom_subsystem name="proficiency_access">
+        <definition>Class proficiency list.</definition>
+        <tables>
+          <table name="class_proficiency_list">
+            <columns>
+              <column>proficiency</column>
+            </columns>
+            <row><value name="proficiency">Beast Friendship</value></row>
+            <row><value name="proficiency">Bribery</value></row>
+            <row><value name="proficiency">Combat Trickery (Disarm, Sunder)</value></row>
+            <row><value name="proficiency">Command</value></row>
+            <row><value name="proficiency">Eavesdropping</value></row>
+            <row><value name="proficiency">Familiar</value></row>
+            <row><value name="proficiency">Fighting Style</value></row>
+            <row><value name="proficiency">Healing</value></row>
+            <row><value name="proficiency">Knowledge (political history)</value></row>
+            <row><value name="proficiency">Laying on Hands</value></row>
+            <row><value name="proficiency">Leadership</value></row>
+            <row><value name="proficiency">Loremastery</value></row>
+            <row><value name="proficiency">Magical Engineering</value></row>
+            <row><value name="proficiency">Military Strategy</value></row>
+            <row><value name="proficiency">Mystic Aura</value></row>
+            <row><value name="proficiency">Naturalism</value></row>
+            <row><value name="proficiency">Passing Without Trace</value></row>
+            <row><value name="proficiency">Performance</value></row>
+            <row><value name="proficiency">Precise Shooting</value></row>
+            <row><value name="proficiency">Prestidigitation</value></row>
+            <row><value name="proficiency">Profession (seneschal)</value></row>
+            <row><value name="proficiency">Quiet Magic</value></row>
+            <row><value name="proficiency">Riding</value></row>
+            <row><value name="proficiency">Sensing Power</value></row>
+            <row><value name="proficiency">Skirmishing</value></row>
+            <row><value name="proficiency">Swashbuckling</value></row>
+            <row><value name="proficiency">Unflappable Casting</value></row>
+            <row><value name="proficiency">Wakefulness</value></row>
+            <row><value name="proficiency">Weapon Finesse</value></row>
+            <row><value name="proficiency">Weapon Focus</value></row>
+          </table>
+        </tables>
+      </custom_subsystem>
+    </class_subsystems>
+
+    <special_abilities>
+      <ability name="classical_weapons_training" level="1">
+        <summary>Receives a fixed attack bonus with either melee or missile attacks.</summary>
+        <rules>
+          <rule>Gain +1 bonus to attack throws with either melee attacks or missile attacks.</rule>
+          <rule>The choice is made at 1st level and cannot be changed later.</rule>
+        </rules>
+      </ability>
+
+      <ability name="diplomacy_and_protocol" level="1">
+        <summary>Improved parley with intelligent creatures.</summary>
+        <rules>
+          <rule>Gain +2 bonus on all reaction rolls when attempting to parley with intelligent creatures.</rule>
+          <rule>This functions as the Diplomacy proficiency for reaction bonus purposes.</rule>
+        </rules>
+      </ability>
+
+      <ability name="inspire_courage" level="1">
+        <summary>Can inspire nearby allies before battle.</summary>
+        <procedure>
+          <step order="1">Spend 1 round in oration before battle.</step>
+          <step order="2">Allies within 50' who are not already engaged in combat are affected.</step>
+        </procedure>
+        <rules>
+          <rule>Affected allies gain +1 bonus to attack throws.</rule>
+          <rule>Affected allies gain +1 bonus to damage rolls.</rule>
+          <rule>Affected allies gain +1 bonus to morale rolls if monsters or NPCs are allied with the courtier.</rule>
+          <rule>Affected allies gain +1 bonus to saving throws against magical fear.</rule>
+        </rules>
+        <limits>
+          <limit>Cannot affect characters already engaged in combat.</limit>
+          <limit>A courtier can inspire courage in any given character once per day per class level.</limit>
+        </limits>
+        <duration>10 minutes (1 turn)</duration>
+      </ability>
+
+      <ability name="performance_training" level="1">
+        <summary>Begins play trained in one performance mode.</summary>
+        <rules>
+          <rule>Choose one type of performance known by the character: singing, recited poetry, or a group of instruments.</rule>
+          <rule>The Perform proficiency may be taken to learn other performance types.</rule>
+        </rules>
+      </ability>
+
+      <ability name="performance_magic" level="1">
+        <summary>Can produce magical effects through performance.</summary>
+        <procedure>
+          <step order="1">Perform for 1 minute (6 rounds).</step>
+          <step order="2">Choose one effect.</step>
+        </procedure>
+        <rules>
+          <rule>May serenade creatures with a potential prurient interest, functioning as charm person.</rule>
+          <rule>May quiet savage beasts, functioning as sleep, but only against ordinary and giant animals of 4 HD or less.</rule>
+          <rule>This ability is usable at will.</rule>
+        </rules>
+        <limits>
+          <limit>May not be used if combat has already begun.</limit>
+        </limits>
+      </ability>
+
+      <ability name="elven_traits" level="1">
+        <summary>Receives standard elven sensory, language, wilderness, and anti-paralysis benefits.</summary>
+        <rules>
+          <rule>Gain +1 bonus to surprise rolls in the wilderness.</rule>
+          <rule>Detect hidden and secret doors with proficiency throw 8+ on 1d20 when actively searching.</rule>
+          <rule>Detect hidden and secret doors with proficiency throw 14+ on casual inspection.</rule>
+          <rule>Completely unaffected by ghoul paralysis.</rule>
+          <rule>Reduce target values for saving throws versus Petrification/Paralysis by 1.</rule>
+          <rule>Reduce target values for saving throws versus Spells by 1.</rule>
+          <rule>Speaks Common, Elven, Gnoll, Hobgoblin, and Orc.</rule>
+        </rules>
+      </ability>
+
+      <ability name="establish_elven_fastness" level="9">
+        <summary>May establish an elven fastness.</summary>
+        <rules>
+          <rule>At 9th level, is expected to establish a fastness in a natural setting such as a forest or glen to further the family line.</rule>
+          <rule>The fastness follows all rules for elven fastnesses.</rule>
+        </rules>
+      </ability>
+
+      <ability name="spell_research_scrolls_and_potions" level="10">
+        <summary>May create and research lesser magical works.</summary>
+        <rules>
+          <rule>May research spells.</rule>
+          <rule>May scribe magical scrolls.</rule>
+          <rule>May brew potions.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Attendant</title>
+        <hit_dice>1d6</hit_dice>
+        <features_gained>
+          <feature_ref>classical_weapons_training</feature_ref>
+          <feature_ref>diplomacy_and_protocol</feature_ref>
+          <feature_ref>inspire_courage</feature_ref>
+          <feature_ref>performance_training</feature_ref>
+          <feature_ref>performance_magic</feature_ref>
+          <feature_ref>elven_traits</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="2">
+        <xp_required>2,600</xp_required>
+        <title>Courtier</title>
+        <hit_dice>2d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">1</slot>
+        </spell_slots>
+      </entry>
+      <entry level="3">
+        <xp_required>5,200</xp_required>
+        <title>Aristocrat</title>
+        <hit_dice>3d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="4">
+        <xp_required>10,400</xp_required>
+        <title>Noble</title>
+        <hit_dice>4d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="5">
+        <xp_required>20,800</xp_required>
+        <title>Exemplar</title>
+        <hit_dice>5d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">1</slot>
+        </spell_slots>
+      </entry>
+      <entry level="6">
+        <xp_required>41,600</xp_required>
+        <title>Patrician</title>
+        <hit_dice>6d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">1</slot>
+        </spell_slots>
+      </entry>
+      <entry level="7">
+        <xp_required>85,000</xp_required>
+        <title>Dignitary</title>
+        <hit_dice>7d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="8">
+        <xp_required>170,000</xp_required>
+        <title>Consul</title>
+        <hit_dice>8d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="9">
+        <xp_required>370,000</xp_required>
+        <title>Lord</title>
+        <hit_dice>9d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">1</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>establish_elven_fastness</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>520,000</xp_required>
+        <title>Lord, 10th level</title>
+        <hit_dice>9d6+1</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">1</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>spell_research_scrolls_and_potions</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="11">
+        <xp_required>670,000</xp_required>
+        <title>Lord, 11th level</title>
+        <hit_dice>9d6+2</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="12">
+        <xp_required>820,000</xp_required>
+        <title>Lord, 12th level</title>
+        <hit_dice>9d6+3</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">2</slot>
+        </spell_slots>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1-2</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">13+</value>
+          <value name="blast_breath">16+</value>
+          <value name="staffs_wands">14+</value>
+          <value name="spells">14+</value>
+        </row>
+        <row>
+          <value name="level_range">3-4</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">12+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">13+</value>
+          <value name="spells">13+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">11+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">12+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">7-8</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">9-10</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">11-12</value>
+          <value name="attack_throw">5+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">9+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>elven_fastness</structure_type>
+      <acquisition_rules>
+        <rule>Fastness must be established in a natural setting such as a forest or glen.</rule>
+        <rule>Fastness follows the rules for elven fastnesses.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="1st_level_elven_npc" number="3d6x10"/>
+      </followers>
+      <cost_rules>
+        <rule>Followers move in to help and defend the fastness at no cost to the character.</rule>
+      </cost_rules>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="thief"/>
+      <general_rule_reference type="arcane_magic"/>
+      <general_rule_reference type="mage_spellcasting_rules"/>
+      <general_rule_reference type="diplomacy_proficiency"/>
+      <general_rule_reference type="bard_inspiring_courage"/>
+      <general_rule_reference type="elven_fastnesses"/>
+    </references>
+  </class>
+
+  <class name="Elven Enchanter">
+    <identity>
+      <name>Elven Enchanter</name>
+      <ancestry_category>elven</ancestry_category>
+      <source_label>111D-ACKS Players Companion-Classes-4.md</source_label>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>arcane_caster</tag>
+        <tag>enchanter</tag>
+        <tag>illusionist</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>repertoire_spellcasting</tag>
+        <tag>charm_specialist</tag>
+        <tag>illusion_specialist</tag>
+        <tag>reaction_control</tag>
+        <tag>elven_traits</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>INT</ability>
+        <ability>CHA</ability>
+      </prime_requisites>
+      <minimum_abilities>
+        <requirement ability="INT" score="9"/>
+      </minimum_abilities>
+      <entry_restrictions>
+        <restriction type="ancestry">elven</restriction>
+      </entry_restrictions>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>mage</primary_progression_family>
+      <attack_throw_progression family="mage"/>
+      <cleave_progression family="mage"/>
+      <saving_throw_progression family="mage"/>
+      <damage_bonus_progression family="mage"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d4</hit_die>
+      <maximum_level>12</maximum_level>
+      <baseline_title>Prestidigitator</baseline_title>
+      <post_max_hit_dice_rule>After 9d4 hit dice, gains +1 hit point per level at 10th-12th level. Hit point modifiers from Constitution are ignored.</post_max_hit_dice_rule>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>no armor</armor>
+        <shields>no shields</shields>
+        <weapons>
+          <rule>May fight only with quarterstaffs, daggers, darts, or slings.</rule>
+        </weapons>
+      </permissions>
+      <restrictions>
+        <restriction>May not fight with two weapons.</restriction>
+      </restrictions>
+      <combat_rules>
+        <rule>Attack throw against AC 0 is 10+ at 1st level.</rule>
+        <rule>Attack throws and saving throws improve by 2 points every 6 class levels, as mages.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <spellcasting_profile>
+      <tradition>arcane</tradition>
+      <access_rules>
+        <rule>Learns and casts arcane spells as a mage.</rule>
+        <rule>May use magic items usable by mages.</rule>
+      </access_rules>
+      <repertoire_rules>
+        <rule>Spell selection is limited to the enchanter's repertoire.</rule>
+        <rule>Repertoire may include a number of spells up to the number and level of spells listed for the enchanter's class level, increased by Intelligence bonus.</rule>
+      </repertoire_rules>
+      <ritual_access>
+        <rule>At 11th level, may learn and cast ritual arcane spells of 7th, 8th, and 9th level.</rule>
+      </ritual_access>
+    </spellcasting_profile>
+
+    <class_subsystems>
+      <custom_subsystem name="proficiency_access">
+        <definition>Class proficiency list.</definition>
+        <tables>
+          <table name="class_proficiency_list">
+            <columns>
+              <column>proficiency</column>
+            </columns>
+            <row><value name="proficiency">Alchemy</value></row>
+            <row><value name="proficiency">Alertness</value></row>
+            <row><value name="proficiency">Art</value></row>
+            <row><value name="proficiency">Beast Friendship</value></row>
+            <row><value name="proficiency">Collegiate Wizardry</value></row>
+            <row><value name="proficiency">Contortionism</value></row>
+            <row><value name="proficiency">Craft</value></row>
+            <row><value name="proficiency">Diplomacy</value></row>
+            <row><value name="proficiency">Disguise</value></row>
+            <row><value name="proficiency">Familiar</value></row>
+            <row><value name="proficiency">Healing</value></row>
+            <row><value name="proficiency">Illusion Resistance</value></row>
+            <row><value name="proficiency">Knowledge</value></row>
+            <row><value name="proficiency">Language</value></row>
+            <row><value name="proficiency">Loremastery</value></row>
+            <row><value name="proficiency">Magical Engineering</value></row>
+            <row><value name="proficiency">Magical Music</value></row>
+            <row><value name="proficiency">Mimicry</value></row>
+            <row><value name="proficiency">Naturalism</value></row>
+            <row><value name="proficiency">Passing Without Trace</value></row>
+            <row><value name="proficiency">Performance</value></row>
+            <row><value name="proficiency">Profession</value></row>
+            <row><value name="proficiency">Quiet Magic</value></row>
+            <row><value name="proficiency">Running</value></row>
+            <row><value name="proficiency">Sensing Power</value></row>
+            <row><value name="proficiency">Soothsaying</value></row>
+            <row><value name="proficiency">Swashbuckling</value></row>
+            <row><value name="proficiency">Transmogrification</value></row>
+            <row><value name="proficiency">Unflappable Casting</value></row>
+            <row><value name="proficiency">Wakefulness</value></row>
+          </table>
+        </tables>
+      </custom_subsystem>
+    </class_subsystems>
+
+    <special_abilities>
+      <ability name="mastery_of_charms_and_illusions" level="1">
+        <summary>Charm and illusion magic is more potent.</summary>
+        <rules>
+          <rule>When casting charm spells, spell effects are calculated as if the enchanter were 2 class levels higher.</rule>
+          <rule>When casting illusion spells, spell effects are calculated as if the enchanter were 2 class levels higher.</rule>
+          <rule>Targets of charm spells suffer a -2 penalty to saving throws.</rule>
+          <rule>Targets attempting to disbelieve the enchanter's illusions suffer a -2 penalty.</rule>
+        </rules>
+      </ability>
+
+      <ability name="prestidigitations" level="1">
+        <summary>Can perform simple magical illusions and sleight-of-hand at will.</summary>
+        <rules>
+          <rule>Can magically accomplish simple illusions and sleight-of-hand tricks suitable for impressing peasants.</rule>
+          <rule>To cast these prestidigitations, the enchanter must be able to perform the task physically and be free to speak and gesture.</rule>
+          <rule>May use magical sleight-of-hand to pick pockets as a thief of one-half class level.</rule>
+        </rules>
+      </ability>
+
+      <ability name="glamorous_aura" level="1">
+        <summary>Presence can awe and charm observers.</summary>
+        <rules>
+          <rule>Gain +2 bonus to reaction rolls to impress and intimidate people encountered.</rule>
+          <rule>If this bonus results in a reaction total of 12 or more, affected subjects act as if charmed while in the enchanter's presence.</rule>
+        </rules>
+      </ability>
+
+      <ability name="elven_traits" level="1">
+        <summary>Receives standard elven sensory, language, wilderness, and anti-paralysis benefits.</summary>
+        <rules>
+          <rule>Gain +1 bonus to surprise rolls in the wilderness.</rule>
+          <rule>Detect hidden and secret doors with proficiency throw 8+ on 1d20 when actively searching.</rule>
+          <rule>Detect hidden and secret doors with proficiency throw 14+ on casual inspection.</rule>
+          <rule>Completely unaffected by ghoul paralysis.</rule>
+          <rule>Reduce target values for saving throws versus Petrification/Paralysis by 1.</rule>
+          <rule>Reduce target values for saving throws versus Spells by 1.</rule>
+          <rule>Speaks Common, Elven, Gnoll, Hobgoblin, and Orc.</rule>
+        </rules>
+      </ability>
+
+      <ability name="spell_research_scrolls_and_potions" level="5">
+        <summary>May create and research lesser magical works.</summary>
+        <rules>
+          <rule>May research spells.</rule>
+          <rule>May scribe magical scrolls.</rule>
+          <rule>May brew potions.</rule>
+        </rules>
+      </ability>
+
+      <ability name="greater_magic_item_creation" level="9">
+        <summary>May create more powerful magic items.</summary>
+        <rules>
+          <rule>May create magical weapons.</rule>
+          <rule>May create rings.</rule>
+          <rule>May create staffs.</rule>
+        </rules>
+      </ability>
+
+      <ability name="establish_sanctum" level="9">
+        <summary>May build a sanctum and attract students.</summary>
+        <rules>
+          <rule>May build a sanctum, often a great tower.</rule>
+        </rules>
+      </ability>
+
+      <ability name="ritual_arcana_and_magical_creation" level="11">
+        <summary>Gains access to top-tier arcane rituals and advanced magical creation.</summary>
+        <rules>
+          <rule>May learn and cast ritual arcane spells of 7th, 8th, and 9th level.</rule>
+          <rule>May craft magical constructs.</rule>
+          <rule>May create magical cross-breeds.</rule>
+          <rule>If chaotic, may create necromantic servants.</rule>
+          <rule>If chaotic, may become undead.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Prestidigitator</title>
+        <hit_dice>1d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">1</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>mastery_of_charms_and_illusions</feature_ref>
+          <feature_ref>prestidigitations</feature_ref>
+          <feature_ref>glamorous_aura</feature_ref>
+          <feature_ref>elven_traits</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="2">
+        <xp_required>2,700</xp_required>
+        <title>Glamourer</title>
+        <hit_dice>2d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="3">
+        <xp_required>5,400</xp_required>
+        <title>Charmer</title>
+        <hit_dice>3d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">1</slot>
+        </spell_slots>
+      </entry>
+      <entry level="4">
+        <xp_required>10,800</xp_required>
+        <title>Beguiler</title>
+        <hit_dice>4d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="5">
+        <xp_required>21,600</xp_required>
+        <title>Spellbinder</title>
+        <hit_dice>5d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">1</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>spell_research_scrolls_and_potions</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="6">
+        <xp_required>43,200</xp_required>
+        <title>Bewitcher</title>
+        <hit_dice>6d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="7">
+        <xp_required>85,000</xp_required>
+        <title>Ensorceller</title>
+        <hit_dice>7d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">2</slot>
+          <slot spell_level="4">1</slot>
+        </spell_slots>
+      </entry>
+      <entry level="8">
+        <xp_required>170,000</xp_required>
+        <title>Illusionist</title>
+        <hit_dice>8d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">2</slot>
+          <slot spell_level="4">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="9">
+        <xp_required>370,000</xp_required>
+        <title>Enchanter</title>
+        <hit_dice>9d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">2</slot>
+          <slot spell_level="5">1</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>greater_magic_item_creation</feature_ref>
+          <feature_ref>establish_sanctum</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>570,000</xp_required>
+        <title>Enchanter, 10th level</title>
+        <hit_dice>9d4+1</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="11">
+        <xp_required>770,000</xp_required>
+        <title>Enchanter, 11th level</title>
+        <hit_dice>9d4+2</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">4</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">2</slot>
+          <slot spell_level="6">1</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>ritual_arcana_and_magical_creation</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="12">
+        <xp_required>970,000</xp_required>
+        <title>Enchanter, 12th level</title>
+        <hit_dice>9d4+3</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">4</slot>
+          <slot spell_level="2">4</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">3</slot>
+          <slot spell_level="6">2</slot>
+        </spell_slots>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1-3</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">13+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">4-6</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">12+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">7-9</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">11+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">9+</value>
+        </row>
+        <row>
+          <value name="level_range">10-12</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">8+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>sanctum</structure_type>
+      <acquisition_rules>
+        <rule>May build a sanctum, often a great tower.</rule>
+        <rule>If the enchanter builds a dungeon beneath or near the tower, monsters begin arriving to dwell within, followed shortly by adventurers seeking to fight them.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="apprentice" number="1d6">1st-3rd level</follower>
+        <follower type="elven_student" number="2d6"/>
+      </followers>
+      <cost_rules>
+        <rule>Apprentices and students must be provided food and lodging.</rule>
+        <rule>They need not be paid wages.</rule>
+      </cost_rules>
+      <loyalty_or_morale_rules>
+        <rule>Many elven students become discouraged by rigorous mental training and quit after 1d6 months.</rule>
+        <rule>Elven students have above-average Intelligence scores.</rule>
+      </loyalty_or_morale_rules>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="mage"/>
+      <general_rule_reference type="arcane_magic"/>
+      <general_rule_reference type="mage_repertoire_rules"/>
+      <general_rule_reference type="ritual_arcane_magic"/>
+    </references>
+  </class>
+
+  <class name="Elven Ranger">
+    <identity>
+      <name>Elven Ranger</name>
+      <ancestry_category>elven</ancestry_category>
+      <source_label>111D-ACKS Players Companion-Classes-4.md</source_label>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>warrior</tag>
+        <tag>archer</tag>
+        <tag>scout</tag>
+        <tag>wilderness_patroller</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>fighter_combat</tag>
+        <tag>missile_specialist</tag>
+        <tag>stealth</tag>
+        <tag>tracking</tag>
+        <tag>animal_affinity</tag>
+        <tag>elven_traits</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>STR</ability>
+        <ability>DEX</ability>
+      </prime_requisites>
+      <minimum_abilities>
+        <requirement ability="INT" score="9"/>
+      </minimum_abilities>
+      <entry_restrictions>
+        <restriction type="ancestry">elven</restriction>
+      </entry_restrictions>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>fighter</primary_progression_family>
+      <attack_throw_progression family="fighter"/>
+      <cleave_progression family="fighter"/>
+      <saving_throw_progression family="fighter"/>
+      <damage_bonus_progression family="fighter"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d6</hit_die>
+      <maximum_level>13</maximum_level>
+      <baseline_title>Archer</baseline_title>
+      <post_max_hit_dice_rule>After 9d6 hit dice, gains +2 hit points per level at 10th-13th level. Hit point modifiers from Constitution are ignored.</post_max_hit_dice_rule>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>chain mail or lighter armor</armor>
+        <shields>may use shields</shields>
+        <weapons>
+          <rule>May fight with any missile weapons.</rule>
+          <rule>May fight with any one-handed melee weapons.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>May wield a weapon two-handed.</rule>
+          <rule>May wield a weapon in each hand.</rule>
+          <rule>May wield a weapon and shield.</rule>
+        </fighting_styles>
+      </permissions>
+      <combat_rules>
+        <rule>Attack throw against AC 0 is 10+ at 1st level.</rule>
+        <rule>Attack throws and saving throws improve by 2 points every 3 class levels, as fighters.</rule>
+        <rule>May use any magic item usable by fighters.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <class_subsystems>
+      <custom_subsystem name="proficiency_access">
+        <definition>Class proficiency list.</definition>
+        <tables>
+          <table name="class_proficiency_list">
+            <columns>
+              <column>proficiency</column>
+            </columns>
+            <row><value name="proficiency">Alertness</value></row>
+            <row><value name="proficiency">Ambushing</value></row>
+            <row><value name="proficiency">Animal Husbandry</value></row>
+            <row><value name="proficiency">Blind Fighting</value></row>
+            <row><value name="proficiency">Climbing</value></row>
+            <row><value name="proficiency">Combat Trickery (disarm, incapacitate, knock down)</value></row>
+            <row><value name="proficiency">Eavesdropping</value></row>
+            <row><value name="proficiency">Endurance</value></row>
+            <row><value name="proficiency">Fighting Style</value></row>
+            <row><value name="proficiency">Land Surveying</value></row>
+            <row><value name="proficiency">Mapping</value></row>
+            <row><value name="proficiency">Mountaineering</value></row>
+            <row><value name="proficiency">Naturalism</value></row>
+            <row><value name="proficiency">Navigation</value></row>
+            <row><value name="proficiency">Passing Without Trace</value></row>
+            <row><value name="proficiency">Precise Shooting</value></row>
+            <row><value name="proficiency">Riding</value></row>
+            <row><value name="proficiency">Running</value></row>
+            <row><value name="proficiency">Skirmishing</value></row>
+            <row><value name="proficiency">Sniping</value></row>
+            <row><value name="proficiency">Survival</value></row>
+            <row><value name="proficiency">Swashbuckling</value></row>
+            <row><value name="proficiency">Tracking</value></row>
+            <row><value name="proficiency">Trapping</value></row>
+            <row><value name="proficiency">Wakefulness</value></row>
+            <row><value name="proficiency">Weapon Finesse</value></row>
+            <row><value name="proficiency">Weapon Focus</value></row>
+          </table>
+        </tables>
+      </custom_subsystem>
+    </class_subsystems>
+
+    <special_abilities>
+      <ability name="archery_mastery" level="1">
+        <summary>Elite missile combatant with scaling missile damage and accuracy.</summary>
+        <rules>
+          <rule>Gain +1 bonus to attack throws with missile weapons.</rule>
+          <rule>Increase base damage roll from successful missile attacks by +1 at 1st level.</rule>
+          <rule>Increase missile damage bonus by an additional +1 at 3rd level.</rule>
+          <rule>Increase missile damage bonus by an additional +1 at 6th level.</rule>
+          <rule>Increase missile damage bonus by an additional +1 at 9th level.</rule>
+          <rule>Increase missile damage bonus by an additional +1 at 12th level.</rule>
+          <rule>May make missile attacks into melee at -4 penalty to attack throws.</rule>
+          <rule>Ranks in Precise Shooting may reduce this penalty to -2 or less.</rule>
+        </rules>
+      </ability>
+
+      <ability name="concealment" level="1">
+        <summary>Can evade detection in wilderness and dungeon cover.</summary>
+        <rules>
+          <rule>Can disappear into woods and underbrush in the wilderness with proficiency throw 3+ on 1d20.</rule>
+          <rule>In dungeons, if motionless and quiet in cover, can escape detection with proficiency throw 14+ on 1d20.</rule>
+        </rules>
+      </ability>
+
+      <ability name="tracking" level="1">
+        <summary>Can follow tracks with improved skill.</summary>
+        <rules>
+          <rule>Can follow tracks with proficiency throw 11+, applying modifiers from the Tracking proficiency.</rule>
+          <rule>If the ranger selects the Tracking proficiency, each rank reduces the required proficiency throw by 4.</rule>
+        </rules>
+      </ability>
+
+      <ability name="friends_of_birds_and_beasts" level="1">
+        <summary>Understands and works well with normal animals.</summary>
+        <rules>
+          <rule>Can understand the subtle body language and moods of normal animals, though the animals may not understand the ranger.</rule>
+          <rule>Gain +2 bonus to all reaction rolls when encountering normal animals.</rule>
+          <rule>May take animals as henchmen.</rule>
+          <rule>Can identify flora and fauna with proficiency throw 11+.</rule>
+        </rules>
+      </ability>
+
+      <ability name="animal_reflexes" level="1">
+        <summary>Acts quickly and spots danger easily.</summary>
+        <rules>
+          <rule>Gain +1 bonus to initiative.</rule>
+          <rule>Gain +1 bonus to surprise rolls.</rule>
+        </rules>
+      </ability>
+
+      <ability name="elven_traits" level="1">
+        <summary>Receives standard elven sensory, language, wilderness, and anti-paralysis benefits, with ranger wilderness surprise stacking.</summary>
+        <rules>
+          <rule>Gain an additional +1 bonus to surprise rolls in the wilderness from attunement to nature, for total +2 surprise in the wilderness.</rule>
+          <rule>Detect hidden and secret doors with proficiency throw 8+ on 1d20 when actively searching.</rule>
+          <rule>Detect hidden and secret doors with proficiency throw 14+ on casual inspection.</rule>
+          <rule>Completely unaffected by ghoul paralysis.</rule>
+          <rule>Reduce target values for saving throws versus Spells by 1.</rule>
+          <rule>Reduce target values for saving throws versus Paralysis by 1.</rule>
+          <rule>Reduce target values for saving throws versus Petrification by 1.</rule>
+          <rule>Speaks Common, Elven, Gnoll, Hobgoblin, and Orc.</rule>
+        </rules>
+      </ability>
+
+      <ability name="establish_elven_fastness" level="9">
+        <summary>May establish an elven fastness.</summary>
+        <rules>
+          <rule>At 9th level, may establish a fastness in a natural setting such as a forest or glen.</rule>
+          <rule>The fastness must blend seamlessly with nature.</rule>
+          <rule>The fastness follows the rules for elven fastnesses.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Archer</title>
+        <hit_dice>1d6</hit_dice>
+        <values>
+          <value name="missile_damage_bonus">+1</value>
+        </values>
+        <features_gained>
+          <feature_ref>archery_mastery</feature_ref>
+          <feature_ref>concealment</feature_ref>
+          <feature_ref>tracking</feature_ref>
+          <feature_ref>friends_of_birds_and_beasts</feature_ref>
+          <feature_ref>animal_reflexes</feature_ref>
+          <feature_ref>elven_traits</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="2">
+        <xp_required>2,275</xp_required>
+        <title>Rover</title>
+        <hit_dice>2d6</hit_dice>
+        <values>
+          <value name="missile_damage_bonus">+1</value>
+        </values>
+      </entry>
+      <entry level="3">
+        <xp_required>4,550</xp_required>
+        <title>Forester</title>
+        <hit_dice>3d6</hit_dice>
+        <values>
+          <value name="missile_damage_bonus">+2</value>
+        </values>
+      </entry>
+      <entry level="4">
+        <xp_required>9,100</xp_required>
+        <title>Courser</title>
+        <hit_dice>4d6</hit_dice>
+        <values>
+          <value name="missile_damage_bonus">+2</value>
+        </values>
+      </entry>
+      <entry level="5">
+        <xp_required>18,200</xp_required>
+        <title>Patroller</title>
+        <hit_dice>5d6</hit_dice>
+        <values>
+          <value name="missile_damage_bonus">+2</value>
+        </values>
+      </entry>
+      <entry level="6">
+        <xp_required>36,400</xp_required>
+        <title>Keeper</title>
+        <hit_dice>6d6</hit_dice>
+        <values>
+          <value name="missile_damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="7">
+        <xp_required>75,000</xp_required>
+        <title>Protector</title>
+        <hit_dice>7d6</hit_dice>
+        <values>
+          <value name="missile_damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="8">
+        <xp_required>150,000</xp_required>
+        <title>Steward</title>
+        <hit_dice>8d6</hit_dice>
+        <values>
+          <value name="missile_damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="9">
+        <xp_required>300,000</xp_required>
+        <title>Ranger</title>
+        <hit_dice>9d6</hit_dice>
+        <values>
+          <value name="missile_damage_bonus">+4</value>
+        </values>
+        <features_gained>
+          <feature_ref>establish_elven_fastness</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>450,000</xp_required>
+        <title>Ranger, 10th level</title>
+        <hit_dice>9d6+2</hit_dice>
+        <values>
+          <value name="missile_damage_bonus">+4</value>
+        </values>
+      </entry>
+      <entry level="11">
+        <xp_required>600,000</xp_required>
+        <title>Ranger, 11th level</title>
+        <hit_dice>9d6+4</hit_dice>
+        <values>
+          <value name="missile_damage_bonus">+4</value>
+        </values>
+      </entry>
+      <entry level="12">
+        <xp_required>750,000</xp_required>
+        <title>Ranger, 12th level</title>
+        <hit_dice>9d6+6</hit_dice>
+        <values>
+          <value name="missile_damage_bonus">+5</value>
+        </values>
+      </entry>
+      <entry level="13">
+        <xp_required>900,000</xp_required>
+        <title>Ranger, 13th level</title>
+        <hit_dice>9d6+8</hit_dice>
+        <values>
+          <value name="missile_damage_bonus">+5</value>
+        </values>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">14+</value>
+          <value name="poison_death">14+</value>
+          <value name="blast_breath">16+</value>
+          <value name="staffs_wands">16+</value>
+          <value name="spells">16+</value>
+        </row>
+        <row>
+          <value name="level_range">2-3</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">13+</value>
+          <value name="poison_death">13+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">15+</value>
+          <value name="spells">15+</value>
+        </row>
+        <row>
+          <value name="level_range">4</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">12+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">14+</value>
+          <value name="spells">14+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">11+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">13+</value>
+          <value name="spells">13+</value>
+        </row>
+        <row>
+          <value name="level_range">7</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">12+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">8-9</value>
+          <value name="attack_throw">5+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">10</value>
+          <value name="attack_throw">4+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">10+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">11-12</value>
+          <value name="attack_throw">3+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">7+</value>
+          <value name="blast_breath">9+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">9+</value>
+        </row>
+        <row>
+          <value name="level_range">13</value>
+          <value name="attack_throw">2+</value>
+          <value name="petrification_paralysis">6+</value>
+          <value name="poison_death">6+</value>
+          <value name="blast_breath">8+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">8+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>elven_fastness</structure_type>
+      <acquisition_rules>
+        <rule>Fastness must be established in a natural setting such as a forest or glen.</rule>
+        <rule>Fastness must blend seamlessly with nature.</rule>
+        <rule>Fastness follows the rules for elven fastnesses.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="1st_level_elven_npc" number="3d6x10"/>
+      </followers>
+      <cost_rules>
+        <rule>Followers move in to help and defend the fastness at no cost to the character.</rule>
+      </cost_rules>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="fighter"/>
+      <general_rule_reference type="tracking_proficiency"/>
+      <general_rule_reference type="precise_shooting_proficiency"/>
+      <general_rule_reference type="elven_fastnesses"/>
+    </references>
+  </class>
+</class_catalog>

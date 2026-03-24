@@ -1,0 +1,1074 @@
+<acks_proficiencies>
+  <core_rules>
+    <definition>
+      <proficiencies>Areas of expertise learned from background, homeland, and training.</proficiencies>
+      <lists>
+        <class_list>Proficiencies especially useful to a class.</class_list>
+        <general_list>Trade skills and knowledge broadly available to all characters.</general_list>
+      </lists>
+    </definition>
+
+    <starting_proficiencies>
+      <player_characters>
+        <automatic>Adventuring</automatic>
+        <class_choices count="1">Choose 1 proficiency from class list.</class_choices>
+        <general_choices count="1">Choose 1 proficiency from general list.</general_choices>
+        <intelligence_bonus_general_choices>
+          <rule>Characters with an Intelligence bonus gain additional starting general proficiencies equal to their Intelligence bonus (+1, +2, or +3).</rule>
+          <restriction>These bonus slots may only be used for general proficiencies.</restriction>
+          <open_slots_allowed>true</open_slots_allowed>
+          <open_slots_rule>Bonus proficiency slots may be left open and filled later during play.</open_slots_rule>
+        </intelligence_bonus_general_choices>
+        <overlap_rule>A proficiency may appear on both the general list and class lists; this does not change how it is selected.</overlap_rule>
+      </player_characters>
+    </starting_proficiencies>
+
+    <gaining_proficiencies>
+      <general_progression>All characters gain 1 additional general proficiency at levels 5, 9, and 13 if maximum level permits.</general_progression>
+      <class_progression>
+        <rule>Characters gain 1 additional class-list proficiency each time they complete a full 2-point saving throw progression.</rule>
+        <examples>
+          <fighter>Levels 3, 6, 9, 12</fighter>
+          <cleric_and_thief>Levels 4, 8, 12</cleric_and_thief>
+          <mage>Levels 6, 12</mage>
+        </examples>
+      </class_progression>
+
+      <proficiencies_gained_per_level_table>
+        <row class="Assassin" level_1="C+G" level_3="C" level_5="G" level_6="C" level_9="C+G" level_12="C" level_13="G"/>
+        <row class="Bard" level_1="C+G" level_4="C" level_5="G" level_8="C" level_9="G" level_12="C" level_13="G"/>
+        <row class="Blade Dancer" level_1="C+G" level_4="C" level_5="G" level_8="C" level_9="G" level_12="C" level_13="G"/>
+        <row class="Cleric" level_1="C+G" level_4="C" level_5="G" level_8="C" level_9="G" level_12="C" level_13="G"/>
+        <row class="Dwarven Craftpriest" level_1="C+G" level_4="C" level_5="G" level_8="C" level_9="G" level_12="-" level_13="-" level_14="-"/>
+        <row class="Dwarven Vaultguard" level_1="C+G" level_3="C" level_5="G" level_6="C" level_9="C+G" level_12="C" level_13="G" level_14="-"/>
+        <row class="Elven Nightblade" level_1="C+G" level_4="C" level_5="G" level_8="C" level_9="G" level_12="-" level_13="-" level_14="-"/>
+        <row class="Elven Spellsword" level_1="C+G" level_3="C" level_5="G" level_6="C" level_9="C+G" level_12="-" level_13="-" level_14="-"/>
+        <row class="Explorer" level_1="C+G" level_3="C" level_5="G" level_6="C" level_9="C+G" level_12="C" level_13="G"/>
+        <row class="Fighter" level_1="C+G" level_3="C" level_5="G" level_6="C" level_9="C+G" level_12="C" level_13="G"/>
+        <row class="Mage" level_1="C+G" level_5="G" level_6="C" level_9="G" level_12="C" level_13="G"/>
+        <row class="Thief" level_1="C+G" level_4="C" level_5="G" level_8="C" level_9="G" level_12="C" level_13="G"/>
+      </proficiencies_gained_per_level_table>
+
+      <selection_rules>
+        <default_single_selection>Unless a description says otherwise, a proficiency may only be selected once.</default_single_selection>
+        <multi_selection_rule>If a proficiency can be selected more than once, each additional selection reduces the required proficiency throw by 4 unless the description states otherwise.</multi_selection_rule>
+        <default_die>All proficiency throws use 1d20 unless otherwise noted.</default_die>
+        <judge_limitation_rule>The Judge may limit available proficiencies by campaign or setting.</judge_limitation_rule>
+      </selection_rules>
+    </gaining_proficiencies>
+
+    <proficiency_lists>
+      <general>
+        <proficiency>Adventuring</proficiency>
+        <proficiency>Alchemy</proficiency>
+        <proficiency>Animal Husbandry</proficiency>
+        <proficiency>Animal Training</proficiency>
+        <proficiency>Art</proficiency>
+        <proficiency>Bargaining</proficiency>
+        <proficiency>Caving</proficiency>
+        <proficiency>Collegiate Wizardry</proficiency>
+        <proficiency>Craft</proficiency>
+        <proficiency>Diplomacy</proficiency>
+        <proficiency>Disguise</proficiency>
+        <proficiency>Endurance</proficiency>
+        <proficiency>Engineering</proficiency>
+        <proficiency>Gambling</proficiency>
+        <proficiency>Healing</proficiency>
+        <proficiency>Intimidation</proficiency>
+        <proficiency>Knowledge</proficiency>
+        <proficiency>Labor</proficiency>
+        <proficiency>Language</proficiency>
+        <proficiency>Leadership</proficiency>
+        <proficiency>Lip Reading</proficiency>
+        <proficiency>Manual of Arms</proficiency>
+        <proficiency>Mapping</proficiency>
+        <proficiency>Military Strategy</proficiency>
+        <proficiency>Mimicry</proficiency>
+        <proficiency>Naturalism</proficiency>
+        <proficiency>Navigation</proficiency>
+        <proficiency>Performance</proficiency>
+        <proficiency>Profession</proficiency>
+        <proficiency>Riding</proficiency>
+        <proficiency>Seafaring</proficiency>
+        <proficiency>Seduction</proficiency>
+        <proficiency>Siege Engineering</proficiency>
+        <proficiency>Signaling</proficiency>
+        <proficiency>Survival</proficiency>
+        <proficiency>Theology</proficiency>
+        <proficiency>Tracking</proficiency>
+        <proficiency>Trapping</proficiency>
+      </general>
+
+      <class name="Assassin">
+        <proficiency>Acrobatics</proficiency>
+        <proficiency>Alchemy</proficiency>
+        <proficiency>Alertness</proficiency>
+        <proficiency>Arcane Dabbling</proficiency>
+        <proficiency>Blind Fighting</proficiency>
+        <proficiency>Bribery</proficiency>
+        <proficiency>Cat Burglary</proficiency>
+        <proficiency>Climbing</proficiency>
+        <proficiency>Combat Reflexes</proficiency>
+        <proficiency>Combat Trickery (disarm, incapacitate)</proficiency>
+        <proficiency>Contortionism</proficiency>
+        <proficiency>Disguise</proficiency>
+        <proficiency>Eavesdropping</proficiency>
+        <proficiency>Fighting Style</proficiency>
+        <proficiency>Gambling</proficiency>
+        <proficiency>Intimidation</proficiency>
+        <proficiency>Mimicry</proficiency>
+        <proficiency>Precise Shooting</proficiency>
+        <proficiency>Running</proficiency>
+        <proficiency>Seduction</proficiency>
+        <proficiency>Skirmishing</proficiency>
+        <proficiency>Skulking</proficiency>
+        <proficiency>Sniping</proficiency>
+        <proficiency>Swashbuckling</proficiency>
+        <proficiency>Trap Finding</proficiency>
+        <proficiency>Weapon Finesse</proficiency>
+        <proficiency>Weapon Focus</proficiency>
+      </class>
+
+      <class name="Bard">
+        <proficiency>Acrobatics</proficiency>
+        <proficiency>Art</proficiency>
+        <proficiency>Bargaining</proficiency>
+        <proficiency>Beast Friendship</proficiency>
+        <proficiency>Combat Trickery (disarm)</proficiency>
+        <proficiency>Command</proficiency>
+        <proficiency>Diplomacy</proficiency>
+        <proficiency>Eavesdropping</proficiency>
+        <proficiency>Elven Bloodline</proficiency>
+        <proficiency>Fighting Style</proficiency>
+        <proficiency>Healing</proficiency>
+        <proficiency>Knowledge</proficiency>
+        <proficiency>Language</proficiency>
+        <proficiency>Leadership</proficiency>
+        <proficiency>Lip Reading</proficiency>
+        <proficiency>Magical Engineering</proficiency>
+        <proficiency>Magical Music</proficiency>
+        <proficiency>Mimicry</proficiency>
+        <proficiency>Mystic Aura</proficiency>
+        <proficiency>Performance</proficiency>
+        <proficiency>Precise Shooting</proficiency>
+        <proficiency>Prestidigitation</proficiency>
+        <proficiency>Running</proficiency>
+        <proficiency>Seduction</proficiency>
+        <proficiency>Skirmishing</proficiency>
+        <proficiency>Swashbuckling</proficiency>
+        <proficiency>Weapon Finesse</proficiency>
+        <proficiency>Weapon Focus</proficiency>
+      </class>
+
+      <class name="Blade Dancer">
+        <proficiency>Acrobatics</proficiency>
+        <proficiency>Apostasy</proficiency>
+        <proficiency>Battle Magic</proficiency>
+        <proficiency>Beast Friendship</proficiency>
+        <proficiency>Combat Reflexes</proficiency>
+        <proficiency>Combat Trickery (knock down)</proficiency>
+        <proficiency>Contemplation</proficiency>
+        <proficiency>Diplomacy</proficiency>
+        <proficiency>Divine Blessing</proficiency>
+        <proficiency>Divine Health</proficiency>
+        <proficiency>Fighting Style</proficiency>
+        <proficiency>Laying on Hands</proficiency>
+        <proficiency>Magical Music</proficiency>
+        <proficiency>Martial Training</proficiency>
+        <proficiency>Performance</proficiency>
+        <proficiency>Prestidigitation</proficiency>
+        <proficiency>Prophecy</proficiency>
+        <proficiency>Quiet Magic</proficiency>
+        <proficiency>Righteous Turning</proficiency>
+        <proficiency>Running</proficiency>
+        <proficiency>Seduction</proficiency>
+        <proficiency>Skirmishing</proficiency>
+        <proficiency>Swashbuckling</proficiency>
+        <proficiency>Theology</proficiency>
+        <proficiency>Unflappable Casting</proficiency>
+        <proficiency>Weapon Finesse</proficiency>
+        <proficiency>Weapon Focus</proficiency>
+      </class>
+
+      <class name="Cleric">
+        <proficiency>Apostasy</proficiency>
+        <proficiency>Battle Magic</proficiency>
+        <proficiency>Beast Friendship</proficiency>
+        <proficiency>Combat Trickery (force back, overrun, sunder)</proficiency>
+        <proficiency>Command</proficiency>
+        <proficiency>Contemplation</proficiency>
+        <proficiency>Diplomacy</proficiency>
+        <proficiency>Divine Blessing</proficiency>
+        <proficiency>Divine Health</proficiency>
+        <proficiency>Fighting Style</proficiency>
+        <proficiency>Healing</proficiency>
+        <proficiency>Knowledge (history)</proficiency>
+        <proficiency>Laying on Hands</proficiency>
+        <proficiency>Leadership</proficiency>
+        <proficiency>Loremastery</proficiency>
+        <proficiency>Magical Engineering</proficiency>
+        <proficiency>Martial Training</proficiency>
+        <proficiency>Prestidigitation</proficiency>
+        <proficiency>Profession (judge)</proficiency>
+        <proficiency>Prophecy</proficiency>
+        <proficiency>Quiet Magic</proficiency>
+        <proficiency>Righteous Turning</proficiency>
+        <proficiency>Sensing Evil</proficiency>
+        <proficiency>Sensing Power</proficiency>
+        <proficiency>Theology</proficiency>
+        <proficiency>Unflappable Casting</proficiency>
+        <proficiency>Weapon Focus</proficiency>
+      </class>
+
+      <class name="Dwarven Craftpriest">
+        <proficiency>Alchemy</proficiency>
+        <proficiency>Art</proficiency>
+        <proficiency>Battle Magic</proficiency>
+        <proficiency>Caving</proficiency>
+        <proficiency>Collegiate Wizardry</proficiency>
+        <proficiency>Contemplation</proficiency>
+        <proficiency>Craft</proficiency>
+        <proficiency>Diplomacy</proficiency>
+        <proficiency>Divine Blessing</proficiency>
+        <proficiency>Divine Health</proficiency>
+        <proficiency>Dwarven Brewing</proficiency>
+        <proficiency>Endurance</proficiency>
+        <proficiency>Engineering</proficiency>
+        <proficiency>Fighting Style</proficiency>
+        <proficiency>Goblin-Slaying</proficiency>
+        <proficiency>Healing</proficiency>
+        <proficiency>Illusion Resistance</proficiency>
+        <proficiency>Knowledge</proficiency>
+        <proficiency>Laying on Hands</proficiency>
+        <proficiency>Loremastery</proficiency>
+        <proficiency>Magical Engineering</proficiency>
+        <proficiency>Mapping</proficiency>
+        <proficiency>Performance (chanting)</proficiency>
+        <proficiency>Prestidigitation</proficiency>
+        <proficiency>Profession (judge)</proficiency>
+        <proficiency>Prophecy</proficiency>
+        <proficiency>Quiet Magic</proficiency>
+        <proficiency>Righteous Turning</proficiency>
+        <proficiency>Sensing Evil</proficiency>
+        <proficiency>Siege Engineering</proficiency>
+        <proficiency>Theology</proficiency>
+        <proficiency>Unflappable Casting</proficiency>
+        <proficiency>Weapon Focus</proficiency>
+      </class>
+
+      <class name="Dwarven Vaultguard">
+        <proficiency>Alertness</proficiency>
+        <proficiency>Berserkergang</proficiency>
+        <proficiency>Blind Fighting</proficiency>
+        <proficiency>Caving</proficiency>
+        <proficiency>Combat Reflexes</proficiency>
+        <proficiency>Combat Trickery (force back, knock down, overrun, sunder, wrestle)</proficiency>
+        <proficiency>Command</proficiency>
+        <proficiency>Craft</proficiency>
+        <proficiency>Dungeon Bashing</proficiency>
+        <proficiency>Dwarven Brewing</proficiency>
+        <proficiency>Endurance</proficiency>
+        <proficiency>Engineering</proficiency>
+        <proficiency>Fighting Style</proficiency>
+        <proficiency>Gambling</proficiency>
+        <proficiency>Goblin-Slaying</proficiency>
+        <proficiency>Illusion Resistance</proficiency>
+        <proficiency>Intimidation</proficiency>
+        <proficiency>Land Surveying</proficiency>
+        <proficiency>Leadership</proficiency>
+        <proficiency>Mapping</proficiency>
+        <proficiency>Manual of Arms</proficiency>
+        <proficiency>Military Strategy</proficiency>
+        <proficiency>Mountaineering</proficiency>
+        <proficiency>Siege Engineering</proficiency>
+        <proficiency>Weapon Focus</proficiency>
+      </class>
+
+      <class name="Elven Nightblade">
+        <proficiency>Alchemy</proficiency>
+        <proficiency>Alertness</proficiency>
+        <proficiency>Battle Magic</proficiency>
+        <proficiency>Beast Friendship</proficiency>
+        <proficiency>Black Lore of Zahar</proficiency>
+        <proficiency>Blind Fighting</proficiency>
+        <proficiency>Combat Reflexes</proficiency>
+        <proficiency>Combat Trickery (disarm, incapacitate)</proficiency>
+        <proficiency>Contortionism</proficiency>
+        <proficiency>Elementalism</proficiency>
+        <proficiency>Familiar</proficiency>
+        <proficiency>Fighting Style</proficiency>
+        <proficiency>Intimidation</proficiency>
+        <proficiency>Magical Engineering</proficiency>
+        <proficiency>Mystic Aura</proficiency>
+        <proficiency>Passing Without Trace</proficiency>
+        <proficiency>Precise Shooting</proficiency>
+        <proficiency>Prestidigitation</proficiency>
+        <proficiency>Quiet Magic</proficiency>
+        <proficiency>Running</proficiency>
+        <proficiency>Sensing Power</proficiency>
+        <proficiency>Skirmishing</proficiency>
+        <proficiency>Skulking</proficiency>
+        <proficiency>Sniping</proficiency>
+        <proficiency>Swashbuckling</proficiency>
+        <proficiency>Unflappable Casting</proficiency>
+        <proficiency>Trap Finding</proficiency>
+        <proficiency>Wakefulness</proficiency>
+        <proficiency>Weapon Focus</proficiency>
+        <proficiency>Weapon Finesse</proficiency>
+      </class>
+
+      <class name="Elven Spellsword">
+        <proficiency>Acrobatics</proficiency>
+        <proficiency>Alertness</proficiency>
+        <proficiency>Battle Magic</proficiency>
+        <proficiency>Beast Friendship</proficiency>
+        <proficiency>Black Lore of Zahar</proficiency>
+        <proficiency>Blind Fighting</proficiency>
+        <proficiency>Combat Reflexes</proficiency>
+        <proficiency>Combat Trickery (disarm, knock down)</proficiency>
+        <proficiency>Command</proficiency>
+        <proficiency>Elementalism</proficiency>
+        <proficiency>Familiar</proficiency>
+        <proficiency>Fighting Style</proficiency>
+        <proficiency>Leadership</proficiency>
+        <proficiency>Loremastery</proficiency>
+        <proficiency>Magical Engineering</proficiency>
+        <proficiency>Magical Music</proficiency>
+        <proficiency>Mystic Aura</proficiency>
+        <proficiency>Naturalism</proficiency>
+        <proficiency>Passing Without Trace</proficiency>
+        <proficiency>Quiet Magic</proficiency>
+        <proficiency>Precise Shooting</proficiency>
+        <proficiency>Prestidigitation</proficiency>
+        <proficiency>Running</proficiency>
+        <proficiency>Sensing Power</proficiency>
+        <proficiency>Skirmishing</proficiency>
+        <proficiency>Soothsaying</proficiency>
+        <proficiency>Swashbuckler</proficiency>
+        <proficiency>Unflappable Casting</proficiency>
+        <proficiency>Wakefulness</proficiency>
+        <proficiency>Weapon Focus</proficiency>
+        <proficiency>Weapon Finesse</proficiency>
+      </class>
+
+      <class name="Explorer">
+        <proficiency>Alertness</proficiency>
+        <proficiency>Ambushing</proficiency>
+        <proficiency>Beast Friendship</proficiency>
+        <proficiency>Blind Fighting</proficiency>
+        <proficiency>Climbing</proficiency>
+        <proficiency>Combat Reflexes</proficiency>
+        <proficiency>Combat Trickery (disarm, knock down)</proficiency>
+        <proficiency>Eavesdropping</proficiency>
+        <proficiency>Endurance</proficiency>
+        <proficiency>Fighting Style</proficiency>
+        <proficiency>Land Surveying</proficiency>
+        <proficiency>Mapping</proficiency>
+        <proficiency>Mountaineering</proficiency>
+        <proficiency>Naturalism</proficiency>
+        <proficiency>Navigation</proficiency>
+        <proficiency>Passing Without Trace</proficiency>
+        <proficiency>Precise Shooting</proficiency>
+        <proficiency>Riding</proficiency>
+        <proficiency>Running</proficiency>
+        <proficiency>Seafaring</proficiency>
+        <proficiency>Skirmishing</proficiency>
+        <proficiency>Sniping</proficiency>
+        <proficiency>Survival</proficiency>
+        <proficiency>Swashbuckling</proficiency>
+        <proficiency>Trapping</proficiency>
+        <proficiency>Weapon Finesse</proficiency>
+        <proficiency>Weapon Focus</proficiency>
+      </class>
+
+      <class name="Fighter">
+        <proficiency>Acrobatics</proficiency>
+        <proficiency>Alertness</proficiency>
+        <proficiency>Berserkergang</proficiency>
+        <proficiency>Blind Fighting</proficiency>
+        <proficiency>Combat Reflexes</proficiency>
+        <proficiency>Combat Trickery (disarm, force back, knock down, overrun, sunder)</proficiency>
+        <proficiency>Command</proficiency>
+        <proficiency>Dungeon Bashing</proficiency>
+        <proficiency>Endurance</proficiency>
+        <proficiency>Fighting Style</proficiency>
+        <proficiency>Gambling</proficiency>
+        <proficiency>Intimidation</proficiency>
+        <proficiency>Leadership</proficiency>
+        <proficiency>Manual of Arms</proficiency>
+        <proficiency>Military Strategy</proficiency>
+        <proficiency>Precise Shooting</proficiency>
+        <proficiency>Riding</proficiency>
+        <proficiency>Running</proficiency>
+        <proficiency>Siege Engineering</proficiency>
+        <proficiency>Skirmishing</proficiency>
+        <proficiency>Survival</proficiency>
+        <proficiency>Swashbuckling</proficiency>
+        <proficiency>Weapon Finesse</proficiency>
+        <proficiency>Weapon Focus</proficiency>
+      </class>
+
+      <class name="Mage">
+        <proficiency>Alchemy</proficiency>
+        <proficiency>Battle Magic</proficiency>
+        <proficiency>Beast Friendship</proficiency>
+        <proficiency>Black Lore of Zahar</proficiency>
+        <proficiency>Collegiate Wizardry</proficiency>
+        <proficiency>Craft</proficiency>
+        <proficiency>Diplomacy</proficiency>
+        <proficiency>Elementalism</proficiency>
+        <proficiency>Elven Bloodline</proficiency>
+        <proficiency>Engineering</proficiency>
+        <proficiency>Familiar</proficiency>
+        <proficiency>Healing</proficiency>
+        <proficiency>Illusion Resistance</proficiency>
+        <proficiency>Knowledge</proficiency>
+        <proficiency>Language</proficiency>
+        <proficiency>Loremastery</proficiency>
+        <proficiency>Magical Engineering</proficiency>
+        <proficiency>Mapping</proficiency>
+        <proficiency>Mystic Aura</proficiency>
+        <proficiency>Naturalism</proficiency>
+        <proficiency>Quiet Magic</proficiency>
+        <proficiency>Performance</proficiency>
+        <proficiency>Prestidigitation</proficiency>
+        <proficiency>Profession</proficiency>
+        <proficiency>Sensing Power</proficiency>
+        <proficiency>Transmogrification</proficiency>
+        <proficiency>Soothsaying</proficiency>
+        <proficiency>Unflappable Casting</proficiency>
+      </class>
+
+      <class name="Thief">
+        <proficiency>Acrobatics</proficiency>
+        <proficiency>Alertness</proficiency>
+        <proficiency>Arcane Dabbling</proficiency>
+        <proficiency>Blind Fighting</proficiency>
+        <proficiency>Bribery</proficiency>
+        <proficiency>Cat Burglary</proficiency>
+        <proficiency>Combat Reflexes</proficiency>
+        <proficiency>Combat Trickery (disarm, incapacitate)</proficiency>
+        <proficiency>Contortionism</proficiency>
+        <proficiency>Diplomacy</proficiency>
+        <proficiency>Fighting Style</proficiency>
+        <proficiency>Gambling</proficiency>
+        <proficiency>Intimidation</proficiency>
+        <proficiency>Lip Reading</proficiency>
+        <proficiency>Lockpicking</proficiency>
+        <proficiency>Mapping</proficiency>
+        <proficiency>Precise Shooting</proficiency>
+        <proficiency>Riding</proficiency>
+        <proficiency>Running</proficiency>
+        <proficiency>Seafaring</proficiency>
+        <proficiency>Skirmishing</proficiency>
+        <proficiency>Skulking</proficiency>
+        <proficiency>Sniping</proficiency>
+        <proficiency>Swashbuckling</proficiency>
+        <proficiency>Trap Finding</proficiency>
+        <proficiency>Weapon Finesse</proficiency>
+        <proficiency>Weapon Focus</proficiency>
+      </class>
+    </proficiency_lists>
+
+    <proficiency_descriptions>
+      <proficiency name="Acrobatics">
+        <effect>+2 to saving throws where agility helps avoid danger.</effect>
+        <tumble>Instead of moving, may attempt proficiency throw 20+ to tumble behind a melee opponent; required throw improves by 1 per experience level.</tumble>
+        <successful_tumble>Character ends behind target; target may then be attacked at +2; target gains no shield benefit; thieves and other backstab-eligible characters use their normal +4 attack bonus and damage bonus for backstab.</successful_tumble>
+        <restriction>Cannot tumble at encumbrance 6 stone or more.</restriction>
+        <automatic_class_note>Elven nightblades begin with this proficiency automatically.</automatic_class_note>
+      </proficiency>
+
+      <proficiency name="Adventuring" general="true">
+        <effect>Covers standard adventuring tasks such as weapon maintenance, horsemanship basics, camping, searching for secret doors, and rough valuation of common coins, trade goods, gems, and jewelry.</effect>
+        <rule>All player characters are assumed to have it for standard adventuring proficiency throws.</rule>
+      </proficiency>
+
+      <proficiency name="Alchemy" general="true">
+        <rank1>Identify common alchemical substances, potions, and poisons on 11+.</rank1>
+        <rank2>Can work as an apothecary or alchemical assistant.</rank2>
+        <rank3>Can work as an alchemist.</rank3>
+      </proficiency>
+
+      <proficiency name="Alertness">
+        <effect>+4 on proficiency throws to hear noises and detect secret doors; notice secret doors by casual observation on 18+; +1 to avoid surprise.</effect>
+      </proficiency>
+
+      <proficiency name="Ambushing">
+        <effect>When attacking with surprise, gain +4 to attack throws and deal double damage.</effect>
+        <restriction>Does not stack with thief-style backstab.</restriction>
+      </proficiency>
+
+      <proficiency name="Animal Husbandry" general="true">
+        <rank1>Diagnose animal disease on 11+ and tell whether it is magical or mundane; animals under treatment heal an extra 1d3 hp/day with clean conditions and rest.</rank1>
+        <rank2>Neutralize poison, cure disease, or cure light wounds on 18+, once per day per animal.</rank2>
+        <rank3>Neutralize poison, cure disease, or cure serious wounds on 14+, once per day per animal; cure mortal wounds on 18+, once per day per animal.</rank3>
+        <capacity>Treat 3 animals at once, plus 1 additional animal for each time the proficiency is selected.</capacity>
+      </proficiency>
+
+      <proficiency name="Animal Training" general="true">
+        <scope>Choose one animal type; additional selections are required for additional animal types.</scope>
+        <fantastic_variant>May instead choose a similar fantastic creature type.</fantastic_variant>
+        <training_requirements>Animals must begin training while young.</training_requirements>
+        <timings>
+          <tame_wild_animal>Minimum 1 month.</tame_wild_animal>
+          <teach_first_trick>Minimum 1 month.</teach_first_trick>
+          <teach_additional_tricks>Half the first-trick time per trick.</teach_additional_tricks>
+        </timings>
+        <maximum_tricks>2d4 tricks/tasks; trainer only learns the limit upon reaching it.</maximum_tricks>
+      </proficiency>
+
+      <proficiency name="Apostasy">
+        <effect>Select 4 divine spells not normally available to worshippers of the character's god and add them to the repertoire.</effect>
+      </proficiency>
+
+      <proficiency name="Arcane Dabbling">
+        <effect>May attempt to use mage-only wands, staffs, and similar magic items.</effect>
+        <throw>At level 1, requires 18+ or the attempt backfires; required throw improves by 2 per level to a minimum of 3+.</throw>
+        <automatic_class_note>Bards begin with this proficiency automatically.</automatic_class_note>
+      </proficiency>
+
+      <proficiency name="Art" general="true">
+        <scope>Choose one art form; additional selections may buy additional art forms or improve the same one.</scope>
+        <recognition>Identify masterwork items, rare materials, and famous artisans on 11+.</recognition>
+        <progression_table>
+          <row title="Apprentice" rank="1" gp_per_month="10gp" workers_allowed="N.A."/>
+          <row title="Journeyman" rank="2" gp_per_month="20gp" workers_allowed="3 Apprentices" worker_bonus="Increase productivity by 50%"/>
+          <row title="Master Artist" rank="3" gp_per_month="40gp" workers_allowed="2 Journeymen, 4 Apprentices" worker_bonus="Increase productivity by 50%"/>
+        </progression_table>
+        <specialist_rule>At rank 3, may work as a specialist in that art.</specialist_rule>
+      </proficiency>
+
+      <proficiency name="Bargaining" general="true">
+        <effect>Buy at 10% below list price and sell at 10% above list price.</effect>
+        <opposed_rule>If both buyer and seller have Bargaining, both make reaction rolls; higher result gets the discount advantage.</opposed_rule>
+        <multiple_selection>Each additional selection gives +2 on reaction rolls when negotiating with other bargainers.</multiple_selection>
+      </proficiency>
+
+      <proficiency name="Battle Magic">
+        <effect>+1 initiative when casting spells; treated as 2 class levels higher for dispel magic and for penetrating magic resistance.</effect>
+      </proficiency>
+
+      <proficiency name="Beast Friendship">
+        <effect>Identify plants and fauna on 11+; understand animal moods/body language; +2 reaction rolls with normal animals; may take animals as henchmen.</effect>
+      </proficiency>
+
+      <proficiency name="Berserkergang">
+        <effect>May enter berserker rage: +2 attack throws, immune to fear, -2 AC, cannot retreat.</effect>
+        <duration>Once begun, rage lasts until combat ends.</duration>
+      </proficiency>
+
+      <proficiency name="Black Lore of Zahar">
+        <effect>Control undead as a Chaotic cleric of half class level.</effect>
+        <death_magic>Targets suffer -2 on saves versus Death from the character's spells.</death_magic>
+        <necromancy_bonus>Necromantic spell effects and necromantic research are resolved as if the caster were 2 class levels higher.</necromancy_bonus>
+      </proficiency>
+
+      <proficiency name="Blind Fighting">
+        <effect>Penalty for fighting blind or against invisible enemies is reduced from -4 to -2.</effect>
+      </proficiency>
+
+      <proficiency name="Bribery">
+        <effect>Offering a bribe grants one additional reaction roll in an encounter.</effect>
+        <bribe_modifiers>
+          <day_pay>+1</day_pay>
+          <week_pay>+2</week_pay>
+          <month_pay>+3</month_pay>
+        </bribe_modifiers>
+        <limit>Only one bribe attempt per target in a given situation.</limit>
+      </proficiency>
+
+      <proficiency name="Caving" general="true">
+        <effect>When exploring underground caves, caverns, and rivers, know the route taken on 11+ if conscious during travel.</effect>
+      </proficiency>
+
+      <proficiency name="Cat Burglary">
+        <effect>Balance on thin ledges or tight ropes using a climb walls proficiency throw.</effect>
+        <fall_recovery>If a climb is failed, may make a second proficiency throw at -4 to catch oneself and avoid damage.</fall_recovery>
+      </proficiency>
+
+      <proficiency name="Climbing">
+        <effect>Climb cliffs, branchless trees, walls, and similar sheer surfaces without climbing aids as a thief of class level.</effect>
+      </proficiency>
+
+      <proficiency name="Collegiate Wizardry" general="true">
+        <effect>Automatically identify arcane symbols, spell signatures, trappings, and grimoires of the character's own order.</effect>
+        <other_orders>Recognize those of other orders or traditions on 11+; rarer traditions may be harder at Judge discretion.</other_orders>
+        <multiple_selection>true</multiple_selection>
+      </proficiency>
+
+      <proficiency name="Combat Reflexes">
+        <effect>+1 on surprise rolls and initiative rolls.</effect>
+        <restriction>Does not apply when casting spells.</restriction>
+      </proficiency>
+
+      <proficiency name="Combat Trickery">
+        <selection>Choose one maneuver: Disarm, Force Back, Incapacitate, Knock Down, Overrun, Sunder, or Wrestle.</selection>
+        <effect>When using the chosen maneuver, reduce the normal attack penalty by 2 and impose -2 on the opponent's saving throw to resist it.</effect>
+        <multiple_selection>May be taken multiple times for additional maneuvers.</multiple_selection>
+      </proficiency>
+
+      <proficiency name="Command">
+        <effect>Henchmen and mercenaries receive +2 morale.</effect>
+      </proficiency>
+
+      <proficiency name="Contemplation">
+        <effect>After 1 hour (6 turns) of undisturbed meditation, regain the ability to cast one previously expended spell level.</effect>
+        <limit>The same spell level cannot be regained more than once per day by contemplation.</limit>
+      </proficiency>
+
+      <proficiency name="Contortionism">
+        <effect>On 18+ each round, escape bonds or slip between bars such as a portcullis.</effect>
+      </proficiency>
+
+      <proficiency name="Craft" general="true">
+        <scope>Choose one craft; additional selections may buy additional crafts or improve the same one.</scope>
+        <recognition>Identify masterwork items, rare materials, and famous artisans on 11+.</recognition>
+        <automatic_class_note>Dwarven craftpriests begin with this proficiency at Journeyman rank.</automatic_class_note>
+        <progression_table>
+          <row title="Apprentice" rank="1" gp_per_month="10gp" workers_allowed="N.A."/>
+          <row title="Journeyman" rank="2" gp_per_month="20gp" workers_allowed="3 Apprentices" worker_bonus="Increase productivity by 50%"/>
+          <row title="Master Craftsman" rank="3" gp_per_month="40gp" workers_allowed="2 Journeymen, 4 Apprentices" worker_bonus="Increase productivity by 50%"/>
+        </progression_table>
+        <specialist_rule>At rank 3, may work as a specialist in that craft.</specialist_rule>
+      </proficiency>
+
+      <proficiency name="Diplomacy" general="true">
+        <effect>+2 on reaction rolls when attempting to parley.</effect>
+      </proficiency>
+
+      <proficiency name="Disguise" general="true">
+        <effect>Create a disguise on 11+.</effect>
+        <detection_rule>Someone intimately familiar with the impersonated subject may see through it on 14+, adding Wisdom modifier to the roll.</detection_rule>
+      </proficiency>
+
+      <proficiency name="Divine Blessing">
+        <effect>+2 to all saving throws.</effect>
+      </proficiency>
+
+      <proficiency name="Divine Health">
+        <effect>Immune to all disease, including magical disease caused by spells, mummies, or lycanthropes.</effect>
+      </proficiency>
+
+      <proficiency name="Dungeon Bashing">
+        <effect>+4 on throws to open doors and similar acts of brute strength.</effect>
+      </proficiency>
+
+      <proficiency name="Dwarven Brewing">
+        <effect>Taste-identify the magical properties of a potion or oil on 11+.</effect>
+        <craft_bonus>+4 on proficiency throws to craft alcoholic beverages.</craft_bonus>
+      </proficiency>
+
+      <proficiency name="Eavesdropping">
+        <effect>Hear noises as a thief of class level.</effect>
+      </proficiency>
+
+      <proficiency name="Elementalism">
+        <selection>Choose air, earth, fire, or water.</selection>
+        <effect>Spells using that element deal +1 damage per die and impose -2 on the target's saving throw.</effect>
+        <summoning_bonus>Elementals of that type gain +1 hp per Hit Die when summoned.</summoning_bonus>
+        <magic_missile_option>Magic missiles may be treated as the chosen element.</magic_missile_option>
+      </proficiency>
+
+      <proficiency name="Elven Bloodline">
+        <effect>Lifespan is tripled for the character's race; the character shows no signs of aging and gains elven immunity to paralysis.</effect>
+        <manifestation>Ancestry must visibly manifest in appearance.</manifestation>
+      </proficiency>
+
+      <proficiency name="Endurance" general="true">
+        <effect>No need to rest every 6 turns; may force march for 1 day without penalty plus 1 additional day per point of Constitution bonus.</effect>
+      </proficiency>
+
+      <proficiency name="Engineering" general="true">
+        <effect>Evaluate structures on 11+ to judge condition, origin, and similar features.</effect>
+        <construction_capacity>Each selection allows supervision of 25,000gp of permanent construction.</construction_capacity>
+        <specialist_rule>At 4 selections, equivalent to the engineer specialist.</specialist_rule>
+      </proficiency>
+
+      <proficiency name="Familiar">
+        <effect>Gain a magical animal companion appropriate to alignment and powers.</effect>
+        <familiar_stats>
+          <hit_dice_and_max_hp>Equal to half the master's value.</hit_dice_and_max_hp>
+          <intelligence>Equal to master's Intelligence.</intelligence>
+          <proficiencies>Same number of general and class proficiencies as master, chosen from master's class list.</proficiencies>
+          <languages>Always understands any language spoken by the master; master can understand the familiar's speech.</languages>
+          <loyalty>Utterly loyal and obeys commands.</loyalty>
+        </familiar_stats>
+        <benefit>While within 30 feet, the master gains +1 on saving throws.</benefit>
+        <death_penalty>If slain, master must save versus Death or instantly take damage equal to the familiar's maximum hp.</death_penalty>
+        <replacement_rule>No new familiar until the master gains a level.</replacement_rule>
+      </proficiency>
+
+      <proficiency name="Fighting Style">
+        <general_rule>Choose one style. A proficient character can draw weapon(s) and/or ready shield without sacrificing move or attack, and gains the style bonus.</general_rule>
+        <styles>
+          <style name="Pole weapon" bonus="+1 initiative"/>
+          <style name="Missile weapon" bonus="+1 attack throws"/>
+          <style name="Single weapon" bonus="+1 attack throws"/>
+          <style name="Two weapons" bonus="+1 attack throws"/>
+          <style name="Two-handed weapon" bonus="+1 damage rolls"/>
+          <style name="Weapon and shield" bonus="+1 armor class"/>
+        </styles>
+        <stacking_rule>These bonuses are in addition to normal bonuses for that fighting mode.</stacking_rule>
+        <multiple_selection>May be taken multiple times for additional styles.</multiple_selection>
+        <one_style_per_round>If more than one known style could apply, only one style bonus may be used in a given round.</one_style_per_round>
+      </proficiency>
+
+      <proficiency name="Gambling" general="true">
+        <income>Earn 1d6 gp/month as a professional gambler; each additional selection adds another 1d6 gp/month.</income>
+        <contested_play>Each gambler rolls the number of d6s equal to monthly gambling income; highest total wins the first round/hand. Losers may leave or raise by rolling again and adding to total. When no one raises further, highest cumulative total wins and each loser pays the winner the total amount of that loser's rolls.</contested_play>
+        <stakes_rule>By agreement, stakes may be multiplied or made more severe.</stakes_rule>
+      </proficiency>
+
+      <proficiency name="Goblin-Slaying">
+        <effect>+1 attack throws against kobolds, goblins, orcs, gnolls, hobgoblins, bugbears, ogres, trolls, and giants.</effect>
+        <progression level_7="+2" level_13="+3"/>
+      </proficiency>
+
+      <proficiency name="Healing" general="true">
+        <rank1>Diagnose human/demihuman disease on 11+ and tell whether it is magical or mundane; patients heal an extra 1d3 hp/day.</rank1>
+        <rank2>Neutralize poison, cure disease, or cure light wounds on 18+, once per day per patient.</rank2>
+        <rank3>Neutralize poison, cure disease, or cure serious wounds on 14+, once per day per patient.</rank3>
+        <herbs_rule>May use listed healing herbs to heal additional damage or gain bonuses on Healing proficiency throws.</herbs_rule>
+        <capacity>Supervise 3 patients/day, plus 1 more patient for each selection of Healing.</capacity>
+        <progression_table>
+          <row title="Healer" rank="1" gp_per_month="25gp" patients_per_day="3" skills="Identify 11+, extra 1d3 hp/day"/>
+          <row title="Physicker" rank="2" gp_per_month="50gp" patients_per_day="4" skills="Identify 7+, neutralize poison, cure disease, cure light wounds 18+"/>
+          <row title="Chirugeon" rank="3" gp_per_month="100gp" patients_per_day="5" skills="Identify 3+, neutralize poison, cure disease, cure serious wounds 14+"/>
+        </progression_table>
+      </proficiency>
+
+      <proficiency name="Illusion Resistance">
+        <effect>+4 on saving throws to disbelieve magical illusions.</effect>
+      </proficiency>
+
+      <proficiency name="Intimidation" general="true">
+        <effect>+2 on reaction rolls when threatening violence or dire consequences.</effect>
+        <limit>Targets must be 5 HD or less, or the character and allies must outnumber or grossly outrank them.</limit>
+      </proficiency>
+
+      <proficiency name="Knowledge" general="true">
+        <scope>Choose one field of knowledge; additional selections may buy more fields or deepen the same field.</scope>
+        <effect>Recall expert commentary or information in the chosen field on 11+.</effect>
+        <income>Can normally make a living as an expert in that subject.</income>
+        <rank2>Expert in the subject; can train students and write books.</rank2>
+        <rank3>May work as a sage in that subject.</rank3>
+      </proficiency>
+
+      <proficiency name="Labor" general="true">
+        <scope>Choose one type of physical labor; additional selections buy other labor proficiencies.</scope>
+        <income>Earn 3d4 gp/month.</income>
+        <effect>Interpret information relevant to the labor skill on 11+.</effect>
+        <restriction>Labor is not improved by taking the same labor multiple times.</restriction>
+      </proficiency>
+
+      <proficiency name="Land Surveying">
+        <effect>On 11+, predict sinkholes, deadfalls, collapses, or rock slides upon entering an area.</effect>
+        <dungeon_benefit>+4 on throws to escape detection in dungeons by finding the best cover.</dungeon_benefit>
+      </proficiency>
+
+      <proficiency name="Language" general="true">
+        <effect>Learn to speak, read, and write one additional language.</effect>
+        <literacy_rule>Literacy level in the new language depends on Intelligence.</literacy_rule>
+        <low_int_rule>Characters with Intelligence 8 or less are generally illiterate, but may take this proficiency to become literate in a language they already speak.</low_int_rule>
+      </proficiency>
+
+      <proficiency name="Laying on Hands">
+        <effect>Once per day, heal self or another for 2 hp per experience level.</effect>
+        <multiple_selection>Each additional selection grants one additional use per day.</multiple_selection>
+      </proficiency>
+
+      <proficiency name="Leadership" general="true">
+        <effect>May hire 1 additional henchman beyond normal Charisma limits; domain base morale increases by 1.</effect>
+      </proficiency>
+
+      <proficiency name="Lip Reading" general="true">
+        <effect>Can understand visible speech in a language the character knows.</effect>
+        <visibility_condition>If speech is not clear and in bright light, a hear noise proficiency throw may be needed to determine success.</visibility_condition>
+        <hijinks_bonus>+1 on carousing and spying hijinks.</hijinks_bonus>
+      </proficiency>
+
+      <proficiency name="Lockpicking">
+        <effect>+2 on proficiency throws to open locks.</effect>
+        <fast_use>May open a lock in 1 round instead of 1 turn by making the roll at -4.</fast_use>
+      </proficiency>
+
+      <proficiency name="Loremastery">
+        <effect>At level 1, decipher occult runes, remember ancient history, or identify a historic artifact on 18+.</effect>
+        <progression>The required throw improves by 1 per level.</progression>
+        <automatic_class_note>Bards begin with this proficiency automatically.</automatic_class_note>
+      </proficiency>
+
+      <proficiency name="Magical Engineering">
+        <effect>+1 to magical research throws.</effect>
+        <identification>Recognize most common magical items after careful investigation on 11+.</identification>
+        <cannot_identify>Cannot identify uncommon/unique magic items, command words, curses/traps, exact bonuses, or remaining charges.</cannot_identify>
+        <multiple_selection>Each additional selection gives another +1 to magical research and lowers the common-item identification throw by 4.</multiple_selection>
+      </proficiency>
+
+      <proficiency name="Magical Music">
+        <effect>By succeeding on an appropriate Performance throw, may serenade suitable targets as charm person or tame savage beasts as sleep.</effect>
+        <duration>If successful, effect begins immediately and lasts while performing; after 1 full turn of performance, it lasts for the spell duration.</duration>
+        <restriction>No effect on creatures already in combat.</restriction>
+      </proficiency>
+
+      <proficiency name="Manual of Arms" general="true">
+        <rank1>Earn 30 gp/month training light infantry; turns raw recruits into light infantry in 1 month.</rank1>
+        <rank1_with_riding>Can train light cavalry in 3 months.</rank1_with_riding>
+        <rank1_with_bow_focus>Can train crossbowmen in 1 month, bowmen in 2 months, or longbowmen in 3 months.</rank1_with_bow_focus>
+        <rank1_with_riding_and_bow_focus>Can train horse archers in 6 months.</rank1_with_riding_and_bow_focus>
+        <rank2>Earn 60 gp/month and can train heavy infantry in 1 month.</rank2>
+        <rank2_with_riding>Can train heavy cavalry in 6 months.</rank2_with_riding>
+        <rank2_with_riding_and_bow_focus>Can train cataphract cavalry in 12 months.</rank2_with_riding_and_bow_focus>
+        <capacity>Can train up to 60 soldiers during each training period.</capacity>
+      </proficiency>
+
+      <proficiency name="Mapping" general="true">
+        <effect>Can understand and make maps even if illiterate.</effect>
+        <throw>Interpret/draft complex layouts or map an area from memory on 11+.</throw>
+        <multiple_selection>true</multiple_selection>
+      </proficiency>
+
+      <proficiency name="Martial Training">
+        <effect>Select one additional weapon group and add it to the character's permitted weapons.</effect>
+        <weapon_groups>
+          <group>Axes</group>
+          <group>Bows/Crossbows</group>
+          <group>Flails/Hammers/Maces</group>
+          <group>Swords/Daggers</group>
+          <group>Spears/Pole arms</group>
+          <group>Bolas/Nets/Slings/Saps/Staffs</group>
+        </weapon_groups>
+      </proficiency>
+
+      <proficiency name="Military Strategy" general="true">
+        <effect>Recognize famous battles, generals, and weapons on 11+.</effect>
+        <mass_combat>Forces under command gain +1 to mass combat initiative.</mass_combat>
+        <multiple_selection>Each additional selection adds another +1, to a maximum of +3.</multiple_selection>
+      </proficiency>
+
+      <proficiency name="Mimicry" general="true">
+        <effect>On 11+, imitate animal calls and foreign accents convincingly enough to fool listeners.</effect>
+        <multiple_selection>true</multiple_selection>
+      </proficiency>
+
+      <proficiency name="Mountaineering">
+        <effect>Use mountaineering gear to climb difficult mountains and cliff faces, and rig lines for others, as a thief of class level.</effect>
+        <restriction>Does not allow climbing sheer surfaces during combat or without extensive gear.</restriction>
+      </proficiency>
+
+      <proficiency name="Mystic Aura">
+        <effect>+2 on reaction rolls to impress or intimidate others.</effect>
+        <special_result>If this bonus helps produce a total reaction result of 12 or more, subjects act as if charmed while in the character's presence.</special_result>
+      </proficiency>
+
+      <proficiency name="Naturalism" general="true">
+        <effect>In terrain typical to the character's background, know common plants/animals, edible and poisonous foods, healing herbs, and signs of unnatural danger on 11+.</effect>
+        <multiple_selection>true</multiple_selection>
+      </proficiency>
+
+      <proficiency name="Navigation" general="true">
+        <effect>Use sun and stars to determine rough position.</effect>
+        <bonus>+4 on throws to avoid getting lost in the wilderness.</bonus>
+        <specialist_role>Can serve as a ship navigator.</specialist_role>
+      </proficiency>
+
+      <proficiency name="Passing Without Trace">
+        <effect>Leaves no sign over wilderness terrain and cannot be tracked.</effect>
+        <companions>May cover the tracks of 1 additional traveling companion per 3 experience levels.</companions>
+      </proficiency>
+
+      <proficiency name="Performance" general="true">
+        <scope>Choose one performance type; additional selections may buy more types or improve the same one.</scope>
+        <recognition>Identify famous performers, masterpieces, and rare instruments on 11+.</recognition>
+        <automatic_class_note>Bards begin with this proficiency at Apprentice rank.</automatic_class_note>
+        <progression_table>
+          <row title="Apprentice" rank="1" gp_per_month="10gp" workers_allowed="N.A."/>
+          <row title="Journeyman" rank="2" gp_per_month="20gp" workers_allowed="3 Apprentices" worker_bonus="Increase productivity by 50%"/>
+          <row title="Master Performer" rank="3" gp_per_month="40gp" workers_allowed="2 Journeymen, 4 Apprentices" worker_bonus="Increase productivity by 50%"/>
+        </progression_table>
+      </proficiency>
+
+      <proficiency name="Precise Shooting">
+        <effect>May fire missiles into melee at -4 to attack.</effect>
+        <multiple_selection>Each additional selection reduces this penalty by 2.</multiple_selection>
+        <restriction>Characters without this proficiency cannot make missile attacks into melee.</restriction>
+      </proficiency>
+
+      <proficiency name="Prestidigitation">
+        <effect>At will, create simple magical tricks and sleight-of-hand effects suitable for minor entertainment.</effect>
+        <requirements>Must be physically capable of the task and free to speak and gesture.</requirements>
+        <pickpocketing>May pick pockets as a thief of half class level.</pickpocketing>
+      </proficiency>
+
+      <proficiency name="Profession" general="true">
+        <scope>Choose one civil profession; additional selections may buy more professions or improve the same one.</scope>
+        <effect>Make expert commentary in the chosen profession on 11+.</effect>
+        <progression_table>
+          <row title="Apprentice" rank="1" gp_per_month="25gp" workers_allowed="N.A."/>
+          <row title="Licensed Practitioner" rank="2" gp_per_month="50gp" workers_allowed="3 Apprentices" worker_bonus="Increase productivity by 50%"/>
+          <row title="Master of Profession" rank="3" gp_per_month="100gp" workers_allowed="2 Journeymen, 4 Apprentices" worker_bonus="Increase productivity by 50%"/>
+        </progression_table>
+      </proficiency>
+
+      <proficiency name="Prophecy">
+        <effect>Receives cryptic but useful visions; once per week may use commune.</effect>
+      </proficiency>
+
+      <proficiency name="Quiet Magic">
+        <effect>Spellcasting can only be heard with a successful hear noise proficiency throw.</effect>
+        <restriction>Full gagging is required to prevent casting.</restriction>
+      </proficiency>
+
+      <proficiency name="Riding" general="true">
+        <effect>Care for and control a riding animal under difficult conditions, including fighting from its back.</effect>
+        <selection_rule>Must be selected separately for each animal type.</selection_rule>
+        <restriction>Not required for simply riding a domesticated animal under non-combat conditions.</restriction>
+      </proficiency>
+
+      <proficiency name="Righteous Turning">
+        <effect>When turning undead, add Wisdom bonus both to the turning throw and to the number of HD turned on success.</effect>
+      </proficiency>
+
+      <proficiency name="Running">
+        <effect>Base movement increases by 30 feet when wearing chainmail or lighter armor.</effect>
+      </proficiency>
+
+      <proficiency name="Seafaring" general="true">
+        <rank1>Can crew large sailing ships or galleys.</rank1>
+        <rank2>Can serve as captain on a seagoing vessel.</rank2>
+        <rank3>Becomes a master mariner; when tacking, movement is reduced by only one category instead of two, and the ship's chance to evade increases by +5.</rank3>
+      </proficiency>
+
+      <proficiency name="Seduction" general="true">
+        <effect>+2 on reaction rolls with creatures who are potentially attracted to the character.</effect>
+      </proficiency>
+
+      <proficiency name="Sensing Evil">
+        <effect>At will, detect evil as the spell within 60 feet by concentrating for 1 turn.</effect>
+      </proficiency>
+
+      <proficiency name="Sensing Power">
+        <effect>Detect spellcasters within 60 feet and estimate their power relative to the character.</effect>
+        <recent_magic>Can tell whether arcane magic has been used in the same vicinity within the last 24 hours.</recent_magic>
+        <item_limitation>Does not necessarily detect whether an item is magical unless it was used in the last 24 hours.</item_limitation>
+        <use_time>Each use takes 1 turn.</use_time>
+      </proficiency>
+
+      <proficiency name="Siege Engineering" general="true">
+        <rank1>Construct and place temporary defensive works and operate heavy war machines and siege engines.</rank1>
+        <rank2>Can also construct heavy war machines, siege engines, and siege towers.</rank2>
+      </proficiency>
+
+      <proficiency name="Signaling" general="true">
+        <effect>Transmit messages to other signaling specialists of the same force, culture, guild, or organization.</effect>
+        <selection_rule>Specify the style/culture of signals learned when selected.</selection_rule>
+        <examples_of_style>Examples include naval flags, cavalry trumpets, or smoke signals.</examples_of_style>
+      </proficiency>
+
+      <proficiency name="Skirmishing">
+        <effect>May withdraw or retreat from melee without declaring defensive movement before initiative is rolled.</effect>
+      </proficiency>
+
+      <proficiency name="Skulking">
+        <effect>+2 on proficiency throws to hide in shadows and move silently.</effect>
+      </proficiency>
+
+      <proficiency name="Sniping">
+        <effect>If otherwise eligible to ambush or backstab, may do so with ranged weapons out to short range.</effect>
+      </proficiency>
+
+      <proficiency name="Soothsaying">
+        <effect>Receives cryptic but useful visions; once per week may use contact higher plane.</effect>
+      </proficiency>
+
+      <proficiency name="Survival">
+        <effect>Automatically forage enough food for self while moving in a fairly fertile area.</effect>
+        <group_foraging>If foraging for more than one person, make the normal proficiency throw with a +4 bonus.</group_foraging>
+      </proficiency>
+
+      <proficiency name="Swashbuckling">
+        <effect>+1 AC when wearing leather armor or less and able to move freely.</effect>
+        <progression level_7="+2 AC" level_13="+3 AC"/>
+      </proficiency>
+
+      <proficiency name="Theology" general="true">
+        <effect>Automatically identify symbols, spell signatures, trappings, and holy days of the character's own faith.</effect>
+        <other_faiths>Recognize those of other faiths on 11+; rare or occult cults may be harder at Judge discretion.</other_faiths>
+        <automatic_class_note>Dwarven craftpriests begin with this proficiency automatically.</automatic_class_note>
+        <multiple_selection>true</multiple_selection>
+      </proficiency>
+
+      <proficiency name="Trap Finding">
+        <effect>+2 on proficiency throws to find and remove traps.</effect>
+        <fast_use>May find a trap in 1 round rather than 1 turn by making the roll at -4.</fast_use>
+      </proficiency>
+
+      <proficiency name="Tracking" general="true">
+        <base_throw>11+</base_throw>
+        <modifiers>
+          <modifier circumstance="Tracking 2-4 creatures">+2</modifier>
+          <modifier circumstance="Tracking 4-8 creatures">+4</modifier>
+          <modifier circumstance="Tracking 8-16 creatures">+6</modifier>
+          <modifier circumstance="Tracking 17 or more creatures">+8</modifier>
+          <modifier circumstance="Soft or muddy ground">+4</modifier>
+          <modifier circumstance="Hard or rocky ground">-8</modifier>
+          <modifier circumstance="Bad lighting">-4</modifier>
+          <modifier circumstance="Good weather since trail was made">-1 per 12 hours</modifier>
+          <modifier circumstance="Rain or snow since trail was made">-4 per hour</modifier>
+        </modifiers>
+        <movement>Characters move at half speed while tracking.</movement>
+      </proficiency>
+
+      <proficiency name="Transmogrification">
+        <effect>Polymorph spells function as if cast by a character 2 class levels higher.</effect>
+        <crossbreeds>May create magical crossbreeds as if 2 class levels higher.</crossbreeds>
+        <save_penalty>Targets of polymorph other suffer -2 on saving throws.</save_penalty>
+      </proficiency>
+
+      <proficiency name="Trapping" general="true">
+        <effect>Build simple pits, snares, and deadfalls able to capture creatures up to elephant size; proper construction requires 11+.</effect>
+        <wilderness_traps>Can detect and disable simple wilderness traps as a thief of class level.</wilderness_traps>
+        <restriction>No effect on dungeon mechanical traps or magical traps.</restriction>
+      </proficiency>
+
+      <proficiency name="Unflappable Casting">
+        <effect>If interrupted or damaged while casting, the spell is lost but the character still keeps the action and may move/attack normally.</effect>
+        <contrast>Without this proficiency, interruption during casting causes the character to lose the action entirely.</contrast>
+      </proficiency>
+
+      <proficiency name="Wakefulness">
+        <effect>Only 4 hours of sleep are required each night to be rested.</effect>
+      </proficiency>
+
+      <proficiency name="Weapon Finesse">
+        <effect>With one-handed melee weapons, may use Dexterity modifier instead of Strength modifier on attack throws.</effect>
+      </proficiency>
+
+      <proficiency name="Weapon Focus">
+        <effect>With a chosen weapon category, an unmodified natural 20 deals double normal damage.</effect>
+        <multiple_selection>May be taken multiple times for additional weapon categories.</multiple_selection>
+        <weapon_categories>
+          <category>Axes</category>
+          <category>Maces, flails, and hammers</category>
+          <category>Swords and daggers</category>
+          <category>Bows and crossbows</category>
+          <category>Slings and thrown weapons</category>
+          <category>Spears and polearms</category>
+        </weapon_categories>
+        <restriction>Does not grant permission to use weapons forbidden to the class.</restriction>
+      </proficiency>
+    </proficiency_descriptions>
+
+    <normal_humans_and_demi_humans>
+      <starting_rule>0-level normal humans and demi-humans do not begin with Adventuring or any class proficiencies.</starting_rule>
+      <starting_general_proficiencies>They begin with 4 general proficiencies.</starting_general_proficiencies>
+      <int_bonus_rule>If Intelligence is 13 or greater, they gain additional general proficiencies equal to Intelligence bonus.</int_bonus_rule>
+      <duplicate_rule>Among the 4 base starting proficiencies, the same proficiency cannot be chosen more than once; bonus proficiencies from high Intelligence may be used for duplicate selections.</duplicate_rule>
+      <advancement>
+        <human>Gain an additional general proficiency after 5, 15, and 35 years of work.</human>
+        <dwarf_and_elf>Gain an additional general proficiency after 5, 15, 35, and 70 years of work.</dwarf_and_elf>
+      </advancement>
+    </normal_humans_and_demi_humans>
+  </core_rules>
+</acks_proficiencies>

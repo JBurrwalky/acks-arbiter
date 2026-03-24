@@ -1,0 +1,1577 @@
+<monster_catalog title="108I-ACKS Core-Monster-Catalog-8" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <metadata>
+    <source_file>108I-ACKS Core-Monster-Catalog-8.md</source_file>
+    <format_guide>Monster Catalog Format.xml</format_guide>
+    <source_text_truncations>
+      <entry monster="Varmint, Giant" variant="Weasel">Source text ends after "These burrowing creatures live in".</entry>
+      <entry monster="Wyvern">Source text ends after "If eggs or young are".</entry>
+    </source_text_truncations>
+  </metadata>
+
+  <monster>
+    <identity>
+      <name>Triceratops</name>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <size>12' high; 40' long</size>
+      <tags>
+        <tag>dinosaur</tag>
+        <tag>charge</tag>
+        <tag>trample</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter/>
+      <wilderness_encounter>
+        <outside_lair collective_noun="herd" number="1d4"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+      </movement>
+      <armor_class>7</armor_class>
+      <hit_dice printed="11"/>
+      <attacks>1 (gore or trample)</attacks>
+      <damage>3d6</damage>
+      <save>F6</save>
+      <morale>0</morale>
+      <treasure_type>None</treasure_type>
+      <xp>1,200</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="gore">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="gore" count="1" damage="3d6"/>
+          </attack_sequence>
+        </attack_routine>
+        <attack_routine name="trample">
+          <usage>alternative close-combat attack</usage>
+          <attack_sequence>
+            <attack type="trample" count="1" damage="3d6"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+      <attack_effects>
+        <attack_effect attack_name="charge_gore">
+          <trigger>Enough distance between triceratops and foe to commit to a charge.</trigger>
+          <damage>double gore damage</damage>
+          <effect>Charge gore scores double damage.</effect>
+        </attack_effect>
+        <attack_effect attack_name="trample">
+          <to_hit_rule>+4 attack throw against man-sized or smaller opponents.</to_hit_rule>
+          <damage>3d6</damage>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Grassy environments in sub-tropical and temperate regions.</rule>
+      </habitat>
+      <behavior_rules>
+        <rule>Although herbivorous, it is very aggressive toward creatures that come near.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Troglodyte</name>
+    </identity>
+    <classification>
+      <monster_type>humanoid</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>ambusher</tag>
+        <tag>stench</tag>
+        <tag>clawed</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>15%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="gang" number="1d8"/>
+        <in_lair collective_noun="lair" number="1 warband"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="warband" number="1d10 gangs"/>
+        <in_lair collective_noun="warren" number="1d10 warbands"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+      </movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="2"/>
+      <attacks>3 or 1 (2 claws, bite or weapon)</attacks>
+      <damage>1d4/1d4/1d4 or by weapon</damage>
+      <save>F2</save>
+      <morale>+1</morale>
+      <treasure_type>J (per warband)</treasure_type>
+      <xp>20</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="gang_champion" number="1 per gang"/>
+        <member role="warband_sub_chieftain" number="1 per warband"/>
+        <member role="lair_or_warren_chieftain" number="1"/>
+        <member role="female" number="100% of males in lair"/>
+        <member role="eggs" number="100% of males in lair"/>
+        <member role="additional_sub_chieftain" number="1 per warband in warren"/>
+        <member role="additional_champion" number="2d4 in warren"/>
+      </lair_composition>
+      <population_rules>
+        <rule>Female troglodytes fight as hobgoblins, but only to defend the eggs.</rule>
+        <rule>Warren has a 33% chance of a shaman and a 25% chance of a witch doctor.</rule>
+        <rule>Shaman is statistically equivalent to a sub-chieftain and has Clerical abilities at level 1d4.</rule>
+        <rule>Witch doctor is statistically equivalent to a champion and has Mage abilities at level 1d2.</rule>
+      </population_rules>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="natural_attacks">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="claw" count="2" damage="1d4"/>
+            <attack type="bite" count="1" damage="1d4"/>
+          </attack_sequence>
+        </attack_routine>
+        <attack_routine name="weapon_attack">
+          <usage>alternative</usage>
+          <attack_sequence>
+            <attack type="weapon" count="1" damage="by weapon"/>
+          </attack_sequence>
+          <notes>Favored weapons are stone axes, clubs, and great barbed darts treated as javelins with +3 to attack throws.</notes>
+        </attack_routine>
+      </attack_routines>
+      <morale_modifiers>
+        <modifier condition="chieftain alive" value="+1 morale rolls"/>
+      </morale_modifiers>
+    </combat_profile>
+    <special_abilities>
+      <ability name="blend_into_environment">
+        <effect>Characters encountering troglodytes have a -2 penalty to surprise rolls.</effect>
+      </ability>
+      <ability name="stench">
+        <trigger>Humans and demi-humans come near a troglodyte.</trigger>
+        <save type="Poison" on_success="no penalty" on_failure="-2 to attack throws"/>
+      </ability>
+      <ability name="champion">
+        <effect>Champion has AC5, 3 Hit Dice, 16 hit points, and +2 bonus to damage rolls from Strength.</effect>
+      </ability>
+      <ability name="sub_chieftain">
+        <effect>Sub-chieftain has AC6, 4 Hit Dice, 20 hit points, and +2 bonus to damage rolls.</effect>
+      </ability>
+      <ability name="chieftain">
+        <effect>Chieftain has AC7, 6 Hit Dice, 28 hit points, and +3 bonus to damage rolls.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Troglodytes are malicious and warlike and attempt to slay creatures that cross their paths.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Troll</name>
+    </identity>
+    <classification>
+      <monster_type>humanoid</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>regeneration</tag>
+        <tag>fire_vulnerability</tag>
+        <tag>acid_vulnerability</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>40%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="gang" number="1d8"/>
+        <in_lair collective_noun="lair" number="1 gang"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="gang" number="1d8"/>
+        <in_lair collective_noun="village" number="1d10 gangs"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+      </movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="6 + 3*" special_ability_markers="*"/>
+      <attacks>3 (2 claws, bite)</attacks>
+      <damage>1d6/1d6/1d10</damage>
+      <save>F6</save>
+      <morale>+2 (0)</morale>
+      <treasure_type>O (per gang)</treasure_type>
+      <xp>680</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="gang_champion" number="1 per gang"/>
+        <member role="lair_or_village_chieftain" number="1"/>
+        <member role="female" number="100% of males in lair"/>
+        <member role="young" number="100% of males in lair"/>
+        <member role="village_sub_chieftain" number="1"/>
+        <member role="bodyguard" number="1d4 in village"/>
+      </lair_composition>
+      <population_rules>
+        <rule>Female trolls fight as ogres.</rule>
+        <rule>Young trolls fight as orcs.</rule>
+        <rule>Village has a 50% chance of a shaman and a 25% chance of a witch doctor.</rule>
+        <rule>Shaman is statistically equivalent to a sub-chieftain and has Clerical abilities at level 1d4.</rule>
+        <rule>Witch doctor is statistically equivalent to a champion and has Mage abilities at level 1d2.</rule>
+      </population_rules>
+    </encounter_profile>
+    <combat_profile>
+      <morale_modifiers>
+        <modifier condition="confronted by fire or acid" value="morale becomes 0"/>
+        <modifier condition="chieftain alive" value="+1 morale rolls"/>
+      </morale_modifiers>
+    </combat_profile>
+    <special_abilities>
+      <ability name="regeneration">
+        <effect>Regenerates 3 hit points each round unless damage is from fire or acid.</effect>
+        <exception>Cannot be permanently destroyed except by fire or acid.</exception>
+      </ability>
+      <ability name="reattach_severed_parts">
+        <effect>Lost limbs and body parts attempt to crawl or squirm back to the main body and can be instantly reattached by holding them to the stump.</effect>
+      </ability>
+      <ability name="returns_from_zero_hit_points">
+        <trigger>Troll reaches 0 or fewer hit points.</trigger>
+        <effect>Troll continues to regenerate and stands again to fight when it reaches 1 or more hit points.</effect>
+      </ability>
+      <ability name="champion">
+        <effect>Champion has AC6, 7+3 Hit Dice, and 51 hit points.</effect>
+      </ability>
+      <ability name="chieftain">
+        <effect>Chieftain has AC8, 10+6 Hit Dice, 63 hit points, and +2 bonus to damage rolls with natural attacks.</effect>
+      </ability>
+      <ability name="sub_chieftain_and_bodyguards">
+        <effect>Village sub-chieftain and bodyguards have AC7, 8+3 Hit Dice, 45 hit points, and +2 bonus to damage rolls with natural attacks.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Tends to lurk in dungeons, caverns, ruins, and swamps.</rule>
+      </habitat>
+      <diet>
+        <rule>Enjoys eating intelligent humanoids.</rule>
+      </diet>
+    </ecology_and_behavior>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Tyrannosaurus Rex</name>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <size>20' tall</size>
+      <tags>
+        <tag>dinosaur</tag>
+        <tag>predator</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter/>
+      <wilderness_encounter>
+        <outside_lair collective_noun="solitary" number="1"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+      </movement>
+      <armor_class>6</armor_class>
+      <hit_dice printed="20"/>
+      <attacks>1 (bite)</attacks>
+      <damage>6d6</damage>
+      <save>F10</save>
+      <morale>+3</morale>
+      <treasure_type>None</treasure_type>
+      <xp>2,800</xp>
+    </stat_block>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Hunts any creature that moves.</rule>
+        <rule>Generally does not bother with prey smaller than a dwarf.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Unicorn</name>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Lawful</alignment>
+      <tags>
+        <tag>healing</tag>
+        <tag>teleportation</tag>
+        <tag>mount</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>5%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="grace" number="1d6"/>
+        <in_lair collective_noun="sanctum" number="1d8"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="blessing" number="1d8"/>
+        <in_lair collective_noun="sanctum" number="1d8"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="240'" combat="80'"/>
+      </movement>
+      <armor_class>7</armor_class>
+      <hit_dice printed="4*" special_ability_markers="*"/>
+      <attacks>3 (2 hooves, horn)</attacks>
+      <damage>1d8/1d8/1d8</damage>
+      <save>F8</save>
+      <morale>-1</morale>
+      <treasure_type>D</treasure_type>
+      <xp>135</xp>
+    </stat_block>
+    <combat_profile>
+      <targeting_constraints>
+        <constraint>Only lawful, virtuous maidens may approach unicorns.</constraint>
+      </targeting_constraints>
+    </combat_profile>
+    <special_abilities>
+      <ability name="cure_light_wounds">
+        <limitation>3 times per day.</limitation>
+        <effect>Can cast cure light wounds by touch of its horn.</effect>
+      </ability>
+      <ability name="dimension_door">
+        <limitation>Once per day.</limitation>
+        <effect>Can transport itself and its rider, as dimension door, up to 360'.</effect>
+      </ability>
+      <ability name="carrying_capacity">
+        <effect>Can carry up to 30 stone (300lb) at full movement, or up to 60 stone (600lb) at half movement.</effect>
+      </ability>
+    </special_abilities>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Vampire</name>
+    </identity>
+    <classification>
+      <monster_type>undead</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>energy_drain</tag>
+        <tag>gaze</tag>
+        <tag>shapechange</tag>
+        <tag>gaseous_form</tag>
+        <tag>summoning</tag>
+        <tag>regeneration</tag>
+      </tags>
+      <spell_interactions>
+        <interaction>
+          <spell_or_effect>poison</spell_or_effect>
+          <result>immune</result>
+        </interaction>
+        <interaction>
+          <spell_or_effect>charm</spell_or_effect>
+          <result>immune</result>
+        </interaction>
+        <interaction>
+          <spell_or_effect>hold</spell_or_effect>
+          <result>immune</result>
+        </interaction>
+        <interaction>
+          <spell_or_effect>sleep</spell_or_effect>
+          <result>immune</result>
+        </interaction>
+      </spell_interactions>
+    </classification>
+    <stat_block>
+      <percent_in_lair>25%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="coterie" number="1d4"/>
+        <in_lair collective_noun="sanctum" number="1d6"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="coven" number="1d6"/>
+        <in_lair collective_noun="sanctum" number="1d6"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+        <mode type="fly" exploration="180'" combat="60'"/>
+      </movement>
+      <armor_class>7</armor_class>
+      <hit_dice printed="7 to 9****" special_ability_markers="****"/>
+      <attacks>1 (touch, see below)</attacks>
+      <damage>1d10, energy drain</damage>
+      <save>F7 to F9</save>
+      <morale>+3</morale>
+      <treasure_type>Q</treasure_type>
+      <xp>1,840/2,600/3,100</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="touch">
+          <damage>1d10</damage>
+          <effect>Victim loses two levels of experience.</effect>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <immunities>
+          <immunity>poison</immunity>
+          <immunity>charm</immunity>
+          <immunity>hold</immunity>
+          <immunity>sleep</immunity>
+          <immunity>normal weapons</immunity>
+        </immunities>
+        <resistances>
+          <resistance>electricity deals half damage</resistance>
+          <resistance>cold deals half damage</resistance>
+        </resistances>
+        <special_defense>
+          <name>regeneration</name>
+          <effect>Regenerates 3 hit points per round.</effect>
+        </special_defense>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="coffin_and_grave_soil_dependency">
+        <effect>Must take refuge in a coffin or other sanctum during daylight hours and must slumber on soil from its own grave once per month to maintain vitality.</effect>
+      </ability>
+      <ability name="gaseous_form">
+        <effect>Can take gaseous form at will.</effect>
+      </ability>
+      <ability name="shapechange">
+        <effect>Can shapechange at will into either a dire wolf or a giant bat.</effect>
+      </ability>
+      <ability name="summon_creatures">
+        <effect>When underground can summon 1d10 bat swarms or rat swarms; when above can summon 3d6 wolves or 2d4 dire wolves.</effect>
+        <duration>Summoned creatures arrive in 2d6 rounds.</duration>
+      </ability>
+      <ability name="charming_gaze">
+        <trigger>Victim peers into vampire's eyes.</trigger>
+        <effect>Charm person effect.</effect>
+        <save type="Spells" on_success="not charmed" on_failure="charmed" />
+        <exception>Saving throw suffers a -2 penalty.</exception>
+      </ability>
+      <ability name="repelled_by_symbols">
+        <effect>Draws back from a lawful holy symbol, mirror, or garlic when presented with confidence.</effect>
+        <notes>Garlic causes the vampire to cringe for 1d4 rounds. Holy symbol or mirror causes it to take a position where the item does not impede progress or attack. A lawful holy symbol affects a vampire regardless of ethos in life.</notes>
+      </ability>
+      <ability name="holy_water">
+        <effect>Holy water inflicts 1d6+1 damage.</effect>
+      </ability>
+      <ability name="reduction_to_zero_hit_points">
+        <trigger>Vampire reaches 0 hit points.</trigger>
+        <effect>Not destroyed; forced into gaseous form.</effect>
+      </ability>
+      <ability name="reformation">
+        <procedure>
+          <step>Gaseous vampire returns to its coffin.</step>
+          <step>After resting there for 8 hours, it reforms with full hit points.</step>
+        </procedure>
+        <exception>If all coffins are broken, the vampire is not destroyed but cannot reform until a minion builds a new coffin.</exception>
+      </ability>
+      <ability name="true_destruction">
+        <procedure>
+          <step>Immersion in running water destroys a vampire in 1 turn.</step>
+          <step>Sunlight exposure turns a vampire to dust unless it succeeds on a saving throw versus Death each round of exposure.</step>
+          <step>Stake through the heart plus decapitation destroys a vampire.</step>
+        </procedure>
+        <exception>If staked without decapitation, the vampire appears to die but can revive if the stake is removed.</exception>
+      </ability>
+      <ability name="create_spawn">
+        <trigger>Human or humanoid is drained of all life energy by a vampire.</trigger>
+        <effect>Victim returns as a vampire after 3 days.</effect>
+        <notes>Spawn is a slave to the creating vampire and becomes free-willed if the master is killed.</notes>
+      </ability>
+    </special_abilities>
+    <references>
+      <general_rule_reference type="undead"/>
+      <notation_reference>Once a person becomes a vampire, he or she is a chaotic undead creature.</notation_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Varmint, Giant</name>
+      <variant_name>Ferret</variant_name>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>vermin</monster_type>
+      <tags>
+        <tag>hunter</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>25%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="pack" number="1d8"/>
+        <in_lair collective_noun="den" number="1d12"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="fesnying" number="1d8"/>
+        <in_lair collective_noun="den" number="1d12"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="150'" combat="50'"/>
+      </movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="1+1"/>
+      <attacks>1 (bite)</attacks>
+      <damage>1d8</damage>
+      <save>F1</save>
+      <morale>0</morale>
+      <treasure_type>A</treasure_type>
+      <xp>15</xp>
+    </stat_block>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Often trained to hunt giant vermin.</rule>
+        <rule>Temperamental and occasionally turn on their masters.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Varmint, Giant</name>
+      <variant_name>Rat</variant_name>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>vermin</monster_type>
+      <tags>
+        <tag>disease</tag>
+        <tag>swimmer</tag>
+        <tag>fire_fear</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>10%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="pack" number="3d6"/>
+        <in_lair collective_noun="den" number="3d10"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="horde" number="3d10"/>
+        <in_lair collective_noun="den" number="3d10"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+        <mode type="swim" exploration="60'" combat="20'"/>
+      </movement>
+      <armor_class>2</armor_class>
+      <hit_dice printed="1d4 hit points"/>
+      <attacks>1 (bite)</attacks>
+      <damage>1d3, disease</damage>
+      <save>F1</save>
+      <morale>0</morale>
+      <treasure_type>A</treasure_type>
+      <xp>5</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="bite">
+          <damage>1d3</damage>
+          <effect>5% chance target contracts a disease.</effect>
+          <save type="Poison" on_success="ill and bedridden for 30 days; disease not fatal" on_failure="dies of disease in 1d6 days"/>
+          <follow_up>cure disease cures the infection.</follow_up>
+        </attack_effect>
+      </attack_effects>
+      <morale_modifiers>
+        <modifier condition="burned with torches or oil" value="must make a morale roll"/>
+      </morale_modifiers>
+    </combat_profile>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>At home in sewers, water-filled caverns, and marshes.</rule>
+      </habitat>
+    </ecology_and_behavior>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Varmint, Giant</name>
+      <variant_name>Shrew</variant_name>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>vermin</monster_type>
+      <tags>
+        <tag>echolocation</tag>
+        <tag>burrower</tag>
+        <tag>initiative_bonus</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>40%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="pack" number="1d4"/>
+        <in_lair collective_noun="den" number="1d8"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="drove" number="1d8"/>
+        <in_lair collective_noun="den" number="1d8"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="180'" combat="60'"/>
+      </movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="1"/>
+      <attacks>2 (bite)</attacks>
+      <damage>1d6/1d6</damage>
+      <save>F1</save>
+      <morale>+2</morale>
+      <treasure_type>A</treasure_type>
+      <xp>10</xp>
+    </stat_block>
+    <combat_profile>
+      <morale_modifiers/>
+    </combat_profile>
+    <special_abilities>
+      <ability name="echolocation">
+        <effect>Can perceive by echolocation out to 60'.</effect>
+        <exception>Vision is blocked by silence 15' radius.</exception>
+      </ability>
+      <ability name="deafened_or_blinded">
+        <effect>Effective AC becomes 1 and suffers a -4 penalty to attack throws.</effect>
+      </ability>
+      <ability name="initiative_burst">
+        <effect>Automatically has initiative on the first round of combat and gains +1 on the second round.</effect>
+      </ability>
+      <ability name="jump">
+        <effect>Can jump up to 5'.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Highly territorial and attacks trespassers.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Varmint, Giant</name>
+      <variant_name>Weasel</variant_name>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>vermin</monster_type>
+      <tags>
+        <tag>blood_drain</tag>
+        <tag>cling</tag>
+        <tag>infravision</tag>
+        <tag>tracking</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>25%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="pack" number="1d4"/>
+        <in_lair collective_noun="den" number="1d6"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="sneak" number="1d6"/>
+        <in_lair collective_noun="den" number="1d6"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="150'" combat="50'"/>
+      </movement>
+      <armor_class>2</armor_class>
+      <hit_dice printed="4+4*" special_ability_markers="*"/>
+      <attacks>1 (bite)</attacks>
+      <damage>2d4</damage>
+      <save>F3</save>
+      <morale>0</morale>
+      <treasure_type>I</treasure_type>
+      <xp>215</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="bite_and_cling">
+          <trigger>Successful bite attack.</trigger>
+          <damage>2d4 initial bite; then 2d4 blood-drain damage each round while attached.</damage>
+          <effect>Clings to the victim and sucks blood.</effect>
+          <termination>Continues until either the victim dies or the weasel is killed.</termination>
+          <limitations>
+            <limitation>Cannot be removed once attached.</limitation>
+          </limitations>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities>
+      <ability name="infravision">
+        <effect>30' infravision.</effect>
+      </ability>
+      <ability name="keen_smell">
+        <effect>Tracks prey by scent.</effect>
+      </ability>
+    </special_abilities>
+    <references>
+      <notation_reference>Uploaded source truncates the habitat sentence after "These burrowing creatures live in".</notation_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Whale</name>
+      <variant_name>Killer</variant_name>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>aquatic</tag>
+        <tag>swallow_whole</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter/>
+      <wilderness_encounter>
+        <outside_lair collective_noun="pod" number="1d6"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="swim" exploration="240'" combat="80'"/>
+      </movement>
+      <armor_class>3</armor_class>
+      <hit_dice printed="6*" special_ability_markers="*"/>
+      <attacks>1 (bite)</attacks>
+      <damage>1d20</damage>
+      <save>F3</save>
+      <morale>+2</morale>
+      <treasure_type>M</treasure_type>
+      <xp>570</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="swallow_whole">
+          <trigger>Unmodified attack throw of 20 against man-sized or smaller creature.</trigger>
+          <effect>Target is swallowed whole.</effect>
+          <follow_up>Swallowed creature suffers 1d6 damage each round and drowns after 10 rounds.</follow_up>
+          <termination>Damage stops when either the creature dies or the whale is killed.</termination>
+          <limitations>
+            <limitation>If swallowed creature has a sharp weapon, it may attack from inside with a -4 attack penalty.</limitation>
+            <limitation>If swallowed creature dies and remains in the belly for 6 turns, it is irrecoverably digested.</limitation>
+          </limitations>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <treasure_and_rewards>
+      <treasure_type>M</treasure_type>
+      <treasure_rules>
+        <rule>Because killer whales can swallow creatures whole, treasure may be recovered from their bellies even though they have no lair.</rule>
+      </treasure_rules>
+    </treasure_and_rewards>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Whale</name>
+      <variant_name>Narwhal</variant_name>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Lawful</alignment>
+      <tags>
+        <tag>aquatic</tag>
+        <tag>horn</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter/>
+      <wilderness_encounter>
+        <outside_lair collective_noun="pod" number="1d4"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="swim" exploration="180'" combat="60'"/>
+      </movement>
+      <armor_class>2</armor_class>
+      <hit_dice printed="12"/>
+      <attacks>2 (bite, horn)</attacks>
+      <damage>2d6/1d8</damage>
+      <save>F12</save>
+      <morale>0</morale>
+      <treasure_type>Special</treasure_type>
+      <xp>1,200</xp>
+    </stat_block>
+    <treasure_and_rewards>
+      <treasure_type>Special</treasure_type>
+      <harvest_or_resource_value>
+        <resource name="horn_ivory" value="1d6x1,000gp"/>
+      </harvest_or_resource_value>
+    </treasure_and_rewards>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Whale</name>
+      <variant_name>Sperm</variant_name>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>aquatic</tag>
+        <tag>swallow_whole</tag>
+        <tag>ship_attack</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter/>
+      <wilderness_encounter>
+        <outside_lair collective_noun="pod" number="1d3"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="swim" exploration="180'" combat="60'"/>
+      </movement>
+      <armor_class>3</armor_class>
+      <hit_dice printed="36*" special_ability_markers="*"/>
+      <attacks>1 (bite)</attacks>
+      <damage>3d20</damage>
+      <save>F15</save>
+      <morale>-1</morale>
+      <treasure_type>P</treasure_type>
+      <xp>12,500</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="swallow_whole">
+          <trigger>Attack throw at least 4 higher than target value against man-sized or smaller creature, or any unmodified attack throw of 20.</trigger>
+          <effect>Target is swallowed whole.</effect>
+          <follow_up>Swallowed creature suffers 3d6 damage each round and drowns after 10 rounds.</follow_up>
+          <termination>Damage stops when either the creature dies or the whale is killed.</termination>
+          <limitations>
+            <limitation>If swallowed creature has a sharp weapon, it may attack from inside with a -4 attack penalty.</limitation>
+            <limitation>If swallowed creature dies and remains in the belly for 6 turns, it is irrecoverably digested.</limitation>
+          </limitations>
+        </attack_effect>
+        <attack_effect attack_name="ship_slam">
+          <trigger>Chooses to attack a sea vessel.</trigger>
+          <damage>6d6 structural points</damage>
+          <effect>Can slam a ship with its head.</effect>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <encounter_profile>
+      <reaction_or_pursuit_behavior>
+        <rule>When it encounters a sea vessel, it usually (90%) leaves it undisturbed but may decide to attack.</rule>
+      </reaction_or_pursuit_behavior>
+    </encounter_profile>
+    <treasure_and_rewards>
+      <treasure_type>P</treasure_type>
+      <treasure_rules>
+        <rule>Because sperm whales can swallow creatures whole, treasure may be recovered from their bellies even though they have no lair.</rule>
+      </treasure_rules>
+    </treasure_and_rewards>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Wight</name>
+    </identity>
+    <classification>
+      <monster_type>undead</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>energy_drain</tag>
+        <tag>spawn_creation</tag>
+      </tags>
+      <spell_interactions>
+        <interaction>
+          <spell_or_effect>sleep</spell_or_effect>
+          <result>immune</result>
+        </interaction>
+        <interaction>
+          <spell_or_effect>charm</spell_or_effect>
+          <result>immune</result>
+        </interaction>
+        <interaction>
+          <spell_or_effect>hold</spell_or_effect>
+          <result>immune</result>
+        </interaction>
+      </spell_interactions>
+    </classification>
+    <stat_block>
+      <percent_in_lair>70%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="throng" number="1d6"/>
+        <in_lair collective_noun="barrow" number="1d8"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="horde" number="1d8"/>
+        <in_lair collective_noun="barrow" number="1d8"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+      </movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="3**" special_ability_markers="**"/>
+      <attacks>1 (touch)</attacks>
+      <damage>Energy drain</damage>
+      <save>F3</save>
+      <morale>+4</morale>
+      <treasure_type>H</treasure_type>
+      <xp>80</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="touch">
+          <effect>Victim loses one level.</effect>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <immunities>
+          <immunity>sleep</immunity>
+          <immunity>charm</immunity>
+          <immunity>hold</immunity>
+        </immunities>
+        <special_defense>
+          <name>limited_harm_sources</name>
+          <effect>May only be harmed by magical weapons, spells, and weapons made of silver.</effect>
+        </special_defense>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="create_wight">
+        <trigger>Human or demi-human is slain by a wight.</trigger>
+        <effect>Victim becomes a wight in 1d4 days.</effect>
+      </ability>
+    </special_abilities>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Wolf</name>
+      <variant_name>Ordinary</variant_name>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>pack_hunter</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>10%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="pack" number="2d6"/>
+        <in_lair collective_noun="den" number="3d6"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="route" number="3d6"/>
+        <in_lair collective_noun="den" number="3d6"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="180'" combat="60'"/>
+      </movement>
+      <armor_class>2</armor_class>
+      <hit_dice printed="2 + 2"/>
+      <attacks>1 (bite)</attacks>
+      <damage>1d6</damage>
+      <save>F1</save>
+      <morale>0</morale>
+      <treasure_type>None</treasure_type>
+      <xp>35</xp>
+    </stat_block>
+    <encounter_profile>
+      <population_rules>
+        <rule>When a den is encountered, there is a 50% chance that 1d4 cubs are present.</rule>
+      </population_rules>
+    </encounter_profile>
+    <combat_profile>
+      <morale_modifiers>
+        <modifier condition="group of 3 or fewer" value="morale becomes -1"/>
+        <modifier condition="50% of number lost" value="morale becomes -1"/>
+      </morale_modifiers>
+    </combat_profile>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Primarily wilderness; may venture into caverns and dungeons.</rule>
+      </habitat>
+      <behavior_rules>
+        <rule>Pack hunter.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <special_abilities>
+      <ability name="cubs">
+        <effect>Wolf cubs may be kept and trained in the same manner as dogs.</effect>
+      </ability>
+    </special_abilities>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Wolf</name>
+      <variant_name>Dire</variant_name>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>pack_hunter</tag>
+        <tag>mount</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>10%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="pack" number="1d4"/>
+        <in_lair collective_noun="den" number="2d4"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="route" number="2d4"/>
+        <in_lair collective_noun="den" number="2d4"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="150'" combat="50'"/>
+      </movement>
+      <armor_class>3</armor_class>
+      <hit_dice printed="4 + 1"/>
+      <attacks>1 (bite)</attacks>
+      <damage>2d4</damage>
+      <save>F2</save>
+      <morale>0</morale>
+      <treasure_type>None</treasure_type>
+      <xp>140</xp>
+    </stat_block>
+    <encounter_profile>
+      <population_rules>
+        <rule>When a den is encountered, there is a 50% chance that 1d4 cubs are present.</rule>
+      </population_rules>
+    </encounter_profile>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Normally wooded and mountainous areas; may also venture into caverns and dungeons in search of prey.</rule>
+      </habitat>
+    </ecology_and_behavior>
+    <special_abilities>
+      <ability name="cubs">
+        <effect>Dire wolf cubs may be kept and trained in the same manner as dogs but are more difficult to control.</effect>
+      </ability>
+      <ability name="goblin_mounts">
+        <effect>Goblins capture cubs to train them as mounts.</effect>
+      </ability>
+    </special_abilities>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Wraith</name>
+    </identity>
+    <classification>
+      <monster_type>undead</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>incorporeal</tag>
+        <tag>energy_drain</tag>
+        <tag>spawn_creation</tag>
+        <tag>flight</tag>
+      </tags>
+      <spell_interactions>
+        <interaction>
+          <spell_or_effect>sleep</spell_or_effect>
+          <result>immune</result>
+        </interaction>
+        <interaction>
+          <spell_or_effect>hold</spell_or_effect>
+          <result>immune</result>
+        </interaction>
+        <interaction>
+          <spell_or_effect>charm</spell_or_effect>
+          <result>immune</result>
+        </interaction>
+      </spell_interactions>
+    </classification>
+    <stat_block>
+      <percent_in_lair>25%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="throng" number="1d4"/>
+        <in_lair collective_noun="haunt" number="1d6"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="horde" number="1d6"/>
+        <in_lair collective_noun="haunt" number="1d6"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+        <mode type="fly" exploration="240'" combat="80'"/>
+      </movement>
+      <armor_class>6</armor_class>
+      <hit_dice printed="4**" special_ability_markers="**"/>
+      <attacks>1 (touch)</attacks>
+      <damage>1d6, energy drain</damage>
+      <save>F4</save>
+      <morale>+4</morale>
+      <treasure_type>H</treasure_type>
+      <xp>190</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="touch">
+          <damage>1d6</damage>
+          <effect>Victim loses one level.</effect>
+          <follow_up>Characters reduced to level 0 are slain.</follow_up>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <immunities>
+          <immunity>sleep</immunity>
+          <immunity>hold</immunity>
+          <immunity>charm</immunity>
+          <immunity>non-magical weapons of wood, bronze, or iron</immunity>
+        </immunities>
+        <resistances>
+          <resistance>silver weapons deal half damage</resistance>
+        </resistances>
+        <special_defense>
+          <name>magical_weapons</name>
+          <effect>Magical weapons deal full damage.</effect>
+        </special_defense>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="create_wraith">
+        <trigger>Character is slain by a wraith.</trigger>
+        <effect>Victim becomes a wraith in 24 hours.</effect>
+        <notes>New wraith is under the command of the wraith that killed the victim.</notes>
+      </ability>
+    </special_abilities>
+    <references>
+      <notation_reference>Appearance as armored or armed silhouette has no effect on AC or combat abilities.</notation_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Wyvern</name>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>flight</tag>
+        <tag>poison</tag>
+        <tag>grab</tag>
+        <tag>dive_attack</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>30%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="flight" number="1d2"/>
+        <in_lair collective_noun="aerie" number="1d6"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="wing" number="1d6"/>
+        <in_lair collective_noun="aerie" number="1d6"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="fly" exploration="240'" combat="80'"/>
+      </movement>
+      <armor_class>6</armor_class>
+      <hit_dice printed="7**" special_ability_markers="**"/>
+      <attacks>2 (bite, sting or 2 talons)</attacks>
+      <damage>2d8/2d8, poison or 2d8/2d8</damage>
+      <save>F4</save>
+      <morale>+1</morale>
+      <treasure_type>M</treasure_type>
+      <xp>1,140</xp>
+    </stat_block>
+    <encounter_profile>
+      <population_rules>
+        <rule>When an aerie is encountered, there is a 50% probability that 1d6 eggs or 1d4 young are present.</rule>
+      </population_rules>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="ground_attack">
+          <usage>on ground</usage>
+          <attack_sequence>
+            <attack type="bite" count="1" damage="2d8"/>
+            <attack type="sting" count="1" damage="2d8 plus poison"/>
+          </attack_sequence>
+        </attack_routine>
+        <attack_routine name="flying_attack">
+          <usage>while flying</usage>
+          <attack_sequence>
+            <attack type="bite" count="1" damage="2d8"/>
+            <attack type="tail" count="1" damage="2d8 plus poison"/>
+          </attack_sequence>
+        </attack_routine>
+        <attack_routine name="dive_attack">
+          <usage>while flying</usage>
+          <attack_sequence>
+            <attack type="talon" count="2" damage="2d8/2d8 doubled"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+      <attack_effects>
+        <attack_effect attack_name="sting">
+          <damage>2d8</damage>
+          <save type="Poison" on_success="survives" on_failure="dies instantly"/>
+        </attack_effect>
+        <attack_effect attack_name="dive_talons">
+          <damage>double talon damage</damage>
+          <effect>If both talons hit a creature smaller than the wyvern, the target is grabbed unless it succeeds on a saving throw versus Paralysis.</effect>
+          <save type="Paralysis" on_success="not grabbed" on_failure="grabbed"/>
+          <follow_up>Grabbed creatures of man size or less can be carried off.</follow_up>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <references>
+      <notation_reference>Uploaded source truncates the sentence following the eggs/young clause; no additional rule beyond presence of eggs or young is preserved here.</notation_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Yellow Mold</name>
+    </identity>
+    <classification>
+      <monster_type>other</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>stationary</tag>
+        <tag>acid</tag>
+        <tag>spores</tag>
+        <tag>fire_vulnerability</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="culture" number="1d4"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="colony" number="1d8"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="stationary" exploration="0"/>
+      </movement>
+    </stat_block>
+    <combat_profile>
+      <targeting_constraints>
+        <constraint>Typically covers 10 square feet.</constraint>
+        <constraint>Does not move or make attacks.</constraint>
+      </targeting_constraints>
+      <defenses>
+        <immunities>
+          <immunity>all attacks except fire</immunity>
+        </immunities>
+        <vulnerabilities>
+          <vulnerability>fire</vulnerability>
+        </vulnerabilities>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="acidic_contact">
+        <trigger>Touched.</trigger>
+        <effect>Destroys leather and wood; deals 1d6 damage to bare flesh.</effect>
+      </ability>
+      <ability name="spore_cloud">
+        <trigger>Any time yellow mold is contacted.</trigger>
+        <effect>50% chance to eject spores into a 10' cube area.</effect>
+        <save type="Poison" on_success="no suffocation" on_failure="suffocates and dies in 6 rounds"/>
+      </ability>
+      <ability name="fire_damage">
+        <effect>Torch deals 1d4 damage per strike; burning oil and magical fire deal normal damage.</effect>
+      </ability>
+      <ability name="sunlight">
+        <effect>Sunlight renders yellow mold dormant.</effect>
+      </ability>
+    </special_abilities>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Zombie</name>
+    </identity>
+    <classification>
+      <monster_type>undead</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>mindless</tag>
+        <tag>slow</tag>
+      </tags>
+      <spell_interactions>
+        <interaction>
+          <spell_or_effect>poison</spell_or_effect>
+          <result>immune</result>
+        </interaction>
+        <interaction>
+          <spell_or_effect>charm</spell_or_effect>
+          <result>immune</result>
+        </interaction>
+        <interaction>
+          <spell_or_effect>hold</spell_or_effect>
+          <result>immune</result>
+        </interaction>
+        <interaction>
+          <spell_or_effect>sleep</spell_or_effect>
+          <result>immune</result>
+        </interaction>
+        <interaction>
+          <spell_or_effect>ordinary weapons</spell_or_effect>
+          <result>susceptible</result>
+        </interaction>
+      </spell_interactions>
+    </classification>
+    <stat_block>
+      <percent_in_lair>35%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="throng" number="2d4"/>
+        <in_lair collective_noun="abattoir" number="4d6"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="horde" number="4d6"/>
+        <in_lair collective_noun="abattoir" number="4d6"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="60'" combat="20'"/>
+      </movement>
+      <armor_class>1</armor_class>
+      <hit_dice printed="2*" special_ability_markers="*"/>
+      <attacks>1 (weapon)</attacks>
+      <damage>1d8 or weapon</damage>
+      <save>F1</save>
+      <morale>N/A</morale>
+      <treasure_type>None</treasure_type>
+      <xp>29</xp>
+    </stat_block>
+    <special_abilities>
+      <ability name="simple_orders_only">
+        <effect>Because zombies lack intelligence, instructions from their creator must be very simple.</effect>
+      </ability>
+      <ability name="attack_last">
+        <effect>Attack last each round because of clumsy, decomposing limbs.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Typically used by chaotic mages and clerics to guard locations or valuable treasure.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+  </monster>
+
+  <source_tables>
+    <table name="giant_varmint_stat_table">
+      <columns>
+        <column>variant</column>
+        <column>percent_in_lair</column>
+        <column>dungeon_encounter</column>
+        <column>wilderness_encounter</column>
+        <column>movement</column>
+        <column>swim</column>
+        <column>armor_class</column>
+        <column>hit_dice</column>
+        <column>attacks</column>
+        <column>damage</column>
+        <column>save</column>
+        <column>morale</column>
+        <column>treasure_type</column>
+        <column>xp</column>
+      </columns>
+      <row>
+        <value name="variant">Ferret</value>
+        <value name="percent_in_lair">25%</value>
+        <value name="dungeon_encounter">Pack (1d8) / Den (1d12)</value>
+        <value name="wilderness_encounter">Fesnying (1d8) / Den (1d12)</value>
+        <value name="movement">150' (50')</value>
+        <value name="swim">-</value>
+        <value name="armor_class">4</value>
+        <value name="hit_dice">1+1</value>
+        <value name="attacks">1 (bite)</value>
+        <value name="damage">1d8</value>
+        <value name="save">F1</value>
+        <value name="morale">0</value>
+        <value name="treasure_type">A</value>
+        <value name="xp">15</value>
+      </row>
+      <row>
+        <value name="variant">Rat</value>
+        <value name="percent_in_lair">10%</value>
+        <value name="dungeon_encounter">Pack (3d6) / Den (3d10)</value>
+        <value name="wilderness_encounter">Horde (3d10) / Den (3d10)</value>
+        <value name="movement">120' (40')</value>
+        <value name="swim">60' (20')</value>
+        <value name="armor_class">2</value>
+        <value name="hit_dice">1d4 hit points</value>
+        <value name="attacks">1 (bite)</value>
+        <value name="damage">1d3, disease</value>
+        <value name="save">F1</value>
+        <value name="morale">0</value>
+        <value name="treasure_type">A</value>
+        <value name="xp">5</value>
+      </row>
+      <row>
+        <value name="variant">Shrew</value>
+        <value name="percent_in_lair">40%</value>
+        <value name="dungeon_encounter">Pack (1d4), Den (1d8)</value>
+        <value name="wilderness_encounter">Drove (1d8) / Den (1d8)</value>
+        <value name="movement">180' (60')</value>
+        <value name="swim">-</value>
+        <value name="armor_class">5</value>
+        <value name="hit_dice">1</value>
+        <value name="attacks">2 (bite)</value>
+        <value name="damage">1d6/1d6</value>
+        <value name="save">F1</value>
+        <value name="morale">+2</value>
+        <value name="treasure_type">A</value>
+        <value name="xp">10</value>
+      </row>
+      <row>
+        <value name="variant">Weasel</value>
+        <value name="percent_in_lair">25%</value>
+        <value name="dungeon_encounter">Pack (1d4) / Den (1d6)</value>
+        <value name="wilderness_encounter">Sneak (1d6) / Den (1d6)</value>
+        <value name="movement">150' (50')</value>
+        <value name="swim">-</value>
+        <value name="armor_class">2</value>
+        <value name="hit_dice">4+4*</value>
+        <value name="attacks">1 (bite)</value>
+        <value name="damage">2d4</value>
+        <value name="save">F3</value>
+        <value name="morale">0</value>
+        <value name="treasure_type">I</value>
+        <value name="xp">215</value>
+      </row>
+    </table>
+
+    <table name="whale_stat_table">
+      <columns>
+        <column>variant</column>
+        <column>percent_in_lair</column>
+        <column>dungeon_encounter</column>
+        <column>wilderness_encounter</column>
+        <column>alignment</column>
+        <column>movement</column>
+        <column>armor_class</column>
+        <column>hit_dice</column>
+        <column>attacks</column>
+        <column>damage</column>
+        <column>save</column>
+        <column>morale</column>
+        <column>treasure_type</column>
+        <column>xp</column>
+      </columns>
+      <row>
+        <value name="variant">Killer</value>
+        <value name="percent_in_lair">None</value>
+        <value name="dungeon_encounter">None</value>
+        <value name="wilderness_encounter">Pod (1d6)</value>
+        <value name="alignment">Neutral</value>
+        <value name="movement">240' (80')</value>
+        <value name="armor_class">3</value>
+        <value name="hit_dice">6*</value>
+        <value name="attacks">1 (bite)</value>
+        <value name="damage">1d20</value>
+        <value name="save">F3</value>
+        <value name="morale">+2</value>
+        <value name="treasure_type">M</value>
+        <value name="xp">570</value>
+      </row>
+      <row>
+        <value name="variant">Narwhal</value>
+        <value name="percent_in_lair">None</value>
+        <value name="dungeon_encounter">None</value>
+        <value name="wilderness_encounter">Pod (1d4)</value>
+        <value name="alignment">Lawful</value>
+        <value name="movement">180' (60')</value>
+        <value name="armor_class">2</value>
+        <value name="hit_dice">12</value>
+        <value name="attacks">2 (bite, horn)</value>
+        <value name="damage">2d6/1d8</value>
+        <value name="save">F12</value>
+        <value name="morale">0</value>
+        <value name="treasure_type">Special</value>
+        <value name="xp">1,200</value>
+      </row>
+      <row>
+        <value name="variant">Sperm</value>
+        <value name="percent_in_lair">None</value>
+        <value name="dungeon_encounter">None</value>
+        <value name="wilderness_encounter">Pod (1d3)</value>
+        <value name="alignment">Neutral</value>
+        <value name="movement">180' (60')</value>
+        <value name="armor_class">3</value>
+        <value name="hit_dice">36*</value>
+        <value name="attacks">1 (bite)</value>
+        <value name="damage">3d20</value>
+        <value name="save">F15</value>
+        <value name="morale">-1</value>
+        <value name="treasure_type">P</value>
+        <value name="xp">12,500</value>
+      </row>
+    </table>
+
+    <table name="wolf_stat_table">
+      <columns>
+        <column>variant</column>
+        <column>percent_in_lair</column>
+        <column>dungeon_encounter</column>
+        <column>wilderness_encounter</column>
+        <column>alignment</column>
+        <column>movement</column>
+        <column>armor_class</column>
+        <column>hit_dice</column>
+        <column>attacks</column>
+        <column>damage</column>
+        <column>save</column>
+        <column>morale</column>
+        <column>treasure_type</column>
+        <column>xp</column>
+      </columns>
+      <row>
+        <value name="variant">Ordinary Wolf</value>
+        <value name="percent_in_lair">10%</value>
+        <value name="dungeon_encounter">Pack (2d6) / Den (3d6)</value>
+        <value name="wilderness_encounter">Route (3d6) / Den (3d6)</value>
+        <value name="alignment">Neutral</value>
+        <value name="movement">180' (60')</value>
+        <value name="armor_class">2</value>
+        <value name="hit_dice">2 + 2</value>
+        <value name="attacks">1 (bite)</value>
+        <value name="damage">1d6</value>
+        <value name="save">F1</value>
+        <value name="morale">0</value>
+        <value name="treasure_type">None</value>
+        <value name="xp">35</value>
+      </row>
+      <row>
+        <value name="variant">Dire Wolf</value>
+        <value name="percent_in_lair">10%</value>
+        <value name="dungeon_encounter">Pack (1d4) / Den (2d4)</value>
+        <value name="wilderness_encounter">Route (2d4) / Den (2d4)</value>
+        <value name="alignment">Neutral</value>
+        <value name="movement">150' (50')</value>
+        <value name="armor_class">3</value>
+        <value name="hit_dice">4 + 1</value>
+        <value name="attacks">1 (bite)</value>
+        <value name="damage">2d4</value>
+        <value name="save">F2</value>
+        <value name="morale">0</value>
+        <value name="treasure_type">None</value>
+        <value name="xp">140</value>
+      </row>
+    </table>
+  </source_tables>
+</monster_catalog>

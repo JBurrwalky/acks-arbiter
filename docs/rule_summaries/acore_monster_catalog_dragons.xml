@@ -1,0 +1,1272 @@
+<monster_catalog title="dragon_entries" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <monster>
+    <identity>
+      <name>Dragon</name>
+      <source_label>108C-ACKS Core-Monster-Catalog-2</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Any</alignment>
+      <tags>
+        <tag>dragon</tag>
+        <tag>breath_weapon</tag>
+        <tag>flyer</tag>
+        <tag>age_scaled</tag>
+        <tag>spellcasting_optional</tag>
+        <tag>fear</tag>
+        <tag>intelligent</tag>
+      </tags>
+    </classification>
+
+    <stat_block>
+      <percent_in_lair>Varies by age category.</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="dragons" number="Varies by age category"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="dragons" number="Varies by age category"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="fly" exploration="240'" combat="80'"/>
+      </movement>
+      <armor_class>Varies by age category.</armor_class>
+      <hit_dice printed="Varies by age category" special_ability_markers="See primary_dragon_attributes"/>
+      <attacks>3 or breath weapon</attacks>
+      <damage>Varies by age category.</damage>
+      <save>Varies by age category.</save>
+      <morale>Varies by age category.</morale>
+      <treasure_type>Varies by age category.</treasure_type>
+      <xp>Varies by age category.</xp>
+    </stat_block>
+
+    <encounter_profile>
+      <population_rules>
+        <rule>Apply age category from primary_dragon_attributes and secondary_dragon_attributes after choosing habitat variant.</rule>
+        <rule>If two dragons are encountered, they are a mated pair if adult or older, or siblings if juvenile or younger.</rule>
+        <rule>If three or more dragons are encountered, they are a mated pair if adult or older along with offspring that are juvenile or younger.</rule>
+        <rule>Roll treasure separately for each dragon based on age.</rule>
+      </population_rules>
+      <reaction_or_pursuit_behavior>
+        <rule>Unless prevented, dragons tend to use breath weapon as their initial attack in combat.</rule>
+        <rule>On later rounds, dragons use breath weapon about 50% of the time.</rule>
+        <rule>Dragons may bargain or surrender to preserve their lives or gain advantage.</rule>
+      </reaction_or_pursuit_behavior>
+    </encounter_profile>
+
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="melee_routine">
+          <usage>when breath weapon is not used</usage>
+          <attack_sequence>
+            <attack type="claw" count="2" damage="Varies by age category"/>
+            <attack type="bite" count="1" damage="Varies by age category"/>
+          </attack_sequence>
+        </attack_routine>
+        <attack_routine name="breath_weapon_routine">
+          <usage>initial attack if possible; about 50% of subsequent rounds</usage>
+          <attack_sequence>
+            <attack type="breath_weapon" count="1" damage="1d6 per Hit Die"/>
+          </attack_sequence>
+          <notes>Usable 3 times per day.</notes>
+        </attack_routine>
+      </attack_routines>
+
+      <attack_effects>
+        <attack_effect attack_name="breath_weapon">
+          <damage>1d6 per Hit Die of the dragon.</damage>
+          <save type="Breath" on_success="half damage" on_failure="full damage"/>
+          <effect>Area and secondary effect depend on habitat variant.</effect>
+          <limitations>
+            <limitation>Usable 3 times per day.</limitation>
+          </limitations>
+        </attack_effect>
+      </attack_effects>
+
+      <defenses>
+        <immunities>
+          <immunity>Immune to its own breath weapon.</immunity>
+          <immunity>Immune to the same kind of breath weapon from other dragons.</immunity>
+          <immunity>Immune to ordinary instances of energy or substance similar to its breath weapon.</immunity>
+        </immunities>
+        <resistances>
+          <resistance>Takes half damage from magical attacks similar to the nature of its breath weapon.</resistance>
+        </resistances>
+      </defenses>
+
+      <mobility_rules>
+        <rule>Standard dragons use land and flight movement from the stat block unless modified by variant rules.</rule>
+      </mobility_rules>
+
+      <targeting_constraints>
+        <constraint>General breath-shape rule: cloud-shaped effects occupy 20' high, 40' long, and 40' wide.</constraint>
+        <constraint>General breath-shape rule: cone-shaped effects begin at 2' width and spread to 90' long and 30' wide.</constraint>
+        <constraint>General breath-shape rule: line-shaped effects are 100' long and 5' wide.</constraint>
+        <constraint>Use the printed habitat breath profile for each variant.</constraint>
+      </targeting_constraints>
+    </combat_profile>
+
+    <special_abilities>
+      <ability name="breath_weapon_acid">
+        <effect>The acid stream burns through wooden or metal barriers and continues to full length.</effect>
+        <effect>The acid corrodes metal, wood, and cloth it touches.</effect>
+        <exception>Acid cannot harm stone.</exception>
+      </ability>
+
+      <ability name="breath_weapon_fetid_gas">
+        <save type="Breath" on_success="avoid disease rider" on_failure="contract noxious rotting disease"/>
+        <effect>Afflicted creatures lose 1d4 STR, 1d4 DEX, and 1d4 CON each day until cured.</effect>
+        <effect>If any affected ability score is reduced to 0, the creature dies.</effect>
+        <termination>Cured by cure disease cast by a 9th level or higher cleric.</termination>
+        <notes>Lost ability score points recover at 1 point per day after the disease is cured.</notes>
+      </ability>
+
+      <ability name="breath_weapon_obscuring_vapors">
+        <effect>Blistering steam, freezing vapors, poison vapor, and scouring wind partly obscure the affected area for 1 round after the dragon breathes.</effect>
+        <effect>Attacks into or through the area suffer -2 to attack throws.</effect>
+      </ability>
+
+      <ability name="breath_weapon_lightning_bolt">
+        <effect>May melt lead, gold, copper, silver, or bronze.</effect>
+        <effect>If damage to an interposing barrier breaks through it, the bolt may continue beyond the barrier.</effect>
+      </ability>
+
+      <ability name="breath_weapon_fire">
+        <effect>Ignites combustibles and damages objects in the area.</effect>
+        <effect>May melt lead, gold, copper, silver, or bronze.</effect>
+        <effect>If damage to an interposing barrier breaks through it, the breath may continue beyond the barrier to attain full volume.</effect>
+      </ability>
+
+      <ability name="clutching_claws">
+        <trigger>Used as a dive attack with claws.</trigger>
+        <effect>Deals double damage.</effect>
+        <effect>If both claw attacks hit a creature smaller than the dragon, the dragon automatically grabs the creature.</effect>
+        <save type="Paralysis" on_success="escape the claws" on_failure="remain grabbed">
+          <modifier>-4</modifier>
+        </save>
+        <notes>Grabbed humanoids, and any creatures with less than half the dragon's Hit Dice, can be carried off.</notes>
+      </ability>
+
+      <ability name="decapitating_bite">
+        <trigger>Natural attack throw of 19-20 with bite.</trigger>
+        <save type="Death" on_success="target survives but takes quadruple bite damage" on_failure="target dies"/>
+      </ability>
+
+      <ability name="elemental_aura">
+        <effect>Creatures within 5' of the dragon take 1d4 damage per round from an aura matching the dragon's breath weapon.</effect>
+      </ability>
+
+      <ability name="fear_aura">
+        <trigger>When the dragon charges or flies overhead.</trigger>
+        <effect>Creatures with less than 1 Hit Die flee in panic for 4d6 turns.</effect>
+        <save type="Paralysis" on_success="no paralysis or attack penalty" on_failure="see Hit Dice based result"/>
+        <effect>Creatures with 1-3 Hit Dice that fail are paralyzed with fear.</effect>
+        <effect>Creatures with more than 3 Hit Dice that fail suffer -1 to attack throws.</effect>
+        <duration>The fear effect lasts until the dragon is slain or passes out of sight and sound.</duration>
+      </ability>
+
+      <ability name="gem_encrusted_hide">
+        <effect>Gain +2 bonus to AC.</effect>
+        <effect>Movement is reduced by 30'.</effect>
+        <notes>The AC bonus becomes +3 at Very Old and +4 at Venerable.</notes>
+      </ability>
+
+      <ability name="horrific_stench">
+        <trigger>Creatures within 20' of the dragon.</trigger>
+        <save type="Poison" on_success="resist stench" on_failure="be nauseated"/>
+        <effect>Nauseated creatures suffer -3 to attack throws and damage rolls.</effect>
+        <duration>1d4+4 rounds after leaving the dragon's vicinity.</duration>
+      </ability>
+
+      <ability name="invulnerable">
+        <effect>Cannot be harmed by non-magical weapons.</effect>
+      </ability>
+
+      <ability name="massive_size">
+        <effect>Hit Dice increase by 3.</effect>
+        <effect>Claw damage, bite damage, and breath weapon damage increase commensurately.</effect>
+        <limitation>May be taken multiple times.</limitation>
+        <notes>Venerable dragons attack for 3d6/3d6/6d8 if taken once and 3d8/3d8/6d10 if taken twice.</notes>
+      </ability>
+
+      <ability name="paralyzing_blows">
+        <effect>Claw and bite attacks channel negative energy and cause paralysis for 3d4 turns.</effect>
+        <save type="Paralysis" on_success="avoid paralysis" on_failure="paralyzed for 3d4 turns"/>
+        <exception>Only chaotic dragons may have this special ability.</exception>
+        <notes>Otherwise identical to a ghoul's paralysis.</notes>
+      </ability>
+
+      <ability name="poisonous_blood">
+        <trigger>Any opponent that successfully hits the dragon in melee.</trigger>
+        <save type="Poison" on_success="avoid blood effect" on_failure="death"/>
+      </ability>
+
+      <ability name="polymorph_self">
+        <effect>May change shape at will to any humanoid or animal form.</effect>
+        <exception>Only dragons capable of casting spells may have this special ability.</exception>
+      </ability>
+
+      <ability name="tail_lash">
+        <effect>May make one additional melee attack each round against targets to the rear.</effect>
+        <effect>Tail damage equals the dragon's bite damage.</effect>
+      </ability>
+
+      <ability name="wing_claws">
+        <effect>May make two additional melee attacks each round with wing claws.</effect>
+        <effect>Wing-claw damage equals the dragon's claw damage for its age category.</effect>
+      </ability>
+    </special_abilities>
+
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Habitat determines common dragon variant, hide colors, and breath weapon profile.</rule>
+      </habitat>
+      <diet>
+        <rule>Dragons are completely carnivorous.</rule>
+      </diet>
+      <social_structure>
+        <rule>Encounter composition depends on age and number encountered.</rule>
+      </social_structure>
+      <communication>
+        <rule>Dragons that can speak know Common, Draconic, and one other language.</rule>
+      </communication>
+      <behavior_rules>
+        <rule>Neutral dragons may or may not converse depending on circumstances.</rule>
+        <rule>Lawful dragons are more likely to aid a good party or a party on a noble mission.</rule>
+        <rule>Chaotic dragons are likely to attack on sight unless restraint offers gain.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+
+    <treasure_and_rewards>
+      <treasure_type>Varies by age category.</treasure_type>
+      <treasure_rules>
+        <rule>Captured live dragons may be sold in a Class I or II market for 1,000 gp per total hit point.</rule>
+        <rule>An enslaved dragon becomes a henchman of the enslaving character but always desires freedom.</rule>
+        <rule>An enslaved dragon makes a Henchman Loyalty roll whenever it has an opportunity to escape or betray its master.</rule>
+        <rule>Apply the dragon's normal morale bonus as a penalty to that loyalty roll.</rule>
+      </treasure_rules>
+      <xp_rule>A dragon capable of speech counts as having one additional special ability for XP purposes, except Ancient and Venerable dragons where this is already factored into XP.</xp_rule>
+    </treasure_and_rewards>
+
+    <procedures>
+      <procedure name="derive_dragon_statistics">
+        <condition>Use when building a specific dragon from this entry.</condition>
+        <steps>
+          <step number="1">Choose habitat variant from dragon_attributes_by_habitat.</step>
+          <step number="2">Choose age category from primary_dragon_attributes and secondary_dragon_attributes.</step>
+          <step number="3">Apply percent_in_lair, armor_class, hit_dice, damage, save, morale, treasure_type, and xp from primary_dragon_attributes.</step>
+          <step number="4">Apply dungeon_encounter, wilderness_encounter, chance_asleep, chance_speech, special_ability_count, and spells_per_day from secondary_dragon_attributes.</step>
+          <step number="5">Assign special abilities appropriate to habitat and alignment based on special_ability_count, or create custom abilities if desired.</step>
+          <step number="6">If the dragon can speak, it can cast the listed number of arcane spells per day and knows the same number of arcane spells.</step>
+          <step number="7">Apply any variant-specific rules such as sea_dragon_mobility_modification.</step>
+        </steps>
+        <outcome>A fully derived dragon variant with habitat-specific breath weapon and age-based statistics.</outcome>
+      </procedure>
+
+      <procedure name="sleeping_dragons">
+        <condition>Dragon is encountered in its lair or otherwise on the ground.</condition>
+        <steps>
+          <step number="1">Roll against the age category's chance_asleep from secondary_dragon_attributes.</step>
+          <step number="2">If asleep, opponents may attack for one round with +2 to attack throws.</step>
+          <step number="3">Thieves may backstab a sleeping dragon.</step>
+          <step number="4">After that round, the dragon awakens whether or not any attack hit.</step>
+        </steps>
+        <outcome>Combat proceeds normally from round 2 onward.</outcome>
+      </procedure>
+
+      <procedure name="dragon_interaction_and_capture">
+        <steps>
+          <step number="1">Characters may attempt to incapacitate and capture a dragon using incapacitating attacks or other methods.</step>
+          <step number="2">If captured, the dragon may be enslaved or sold.</step>
+          <step number="3">If enslaved, treat it as a henchman of the enslaving character.</step>
+          <step number="4">Whenever escape or betrayal is possible, roll Henchman Loyalty with the dragon's morale bonus applied as a penalty.</step>
+          <step number="5">If sold alive, price is 1,000 gp per total hit point in a Class I or II market.</step>
+        </steps>
+      </procedure>
+    </procedures>
+
+    <tables>
+      <table name="dragon_attributes_by_habitat">
+        <row>
+          <column name="habitat">Any sinkhole of evil</column>
+          <column name="common_name">Wyrm</column>
+          <column name="hide_color">Purple taupe, liver, charcoal, or black</column>
+          <column name="breath_weapon">40' long, 40' wide, cloud, fetid gas</column>
+        </row>
+        <row>
+          <column name="habitat">Any pinnacle of good</column>
+          <column name="common_name">Metallic dragon</column>
+          <column name="hide_color">Bronze, silver, electrum, or gold</column>
+          <column name="breath_weapon">90' long, 30' wide, cone, fire</column>
+        </row>
+        <row>
+          <column name="habitat">Clouds, mountain peaks</column>
+          <column name="common_name">Blue dragon</column>
+          <column name="hide_color">Sky blue, slate grey, cloud white</column>
+          <column name="breath_weapon">100' long, 5' wide, line, lightning bolt</column>
+        </row>
+        <row>
+          <column name="habitat">Deserts, wastelands</column>
+          <column name="common_name">Brown dragon</column>
+          <column name="hide_color">Burnt orange, copper, or sandy brown</column>
+          <column name="breath_weapon">90' long, 30' wide, cone, scouring wind</column>
+        </row>
+        <row>
+          <column name="habitat">Oceans, lakes</column>
+          <column name="common_name">Sea dragon</column>
+          <column name="hide_color">Sea green, teal, or cerulean blue</column>
+          <column name="breath_weapon">90' long, 30' wide, cloud, blistering steam</column>
+        </row>
+        <row>
+          <column name="habitat">Glaciers, icy caves</column>
+          <column name="common_name">White dragon</column>
+          <column name="hide_color">Ivory, pearl, or snow white</column>
+          <column name="breath_weapon">90' long, 30' wide, cloud, freezing vapor</column>
+        </row>
+        <row>
+          <column name="habitat">Volcanoes, badlands</column>
+          <column name="common_name">Red dragon</column>
+          <column name="hide_color">Flaming red, burnt orange, or charcoal</column>
+          <column name="breath_weapon">90' long, 30' wide, cone, fire</column>
+        </row>
+        <row>
+          <column name="habitat">Woods, jungles</column>
+          <column name="common_name">Green dragon</column>
+          <column name="hide_color">Moss green, olive, or forest green</column>
+          <column name="breath_weapon">40' long, 40' wide, cloud, poison vapor</column>
+        </row>
+        <row>
+          <column name="habitat">Swamps, marshes</column>
+          <column name="common_name">Black dragon</column>
+          <column name="hide_color">Green-grey, midnight green, or black</column>
+          <column name="breath_weapon">100' long, 5' wide, line, acid</column>
+        </row>
+      </table>
+
+      <table name="primary_dragon_attributes">
+        <row>
+          <column name="category">Spawn</column>
+          <column name="age">1-5 years</column>
+          <column name="percent_in_lair">90%</column>
+          <column name="armor_class">3</column>
+          <column name="hit_dice">2*</column>
+          <column name="damage">1d2/1d2/2d3</column>
+          <column name="save">F2</column>
+          <column name="morale">0</column>
+          <column name="treasure_type">B</column>
+          <column name="xp">29</column>
+        </row>
+        <row>
+          <column name="category">Very Young</column>
+          <column name="age">6-15 years</column>
+          <column name="percent_in_lair">70%</column>
+          <column name="armor_class">4</column>
+          <column name="hit_dice">4**</column>
+          <column name="damage">1d3/1d3/2d4</column>
+          <column name="save">F4</column>
+          <column name="morale">0</column>
+          <column name="treasure_type">H</column>
+          <column name="xp">190</column>
+        </row>
+        <row>
+          <column name="category">Young</column>
+          <column name="age">16-25 years</column>
+          <column name="percent_in_lair">50%</column>
+          <column name="armor_class">5</column>
+          <column name="hit_dice">6**</column>
+          <column name="damage">1d4/1d4/2d6</column>
+          <column name="save">F6</column>
+          <column name="morale">0</column>
+          <column name="treasure_type">N</column>
+          <column name="xp">820</column>
+        </row>
+        <row>
+          <column name="category">Juvenile</column>
+          <column name="age">26-50 years</column>
+          <column name="percent_in_lair">40%</column>
+          <column name="armor_class">6</column>
+          <column name="hit_dice">8**</column>
+          <column name="damage">1d6/1d6/2d8</column>
+          <column name="save">F8</column>
+          <column name="morale">0</column>
+          <column name="treasure_type">Q</column>
+          <column name="xp">1,600</column>
+        </row>
+        <row>
+          <column name="category">Adult</column>
+          <column name="age">51-75 years</column>
+          <column name="percent_in_lair">40%</column>
+          <column name="armor_class">7</column>
+          <column name="hit_dice">10***</column>
+          <column name="damage">2d3/2d3/2d10</column>
+          <column name="save">F10</column>
+          <column name="morale">+1</column>
+          <column name="treasure_type">Q, N</column>
+          <column name="xp">2,950</column>
+        </row>
+        <row>
+          <column name="category">Mature Adult</column>
+          <column name="age">75-100 years</column>
+          <column name="percent_in_lair">30%</column>
+          <column name="armor_class">8</column>
+          <column name="hit_dice">12***</column>
+          <column name="damage">1d8/1d8/3d8</column>
+          <column name="save">F12</column>
+          <column name="morale">+1</column>
+          <column name="treasure_type">Q, N</column>
+          <column name="xp">3,900</column>
+        </row>
+        <row>
+          <column name="category">Old</column>
+          <column name="age">101-200 years</column>
+          <column name="percent_in_lair">40%</column>
+          <column name="armor_class">9</column>
+          <column name="hit_dice">14***</column>
+          <column name="damage">2d4/2d4/3d10</column>
+          <column name="save">F14</column>
+          <column name="morale">+1</column>
+          <column name="treasure_type">R</column>
+          <column name="xp">4,900</column>
+        </row>
+        <row>
+          <column name="category">Very Old</column>
+          <column name="age">201-400 years</column>
+          <column name="percent_in_lair">50%</column>
+          <column name="armor_class">10</column>
+          <column name="hit_dice">16****</column>
+          <column name="damage">1d10/1d10/4d8</column>
+          <column name="save">F16</column>
+          <column name="morale">+2</column>
+          <column name="treasure_type">R</column>
+          <column name="xp">7,200</column>
+        </row>
+        <row>
+          <column name="category">Ancient</column>
+          <column name="age">401-700 years</column>
+          <column name="percent_in_lair">70%</column>
+          <column name="armor_class">11</column>
+          <column name="hit_dice">18****</column>
+          <column name="damage">1d12/1d12/4d10</column>
+          <column name="save">F18</column>
+          <column name="morale">+2</column>
+          <column name="treasure_type">R</column>
+          <column name="xp">8,400</column>
+        </row>
+        <row>
+          <column name="category">Venerable</column>
+          <column name="age">701+ years</column>
+          <column name="percent_in_lair">90%</column>
+          <column name="armor_class">12</column>
+          <column name="hit_dice">20*****</column>
+          <column name="damage">3d4/3d4/5d8</column>
+          <column name="save">F20</column>
+          <column name="morale">+3</column>
+          <column name="treasure_type">R, N</column>
+          <column name="xp">12,800</column>
+        </row>
+      </table>
+
+      <table name="secondary_dragon_attributes">
+        <row>
+          <column name="category">Spawn</column>
+          <column name="dungeon_encounter">1d4</column>
+          <column name="wilderness_encounter">1d4</column>
+          <column name="chance_asleep">80%</column>
+          <column name="chance_speech">1%</column>
+          <column name="special_abilities">None</column>
+          <column name="spells_per_day_level_1">1</column>
+          <column name="spells_per_day_level_2">-</column>
+          <column name="spells_per_day_level_3">-</column>
+          <column name="spells_per_day_level_4">-</column>
+          <column name="spells_per_day_level_5">-</column>
+        </row>
+        <row>
+          <column name="category">Very Young</column>
+          <column name="dungeon_encounter">1d4</column>
+          <column name="wilderness_encounter">1d4</column>
+          <column name="chance_asleep">70%</column>
+          <column name="chance_speech">2%</column>
+          <column name="special_abilities">None</column>
+          <column name="spells_per_day_level_1">2</column>
+          <column name="spells_per_day_level_2">-</column>
+          <column name="spells_per_day_level_3">-</column>
+          <column name="spells_per_day_level_4">-</column>
+          <column name="spells_per_day_level_5">-</column>
+        </row>
+        <row>
+          <column name="category">Young</column>
+          <column name="dungeon_encounter">1d4</column>
+          <column name="wilderness_encounter">1d4</column>
+          <column name="chance_asleep">60%</column>
+          <column name="chance_speech">5%</column>
+          <column name="special_abilities">None</column>
+          <column name="spells_per_day_level_1">2</column>
+          <column name="spells_per_day_level_2">1</column>
+          <column name="spells_per_day_level_3">-</column>
+          <column name="spells_per_day_level_4">-</column>
+          <column name="spells_per_day_level_5">-</column>
+        </row>
+        <row>
+          <column name="category">Juvenile</column>
+          <column name="dungeon_encounter">1d4</column>
+          <column name="wilderness_encounter">1d4</column>
+          <column name="chance_asleep">50%</column>
+          <column name="chance_speech">10%</column>
+          <column name="special_abilities">None</column>
+          <column name="spells_per_day_level_1">2</column>
+          <column name="spells_per_day_level_2">2</column>
+          <column name="spells_per_day_level_3">-</column>
+          <column name="spells_per_day_level_4">-</column>
+          <column name="spells_per_day_level_5">-</column>
+        </row>
+        <row>
+          <column name="category">Adult</column>
+          <column name="dungeon_encounter">1d4</column>
+          <column name="wilderness_encounter">1d4</column>
+          <column name="chance_asleep">40%</column>
+          <column name="chance_speech">20%</column>
+          <column name="special_abilities">1 ability</column>
+          <column name="spells_per_day_level_1">2</column>
+          <column name="spells_per_day_level_2">2</column>
+          <column name="spells_per_day_level_3">1</column>
+          <column name="spells_per_day_level_4">-</column>
+          <column name="spells_per_day_level_5">-</column>
+        </row>
+        <row>
+          <column name="category">Mature Adult</column>
+          <column name="dungeon_encounter">1d4</column>
+          <column name="wilderness_encounter">1d4</column>
+          <column name="chance_asleep">30%</column>
+          <column name="chance_speech">35%</column>
+          <column name="special_abilities">1 ability</column>
+          <column name="spells_per_day_level_1">2</column>
+          <column name="spells_per_day_level_2">2</column>
+          <column name="spells_per_day_level_3">2</column>
+          <column name="spells_per_day_level_4">-</column>
+          <column name="spells_per_day_level_5">-</column>
+        </row>
+        <row>
+          <column name="category">Old</column>
+          <column name="dungeon_encounter">1d2</column>
+          <column name="wilderness_encounter">1d2</column>
+          <column name="chance_asleep">20%</column>
+          <column name="chance_speech">50%</column>
+          <column name="special_abilities">1 ability</column>
+          <column name="spells_per_day_level_1">3</column>
+          <column name="spells_per_day_level_2">2</column>
+          <column name="spells_per_day_level_3">2</column>
+          <column name="spells_per_day_level_4">1</column>
+          <column name="spells_per_day_level_5">-</column>
+        </row>
+        <row>
+          <column name="category">Very Old</column>
+          <column name="dungeon_encounter">1d2</column>
+          <column name="wilderness_encounter">1d2</column>
+          <column name="chance_asleep">10%</column>
+          <column name="chance_speech">75%</column>
+          <column name="special_abilities">2 abilities</column>
+          <column name="spells_per_day_level_1">3</column>
+          <column name="spells_per_day_level_2">3</column>
+          <column name="spells_per_day_level_3">2</column>
+          <column name="spells_per_day_level_4">2</column>
+          <column name="spells_per_day_level_5">-</column>
+        </row>
+        <row>
+          <column name="category">Ancient</column>
+          <column name="dungeon_encounter">1d2</column>
+          <column name="wilderness_encounter">1d2</column>
+          <column name="chance_asleep">5%</column>
+          <column name="chance_speech">100%</column>
+          <column name="special_abilities">2 abilities</column>
+          <column name="spells_per_day_level_1">3</column>
+          <column name="spells_per_day_level_2">3</column>
+          <column name="spells_per_day_level_3">3</column>
+          <column name="spells_per_day_level_4">2</column>
+          <column name="spells_per_day_level_5">-</column>
+        </row>
+        <row>
+          <column name="category">Venerable</column>
+          <column name="dungeon_encounter">1</column>
+          <column name="wilderness_encounter">1</column>
+          <column name="chance_asleep">0%</column>
+          <column name="chance_speech">100%</column>
+          <column name="special_abilities">3 abilities</column>
+          <column name="spells_per_day_level_1">3</column>
+          <column name="spells_per_day_level_2">3</column>
+          <column name="spells_per_day_level_3">3</column>
+          <column name="spells_per_day_level_4">3</column>
+          <column name="spells_per_day_level_5">2</column>
+        </row>
+      </table>
+    </tables>
+
+    <references>
+      <general_rule_reference type="breath"/>
+      <general_rule_reference type="morale"/>
+      <general_rule_reference type="henchman_loyalty"/>
+      <general_rule_reference type="incapacitating_attacks"/>
+      <notation_reference>Hit Dice, AC, damage, save, morale, treasure, XP, encounter counts, sleep chance, speech chance, special ability count, and spells per day are all age-based modifiers.</notation_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Dragon</name>
+      <variant_name>Wyrm</variant_name>
+      <source_label>108C-ACKS Core-Monster-Catalog-2</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Any</alignment>
+      <tags>
+        <tag>dragon</tag>
+        <tag>wyrm</tag>
+        <tag>fetid_gas</tag>
+        <tag>cloud_breath</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>By age category.</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="wyrms" number="By age category"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="wyrms" number="By age category"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="fly" exploration="240'" combat="80'"/>
+      </movement>
+      <armor_class>By age category.</armor_class>
+      <hit_dice printed="By age category" special_ability_markers="By age category"/>
+      <attacks>3 or breath weapon</attacks>
+      <damage>By age category.</damage>
+      <save>By age category.</save>
+      <morale>By age category.</morale>
+      <treasure_type>By age category.</treasure_type>
+      <xp>By age category.</xp>
+    </stat_block>
+    <encounter_profile>
+      <terrain>
+        <primary>Any sinkhole of evil</primary>
+      </terrain>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="breath_weapon">
+          <damage>1d6 per Hit Die.</damage>
+          <save type="Breath" on_success="half damage and no disease rider" on_failure="full damage and fetid gas disease"/>
+          <effect>40' long, 40' wide, cloud, fetid gas.</effect>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Associated with sinkholes of evil.</rule>
+      </habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>By age category.</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="breath"/>
+      <notation_reference>Use the base Dragon entry's primary_dragon_attributes and secondary_dragon_attributes as age-based modifiers for this variant.</notation_reference>
+      <notation_reference>Hide colors: purple taupe, liver, charcoal, or black.</notation_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Dragon</name>
+      <variant_name>Metallic dragon</variant_name>
+      <source_label>108C-ACKS Core-Monster-Catalog-2</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Any</alignment>
+      <tags>
+        <tag>dragon</tag>
+        <tag>metallic_dragon</tag>
+        <tag>fire</tag>
+        <tag>cone_breath</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>By age category.</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="metallic_dragons" number="By age category"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="metallic_dragons" number="By age category"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="fly" exploration="240'" combat="80'"/>
+      </movement>
+      <armor_class>By age category.</armor_class>
+      <hit_dice printed="By age category" special_ability_markers="By age category"/>
+      <attacks>3 or breath weapon</attacks>
+      <damage>By age category.</damage>
+      <save>By age category.</save>
+      <morale>By age category.</morale>
+      <treasure_type>By age category.</treasure_type>
+      <xp>By age category.</xp>
+    </stat_block>
+    <encounter_profile>
+      <terrain>
+        <primary>Any pinnacle of good</primary>
+      </terrain>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="breath_weapon">
+          <damage>1d6 per Hit Die.</damage>
+          <save type="Breath" on_success="half damage" on_failure="full damage"/>
+          <effect>90' long, 30' wide, cone, fire.</effect>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Associated with pinnacles of good.</rule>
+      </habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>By age category.</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="breath"/>
+      <notation_reference>Use the base Dragon entry's primary_dragon_attributes and secondary_dragon_attributes as age-based modifiers for this variant.</notation_reference>
+      <notation_reference>Hide colors: bronze, silver, electrum, or gold.</notation_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Dragon</name>
+      <variant_name>Blue dragon</variant_name>
+      <source_label>108C-ACKS Core-Monster-Catalog-2</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Any</alignment>
+      <tags>
+        <tag>dragon</tag>
+        <tag>blue_dragon</tag>
+        <tag>lightning</tag>
+        <tag>line_breath</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>By age category.</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="blue_dragons" number="By age category"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="blue_dragons" number="By age category"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="fly" exploration="240'" combat="80'"/>
+      </movement>
+      <armor_class>By age category.</armor_class>
+      <hit_dice printed="By age category" special_ability_markers="By age category"/>
+      <attacks>3 or breath weapon</attacks>
+      <damage>By age category.</damage>
+      <save>By age category.</save>
+      <morale>By age category.</morale>
+      <treasure_type>By age category.</treasure_type>
+      <xp>By age category.</xp>
+    </stat_block>
+    <encounter_profile>
+      <terrain>
+        <primary>Clouds</primary>
+        <secondary>Mountain peaks</secondary>
+      </terrain>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="breath_weapon">
+          <damage>1d6 per Hit Die.</damage>
+          <save type="Breath" on_success="half damage" on_failure="full damage"/>
+          <effect>100' long, 5' wide, line, lightning bolt.</effect>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Common in clouds and mountain peaks.</rule>
+      </habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>By age category.</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="breath"/>
+      <notation_reference>Use the base Dragon entry's primary_dragon_attributes and secondary_dragon_attributes as age-based modifiers for this variant.</notation_reference>
+      <notation_reference>Hide colors: sky blue, slate grey, or cloud white.</notation_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Dragon</name>
+      <variant_name>Brown dragon</variant_name>
+      <source_label>108C-ACKS Core-Monster-Catalog-2</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Any</alignment>
+      <tags>
+        <tag>dragon</tag>
+        <tag>brown_dragon</tag>
+        <tag>scouring_wind</tag>
+        <tag>cone_breath</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>By age category.</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="brown_dragons" number="By age category"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="brown_dragons" number="By age category"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="fly" exploration="240'" combat="80'"/>
+      </movement>
+      <armor_class>By age category.</armor_class>
+      <hit_dice printed="By age category" special_ability_markers="By age category"/>
+      <attacks>3 or breath weapon</attacks>
+      <damage>By age category.</damage>
+      <save>By age category.</save>
+      <morale>By age category.</morale>
+      <treasure_type>By age category.</treasure_type>
+      <xp>By age category.</xp>
+    </stat_block>
+    <encounter_profile>
+      <terrain>
+        <primary>Deserts</primary>
+        <secondary>Wastelands</secondary>
+      </terrain>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="breath_weapon">
+          <damage>1d6 per Hit Die.</damage>
+          <save type="Breath" on_success="half damage" on_failure="full damage"/>
+          <effect>90' long, 30' wide, cone, scouring wind.</effect>
+          <follow_up>Area is partly obscured for 1 round; attacks into or through it suffer -2 to attack throws.</follow_up>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Common in deserts and wastelands.</rule>
+      </habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>By age category.</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="breath"/>
+      <notation_reference>Use the base Dragon entry's primary_dragon_attributes and secondary_dragon_attributes as age-based modifiers for this variant.</notation_reference>
+      <notation_reference>Hide colors: burnt orange, copper, or sandy brown.</notation_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Dragon</name>
+      <variant_name>Sea dragon</variant_name>
+      <source_label>108C-ACKS Core-Monster-Catalog-2</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Any</alignment>
+      <tags>
+        <tag>dragon</tag>
+        <tag>sea_dragon</tag>
+        <tag>blistering_steam</tag>
+        <tag>aquatic</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>By age category.</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="sea_dragons" number="By age category"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="sea_dragons" number="By age category"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="fly" exploration="240'" combat="80'"/>
+        <mode type="swim" exploration="240'" combat="80'"/>
+      </movement>
+      <armor_class>By age category.</armor_class>
+      <hit_dice printed="By age category" special_ability_markers="By age category"/>
+      <attacks>3 or breath weapon</attacks>
+      <damage>By age category.</damage>
+      <save>By age category.</save>
+      <morale>By age category.</morale>
+      <treasure_type>By age category.</treasure_type>
+      <xp>By age category.</xp>
+    </stat_block>
+    <encounter_profile>
+      <terrain>
+        <primary>Oceans</primary>
+        <secondary>Lakes</secondary>
+      </terrain>
+      <population_rules>
+        <rule>Sea dragons live in underwater caverns and hoard treasure from sunken vessels.</rule>
+      </population_rules>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="breath_weapon">
+          <damage>1d6 per Hit Die.</damage>
+          <save type="Breath" on_success="half damage" on_failure="full damage"/>
+          <effect>90' long, 30' wide, cloud, blistering steam.</effect>
+          <follow_up>Area is partly obscured for 1 round; attacks into or through it suffer -2 to attack throws.</follow_up>
+        </attack_effect>
+      </attack_effects>
+      <mobility_rules>
+        <rule>May lose the ability to fly.</rule>
+        <rule>Gain the ability to breathe underwater.</rule>
+        <rule>Gain swim movement 240' (80').</rule>
+        <rule>May glide over the surface of water for 6 rounds.</rule>
+        <rule>Stay almost exclusively in water.</rule>
+      </mobility_rules>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Common in oceans and lakes.</rule>
+      </habitat>
+      <behavior_rules>
+        <rule>Never found asleep above water.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>By age category.</treasure_type>
+      <treasure_rules>
+        <rule>Often hoard treasure from sunken vessels.</rule>
+      </treasure_rules>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="breath"/>
+      <notation_reference>Use the base Dragon entry's primary_dragon_attributes and secondary_dragon_attributes as age-based modifiers for this variant.</notation_reference>
+      <notation_reference>Hide colors: sea green, teal, or cerulean blue.</notation_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Dragon</name>
+      <variant_name>White dragon</variant_name>
+      <source_label>108C-ACKS Core-Monster-Catalog-2</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Any</alignment>
+      <tags>
+        <tag>dragon</tag>
+        <tag>white_dragon</tag>
+        <tag>freezing_vapor</tag>
+        <tag>cloud_breath</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>By age category.</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="white_dragons" number="By age category"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="white_dragons" number="By age category"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="fly" exploration="240'" combat="80'"/>
+      </movement>
+      <armor_class>By age category.</armor_class>
+      <hit_dice printed="By age category" special_ability_markers="By age category"/>
+      <attacks>3 or breath weapon</attacks>
+      <damage>By age category.</damage>
+      <save>By age category.</save>
+      <morale>By age category.</morale>
+      <treasure_type>By age category.</treasure_type>
+      <xp>By age category.</xp>
+    </stat_block>
+    <encounter_profile>
+      <terrain>
+        <primary>Glaciers</primary>
+        <secondary>Icy caves</secondary>
+      </terrain>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="breath_weapon">
+          <damage>1d6 per Hit Die.</damage>
+          <save type="Breath" on_success="half damage" on_failure="full damage"/>
+          <effect>90' long, 30' wide, cloud, freezing vapor.</effect>
+          <follow_up>Area is partly obscured for 1 round; attacks into or through it suffer -2 to attack throws.</follow_up>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Common in glaciers and icy caves.</rule>
+      </habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>By age category.</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="breath"/>
+      <notation_reference>Use the base Dragon entry's primary_dragon_attributes and secondary_dragon_attributes as age-based modifiers for this variant.</notation_reference>
+      <notation_reference>Hide colors: ivory, pearl, or snow white.</notation_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Dragon</name>
+      <variant_name>Red dragon</variant_name>
+      <source_label>108C-ACKS Core-Monster-Catalog-2</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Any</alignment>
+      <tags>
+        <tag>dragon</tag>
+        <tag>red_dragon</tag>
+        <tag>fire</tag>
+        <tag>cone_breath</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>By age category.</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="red_dragons" number="By age category"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="red_dragons" number="By age category"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="fly" exploration="240'" combat="80'"/>
+      </movement>
+      <armor_class>By age category.</armor_class>
+      <hit_dice printed="By age category" special_ability_markers="By age category"/>
+      <attacks>3 or breath weapon</attacks>
+      <damage>By age category.</damage>
+      <save>By age category.</save>
+      <morale>By age category.</morale>
+      <treasure_type>By age category.</treasure_type>
+      <xp>By age category.</xp>
+    </stat_block>
+    <encounter_profile>
+      <terrain>
+        <primary>Volcanoes</primary>
+        <secondary>Badlands</secondary>
+      </terrain>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="breath_weapon">
+          <damage>1d6 per Hit Die.</damage>
+          <save type="Breath" on_success="half damage" on_failure="full damage"/>
+          <effect>90' long, 30' wide, cone, fire.</effect>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Common in volcanoes and badlands.</rule>
+      </habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>By age category.</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="breath"/>
+      <notation_reference>Use the base Dragon entry's primary_dragon_attributes and secondary_dragon_attributes as age-based modifiers for this variant.</notation_reference>
+      <notation_reference>Hide colors: flaming red, burnt orange, or charcoal.</notation_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Dragon</name>
+      <variant_name>Green dragon</variant_name>
+      <source_label>108C-ACKS Core-Monster-Catalog-2</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Any</alignment>
+      <tags>
+        <tag>dragon</tag>
+        <tag>green_dragon</tag>
+        <tag>poison_vapor</tag>
+        <tag>cloud_breath</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>By age category.</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="green_dragons" number="By age category"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="green_dragons" number="By age category"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="fly" exploration="240'" combat="80'"/>
+      </movement>
+      <armor_class>By age category.</armor_class>
+      <hit_dice printed="By age category" special_ability_markers="By age category"/>
+      <attacks>3 or breath weapon</attacks>
+      <damage>By age category.</damage>
+      <save>By age category.</save>
+      <morale>By age category.</morale>
+      <treasure_type>By age category.</treasure_type>
+      <xp>By age category.</xp>
+    </stat_block>
+    <encounter_profile>
+      <terrain>
+        <primary>Woods</primary>
+        <secondary>Jungles</secondary>
+      </terrain>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="breath_weapon">
+          <damage>1d6 per Hit Die.</damage>
+          <save type="Breath" on_success="half damage" on_failure="full damage"/>
+          <effect>40' long, 40' wide, cloud, poison vapor.</effect>
+          <follow_up>Area is partly obscured for 1 round; attacks into or through it suffer -2 to attack throws.</follow_up>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Common in woods and jungles.</rule>
+      </habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>By age category.</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="breath"/>
+      <notation_reference>Use the base Dragon entry's primary_dragon_attributes and secondary_dragon_attributes as age-based modifiers for this variant.</notation_reference>
+      <notation_reference>Hide colors: moss green, olive, or forest green.</notation_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Dragon</name>
+      <variant_name>Black dragon</variant_name>
+      <source_label>108C-ACKS Core-Monster-Catalog-2</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Any</alignment>
+      <tags>
+        <tag>dragon</tag>
+        <tag>black_dragon</tag>
+        <tag>acid</tag>
+        <tag>line_breath</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>By age category.</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="black_dragons" number="By age category"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="black_dragons" number="By age category"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="fly" exploration="240'" combat="80'"/>
+      </movement>
+      <armor_class>By age category.</armor_class>
+      <hit_dice printed="By age category" special_ability_markers="By age category"/>
+      <attacks>3 or breath weapon</attacks>
+      <damage>By age category.</damage>
+      <save>By age category.</save>
+      <morale>By age category.</morale>
+      <treasure_type>By age category.</treasure_type>
+      <xp>By age category.</xp>
+    </stat_block>
+    <encounter_profile>
+      <terrain>
+        <primary>Swamps</primary>
+        <secondary>Marshes</secondary>
+      </terrain>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="breath_weapon">
+          <damage>1d6 per Hit Die.</damage>
+          <save type="Breath" on_success="half damage" on_failure="full damage"/>
+          <effect>100' long, 5' wide, line, acid.</effect>
+          <follow_up>Acid burns through wooden or metal barriers and continues to full length; corrodes metal, wood, and cloth; cannot harm stone.</follow_up>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Common in swamps and marshes.</rule>
+      </habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>By age category.</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="breath"/>
+      <notation_reference>Use the base Dragon entry's primary_dragon_attributes and secondary_dragon_attributes as age-based modifiers for this variant.</notation_reference>
+      <notation_reference>Hide colors: green-grey, midnight green, or black.</notation_reference>
+    </references>
+  </monster>
+</monster_catalog>

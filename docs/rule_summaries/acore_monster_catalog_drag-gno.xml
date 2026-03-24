@@ -1,0 +1,1692 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster_catalog title="108D-ACKS Core-Monster-Catalog-3" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <source>108D-ACKS Core-Monster-Catalog-3.md</source>
+
+  <monster>
+    <identity>
+      <name>Dragon Turtle</name>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>swimmer</tag>
+        <tag>breath_weapon</tag>
+        <tag>aquatic_lair</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>5%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="none" number=""/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Solitary" number="1"/>
+        <in_lair collective_noun="Lair" number="1"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="30'" combat="10'"/>
+        <mode type="swim" exploration="90'" combat="30'"/>
+      </movement>
+      <armor_class>11</armor_class>
+      <hit_dice printed="30*" special_ability_markers="*"/>
+      <attacks>3 (2 claws, bite)</attacks>
+      <damage>1d8/1d8/1d6x10</damage>
+      <save>F15</save>
+      <morale>+2</morale>
+      <treasure_type>R, N</treasure_type>
+      <xp>9,500</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="lair_location" number="submerged caverns below water"/>
+      </lair_composition>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="claws_and_bite">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="claw" count="2" damage="1d8"/>
+            <attack type="bite" count="1" damage="1d6x10"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+    </combat_profile>
+    <special_abilities>
+      <ability name="steam_breath">
+        <effect>Hot blistering steam cloud.</effect>
+        <save type="Breath" on_success="half damage" on_failure="30d6 damage"/>
+        <duration>instantaneous</duration>
+        <limitation>Usable 3 times per day.</limitation>
+        <notes>Area is 90' long and 30' wide.</notes>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Lairs are always below water in submerged caverns.</rule>
+      </habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>R, N</treasure_type>
+      <treasure_rules>
+        <rule>Hoard consists of wealth taken from ships sunk to the bottom of the sea.</rule>
+      </treasure_rules>
+    </treasure_and_rewards>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Dwarf</name>
+    </identity>
+    <classification>
+      <monster_type>humanoid</monster_type>
+      <alignment>Lawful, Neutral</alignment>
+      <tags>
+        <tag>demi_human</tag>
+        <tag>organized_lair</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>50%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Squad" number="1d6"/>
+        <in_lair collective_noun="Redoubt" number="1 company"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Company" number="1d12 squads"/>
+        <in_lair collective_noun="Vault" number="1d10 companies"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+      </movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="1" special_ability_markers=""/>
+      <attacks>1 (weapon)</attacks>
+      <damage>1d8 or weapon +1</damage>
+      <save>D1</save>
+      <morale>0</morale>
+      <treasure_type>D (per company)</treasure_type>
+      <xp>10</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="company_leader" number="1 dwarven vaultguard of level 1d4+1 per company"/>
+        <member role="vault_ruler" number="1 vaultlord; dwarven vaultguard of 9th level"/>
+        <member role="elite_guard" number="2d6 vaultguards of level 1d4+1"/>
+        <member role="advisor" number="50% chance of 1 dwarven craftpriest of level 6+1d2"/>
+        <member role="trained_animals" number="60% chance of 5d4 war dogs or 2d4 brown bears"/>
+        <member role="adult_noncombatants" number="50% of able-bodied adults"/>
+        <member role="young" number="25% of able-bodied adults"/>
+      </lair_composition>
+      <population_rules>
+        <rule>Each company is led by a dwarven vaultguard of level 1d4+1.</rule>
+      </population_rules>
+    </encounter_profile>
+    <combat_profile>
+      <morale_modifiers>
+        <modifier condition="in the presence of company leader" value="+2"/>
+      </morale_modifiers>
+    </combat_profile>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Dwarves attack goblins first.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>D (per company)</treasure_type>
+      <treasure_rules>
+        <rule>Each leader, elite guard member, and craftpriest may possess individual magic items.</rule>
+        <rule>For each magic item category except rods, staffs, wands, and scrolls, there is a 5% chance per leader level that a leader possesses an item of that category.</rule>
+      </treasure_rules>
+    </treasure_and_rewards>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Efreeti</name>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>flyer</tag>
+        <tag>spell_like_abilities</tag>
+        <tag>wish_granting</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Solitary" number="1"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Solitary" number="1"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="fly" exploration="240'" combat="80'"/>
+      </movement>
+      <armor_class>6</armor_class>
+      <hit_dice printed="10***" special_ability_markers="***"/>
+      <attacks>1 (fist)</attacks>
+      <damage>2d8</damage>
+      <save>F15</save>
+      <morale>+4</morale>
+      <treasure_type>None</treasure_type>
+      <xp>2,950</xp>
+    </stat_block>
+    <combat_profile>
+      <defenses>
+        <immunities>
+          <immunity>May only be affected by magic and magical weapons.</immunity>
+        </immunities>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="spell_like_abilities">
+        <effect>Each listed ability is usable 3 times per day.</effect>
+        <notes>Create food and water as a 7th-level cleric; create temporary metal objects up to 10 stone, with duration based on softness of the metal (gold 24 hours, iron 1 round); create permanent goods of wood, rope, and similarly soft materials up to 10 stone; create illusion as phantasmal force with sight and sound, permanent until touched or dispelled; become invisible; create wall of fire.</notes>
+      </ability>
+      <ability name="flame_pillar_form">
+        <effect>Characters within 5' take 1d8 damage each round; combustible materials ignite.</effect>
+        <duration>Up to 3 rounds.</duration>
+        <limitation>Efreeti may still attack and use other powers while in this form.</limitation>
+      </ability>
+      <ability name="wish_granting">
+        <effect>May grant up to 3 wishes.</effect>
+        <limitation>Only once every 101 days.</limitation>
+      </ability>
+      <ability name="compelled_service">
+        <effect>When properly compelled, serves for 101 days.</effect>
+        <notes>Attempts to twist orders and obeys only to the letter.</notes>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Efreet resent being summoned.</rule>
+        <rule>Efreet are enemies of djinn and will try to destroy them when encountered.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Air Elemental</name>
+      <variant_name>Air</variant_name>
+    </identity>
+    <classification>
+      <monster_type>summoned_creature</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>flyer</tag>
+        <tag>summoned</tag>
+        <tag>non_magical_weapon_immunity</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Solitary" number="1"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Solitary" number="1"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="fly" exploration="360'" combat="120'"/>
+      </movement>
+      <armor_class>7/9/11</armor_class>
+      <hit_dice printed="8/12/16*" special_ability_markers="*"/>
+      <attacks>See below</attacks>
+      <damage>1d8 or 2d8 or 3d8</damage>
+      <save>F8 or F12 or F16</save>
+      <morale>+4</morale>
+      <treasure_type>None</treasure_type>
+      <xp>1,100/2,100/3,300</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="slam">
+          <damage>1d8 or 2d8 or 3d8</damage>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <immunities>
+          <immunity>Immune to non-magical weapons.</immunity>
+        </immunities>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="size_by_hit_dice">
+        <effect>Appears as a twirling air mass with diameter 1/2' and height 2' per Hit Die.</effect>
+      </ability>
+      <ability name="carried_away">
+        <trigger>If a being of fewer than 2 Hit Dice is caught in the twirling mass.</trigger>
+        <effect>Target is carried away and remains helpless until the elemental is killed.</effect>
+        <save type="Death" on_success="not carried away" on_failure="carried away and helpless"/>
+      </ability>
+      <ability name="anti_flight_strike">
+        <effect>Inflicts an extra 1d8 damage when it successfully hits a flying opponent.</effect>
+      </ability>
+    </special_abilities>
+    <procedures>
+      <procedure name="summoning_and_control">
+        <steps>
+          <step number="1">Determine power tier by summoning method: staff, miscellaneous magic item, or spell.</step>
+          <step number="2">Elemental leaves when dispelled, destroyed, or ordered to depart by the summoner.</step>
+          <step number="3">Summoner must completely concentrate to direct the elemental.</step>
+          <step number="4">If the summoner stops concentrating or loses concentration due to being struck or taking other actions, control is lost.</step>
+          <step number="5">An uncontrolled elemental attacks the summoner and anyone between it and the summoner.</step>
+          <step number="6">Once control is lost, the summoner can no longer order it to depart.</step>
+        </steps>
+      </procedure>
+    </procedures>
+    <tables>
+      <table name="power_tiers">
+        <row>
+          <column name="summoning_method">staff</column>
+          <column name="armor_class">7</column>
+          <column name="hit_dice">8</column>
+          <column name="damage">1d8</column>
+        </row>
+        <row>
+          <column name="summoning_method">miscellaneous magic item</column>
+          <column name="armor_class">9</column>
+          <column name="hit_dice">12</column>
+          <column name="damage">2d8</column>
+        </row>
+        <row>
+          <column name="summoning_method">spell</column>
+          <column name="armor_class">11</column>
+          <column name="hit_dice">16</column>
+          <column name="damage">3d8</column>
+        </row>
+      </table>
+    </tables>
+    <references>
+      <general_rule_reference type="summoning"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Earth Elemental</name>
+      <variant_name>Earth</variant_name>
+    </identity>
+    <classification>
+      <monster_type>summoned_creature</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>summoned</tag>
+        <tag>non_magical_weapon_immunity</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Solitary" number="1"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Solitary" number="1"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="60'" combat="20'"/>
+      </movement>
+      <armor_class>7/9/11</armor_class>
+      <hit_dice printed="8/12/16*" special_ability_markers="*"/>
+      <attacks>See below</attacks>
+      <damage>1d8 or 2d8 or 3d8</damage>
+      <save>F8 or F12 or F16</save>
+      <morale>+4</morale>
+      <treasure_type>None</treasure_type>
+      <xp>1,100/2,100/3,300</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="slam">
+          <damage>1d8 or 2d8 or 3d8</damage>
+          <effect>Inflicts an extra 1d8 damage when it successfully hits opponents standing on the ground.</effect>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <immunities>
+          <immunity>Immune to non-magical weapons.</immunity>
+        </immunities>
+      </defenses>
+      <targeting_constraints>
+        <constraint>Unable to move through water wider than the elemental's height.</constraint>
+      </targeting_constraints>
+    </combat_profile>
+    <special_abilities>
+      <ability name="size_by_hit_dice">
+        <effect>Appears as a giant humanoid made of earth and is 1' high per Hit Die.</effect>
+      </ability>
+    </special_abilities>
+    <procedures>
+      <procedure name="summoning_and_control">
+        <steps>
+          <step number="1">Determine power tier by summoning method: staff, miscellaneous magic item, or spell.</step>
+          <step number="2">Elemental leaves when dispelled, destroyed, or ordered to depart by the summoner.</step>
+          <step number="3">Summoner must completely concentrate to direct the elemental.</step>
+          <step number="4">If the summoner stops concentrating or loses concentration due to being struck or taking other actions, control is lost.</step>
+          <step number="5">An uncontrolled elemental attacks the summoner and anyone between it and the summoner.</step>
+          <step number="6">Once control is lost, the summoner can no longer order it to depart.</step>
+        </steps>
+      </procedure>
+    </procedures>
+    <tables>
+      <table name="power_tiers">
+        <row><column name="summoning_method">staff</column><column name="armor_class">7</column><column name="hit_dice">8</column><column name="damage">1d8</column></row>
+        <row><column name="summoning_method">miscellaneous magic item</column><column name="armor_class">9</column><column name="hit_dice">12</column><column name="damage">2d8</column></row>
+        <row><column name="summoning_method">spell</column><column name="armor_class">11</column><column name="hit_dice">16</column><column name="damage">3d8</column></row>
+      </table>
+    </tables>
+    <references>
+      <general_rule_reference type="summoning"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Fire Elemental</name>
+      <variant_name>Fire</variant_name>
+    </identity>
+    <classification>
+      <monster_type>summoned_creature</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>summoned</tag>
+        <tag>fire_body</tag>
+        <tag>non_magical_weapon_immunity</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Solitary" number="1"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Solitary" number="1"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+      </movement>
+      <armor_class>7/9/11</armor_class>
+      <hit_dice printed="8/12/16*" special_ability_markers="*"/>
+      <attacks>See below</attacks>
+      <damage>1d8 or 2d8 or 3d8</damage>
+      <save>F8 or F12 or F16</save>
+      <morale>+4</morale>
+      <treasure_type>None</treasure_type>
+      <xp>1,100/2,100/3,300</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="slam">
+          <damage>1d8 or 2d8 or 3d8</damage>
+          <effect>Inflicts an extra 1d8 damage when it successfully hits opponents that use cold-based attacks.</effect>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <immunities>
+          <immunity>Immune to non-magical weapons.</immunity>
+        </immunities>
+      </defenses>
+      <targeting_constraints>
+        <constraint>Unable to move through water wider than the elemental's diameter.</constraint>
+      </targeting_constraints>
+    </combat_profile>
+    <special_abilities>
+      <ability name="size_by_hit_dice">
+        <effect>Appears as a giant pillar of flame with diameter 1' and height 1' per Hit Die.</effect>
+      </ability>
+    </special_abilities>
+    <procedures>
+      <procedure name="summoning_and_control">
+        <steps>
+          <step number="1">Determine power tier by summoning method: staff, miscellaneous magic item, or spell.</step>
+          <step number="2">Elemental leaves when dispelled, destroyed, or ordered to depart by the summoner.</step>
+          <step number="3">Summoner must completely concentrate to direct the elemental.</step>
+          <step number="4">If the summoner stops concentrating or loses concentration due to being struck or taking other actions, control is lost.</step>
+          <step number="5">An uncontrolled elemental attacks the summoner and anyone between it and the summoner.</step>
+          <step number="6">Once control is lost, the summoner can no longer order it to depart.</step>
+        </steps>
+      </procedure>
+    </procedures>
+    <tables>
+      <table name="power_tiers">
+        <row><column name="summoning_method">staff</column><column name="armor_class">7</column><column name="hit_dice">8</column><column name="damage">1d8</column></row>
+        <row><column name="summoning_method">miscellaneous magic item</column><column name="armor_class">9</column><column name="hit_dice">12</column><column name="damage">2d8</column></row>
+        <row><column name="summoning_method">spell</column><column name="armor_class">11</column><column name="hit_dice">16</column><column name="damage">3d8</column></row>
+      </table>
+    </tables>
+    <references>
+      <general_rule_reference type="summoning"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Water Elemental</name>
+      <variant_name>Water</variant_name>
+    </identity>
+    <classification>
+      <monster_type>summoned_creature</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>swimmer</tag>
+        <tag>summoned</tag>
+        <tag>non_magical_weapon_immunity</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Solitary" number="1"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Solitary" number="1"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="60'" combat="20'"/>
+        <mode type="swim" exploration="180'" combat="60'"/>
+      </movement>
+      <armor_class>7/9/11</armor_class>
+      <hit_dice printed="8/12/16*" special_ability_markers="*"/>
+      <attacks>See below</attacks>
+      <damage>1d8 or 2d8 or 3d8</damage>
+      <save>F8 or F12 or F16</save>
+      <morale>+4</morale>
+      <treasure_type>None</treasure_type>
+      <xp>1,100/2,100/3,300</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="slam">
+          <damage>1d8 or 2d8 or 3d8</damage>
+          <effect>Inflicts an extra 1d8 damage when it successfully hits opponents standing or submerged in water.</effect>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <immunities>
+          <immunity>Immune to non-magical weapons.</immunity>
+        </immunities>
+      </defenses>
+      <targeting_constraints>
+        <constraint>May not be further than 60' from a source of water.</constraint>
+      </targeting_constraints>
+    </combat_profile>
+    <special_abilities>
+      <ability name="size_by_hit_dice">
+        <effect>Appears as a large mass of watery waves with diameter 2' and height 1/2' per Hit Die.</effect>
+      </ability>
+    </special_abilities>
+    <procedures>
+      <procedure name="summoning_and_control">
+        <steps>
+          <step number="1">Determine power tier by summoning method: staff, miscellaneous magic item, or spell.</step>
+          <step number="2">Elemental leaves when dispelled, destroyed, or ordered to depart by the summoner.</step>
+          <step number="3">Summoner must completely concentrate to direct the elemental.</step>
+          <step number="4">If the summoner stops concentrating or loses concentration due to being struck or taking other actions, control is lost.</step>
+          <step number="5">An uncontrolled elemental attacks the summoner and anyone between it and the summoner.</step>
+          <step number="6">Once control is lost, the summoner can no longer order it to depart.</step>
+        </steps>
+      </procedure>
+    </procedures>
+    <tables>
+      <table name="power_tiers">
+        <row><column name="summoning_method">staff</column><column name="armor_class">7</column><column name="hit_dice">8</column><column name="damage">1d8</column></row>
+        <row><column name="summoning_method">miscellaneous magic item</column><column name="armor_class">9</column><column name="hit_dice">12</column><column name="damage">2d8</column></row>
+        <row><column name="summoning_method">spell</column><column name="armor_class">11</column><column name="hit_dice">16</column><column name="damage">3d8</column></row>
+      </table>
+    </tables>
+    <references>
+      <general_rule_reference type="summoning"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Elephant</name>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>charge</tag>
+        <tag>trample</tag>
+        <tag>resource_value</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="none" number=""/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Herd" number="1d20"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+      </movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="9" special_ability_markers=""/>
+      <attacks>2 or 1 (2 tusks or trample)</attacks>
+      <damage>2d4/2d4 or 4d8</damage>
+      <save>F5</save>
+      <morale>0</morale>
+      <treasure_type>Special</treasure_type>
+      <xp>700</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="tusks">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="tusk" count="2" damage="2d4"/>
+          </attack_sequence>
+          <notes>When distance permits, an elephant may charge with its tusk attacks to deal double damage.</notes>
+        </attack_routine>
+        <attack_routine name="trample">
+          <usage>alternative</usage>
+          <attack_sequence>
+            <attack type="trample" count="1" damage="4d8"/>
+          </attack_sequence>
+          <notes>Elephant gains +4 to its attack throw when attempting to trample an opponent that is man-sized or smaller.</notes>
+        </attack_routine>
+      </attack_routines>
+    </combat_profile>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Sometimes used as mounts or beasts of burden.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>Special</treasure_type>
+      <harvest_or_resource_value>
+        <resource name="tusk_ivory" value="1d6x100gp each" condition="recovered from tusks"/>
+      </harvest_or_resource_value>
+    </treasure_and_rewards>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Elf</name>
+    </identity>
+    <classification>
+      <monster_type>humanoid</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>demi_human</tag>
+        <tag>organized_lair</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>10%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Fellowship" number="1d4"/>
+        <in_lair collective_noun="Haven" number="1 company"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Company" number="1d10 fellowships"/>
+        <in_lair collective_noun="Fastness" number="1d10 companies"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+      </movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="1 + 1" special_ability_markers=""/>
+      <attacks>1 (weapon)</attacks>
+      <damage>1d8 or weapon +1</damage>
+      <save>E1</save>
+      <morale>0</morale>
+      <treasure_type>E (per company)</treasure_type>
+      <xp>15</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="company_leader" number="1 elven spellsword of level 1d6+1 per company"/>
+        <member role="fastness_ruler" number="1 wizard-lord; elven spellsword of 9th level"/>
+        <member role="elite_guard" number="2d6 spellswords of level 1d6+1"/>
+        <member role="nightblade" number="50% chance of 1 elven nightblade of level 6+1d2"/>
+        <member role="trained_animals" number="70% chance of 2d6 trained giant hawks"/>
+        <member role="adult_noncombatants" number="100% of able-bodied adults"/>
+        <member role="young" number="5% of able-bodied adults"/>
+      </lair_composition>
+    </encounter_profile>
+    <combat_profile>
+      <morale_modifiers>
+        <modifier condition="in the presence of company leader" value="+2"/>
+      </morale_modifiers>
+    </combat_profile>
+    <treasure_and_rewards>
+      <treasure_type>E (per company)</treasure_type>
+      <treasure_rules>
+        <rule>Each leader, wizard-lord, elite guard member, and nightblade may possess individual magic items.</rule>
+        <rule>For each item category, there is a 5% chance per leader level that a leader possesses an item of that category.</rule>
+      </treasure_rules>
+    </treasure_and_rewards>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Ettin</name>
+    </identity>
+    <classification>
+      <monster_type>giant_humanoid</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>two_headed</tag>
+        <tag>surprise_bonus</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>20%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Gang" number="1d2"/>
+        <in_lair collective_noun="Lair" number="1d4"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Warband" number="1d4"/>
+        <in_lair collective_noun="Lair" number="1d4"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+      </movement>
+      <armor_class>6</armor_class>
+      <hit_dice printed="10" special_ability_markers=""/>
+      <attacks>2 (club, club)</attacks>
+      <damage>2d8/3d6</damage>
+      <save>F10</save>
+      <morale>+1</morale>
+      <treasure_type>N, H</treasure_type>
+      <xp>850</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="dual_clubs">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="left_arm_club" count="1" damage="2d8"/>
+            <attack type="right_arm_club" count="1" damage="3d6"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+    </combat_profile>
+    <special_abilities>
+      <ability name="double_watchfulness">
+        <effect>Gains +1 bonus to surprise rolls because one head or the other is usually keeping watch.</effect>
+      </ability>
+    </special_abilities>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Faerie</name>
+      <variant_name>Pixie</variant_name>
+    </identity>
+    <classification>
+      <monster_type>enchanted_creature</monster_type>
+      <alignment>Neutral</alignment>
+      <size>2' tall</size>
+      <tags>
+        <tag>flyer</tag>
+        <tag>invisible</tag>
+        <tag>surprise_specialist</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>5%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Flight" number="2d4"/>
+        <in_lair collective_noun="Lair" number="1d4x10"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Wing" number="1d4x10"/>
+        <in_lair collective_noun="Lair" number="1d4x10"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="fly" exploration="180'" combat="60'"/>
+      </movement>
+      <armor_class>6</armor_class>
+      <hit_dice printed="1*" special_ability_markers="*"/>
+      <attacks>1 (dagger)</attacks>
+      <damage>1d4</damage>
+      <save>E1</save>
+      <morale>-1</morale>
+      <treasure_type>B</treasure_type>
+      <xp>13</xp>
+    </stat_block>
+    <special_abilities>
+      <ability name="flight_endurance">
+        <effect>Must spend 1 turn on its feet for each 3 turns spent flying.</effect>
+      </ability>
+      <ability name="natural_invisibility">
+        <effect>Pixie is naturally invisible and may choose to become visible at will.</effect>
+        <notes>Detect invisibility reveals the pixie's presence. Pixie may act freely, including attacking, without becoming visible.</notes>
+      </ability>
+      <ability name="combat_surprise">
+        <effect>Always gets surprise on its opponent.</effect>
+        <notes>Opponent cannot attack a pixie during the first round of engagement. In the second round an opponent may strike by hearing it and estimating its position.</notes>
+      </ability>
+    </special_abilities>
+    <references>
+      <general_rule_reference type="invisibility"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Faerie</name>
+      <variant_name>Sprite</variant_name>
+    </identity>
+    <classification>
+      <monster_type>enchanted_creature</monster_type>
+      <alignment>Neutral</alignment>
+      <size>1' tall</size>
+      <tags>
+        <tag>flyer</tag>
+        <tag>curse</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>30%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="none" number=""/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Wing" number="3d6"/>
+        <in_lair collective_noun="Lair" number="3d6"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="60'" combat=""/>
+        <mode type="fly" exploration="180'" combat="60'"/>
+      </movement>
+      <armor_class>4*</armor_class>
+      <hit_dice printed="1d4 hit points" special_ability_markers="*"/>
+      <attacks>1 (spell)</attacks>
+      <damage>See below</damage>
+      <save>E1</save>
+      <morale>-1</morale>
+      <treasure_type>B</treasure_type>
+      <xp>6</xp>
+    </stat_block>
+    <special_abilities>
+      <ability name="pooled_curse">
+        <trigger>Five sprites pool their energies.</trigger>
+        <effect>Target is cursed.</effect>
+        <limitation>Curse is not directed to cause physical harm or illness.</limitation>
+        <notes>Curse produces an embarrassing or otherwise humorous effect at the Judge's discretion. Remove curse can counter the effect.</notes>
+      </ability>
+    </special_abilities>
+    <references>
+      <general_rule_reference type="curse"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Fish, Giant</name>
+      <variant_name>Catfish</variant_name>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <size>15' long</size>
+      <tags>
+        <tag>swimmer</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="none" number=""/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="School" number="1d2"/></wilderness_encounter>
+      <movement><mode type="swim" exploration="90'" combat="30'"/></movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="8" special_ability_markers=""/>
+      <attacks>5 (bite, 4 feelers)</attacks>
+      <damage>2d8/1d4 (each feeler)</damage>
+      <save>F4</save>
+      <treasure_type>None</treasure_type>
+      <xp>600</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="bite_and_feelers">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="bite" count="1" damage="2d8"/>
+            <attack type="feeler" count="4" damage="1d4 each"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+    </combat_profile>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Fish, Giant</name>
+      <variant_name>Piranha</variant_name>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <size>5' long</size>
+      <tags>
+        <tag>swimmer</tag>
+        <tag>pack_hunter</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="none" number=""/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Pack" number="2d4"/></wilderness_encounter>
+      <movement><mode type="swim" exploration="150'" combat="50'"/></movement>
+      <armor_class>3</armor_class>
+      <hit_dice printed="3 + 3" special_ability_markers=""/>
+      <attacks>1 (bite)</attacks>
+      <damage>1d8</damage>
+      <save>F2</save>
+      <treasure_type>None</treasure_type>
+      <xp>65</xp>
+    </stat_block>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Attacks nearly anything that moves.</rule>
+        <rule>If blood is scented, feeds at a feverish pace and never has to check for morale.</rule>
+        <rule>As many as 8 giant piranhas may attack a single victim at a time.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Fish, Giant</name>
+      <variant_name>Rockfish</variant_name>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>swimmer</tag>
+        <tag>poison</tag>
+        <tag>camouflage</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="none" number=""/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="School" number="2d4"/></wilderness_encounter>
+      <movement><mode type="swim" exploration="180'" combat="60'"/></movement>
+      <armor_class>2</armor_class>
+      <hit_dice printed="5 + 5*" special_ability_markers="*"/>
+      <attacks>4 (spines)</attacks>
+      <damage>1d4x4 (each spine), poison</damage>
+      <save>F3</save>
+      <morale>0</morale>
+      <treasure_type>None</treasure_type>
+      <xp>460</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="spines">
+          <damage>1d4 each spine</damage>
+          <save type="Poison" on_success="avoid death" on_failure="death"/>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities>
+      <ability name="camouflage">
+        <effect>Only a 30% chance that an observer recognizes the fish is present.</effect>
+      </ability>
+      <ability name="contact_spines">
+        <trigger>If a being touches the rockfish after mistaking it for its surroundings.</trigger>
+        <effect>Victim is struck by all four spines with no attack throw required.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Attacks if threatened.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Fish, Giant</name>
+      <variant_name>Sturgeon</variant_name>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <size>30' long</size>
+      <tags>
+        <tag>swimmer</tag>
+        <tag>swallow_whole</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="none" number=""/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Solitary" number="1"/></wilderness_encounter>
+      <movement><mode type="swim" exploration="180'" combat="60'"/></movement>
+      <armor_class>9</armor_class>
+      <hit_dice printed="10*" special_ability_markers="*"/>
+      <attacks>1 (bite)</attacks>
+      <damage>2d10</damage>
+      <save>F5</save>
+      <morale>+1</morale>
+      <treasure_type>I</treasure_type>
+      <xp>1,550</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="bite">
+          <damage>2d10</damage>
+        </attack_effect>
+      </attack_effects>
+      <targeting_constraints>
+        <constraint>Swallow whole applies only to creatures up to man size.</constraint>
+      </targeting_constraints>
+    </combat_profile>
+    <special_abilities>
+      <ability name="swallow_whole">
+        <trigger>On an unmodified attack throw of 18 or greater.</trigger>
+        <effect>Target is swallowed whole.</effect>
+      </ability>
+    </special_abilities>
+    <procedures>
+      <procedure name="swallowed_creature_resolution">
+        <steps>
+          <step number="1">A swallowed creature takes 2d6 damage per round inside the sturgeon's belly until the fish is killed or the creature dies.</step>
+          <step number="2">Each round, the swallowed creature must save versus Paralysis or be paralyzed.</step>
+          <step number="3">If armed with a sharp weapon and not paralyzed, the swallowed creature may attack from inside with a -4 to the attack throw versus effective AC 2.</step>
+          <step number="4">If the swallowed creature dies and remains in the belly for 6 turns, it is irrecoverably digested.</step>
+        </steps>
+      </procedure>
+    </procedures>
+    <treasure_and_rewards>
+      <treasure_type>I</treasure_type>
+      <treasure_rules>
+        <rule>Any encounter with giant sturgeons may yield treasure, whether wandering or in lair.</rule>
+        <rule>If present, treasure is always found inside the creature's belly.</rule>
+      </treasure_rules>
+    </treasure_and_rewards>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Fly, Giant Carnivorous</name>
+    </identity>
+    <classification>
+      <monster_type>vermin</monster_type>
+      <alignment>Neutral</alignment>
+      <size>3' long</size>
+      <tags>
+        <tag>flyer</tag>
+        <tag>ambush</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>35%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Scourge" number="1d6"/>
+        <in_lair collective_noun="Nest" number="2d6"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Swarm" number="2d6"/>
+        <in_lair collective_noun="Nest" number="2d6"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="fly" exploration="180'" combat="60'"/>
+      </movement>
+      <armor_class>3</armor_class>
+      <hit_dice printed="2" special_ability_markers=""/>
+      <attacks>1 (bite)</attacks>
+      <damage>1d8</damage>
+      <save>F1</save>
+      <morale>0</morale>
+      <treasure_type>C</treasure_type>
+      <xp>20</xp>
+    </stat_block>
+    <combat_profile>
+      <defenses>
+        <immunities>
+          <immunity>Immune to giant killer bee poisonous sting.</immunity>
+        </immunities>
+      </defenses>
+      <mobility_rules>
+        <rule>Sometimes jumps up to 30' to attack.</rule>
+      </mobility_rules>
+    </combat_profile>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Skulks in shadows waiting for victims.</rule>
+        <rule>Characters encountering carnivorous flies suffer a -2 penalty to surprise rolls.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Gargoyle</name>
+    </identity>
+    <classification>
+      <monster_type>construct</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>flyer</tag>
+        <tag>magic_weapon_only</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>20%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Flight" number="1d6"/>
+        <in_lair collective_noun="Lair" number="2d4"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Wing" number="2d4"/>
+        <in_lair collective_noun="Lair" number="2d4"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="fly" exploration="150'" combat="50'"/>
+      </movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="4*" special_ability_markers="*"/>
+      <attacks>4 (2 claws, bite, horn)</attacks>
+      <damage>1d3/1d3/1d6/1d4</damage>
+      <save>F8</save>
+      <morale>+3</morale>
+      <treasure_type>H</treasure_type>
+      <xp>135</xp>
+    </stat_block>
+    <combat_profile>
+      <defenses>
+        <immunities>
+          <immunity>Immune to poison.</immunity>
+          <immunity>Immune to sleep, charm, and hold spells.</immunity>
+        </immunities>
+        <special_defense>
+          <name>magical_harm_requirement</name>
+          <effect>May only be harmed by enchanted weapons or magic.</effect>
+        </special_defense>
+      </defenses>
+    </combat_profile>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Gelatinous Cube</name>
+    </identity>
+    <classification>
+      <monster_type>ooze</monster_type>
+      <alignment>Neutral</alignment>
+      <size>10' on a side; about 15,000lb</size>
+      <tags>
+        <tag>paralysis</tag>
+        <tag>surprise_penalty</tag>
+        <tag>embedded_treasure</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Solitary" number="1"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="none" number=""/></wilderness_encounter>
+      <movement><mode type="land" exploration="60'" combat="20'"/></movement>
+      <armor_class>1</armor_class>
+      <hit_dice printed="4*" special_ability_markers="*"/>
+      <attacks>1 (envelopment)</attacks>
+      <damage>2d4 + see below</damage>
+      <save>F2</save>
+      <morale>N/A</morale>
+      <treasure_type>C</treasure_type>
+      <xp>135</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="envelopment">
+          <damage>2d4</damage>
+          <save type="Paralysis" on_success="avoid paralysis" on_failure="paralyzed for 2d4 turns"/>
+          <follow_up>Subsequent attacks against a paralyzed foe always hit.</follow_up>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <immunities>
+          <immunity>Immune to lightning-based attacks.</immunity>
+          <immunity>Immune to cold-based attacks.</immunity>
+        </immunities>
+        <special_defense>
+          <name>normal_damage_sources</name>
+          <effect>Takes normal damage from weapons and fire-based attacks.</effect>
+        </special_defense>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="translucence">
+        <effect>Characters suffer a -2 penalty to avoid being surprised by the cube.</effect>
+      </ability>
+      <ability name="cure_light_wounds_interaction">
+        <effect>Cure light wounds restores movement to a paralyzed character.</effect>
+        <exception>This use does not heal hit points with the same casting.</exception>
+      </ability>
+    </special_abilities>
+    <treasure_and_rewards>
+      <treasure_type>C</treasure_type>
+      <treasure_rules>
+        <rule>Any encounter with a gelatinous cube may yield treasure even though the creature has no lair.</rule>
+        <rule>If present, treasure floats inside its body with trapped bone, stone, and metal.</rule>
+      </treasure_rules>
+    </treasure_and_rewards>
+  </monster>
+
+  <monster>
+    <identity><name>Giant</name><variant_name>Hill</variant_name></identity>
+    <classification>
+      <monster_type>giant_humanoid</monster_type>
+      <alignment>Chaotic</alignment>
+      <size>12' tall; about 1,100lb</size>
+      <tags><tag>rock_thrower</tag></tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>25%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Gang" number="1d4"/><in_lair collective_noun="Lair" number="2d4"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Warband" number="2d4"/><in_lair collective_noun="Lair" number="2d4"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="8" special_ability_markers=""/>
+      <attacks>1 (weapon or rock)</attacks>
+      <damage>2d8</damage>
+      <save>F8</save>
+      <morale>0</morale>
+      <treasure_type>N</treasure_type>
+      <xp>600</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="rock_throw">
+          <damage>3d6</damage>
+          <limitations><limitation>Range 200'.</limitation></limitations>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+  </monster>
+
+  <monster>
+    <identity><name>Giant</name><variant_name>Stone</variant_name></identity>
+    <classification>
+      <monster_type>giant_humanoid</monster_type>
+      <alignment>Neutral</alignment>
+      <size>14' tall; about 1,500lb</size>
+      <tags><tag>rock_thrower</tag></tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>25%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Gang" number="1d2"/><in_lair collective_noun="Lair" number="1d6"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Warband" number="1d6"/><in_lair collective_noun="Lair" number="1d6"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="9" special_ability_markers=""/>
+      <attacks>1 (weapon or rock)</attacks>
+      <damage>3d6</damage>
+      <save>F9</save>
+      <morale>+1</morale>
+      <treasure_type>N</treasure_type>
+      <xp>700</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition><member role="guards" number="50% chance of 1d4 cave bears"/></lair_composition>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="rock_throw">
+          <damage>3d6</damage>
+          <limitations><limitation>Range 300'.</limitation></limitations>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+  </monster>
+
+  <monster>
+    <identity><name>Giant</name><variant_name>Frost</variant_name></identity>
+    <classification>
+      <monster_type>giant_humanoid</monster_type>
+      <alignment>Chaotic</alignment>
+      <size>18' tall; about 2,800lb</size>
+      <tags><tag>rock_thrower</tag><tag>cold_immunity</tag></tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>30%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Gang" number="1d2"/><in_lair collective_noun="Lair" number="1d4"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Warband" number="1d4"/><in_lair collective_noun="Lair" number="1d6"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="10" special_ability_markers=""/>
+      <attacks>1 (weapon or rock)</attacks>
+      <damage>4d6</damage>
+      <save>F10</save>
+      <morale>+1</morale>
+      <treasure_type>N</treasure_type>
+      <xp>850</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="guards" number="always present; 1-8 on 1d10: 6d6 dire wolves; 9-10 on 1d10: 3d6 polar bears"/>
+      </lair_composition>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="rock_throw">
+          <damage>3d6</damage>
+          <limitations><limitation>Range 200'.</limitation></limitations>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <immunities><immunity>Immune to cold, including white dragon breath.</immunity></immunities>
+      </defenses>
+    </combat_profile>
+  </monster>
+
+  <monster>
+    <identity><name>Giant</name><variant_name>Fire</variant_name></identity>
+    <classification>
+      <monster_type>giant_humanoid</monster_type>
+      <alignment>Chaotic</alignment>
+      <size>16' tall; about 3,200lb</size>
+      <tags><tag>rock_thrower</tag><tag>fire_immunity</tag></tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>35%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Gang" number="1d2"/><in_lair collective_noun="Lair" number="1d3"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Warband" number="1d3"/><in_lair collective_noun="Lair" number="1d3"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="11" special_ability_markers=""/>
+      <attacks>1 (weapon or rock)</attacks>
+      <damage>5d6</damage>
+      <save>F11</save>
+      <morale>+1</morale>
+      <treasure_type>N</treasure_type>
+      <xp>1,000</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="guards" number="always present; 1-8 on 1d10: 3d6 hellhounds; 9-10 on 1d10: 1d3 hydras"/>
+      </lair_composition>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="rock_throw">
+          <damage>3d6</damage>
+          <limitations><limitation>Range 200'.</limitation></limitations>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <immunities><immunity>Immune to fire-based attacks, including red dragon breath.</immunity></immunities>
+      </defenses>
+    </combat_profile>
+  </monster>
+
+  <monster>
+    <identity><name>Giant</name><variant_name>Cloud</variant_name></identity>
+    <classification>
+      <monster_type>giant_humanoid</monster_type>
+      <alignment>Neutral</alignment>
+      <size>20' tall; about 7,000lb</size>
+      <tags><tag>rock_thrower</tag><tag>surprise_bonus</tag><tag>mage_chance</tag></tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>40%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Gang" number="1d2"/><in_lair collective_noun="Lair" number="1d3"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Warband" number="1d3"/><in_lair collective_noun="Lair" number="1d3"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="12" special_ability_markers=""/>
+      <attacks>1 (weapon or rock)</attacks>
+      <damage>6d6</damage>
+      <save>F12</save>
+      <morale>+2</morale>
+      <treasure_type>N</treasure_type>
+      <xp>1,200</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="guards" number="if lair is on clouds: 3d6 giant hawks; if lair is in mountain castles: 6d6 dire wolves"/>
+      </lair_composition>
+      <terrain>
+        <primary>high mountain castles</primary>
+        <secondary>cloud castles made substantial by magic</secondary>
+      </terrain>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="rock_throw">
+          <damage>3d6</damage>
+          <limitations><limitation>Range 200'.</limitation></limitations>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities>
+      <ability name="keen_senses">
+        <effect>Gains +1 bonus to surprise rolls.</effect>
+      </ability>
+      <ability name="mage_ability">
+        <effect>5% of cloud giants have Mage abilities at level 2d4.</effect>
+      </ability>
+    </special_abilities>
+  </monster>
+
+  <monster>
+    <identity><name>Giant</name><variant_name>Storm</variant_name></identity>
+    <classification>
+      <monster_type>giant_humanoid</monster_type>
+      <alignment>Lawful</alignment>
+      <size>22' tall; 12,000lb</size>
+      <tags><tag>lightning_immunity</tag><tag>thunderstorm</tag><tag>mage_chance</tag></tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>45%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Solitary" number="1"/><in_lair collective_noun="Lair" number="1d3"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Warband" number="1d3"/><in_lair collective_noun="Lair" number="1d3"/></wilderness_encounter>
+      <movement><mode type="land" exploration="150'" combat="50'"/></movement>
+      <armor_class>7</armor_class>
+      <hit_dice printed="15" special_ability_markers=""/>
+      <attacks>1 (weapon or rock)</attacks>
+      <damage>8d6</damage>
+      <save>F15</save>
+      <morale>+2</morale>
+      <treasure_type>N, H</treasure_type>
+      <xp>1,800</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="guards" number="if living above water: 2d4 griffons; if underwater: 3d6 giant crabs"/>
+      </lair_composition>
+      <terrain>
+        <primary>60% cloud castles</primary>
+        <secondary>30% mountain castles; 10% underwater castles</secondary>
+      </terrain>
+    </encounter_profile>
+    <combat_profile>
+      <defenses>
+        <immunities><immunity>Immune to all forms of lightning, including blue dragon breath.</immunity></immunities>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="summon_thunderstorm">
+        <effect>Can summon a thunderstorm that arrives after 1 turn.</effect>
+      </ability>
+      <ability name="lightning_bolt">
+        <trigger>While a thunderstorm is present.</trigger>
+        <effect>May cast lightning bolt once every 5 rounds.</effect>
+        <save type="Blast" on_success="half damage" on_failure="15d6 damage"/>
+      </ability>
+      <ability name="mage_ability">
+        <effect>10% of storm giants have Mage abilities at level 2d6.</effect>
+      </ability>
+    </special_abilities>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Ghoul</name>
+    </identity>
+    <classification>
+      <monster_type>undead</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>paralysis</tag>
+        <tag>undead_creation</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>20%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Pack" number="1d6"/><in_lair collective_noun="Lair" number="2d8"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Horde" number="2d8"/><in_lair collective_noun="Lair" number="2d8"/></wilderness_encounter>
+      <movement><mode type="land" exploration="90'" combat="30'"/></movement>
+      <armor_class>3</armor_class>
+      <hit_dice printed="2*" special_ability_markers="*"/>
+      <attacks>3 (2 claws, bite)</attacks>
+      <damage>1d3/1d3/1d3 + see below</damage>
+      <save>F2</save>
+      <morale>+1</morale>
+      <treasure_type>D</treasure_type>
+      <xp>29</xp>
+    </stat_block>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="claws_or_bite">
+          <trigger>Any successful attack.</trigger>
+          <save type="Paralysis" on_success="avoid paralysis" on_failure="paralyzed for 2d4 turns"/>
+          <follow_up>Ghouls attempt to paralyze all members of a group so they can feed at leisure.</follow_up>
+        </attack_effect>
+      </attack_effects>
+      <targeting_constraints>
+        <constraint>Paralysis does not affect humanoids larger than ogres.</constraint>
+      </targeting_constraints>
+      <defenses>
+        <immunities>
+          <immunity>Immune to sleep, charm, and hold spells.</immunity>
+          <immunity>Immune to poison.</immunity>
+        </immunities>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="cure_light_wounds_interaction">
+        <effect>Cure light wounds cures ghoul paralysis.</effect>
+      </ability>
+      <ability name="elf_immunity">
+        <effect>Elves are immune to ghoul paralysis.</effect>
+      </ability>
+      <ability name="create_ghoul">
+        <trigger>If a human is slain by a ghoul.</trigger>
+        <effect>The slain human rises again in 24 hours as a ghoul.</effect>
+        <exception>Bless cast on the body prevents this.</exception>
+      </ability>
+    </special_abilities>
+    <references>
+      <general_rule_reference type="undead"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Gnoll</name>
+    </identity>
+    <classification>
+      <monster_type>beastman</monster_type>
+      <alignment>Chaotic</alignment>
+      <size>about 7 1/2' tall; about 300lb</size>
+      <tags>
+        <tag>organized_warbands</tag>
+        <tag>strength_bonus</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>20%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Gang" number="1d6"/>
+        <in_lair collective_noun="Lair" number="1 warband"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Warband" number="1d6 gangs"/>
+        <in_lair collective_noun="Village" number="1d10 warbands"/>
+      </wilderness_encounter>
+      <movement><mode type="land" exploration="90'" combat="30'"/></movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="2" special_ability_markers=""/>
+      <attacks>1 (weapon)</attacks>
+      <damage>2d4 or weapon +1</damage>
+      <save>F2</save>
+      <morale>0</morale>
+      <treasure_type>G (per warband)</treasure_type>
+      <xp>20</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="gang_leader" number="1 champion; AC 5, 3 HD, 16 hp, +2 damage"/>
+        <member role="warband_leader" number="1 sub-chieftain; AC 6, 4 HD, 20 hp, +2 damage"/>
+        <member role="village_or_lair_leader" number="1 chieftain; AC 7, 6 HD, 28 hp, +3 damage"/>
+        <member role="females" number="50% of males"/>
+        <member role="young" number="200% of males"/>
+        <member role="prisoners" number="1 per 10 gnolls in a village"/>
+        <member role="troll_guards" number="33% chance of 1d3"/>
+        <member role="trained_hyenas" number="66% chance of 4d4"/>
+        <member role="shaman" number="60% chance in village"/>
+        <member role="witch_doctor" number="50% chance in village"/>
+      </lair_composition>
+    </encounter_profile>
+    <combat_profile>
+      <morale_modifiers>
+        <modifier condition="chieftain alive" value="+1 to morale rolls"/>
+      </morale_modifiers>
+    </combat_profile>
+    <special_abilities>
+      <ability name="strength_damage_bonus">
+        <effect>Gnolls receive a +1 bonus to damage rolls due to high strength.</effect>
+      </ability>
+      <ability name="female_and_young_fighting_rules">
+        <effect>Female gnolls fight as orcs; young never fight and have 1 hit point each.</effect>
+      </ability>
+      <ability name="shaman">
+        <effect>Shaman is statistically equivalent to a sub-chieftain and has Clerical abilities at level 1d4+1.</effect>
+      </ability>
+      <ability name="witch_doctor">
+        <effect>Witch doctor is statistically equivalent to a champion and has Mage abilities at level 1d4.</effect>
+      </ability>
+    </special_abilities>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Gnome</name>
+    </identity>
+    <classification>
+      <monster_type>humanoid</monster_type>
+      <alignment>Neutral</alignment>
+      <size>3' to 3 1/2' tall</size>
+      <tags>
+        <tag>demi_human</tag>
+        <tag>infravision</tag>
+        <tag>organized_lair</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>50%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Squad" number="1d8"/><in_lair collective_noun="Redoubt" number="1 company"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Company" number="1d10 squads"/><in_lair collective_noun="Vault" number="1d10 companies"/></wilderness_encounter>
+      <movement><mode type="land" exploration="60'" combat="20'"/></movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="1" special_ability_markers=""/>
+      <attacks>1 (weapon)</attacks>
+      <damage>1d6 or weapon</damage>
+      <save>D1</save>
+      <morale>0</morale>
+      <treasure_type>D (per company)</treasure_type>
+      <xp>10</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="squad_leader" number="1 leader with 2 HD and 11 hp"/>
+        <member role="company_leader" number="1 sub-chieftain with 3 HD and 1d4+9 hp"/>
+        <member role="redoubt_or_vault_ruler" number="1 grand chief with 4 HD, 18 hp, and +1 damage"/>
+        <member role="bodyguards" number="in vaults, 1d6 bodyguards equivalent to a sub-chieftain"/>
+        <member role="adult_noncombatants" number="50% of able-bodied adults"/>
+        <member role="young" number="25% of able-bodied adults"/>
+      </lair_composition>
+    </encounter_profile>
+    <combat_profile>
+      <morale_modifiers>
+        <modifier condition="grand chief alive" value="+2"/>
+      </morale_modifiers>
+    </combat_profile>
+    <special_abilities>
+      <ability name="infravision">
+        <effect>Infravision 90'.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Gnomes particularly hate kobolds and dislike goblins.</rule>
+        <rule>Dwarves are treated as welcome relatives.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Goblin</name>
+    </identity>
+    <classification>
+      <monster_type>beastman</monster_type>
+      <alignment>Chaotic</alignment>
+      <size>3' to 3 1/2' tall</size>
+      <tags>
+        <tag>infravision</tag>
+        <tag>mounted</tag>
+        <tag>sunlight_penalty</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>40%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Gang" number="2d4"/><in_lair collective_noun="Lair" number="1 warband"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Warband" number="2d6 gangs"/><in_lair collective_noun="Village" number="1d10 warbands"/></wilderness_encounter>
+      <movement><mode type="land" exploration="60'" combat="20'"/></movement>
+      <armor_class>3</armor_class>
+      <hit_dice printed="1 - 1" special_ability_markers=""/>
+      <attacks>1 (weapon)</attacks>
+      <damage>1d6 or weapon</damage>
+      <save>0 level human</save>
+      <morale>-1</morale>
+      <treasure_type>E (per warband)</treasure_type>
+      <xp>5</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="gang_leader" number="1 champion; AC 4, 1 HD, 7 hp"/>
+        <member role="warband_leader" number="1 sub-chieftain; AC 5, 1+1 HD, 9 hp, +1 damage"/>
+        <member role="lair_or_village_leader" number="1 chieftain; AC 6, 3 HD, 16 hp, +2 damage"/>
+        <member role="females" number="60% of males"/>
+        <member role="young" number="100% of males"/>
+        <member role="dire_wolf_guards" number="60% chance of 5d6 in a village"/>
+        <member role="bugbear_mercenaries" number="20% chance of 2d6 in a village"/>
+        <member role="shaman" number="75% chance in village"/>
+        <member role="witch_doctor" number="50% chance in village"/>
+      </lair_composition>
+    </encounter_profile>
+    <combat_profile>
+      <morale_modifiers>
+        <modifier condition="chieftain alive" value="+2 to morale rolls"/>
+      </morale_modifiers>
+    </combat_profile>
+    <special_abilities>
+      <ability name="sunlight_penalty">
+        <effect>Suffers a -1 penalty to all attack throws in full sunlight.</effect>
+      </ability>
+      <ability name="infravision">
+        <effect>Infravision 90'.</effect>
+      </ability>
+      <ability name="female_and_young_fighting_rules">
+        <effect>Females and young do not fight.</effect>
+      </ability>
+      <ability name="mounted_goblins">
+        <effect>Goblins sometimes use dire wolves as mounts.</effect>
+        <notes>Each gang has a 5% chance to be mounted. Each warband has a 20% chance to have 1/4 of its gangs mounted. If a gang is mounted, its champion is mounted. If any gangs within a warband are mounted, the sub-chieftain is mounted. If any warbands within a lair or village are mounted, the chieftain is mounted.</notes>
+      </ability>
+      <ability name="shaman">
+        <effect>Shaman is statistically equivalent to a sub-chieftain and has Clerical abilities at level 2d4.</effect>
+      </ability>
+      <ability name="witch_doctor">
+        <effect>Witch doctor is statistically equivalent to a champion and has Mage abilities at level 1d6.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Goblins hate dwarves above all other humanoids and also dislike gnomes.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+  </monster>
+</monster_catalog>

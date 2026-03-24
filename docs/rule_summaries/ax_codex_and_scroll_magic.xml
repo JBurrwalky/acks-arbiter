@@ -1,0 +1,583 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<acks_summary>
+  <source_title>132-Axioms-Codex and Scroll Parts 1 - 3</source_title>
+  <document_type>rules_summary</document_type>
+  <section name="Books">
+    <subsection name="Characteristics">
+      <rule name="Format">A book is organized as a codex, scroll roll, or tablet. A codex is stitched pages between covers; a typical codex is 12-13 inches tall, 9-10 inches wide, and about 1 inch thick per 100 pages excluding cover or 1.5 inches including cover. A scroll roll is stitched pages wrapped around one or two handles and stored in a case, box, or jar; a typical roll is 12-13 inches tall and 10-12 feet long, with about 20 sheets around 8 inches wide. A tablet is engraved metal or clay; a typical tablet is 12 inches by 6 inches by 1/16 inch and counts as 1 page. Any book may be divided into multiple volumes.</rule>
+      <rule name="Language">A book is written in a language. A character must know the language to read it.</rule>
+      <rule name="Topic">A book’s contents are expressed as one or more topical proficiencies. Topics may include sub-specializations.</rule>
+      <rule name="Scope">Scope is the sum of ranks of all topical proficiencies. A sub-specialization counts as 0.5 rank.</rule>
+      <rule name="Complexity">Complexity measures difficulty of comprehension. It ranges from 0.25 to 6 in the main rules text, and random generation can produce complexity 7.</rule>
+      <formula name="Length">Length in pages = (scope × 1000) / complexity.</formula>
+      <formula name="Reading_and_Reference_Time">Base reading time in days of major activity and base reference time in turns = pages / 180, rounded to the nearest whole number, with 0.5 rounded up.</formula>
+      <rule name="Price_Baselines">Typical market baselines: a 100-page codex ranges from 20gp to 1,000gp or more; a 20-page scroll roll ranges from 4gp to 250gp or more; clay and stone tablets cost 5sp to 1gp each.</rule>
+      <rule name="Weight_Baselines">A typical 100-page codex weighs 0.5 stone. A typical 20-page scroll roll weighs 1/6 stone. 15 clay tablets or 12 stone tablets weigh 1 stone.</rule>
+    </subsection>
+    <subsection name="Using_Books">
+      <rule name="Reading_Comprehension">Reading comprehension for a book = INT bonus + ranks in the topical proficiency. If the book has multiple topical proficiencies, use the lowest relevant rank.</rule>
+      <table name="Reading_Effects">
+        <row comparison="reading comprehension &gt; complexity × 4" effect="read in 25% of base time"/>
+        <row comparison="reading comprehension &gt; complexity × 3" effect="read in 33% of base time"/>
+        <row comparison="reading comprehension &gt; complexity × 2" effect="read in 50% of base time"/>
+        <row comparison="reading comprehension ≥ complexity" effect="read in base time"/>
+        <row comparison="reading comprehension &lt; complexity" effect="read in double base time"/>
+        <row comparison="reading comprehension ≤ complexity - 1" effect="cannot be fruitfully read"/>
+      </table>
+      <rule name="Referencing">After a character has read a book, he can reference it. Reference time uses the same reading-comprehension modifiers as reading time.</rule>
+      <rule name="Reference_Benefit">When referencing, the character may make a proficiency throw as though he had gained 1 rank in one topical proficiency, to a maximum effective rank limited by the book’s scope. A character may also reference a book after a failed throw or after referencing another book to gain a re-roll even if the book cannot increase rank, but may not reference the same book twice on the same throw. A book with a sub-specialized topic only applies to throws related to that sub-specialization.</rule>
+      <rule name="Working_From_Books">After reading a book, a character may work from it if its topic is an Art, Craft, Labor, or another proficiency that grants a construction rate. Working from a book lets the character perform related activities at 2sp per day.</rule>
+      <rule name="Learning_From_Books">Reading can fill the four implicit general proficiency slots described in Axioms 6. Required cumulative study time on a topic: 60 days for the first rank; 240 days for the second rank or first rank of a second topical proficiency; 540 days for the third rank or first rank of a third topical proficiency; 960 days for the fourth rank or first rank of a fourth topical proficiency. Total time to gain four ranks is 1,800 days. Training may be combined with reading, but total proficiencies gained this way cannot exceed four.</rule>
+      <rule name="Overcomplicated_Books">If a book’s complexity exceeds the character’s reading comprehension, he cannot learn from it. Time spent reading does not count toward book learning.</rule>
+      <rule name="Limit_on_Repeated_Reading">For book learning, a book of complexity 1 or less can only be counted once. A book of complexity 2 or more can be counted multiple times, up to a maximum number of readings equal to its complexity.</rule>
+      <rule name="Fast_Readers">A character who could read a book faster may instead read it more slowly and still count the full value toward learning.</rule>
+      <rule name="Retraining">Retraining a class or general proficiency into another proficiency of the same type takes 120 days of major activity and requires a tutor or books with the appropriate topical proficiency rank. Re-learning a previously known proficiency takes 60 days of study.</rule>
+    </subsection>
+    <subsection name="Writing_Copying_and_Translating">
+      <rule name="Writing_Books">Any character with INT 9 or higher and at least 1 rank in a topic may write a book on that topic. Writing is a major activity at 1 page per day. The book’s topical ranks cannot exceed the writer’s ranks. The book’s complexity cannot exceed the writer’s reading comprehension for the topic. The writer must still pay material costs.</rule>
+      <rule name="Copying_Books">A literate character copies an existing book at 1 page per day, plus 1 additional page per day per rank in Art (calligraphy) or Craft (scribing).</rule>
+      <rule name="Translating_Books">A character translates a book at 1 page per day.</rule>
+    </subsection>
+    <subsection name="Hiring_Specialists">
+      <rule name="Specialist_Use">Characters may hire specialists to write, copy, or translate books. A writer’s rank in each topical proficiency must meet or exceed the book’s corresponding rank.</rule>
+      <rule name="Gifted_Writer_Surcharge">For writing cost, subtract scope from complexity. If the result is at least 1, increase cost per page by 25%. If at least 2, increase by 100%. If at least 3, increase by 400%.</rule>
+      <table name="Specialist_Costs_Per_Page">
+        <row service="writer_rank_1" cost="1gp"/>
+        <row service="writer_rank_2" cost="2gp"/>
+        <row service="writer_rank_3" cost="4gp"/>
+        <row service="writer_rank_4" cost="10gp"/>
+        <row service="copyist" cost="2sp"/>
+        <row service="translator" cost="1gp"/>
+      </table>
+    </subsection>
+    <subsection name="Production">
+      <rule name="Production_Simplified">A finished book costs at least 3sp per page, or 2sp per blank page, and can cost more as desired.</rule>
+      <table name="Page_Materials">
+        <row material="papyrus_coarse_0.01_in" cost_per_page="1cp" weight_per_page="0.06 lbs" lifespan="10 years" formats="scroll roll"/>
+        <row material="papyrus_ordinary_0.01_in" cost_per_page="2cp" weight_per_page="0.06 lbs" lifespan="30 years" formats="scroll roll"/>
+        <row material="papyrus_fine_0.01_in" cost_per_page="3cp" weight_per_page="0.06 lbs" lifespan="50 years" formats="scroll roll"/>
+        <row material="parchment_coarse_0.01_in" cost_per_page="4cp" weight_per_page="0.06 lbs" lifespan="100 years" formats="codex or scroll roll"/>
+        <row material="parchment_ordinary_0.01_in" cost_per_page="6cp" weight_per_page="0.06 lbs" lifespan="500 years" formats="codex or scroll roll"/>
+        <row material="vellum_fine_parchment_0.01_in" cost_per_page="8cp" weight_per_page="0.06 lbs" lifespan="1,000 years" formats="codex or scroll roll"/>
+        <row material="copper_foil_0.005_in" cost_per_page="12cp" weight_per_page="0.12 lbs" lifespan="indefinite" formats="codex or tablet"/>
+        <row material="silver_foil_0.005_in" cost_per_page="15sp" weight_per_page="0.15 lbs" lifespan="indefinite" formats="codex or tablet"/>
+        <row material="gold_foil_0.005_in" cost_per_page="30gp" weight_per_page="0.30 lbs" lifespan="indefinite" formats="codex or tablet"/>
+        <row material="clay_tablet_0.125_in" cost_per_page="5sp" weight_per_page="0.75 lbs" lifespan="indefinite" formats="tablet"/>
+        <row material="stone_tablet_0.125_in" cost_per_page="1gp" weight_per_page="1 lb" lifespan="indefinite" formats="tablet"/>
+      </table>
+      <rule name="Environmental_Durability">Papyrus and parchment can last indefinitely if kept warm and dry. Lifespan mainly matters for long-term campaign world placement.</rule>
+      <formula name="Exotic_Parchment_Yield">A creature yields 1 page of hide per 20 lbs of weight.</formula>
+      <formula name="Exotic_Parchment_Cost">Cost per page = (creature value × 2) / creature weight.</formula>
+      <rule name="Codex_Limits">A codex can hold up to 750 pages. Longer books must be divided into multiple volumes. Codices use parchment or metal foil. Leather or cloth bound codices become difficult to read after 10 years because of warping; base reading time doubles.</rule>
+      <table name="Codex_Components">
+        <row component="cover_leather_or_cloth" cost="1sp+" weight="0.5 lbs" note="reading time doubles after 10 years"/>
+        <row component="cover_wood_0.25_in" cost="1sp+" weight="1.5 lbs" note=""/>
+        <row component="cover_wood_0.25_in_leather_wrapped" cost="2sp+" weight="1.5 lbs" note=""/>
+        <row component="cover_treasure_bound" cost="1gp+" weight="2 lbs" note="gold, ivory, etc."/>
+        <row component="clasp_brass_or_bronze" cost="5cp+" weight="N/A" note=""/>
+        <row component="clasp_silver" cost="5sp+" weight="N/A" note=""/>
+        <row component="clasp_gold" cost="5gp+" weight="N/A" note=""/>
+        <row component="straps_leather" cost="1cp+" weight="N/A" note=""/>
+        <row component="straps_silk" cost="1sp+" weight="N/A" note=""/>
+      </table>
+      <rule name="Scroll_Roll_Limits">A scroll roll can hold up to 125 pages with 1 handle or 250 pages with 2 handles. Longer books must be split into multiple volumes.</rule>
+      <table name="Scroll_Roll_Components">
+        <row component="wood_handle" cost="2cp+" weight="0.25 lbs" note="1 handle per 125 pages"/>
+        <row component="bone_handle" cost="1sp+" weight="0.75 lbs" note="1 handle per 125 pages"/>
+        <row component="ivory_handle" cost="5gp+" weight="0.75 lbs" note="1 handle per 125 pages"/>
+        <row component="brass_or_bronze_handle" cost="1sp+" weight="3 lbs" note="1 handle per 125 pages"/>
+        <row component="silver_handle" cost="1gp+" weight="4 lbs" note="1 handle per 125 pages"/>
+        <row component="gold_handle" cost="10gp+" weight="7 lbs" note="1 handle per 125 pages"/>
+        <row component="leather_scroll_case" cost="1sp+" weight="0.25 lbs" note="1 case per volume"/>
+        <row component="wooden_scroll_box" cost="1gp+" weight="2 lbs" note="1 box per 9 volumes"/>
+        <row component="clay_scroll_jar" cost="1sp+" weight="3 lbs" note="1 jar per 9 volumes"/>
+        <row component="porcelain_scroll_jar" cost="1gp+" weight="2 lbs" note="1 jar per 9 volumes"/>
+      </table>
+      <table name="Scribing_Illuminating_and_Binding">
+        <row service="book_scribing" cost="2sp/page" time="1 day per 3 pages"/>
+        <row service="book_illuminating" cost="1sp/page" time="1 day per 6 pages"/>
+        <row service="codex_binding" cost="1cp/page" time="1 day per 32 pages; simplified to 1 day per 100 pages"/>
+      </table>
+      <rule name="Shoddy_Workmanship">If a book was not professionally illuminated, other readers take double base reading time. If it was neither professionally scribed nor illuminated, other readers take triple base reading time.</rule>
+    </subsection>
+    <subsection name="Valuation">
+      <procedure name="Book_Market_Value">
+        <step order="1">Calculate base literary value from writing cost using the writing rules and hiring-specialist costs.</step>
+        <step order="2">Apply rarity modifier based on number of copies extant to get modified literary value.</step>
+        <step order="3">Calculate production value from physical production rules.</step>
+        <step order="4">Market value = modified literary value + production value.</step>
+      </procedure>
+      <table name="Rarity_Modifier">
+        <row copies_extant="1" modifier="100%"/>
+        <row copies_extant="2-5" modifier="50%"/>
+        <row copies_extant="6-25" modifier="33%"/>
+        <row copies_extant="26-50" modifier="25%"/>
+        <row copies_extant="51-100" modifier="10%"/>
+        <row copies_extant="101-250" modifier="5%"/>
+        <row copies_extant="251-500" modifier="2%"/>
+        <row copies_extant="501-1000" modifier="1%"/>
+        <row copies_extant="1000_or_more" modifier="0%"/>
+      </table>
+    </subsection>
+  </section>
+  <section name="Collections_and_Libraries">
+    <subsection name="Values_and_Use">
+      <rule name="Collection_and_Library_Research_Value">A collection is one or more books. A library is one or more collections. Research value of a collection is the sum of market values of its books. Research value of a library is the sum of research values of its collections.</rule>
+      <rule name="Shared_Use">If a collection or library is shared, each user’s research value is the total research value divided by the number of characters actively using it, rounded down.</rule>
+      <rule name="Segmented_Collections">If a library is segmented into collections with different access levels, calculate each collection’s research value separately based on its active users, then sum the values of collections a given user can access.</rule>
+    </subsection>
+    <subsection name="Dimensions_and_Capacity">
+      <table name="Library_Dimension_Guidelines">
+        <row library_type="classical_scroll_library" volume_requirement="1 cubic foot per 130gp or per 0.864 scrolls"/>
+        <row library_type="medieval_codex_library" volume_requirement="1 cubic foot per 180gp or per 1.2 codices"/>
+        <row library_type="mixed_library" volume_requirement="1 cubic foot per 150gp or per 1 book"/>
+      </table>
+      <formula name="Circulation_Capacity">Circulation capacity = research value / 1,500gp.</formula>
+      <formula name="Seating_Capacity_Default">If no dedicated reading space exists, seating capacity = 1 + (library volume / 1,500 cubic feet), rounded down.</formula>
+      <formula name="Dedicated_Reading_Room_Seating">A dedicated reading room adds 1 seat per 350 cubic feet.</formula>
+      <rule name="Collection_Capacity">Collections within a library can be allocated capacity separately.</rule>
+    </subsection>
+    <subsection name="Access_and_Maintenance">
+      <formula name="Monthly_Access_Fee">Monthly fee = user research value / 400.</formula>
+      <formula name="Daily_Access_Fee">Daily fee = user research value / 8,000.</formula>
+      <rule name="Collection_Based_Fees">Access fees can be segmented by collection.</rule>
+      <rule name="Librarian_Requirement">A library with value 60,000gp requires a librarian.</rule>
+    </subsection>
+    <subsection name="Spell_Research_in_Libraries">
+      <rule name="Minimum_Research_Value">Minimum library research value to research 1st-level spells is 4,000gp. Add 2,000gp for each spell level after 1st.</rule>
+      <rule name="Library_Bonus_To_Research">For each full 10,000gp of research value above the minimum required for the spell, the researcher gains +1 on the magic research throw, to a maximum of +3.</rule>
+      <rule name="Library_Growth_From_Research">Each time a character successfully researches a spell, add 10% of the gold spent on that effect to his library’s research value as notes and annotations. These may remain private or be added to a shared collection.</rule>
+    </subsection>
+    <subsection name="Volumes_and_Incomplete_Books">
+      <rule name="Completeness">If a book is missing pages or volumes, completeness = available pages or volumes / total pages or volumes.</rule>
+      <rule name="Effects_of_Incompleteness">Multiply reading time and scope by completeness. Round fractions down to the nearest 0.5. If the book has one topical proficiency, reduced scope reduces its rank; at the Judge’s discretion, reduced ranks can become sub-specializations. If the book has multiple topical proficiencies, the Judge allocates the reduced scope among them. At least one topical proficiency should lose at least 1 rank if the book is missing volumes.</rule>
+      <rule name="Volume_Value_Default">Usually, the market value of one volume = total book market value / number of volumes.</rule>
+      <rule name="Volume_Value_Mixed_Rarity">If some volumes are common and some rare, calculate market value twice: once using rarity of common volumes and once using rarity of rare volumes. Value per common volume = common market value / total volumes. Value per rare volume = (rare market value - total value of all common volumes) / number of rare volumes. Complete-book market value is based on the rarest volume when using this method.</rule>
+    </subsection>
+  </section>
+  <section name="Esoteric_Books">
+    <subsection name="Definition_and_Characteristics">
+      <rule name="Definition">An esoteric book has a surface meaning for ordinary readers and a hidden meaning that only sufficiently intelligent and prepared readers can recognize and comprehend.</rule>
+      <rule name="Dual_Topics">An esoteric book has apparent topics and esoteric topics. Each has its own scope and complexity.</rule>
+      <formula name="Apparent_to_Esoteric_Ratio">Apparent scope / apparent complexity must be equal to or greater than esoteric scope / esoteric complexity.</formula>
+      <rule name="Length_and_Time">Length and reading time are based only on apparent scope and apparent complexity. Esoteric content does not add pages or base reading time.</rule>
+    </subsection>
+    <subsection name="Using_Esoteric_Books">
+      <table name="Apparent_Reading_Effects">
+        <row comparison="reading comprehension ≥ apparent complexity × 4" effect="apparent book can be read in 25% of base time"/>
+        <row comparison="reading comprehension ≥ apparent complexity × 3" effect="apparent book can be read in 33% of base time"/>
+        <row comparison="reading comprehension ≥ apparent complexity × 2" effect="apparent book can be read in 50% of base time"/>
+        <row comparison="reading comprehension ≥ apparent complexity" effect="apparent book can be read in base time"/>
+        <row comparison="reading comprehension &lt; apparent complexity" effect="apparent book can be read in double base time"/>
+        <row comparison="reading comprehension ≤ apparent complexity - 1" effect="apparent book cannot be fruitfully read"/>
+      </table>
+      <rule name="Secret_Esoteric_Check">When a character begins reading an esoteric book, the Judge secretly calculates esoteric reading comprehension using INT bonus and ranks in the esoteric topic.</rule>
+      <table name="Esoteric_Reading_Effects">
+        <row comparison="reading comprehension ≥ esoteric complexity × 2" effect="esoteric topic is noticed and can be read in base time"/>
+        <row comparison="reading comprehension ≥ esoteric complexity" effect="esoteric topic is noticed and can be read in double base time"/>
+        <row comparison="reading comprehension &lt; esoteric complexity" effect="esoteric topic is noticed but cannot be fruitfully read"/>
+        <row comparison="reading comprehension ≤ esoteric complexity - 2" effect="esoteric topic is unnoticed"/>
+      </table>
+      <rule name="Separate_Readings">The apparent topic and esoteric topic must be read separately.</rule>
+      <rule name="Reputation">Even if unable to comprehend the esoteric topic, a character may identify that a specific book on a specific topic is known to be esoteric with an appropriate Loremastery, Art, Knowledge, Craft, or similar proficiency throw.</rule>
+    </subsection>
+    <subsection name="Writing_Copying_and_Valuation">
+      <rule name="Writing_Esoteric_Books">Writing an esoteric book requires INT 18. Apparent and esoteric topic ranks cannot exceed the writer’s ranks. Apparent and esoteric complexities cannot exceed the writer’s corresponding reading comprehensions. Writing proceeds at 1 page per day.</rule>
+      <table name="Esoteric_Literary_Value_Per_Page">
+        <row proficiency_rank="1" apparent_value_per_page="1gp" esoteric_value_per_page="5gp"/>
+        <row proficiency_rank="2" apparent_value_per_page="2gp" esoteric_value_per_page="10gp"/>
+        <row proficiency_rank="3" apparent_value_per_page="4gp" esoteric_value_per_page="20gp"/>
+        <row proficiency_rank="4" apparent_value_per_page="10gp" esoteric_value_per_page="50gp"/>
+      </table>
+      <rule name="Copying_Esoteric_Books">Any literate character can copy an esoteric book using the normal copying rate.</rule>
+      <rule name="Translating_Esoteric_Books">An esoteric book can be translated at 1 page per day, but translation strips the esoteric topic unless the translator himself would qualify to write that esoteric book.</rule>
+      <rule name="Valuing_Esoteric_Books">Literary value = apparent literary value + esoteric literary value. Apparent literary value is calculated normally. Esoteric literary value is calculated using the writer’s INT 18. Literary value is modified by rarity as usual. Production value is calculated normally.</rule>
+      <rule name="Appraisal_Limit">A character can correctly appraise an esoteric book’s full literary value only if he can comprehend the esoteric topic.</rule>
+      <rule name="Non_Esoteric_Translations">When valuing esoteric versions, do not count non-esoteric translations among the copies extant of the esoteric version.</rule>
+    </subsection>
+  </section>
+  <section name="Authorities">
+    <subsection name="Definition_and_Characteristics">
+      <rule name="Definition">An authority is a canonical book for a proficiency or a magical research field. It is definitive for that field, though it may still be misunderstood, misinterpreted, misapplied, or incomplete.</rule>
+      <rule name="Authority_Stats">An authority has all characteristics of an ordinary or esoteric book, plus an authoritative field and a rank from +1 to +3.</rule>
+      <rule name="Possible_Fields">Authoritative fields may be a proficiency, spell type, spell element, ritual spell, magic item, or a research type such as automatons, constructs, crossbreeding, or necromancy.</rule>
+      <rule name="Authority_Requirements">To qualify as an authority for a field, a book must include the required topics for that field. Scope across required topics must be at least 3. Complexity must be at least 2 + authority rank.</rule>
+      <table name="Authority_Required_Topics">
+        <row field="any_general_proficiency" required_topics="that proficiency at rank 3"/>
+        <row field="Black_Lore_of_Zahar" required_topics="Black Lore plus any two of Loremastery, Knowledge (occult), and/or Sensing Evil"/>
+        <row field="Loremastery" required_topics="Loremastery plus any two Knowledge proficiencies"/>
+        <row field="Magical_Engineering" required_topics="Magical Engineering 3"/>
+        <row field="blast_spells" required_topics="Battle Magic, Elementalism, and Military Strategy"/>
+        <row field="death_and_necromancy_spells" required_topics="Black Lore plus any two of Loremastery, Knowledge (occult), and/or Sensing Evil"/>
+        <row field="detection_spells" required_topics="any three of Prophecy, Second Sight, Soothsaying, Sense Evil, Sense Power"/>
+        <row field="elemental_air_spells" required_topics="Elementalism (air) plus Battle Magic and Navigation or Knowledge (astronomy)"/>
+        <row field="elemental_earth_spells" required_topics="Elementalism (earth) plus Battle Magic and Engineering or Naturalism"/>
+        <row field="elemental_fire_spells" required_topics="Elementalism (fire) plus Battle Magic and Alchemy"/>
+        <row field="elemental_water_spells" required_topics="Elementalism (water) plus Battle Magic and Seamanship"/>
+        <row field="enchantment_spells" required_topics="Mastery of Charms and Illusions, Mystic Aura, and Diplomacy or Intimidation or Seduction"/>
+        <row field="illusion_spells" required_topics="Mastery of Charms and Illusions plus any two of Illusion Resistance, Loremastery, Second Sight"/>
+        <row field="healing_spells" required_topics="Healing 3"/>
+        <row field="movement_spells" required_topics="any three of Climbing, Riding, Running, Seamanship"/>
+        <row field="protection_spells" required_topics="any three of Battle Magic, Bright Lore, Military Strategy, Theology"/>
+        <row field="summoning_spells" required_topics="Black Lore or Bright Lore plus any two of Beast Friendship, Elementalism, or Loremastery"/>
+        <row field="transformation_spells" required_topics="Transmogrification plus any two of Alchemy, Animal Husbandry, or Healing"/>
+        <row field="crossbreeding" required_topics="Transmogrification plus any two of Alchemy, Animal Husbandry, or Healing"/>
+        <row field="necromancy" required_topics="Black Lore plus any two of Alchemy, Knowledge (occult), or Ceremonial Magic"/>
+      </table>
+      <rule name="Esoteric_Authorities">If an authority is esoteric, the esoteric topic, not the apparent topic, must satisfy the authority requirements. The apparent scope and complexity may be anything so long as apparent scope / apparent complexity equals or exceeds esoteric scope / esoteric complexity.</rule>
+    </subsection>
+    <subsection name="Using_Authorities">
+      <rule name="Reading_Authorities">A character must first read an authority; if it is esoteric, he must read it esoterically.</rule>
+      <rule name="Authority_Bonus">After it has been read, the authority can be used normally, and while it is available to the character he adds the authority’s rank to throws related to the authority’s field. Availability means the authority is on his person or exclusively available to him in a library he is physically within.</rule>
+      <rule name="Construction_Authorities">If the authority concerns a craft or other construction skill, it increases construction rate by 10% per authority rank.</rule>
+    </subsection>
+    <subsection name="Writing_Copying_and_Valuation">
+      <rule name="Writing_Authorities_General">To write an authority, a character must possess the appropriate ranks in all required proficiencies.</rule>
+      <rule name="Writing_Authorities_Proficiency_Field">If the field is a proficiency, the writer must have the maximum possible rank in that proficiency, or if it is a proficiency that can only be taken once, at least 4 total ranks in related proficiencies. If the field is a class proficiency, the writer must be at least 11th level in that class, or at least that class’s maximum level if lower.</rule>
+      <rule name="Writing_Authorities_Spell_Field">If the field is a spell type or spell element, the writer must have successfully researched at least 6 spells of that type or element with total base cost of at least 21,000gp.</rule>
+      <rule name="Writing_Authorities_Ritual_or_Item_Field">If the field is a ritual spell or magic item creation, the writer must be at least 11th level, must have successfully performed or created that exact ritual or item, and must also have successfully performed or created at least 6 other rituals or items of a similar type with total base cost of at least 21,000gp.</rule>
+      <rule name="Writing_Authorities_Project_Field">If the field is automatons, constructs, crossbreeding, or necromancy, the writer must be at least 11th level and must have successfully completed the project at least 6 times with total base cost of at least 21,000gp.</rule>
+      <rule name="Writing_Authorities_INT">INT 13 is required to write an authority +2. INT 16 is required to write an authority +3.</rule>
+      <rule name="Authority_Writing_Time">Authority writing time adds extra time to normal book writing time.</rule>
+      <table name="Additional_Authority_Writing_Time">
+        <row writer_INT="9-12" rank_plus_1="500 days" rank_plus_2="not allowed" rank_plus_3="not allowed"/>
+        <row writer_INT="13-15" rank_plus_1="400 days" rank_plus_2="800 days" rank_plus_3="not allowed"/>
+        <row writer_INT="16-17" rank_plus_1="250 days" rank_plus_2="500 days" rank_plus_3="750 days"/>
+        <row writer_INT="18" rank_plus_1="100 days" rank_plus_2="200 days" rank_plus_3="300 days"/>
+      </table>
+      <formula name="Authority_Writing_Time_Alternate">Additional time may instead be calculated as (5,000gp × rank) / writing cost.</formula>
+      <rule name="Copying_or_Translating_Authorities">An authority may be copied or translated at 1 page per day, but the copy or translation loses authority rank unless the copyist or translator himself would qualify to write the authority.</rule>
+      <formula name="Authority_Market_Value">Market value = 50gp per page + 5,000gp per authority rank + production value.</formula>
+      <rule name="Authority_Rarity">Authority market value does not decrease with rarity.</rule>
+      <rule name="Unauthoritative_Copy_Value">An unauthoritative copy is valued using modified literary value from its topic plus production value, with rarity applied normally.</rule>
+    </subsection>
+  </section>
+  <section name="Spell_Formulae">
+    <subsection name="Spell_Books_and_Formula_Values">
+      <rule name="Spell_Book_Value">A spell book’s value is based on its production value plus its literary value. If a book contains only spell formulae, both values are determined by the total value of the formulae. If a non-spell book includes spell formulae, add the value of each formula to the value of the book.</rule>
+      <table name="Spell_Formula_Values">
+        <row level="1" standard_value="50gp" custom_value="2,000gp"/>
+        <row level="2" standard_value="100gp" custom_value="3,500gp"/>
+        <row level="3" standard_value="200gp" custom_value="4,500gp"/>
+        <row level="4" standard_value="500gp" custom_value="5,500gp"/>
+        <row level="5" standard_value="1,500gp" custom_value="6,100gp"/>
+        <row level="6" standard_value="3,500gp" custom_value="7,000gp"/>
+        <row level="7" standard_value="5,500gp" custom_value="8,100gp"/>
+        <row level="8" standard_value="7,500gp" custom_value="10,000gp"/>
+        <row level="9" standard_value="11,000gp" custom_value="11,000gp"/>
+      </table>
+    </subsection>
+    <subsection name="Production_and_Literary_Value_Calculations">
+      <rule name="Blank_Spellbook_Assumptions">A blank spell book has 100 pages of fine parchment and costs 20gp. For codices, the assumed average cover, clasp, and strap cost also totals 20gp. For scroll rolls, the assumed average handles and box total 20gp. Average blank-page cost is therefore 2sp per page and counts toward production value.</rule>
+      <rule name="Formula_Page_Use">Each spell formula takes 1 page per spell level.</rule>
+      <rule name="Formula_Inscription_Cost">Inscribing a spell formula costs 50gp per page in rare inks, pigments, quills, and associated losses. This is in addition to the blank-page cost.</rule>
+      <rule name="Formula_Literary_Value_Basis">Literary value is based on spell level and the opportunity cost of researching the spell, modified by rarity, then combined with production cost. The default assumptions are that there are 24 spells per level, spellcasters average INT 13, and decay roughly matches creation.</rule>
+      <table name="Recommended_Spell_Formula_Values_Derivation">
+        <row metric="total_copies_of_each_individual_spell_formula" level_1="24736" level_2="3533" level_3="694" level_4="122" level_5="20" level_6="4" level_7="3" level_8="3" level_9="3"/>
+        <row metric="rarity_modifier" level_1="0%" level_2="0%" level_3="1%" level_4="5%" level_5="25%" level_6="50%" level_7="65%" level_8="75%" level_9="100%"/>
+        <row metric="base_cost_of_spell_research" level_1="1,818gp" level_2="3,333gp" level_3="4,286gp" level_4="5,333gp" level_5="5,882gp" level_6="6,667gp" level_7="7,778gp" level_8="9,412gp" level_9="10,588gp"/>
+        <row metric="modified_cost_of_spell_research" level_1="0gp" level_2="0gp" level_3="43gp" level_4="266gp" level_5="1,470gp" level_6="3,333gp" level_7="5,133gp" level_8="7,060gp" level_9="10,588gp"/>
+        <row metric="production_cost" level_1="50.2gp" level_2="100.4gp" level_3="150.6gp" level_4="200.6gp" level_5="251gp" level_6="301.2gp" level_7="351.4gp" level_8="401.6gp" level_9="451.8gp"/>
+        <row metric="calculated_value" level_1="50.2gp" level_2="100.4gp" level_3="193.6gp" level_4="466gp" level_5="1,721gp" level_6="3,634gp" level_7="5,483gp" level_8="7,460gp" level_9="11,039gp"/>
+        <row metric="recommended_value" level_1="50gp" level_2="100gp" level_3="200gp" level_4="500gp" level_5="1,500gp" level_6="3,500gp" level_7="5,500gp" level_8="7,500gp" level_9="11,000gp"/>
+        <row metric="recommended_custom_value" level_1="2,000gp" level_2="3,500gp" level_3="4,500gp" level_4="5,500gp" level_5="6,100gp" level_6="7,000gp" level_7="8,100gp" level_8="10,000gp" level_9="11,000gp"/>
+      </table>
+      <rule name="Adjusting_Assumptions">If campaign assumptions differ, adjust spell-formula values by changing spellcaster population, formula rarity, research cost assumptions, or the per-page production cost.</rule>
+      <rule name="Ritual_Spells_From_Formulae">Under these rules, ritual spells may be learned from spell formulae.</rule>
+    </subsection>
+  </section>
+  <section name="Research_Formulae">
+    <rule name="Research_Formula_Books">Books may contain research formulae useful for magic research. Their value is based on production value plus literary value. If a book contains only research formulae, both values are determined by the total value of the formulae. If another book includes one or more research formulae, add each research formula’s value to the book’s value.</rule>
+    <table name="Research_Formula_Value_By_Item_Base_Cost">
+      <row item_base_cost="100gp_or_less" formula_value="5% of item value"/>
+      <row item_base_cost="101gp_to_1,000gp" formula_value="10% of item value"/>
+      <row item_base_cost="1,001gp_to_10,000gp" formula_value="25% of item value"/>
+      <row item_base_cost="10,001gp_or_more" formula_value="50% of item value"/>
+    </table>
+    <rule name="Research_Formula_Effect">A formula halves the base cost and the special-component cost of the related item or project.</rule>
+    <rule name="Research_Formula_Market_Discount">Formulae can be copied and sold without losing use by the seller, so market value is discounted below the full saved cost. Base item cost is used as a proxy for rarity.</rule>
+  </section>
+  <section name="Random_Rare_Book_Generation">
+    <procedure name="Random_Rare_Book_Generation_Procedure">
+      <step order="1">Roll 1d1000 for topic on the Random Book Topic table.</step>
+      <step order="2">Roll 1d100 for scope on the Random Book Scope table.</step>
+      <step order="3">Roll 1d100 for complexity on the Random Book Complexity by Scope table.</step>
+      <step order="4">Roll 1d100 for language on the Random Book Language table.</step>
+      <step order="5">Roll 1d100 for age on the Random Book Age by Language table.</step>
+      <step order="6">Roll 1d100 for format on the Random Book Format by Age table.</step>
+      <step order="7">Roll 1d100 for page material on the Random Book Material by Format table.</step>
+      <step order="8">Roll 1d100 for number of copies extant on the Random Book Rarity table.</step>
+      <step order="9">Length in pages = (scope × 1000) / complexity.</step>
+      <step order="10">Reading and reference time = page length / 180.</step>
+      <step order="11">Calculate production value from page length and materials.</step>
+      <step order="12">Calculate base literary value from page length, scope, and complexity.</step>
+      <step order="13">Apply rarity modifier.</step>
+      <step order="14">Calculate modified literary value.</step>
+      <step order="15">Book value = production value + modified literary value, plus authority value if any.</step>
+      <step order="16">Calculate weight from materials.</step>
+      <step order="17">Calculate volumes from page length and format. Codices split every 750 pages. Scrolls split every 250 pages. Add 1.5 lbs per codex volume and 2 lbs per scroll volume.</step>
+    </procedure>
+    <rule name="Authority_Adjustment">If the topic roll indicates an authority, roll again for its authority topic. On a re-roll of 901 or higher, select a spell type or magic research. Raise scope to 3 if lower. Raise complexity to 3 if lower. Authority rank = complexity - 2.</rule>
+    <rule name="Esoteric_Book_Adjustment">If the topic roll indicates an esoteric topic, roll again for the apparent topic and re-roll repeated esoteric results. The rolled scope becomes esoteric scope and the rolled complexity becomes esoteric complexity. The Judge sets apparent scope and complexity so that apparent scope / apparent complexity equals or exceeds esoteric scope / esoteric complexity.</rule>
+    <rule name="Scope_Exceeding_Topic">If a rolled topic cannot legally supply enough ranks to match the rolled scope, either reduce scope to 1 or add one or more extra topics until enough total ranks are available.</rule>
+    <rule name="Subspecializations_in_Random_Generation">The Judge may replace 1 rank in a topic with 2 ranks in a sub-specialization. No topic may have more than 4 ranks.</rule>
+    <table name="Random_Book_Topic">
+      <entry roll="01-05" topic="Acrobatics"/>
+      <entry roll="06-10" topic="Alchemy"/>
+      <entry roll="11-15" topic="Alchemy"/>
+      <entry roll="16-20" topic="Alertness"/>
+      <entry roll="21-25" topic="Ambushing"/>
+      <entry roll="26-30" topic="Animal Husbandry"/>
+      <entry roll="31-35" topic="Animal Training (dogs)"/>
+      <entry roll="36-40" topic="Animal Training (horses)"/>
+      <entry roll="41-45" topic="Animal Training (falcons)"/>
+      <entry roll="46-50" topic="Apostasy"/>
+      <entry roll="51-55" topic="Arcane Dabbling"/>
+      <entry roll="56-60" topic="Art (calligraphy)"/>
+      <entry roll="61-65" topic="Art (drawing)"/>
+      <entry roll="66-70" topic="Art (illumination)"/>
+      <entry roll="71-80" topic="Art (mosaic)"/>
+      <entry roll="81-85" topic="Art (painting)"/>
+      <entry roll="86-90" topic="Art (sculpture)"/>
+      <entry roll="91-95" topic="Art (stained glass)"/>
+      <entry roll="96-100" topic="Bargaining"/>
+      <entry roll="101-105" topic="Battle Magic"/>
+      <entry roll="106-110" topic="Battle Magic"/>
+      <entry roll="111-115" topic="Beast Friendship"/>
+      <entry roll="116-120" topic="Berserkergang"/>
+      <entry roll="121-125" topic="Black Lore of Zahar"/>
+      <entry roll="126-130" topic="Black Lore of Zahar"/>
+      <entry roll="131-135" topic="Blind Fighting"/>
+      <entry roll="136-140" topic="Bribery"/>
+      <entry roll="141-145" topic="Caving"/>
+      <entry roll="146-150" topic="Cat Burglary"/>
+      <entry roll="151-155" topic="Climbing"/>
+      <entry roll="156-160" topic="Collegiate Wizardry"/>
+      <entry roll="161-165" topic="Collegiate Wizardry"/>
+      <entry roll="166-170" topic="Combat Reflexes"/>
+      <entry roll="171-180" topic="Combat Trickery"/>
+      <entry roll="181-185" topic="Command"/>
+      <entry roll="186-190" topic="Contemplation"/>
+      <entry roll="191-195" topic="Contortionism"/>
+      <entry roll="196-200" topic="Craft (armor-making)"/>
+      <entry roll="201-205" topic="Craft (baking)"/>
+      <entry roll="206-210" topic="Craft (basket-making)"/>
+      <entry roll="211-215" topic="Craft (blacksmithing)"/>
+      <entry roll="216-220" topic="Craft (book-binding)"/>
+      <entry roll="221-225" topic="Craft (bow-making)"/>
+      <entry roll="226-230" topic="Craft (brewing)"/>
+      <entry roll="231-235" topic="Craft (candle-making)"/>
+      <entry roll="236-240" topic="Craft (carpentry)"/>
+      <entry roll="241-245" topic="Craft (cobbling)"/>
+      <entry roll="246-250" topic="Craft (cooking)"/>
+      <entry roll="251-255" topic="Craft (doll-making)"/>
+      <entry roll="256-260" topic="Craft (dying)"/>
+      <entry roll="261-265" topic="Craft (embroidery)"/>
+      <entry roll="266-270" topic="Craft (fletching)"/>
+      <entry roll="271-280" topic="Craft (leatherworking)"/>
+      <entry roll="281-285" topic="Craft (lock-smithing)"/>
+      <entry roll="286-290" topic="Craft (rune-carving)"/>
+      <entry roll="291-295" topic="Craft (saddlery)"/>
+      <entry roll="296-300" topic="Craft (scribing)"/>
+      <entry roll="301-305" topic="Craft (scrivening)"/>
+      <entry roll="306-310" topic="Craft (stonemason)"/>
+      <entry roll="311-315" topic="Craft (tanning)"/>
+      <entry roll="316-320" topic="Craft (tinkering)"/>
+      <entry roll="321-325" topic="Craft (weaving)"/>
+      <entry roll="326-330" topic="Craft (weaponsmithing)"/>
+      <entry roll="331-335" topic="Craft (wheelwright)"/>
+      <entry roll="336-340" topic="Diplomacy"/>
+      <entry roll="341-345" topic="Disguise"/>
+      <entry roll="346-350" topic="Dungeon Bashing"/>
+      <entry roll="351-355" topic="Dwarven Brewing"/>
+      <entry roll="356-360" topic="Eavesdropping"/>
+      <entry roll="361-365" topic="Elementalism"/>
+      <entry roll="366-370" topic="Endurance"/>
+      <entry roll="371-380" topic="Engineering"/>
+      <entry roll="381-385" topic="Engineering"/>
+      <entry roll="386-390" topic="Familiar"/>
+      <entry roll="391-395" topic="Fighting Style"/>
+      <entry roll="396-400" topic="Gambling"/>
+      <entry roll="401-405" topic="Goblin-Slaying"/>
+      <entry roll="406-410" topic="Healing"/>
+      <entry roll="411-415" topic="Healing"/>
+      <entry roll="416-420" topic="Healing"/>
+      <entry roll="421-425" topic="Illusion Resistance"/>
+      <entry roll="426-430" topic="Intimidation"/>
+      <entry roll="431-435" topic="Knowledge (architecture)"/>
+      <entry roll="436-440" topic="Knowledge (astrology)"/>
+      <entry roll="441-445" topic="Knowledge (geography)"/>
+      <entry roll="446-450" topic="Knowledge (history)"/>
+      <entry roll="451-455" topic="Knowledge (mathematics)"/>
+      <entry roll="456-460" topic="Knowledge (natural history)"/>
+      <entry roll="461-465" topic="Knowledge (natural philosophy)"/>
+      <entry roll="466-470" topic="Knowledge (political economy)"/>
+      <entry roll="471-480" topic="Knowledge (occult)"/>
+      <entry roll="481-485" topic="Knowledge (trivia)"/>
+      <entry roll="486-490" topic="Labor (barber)"/>
+      <entry roll="491-495" topic="Labor (bricklaying)"/>
+      <entry roll="496-500" topic="Labor (butchering)"/>
+      <entry roll="501-505" topic="Labor (construction)"/>
+      <entry roll="506-510" topic="Labor (domestic)"/>
+      <entry roll="511-515" topic="Labor (farming)"/>
+      <entry roll="516-520" topic="Labor (mining)"/>
+      <entry roll="521-525" topic="Labor (shepherding)"/>
+      <entry roll="526-530" topic="Labor (stone-cutting)"/>
+      <entry roll="531-535" topic="Land Surveying"/>
+      <entry roll="536-540" topic="Laying on Hands"/>
+      <entry roll="541-545" topic="Leadership"/>
+      <entry roll="546-550" topic="Lip Reading"/>
+      <entry roll="551-555" topic="Lockpicking"/>
+      <entry roll="556-560" topic="Loremastery"/>
+      <entry roll="561-565" topic="Loremastery"/>
+      <entry roll="566-570" topic="Magical Engineering"/>
+      <entry roll="571-580" topic="Magical Engineering"/>
+      <entry roll="581-585" topic="Magical Music"/>
+      <entry roll="586-590" topic="Manual of Arms"/>
+      <entry roll="591-595" topic="Manual of Arms"/>
+      <entry roll="596-600" topic="Mapping"/>
+      <entry roll="601-605" topic="Mapping"/>
+      <entry roll="606-610" topic="Martial Training"/>
+      <entry roll="611-615" topic="Military Strategy"/>
+      <entry roll="616-620" topic="Military Strategy"/>
+      <entry roll="621-625" topic="Mimicry"/>
+      <entry roll="626-630" topic="Mountaineering"/>
+      <entry roll="631-635" topic="Naturalism"/>
+      <entry roll="636-640" topic="Naturalism"/>
+      <entry roll="641-645" topic="Navigation"/>
+      <entry roll="646-650" topic="Navigation"/>
+      <entry roll="651-655" topic="Pass Without Trace"/>
+      <entry roll="656-660" topic="Performance (acting)"/>
+      <entry roll="661-665" topic="Performance (chanting)"/>
+      <entry roll="666-670" topic="Performance (dancing)"/>
+      <entry roll="671-680" topic="Performance (epic poetry)"/>
+      <entry roll="681-685" topic="Performance (playing instruments)"/>
+      <entry roll="686-690" topic="Performance (singing)"/>
+      <entry roll="691-695" topic="Performance (storytelling)"/>
+      <entry roll="696-700" topic="Precise Shooting"/>
+      <entry roll="701-705" topic="Prestidigitation"/>
+      <entry roll="706-710" topic="Profession (actuary)"/>
+      <entry roll="711-715" topic="Profession (banker)"/>
+      <entry roll="716-720" topic="Profession (chamberlain)"/>
+      <entry roll="721-725" topic="Profession (judge)"/>
+      <entry roll="726-730" topic="Profession (lawyer)"/>
+      <entry roll="731-735" topic="Profession (librarian)"/>
+      <entry roll="736-740" topic="Profession (merchant)"/>
+      <entry roll="741-745" topic="Profession (restaurateur)"/>
+      <entry roll="746-750" topic="Profession (seneschal)"/>
+      <entry roll="751-755" topic="Profession (torturer)"/>
+      <entry roll="756-760" topic="Prophecy"/>
+      <entry roll="761-765" topic="Quiet Magic"/>
+      <entry roll="766-770" topic="Riding"/>
+      <entry roll="771-775" topic="Righteous Turning"/>
+      <entry roll="776-785" topic="Running"/>
+      <entry roll="786-790" topic="Seafaring"/>
+      <entry roll="791-795" topic="Seafaring"/>
+      <entry roll="796-800" topic="Seduction"/>
+      <entry roll="801-805" topic="Siege Engineering"/>
+      <entry roll="806-810" topic="Siege Engineering"/>
+      <entry roll="811-815" topic="Signaling"/>
+      <entry roll="816-820" topic="Skirmishing"/>
+      <entry roll="821-825" topic="Skulking"/>
+      <entry roll="826-830" topic="Sniping"/>
+      <entry roll="831-835" topic="Soothsaying"/>
+      <entry roll="836-840" topic="Survival"/>
+      <entry roll="841-845" topic="Swashbuckling"/>
+      <entry roll="846-850" topic="Theology"/>
+      <entry roll="851-855" topic="Theology"/>
+      <entry roll="856-860" topic="Theology"/>
+      <entry roll="861-865" topic="Trap Finding"/>
+      <entry roll="866-870" topic="Tracking"/>
+      <entry roll="871-880" topic="Transmogrification"/>
+      <entry roll="881-885" topic="Trapping"/>
+      <entry roll="886-890" topic="Unflappable Casting"/>
+      <entry roll="891-895" topic="Weapon Finesse"/>
+      <entry roll="896-900" topic="Weapon Focus"/>
+      <entry roll="901-910" topic="Esoteric: Alchemy"/>
+      <entry roll="911-920" topic="Esoteric: Apostasy"/>
+      <entry roll="921-930" topic="Esoteric: Black Lore of Zahar"/>
+      <entry roll="931-940" topic="Esoteric: Knowledge (occult)"/>
+      <entry roll="941-950" topic="Esoteric: Loremastery"/>
+      <entry roll="951-960" topic="Esoteric: Soothsaying"/>
+      <entry roll="961-970" topic="Esoteric: Theology"/>
+      <entry roll="971-999" topic="Esoteric: Judge’s Choice"/>
+      <entry roll="1000" topic="Authority"/>
+    </table>
+    <table name="Random_Book_Scope">
+      <row roll="01-55" scope="1"/>
+      <row roll="56-80" scope="2"/>
+      <row roll="81-95" scope="3"/>
+      <row roll="96-100" scope="4"/>
+    </table>
+    <table name="Random_Book_Complexity_By_Scope">
+      <row scope="1" complexity_0_75="01-25" complexity_1="26-50" complexity_2="51-91" complexity_3="92-99" complexity_4="100" complexity_5="-" complexity_6="-" complexity_7="-"/>
+      <row scope="2" complexity_0_75="01-06" complexity_1="07-21" complexity_2="22-61" complexity_3="62-91" complexity_4="92-99" complexity_5="100" complexity_6="-" complexity_7="-"/>
+      <row scope="3" complexity_0_75="01" complexity_1="02-06" complexity_2="07-21" complexity_3="22-61" complexity_4="62-91" complexity_5="92-99" complexity_6="100" complexity_7="-"/>
+      <row scope="4" complexity_0_75="01" complexity_1="02-06" complexity_2="07-11" complexity_3="12-26" complexity_4="27-59" complexity_5="60-91" complexity_6="92-99" complexity_7="100"/>
+    </table>
+    <table name="Random_Book_Language">
+      <row roll="01-30" language="Classical"/>
+      <row roll="31-65" language="Common"/>
+      <row roll="66-85" language="Regional"/>
+      <row roll="86-90" language="Dwarven"/>
+      <row roll="91-95" language="Elven"/>
+      <row roll="96-100" language="Ancient"/>
+    </table>
+    <table name="Random_Book_Age_By_Language">
+      <row language="Classical" age_10_or_less="01-05" age_11_30="11-15" age_31_50="21-35" age_51_100="36-75" age_101_500="76-95" age_501_1000="96-100" age_1000_2000="-" age_2000_plus="-"/>
+      <row language="Common" age_10_or_less="01-05" age_11_30="06-25" age_31_50="26-75" age_51_100="76-95" age_101_500="96-100" age_501_1000="-" age_1000_2000="-" age_2000_plus="-"/>
+      <row language="Regional" age_10_or_less="01-05" age_11_30="06-25" age_31_50="26-75" age_51_100="76-100" age_101_500="-" age_501_1000="-" age_1000_2000="-" age_2000_plus="-"/>
+      <row language="Dwarven" age_10_or_less="01-05" age_11_30="06-15" age_31_50="16-30" age_51_100="31-50" age_101_500="51-75" age_501_1000="76-95" age_1000_2000="96-99" age_2000_plus="100"/>
+      <row language="Elven" age_10_or_less="01-05" age_11_30="06-10" age_31_50="11-20" age_51_100="21-40" age_101_500="41-60" age_501_1000="61-80" age_1000_2000="81-95" age_2000_plus="96-100"/>
+      <row language="Ancient" age_10_or_less="01-05" age_11_30="06-10" age_31_50="11-15" age_51_100="16-20" age_101_500="21-30" age_501_1000="31-70" age_1000_2000="71-90" age_2000_plus="91-100"/>
+    </table>
+    <table name="Random_Book_Format_By_Age">
+      <row age="10_years_or_less" tablet="01" scroll="02" codex="03-100"/>
+      <row age="11_50_years" tablet="01" scroll="02-03" codex="04-100"/>
+      <row age="51_100_years" tablet="01" scroll="02-05" codex="06-100"/>
+      <row age="101_500_years" tablet="01" scroll="02-25" codex="26-100"/>
+      <row age="501_1000_years" tablet="01-05" scroll="06-80" codex="81-100"/>
+      <row age="1000_2000_years" tablet="01-25" scroll="26-75" codex="-"/>
+      <row age="2000_years_or_more" tablet="01-50" scroll="51-100" codex="-"/>
+    </table>
+    <table name="Random_Book_Material_By_Format">
+      <row format="tablet" stone="01-20" clay="21-80" gold_foil="81" silver_foil="82-85" copper_foil="86-100" vellum="-" parchment="-" fine_papyrus="-" papyrus="-"/>
+      <row format="scroll" stone="-" clay="-" gold_foil="-" silver_foil="-" copper_foil="-" vellum="01-20" parchment="21-50" fine_papyrus="51-70" papyrus="71-100"/>
+      <row format="codex" stone="-" clay="-" gold_foil="01" silver_foil="02-03" copper_foil="04-05" vellum="06-50" parchment="51-100" fine_papyrus="-" papyrus="-"/>
+    </table>
+    <table name="Random_Book_Rarity">
+      <row roll="01-10" copies_extant="1" rarity_modifier="100%"/>
+      <row roll="11-25" copies_extant="2-5" rarity_modifier="50%"/>
+      <row roll="26-50" copies_extant="6-25" rarity_modifier="33%"/>
+      <row roll="51-65" copies_extant="26-50" rarity_modifier="25%"/>
+      <row roll="66-75" copies_extant="51-100" rarity_modifier="10%"/>
+      <row roll="76-85" copies_extant="101-250" rarity_modifier="5%"/>
+      <row roll="86-90" copies_extant="251-500" rarity_modifier="2%"/>
+      <row roll="91-95" copies_extant="501-1000" rarity_modifier="1%"/>
+      <row roll="96-100" copies_extant="1000_or_more" rarity_modifier="0%"/>
+    </table>
+    <table name="Book_Production_Value_By_Format_and_Material">
+      <row material="parchment_ordinary_0.01_in" codex_cost_per_page="37cp" scroll_or_tablet_cost_per_page="36cp" weight_per_page="0.06 lbs"/>
+      <row material="vellum_fine_parchment_0.01_in" codex_cost_per_page="39cp" scroll_or_tablet_cost_per_page="38cp" weight_per_page="0.06 lbs"/>
+      <row material="copper_foil_0.005_in" codex_cost_per_page="43cp" scroll_or_tablet_cost_per_page="42cp" weight_per_page="0.12 lbs"/>
+      <row material="silver_foil_0.005_in" codex_cost_per_page="181cp" scroll_or_tablet_cost_per_page="180cp" weight_per_page="0.15 lbs"/>
+      <row material="gold_foil_0.005_in" codex_cost_per_page="3031cp" scroll_or_tablet_cost_per_page="3030cp" weight_per_page="0.30 lbs"/>
+      <row material="papyrus_ordinary_0.01_in" codex_cost_per_page="N/A" scroll_or_tablet_cost_per_page="31cp" weight_per_page="0.06 lbs"/>
+      <row material="papyrus_fine_0.01_in" codex_cost_per_page="N/A" scroll_or_tablet_cost_per_page="33cp" weight_per_page="0.06 lbs"/>
+      <row material="clay_tablet_0.125_in" codex_cost_per_page="N/A" scroll_or_tablet_cost_per_page="80cp" weight_per_page="0.75 lbs"/>
+      <row material="stone_tablet_0.125_in" codex_cost_per_page="N/A" scroll_or_tablet_cost_per_page="130cp" weight_per_page="1 lb"/>
+    </table>
+    <table name="Book_Literary_Value_Per_Page_By_Scope_and_Complexity">
+      <row scope="1" complexity_0_75="1gp" complexity_1="1gp" complexity_2="1.25gp" complexity_3="2gp" complexity_4="5gp" complexity_5="N/A" complexity_6="N/A" complexity_7="N/A"/>
+      <row scope="2" complexity_0_75="2gp" complexity_1="2gp" complexity_2="2gp" complexity_3="2.5gp" complexity_4="4gp" complexity_5="10gp" complexity_6="N/A" complexity_7="N/A"/>
+      <row scope="3" complexity_0_75="4gp" complexity_1="4gp" complexity_2="4gp" complexity_3="4gp" complexity_4="5gp" complexity_5="8gp" complexity_6="20gp" complexity_7="N/A"/>
+      <row scope="4" complexity_0_75="10gp" complexity_1="10gp" complexity_2="10gp" complexity_3="10gp" complexity_4="10gp" complexity_5="12.5gp" complexity_6="20gp" complexity_7="50gp"/>
+    </table>
+  </section>
+  <confidence_notes>
+    <note>The source’s Random Book Topic table is visibly corrupted in several lines. I reconstructed the affected entries using alphabetical sequence and adjacent ranges. The reconstructed entries are: 131-135 Blind Fighting; 136-140 Bribery; 146-150 Cat Burglary; 151-155 Climbing; 456-460 Knowledge (natural history); 461-465 Knowledge (natural philosophy); 466-470 Knowledge (political economy); 596-600 Mapping; 766-770 Riding; 771-775 Righteous Turning; 776-785 Running. Confidence is below 0.90 on these exact roll breaks.</note>
+    <note>The seating-capacity rule for dedicated reading rooms is phrased corruptly in the source. I summarized it as adding 1 seat per 350 cubic feet, which matches the formula used in the examples.</note>
+    <note>The authority required-topics table appears to abbreviate or truncate some proficiency names, especially in spell-field rows. I normalized these to their likely full names where the intent was clear.</note>
+    <note>The text states that ordinary books use complexities from 0.25 to 6, but the random-generation table allows complexity 7. I preserved both statements.</note>
+  </confidence_notes>
+</acks_summary>

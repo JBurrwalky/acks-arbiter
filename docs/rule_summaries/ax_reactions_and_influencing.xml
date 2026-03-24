@@ -1,0 +1,332 @@
+<rules_summary title="reactions_chart_update" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+<interaction_framework>
+<rule>Interaction occurs when an adventurer or party encounters a creature or group not previously encountered.</rule>
+<rule>The first exchange is an initial_interaction resolved with an interaction_roll.</rule>
+<rule>Interaction_roll results establish an attitude.</rule>
+<rule>If the adventurer or party wants to change an existing attitude, they must make an attempt_to_influence.</rule>
+<rule>If combat breaks out, no attempts_to_influence may be made until the adventurer or party is defeated and captured, or the opposing creatures are defeated or fail a morale roll.</rule>
+</interaction_framework>
+
+<attitudes> <attitude>hostile</attitude> <attitude>unfriendly</attitude> <attitude>neutral</attitude> <attitude>indifferent</attitude> <attitude>friendly</attitude> <intimidation_specific_attitudes> <attitude>fearful</attitude> <attitude>cowed</attitude> </intimidation_specific_attitudes> <definitions> <entry attitude="fearful">Creature attempts to withdraw or escape at the first opportunity; if no opportunity exists, it counts as cowed while it remains intimidated.</entry> <entry attitude="cowed">Creature acts as if Friendly while it remains intimidated.</entry> <entry scope="intimidation_follow_on_interactions">Fearful and Cowed creatures are treated as Neutral for purposes of diplomatic or seductive interactions.</entry> </definitions> </attitudes>
+
+<time_required>
+<table name="interaction_time_intervals">
+<columns>
+<column>stage</column>
+<column>time_required</column>
+</columns>
+<row>
+<stage>initial_interaction</stage>
+<time_required>instantaneous</time_required>
+</row>
+<row>
+<stage>1st_attempt_to_influence</stage>
+<time_required>1 round (10 seconds)</time_required>
+</row>
+<row>
+<stage>2nd_attempt_to_influence</stage>
+<time_required>6 rounds (1 minute)</time_required>
+</row>
+<row>
+<stage>3rd_attempt_to_influence</stage>
+<time_required>1 turn (10 minutes)</time_required>
+</row>
+<row>
+<stage>4th_attempt_to_influence</stage>
+<time_required>6 turns (1 hour)</time_required>
+</row>
+<row>
+<stage>5th_attempt_to_influence</stage>
+<time_required>8 hours (1 work-day)</time_required>
+</row>
+<row>
+<stage>6th_and_later_attempts_to_influence</stage>
+<time_required>5 work-days (1 week)</time_required>
+</row>
+</table>
+<rule>Interaction time increases as the parties become more established in their relationship or opposition.</rule>
+</time_required>
+
+<spokesperson_rules>
+<rule>When groups interact, each group designates a spokesperson.</rule>
+<rule>The spokesperson is typically the group's leader or highest Charisma character.</rule>
+<rule>The spokesperson's class, ability scores, proficiencies, and other relevant characteristics apply on behalf of the group.</rule>
+<rule>If the party has no agreed spokesperson, the first adventurer encountered by or speaking to the other side is the spokesperson for that stage.</rule>
+<rule>If it is unclear who speaks first, the Judge may call for an initiative roll to determine it.</rule>
+</spokesperson_rules>
+
+<interaction_tones>
+<tone name="diplomatic">
+<definition>Non-threatening appeal to the self-interest of the target or target's group.</definition>
+</tone>
+<tone name="intimidating">
+<definition>Threat to cause harm to the target or target's group if they do not cooperate.</definition>
+</tone>
+<tone name="seductive">
+<definition>Interaction resolved using the seduction modifiers and reaction table.</definition>
+</tone>
+<rule>If a party is surprised by an encounter, the Judge chooses the tone least favorable to the party.</rule>
+<rule>Otherwise, the party's spokesperson chooses the tone for the initial interaction and for each later stage.</rule>
+<rule>If the tone is unclear from statements or roleplay, the Judge may ask for clarification or decide the adopted tone.</rule>
+<rule>Once the tone is settled, the Judge makes an interaction roll.</rule>
+</interaction_tones>
+
+<diplomatic_interactions>
+<definition>Diplomatic interaction is a non-threatening appeal to the target's self-interest.</definition>
+
+<modifiers>
+  <category name="alignment">
+    <modifier value="+1">Character believed to be Lawful; target is Lawful or Neutral.</modifier>
+    <modifier value="-1">Character believed to be Lawful; target is Chaotic.</modifier>
+    <modifier value="-2">Character believed to be Chaotic; target is Lawful or Neutral.</modifier>
+    <modifier value="-2">Character's race is a historical enemy of target.</modifier>
+  </category>
+  <category name="location">
+    <modifier value="-1">Character is trespassing in target's lair.</modifier>
+    <modifier value="+1">Character is in own lair.</modifier>
+  </category>
+  <category name="authority">
+    <modifier value="+2 or more">Character has legal authority over target.</modifier>
+    <modifier value="-1 per favor">Character owes target favors.</modifier>
+    <modifier value="-1 or more">Target has authority over character.</modifier>
+    <modifier value="+1 per favor">Target owes character favors.</modifier>
+  </category>
+  <category name="ability_scores_and_proficiencies">
+    <modifier value="+charisma_modifier">Character has Charisma Modifier.</modifier>
+    <modifier value="+1 to +3">Character has Bribery and offers appropriate bribe.</modifier>
+    <modifier value="+2">Character has Diplomacy.</modifier>
+    <modifier value="+2">Character has Mystic Aura.</modifier>
+    <modifier value="-target_wisdom_modifier">Target has Wisdom Modifier.</modifier>
+  </category>
+  <category name="threat">
+    <modifier value="-1">Character is brandishing weapon.</modifier>
+    <modifier value="-2">Target believes character has harmed friends.</modifier>
+    <modifier value="-5">Target has witnessed or has evidence that character harmed friends.</modifier>
+    <modifier value="-5 or more">Target has been personally harmed by character.</modifier>
+  </category>
+  <category name="relationship">
+    <modifier value="-2">Target is already Hostile.</modifier>
+    <modifier value="-1">Target is already Unfriendly.</modifier>
+    <modifier value="+1">Target is already Indifferent.</modifier>
+  </category>
+</modifiers>
+
+<reaction_table>
+  <table name="diplomatic_reaction_results">
+    <columns>
+      <column>interaction_roll</column>
+      <column>initial_interaction</column>
+      <column>attempt_to_influence</column>
+    </columns>
+    <row>
+      <interaction_roll>2</interaction_roll>
+      <initial_interaction>Hostile, attacks</initial_interaction>
+      <attempt_to_influence>Shift 2 attitudes towards Hostile</attempt_to_influence>
+    </row>
+    <row>
+      <interaction_roll>3-5</interaction_roll>
+      <initial_interaction>Unfriendly, may attack</initial_interaction>
+      <attempt_to_influence>Shift 1 attitude towards Hostile</attempt_to_influence>
+    </row>
+    <row>
+      <interaction_roll>6-8</interaction_roll>
+      <initial_interaction>Neutral, uncertain</initial_interaction>
+      <attempt_to_influence>Shift 1 attitude towards Neutral</attempt_to_influence>
+    </row>
+    <row>
+      <interaction_roll>9-11</interaction_roll>
+      <initial_interaction>Indifferent, uninterested</initial_interaction>
+      <attempt_to_influence>Shift 1 attitude towards Friendly</attempt_to_influence>
+    </row>
+    <row>
+      <interaction_roll>12</interaction_roll>
+      <initial_interaction>Friendly, helpful</initial_interaction>
+      <attempt_to_influence>Shift 2 attitudes towards Friendly</attempt_to_influence>
+    </row>
+  </table>
+</reaction_table>
+
+</diplomatic_interactions>
+
+<intimidating_interactions>
+<definition>Intimidating interaction is a threat of harm if the target does not cooperate.</definition>
+<rule>Intimidating interactions cannot achieve genuinely Indifferent or Friendly attitudes.</rule>
+<rule>In intimidating interactions, Indifferent is replaced by Fearful and Friendly is replaced by Cowed.</rule>
+<rule>Attitudes established by intimidating interactions are temporary.</rule>
+<rule>New interactions with newly encountered allies are rolled separately, and that roll may also shift the attitudes of creatures already intimidated if the changed circumstances weaken the intimidation.</rule>
+<rule>When a character intimidates new allies of creatures already intimidated, make a new interaction roll for the new allies.</rule>
+<rule>If the new allies receive a worse intimidation result than the already-intimidated creatures, the already-intimidated creatures' attitudes also worsen to match the change in circumstances.</rule>
+<rule>For the already-intimidated creatures, resolve this as an attempt_to_influence using the same roll result generated for the newly encountered allies.</rule>
+<rule>Apply the result as an attitude shift from their current intimidation attitude rather than assigning a fresh initial attitude.</rule><rule>The new interaction with new allies should be resolved using the same roll used for the initial interaction with those new creatures.</rule>
+<rule>The Judge may call for a new interaction roll any time the conditions that led to the initial intimidation materially change.</rule>
+<rule>Lengthy ongoing intimidation attempts represent long-term brainwashing, dehumanizing treatment, or torture.</rule>
+<rule>The Judge may limit the use of such long-term intimidating interactions by Lawful characters.</rule>
+
+<modifiers>
+  <category name="character">
+    <modifier value="+1">Character and party members outnumber target(s).</modifier>
+    <modifier value="+2">Character and party members outnumber target(s) by 3:2 or more.</modifier>
+    <modifier value="+5">Character and party members outnumber target(s) by 3:1 or more.</modifier>
+    <modifier value="+1">Character is in own lair.</modifier>
+    <modifier value="+1">Character is brandishing weapon.</modifier>
+    <modifier value="+1">Character is brandishing magic items.</modifier>
+    <modifier value="+2 or more">Character has target at disadvantage.</modifier>
+    <modifier value="+2 or more">Character has legal authority over target.</modifier>
+    <modifier value="+2">Character is significantly higher level than target (3+ HD).</modifier>
+    <modifier value="+charisma_modifier">Character has Charisma Modifier.</modifier>
+    <modifier value="+2">Character has Intimidation and either legal authority, outnumbers, or outlevels target.</modifier>
+    <modifier value="+2">Character has Mystic Aura.</modifier>
+  </category>
+  <category name="target">
+    <modifier value="-morale_score">Target's Morale Score.</modifier>
+    <modifier value="-target_wisdom_modifier">Target has Wisdom Modifier.</modifier>
+    <modifier value="+1">Target has witnessed character kill or torture target's associates.</modifier>
+    <modifier value="-1">Target is in own lair.</modifier>
+    <modifier value="-1">Target is armed.</modifier>
+    <modifier value="-1">Target has spells or magic items available.</modifier>
+    <modifier value="-1">Target and friends outnumber character and party members.</modifier>
+    <modifier value="-2">Target and friends outnumber character and party members by 3:2 or more.</modifier>
+    <modifier value="-5">Target and friends outnumber character and party members by 3:1 or more.</modifier>
+    <modifier value="-5">Target has character at disadvantage.</modifier>
+    <modifier value="-2 or more">Target has legal authority over character.</modifier>
+    <modifier value="-2">Target is significantly higher level than character (3+ HD).</modifier>
+    <modifier value="-2 or more">Target believes he will suffer loss of face if he submits.</modifier>
+    <modifier value="-5 or more">Target believes he will be horrendously punished or killed if he submits.</modifier>
+  </category>
+  <category name="relationship">
+    <modifier value="-2">Target is already Hostile.</modifier>
+    <modifier value="-1">Target is already Unfriendly.</modifier>
+    <modifier value="+1">Target is already Fearful.</modifier>
+  </category>
+  <notes>
+    <note>If the target is in lair, include numbers in lair as part of friends when evaluating outnumbering modifiers.</note>
+  </notes>
+</modifiers>
+
+<reaction_table>
+  <table name="intimidation_reaction_results">
+    <columns>
+      <column>interaction_roll</column>
+      <column>initial_interaction</column>
+      <column>attempt_to_influence</column>
+    </columns>
+    <row>
+      <interaction_roll>2</interaction_roll>
+      <initial_interaction>Hostile, attacks</initial_interaction>
+      <attempt_to_influence>Shift 2 attitudes towards Hostile</attempt_to_influence>
+    </row>
+    <row>
+      <interaction_roll>3-5</interaction_roll>
+      <initial_interaction>Unfriendly, may attack</initial_interaction>
+      <attempt_to_influence>Shift 1 attitude towards Hostile</attempt_to_influence>
+    </row>
+    <row>
+      <interaction_roll>6-8</interaction_roll>
+      <initial_interaction>Neutral, uncertain</initial_interaction>
+      <attempt_to_influence>Shift 1 attitude towards Neutral</attempt_to_influence>
+    </row>
+    <row>
+      <interaction_roll>9-11</interaction_roll>
+      <initial_interaction>Fearful, attempts to withdraw or escape if possible</initial_interaction>
+      <attempt_to_influence>Shift 1 attitude towards Friendly</attempt_to_influence>
+    </row>
+    <row>
+      <interaction_roll>12</interaction_roll>
+      <initial_interaction>Cowed, helpful</initial_interaction>
+      <attempt_to_influence>Shift 2 attitudes towards Friendly</attempt_to_influence>
+    </row>
+  </table>
+</reaction_table>
+
+</intimidating_interactions>
+
+<seductive_interactions>
+<modifiers>
+<category name="age">
+<modifier value="+1 per category">Character is of younger age category than target attracted to youthful mates.</modifier>
+<modifier value="-1 per category">Character is of younger age category than target attracted to mature mates.</modifier>
+<modifier value="+1 per category">Character is of older age category than target attracted to mature mates.</modifier>
+<modifier value="-1 per category">Character is of older age category than target attracted to youthful mates.</modifier>
+
+<note>Age categories only apply within Youth to Old range.</note>
+</category>
+<category name="status">
+<modifier value="+1 per noble rank or equivalent">Character has higher social status than target.</modifier>
+<modifier value="+1">Character is substantially higher level than target.</modifier>
+<modifier value="-1">Character is substantially lower level than target.</modifier>
+</category>
+<category name="kink">
+<modifier value="+1 or more">Character is of a race which particularly appeals to target.</modifier>
+<modifier value="-1 or more">Character is of a race which is unappealing to target.</modifier>
+<modifier value="+1 or more">Character's clothing is particularly appealing to target.</modifier>
+<modifier value="-1 or more">Character's clothing is particularly unappealing to target.</modifier>
+<modifier value="+1 or more">Character's physical traits are particularly appealing to target.</modifier>
+<modifier value="-1 or more">Character's physical traits are particularly unappealing to target.</modifier>
+<modifier value="+1 or more">Character's behavioral traits are particularly appealing to target.</modifier>
+<modifier value="-1 or more">Character's behavioral traits are particularly unappealing to target.</modifier>
+</category>
+<category name="privacy">
+<modifier value="+1">Character and target are alone.</modifier>
+<modifier value="-1">Character and target are in front of target's friends.</modifier>
+</category>
+<category name="ability_scores_and_proficiencies">
+<modifier value="+1">Character demonstrates Performance or Art proficiency.</modifier>
+<modifier value="+2">Character has Mystic Aura.</modifier>
+<modifier value="+2">Character has Seduction and otherwise has at least +1 in modifiers.</modifier>
+<modifier value="-target_wisdom_modifier">Target has Wisdom Modifier.</modifier>
+</category>
+<category name="relationship_history">
+<modifier value="-2">Character already Hostile.</modifier>
+<modifier value="-1">Character already Unfriendly.</modifier>
+<modifier value="+1">Character already Indifferent.</modifier>
+<modifier value="+2">Character already Friendly.</modifier>
+<modifier value="-1">Character has taken advantage of target's friends in the past.</modifier>
+<modifier value="-2">Character has taken advantage of target in the past.</modifier>
+<modifier value="-2 or more">Target would be at personal risk from liaison with character.</modifier>
+</category>
+</modifiers>
+
+<reaction_table>
+  <table name="seduction_reaction_results">
+    <columns>
+      <column>interaction_roll</column>
+      <column>initial_interaction</column>
+      <column>attempt_to_influence</column>
+    </columns>
+    <row>
+      <interaction_roll>2</interaction_roll>
+      <initial_interaction>Hostile, attacks or calls for aid</initial_interaction>
+      <attempt_to_influence>Shift 2 attitudes towards Hostile</attempt_to_influence>
+    </row>
+    <row>
+      <interaction_roll>3-5</interaction_roll>
+      <initial_interaction>Unfriendly, insults or rejects</initial_interaction>
+      <attempt_to_influence>Shift 1 attitude towards Hostile</attempt_to_influence>
+    </row>
+    <row>
+      <interaction_roll>6-8</interaction_roll>
+      <initial_interaction>Neutral, remains open</initial_interaction>
+      <attempt_to_influence>Shift 1 attitude towards Neutral</attempt_to_influence>
+    </row>
+    <row>
+      <interaction_roll>9-11</interaction_roll>
+      <initial_interaction>Indifferent, but secretly interested</initial_interaction>
+      <attempt_to_influence>Shift 1 attitude towards Friendly</attempt_to_influence>
+    </row>
+    <row>
+      <interaction_roll>12</interaction_roll>
+      <initial_interaction>Friendly, helpful</initial_interaction>
+      <attempt_to_influence>Shift 2 attitudes towards Friendly</attempt_to_influence>
+    </row>
+  </table>
+</reaction_table>
+
+</seductive_interactions>
+
+<procedures> <procedure name="resolve_interaction"> <step order="1">Determine whether the encounter is an initial_interaction or an attempt_to_influence an existing attitude.</step> <step order="2">Determine spokesperson for each group.</step> <step order="3">Determine interaction tone.</step> <step order="4">Apply relevant modifiers for the chosen tone.</step> <step order="5">Roll 2d6 and apply modifiers.</step> <step order="6">For an initial_interaction, assign the resulting attitude from the relevant reaction table.</step> <step order="7">For an attempt_to_influence, shift attitude the listed number of steps toward the indicated destination.</step> <step order="8">Require the listed time interval before the next attempt_to_influence.</step> </procedure> </procedures>
+
+<confidence_notes>
+<note>The seduction modifiers table appears to contain an OCR/layout duplication and one likely corruption. The line for older age category appears twice with the same positive modifier, and the behavioral traits lines appear inverted in the source image-text flow. I normalized them to an internally consistent mechanical reading, but those lines should be checked against the original layout for exact wording.</note>
+<note>The intimidation rule stating that encounters with new allies should be resolved with the same roll as that used for the initial interaction is preserved as written, but the intended meaning may be that the same intimidating circumstances or same rolled result applies. Source wording should be checked if exact procedural intent matters.</note>
+</confidence_notes>
+</rules_summary>

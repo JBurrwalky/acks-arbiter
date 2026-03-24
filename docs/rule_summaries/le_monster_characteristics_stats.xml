@@ -1,0 +1,394 @@
+<rules_summary title="monster_characteristics_and_types" summary_scope="rules, procedures, definitions" flavor_excluded="true">
+  <scope>
+    <definition name="monster">Any being other than the player characters.</definition>
+    <rule>Monster listings describe an average specimen; the Judge may alter any creature's abilities and power level.</rule>
+    <rule>Assume all monsters except humans and demi-humans have infravision 60'.</rule>
+  </scope>
+
+  <monster_characteristics>
+    <characteristic name="percent_in_lair">
+      <definition>Percentage chance that an encounter occurs in the monster's lair.</definition>
+      <rule>Monsters encountered in their lair are usually present in greater numbers.</rule>
+      <rule>Monsters encountered in their lair may have treasure appropriate to their type.</rule>
+    </characteristic>
+
+    <characteristic name="dungeon_encounter">
+      <definition>Typical encounter pattern in a dungeon.</definition>
+      <format>[collective_noun] (number_encountered) / [collective_noun] (number_encountered)</format>
+      <rule>Use the first collective noun and number for encounters outside the lair.</rule>
+      <rule>Use the second collective noun and number for encounters inside the lair.</rule>
+      <rule>The in-lair number may be a direct quantity such as 2d6 or a larger organizational unit defined elsewhere, such as 1 warband.</rule>
+      <rule>If only one collective noun and one range are listed, the monster does not make a lair.</rule>
+      <rule>If the entry is none, the monster is not normally encountered in that setting unless placed there by the Judge for a special reason.</rule>
+      <rule>Collective nouns have no game mechanical effect other than referencing encounter quantity.</rule>
+      <rule>Number encountered counts only standard combatant creatures.</rule>
+      <rule>Chiefs, bodyguards, juveniles, elderly, and sometimes females do not count in number encountered unless a specific description states otherwise.</rule>
+      <rule>The monster description defines additional encounter members where relevant.</rule>
+      <rule>The Judge is the final arbiter when encounter composition is unclear.</rule>
+    </characteristic>
+
+    <characteristic name="wilderness_encounter">
+      <definition>Typical encounter pattern in the wilderness.</definition>
+      <rule>Read wilderness encounter entries the same way as dungeon encounter entries.</rule>
+      <rule>Wilderness lairs are usually the same size as dungeon lairs.</rule>
+      <rule>Wilderness lairs can be much larger than dungeon lairs.</rule>
+      <rule>Large wilderness lairs are common for human, demi-human, and humanoid encounters.</rule>
+      <rule>A large wilderness lair can effectively be an entire dungeon.</rule>
+    </characteristic>
+
+    <characteristic name="alignment">
+      <definition>Monster alignment is Lawful, Neutral, or Chaotic.</definition>
+      <rule>Many unintelligent or alignment-indifferent monsters are Neutral.</rule>
+    </characteristic>
+
+    <characteristic name="movement">
+      <definition>Movement is listed as exploration movement in feet per turn and combat movement in feet per round.</definition>
+      <rule>The value in parentheses is combat movement.</rule>
+      <rule>If more than one movement rate is listed, the additional rate is a different movement mode appropriate to the creature, such as flying or swimming.</rule>
+    </characteristic>
+
+    <characteristic name="armor_class">
+      <definition>Monster AC functions the same as character AC.</definition>
+      <rule>Monster AC may reflect agility, natural armor, or magical adjustment.</rule>
+    </characteristic>
+
+    <characteristic name="hit_dice">
+      <definition>Hit Dice are roughly analogous to character level, but determine hit points as a number of d8s.</definition>
+      <rule>A monster with X HD normally has Xd8 hit points.</rule>
+      <rule>A printed plus or minus value modifies rolled hit points.</rule>
+      <rule>A monster always has at least 1 hp.</rule>
+      <rule>Hit Dice determine monster attack throws.</rule>
+      <rule>Hit Dice help determine experience points awarded for defeating the monster.</rule>
+      <asterisk_rule>
+        <definition>Each asterisk next to Hit Dice indicates one special ability for XP purposes.</definition>
+        <qualifying_abilities>
+          <ability>automatic damage</ability>
+          <ability>breath weapon</ability>
+          <ability>charm</ability>
+          <ability>energy drain</ability>
+          <ability>fear</ability>
+          <ability>gaze attack</ability>
+          <ability>immunity to normal weapons</ability>
+          <ability>immunity to morale checks</ability>
+          <ability>invisibility</ability>
+          <ability>paralysis</ability>
+          <ability>petrification</ability>
+          <ability>poison</ability>
+          <ability>regeneration</ability>
+          <ability>spell-casting</ability>
+          <ability>splitting</ability>
+          <ability>summoning other creatures</ability>
+          <ability>swallowing whole</ability>
+          <ability>spell-like abilities or other abilities of similar potency</ability>
+        </qualifying_abilities>
+        <rule>These special abilities increase XP earned for defeating the monster.</rule>
+      </asterisk_rule>
+      <dungeon_level_stocking>
+        <rule>1 HD or less monsters are typically found on dungeon level 1.</rule>
+        <rule>2-3 HD monsters are typically found on dungeon level 2.</rule>
+        <rule>4-5 HD monsters are typically found on dungeon level 3.</rule>
+        <rule>6-7 HD monsters are typically found on dungeon level 4.</rule>
+        <rule>8-9 HD monsters are typically found on dungeon level 5.</rule>
+        <rule>10 HD or more monsters are typically found on dungeon level 6 or deeper.</rule>
+        <rule>When monsters are placed on an atypical dungeon level, their Number Encountered should be adjusted accordingly.</rule>
+      </dungeon_level_stocking>
+    </characteristic>
+
+    <characteristic name="attacks">
+      <definition>Lists the number of attacks available each round and the nature of those attacks.</definition>
+      <rule>Attack entries are ordered to match the damage listing.</rule>
+      <rule>General special attack rules apply whenever a monster is noted to possess that special attack, unless the monster description states otherwise.</rule>
+    </characteristic>
+
+    <special_attack name="acid">
+      <rule>Acid damages on a successful hit by making contact with flesh.</rule>
+      <rule>After contact is made, acid continues to deal damage in later rounds without additional attack throws unless noted otherwise.</rule>
+      <rule>Most acid can be removed with water or another non-flammable liquid.</rule>
+      <exception>Black dragon acid breath does not persist round to round; damage is suffered only per attack.</exception>
+      <rule>If acid destroys armor, adjust the victim's AC as though unarmored.</rule>
+    </special_attack>
+
+    <special_attack name="charge">
+      <rule>Any monster may charge using the normal movement rules.</rule>
+      <rule>Monsters with natural weapons suited for charging deal double damage on a successful charge.</rule>
+    </special_attack>
+
+    <special_attack name="charm">
+      <rule>Monster charm differs from charm person.</rule>
+      <rule>The target receives a saving throw versus Spells.</rule>
+      <rule>On a failed save, the target becomes confused and passive.</rule>
+      <rule>A charmed target cannot use spells or magic items.</rule>
+      <rule>A charmed target cannot make decisions.</rule>
+      <rule>A charmed target does not defend against the monster's attacks.</rule>
+      <rule>If the monster and target cannot communicate, the target still acts in the monster's interest and protects it, even against allies.</rule>
+      <rule>Charm effects have a duration.</rule>
+      <rule>If the monster is killed, the charm effect ends immediately.</rule>
+    </special_attack>
+
+    <special_attack name="continuing_damage">
+      <definition>Some attacks continue to deal damage after the initial successful hit without requiring new attack throws.</definition>
+      <rule>The monster description states when the continuing damage ends.</rule>
+      <rule>Ending conditions usually include the monster's death.</rule>
+    </special_attack>
+
+    <special_attack name="dive">
+      <rule>Only flying monsters with talons can make dive attacks.</rule>
+      <rule>Targets must be in open terrain for a dive attack to be possible.</rule>
+      <rule>A successful dive attack deals double damage.</rule>
+      <rule>If both talon attacks hit, the monster may grab the target.</rule>
+      <rule>The target must be smaller than the monster to be grabbed.</rule>
+      <rule>The target can avoid being grabbed with a successful saving throw versus Paralysis.</rule>
+      <rule>If the monster is much larger than the target, the Judge may impose a save penalty of -4, -6, -8, or greater.</rule>
+      <rule>Some monsters are large enough to grab with no saving throw allowed.</rule>
+      <rule>Once grabbed, the target takes automatic damage each round without further attack throws until escape.</rule>
+      <rule>Grabbed creatures are helpless until they escape.</rule>
+      <rule>Escape requires a successful saving throw versus Paralysis.</rule>
+      <rule>Grabbed creatures may be carried off.</rule>
+      <rule>A carried creature falls if it escapes, if the monster releases it, or if the monster is killed.</rule>
+    </special_attack>
+
+    <special_attack name="energy_drain">
+      <rule>Energy drain removes class levels from characters and Hit Dice from monsters.</rule>
+      <rule>No saving throw is allowed.</rule>
+      <rule>The effect can be reversed only by ritual magic such as wish.</rule>
+      <rule>When a character loses a level, set experience points to the minimum for the new lower level.</rule>
+      <rule>All class-dependent abilities adjust to the new lower level, including hit points and saving throws.</rule>
+    </special_attack>
+
+    <special_attack name="magic_resistance">
+      <definition>Magic resistance is a chance to ignore spells and spell-like effects.</definition>
+      <procedure>
+        <step order="1">When the creature is affected by a spell or qualifying spell-like effect, roll 1d20.</step>
+        <step order="2">If the roll is equal to or greater than the creature's listed MR value, the creature ignores the effect.</step>
+      </procedure>
+      <rule>The listed MR value assumes a 7th level caster.</rule>
+      <rule>Apply a -1 penalty to the resistance target for each caster level above 7.</rule>
+      <rule>Apply a +1 bonus to the resistance target for each caster level below 7.</rule>
+      <rule>For MR, spell-like effects are effects that duplicate spells or are resisted with a saving throw versus Spells or Staffs and Wands.</rule>
+      <rule>Effects resisted with Poison and Death, Blast and Breath, or Paralysis or Petrification do not count as spell-like effects for MR unless they also duplicate a spell.</rule>
+    </special_attack>
+
+    <special_attack name="paralysis">
+      <rule>A paralyzed character collapses and cannot move, speak, or cast spells.</rule>
+      <rule>The character remains conscious and aware.</rule>
+      <rule>A saving throw versus Paralysis avoids the effect.</rule>
+      <rule>Paralyzed characters require no attack throw to be hit.</rule>
+      <rule>Any unengaged character can slay a paralyzed character in one round with any weapon.</rule>
+      <rule>Most monster paralysis lasts 2d4 turns.</rule>
+      <rule>Cure light wounds can negate monster paralysis, but heals no hit points when used this way.</rule>
+    </special_attack>
+
+    <special_attack name="petrifying_gaze">
+      <rule>Meeting the gaze requires a saving throw versus Petrification or the victim turns to stone.</rule>
+      <rule>Surprised opponents automatically meet the gaze.</rule>
+      <rule>Opponents attacking without averting their eyes or using a mirror also meet the gaze.</rule>
+      <rule>Fighting while averting the eyes imposes -4 on attack rolls and -2 AC.</rule>
+      <rule>Fighting via mirror reflection is safe from direct gaze.</rule>
+      <rule>Using a mirror imposes -2 to attack and no AC penalty.</rule>
+      <rule>A petrifying-gaze monster is not immune to its own gaze.</rule>
+      <rule>If such a monster sees itself in a mirror, it must save versus Petrification or turn itself to stone.</rule>
+      <rule>Monsters with petrifying gaze instinctively avoid mirrors and reflective surfaces.</rule>
+      <rule>If an attacker surprises such a monster with a mirror, there is a 1-2 on 1d6 chance the monster sees its reflection.</rule>
+    </special_attack>
+
+    <special_attack name="poison">
+      <rule>Unless otherwise noted, a character exposed to monster poison must immediately save versus Poison or die.</rule>
+      <rule>Neutralize poison can restore a poisoned character if cast within 10 rounds of death.</rule>
+    </special_attack>
+
+    <special_attack name="swallow_attack">
+      <rule>Some monsters swallow whole when an unmodified attack throw equals or exceeds a target value stated in the monster description.</rule>
+      <rule>A swallowed character suffers the listed damage each round until death or until the monster is killed.</rule>
+      <rule>Swallowing may have additional effects stated in the monster's description.</rule>
+      <rule>A swallowed character with a sharp weapon may attack from inside with a -4 attack penalty.</rule>
+      <rule>If a swallowed character dies and remains in the monster's belly for 6 turns, the body is irrecoverably digested and cannot benefit from restore life and limb.</rule>
+    </special_attack>
+
+    <special_attack name="trample">
+      <rule>A trample attack uses the monster's bulk to stomp or crush a target.</rule>
+      <rule>Trample gains +4 to the attack throw against human-sized or smaller opponents.</rule>
+      <rule>A monster capable of trampling will use trample 3/4 of the time, rolling 1-3 on 1d4, and use other attacks the rest of the time.</rule>
+      <rule>Large groups of normal-sized animals, numbering 20 or more, may also trample.</rule>
+      <rule>Mass animal trample attacks deal 1d20 damage.</rule>
+    </special_attack>
+
+    <characteristic name="damage">
+      <definition>Damage is listed in the same order as attacks.</definition>
+      <rule>Damage is rolled using the listed die expression as with weapon damage.</rule>
+      <rule>Some monsters use weapons.</rule>
+    </characteristic>
+
+    <characteristic name="save">
+      <definition>Monsters save as a class and level equivalent.</definition>
+      <rule>Most monsters save as fighters, but any class progression may be specified.</rule>
+      <rule>Unintelligent monsters often save as a fighter of level equal to one-half their Hit Dice, rounded up.</rule>
+      <abbreviations>
+        <entry short="C" long="Cleric"/>
+        <entry short="F" long="Fighter"/>
+        <entry short="M" long="Mage"/>
+        <entry short="T" long="Thief"/>
+        <entry short="D" long="Dwarven Vaultguard"/>
+        <entry short="E" long="Elven Spellsword"/>
+      </abbreviations>
+    </characteristic>
+
+    <characteristic name="morale">
+      <definition>Morale determines whether monsters continue fighting or flee when losing a battle.</definition>
+      <procedure>
+        <step order="1">Roll 2d6 using the Morale Rolls rule.</step>
+        <step order="2">Add the monster's morale score.</step>
+        <step order="3">Resolve the result using the morale subsystem.</step>
+      </procedure>
+      <rule>Morale scores range from -6 to +4.</rule>
+      <rule>A morale of -6 represents a monster that never fights.</rule>
+      <rule>A morale of +4 represents a monster that never retreats and never surrenders.</rule>
+      <rule>Mindless vermin, constructs, and controlled undead may have morale listed as N/A and never roll morale.</rule>
+    </characteristic>
+
+    <characteristic name="treasure_type">
+      <definition>Treasure Type is a letter code from A to R.</definition>
+      <rule>Treasure Type A yields the smallest hoards and Treasure Type R the largest.</rule>
+      <rule>Treasure Type is cross-referenced on the treasure table to determine lair treasure.</rule>
+      <rule>Unless otherwise noted, monster treasure is found only in the lair.</rule>
+    </characteristic>
+
+    <characteristic name="xp">
+      <definition>Printed experience points are precalculated from Hit Dice and special abilities.</definition>
+      <rule>If the monster has variable Hit Dice, the printed XP assumes the lowest possible Hit Dice.</rule>
+      <rule>XP must be recalculated for more powerful versions with higher Hit Dice.</rule>
+    </characteristic>
+  </monster_characteristics>
+
+  <monster_types>
+    <general_rules>
+      <rule>Monster type determines the effectiveness of charm, detection, hold, protection, and sleep spells against the creature.</rule>
+      <rule>A creature may belong to more than one monster type.</rule>
+    </general_rules>
+
+    <monster_type name="animal">
+      <definition>Real-world creatures of subhuman intelligence, including giant and prehistoric animals.</definition>
+      <spell_interactions>
+        <rule>Charm animal, speak with animal, and related magic items work only on animals.</rule>
+        <rule>Animals are also vulnerable to charm monster and hold monster.</rule>
+      </spell_interactions>
+    </monster_type>
+
+    <monster_type name="beastman">
+      <definition>Hybrid humanoid-animal or humanoid-fantastic-creature monsters.</definition>
+    </monster_type>
+
+    <monster_type name="construct">
+      <definition>Mindless, unliving monsters.</definition>
+      <rule>Skeletons and zombies are undead constructs.</rule>
+      <immunities>
+        <immunity>gas</immunity>
+        <immunity>poison</immunity>
+        <immunity>charm</immunity>
+        <immunity>sleep</immunity>
+        <immunity>hold</immunity>
+      </immunities>
+      <spell_interactions>
+        <rule>Constructs count as enchanted creatures for dispel evil and protection from evil.</rule>
+      </spell_interactions>
+    </monster_type>
+
+    <monster_type name="enchanted_creature">
+      <definition>Creatures affected by anti-evil warding and banishment interactions.</definition>
+      <spell_interactions>
+        <rule>Can be kept at bay by protection from evil.</rule>
+        <rule>Can be destroyed or driven off by dispel evil.</rule>
+      </spell_interactions>
+      <membership_rules>
+        <rule>All constructs, summoned creatures, and undead are enchanted creatures.</rule>
+        <rule>Lycanthropes, shadows, and other fantastic creatures that can only be harmed by magical weapons are also enchanted creatures.</rule>
+      </membership_rules>
+    </monster_type>
+
+    <monster_type name="fantastic_creature">
+      <definition>Creatures defined by magical powers, impossible body combinations, or both.</definition>
+      <spell_interactions>
+        <rule>Not affected by charm person or hold person.</rule>
+        <rule>Usually vulnerable to charm monster and hold monster.</rule>
+      </spell_interactions>
+    </monster_type>
+
+    <monster_type name="giant_humanoid">
+      <definition>Creatures that would be humanoids except for great size and 5 or more Hit Dice.</definition>
+      <spell_interactions>
+        <rule>Not affected by charm person or hold person.</rule>
+        <rule>Vulnerable to charm monster and hold monster.</rule>
+      </spell_interactions>
+    </monster_type>
+
+    <monster_type name="humanoid">
+      <definition>Creatures no larger than an ogre and possessing 4 or fewer Hit Dice.</definition>
+      <rule>Humanoids other than humans that have character classes are called demi-humans.</rule>
+      <rule>Humans and demi-humans remain humanoids even at 5th level or higher.</rule>
+      <spell_interactions>
+        <rule>All humanoids are vulnerable to charm person and hold person.</rule>
+      </spell_interactions>
+    </monster_type>
+
+    <monster_type name="ooze">
+      <definition>Mindless ooze-type monsters.</definition>
+      <rule>Different oozes have different immunities and vulnerabilities.</rule>
+      <immunities>
+        <immunity>charm</immunity>
+        <immunity>hold</immunity>
+        <immunity>sleep</immunity>
+      </immunities>
+    </monster_type>
+
+    <monster_type name="summoned_creature">
+      <definition>Creatures classified as summoned beings.</definition>
+      <spell_interactions>
+        <rule>Can be kept at bay by protection from evil.</rule>
+        <rule>Can be destroyed or driven off by dispel evil.</rule>
+        <rule>Chaotic summoned creatures are inherently evil for detect evil and protection from evil.</rule>
+        <rule>Usually vulnerable to charm monster and hold monster.</rule>
+      </spell_interactions>
+    </monster_type>
+
+    <monster_type name="undead">
+      <definition>Creatures that were once alive and now exist as undead horrors.</definition>
+      <behavior_rule>Most undead do not make a sound when moving.</behavior_rule>
+      <immunities>
+        <immunity>gas</immunity>
+        <immunity>poison</immunity>
+        <immunity>charm</immunity>
+        <immunity>sleep</immunity>
+        <immunity>hold</immunity>
+      </immunities>
+      <spell_interactions>
+        <rule>All undead are inherently evil for detect evil and protection from evil.</rule>
+      </spell_interactions>
+    </monster_type>
+
+    <monster_type name="vermin">
+      <definition>Mindless lower life forms.</definition>
+      <spell_interactions>
+        <rule>Cannot be affected by spells that affect animals.</rule>
+        <rule>Usually vulnerable to charm monster and hold monster.</rule>
+      </spell_interactions>
+    </monster_type>
+  </monster_types>
+
+  <abbreviations>
+    <monster_stat_block_order>
+      <entry short="AC" long="armor_class"/>
+      <entry short="Move" long="movement"/>
+      <entry short="HD" long="hit_dice"/>
+      <entry short="hp" long="hit_points"/>
+      <entry short="#AT" long="number_of_attacks"/>
+      <entry short="Dmg" long="damage"/>
+      <entry short="SV" long="save"/>
+      <entry short="ML" long="morale"/>
+      <entry short="AL" long="alignment"/>
+    </monster_stat_block_order>
+    <alignment_abbreviations>
+      <entry short="C" long="chaotic"/>
+      <entry short="N" long="neutral"/>
+      <entry short="L" long="lawful"/>
+    </alignment_abbreviations>
+  </abbreviations>
+</rules_summary>

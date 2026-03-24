@@ -1,0 +1,993 @@
+<acks_equipment_summary>
+  <document_scope>
+    <title>ACKS Core - Equipment, Encumbrance, Hirelings, Henchmen, Mercenaries, and Specialists</title>
+    <focus>Mechanical rules, procedures, definitions, and tables only.</focus>
+  </document_scope>
+
+  <equipment_basics>
+    <starting_equipment>
+      <default_clothing>All characters begin with sturdy clothes suitable for adventuring.</default_clothing>
+      <starting_wealth>Additional starting equipment is purchased with 3d6 x 10 gp.</starting_wealth>
+      <class_relevance>
+        <note>Characters are expected to buy equipment appropriate to class needs.</note>
+      </class_relevance>
+    </starting_equipment>
+  </equipment_basics>
+
+  <currency>
+    <coin_types>
+      <coin id="cp" name="copper_piece"/>
+      <coin id="sp" name="silver_piece"/>
+      <coin id="ep" name="electrum_piece"/>
+      <coin id="gp" name="gold_piece"/>
+      <coin id="pp" name="platinum_piece"/>
+    </coin_types>
+    <exchange_values>
+      <row coin="cp" cp="1" sp="1/10" ep="1/50" gp="1/100" pp="1/500"/>
+      <row coin="sp" cp="10" sp="1" ep="1/5" gp="1/10" pp="1/50"/>
+      <row coin="ep" cp="50" sp="5" ep="1" gp="1/2" pp="1/10"/>
+      <row coin="gp" cp="100" sp="10" ep="2" gp="1" pp="1/5"/>
+      <row coin="pp" cp="500" sp="50" ep="10" gp="5" pp="1"/>
+    </exchange_values>
+  </currency>
+
+  <standard_of_living>
+    <row standard="wretched" monthly_cost="1gp" common_professions="serfs and peasants"/>
+    <row standard="meager" monthly_cost="3gp-12gp" common_professions="unskilled manual laborers"/>
+    <row standard="adequate" monthly_cost="12gp-40gp" common_professions="skilled laborers or journeyman crafters; 1st level adventurers"/>
+    <row standard="comfortable" monthly_cost="40gp-100gp" common_professions="master craftsmen or yeomen farmer (85 acres); 2nd level adventurers"/>
+    <row standard="prosperous" monthly_cost="100gp-450gp" common_professions="master professionals or landed patrician (200 acres); 3rd-4th level adventurers"/>
+    <row standard="affluent" monthly_cost="450gp-2,000gp" common_professions="barons or wealthy patricians; 5th-7th level adventurers"/>
+    <row standard="sumptuous" monthly_cost="2,000gp-12,000gp" common_professions="marquis or counts; 8th-9th level adventurers"/>
+    <row standard="luxuriant" monthly_cost="12,000gp-80,000gp" common_professions="dukes or princes; 10th-12th level adventurers"/>
+    <row standard="lavishly_opulent" monthly_cost="80,000gp+" common_professions="kings or emperors; 13th-14th level adventurers"/>
+  </standard_of_living>
+
+  <purchasing_equipment>
+    <recordkeeping>All purchases should be recorded on the character sheet, including remaining money.</recordkeeping>
+    <open_item_creation>If desired items are not listed, the Judge may derive characteristics and prices from existing items.</open_item_creation>
+    <class_restriction_rule>
+      <statement>Any class may purchase, carry, and use any weapon or armor.</statement>
+      <penalty_when_using_prohibited_equipment>
+        <effect>Character fights as a 0-level character while so equipped.</effect>
+        <effect>No bonus on attack throws or armor class from ability scores or equipment.</effect>
+        <effect>Cannot use class powers.</effect>
+        <effect>Does not gain XP.</effect>
+      </penalty_when_using_prohibited_equipment>
+    </class_restriction_rule>
+  </purchasing_equipment>
+
+  <markets_and_availability>
+    <market_classes>
+      <market class="I" population="100,000+" description="vast mercantile hubs of empires"/>
+      <market class="II" population="25,000+" description="major ports, national capitals, other large cities"/>
+      <market class="III" population="8,750-25,000" description="provincial capitals and medium-sized cities"/>
+      <market class="IV" population="3,000-8,750" description="small cities and large towns"/>
+      <market class="V" population="1,250-3,000" description="small towns and large villages"/>
+      <market class="VI" population="1,250 or less" description="villages"/>
+    </market_classes>
+
+    <equipment_availability_rules>
+      <rule>Availability is determined by item price category relative to market class.</rule>
+      <rule>Values are the number of each specific item available each month, not total items in that price category.</rule>
+      <rule>Percentages indicate the chance that one unit of that specific item is available at all that month.</rule>
+      <bundle_rule>Bundles of small items sold together count as one item for availability purposes.</bundle_rule>
+    </equipment_availability_rules>
+
+    <equipment_availability_by_market_class>
+      <row price="1gp or less" class_I="1700" class_II="585" class_III="260" class_IV="65" class_V="30" class_VI="10"/>
+      <row price="2gp-10gp" class_I="100" class_II="30" class_III="15" class_IV="5" class_V="1" class_VI="1"/>
+      <row price="11gp-100gp" class_I="15" class_II="5" class_III="2" class_IV="1" class_V="25%" class_VI="10%"/>
+      <row price="101gp-1,000gp" class_I="7" class_II="2" class_III="1" class_IV="25%" class_V="10%" class_VI="5%"/>
+      <row price="1,001gp-10,000gp" class_I="2" class_II="1" class_III="25%" class_IV="10%" class_V="5%" class_VI="1%"/>
+      <row price="10,001gp or more" class_I="10%" class_II="5%" class_III="2%" class_IV="NA" class_V="NA" class_VI="NA"/>
+    </equipment_availability_by_market_class>
+  </markets_and_availability>
+
+  <commissioning_equipment>
+    <availability_adjustment>Commissioned equipment is treated as one price category less expensive when determining whether builders/trainers are available.</availability_adjustment>
+    <drawback>Commissioned goods are not immediately available.</drawback>
+    <time_to_complete>
+      <category type="buildings_and_vehicles">1 day per 500gp value</category>
+      <category type="animals">1 day per 1gp value to find and train</category>
+      <category type="other_equipment">1 day per 5gp value</category>
+    </time_to_complete>
+  </commissioning_equipment>
+
+  <equipment_tables>
+    <adventuring_equipment>
+      <item name="Backpack" cost="2gp" notes="holds 4 stone"/>
+      <item name="Barrel (20 gallon)" cost="3sp"/>
+      <item name="Belladonna (1lb)" cost="10gp"/>
+      <item name="Blanket (wool, thick)" cost="2gp"/>
+      <item name="Birthwort (1lb)" cost="10gp"/>
+      <item name="Candle (tallow, 1lb)" cost="2sp"/>
+      <item name="Candle (wax, 1lb)" cost="6sp"/>
+      <item name="Chest (ironbound)" cost="22gp" notes="holds 20 stone"/>
+      <item name="Comfrey (1lb)" cost="10gp"/>
+      <item name="Crowbar" cost="1gp"/>
+      <item name="Flask of Oil (common, 1 pint)" cost="3sp"/>
+      <item name="Flask of Oil (military, 1 pint)" cost="2gp"/>
+      <item name="Garlic (1lb)" cost="5gp"/>
+      <item name="Goldenrod (1lb)" cost="10gp"/>
+      <item name="Grappling Hook" cost="25gp"/>
+      <item name="Hammer (small)" cost="2gp"/>
+      <item name="Holy Symbol" cost="25gp"/>
+      <item name="Holy Water (1 pint)" cost="25gp"/>
+      <item name="Ink (1 oz.)" cost="8gp"/>
+      <item name="Iron Spikes (12)" cost="1gp"/>
+      <item name="Lantern" cost="10gp"/>
+      <item name="Lock" cost="20gp"/>
+      <item name="Mirror (hand-sized, steel)" cost="5gp"/>
+      <item name="Musical Instrument" cost="25gp-100gp"/>
+      <item name="Pouch/Purse" cost="5sp" notes="holds 1/2 stone"/>
+      <item name="Pole, Wooden (10')" cost="1sp"/>
+      <item name="Rations, Iron (one week)" cost="1gp-6gp"/>
+      <item name="Rations, Standard (one week)" cost="3sp-3gp"/>
+      <item name="Rope (50')" cost="1gp"/>
+      <item name="Sack (small)" cost="3sp" notes="holds 2 stone"/>
+      <item name="Sack (large)" cost="8sp" notes="holds 6 stone"/>
+      <item name="Spell Book (blank)" cost="20gp"/>
+      <item name="Stakes (4) and Mallet" cost="3gp"/>
+      <item name="Tent" cost="20gp"/>
+      <item name="Thieves' Tools" cost="25gp"/>
+      <item name="Tinder Box (flint and steel)" cost="8sp"/>
+      <item name="Torches (6)" cost="1sp"/>
+      <item name="Water/Wine Skin" cost="6sp"/>
+      <item name="Wolfsbane (1lb)" cost="10gp"/>
+      <item name="Woundwart (1lb)" cost="10gp"/>
+    </adventuring_equipment>
+
+    <armor>
+      <item name="Clothing Only" cost="-" ac="0"/>
+      <item name="Hide and Fur Armor" cost="10gp" ac="1"/>
+      <item name="Leather Armor" cost="20gp" ac="2"/>
+      <item name="Ring Mail or Scale Armor" cost="30gp" ac="3"/>
+      <item name="Chain Mail Armor" cost="40gp" ac="4"/>
+      <item name="Banded Plate or Lamellar Armor" cost="50gp" ac="5"/>
+      <item name="Plate Armor" cost="60gp" ac="6"/>
+      <item name="Shield" cost="10gp" ac="+1"/>
+      <item name="Leather Barding" cost="40gp" ac="1"/>
+      <item name="Scale Barding" cost="75gp" ac="2"/>
+      <item name="Chain Barding" cost="150gp" ac="3"/>
+      <item name="Lamellar Barding" cost="300gp" ac="4"/>
+      <item name="Plate Barding" cost="600gp" ac="5"/>
+    </armor>
+
+    <weapons>
+      <damage_note>Where two damage values are listed, the first is for one-handed use and the second is for two-handed use.</damage_note>
+
+      <category name="Axes">
+        <item name="Battle Axe" cost="7gp" damage="1d6/1d8"/>
+        <item name="Great Axe (two-handed)" cost="10gp" damage="1d10"/>
+        <item name="Hand Axe" cost="4gp" damage="1d6"/>
+      </category>
+
+      <category name="Bows and Crossbows">
+        <item name="Arbalest" cost="50gp" damage="1d8"/>
+        <item name="Crossbow" cost="30gp" damage="1d6"/>
+        <item name="Case with 20 Bolts" cost="2gp"/>
+        <item name="Composite Bow" cost="40gp" damage="1d6"/>
+        <item name="Longbow" cost="7gp" damage="1d6"/>
+        <item name="Shortbow" cost="3gp" damage="1d6"/>
+        <item name="Quiver with 20 Arrows" cost="1gp"/>
+        <item name="1 Silver-Tipped Arrow" cost="5gp"/>
+      </category>
+
+      <category name="Catapults and Ballista">
+        <item name="Ballista (800lb)" cost="80gp" damage="3d6"/>
+        <item name="Ballista Shot" cost="2gp"/>
+        <item name="Heavy Catapult (1,800lb)" cost="200gp" damage="4d6"/>
+        <item name="Light Catapult (1,200lb)" cost="100gp" damage="3d6"/>
+        <item name="Catapult Shot (25lb)" cost="5gp"/>
+        <item name="Catapult Shot, Pitch (25lb)" cost="25gp"/>
+      </category>
+
+      <category name="Flails, Hammers, and Maces">
+        <item name="Club" cost="1gp" damage="1d4"/>
+        <item name="Flail" cost="5gp" damage="1d6/1d8"/>
+        <item name="Mace" cost="5gp" damage="1d6/1d8"/>
+        <item name="Morning Star (two-handed)" cost="10gp" damage="1d10"/>
+        <item name="War Hammer" cost="5gp" damage="1d6/1d8"/>
+      </category>
+
+      <category name="Spears and Pole Arms">
+        <item name="Lance (mounted)" cost="1gp" damage="1d10"/>
+        <item name="Javelin" cost="1gp" damage="1d6"/>
+        <item name="Pole Arm (two-handed)" cost="7gp" damage="1d10"/>
+        <item name="Spear" cost="3gp" damage="1d6/1d8"/>
+      </category>
+
+      <category name="Swords and Daggers">
+        <item name="Dagger" cost="3gp" damage="1d4"/>
+        <item name="Silver Dagger" cost="30gp" damage="1d4"/>
+        <item name="Short Sword" cost="7gp" damage="1d6"/>
+        <item name="Sword" cost="10gp" damage="1d6/1d8"/>
+        <item name="Two-Handed Sword" cost="15gp" damage="1d10"/>
+      </category>
+
+      <category name="Other Weapons">
+        <item name="Bola" cost="5gp" damage="1d2"/>
+        <item name="Darts (5)" cost="2gp" damage="1d4"/>
+        <item name="Net" cost="1gp" damage="-"/>
+        <item name="Sling with 30 Sling Bullets" cost="2gp" damage="1d4"/>
+        <item name="Sap" cost="1gp" damage="1d4"/>
+        <item name="Staff" cost="1gp" damage="1d4/1d6"/>
+        <item name="Whip" cost="5gp" damage="1d2"/>
+      </category>
+    </weapons>
+
+    <clothing>
+      <item name="Belt/Sash (leather)" cost="4sp"/>
+      <item name="Boots (leather, low)" cost="6sp"/>
+      <item name="Boots (leather, high)" cost="3gp"/>
+      <item name="Cassock (cleric/mage)" cost="7gp"/>
+      <item name="Cloak (fur-lined, winter)" cost="15gp"/>
+      <item name="Cloak (long, hooded)" cost="1gp"/>
+      <item name="Dress (crafter/freeholder)" cost="4gp"/>
+      <item name="Dress (armiger)" cost="20gp"/>
+      <item name="Gown (lady-in-waiting/noble)" cost="100gp"/>
+      <item name="Gown (duchess)" cost="1000gp"/>
+      <item name="Gloves" cost="4sp"/>
+      <item name="Hat (armiger)" cost="10sp"/>
+      <item name="Linen (cheap, 1 yard)" cost="1gp"/>
+      <item name="Linen (fine, 1 yard)" cost="7gp"/>
+      <item name="Robe (cleric/mage)" cost="6gp"/>
+      <item name="Silk (1 yard)" cost="15gp"/>
+      <item name="Sandals/Shoes (leather)" cost="4sp"/>
+      <item name="Tunic and Pants (serf)" cost="2gp"/>
+      <item name="Tunic and Pants (crafter/freeholder)" cost="4gp"/>
+      <item name="Tunic and Pants (armiger)" cost="20gp"/>
+      <item name="Tunic and Pants (noble)" cost="100gp"/>
+      <item name="Wool (cheap, 1 yard)" cost="6sp"/>
+      <item name="Wool (fine, 1 yard)" cost="6gp"/>
+    </clothing>
+
+    <livestock>
+      <item name="Chicken (3lb)" cost="1sp"/>
+      <item name="Cow (550lb)" cost="10gp"/>
+      <item name="Dog (hunting)" cost="10gp"/>
+      <item name="Dog (war)" cost="75gp"/>
+      <item name="Goat (125lb)" cost="3gp"/>
+      <item name="Hawk (trained)" cost="20gp"/>
+      <item name="Pig (125lb)" cost="3gp"/>
+      <item name="Sheep (80lb)" cost="2gp"/>
+    </livestock>
+
+    <foodstuffs>
+      <item name="Ale/Beer (cheap, 3 pints)" cost="1cp"/>
+      <item name="Ale/Beer (good, 1 pint)" cost="2cp"/>
+      <item name="Bread (white, 4lb)" cost="1sp"/>
+      <item name="Bread (wheat, 8lb)" cost="1sp"/>
+      <item name="Bread (coarse, 12lb)" cost="1sp"/>
+      <item name="Cheese (1lb)" cost="5cp"/>
+      <item name="Cinnamon / clover / pepper / sugar (1lb)" cost="3gp"/>
+      <item name="Dried Fruit (1lb)" cost="1sp"/>
+      <item name="Eggs (1 dozen)" cost="5cp"/>
+      <item name="Meal (1 person, poor to feast)" cost="1cp-10gp"/>
+      <item name="Meat (beef/chicken/mutton/pork, 1lb)" cost="1sp"/>
+      <item name="Saffron (1lb)" cost="15gp"/>
+      <item name="Wine (cheap, 1 pint)" cost="2cp"/>
+      <item name="Wine (good, 1 pint)" cost="1sp"/>
+      <item name="Wine (rare, 1 pint)" cost="5sp"/>
+    </foodstuffs>
+
+    <lodging>
+      <item name="Cottage (wood)" cost="300gp"/>
+      <item name="Inn (one person, one night, slum)" cost="1sp"/>
+      <item name="Inn (one person, one night, average)" cost="5sp"/>
+      <item name="Inn (one person, one night, superb)" cost="2gp"/>
+      <item name="Hut (wattle)" cost="25gp"/>
+      <item name="Hut (wooden)" cost="50gp"/>
+      <item name="Townhouse (stone)" cost="1,200gp"/>
+    </lodging>
+
+    <land_transport>
+      <item name="Camel" cost="100gp"/>
+      <item name="Caparison (warhorse)" cost="20gp"/>
+      <item name="Cart (small)" cost="25gp"/>
+      <item name="Cart (large)" cost="50gp"/>
+      <item name="Donkey" cost="8gp"/>
+      <item name="Mule" cost="20gp"/>
+      <item name="Ox (2,000lb)" cost="40gp"/>
+      <item name="Saddle and Tack (draft)" cost="5gp"/>
+      <item name="Saddle and Tack (riding)" cost="10gp"/>
+      <item name="Saddle and Tack (war)" cost="25gp"/>
+      <item name="Saddlebags (leather)" cost="5gp"/>
+      <item name="Stabling (draft/riding horse, one night)" cost="2sp-5sp"/>
+      <item name="Stabling (warhorse, one night)" cost="5sp-1gp"/>
+      <item name="Wagon" cost="200gp"/>
+      <item name="Heavy Draft Horse" cost="40gp"/>
+      <item name="Heavy Warhorse" cost="700gp"/>
+      <item name="Medium Draft Horse" cost="30gp"/>
+      <item name="Medium Riding Horse" cost="40gp"/>
+      <item name="Medium Warhorse" cost="250gp"/>
+      <item name="Light Riding Horse" cost="75gp"/>
+      <item name="Light Warhorse" cost="150gp"/>
+    </land_transport>
+
+    <maritime_transport>
+      <item name="Barge/Raft" cost="1gp per sq ft"/>
+      <item name="Boat (river)" cost="4000gp"/>
+      <item name="Boat (sailing)" cost="2000gp"/>
+      <item name="Canoe" cost="40gp"/>
+      <item name="Galley (large)" cost="30,000gp"/>
+      <item name="Galley (small)" cost="10,000gp"/>
+      <item name="Galley (war)" cost="60,000gp"/>
+      <item name="Longship" cost="15,000gp"/>
+      <item name="Sailing Ship (large)" cost="20,000gp"/>
+      <item name="Sailing Ship (small)" cost="10,000gp"/>
+      <item name="Troop Transport (large)" cost="30,000gp"/>
+      <item name="Troop Transport (small)" cost="15,000gp"/>
+    </maritime_transport>
+  </equipment_tables>
+
+  <equipment_mechanics>
+    <items>
+      <item name="Great Axe">
+        <effect>Imposes -1 penalty on initiative rolls.</effect>
+      </item>
+
+      <item name="Backpack">
+        <capacity>4 stone (40lb).</capacity>
+      </item>
+
+      <item name="Belladonna">
+        <effect>If eaten within 1 hour of infection with lycanthropy, character may save vs Poison to shake off lycanthropy.</effect>
+        <failure>If the save fails, the character dies from poison after 1 turn.</failure>
+        <limitation>Even if poison is neutralized or the character is raised, the lycanthropy remains; further doses are useless.</limitation>
+      </item>
+
+      <item name="Birthwort">
+        <requirement>Must be applied by an adventurer with the Healing proficiency.</requirement>
+        <effect>Provides +2 bonus on Healing proficiency throw to neutralize poison.</effect>
+      </item>
+
+      <item name="Boat, River">
+        <crew>Requires at least 1 rower.</crew>
+        <optional_upgrade>Roof increases cost by 1,000gp.</optional_upgrade>
+        <capacity>600 stone plus crew.</capacity>
+      </item>
+
+      <item name="Boat, Sailing">
+        <crew>Requires at least 1 sailor.</crew>
+        <capacity>400 stone plus crew.</capacity>
+      </item>
+
+      <item name="Bola">
+        <effect>May be used with a thrown attack to make a knock down or wrestling maneuver.</effect>
+      </item>
+
+      <item name="Longbow">
+        <restriction>Requires STR 9+.</restriction>
+        <restriction>Cannot be used by mounted troops.</restriction>
+      </item>
+
+      <item name="Candles">
+        <effect>Dimly illuminate a 5' radius.</effect>
+        <duration>Burn for 1 hour.</duration>
+        <special>Tallow candles produce foul-smelling smoke; adventurers carrying them never surprise creatures with keen olfactory senses.</special>
+      </item>
+
+      <item name="Canoe">
+        <capacity>60 stone (600lb) plus crew.</capacity>
+        <overland_transport>Can be carried overland by two people at a cost of 5 stone of encumbrance.</overland_transport>
+      </item>
+
+      <item name="Cart, Small">
+        <mobility>May only move through desert, mountains, forests, or swamps if a road is available.</mobility>
+        <pulling_options>
+          <option team="1 mule" load_normal="40 stone" speed_normal="60' per turn" load_max="60 stone" speed_max="30' per turn"/>
+          <option team="2 mules" load_normal="80 stone" speed_normal="60' per turn" load_max="120 stone" speed_max="30' per turn"/>
+        </pulling_options>
+      </item>
+
+      <item name="Cart, Large">
+        <mobility>May only move through desert, mountains, forests, or swamps if a road is available.</mobility>
+        <pulling_options>
+          <option team="1 heavy horse or 2 mules or 2 medium horses" load_normal="80 stone" speed_normal="60' per turn" load_max="120 stone" speed_max="30' per turn"/>
+          <option team="2 heavy horses" load_normal="160 stone" speed_normal="60' per turn" load_max="240 stone" speed_max="30' per turn"/>
+        </pulling_options>
+      </item>
+
+      <item name="Club">
+        <note>Common simple weapon.</note>
+      </item>
+
+      <item name="Military Oil">
+        <effect>May be thrown at a creature, dealing 1d8 damage for 2 rounds to the creature struck.</effect>
+        <effect>May be poured on the floor and ignited to delay pursuit.</effect>
+        <special>Cannot be easily doused with water.</special>
+      </item>
+
+      <item name="Mule">
+        <load>
+          <normal load="20 stone" move="120' per turn"/>
+          <maximum load="40 stone" move="60' per turn"/>
+        </load>
+      </item>
+
+      <item name="Musical Instrument">
+        <quality_levels>
+          <level cost="25gp" effect="common instrument"/>
+          <level cost="50gp" effect="+1 to Performance proficiency throws made with it"/>
+          <level cost="100gp" effect="+2 to Performance proficiency throws made with it"/>
+        </quality_levels>
+      </item>
+
+      <item name="Net">
+        <effect>Provides +2 bonus on attack throws to wrestle opponents.</effect>
+      </item>
+
+      <item name="Ox">
+        <load>
+          <normal load="45 stone" move="60' per turn"/>
+          <maximum load="90 stone" move="30' per turn"/>
+        </load>
+      </item>
+
+      <item name="Pole, Wooden">
+        <use>Commonly used to prod or test hazardous areas and measure depth.</use>
+      </item>
+
+      <item name="Pole Arm">
+        <effect>Can attack from the second rank in melee.</effect>
+        <effect>Inflicts double damage when used in or against a charge.</effect>
+        <penalty>-1 initiative.</penalty>
+      </item>
+
+      <item name="Pouch/Purse">
+        <capacity>1/2 stone (5lb).</capacity>
+      </item>
+
+      <item name="Raft/Barge">
+        <barge>Professionally built barges can be 30' x 40' and carry 500 stone (5,000lb) per 10' square.</barge>
+        <makeshift_raft>Makeshift rafts can be up to 20' x 30'; each 10' square carries 250 stone (2,500lb).</makeshift_raft>
+        <construction_time>Makeshift raft construction takes 1d3 days per 10' x 10' portion.</construction_time>
+      </item>
+
+      <item name="Rations, Iron">
+        <duration>Last 2 months in wilderness, 1 week in dungeon conditions.</duration>
+      </item>
+
+      <item name="Rations, Standard">
+        <duration>Last 1 week in wilderness; spoil overnight in dank dungeons.</duration>
+      </item>
+
+      <item name="Rope (50')">
+        <capacity>Can bear 45 stone.</capacity>
+      </item>
+
+      <item name="Sack, Large">
+        <capacity>6 stone (60lb).</capacity>
+      </item>
+
+      <item name="Sack, Small">
+        <capacity>2 stone (20lb).</capacity>
+      </item>
+
+      <item name="Saddle and Tack">
+        <types>
+          <type name="draft">Used to harness to cart or wagon or carry saddle bags; cannot be used for riding.</type>
+          <type name="riding">Designed for rider comfort.</type>
+          <type name="war">Designed for combat stability.</type>
+        </types>
+        <combat_rule>Without a military saddle, a rider in combat must save vs Paralysis each time he is dealt damage or be knocked off the horse.</combat_rule>
+      </item>
+
+      <item name="Saddle Bag">
+        <capacity>3 stone (30lb).</capacity>
+      </item>
+
+      <item name="Sailing Ship, Large">
+        <crew>1 captain and 20 sailors.</crew>
+        <capacity>30,000 stone cargo plus crew.</capacity>
+        <weapon_mounts>May mount up to 2 light catapults.</weapon_mounts>
+      </item>
+
+      <item name="Sailing Ship, Small">
+        <crew>1 captain and 12 sailors.</crew>
+        <capacity>10,000 stone cargo plus crew.</capacity>
+      </item>
+
+      <item name="Sap">
+        <effect>Provides +2 bonus to attack throws made to incapacitate opponents.</effect>
+      </item>
+
+      <item name="Shield">
+        <effect>Increases AC by 1 while equipped.</effect>
+        <limitations>No protection when surprised, retreating, or attacked from behind.</limitations>
+      </item>
+
+      <item name="Spear">
+        <effect>Can be used one- or two-handed.</effect>
+        <effect>Can attack from the second rank in melee.</effect>
+        <effect>Inflicts double damage when used in or against a charge.</effect>
+      </item>
+
+      <item name="Spell Book (Blank)">
+        <pages>100 pages.</pages>
+        <recording_rule>Each spell uses one page per spell level.</recording_rule>
+      </item>
+
+      <item name="Staff">
+        <effect>Used two-handed; if used one-handed, treat as a club.</effect>
+      </item>
+
+      <item name="Stakes and Mallet">
+        <use>Used to destroy vampires.</use>
+      </item>
+
+      <item name="Two-Handed Sword">
+        <effect>Imposes -1 penalty on initiative rolls.</effect>
+      </item>
+
+      <item name="Thieves' Tools">
+        <requirement>Required to make proficiency throws to open locks and remove traps.</requirement>
+      </item>
+
+      <item name="Tinderbox">
+        <timing>Lighting a torch takes a full round.</timing>
+        <timing>Lighting any other fire with flint and steel takes at least a full round.</timing>
+      </item>
+
+      <item name="Torch">
+        <duration>6 turns (1 hour).</duration>
+        <illumination>Clearly illuminates a 30' radius.</illumination>
+        <combat_damage>Deals 1d4 damage if used in combat.</combat_damage>
+      </item>
+
+      <item name="Troop Transport, Large">
+        <capacity>Can carry 50 marines in addition to its normal complement of 20 sailors.</capacity>
+      </item>
+
+      <item name="Troop Transport, Small">
+        <capacity>Can carry 25 marines in addition to its normal complement of 12 sailors.</capacity>
+      </item>
+
+      <item name="Wagon">
+        <pulling_options>
+          <option team="2 heavy horses or equivalent" load_normal="160 stone" speed_normal="60' per turn" load_max="320 stone" speed_max="30' per turn"/>
+          <option team="4 heavy horses or equivalent" load_normal="320 stone" speed_normal="60' per turn" load_max="640 stone" speed_max="30' per turn"/>
+        </pulling_options>
+        <mobility>Moves under the same speed and terrain conditions as a cart.</mobility>
+      </item>
+
+      <item name="Waterskin/Wineskin">
+        <capacity>2 pints (1 quart).</capacity>
+      </item>
+
+      <item name="Whip">
+        <effect>Provides +2 bonus to attack throws made to disarm or knock down opponents.</effect>
+      </item>
+
+      <item name="Wolfsbane">
+        <effect>If a character strikes a lycanthrope in melee with a sprig of wolfsbane and the target fails a save vs Poison, it must flee as if turned.</effect>
+        <risk>A character who eats wolfsbane must save vs Poison or die after 1 turn.</risk>
+      </item>
+
+      <item name="Woundwart">
+        <requirement>Must be used by an adventurer with Healing proficiency.</requirement>
+        <effect>Provides +2 bonus on proficiency throws to cure light wounds and cure serious wounds.</effect>
+      </item>
+    </items>
+  </equipment_mechanics>
+
+  <encumbrance>
+    <definitions>
+      <encumbrance>Measure of how much equipment and treasure a character carries.</encumbrance>
+      <stone>A unit treated as about 10lb, abstracted to represent weight, bulk, and portability.</stone>
+    </definitions>
+
+    <character_encumbrance_table>
+      <row category="Worn clothing" encumbrance="0 stone"/>
+      <row category="Armor and Shield" encumbrance="1 stone per point of Armor Class"/>
+      <row category="Items" encumbrance="1 stone per 6 items"/>
+      <row category="Heavy Item" encumbrance="1 stone per heavy item (8-14lb)"/>
+      <row category="Treasure" encumbrance="1 stone per 1,000 coins or gems"/>
+    </character_encumbrance_table>
+
+    <encumbrance_rules>
+      <magic_armor_rule>Magical armor and shields reduce encumbrance by 1 stone per point of magical bonus.</magic_armor_rule>
+      <item_counting_rule>Each weapon, scroll, potion, vial, wand, magic item, or similar object counts as one item.</item_counting_rule>
+      <bundle_rule>Bundles of small items count as one item.</bundle_rule>
+      <tiny_item_rule>Very small single items such as one silver arrow can be ignored for encumbrance.</tiny_item_rule>
+      <heavy_item_definition>
+        <criterion>Two-handed weapons, including bows and crossbows.</criterion>
+        <criterion>Items as tall as the carrier, including spears, staffs, and 10' poles.</criterion>
+        <criterion>Items weighing around 8-14lb.</criterion>
+        <criterion>Items requiring two hands to carry, such as chairs or chests.</criterion>
+      </heavy_item_definition>
+      <heavier_than_stone_rule>Items over 14lb weigh more than 1 stone.</heavier_than_stone_rule>
+      <coin_weight_rule>1,000 coins = 1 stone.</coin_weight_rule>
+      <container_conversion_rule>Container capacity listed in stone converts to coins at 1 stone : 1,000 coins.</container_conversion_rule>
+      <maximum_carrying_capacity>20 stone plus Strength adjustment.</maximum_carrying_capacity>
+    </encumbrance_rules>
+
+    <character_movement_and_encumbrance>
+      <row encumbrance="up to 5 stone" exploration="120' per turn" combat="40' per round" running="120' per round"/>
+      <row encumbrance="up to 7 stone" exploration="90' per turn" combat="30' per round" running="90' per round"/>
+      <row encumbrance="up to 10 stone" exploration="60' per turn" combat="20' per round" running="60' per round"/>
+      <row encumbrance="up to max capacity" exploration="30' per turn" combat="10' per round" running="30' per round"/>
+    </character_movement_and_encumbrance>
+
+    <animal_vehicle_movement_and_encumbrance>
+      <row name="Camel" movement="150' / 75'" normal_load="30" maximum_load="60"/>
+      <row name="Donkey" movement="120' / 60'" normal_load="8" maximum_load="16"/>
+      <row name="Elephant" movement="120' / 60'" normal_load="120" maximum_load="240"/>
+      <row name="Horse, Heavy" movement="120' / 60'" normal_load="40" maximum_load="80"/>
+      <row name="Horse, Light" movement="240' / 120'" normal_load="20" maximum_load="40"/>
+      <row name="Horse, Medium" movement="180' / 90'" normal_load="30" maximum_load="60"/>
+      <row name="Mule" movement="120' / 60'" normal_load="20" maximum_load="40"/>
+      <row name="Ox" movement="60' / 30'" normal_load="45" maximum_load="90"/>
+      <row name="Cart, Small, 1 Mule" movement="60' / 30'" normal_load="35" maximum_load="70"/>
+      <row name="Cart, Small, 2 Mules" movement="60' / 30'" normal_load="80" maximum_load="160"/>
+      <row name="Cart, Large, 1 Horse" movement="60' / 30'" normal_load="80" maximum_load="160"/>
+      <row name="Cart, Large, 2 Horses" movement="60' / 30'" normal_load="120" maximum_load="240"/>
+      <row name="Wagon, 2 Horses" movement="60' / 30'" normal_load="160" maximum_load="320"/>
+      <row name="Wagon, 4 Horses" movement="60' / 30'" normal_load="320" maximum_load="640"/>
+    </animal_vehicle_movement_and_encumbrance>
+
+    <animal_vehicle_movement_rule>
+      <definition>The value to the left of the slash is movement per turn when carrying normal load or less; the value to the right is movement per turn when carrying more than normal load but not more than maximum load.</definition>
+    </animal_vehicle_movement_rule>
+  </encumbrance>
+
+  <hirelings>
+    <types>
+      <type name="henchmen">NPC sidekicks/companions. Generally loyal. Usually the only hirelings willing to accompany adventurers into dungeons, lairs, or ruins.</type>
+      <type name="mercenaries">Hired soldiers for guard, patrol, or war service in wilderness or military forces; not normal adventuring companions.</type>
+      <type name="specialists">Hired experts with a trade or special knowledge, usually for specific tasks.</type>
+    </types>
+
+    <availability_rules>
+      <rule>Hirelings are limited by market class.</rule>
+      <rule>Percentages indicate chance that at least one of that hireling type is present.</rule>
+      <timing>
+        <week_1>One-half of available hirelings, rounded up.</week_1>
+        <week_2>One-quarter, rounded down, minimum 1.</week_2>
+        <week_3>The remainder.</week_3>
+      </timing>
+    </availability_rules>
+
+    <search_costs>
+      <rule>Each week spent searching for hirelings costs the listed fee per hireling type.</rule>
+      <row market_class="I" cost="1d6+15gp"/>
+      <row market_class="II" cost="1d10+10gp"/>
+      <row market_class="III" cost="1d8+5gp"/>
+      <row market_class="IV" cost="1d6+3gp"/>
+      <row market_class="V" cost="1d6gp"/>
+      <row market_class="VI" cost="1d3gp"/>
+    </search_costs>
+
+    <general_hiring_terms>
+      <henchmen>Typically hired for a share of treasure of at least 15% of the employer's income, plus monthly fee for food, lodging, and expenses based on level.</henchmen>
+      <mercenaries>Typically hired for a flat monthly fee.</mercenaries>
+      <specialists>Typically hired for a flat monthly fee.</specialists>
+      <equipment>Henchmen, mercenaries, and specialists normally have equipment appropriate to profession/class/level; adventurers may provide extra equipment.</equipment>
+    </general_hiring_terms>
+
+    <reaction_to_hiring_offer>
+      <procedure>
+        <step>Judge rolls 2d6.</step>
+        <step>Modify by employer's Charisma bonus or penalty.</step>
+        <step>Judge may apply situational modifiers, usually around +/-1 for better or worse terms; similar modest adjustments are allowed.</step>
+      </procedure>
+      <table>
+        <row adjusted_roll="2 or less" result="Refuse and slander"/>
+        <row adjusted_roll="3-5" result="Refuse"/>
+        <row adjusted_roll="6-8" result="Try Again"/>
+        <row adjusted_roll="9-11" result="Accept"/>
+        <row adjusted_roll="12+" result="Accept with élan"/>
+      </table>
+      <results>
+        <refuse_and_slander>Future reaction rolls in that town or region suffer -1 toward that adventurer.</refuse_and_slander>
+        <refuse>NPC declines offer.</refuse>
+        <try_again>NPC needs a sweeter deal; if no improved offer is made, treat as Refuse.</try_again>
+        <accept>NPC becomes the character's hireling on stated terms.</accept>
+        <accept_with_elan>As Accept, plus the hireling gets +1 on morale rolls.</accept_with_elan>
+      </results>
+    </reaction_to_hiring_offer>
+
+    <hiring_availability_by_market_class>
+      <mercenaries>
+        <row type="Light Infantry" class_I="4d100" class_II="5d20" class_III="5d10" class_IV="3d4" class_V="1d6" class_VI="1d2"/>
+        <row type="Heavy Infantry" class_I="2d100" class_II="5d10" class_III="3d8" class_IV="1d8" class_V="1d3" class_VI="1 (85%)"/>
+        <row type="Slinger" class_I="8d20" class_II="4d10" class_III="2d10" class_IV="1d6" class_V="1d2" class_VI="1 (70%)"/>
+        <row type="Bowman" class_I="8d20" class_II="4d10" class_III="2d10" class_IV="1d6" class_V="1d2" class_VI="1 (70%)"/>
+        <row type="Crossbowman" class_I="8d20" class_II="4d10" class_III="2d10" class_IV="1d6" class_V="1d2" class_VI="1 (70%)"/>
+        <row type="Longbowman" class_I="4d20" class_II="2d10" class_III="1d10" class_IV="1d3" class_V="1" class_VI="1 (33%)"/>
+        <row type="Light Cavalry" class_I="4d20" class_II="2d10" class_III="1d10" class_IV="1d3" class_V="1" class_VI="1 (33%)"/>
+        <row type="Mounted Crossbowman" class_I="3d20" class_II="4d4" class_III="2d4" class_IV="1d2" class_V="1 (75%)" class_VI="1 (25%)"/>
+        <row type="Horse Archers" class_I="3d20" class_II="4d4" class_III="2d4" class_IV="1d3" class_V="1 (70%)" class_VI="1 (23%)"/>
+        <row type="Medium Cavalry" class_I="3d20" class_II="4d4" class_III="2d4" class_IV="1d2" class_V="1 (70%)" class_VI="1 (23%)"/>
+        <row type="Heavy Cavalry" class_I="4d10" class_II="1d10" class_III="1d6" class_IV="1d2 (50%)" class_V="1 (50%)" class_VI="1 (15%)"/>
+        <row type="Cataphract Cavalry" class_I="3d10" class_II="1d8" class_III="1d4" class_IV="1d2 (33%)" class_V="1 (40%)" class_VI="1 (10%)"/>
+        <row type="Beast Riders" class_I="3d10" class_II="1d8" class_III="1d4" class_IV="1d2 (33%)" class_V="1 (40%)" class_VI="1 (10%)"/>
+      </mercenaries>
+
+      <specialists>
+        <row type="Alchemist" class_I="1d10" class_II="1d3" class_III="1" class_IV="1 (33%)" class_V="1 (15%)" class_VI="1 (5%)"/>
+        <row type="Animal Trainer - Common" class_I="5d10" class_II="2d6" class_III="1d6" class_IV="1d2" class_V="1 (65%)" class_VI="1 (20%)"/>
+        <row type="Animal Trainer - Exotic" class_I="1d10" class_II="1d3" class_III="1" class_IV="1 (33%)" class_V="1 (15%)" class_VI="1 (5%)"/>
+        <row type="Armorer" class_I="3d10" class_II="2d4" class_III="1d4" class_IV="1" class_V="1 (40%)" class_VI="1 (15%)"/>
+        <row type="Engineer" class_I="1d10" class_II="1d3" class_III="1" class_IV="1 (33%)" class_V="1 (15%)" class_VI="1 (5%)"/>
+        <row type="Healer" class_I="5d10" class_II="2d6" class_III="1d6" class_IV="1d2" class_V="1 (65%)" class_VI="1 (20%)"/>
+        <row type="Healer - Physicker" class_I="3d10" class_II="2d4" class_III="1d4" class_IV="1" class_V="1 (40%)" class_VI="1 (15%)"/>
+        <row type="Healer - Chirugeon" class_I="1d10" class_II="1d3" class_III="1" class_IV="1 (33%)" class_V="1 (15%)" class_VI="1 (5%)"/>
+        <row type="Mariner - Captain" class_I="4d6" class_II="1d6" class_III="1d3" class_IV="1 (80%)" class_V="1 (33%)" class_VI="1 (10%)"/>
+        <row type="Mariner - Navigator" class_I="5d10" class_II="1d12" class_III="1d6" class_IV="1d2" class_V="1 (60%)" class_VI="1 (45%)"/>
+        <row type="Mariner - Sailor/Rower" class_I="4d100" class_II="5d20" class_III="5d10" class_IV="3d4" class_V="1d6" class_VI="1d2"/>
+        <row type="Ruffian - Carouser" class_I="4d100" class_II="5d20" class_III="5d10" class_IV="3d4" class_V="1d6" class_VI="1d2"/>
+        <row type="Ruffian - Footpad" class_I="5d20" class_II="4d6" class_III="2d6" class_IV="1d3" class_V="1d2" class_VI="1 (40%)"/>
+        <row type="Ruffian - Reciter" class_I="5d20" class_II="4d6" class_III="2d6" class_IV="1d3" class_V="1d2" class_VI="1 (40%)"/>
+        <row type="Ruffian - Spy" class_I="2d10" class_II="1d6" class_III="1d3" class_IV="1 (65%)" class_V="1 (25%)" class_VI="1 (10%)"/>
+        <row type="Ruffian - Thug" class_I="5d20" class_II="4d6" class_III="2d6" class_IV="1d3" class_V="1d2" class_VI="1 (40%)"/>
+        <row type="Sage" class_I="1d6" class_II="1d2" class_III="1 (65%)" class_IV="1 (15%)" class_V="1 (5%)" class_VI="None"/>
+        <row type="Spellcaster" class_I="Varies by spell level" class_II="Varies by spell level" class_III="Varies by spell level" class_IV="Varies by spell level" class_V="Varies by spell level" class_VI="Varies by spell level"/>
+      </specialists>
+
+      <henchmen>
+        <row type="Normal Men" class_I="4d100" class_II="5d20" class_III="4d8" class_IV="3d4" class_V="1d6" class_VI="1d2"/>
+        <row type="Level 1" class_I="5d10" class_II="2d6" class_III="1d4" class_IV="1d2" class_V="1 (65%)" class_VI="1 (20%)"/>
+        <row type="Level 2" class_I="3d10" class_II="2d4" class_III="1d3" class_IV="1" class_V="1 (40%)" class_VI="1 (15%)"/>
+        <row type="Level 3" class_I="1d10" class_II="1d3" class_III="1 (85%)" class_IV="1 (33%)" class_V="1 (15%)" class_VI="1 (5%)"/>
+        <row type="Level 4" class_I="1d6" class_II="1d2" class_III="1 (45%)" class_IV="1 (15%)" class_V="1 (5%)" class_VI="None"/>
+      </henchmen>
+
+      <special_notes>
+        <note>Mounted crossbowmen are only found in Dwarven settlements.</note>
+        <note>Beast Riders are only found in Chaotic-aligned settlements.</note>
+      </special_notes>
+    </hiring_availability_by_market_class>
+  </hirelings>
+
+  <henchmen>
+    <generation>Henchmen are rolled up like player characters, with ability scores, class, hit points, and equipment.</generation>
+    <pay>
+      <treasure_share>At least 15% of employer's income.</treasure_share>
+      <monthly_fee>Based on level.</monthly_fee>
+    </pay>
+
+    <eligibility_by_employer_level>
+      <rule>Potential henchmen should be lower level than their employer.</rule>
+      <rule>A 1st level character can hire only normal men.</rule>
+      <rule>A 2nd level character can hire only 1st level characters.</rule>
+      <rule>Continue similarly upward.</rule>
+      <trigger>If a henchman concludes he is more powerful than his employer, make an immediate Henchman Loyalty roll.</trigger>
+      <market_limit>Henchmen above 4th level are not generally for hire on the market, though they may be found on adventures.</market_limit>
+    </eligibility_by_employer_level>
+
+    <morale>
+      <base>Generally 0 plus employer's Charisma bonus or penalty.</base>
+      <judge_adjustment>May be increased for especially good treatment or reduced for cruelty or broken word.</judge_adjustment>
+      <when_to_roll>
+        <event>Whenever a henchman suffers a calamity.</event>
+        <event>At the end of each adventure if the henchman leveled up.</event>
+      </when_to_roll>
+      <calamity_examples>
+        <event>Energy drain</event>
+        <event>Curse</event>
+        <event>Magical disease</event>
+        <event>Being nearly killed</event>
+      </calamity_examples>
+      <roll_method>Roll 2d6 and add henchman's morale; Judge may usually adjust by no more than +/-2 for pay and treatment.</roll_method>
+    </morale>
+
+    <monthly_fee_table>
+      <row class_level="0" wage="12gp"/>
+      <row class_level="1" wage="25gp"/>
+      <row class_level="2" wage="50gp"/>
+      <row class_level="3" wage="100gp"/>
+      <row class_level="4" wage="200gp"/>
+      <row class_level="5" wage="400gp"/>
+      <row class_level="6" wage="800gp"/>
+      <row class_level="7" wage="1,600gp"/>
+      <row class_level="8" wage="3,000gp"/>
+      <row class_level="9" wage="7,250gp"/>
+      <row class_level="10" wage="12,000gp"/>
+      <row class_level="11" wage="32,000gp"/>
+      <row class_level="12" wage="50,000gp"/>
+      <row class_level="13" wage="135,000gp"/>
+      <row class_level="14" wage="350,000gp"/>
+    </monthly_fee_table>
+
+    <loyalty_table>
+      <row adjusted_roll="2 or less" result="Hostility"/>
+      <row adjusted_roll="3-5" result="Resignation"/>
+      <row adjusted_roll="6-8" result="Grudging Loyalty"/>
+      <row adjusted_roll="9-11" result="Loyalty"/>
+      <row adjusted_roll="12+" result="Fanatic Loyalty"/>
+    </loyalty_table>
+
+    <loyalty_results>
+      <hostility>Henchman leaves and becomes a rival/enemy; can never again be recruited by that character.</hostility>
+      <resignation>Henchman leaves without ill will and may be recruited again later.</resignation>
+      <grudging_loyalty>Henchman stays reluctantly; if terms are not improved, the next loyalty roll is at -1.</grudging_loyalty>
+      <loyalty>Henchman continues in service enthusiastically.</loyalty>
+      <fanatic_loyalty>Henchman becomes dedicated and sworn servant; all future morale rolls are at +2.</fanatic_loyalty>
+    </loyalty_results>
+
+    <morale_score_changes>
+      <penalty>Morale permanently decreases by 1 each time the henchman suffers a calamity.</penalty>
+      <bonus>Morale permanently increases by 1 each time the henchman gains a level while in the adventurer's service.</bonus>
+    </morale_score_changes>
+
+    <maximum_henchmen>
+      <rule>A player character may have at most 4 henchmen, modified by Charisma bonus or penalty.</rule>
+      <overflow_attempt>Trying to hire more than this causes the character to lose one existing henchman.</overflow_attempt>
+      <exemption>Mercenaries and specialists do not count against this limit.</exemption>
+    </maximum_henchmen>
+
+    <experience>
+      <rule>Henchmen who participate in an adventure gain XP.</rule>
+      <share>Each henchman receives one-half of a normal XP share.</share>
+    </experience>
+  </henchmen>
+
+  <mercenaries>
+    <service_limits>Mercenaries usually garrison strongholds or fight in military campaigns; they do not accompany employers on dangerous adventures such as dungeon exploration unless they become henchmen.</service_limits>
+    <costing>
+      <included>Listed wages only.</included>
+      <not_included>Armorers, stablehands, caravans, supplies in the field, and other incidental expenses.</not_included>
+      <campaign_expectation>Mercenaries on campaign expect a share of military plunder in addition to wages.</campaign_expectation>
+    </costing>
+
+    <morale>
+      <base>Based on training and equipment, not employer Charisma.</base>
+      <situational_modifiers>Working conditions may raise or lower morale.</situational_modifiers>
+      <examples>
+        <low>If being killed frequently or abused.</low>
+        <high>If enjoying riches and excitement.</high>
+      </examples>
+    </morale>
+
+    <base_morale_by_type>
+      <row type="Peasants, Conscripts/Militia" morale="-2"/>
+      <row type="Barbarians, Light Infantry, Bowmen, Slingers" morale="-1"/>
+      <row type="Heavy Infantry, Longbowmen, Crossbowmen" morale="0"/>
+      <row type="Light Cavalry, Medium Cavalry, Horse Archers" morale="+1"/>
+      <row type="Heavy Cavalry, Cataphract Cavalry" morale="+2"/>
+      <row type="Fanatics, Berserkers" morale="+4"/>
+    </base_morale_by_type>
+
+    <mercenary_troop_type_wages>
+      <row type="Peasants (spear)" man="3" dwarf="-" elf="-" goblin="-" orc="-"/>
+      <row type="Light Infantry (3 javelins, short sword, shield, leather armor)" man="6" dwarf="-" elf="10" goblin="3" orc="6"/>
+      <row type="Heavy Infantry (spear, sword, shield, banded plate armor)" man="12" dwarf="18" elf="24" goblin="-" orc="9"/>
+      <row type="Slingers (sling, short sword, shield, leather armor)" man="6" dwarf="-" elf="-" goblin="3" orc="-"/>
+      <row type="Bowmen (shortbow, short sword, leather armor)" man="9" dwarf="-" elf="21" goblin="3" orc="6"/>
+      <row type="Crossbowmen (arbalest, short sword, chainmail)" man="18" dwarf="21" elf="-" goblin="-" orc="12"/>
+      <row type="Longbowmen (longbow, sword, chainmail)" man="18" dwarf="-" elf="42" goblin="-" orc="-"/>
+      <row type="Light Cavalry (3 javelins, sword, shield, leather armor, light warhorse)" man="30" dwarf="-" elf="60" goblin="-" orc="-"/>
+      <row type="Mounted Crossbowmen (crossbow, short sword, chainmail, mule)" man="-" dwarf="45" elf="-" goblin="-" orc="-"/>
+      <row type="Horse Archers (composite bow, scimitar, leather armor, light warhorse)" man="45" dwarf="-" elf="90" goblin="-" orc="-"/>
+      <row type="Medium Cavalry (lance, sword, shield, lamellar, medium warhorse)" man="45" dwarf="-" elf="-" goblin="-" orc="-"/>
+      <row type="Heavy Cavalry (lance, sword, shield, plate armor, chain barded medium warhorse)" man="60" dwarf="-" elf="-" goblin="-" orc="-"/>
+      <row type="Cataphract Cavalry (composite bow, lance, sword, shield, plate, chain barded medium warhorse)" man="75" dwarf="" elf="140" goblin="" orc=""/>
+      <row type="Beast Riders (spear, short sword, shield, leather or scale armor, dire wolf or giant boar)" man="-" dwarf="-" elf="-" goblin="15" orc="35"/>
+    </mercenary_troop_type_wages>
+  </mercenaries>
+
+  <specialists>
+    <general_rule>The list is not exhaustive; the Judge may create more specialists using proficiency rules.</general_rule>
+    <player_character_option>Player characters with appropriate proficiencies may serve as specialists.</player_character_option>
+
+    <specialist_details>
+      <specialist name="Alchemist" monthly_pay="250gp">
+        <effects>
+          <effect>May assist mages in potion creation.</effect>
+          <effect>May research new potions as if a 5th level mage.</effect>
+          <limitation>Research takes twice the base time and cost.</limitation>
+        </effects>
+      </specialist>
+
+      <specialist name="Animal Trainer" monthly_pay="25gp-250gp">
+        <scope>The least expensive trainer handles one type of normal animal; trainers able to handle multiple types or monsters cost more.</scope>
+        <training_time>
+          <taming_minimum>At least 1 month to tame a wild animal.</taming_minimum>
+          <behavior_minimum>At least 1 month to teach one behavior to an already tame animal.</behavior_minimum>
+          <additional_behaviors>After the first month, additional behaviors for that same animal take half time per behavior.</additional_behaviors>
+        </training_time>
+        <interruptions>
+          <behavior_training_interrupted>All time spent on that behavior is lost.</behavior_training_interrupted>
+          <taming_interrupted>The animal rebels and can never be tamed.</taming_interrupted>
+        </interruptions>
+        <capacity>One trainer can train and manage no more than 6 animals at a time.</capacity>
+        <after_training>Once fully trained and in service, the trainer is no longer needed to handle it.</after_training>
+      </specialist>
+
+      <specialist name="Armorer" monthly_pay="75gp">
+        <production>Produces 40gp worth of weapons, armor, or shields per month.</production>
+        <maintenance_requirement>Required at a rate of 1 armorer per 60 troops to maintain and repair armor and weapons.</maintenance_requirement>
+        <assistants>
+          <journeyman max="2" pay="20gp/month each"/>
+          <apprentice max="4" pay="10gp/month each"/>
+        </assistants>
+        <improved_output>
+          <setup description="1 journeyman and 2 apprentices" production="100gp/month" maintenance_capacity="150 troops"/>
+          <setup description="2 journeymen and 4 apprentices" production="160gp/month" maintenance_capacity="240 troops"/>
+        </improved_output>
+      </specialist>
+
+      <specialist name="Engineer" monthly_pay="250gp">
+        <function>Plans and oversees large construction projects such as strongholds.</function>
+        <required_number>
+          <minimum>1 engineer minimum.</minimum>
+          <additional>+1 engineer per 100,000gp of project value.</additional>
+        </required_number>
+      </specialist>
+
+      <specialist name="Healer">
+        <types>
+          <type name="healer" pay="1gp/day/patient" patients_per_day="3"/>
+          <type name="physicker" pay="2gp/day/patient" patients_per_day="4"/>
+          <type name="chirugeon" pay="4gp/day/patient" patients_per_day="5"/>
+        </types>
+        <common_effect>Under treatment in clean sanitary conditions with bed rest, a patient regains an extra 1d3 hit points per day.</common_effect>
+        <physicker>
+          <effect>May non-magically neutralize poison, cure disease, or cure light wounds with a proficiency throw of 18+ once per day per patient.</effect>
+        </physicker>
+        <chirugeon>
+          <effect>May non-magically neutralize poison, cure disease, or cure serious wounds with a proficiency throw of 14+ once per day per patient.</effect>
+        </chirugeon>
+      </specialist>
+
+      <specialist name="Mariner">
+        <types>
+          <type name="rower" pay="3gp/month" role="unskilled oarsman"/>
+          <type name="sailor" pay="6gp/month" role="skilled ship handler"/>
+          <type name="navigator" pay="25gp/month" role="required when a ship ventures beyond sight of coast"/>
+          <type name="captain" pay="100gp/month" role="required for any large ship"/>
+        </types>
+      </specialist>
+
+      <specialist name="Ruffian">
+        <types>
+          <type name="carouser" pay="6gp/month" level="0" class_like="brawler/hoodlum"/>
+          <type name="footpad" pay="25gp/month" level="1" class_like="thief"/>
+          <type name="reciter" pay="25gp/month" level="1" class_like="bard"/>
+          <type name="spy" pay="125gp/month" level="4" class_like="thief"/>
+          <type name="thug" pay="25gp/month" level="1" class_like="assassin"/>
+        </types>
+        <uses>May be used as muscle or sent on hijinks such as assassinating, carousing, spying, stealing, or treasure-hunting.</uses>
+        <responsibility>If caught during hijinks, they expect the employer to rescue or bail them out.</responsibility>
+        <adventure_limit>Do not go on adventures unless recruited as henchmen.</adventure_limit>
+        <advancement>May gain XP from hijinks; if they level up, use the Henchmen Monthly Fee table for higher wages.</advancement>
+        <reliability>May be unreliable or treacherous.</reliability>
+      </specialist>
+
+      <specialist name="Sage" monthly_pay="500gp">
+        <availability>Sages are rare and usually specialize in a subject area.</availability>
+        <use>Can be consulted for information.</use>
+        <additional_costs>Difficult questions may require extra research costs and supplies beyond monthly pay.</additional_costs>
+        <uncertainty>The Judge decides what is obscure and the chance a wrong answer is given; characters may not realize an answer is wrong.</uncertainty>
+      </specialist>
+
+      <specialist name="Spellcaster" monthly_pay="varies">
+        <use>Arcane or divine casters may be hired to cast spells for adventurers.</use>
+        <availability>Determined by market class and spell level.</availability>
+        <casting_limit>Each available spellcaster can cast a spell of the listed level once per day.</casting_limit>
+        <recruitment_rule>Availability does not guarantee cooperation; the caster must still be successfully hired through negotiation.</recruitment_rule>
+        <cleric_restrictions>
+          <restriction>Clerics never cast spells for adventurers of opposite alignment.</restriction>
+          <surcharge>Clerics may charge double if adventurers do not belong to their faith.</surcharge>
+        </cleric_restrictions>
+      </specialist>
+    </specialist_details>
+
+    <spell_availability_by_market>
+      <row spell_type="Divine 1st level" cost="10gp" class_I="2d3x100" class_II="4d4x10" class_III="5d10" class_IV="4d6" class_V="2d6" class_VI="1d6"/>
+      <row spell_type="Divine 2nd level" cost="40gp" class_I="8d10" class_II="4d6" class_III="2d6" class_IV="2d3" class_V="1d3" class_VI="1d2"/>
+      <row spell_type="Divine 3rd level" cost="150gp" class_I="2d6" class_II="2d3" class_III="2d3" class_IV="1d2" class_V="1d2-1" class_VI="-"/>
+      <row spell_type="Divine 4th level" cost="325gp" class_I="2d6" class_II="2d3" class_III="2d3" class_IV="1d2" class_V="1d2-1" class_VI="-"/>
+      <row spell_type="Divine 5th level" cost="500gp" class_I="1d6" class_II="1d4" class_III="1d4" class_IV="1d2-1" class_V="-" class_VI="-"/>
+      <row spell_type="Arcane 1st level" cost="5gp" class_I="2d4x100" class_II="2d10x10" class_III="2d4x10" class_IV="3d10" class_V="2d6" class_VI="1d4"/>
+      <row spell_type="Arcane 2nd level" cost="20gp" class_I="2d6x10" class_II="6d6" class_III="2d6" class_IV="2d4" class_V="1d4" class_VI="1d2"/>
+      <row spell_type="Arcane 3rd level" cost="75gp" class_I="4d6" class_II="2d6" class_III="2d3" class_IV="1d4" class_V="1d2" class_VI="-"/>
+      <row spell_type="Arcane 4th level" cost="325gp" class_I="2d4" class_II="2d3" class_III="1d4" class_IV="1d2" class_V="1d2-1" class_VI="-"/>
+      <row spell_type="Arcane 5th level" cost="1,250gp" class_I="1d4" class_II="1d4" class_III="1d2" class_IV="-" class_V="-" class_VI="-"/>
+      <row spell_type="Arcane 6th level" cost="4,500gp" class_I="1d3" class_II="1d3" class_III="1d2-1" class_IV="-" class_V="-" class_VI="-"/>
+    </spell_availability_by_market>
+  </specialists>
+</acks_equipment_summary>

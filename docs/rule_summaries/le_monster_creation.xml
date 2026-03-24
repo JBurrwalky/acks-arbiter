@@ -1,0 +1,811 @@
+<monster_creation_rules title="creating_monsters" source="lairs_and_encounters" flavor_excluded="true" example_monster_blocks_excluded="true">
+  <scope>
+    <rule>This section defines procedures, formulas, tables, and constraints for creating new monsters within ACKS-compatible ranges.</rule>
+    <rule>A created monster is finalized by tabulating a monster listing and adding a short appearance, behavior, and habitat summary, but only the mechanical generation rules are summarized here.</rule>
+  </scope>
+
+  <creation_procedure>
+    <step order="1">Choose a monster concept.</step>
+    <step order="2">Choose one or more monster types.</step>
+    <step order="3">Choose hit dice.</step>
+    <step order="4">Determine saving throws from monster type and hit dice.</step>
+    <step order="5">Choose a body form.</step>
+    <step order="6">Determine weight in pounds using weight = (hd × 10)^bme.</step>
+    <step order="7">Determine size category from weight.</step>
+    <step order="8">Determine normal load in stone using normal_load = weight × ccf.</step>
+    <step order="9">Determine armor class from hit dice, body form modifier, and size modifier.</step>
+    <step order="10">Choose natural attacks from body form and modify as desired.</step>
+    <step order="11">Assign damage so the full attack routine averages about 2 hp per hd.</step>
+    <step order="12">Choose movement rate from body form.</step>
+    <step order="13">Assign special abilities.</step>
+    <step order="14">Calculate xp value from hit dice and counted special abilities.</step>
+    <step order="15">Determine typical dungeon and wilderness encounters.</step>
+    <step order="16">Determine treasure type from average treasure value and accumulation method.</step>
+    <step order="17">Choose intelligence.</step>
+    <step order="18">Choose alignment.</step>
+    <step order="19">Optionally calculate taming and training characteristics.</step>
+  </creation_procedure>
+
+  <monster_types>
+    <general_rules>
+      <rule>A creature may belong to multiple types.</rule>
+      <rule>Monster type determines charm, hold, protection, detection, sleep, and similar spell interactions, saving throw progression, and number of special abilities.</rule>
+      <rule>Constructs are also enchanted creatures for purposes of spells such as dispel evil and protection from evil.</rule>
+      <rule>Undead constructs such as skeletons and zombies count as both undead and construct.</rule>
+      <rule>Summoned creatures of Chaotic alignment are inherently evil for detect evil and protection from evil.</rule>
+      <rule>Undead are inherently evil for detect evil and protection from evil.</rule>
+      <rule>Variant saving throw progressions may be assigned instead of fighter at Judge discretion: cleric for divine spellcasting or divine spell-like powers, mage for arcane spellcasting or arcane spell-like powers, thief for thief-like abilities or stealth/ambush focus, dwarf or elf only for creatures closely akin to those races.</rule>
+    </general_rules>
+
+    <type_definitions>
+      <type name="animal">
+        <rule>Includes real-world sub-human creatures, giant normal animals, and prehistoric animals.</rule>
+        <rule>Charm animal, speak with animal, and related magic items work on animals.</rule>
+        <rule>Animals are also vulnerable to charm monster and hold monster.</rule>
+      </type>
+      <type name="beastman">
+        <rule>Created by ancient magic blending humanoids with animals or fantastic creatures.</rule>
+      </type>
+      <type name="construct">
+        <rule>Mindless, unliving monsters.</rule>
+        <rule>Immune to gas and poison.</rule>
+        <rule>Unaffected by charm, sleep, and hold.</rule>
+      </type>
+      <type name="enchanted_creature">
+        <rule>Can be kept at bay by protection from evil and destroyed or driven off by dispel evil.</rule>
+      </type>
+      <type name="fantastic_creature">
+        <rule>Characterized by magical powers, impossible body-part combinations, or both.</rule>
+        <rule>Not affected by charm person or hold person.</rule>
+        <rule>Usually vulnerable to charm monster and hold monster.</rule>
+      </type>
+      <type name="giant_humanoid">
+        <rule>Creatures that would be humanoids except for great size and 5 or more hd.</rule>
+        <rule>Not affected by charm person or hold person.</rule>
+        <rule>Vulnerable to charm monster and hold monster.</rule>
+      </type>
+      <type name="humanoid">
+        <rule>No larger than an ogre and possessing 4 or fewer hd.</rule>
+        <rule>Humans and demi-humans remain humanoids even above 4 hd or level 4.</rule>
+        <rule>All humanoids are vulnerable to charm person and hold person.</rule>
+      </type>
+      <type name="ooze">
+        <rule>Mindless monsters with varied immunities and vulnerabilities.</rule>
+        <rule>All oozes are immune to charm, hold, and sleep.</rule>
+      </type>
+      <type name="summoned_creature">
+        <rule>Can be kept at bay by protection from evil and destroyed or driven off by dispel evil.</rule>
+        <rule>Usually vulnerable to charm monster and hold monster.</rule>
+      </type>
+      <type name="undead">
+        <rule>Immune to gas and poison.</rule>
+        <rule>Unaffected by charm, sleep, or hold of any sort.</rule>
+        <rule>Usually silent in movement.</rule>
+      </type>
+      <type name="vermin">
+        <rule>Lower life forms with minimal intelligence.</rule>
+        <rule>Cannot be affected by spells that affect animals.</rule>
+        <rule>Usually vulnerable to charm monster and hold monster.</rule>
+      </type>
+    </type_definitions>
+
+    <type_table>
+      <row type="animal" susceptibilities="charm_hold_animal_or_monster" immunities="none" saving_throws="fighter(hd/2)" special_abilities="1d4-2"/>
+      <row type="beastman" susceptibilities="charm_hold_person_or_monster" immunities="none" saving_throws="fighter(hd)" special_abilities="1d4-2"/>
+      <row type="construct" susceptibilities="dispel_protection_from_evil" immunities="charm, hold, sleep, gas, poison, various" saving_throws="fighter(hd/2 x 1d2)" special_abilities="2d6-7"/>
+      <row type="enchanted_creature" susceptibilities="dispel_protection_from_evil" immunities="various" saving_throws="fighter(hd/2 x 2d2)" special_abilities="1d10-5"/>
+      <row type="fantastic_creature" susceptibilities="charm_hold_monster" immunities="various" saving_throws="fighter(hd/4 x 1d8)" special_abilities="2d6-7"/>
+      <row type="giant_humanoid" susceptibilities="charm_hold_monster" immunities="various" saving_throws="fighter(hd)" special_abilities="1d4-2"/>
+      <row type="humanoid" susceptibilities="charm_hold_person_or_monster" immunities="none" saving_throws="fighter(hd)" special_abilities="1d4-2"/>
+      <row type="ooze" susceptibilities="charm_hold_monster" immunities="charm, hold, sleep, various" saving_throws="fighter(hd/2)" special_abilities="1d4"/>
+      <row type="summoned_creature" susceptibilities="dispel_protection_from_evil" immunities="various" saving_throws="fighter(hd/2 x 2d2)" special_abilities="1d10-5"/>
+      <row type="undead" susceptibilities="dispel_protection_from_evil, control_undead, turn_undead" immunities="charm, hold, sleep, gas, poison, various" saving_throws="fighter(hd)" special_abilities="2d6-7"/>
+      <row type="vermin" susceptibilities="charm_hold_monster" immunities="usually_none" saving_throws="fighter(hd/2)" special_abilities="1d4-2"/>
+    </type_table>
+  </monster_types>
+
+  <body_forms>
+    <general_rules>
+      <rule>Body form determines natural attacks, movement, armor class modifier, weight scaling, carrying capacity factor, and influences organization and intelligence tables.</rule>
+      <rule>A hybrid body form may use movement from either or both forms. Using both movement sets counts as a special ability.</rule>
+      <rule>A hybrid body form uses the ac modifier of the form whose movement it uses. If it uses both movement sets, use the better ac modifier.</rule>
+      <rule>A hybrid body form may use attacks from either or both forms. Using both attack sets counts as a special ability.</rule>
+      <rule>A hybrid body form may use bme and ccf from either body form or a mid-range value between them.</rule>
+    </general_rules>
+
+    <body_form_table>
+      <row body_form="accipitrine" sample_monsters="hawk(any)" bme="1.37-1.39" ccf="0.125-0.250" attack_routine="2 talons" movement="450'-480' (fly)" ac_modifier="0"/>
+      <row body_form="aquiline" sample_monsters="roc(any)" bme="1.63-1.67" ccf="0.020" attack_routine="2 talons, 1 bite" movement="450'-480' (fly)" ac_modifier="+1"/>
+      <row body_form="ankhegine" sample_monsters="ankheg" bme="1.71" ccf="0.090" attack_routine="1 bite" movement="90', 60' (burrow)" ac_modifier="+5"/>
+      <row body_form="apian" sample_monsters="giant_bee" bme="0.68" ccf="0.050" attack_routine="1 sting" movement="150' (fly)" ac_modifier="+1"/>
+      <row body_form="arachnine" sample_monsters="spider(any), rhagodessa" bme="1.41-1.68" ccf="0.213-0.426" attack_routine="1 bite" movement="60'-120', 120' (web)" ac_modifier="+1"/>
+      <row body_form="basilicine" sample_monsters="basilisk" bme="1.38" ccf="0.066" attack_routine="1 bite" movement="60'" ac_modifier="0"/>
+      <row body_form="bovine" sample_monsters="herd_animal(any)" bme="1.96-2.00" ccf="0.020" attack_routine="1 horn" movement="240'" ac_modifier="0"/>
+      <row body_form="cameline" sample_monsters="camel" bme="2.31" ccf="0.030" attack_routine="1 bite, 1 hoof" movement="150'" ac_modifier="+1"/>
+      <row body_form="cancrine" sample_monsters="giant_crab" bme="1.83" ccf="0.420" attack_routine="2 pincers (large claw)" movement="60'" ac_modifier="+5"/>
+      <row body_form="canine" sample_monsters="dog(any), hellhound, wolf" bme="1.61-1.70" ccf="0.033" attack_routine="1 bite" movement="120'-180'" ac_modifier="0"/>
+      <row body_form="cetacean" sample_monsters="whale(any)" bme="1.70-2.19" ccf="0.020" attack_routine="1 bite" movement="180'-240' (swim)" ac_modifier="+3"/>
+      <row body_form="coleopteran" sample_monsters="beetle(any)" bme="1.62" ccf="0.430" attack_routine="1 bite" movement="120'-150'" ac_modifier="+3"/>
+      <row body_form="crocodilian" sample_monsters="crocodile(any)" bme="1.98" ccf="0.20" attack_routine="1 bite" movement="90', 90' (swim)" ac_modifier="+3"/>
+      <row body_form="dinosaurian" sample_monsters="dinosaur(any)" bme="1.81-2.02" ccf="0.020" attack_routine="1 bite; 1 tail; or 1 tusk" movement="60'-120'" ac_modifier="+1"/>
+      <row body_form="dipterous" sample_monsters="giant_carnivorous_fly" bme="0.46" ccf="0.033" attack_routine="1 bite" movement="90', 180' (fly)" ac_modifier="0"/>
+      <row body_form="draconine" sample_monsters="dragon" bme="1.98" ccf="0.020" attack_routine="2 claws, 1 bite" movement="90', 240' (fly)" ac_modifier="+2_special"/>
+      <row body_form="elephantine" sample_monsters="elephant, mastodon" bme="1.96-2.02" ccf="0.020" attack_routine="2 tusks" movement="120'" ac_modifier="+1"/>
+      <row body_form="equine" sample_monsters="donkey, horse(any), mule" bme="2.10-2.31" ccf="0.020" attack_routine="1 or 2 hooves; or 1 bite, 1 hoof" movement="120'-240'" ac_modifier="+1"/>
+      <row body_form="feline" sample_monsters="large_cat(any)" bme="1.50-1.53" ccf="0.060" attack_routine="2 claws, 1 bite" movement="150'-210'" ac_modifier="0"/>
+      <row body_form="formic" sample_monsters="giant_ant" bme="1.36" ccf="0.020" attack_routine="1 bite" movement="180'" ac_modifier="+3"/>
+      <row body_form="humanoid" sample_monsters="giant_humanoids, humanoids" bme="1.88-2.5" ccf="0.033" attack_routine="1 weapon; or 2 claws, 1 bite" movement="120'" ac_modifier="0"/>
+      <row body_form="lacertine" sample_monsters="giant_lizard(any)" bme="1.35" ccf="0.020" attack_routine="1 bite; 1 bite, 1 horn; 2 claws, 1 bite" movement="120'" ac_modifier="+1"/>
+      <row body_form="monadine" sample_monsters="ooze(any)" bme="2.08" ccf="0.000" attack_routine="1 envelopment" movement="0'-30'" ac_modifier="0"/>
+      <row body_form="murine" sample_monsters="giant_rat" bme="2.17" ccf="0.020" attack_routine="1 bite" movement="120', 60' (swim)" ac_modifier="+1"/>
+      <row body_form="musteline" sample_monsters="giant_ferret, giant_weasel" bme="1.94" ccf="0.020" attack_routine="1 bite" movement="150'" ac_modifier="+3"/>
+      <row body_form="octopine" sample_monsters="giant_octopus, giant_squid" bme="1.07" ccf="0.033" attack_routine="1 bite, 8 tentacles" movement="90'-120' (swim)" ac_modifier="-3"/>
+      <row body_form="piscine" sample_monsters="giant_fish(any)" bme="1.80-2.16" ccf="0.020" attack_routine="1 bite, 0-4 feelers, 0-4 spines" movement="90'-180' (swim)" ac_modifier="+1"/>
+      <row body_form="porcine" sample_monsters="boar, giant_boar" bme="1.75" ccf="0.033" attack_routine="1 tusk" movement="120'-150'" ac_modifier="0"/>
+      <row body_form="pterosaurian" sample_monsters="pteranodon, pterodactyl" bme="1.35-1.48" ccf="0.031-0.063" attack_routine="1 bite" movement="180'240' (fly)" ac_modifier="0"/>
+      <row body_form="ranine" sample_monsters="giant_toad" bme="1.72" ccf="0.033" attack_routine="1 bite" movement="90'" ac_modifier="0"/>
+      <row body_form="rhinerocerine" sample_monsters="rhinoceros(any)" bme="2.02-2.08" ccf="0.020" attack_routine="1 tusk" movement="120'" ac_modifier="+1"/>
+      <row body_form="salamandrine" sample_monsters="salamander(any)" bme="1.64" ccf="0.020" attack_routine="2-4 claws, 1 bite" movement="120'" ac_modifier="-1"/>
+      <row body_form="scolopendrine" sample_monsters="carcass_scavenger, centipede" bme="1.52" ccf="0.020" attack_routine="1 bite, 0-8 tentacles" movement="120'" ac_modifier="0"/>
+      <row body_form="selachian" sample_monsters="shark(any)" bme="1.89" ccf="0.020" attack_routine="1 bite" movement="180' (swim)" ac_modifier="+3"/>
+      <row body_form="serpentine" sample_monsters="snakes(any), sea_serpent" bme="0.90-1.31" ccf="0.066" attack_routine="1 bite; 0-1 constriction" movement="90'-120', 120' (swim)" ac_modifier="0"/>
+      <row body_form="simian" sample_monsters="white_ape, rock_baboon" bme="1.60" ccf="0.060" attack_routine="2 claws; or 1 bite, 1 weapon" movement="120'" ac_modifier="0"/>
+      <row body_form="soricine" sample_monsters="giant_shrew" bme="2.33" ccf="0.020" attack_routine="2 bites" movement="180'" ac_modifier="+3"/>
+      <row body_form="ursine" sample_monsters="bear" bme="1.71" ccf="0.033" attack_routine="2 claws, 1 bite" movement="120'" ac_modifier="0"/>
+      <row body_form="vermian" sample_monsters="caecilian, purple_worm" bme="1.51-1.93" ccf="0.020" attack_routine="1 bite; or 1 bite, 1 sting" movement="60'" ac_modifier="-3"/>
+      <row body_form="vespertilionine" sample_monsters="bat(any)" bme="1.43" ccf="0.125" attack_routine="1 bite" movement="120'-180' (fly)" ac_modifier="+1"/>
+      <row body_form="wyverine" sample_monsters="wyvern" bme="1.72" ccf="0.020" attack_routine="2 talons and 1 bite, 1 sting" movement="90', 240' (fly)" ac_modifier="+1"/>
+    </body_form_table>
+
+    <draconine_special_rule>
+      <rule>Draconine armor class is +2 + 1/2 per hd up to 20 hd.</rule>
+      <rule>Draconine ignores weight-based ac modifiers.</rule>
+    </draconine_special_rule>
+  </body_forms>
+
+  <hit_dice_rules>
+    <rule>Hit dice measure fighting ability and toughness.</rule>
+    <rule>Normal range runs from less than 1 hd to 36 hd or more.</rule>
+    <rule>Hit dice affect hit points, size category, armor class, attack throws, saving throws, damage, experience value, and treasure type.</rule>
+    <bonus_hit_points>
+      <rule>Printed hd bonuses such as 1+1 or 4+2 count as bonus hit points.</rule>
+      <rule>Each bonus point counts as 0.25 hd for weight, armor class, carrying capacity, and damage calculations.</rule>
+    </bonus_hit_points>
+  </hit_dice_rules>
+
+  <weight_size_and_ac_rules>
+    <weight>
+      <rule>Weight = (hd × 10)^bme.</rule>
+    </weight>
+
+    <size_category_table>
+      <row mass="35 lbs or less" size_category="small" length_height="less than 2' long/tall" ac_modifier="+1"/>
+      <row mass="36 to 400 lbs" size_category="man_sized" length_height="less than 8' long/tall" ac_modifier="0"/>
+      <row mass="401 to 2,000 lbs" size_category="large" length_height="8' to 12' long/tall" ac_modifier="-1"/>
+      <row mass="2,001 to 8,000 lbs" size_category="huge" length_height="12' to 20' long/tall" ac_modifier="-2"/>
+      <row mass="8,001 to 32,000 lbs" size_category="gigantic" length_height="20' to 32' long/tall" ac_modifier="-4"/>
+      <row mass="more than 32,000 lbs" size_category="colossal" length_height="32' or more long/tall" ac_modifier="-8"/>
+    </size_category_table>
+
+    <general_size_rules>
+      <rule>Wingspan of flying creatures is typically three times length.</rule>
+    </general_size_rules>
+
+    <normal_load>
+      <rule>Normal load = weight × ccf.</rule>
+    </normal_load>
+
+    <square_cube_law_optional>
+      <rule>Optional adjusted carrying capacity = (baseline monster ccf × new monster weight) × ((new monster weight / baseline monster weight)^(2/3) / (new monster weight / baseline monster weight)).</rule>
+      <rule>Use this primarily when the new creature is one or more size categories larger than typical for its body form.</rule>
+    </square_cube_law_optional>
+
+    <armor_class>
+      <rule>Base ac increases by 0.8 per hd for the first 9 hd only.</rule>
+      <rule>Round to the nearest whole number, rounding 0.5 up if odd and down if even.</rule>
+      <rule>Apply body form ac modifier.</rule>
+      <rule>Apply size category ac modifier unless body form says otherwise.</rule>
+      <rule>Species variation may adjust ac by -1, 0, or +1; roll 1d6 or choose: 1-2 = -1, 3-4 = +0, 5-6 = +1.</rule>
+    </armor_class>
+
+    <size_hit_dice_limits>
+      <rule>These limits apply to unnaturally tough monsters in the absence of magic.</rule>
+      <rule>Enchanted creatures and undead may ignore these size-based maximum hd limits.</rule>
+      <row size="man_sized_or_less" maximum_hit_dice="9"/>
+      <row size="large" maximum_hit_dice="13"/>
+      <row size="huge" maximum_hit_dice="17"/>
+      <row size="gigantic" maximum_hit_dice="25"/>
+      <row size="colossal" maximum_hit_dice="40"/>
+    </size_hit_dice_limits>
+
+    <unnaturally_tough_monsters>
+      <rule>Weight, carrying capacity, and size may be calculated from a lower hd value than the one used for hit points, attack throws, ac, damage, saving throws, xp, and treasure type.</rule>
+      <rule>The same process can be reversed to create unnaturally weak monsters.</rule>
+    </unnaturally_tough_monsters>
+  </weight_size_and_ac_rules>
+
+  <attack_and_damage_rules>
+    <general_rules>
+      <rule>Recommended attacks come from body form, but the Judge may add, remove, or modify them.</rule>
+      <rule>Attack throws are determined by hit dice using normal monster attack throw rules.</rule>
+      <rule>A monster's full attack sequence should average about 2 hp damage per hd.</rule>
+      <rule>That damage may be divided across attacks as desired.</rule>
+      <rule>The natural attack damage table is guidance, not a mandatory formula.</rule>
+      <rule>Monsters using normal weapons inflict average damage equal to 2.5 + 1 hp per full hd.</rule>
+      <rule>Adjust weapon damage up or down for unusually small or large weapons.</rule>
+    </general_rules>
+
+    <natural_attack_damage_table>
+      <row hd_range="1_or_less" bite_large="1d6" bite_medium="1d4" bite_small="1d3" claw_large="1d3" claw_small="1d2" hoof="1d3" horn="1d3" stinger="1d6" talon="1d2" tail_tentacle="0" tusk="1d3" weapon="1d6"/>
+      <row hd_range="1_plus_and_2" bite_large="1d8" bite_medium="2d3" bite_small="1d4" claw_large="1d3" claw_small="1d2" hoof="1d4" horn="1d3" stinger="1d8" talon="1d3" tail_tentacle="1" tusk="2d3" weapon="1d6"/>
+      <row hd_range="2_plus_and_3" bite_large="1d8" bite_medium="2d3+1" bite_small="1d6" claw_large="1d3" claw_small="1d3" hoof="1d6" horn="1d4" stinger="1d8" talon="1d4" tail_tentacle="1d2" tusk="2d4" weapon="1d8"/>
+      <row hd_range="3_plus_and_4" bite_large="1d10" bite_medium="2d4" bite_small="1d8" claw_large="1d4" claw_small="1d3" hoof="1d8" horn="1d4" stinger="1d10" talon="1d6" tail_tentacle="1d3" tusk="2d4" weapon="1d10"/>
+      <row hd_range="4_plus_and_5" bite_large="2d6" bite_medium="2d4+1" bite_small="1d10" claw_large="1d4" claw_small="1d4" hoof="1d8" horn="1d6" stinger="2d6" talon="1d8" tail_tentacle="1d4" tusk="3d4" weapon="1d12"/>
+      <row hd_range="5_plus_and_6" bite_large="2d8" bite_medium="2d6" bite_small="2d6" claw_large="1d6" claw_small="1d4" hoof="1d8" horn="1d6" stinger="2d8" talon="1d10" tail_tentacle="1d4" tusk="3d4" weapon="2d6"/>
+      <row hd_range="6_plus_and_7" bite_large="2d8" bite_medium="2d6+1" bite_small="2d6" claw_large="1d8" claw_small="1d6" hoof="1d8" horn="1d8" stinger="2d8" talon="2d6" tail_tentacle="1d6" tusk="4d4" weapon="3d4"/>
+      <row hd_range="7_plus_to_9" bite_large="2d8" bite_medium="2d8" bite_small="2d8" claw_large="1d10" claw_small="1d6" hoof="1d8" horn="1d8" stinger="2d8" talon="2d8" tail_tentacle="1d6" tusk="4d4" weapon="2d8"/>
+      <row hd_range="9_plus_to_11" bite_large="3d8" bite_medium="2d10" bite_small="2d8" claw_large="2d6" claw_small="2d3" hoof="1d8" horn="1d10" stinger="3d8" talon="2d10" tail_tentacle="1d8" tusk="3d6" weapon="3d6"/>
+      <row hd_range="11_plus_to_13" bite_large="3d8" bite_medium="3d8" bite_small="2d10" claw_large="2d8" claw_small="1d8" hoof="1d8" horn="1d10" stinger="3d8" talon="3d8" tail_tentacle="1d8" tusk="3d6+1" weapon="4d6"/>
+      <row hd_range="13_plus_to_15" bite_large="3d8" bite_medium="3d10" bite_small="2d10" claw_large="2d10" claw_small="2d4" hoof="1d8" horn="1d12" stinger="3d8" talon="3d10" tail_tentacle="1d10" tusk="4d6" weapon="5d6"/>
+      <row hd_range="15_plus_to_17" bite_large="5d6" bite_medium="4d8" bite_small="2d10" claw_large="3d8" claw_small="1d10" hoof="1d8" horn="1d12" stinger="5d6" talon="4d8" tail_tentacle="1d10" tusk="4d6+1" weapon="6d6"/>
+      <row hd_range="17_plus_to_19" bite_large="6d6" bite_medium="4d10" bite_small="4d6" claw_large="3d10" claw_small="1d12" hoof="1d8" horn="2d6" stinger="6d6" talon="4d10" tail_tentacle="2d6" tusk="5d6" weapon="3d10"/>
+      <row hd_range="19_plus_to_21" bite_large="7d6" bite_medium="5d8" bite_small="4d6" claw_large="4d8" claw_small="3d4" hoof="1d8" horn="2d6" stinger="7d6" talon="5d8" tail_tentacle="2d6" tusk="5d6+1" weapon="4d10"/>
+      <row hd_range="21_plus_to_25" bite_large="8d6" bite_medium="6d8" bite_small="5d6" claw_large="4d10" claw_small="3d6" hoof="1d8" horn="2d8" stinger="8d6" talon="6d8" tail_tentacle="2d8" tusk="4d8" weapon="6d10"/>
+      <row hd_range="25_to_30" bite_large="9d6" bite_medium="6d10" bite_small="6d6" claw_large="5d8" claw_small="3d8" hoof="1d8" horn="2d8" stinger="9d6" talon="6d10" tail_tentacle="2d8" tusk="4d8+1" weapon="8d10"/>
+      <row hd_range="31_plus_to_35" bite_large="3d20" bite_medium="7d10" bite_small="7d6" claw_large="6d8" claw_small="3d10" hoof="1d8" horn="3d6" stinger="3d20" talon="7d10" tail_tentacle="2d10" tusk="5d8" weapon="10d10"/>
+      <row hd_range="36_plus" bite_large="4d20" bite_medium="8d10" bite_small="8d6" claw_large="6d10" claw_small="4d8" hoof="1d8" horn="3d6" stinger="4d20" talon="8d10" tail_tentacle="2d10" tusk="6d8" weapon="10d12"/>
+    </natural_attack_damage_table>
+  </attack_and_damage_rules>
+
+  <special_abilities>
+    <general_rules>
+      <rule>A monster may have zero to five special abilities in addition to monster-type immunities.</rule>
+      <rule>The Judge may choose the number or roll using the monster type table.</rule>
+      <rule>Roll or choose each special ability from the special abilities table.</rule>
+      <rule>Re-roll duplicate abilities unless the result explicitly permits stacking or converting a duplicate into immunity.</rule>
+      <rule>All results are cumulative.</rule>
+      <rule>Some abilities modify attacks, damage, movement, or ac; update derived values after assignment.</rule>
+      <rule>The Judge may alter the text, balance, or exact implementation of listed abilities.</rule>
+    </general_rules>
+
+    <xp_counting_rules>
+      <rule>Major abilities are marked with one or more asterisks.</rule>
+      <rule>Minor abilities are marked with one or more hashtags.</rule>
+      <rule>Total counted abilities = number_of_asterisks + (total_hashtags / 8).</rule>
+      <rule>Round counted abilities to the nearest whole number, rounding .5 down if even and up if odd.</rule>
+      <rule>Record that total beside hd as the monster's counted special abilities for xp.</rule>
+    </xp_counting_rules>
+
+    <spell_like_ability_counting>
+      <rule>Each spell-like ability counts as minor abilities equal to 2 × spell_level × usage_factor.</rule>
+      <usage_factor_table>
+        <row usage="at_will" usage_factor="1"/>
+        <row usage="1/turn" usage_factor="0.8"/>
+        <row usage="1/3_turns" usage_factor="0.7"/>
+        <row usage="1/hour" usage_factor="0.6"/>
+        <row usage="3/day" usage_factor="0.5"/>
+        <row usage="1/day" usage_factor="0.4"/>
+        <row usage="1/week" usage_factor="0.3"/>
+        <row usage="1/month" usage_factor="0.2"/>
+        <row usage="1/season" usage_factor="0.1"/>
+        <row usage="1/year" usage_factor="0.05"/>
+      </usage_factor_table>
+    </spell_like_ability_counting>
+
+    <special_disabilities>
+      <rule>Each special disability may permit one additional special ability, up to the normal maximum for the monster's type.</rule>
+      <rule>A disability may also reduce counted asterisks if it meaningfully weakens the creature or fully offsets a strong ability.</rule>
+      <sample_disability>Hateful towards a particular creature type and attacks on sight regardless of circumstances.</sample_disability>
+      <sample_disability>Instantly killed by an ordinary spell effect or condition; counts as 2 disabilities.</sample_disability>
+      <sample_disability>Rendered dormant by an otherwise ordinary condition.</sample_disability>
+      <sample_disability>Sensitive to a common environmental condition and suffers -1d3 attack penalty.</sample_disability>
+      <sample_disability>Substantial movement reduction or loss of the special movement capability typical for its body type.</sample_disability>
+      <sample_disability>Vulnerable to a particular attack type and suffers double damage or loses normal immunity or resistance.</sample_disability>
+      <sample_disability>Vulnerable to a particular attack type and is paralyzed for one round per die of damage that attack deals.</sample_disability>
+    </special_disabilities>
+
+    <special_ability_table>
+      <ability roll="01-02" name="acid" xp_classification="*" >
+        <rule>Monster attacks destroy non-magical armor or clothing on a successful hit.</rule>
+        <rule>A non-magical weapon striking the monster dissolves immediately after dealing damage.</rule>
+        <rule>Magical weapons and armor receive a saving throw using the wearer's save versus death, adding magical bonus if applicable.</rule>
+      </ability>
+      <ability roll="03-04" name="aura" xp_classification="*">
+        <rule>The monster has a damaging aura with radius 2' per hd.</rule>
+        <rule>The aura deals 1d8 damage per round to susceptible creatures.</rule>
+        <subtable>
+          <row roll="1" result="fire"/>
+          <row roll="2" result="lightning"/>
+          <row roll="3" result="freezing_vapors"/>
+          <row roll="4" result="poison_vapor"/>
+          <row roll="5" result="scouring_wind"/>
+          <row roll="6" result="acid"/>
+          <row roll="7" result="blistering_steam"/>
+          <row roll="8" result="fetid_gas"/>
+        </subtable>
+      </ability>
+      <ability roll="05" name="berserk" xp_classification="*">
+        <rule>+2 bonus to attack rolls.</rule>
+        <rule>Immune to fear.</rule>
+        <rule>Morale becomes +4.</rule>
+      </ability>
+      <ability roll="06-07" name="bonus_attack" xp_classification="conditional">
+        <rule>Roll 1d6.</rule>
+        <subtable>
+          <row roll="1-3" result="one bonus attack dealing damage equal to primary attack"/>
+          <row roll="4-6" result="two bonus attacks each dealing damage equal to secondary attack or half the primary attack"/>
+        </subtable>
+        <rule>If average damage exceeds 4 points per hd, the ability counts as *; otherwise it counts as ##.</rule>
+      </ability>
+      <ability roll="08-09" name="breath_weapon" xp_classification="*">
+        <rule>Usable 3/day.</rule>
+        <rule>Deals 1d6 damage per hd.</rule>
+        <rule>Save versus blast halves damage.</rule>
+        <rule>Area and special properties are as per a dragon.</rule>
+        <subtable>
+          <row roll="1" result="fire"/>
+          <row roll="2" result="lightning"/>
+          <row roll="3" result="freezing_vapors"/>
+          <row roll="4" result="poison_vapor"/>
+          <row roll="5" result="scouring_wind"/>
+          <row roll="6" result="acid"/>
+          <row roll="7" result="blistering_steam"/>
+          <row roll="8" result="fetid_gas"/>
+        </subtable>
+      </ability>
+      <ability roll="10-13" name="charge" xp_classification="##">
+        <rule>Choose one natural attack type.</rule>
+        <rule>Charge attacks with that attack type deal double damage.</rule>
+      </ability>
+      <ability roll="14-15" name="charm" xp_classification="*">
+        <rule>Usable 3/day or by gaze.</rule>
+        <rule>Target must save versus spells or become totally enthralled.</rule>
+        <rule>If monster has 3 hd or less, targets save at +2.</rule>
+        <rule>If monster has 9 hd or more, targets save at -2.</rule>
+      </ability>
+      <ability roll="16-17" name="class_powers_or_proficiencies" xp_classification="variable">
+        <rule>Monster gains 1d4 class powers or proficiencies chosen to fit design, excluding spellcasting.</rule>
+        <rule>If the monster gains all powers of a class, the result counts as *.</rule>
+        <rule>Otherwise each class power counts as one #.</rule>
+      </ability>
+      <ability roll="18-19" name="energy_drain" xp_classification="**">
+        <rule>Victims of the primary attack lose experience levels.</rule>
+        <rule>If monster has 6 hd or less, it drains 1 level.</rule>
+        <rule>If monster has 7 hd or more, it drains 2 levels.</rule>
+      </ability>
+      <ability roll="20-23" name="flying" xp_classification="##">
+        <rule>If the monster cannot already fly, it gains flight at exploration movement equal to twice base movement.</rule>
+        <rule>If it already flies, it gains dive attacks that deal double damage.</rule>
+        <rule>If a dive hits a victim smaller than the monster, the victim is grabbed and carried off unless he saves versus paralysis.</rule>
+        <rule>If the monster already has a dive attack, re-roll this result.</rule>
+      </ability>
+      <ability roll="24-25" name="grab" xp_classification="*">
+        <rule>Victims of the primary attack save versus paralysis or are grabbed.</rule>
+        <rule>Grabbed victims are helpless until they escape by succeeding on a saving throw versus paralysis on their turn.</rule>
+      </ability>
+      <ability roll="26-31" name="hug" xp_classification="##">
+        <rule>If the monster hits with more than half of its attacks in an attack sequence, it deals extra damage.</rule>
+        <subtable>
+          <row size="man_sized" damage="2d6"/>
+          <row size="large" damage="2d8"/>
+          <row size="huge" damage="2d10"/>
+          <row size="gigantic" damage="2d12"/>
+          <row size="colossal" damage="2d20"/>
+        </subtable>
+      </ability>
+      <ability roll="32-37" name="immunity" xp_classification="variable">
+        <rule>Re-roll if the monster is already immune to the rolled effect.</rule>
+        <subtable>
+          <row roll="1" result="fire" xp_classification="##"/>
+          <row roll="2" result="lightning" xp_classification="##"/>
+          <row roll="3" result="cold" xp_classification="##"/>
+          <row roll="4" result="acid" xp_classification="##"/>
+          <row roll="5" result="sleep, charm, hold, and poison" xp_classification="*"/>
+          <row roll="6" result="fear" xp_classification="##"/>
+          <row roll="7" result="blunt_weapons" xp_classification="##"/>
+          <row roll="8" result="edged_weapons" xp_classification="##"/>
+          <row roll="9" result="piercing_weapons" xp_classification="##"/>
+          <row roll="10" result="bronze/iron/wood_weapons" xp_classification="######"/>
+          <row roll="11" result="all_nonmagical_weapons" xp_classification="*"/>
+          <row roll="12" result="all_elemental_effects" xp_classification="*"/>
+        </subtable>
+      </ability>
+      <ability roll="38" name="incorporeal" xp_classification="*">
+        <rule>Monster is formless, weightless, and cannot interact with physical objects except through its attacks or special abilities.</rule>
+        <rule>If 4 hd or less, it can only be harmed by silver weapons.</rule>
+        <rule>If 5 hd or more, it can only be harmed by magical weapons.</rule>
+        <rule>It may select energy drain and flying as special abilities.</rule>
+      </ability>
+      <ability roll="39" name="infectious" xp_classification="#">
+        <rule>Victims may transform into others of the monster's kind.</rule>
+        <rule>Creatures slain by the monster may rise as that monster type unless appropriate measures are taken.</rule>
+        <rule>Alternatively, victims suffering loss of half or more of their hit points to the monster's natural attacks may transform after 2d6 days.</rule>
+      </ability>
+      <ability roll="40-41" name="initiative" xp_classification="*">
+        <rule>The monster always has initiative each round.</rule>
+      </ability>
+      <ability roll="42-43" name="invisibility" xp_classification="*">
+        <rule>The monster is naturally invisible.</rule>
+        <rule>It may act freely, including attacking, without becoming visible.</rule>
+      </ability>
+      <ability roll="44" name="magic_resistance" xp_classification="*">
+        <rule>Magic resistance target value = 20 - hd.</rule>
+      </ability>
+      <ability roll="45-48" name="ongoing_damage" xp_classification="*">
+        <rule>Once the monster has hit its victim, it deals ongoing damage each round equal to its most damaging attack.</rule>
+        <rule>Special effects such as poison or energy drain are not ongoing unless separately specified.</rule>
+      </ability>
+      <ability roll="49-51" name="paralysis" xp_classification="*">
+        <rule>Victims of primary attack(s) save versus paralysis or are paralyzed.</rule>
+        <subtable>
+          <row roll="1-2" duration="1d10 rounds"/>
+          <row roll="3-6" duration="2d4 turns"/>
+        </subtable>
+      </ability>
+      <ability roll="52-53" name="petrification" xp_classification="**">
+        <rule>Roll 1d6.</rule>
+        <subtable>
+          <row roll="1-3" trigger="meeting the monster's gaze" result="save versus petrification or turn to stone"/>
+          <row roll="4-6" trigger="being struck by the monster's attacks" result="save versus petrification or turn to stone"/>
+        </subtable>
+      </ability>
+      <ability roll="54-61" name="poison" xp_classification="*">
+        <rule>Victims of primary attack(s) save versus poison or die.</rule>
+        <rule>If monster has 3 hd or less, save is at +2.</rule>
+        <rule>If monster has 9 hd or more, save is at -2.</rule>
+      </ability>
+      <ability roll="62-63" name="regeneration" xp_classification="*">
+        <rule>Monster regenerates hd/2 hit points per round.</rule>
+        <rule>Lost limbs can be re-attached.</rule>
+        <rule>Regeneration does not function against two specific damage types, usually fire and acid.</rule>
+      </ability>
+      <ability roll="64-68" name="resistance" xp_classification="variable">
+        <rule>The monster gains resistance to two effects.</rule>
+        <rule>If the same effect is rolled twice, the monster instead becomes immune to it.</rule>
+        <rule>Re-roll if the monster is already immune to the effect.</rule>
+        <subtable>
+          <row roll="1" result="fire" xp_classification="#"/>
+          <row roll="2" result="lightning" xp_classification="#"/>
+          <row roll="3" result="cold" xp_classification="#"/>
+          <row roll="4" result="acid" xp_classification="#"/>
+          <row roll="5" result="sleep, charm, hold, and poison" xp_classification="####"/>
+          <row roll="6" result="fear" xp_classification="#"/>
+          <row roll="7" result="blunt_weapons" xp_classification="#"/>
+          <row roll="8" result="edged_weapons" xp_classification="#"/>
+          <row roll="9" result="piercing_weapons" xp_classification="#"/>
+          <row roll="10" result="bronze/iron/wood_weapons" xp_classification="###"/>
+          <row roll="11" result="all_nonmagical_weapons" xp_classification="####"/>
+          <row roll="12" result="all_elemental_effects" xp_classification="####"/>
+        </subtable>
+      </ability>
+      <ability roll="69-71" name="spellcasting" xp_classification="variable" uncertain="true">
+        <rule>Monster casts as a classed character with level equal to hd, maximum 14th level.</rule>
+        <subtable>
+          <row roll="1" result="bladedancer" xp_classification="*"/>
+          <row roll="2-3" result="cleric" xp_classification="*"/>
+          <row roll="4-5" result="mage" xp_classification="**"/>
+          <row roll="6" result="shaman" xp_classification="*"/>
+          <row roll="7" result="witch" xp_classification="**"/>
+          <row roll="8" result="priestess" xp_classification="**"/>
+        </subtable>
+      </ability>
+      <ability roll="72-75" name="spell_like_abilities" xp_classification="variable">
+        <rule>Monster gains 1d4 spell-like abilities.</rule>
+        <rule>Generate as if rolling for spell scrolls or choose abilities that fit existing powers.</rule>
+        <rule>Each counts using the spell-like ability counting formula.</rule>
+      </ability>
+      <ability roll="76-80" name="stealth" xp_classification="##">
+        <subtable>
+          <row roll="1-2" result="characters encountering the monster at any time suffer -1 to surprise rolls"/>
+          <row roll="3-4" result="characters encountering the monster in its natural habitat suffer -1 to surprise rolls"/>
+          <row roll="4-6" result="characters encountering the monster in its natural habitat suffer -2 to surprise rolls"/>
+        </subtable>
+      </ability>
+      <ability roll="81-83" name="swallow_attack" xp_classification="*">
+        <rule>On an unmodified attack throw of 19 or 20, the monster swallows whole a victim smaller than itself.</rule>
+        <rule>A swallowed victim takes damage equal to the monster's most damaging attack each round until either the monster is killed or the victim dies.</rule>
+      </ability>
+      <ability roll="84-86" name="swift" xp_classification="##">
+        <rule>Movement rate increases by 30' for every 120' of base encounter movement.</rule>
+      </ability>
+      <ability roll="87-88" name="terrifying" xp_classification="*">
+        <rule>Any being seeing the monster saves versus paralysis or is paralyzed with dread.</rule>
+        <rule>The effect ends if the monster leaves the victim's line of sight or engages in combat.</rule>
+      </ability>
+      <ability roll="89-94" name="tough" xp_classification="conditional">
+        <rule>Ac increases by 1d4 points.</rule>
+        <rule>If this raises ac to more than hd × 1.5, it counts as *.</rule>
+        <rule>Otherwise it counts as ##.</rule>
+      </ability>
+      <ability roll="95-99" name="trample" xp_classification="##">
+        <rule>The monster gains a trample attack usable instead of its normal attack sequence.</rule>
+        <rule>The trample attack should average 2 hp damage per hd.</rule>
+        <rule>The monster gains +4 to attack man-sized targets when trampling.</rule>
+        <rule>If the monster is not at least large size, re-roll.</rule>
+      </ability>
+      <ability roll="100" name="unusual" xp_classification="*">
+        <rule>Judge assigns a rare, unique, or special power.</rule>
+      </ability>
+    </special_ability_table>
+  </special_abilities>
+
+  <experience_points>
+    <general_rule>
+      <rule>Monster xp = base xp for hd + (bonus xp per counted ability × number of counted abilities).</rule>
+    </general_rule>
+    <xp_table>
+      <row monster_hd="less_than_1" base_xp="5" bonus_xp_per_ability="1"/>
+      <row monster_hd="1" base_xp="10" bonus_xp_per_ability="3"/>
+      <row monster_hd="1+" base_xp="15" bonus_xp_per_ability="6"/>
+      <row monster_hd="2" base_xp="20" bonus_xp_per_ability="9"/>
+      <row monster_hd="2+" base_xp="35" bonus_xp_per_ability="12"/>
+      <row monster_hd="3" base_xp="50" bonus_xp_per_ability="15"/>
+      <row monster_hd="3+" base_xp="65" bonus_xp_per_ability="35"/>
+      <row monster_hd="4" base_xp="80" bonus_xp_per_ability="55"/>
+      <row monster_hd="4+" base_xp="140" bonus_xp_per_ability="75"/>
+      <row monster_hd="5" base_xp="200" bonus_xp_per_ability="150"/>
+      <row monster_hd="5+" base_xp="260" bonus_xp_per_ability="200"/>
+      <row monster_hd="6" base_xp="320" bonus_xp_per_ability="250"/>
+      <row monster_hd="6+" base_xp="380" bonus_xp_per_ability="300"/>
+      <row monster_hd="7" base_xp="440" bonus_xp_per_ability="350"/>
+      <row monster_hd="7+" base_xp="500" bonus_xp_per_ability="400"/>
+      <row monster_hd="8" base_xp="600" bonus_xp_per_ability="500"/>
+      <row monster_hd="9" base_xp="700" bonus_xp_per_ability="600"/>
+      <row monster_hd="10" base_xp="850" bonus_xp_per_ability="700"/>
+      <row monster_hd="11" base_xp="1000" bonus_xp_per_ability="800"/>
+      <row monster_hd="12" base_xp="1200" bonus_xp_per_ability="900"/>
+      <row monster_hd="13" base_xp="1400" bonus_xp_per_ability="1000"/>
+      <row monster_hd="14" base_xp="1600" bonus_xp_per_ability="1100"/>
+      <row monster_hd="15" base_xp="1800" bonus_xp_per_ability="1200"/>
+      <row monster_hd="16" base_xp="2000" bonus_xp_per_ability="1300"/>
+      <row monster_hd="17" base_xp="2200" bonus_xp_per_ability="1400"/>
+      <row monster_hd="18" base_xp="2400" bonus_xp_per_ability="1500"/>
+      <row monster_hd="19" base_xp="2600" bonus_xp_per_ability="1600"/>
+      <row monster_hd="20" base_xp="2800" bonus_xp_per_ability="1800"/>
+      <row monster_hd="21*" base_xp="3000" bonus_xp_per_ability="2000"/>
+    </xp_table>
+    <rule>For monsters of hd 22 and higher, add a cumulative 250 xp to both base xp and bonus xp per ability for each hd above 21.</rule>
+  </experience_points>
+
+  <organization>
+    <general_rules>
+      <rule>Typical encounter format is [collective noun] (number encountered) / [collective noun] (number encountered).</rule>
+      <rule>The first part is an encounter outside the lair; the second part is inside the lair.</rule>
+      <rule>If a monster does not make a lair, list only one collective noun and range.</rule>
+      <rule>If the monster is not found in dungeon or wilderness, list none.</rule>
+      <rule>% in lair ranges from none to 100%; average is 25%.</rule>
+      <rule>Organization table values are expressed as average total hit dice of encounters.</rule>
+      <rule>Monsters whose hd exceed the recommended total hd for a listed encounter are usually solitary (1).</rule>
+    </general_rules>
+
+    <organization_table>
+      <row body_form="accipitrine" sample_monsters="hawk(any)" percent_in_lair="20%" wandering_dungeon="none" lair_dungeon="none" wandering_wilderness="flight (36 hd)" lair_wilderness="aerie (48 hd)" uncertain="true"/>
+      <row body_form="aquiline" sample_monsters="roc(any)" percent_in_lair="20%" wandering_dungeon="none" lair_dungeon="none" wandering_wilderness="flight (36 hd)" lair_wilderness="aerie (48 hd)" uncertain="true"/>
+      <row body_form="ankhegine" sample_monsters="ankheg" percent_in_lair="15%" wandering_dungeon="cluster (18 hd)" lair_dungeon="nest (22 hd)" wandering_wilderness="cluster (18 hd)" lair_wilderness="nest (22 hd)"/>
+      <row body_form="apian" sample_monsters="giant_bee" percent_in_lair="35%" wandering_dungeon="flight (2 hd)" lair_dungeon="hive (10 hd)" wandering_wilderness="swarm (10 hd)" lair_wilderness="hive (10 hd)"/>
+      <row body_form="arachnine" sample_monsters="spider(any), rhagodessa" percent_in_lair="70%" wandering_dungeon="cluster (7 hd)" lair_dungeon="den (7 hd)" wandering_wilderness="cluster (7 hd)" lair_wilderness="den (7 hd)"/>
+      <row body_form="basilicine" sample_monsters="basilisk" percent_in_lair="40%" wandering_dungeon="bask (22 hd)" lair_dungeon="nest (22 hd)" wandering_wilderness="bask (22 hd)" lair_wilderness="nest (22 hd)"/>
+      <row body_form="bovine" sample_monsters="herd_animal(any)" percent_in_lair="none" wandering_dungeon="none" lair_dungeon="none" wandering_wilderness="herd (18-72 hd)" lair_wilderness="none"/>
+      <row body_form="cameline" sample_monsters="camel" percent_in_lair="none" wandering_dungeon="none" lair_dungeon="none" wandering_wilderness="caravan (10 hd)" lair_wilderness="none"/>
+      <row body_form="cancrine" sample_monsters="giant_crab" percent_in_lair="90%" wandering_dungeon="clutter (5 hd)" lair_dungeon="nest (11 hd)" wandering_wilderness="cluster (11 hd)" lair_wilderness="colony (21 hd)"/>
+      <row body_form="canine" sample_monsters="dog(any), hellhound, wolf" percent_in_lair="10%" wandering_dungeon="pack (18 hd)" lair_dungeon="den (26 hd)" wandering_wilderness="route (26 hd)" lair_wilderness="den (26 hd)"/>
+      <row body_form="cetacean" sample_monsters="whale(any)" percent_in_lair="none" wandering_dungeon="none" lair_dungeon="none" wandering_wilderness="pod (36 hd)" lair_wilderness="none"/>
+      <row body_form="coleopteran" sample_monsters="beetle(any)" percent_in_lair="40%" wandering_dungeon="cluster (9 hd)" lair_dungeon="nest (14 hd)" wandering_wilderness="scourge (14 hd)" lair_wilderness="nest (14 hd)"/>
+      <row body_form="crocodilian" sample_monsters="crocodile(any)" percent_in_lair="none" wandering_dungeon="none" lair_dungeon="none" wandering_wilderness="bask (15 hd)" lair_wilderness="none"/>
+      <row body_form="dinosaurian" sample_monsters="dinosaur(any)" percent_in_lair="none" wandering_dungeon="none" lair_dungeon="none" wandering_wilderness="herd (25 hd)" lair_wilderness="none"/>
+      <row body_form="dipterous" sample_monsters="giant_carnivorous_fly" percent_in_lair="35%" wandering_dungeon="scourge (7 hd)" lair_dungeon="nest (7 hd)" wandering_wilderness="swarm (7 hd)" lair_wilderness="nest (7 hd)"/>
+      <row body_form="draconine" sample_monsters="dragon" percent_in_lair="55%" wandering_dungeon="flight (20 hd)" lair_dungeon="lair (20 hd)" wandering_wilderness="flight (20 hd)" lair_wilderness="lair (20 hd)"/>
+      <row body_form="elephantine" sample_monsters="elephant, mastodon" percent_in_lair="none" wandering_dungeon="none" lair_dungeon="none" wandering_wilderness="herd (100 hd)" lair_wilderness="none"/>
+      <row body_form="equine" sample_monsters="donkey, horse(any), mule" percent_in_lair="none" wandering_dungeon="none" lair_dungeon="none" wandering_wilderness="herd (100 hd)" lair_wilderness="none"/>
+      <row body_form="feline" sample_monsters="large_cat(any)" percent_in_lair="10%" wandering_dungeon="pride/troop (12 hd)" lair_dungeon="den (12 hd)" wandering_wilderness="pride/troop (12 hd)" lair_wilderness="den (12 hd)"/>
+      <row body_form="formic" sample_monsters="giant_ant" percent_in_lair="10%" wandering_dungeon="scourge (20 hd)" lair_dungeon="nest (56 hd)" wandering_wilderness="swarm (56 hd)" lair_wilderness="nest (56 hd)"/>
+      <row body_form="humanoid" sample_monsters="giant_humanoids, humanoids" percent_in_lair="35%" wandering_dungeon="gang (5 hd)" lair_dungeon="lair (35 hd)" wandering_wilderness="warband (35 hd)" lair_wilderness="village (200 hd)"/>
+      <row body_form="lacertine" sample_monsters="giant_lizard(any)" percent_in_lair="25%" wandering_dungeon="lounge (10 hd)" lair_dungeon="lair (20 hd)" wandering_wilderness="lounge (10 hd)" lair_wilderness="lair (20 hd)"/>
+      <row body_form="monadine" sample_monsters="ooze(any)" percent_in_lair="none" wandering_dungeon="solitary" lair_dungeon="none" wandering_wilderness="solitary" lair_wilderness="none"/>
+      <row body_form="murine" sample_monsters="giant_rat" percent_in_lair="10%" wandering_dungeon="pack (6 hd)" lair_dungeon="den (9 hd)" wandering_wilderness="horde (9 hd)" lair_wilderness="den (9 hd)"/>
+      <row body_form="musteline" sample_monsters="giant_ferret, giant_weasel" percent_in_lair="25%" wandering_dungeon="pack (9 hd)" lair_dungeon="den (11 hd)" wandering_wilderness="fesnying/sneak (11 hd)" lair_wilderness="den (11 hd)"/>
+      <row body_form="octopine" sample_monsters="giant_octopus, giant_squid" percent_in_lair="none" wandering_dungeon="none" lair_dungeon="none" wandering_wilderness="pod (12 hd)" lair_wilderness="none"/>
+      <row body_form="piscine" sample_monsters="giant_fish(any)" percent_in_lair="none" wandering_dungeon="none" lair_dungeon="none" wandering_wilderness="school (15 hd)" lair_wilderness="none"/>
+      <row body_form="porcine" sample_monsters="boar, giant_boar" percent_in_lair="none" wandering_dungeon="sounder (10 hd)" lair_dungeon="none" wandering_wilderness="sounder (15 hd)" lair_wilderness="none"/>
+      <row body_form="pterosaurian" sample_monsters="pteranodon, pterodactyl" percent_in_lair="none" wandering_dungeon="flight (7.5 hd)" lair_dungeon="none" wandering_wilderness="flight (7.5 hd)" lair_wilderness="none"/>
+      <row body_form="ranine" sample_monsters="giant_toad" percent_in_lair="none" wandering_dungeon="knot (6 hd)" lair_dungeon="none" wandering_wilderness="knot (6 hd)" lair_wilderness="none"/>
+      <row body_form="rhinerocerine" sample_monsters="rhinoceros(any)" percent_in_lair="none" wandering_dungeon="none" lair_dungeon="none" wandering_wilderness="herd (36 hd)" lair_wilderness="none"/>
+      <row body_form="salamandrine" sample_monsters="salamander(any)" percent_in_lair="25%" wandering_dungeon="band (20 hd)" lair_dungeon="nest (30 hd)" wandering_wilderness="swarm (30 hd)" lair_wilderness="nest (30 hd)"/>
+      <row body_form="scolopendrine" sample_monsters="carcass_scavenger, centipede" percent_in_lair="10%" wandering_dungeon="claw (7 hd)" lair_dungeon="none" wandering_wilderness="claw (7 hd)" lair_wilderness="none"/>
+      <row body_form="selachian" sample_monsters="shark(any)" percent_in_lair="none" wandering_dungeon="none" lair_dungeon="none" wandering_wilderness="shiver (20 hd)" lair_wilderness="none"/>
+      <row body_form="serpentine" sample_monsters="snakes(any), sea_serpent" percent_in_lair="none" wandering_dungeon="quiver (3.5 hd)" lair_dungeon="none" wandering_wilderness="quiver (3.5 hd)" lair_wilderness="none"/>
+      <row body_form="simian" sample_monsters="white_ape, rock_baboon" percent_in_lair="10%" wandering_dungeon="troop (14 hd)" lair_dungeon="den (28 hd)" wandering_wilderness="band (28 hd)" lair_wilderness="den (28 hd)"/>
+      <row body_form="soricine" sample_monsters="giant_shrew" percent_in_lair="40%" wandering_dungeon="pack (11 hd)" lair_dungeon="den (22 hd)" wandering_wilderness="drove (22 hd)" lair_wilderness="den (22 hd)"/>
+      <row body_form="ursine" sample_monsters="bear" percent_in_lair="25%" wandering_dungeon="solitary or sloth (10 hd)" lair_dungeon="den (10 hd)" wandering_wilderness="solitary or sloth (10 hd)" lair_wilderness="den (10 hd)"/>
+      <row body_form="vermian" sample_monsters="caecilian, purple_worm" percent_in_lair="25%" wandering_dungeon="clew (12 hd)" lair_dungeon="nest (12 hd)" wandering_wilderness="herd (30 hd)" lair_wilderness="nest (30 hd)"/>
+      <row body_form="vespertilionine" sample_monsters="bat(any)" percent_in_lair="35%" wandering_dungeon="flock (11 hd)" lair_dungeon="nest (11 hd)" wandering_wilderness="flock (11 hd)" lair_wilderness="nest (11 hd)"/>
+      <row body_form="wyverine" sample_monsters="wyvern" percent_in_lair="30%" wandering_dungeon="flight (10 hd)" lair_dungeon="aerie (25 hd)" wandering_wilderness="wing (25 hd)" lair_wilderness="aerie (25 hd)"/>
+    </organization_table>
+  </organization>
+
+  <treasure_type_rules>
+    <general_rules>
+      <rule>Average treasure value = 4 × monster xp value × average number encountered in its dungeon lair.</rule>
+      <rule>If the monster has no dungeon lair, use its wilderness lair instead.</rule>
+      <rule>Determine whether treasure is accumulated by hoarding, raiding, or accident.</rule>
+      <rule>Cross-reference average treasure value and accumulation method to determine treasure type.</rule>
+      <rule>Treasure value may be adjusted up or down by one or more rows if the monster should have more or less treasure than usual for its hd.</rule>
+    </general_rules>
+
+    <treasure_type_table>
+      <row average_treasure_value="0-250" hoarder="none" raider="none" incidental="none"/>
+      <row average_treasure_value="251-500" hoarder="B (500gp)" raider="A (275gp)" incidental="A (275gp)"/>
+      <row average_treasure_value="501-750" hoarder="B, A (775gp)" raider="C (700gp)" incidental="C (700gp)"/>
+      <row average_treasure_value="751-1,000" hoarder="D (1,000gp)" raider="C, A (975gp)" incidental="C, A (975gp)"/>
+      <row average_treasure_value="1,001-1,500" hoarder="D, B (1,500gp)" raider="E (1,250gp)" incidental="F (1,500gp)"/>
+      <row average_treasure_value="1,501-2,000" hoarder="D x 2 (2,000gp)" raider="G (2,000gp)" incidental="C x 2, A (1,675gp)"/>
+      <row average_treasure_value="2,001-2,500" hoarder="H (2,500gp)" raider="E x 2 (2,500gp)" incidental="F, C (2,200gp)"/>
+      <row average_treasure_value="2,501-3,000" hoarder="D x 2, B x 2 (3,000gp)" raider="G, C, A (2,975gp)" incidental="F x 2 (3,00gp)" uncertain="true"/>
+      <row average_treasure_value="3,001-3,500" hoarder="H, D (3,500gp)" raider="G, E (3,250gp)" incidental="I (3,250gp)"/>
+      <row average_treasure_value="3,501-4,000" hoarder="H, D, B (4,000gp)" raider="J (4,000gp)" incidental="F x 2, C (3,700gp)"/>
+      <row average_treasure_value="4,001-5,000" hoarder="H x 2 (5,000gp)" raider="J, D (5,000gp)" incidental="K (5,000gp)"/>
+      <row average_treasure_value="5,001-6,000" hoarder="H x 2, D (6,000gp)" raider="L (6,000gp)" incidental="K, C (5,700gp)"/>
+      <row average_treasure_value="6,001-7,000" hoarder="H x 2, D x 2 (7,000gp)" raider="L, D (7,000gp)" incidental="I x 2 (6,500)" uncertain="true"/>
+      <row average_treasure_value="7,001-8,000" hoarder="H x 2, D x 3 (8,000gp)" raider="L, G (8,000gp)" incidental="M (8,000gp)"/>
+      <row average_treasure_value="8,001-9,000" hoarder="N (9,000gp)" raider="J x 2, D (9,000gp)" incidental="M, C (8,700gp)"/>
+      <row average_treasure_value="9,001-10,000" hoarder="N, D (10,000gp)" raider="L, J (10,000gp)" incidental="M, F (9,500gp)"/>
+      <row average_treasure_value="10,001-11,000" hoarder="N, D x 2 (11,000gp)" raider="L, J, E (11,250gp)" incidental="M, I (11,250gp)"/>
+      <row average_treasure_value="11,001-12,000" hoarder="N, H (11,500gp)" raider="O (12,000gp)" incidental="M, I, C (11,9750gp)" uncertain="true"/>
+      <row average_treasure_value="12,001-16,000" hoarder="N, H x 2 (14,000gp)" raider="O, J (16,000gp)" incidental="M, K (13,000gp)"/>
+      <row average_treasure_value="16,001-20,000" hoarder="N x 2 (18,000gp)" raider="O, L (18,000gp)" incidental="P (17,000gp)"/>
+      <row average_treasure_value="20,001-24,000" hoarder="Q (22,000gp)" raider="O, L, J (22,000gp)" incidental="P, K (22,000gp)"/>
+      <row average_treasure_value="24,001-28,000" hoarder="Q, H, D (25,500gp)" raider="O x 2 (24,000gp)" incidental="P, M (25,000gp)"/>
+      <row average_treasure_value="28,001-32,000" hoarder="Q, N (31,000gp)" raider="O x 2, L (30,000gp)" incidental="P, M, K (30,000gp)"/>
+      <row average_treasure_value="32,001-36,000" hoarder="Q, N, H, D (34,500gp)" raider="O x 2, L, J (34,000gp)" incidental="P x 2 (34,000gp)"/>
+      <row average_treasure_value="36,001-40,000" hoarder="Q, N x 2 (40,000gp)" raider="O x 3 (36,000gp)" incidental="P x 2, I (37,250gp)"/>
+      <row average_treasure_value="40,001-50,000" hoarder="R (45,000gp)" raider="O x 3, L (42,000gp)" incidental="P x 2, M, F (41,500gp)" uncertain="true"/>
+      <row average_treasure_value="50,001-60,000" hoarder="R, N (54,000gp)" raider="O x 4, L (54,000gp)" incidental="P x 3 (54,000gp)"/>
+      <row average_treasure_value="60,001-75,000" hoarder="R, Q (67,000gp)" raider="O x 5, L (66,000gp)" incidental="P x 3, M, K (67,000gp)"/>
+      <row average_treasure_value="75,000-90,000" hoarder="R, Q, N x 2 (85,000gp)" raider="O x 7 (84,000gp)" incidental="P x 5 (85,000gp)"/>
+      <row average_treasure_value="90,000_or_more" hoarder="R x 3 (135,000gp)" raider="O x 8 (96,000gp)" incidental="P x 6 (102,000gp)"/>
+    </treasure_type_table>
+  </treasure_type_rules>
+
+  <intelligence_rules>
+    <monster_intelligence_by_type>
+      <row monster_type="animal" intelligence_options="animal"/>
+      <row monster_type="beastman" intelligence_options="sapient"/>
+      <row monster_type="construct" intelligence_options="mindless or sapient"/>
+      <row monster_type="enchanted_creature" intelligence_options="animal, mindless, or sapient"/>
+      <row monster_type="fantastic_creature" intelligence_options="animal or sapient"/>
+      <row monster_type="giant_humanoid" intelligence_options="sapient"/>
+      <row monster_type="humanoid" intelligence_options="sapient"/>
+      <row monster_type="ooze" intelligence_options="mindless"/>
+      <row monster_type="summoned_creature" intelligence_options="animal, mindless, or sapient"/>
+      <row monster_type="undead" intelligence_options="sapient or mindless"/>
+      <row monster_type="vermin" intelligence_options="animal or mindless"/>
+    </monster_intelligence_by_type>
+
+    <animal_intelligence_by_body_form>
+      <rule>Animal-intelligence monsters use trainability modifier and training period from body form.</rule>
+      <rule>The Judge may modify these values.</rule>
+      <row body_form="accipitrine" sample_monsters="hawk(any)" trainability_modifier="+1" training_period="2 months"/>
+      <row body_form="aquiline" sample_monsters="eagle(any)" trainability_modifier="+1" training_period="2 months"/>
+      <row body_form="ankhegine" sample_monsters="ankheg" trainability_modifier="-2" training_period="4 months"/>
+      <row body_form="apian" sample_monsters="giant_bee" trainability_modifier="0" training_period="6 months"/>
+      <row body_form="arachnine" sample_monsters="spider(any), rhagodessa" trainability_modifier="+2" training_period="12 months"/>
+      <row body_form="basilicine" sample_monsters="basilisk" trainability_modifier="0" training_period="6 months"/>
+      <row body_form="bovine" sample_monsters="herd_animal(any)" trainability_modifier="-1" training_period="6 months"/>
+      <row body_form="cameline" sample_monsters="camel" trainability_modifier="+1" training_period="5 months"/>
+      <row body_form="cancrine" sample_monsters="giant_crab" trainability_modifier="-2" training_period="6 months"/>
+      <row body_form="canine" sample_monsters="dog(any), hellhound, wolf" trainability_modifier="+1" training_period="1 month"/>
+      <row body_form="cetacean" sample_monsters="whale(any)" trainability_modifier="+2" training_period="3 months"/>
+      <row body_form="coleopteran" sample_monsters="beetle(any)" trainability_modifier="-2" training_period="4.75 months"/>
+      <row body_form="crocodilian" sample_monsters="crocodile(any)" trainability_modifier="-2" training_period="11 months"/>
+      <row body_form="dinosaurian" sample_monsters="dinosaur(any)" trainability_modifier="-1" training_period="12 months"/>
+      <row body_form="dipterous" sample_monsters="giant_carnivorous_fly" trainability_modifier="-2" training_period="5 months"/>
+      <row body_form="draconine" sample_monsters="dragon" trainability_modifier="+3" training_period="3 months"/>
+      <row body_form="elephantine" sample_monsters="elephant, mastodon" trainability_modifier="+3" training_period="3 months"/>
+      <row body_form="equine" sample_monsters="donkey, horse(any), mule" trainability_modifier="+2" training_period="1 month"/>
+      <row body_form="feline" sample_monsters="large_cat(any)" trainability_modifier="+1" training_period="5.5 months"/>
+      <row body_form="formic" sample_monsters="giant_ant" trainability_modifier="0" training_period="6 months"/>
+      <row body_form="humanoid" sample_monsters="giant_humanoids, humanoids" trainability_modifier="sentient" training_period="sentient" uncertain="true"/>
+      <row body_form="lacertine" sample_monsters="giant_lizard(any)" trainability_modifier="-2" training_period="10 months"/>
+      <row body_form="monadine" sample_monsters="ooze(any)" trainability_modifier="-3" training_period="12 months"/>
+      <row body_form="murine" sample_monsters="giant_rat" trainability_modifier="0" training_period="2.5 months"/>
+      <row body_form="musteline" sample_monsters="giant_ferret, giant_weasel" trainability_modifier="0" training_period="3 months"/>
+      <row body_form="octopine" sample_monsters="giant_octopus, giant_squid" trainability_modifier="+1" training_period="12 months"/>
+      <row body_form="piscine" sample_monsters="giant_fish(any)" trainability_modifier="-3" training_period="9 months"/>
+      <row body_form="porcine" sample_monsters="boar, giant_boar" trainability_modifier="+2" training_period="2 months"/>
+      <row body_form="pterosaurian" sample_monsters="pteranodon, pterodactyl" trainability_modifier="-1" training_period="5 months"/>
+      <row body_form="ranine" sample_monsters="giant_toad" trainability_modifier="-2" training_period="5 months"/>
+      <row body_form="rhinerocerine" sample_monsters="rhinoceros(any)" trainability_modifier="0" training_period="6 months"/>
+      <row body_form="salamandrine" sample_monsters="salamander(any)" trainability_modifier="-2" training_period="10 months"/>
+      <row body_form="scolopendrine" sample_monsters="carcass_scavenger, centipede" trainability_modifier="-3" training_period="4.5 months"/>
+      <row body_form="selachian" sample_monsters="shark(any)" trainability_modifier="-3" training_period="6 months"/>
+      <row body_form="serpentine" sample_monsters="snakes(any), sea_serpent" trainability_modifier="-3" training_period="5 months"/>
+      <row body_form="simian" sample_monsters="white_ape, rock_baboon" trainability_modifier="+3" training_period="1 month"/>
+      <row body_form="soricine" sample_monsters="giant_shrew" trainability_modifier="0" training_period="3 months"/>
+      <row body_form="ursine" sample_monsters="bear" trainability_modifier="+1" training_period="3 months"/>
+      <row body_form="vermian" sample_monsters="caecilian, purple_worm" trainability_modifier="-3" training_period="9 months"/>
+      <row body_form="vespertilionine" sample_monsters="bat(any)" trainability_modifier="+1" training_period="5 months"/>
+      <row body_form="wyverine" sample_monsters="wyvern" trainability_modifier="+3" training_period="3 months"/>
+    </animal_intelligence_by_body_form>
+  </intelligence_rules>
+
+  <alignment_rules>
+    <general_rules>
+      <rule>Alignment is restricted by monster type and intelligence, but the Judge may overrule these restrictions.</rule>
+      <rule>Animals are generally Neutral, sometimes Lawful, never Chaotic.</rule>
+      <rule>Beastmen are typically Chaotic, occasionally Neutral, almost never Lawful.</rule>
+      <rule>Enchanted creatures and fantastic creatures may be any alignment; if animal or mindless they are typically Neutral but may be Lawful or Chaotic.</rule>
+      <rule>Humanoids and giant humanoids may be any alignment.</rule>
+      <rule>Oozes and vermin are typically Neutral; some may be Chaotic.</rule>
+      <rule>Summoned creatures may be Neutral or Chaotic, never Lawful.</rule>
+      <rule>Undead are always Chaotic.</rule>
+    </general_rules>
+
+    <alignment_table>
+      <row monster_type="animal" animal_intelligence="lawful or neutral" mindless_intelligence="-" sapient_intelligence="-"/>
+      <row monster_type="beastman" animal_intelligence="-" mindless_intelligence="-" sapient_intelligence="neutral or chaotic"/>
+      <row monster_type="construct" animal_intelligence="-" mindless_intelligence="any" sapient_intelligence="-"/>
+      <row monster_type="enchanted_creature" animal_intelligence="any" mindless_intelligence="any" sapient_intelligence="any"/>
+      <row monster_type="fantastic_creature" animal_intelligence="any" mindless_intelligence="-" sapient_intelligence="any"/>
+      <row monster_type="giant_humanoid" animal_intelligence="-" mindless_intelligence="-" sapient_intelligence="any"/>
+      <row monster_type="humanoid" animal_intelligence="-" mindless_intelligence="-" sapient_intelligence="any"/>
+      <row monster_type="ooze" animal_intelligence="-" mindless_intelligence="neutral or chaotic" sapient_intelligence="-"/>
+      <row monster_type="summoned_creature" animal_intelligence="neutral or chaotic" mindless_intelligence="neutral or chaotic" sapient_intelligence="neutral or chaotic"/>
+      <row monster_type="undead" animal_intelligence="-" mindless_intelligence="chaotic" sapient_intelligence="chaotic"/>
+      <row monster_type="vermin" animal_intelligence="neutral or chaotic" mindless_intelligence="neutral or chaotic" sapient_intelligence="-"/>
+    </alignment_table>
+  </alignment_rules>
+
+  <taming_and_training_characteristics>
+    <lifespan_rules>
+      <rule>Maximum lifespan may be determined in any of three ways.</rule>
+      <method name="weight_formula">
+        <rule>maximum_lifespan_years ≈ 10.14 × (monster_weight / 2.2)^0.18</rule>
+        <rule>Most accurate for common mammals.</rule>
+        <rule>High-brain-mass creatures, birds, and reptiles tend to live longer than this estimate.</rule>
+      </method>
+      <method name="baseline_ratio">
+        <rule>new_monster_maximum_lifespan = baseline_monster_lifespan × (new_monster_weight / baseline_monster_weight)^0.25</rule>
+      </method>
+      <method name="known_lifespan">
+        <rule>If the source concept has a known or reputed lifespan, that value may be used directly.</rule>
+      </method>
+    </lifespan_rules>
+
+    <age_category_thresholds>
+      <row category="baby" threshold="0% of maximum"/>
+      <row category="child" threshold="1% of maximum"/>
+      <row category="youth" threshold="5% of maximum"/>
+      <row category="adult" threshold="10% of maximum"/>
+      <row category="middle_aged" threshold="40% of maximum"/>
+      <row category="old" threshold="60% of maximum"/>
+      <row category="ancient" threshold="80% of maximum"/>
+      <row category="maximum_age" threshold="100% of maximum" inferred="true"/>
+    </age_category_thresholds>
+
+    <trained_value>
+      <rule>Trained value in gp = monthly wage × 33.</rule>
+      <rule>If detailed battle rating wage rules are unavailable, estimate trained value as (ac + 1) × hd × (hd + 1) × (1 + number_of_counted_special_abilities) × 24.</rule>
+      <rule>Only special abilities that warrant an asterisk count for this formula.</rule>
+      <rule>Round values of 10,000gp or less to nearest 100gp.</rule>
+      <rule>Round values above 10,000gp to nearest 250gp.</rule>
+    </trained_value>
+
+    <other_value_modifiers>
+      <row value_category="untrained_adult_value" modifier="67%"/>
+      <row value_category="child_value" modifier="50%"/>
+      <row value_category="baby_value" modifier="25%"/>
+      <rule>These percentages approximate values from trained adult price.</rule>
+      <rule>Round using the same thresholds as trained value.</rule>
+      <rule>Actual published values may vary widely because the full calculation uses a more complex spreadsheet.</rule>
+    </other_value_modifiers>
+  </taming_and_training_characteristics>
+
+  <confidence_notes>
+    <note confidence="0.55">The spellcasting special ability subtable is incomplete as extracted: the printed 1d10 roll mapping only shows results 1-8.</note>
+    <note confidence="0.7">The treasure type table contains likely OCR corruption in several gp totals, including "3,00gp", "11,9750gp", and formatting around "41,500gp". Those entries were preserved as printed and marked uncertain.</note>
+    <note confidence="0.72">The organization table truncates the closing parenthesis on accipitrine and aquiline lair_wilderness entries; they appear to be "aerie (48 hd)".</note>
+    <note confidence="0.68">The body-form movement entry for pterosaurian prints as "180'240' (fly)", which appears malformed; preserved as printed.</note>
+    <note confidence="0.62">The intelligence tables appear to have OCR-swapped headings: the type/intelligence matrix is labeled as an animal-intelligence body-form table in one location, and the body-form training table is labeled as a type table in another.</note>
+    <note confidence="0.6">The humanoid row in the body-form training table appears corrupted as "sentient / sentient" rather than a normal trainability modifier and training period; preserved as uncertain.</note>
+  </confidence_notes>
+</monster_creation_rules>

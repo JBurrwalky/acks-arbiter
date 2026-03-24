@@ -1,0 +1,465 @@
+<acks_summary title="noncombatant_characters" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <document_scope>
+    <rule>Summarizes the noncombatant subtype for characters, rules for becoming a combatant, and listed noncombatant monster statistics.</rule>
+    <rule>Noncombatant is a subtype applicable to characters of any class or race, not a standalone class.</rule>
+  </document_scope>
+
+  <noncombatant_subtype>
+    <identity>
+      <name>noncombatant_subtype</name>
+      <applies_to>any character of any class or race</applies_to>
+      <category>class_adjacent_subtype</category>
+    </identity>
+
+    <definition>
+      <rule>A noncombatant is a character not devoted to adventure, combat, and exploration.</rule>
+      <rule>Any class or race may be treated as a noncombatant.</rule>
+      <rule>Noncombatants advance in level more quickly than comparable combatants.</rule>
+      <rule>Noncombatants suffer substantial combat, durability, and aging penalties.</rule>
+    </definition>
+
+    <xp_progression_rules>
+      <rule>The base cost of advancing from 1st level to 2nd level is decreased by 800 XP.</rule>
+      <rule>The decreased base cost doubles thereafter through 8th level.</rule>
+      <rule>At 9th level and above, the base cost is decreased by 50,000 XP per level.</rule>
+    </xp_progression_rules>
+
+    <example_fighter_progression>
+      <table name="combatant_vs_noncombatant_xp_progression_fighter">
+        <columns>
+          <column>level</column>
+          <column>combatant_xp</column>
+          <column>combatant_title</column>
+          <column>noncombatant_xp</column>
+          <column>noncombatant_title</column>
+        </columns>
+        <row>
+          <value name="level">1</value>
+          <value name="combatant_xp">0</value>
+          <value name="combatant_title">Man-at-Arms</value>
+          <value name="noncombatant_xp">0</value>
+          <value name="noncombatant_title">Man-about-Town</value>
+        </row>
+        <row>
+          <value name="level">2</value>
+          <value name="combatant_xp">2,000</value>
+          <value name="combatant_title">Warrior</value>
+          <value name="noncombatant_xp">1,200</value>
+          <value name="noncombatant_title">Courier</value>
+        </row>
+        <row>
+          <value name="level">3</value>
+          <value name="combatant_xp">4,000</value>
+          <value name="combatant_title">Swordmaster</value>
+          <value name="noncombatant_xp">2,400</value>
+          <value name="noncombatant_title">Swordowner</value>
+        </row>
+        <row>
+          <value name="level">4</value>
+          <value name="combatant_xp">8,000</value>
+          <value name="combatant_title">Hero</value>
+          <value name="noncombatant_xp">4,800</value>
+          <value name="noncombatant_title">Nero</value>
+        </row>
+        <row>
+          <value name="level">5</value>
+          <value name="combatant_xp">16,000</value>
+          <value name="combatant_title">Exemplar</value>
+          <value name="noncombatant_xp">9,600</value>
+          <value name="noncombatant_title">Unexemplar</value>
+        </row>
+        <row>
+          <value name="level">6</value>
+          <value name="combatant_xp">32,000</value>
+          <value name="combatant_title">Myrmidon</value>
+          <value name="noncombatant_xp">19,200</value>
+          <value name="noncombatant_title">Dastard</value>
+        </row>
+        <row>
+          <value name="level">7</value>
+          <value name="combatant_xp">65,000</value>
+          <value name="combatant_title">Champion</value>
+          <value name="noncombatant_xp">35,000</value>
+          <value name="noncombatant_title">Championet</value>
+        </row>
+        <row>
+          <value name="level">8</value>
+          <value name="combatant_xp">130,000</value>
+          <value name="combatant_title">Epic Hero</value>
+          <value name="noncombatant_xp">70,000</value>
+          <value name="noncombatant_title">Petty Lord</value>
+        </row>
+        <row>
+          <value name="level">9</value>
+          <value name="combatant_xp">250,000</value>
+          <value name="combatant_title">Warlord</value>
+          <value name="noncombatant_xp">120,000</value>
+          <value name="noncombatant_title">Lord</value>
+        </row>
+        <row>
+          <value name="level">10</value>
+          <value name="combatant_xp">370,000</value>
+          <value name="combatant_title">Warlord, 10th lvl</value>
+          <value name="noncombatant_xp">190,000</value>
+          <value name="noncombatant_title">Lord, 10th level</value>
+        </row>
+        <row>
+          <value name="level">11</value>
+          <value name="combatant_xp">490,000</value>
+          <value name="combatant_title">Warlord, 11th lvl</value>
+          <value name="noncombatant_xp">260,000</value>
+          <value name="noncombatant_title">Lord, 11th level</value>
+        </row>
+        <row>
+          <value name="level">12</value>
+          <value name="combatant_xp">610,000</value>
+          <value name="combatant_title">Warlord, 12th lvl</value>
+          <value name="noncombatant_xp">330,000</value>
+          <value name="noncombatant_title">Lord, 12th level</value>
+        </row>
+        <row>
+          <value name="level">13</value>
+          <value name="combatant_xp">730,000</value>
+          <value name="combatant_title">Warlord, 13th lvl</value>
+          <value name="noncombatant_xp">400,000</value>
+          <value name="noncombatant_title">Lord, 13th level</value>
+        </row>
+        <row>
+          <value name="level">14</value>
+          <value name="combatant_xp">850,000</value>
+          <value name="combatant_title">Overlord</value>
+          <value name="noncombatant_xp">470,000</value>
+          <value name="noncombatant_title">Overweight Lord</value>
+        </row>
+      </table>
+    </example_fighter_progression>
+
+    <custom_powers>
+      <power name="indolent" custom_power_value="-3">
+        <rule>Noncombatant avoids training in arms.</rule>
+        <penalty type="attack_throws" value="-1" level="1"/>
+        <penalty type="attack_throws" value="-2" level="3"/>
+        <penalty type="attack_throws" value="-3" level="5"/>
+        <penalty type="attack_throws" value="-4" level="9"/>
+        <penalty type="attack_throws" value="-5" level="11"/>
+      </power>
+
+      <power name="nonaggressive" custom_power_value="-1">
+        <rule>Noncombatant has never had to kill or be killed.</rule>
+        <penalty type="damage_rolls" scope="missile_and_melee_weapons" value="-1"/>
+      </power>
+
+      <power name="uncertain" custom_power_value="-1">
+        <rule>Noncombatant lacks the situational awareness and intensity of focus that keeps an adventurer alive.</rule>
+        <rule>Saving throw penalty is due to loss of morale.</rule>
+        <penalty type="saving_throws" value="-1" level="1"/>
+        <penalty type="saving_throws" value="-2" level="3"/>
+        <penalty type="saving_throws" value="-3" level="5"/>
+        <penalty type="saving_throws" value="-4" level="9"/>
+        <penalty type="saving_throws" value="-5" level="11"/>
+      </power>
+
+      <power name="sedentary" custom_power_value="-1">
+        <rule>Noncombatant lifestyle increases penalties from age.</rule>
+        <rule>Even ageless characters such as elves suffer these penalties, representing fading or weariness with life.</rule>
+        <table name="progressive_and_cumulative_ability_score_adjustments_by_age">
+          <columns>
+            <column>age_category</column>
+            <column>progressive_adjustments</column>
+            <column>cumulative_adjustments</column>
+          </columns>
+          <row>
+            <value name="age_category">Middle Aged</value>
+            <value name="progressive_adjustments">-2 STR, -2 DEX, -3 CON</value>
+            <value name="cumulative_adjustments">-2 STR, -2 DEX, -3 CON</value>
+          </row>
+          <row>
+            <value name="age_category">Old</value>
+            <value name="progressive_adjustments">-3 STR, -2 DEX, -2 CON, -2 CHA</value>
+            <value name="cumulative_adjustments">-5 STR, -4 DEX, -5 CON, -2 CHA</value>
+          </row>
+          <row>
+            <value name="age_category">Ancient</value>
+            <value name="progressive_adjustments">-2 STR, -3 DEX, -2 CON, -4 CHA</value>
+            <value name="cumulative_adjustments">-7 STR, -7 DEX, -7 CON, -4 CHA</value>
+          </row>
+        </table>
+      </power>
+
+      <power name="tender" custom_power_value="-10">
+        <rule>Noncombatant has never been hardened by suffering and injury.</rule>
+        <rule>Begins play with one-half normal hit points, excluding CON bonus.</rule>
+        <rule>Gains one less hit point each level thereafter.</rule>
+      </power>
+    </custom_powers>
+  </noncombatant_subtype>
+
+  <becoming_a_combatant>
+    <overview>
+      <rule>A noncombatant may become a combatant accidentally through surviving difficult circumstances or deliberately through renewed training and adventuring.</rule>
+    </overview>
+
+    <procedure name="remove_noncombatant_penalties">
+      <step order="1">Accumulate the required XP from adventuring, including war.</step>
+      <step order="2">Expend that XP instead of applying it toward class advancement.</step>
+      <step order="3">Remove noncombatant penalties cumulatively, in order, by level purchased off.</step>
+    </procedure>
+
+    <rules>
+      <rule>A 1st level noncombatant becomes a combatant by accumulating and expending 100 XP from adventuring or war.</rule>
+      <rule>The 100 XP spent to remove 1st level noncombatant penalties does not count toward advancement to 2nd level.</rule>
+      <rule>At higher levels, each level's noncombatant penalty removal must be purchased in order, cumulatively.</rule>
+      <rule>Once a noncombatant begins adventuring to become a combatant, he can no longer accumulate XP in his character class until all noncombatant penalties have been removed.</rule>
+      <rule>The character may abandon the effort at any time.</rule>
+      <rule>If the effort is abandoned, the character reverts to noncombatant status.</rule>
+      <rule>Returned penalties come back at a rate of 1 point per week.</rule>
+    </rules>
+
+    <table name="cumulative_noncombatant_penalty_removal">
+      <columns>
+        <column>level_step_removed</column>
+        <column>xp_cost</column>
+        <column>cumulative_removal_effect</column>
+      </columns>
+      <row>
+        <value name="level_step_removed">1</value>
+        <value name="xp_cost">100</value>
+        <value name="cumulative_removal_effect">+1 attack throws, damage rolls, saving throws; +1/2 HD of hp; aging penalty removed</value>
+      </row>
+      <row>
+        <value name="level_step_removed">2</value>
+        <value name="xp_cost">+800</value>
+        <value name="cumulative_removal_effect">+1 hp</value>
+      </row>
+      <row>
+        <value name="level_step_removed">3</value>
+        <value name="xp_cost">+800</value>
+        <value name="cumulative_removal_effect">+1 attack throws and saving throws; +1 hp</value>
+      </row>
+      <row>
+        <value name="level_step_removed">4</value>
+        <value name="xp_cost">+1,600</value>
+        <value name="cumulative_removal_effect">+1 hp</value>
+      </row>
+      <row>
+        <value name="level_step_removed">5</value>
+        <value name="xp_cost">+3,200</value>
+        <value name="cumulative_removal_effect">+1 attack throws and saving throws; +1 hp</value>
+      </row>
+      <row>
+        <value name="level_step_removed">6</value>
+        <value name="xp_cost">+6,400</value>
+        <value name="cumulative_removal_effect">+1 hp</value>
+      </row>
+      <row>
+        <value name="level_step_removed">7</value>
+        <value name="xp_cost">+12,800</value>
+        <value name="cumulative_removal_effect">+1 hp</value>
+      </row>
+      <row>
+        <value name="level_step_removed">8</value>
+        <value name="xp_cost">+64,000</value>
+        <value name="cumulative_removal_effect">+1 hp</value>
+      </row>
+      <row>
+        <value name="level_step_removed">9</value>
+        <value name="xp_cost">+50,000</value>
+        <value name="cumulative_removal_effect">+1 attack throws and saving throws; +1 hp</value>
+      </row>
+      <row>
+        <value name="level_step_removed">10</value>
+        <value name="xp_cost">+50,000</value>
+        <value name="cumulative_removal_effect">+1 hp</value>
+      </row>
+      <row>
+        <value name="level_step_removed">11</value>
+        <value name="xp_cost">+50,000</value>
+        <value name="cumulative_removal_effect">+1 attack throws and saving throws; +1 hp</value>
+      </row>
+      <row>
+        <value name="level_step_removed">12</value>
+        <value name="xp_cost">+50,000</value>
+        <value name="cumulative_removal_effect">+1 hp</value>
+      </row>
+      <row>
+        <value name="level_step_removed">13</value>
+        <value name="xp_cost">+50,000</value>
+        <value name="cumulative_removal_effect">+1 hp</value>
+      </row>
+      <row>
+        <value name="level_step_removed">14</value>
+        <value name="xp_cost">+50,000</value>
+        <value name="cumulative_removal_effect">+1 hp</value>
+      </row>
+    </table>
+  </becoming_a_combatant>
+
+  <noncombatant_monsters>
+    <rule>Listed monster statistics are noncombatant versions derived by applying the noncombatant mechanic to creatures.</rule>
+    <rule>In calculating HD, subtract 0.5 for the first HD and 0.25 for each HD thereafter, then convert back into standard notation, where +1 equals 0.25 HD.</rule>
+    <rule>Attack throws and saving throws are calculated from base combatant HD, then modified by the noncombatant penalties.</rule>
+
+    <monster_entries>
+      <entry name="Bugbear">
+        <armor_class>3</armor_class>
+        <movement>90'</movement>
+        <hit_dice>2+1</hit_dice>
+        <attacks>1 (weapon)</attacks>
+        <attack_throw>9+</attack_throw>
+        <damage>1d6 or weapon</damage>
+        <save>F1</save>
+        <morale>+1</morale>
+        <alignment>C</alignment>
+      </entry>
+
+      <entry name="Dwarf">
+        <armor_class>0</armor_class>
+        <movement>120'</movement>
+        <hit_dice>1/2 HD</hit_dice>
+        <attacks>1 (weapon)</attacks>
+        <attack_throw>11+</attack_throw>
+        <damage>1d6 or weapon</damage>
+        <save>D1 -1</save>
+        <morale>-1</morale>
+        <alignment>L</alignment>
+      </entry>
+
+      <entry name="Elf">
+        <armor_class>0</armor_class>
+        <movement>120'</movement>
+        <hit_dice>1-1</hit_dice>
+        <attacks>1 (weapon)</attacks>
+        <attack_throw>10+</attack_throw>
+        <damage>1d6 or weapon</damage>
+        <save>E1 -1</save>
+        <morale>-1</morale>
+        <alignment>N</alignment>
+      </entry>
+
+      <entry name="Gnoll">
+        <armor_class>1</armor_class>
+        <movement>90'</movement>
+        <hit_dice>1+1</hit_dice>
+        <attacks>1 (weapon)</attacks>
+        <attack_throw>10+</attack_throw>
+        <damage>1d6 or weapon</damage>
+        <save>F1</save>
+        <morale>-1</morale>
+        <alignment>C</alignment>
+      </entry>
+
+      <entry name="Gnome">
+        <armor_class>0</armor_class>
+        <movement>120'</movement>
+        <hit_dice>1/2</hit_dice>
+        <attacks>1 (weapon)</attacks>
+        <attack_throw>11+</attack_throw>
+        <damage>1d4 or weapon -1</damage>
+        <save>D1 -1</save>
+        <morale>-1</morale>
+        <alignment>N</alignment>
+      </entry>
+
+      <entry name="Goblin">
+        <armor_class>0</armor_class>
+        <movement>60'</movement>
+        <hit_dice>1/2 -1</hit_dice>
+        <attacks>1 (weapon)</attacks>
+        <attack_throw>11+</attack_throw>
+        <damage>1d4 or weapon -1</damage>
+        <save>NM -1</save>
+        <morale>-2</morale>
+        <alignment>C</alignment>
+      </entry>
+
+      <entry name="Halfling">
+        <armor_class>0</armor_class>
+        <movement>90'</movement>
+        <hit_dice>1/2 -1</hit_dice>
+        <attacks>1 (weapon)</attacks>
+        <attack_throw>11+</attack_throw>
+        <damage>1d4 or weapon -1</damage>
+        <save>E1 -1</save>
+        <morale>-2</morale>
+        <alignment>L</alignment>
+      </entry>
+
+      <entry name="Hobgoblin">
+        <armor_class>0</armor_class>
+        <movement>90'</movement>
+        <hit_dice>1-1</hit_dice>
+        <attacks>1 (weapon)</attacks>
+        <attack_throw>10+</attack_throw>
+        <damage>1d6 or weapon</damage>
+        <save>NM</save>
+        <morale>-1</morale>
+        <alignment>C</alignment>
+      </entry>
+
+      <entry name="Kobold">
+        <armor_class>0</armor_class>
+        <movement>60'</movement>
+        <hit_dice>1d2 hit points</hit_dice>
+        <attacks>1 (weapon)</attacks>
+        <attack_throw>11+</attack_throw>
+        <damage>1d2 or weapon -2</damage>
+        <save>NM -1</save>
+        <morale>-3</morale>
+        <alignment>C</alignment>
+      </entry>
+
+      <entry name="Lizardman">
+        <armor_class>3</armor_class>
+        <movement>60'</movement>
+        <hit_dice>1+2</hit_dice>
+        <attacks>3 or 1 (claws/bite or weapon)</attacks>
+        <attack_throw>10+</attack_throw>
+        <damage>1d2/1d2/1d6 or weapon</damage>
+        <save>F1</save>
+        <morale>+1</morale>
+        <alignment>C</alignment>
+      </entry>
+
+      <entry name="Man">
+        <armor_class>0</armor_class>
+        <movement>120'</movement>
+        <hit_dice>1/2</hit_dice>
+        <attacks>1 (weapon)</attacks>
+        <attack_throw>11+</attack_throw>
+        <damage>1d6 or weapon</damage>
+        <save>NM</save>
+        <morale>-1</morale>
+        <alignment>N</alignment>
+      </entry>
+
+      <entry name="Ogre">
+        <armor_class>3</armor_class>
+        <movement>90'</movement>
+        <hit_dice>3</hit_dice>
+        <attacks>1 (weapon)</attacks>
+        <attack_throw>8+</attack_throw>
+        <damage>1d8 or weapon +2</damage>
+        <save>F1</save>
+        <morale>+1</morale>
+        <alignment>C</alignment>
+      </entry>
+
+      <entry name="Orc">
+        <armor_class>0</armor_class>
+        <movement>120'</movement>
+        <hit_dice>1/2</hit_dice>
+        <attacks>1 (weapon)</attacks>
+        <attack_throw>11+</attack_throw>
+        <damage>1d4 or weapon -1</damage>
+        <save>NM</save>
+        <morale>-1</morale>
+        <alignment>C</alignment>
+      </entry>
+    </monster_entries>
+  </noncombatant_monsters>
+
+  <confidence_notes>
+    <note>The age-adjustment table headers were visibly corrupted in the source markup, but the age categories and adjustment values were clear enough to preserve with high confidence.</note>
+    <note>The fighter noncombatant title at 4th level appears as "Nero" in the source and was retained as printed; this may be intentional humor or a transcription artifact.</note>
+  </confidence_notes>
+</acks_summary>

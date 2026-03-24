@@ -1,0 +1,126 @@
+{
+  "culture_id": "zhyssarel_thornwake",
+  "display_name": "Zhyssarel Thornwake",
+  "race": "elf",
+  "terrain_affinity": {
+    "primary": "forest",
+    "secondary": "swamp",
+    "avoidance": "plains"
+  },
+  "climate_preference": {
+    "temperature": "subtropical",
+    "moisture": "wet"
+  },
+  "alignment_tendency": {
+    "dominant": "Chaotic",
+    "secondary": "Neutral",
+    "distribution": {
+      "Lawful": 0.14,
+      "Neutral": 0.27,
+      "Chaotic": 0.59
+    },
+    "notes": "The dominant alignment must have the highest distribution value and must be ≥ 0.40. A culture's LLM-generated history may describe past alignment shifts, but at runtime the culture IS its dominant alignment. This is a hard constraint."
+  },
+  "values": {
+    "core_values": [
+      "freedom",
+      "cunning",
+      "beauty"
+    ],
+    "taboos": [
+      "accepting a chain-name from outsiders",
+      "burning a memory tree",
+      "burying the dead in closed earth"
+    ],
+    "social_structure": "tribal",
+    "gender_roles": "egalitarian",
+    "attitude_toward_outsiders": "wary"
+  },
+  "personality_weight_biases": {
+    "temperament": {
+      "stoic": -0.1,
+      "jovial": 0.08,
+      "nervous": -0.04,
+      "aggressive": 0.11,
+      "melancholic": -0.07,
+      "cunning": 0.12,
+      "passionate": 0.15,
+      "serene": -0.08,
+      "paranoid": 0.03,
+      "gregarious": -0.2
+    },
+    "motivation": {
+      "wealth": 0.05,
+      "power": 0.09,
+      "knowledge": 0.03,
+      "security": -0.1,
+      "revenge": 0.11,
+      "faith": -0.03,
+      "legacy": 0.04,
+      "freedom": 0.17,
+      "pleasure": 0.06,
+      "duty": -0.18,
+      "survival": -0.07,
+      "redemption": -0.17
+    },
+    "social_style": {
+      "formal": -0.12,
+      "blunt": 0.11,
+      "flattering": -0.05,
+      "laconic": 0.04,
+      "verbose": -0.02,
+      "evasive": 0.12,
+      "warm": 0.0,
+      "intimidating": 0.09,
+      "scholarly": -0.07,
+      "streetwise": -0.1
+    },
+    "moral_compass": {
+      "righteous": -0.08,
+      "honorable": -0.04,
+      "pragmatic": 0.1,
+      "opportunistic": 0.09,
+      "ruthless": 0.05,
+      "conflicted": -0.12
+    }
+  },
+  "military_tradition": {
+    "preferred_troop_types": [
+      "archers",
+      "light_infantry",
+      "berserkers"
+    ],
+    "fighting_style": "guerrilla",
+    "military_culture": "tribal_warband"
+  },
+  "economy": {
+    "primary_livelihood": "hunting_gathering",
+    "secondary_livelihood": "raiding",
+    "trade_goods": [
+      "amber resin",
+      "ghost orchids",
+      "barbed lacquer",
+      "dream-sap tinctures"
+    ],
+    "currency_attitude": "gift_economy"
+  },
+  "magic_attitude": {
+    "arcane": "commonplace",
+    "divine": "commonplace",
+    "notes": "Sorcery, omen-reading, and spirit bargains mingle freely in daily life."
+  },
+  "architecture_style": {
+    "primary_material": "living_wood",
+    "aesthetic": "organic",
+    "signature_feature": "spiral branch nests linked by thorn-lashed rope spans"
+  },
+  "language": {
+    "language_name": "Zhyrsa",
+    "language_family": "Wild Sylvan",
+    "script": "none_oral_only"
+  },
+  "flavor_text": {
+    "one_line": "Fierce twilight elves who prize self-making, swift revenge, and beauty sharpened by danger.",
+    "one_paragraph": "The Zhyssarel range through drowned forests and thorn-choked canopy roads where names are earned, discarded, and earned again. They distrust walls, fixed ranks, and every promise that lasts longer than desire, yet they keep memory through song, scars, and living trees grown around the ashes of honored dead. To them, beauty is not peace but intensity: the flash of a blade, a poisonous bloom, or a dance performed over a perilous drop."
+  }
+}

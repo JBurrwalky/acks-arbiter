@@ -1,0 +1,1009 @@
+<campaign_armies_rules title="Domains at War - Campaigns - Armies" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <army_sources>
+    <source>mercenaries</source>
+    <source>conscripts</source>
+    <source>militias</source>
+    <source>followers</source>
+    <source>slave_soldiers</source>
+    <source>vassal_troops</source>
+  </army_sources>
+
+  <mercenaries>
+    <definition>
+      <rule>Mercenaries are hired soldiers who will guard, patrol, and campaign for anyone who pays their fee.</rule>
+      <rule>Unlike conscripts and militias, mercenaries must be found and recruited.</rule>
+    </definition>
+
+    <equipment_rules>
+      <rule>All mercenaries also carry a military tunic, cloak, pair of sandals, backpack, laborer’s tools, 4 stakes and mallet, mess kit, small tent, 2 wool blankets, and waterskin.</rule>
+      <rule>Cavalry mercenaries also carry saddle, bridle, 2 saddlebags, and grooming kit.</rule>
+      <rule>Missile-armed mercenaries carry 20 rounds of ammunition.</rule>
+    </equipment_rules>
+
+    <availability_in_markets>
+      <rule>Any character can hire mercenaries from markets.</rule>
+      <rule>Availability depends on market class.</rule>
+      <rule>Mercenaries recruited from a settlement are of the prevailing race of that settlement unless otherwise specified.</rule>
+      <rule>Dwarven troops and elven troops may only be found in dwarven and elven settlements.</rule>
+      <rule>Humanoid troops may only be found in Chaotic-aligned settlements.</rule>
+      <rule>Terrain and climate restrictions apply where listed.</rule>
+      <rule>Exotic troops are available only at Judge discretion.</rule>
+      <crop_rules>
+        <rule>The total number available of a given type is called a crop.</rule>
+        <rule>One half of the crop, rounded up, becomes available within the first week after mustering begins.</rule>
+        <rule>Another quarter, rounded down with minimum 1, becomes available during the second week.</rule>
+        <rule>The remainder becomes available during the third week.</rule>
+        <rule>The market crop replenishes at the end of each month.</rule>
+      </crop_rules>
+      <hiring_costs>
+        <rule>Each week spent finding mercenaries in a market requires a fee per mercenary type.</rule>
+        <table name="market_cost_per_week_per_mercenary_type">
+          <columns>
+            <column>market_class</column>
+            <column>cost</column>
+          </columns>
+          <row><value name="market_class">I</value><value name="cost">1d6+15gp</value></row>
+          <row><value name="market_class">II</value><value name="cost">1d10+10gp</value></row>
+          <row><value name="market_class">III</value><value name="cost">1d8+5gp</value></row>
+          <row><value name="market_class">IV</value><value name="cost">1d6+3gp</value></row>
+          <row><value name="market_class">V</value><value name="cost">1d6gp</value></row>
+          <row><value name="market_class">VI</value><value name="cost">1d3gp</value></row>
+        </table>
+      </hiring_costs>
+    </availability_in_markets>
+
+    <availability_in_realm>
+      <rule>A domain or realm leader, or a character acting with the leader’s permission, may recruit mercenaries from the entire realm.</rule>
+      <rule>Realm recruitment uses the same race, climate, and terrain restrictions as settlement recruitment.</rule>
+      <rule>Realm populations listed are minimum populations for their type; larger realms scale proportionately.</rule>
+      <crop_rules>
+        <rule>One half of the realm crop, rounded up, becomes available in the first time period after mustering begins.</rule>
+        <rule>Another quarter, rounded down with minimum 1, becomes available in the second time period.</rule>
+        <rule>The remainder becomes available in the third time period.</rule>
+        <rule>The realm crop replenishes at the end of the fourth time period.</rule>
+      </crop_rules>
+      <price_pressure>
+        <rule>If more than 50% of the crop of a mercenary type in a realm is hired, prices for that type throughout the realm increase by a percentage equal to the percentage over 50%.</rule>
+        <rule>Elevated prices remain even after a new crop appears until less than 50% of a crop is employed in the realm.</rule>
+      </price_pressure>
+      <hiring_costs>
+        <rule>Each recruitment time period requires a fee per mercenary type.</rule>
+        <table name="realm_cost_per_time_period_per_mercenary_type">
+          <columns>
+            <column>realm_size</column>
+            <column>cost</column>
+          </columns>
+          <row><value name="realm_size">Continent</value><value name="cost">6d10 x 1,000gp</value></row>
+          <row><value name="realm_size">Empire</value><value name="cost">2d6+1 x 1,000gp</value></row>
+          <row><value name="realm_size">Kingdom</value><value name="cost">4d12 x 100gp</value></row>
+          <row><value name="realm_size">Principality</value><value name="cost">5d6 x 100gp</value></row>
+          <row><value name="realm_size">Duchy</value><value name="cost">4d20 x 10gp</value></row>
+          <row><value name="realm_size">Country</value><value name="cost">4d10 x 10gp</value></row>
+          <row><value name="realm_size">March</value><value name="cost">2d4 x 10gp</value></row>
+          <row><value name="realm_size">Barony</value><value name="cost">2d6+1gp</value></row>
+        </table>
+      </hiring_costs>
+    </availability_in_realm>
+
+    <hiring_procedure>
+      <rule>Availability does not guarantee service; mercenaries must still be recruited through negotiation.</rule>
+      <rule>For large-scale hiring, divide mercenaries into companies of 120, battalions of 500, or brigades of 2,000 when rolling on the Reaction to Hiring Offer table.</rule>
+      <rule>After hiring, mercenaries must be paid monthly wages by troop type and race.</rule>
+    </hiring_procedure>
+
+    <morale_and_loyalty>
+      <rule>Mercenary morale is based on training and equipment, not employer magnetism.</rule>
+      <rule>Morale modifies both morale rolls and loyalty rolls.</rule>
+      <rule>Morale rolls are made during battles when casualties exceed an army’s break point.</rule>
+      <rule>A calamity is routing from battle, suffering 25% or greater casualties, being out of supply, or going without pay for a month.</rule>
+      <rule>When a calamity occurs, make a loyalty roll of 2d6 plus morale and adjustments.</rule>
+      <rule>If troops are suffering more than one calamity at once, apply -2 to the loyalty roll per calamity after the first.</rule>
+      <rule>Working conditions may modify morale upward or downward at Judge discretion.</rule>
+      <outcome_definitions>
+        <entry result="enmity">Troops immediately leave service; they may attack or stage a coup if the employer is vulnerable, or seek service with a strong enemy.</entry>
+        <entry result="resignation">Troops leave service at the first advantageous safe moment and will not risk another battle or calamity.</entry>
+        <entry result="grudging_loyalty">Troops remain only because they see no better option; if rolled on two consecutive morale rolls they leave service.</entry>
+        <entry result="loyalty">Troops continue service enthusiastically.</entry>
+        <entry result="fanatic_loyalty">Troops become dedicated servants; all future loyalty rolls are at +1; fanatic loyalty can never result from going without pay and becomes ordinary loyalty in that case.</entry>
+      </outcome_definitions>
+    </morale_and_loyalty>
+
+    <veterans>
+      <rule>The average human mercenary is a 0th level normal man with 1-1 HD, attack throw 11+, and damage by weapon.</rule>
+      <rule>Veterans are generally 1st level fighters or explorers.</rule>
+      <rule>Veterans gain +1 morale over the base morale for their troop type.</rule>
+      <rule>Veterans cost an additional 12gp per month above the normal wage for their type.</rule>
+      <rule>Up to 25% of human mercenaries hired may be veterans.</rule>
+      <rule>Elven and dwarven mercenaries are already equivalent to veterans.</rule>
+    </veterans>
+
+    <exotic_mercenaries>
+      <rule>Exotic mercenaries may include trained animals, constructs, or fantastic creatures.</rule>
+      <rule>To determine available quantity, use the Exotic row of the mercenary availability table and divide by the creature’s total monthly cost on the Exotic Creatures Roster.</rule>
+      <rule>Total monthly cost includes wages, supplies, and specialists needed to handle the creature.</rule>
+      <rule>Exotic mercenaries use the normal mercenary finding and hiring rules, but the finding cost is multiplied by exotic type.</rule>
+      <rule>The Judge may adjust availability and cost by setting.</rule>
+      <table name="exotic_mercenary_cost_multiplier">
+        <columns>
+          <column>type</column>
+          <column>cost_per_time_period_multiplier</column>
+        </columns>
+        <row><value name="type">Animal</value><value name="cost_per_time_period_multiplier">x1</value></row>
+        <row><value name="type">Animal, Wild</value><value name="cost_per_time_period_multiplier">x3</value></row>
+        <row><value name="type">Animal, Prehistoric/Giant</value><value name="cost_per_time_period_multiplier">x8</value></row>
+        <row><value name="type">Construct</value><value name="cost_per_time_period_multiplier">x10</value></row>
+        <row><value name="type">Fantastic Creature</value><value name="cost_per_time_period_multiplier">x10</value></row>
+        <row><value name="type">Ooze</value><value name="cost_per_time_period_multiplier">x20</value></row>
+        <row><value name="type">Undead</value><value name="cost_per_time_period_multiplier">x20</value></row>
+        <row><value name="type">Vermin</value><value name="cost_per_time_period_multiplier">x20</value></row>
+      </table>
+    </exotic_mercenaries>
+
+    <tables>
+      <table name="mercenary_type">
+        <columns>
+          <column>mercenary_type</column>
+          <column>races</column>
+          <column>default_equipment</column>
+        </columns>
+        <row><value name="mercenary_type">Light Infantry</value><value name="races">Any</value><value name="default_equipment">3 javelins, short sword, shield, leather armor</value></row>
+        <row><value name="mercenary_type">Heavy Infantry</value><value name="races">Any but Kobold or Goblin</value><value name="default_equipment">Spear, sword, shield, banded plate armor</value></row>
+        <row><value name="mercenary_type">Slingers</value><value name="races">Man, Goblin</value><value name="default_equipment">Sling, short sword, shield, leather armor</value></row>
+        <row><value name="mercenary_type">Bowmen</value><value name="races">Man, Elf, Goblin, Orc</value><value name="default_equipment">Short bow, short sword, leather armor</value></row>
+        <row><value name="mercenary_type">Crossbowmen</value><value name="races">Man, Dwarf, Orc</value><value name="default_equipment">Arbalest, short sword, chainmail armor</value></row>
+        <row><value name="mercenary_type">Longbowmen</value><value name="races">Man, Elf, Hobgoblin, Gnoll</value><value name="default_equipment">Long bow, sword, chainmail armor</value></row>
+        <row><value name="mercenary_type">Light Cavalry</value><value name="races">Man, Elf, Hobgoblin</value><value name="default_equipment">3 javelins, sword, shield, leather armor, light warhorse</value></row>
+        <row><value name="mercenary_type">Horse Archers</value><value name="races">Man, Elf, Hobgoblin</value><value name="default_equipment">Composite bow, scimitar, shield, leather armor, light warhorse</value></row>
+        <row><value name="mercenary_type">Medium Cavalry</value><value name="races">Man, Hobgoblin</value><value name="default_equipment">Lance, sword, shield, lamellar armor, medium warhorse</value></row>
+        <row><value name="mercenary_type">Heavy Cavalry</value><value name="races">Man</value><value name="default_equipment">Lance, sword, shield, plate armor, chain barded medium warhorse</value></row>
+        <row><value name="mercenary_type">Cataphract Cavalry</value><value name="races">Man, Elf</value><value name="default_equipment">Composite bow, lance, sword, shield, plate armor, lamellar barded medium warhorse</value></row>
+        <row><value name="mercenary_type">Camel Archers</value><value name="races">Man</value><value name="default_equipment">Composite bow, scimitar, shield, leather armor, camel</value></row>
+        <row><value name="mercenary_type">Camel Lancers</value><value name="races">Man</value><value name="default_equipment">Composite bow, lance, scimitar, shield, chainmail armor, leather barded camel</value></row>
+        <row><value name="mercenary_type">War Elephants</value><value name="races">Man</value><value name="default_equipment">Lamellar barded elephant, 6 x composite bows, lances, and leather armor</value></row>
+        <row><value name="mercenary_type">Mounted Crossbows</value><value name="races">Dwarf</value><value name="default_equipment">Crossbow, short sword, chainmail, mule</value></row>
+        <row><value name="mercenary_type">Beast Riders</value><value name="races">Goblin, Orc</value><value name="default_equipment">Spear, short sword, shield, leather or scale armor, dire wolf or giant boar</value></row>
+      </table>
+
+      <table name="mercenary_availability_by_market_class">
+        <columns>
+          <column>mercenary_type</column>
+          <column>class_i</column>
+          <column>class_ii</column>
+          <column>class_iii</column>
+          <column>class_iv</column>
+          <column>class_v</column>
+          <column>class_vi</column>
+          <column>availability_restrictions</column>
+        </columns>
+        <row><value name="mercenary_type">Light Infantry</value><value name="class_i">4d100</value><value name="class_ii">5d20</value><value name="class_iii">5d10</value><value name="class_iv">3d4</value><value name="class_v">1d6</value><value name="class_vi">1d2</value><value name="availability_restrictions">None</value></row>
+        <row><value name="mercenary_type">Heavy Infantry</value><value name="class_i">2d100</value><value name="class_ii">5d10</value><value name="class_iii">3d8</value><value name="class_iv">1d8</value><value name="class_v">1d3</value><value name="class_vi">1 (85%)</value><value name="availability_restrictions">None</value></row>
+        <row><value name="mercenary_type">Slingers</value><value name="class_i">8d20</value><value name="class_ii">4d10</value><value name="class_iii">2d10</value><value name="class_iv">1d6</value><value name="class_v">1d2</value><value name="class_vi">1 (70%)</value><value name="availability_restrictions">None</value></row>
+        <row><value name="mercenary_type">Bowmen</value><value name="class_i">8d20</value><value name="class_ii">4d10</value><value name="class_iii">2d10</value><value name="class_iv">1d6</value><value name="class_v">1d2</value><value name="class_vi">1 (70%)</value><value name="availability_restrictions">None</value></row>
+        <row><value name="mercenary_type">Crossbowmen</value><value name="class_i">8d20</value><value name="class_ii">4d10</value><value name="class_iii">2d10</value><value name="class_iv">1d6</value><value name="class_v">1d2</value><value name="class_vi">1 (70%)</value><value name="availability_restrictions">None</value></row>
+        <row><value name="mercenary_type">Longbowmen</value><value name="class_i">4d20</value><value name="class_ii">2d10</value><value name="class_iii">1d10</value><value name="class_iv">1d3</value><value name="class_v">1</value><value name="class_vi">1 (33%)</value><value name="availability_restrictions">None</value></row>
+        <row><value name="mercenary_type">Light Cavalry</value><value name="class_i">4d20</value><value name="class_ii">2d10</value><value name="class_iii">1d10</value><value name="class_iv">1d3</value><value name="class_v">1</value><value name="class_vi">1 (33%)</value><value name="availability_restrictions">None</value></row>
+        <row><value name="mercenary_type">Horse Archers</value><value name="class_i">4d20</value><value name="class_ii">2d10</value><value name="class_iii">1d10</value><value name="class_iv">1d3</value><value name="class_v">1</value><value name="class_vi">1 (33%)</value><value name="availability_restrictions">None</value></row>
+        <row><value name="mercenary_type">Medium Cavalry</value><value name="class_i">3d20</value><value name="class_ii">4d4</value><value name="class_iii">2d4</value><value name="class_iv">1d2</value><value name="class_v">1 (70%)</value><value name="class_vi">1 (23%)</value><value name="availability_restrictions">None</value></row>
+        <row><value name="mercenary_type">Heavy Cavalry</value><value name="class_i">4d10</value><value name="class_ii">1d10</value><value name="class_iii">1d6</value><value name="class_iv">1d2 (50%)</value><value name="class_v">1 (50%)</value><value name="class_vi">1 (15%)</value><value name="availability_restrictions">None</value></row>
+        <row><value name="mercenary_type">Cataphract Cavalry</value><value name="class_i">3d10</value><value name="class_ii">1d8</value><value name="class_iii">1d4</value><value name="class_iv">1d2 (33%)</value><value name="class_v">1 (40%)</value><value name="class_vi">1 (10%)</value><value name="availability_restrictions">None</value></row>
+        <row><value name="mercenary_type">Camel Archers</value><value name="class_i">4d20</value><value name="class_ii">2d10</value><value name="class_iii">1d10</value><value name="class_iv">1d3</value><value name="class_v">1</value><value name="class_vi">1 (33%)</value><value name="availability_restrictions">Desert terrain only</value></row>
+        <row><value name="mercenary_type">Camel Lancers</value><value name="class_i">3d20</value><value name="class_ii">4d4</value><value name="class_iii">2d4</value><value name="class_iv">1d2</value><value name="class_v">1 (70%)</value><value name="class_vi">1 (23%)</value><value name="availability_restrictions">Desert terrain only</value></row>
+        <row><value name="mercenary_type">War Elephants</value><value name="class_i">1d10</value><value name="class_ii">1 (70%)</value><value name="class_iii">1 (40%)</value><value name="class_iv">1 (7%)</value><value name="class_v">1 (5%)</value><value name="class_vi">-</value><value name="availability_restrictions">Tropical climates only</value></row>
+        <row><value name="mercenary_type">Mounted Crossbowmen</value><value name="class_i">3d20</value><value name="class_ii">4d4</value><value name="class_iii">2d4</value><value name="class_iv">1d2</value><value name="class_v">1 (75%)</value><value name="class_vi">1 (25%)</value><value name="availability_restrictions">Dwarven only</value></row>
+        <row><value name="mercenary_type">Beast Riders</value><value name="class_i">3d10</value><value name="class_ii">1d8</value><value name="class_iii">1d4</value><value name="class_iv">1d2 (33%)</value><value name="class_v">1 (40%)</value><value name="class_vi">1 (10%)</value><value name="availability_restrictions">Chaotic only</value></row>
+        <row><value name="mercenary_type">Exotic</value><value name="class_i">8d100/cost</value><value name="class_ii">10d20/cost</value><value name="class_iii">5d20/cost</value><value name="class_iv">3d8/cost</value><value name="class_v">2d6/cost</value><value name="class_vi">-</value><value name="availability_restrictions">Judge’s Discretion</value></row>
+      </table>
+
+      <table name="mercenary_availability_by_realm_size">
+        <columns>
+          <column>mercenary_type</column>
+          <column>continent</column>
+          <column>empire</column>
+          <column>kingdom</column>
+          <column>principality</column>
+          <column>duchy</column>
+          <column>county</column>
+          <column>march</column>
+          <column>barony</column>
+        </columns>
+        <metadata>
+          <population_families continent="16000000" empire="1500000" kingdom="364000" principality="87000" duchy="20000" county="4600" march="960" barony="160"/>
+          <time_period continent="Year" empire="Season" kingdom="Season" principality="Month" duchy="Month" county="Week" march="Week" barony="Week"/>
+        </metadata>
+        <row><value name="mercenary_type">Light Infantry</value><value name="continent">340000</value><value name="empire">28000</value><value name="kingdom">6800</value><value name="principality">1600</value><value name="duchy">360</value><value name="county">85</value><value name="march">17</value><value name="barony">3</value></row>
+        <row><value name="mercenary_type">Heavy Infantry</value><value name="continent">170000</value><value name="empire">13000</value><value name="kingdom">3400</value><value name="principality">800</value><value name="duchy">180</value><value name="county">40</value><value name="march">8</value><value name="barony">2</value></row>
+        <row><value name="mercenary_type">Slingers</value><value name="continent">135000</value><value name="empire">11000</value><value name="kingdom">2700</value><value name="principality">645</value><value name="duchy">145</value><value name="county">35</value><value name="march">7</value><value name="barony">1</value></row>
+        <row><value name="mercenary_type">Bowmen</value><value name="continent">135000</value><value name="empire">11000</value><value name="kingdom">2700</value><value name="principality">645</value><value name="duchy">145</value><value name="county">35</value><value name="march">7</value><value name="barony">1</value></row>
+        <row><value name="mercenary_type">Crossbowmen</value><value name="continent">135000</value><value name="empire">11000</value><value name="kingdom">2700</value><value name="principality">645</value><value name="duchy">145</value><value name="county">35</value><value name="march">7</value><value name="barony">1</value></row>
+        <row><value name="mercenary_type">Longbowmen</value><value name="continent">70000</value><value name="empire">5500</value><value name="kingdom">1350</value><value name="principality">325</value><value name="duchy">75</value><value name="county">17</value><value name="march">3</value><value name="barony">1</value></row>
+        <row><value name="mercenary_type">Light Cavalry</value><value name="continent">70000</value><value name="empire">5500</value><value name="kingdom">1350</value><value name="principality">325</value><value name="duchy">75</value><value name="county">17</value><value name="march">3</value><value name="barony">1</value></row>
+        <row><value name="mercenary_type">Horse Archers</value><value name="continent">45000</value><value name="empire">3700</value><value name="kingdom">905</value><value name="principality">215</value><value name="duchy">50</value><value name="county">10</value><value name="march">2</value><value name="barony">-</value></row>
+        <row><value name="mercenary_type">Medium Cavalry</value><value name="continent">45000</value><value name="empire">3700</value><value name="kingdom">905</value><value name="principality">215</value><value name="duchy">50</value><value name="county">10</value><value name="march">2</value><value name="barony">-</value></row>
+        <row><value name="mercenary_type">Heavy Cavalry</value><value name="continent">34000</value><value name="empire">2750</value><value name="kingdom">680</value><value name="principality">160</value><value name="duchy">36</value><value name="county">8</value><value name="march">2</value><value name="barony">-</value></row>
+        <row><value name="mercenary_type">Cataphract Cavalry</value><value name="continent">28000</value><value name="empire">2200</value><value name="kingdom">540</value><value name="principality">130</value><value name="duchy">30</value><value name="county">7</value><value name="march">1</value><value name="barony">-</value></row>
+        <row><value name="mercenary_type">Camel Archers</value><value name="continent">45000</value><value name="empire">3700</value><value name="kingdom">905</value><value name="principality">215</value><value name="duchy">50</value><value name="county">10</value><value name="march">2</value><value name="barony">-</value></row>
+        <row><value name="mercenary_type">Camel Lancers</value><value name="continent">28000</value><value name="empire">2200</value><value name="kingdom">540</value><value name="principality">130</value><value name="duchy">30</value><value name="county">7</value><value name="march">1</value><value name="barony">-</value></row>
+        <row><value name="mercenary_type">War Elephants</value><value name="continent">4400</value><value name="empire">345</value><value name="kingdom">85</value><value name="principality">20</value><value name="duchy">5</value><value name="county">1</value><value name="march">-</value><value name="barony">-</value></row>
+        <row><value name="mercenary_type">Mtd. Crossbowman</value><value name="continent">45000</value><value name="empire">3700</value><value name="kingdom">1350</value><value name="principality">215</value><value name="duchy">50</value><value name="county">10</value><value name="march">2</value><value name="barony">-</value></row>
+        <row><value name="mercenary_type">Beast Riders</value><value name="continent">28000</value><value name="empire">2200</value><value name="kingdom">540</value><value name="principality">130</value><value name="duchy">30</value><value name="county">7</value><value name="march">1</value><value name="barony">-</value></row>
+        <row><value name="mercenary_type">Exotic</value><value name="continent">400000/cost</value><value name="empire">39000/cost</value><value name="kingdom">8100/cost</value><value name="principality">1935/cost</value><value name="duchy">435/cost</value><value name="county">105/cost</value><value name="march">-</value><value name="barony">-</value></row>
+      </table>
+
+      <table name="mercenary_gp_wage_per_month">
+        <columns>
+          <column>mercenary_type</column>
+          <column>man</column>
+          <column>dwarf</column>
+          <column>elf</column>
+          <column>kobold</column>
+          <column>goblin</column>
+          <column>orc</column>
+          <column>hobgoblin</column>
+          <column>gnoll</column>
+          <column>lizardman</column>
+          <column>bugbear</column>
+          <column>ogre</column>
+        </columns>
+        <row><value name="mercenary_type">Light Infantry</value><value name="man">6</value><value name="dwarf">-</value><value name="elf">10</value><value name="kobold">2</value><value name="goblin">3</value><value name="orc">6</value><value name="hobgoblin">12</value><value name="gnoll">18</value><value name="lizardman">27</value><value name="bugbear">35</value><value name="ogre">40</value></row>
+        <row><value name="mercenary_type">Heavy Infantry</value><value name="man">12</value><value name="dwarf">18</value><value name="elf">24</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">9</value><value name="hobgoblin">15</value><value name="gnoll">24</value><value name="lizardman">45</value><value name="bugbear">50</value><value name="ogre">80</value></row>
+        <row><value name="mercenary_type">Slingers</value><value name="man">6</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">3</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Bowmen</value><value name="man">9</value><value name="dwarf">-</value><value name="elf">21</value><value name="kobold">-</value><value name="goblin">3</value><value name="orc">6</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Crossbowmen</value><value name="man">18</value><value name="dwarf">24</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">12</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Longbowmen</value><value name="man">18</value><value name="dwarf">-</value><value name="elf">42</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">24</value><value name="gnoll">40</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Light Cavalry</value><value name="man">30</value><value name="dwarf">-</value><value name="elf">60</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">45</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Horse Archers</value><value name="man">45</value><value name="dwarf">-</value><value name="elf">90</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">75</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Medium Cavalry</value><value name="man">45</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">55</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Heavy Cavalry</value><value name="man">60</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Cataphract Cavalry</value><value name="man">75</value><value name="dwarf">-</value><value name="elf">150</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Camel Archers</value><value name="man">30</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Camel Lancers</value><value name="man">45</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">War Elephants</value><value name="man">360</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Mounted Crossbowmen</value><value name="man">-</value><value name="dwarf">45</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman"></value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Beast Riders</value><value name="man">-</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">15</value><value name="orc">33</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+      </table>
+
+      <table name="unit_loyalty">
+        <columns>
+          <column>adjusted_die_roll</column>
+          <column>result</column>
+        </columns>
+        <row><value name="adjusted_die_roll">2-</value><value name="result">Enmity</value></row>
+        <row><value name="adjusted_die_roll">3-5</value><value name="result">Resignation</value></row>
+        <row><value name="adjusted_die_roll">6-8</value><value name="result">Grudging Loyalty</value></row>
+        <row><value name="adjusted_die_roll">9-11</value><value name="result">Loyalty</value></row>
+        <row><value name="adjusted_die_roll">12+</value><value name="result">Fanatic loyalty</value></row>
+      </table>
+
+      <table name="mercenary_morale_by_type_and_race">
+        <columns>
+          <column>mercenary_type</column>
+          <column>man</column>
+          <column>dwarf</column>
+          <column>elf</column>
+          <column>kobold</column>
+          <column>goblin</column>
+          <column>orc</column>
+          <column>hobgoblin</column>
+          <column>gnoll</column>
+          <column>lizardman</column>
+          <column>bugbear</column>
+          <column>ogre</column>
+        </columns>
+        <row><value name="mercenary_type">Light Infantry</value><value name="man">-1</value><value name="dwarf">-</value><value name="elf">0</value><value name="kobold">-2</value><value name="goblin">-1</value><value name="orc">0</value><value name="hobgoblin">0</value><value name="gnoll">0</value><value name="lizardman">+2</value><value name="bugbear">+2</value><value name="ogre">+2</value></row>
+        <row><value name="mercenary_type">Heavy Infantry</value><value name="man">0</value><value name="dwarf">0</value><value name="elf">0</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">0</value><value name="hobgoblin">0</value><value name="gnoll">0</value><value name="lizardman">+2</value><value name="bugbear">+2</value><value name="ogre">+2</value></row>
+        <row><value name="mercenary_type">Slingers</value><value name="man">-1</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-1</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Bowmen</value><value name="man">-1</value><value name="dwarf">-</value><value name="elf">0</value><value name="kobold">-</value><value name="goblin">-1</value><value name="orc">0</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Crossbowmen</value><value name="man">0</value><value name="dwarf">0</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">0</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Longbowmen</value><value name="man">0</value><value name="dwarf">0</value><value name="elf">0</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">0</value><value name="gnoll">0</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Light Cavalry</value><value name="man">+1</value><value name="dwarf">-</value><value name="elf">+1</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">+1</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Horse Archers</value><value name="man">+1</value><value name="dwarf">-</value><value name="elf">+1</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">+1</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Medium Cavalry</value><value name="man">+1</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">+1</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Heavy Cavalry</value><value name="man">+2</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Cataphract Cavalry</value><value name="man">+2</value><value name="dwarf">-</value><value name="elf">+2</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Camel Archers</value><value name="man">+1</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Camel Lancers</value><value name="man">+2</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">War Elephants (riders)</value><value name="man">+2</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Mounted Crossbowmen</value><value name="man">-</value><value name="dwarf">+1</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman"></value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="mercenary_type">Beast Riders</value><value name="man">-</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">+1</value><value name="orc">+2</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+      </table>
+    </tables>
+  </mercenaries>
+
+  <conscripts>
+    <definition>
+      <rule>A domain leader can permanently conscript peasants into an army.</rule>
+      <rule>Up to 1 conscript per 10 peasant families may be levied without affecting domain morale or revenue.</rule>
+      <rule>Conscription may be done all at once or gradually.</rule>
+      <rule>If peasant families decrease, some conscripts must be released.</rule>
+      <rule>If peasant families increase, more conscripts may be levied.</rule>
+      <rule>If conscripts are killed, they can only be replaced through population growth.</rule>
+    </definition>
+
+    <untrained_state>
+      <rule>Untrained conscripts have no weapons or armor, 1d4 hit points, morale -2, and fight as normal men.</rule>
+      <rule>Unless trained, they may only use spears, clubs, quarterstaffs, or daggers.</rule>
+      <rule>Untrained conscripts cost 3gp per month.</rule>
+    </untrained_state>
+
+    <training>
+      <rule>Conscripts may be trained into the same troop varieties as mercenaries.</rule>
+      <rule>Eligibility by troop type is limited by aptitude and race.</rule>
+      <rule>Trained conscripts gain the same characteristics as mercenaries of their type.</rule>
+      <rule>Trained conscripts must be paid the wages appropriate to their troop type.</rule>
+      <eligibility_rules_human>
+        <rule>Any able-bodied conscript can qualify as light infantry.</rule>
+        <rule>50% qualify as heavy infantry.</rule>
+        <rule>50% qualify as slingers, bowmen, or crossbowmen.</rule>
+        <rule>25% qualify as light cavalry.</rule>
+        <rule>Two-thirds of those who qualify as light cavalry, 17% of total conscripts, qualify as medium cavalry.</rule>
+        <rule>25% qualify as longbowmen because they must qualify as both heavy infantry and bowmen.</rule>
+        <rule>12.5% qualify as horse archers because they must qualify as both bowmen and cavalry.</rule>
+        <rule>8.5% qualify as heavy cavalry because they must qualify as both heavy infantry and medium cavalry.</rule>
+        <rule>5% qualify as cataphract cavalry because they must qualify as heavy infantry, bowmen, and medium cavalry.</rule>
+      </eligibility_rules_human>
+    </training>
+
+    <morale>
+      <rule>Newly levied conscripts have base morale -2.</rule>
+      <rule>After training, base morale becomes that of the trained troop type.</rule>
+      <rule>Conscripts from domains with Steadfast or Stalwart morale gain a one-time +1 morale increase.</rule>
+      <rule>Conscripts from domains with Apathetic or Demoralized morale suffer a one-time -1 morale penalty.</rule>
+      <rule>Working conditions may further modify morale.</rule>
+      <rule>Conscripts make morale rolls during battles when casualties exceed break point.</rule>
+      <rule>Conscripts make loyalty rolls when suffering any calamity.</rule>
+      <rule>Use the Unit Loyalty table for loyalty results.</rule>
+      <rule>Conscripts cannot voluntarily leave service; loyalty results that would cause departure represent desertion.</rule>
+      <rule>If released by their leader, trained conscripts become mercenaries or brigands, while untrained conscripts return to their farms.</rule>
+    </morale>
+
+    <tables>
+      <table name="qualifying_number_per_120_conscripts">
+        <columns>
+          <column>troop_type</column>
+          <column>man</column>
+          <column>dwarf</column>
+          <column>elf</column>
+          <column>kobold</column>
+          <column>goblin</column>
+          <column>orc</column>
+          <column>hobgoblin</column>
+          <column>gnoll</column>
+          <column>lizardman</column>
+          <column>bugbear</column>
+          <column>ogre</column>
+        </columns>
+        <row><value name="troop_type">Light Infantry</value><value name="man">120</value><value name="dwarf">-</value><value name="elf">120</value><value name="kobold">120</value><value name="goblin">120</value><value name="orc">120</value><value name="hobgoblin">120</value><value name="gnoll">120</value><value name="lizardman">120</value><value name="bugbear">120</value><value name="ogre">120</value></row>
+        <row><value name="troop_type">Heavy Infantry</value><value name="man">60</value><value name="dwarf">120</value><value name="elf">60</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">90</value><value name="hobgoblin">90</value><value name="gnoll">90</value><value name="lizardman">90</value><value name="bugbear">90</value><value name="ogre">60</value></row>
+        <row><value name="troop_type">Slingers</value><value name="man">60</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">60</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="troop_type">Bowmen</value><value name="man">60</value><value name="dwarf">-</value><value name="elf">120</value><value name="kobold">-</value><value name="goblin">60</value><value name="orc">60</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="troop_type">Crossbowmen</value><value name="man">60</value><value name="dwarf">60</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">60</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="troop_type">Longbowmen</value><value name="man">30</value><value name="dwarf">-</value><value name="elf">60</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">60</value><value name="gnoll">60</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="troop_type">Light Cavalry</value><value name="man">30</value><value name="dwarf">-</value><value name="elf">60</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">30</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="troop_type">Horse Archers</value><value name="man">15</value><value name="dwarf">-</value><value name="elf">30</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">15</value><value name="gnoll">-</value><value name="lizardman">--</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="troop_type">Medium Cavalry</value><value name="man">20</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">20</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="troop_type">Heavy Cavalry</value><value name="man">10</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="troop_type">Cataphract Cavalry</value><value name="man">6</value><value name="dwarf">-</value><value name="elf">12</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="troop_type">Camel Archers</value><value name="man">15</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="troop_type">Camel Lancers</value><value name="man">6</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="troop_type">War Elephants</value><value name="man">15</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="troop_type">Mounted Crossbowmen</value><value name="man">-</value><value name="dwarf">15</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="troop_type">Beast Riders</value><value name="man">-</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">6</value><value name="orc">6</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+      </table>
+
+      <table name="training_and_equipment_time_and_cost">
+        <columns>
+          <column>troop_type</column>
+          <column>training_time</column>
+          <column>marshal_cost</column>
+          <column>training_cost</column>
+          <column>equipment_cost</column>
+          <column>total_cost_per_troop</column>
+          <column>total_cost_per_unit</column>
+        </columns>
+        <row><value name="troop_type">Light Infantry</value><value name="training_time">1 month</value><value name="marshal_cost">5sp</value><value name="training_cost">9gp</value><value name="equipment_cost">85gp</value><value name="total_cost_per_troop">94.5gp</value><value name="total_cost_per_unit">11,340gp</value></row>
+        <row><value name="troop_type">Heavy Infantry</value><value name="training_time">1 month</value><value name="marshal_cost">1gp</value><value name="training_cost">9gp</value><value name="equipment_cost">118gp</value><value name="total_cost_per_troop">128gp</value><value name="total_cost_per_unit">15,360gp</value></row>
+        <row><value name="troop_type">Slingers</value><value name="training_time">1.5 months</value><value name="marshal_cost">1.5gp</value><value name="training_cost">13.5gp</value><value name="equipment_cost">84gp</value><value name="total_cost_per_troop">97.5gp</value><value name="total_cost_per_unit">11,940gp</value></row>
+        <row><value name="troop_type">Bowmen</value><value name="training_time">2 month</value><value name="marshal_cost">2gp</value><value name="training_cost">18gp</value><value name="equipment_cost">76gp</value><value name="total_cost_per_troop">96gp</value><value name="total_cost_per_unit">11,520gp</value></row>
+        <row><value name="troop_type">Crossbowmen</value><value name="training_time">1 month</value><value name="marshal_cost">1gp</value><value name="training_cost">9gp</value><value name="equipment_cost">144gp</value><value name="total_cost_per_troop">154gp</value><value name="total_cost_per_unit">18,480gp</value></row>
+        <row><value name="troop_type">Longbowmen</value><value name="training_time">3 months</value><value name="marshal_cost">3gp</value><value name="training_cost">30gp</value><value name="equipment_cost">103gp</value><value name="total_cost_per_troop">136gp</value><value name="total_cost_per_unit">16,320gp</value></row>
+        <row><value name="troop_type">Light Cavalry</value><value name="training_time">3 months</value><value name="marshal_cost">3gp</value><value name="training_cost">30gp</value><value name="equipment_cost">273gp</value><value name="total_cost_per_troop">306gp</value><value name="total_cost_per_unit">18,360gp</value></row>
+        <row><value name="troop_type">Horse Archers</value><value name="training_time">6 months</value><value name="marshal_cost">12gp</value><value name="training_cost">85gp</value><value name="equipment_cost">308gp</value><value name="total_cost_per_troop">405gp</value><value name="total_cost_per_unit">24,300gp</value></row>
+        <row><value name="troop_type">Medium Cavalry</value><value name="training_time">4 months</value><value name="marshal_cost">8gp</value><value name="training_cost">45gp</value><value name="equipment_cost">403gp</value><value name="total_cost_per_troop">456gp</value><value name="total_cost_per_unit">27,360gp</value></row>
+        <row><value name="troop_type">Heavy Cavalry</value><value name="training_time">6 months</value><value name="marshal_cost">12gp</value><value name="training_cost">85gp</value><value name="equipment_cost">563gp</value><value name="total_cost_per_troop">660gp</value><value name="total_cost_per_unit">39,600gp</value></row>
+        <row><value name="troop_type">Cataphract Cavalry</value><value name="training_time">12 months</value><value name="marshal_cost">48gp</value><value name="training_cost">170gp</value><value name="equipment_cost">750gp</value><value name="total_cost_per_troop">968gp</value><value name="total_cost_per_unit">58,080gp</value></row>
+        <row><value name="troop_type">Camel Archers</value><value name="training_time">6 months</value><value name="marshal_cost">12gp</value><value name="training_cost">85gp</value><value name="equipment_cost">261gp</value><value name="total_cost_per_troop">358gp</value><value name="total_cost_per_unit">21,480gp</value></row>
+        <row><value name="troop_type">Camel Lancers</value><value name="training_time">12 months</value><value name="marshal_cost">48gp</value><value name="training_cost">170gp</value><value name="equipment_cost">321gp</value><value name="total_cost_per_troop">539gp</value><value name="total_cost_per_unit">32,340gp</value></row>
+        <row><value name="troop_type">War Elephants</value><value name="training_time">6 months</value><value name="marshal_cost">48gp</value><value name="training_cost">340gp</value><value name="equipment_cost">8,048gp</value><value name="total_cost_per_troop">8,606gp</value><value name="total_cost_per_unit">43,030gp</value></row>
+        <row><value name="troop_type">Mounted Crossbowmen</value><value name="training_time">4 months</value><value name="marshal_cost">8gp</value><value name="training_cost">30gp</value><value name="equipment_cost">179gp</value><value name="total_cost_per_troop">209gp</value><value name="total_cost_per_unit">12,540gp</value></row>
+        <row><value name="troop_type">Wolf Riders</value><value name="training_time">6 months</value><value name="marshal_cost">12gp</value><value name="training_cost">85gp</value><value name="equipment_cost">820gp</value><value name="total_cost_per_troop">9179gp</value><value name="total_cost_per_unit">55,020gp</value></row>
+        <row><value name="troop_type">Boar Riders</value><value name="training_time">6 months</value><value name="marshal_cost">12gp</value><value name="training_cost">85gp</value><value name="equipment_cost">1530gp</value><value name="total_cost_per_troop">1,627gp</value><value name="total_cost_per_unit">97,620gp</value></row>
+        <notes><rule>Marshal cost is per troop, assuming each marshal trains 60 troops.</rule></notes>
+      </table>
+    </tables>
+  </conscripts>
+
+  <militia>
+    <definition>
+      <rule>A domain leader may levy a peasant militia in addition to conscripts.</rule>
+      <rule>Up to 2 additional peasants per 10 families may be levied.</rule>
+      <rule>For each peasant levied, domain revenue is reduced by one family.</rule>
+      <rule>Levying 1 or fewer militia per 10 families reduces domain morale by 1; levying 2 per 10 families reduces domain morale by 2.</rule>
+      <rule>These penalties remain until the militia is sent home.</rule>
+      <rule>If militia are killed, the loss of domain morale and family revenue is permanent.</rule>
+    </definition>
+
+    <untrained_state>
+      <rule>Untrained militia have no weapons or armor, 1d4 hit points, fight as normal men, and have morale -2.</rule>
+      <rule>Militia cost 3gp per month while called up, or more if trained.</rule>
+    </untrained_state>
+
+    <training>
+      <rule>Militia may be trained like conscripts and use the same training qualification logic and training cost table.</rule>
+      <rule>If trained and then sent home, militia keep their equipment.</rule>
+      <rule>When called up again, trained militia return with that equipment and fight as the trained troop type.</rule>
+      <rule>Trained militia use the same characteristics as mercenaries of their type and are paid the wages for that type while called up.</rule>
+      <rule>Militia are assumed to pass arms and skills to their heirs when no longer capable of serving.</rule>
+      <risk_rule>
+        <rule>If domain morale becomes Turbulent, Defiant, or Rebellious, any rebels are drawn from the militia.</rule>
+      </risk_rule>
+    </training>
+
+    <morale>
+      <rule>New militia have base morale -2.</rule>
+      <rule>Trained militia have the base morale of their troop type.</rule>
+      <rule>Militia from domains with Steadfast or Stalwart morale gain a one-time +1 morale bonus.</rule>
+      <rule>Militia from domains with Apathetic or Demoralized morale suffer a one-time -1 morale penalty.</rule>
+      <rule>Working conditions may further modify morale.</rule>
+      <rule>Militia make morale rolls during battle when casualties exceed break point.</rule>
+      <rule>Militia make loyalty rolls when they suffer a calamity.</rule>
+      <rule>Militia also treat each season of continuous campaigning as a calamity.</rule>
+      <rule>Use the Unit Loyalty table for loyalty results.</rule>
+      <rule>Militia cannot voluntarily leave service, but may desert, betray, or attack their leader.</rule>
+      <rule>If voluntarily released, militia return to their farms.</rule>
+    </morale>
+  </militia>
+
+  <followers>
+    <definition>
+      <rule>A domain leader may have followers available for army service.</rule>
+      <rule>Follower arms and equipment are determined by class-based follower tables.</rule>
+    </definition>
+
+    <morale>
+      <rule>Follower base morale equals that of a mercenary of the same troop type.</rule>
+      <rule>Followers add the leader’s Charisma bonus to morale, to a maximum of +4.</rule>
+      <rule>Working conditions may further modify morale.</rule>
+      <rule>Followers make morale rolls during battle when casualties exceed break point.</rule>
+      <rule>Followers make loyalty rolls when suffering a calamity.</rule>
+      <rule>For followers, a calamity is routing from battle, suffering 25% or greater casualties, being out of supply, or going without pay for a month.</rule>
+      <religious_fanatics>
+        <rule>Cleric and bladedancer followers are religious fanatics.</rule>
+        <rule>Religious fanatics need only basic upkeep of 3gp per month.</rule>
+        <rule>Religious fanatics always have Base Morale +4 regardless of equipment.</rule>
+        <rule>Religious fanatics do not make loyalty rolls for calamities, but still make morale rolls in battle.</rule>
+      </religious_fanatics>
+    </morale>
+
+    <tables>
+      <table name="follower_type_and_equipment_by_class">
+        <columns>
+          <column>class_group</column>
+          <column>die_roll</column>
+          <column>type_and_equipment</column>
+        </columns>
+
+        <row><value name="class_group">Barbarians (Jutland)</value><value name="die_roll">01-25</value><value name="type_and_equipment">Bowmen (shortbow, hand axe, leather armor, shield)</value></row>
+        <row><value name="class_group">Barbarians (Jutland)</value><value name="die_roll">26-50</value><value name="type_and_equipment">Light Infantry (great axe, leather armor)</value></row>
+        <row><value name="class_group">Barbarians (Jutland)</value><value name="die_roll">51-70</value><value name="type_and_equipment">Light Infantry (spear, battle axe, leather armor, shield)</value></row>
+        <row><value name="class_group">Barbarians (Jutland)</value><value name="die_roll">71-85</value><value name="type_and_equipment">Heavy Infantry (two-handed sword, chain mail armor)</value></row>
+        <row><value name="class_group">Barbarians (Jutland)</value><value name="die_roll">86-100</value><value name="type_and_equipment">Heavy Infantry (spear, sword, chain mail armor, shield)</value></row>
+
+        <row><value name="class_group">Barbarians (Ivory Kingdoms)</value><value name="die_roll">01-25</value><value name="type_and_equipment">Hunters (bola, net, 5 darts, hand axe, hide armor)</value></row>
+        <row><value name="class_group">Barbarians (Ivory Kingdoms)</value><value name="die_roll">26-50</value><value name="type_and_equipment">Hunters (bola, net, 3 javelins, hand axe, leather armor)</value></row>
+        <row><value name="class_group">Barbarians (Ivory Kingdoms)</value><value name="die_roll">51-70</value><value name="type_and_equipment">Bowmen (shortbow, hand axe, leather armor)</value></row>
+        <row><value name="class_group">Barbarians (Ivory Kingdoms)</value><value name="die_roll">71-85</value><value name="type_and_equipment">Hunters (spear, club, shield, hide armor)</value></row>
+        <row><value name="class_group">Barbarians (Ivory Kingdoms)</value><value name="die_roll">86-100</value><value name="type_and_equipment">Hunters (spear, hand axe, shield, leather armor)</value></row>
+
+        <row><value name="class_group">Barbarians (Skysos)</value><value name="die_roll">01-25</value><value name="type_and_equipment">Light Infantry (spear, scimitar, shield, leather armor)</value></row>
+        <row><value name="class_group">Barbarians (Skysos)</value><value name="die_roll">26-50</value><value name="type_and_equipment">Composite Bowmen (composite bow, scimitar, shield, leather armor)</value></row>
+        <row><value name="class_group">Barbarians (Skysos)</value><value name="die_roll">51-70</value><value name="type_and_equipment">Horse Archers (composite bow, scimitar, shield, leather armor, light warhorse)</value></row>
+        <row><value name="class_group">Barbarians (Skysos)</value><value name="die_roll">71-85</value><value name="type_and_equipment">Medium Cavalry (lance, shield, lamellar armor, medium warhorse)</value></row>
+        <row><value name="class_group">Barbarians (Skysos)</value><value name="die_roll">86-100</value><value name="type_and_equipment">Light Cavalry (3 javelins, sword, shield, leather armor, light warhorse)</value></row>
+
+        <row><value name="class_group">Bards, Bladedancers, and Mystics</value><value name="die_roll">01-10</value><value name="type_and_equipment">Heavy Cavalry (lance, sword, shield, plate armor, chain barded medium warhorse)</value></row>
+        <row><value name="class_group">Bards, Bladedancers, and Mystics</value><value name="die_roll">11-20</value><value name="type_and_equipment">Medium Cavalry (lance, shield, lamellar armor, medium warhorse)</value></row>
+        <row><value name="class_group">Bards, Bladedancers, and Mystics</value><value name="die_roll">21-35</value><value name="type_and_equipment">Light Cavalry (3 javelins, 2 swords, leather armor, light warhorse)</value></row>
+        <row><value name="class_group">Bards, Bladedancers, and Mystics</value><value name="die_roll">36-55</value><value name="type_and_equipment">Heavy Infantry (pole arm, sword, shield, banded plate armor)</value></row>
+        <row><value name="class_group">Bards, Bladedancers, and Mystics</value><value name="die_roll">56-80</value><value name="type_and_equipment">Light Infantry (2 swords, dagger, leather armor)</value></row>
+        <row><value name="class_group">Bards, Bladedancers, and Mystics</value><value name="die_roll">81-90</value><value name="type_and_equipment">Bowmen (shortbow, sword, leather armor)</value></row>
+        <row><value name="class_group">Bards, Bladedancers, and Mystics</value><value name="die_roll">91-100</value><value name="type_and_equipment">Slingers (sling, short sword, shield, leather armor)</value></row>
+
+        <row><value name="class_group">Clerics, Fighters, Paladins, Anti-Paladins, and Zaharan Ruinguards</value><value name="die_roll">01-05</value><value name="type_and_equipment">Cataphract Cavalry (composite bow, lance, sword, shield, plate armor, lamellar barded medium warhorse)</value></row>
+        <row><value name="class_group">Clerics, Fighters, Paladins, Anti-Paladins, and Zaharan Ruinguards</value><value name="die_roll">06-15</value><value name="type_and_equipment">Heavy Cavalry (lance, sword, shield, plate armor, chain barded medium warhorse)</value></row>
+        <row><value name="class_group">Clerics, Fighters, Paladins, Anti-Paladins, and Zaharan Ruinguards</value><value name="die_roll">16-25</value><value name="type_and_equipment">Medium Cavalry (lance, shield, lamellar armor, medium warhorse)</value></row>
+        <row><value name="class_group">Clerics, Fighters, Paladins, Anti-Paladins, and Zaharan Ruinguards</value><value name="die_roll">26-35</value><value name="type_and_equipment">Light Cavalry (3 javelins, sword, shield, leather armor, light warhorse)</value></row>
+        <row><value name="class_group">Clerics, Fighters, Paladins, Anti-Paladins, and Zaharan Ruinguards</value><value name="die_roll">36-60</value><value name="type_and_equipment">Heavy Infantry (pole arm, sword, shield, banded plate armor)</value></row>
+        <row><value name="class_group">Clerics, Fighters, Paladins, Anti-Paladins, and Zaharan Ruinguards</value><value name="die_roll">61-80</value><value name="type_and_equipment">Light Infantry (spear, short sword, shield, leather armor)</value></row>
+        <row><value name="class_group">Clerics, Fighters, Paladins, Anti-Paladins, and Zaharan Ruinguards</value><value name="die_roll">81-90</value><value name="type_and_equipment">Bowmen (shortbow, short sword, leather armor)</value></row>
+        <row><value name="class_group">Clerics, Fighters, Paladins, Anti-Paladins, and Zaharan Ruinguards</value><value name="die_roll">91-100</value><value name="type_and_equipment">Slingers (sling, short sword, shield, leather armor)</value></row>
+
+        <row><value name="class_group">Dwarven Craftpriests, Dwarven Delvers, Dwarven Furies, Dwarven Vaultguards, and Gnomish Tricksters</value><value name="die_roll">01-20</value><value name="type_and_equipment">Dwarven Heavy Infantry (great axe, plate armor)</value></row>
+        <row><value name="class_group">Dwarven Craftpriests, Dwarven Delvers, Dwarven Furies, Dwarven Vaultguards, and Gnomish Tricksters</value><value name="die_roll">21-40</value><value name="type_and_equipment">Dwarven Heavy Infantry (war hammer, shield, banded plate armor)</value></row>
+        <row><value name="class_group">Dwarven Craftpriests, Dwarven Delvers, Dwarven Furies, Dwarven Vaultguards, and Gnomish Tricksters</value><value name="die_roll">41-60</value><value name="type_and_equipment">Dwarven Heavy Infantry (battle axe, shield, chain mail)</value></row>
+        <row><value name="class_group">Dwarven Craftpriests, Dwarven Delvers, Dwarven Furies, Dwarven Vaultguards, and Gnomish Tricksters</value><value name="die_roll">61-80</value><value name="type_and_equipment">Dwarven Crossbowman (arbalest, dagger, chain mail)</value></row>
+        <row><value name="class_group">Dwarven Craftpriests, Dwarven Delvers, Dwarven Furies, Dwarven Vaultguards, and Gnomish Tricksters</value><value name="die_roll">81-100</value><value name="type_and_equipment">Dwarven Mounted Crossbowmen (crossbow, chain mail, mule)</value></row>
+
+        <row><value name="class_group">Elven Courtiers, Elven Rangers, and Elven Spellswords</value><value name="die_roll">01-15</value><value name="type_and_equipment">Elven Horse Archers (composite bow, scimitar, shield, leather armor, light warhorse)</value></row>
+        <row><value name="class_group">Elven Courtiers, Elven Rangers, and Elven Spellswords</value><value name="die_roll">16-30</value><value name="type_and_equipment">Elven Light Cavalry (lance, sword, shield, leather armor, light warhorse)</value></row>
+        <row><value name="class_group">Elven Courtiers, Elven Rangers, and Elven Spellswords</value><value name="die_roll">31-45</value><value name="type_and_equipment">Elven Light Infantry (spear, short sword, shield, leather armor)</value></row>
+        <row><value name="class_group">Elven Courtiers, Elven Rangers, and Elven Spellswords</value><value name="die_roll">46-60</value><value name="type_and_equipment">Elven Heavy Infantry (spear, sword, shield, chain mail)</value></row>
+        <row><value name="class_group">Elven Courtiers, Elven Rangers, and Elven Spellswords</value><value name="die_roll">61-75</value><value name="type_and_equipment">Elven Bowmen (shortbow, dagger, leather armor)</value></row>
+        <row><value name="class_group">Elven Courtiers, Elven Rangers, and Elven Spellswords</value><value name="die_roll">76-100</value><value name="type_and_equipment">Elven Longbowmen (longbow, sword, chain mail)</value></row>
+
+        <row><value name="class_group">Explorers and Shamans</value><value name="die_roll">01-10</value><value name="type_and_equipment">Medium Cavalry (lance, shield, lamellar armor, medium warhorse)</value></row>
+        <row><value name="class_group">Explorers and Shamans</value><value name="die_roll">11-25</value><value name="type_and_equipment">Light Cavalry (3 javelins, 2 swords, leather armor, light warhorse)</value></row>
+        <row><value name="class_group">Explorers and Shamans</value><value name="die_roll">26-40</value><value name="type_and_equipment">Horse Archers (composite bow, scimitar, shield, leather armor, light warhorse)</value></row>
+        <row><value name="class_group">Explorers and Shamans</value><value name="die_roll">41-60</value><value name="type_and_equipment">Light Infantry (spear, hand axe, shield, leather armor)</value></row>
+        <row><value name="class_group">Explorers and Shamans</value><value name="die_roll">61-70</value><value name="type_and_equipment">Longbowmen (longbow, sword, chain mail armor)</value></row>
+        <row><value name="class_group">Explorers and Shamans</value><value name="die_roll">71-80</value><value name="type_and_equipment">Bowmen (shortbow, short sword, leather armor)</value></row>
+        <row><value name="class_group">Explorers and Shamans</value><value name="die_roll">81-90</value><value name="type_and_equipment">Slingers (sling, short sword, shield, leather armor)</value></row>
+        <row><value name="class_group">Explorers and Shamans</value><value name="die_roll">91-100</value><value name="type_and_equipment">Hunters (bola, net, 3 javelins, hand axe, leather armor)</value></row>
+      </table>
+
+      <follower_table_notes>
+        <rule>Hunters are treated as Light Infantry for wages and morale.</rule>
+        <rule>Composite Bowmen are treated as Longbowmen for wages and morale.</rule>
+        <rule>Gnomish Tricksters replace dwarven troops with gnomish troops of the same type.</rule>
+      </follower_table_notes>
+    </tables>
+  </followers>
+
+  <slave_soldiers>
+    <definition>
+      <rule>Whether a realm uses slave soldiers is at Judge discretion.</rule>
+    </definition>
+
+    <availability>
+      <rule>Use the mercenary availability tables to determine slave soldier availability.</rule>
+      <rule>Slave soldiers displace 10% to 90% of mercenaries available in a market or realm, depending on how widespread they are.</rule>
+      <rule>Slave soldiers need not match the prevailing race of the realm or settlement.</rule>
+    </availability>
+
+    <buying>
+      <rule>Finding and buying slave soldiers uses the same time requirements and gp search costs as recruiting mercenaries.</rule>
+      <rule>Instead of wages, slave soldiers are purchased at a variable cost by race, training, and equipment.</rule>
+      <rule>Once obtained, slave soldiers cost 3gp per month in upkeep; cavalry and ogres cost 16gp per month in upkeep.</rule>
+      <rule>Failure to pay upkeep counts as a calamity for morale purposes.</rule>
+      <rule>Supplemental pay, better food, and other privileges may improve morale over time.</rule>
+      <rule>At Judge discretion, slave soldiers may be hired from an owner instead of purchased outright; in that case their monthly cost equals the normal wage for their troop type and is paid to the owner.</rule>
+    </buying>
+
+    <training>
+      <rule>Leaders may conscript, capture, or purchase suitable youths and train them into slave soldiers.</rule>
+      <rule>Suitable candidates must be able-bodied and no older than Youth age category for their race.</rule>
+      <rule>In Chaotic societies, one suitable candidate per 10 peasant families may be enslaved without affecting morale or revenue.</rule>
+      <rule>Enslaving more candidates has the same morale and revenue penalties as levying militia.</rule>
+      <rule>Enslaving families in Lawful or Neutral realms is not permitted; doing so changes realm alignment.</rule>
+      <rule>25% of prisoners taken while pillaging a domain are suitable to become slave soldiers.</rule>
+      <rule>Market-bought candidates cost 40gp each.</rule>
+      <rule>If the market does not have enough candidates, more may be commissioned; this takes 40 days at 1 day per gp.</rule>
+      <rule>Indoctrination lasts 5 years.</rule>
+      <rule>Indoctrination costs 180gp in upkeep per candidate.</rule>
+      <rule>One marshal is required per 60 candidates at 30gp per month.</rule>
+      <rule>After indoctrination, slave soldiers are trained into troop types using the conscript training rules.</rule>
+    </training>
+
+    <exotic_slaves>
+      <rule>Purchase prices listed for creatures are for tamed and trained creatures.</rule>
+      <rule>Exotic slaves do not require wages, but still require supplies and specialists.</rule>
+      <rule>Sentient exotics are reliable only if captured young and raised in captivity.</rule>
+      <rule>Adult sentient exotics make a loyalty roll whenever they have an opportunity to escape or betray their master.</rule>
+      <rule>Apply the creature’s normal morale bonus as a penalty to such loyalty rolls.</rule>
+      <rule>Adult-captured sentient exotics cost 25% less.</rule>
+      <rule>Exotic slaves are generally very rare and always Judge-controlled in availability.</rule>
+    </exotic_slaves>
+
+    <morale>
+      <rule>Slave soldiers enslaved as adults have morale -4.</rule>
+      <rule>Slave soldiers enslaved as children have the same morale as normal mercenaries of their type.</rule>
+      <rule>Child-raised slave soldiers gain a permanent +1 morale bonus while serving the leader who trained them.</rule>
+      <rule>This +1 bonus is lost if they are sold or hired out.</rule>
+      <rule>Slave soldiers make loyalty rolls as conscripts.</rule>
+      <rule>Like conscripts, they cannot voluntarily leave service, but may desert, betray, or attack their leader.</rule>
+      <mother_of_dragons_memorial_rule>
+        <rule>If freed, slave soldiers immediately make a loyalty roll modified by the liberator’s Charisma.</rule>
+        <rule>If the result is Fanatic Loyalty, they become liberator-worshipping fanatics, need only 3gp per month upkeep, and have Base Morale +4 regardless of equipment.</rule>
+      </mother_of_dragons_memorial_rule>
+    </morale>
+
+    <tables>
+      <table name="slave_troop_type_cost_per_slave">
+        <columns>
+          <column>slave_troop_type</column>
+          <column>man</column>
+          <column>dwarf</column>
+          <column>elf</column>
+          <column>kobold</column>
+          <column>goblin</column>
+          <column>orc</column>
+          <column>hobgoblin</column>
+          <column>gnoll</column>
+          <column>lizardman</column>
+          <column>bugbear</column>
+          <column>ogre</column>
+        </columns>
+        <row><value name="slave_troop_type">Militia</value><value name="man">40</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="slave_troop_type">Light Infantry</value><value name="man">215</value><value name="dwarf">-</value><value name="elf">315</value><value name="kobold">40</value><value name="goblin">85</value><value name="orc">185</value><value name="hobgoblin">385</value><value name="gnoll">575</value><value name="lizardman">750</value><value name="bugbear">1,115</value><value name="ogre">1,275</value></row>
+        <row><value name="slave_troop_type">Heavy Infantry</value><value name="man">415</value><value name="dwarf">650</value><value name="elf">800</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">285</value><value name="hobgoblin">475</value><value name="gnoll">775</value><value name="lizardman">1,300</value><value name="bugbear">1,620</value><value name="ogre">2,625</value></row>
+        <row><value name="slave_troop_type">Slinger</value><value name="man">185</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">85</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="slave_troop_type">Bowman</value><value name="man">275</value><value name="dwarf">-</value><value name="elf">650</value><value name="kobold">-</value><value name="goblin">85</value><value name="orc">175</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="slave_troop_type">Crossbowman</value><value name="man">600</value><value name="dwarf">866</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">415</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="slave_troop_type">Longbowman</value><value name="man">650</value><value name="dwarf">-</value><value name="elf">1,400</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">825</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="slave_troop_type">Light Cavalry</value><value name="man">1,150</value><value name="dwarf">-</value><value name="elf">2,150</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">1,650</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="slave_troop_type">Horse Archers</value><value name="man">1,700</value><value name="dwarf">-</value><value name="elf">3,200</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">2,675</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="slave_troop_type">Medium Cavalry</value><value name="man">1,800</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">2,115</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="slave_troop_type">Heavy Cavalry</value><value name="man">2,600</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="slave_troop_type">Cataphract Cavalry</value><value name="man">3,125</value><value name="dwarf">-</value><value name="elf">5,600</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="slave_troop_type">Camel Archers</value><value name="man">1,150</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="slave_troop_type">Camel Lancers</value><value name="man">1,700</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="slave_troop_type">War Elephants</value><value name="man">20,000</value><value name="dwarf"></value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="slave_troop_type">Mounted Crossbowman</value><value name="man">-</value><value name="dwarf">1,575</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">-</value><value name="orc">-</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+        <row><value name="slave_troop_type">Beast Rider</value><value name="man">-</value><value name="dwarf">-</value><value name="elf">-</value><value name="kobold">-</value><value name="goblin">1,200</value><value name="orc">2,525</value><value name="hobgoblin">-</value><value name="gnoll">-</value><value name="lizardman">-</value><value name="bugbear">-</value><value name="ogre">-</value></row>
+      </table>
+    </tables>
+  </slave_soldiers>
+
+  <vassal_troops>
+    <definition>
+      <rule>A realm leader cannot directly access the troops employed by vassals without a call to arms.</rule>
+      <rule>On a call to arms, a vassal must muster at least half the garrison of the vassal’s realm.</rule>
+      <rule>Demanding the full garrison counts as demanding two duties and may provoke a Henchman Morale roll unless offset by a boon.</rule>
+      <rule>Calls to arms are based on the garrison of the vassal’s realm, not the vassal’s personal domain.</rule>
+      <rule>Each vassal is responsible for issuing calls to sub-vassals in turn.</rule>
+      <rule>A domain garrison is some mix of followers, mercenaries, conscripts, and militia.</rule>
+    </definition>
+
+    <realm_size_rules>
+      <rule>The Vassal Troops by Realm Size table estimates available troops for different realm sizes.</rule>
+      <rule>The table assumes garrison expenditures of 2gp per peasant family each month.</rule>
+      <rule>Borderlands and wilderness domains may have more troops.</rule>
+      <rule>Highly militarized or total-war realms may have garrisons 50% to 100% larger than listed.</rule>
+      <rule>Leaders usually do not muster the maximum because of morale pressure, gifts required, supply burden, and the need to retain reserves.</rule>
+    </realm_size_rules>
+
+    <time_required>
+      <rule>When a call to arms is issued, one half of the requested troops, rounded up, arrives in the first time period.</rule>
+      <rule>Another quarter, rounded down with minimum 1, arrives in the second time period.</rule>
+      <rule>The remainder arrives in the third time period.</rule>
+      <rule>Troops generally muster at the realm leader’s stronghold unless ordered elsewhere.</rule>
+      <rule>Geography, dispersion, or enemy isolation may prevent a single rendezvous point; the Judge determines actual muster points.</rule>
+    </time_required>
+
+    <tables>
+      <table name="vassal_troops_by_realm_size">
+        <columns>
+          <column>title</column>
+          <column>number_of_domains</column>
+          <column>overall_realm_families</column>
+          <column>average_personal_domain_garrison</column>
+          <column>maximum_realm_troops_wages_per_month</column>
+          <column>maximum_realm_standing_army_approx_number</column>
+          <column>time_period</column>
+        </columns>
+        <row><value name="title">Emperor</value><value name="number_of_domains">4,096-46,656</value><value name="overall_realm_families">1.5M - 11.6M+</value><value name="average_personal_domain_garrison">25,000gp</value><value name="maximum_realm_troops_wages_per_month">3,000,000-24,000,000gp</value><value name="maximum_realm_standing_army_approx_number">150,000-1,000,000+</value><value name="time_period">Season</value></row>
+        <row><value name="title">King</value><value name="number_of_domains">1,024-7,776</value><value name="overall_realm_families">364K - 2,000K</value><value name="average_personal_domain_garrison">25,000gp</value><value name="maximum_realm_troops_wages_per_month">728,000-4,000,000gp</value><value name="maximum_realm_standing_army_approx_number">36,000-200,000</value><value name="time_period">Season</value></row>
+        <row><value name="title">Prince</value><value name="number_of_domains">256-1,296</value><value name="overall_realm_families">87K - 322K</value><value name="average_personal_domain_garrison">15,000gp</value><value name="maximum_realm_troops_wages_per_month">175,000-645,000gp</value><value name="maximum_realm_standing_army_approx_number">8,700-32,000</value><value name="time_period">Month</value></row>
+        <row><value name="title">Duke</value><value name="number_of_domains">64-216</value><value name="overall_realm_families">20,000 - 52,000</value><value name="average_personal_domain_garrison">3,000gp</value><value name="maximum_realm_troops_wages_per_month">40,000-104,000gp</value><value name="maximum_realm_standing_army_approx_number">2,000-5,200</value><value name="time_period">Month</value></row>
+        <row><value name="title">Earl/Count</value><value name="number_of_domains">16-36</value><value name="overall_realm_families">4,600 - 8,500</value><value name="average_personal_domain_garrison">1,500gp</value><value name="maximum_realm_troops_wages_per_month">9,600-17,000gp</value><value name="maximum_realm_standing_army_approx_number">460-850</value><value name="time_period">Week</value></row>
+        <row><value name="title">Marquis</value><value name="number_of_domains">4-6</value><value name="overall_realm_families">960 - 1,280</value><value name="average_personal_domain_garrison">640gp</value><value name="maximum_realm_troops_wages_per_month">1,920-2,560gp</value><value name="maximum_realm_standing_army_approx_number">100-130</value><value name="time_period">Week</value></row>
+        <row><value name="title">Baron</value><value name="number_of_domains">1</value><value name="overall_realm_families">120-200</value><value name="average_personal_domain_garrison">320gp</value><value name="maximum_realm_troops_wages_per_month">240-400gp</value><value name="maximum_realm_standing_army_approx_number">12-20</value><value name="time_period">Week</value></row>
+      </table>
+    </tables>
+  </vassal_troops>
+
+  <standing_armies>
+    <rule>A realm leader may maintain a standing army instead of relying on vassal troops.</rule>
+    <rule>A standing army usually requires a special tax on vassals of 1gp or more per peasant family.</rule>
+    <rule>Each gp taxed counts as demanding a duty.</rule>
+    <rule>Taxes of 2gp or more may provoke Henchman Morale rolls just like calling up troops.</rule>
+    <rule>Standing armies are usually distributed across the realm to supplement local garrisons.</rule>
+    <rule>Leaders relying on vassals usually field conscripts from domains; leaders relying on standing armies usually hire mercenaries.</rule>
+  </standing_armies>
+
+  <army_organization>
+    <definition>
+      <rule>After troops are raised, they must be organized into units and divisions and assigned officers.</rule>
+    </definition>
+
+    <units>
+      <rule>Default organization uses company-sized units.</rule>
+      <rule>A unit may contain up to 120 man-sized creatures, 60 large creatures, 20 huge creatures, 5 gigantic creatures, or 1 colossal creature.</rule>
+      <rule>Where possible, units should be homogeneous by race, class, level, Hit Dice, and equipment.</rule>
+      <rule>Mixed units are allowed if necessary.</rule>
+      <rule>Every unit has a minimum equivalent of 20 men and maximum equivalent of 120 men.</rule>
+      <size_equivalencies>
+        <entry size="large">2 men</entry>
+        <entry size="huge">6 men</entry>
+        <entry size="gigantic">24 men</entry>
+        <entry size="colossal">120 men</entry>
+      </size_equivalencies>
+      <restriction>Living and undead creatures may not be in the same unit.</restriction>
+      <restriction>Infantry and cavalry may not be in the same unit.</restriction>
+    </units>
+
+    <divisions>
+      <rule>After units are created, units are assigned to divisions.</rule>
+      <rule>A division is a group of nearby units under a commander reporting to the army leader.</rule>
+      <rule>An army must have at least 3 units.</rule>
+      <rule>Maximum divisions equals the maximum number of henchmen the army leader may retain: 4 plus Charisma modifier.</rule>
+      <rule>If the army leader has Leadership proficiency, increase maximum divisions by 1.</rule>
+    </divisions>
+
+    <leadership_ability>
+      <rule>Leadership ability is the maximum number of units a character can readily control in battle.</rule>
+      <rule>Leadership ability also determines the maximum number of divisions the leader may have.</rule>
+      <rule>For characters, leadership ability equals 4 plus Charisma modifier.</rule>
+      <rule>Leadership proficiency adds +1.</rule>
+      <rule>Maximum leadership ability is 8.</rule>
+      <rule>For monstrous officers without Charisma scores, leadership ability is 3 + 1 per 4 HD, rounded down, maximum 8.</rule>
+    </leadership_ability>
+
+    <officers>
+      <rule>Each division must have a commander.</rule>
+      <rule>Each unit may have a lieutenant, but one is not required.</rule>
+      <rule>The army leader usually serves as one commander.</rule>
+      <rule>Other commanders are usually adventurers, henchmen, followers, or hired mercenary officers.</rule>
+      <qualifications>
+        <rule>PCs and NPCs must be at least 7th level to serve as commanders in campaign battle and at least 5th level to serve as lieutenants.</rule>
+        <rule>Monsters must have at least 4 more HD than the average of creatures they command to serve as commanders and at least 2 more HD than average to serve as lieutenants.</rule>
+        <rule>A beastman chieftain can always command company-sized units of its own race regardless of HD.</rule>
+        <rule>A beastman sub-chieftain can always serve as lieutenant for a company-sized unit of its race regardless of HD.</rule>
+        <rule>The Judge may waive officer requirements if circumstances justify command.</rule>
+      </qualifications>
+      <officer_characteristics>
+        <strategic_ability>
+          <rule>Strategic ability equals the better bonus from Intelligence or Wisdom, minimum 0, minus the worse penalty from Intelligence or Wisdom, maximum 0.</rule>
+          <rule>Each rank of Military Strategy proficiency adds +1.</rule>
+          <rule>Minimum strategic ability is -3 and maximum is +6.</rule>
+          <rule>For monstrous officers without Intelligence or Wisdom, strategic ability is 0 + 1 per 5 HD, rounded down.</rule>
+          <rule>Sub-human intelligence reduces monstrous strategic ability by 1.</rule>
+          <rule>Generally high intelligence increases it by 1.</rule>
+          <rule>Super-human intelligence increases it by 2.</rule>
+          <rule>The Judge may adjust monstrous strategic ability for experience and tactical knowledge.</rule>
+        </strategic_ability>
+        <morale_modifier>
+          <rule>Morale modifier affects Unit Morale rolls for units under the officer’s command; it does not affect Unit Loyalty rolls.</rule>
+          <rule>Morale modifier equals Charisma bonus or penalty.</rule>
+          <rule>Barbarians, bards, explorers, fighters, and paladins of 5th level or higher gain +1 morale modifier.</rule>
+          <rule>Command proficiency adds +2 morale modifier.</rule>
+          <rule>Legendary leader status adds +1 morale modifier.</rule>
+          <rule>Monsters without Charisma usually have morale modifier 0.</rule>
+          <rule>If a monster entry states that monsters of a type gain a morale bonus while that commander lives, use that bonus as the commander’s morale modifier.</rule>
+        </morale_modifier>
+      </officer_characteristics>
+      <role_of_officers>
+        <rule>Leadership ability, strategic ability, and morale modifier materially affect army performance.</rule>
+        <rule>Armies with mediocre officers or too few officers are substantially disadvantaged.</rule>
+      </role_of_officers>
+    </officers>
+
+    <small_and_large_armies>
+      <rule>Armies of 600 to 3,000 troops use the standard company and division structure.</rule>
+      <rule>Armies of 600 or fewer troops use platoon-scale units.</rule>
+      <rule>Armies of 3,001 to 12,000 troops use battalion-scale units.</rule>
+      <rule>Armies of 12,001 or more troops use brigade-scale units.</rule>
+      <rule>Larger units require higher-level officers.</rule>
+      <rule>Smaller units allow lower-level officers to matter individually.</rule>
+      <beastmen_officers>
+        <rule>A beastman sub-chieftain can always serve as commander or lieutenant of a platoon-scale unit of its race regardless of HD.</rule>
+        <rule>At battalion and brigade scale, beastmen get no special officer advantage.</rule>
+      </beastmen_officers>
+      <rump_troops>
+        <rule>If excess troops are less than half a unit, ignore them as reserves, trainees, or sick troops.</rule>
+        <rule>If excess troops are at least half a unit, organize them as one or more understrength units.</rule>
+        <rule>For large-scale units, sizes may be rounded to the nearest 500 infantry per battalion or 2,000 infantry per brigade to reduce rump troops.</rule>
+      </rump_troops>
+    </small_and_large_armies>
+
+    <tables>
+      <table name="army_size_and_unit_scale">
+        <columns>
+          <column>army_size</column>
+          <column>unit_scale</column>
+          <column>troops_per_unit</column>
+          <column>commander_qualification</column>
+          <column>lieutenant_qualification</column>
+        </columns>
+        <row><value name="army_size">120-600</value><value name="unit_scale">Platoon</value><value name="troops_per_unit">x1/: 30 infantry, 15 cavalry 4</value><value name="commander_qualification">NPC: 5th level; Monster: HD +2</value><value name="lieutenant_qualification">NPC: 3rd level; Monster: HD +1</value></row>
+        <row><value name="army_size">601-3,000</value><value name="unit_scale">Company</value><value name="troops_per_unit">x1: 120 infantry, 60 cavalry</value><value name="commander_qualification">NPC: 7th level; Monster: HD +4</value><value name="lieutenant_qualification">NPC: 5th level; Monster: HD +2</value></row>
+        <row><value name="army_size">3,001-12,000</value><value name="unit_scale">Battalion</value><value name="troops_per_unit">x4: 480 infantry, 240 cavalry</value><value name="commander_qualification">NPC: 9th level; Monster: HD +6</value><value name="lieutenant_qualification">NPC: 7th level; Monster: HD +4</value></row>
+        <row><value name="army_size">12,001 or more</value><value name="unit_scale">Brigade</value><value name="troops_per_unit">x16: 1,920 infantry, 960 cavalry</value><value name="commander_qualification">NPC: 11th level; Monster: HD +8</value><value name="lieutenant_qualification">NPC: 9th level; Monster: HD + 6</value></row>
+      </table>
+    </tables>
+  </army_organization>
+
+  <military_specialists>
+    <definition>
+      <rule>Armies require specialists in addition to troops and officers.</rule>
+      <rule>Player characters with appropriate proficiencies may act as specialists where noted.</rule>
+      <rule>The list of specialists is not exhaustive.</rule>
+    </definition>
+
+    <specialist_types>
+      <artillerist>
+        <wage>25gp/month</wage>
+        <rule>Required to employ siege artillery such as ballistae, catapults, and trebuchets.</rule>
+        <rule>One artillerist can oversee a battery of 3 to 5 artillery pieces.</rule>
+      </artillerist>
+
+      <armorer>
+        <wage>75gp/month</wage>
+        <rule>An armorer can make 40gp worth of weapons, armor, or shields each month.</rule>
+        <rule>Armies require 1 armorer per 60 troops, equal to 2 per standard unit, to maintain and repair weapons and armor.</rule>
+        <rule>An armorer may be assisted by up to 2 journeymen at 20gp/month each and 4 apprentices at 10gp/month each.</rule>
+        <rule>An armorer with 1 journeyman and 2 apprentices produces 100gp/month and can maintain 150 troops.</rule>
+        <rule>An armorer with 2 journeymen and 4 apprentices produces 160gp/month and can maintain 240 troops.</rule>
+        <rule>If no armorer is provided, troops maintain their own gear and the unit suffers -1 morale until an armorer is provided.</rule>
+      </armorer>
+
+      <creature_handler>
+        <wage_range>25gp to 250gp/month</wage_range>
+        <rule>A creature handler is trained to safely handle hunting or guard creatures in battle conditions.</rule>
+        <rule>One handler is required per 6 hunting creatures or 20 guard creatures in battlefield conditions.</rule>
+        <rule>No handler is required for mounts or war mounts under rider control.</rule>
+        <rule>Sentient creatures never require handlers.</rule>
+        <rule>Trained animals used for ordinary non-battle purposes do not require handlers.</rule>
+        <rule>If a creature is gigantic or larger, handlers cost at least 150gp/month.</rule>
+      </creature_handler>
+
+      <marshal>
+        <rule>Marshals train soldiers in discipline, fitness, and weapon drill.</rule>
+        <rule>Minimum requirement is 1 marshal per 60 troops being trained.</rule>
+        <wages>
+          <entry type="light_infantry_marshal">30gp/month</entry>
+          <entry type="bow_crossbow_or_sling_marshal">60gp/month</entry>
+          <entry type="heavy_infantry_marshal">60gp/month</entry>
+          <entry type="light_cavalry_marshal">60gp/month</entry>
+          <entry type="heavy_cavalry_marshal">120gp/month</entry>
+          <entry type="horse_archer_marshal">120gp/month</entry>
+          <entry type="cataphract_marshal">240gp/month</entry>
+        </wages>
+      </marshal>
+
+      <mercenary_officer>
+        <rule>Mercenary officers may serve as lieutenants or division commanders.</rule>
+        <rule>Typical officer class distribution in ordinary settlements: fighters 60%, anti-paladins 3%, barbarians 10%, bards 10%, explorers 10%, paladins 5%, ruinguards 2%.</rule>
+        <rule>Typical officer class distribution in elven settlements: courtiers 30%, rangers 40%, spellswords 30%.</rule>
+        <rule>Typical officer class distribution in dwarven settlements: delvers 10%, furies 10%, vaultguards 80%.</rule>
+        <rule>Roll 3d6 for the officer’s Intelligence, Wisdom, and Charisma.</rule>
+        <rule>For colonels and generals, one ability score may be re-rolled and the new result used if desired.</rule>
+        <rule>Apply normal officer characteristic rules to convert ability scores into leadership, strategic ability, and morale modifier.</rule>
+        <rule>All mercenary officers have base morale -2 because of inherent disloyalty.</rule>
+        <rule>Mercenary officers make morale rolls whenever they suffer a calamity.</rule>
+        <rule>Mercenary officers also make morale rolls whenever offered a higher wage by another employer.</rule>
+        <rule>If mercenary officers betray their leader, they take any units assigned to their command.</rule>
+      </mercenary_officer>
+
+      <quartermaster>
+        <wage>50gp/month</wage>
+        <rule>Quartermasters manage supply distribution to a unit.</rule>
+        <rule>Armies require 1 quartermaster per unit to efficiently maintain supply lines.</rule>
+        <rule>A unit without a quartermaster has doubled supply cost and -1 morale until one is provided.</rule>
+      </quartermaster>
+
+      <siege_engineer>
+        <wage>50gp/month</wage>
+        <rule>Siege engineers build and place temporary defensive works and construct and operate war machines and siege devices.</rule>
+      </siege_engineer>
+    </specialist_types>
+
+<availability_in_markets>
+  <rule>Any character may hire military specialists from markets.</rule>
+  <rule>Availability depends on market class.</rule>
+  <rule>Some specialist entries use percentage chances for presence.</rule>
+  <rule>One half of available specialists, rounded up, becomes available in the first week.</rule>
+  <rule>Another quarter, rounded down with minimum 1, becomes available in the second week.</rule>
+  <rule>The remainder becomes available in the third week.</rule>
+  <rule>Market availability replenishes at the end of each month.</rule>
+  <rule>Finding fees are identical to mercenary search fees.</rule>
+  <table name="military_specialist_availability_by_market_class">
+    <columns>
+      <column>specialist_type</column>
+      <column>class_i</column>
+      <column>class_ii</column>
+      <column>class_iii</column>
+      <column>class_iv</column>
+      <column>class_v</column>
+      <column>class_vi</column>
+    </columns>
+    <row><value name="specialist_type">Artillerist</value><value name="class_i">5d10</value><value name="class_ii">2d6</value><value name="class_iii">1d6</value><value name="class_iv">1d2</value><value name="class_v">1 (65%)</value><value name="class_vi">1 (20%)</value></row>
+    <row><value name="specialist_type">Armorer</value><value name="class_i">3d10</value><value name="class_ii">2d4</value><value name="class_iii">1d4</value><value name="class_iv">1</value><value name="class_v">1 (40%)</value><value name="class_vi">1 (15%)</value></row>
+    <row><value name="specialist_type">Creature Handler – Domestic</value><value name="class_i">5d10</value><value name="class_ii">2d6</value><value name="class_iii">1d6</value><value name="class_iv">1d2</value><value name="class_v">1 (65%)</value><value name="class_vi">1 (20%)</value></row>
+    <row><value name="specialist_type">Creature Handler – Wild</value><value name="class_i">3d10</value><value name="class_ii">2d4</value><value name="class_iii">1d4</value><value name="class_iv">1</value><value name="class_v">1 (40%)</value><value name="class_vi">1 (15%)</value></row>
+    <row><value name="specialist_type">Creature Handler – Giant/Prehistoric</value><value name="class_i">2d10</value><value name="class_ii">1d6</value><value name="class_iii">1d3</value><value name="class_iv">1 (65%)</value><value name="class_v">1 (25%)</value><value name="class_vi">1 (10%)</value></row>
+    <row><value name="specialist_type">Creature Handler - Fantastic</value><value name="class_i">1d10</value><value name="class_ii">1d3</value><value name="class_iii">1</value><value name="class_iv">1 (33%)</value><value name="class_v">1 (15%)</value><value name="class_vi">1 (5%)</value></row>
+    <row><value name="specialist_type">Marshal – Light Infantry</value><value name="class_i">5d10</value><value name="class_ii">2d6</value><value name="class_iii">1d6</value><value name="class_iv">1d2</value><value name="class_v">1 (65%)</value><value name="class_vi">1 (20%)</value></row>
+    <row><value name="specialist_type">Marshal – Bow, Hvy. Inf., or Light Cavalry</value><value name="class_i">3d10</value><value name="class_ii">2d4</value><value name="class_iii">1d4</value><value name="class_iv">1</value><value name="class_v">1 (40%)</value><value name="class_vi">1 (15%)</value></row>
+    <row><value name="specialist_type">Marshal – Heavy Cavalry or Horse Archer</value><value name="class_i">2d10</value><value name="class_ii">1d6</value><value name="class_iii">1d2</value><value name="class_iv">1 (85%)</value><value name="class_v">1 (25%)</value><value name="class_vi">1 (10%)</value></row>
+    <row><value name="specialist_type">Marshal – Cataphract</value><value name="class_i">1d10</value><value name="class_ii">1d3</value><value name="class_iii">1</value><value name="class_iv">1 (33%)</value><value name="class_v">1 (15%)</value><value name="class_vi">1 (5%)</value></row>
+    <row><value name="specialist_type">Mercenary Officer – Lieutenant</value><value name="class_i">1d10</value><value name="class_ii">1d3</value><value name="class_iii">1</value><value name="class_iv">1 (33%)</value><value name="class_v">1 (15%)</value><value name="class_vi">1 (5%)</value></row>
+    <row><value name="specialist_type">Mercenary Officer – Captain</value><value name="class_i">1d6</value><value name="class_ii">1d2</value><value name="class_iii">1 (45%)</value><value name="class_iv">1 (15%)</value><value name="class_v">1 (5%)</value><value name="class_vi">-</value></row>
+    <row><value name="specialist_type">Mercenary Officer – Colonel</value><value name="class_i">1d2</value><value name="class_ii">1 (25%)</value><value name="class_iii">1 (15%)</value><value name="class_iv">1 (5%)</value><value name="class_v">-</value><value name="class_vi">-</value></row>
+    <row><value name="specialist_type">Mercenary Officer – General</value><value name="class_i">1 (15%)</value><value name="class_ii">-</value><value name="class_iii">-</value><value name="class_iv">-</value><value name="class_v">-</value><value name="class_vi">-</value></row>
+    <row><value name="specialist_type">Quartermaster</value><value name="class_i">3d10</value><value name="class_ii">2d4</value><value name="class_iii">1d4</value><value name="class_iv">1</value><value name="class_v">1 (40%)</value><value name="class_vi">1 (15%)</value></row>
+    <row><value name="specialist_type">Siege Engineer</value><value name="class_i">3d10</value><value name="class_ii">2d4</value><value name="class_iii">1d4</value><value name="class_iv">1</value><value name="class_v">1 (40%)</value><value name="class_vi">1 (15%)</value></row>
+  </table>
+</availability_in_markets>
+
+<availability_in_realm>
+  <rule>Domain and realm leaders may recruit specialists from the entire realm.</rule>
+  <rule>Realm populations listed for specialist availability are minimum populations and scale up proportionately for larger realms.</rule>
+  <rule>One half of available specialists, rounded up, becomes available in the first recruitment time period.</rule>
+  <rule>Another quarter, rounded down with minimum 1, becomes available in the second time period.</rule>
+  <rule>The remainder becomes available in the third time period.</rule>
+  <rule>Realm availability replenishes at the end of the fourth time period.</rule>
+  <rule>Finding fees are identical to mercenary search fees.</rule>
+  <table name="military_specialist_availability_by_realm_size">
+    <columns>
+      <column>specialist_type</column>
+      <column>continent</column>
+      <column>empire</column>
+      <column>kingdom</column>
+      <column>principality</column>
+      <column>duchy</column>
+      <column>county</column>
+      <column>march</column>
+      <column>barony</column>
+    </columns>
+    <metadata>
+      <population_families continent="16000000" empire="1500000" kingdom="364000" principality="87000" duchy="20000" county="4600" march="960" barony="160"/>
+      <time_period continent="Year" empire="Season" kingdom="Season" principality="Month" duchy="Month" county="Week" march="Week" barony="Week"/>
+    </metadata>
+    <row><value name="specialist_type">Artillerist</value><value name="continent">45,000</value><value name="empire">3,700</value><value name="kingdom">905</value><value name="principality">215</value><value name="duchy">50</value><value name="county">10</value><value name="march">2</value><value name="barony">-</value></row>
+    <row><value name="specialist_type">Armorer</value><value name="continent">28,000</value><value name="empire">2,200</value><value name="kingdom">540</value><value name="principality">130</value><value name="duchy">30</value><value name="county">7</value><value name="march">1</value><value name="barony">-</value></row>
+    <row><value name="specialist_type">Creature Handler – Domestic</value><value name="continent">45,000</value><value name="empire">3,700</value><value name="kingdom">905</value><value name="principality">215</value><value name="duchy">50</value><value name="county">10</value><value name="march">2</value><value name="barony">-</value></row>
+    <row><value name="specialist_type">Creature Handler – Wild</value><value name="continent">28,000</value><value name="empire">2,200</value><value name="kingdom">540</value><value name="principality">130</value><value name="duchy">30</value><value name="county">7</value><value name="march">1</value><value name="barony">-</value></row>
+    <row><value name="specialist_type">Creature Handler – Giant/Prehistoric</value><value name="continent">19,000</value><value name="empire">1,450</value><value name="kingdom">360</value><value name="principality">85</value><value name="duchy">20</value><value name="county">5</value><value name="march">1</value><value name="barony">-</value></row>
+    <row><value name="specialist_type">Creature Handler - Fantastic</value><value name="continent">9,300</value><value name="empire">725</value><value name="kingdom">180</value><value name="principality">45</value><value name="duchy">10</value><value name="county">3</value><value name="march">-</value><value name="barony">-</value></row>
+    <row><value name="specialist_type">Marshal – Light Infantry</value><value name="continent">45,000</value><value name="empire">3,700</value><value name="kingdom">905</value><value name="principality">215</value><value name="duchy">50</value><value name="county">10</value><value name="march">2</value><value name="barony">-</value></row>
+    <row><value name="specialist_type">Marshal – Bow, Hvy. Inf., or Light Cavalry</value><value name="continent">28,000</value><value name="empire">2,200</value><value name="kingdom">540</value><value name="principality">130</value><value name="duchy">30</value><value name="county">7</value><value name="march">1</value><value name="barony">-</value></row>
+    <row><value name="specialist_type">Marshal – Heavy Cavalry or Horse Archer</value><value name="continent">19,000</value><value name="empire">1,450</value><value name="kingdom">360</value><value name="principality">85</value><value name="duchy">20</value><value name="county">5</value><value name="march">1</value><value name="barony">-</value></row>
+    <row><value name="specialist_type">Marshal – Cataphract</value><value name="continent">9,300</value><value name="empire">725</value><value name="kingdom">180</value><value name="principality">45</value><value name="duchy">10</value><value name="county">3</value><value name="march">-</value><value name="barony">-</value></row>
+    <row><value name="specialist_type">Mercenary Officer – Lieutenant</value><value name="continent">9,300</value><value name="empire">725</value><value name="kingdom">180</value><value name="principality">45</value><value name="duchy">10</value><value name="county">5</value><value name="march">1</value><value name="barony">-</value></row>
+    <row><value name="specialist_type">Mercenary Officer – Captain</value><value name="continent">3,500</value><value name="empire">275</value><value name="kingdom">25</value><value name="principality">16</value><value name="duchy">3</value><value name="county">1</value><value name="march">-</value><value name="barony">-</value></row>
+    <row><value name="specialist_type">Mercenary Officer – Colonel</value><value name="continent">1,000</value><value name="empire">75</value><value name="kingdom">20</value><value name="principality">4</value><value name="duchy">1</value><value name="county">-</value><value name="march">-</value><value name="barony">-</value></row>
+    <row><value name="specialist_type">Mercenary Officer – General</value><value name="continent">125</value><value name="empire">10</value><value name="kingdom">3</value><value name="principality">1</value><value name="duchy">-</value><value name="county">-</value><value name="march">-</value><value name="barony">-</value></row>
+    <row><value name="specialist_type">Quartermaster</value><value name="continent">28,000</value><value name="empire">2,200</value><value name="kingdom">540</value><value name="principality">130</value><value name="duchy">30</value><value name="county">7</value><value name="march">1</value><value name="barony">-</value></row>
+    <row><value name="specialist_type">Siege Engineer</value><value name="continent">28,000</value><value name="empire">2,200</value><value name="kingdom">540</value><value name="principality">130</value><value name="duchy">30</value><value name="county">7</value><value name="march">1</value><value name="barony">-</value></row>
+  </table>
+</availability_in_realm>
+
+    <tables>
+      <table name="creature_handler_wages">
+        <columns>
+          <column>handler_type</column>
+          <column>wage</column>
+        </columns>
+        <row><value name="handler_type">Domestic animal (Dog, hawk, horse, etc.)</value><value name="wage">25gp/month</value></row>
+        <row><value name="handler_type">Wild animal (Bear, cat, etc.)</value><value name="wage">75gp/month</value></row>
+        <row><value name="handler_type">Dire, giant, or prehistoric animal (any)</value><value name="wage">150gp/month</value></row>
+        <row><value name="handler_type">Fantastic creature or vermin (any)</value><value name="wage">250gp/month</value></row>
+      </table>
+
+      <table name="mercenary_officer_characteristics">
+        <columns>
+          <column>officer_title</column>
+          <column>level</column>
+          <column>cost_per_month</column>
+          <column>leadership_ability</column>
+          <column>strategic_ability</column>
+          <column>morale_modifier</column>
+        </columns>
+        <row><value name="officer_title">Lieutenant</value><value name="level">5th</value><value name="cost_per_month">400gp</value><value name="leadership_ability">4</value><value name="strategic_ability">+1</value><value name="morale_modifier">+3</value></row>
+        <row><value name="officer_title">Captain</value><value name="level">7th</value><value name="cost_per_month">1,600gp</value><value name="leadership_ability">4</value><value name="strategic_ability">+2</value><value name="morale_modifier">+3</value></row>
+        <row><value name="officer_title">Colonel</value><value name="level">9th</value><value name="cost_per_month">7,250gp</value><value name="leadership_ability">5</value><value name="strategic_ability">+2</value><value name="morale_modifier">+3</value></row>
+        <row><value name="officer_title">General</value><value name="level">11th</value><value name="cost_per_month">32,000gp</value><value name="leadership_ability">5</value><value name="strategic_ability">+3</value><value name="morale_modifier">+3</value></row>
+      </table>
+    </tables>
+  </military_specialists>
+</campaign_armies_rules>

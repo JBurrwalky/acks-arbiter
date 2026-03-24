@@ -1,0 +1,559 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<acks_wandering_monsters_summary title="ACKS Core - Wandering Monsters" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true" source_count="1">
+  <document_notes>
+    <note>This summary covers wandering monster procedures for dungeons and wilderness, dungeon wandering monster table design guidance, wilderness sub-table selection, and NPC party generation.</note>
+    <note>Mechanical prose, procedures, and tables are preserved. Flavor text, quotations, examples, and illustrations are omitted.</note>
+    <note>Some wilderness table cells appear merged or malformed in the source text conversion. Where this occurred, the source wording is preserved exactly rather than normalized by guesswork.</note>
+  </document_notes>
+
+  <definitions>
+    <definition term="wandering_monster">A monster encountered while moving, hunting, exploring, or otherwise away from a fixed lair; some such creatures may have no lair at all.</definition>
+    <definition term="encounter_throw">A periodic die roll used to determine whether a wandering monster encounter occurs.</definition>
+    <definition term="random_monster_table_used">For dungeon encounters, the monster level table selected from the Dungeon Wandering Monster Level table before rolling the actual monster.</definition>
+    <definition term="base_level">For NPC parties, the average level for the party as a whole, used to derive each NPC's actual level.</definition>
+  </definitions>
+
+  <core_rule>
+    <rule>The Judge checks periodically for wandering monsters by making an encounter throw.</rule>
+    <rule>Encounter throw frequency and target number vary by activity and location.</rule>
+    <rule>If an encounter throw indicates a wandering monster, the Judge consults the appropriate wandering monster tables and adjudicates the encounter using the encounter rules.</rule>
+  </core_rule>
+
+  <dungeon_wandering_monsters>
+    <encounter_check>
+      <frequency>Every 2 turns while characters are in a dungeon.</frequency>
+      <die>1d6</die>
+      <encounter_on>6+</encounter_on>
+      <modifiers>
+        <rule>Modify the die roll if characters are exceptionally loud or stealthy.</rule>
+        <rule>Modify the die roll based on how inhabited or desolate the area is.</rule>
+        <rule>Other situational factors may also modify the encounter throw.</rule>
+      </modifiers>
+      <table_selection>Use the wandering monster table appropriate to the dungeon level where the encounter occurs.</table_selection>
+    </encounter_check>
+
+    <procedure>
+      <step order="1">
+        <action>Find the row matching the dungeon level on the Dungeon Wandering Monster Level table.</action>
+        <action>Roll 1d12 and read across that row to determine which Random Monsters by Level table to use.</action>
+        <action>Roll 1d12 on the selected Random Monsters by Level table to determine the creature type.</action>
+      </step>
+      <step order="2">
+        <action>Roll the creature's normal number encountered.</action>
+        <adjustment>Increase or decrease the rolled result by one-half for each step of difference between the dungeon level and the Random Monster table used.</adjustment>
+        <rounding>Round down.</rounding>
+      </step>
+      <step order="3">
+        <action>Roll 2d6 x 10 feet for encounter distance.</action>
+        <rule>This is the distance separating characters and monster(s) when the characters may become aware of the monster(s).</rule>
+        <exception>Light source, dungeon geometry, or other factors may override this distance.</exception>
+        <judge_guidance>The Judge determines the direction of approach using dungeon layout and known placement of other monsters.</judge_guidance>
+      </step>
+      <post_generation>
+        <rule>Roll for surprise and reaction using the dungeon encounter rules.</rule>
+        <reaction_modifier>Modify the reaction roll by the difference between the Random Monster table used and the dungeon level of the encounter.</reaction_modifier>
+        <reaction_logic>
+          <rule>If monsters from a lower-level table are encountered deeper in the dungeon, they receive a penalty to reaction rolls equal to the depth difference.</rule>
+          <rule>If monsters from a higher-level table are encountered on an upper level, they receive a bonus to reaction rolls equal to the level difference.</rule>
+          <behavior_guidance>Monsters traveling deeper into the dungeon are more likely to attack because of numerical superiority.</behavior_guidance>
+          <behavior_guidance>Powerful monsters wandering on upper levels are more likely to see the party as tools rather than threats.</behavior_guidance>
+        </reaction_logic>
+      </post_generation>
+    </procedure>
+
+    <table_design_guidelines>
+      <rule>Dungeon wandering monster tables should provide a mix of challenge types.</rule>
+      <rule>Entries 1-4 are typically beastmen or other organized group monsters.</rule>
+      <rule>Entries 5-8 are typically animals, vermin, or instinct-driven creatures.</rule>
+      <rule>Entries 9-12 are typically men and monsters: less communal, more independent, and often more intelligent and/or supernatural.</rule>
+      <rule>The last entry in the men and monsters category is always reserved for NPC parties.</rule>
+      <rule>Tables should support varied treasure placement as well as varied challenge types.</rule>
+      <rule>Most or all monsters on a table should be appropriate to the intended dungeon level, following the Wandering Monster Table Guidelines.</rule>
+      <rule>Variation in actual challenge is still produced by the Dungeon Wandering Monster Level table, which can direct encounters to stronger or weaker monster tables than the current dungeon level.</rule>
+    </table_design_guidelines>
+
+    <tables>
+      <table name="dungeon_wandering_monster_level">
+        <columns>
+          <column>Dungeon Level</column>
+          <column>Monster Level 1 Table on Roll</column>
+          <column>Monster Level 2 Table on Roll</column>
+          <column>Monster Level 3 Table on Roll</column>
+          <column>Monster Level 4 Table on Roll</column>
+          <column>Monster Level 5 Table on Roll</column>
+          <column>Monster Level 6 Table on Roll</column>
+        </columns>
+        <rows>
+          <row><dungeon_level>1</dungeon_level><monster_level_1>1-9</monster_level_1><monster_level_2>10-11</monster_level_2><monster_level_3>12</monster_level_3><monster_level_4>-</monster_level_4><monster_level_5>-</monster_level_5><monster_level_6>-</monster_level_6></row>
+          <row><dungeon_level>2</dungeon_level><monster_level_1>1-3</monster_level_1><monster_level_2>4-9</monster_level_2><monster_level_3>10-11</monster_level_3><monster_level_4>12</monster_level_4><monster_level_5>-</monster_level_5><monster_level_6>-</monster_level_6></row>
+          <row><dungeon_level>3</dungeon_level><monster_level_1>1</monster_level_1><monster_level_2>2-3</monster_level_2><monster_level_3>4-9</monster_level_3><monster_level_4>10-11</monster_level_4><monster_level_5>12</monster_level_5><monster_level_6>-</monster_level_6></row>
+          <row><dungeon_level>4</dungeon_level><monster_level_1>-</monster_level_1><monster_level_2>1</monster_level_2><monster_level_3>2-3</monster_level_3><monster_level_4>4-9</monster_level_4><monster_level_5>10-11</monster_level_5><monster_level_6>12</monster_level_6></row>
+          <row><dungeon_level>5</dungeon_level><monster_level_1>-</monster_level_1><monster_level_2>-</monster_level_2><monster_level_3>1</monster_level_3><monster_level_4>2-3</monster_level_4><monster_level_5>4-9</monster_level_5><monster_level_6>10-12</monster_level_6></row>
+          <row><dungeon_level>6</dungeon_level><monster_level_1>-</monster_level_1><monster_level_2>-</monster_level_2><monster_level_3>-</monster_level_3><monster_level_4>1</monster_level_4><monster_level_5>2-3</monster_level_5><monster_level_6>4-12</monster_level_6></row>
+        </rows>
+      </table>
+
+      <table name="wandering_monster_table_guidelines">
+        <columns>
+          <column>Dungeon Level</column>
+          <column>Party Level</column>
+          <column>Monster XP Value</column>
+        </columns>
+        <rows>
+          <row><dungeon_level>1</dungeon_level><party_level>1</party_level><monster_xp_value>1-15</monster_xp_value></row>
+          <row><dungeon_level>2</dungeon_level><party_level>2-3</party_level><monster_xp_value>20-47</monster_xp_value></row>
+          <row><dungeon_level>3</dungeon_level><party_level>4-5</party_level><monster_xp_value>50-150</monster_xp_value></row>
+          <row><dungeon_level>4</dungeon_level><party_level>6-7</party_level><monster_xp_value>175-475</monster_xp_value></row>
+          <row><dungeon_level>5</dungeon_level><party_level>8-9</party_level><monster_xp_value>500-1,140</monster_xp_value></row>
+          <row><dungeon_level>6</dungeon_level><party_level>10+</party_level><monster_xp_value>1,200+</monster_xp_value></row>
+        </rows>
+      </table>
+
+      <table name="random_monsters_by_level">
+        <columns>
+          <column>Roll</column>
+          <column>Monster Level 1</column>
+          <column>Monster Level 2</column>
+          <column>Monster Level 3</column>
+          <column>Monster Level 4</column>
+          <column>Monster Level 5</column>
+          <column>Monster Level 6</column>
+        </columns>
+        <rows>
+          <row><roll>1</roll><monster_level_1>Goblin (2d4)</monster_level_1><monster_level_2>Gnoll (1d6)</monster_level_2><monster_level_3>Bugbear (2d4)</monster_level_3><monster_level_4>Lycanthrope, Wereboar (1d4)</monster_level_4><monster_level_5>Ettin (1d2)</monster_level_5><monster_level_6>Cyclops (1)</monster_level_6></row>
+          <row><roll>2</roll><monster_level_1>Kobold (4d4)</monster_level_1><monster_level_2>Hobgoblin (1d6)</monster_level_2><monster_level_3>Lycanthrope, Werewolf (1d6)</monster_level_3><monster_level_4>Lycanthrope, Weretiger (1d4)</monster_level_4><monster_level_5>Giant, Hill (1d4)</monster_level_5><monster_level_6>Giant, Cloud (1d2)</monster_level_6></row>
+          <row><roll>3</roll><monster_level_1>Morlock (1d12)</monster_level_1><monster_level_2>Lizardman (2d4)</monster_level_2><monster_level_3>Ogre (1d6)</monster_level_3><monster_level_4>Minotaur (1d6)</monster_level_4><monster_level_5>Giant, Stone (1d2)</monster_level_5><monster_level_6>Purple Worm (1d2)</monster_level_6></row>
+          <row><roll>4</roll><monster_level_1>Orc (2d4)</monster_level_1><monster_level_2>Troglodyte (1d8)</monster_level_2><monster_level_3>Throghrin (1d6)</monster_level_3><monster_level_4>Boar, Giant (1d4)</monster_level_4><monster_level_5>Troll (1d8)</monster_level_5><monster_level_6>Demon Boar (1d4)</monster_level_6></row>
+          <row><roll>5</roll><monster_level_1>Beetle, Fire (1d8)</monster_level_1><monster_level_2>Bat, Giant (1d10)</monster_level_2><monster_level_3>Ant, Giant (2d4)</monster_level_3><monster_level_4>Owl Bear (1d4)</monster_level_4><monster_level_5>Ankheg (1d6)</monster_level_5><monster_level_6>Dragon (20 HD) (1)</monster_level_6></row>
+          <row><roll>6</roll><monster_level_1>Centipede, Giant (2d4)</monster_level_1><monster_level_2>Fly, Giant Carnivorous (1d8)</monster_level_2><monster_level_3>Lizard, Draco (1d3)</monster_level_3><monster_level_4>Phase Tiger (1d4)</monster_level_4><monster_level_5>Caecilian (1d3)</monster_level_5><monster_level_6>Hydra (12 HD) (1)</monster_level_6></row>
+          <row><roll>7</roll><monster_level_1>Ferret, Giant (1d8)</monster_level_1><monster_level_2>Locust, Cavern (1d10)</monster_level_2><monster_level_3>Scorpion, Giant (1d6)</monster_level_3><monster_level_4>Rhagodessa, Giant (1d4)</monster_level_4><monster_level_5>Basilisk (1d6)</monster_level_5><monster_level_6>Gorgon (1d2)</monster_level_6></row>
+          <row><roll>8</roll><monster_level_1>Rat, Giant (3d6)</monster_level_1><monster_level_2>Snake, Pit Viper (1d8)</monster_level_2><monster_level_3>Wolf, Dire (1d4)</monster_level_3><monster_level_4>Snake, Giant Python (1d3)</monster_level_4><monster_level_5>Hell Hound, Greater (2d4)</monster_level_5><monster_level_6>Lamia (1)</monster_level_6></row>
+          <row><roll>9</roll><monster_level_1>Men, Brigand (2d4)</monster_level_1><monster_level_2>Ghoul (1d6)</monster_level_2><monster_level_3>Carcass Scavenger (1d3)</monster_level_3><monster_level_4>Cockatrice (1d4)</monster_level_4><monster_level_5>Salamander, Flame (1d4+1)</monster_level_5><monster_level_6>Remorhaz (15 HD) (1)</monster_level_6></row>
+          <row><roll>10</roll><monster_level_1>Skeleton (3d4)</monster_level_1><monster_level_2>Men, Berserker (1d6)</monster_level_2><monster_level_3>Gargoyle (1d6)</monster_level_3><monster_level_4>Medusa (1d3)</monster_level_4><monster_level_5>Spectre (1d4)</monster_level_5><monster_level_6>Skittering Maw (1)</monster_level_6></row>
+          <row><roll>11</roll><monster_level_1>Stirge (1d10)</monster_level_1><monster_level_2>Zombie (2d4)</monster_level_2><monster_level_3>Wight (1d6)</monster_level_3><monster_level_4>Wraith (1d4)</monster_level_4><monster_level_5>Wyvern (1d2)</monster_level_5><monster_level_6>Vampire (9 HD) (1d4)</monster_level_6></row>
+          <row><roll>12</roll><monster_level_1>NPC Party (Lvl 1) (1d4+2)</monster_level_1><monster_level_2>NPC Party (Lvl 2) (1d4+2)</monster_level_2><monster_level_3>NPC Party (Lvl 4) (1d4+2)</monster_level_3><monster_level_4>NPC Party (Lvl 5) (1d4+2)</monster_level_4><monster_level_5>NPC Party (Lvl 8) (1d4+3)</monster_level_5><monster_level_6>NPC Party (Lvl 14) (1d4+3)</monster_level_6></row>
+        </rows>
+      </table>
+    </tables>
+  </dungeon_wandering_monsters>
+
+  <wilderness_wandering_monsters>
+    <encounter_check>
+      <frequency>
+        <rule>If the party is stationary, check once per day.</rule>
+        <rule>If the party is in settled terrain, check once per day.</rule>
+        <rule>Otherwise, check each time the adventurers enter a new 6-mile hex.</rule>
+      </frequency>
+      <die>1d6</die>
+      <terrain_based_target>Use the Encounter Frequency by Terrain table.</terrain_based_target>
+    </encounter_check>
+
+    <procedure>
+      <step order="1">Roll 1d8 on the appropriate terrain column of the Wilderness Encounters by Terrain table to determine a sub-table.</step>
+      <step order="2">Roll 1d12 on the resulting sub-table to determine the creature encountered.</step>
+      <step order="3">Find the creature in the monster chapter and roll against its % In Lair to determine whether it is in its lair.</step>
+      <step order="4">If the creature is in its lair, a dynamic lair can be used if one is available.</step>
+      <step order="5">If the creature is not in its lair, roll the normal number encountered for that creature.</step>
+      <step order="6">If the encounter is in the creature's lair, roll against the creature's Treasure Type.</step>
+      <step order="7">Roll on the Wilderness Encounter Distance table to determine the number of yards from the characters to the creature(s) or lair at the start of the encounter.</step>
+      <distance_rules>
+        <rule>If the creature is in its lair, encounter distance is the distance to the lair.</rule>
+        <rule>If the creature is outside its lair, encounter distance is the distance to the creature.</rule>
+      </distance_rules>
+      <post_generation>
+        <rule>Roll for surprise, initiative, and reaction using the wilderness encounter rules.</rule>
+      </post_generation>
+    </procedure>
+
+    <tables>
+      <table name="encounter_frequency_by_terrain">
+        <columns>
+          <column>Terrain</column>
+          <column>Encounter Throw</column>
+        </columns>
+        <rows>
+          <row><terrain>City, Grasslands, Scrub, or Settled</terrain><encounter_throw>6+</encounter_throw></row>
+          <row><terrain>Aerial, Hills, Ocean, Woods, or River</terrain><encounter_throw>5+</encounter_throw></row>
+          <row><terrain>Barren, Desert, Jungle, Mountains, or Swamp</terrain><encounter_throw>4+</encounter_throw></row>
+        </rows>
+      </table>
+
+      <table name="wilderness_encounters_by_terrain_set_1">
+        <columns>
+          <column>Roll</column>
+          <column>Clear, Grass, Scrub</column>
+          <column>Woods</column>
+          <column>River</column>
+          <column>Swamp</column>
+          <column>Mountains, Hills</column>
+        </columns>
+        <rows>
+          <row><roll>1</roll><clear_grass_scrub>Men</clear_grass_scrub><woods>Men</woods><river>Men</river><swamp>Men</swamp><mountains_hills>Men</mountains_hills></row>
+          <row><roll>2</roll><clear_grass_scrub>Flyer</clear_grass_scrub><woods>Flyer</woods><river>Flyer</river><swamp>Flyer</swamp><mountains_hills>Flyer</mountains_hills></row>
+          <row><roll>3</roll><clear_grass_scrub>Humanoid</clear_grass_scrub><woods>Humanoid</woods><river>Humanoid</river><swamp>Humanoid</swamp><mountains_hills>Humanoid</mountains_hills></row>
+          <row><roll>4</roll><clear_grass_scrub>Animal</clear_grass_scrub><woods>Insect</woods><river>Insect</river><swamp>Swimmer</swamp><mountains_hills>Unusual</mountains_hills></row>
+          <row><roll>5</roll><clear_grass_scrub>Animal</clear_grass_scrub><woods>Unusual</woods><river>Swimmer</river><swamp>Undead</swamp><mountains_hills>Animal</mountains_hills></row>
+          <row><roll>6</roll><clear_grass_scrub>Unusual</clear_grass_scrub><woods>Animal</woods><river>Swimmer</river><swamp>Undead</swamp><mountains_hills>Humanoid</mountains_hills></row>
+          <row><roll>7</roll><clear_grass_scrub>Dragon</clear_grass_scrub><woods>Animal</woods><river>Animal</river><swamp>Insect</swamp><mountains_hills>Dragon</mountains_hills></row>
+          <row><roll>8</roll><clear_grass_scrub>Insect</clear_grass_scrub><woods>Dragon</woods><river>Dragon</river><swamp>Dragon</swamp><mountains_hills>Flyer</mountains_hills></row>
+        </rows>
+      </table>
+
+      <table name="wilderness_encounters_by_terrain_set_2">
+        <columns>
+          <column>Roll</column>
+          <column>Barren, Desert</column>
+          <column>Inhabited</column>
+          <column>City</column>
+          <column>Ocean</column>
+          <column>Jungle</column>
+        </columns>
+        <rows>
+          <row><roll>1</roll><barren_desert>Men</barren_desert><inhabited>Men</inhabited><city>Men</city><ocean>Men</ocean><jungle>Men</jungle></row>
+          <row><roll>2</roll><barren_desert>Flyer</barren_desert><inhabited>Flyer</inhabited><city>Undead</city><ocean>Flyer</ocean><jungle>Flyer</jungle></row>
+          <row><roll>3</roll><barren_desert>Humanoid</barren_desert><inhabited>Humanoid</inhabited><city>Humanoid</city><ocean>Swimmer</ocean><jungle>Insect</jungle></row>
+          <row><roll>4</roll><barren_desert>Humanoid</barren_desert><inhabited>Men</inhabited><city>Men</city><ocean>Swimmer</ocean><jungle>Insect</jungle></row>
+          <row><roll>5</roll><barren_desert>Animal</barren_desert><inhabited>Men</inhabited><city>Men</city><ocean>Swimmer</ocean><jungle>Humanoid</jungle></row>
+          <row><roll>6</roll><barren_desert>Dragon</barren_desert><inhabited>Insect</inhabited><city>Men</city><ocean>Swimmer</ocean><jungle>Animal</jungle></row>
+          <row><roll>7</roll><barren_desert>Undead</barren_desert><inhabited>Animal</inhabited><city>Men</city><ocean>Swimmer</ocean><jungle>Animal</jungle></row>
+          <row><roll>8</roll><barren_desert>Unusual</barren_desert><inhabited>Dragon</inhabited><city>Men</city><ocean>Dragon</ocean><jungle>Dragon</jungle></row>
+        </rows>
+      </table>
+
+      <table name="wilderness_encounters_men_set_1" source_format_note="some cells appear merged in source; values preserved verbatim">
+        <columns>
+          <column>Roll</column>
+          <column>Clear, Grass, Scrub</column>
+          <column>Woods</column>
+          <column>River Swamp</column>
+          <column>Barrens, Mountains, Hills</column>
+        </columns>
+        <rows>
+          <row><roll>1</roll><clear_grass_scrub>Berserker</clear_grass_scrub><woods>Berserker</woods><river_swamp>Brigand Berserker</river_swamp><barrens_mountains_hills>Barbarian*</barrens_mountains_hills></row>
+          <row><roll>2</roll><clear_grass_scrub>Brigand</clear_grass_scrub><woods>Brigand</woods><river_swamp>Buccaneer Brigand</river_swamp><barrens_mountains_hills>Berserker</barrens_mountains_hills></row>
+          <row><roll>3</roll><clear_grass_scrub>Cleric*</clear_grass_scrub><woods>Brigand</woods><river_swamp>Buccaneer Cleric*</river_swamp><barrens_mountains_hills>Brigand</barrens_mountains_hills></row>
+          <row><roll>4</roll><clear_grass_scrub>Fighter*</clear_grass_scrub><woods>Brigand</woods><river_swamp>Buccaneer Fighter*</river_swamp><barrens_mountains_hills>Brigand</barrens_mountains_hills></row>
+          <row><roll>5</roll><clear_grass_scrub>Mage</clear_grass_scrub><woods>Cleric*</woods><river_swamp>Cleric* Mage*</river_swamp><barrens_mountains_hills>Cleric*</barrens_mountains_hills></row>
+          <row><roll>6</roll><clear_grass_scrub>Merchant</clear_grass_scrub><woods>Fighter*</woods><river_swamp>Fighter* Merchant</river_swamp><barrens_mountains_hills>Fighter*</barrens_mountains_hills></row>
+          <row><roll>7</roll><clear_grass_scrub>Noble</clear_grass_scrub><woods>Mage*</woods><river_swamp>Mage* NPC Party*</river_swamp><barrens_mountains_hills>Mage*</barrens_mountains_hills></row>
+          <row><roll>8</roll><clear_grass_scrub>Nomad</clear_grass_scrub><woods>Merchant</woods><river_swamp>Merchant NPC Party*</river_swamp><barrens_mountains_hills>NPC Party*</barrens_mountains_hills></row>
+          <row><roll>9</roll><clear_grass_scrub>NPC Party*</clear_grass_scrub><woods>NPC Party*</woods><river_swamp>Merchant NPC Party*</river_swamp><barrens_mountains_hills>NPC Party*</barrens_mountains_hills></row>
+          <row><roll>10</roll><clear_grass_scrub>Thief*</clear_grass_scrub><woods>NPC Party*</woods><river_swamp>NPC Party* Thief*</river_swamp><barrens_mountains_hills>NPC Party*</barrens_mountains_hills></row>
+          <row><roll>11</roll><clear_grass_scrub>Thief*</clear_grass_scrub><woods>Thief*</woods><river_swamp>NPC Party* Thief*</river_swamp><barrens_mountains_hills>Thief*</barrens_mountains_hills></row>
+          <row><roll>12</roll><clear_grass_scrub>Venturer*</clear_grass_scrub><woods>Thief*</woods><river_swamp>Thief* Venturer*</river_swamp><barrens_mountains_hills>Venturer*</barrens_mountains_hills></row>
+        </rows>
+      </table>
+
+      <table name="wilderness_encounters_men_set_2" source_format_note="some cells appear merged in source; values preserved verbatim">
+        <columns>
+          <column>Roll</column>
+          <column>Desert</column>
+          <column>Inhabited</column>
+          <column>City Ocean</column>
+          <column>Jungle</column>
+        </columns>
+        <rows>
+          <row><roll>1</roll><desert>Cleric*</desert><inhabited>Cleric*</inhabited><city_ocean>Cleric* Buccaneer</city_ocean><jungle>Barbarian*</jungle></row>
+          <row><roll>2</roll><desert>Fighter*</desert><inhabited>Cleric*</inhabited><city_ocean>Cleric* Buccaneer</city_ocean><jungle>Berserker</jungle></row>
+          <row><roll>3</roll><desert>Mage*</desert><inhabited>Fighter*</inhabited><city_ocean>Fighter* Merchant</city_ocean><jungle>Brigand</jungle></row>
+          <row><roll>4</roll><desert>Merchant</desert><inhabited>Fighter*</inhabited><city_ocean>Fighter* Merchant</city_ocean><jungle>Brigand</jungle></row>
+          <row><roll>5</roll><desert>Noble</desert><inhabited>Mage*</inhabited><city_ocean>Mage* Merchant</city_ocean><jungle>Brigand</jungle></row>
+          <row><roll>6</roll><desert>Nomad</desert><inhabited>Merchant</inhabited><city_ocean>Merchant Merchant</city_ocean><jungle>Cleric*</jungle></row>
+          <row><roll>7</roll><desert>Nomad</desert><inhabited>Noble</inhabited><city_ocean>Merchant Merchant</city_ocean><jungle>Fighter*</jungle></row>
+          <row><roll>8</roll><desert>Nomad</desert><inhabited>NPC Party</inhabited><city_ocean>Noble NPC Party*</city_ocean><jungle>Medium</jungle></row>
+          <row><roll>9</roll><desert>Nomad</desert><inhabited>NPC Party</inhabited><city_ocean>NPC Party Pirate</city_ocean><jungle>NPC Party*</jungle></row>
+          <row><roll>10</roll><desert>Nomad</desert><inhabited>Thief*</inhabited><city_ocean>NPC Party Pirate</city_ocean><jungle>NPC Party*</jungle></row>
+          <row><roll>11</roll><desert>Nomad</desert><inhabited>Thief*</inhabited><city_ocean>Thief* Pirate</city_ocean><jungle>Thief*</jungle></row>
+          <row><roll>12</roll><desert>NPC Party*</desert><inhabited>Venturer*</inhabited><city_ocean>Venturer* Pirate</city_ocean><jungle>Venturer*</jungle></row>
+        </rows>
+      </table>
+
+      <table name="wilderness_encounters_humanoid_set_1">
+        <columns>
+          <column>Roll</column>
+          <column>Clear, Grass, Scrub</column>
+          <column>Woods</column>
+          <column>River</column>
+          <column>Swamp</column>
+          <column>Hills, Mountains</column>
+        </columns>
+        <rows>
+          <row><roll>1</roll><clear_grass_scrub>Bugbear</clear_grass_scrub><woods>Bugbear</woods><river>Bugbear</river><swamp>Gnoll</swamp><hills_mountains>Dwarf</hills_mountains></row>
+          <row><roll>2</roll><clear_grass_scrub>Elf</clear_grass_scrub><woods>Cyclops</woods><river>Elf</river><swamp>Goblin</swamp><hills_mountains>Giant, Cloud</hills_mountains></row>
+          <row><roll>3</roll><clear_grass_scrub>Gnoll</clear_grass_scrub><woods>Dryad</woods><river>Gnoll</river><swamp>Hobgoblin</swamp><hills_mountains>Giant, Frost</hills_mountains></row>
+          <row><roll>4</roll><clear_grass_scrub>Goblin</clear_grass_scrub><woods>Elf</woods><river>Hobgoblin</river><swamp>Lizard Man</swamp><hills_mountains>Giant, Hill</hills_mountains></row>
+          <row><roll>5</roll><clear_grass_scrub>Halfling</clear_grass_scrub><woods>Giant, Hill</woods><river>Lizard Man</river><swamp>Lizard Man</swamp><hills_mountains>Giant, Stone</hills_mountains></row>
+          <row><roll>6</roll><clear_grass_scrub>Hobgoblin</clear_grass_scrub><woods>Gnoll</woods><river>Lizard Man</river><swamp>Lizard Man</swamp><hills_mountains>Giant, Storm</hills_mountains></row>
+          <row><roll>7</roll><clear_grass_scrub>Kobold</clear_grass_scrub><woods>Goblin</woods><river>Naiad</river><swamp>Naiad</swamp><hills_mountains>Goblin</hills_mountains></row>
+          <row><roll>8</roll><clear_grass_scrub>Ogre</clear_grass_scrub><woods>Hobgoblin</woods><river>Naiad</river><swamp>Ogre</swamp><hills_mountains>Kobold</hills_mountains></row>
+          <row><roll>9</roll><clear_grass_scrub>Orc</clear_grass_scrub><woods>Ogre</woods><river>Ogre</river><swamp>Orc</swamp><hills_mountains>Ogre</hills_mountains></row>
+          <row><roll>10</roll><clear_grass_scrub>Pixie</clear_grass_scrub><woods>Orc</woods><river>Orc</river><swamp>Troglodyte</swamp><hills_mountains>Orc</hills_mountains></row>
+          <row><roll>11</roll><clear_grass_scrub>Throghrin</clear_grass_scrub><woods>Pixie</woods><river>Sprite</river><swamp>Troll</swamp><hills_mountains>Troglodyte</hills_mountains></row>
+          <row><roll>12</roll><clear_grass_scrub>Troll</clear_grass_scrub><woods>Troll</woods><river>Troll</river><swamp>Troll</swamp><hills_mountains>Troll</hills_mountains></row>
+        </rows>
+      </table>
+
+      <table name="wilderness_encounters_humanoid_set_2">
+        <columns>
+          <column>Roll</column>
+          <column>Barrens</column>
+          <column>Desert</column>
+          <column>City</column>
+          <column>Inhabited</column>
+          <column>Jungle</column>
+        </columns>
+        <rows>
+          <row><roll>1</roll><barrens>Bugbear</barrens><desert>Bugbear</desert><city>Doppelganger</city><inhabited>Doppelganger</inhabited><jungle>Bugbear</jungle></row>
+          <row><roll>2</roll><barrens>Giant, Hill</barrens><desert>Gnoll</desert><city>Dwarf</city><inhabited>Dwarf</inhabited><jungle>Cyclops</jungle></row>
+          <row><roll>3</roll><barrens>Goblin</barrens><desert>Giant, Fire</desert><city>Elf</city><inhabited>Elf</inhabited><jungle>Elf</jungle></row>
+          <row><roll>4</roll><barrens>Gnoll</barrens><desert>Hobgoblin</desert><city>Gnome</city><inhabited>Gnome</inhabited><jungle>Giant, Fire</jungle></row>
+          <row><roll>5</roll><barrens>Hobgoblin</barrens><desert>Hobgoblin</desert><city>Halfling</city><inhabited>Goblin</inhabited><jungle>Giant, Hill</jungle></row>
+          <row><roll>6</roll><barrens>Hobgoblin</barrens><desert>Minotaur</desert><city>Pixie</city><inhabited>Halfling</inhabited><jungle>Gnoll</jungle></row>
+          <row><roll>7</roll><barrens>Ogre</barrens><desert>Ogre</desert><city>Sprite</city><inhabited>Kobold</inhabited><jungle>Goblin</jungle></row>
+          <row><roll>8</roll><barrens>Ogre</barrens><desert>Ogre</desert><city>Werebear</city><inhabited>Ogre</inhabited><jungle>Lizard Man</jungle></row>
+          <row><roll>9</roll><barrens>Orc</barrens><desert>Orc</desert><city>Wereboar</city><inhabited>Orc</inhabited><jungle>Ogre</jungle></row>
+          <row><roll>10</roll><barrens>Orc</barrens><desert>Orc</desert><city>Wererat</city><inhabited>Pixie</inhabited><jungle>Orc</jungle></row>
+          <row><roll>11</roll><barrens>Throghrin</barrens><desert>Troll</desert><city>Weretiger</city><inhabited>Sprite</inhabited><jungle>Troglodyte</jungle></row>
+          <row><roll>12</roll><barrens>Troll</barrens><desert>Troll</desert><city>Werewolf</city><inhabited>Wererat</inhabited><jungle>Troll</jungle></row>
+        </rows>
+      </table>
+
+      <table name="wilderness_encounters_animal_set_1">
+        <columns>
+          <column>Roll</column>
+          <column>Clear, Grass, Scrub</column>
+          <column>Woods</column>
+          <column>River</column>
+          <column>Hills</column>
+          <column>Mountains</column>
+        </columns>
+        <rows>
+          <row><roll>1</roll><clear_grass_scrub>Herd Animal (Antelope)</clear_grass_scrub><woods>Herd Animal (Antelope)</woods><river>Herd Animal (Antelope)</river><hills>Herd Animal (Antelope)</hills><mountains>Herd Animal (Antelope)</mountains></row>
+          <row><roll>2</roll><clear_grass_scrub>Boar*</clear_grass_scrub><woods>Bat*</woods><river>Bear, Black</river><hills>Bear, Grizzly</hills><mountains>Baboon, Rock</mountains></row>
+          <row><roll>3</roll><clear_grass_scrub>Cat, Lion</clear_grass_scrub><woods>Bear, Grizzly</woods><river>Boar*</river><hills>Boar*</hills><mountains>Bear, Cave</mountains></row>
+          <row><roll>4</roll><clear_grass_scrub>Cat, Panther</clear_grass_scrub><woods>Boar*</woods><river>Cat, Panther</river><hills>Cat, Mountain Lion</hills><mountains>Cat, Mountain Lion</mountains></row>
+          <row><roll>5</roll><clear_grass_scrub>Elephant</clear_grass_scrub><woods>Cat, Panther</woods><river>Crab, Giant</river><hills>Eagle*</hills><mountains>Eagle*</mountains></row>
+          <row><roll>6</roll><clear_grass_scrub>Hawk*</clear_grass_scrub><woods>Hawk*</woods><river>Crocodile*</river><hills>Hawk*</hills><mountains>Herd Animal (Goat)</mountains></row>
+          <row><roll>7</roll><clear_grass_scrub>Horse, Light</clear_grass_scrub><woods>Owl*</woods><river>Leech, Giant</river><hills>Horse, Light</hills><mountains>Hawk*</mountains></row>
+          <row><roll>8</roll><clear_grass_scrub>Lizard, Tuatara</clear_grass_scrub><woods>Snake, Pit Viper</woods><river>Piranha, Giant</river><hills>Owl*</hills><mountains>Mule (Donkey)</mountains></row>
+          <row><roll>9</roll><clear_grass_scrub>Mule (Donkey)</clear_grass_scrub><woods>Spider, Black Widow</woods><river>Rat*</river><hills>Herd Animal (Sheep)</hills><mountains>Snake, Giant Rattler</mountains></row>
+          <row><roll>10</roll><clear_grass_scrub>Snake, Giant Rattler</clear_grass_scrub><woods>Unicorn</woods><river>Shrew, Giant</river><hills>Snake, Pit Viper</hills><mountains>Snake, Pit Viper</mountains></row>
+          <row><roll>11</roll><clear_grass_scrub>Snake, Pit Viper</clear_grass_scrub><woods>Wolf</woods><river>Swan</river><hills>Wolf</hills><mountains>Wolf</mountains></row>
+          <row><roll>12</roll><clear_grass_scrub>Weasel, Giant</clear_grass_scrub><woods>Wolf, Dire</woods><river>Toad, Giant</river><hills>Wolf, Dire</hills><mountains>Wolf, Dire</mountains></row>
+        </rows>
+      </table>
+
+      <table name="wilderness_encounters_animal_set_2">
+        <columns>
+          <column>Roll</column>
+          <column>Barrens</column>
+          <column>Desert</column>
+          <column>Inhabited</column>
+          <column>Jungle</column>
+          <column>Prehistoric</column>
+        </columns>
+        <rows>
+          <row><roll>1</roll><barrens>Herd Animal (Antelope)</barrens><desert>Herd Animal (Antelope)</desert><inhabited>Boar*</inhabited><jungle>Herd Animal (Antelope)</jungle><prehistoric>Bear, Cave</prehistoric></row>
+          <row><roll>2</roll><barrens>Baboon, Rock</barrens><desert>Herd Animal (Antelope)</desert><inhabited>Dog</inhabited><jungle>Boar*</jungle><prehistoric>Cat, Sabre-Tooth Tiger</prehistoric></row>
+          <row><roll>3</roll><barrens>Bear, Cave</barrens><desert>Camel</desert><inhabited>Ferret, Giant</inhabited><jungle>Cat, Panther</jungle><prehistoric>Crocodile, Giant</prehistoric></row>
+          <row><roll>4</roll><barrens>Cat, Mountain Lion</barrens><desert>Camel</desert><inhabited>Herd Animal (Goat)</inhabited><jungle>Lizard, Draco</jungle><prehistoric>Mastodon</prehistoric></row>
+          <row><roll>5</roll><barrens>Eagle*</barrens><desert>Cat, Lion</desert><inhabited>Hawk*</inhabited><jungle>Lizard, Gecko</jungle><prehistoric>Pteranodon</prehistoric></row>
+          <row><roll>6</roll><barrens>Herd Animal (Goat)</barrens><desert>Hawk*</desert><inhabited>Horse, Light</inhabited><jungle>Lizard, Horned</jungle><prehistoric>Rhino, Woolly</prehistoric></row>
+          <row><roll>7</roll><barrens>Hawk*</barrens><desert>Lizard, Gecko</desert><inhabited>Mule (Donkey)</inhabited><jungle>Monkey</jungle><prehistoric>Snake, Python</prehistoric></row>
+          <row><roll>8</roll><barrens>Snake, Giant Rattler</barrens><desert>Lizard, Tuatara</desert><inhabited>Rat*</inhabited><jungle>Shrew, Giant</jungle><prehistoric>Stegosaurus</prehistoric></row>
+          <row><roll>9</roll><barrens>Snake, Pit Viper</barrens><desert>Snake, Giant Rattler</desert><inhabited>Herd Animal (Sheep)</inhabited><jungle>Snake, Pit Viper</jungle><prehistoric>Titanothere</prehistoric></row>
+          <row><roll>10</roll><barrens>Spider, Crab</barrens><desert>Wolf (Wild Dog)</desert><inhabited>Snake, Pit Viper</inhabited><jungle>Snake, Python</jungle><prehistoric>Triceratops</prehistoric></row>
+          <row><roll>11</roll><barrens>Wolf, Dire</barrens><desert>Wolf, Dire</desert><inhabited>Weasel, Giant</inhabited><jungle>Snake, Spitting Cobra</jungle><prehistoric>Tyrannosaurus Rex</prehistoric></row>
+          <row><roll>12</roll><barrens>Vulture</barrens><desert>Vulture</desert><inhabited>Wolf</inhabited><jungle>Spider, Crab</jungle><prehistoric>Wolf, Dire</prehistoric></row>
+        </rows>
+      </table>
+      <footnote table="wilderness_encounters_animal_set_1 wilderness_encounters_animal_set_2">For entries marked *, roll 1d6: 1-4 Normal or Swarm, 5-6 Giant.</footnote>
+
+      <table name="wilderness_encounters_flyer">
+        <columns>
+          <column>Roll</column>
+          <column>Barrens</column>
+          <column>Desert</column>
+          <column>Mountains Woods</column>
+          <column>Other</column>
+        </columns>
+        <rows>
+          <row><roll>1</roll><barrens>Cockatrice</barrens><desert>Chimera</desert><mountains_woods>Chimera Bat, Giant</mountains_woods><other>Bee, Killer Giant</other></row>
+          <row><roll>2</roll><barrens>Gargoyle</barrens><desert>Cockatrice</desert><mountains_woods>Cockatrice Cockatrice</mountains_woods><other>Cockatrice</other></row>
+          <row><roll>3</roll><barrens>Griffon</barrens><desert>Gargoyle</desert><mountains_woods>Gargoyle Griffon</mountains_woods><other>Fly, Giant Carnivorous</other></row>
+          <row><roll>4</roll><barrens>Harpy</barrens><desert>Griffon</desert><mountains_woods>Griffon Hawk, Giant</mountains_woods><other>Gargoyle</other></row>
+          <row><roll>5</roll><barrens>Hawk, Giant</barrens><desert>Hawk, Giant</desert><mountains_woods>Harpy Hippogriff</mountains_woods><other>Griffon</other></row>
+          <row><roll>6</roll><barrens>Hippogriff</barrens><desert>Lammasu</desert><mountains_woods>Hawk, Giant Owl, Giant</mountains_woods><other>Hawk, Giant</other></row>
+          <row><roll>7</roll><barrens>Lammasu</barrens><desert>Manticore</desert><mountains_woods>Hippogriff Pegasus</mountains_woods><other>Hippogriff</other></row>
+          <row><roll>8</roll><barrens>Manticore</barrens><desert>Pterodactyl</desert><mountains_woods>Manticore Pixie</mountains_woods><other>Pegasus</other></row>
+          <row><roll>9</roll><barrens>Pegasus</barrens><desert>Roc, Small</desert><mountains_woods>Pegasus Roc, Small</mountains_woods><other>Pixie</other></row>
+          <row><roll>10</roll><barrens>Roc, Small</barrens><desert>Sphinx</desert><mountains_woods>Roc* Sprite</mountains_woods><other>Roc, Small</other></row>
+          <row><roll>11</roll><barrens>Stirge</barrens><desert>Vulture</desert><mountains_woods>Swarm, Bat Stirge</mountains_woods><other>Sprite</other></row>
+          <row><roll>12</roll><barrens>Wyvern</barrens><desert>Wyvern</desert><mountains_woods>Wyvern Swarm, Bat</mountains_woods><other>Stirge</other></row>
+        </rows>
+      </table>
+      <footnote table="wilderness_encounters_flyer">For entries marked Roc*, roll 1d6: 1-3 Small, 4-5 Large, 6 Giant.</footnote>
+
+      <table name="wilderness_encounters_swimmer">
+        <columns>
+          <column>Roll</column>
+          <column>River, Lake</column>
+          <column>Ocean</column>
+          <column>Swamp</column>
+        </columns>
+        <rows>
+          <row><roll>1</roll><river_lake>Crab, Giant</river_lake><ocean>Dragon Turtle</ocean><swamp>Crab, Giant</swamp></row>
+          <row><roll>2</roll><river_lake>Crocodile</river_lake><ocean>Hydra, Sea</ocean><swamp>Crocodile</swamp></row>
+          <row><roll>3</roll><river_lake>Crocodile</river_lake><ocean>Merman</ocean><swamp>Crocodile, Large</swamp></row>
+          <row><roll>4</roll><river_lake>Crocodile, Large</river_lake><ocean>Octopus, Giant</ocean><swamp>Crocodile, Giant</swamp></row>
+          <row><roll>5</roll><river_lake>Fish, Catfish</river_lake><ocean>Sea Dragon</ocean><swamp>Fish, Catfish</swamp></row>
+          <row><roll>6</roll><river_lake>Fish, Piranha</river_lake><ocean>Sea Serpent</ocean><swamp>Insect Swarm</swamp></row>
+          <row><roll>7</roll><river_lake>Fish, Sturgeon</river_lake><ocean>Shark*</ocean><swamp>Insect Swarm</swamp></row>
+          <row><roll>8</roll><river_lake>Leech, Giant</river_lake><ocean>Shark*</ocean><swamp>Leech, Giant</swamp></row>
+          <row><roll>9</roll><river_lake>Lizard Man</river_lake><ocean>Skittering Maw</ocean><swamp>Leech, Giant</swamp></row>
+          <row><roll>10</roll><river_lake>Merman</river_lake><ocean>Snake, Sea</ocean><swamp>Lizard Man</swamp></row>
+          <row><roll>11</roll><river_lake>Naiad</river_lake><ocean>Squid, Giant</ocean><swamp>Lizard Man</swamp></row>
+          <row><roll>12</roll><river_lake>Skittering Maw</river_lake><ocean>Whale</ocean><swamp>Skittering Maw</swamp></row>
+        </rows>
+      </table>
+      <footnote table="wilderness_encounters_swimmer">For Shark*, roll 1d6: 1-2 Bull Shark, 3-4 Mako Shark, 5-6 Great White Shark.</footnote>
+
+      <table name="wilderness_encounters_other">
+        <columns>
+          <column>Roll</column>
+          <column>Dragon</column>
+          <column>Insect Undead</column>
+          <column>Unusual</column>
+        </columns>
+        <rows>
+          <row><roll>1</roll><dragon>Basilisk</dragon><insect_undead>Ant, Giant Ghoul</insect_undead><unusual>Ape, White</unusual></row>
+          <row><roll>2</roll><dragon>Caecilian</dragon><insect_undead>Bee, Killer Giant Ghoul</insect_undead><unusual>Basilisk</unusual></row>
+          <row><roll>3</roll><dragon>Chimera</dragon><insect_undead>Beetle, Fire Mummy</insect_undead><unusual>Blink Dog</unusual></row>
+          <row><roll>4</roll><dragon>Dragon*</dragon><insect_undead>Beetle, Giant Bombardier Mummy</insect_undead><unusual>Centaur</unusual></row>
+          <row><roll>5</roll><dragon>Dragon*</dragon><insect_undead>Beetle, Tiger Skeleton</insect_undead><unusual>Gorgon</unusual></row>
+          <row><roll>6</roll><dragon>Hydra/Sea Hydra</dragon><insect_undead>Carcass Scavenger Skeleton</insect_undead><unusual>Hellhound</unusual></row>
+          <row><roll>7</roll><dragon>Lamia</dragon><insect_undead>Centipede, Giant Spectre</insect_undead><unusual>Lycanthrope</unusual></row>
+          <row><roll>8</roll><dragon>Purple Worm</dragon><insect_undead>Fly, Giant Carnivor. Wight</insect_undead><unusual>Medusa</unusual></row>
+          <row><roll>9</roll><dragon>Salamander</dragon><insect_undead>Rhagodessa Wraith</insect_undead><unusual>Phase Tiger</unusual></row>
+          <row><roll>10</roll><dragon>Snake, Python</dragon><insect_undead>Scorpion, Giant Vampire</insect_undead><unusual>Rust Monster</unusual></row>
+          <row><roll>11</roll><dragon>Sphinx</dragon><insect_undead>Spider, Black Widow Zombie</insect_undead><unusual>Skittering Maw</unusual></row>
+          <row><roll>12</roll><dragon>Wyvern</dragon><insect_undead>Spider, Crab Zombie</insect_undead><unusual>Treant</unusual></row>
+        </rows>
+      </table>
+    </tables>
+  </wilderness_wandering_monsters>
+
+  <npc_parties>
+    <overview>
+      <rule>Wandering monster results may include NPC adventuring parties.</rule>
+      <rule>NPC parties can be generated by procedure or created ad hoc as needed.</rule>
+    </overview>
+
+    <generation_procedure>
+      <step order="1">Roll 1d4+2 to determine the number encountered.</step>
+      <step order="2">For each NPC, roll 3d6 on the NPC Class table to determine class.</step>
+      <step order="3">Roll 1d6 once to determine party alignment.</step>
+      <step order="4">All NPCs are either of that alignment or within one step of it.</step>
+      <step order="5">Determine the party's base level.</step>
+      <step order="6">Roll 1d6 on the NPC Level table to determine each NPC's actual level from the base level.</step>
+      <step order="7">Optionally replace one or more NPCs with 2 NPCs of the same class but two levels lower; these are henchmen of the higher-level characters present.</step>
+      <step order="8">Equip NPCs with mundane weapons, armor, and equipment appropriate to class, level, and terrain.</step>
+      <step order="9">If in the wilderness, each NPC has a 10% chance per level of having a mount.</step>
+      <step order="10">Determine treasure carried by each NPC using the Treasure Type by Level table.</step>
+      <step order="11">Do not roll magic items from the Treasure Type table.</step>
+      <step order="12">Instead, for each category of magic item the NPC can use, there is a 5% chance per NPC level that the NPC possesses a useful item of that category.</step>
+    </generation_procedure>
+
+    <base_level_rules>
+      <rule>Base level is the party's average level.</rule>
+      <rule>In a dungeon, base level is determined by the dungeon level encountered, as shown on the Random Monsters by Level tables.</rule>
+      <rule>In the wilderness, base level is based on the maximum level of the nearest dungeon.</rule>
+      <rule>In a settlement, base level is 7 minus the settlement's market class.</rule>
+    </base_level_rules>
+
+    <alignment_rules>
+      <rule>Roll 1d6 to determine party alignment.</rule>
+      <rule>All NPCs are either of the rolled alignment or one step away from it.</rule>
+    </alignment_rules>
+
+    <tables>
+      <table name="npc_class">
+        <columns>
+          <column>Roll</column>
+          <column>NPC Class</column>
+        </columns>
+        <rows>
+          <row><roll>3-4</roll><npc_class>Elven Nightblade</npc_class></row>
+          <row><roll>5</roll><npc_class>Elven Spellsword</npc_class></row>
+          <row><roll>6</roll><npc_class>Explorer</npc_class></row>
+          <row><roll>7</roll><npc_class>Bladedancer</npc_class></row>
+          <row><roll>8</roll><npc_class>Cleric</npc_class></row>
+          <row><roll>9-11</roll><npc_class>Fighter</npc_class></row>
+          <row><roll>12</roll><npc_class>Thief</npc_class></row>
+          <row><roll>13</roll><npc_class>Mage</npc_class></row>
+          <row><roll>14</roll><npc_class>Assassin</npc_class></row>
+          <row><roll>15</roll><npc_class>Bard</npc_class></row>
+          <row><roll>16</roll><npc_class>Dwarven Vaultguard</npc_class></row>
+          <row><roll>17-18</roll><npc_class>Dwarven Craftpriest</npc_class></row>
+        </rows>
+      </table>
+
+      <table name="npc_alignment">
+        <columns>
+          <column>Roll</column>
+          <column>NPC Alignment</column>
+        </columns>
+        <rows>
+          <row><roll>1-2</roll><npc_alignment>Lawful</npc_alignment></row>
+          <row><roll>3-5</roll><npc_alignment>Neutral</npc_alignment></row>
+          <row><roll>6</roll><npc_alignment>Chaotic</npc_alignment></row>
+        </rows>
+      </table>
+
+      <table name="npc_level">
+        <columns>
+          <column>Roll</column>
+          <column>NPC Level Result</column>
+        </columns>
+        <rows>
+          <row><roll>1</roll><npc_level_result>Base level -2 (minimum 1)</npc_level_result></row>
+          <row><roll>2</roll><npc_level_result>Base level -1 (minimum 1)</npc_level_result></row>
+          <row><roll>3-4</roll><npc_level_result>Base level</npc_level_result></row>
+          <row><roll>5</roll><npc_level_result>Base level +1</npc_level_result></row>
+          <row><roll>6</roll><npc_level_result>Base level +2</npc_level_result></row>
+        </rows>
+      </table>
+
+      <table name="npc_treasure_type_by_level">
+        <columns>
+          <column>Level</column>
+          <column>Treasure Type</column>
+        </columns>
+        <rows>
+          <row><level>1</level><treasure_type>B x 1/4</treasure_type></row>
+          <row><level>2</level><treasure_type>B x 1/2</treasure_type></row>
+          <row><level>3</level><treasure_type>B x 1/2</treasure_type></row>
+          <row><level>4</level><treasure_type>B</treasure_type></row>
+          <row><level>5</level><treasure_type>D x 1/2</treasure_type></row>
+          <row><level>6</level><treasure_type>D</treasure_type></row>
+          <row><level>7</level><treasure_type>H</treasure_type></row>
+          <row><level>8</level><treasure_type>J</treasure_type></row>
+          <row><level>9</level><treasure_type>Jx2</treasure_type></row>
+          <row><level>10</level><treasure_type>N</treasure_type></row>
+          <row><level>11</level><treasure_type>O</treasure_type></row>
+          <row><level>12</level><treasure_type>Nx2</treasure_type></row>
+          <row><level>13</level><treasure_type>Q</treasure_type></row>
+          <row><level>14</level><treasure_type>R</treasure_type></row>
+        </rows>
+      </table>
+    </tables>
+
+    <item_rules>
+      <mundane_equipment>NPCs carry mundane weapons, armor, and equipment appropriate to class, level, and terrain.</mundane_equipment>
+      <mount_rule>In the wilderness, each NPC has a 10% chance per level of having a mount.</mount_rule>
+      <treasure_rule>Use the treasure type table by NPC level for coins, gems, and jewelry.</treasure_rule>
+      <magic_item_rule>Do not roll magic items from Treasure Type.</magic_item_rule>
+      <magic_item_substitute>For each category of magic item the NPC can use, there is a 5% chance per NPC level that the NPC has a useful item of that category.</magic_item_substitute>
+    </item_rules>
+  </npc_parties>
+</acks_wandering_monsters_summary>

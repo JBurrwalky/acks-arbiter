@@ -1,0 +1,486 @@
+<class_catalog title="Venturer" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <class name="Venturer">
+    <identity>
+      <name>Venturer</name>
+      <ancestry_category default="human">human</ancestry_category>
+      <source_label>137-Axioms-Revised Venturer</source_label>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>adventurer</tag>
+        <tag>merchant</tag>
+        <tag>traveler</tag>
+        <tag>negotiator</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>martial</tag>
+        <tag>mercantile</tag>
+        <tag>languages</tag>
+        <tag>trade_routes</tag>
+        <tag>information_gathering</tag>
+        <tag>stronghold</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>CHA</ability>
+      </prime_requisites>
+      <minimum_abilities/>
+      <entry_restrictions/>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>thief</primary_progression_family>
+      <attack_throw_progression family="thief"/>
+      <cleave_progression family="thief"/>
+      <saving_throw_progression family="thief"/>
+      <damage_bonus_progression family="thief"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d4</hit_die>
+      <maximum_level>14</maximum_level>
+      <baseline_title>Tinker</baseline_title>
+      <post_max_hit_dice_rule>After 9th level, hit point modifiers from Constitution are ignored; hit dice increase as 9d4+2 at 10th, 9d4+4 at 11th, 9d4+6 at 12th, 9d4+8 at 13th, and 9d4+10 at 14th.</post_max_hit_dice_rule>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>May wear armor no heavier than chainmail.</armor>
+        <shields>May use shields.</shields>
+        <weapons>
+          <rule>May fight with arbalests, composite bows, crossbows, daggers, longbows, shortbows, and short swords.</rule>
+        </weapons>
+      </permissions>
+      <restrictions>
+        <restriction>Cannot dual-wield.</restriction>
+        <restriction>Cannot fight two-handed.</restriction>
+      </restrictions>
+      <combat_rules>
+        <rule>Attack throw against AC 0 is 10+ at 1st level.</rule>
+        <rule>Attack throws and saving throws improve by 2 every 4 levels, using thief progression.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <special_abilities>
+      <ability name="mercantile_network" level="1">
+        <summary>Improves trade access in previously visited markets.</summary>
+        <rules>
+          <rule>Whenever the venturer buys or sells equipment, hires retainers, or engages in mercantile ventures in a market previously visited, he may treat the market as one class larger than its actual size, or may take a +1 bonus to market impact, whichever is more useful.</rule>
+          <rule>Class I markets remain Class I markets.</rule>
+        </rules>
+      </ability>
+
+      <ability name="expert_bargainer" level="1">
+        <summary>Gets better prices when buying and selling.</summary>
+        <rules>
+          <rule>Items purchased cost 10% less than listed price.</rule>
+          <rule>Items sold go for 10% more than listed price.</rule>
+          <rule>When trading with another venturer or a character with the Bargaining proficiency, both make reaction rolls; whichever character scores higher gets the discount.</rule>
+          <rule>A venturer may select Bargaining proficiency to improve this ability.</rule>
+          <rule>Each time Bargaining is selected, the character gains a +2 bonus on reaction rolls when negotiating with other bargainers.</rule>
+        </rules>
+      </ability>
+
+      <ability name="bonus_languages" level="1">
+        <summary>Gains additional languages.</summary>
+        <rules>
+          <rule>The venturer gains four bonus languages.</rule>
+          <rule>These may be selected immediately from among languages in common use in the campaign's starting region, or selected later from among languages encountered in play.</rule>
+        </rules>
+      </ability>
+
+      <ability name="expert_traveler" level="1">
+        <summary>Begins play with travel training.</summary>
+        <rules>
+          <rule>Begins play with Riding or Seafaring proficiency, player's choice.</rule>
+        </rules>
+      </ability>
+
+      <ability name="avoid_getting_lost" level="1">
+        <summary>Improves navigation in familiar terrain.</summary>
+        <rules>
+          <rule>Any time the venturer's party is in terrain familiar to the venturer, they gain a +4 bonus on proficiency throws to avoid getting lost.</rule>
+        </rules>
+      </ability>
+
+      <ability name="diplomacy" level="1">
+        <summary>Improves parley with intelligent creatures.</summary>
+        <rules>
+          <rule>The venturer gains a +2 bonus on all reaction rolls when attempting to parley with intelligent creatures.</rule>
+        </rules>
+      </ability>
+
+      <ability name="bribery" level="1">
+        <summary>May use bribes to improve reactions.</summary>
+        <rules>
+          <rule>Offering a bribe permits an additional reaction roll during encounters, modified by the size of the bribe.</rule>
+        </rules>
+        <derived_tables>
+          <table name="bribery_modifiers">
+            <columns>
+              <column>bribe_size</column>
+              <column>reaction_bonus</column>
+            </columns>
+            <row>
+              <value name="bribe_size">One day's pay for the target</value>
+              <value name="reaction_bonus">+1</value>
+            </row>
+            <row>
+              <value name="bribe_size">One week's pay for the target</value>
+              <value name="reaction_bonus">+2</value>
+            </row>
+            <row>
+              <value name="bribe_size">One month's pay for the target</value>
+              <value name="reaction_bonus">+3</value>
+            </row>
+          </table>
+        </derived_tables>
+        <limits>
+          <limit>Only one bribe can be attempted per target in any given situation.</limit>
+        </limits>
+      </ability>
+
+      <ability name="art_of_treachery" level="1">
+        <summary>Can turn successful negotiations into tactical surprise.</summary>
+        <triggers>
+          <trigger>The venturer uses diplomacy or bribery to successfully parley with an NPC or NPCs and achieves a Friendly result.</trigger>
+        </triggers>
+        <rules>
+          <rule>If he and his party immediately initiate combat thereafter, they gain a +3 bonus to surprise the NPCs.</rule>
+          <rule>To grant this bonus, the venturer must be able to secretly signal the party to attack or must have planned the treachery in advance.</rule>
+          <rule>This ability cannot be used if the opposing NPC side also has a venturer handling negotiation.</rule>
+        </rules>
+      </ability>
+
+      <ability name="steady_trade_route" level="2">
+        <summary>Creates guaranteed merchant contacts between visited markets.</summary>
+        <rules>
+          <rule>At 2nd level, the venturer may establish a steady trade route for transactions in any two types of merchandise between any two markets he has visited.</rule>
+          <rule>The two markets and the type of merchandise bought and sold at each are chosen when the trade route is established.</rule>
+          <rule>Whenever the venturer personally enters one of the route's markets, within 1d6 days he automatically has one merchant interested in buying the other market's merchandise and selling this market's merchandise.</rule>
+          <rule>This merchant buys and sells at the maximum volume permitted for the market class, modified by +1 market class as with mercantile network.</rule>
+          <rule>This merchant does not count against the number of merchants interested in doing business from the Markets and Merchants table.</rule>
+          <rule>Transactions occur at prevailing market price.</rule>
+          <rule>The venturer gains an additional steady trade route at 6th and 10th level.</rule>
+          <rule>The venturer may take the same trade route again to increase the number of transactions in that route.</rule>
+        </rules>
+      </ability>
+
+      <ability name="rumormongering" level="4">
+        <summary>Collects rumors from prior business contacts.</summary>
+        <rules>
+          <rule>Whenever he revisits an urban settlement where he has previously done business, he may automatically learn 1d4 interesting rumors from old contacts and commercial associates.</rule>
+          <rule>Rumormongering requires one day of major activity (6 hours) in the urban settlement.</rule>
+          <rule>A venturer can rumormonger in a given urban settlement only once per month.</rule>
+        </rules>
+      </ability>
+
+      <ability name="access_to_capital" level="8">
+        <summary>May borrow money from merchant guilds.</summary>
+        <rules>
+          <rule>The venturer can borrow money from the merchant guild at 3% interest per month without collateral, or 1% per month with collateral.</rule>
+          <rule>There is no total limit on how much can be borrowed, but each market has a limited pool of capital available each month.</rule>
+          <rule>If the venturer fails to pay interest each month, he becomes disreputable in that market.</rule>
+          <rule>While disreputable, he cannot use mercantile network or friendly merchant connections.</rule>
+          <rule>If unpaid interest accumulates so that the amount owed in gp exceeds the venturer's total XP, former business partners begin sending rival adventurers after him, with wages by level totaling the monthly interest payment.</rule>
+          <rule>A henchman will not use this ability on behalf of an employer, but a player character may use it on behalf of fellow party members.</rule>
+        </rules>
+      </ability>
+
+      <ability name="guildhouse" level="9">
+        <summary>May establish a guildhouse and attract apprentices.</summary>
+        <rules>
+          <rule>Upon reaching 9th level, the venturer can establish a guildhouse.</rule>
+          <rule>2d6 1st-level venturer apprentices will offer to work for him.</rule>
+          <rule>If hired, these followers must be paid standard rates for ruffians.</rule>
+          <rule>Except as noted, a venturer's guildhouse follows the rules for hideouts.</rule>
+        </rules>
+      </ability>
+
+      <ability name="monopoly_power" level="12">
+        <summary>May claim monopoly revenue from an urban settlement.</summary>
+        <rules>
+          <rule>A 12th-level venturer who has established a guildhouse in a settlement can seize monopoly power in that settlement.</rule>
+          <rule>Thereafter, he earns 1gp per month in monopoly revenue per urban family in the urban settlement.</rule>
+          <rule>He does not need to be the domain's ruler to earn this revenue.</rule>
+          <rule>If he is the domain's ruler, monopoly revenue is in addition to domain revenue.</rule>
+          <rule>Only one venturer in each urban settlement can earn monopoly revenue from each urban family.</rule>
+          <rule>If more than one venturer with this class power operates in the settlement, they must eliminate rivals or agree on how to distribute monopoly revenue among themselves.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Tinker</title>
+        <hit_dice>1d4</hit_dice>
+        <features_gained>
+          <feature_ref>mercantile_network</feature_ref>
+          <feature_ref>expert_bargainer</feature_ref>
+          <feature_ref>expert_traveler</feature_ref>
+          <feature_ref>avoid_getting_lost</feature_ref>
+          <feature_ref>diplomacy</feature_ref>
+          <feature_ref>bribery</feature_ref>
+          <feature_ref>bonus_languages</feature_ref>
+          <feature_ref>art_of_treachery</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="2">
+        <xp_required>1,250</xp_required>
+        <title>Trader</title>
+        <hit_dice>2d4</hit_dice>
+        <features_gained>
+          <feature_ref>steady_trade_route</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="3">
+        <xp_required>2,500</xp_required>
+        <title>Arbitrager</title>
+        <hit_dice>3d4</hit_dice>
+      </entry>
+      <entry level="4">
+        <xp_required>5,000</xp_required>
+        <title>Commissary</title>
+        <hit_dice>4d4</hit_dice>
+        <features_gained>
+          <feature_ref>rumormongering</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="5">
+        <xp_required>10,000</xp_required>
+        <title>Mercantilist</title>
+        <hit_dice>5d4</hit_dice>
+      </entry>
+      <entry level="6">
+        <xp_required>20,000</xp_required>
+        <title>Enterpriser</title>
+        <hit_dice>6d4</hit_dice>
+        <values>
+          <value name="steady_trade_routes">2</value>
+        </values>
+      </entry>
+      <entry level="7">
+        <xp_required>40,000</xp_required>
+        <title>Venturer</title>
+        <hit_dice>7d4</hit_dice>
+      </entry>
+      <entry level="8">
+        <xp_required>80,000</xp_required>
+        <title>Merchant Venturer</title>
+        <hit_dice>8d4</hit_dice>
+        <features_gained>
+          <feature_ref>access_to_capital</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="9">
+        <xp_required>180,000</xp_required>
+        <title>Merchant Prince</title>
+        <hit_dice>9d4</hit_dice>
+        <features_gained>
+          <feature_ref>guildhouse</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>280,000</xp_required>
+        <title>Merchant Prince, 10th level</title>
+        <hit_dice>9d4+2</hit_dice>
+        <values>
+          <value name="steady_trade_routes">3</value>
+        </values>
+      </entry>
+      <entry level="11">
+        <xp_required>380,000</xp_required>
+        <title>Merchant Prince, 11th level</title>
+        <hit_dice>9d4+4</hit_dice>
+      </entry>
+      <entry level="12">
+        <xp_required>480,000</xp_required>
+        <title>Merchant Prince, 12th level</title>
+        <hit_dice>9d4+6</hit_dice>
+        <features_gained>
+          <feature_ref>monopoly_power</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="13">
+        <xp_required>580,000</xp_required>
+        <title>Merchant Prince, 13th level</title>
+        <hit_dice>9d4+8</hit_dice>
+      </entry>
+      <entry level="14">
+        <xp_required>680,000</xp_required>
+        <title>Mogul</title>
+        <hit_dice>9d4+10</hit_dice>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1-2</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">13+</value>
+          <value name="poison_death">13+</value>
+          <value name="blast_breath">16+</value>
+          <value name="staffs_wands">14+</value>
+          <value name="spells">15+</value>
+        </row>
+        <row>
+          <value name="level_range">3-4</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">12+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">13+</value>
+          <value name="spells">14+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">11+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">12+</value>
+          <value name="spells">13+</value>
+        </row>
+        <row>
+          <value name="level_range">7-8</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">9-10</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">11-12</value>
+          <value name="attack_throw">5+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">13-14</value>
+          <value name="attack_throw">4+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">7+</value>
+          <value name="blast_breath">10+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">9+</value>
+        </row>
+      </table>
+
+      <table name="market_capital_per_month">
+        <columns>
+          <column>market_class</column>
+          <column>max_capital_per_month</column>
+        </columns>
+        <row>
+          <value name="market_class">I</value>
+          <value name="max_capital_per_month">100,000gp per 20,000 families</value>
+        </row>
+        <row>
+          <value name="market_class">II</value>
+          <value name="max_capital_per_month">25,000gp</value>
+        </row>
+        <row>
+          <value name="market_class">III</value>
+          <value name="max_capital_per_month">10,000gp</value>
+        </row>
+        <row>
+          <value name="market_class">IV</value>
+          <value name="max_capital_per_month">5,000gp</value>
+        </row>
+        <row>
+          <value name="market_class">V</value>
+          <value name="max_capital_per_month">2,000gp</value>
+        </row>
+        <row>
+          <value name="market_class">VI</value>
+          <value name="max_capital_per_month">1,000gp</value>
+        </row>
+      </table>
+
+      <table name="venturer_proficiency_list">
+        <columns>
+          <column>proficiency</column>
+        </columns>
+        <row><value name="proficiency">Alertness</value></row>
+        <row><value name="proficiency">Ambushing</value></row>
+        <row><value name="proficiency">Arcane Dabbling</value></row>
+        <row><value name="proficiency">Bargaining</value></row>
+        <row><value name="proficiency">Climbing</value></row>
+        <row><value name="proficiency">Combat Reflexes</value></row>
+        <row><value name="proficiency">Combat Trickery (disarm, incapacitate)</value></row>
+        <row><value name="proficiency">Command</value></row>
+        <row><value name="proficiency">Gambling</value></row>
+        <row><value name="proficiency">Intimidation</value></row>
+        <row><value name="proficiency">Language</value></row>
+        <row><value name="proficiency">Leadership</value></row>
+        <row><value name="proficiency">Lip Reading</value></row>
+        <row><value name="proficiency">Magical Engineering</value></row>
+        <row><value name="proficiency">Mapping</value></row>
+        <row><value name="proficiency">Mountaineering</value></row>
+        <row><value name="proficiency">Navigation</value></row>
+        <row><value name="proficiency">Passing Without Trace</value></row>
+        <row><value name="proficiency">Precise Shooting</value></row>
+        <row><value name="proficiency">Profession</value></row>
+        <row><value name="proficiency">Riding</value></row>
+        <row><value name="proficiency">Running</value></row>
+        <row><value name="proficiency">Seafaring</value></row>
+        <row><value name="proficiency">Signaling</value></row>
+        <row><value name="proficiency">Skirmishing</value></row>
+        <row><value name="proficiency">Swashbuckling</value></row>
+        <row><value name="proficiency">Weapon Finesse</value></row>
+      </table>
+      
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>guildhouse</structure_type>
+      <acquisition_rules>
+        <rule>At 9th level the venturer may establish a guildhouse.</rule>
+        <rule>Except as noted, the guildhouse follows hideout rules.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="venturer_apprentices" number="2d6 1st-level"/>
+      </followers>
+      <cost_rules>
+        <rule>If hired, apprentices must be paid standard rates for ruffians.</rule>
+      </cost_rules>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="thief"/>
+      <general_rule_reference type="reaction_rolls"/>
+      <general_rule_reference type="market_class"/>
+      <general_rule_reference type="mercantile_ventures"/>
+      <general_rule_reference type="hideouts"/>
+      <general_rule_reference type="starting_proficiencies"/>
+    </references>
+  </class>
+</class_catalog>

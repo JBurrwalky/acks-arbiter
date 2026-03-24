@@ -1,0 +1,860 @@
+<class_catalog title="111-ACKS Players Companion-Classes" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <class name="Anti-Paladin">
+    <identity>
+      <name>Anti-Paladin</name>
+      <ancestry_category default="human">human</ancestry_category>
+      <source_label>111-ACKS Players Companion-Classes.md</source_label>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>warrior</tag>
+        <tag>divine_champion</tag>
+        <tag>undead_commander</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>fighter_progression</tag>
+        <tag>fighter_magic_items</tag>
+        <tag>full_armor</tag>
+        <tag>aura_of_protection</tag>
+        <tag>detect_good</tag>
+        <tag>command_undead</tag>
+        <tag>stronghold</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>STR</ability>
+        <ability>CHA</ability>
+      </prime_requisites>
+      <minimum_abilities/>
+      <entry_restrictions>
+        <restriction type="requirements">none</restriction>
+        <restriction type="alignment">Must be Chaotic.</restriction>
+      </entry_restrictions>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>fighter</primary_progression_family>
+      <attack_throw_progression family="fighter"></attack_throw_progression>
+      <cleave_progression family="fighter"></cleave_progression>
+      <saving_throw_progression family="fighter"></saving_throw_progression>
+      <damage_bonus_progression family="fighter"></damage_bonus_progression>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d6</hit_die>
+      <maximum_level>14</maximum_level>
+      <baseline_title>Miscreant</baseline_title>
+      <post_max_hit_dice_rule>After 9d6 hit dice, gains +2 hit points per additional level; printed hit dice progression is 9d6+2*, 9d6+4*, 9d6+6*, 9d6+8*, 9d6+10*.</post_max_hit_dice_rule>
+      <general_notes>
+        <rule>At 1st level, hits AC 0 on 10+.</rule>
+        <rule>Attack throws and saving throws improve by 2 points every 3 levels.</rule>
+        <rule>Base damage from missile and melee attacks is +1 at 1st level and increases by an additional +1 at 3rd, 6th, 9th, and 12th level.</rule>
+      </general_notes>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>Any armor.</armor>
+        <shields>May use shields.</shields>
+        <weapons>
+          <rule>Permitted weapons: battle axe, dagger, flail, mace, morning star, pole arm, short sword, spear, sword, two-handed sword, whip.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>Permitted fighting styles: weapon and shield, two-handed weapon, two weapons.</rule>
+        </fighting_styles>
+      </permissions>
+      <restrictions>
+        <restriction>None beyond listed weapon permissions and Chaotic alignment requirement.</restriction>
+      </restrictions>
+      <combat_rules>
+        <rule>May use any magic item usable by fighters.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <class_subsystems>
+      <turning>
+        <definition>Undead command ability.</definition>
+        <rules>
+          <rule>Commands undead as a Chaotic cleric of half the anti-paladin's level, rounded up.</rule>
+        </rules>
+      </turning>
+
+      <custom_subsystem name="proficiency_access">
+        <definition>Class proficiency list.</definition>
+        <rules>
+          <rule>Available proficiencies: Alertness, Ambushing, Berserkergang, Blind Fighting, Combat Reflexes, Combat Trickery (force back, incapacitate, overrun, sunder), Command, Divine Blessing, Dungeon Bashing, Endurance, Fighting Style, Intimidation, Illusion Resistance, Kin-Slaying, Knowledge (history), Leadership, Manual of Arms, Martial Training, Military Strategy, Mystic Aura, Profession (torturer), Riding, Running, Theology, Weapon Focus.</rule>
+        </rules>
+      </custom_subsystem>
+    </class_subsystems>
+
+    <special_abilities>
+      <ability name="aura_of_protection" level="1">
+        <summary>Receives defensive bonuses against good creatures.</summary>
+        <rules>
+          <rule>Gains +1 bonus to AC against attacks made by good creatures.</rule>
+          <rule>Gains +1 bonus on saving throws against effects created by good creatures.</rule>
+          <rule>For the anti-paladin's aura and detection abilities, good creatures include creatures of Lawful alignment and Neutral creatures with good intentions.</rule>
+          <rule>Pinnacles of good and magic items harmful to creatures of Chaotic alignment are also detected by these powers.</rule>
+          <rule>The aura appears as a writhing tenebrous shroud when viewed with detect evil, detect magic, or true seeing.</rule>
+        </rules>
+      </ability>
+
+      <ability name="detect_good" level="1">
+        <summary>Can detect good by concentration.</summary>
+        <rules>
+          <rule>Can detect good as the reversed form of detect evil.</rule>
+          <rule>Range is up to 60'.</rule>
+          <rule>Each use requires concentration and takes 1 turn.</rule>
+        </rules>
+      </ability>
+
+      <ability name="alignment_betrayal_consequences" level="1">
+        <summary>Changing alignment causes loss of class powers.</summary>
+        <triggers>
+          <trigger>The anti-paladin changes alignment to Neutral or Lawful.</trigger>
+        </triggers>
+        <rules>
+          <rule>Loses class powers.</rule>
+          <rule>If later reverting to Chaotic alignment and atoning for misdeeds, possibly through a dire quest or an atonement spell, lost powers can be regained.</rule>
+          <rule>An anti-paladin who became Lawful may be permitted to become a paladin at the Judge's discretion.</rule>
+          <rule>A lawful turncoat anti-paladin will be hunted.</rule>
+        </rules>
+      </ability>
+
+      <ability name="death_knight_advancement" level="1">
+        <summary>Can continue class advancement after becoming intelligent undead.</summary>
+        <rules>
+          <rule>If the anti-paladin becomes intelligent undead, whether by patron reward or by personal effort, the anti-paladin can continue to advance in this class as per the Zaharan's after the flesh power.</rule>
+          <rule>Such undead anti-paladins are called Death Knights.</rule>
+        </rules>
+      </ability>
+
+      <ability name="unholy_fanaticism" level="5">
+        <summary>Improves morale of certain hirelings.</summary>
+        <rules>
+          <rule>Hirelings of the same religion as the anti-paladin gain +1 morale whenever the anti-paladin is present.</rule>
+          <rule>This bonus stacks with modifiers from Charisma or proficiencies.</rule>
+        </rules>
+      </ability>
+
+      <ability name="dark_fortress" level="9">
+        <summary>May establish a stronghold and attract followers.</summary>
+        <rules>
+          <rule>May found or capture a dark fortress.</rule>
+          <rule>The dark fortress is otherwise identical to a fighter's castle.</rule>
+        </rules>
+        <outcomes>
+          <outcome>When the fortress is established, up to 1d4+1x100 0th level mercenaries and 1d6 anti-paladins of 1st-3rd level come to apply for jobs and training.</outcome>
+          <outcome>If hired, these followers must be paid standard mercenary rates.</outcome>
+        </outcomes>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Miscreant</title>
+        <hit_dice>1d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+1</value>
+        </values>
+        <features_gained>
+          <feature_ref>aura_of_protection</feature_ref>
+          <feature_ref>detect_good</feature_ref>
+          <feature_ref>turning</feature_ref>
+          <feature_ref>alignment_betrayal_consequences</feature_ref>
+          <feature_ref>death_knight_advancement</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="2">
+        <xp_required>1,850</xp_required>
+        <title>Despoiler</title>
+        <hit_dice>2d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+1</value>
+        </values>
+      </entry>
+      <entry level="3">
+        <xp_required>3,700</xp_required>
+        <title>Avenger</title>
+        <hit_dice>3d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+      </entry>
+      <entry level="4">
+        <xp_required>7,400</xp_required>
+        <title>Defiler</title>
+        <hit_dice>4d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+      </entry>
+      <entry level="5">
+        <xp_required>14,800</xp_required>
+        <title>Blackguard</title>
+        <hit_dice>5d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+        <features_gained>
+          <feature_ref>unholy_fanaticism</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="6">
+        <xp_required>29,600</xp_required>
+        <title>Destroyer</title>
+        <hit_dice>6d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="7">
+        <xp_required>60,000</xp_required>
+        <title>Warduke</title>
+        <hit_dice>7d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="8">
+        <xp_required>120,000</xp_required>
+        <title>Malefactor</title>
+        <hit_dice>8d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="9">
+        <xp_required>240,000</xp_required>
+        <title>Malefactor Lord</title>
+        <hit_dice>9d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+        <features_gained>
+          <feature_ref>dark_fortress</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>360,000</xp_required>
+        <title>Malefactor Lord, 10th level</title>
+        <hit_dice>9d6+2*</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+      </entry>
+      <entry level="11">
+        <xp_required>480,000</xp_required>
+        <title>Malefactor Lord, 11th level</title>
+        <hit_dice>9d6+4*</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+      </entry>
+      <entry level="12">
+        <xp_required>600,000</xp_required>
+        <title>Malefactor Lord, 12th level</title>
+        <hit_dice>9d6+6*</hit_dice>
+        <values>
+          <value name="damage_bonus">+5</value>
+        </values>
+      </entry>
+      <entry level="13">
+        <xp_required>720,000</xp_required>
+        <title>Malefactor Lord, 13th level</title>
+        <hit_dice>9d6+8*</hit_dice>
+        <values>
+          <value name="damage_bonus">+5</value>
+        </values>
+      </entry>
+      <entry level="14">
+        <xp_required>840,000</xp_required>
+        <title>Dark Lord of Malefaction</title>
+        <hit_dice>9d6+10*</hit_dice>
+        <values>
+          <value name="damage_bonus">+5</value>
+        </values>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">15+</value>
+          <value name="poison_death">14+</value>
+          <value name="blast_breath">16+</value>
+          <value name="staffs_wands">16+</value>
+          <value name="spells">17+</value>
+        </row>
+        <row>
+          <value name="level_range">2-3</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">14+</value>
+          <value name="poison_death">13+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">15+</value>
+          <value name="spells">16+</value>
+        </row>
+        <row>
+          <value name="level_range">4</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">13+</value>
+          <value name="poison_death">12+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">14+</value>
+          <value name="spells">15+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">11+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">13+</value>
+          <value name="spells">14+</value>
+        </row>
+        <row>
+          <value name="level_range">7</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">12+</value>
+          <value name="spells">13+</value>
+        </row>
+        <row>
+          <value name="level_range">8-9</value>
+          <value name="attack_throw">5+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">10</value>
+          <value name="attack_throw">4+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">10+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">11-12</value>
+          <value name="attack_throw">3+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">7+</value>
+          <value name="blast_breath">9+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">13</value>
+          <value name="attack_throw">2+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">6+</value>
+          <value name="blast_breath">8+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">9+</value>
+        </row>
+        <row>
+          <value name="level_range">14</value>
+          <value name="attack_throw">1+</value>
+          <value name="petrification_paralysis">6+</value>
+          <value name="poison_death">5+</value>
+          <value name="blast_breath">7+</value>
+          <value name="staffs_wands">7+</value>
+          <value name="spells">8+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>dark fortress</structure_type>
+      <acquisition_rules>
+        <rule>May found or capture a dark fortress.</rule>
+        <rule>The dark fortress is otherwise identical to a fighter's castle.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="mercenaries_0th_level" number="1d4+1x100"></follower>
+        <follower type="anti_paladins_1st_3rd_level" number="1d6"></follower>
+      </followers>
+      <cost_rules>
+        <rule>If hired, followers must be paid standard mercenary rates.</rule>
+      </cost_rules>
+      <loyalty_or_morale_rules>
+        <rule>At 5th level, hirelings of the same religion gain +1 morale whenever the anti-paladin is present; this stacks with Charisma and proficiency modifiers.</rule>
+      </loyalty_or_morale_rules>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="fighter"></progression_reference>
+      <general_rule_reference type="turning_undead"></general_rule_reference>
+      <general_rule_reference type="fighter_magic_items"></general_rule_reference>
+      <general_rule_reference type="fighter_castle"></general_rule_reference>
+      <general_rule_reference type="detect_evil_reversed_form"></general_rule_reference>
+      <general_rule_reference type="zaharan_after_the_flesh"></general_rule_reference>
+    </references>
+  </class>
+
+  <class name="Barbarian">
+    <identity>
+      <name>Barbarian</name>
+      <ancestry_category default="human">human</ancestry_category>
+      <source_label>111-ACKS Players Companion-Classes.md</source_label>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>warrior</tag>
+        <tag>raider</tag>
+        <tag>regional_specialist</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>fighter_progression</tag>
+        <tag>fighter_magic_items</tag>
+        <tag>damage_specialization</tag>
+        <tag>initiative_bonus</tag>
+        <tag>surprise_bonus</tag>
+        <tag>stealth_bonus</tag>
+        <tag>mortal_wounds_resilience</tag>
+        <tag>stronghold</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>STR</ability>
+        <ability>CON</ability>
+      </prime_requisites>
+      <minimum_abilities/>
+      <entry_restrictions>
+        <restriction type="requirements">none</restriction>
+      </entry_restrictions>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>fighter</primary_progression_family>
+      <attack_throw_progression family="fighter"></attack_throw_progression>
+      <cleave_progression family="fighter"></cleave_progression>
+      <saving_throw_progression family="fighter"></saving_throw_progression>
+      <damage_bonus_progression family="fighter"></damage_bonus_progression>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d8</hit_die>
+      <maximum_level>14</maximum_level>
+      <baseline_title>Hunter</baseline_title>
+      <post_max_hit_dice_rule>After 9d8 hit dice, gains +2 hit points per additional level; printed hit dice progression is 9d8+2*, 9d8+4*, 9d8+6*, 9d8+8*, 9d8+10*.</post_max_hit_dice_rule>
+      <general_notes>
+        <rule>At 1st level, hits AC 0 on 10+.</rule>
+        <rule>Attack throws and saving throws improve by 2 points every 3 levels.</rule>
+        <rule>Base damage bonus progression is +1 at 1st level and increases by an additional +1 at 3rd, 6th, 9th, and 12th level.</rule>
+      </general_notes>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>Chain mail or lighter armor.</armor>
+        <shields>May use shields when permitted by selected fighting style.</shields>
+        <weapons>
+          <rule>Permitted weapons are determined by selected regional origin.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>Permitted fighting styles are determined by selected regional origin.</rule>
+        </fighting_styles>
+      </permissions>
+      <restrictions>
+        <restriction>Limited to the traditional weapons and fighting styles of the selected tribe or region of origin.</restriction>
+      </restrictions>
+      <combat_rules>
+        <rule>At 1st level, choose either melee attacks or missile attacks for the class damage bonus progression.</rule>
+        <rule>The chosen attack type receives the barbarian's class damage bonus at all levels.</rule>
+        <rule>The choice cannot be changed after character creation.</rule>
+        <rule>May use magic items usable by fighters.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <class_subsystems>
+      <custom_subsystem name="regional_origin">
+        <definition>Each barbarian selects a regional origin at character creation which determines permitted weapons, permitted fighting styles, and a bonus natural proficiency.</definition>
+        <rules>
+          <rule>At character creation, select a region of origin from the regional origin table and record the permitted weapons and fighting styles.</rule>
+          <rule>The listed natural proficiency is a bonus proficiency and does not count against the barbarian's normal selections.</rule>
+          <rule>The Judge may create additional regions of origin and corresponding natural proficiencies for the campaign setting.</rule>
+        </rules>
+        <procedure>
+          <step order="1">Choose a region of origin when the barbarian is created.</step>
+          <step order="2">Record the weapons permitted by that region.</step>
+          <step order="3">Record the fighting styles permitted by that region.</step>
+          <step order="4">Gain the listed natural proficiency as a bonus proficiency.</step>
+        </procedure>
+        <tables>
+          <table name="regional_origin">
+            <columns>
+              <column>region</column>
+              <column>natural_proficiency</column>
+              <column>weapons_permitted</column>
+              <column>fighting_styles_permitted</column>
+            </columns>
+            <row>
+              <value name="region">Jutland</value>
+              <value name="natural_proficiency">Climbing</value>
+              <value name="weapons_permitted">Battle axe, club, dagger, great axe, hand axe, shortbow, spear, sword, two-handed sword, war hammer</value>
+              <value name="fighting_styles_permitted">Weapon &amp; shield, two-handed weapon</value>
+            </row>
+            <row>
+              <value name="region">Skysostan</value>
+              <value name="natural_proficiency">Precise Shooting</value>
+              <value name="weapons_permitted">Composite bow, dagger, hand axe, javelin, lance, net, sling, short sword (scimitar), spear, whip</value>
+              <value name="fighting_styles_permitted">Weapon &amp; shield, two weapons</value>
+            </row>
+            <row>
+              <value name="region">Ivory Kingdoms</value>
+              <value name="natural_proficiency">Running</value>
+              <value name="weapons_permitted">Bola, club, dart, dagger, hand axe, javelin, net, shortbow, short sword, spear</value>
+              <value name="fighting_styles_permitted">Weapon &amp; shield, two weapons</value>
+            </row>
+          </table>
+        </tables>
+      </custom_subsystem>
+
+      <custom_subsystem name="proficiency_access">
+        <definition>Class proficiency list.</definition>
+        <rules>
+          <rule>Available proficiencies: Alertness, Ambushing, Armor Training, Beast Friendship, Berserkergang, Blind Fighting, Climbing, Combat Reflexes, Combat Trickery (force back, knock down, overrun, wrestling), Command, Endurance, Fighting Style, Martial Training, Mountaineering, Passing Without Trace, Precise Shooting, Riding, Running, Seafaring, Skirmishing, Sniping, Survival, Swashbuckling, Weapon Finesse, Weapon Focus.</rule>
+        </rules>
+      </custom_subsystem>
+    </class_subsystems>
+
+    <special_abilities>
+      <ability name="damage_specialization_choice" level="1">
+        <summary>Class damage bonus applies to either melee or missile attacks, chosen at 1st level.</summary>
+        <rules>
+          <rule>Choose melee attacks or missile attacks at 1st level.</rule>
+          <rule>The class damage bonus applies only to the chosen attack type.</rule>
+          <rule>The choice cannot be changed as the barbarian advances.</rule>
+        </rules>
+      </ability>
+
+      <ability name="animal_reflexes" level="1">
+        <summary>Improves initiative and surprise.</summary>
+        <rules>
+          <rule>Gains +1 bonus to initiative.</rule>
+          <rule>Gains +1 bonus to surprise rolls.</rule>
+        </rules>
+      </ability>
+
+      <ability name="natural_stealth" level="1">
+        <summary>Harder to surprise and easier to ambush with.</summary>
+        <rules>
+          <rule>Opponents suffer a -1 penalty to surprise rolls when encountering the barbarian.</rule>
+        </rules>
+      </ability>
+
+      <ability name="savage_resilience" level="1">
+        <summary>Improves Mortal Wounds outcomes and recovery time.</summary>
+        <rules>
+          <rule>Whenever required to consult the Mortal Wounds table, the player rolls twice and chooses the preferred result.</rule>
+          <rule>Subtract class level from the number of days of bed rest required to recover.</rule>
+        </rules>
+      </ability>
+
+      <ability name="animal_magnetism" level="5">
+        <summary>Improves morale of followers when personally led.</summary>
+        <rules>
+          <rule>Henchmen and mercenaries hired by the barbarian gain +1 morale whenever the barbarian personally leads them.</rule>
+          <rule>This bonus stacks with modifiers from Charisma or proficiencies.</rule>
+        </rules>
+      </ability>
+
+      <ability name="chieftains_hall" level="9">
+        <summary>May establish a hall and attract followers.</summary>
+        <rules>
+          <rule>May build or claim a chieftain's hall.</rule>
+          <rule>The hall is otherwise identical to a fighter's castle.</rule>
+        </rules>
+        <outcomes>
+          <outcome>When the hall is established, 1d4+1x100 0th level mercenaries join service.</outcome>
+          <outcome>When the hall is established, 1d6 barbarians of 1st-3rd level seeking plunder join service.</outcome>
+          <outcome>If hired, these followers must be paid standard rates for mercenaries.</outcome>
+        </outcomes>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Hunter</title>
+        <hit_dice>1d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+1</value>
+        </values>
+        <features_gained>
+          <feature_ref>regional_origin</feature_ref>
+          <feature_ref>damage_specialization_choice</feature_ref>
+          <feature_ref>animal_reflexes</feature_ref>
+          <feature_ref>natural_stealth</feature_ref>
+          <feature_ref>savage_resilience</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="2">
+        <xp_required>2,600</xp_required>
+        <title>Raider</title>
+        <hit_dice>2d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+1</value>
+        </values>
+      </entry>
+      <entry level="3">
+        <xp_required>5,200</xp_required>
+        <title>Marauder</title>
+        <hit_dice>3d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+      </entry>
+      <entry level="4">
+        <xp_required>10,400</xp_required>
+        <title>Plunderer</title>
+        <hit_dice>4d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+      </entry>
+      <entry level="5">
+        <xp_required>20,800</xp_required>
+        <title>Reaver</title>
+        <hit_dice>5d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+        <features_gained>
+          <feature_ref>animal_magnetism</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="6">
+        <xp_required>41,600</xp_required>
+        <title>Bloodletter</title>
+        <hit_dice>6d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="7">
+        <xp_required>85,000</xp_required>
+        <title>Menace</title>
+        <hit_dice>7d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="8">
+        <xp_required>170,000</xp_required>
+        <title>Scourge</title>
+        <hit_dice>8d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="9">
+        <xp_required>290,000</xp_required>
+        <title>Warchief</title>
+        <hit_dice>9d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+        <features_gained>
+          <feature_ref>chieftains_hall</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>410,000</xp_required>
+        <title>Warchief, 10th level</title>
+        <hit_dice>9d8+2*</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+      </entry>
+      <entry level="11">
+        <xp_required>530,000</xp_required>
+        <title>Warchief, 11th level</title>
+        <hit_dice>9d8+4*</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+      </entry>
+      <entry level="12">
+        <xp_required>650,000</xp_required>
+        <title>Warchief, 12th level</title>
+        <hit_dice>9d8+6*</hit_dice>
+        <values>
+          <value name="damage_bonus">+5</value>
+        </values>
+      </entry>
+      <entry level="13">
+        <xp_required>770,000</xp_required>
+        <title>Warchief, 13th level</title>
+        <hit_dice>9d8+8*</hit_dice>
+        <values>
+          <value name="damage_bonus">+5</value>
+        </values>
+      </entry>
+      <entry level="14">
+        <xp_required>890,000</xp_required>
+        <title>Great Chieftain</title>
+        <hit_dice>9d8+10*</hit_dice>
+        <values>
+          <value name="damage_bonus">+5</value>
+        </values>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">15+</value>
+          <value name="poison_death">14+</value>
+          <value name="blast_breath">16+</value>
+          <value name="staffs_wands">16+</value>
+          <value name="spells">17+</value>
+        </row>
+        <row>
+          <value name="level_range">2-3</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">14+</value>
+          <value name="poison_death">13+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">15+</value>
+          <value name="spells">16+</value>
+        </row>
+        <row>
+          <value name="level_range">4</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">13+</value>
+          <value name="poison_death">12+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">14+</value>
+          <value name="spells">15+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">11+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">13+</value>
+          <value name="spells">14+</value>
+        </row>
+        <row>
+          <value name="level_range">7</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">12+</value>
+          <value name="spells">13+</value>
+        </row>
+        <row>
+          <value name="level_range">8-9</value>
+          <value name="attack_throw">5+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">10</value>
+          <value name="attack_throw">4+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">10+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">11-12</value>
+          <value name="attack_throw">3+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">7+</value>
+          <value name="blast_breath">9+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">13</value>
+          <value name="attack_throw">2+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">6+</value>
+          <value name="blast_breath">8+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">9+</value>
+        </row>
+        <row>
+          <value name="level_range">14</value>
+          <value name="attack_throw">1+</value>
+          <value name="petrification_paralysis">6+</value>
+          <value name="poison_death">5+</value>
+          <value name="blast_breath">7+</value>
+          <value name="staffs_wands">7+</value>
+          <value name="spells">8+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>chieftain's hall</structure_type>
+      <acquisition_rules>
+        <rule>May build or claim a chieftain's hall.</rule>
+        <rule>The hall is otherwise identical to a fighter's castle.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="mercenaries_0th_level" number="1d4+1x100"></follower>
+        <follower type="barbarians_1st_3rd_level" number="1d6"></follower>
+      </followers>
+      <cost_rules>
+        <rule>If hired, followers must be paid standard rates for mercenaries.</rule>
+      </cost_rules>
+      <loyalty_or_morale_rules>
+        <rule>At 5th level, henchmen and mercenaries hired by the barbarian gain +1 morale whenever the barbarian personally leads them; this stacks with Charisma and proficiency modifiers.</rule>
+      </loyalty_or_morale_rules>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="fighter"></progression_reference>
+      <general_rule_reference type="fighter_magic_items"></general_rule_reference>
+      <general_rule_reference type="fighter_castle"></general_rule_reference>
+      <general_rule_reference type="mortal_wounds_table"></general_rule_reference>
+    </references>
+  </class>
+</class_catalog>

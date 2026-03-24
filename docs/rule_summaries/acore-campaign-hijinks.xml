@@ -1,0 +1,1093 @@
+<acks_campaigns_hijinks>
+  <section id="hideouts_and_hijinks">
+    <title>Hideouts and Hijinks</title>
+
+    <hideouts>
+      <definition>
+        <term>Hideout</term>
+        <text>A secret stronghold that may be built by assassins, elven nightblades, and thieves.</text>
+      </definition>
+      <properties>
+        <property>Hideouts do not secure domains.</property>
+        <property>Hideouts do not attract peasant families.</property>
+        <property>Hideouts must be built within 6 miles of an urban settlement.</property>
+        <property>The nearby urban settlement becomes the syndicate's base of operations.</property>
+      </properties>
+
+      <syndicate_creation>
+        <rule>When an adventurer establishes a hideout, he becomes boss of a syndicate of 2d6 1st level followers of his own class.</rule>
+        <rule>Each time the adventurer gains a level thereafter, he attracts an additional 1d6 1st level followers.</rule>
+        <rule>All followers must be paid standard rates for ruffians.</rule>
+        <rule>The syndicate boss may also hire ruffians to increase syndicate size.</rule>
+      </syndicate_creation>
+
+      <syndicate_size_rules>
+        <rule>The market class of the urban settlement determines the maximum syndicate membership the base of operations can sustain.</rule>
+        <rule>To reach the settlement’s maximum syndicate size, the boss must also construct a hideout of sufficient value.</rule>
+        <rule>If the hideout value exceeds what the market can sustain, the market’s limit still applies.</rule>
+      </syndicate_size_rules>
+
+      <table id="hideout_size_and_cost">
+        <title>Hideout Size and Cost</title>
+        <columns>
+          <column>Market Class</column>
+          <column>Maximum Syndicate Membership</column>
+          <column>Minimum Hideout Value (gp)</column>
+        </columns>
+        <rows>
+          <row><cell>Class VI</cell><cell>25</cell><cell>5,000</cell></row>
+          <row><cell>Class V</cell><cell>50</cell><cell>10,000</cell></row>
+          <row><cell>Class IV</cell><cell>100</cell><cell>20,000</cell></row>
+          <row><cell>Class III</cell><cell>375</cell><cell>75,000</cell></row>
+          <row><cell>Class II</cell><cell>750</cell><cell>150,000</cell></row>
+          <row><cell>Class I</cell><cell>3,000</cell><cell>600,000</cell></row>
+        </rows>
+      </table>
+    </hideouts>
+
+    <hijinks>
+      <definition>
+        <term>Hijink</term>
+        <text>A monthly criminal operation assigned to a paid syndicate member, eligible henchman, or ruffian operating within the syndicate’s base of operations.</text>
+      </definition>
+
+      <general_rules>
+        <rule>Once an adventurer has established a syndicate, its members can be assigned hijinks.</rule>
+        <rule>Eligible henchmen of appropriate class (assassin, elven nightblade, or thief) may also be assigned hijinks.</rule>
+        <rule>Each month, each follower, henchman, or ruffian on the boss’s payroll may be assigned one hijink.</rule>
+        <rule>The boss receives the benefit of successful hijinks ordered by him.</rule>
+      </general_rules>
+
+      <table id="hijink_summary">
+        <title>Hijink Summary</title>
+        <columns>
+          <column>Hijink</column>
+          <column>Requirement</column>
+          <column>Successful Outcome</column>
+        </columns>
+        <rows>
+          <row>
+            <cell>Assassinating</cell>
+            <cell>Hide in Shadows</cell>
+            <cell>Victim dies; bounty of 1,000gp per level of victim to boss</cell>
+          </row>
+          <row>
+            <cell>Carousing</cell>
+            <cell>Hear Noise</cell>
+            <cell>Learn one rumor worth 3d12x5gp per level of perpetrator to boss</cell>
+          </row>
+          <row>
+            <cell>Smuggling</cell>
+            <cell>Move Silently</cell>
+            <cell>Smuggle 10 loads per level of perpetrator; payout 12% of value of goods to boss</cell>
+          </row>
+          <row>
+            <cell>Spying</cell>
+            <cell>Hide in Shadows</cell>
+            <cell>Learn one secret worth 2d12x100gp per level of perpetrator to boss</cell>
+          </row>
+          <row>
+            <cell>Stealing</cell>
+            <cell>Pick Pockets</cell>
+            <cell>Steal 2 loads per level of perpetrator; payout 60% of value of goods to boss</cell>
+          </row>
+          <row>
+            <cell>Treasure Hunting</cell>
+            <cell>Find Traps</cell>
+            <cell>Find treasure map to hoard worth 1d6x1,000gp per level of perpetrator to boss</cell>
+          </row>
+        </rows>
+      </table>
+
+      <hijink id="assassinating">
+        <eligibility>Only assassins and elven nightblades may be assigned assassination hijinks.</eligibility>
+        <scope>Assassination hijinks target unsuspecting NPC victims only. Assassinating a PC or suspicious NPC is an adventure, not a hijink.</scope>
+        <targeting>
+          <rule>The adventurer may assign an assassination against a particular target for personal reasons.</rule>
+          <rule>Otherwise, the target is a murder-for-hire victim within 1d2 levels of the perpetrator’s level.</rule>
+        </targeting>
+        <success_procedure>
+          <step>Make a Hide in Shadows throw.</step>
+          <step>Apply a -1 penalty per level by which the perpetrator is lower than the victim.</step>
+          <step>If successful, the victim dies.</step>
+          <step>If the assassination was for hire, the boss receives a bounty of 1,000gp per level of the victim.</step>
+          <step>If the assassination was ordered for the boss’s personal reasons, no bounty is generated.</step>
+          <step>0th level victims count as 1/2 level for bounty purposes, yielding 500gp.</step>
+        </success_procedure>
+        <failure>
+          <rule>If the proficiency throw fails, the assassination fails.</rule>
+          <rule>If the throw fails by 14 or more, or on an unmodified 1, the perpetrator is caught.</rule>
+          <charges_on_capture>
+            <roll die="1d6">
+              <result range="1-3">Assault</result>
+              <result range="4-5">Mayhem</result>
+              <result range="6">Murder</result>
+            </roll>
+          </charges_on_capture>
+        </failure>
+      </hijink>
+
+      <hijink id="carousing">
+        <eligibility>Any character, including 0th level characters, may be assigned to carousing.</eligibility>
+        <best_users>Thieves and characters with Eavesdropping proficiency are especially effective.</best_users>
+        <success_procedure>
+          <step>Make a Hear Noise throw.</step>
+          <step>If successful, the perpetrator learns one valuable rumor appropriate to the location.</step>
+          <step>The boss earns 3d12x5gp per level of the perpetrator by exploiting the rumor.</step>
+          <step>The Judge may provide a campaign-relevant valuable rumor instead of money.</step>
+        </success_procedure>
+        <failure>
+          <rule>If the throw fails, the perpetrator learns nothing.</rule>
+          <rule>If the throw fails by 14 or more, or on an unmodified 1, the perpetrator is caught.</rule>
+          <charges_on_capture>
+            <roll die="1d6">
+              <result range="1-3">Drunkenness</result>
+              <result range="4-5">Gambling</result>
+              <result range="6">Vandalism</result>
+            </roll>
+          </charges_on_capture>
+        </failure>
+      </hijink>
+
+      <hijink id="smuggling">
+        <eligibility>Only thieves may be assigned smuggling hijinks.</eligibility>
+        <success_procedure>
+          <step>Make a Move Silently throw.</step>
+          <step>If successful, the perpetrator smuggles 10 loads of merchandise per class level.</step>
+          <step>Determine the merchandise type by random roll on the Common Merchandise table.</step>
+          <step>The perpetrator may attempt extra loads by taking a -1 penalty on the proficiency throw per additional 10 loads.</step>
+          <step>If successful, the boss receives 12% of the market value of the smuggled merchandise.</step>
+        </success_procedure>
+        <failure>
+          <rule>If the throw fails, the perpetrator was unable to move the merchandise.</rule>
+          <rule>If the throw fails by 14 or more, or on an unmodified 1, the perpetrator is caught and the merchandise is confiscated.</rule>
+          <charges_on_capture>
+            <roll die="1d6">
+              <result range="1-3">Contraband</result>
+              <result range="4-5">Smuggling</result>
+              <result range="6">Racketeering</result>
+            </roll>
+          </charges_on_capture>
+        </failure>
+      </hijink>
+
+      <hijink id="spying">
+        <eligibility>Assassins, elven nightblades, and thieves may be assigned spying hijinks.</eligibility>
+        <success_procedure>
+          <step>Make a Hide in Shadows throw.</step>
+          <step>If successful, the perpetrator learns advance intelligence, secret facts, or other valuable information from the area of operation.</step>
+          <step>The boss earns 2d12x100gp per level of the perpetrator by exploiting the secret.</step>
+          <step>The Judge may provide a campaign-relevant secret instead of money.</step>
+        </success_procedure>
+        <failure>
+          <rule>If the throw fails, the perpetrator learns nothing.</rule>
+          <rule>If the throw fails by 14 or more, or on an unmodified 1, the perpetrator is caught.</rule>
+          <charges_on_capture>
+            <roll die="1d6">
+              <result range="1-3">Eavesdropping</result>
+              <result range="4-5">Sedition</result>
+              <result range="6">Treason</result>
+            </roll>
+          </charges_on_capture>
+        </failure>
+      </hijink>
+
+      <hijink id="stealing">
+        <eligibility>Only thieves may be assigned stealing hijinks.</eligibility>
+        <success_procedure>
+          <step>Make a Pick Pockets throw.</step>
+          <step>If successful, the perpetrator steals 2 loads of merchandise per class level.</step>
+          <step>Determine merchandise type by random roll on the Common Merchandise table.</step>
+          <step>The perpetrator may attempt to steal a particular type of merchandise by taking a -4 penalty on the proficiency throw.</step>
+          <step>The perpetrator may attempt extra loads by taking a -1 penalty on the proficiency throw per extra load.</step>
+          <step>If successful, the boss receives 60% of the market value of the stolen merchandise.</step>
+        </success_procedure>
+        <failure>
+          <rule>If the throw fails, nothing is stolen.</rule>
+          <rule>If the throw fails by 14 or more, or on an unmodified 1, the perpetrator is caught.</rule>
+          <charges_on_capture>
+            <roll die="1d6">
+              <result range="1-3">Theft</result>
+              <result range="4-5">Burglary</result>
+              <result range="6">Robbery</result>
+            </roll>
+          </charges_on_capture>
+        </failure>
+      </hijink>
+
+      <hijink id="treasure_hunting">
+        <eligibility>Only thieves may be assigned treasure-hunting hijinks.</eligibility>
+        <success_procedure>
+          <step>Make a Find Traps throw.</step>
+          <step>If successful, the perpetrator finds a treasure map to a random hoard worth 1d6x1,000gp per level of the perpetrator.</step>
+          <step>The Judge determines the exact location of the hoard.</step>
+          <step>Hoards are generally located 6 miles from the boss’s hideout for each 1,000gp of hoard value.</step>
+        </success_procedure>
+        <failure>
+          <rule>If the throw fails, nothing is found.</rule>
+          <rule>If the throw fails by 14 or more, or on an unmodified 1, the perpetrator is caught.</rule>
+          <charges_on_capture>
+            <roll die="1d6">
+              <result range="1-3">Trespassing</result>
+              <result range="4-5">Theft</result>
+              <result range="6">Burglary</result>
+            </roll>
+          </charges_on_capture>
+        </failure>
+      </hijink>
+    </hijinks>
+
+    <getting_caught>
+      <trigger>A perpetrator is caught whenever the hijink proficiency throw fails by 14 or more, or on an unmodified 1.</trigger>
+      <consequence>Any caught perpetrator is subject to legal penalties for the crime.</consequence>
+      <adjudication>The Judge may determine punishments directly or use the Crime and Punishment procedure.</adjudication>
+
+      <table id="crime_and_punishment">
+        <title>Crime and Punishment</title>
+        <columns>
+          <column>Adjusted Die Roll</column>
+          <column>Result</column>
+        </columns>
+        <rows>
+          <row><cell>2-</cell><cell>Punitive Conviction</cell></row>
+          <row><cell>3-5</cell><cell>Conviction</cell></row>
+          <row><cell>6-8</cell><cell>Conviction on Lesser Charge</cell></row>
+          <row><cell>9-11</cell><cell>Acquittal</cell></row>
+          <row><cell>12+</cell><cell>Acquittal with Damages</cell></row>
+        </rows>
+      </table>
+
+      <crime_and_punishment_procedure>
+        <step>Roll 2d6.</step>
+        <step>Add the perpetrator’s Charisma modifier.</step>
+        <step>Add any relevant proficiency modifiers, such as Diplomacy, Mystic Aura, or Seduction.</step>
+        <step>Apply any applicable modifiers from attorney, bribery, evidence, interpleader, prior crimes, and severity of crime.</step>
+        <step>Consult the Crime and Punishment table.</step>
+      </crime_and_punishment_procedure>
+
+      <modifiers>
+        <attorney>
+          <rule>Add the perpetrator’s rank in Profession (attorney), if any.</rule>
+          <rule>If the perpetrator lacks the proficiency, the syndicate may hire an attorney.</rule>
+          <costs>
+            <cost rank="1">25gp</cost>
+            <cost rank="2">50gp</cost>
+            <cost rank="3">100gp</cost>
+          </costs>
+        </attorney>
+
+        <bribery>
+          <rule>If the syndicate has a member with Bribery proficiency, it may attempt to corrupt the courts.</rule>
+          <costs>
+            <bribe bonus="+1">50gp</bribe>
+            <bribe bonus="+2">350gp</bribe>
+            <bribe bonus="+3">1,500gp</bribe>
+          </costs>
+        </bribery>
+
+        <evidence>
+          <rule>Roll 1d4 for favorable evidence.</rule>
+          <rule>Roll 1d8 for unfavorable evidence penalty.</rule>
+        </evidence>
+
+        <interpleader>
+          <rule>If the syndicate has ties with a domain ruler, the ruler may plead on the perpetrator’s behalf.</rule>
+          <rule>Add the domain ruler’s Charisma modifier.</rule>
+          <rule>Add an additional +2 if the interpleader has Diplomacy, Intimidation, or Mystic Aura.</rule>
+          <rule>If that ruler controls the domain where the crime occurred, he may free the perpetrator without trial.</rule>
+        </interpleader>
+
+        <prior_crimes>
+          <modifier condition="Branded">-1</modifier>
+          <modifier condition="Maimed (loss of tongue or hands)">-2</modifier>
+          <modifier condition="Proscribed">-3</modifier>
+        </prior_crimes>
+
+        <severity_of_crime>
+          <band penalty="0">Breach of peace, drunkenness, outrage of decency</band>
+          <band penalty="-1">Eavesdropping, gambling, trespassing</band>
+          <band penalty="-2">Assault, bribery, contraband extortion, theft, vandalism</band>
+          <band penalty="-3">Battery, burglary, kidnapping, rioting, smuggling</band>
+          <band penalty="-4">Manslaughter, mayhem, racketeering, rape, robbery, sedition</band>
+          <band penalty="-5">Arson, desertion, murder, piracy</band>
+          <band penalty="-6">Heresy, high treason, regicide</band>
+        </severity_of_crime>
+      </modifiers>
+
+      <result_definitions>
+        <result name="Punitive Conviction">The perpetrator is made an example of and punished out of proportion to the charge.</result>
+        <result name="Conviction">The perpetrator is found guilty and punished appropriately.</result>
+        <result name="Conviction on Lesser Charge">The perpetrator is found guilty, but punished less severely.</result>
+        <result name="Acquittal">The perpetrator is found innocent.</result>
+        <result name="Acquittal with Damages">The perpetrator is found innocent and awarded monetary damages equal to the fine that would have applied.</result>
+      </result_definitions>
+
+      <table id="retribution_by_crime">
+        <title>Retribution by Crime</title>
+        <columns>
+          <column>Crime</column>
+          <column>Punitive Punishment</column>
+          <column>Standard Punishment</column>
+          <column>Lesser Punishment</column>
+        </columns>
+        <rows>
+          <row>
+            <cell>Drunkenness, Outrage</cell>
+            <cell>Fine 5gp</cell>
+            <cell>Fine 2gp</cell>
+            <cell>Fine 1gp</cell>
+          </row>
+          <row>
+            <cell>Eavesdropping</cell>
+            <cell>Ear cut off (-1 reaction rolls, -1 hear noise, -1 surprise rolls) and fine 25gp</cell>
+            <cell>Fine 10gp</cell>
+            <cell>Fine 5gp</cell>
+          </row>
+          <row>
+            <cell>Trespassing, Gambling</cell>
+            <cell>Stocks 2d6 days; save vs Death or lose 1d6 teeth, -2 reaction rolls; fine 50gp</cell>
+            <cell>Fine 25gp</cell>
+            <cell>Fine 10gp</cell>
+          </row>
+          <row>
+            <cell>Bribery</cell>
+            <cell>Tongue cut off (cannot speak, cast spells, use magic items, or use speech-based proficiencies; -4 to rolls) and fine 150gp</cell>
+            <cell>Stocks 2d6 days; save vs Death or lose 1d6 teeth, -2 reaction rolls; fine 50gp</cell>
+            <cell>Fine 25gp</cell>
+          </row>
+          <row>
+            <cell>Theft, Contraband</cell>
+            <cell>Hand amputated (cannot dual wield or use two-handed weapons) and fine 450gp</cell>
+            <cell>Whipped; save vs Death or permanent scarring, -2 reaction rolls; fine 300gp</cell>
+            <cell>Stocks 2d6 days and fine 150gp</cell>
+          </row>
+          <row>
+            <cell>Assault, Vandalism</cell>
+            <cell>Tortured; save vs Death or permanent wound from Mortal Wounds table rows 11-15; fine 600gp</cell>
+            <cell>Whipped; save vs Death or permanent scarring, -2 reaction rolls; fine 450gp</cell>
+            <cell>Whipped; save vs Death or permanent scarring, -2 reaction rolls; fine 300gp</cell>
+          </row>
+          <row>
+            <cell>Burglary, Smuggling</cell>
+            <cell>Both hands amputated (cannot climb, use weapons/items, open locks, remove traps, or perform similar actions) and fine 900gp</cell>
+            <cell>Branded (-2 reaction rolls) and fine 600gp</cell>
+            <cell>Whipped and fine 450gp</cell>
+          </row>
+          <row>
+            <cell>Kidnapping, Manslaughter, Mayhem</cell>
+            <cell>Tortured and proscribed (lose all property and rights; permanently exiled)</cell>
+            <cell>Tortured; save vs Death or permanent wound from Mortal Wounds table rows 11-15; fine 750gp</cell>
+            <cell>Whipped and fine 600gp</cell>
+          </row>
+          <row>
+            <cell>Robbery, Racketeering</cell>
+            <cell>Execution (beheaded or hung) and fine 1,200gp</cell>
+            <cell>Hand amputated (cannot dual wield or use two-handed weapons) and fine 900gp</cell>
+            <cell>Branded (-2 reaction rolls) and fine 750gp</cell>
+          </row>
+          <row>
+            <cell>Arson, Desertion, Murder, Sedition</cell>
+            <cell>Agonizing execution</cell>
+            <cell>Execution (beheaded or hung)</cell>
+            <cell>Proscribed (lose all property and rights; permanently exiled)</cell>
+          </row>
+          <row>
+            <cell>Heresy, High Treason, Regicide</cell>
+            <cell>Fate worse than death</cell>
+            <cell>Agonizing execution</cell>
+            <cell>Execution (beheaded or hung)</cell>
+          </row>
+        </rows>
+      </table>
+
+      <punishment_rules>
+        <rule>A perpetrator who cannot pay a fine is indentured to work off the fine.</rule>
+        <rule>Fines are worked off at 3gp per month.</rule>
+        <rule>A perpetrator who can pay three times the amount of a fine may avoid associated non-monetary punishments.</rule>
+        <rule>The syndicate boss is expected to pay attorneys, bribes, fines, and healing for members caught while performing hijinks.</rule>
+        <rule>If the boss regularly abandons members to legal consequences, the Judge may roll on the Henchman Loyalty table to determine whether the remaining syndicate members attack or betray their boss.</rule>
+      </punishment_rules>
+    </getting_caught>
+
+    <criminal_guilds>
+      <definition>
+        <term>Criminal Guild</term>
+        <text>A group of multiple syndicates under the control of one boss.</text>
+      </definition>
+
+      <creation_methods>
+        <method id="new_base_of_operations">
+          <title>New Base of Operations</title>
+          <rule>If a syndicate has reached its maximum size in its current base of operations, the adventurer may establish a new syndicate in a new base of operations.</rule>
+          <rule>This requires a new hideout within 6 miles of another urban settlement.</rule>
+          <rule>The new syndicate operates under the normal hideout and syndicate rules.</rule>
+        </method>
+
+        <method id="henchman_advancement">
+          <title>Henchman Advancement</title>
+          <rule>An adventurer may establish a hideout for an appropriate henchman.</rule>
+          <rule>The henchman then attracts followers into a syndicate using the normal hideout rules.</rule>
+          <rule>The henchman’s syndicate becomes part of the adventurer’s criminal guild.</rule>
+        </method>
+
+        <method id="henchman_acquisition">
+          <title>Henchman Acquisition</title>
+          <rule>An adventurer may recruit an NPC who already controls a syndicate as a henchman.</rule>
+          <rule>The new henchman’s syndicate becomes part of the adventurer’s criminal guild.</rule>
+        </method>
+
+        <method id="change_in_management">
+          <title>Change in Management</title>
+          <rule>An adventurer may exile, imprison, or kill an NPC who already controls a syndicate, then claim the syndicate and its members.</rule>
+          <rule>The Judge rolls on the Change in Management table for each former henchman and follower to determine recruitment success.</rule>
+          <rule>For very large syndicates, the Judge may roll in batches of 5, 10, 25, or 100.</rule>
+
+          <modifiers>
+            <rule>Add the adventurer’s Charisma modifier to the die roll.</rule>
+            <rule>Add any bonuses from Diplomacy, Intimidation, or other relevant proficiencies.</rule>
+            <rule>If the adventurer is higher level than the previous leader, add +1 per level difference.</rule>
+            <rule>If the adventurer is lower level than the previous leader, apply -1 per level difference.</rule>
+            <rule>Apply the previous leader’s Charisma bonus, if any, as a penalty to the roll.</rule>
+            <rule>The Judge may apply an additional modifier from -2 to +2 for reputation, gifts, or similar factors.</rule>
+          </modifiers>
+
+          <table id="change_in_management">
+            <title>Change in Management</title>
+            <columns>
+              <column>Adjusted Die Roll</column>
+              <column>Result</column>
+            </columns>
+            <rows>
+              <row><cell>2-</cell><cell>Immediate Attack</cell></row>
+              <row><cell>3-5</cell><cell>Betray</cell></row>
+              <row><cell>6-8</cell><cell>Hesitate</cell></row>
+              <row><cell>9-11</cell><cell>Accept</cell></row>
+              <row><cell>12+</cell><cell>Accept with élan</cell></row>
+            </rows>
+          </table>
+
+          <results>
+            <result name="Immediate Attack">The follower seeks immediate revenge and attacks at the first available opportunity.</result>
+            <result name="Betray">The follower pretends loyalty but betrays the adventurer if an opportunity arises.</result>
+            <result name="Hesitate">The follower has conflicting loyalties; he betrays if a plurality of his fellows do so, otherwise remains loyal.</result>
+            <result name="Accept">The follower becomes loyal.</result>
+            <result name="Accept with élan">The follower becomes loyal and gains +1 on morale rolls.</result>
+          </results>
+        </method>
+      </creation_methods>
+    </criminal_guilds>
+
+    <managing_a_criminal_guild>
+      <rule>An adventurer may directly manage only one syndicate at a time.</rule>
+      <rule>All other syndicates in the guild must be assigned to henchmen to manage.</rule>
+      <definition>
+        <term>Underboss</term>
+        <text>A henchman who manages a syndicate.</text>
+      </definition>
+
+      <authority_rules>
+        <rule>An adventurer may assign hijinks to members of his own syndicate and to members of syndicates controlled by underbosses.</rule>
+        <rule>Underbosses expect broad latitude in running their own portions of the guild.</rule>
+        <rule>If the adventurer assigns hijinks to more than 20% of an underboss’s followers, the underboss must roll on the Henchman Loyalty table.</rule>
+        <rule>The underboss suffers a -1 penalty on the Henchman Loyalty roll for each additional 10% of followers the adventurer orders around beyond the first 20%.</rule>
+        <rule>A henchman who resigns or becomes hostile takes his syndicate with him.</rule>
+      </authority_rules>
+
+      <hierarchy_rules>
+        <rule>Underbosses may themselves have underbosses beneath them.</rule>
+        <rule>For purposes of assigning hijinks, each underboss is assumed to have direct control over 20% of the followers one rank below him on the chain.</rule>
+      </hierarchy_rules>
+
+      <table id="monthly_hijink_income">
+        <title>Monthly Hijink Income</title>
+        <columns>
+          <column>Syndicate Member Level</column>
+          <column>Monthly Income (gp)</column>
+        </columns>
+        <rows>
+          <row><cell>0</cell><cell>1</cell></row>
+          <row><cell>1</cell><cell>5</cell></row>
+          <row><cell>2</cell><cell>30</cell></row>
+          <row><cell>3</cell><cell>200</cell></row>
+          <row><cell>4</cell><cell>425</cell></row>
+          <row><cell>5</cell><cell>650</cell></row>
+          <row><cell>6</cell><cell>835</cell></row>
+          <row><cell>7</cell><cell>1,500</cell></row>
+          <row><cell>8</cell><cell>2,000</cell></row>
+        </rows>
+      </table>
+
+      <summary_rule>
+        <rule>When managing a large criminal guild, the Monthly Hijink Income table may be used instead of rolling hijinks individually for characters of 1st through 8th level.</rule>
+        <rule>Hijinks by 9th level or higher characters should always be rolled individually.</rule>
+        <rule>The table already factors in wages, attorneys, bribes, fines, and healing for syndicate members who get caught.</rule>
+      </summary_rule>
+    </managing_a_criminal_guild>
+  </section>
+
+  <section id="sanctums_and_dungeons">
+    <title>Sanctums and Dungeons</title>
+
+    <sanctums>
+      <rule>When a mage builds a sanctum, he attracts 1d6 apprentices of 1st-3rd level, plus 2d6 normal men seeking to become mages.</rule>
+      <rule>The Intelligence scores of these normal men are above average; discard any rolls of 8 or less.</rule>
+      <apprentice_progression>
+        <rule>After 1d6 months, each normal man makes a proficiency throw of 14+ and adds his Intelligence modifier.</rule>
+        <rule>Those who succeed become 1st level mages.</rule>
+        <rule>Those who fail become discouraged and leave.</rule>
+      </apprentice_progression>
+      <annual_recruitment>
+        <rule>Each year the mage dwells in the sanctum, he attracts an additional 1d6 normal men.</rule>
+        <limit>At any one time, the mage may have a maximum of 6 apprentices of any level and 12 normal men studying.</limit>
+      </annual_recruitment>
+    </sanctums>
+
+    <constructing_a_dungeon>
+      <rule>A mage may construct a dungeon within his domain to lure monsters into lairing there.</rule>
+      <rule>Dungeon construction uses the Stronghold Structure Costs used for strongholds.</rule>
+      <rule>There are no size restrictions other than cost.</rule>
+      <rule>Dungeons are most effective in wilderness domains with monster-favorable terrain such as forests, swamps, and mountains.</rule>
+      <rule>A mage may construct multiple dungeons within the domain.</rule>
+      <rule>Dungeons need not be in the same hex as the mage’s stronghold.</rule>
+      <rule>The value of a dungeon does not count toward Minimum Stronghold Value unless the dungeon is used to secure a chaotic domain.</rule>
+    </constructing_a_dungeon>
+
+    <populating_a_dungeon>
+      <procedure>
+        <step>After completion, the Judge begins checking whether wandering monsters arrive.</step>
+        <step>Use Wandering Monster tables from the Secrets chapter.</step>
+        <step>Make encounter throws daily in a wilderness domain, weekly in a borderlands domain, and monthly in a civilized domain.</step>
+        <step>Any wandering monster that arrives has a chance to establish a lair equal to its % In Lair value.</step>
+      </procedure>
+
+      <treasure_seeding>
+        <rule>The mage may seed the dungeon with treasure to entice monsters to stay.</rule>
+        <rule>If a monster finds unclaimed treasure equal to or greater than the average for its Treasure Type, its chance of establishing a lair is doubled.</rule>
+        <rule>Monsters without a Treasure Type ignore treasure for this purpose.</rule>
+        <rule>Wandering monsters do not normally have treasure of their own.</rule>
+      </treasure_seeding>
+
+      <room_selection>
+        <rule>Monsters establishing lairs choose the best available room or area appropriate to their size.</rule>
+        <rule>They displace any less powerful monsters already there and take any excess treasure in that area.</rule>
+        <rule>Monsters generally prefer deeper dungeon areas for safety.</rule>
+        <rule>As a result, stronger monsters with more treasure tend to occupy deeper levels, with weaker monsters nearer the entrance.</rule>
+      </room_selection>
+
+      <full_dungeon>
+        <rule>When 1/3 of the dungeon’s areas contain lairs, the dungeon is considered full.</rule>
+        <rule>The remaining rooms become buffer zones between resident groups.</rule>
+        <rule>Future arrivals displace weaker creatures out of the dungeon, unless they would prefer to subjugate existing denizens.</rule>
+      </full_dungeon>
+
+      <special_arrivals>
+        <rule>If the Wandering Monster table indicates NPC men, dwarves, or elves, this represents adventuring parties arriving to clear the dungeon.</rule>
+      </special_arrivals>
+    </populating_a_dungeon>
+
+    <harvesting_a_dungeon>
+      <rule>The method used to harvest monster parts is left to the mage.</rule>
+      <rule>A mage gains no experience for recovering his own treasure from monsters in his dungeon.</rule>
+      <rule>Wandering adventurers who recover treasure from the mage’s dungeon gain experience normally.</rule>
+    </harvesting_a_dungeon>
+
+    <peasants_and_dungeons>
+      <rule>A mage’s domain may attract peasant families like most other secure domains.</rule>
+      <rule>If the mage builds a dungeon and fails to protect peasants from its monsters, peasant morale may suffer.</rule>
+      <garrison_adjustment_procedure>
+        <step>Total the XP value of all monsters currently in the dungeon.</step>
+        <step>Divide that total by the number of peasant families in the domain.</step>
+        <step>Round to the nearest whole number.</step>
+        <step>The result is the required increase in monthly garrison expenditure in gp per family.</step>
+      </garrison_adjustment_procedure>
+      <morale_penalty>
+        <rule>If the mage fails to pay the required increased garrison expenditure, domain morale decreases by 1 per gp per family not paid.</rule>
+      </morale_penalty>
+      <monster_garrison_option>
+        <rule>The mage may hire monsters in the dungeon to serve as the garrison.</rule>
+        <rule>This causes a -2 domain morale penalty if the monsters are Chaotic and the peasants are not.</rule>
+        <rule>Mages ruling beastmen peasant families do not need to increase garrison because of dungeons unless the dungeon inhabitants are Lawful.</rule>
+      </monster_garrison_option>
+    </peasants_and_dungeons>
+  </section>
+
+  <section id="mercantile_ventures">
+    <title>Mercantile Ventures</title>
+
+    <arbitrage_trading>
+      <definition>
+        <term>Arbitrage</term>
+        <text>The long-distance movement of goods from markets where they are cheap to markets where they are expensive.</text>
+      </definition>
+
+      <step id="1_determine_market_characteristics">
+        <title>Determine Market Characteristics</title>
+        <market_definition>
+          <rule>A market may be any settlement or trading venue where goods are bought and sold.</rule>
+          <rule>Each domain generally has its own separate market.</rule>
+          <rule>Markets are rated from Class I through Class VI by size and importance.</rule>
+        </market_definition>
+
+        <market_classes>
+          <class name="I">Urban populations of 20,000 families or more.</class>
+          <class name="II">Major ports, national capitals, and other large cities of 5,000 or more families.</class>
+          <class name="III">Provincial capitals and medium cities of 1,750 to 5,000 families.</class>
+          <class name="IV">Small cities and large towns of 600 to 1,750 families.</class>
+          <class name="V">Small towns and large villages of 250 to 600 families.</class>
+          <class name="VI">Villages of 250 families or fewer.</class>
+        </market_classes>
+
+        <demand_modifiers>
+          <rule>Each market has demand modifiers for types of merchandise.</rule>
+          <rule>A low demand modifier indicates surplus availability and usually local production.</rule>
+          <rule>A high demand modifier indicates scarcity and high price.</rule>
+          <rule>If demand modifiers are unknown, they are generated separately by the Judge.</rule>
+        </demand_modifiers>
+
+        <tolls>
+          <rule>Each time adventurers enter a market to buy or sell goods, they must pay a toll unless they sneak in.</rule>
+          <rule>Characters entering to sell always pay a minimum toll of 1gp per load.</rule>
+        </tolls>
+      </step>
+
+      <step id="2_determine_merchants_and_loads">
+        <title>Determine Number of Merchants and Loads of Merchandise</title>
+
+        <table id="market_and_merchants">
+          <title>Market and Merchants</title>
+          <columns>
+            <column>Market Class</column>
+            <column>Toll</column>
+            <column>Merchants</column>
+            <column>Loads of Merchandise</column>
+          </columns>
+          <rows>
+            <row><cell>I</cell><cell>1d6+15gp</cell><cell>2d6+2</cell><cell>6d8 loads</cell></row>
+            <row><cell>II</cell><cell>1d10+10gp</cell><cell>2d4+1</cell><cell>4d6 loads</cell></row>
+            <row><cell>III</cell><cell>1d8+5gp</cell><cell>2d4</cell><cell>3d4 loads</cell></row>
+            <row><cell>IV</cell><cell>1d6+3gp</cell><cell>1d4</cell><cell>2d4 loads</cell></row>
+            <row><cell>V</cell><cell>1d6gp</cell><cell>1d4-1</cell><cell>1d4 loads</cell></row>
+            <row><cell>VI</cell><cell>1d3gp</cell><cell>1d3-1</cell><cell>1d2 loads</cell></row>
+          </rows>
+        </table>
+
+        <rules>
+          <rule>If buying, the Loads result is how many loads a merchant can sell to the adventurers.</rule>
+          <rule>If selling, the Loads result is how many loads of the adventurers’ cargo that merchant will purchase.</rule>
+        </rules>
+
+        <timing_of_availability>
+          <rule>Half the merchants, rounded up, become interested in the first week.</rule>
+          <rule>One quarter of the merchants, rounded down, minimum 1, become interested in the second week.</rule>
+          <rule>The remainder become interested in the third week.</rule>
+          <rule>After that, the adventurers may continue searching for more merchants, but all rolls take a cumulative -2 penalty per week already spent in the market.</rule>
+        </timing_of_availability>
+
+        <moorage_and_stabling>
+          <rule>While maintaining a vessel or caravan at a market, adventurers pay moorage or stabling daily.</rule>
+          <costs>
+            <cost type="ship_moorage">1gp per 10 structural hit points per day</cost>
+            <cost type="mule_stabling">2sp per mule per day</cost>
+            <cost type="horse_stabling">5sp per horse per day</cost>
+            <cost type="cart_stabling">1gp per cart per day</cost>
+            <cost type="wagon_stabling">2gp per wagon per day</cost>
+          </costs>
+        </moorage_and_stabling>
+
+        <domain_owner_benefit>
+          <rule>An adventurer buying and selling in a domain he controls always has access to the maximum number of merchants and pays no moorage, stabling fees, or tolls.</rule>
+        </domain_owner_benefit>
+      </step>
+
+      <step id="3_determine_merchandise_of_interest">
+        <title>Determine Merchandise of Interest</title>
+        <rule>Each merchant buys and sells only one type of merchandise.</rule>
+        <rule>Roll on the Common Merchandise table to determine each merchant’s merchandise category.</rule>
+        <rule>The Judge may customize specific local versions of the result.</rule>
+        <finding_specific_goods>
+          <rule>If adventurers want a particular type of merchandise, make a reaction roll for each merchant.</rule>
+          <rule>A result of 9+ is required to persuade a merchant to transact in a particular type of Common Merchandise.</rule>
+          <rule>A result of 12+ is required for a particular type of Precious Merchandise.</rule>
+          <rule>Add the demand modifier when seeking buyers.</rule>
+          <rule>Subtract the demand modifier when seeking sellers.</rule>
+          <rule>If the adventurer has a monopoly on that type of merchandise, he gains +3 on the roll.</rule>
+          <rule>Merchants transacting with a monopolist buy or sell twice the normal number of loads.</rule>
+          <rule>Only one roll per merchant is allowed; on failure, that merchant will not transact with the adventurer at all.</rule>
+        </finding_specific_goods>
+      </step>
+
+      <step id="4_determine_market_price">
+        <title>Determine Market Price of Merchandise</title>
+        <rule>Each merchandise type has a base price listed on the merchandise tables.</rule>
+        <rule>Market price is calculated once per type of merchandise for each visit to a market.</rule>
+        <rule>Different merchants in the same market do not buy or sell the same goods at different prices during the same visit.</rule>
+
+        <procedure>
+          <step>Find the merchandise’s base price on the Common or Precious Merchandise table.</step>
+          <step>Roll 4d4.</step>
+          <step>Add the demand modifier for that merchandise in that market, if any.</step>
+          <step>Add 1 if the market is Class I or II.</step>
+          <step>Subtract 1 if the market is Class V or VI.</step>
+          <step>Modify by 1 in the adventurer’s favor if he has a monopoly in that merchandise.</step>
+          <step>Apply any special Judge modifiers, such as war or calamity.</step>
+          <step>Multiply the final result by 10 and apply that percentage to the base price.</step>
+          <step>The resulting amount is the market price.</step>
+        </procedure>
+
+        <price_change_over_time>
+          <rule>If adventurers remain in the same market waiting for prices to change, each month there is a cumulative 10% chance that each merchandise type’s price changes and is re-rolled.</rule>
+        </price_change_over_time>
+      </step>
+
+      <step id="5_exchange_goods">
+        <title>Exchange Goods</title>
+        <rule>If merchants are found and market price is acceptable, adventurers may transact with any or all available merchants.</rule>
+        <rule>No merchant buys or sells more loads than rolled for that merchant in step 2.</rule>
+        <labor_fees>
+          <rule>When buying goods, adventurers pay labor fees to load them.</rule>
+          <rule>When selling goods, adventurers pay labor fees to unload them.</rule>
+          <cost>1gp per 200 stone of merchandise</cost>
+        </labor_fees>
+        <customs_duties>
+          <rule>Adventurers selling goods also pay customs duty equal to 2d10% of the market price.</rule>
+          <rule>Characters unwilling to pay such fees may attempt to smuggle the goods instead.</rule>
+        </customs_duties>
+      </step>
+
+      <step id="6_transport_goods">
+        <title>Transport Goods</title>
+        <rule>If adventurers purchase merchandise, they must transport it to a new market for sale.</rule>
+        <rule>Transporting goods is handled as a wilderness adventure.</rule>
+        <rule>Upon reaching a new market, the adventurers sell the goods by restarting the arbitrage procedure at step 1.</rule>
+      </step>
+    </arbitrage_trading>
+
+    <passenger_and_cargo_transport>
+      <rule>An adventurer operating a vessel or caravan may transport passengers between markets.</rule>
+
+      <table id="passengers_and_shipping_contracts">
+        <title>Passengers and Shipping Contracts</title>
+        <columns>
+          <column>Market Class</column>
+          <column>Passengers</column>
+          <column>Shipping Contracts</column>
+          <column>Cargo to be Shipped</column>
+        </columns>
+        <rows>
+          <row><cell>I</cell><cell>2d4+1</cell><cell>2d6+2</cell><cell>6d8 loads</cell></row>
+          <row><cell>II</cell><cell>2d4</cell><cell>2d4+1</cell><cell>4d6 loads</cell></row>
+          <row><cell>III</cell><cell>1d4</cell><cell>2d4</cell><cell>3d4 loads</cell></row>
+          <row><cell>IV</cell><cell>1d4-1</cell><cell>1d4</cell><cell>2d4 loads</cell></row>
+          <row><cell>V</cell><cell>1d3-1</cell><cell>1d4-1</cell><cell>1d4 loads</cell></row>
+          <row><cell>VI</cell><cell>1d2-1</cell><cell>1d3-1</cell><cell>1d2 loads</cell></row>
+        </rows>
+      </table>
+
+      <passengers>
+        <procedure>
+          <step>Determine the number of passengers from the table.</step>
+          <step>Roll 1d20 to determine each passenger’s destination.</step>
+          <step>On 19+, the passenger wants transport to a distant market of his choice, 2d20x100 miles away.</step>
+          <step>Otherwise, the passenger wants transport to the closest market within one size class along the route to the adventurer’s destination.</step>
+        </procedure>
+        <trust_requirement>
+          <rule>Passengers will not accept transport from adventurers they deem untrustworthy.</rule>
+          <rule>A separate reaction roll of 9+ is required for each passenger.</rule>
+          <rule>Charisma and other normal reaction modifiers apply, including Bribery, Diplomacy, Intimidation, Mystic Aura, and Seduction.</rule>
+        </trust_requirement>
+        <capacity_and_fees>
+          <rule>Each passenger counts as 200 stone of cargo, excluding required provisions.</rule>
+          <fee>20gp per 500 miles by sea, rounded up</fee>
+          <fee>20gp per 150 miles by road, rounded up</fee>
+          <rule>If a passenger charters the vessel or caravan to a chosen destination, he pays as though shipping enough to fill the hold.</rule>
+          <charter_fee>1gp per 10 stone of cargo space per 500 miles by sea</charter_fee>
+          <charter_fee>1gp per 10 stone of cargo space per 150 miles by road</charter_fee>
+          <rule>A round-trip fee may be charged if the destination is at least 2 market classes smaller than the originating market.</rule>
+          <rule>Passengers generally pay half in advance and the rest upon safe arrival.</rule>
+        </capacity_and_fees>
+      </passengers>
+
+      <shipping_contracts>
+        <rule>An adventurer may also solicit shipping contracts to carry cargo for other merchants.</rule>
+        <rule>The number and size of contracts available are determined from the table.</rule>
+        <rule>Destinations are determined the same way as for passengers.</rule>
+        <rule>Shippers will not contract with adventurers they deem untrustworthy.</rule>
+        <rule>A reaction roll of 9+ is required to secure each shipping contract.</rule>
+        <payment>
+          <fee>1gp per 10 stone of cargo space per 500 miles by sea, rounded up</fee>
+          <fee>1gp per 10 stone of cargo per 150 miles by road, rounded up</fee>
+        </payment>
+        <cargo_details>
+          <rule>Shippers usually do not disclose the merchandise being moved.</rule>
+          <rule>The Judge may roll on the Common Merchandise table to determine precise weight, or assume mixed cargo at 70 stone per load.</rule>
+          <rule>The adventurers must provide free passage for one merchant representative accompanying the shipment and handling goods and taxes.</rule>
+          <rule>Shippers generally pay half in advance and the balance, through an agent, on safe arrival.</rule>
+        </cargo_details>
+      </shipping_contracts>
+
+      <interest_timing>
+        <rule>As with merchants, half the passengers and contracts, rounded up, become available in the first week.</rule>
+        <rule>One quarter, rounded down, minimum 1, become available in the second week.</rule>
+        <rule>The remainder become available in the third week.</rule>
+      </interest_timing>
+
+      <capacity_combination>
+        <rule>Characters may simultaneously accept passengers, shipping contracts, and carry their own merchandise to fill cargo space.</rule>
+      </capacity_combination>
+    </passenger_and_cargo_transport>
+
+    <merchant_ships_and_caravans>
+      <rule>This table provides average values for costs, profits, and treasure based on the mercantile rules.</rule>
+      <rule>Large sailing ships and 30-40 wagon caravans are assumed to operate between Class I and II markets.</rule>
+      <rule>Small sailing ships and smaller caravans are assumed to operate between Class II and III markets.</rule>
+
+      <table id="merchant_ships_and_caravans">
+        <title>Merchant Ships and Caravans</title>
+        <columns>
+          <column>Ship/Caravan</column>
+          <column>Upfront Cost</column>
+          <column>Ship Crew / Caravaneers</column>
+          <column>Average Cargo Weight Carried</column>
+          <column>Average Cargo Value Carried (Treasure Type)</column>
+          <column>Average Monthly Costs</column>
+          <column>Average Monthly Profits</column>
+        </columns>
+        <rows>
+          <row>
+            <cell>Small sailing ship</cell>
+            <cell>10,000gp</cell>
+            <cell>10 sailors, 1 navigator, 1 captain</cell>
+            <cell>10,000 stone</cell>
+            <cell>20,000gp (Q)</cell>
+            <cell>325gp</cell>
+            <cell>875gp</cell>
+          </row>
+          <row>
+            <cell>Large sailing ship</cell>
+            <cell>20,000gp</cell>
+            <cell>17 sailors, 2 navigators, 1 captain</cell>
+            <cell>30,000 stone</cell>
+            <cell>64,000gp (R+Q)</cell>
+            <cell>525gp</cell>
+            <cell>2,600gp</cell>
+          </row>
+          <row>
+            <cell>10 wagons</cell>
+            <cell>3,600gp</cell>
+            <cell>20 guards, 2 sergeants, 1 leader</cell>
+            <cell>6,400 stone</cell>
+            <cell>15,000gp (N+L)</cell>
+            <cell>515gp</cell>
+            <cell>120gp</cell>
+          </row>
+          <row>
+            <cell>20 wagons</cell>
+            <cell>7,200gp</cell>
+            <cell>40 guards, 4 sergeants, 1 leader</cell>
+            <cell>12,800 stone</cell>
+            <cell>25,000gp (Q+H)</cell>
+            <cell>825gp</cell>
+            <cell>600gp</cell>
+          </row>
+          <row>
+            <cell>30 wagons</cell>
+            <cell>10,800gp</cell>
+            <cell>60 guards, 6 sergeants, 1 leader</cell>
+            <cell>19,200 stone</cell>
+            <cell>40,000gp (Q+P)</cell>
+            <cell>1,150gp</cell>
+            <cell>1,050gp</cell>
+          </row>
+          <row>
+            <cell>40 wagons</cell>
+            <cell>14,500gp</cell>
+            <cell>80 guards, 8 sergeants, 1 leader</cell>
+            <cell>25,600 stone</cell>
+            <cell>55,000gp (R+N)</cell>
+            <cell>1,450gp</cell>
+            <cell>1,475gp</cell>
+          </row>
+        </rows>
+      </table>
+    </merchant_ships_and_caravans>
+
+    <merchandise_tables>
+      <table id="common_merchandise">
+        <title>Common Merchandise</title>
+        <columns>
+          <column>Roll</column>
+          <column>Merchandise</column>
+          <column>1 Load</column>
+          <column>Encumbrance per Load (stone)</column>
+          <column>Base Price</column>
+        </columns>
+        <rows>
+          <row><cell>01-04</cell><cell>Grain, vegetables</cell><cell>20 bags</cell><cell>80</cell><cell>10gp</cell></row>
+          <row><cell>05-08</cell><cell>Fish, preserved</cell><cell>10 barrels</cell><cell>80</cell><cell>50gp</cell></row>
+          <row><cell>09-12</cell><cell>Wood, common</cell><cell>1 cord of logs</cell><cell>80</cell><cell>50gp</cell></row>
+          <row><cell>13-16</cell><cell>Animals</cell><cell>Roll 1d6 on Animals</cell><cell>By animal</cell><cell>By animal</cell></row>
+          <row><cell>17-20</cell><cell>Salt</cell><cell>150 bricks</cell><cell>80</cell><cell>100gp</cell></row>
+          <row><cell>21-25</cell><cell>Beer, ale</cell><cell>10 barrels</cell><cell>80</cell><cell>100gp</cell></row>
+          <row><cell>26-30</cell><cell>Oil, lamp</cell><cell>5 jars</cell><cell>30</cell><cell>100gp</cell></row>
+          <row><cell>31-35</cell><cell>Textiles</cell><cell>4 bags</cell><cell>20</cell><cell>100gp</cell></row>
+          <row><cell>36-39</cell><cell>Hides, furs</cell><cell>10 bundles</cell><cell>30</cell><cell>150gp</cell></row>
+          <row><cell>40-43</cell><cell>Tea or coffee</cell><cell>2 bags</cell><cell>10</cell><cell>150gp</cell></row>
+          <row><cell>44-47</cell><cell>Metals, common</cell><cell>200 ingots</cell><cell>100</cell><cell>200gp</cell></row>
+          <row><cell>48-51</cell><cell>Meats, preserved</cell><cell>10 barrels</cell><cell>80</cell><cell>200gp</cell></row>
+          <row><cell>52-54</cell><cell>Cloth</cell><cell>20 rolls</cell><cell>80</cell><cell>200gp</cell></row>
+          <row><cell>55-60</cell><cell>Wine, spirits</cell><cell>1 barrel</cell><cell>16</cell><cell>200gp</cell></row>
+          <row><cell>61-63</cell><cell>Pottery</cell><cell>2 crates</cell><cell>10</cell><cell>200gp</cell></row>
+          <row><cell>64-68</cell><cell>Tools</cell><cell>1 crate</cell><cell>10</cell><cell>200gp</cell></row>
+          <row><cell>69-73</cell><cell>Armor, weapons</cell><cell>1 crate</cell><cell>10</cell><cell>225gp</cell></row>
+          <row><cell>74-75</cell><cell>Dye &amp; pigments</cell><cell>5 jars</cell><cell>25</cell><cell>250gp</cell></row>
+          <row><cell>76-80</cell><cell>Glassware</cell><cell>2 crates</cell><cell>10</cell><cell>400gp</cell></row>
+          <row><cell>81-85</cell><cell>Mounts</cell><cell>Roll 1d4+4 on Animals</cell><cell>By animal</cell><cell>By animal</cell></row>
+          <row><cell>86-100</cell><cell>Roll on Precious Merchandise</cell><cell></cell><cell></cell><cell></cell></row>
+        </rows>
+      </table>
+
+      <table id="precious_merchandise">
+        <title>Precious Merchandise</title>
+        <columns>
+          <column>Roll</column>
+          <column>Merchandise</column>
+          <column>1 Load</column>
+          <column>Encumbrance per Load (stone)</column>
+          <column>Base Price</column>
+        </columns>
+        <rows>
+          <row><cell>01-10</cell><cell>Monster parts*</cell><cell>1 crate</cell><cell>5</cell><cell>300gp</cell></row>
+          <row><cell>11-25</cell><cell>Wood, rare</cell><cell>1 cord</cell><cell>16</cell><cell>500gp</cell></row>
+          <row><cell>26-35</cell><cell>Furs, rare</cell><cell>1 bundle</cell><cell>5</cell><cell>500gp</cell></row>
+          <row><cell>36-45</cell><cell>Metals, precious</cell><cell>2 ingots</cell><cell>4</cell><cell>600gp</cell></row>
+          <row><cell>46-60</cell><cell>Ivory</cell><cell>1 tusk</cell><cell>8</cell><cell>800gp</cell></row>
+          <row><cell>61-65</cell><cell>Spices</cell><cell>1 jar</cell><cell>1</cell><cell>800gp</cell></row>
+          <row><cell>66-70</cell><cell>Porcelain, fine</cell><cell>2 crates</cell><cell>10</cell><cell>1,000gp</cell></row>
+          <row><cell>71-75</cell><cell>Books, rare</cell><cell>1 box</cell><cell>3</cell><cell>1,000gp</cell></row>
+          <row><cell>76-90</cell><cell>Silk</cell><cell>5 rolls</cell><cell>20</cell><cell>2,000gp</cell></row>
+          <row><cell>91-95</cell><cell>Semiprecious stones</cell><cell>1 box</cell><cell>1</cell><cell>1,000gp</cell></row>
+          <row><cell>96-100</cell><cell>Gems</cell><cell>1 box</cell><cell>1</cell><cell>3,000gp</cell></row>
+        </rows>
+        <notes>
+          <note>*Roll on the region’s wandering monster table to determine the specific monster. Each monster part has gp value equal to the monster’s XP value, so the number of parts in the load equals base price divided by monster XP.</note>
+        </notes>
+      </table>
+
+      <table id="animals">
+        <title>Animals</title>
+        <columns>
+          <column>Roll</column>
+          <column>Animal</column>
+          <column>Encumbrance per Animal</column>
+          <column>Animals per Load</column>
+          <column>Fodder Cost per Load (10 stone)</column>
+          <column>Price per Load</column>
+        </columns>
+        <rows>
+          <row><cell>1</cell><cell>Rabbit, hen</cell><cell>1 stone per 2</cell><cell>200 (100 stone)</cell><cell>5gp/wk</cell><cell>60gp</cell></row>
+          <row><cell>2</cell><cell>Sheep</cell><cell>6 stone</cell><cell>30 (180 stone)</cell><cell>5gp/wk</cell><cell>60gp</cell></row>
+          <row><cell>3</cell><cell>Pig, goat</cell><cell>12 stone</cell><cell>20 (240 stone)</cell><cell>5gp/wk</cell><cell>60gp</cell></row>
+          <row><cell>4</cell><cell>Cattle</cell><cell>50 stone</cell><cell>5 (250 stone)</cell><cell>5gp/wk</cell><cell>50gp</cell></row>
+          <row><cell>5-6</cell><cell>Horse, yak</cell><cell>150 stone</cell><cell>2 (300 stone)</cell><cell>5gp/wk</cell><cell>80gp</cell></row>
+          <row><cell>7</cell><cell>Warhorse</cell><cell>200 stone</cell><cell>2 (400 stone)</cell><cell>7gp/wk</cell><cell>500gp</cell></row>
+          <row><cell>8</cell><cell>Elephant</cell><cell>1,000 stone</cell><cell>1 (1,000 stone)</cell><cell>20gp/wk</cell><cell>1,500gp</cell></row>
+        </rows>
+      </table>
+
+      <averages>
+        <rule>For quick average haul calculations, merchandise averages 300gp base price and 70 stone per load.</rule>
+        <rule>Common merchandise averages 180gp and 80 stone per load.</rule>
+        <rule>Precious merchandise averages 1,000gp and 10 stone per load.</rule>
+      </averages>
+    </merchandise_tables>
+  </section>
+
+  <section id="experience_from_campaigns">
+    <title>Earning Experience from Campaigns</title>
+
+    <general_rules>
+      <rule>Characters undertaking campaign activities may earn XP from those activities.</rule>
+      <rule>Prime requisite XP bonuses and penalties apply as they do for adventuring XP.</rule>
+      <rule>A character can never earn enough campaign XP in one month to advance 2 or more levels.</rule>
+    </general_rules>
+
+    <experience_from_construction>
+      <rule>A character gains 1 XP per 2 gp spent constructing a stronghold used to secure a domain.</rule>
+      <rule>The XP is earned when the stronghold is completed.</rule>
+      <rule>If the stronghold is ever lost, the character loses the XP previously gained from its construction.</rule>
+      <rule>Losing this XP may cause loss of class levels.</rule>
+      <rule>If the stronghold is retaken intact, the lost XP is regained.</rule>
+      <rule>If the stronghold is retaken partially destroyed, regained XP is based on the reduced value.</rule>
+      <rule>Mages do not gain XP from gp spent constructing dungeons.</rule>
+      <rule>Mages do gain XP for harvesting monsters in their dungeons.</rule>
+      <rule>A follower or henchman who constructs an appropriate stronghold gains XP at 1 XP per 4 gp spent.</rule>
+    </experience_from_construction>
+
+    <experience_from_domain_and_mercantile_income>
+      <qualification_rules>
+        <rule>To earn XP, the activity must be personally managed by the character.</rule>
+        <rule>No XP is earned from domains managed by vassals or mercantile ventures risked by others.</rule>
+        <rule>XP is only earned when monthly income exceeds the character’s gp threshold.</rule>
+      </qualification_rules>
+
+      <domain_income>
+        <definition>
+          <term>Domain Income</term>
+          <text>The total of land, service, tax, and vassal revenue minus garrison cost, stronghold upkeep, taxes, and tithes.</text>
+        </definition>
+        <rule>If domain income exceeds the character’s gp threshold, the character earns XP equal to the difference.</rule>
+        <rule>Domain income is calculated monthly.</rule>
+        <rule>A follower or henchman managing a domain earns 50% of normal domain XP.</rule>
+      </domain_income>
+
+      <mercantile_income>
+        <definition>
+          <term>Mercantile Income</term>
+          <text>Total gp earned from selling goods and transporting cargo and passengers, minus cost of goods sold, wages, rations, tolls, customs duties, moorage, stabling, and labor fees.</text>
+        </definition>
+        <rule>Mercantile income from arbitrage and transport is calculated when the expedition reaches its final destination, usually upon return to origin.</rule>
+        <rule>Divide total revenue from the expedition by the number of months elapsed since it began to determine monthly income.</rule>
+        <rule>If monthly mercantile income exceeds the gp threshold, the character earns XP equal to the difference for each month of the expedition.</rule>
+        <rule>A follower or henchman earns 50% of normal XP from mercantile activities.</rule>
+        <rule>If multiple characters join a mercantile expedition, total gp value is divided evenly among all surviving player characters, with henchmen receiving a half-share each.</rule>
+        <rule>If a character has both domain and mercantile income, calculate them separately.</rule>
+      </mercantile_income>
+
+      <table id="xp_thresholds">
+        <title>XP from Domain and Mercantile Income</title>
+        <columns>
+          <column>Class Level</column>
+          <column>Gp Threshold</column>
+        </columns>
+        <rows>
+          <row><cell>1</cell><cell>25</cell></row>
+          <row><cell>2</cell><cell>75</cell></row>
+          <row><cell>3</cell><cell>150</cell></row>
+          <row><cell>4</cell><cell>300</cell></row>
+          <row><cell>5</cell><cell>650</cell></row>
+          <row><cell>6</cell><cell>1,250</cell></row>
+          <row><cell>7</cell><cell>2,500</cell></row>
+          <row><cell>8</cell><cell>5,000</cell></row>
+          <row><cell>9</cell><cell>12,000</cell></row>
+          <row><cell>10</cell><cell>18,000</cell></row>
+          <row><cell>11</cell><cell>40,000</cell></row>
+          <row><cell>12</cell><cell>60,000</cell></row>
+          <row><cell>13</cell><cell>150,000</cell></row>
+          <row><cell>14</cell><cell>425,000</cell></row>
+        </rows>
+      </table>
+    </experience_from_domain_and_mercantile_income>
+
+    <experience_from_hijinks>
+      <rule>A syndicate boss may earn XP from monthly hijink income.</rule>
+      <definition>
+        <term>Monthly Hijink Income</term>
+        <text>Total gp value earned from hijinks minus wages, attorneys, bribes, fines, and magical healing for syndicate members.</text>
+      </definition>
+      <rule>Monthly hijink income may be calculated manually or by using the Monthly Hijink Income table.</rule>
+      <rule>If monthly hijink income exceeds the character’s gp threshold, the boss earns XP equal to the difference.</rule>
+      <rule>Syndicate members earn XP equal to 50% of the gp value of successful hijinks they perpetrate.</rule>
+      <rule>On average, 1st level followers earn 50 XP per month from hijinks.</rule>
+    </experience_from_hijinks>
+  </section>
+</acks_campaigns_hijinks>

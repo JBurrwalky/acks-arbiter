@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<treasure_rules_summary system="acks" source_file="109-ACKS Core-Treasure.md" flavor_excluded="true">
+  <scope>
+    <rule>Treasure primarily consists of coin, gems, jewelry, special treasures, and magic items.</rule>
+    <rule>Coins, gems, and jewelry recovered to civilization grant 1 XP per 1 gp value.</rule>
+    <rule>Magic items do not grant XP for recovery.</rule>
+  </scope>
+
+  <treasure_generation>
+    <random_generation>
+      <rule>Treasure is usually found in monster lairs.</rule>
+      <rule>Monsters with treasure are assigned a treasure type from A through R.</rule>
+      <rule>To generate a hoard, find the treasure type row and resolve each column independently.</rule>
+      <procedure>
+        <step order="1">Roll for each coin, gem, jewelry, and magic-item column shown on the treasure type row.</step>
+        <step order="2">If gems or jewelry are indicated, roll on the appropriate sub-table or use equivalent conversions if desired.</step>
+        <step order="3">If magic items are indicated without a specific category, roll on the random magic type table.</step>
+        <step order="4">Optionally divide the hoard into lots and replace lots with special treasure.</step>
+      </procedure>
+      <rule>Treasure type tables are calibrated so average treasure in a lair is approximately 4 times monster XP value, with compensation for monsters that never carry treasure.</rule>
+      <categories>
+        <category name="hoarder">
+          <types>B,D,H,N,Q,R</types>
+          <rule>Mix of coins and valuables.</rule>
+          <rule>Usually high value for low weight, typically 10 stone or less.</rule>
+        </category>
+        <category name="raider">
+          <types>E,G,J,L,O</types>
+          <rule>Mostly bulky low-value coin and goods.</rule>
+          <rule>Typically around 20 stone.</rule>
+        </category>
+        <category name="incidental">
+          <types>A,C,F,I,K,M,P</types>
+          <rule>Usually a few stone and highly variable.</rule>
+          <rule>Many results yield nothing; some yield very high value.</rule>
+        </category>
+      </categories>
+      <rule>Unless noted otherwise, random treasure is found only in a monster's lair.</rule>
+      <rule>If a monster entry grants individual treasure, that treasure can be found even when encountered outside its lair.</rule>
+    </random_generation>
+
+    <planned_generation>
+      <rule>The Judge may place treasure by hand instead of rolling.</rule>
+      <rule>Important treasures should be placed deliberately.</rule>
+      <procedure>
+        <step order="1">Sum XP for all monsters in the area.</step>
+        <step order="2">Target treasure value near 4 times total XP.</step>
+        <step order="3">Choose a treasure type with an average value close to that target and an accumulation category appropriate to the area.</step>
+        <step order="4">Generate treasure using that table.</step>
+        <step order="5">If treasure is too high, add monsters or remove treasure.</step>
+        <step order="6">If treasure is too low, add hand-placed special treasures.</step>
+      </procedure>
+      <rule>Allowing more treasure accelerates leveling and increases party power.</rule>
+    </planned_generation>
+
+    <treasure_type_table>
+      <columns>
+        <column>type</column>
+        <column>category_and_average_value</column>
+        <column>copper_1000s</column>
+        <column>silver_1000s</column>
+        <column>electrum_1000s</column>
+        <column>gold_1000s</column>
+        <column>platinum_1000s</column>
+        <column>gems</column>
+        <column>jewelry</column>
+        <column>magic_items</column>
+      </columns>
+      <row><type>A</type><category_and_average_value>Incidental 275gp</category_and_average_value><copper_1000s>None</copper_1000s><silver_1000s>30% 1d4</silver_1000s><electrum_1000s>None</electrum_1000s><gold_1000s>None</gold_1000s><platinum_1000s>None</platinum_1000s><gems>30% 1d4 ornamentals</gems><jewelry>30% 1d4 trinkets</jewelry><magic_items>1% any 1</magic_items></row>
+      <row><type>B</type><category_and_average_value>Hoarder 500gp</category_and_average_value><copper_1000s>None</copper_1000s><silver_1000s>80% 1d6</silver_1000s><electrum_1000s>None</electrum_1000s><gold_1000s>None</gold_1000s><platinum_1000s>None</platinum_1000s><gems>70% 1d4 ornamentals</gems><jewelry>30% 1d4 trinkets</jewelry><magic_items>5% any 2</magic_items></row>
+      <row><type>C</type><category_and_average_value>Incidental 700gp</category_and_average_value><copper_1000s>None</copper_1000s><silver_1000s>None</silver_1000s><electrum_1000s>15% 1d4</electrum_1000s><gold_1000s>None</gold_1000s><platinum_1000s>None</platinum_1000s><gems>40% 1d6 gems</gems><jewelry>30% 1d6 trinkets</jewelry><magic_items>5% any 1</magic_items></row>
+      <row><type>D</type><category_and_average_value>Hoarder 1,000gp</category_and_average_value><copper_1000s>None</copper_1000s><silver_1000s>80% 1d6</silver_1000s><electrum_1000s>20% 1d4</electrum_1000s><gold_1000s>None</gold_1000s><platinum_1000s>None</platinum_1000s><gems>80% 1d6 ornamentals</gems><jewelry>70% 1d4 trinkets</jewelry><magic_items>15% any 2</magic_items></row>
+      <row><type>E</type><category_and_average_value>Raider 1,250gp</category_and_average_value><copper_1000s>80% 2d20</copper_1000s><silver_1000s>7% 3d6</silver_1000s><electrum_1000s>None</electrum_1000s><gold_1000s>None</gold_1000s><platinum_1000s>None</platinum_1000s><gems>60% 1d4 ornamentals</gems><jewelry>40% 1d4 trinkets</jewelry><magic_items>15% 1 sword, weapon or armor; 15% 1 potion; 5% any 1</magic_items></row>
+      <row><type>F</type><category_and_average_value>Incidental 1,500gp</category_and_average_value><copper_1000s>None</copper_1000s><silver_1000s>30% 1d4</silver_1000s><electrum_1000s>None</electrum_1000s><gold_1000s>15% 1d4</gold_1000s><platinum_1000s>None</platinum_1000s><gems>40% 1d6 gems</gems><jewelry>30% 1d4 jewelry</jewelry><magic_items>7% any 1</magic_items></row>
+      <row><type>G</type><category_and_average_value>Raider 2,000gp</category_and_average_value><copper_1000s>70% 2d20</copper_1000s><silver_1000s>70% 3d6</silver_1000s><electrum_1000s>50% 1d4</electrum_1000s><gold_1000s>None</gold_1000s><platinum_1000s>None</platinum_1000s><gems>50% 1d6 ornamentals</gems><jewelry>50% 1d6 trinkets</jewelry><magic_items>25% 1 sword, weapon or armor; 25% 1 potion; 10% any 1</magic_items></row>
+      <row><type>H</type><category_and_average_value>Hoarder 2,500gp</category_and_average_value><copper_1000s>None</copper_1000s><silver_1000s>25% 1d6</silver_1000s><electrum_1000s>70% 1d6</electrum_1000s><gold_1000s>None</gold_1000s><platinum_1000s>None</platinum_1000s><gems>80% 1d6 gems</gems><jewelry>80% 1d6 trinkets</jewelry><magic_items>25% any 3 + 1 potion + 1 scroll</magic_items></row>
+      <row><type>I</type><category_and_average_value>Incidental 3,250gp</category_and_average_value><copper_1000s>None</copper_1000s><silver_1000s>25% 1d4</silver_1000s><electrum_1000s>None</electrum_1000s><gold_1000s>25% 1d6</gold_1000s><platinum_1000s>None</platinum_1000s><gems>50% 2d4 gems</gems><jewelry>40% 1d8 jewelry</jewelry><magic_items>20% any 1</magic_items></row>
+      <row><type>J</type><category_and_average_value>Raider 4,000gp</category_and_average_value><copper_1000s>50% 3d6</copper_1000s><silver_1000s>70% 2d20</silver_1000s><electrum_1000s>70% 1d8</electrum_1000s><gold_1000s>None</gold_1000s><platinum_1000s>None</platinum_1000s><gems>50% 1d6 gems</gems><jewelry>50% 1d8 trinkets</jewelry><magic_items>50% 1 sword, weapon or armor; 45% 1 potion; 20% any 1</magic_items></row>
+      <row><type>K</type><category_and_average_value>Incidental 5,000gp</category_and_average_value><copper_1000s>None</copper_1000s><silver_1000s>None</silver_1000s><electrum_1000s>30% 1d4</electrum_1000s><gold_1000s>25% 1d6</gold_1000s><platinum_1000s>None</platinum_1000s><gems>25% 1d4 brilliants</gems><jewelry>50% 1d4 jewelry</jewelry><magic_items>40% any 1</magic_items></row>
+      <row><type>L</type><category_and_average_value>Raider 6,000gp</category_and_average_value><copper_1000s>40% 3d6</copper_1000s><silver_1000s>60% 2d10</silver_1000s><electrum_1000s>75% 3d6</electrum_1000s><gold_1000s>None</gold_1000s><platinum_1000s>None</platinum_1000s><gems>60% 1d6 gems</gems><jewelry>40% 1d4 jewelry</jewelry><magic_items>75% 1 sword, weapon or armor; 75% 1 potion; 30% any 1</magic_items></row>
+      <row><type>M</type><category_and_average_value>Incidental 8,000gp</category_and_average_value><copper_1000s>None</copper_1000s><silver_1000s>None</silver_1000s><electrum_1000s>25% 1d4</electrum_1000s><gold_1000s>None</gold_1000s><platinum_1000s>15% 1d4</platinum_1000s><gems>30% 1d6 brilliants</gems><jewelry>50% 1d6 jewelry</jewelry><magic_items>30% any 2</magic_items></row>
+      <row><type>N</type><category_and_average_value>Hoarder 9,000gp</category_and_average_value><copper_1000s>None</copper_1000s><silver_1000s>60% 1d8</silver_1000s><electrum_1000s>60% 2d4</electrum_1000s><gold_1000s>80% 1d6</gold_1000s><platinum_1000s>None</platinum_1000s><gems>80% 1d8 gems</gems><jewelry>80% 1d8 jewelry</jewelry><magic_items>50% any 4 + 1 potion + 1 scroll</magic_items></row>
+      <row><type>O</type><category_and_average_value>Raider 12,000gp</category_and_average_value><copper_1000s>30% 3d6</copper_1000s><silver_1000s>50% 3d6</silver_1000s><electrum_1000s>60% 3d6</electrum_1000s><gold_1000s>60% 2d6</gold_1000s><platinum_1000s>None</platinum_1000s><gems>30% 1d4 brilliants</gems><jewelry>60% 1d4 jewelry</jewelry><magic_items>75% 1 sword, weapon or armor; 75% 2 potions; 50% any 2</magic_items></row>
+      <row><type>P</type><category_and_average_value>Incidental 17,000gp</category_and_average_value><copper_1000s>None</copper_1000s><silver_1000s>None</silver_1000s><electrum_1000s>None</electrum_1000s><gold_1000s>30% 1d4</gold_1000s><platinum_1000s>30% 1d4</platinum_1000s><gems>40% 1d4 brilliants</gems><jewelry>30% 1d4 regalia</jewelry><magic_items>40% any 3</magic_items></row>
+      <row><type>Q</type><category_and_average_value>Hoarder 22,000gp</category_and_average_value><copper_1000s>None</copper_1000s><silver_1000s>None</silver_1000s><electrum_1000s>50% 1d8</electrum_1000s><gold_1000s>80% 2d6</gold_1000s><platinum_1000s>40% 1d4</platinum_1000s><gems>60% 1d6 brilliants</gems><jewelry>80% 1d4 jewelry</jewelry><magic_items>1d4 potions; 1d4 scrolls; 50% any 6</magic_items></row>
+      <row><type>R</type><category_and_average_value>Hoarder 45,000gp</category_and_average_value><copper_1000s>None</copper_1000s><silver_1000s>None</silver_1000s><electrum_1000s>50% 1d6</electrum_1000s><gold_1000s>60% 1d6</gold_1000s><platinum_1000s>80% 1d8</platinum_1000s><gems>70% 1d4 brilliants</gems><jewelry>60% 1d4 regalia</jewelry><magic_items>2d4 potions; 2d4 scrolls; 75% 1d3 of each category (swords, armor, miscellaneous weapon, wand/staff/rod, miscellaneous item, ring)</magic_items></row>
+    </treasure_type_table>
+  </treasure_generation>
+
+  <gems>
+    <rule>Average gem value is 200 gp per stone.</rule>
+    <rule>All gems may share one value, receive individual values, or be grouped into several values.</rule>
+    <rule>Ornamentals are worth 10-50 gp and are rolled using 2d20.</rule>
+    <rule>Gems are worth 10-1,000 gp and are rolled using d100.</rule>
+    <rule>Brilliants are worth 500-10,000 gp and are rolled using d100+80.</rule>
+    <rule>For large-hoard conversion, each brilliant may be converted to 11 gems and each gem to 7 ornamentals.</rule>
+    <table name="gem_value">
+      <columns><column>roll</column><column>value_gp</column><column>type_examples</column></columns>
+      <row><roll>2d20</roll><value_gp>avg. 30</value_gp><type_examples>Ornamental</type_examples></row>
+      <row><roll>d100</roll><value_gp>avg. 200</value_gp><type_examples>Gem</type_examples></row>
+      <row><roll>d100+80</roll><value_gp>avg. 4,000</value_gp><type_examples>Brilliant</type_examples></row>
+      <row><roll>01-10</roll><value_gp>10</value_gp><type_examples>Azurite, hematite, malachite, obsidian, quartz</type_examples></row>
+      <row><roll>11-25</roll><value_gp>25</value_gp><type_examples>Agate, lapis lazuli, tiger eye, turquoise</type_examples></row>
+      <row><roll>26-40</roll><value_gp>50</value_gp><type_examples>Bloodstone, crystal, citrine, jasper, moonstone, onyx</type_examples></row>
+      <row><roll>41-55</roll><value_gp>75</value_gp><type_examples>Carnelian, chalcedony, sardonyx, zircon</type_examples></row>
+      <row><roll>56-70</roll><value_gp>100</value_gp><type_examples>Amber, amethyst, coral, jade, jet, tourmaline</type_examples></row>
+      <row><roll>71-80</roll><value_gp>250</value_gp><type_examples>Garnet, pearl, spinel</type_examples></row>
+      <row><roll>81-90</roll><value_gp>500</value_gp><type_examples>Aquamarine, alexandrite, topaz</type_examples></row>
+      <row><roll>91-95</roll><value_gp>750</value_gp><type_examples>Opal, star ruby, star sapphire, sunset amethyst, imperial topaz</type_examples></row>
+      <row><roll>96-00</roll><value_gp>1,000</value_gp><type_examples>Black sapphire, diamond, emerald, jacinth, ruby</type_examples></row>
+      <row><roll>101-110</roll><value_gp>1,500</value_gp><type_examples>Amber with preserved extinct creatures, whorled nephrite jade</type_examples></row>
+      <row><roll>111-125</roll><value_gp>2,000</value_gp><type_examples>Black pearl, baroque pearl, crystal geode</type_examples></row>
+      <row><roll>126-145</roll><value_gp>4,000</value_gp><type_examples>Facet cut imperial topaz, flawless diamond</type_examples></row>
+      <row><roll>146-165</roll><value_gp>6,000</value_gp><type_examples>Facet cut star sapphire or star ruby</type_examples></row>
+      <row><roll>166-175</roll><value_gp>8,000</value_gp><type_examples>Flawless facet cut diamond, emerald, jacinth or ruby</type_examples></row>
+      <row><roll>176-180</roll><value_gp>10,000</value_gp><type_examples>Flawless facet cut black sapphire or blue diamond</type_examples></row>
+    </table>
+  </gems>
+
+  <jewelry>
+    <rule>Average jewelry value is 1,000 gp per piece.</rule>
+    <rule>Trinkets are worth 2-800 gp and are generated using 2d20.</rule>
+    <rule>Jewelry is worth 2-8,000 gp and is generated using d100.</rule>
+    <rule>Regalia is worth 1,000-80,000 gp and is generated using d100+80.</rule>
+    <rule>For quantity conversion, each regalia equals 12 jewelry and each jewelry equals 4 trinkets.</rule>
+    <table name="jewelry_value">
+      <columns><column>roll</column><column>value_gp</column><column>type</column></columns>
+      <row><roll>2d20</roll><value_gp>avg. 225</value_gp><type>Trinkets</type></row>
+      <row><roll>d100</roll><value_gp>avg. 1,000</value_gp><type>Jewelry</type></row>
+      <row><roll>d100+80</roll><value_gp>avg. 11,000</value_gp><type>Regalia</type></row>
+      <row><roll>01-10</roll><value_gp>2d20</value_gp><type>Bone, scrimshaw, beast parts</type></row>
+      <row><roll>11-25</roll><value_gp>2d10x10</value_gp><type>Glass, shells, or wrought copper, brass, or bronze</type></row>
+      <row><roll>26-40</roll><value_gp>2d4x100</value_gp><type>Fine wood, porcelain, or wrought silver</type></row>
+      <row><roll>41-70</roll><value_gp>2d6x100</value_gp><type>Alabaster, chryselephantine, ivory, or wrought gold</type></row>
+      <row><roll>71-80</roll><value_gp>3d6x100</value_gp><type>Carved jade or wrought platinum</type></row>
+      <row><roll>81-95</roll><value_gp>1d4x1,000</value_gp><type>Wrought orichalcum, silver studded with turquoise, moonstone, or opal</type></row>
+      <row><roll>96-100</roll><value_gp>2d4x1,000</value_gp><type>Silver studded with jet, amber, or pearl</type></row>
+      <row><roll>101-125</roll><value_gp>3d4x1,000</value_gp><type>Gold studded with topaz, jacinth, ruby</type></row>
+      <row><roll>126-145</roll><value_gp>2d8x1,000</value_gp><type>Platinum studded with diamond, sapphire, emerald</type></row>
+      <row><roll>146-155</roll><value_gp>3d6x1,000</value_gp><type>Electrum or silver pendant with pearls and star rubies</type></row>
+      <row><roll>156-165</roll><value_gp>2d20x1,000</value_gp><type>Gold or platinum with diamonds and sapphires</type></row>
+      <row><roll>166-175</roll><value_gp>1d4x10,000</value_gp><type>Gold encrusted with flawless facet cut diamonds</type></row>
+      <row><roll>176-180</roll><value_gp>1d8x10,000</value_gp><type>Platinum encrusted with flawless black sapphires or blue diamonds</type></row>
+    </table>
+  </jewelry>
+
+  <special_treasures>
+    <rule>Special treasures replace coin, gem, or jewelry lots with trade goods or luxury goods.</rule>
+    <rule>A lot is 1 piece of jewelry, 1 gem, or 1,000 coins.</rule>
+    <procedure>
+      <step order="1">Generate treasure normally.</step>
+      <step order="2">Divide treasure into lots.</step>
+      <step order="3">Roll once per lot on the replacement table for that lot type.</step>
+      <step order="4">Replace the lot only if the table result is a special treasure rather than the original coin/gem/jewelry.</step>
+      <step order="5">Roll sub-quantities and values for the replacement item.</step>
+    </procedure>
+    <tables_compact>
+      <table name="per_1000_cp"><row><result>1: 1d3 rugs or tapestries, 5gp each, 2d6 stone each</result></row><row><result>2: 1d3 barrels of preserved fish, 5gp each, 8 stone each</result></row><row><result>3: 1d3 tenths of a cord of hardwood log, 5gp each, 8 stone each</result></row><row><result>4: 1d3 barrels of beer, 10gp each, 8 stone each</result></row><row><result>5: 2d6 bricks of salt, 7sp each, 1/2 stone each</result></row><row><result>6: 2d4 gallons of lamp oil, 2gp each, 1/2 stone each</result></row><row><result>7: 1d3 rolls of cloth, 10gp each, 4 stone each</result></row><row><result>8: 3d6 ingots of common metals, 1gp each, 1/2 stone each</result></row><row><result>9-20: 1,000 copper pieces</result></row></table>
+      <table name="per_1000_sp"><row><result>1: 1d100 animal horns, 2gp each, 1 stone per 5 horns</result></row><row><result>2: 2d4 jars of lamp oil, 20gp each, 6 stone per jar</result></row><row><result>3: 2d20 bottles of fine wine, 5gp each, 1 stone per 5 bottles</result></row><row><result>4: 3d6 rolls of garishly dyed cloth, 10gp each, 4 stone each</result></row><row><result>5: 1d3 jars of dyes and pigments, 50gp each, 5 stone each</result></row><row><result>6: 1d3 crates of terra-cotta pottery, 100gp each, 5 stone each</result></row><row><result>7: 1d3 bags of loose tea, 75gp each, 5 stone each</result></row><row><result>8: 2d6 bundles of fur pelts, 15gp each, 3 stone per bundle</result></row><row><result>9-20: 1,000 silver pieces</result></row></table>
+      <table name="per_1000_ep"><row><result>1: 1d4 barrels of fine spirits or liquor, 200gp each, 16 stone each</result></row><row><result>2: 1d3 crates of armor and weapons, 225gp each, 10 stone each</result></row><row><result>3: 1d4 crates of glassware, 200gp each, 5 stone each</result></row><row><result>4: 1d3 crates of monster parts, 300gp each, 5 stone each</result></row><row><result>5-10: 1,000 electrum pieces</result></row></table>
+      <table name="per_1000_gp"><row><result>1: 1d3 bundles of rare fur pelts, 500gp each, 5 stone each</result></row><row><result>2: 1d3 jars of spices, 800gp each, 1 stone each</result></row><row><result>3: 1d10x50 monster feathers, 1d6gp each, 1 stone per 25 feathers</result></row><row><result>4: 1d100 monster horns, value 1d10 HD x 1d4+1 gp/HD, 1 stone per 20 HD</result></row><row><result>5: 1d6 monster carcasses, value 1d10 HD x 1d10x10 gp/HD, 1 stone per HD</result></row><row><result>6: 1d4 crates of fine porcelain, 500gp each, 2 stone each</result></row><row><result>7: 2d20 pieces of ivory, 1d100gp each, 1 stone per 100gp value</result></row><row><result>8: 1d3 rolls of silk, 400gp each, 4 stone each</result></row><row><result>9-20: 1,000 gold pieces</result></row></table>
+      <table name="per_1000_pp"><row><result>1: 5d10 rare books, 150gp each, 1 stone per 2 books</result></row><row><result>2: 1d3 ornamental jars of rare spices, 2,500gp each, 4 stone each</result></row><row><result>3: 5d20 typical fur capes, 100gp each, 1 stone each</result></row><row><result>4: 4d8 ingots of precious metals, 300gp each, 2 stone each</result></row><row><result>5-10: 1,000 platinum pieces</result></row></table>
+      <table name="per_ornamental"><row><result>1: 1d12 silver arrows, 5gp each</result></row><row><result>2: 1d6 pouches of belladonna or wolfsbane, 10gp each</result></row><row><result>3: 1d4 pouches of saffron, 15gp each</result></row><row><result>4-8: 1 ornamental</result></row></table>
+      <table name="per_gem"><row><result>1: 1d3 sets of engraved teeth, each worth 2d6x10gp, 1 stone per 100 sets</result></row><row><result>2: 1d10 sticks of rare incense, each worth 5d6gp, 1 stone per 100 sticks</result></row><row><result>3: 1d3 vials of rare perfume, each worth 1d6x25gp, 1 stone per 100 vials</result></row><row><result>4-8: 1 gem or 2d6 ornamentals</result></row></table>
+      <table name="per_brilliant"><row><result>1: 2d20 jade carvings, 200gp each</result></row><row><result>2: 1d8 opal cameo portraits and intaglio erotic tableaux, 800gp each</result></row><row><result>3: 1d6 amethyst cylinder seals depicting religious scenes, 1,200gp each</result></row><row><result>4-8: 1 brilliant or 4d8 gems</result></row></table>
+      <table name="per_trinket"><row><result>1: 2d6 glass eyes, lenses, or prisms, each worth 1d6x10gp</result></row><row><result>2: 1d4 silver holy or unholy symbols, each worth 2d8x10gp</result></row><row><result>3: 3d6 bone fetishes and figurines, each worth 2d20gp</result></row><row><result>4-8: 1 trinket</result></row></table>
+      <table name="per_piece_of_jewelry"><row><result>1: 1 rich fur cape, worth 4d6x100gp, 1 stone</result></row><row><result>2: 1 rich fur coat, worth 1d6x1000gp, 1 stone</result></row><row><result>3: 1d3 statuettes, worth 1d10x100gp, 1 stone per 1d3 statuettes</result></row><row><result>4-8: 1 piece of jewelry</result></row></table>
+      <table name="per_regalia"><row><result>1: 2d10 alabaster and jet game pieces with jeweled eyes, worth 3d6x100gp each</result></row><row><result>2: 1d4 platinum reliquaries with crystal panes, worth 1d8x1000gp each</result></row><row><result>3: 1d8 carved ivory netsuke and figurines, worth 1d4x1000 each</result></row><row><result>4-8: 1 regalia or 4d8 pieces of jewelry</result></row></table>
+    </tables_compact>
+  </special_treasures>
+
+  <scavenging_treasure>
+    <rule>Scavenged equipment is almost always in bad repair.</rule>
+    <rule>Roll 1d20 on the applicable table.</rule>
+    <rule>Effects are cumulative.</rule>
+    <rule>Damage penalties cannot reduce weapon damage below 1.</rule>
+    <rule>Armor Class or attack throw penalties cannot be worse than -5.</rule>
+    <rule>Weapons and equipment marked as breakable are destroyed on an unmodified attack or use roll of 1.</rule>
+    <table name="bladed_weapons"><row><roll>1-2</roll><category>Serviceable</category><effect>none</effect><value>100%</value></row><row><roll>3-6</roll><category>Blade dented</category><effect>-1 damage</effect><value>-20%</value></row><row><roll>7-10</roll><category>Blade rusty</category><effect>-1 damage</effect><value>-20%</value></row><row><roll>11-14</roll><category>Off balance</category><effect>-1 to attacks</effect><value>-20%</value></row><row><roll>15-16</roll><category>Loose hilt or haft</category><effect>-1 to initiative</effect><value>-20%</value></row><row><roll>17-18</roll><category>Shoddy construction</category><effect>breaks</effect><value>-20%</value></row><row><roll>19-20</roll><category>Roll again twice</category><effect>none</effect><value>none</value></row></table>
+    <table name="blunt_weapons"><row><roll>1-2</roll><category>Serviceable</category><effect>none</effect><value>100%</value></row><row><roll>3-6</roll><category>Soft head</category><effect>-1 damage</effect><value>-20%</value></row><row><roll>7-10</roll><category>Wobbly head</category><effect>-1 damage</effect><value>-20%</value></row><row><roll>11-14</roll><category>Off balance</category><effect>-1 to attacks</effect><value>-20%</value></row><row><roll>15-16</roll><category>Wobbly head</category><effect>-1 to initiative</effect><value>-20%</value></row><row><roll>17-18</roll><category>Shoddy construction</category><effect>breaks</effect><value>-20%</value></row><row><roll>19-20</roll><category>Roll again twice</category><effect>none</effect><value>none</value></row></table>
+    <table name="armor_and_equipment"><row><roll>1-2</roll><category>Serviceable</category><effect>none</effect><value>100%</value></row><row><roll>3-6</roll><category>Broken straps</category><effect>+1 stone encumbrance</effect><value>-20%</value></row><row><roll>7-10</roll><category>Rattles if moved</category><effect>cannot move silently</effect><value>-20%</value></row><row><roll>11-14</roll><category>Rotting</category><effect>-1 Armor Class or breaks</effect><value>-20%</value></row><row><roll>15-16</roll><category>Makeshift work</category><effect>-1 Armor Class or breaks</effect><value>-20%</value></row><row><roll>17-18</roll><category>Torn or ripped</category><effect>breaks</effect><value>-20%</value></row><row><roll>19-20</roll><category>Roll again twice</category><effect>none</effect><value>none</value></row></table>
+  </scavenging_treasure>
+
+  <magic_items>
+    <identification_and_use>
+      <rule>Most magic items are unlabeled.</rule>
+      <rule>Common or famous magic items may be identified by sages or characters proficient in Magical Engineering or Loremastery.</rule>
+      <rule>Potions may be identified by sipping or by consulting an alchemist.</rule>
+      <rule>Other items can be identified with Magic Research by an arcane spellcaster of 9th level or greater.</rule>
+      <rule>To use a magic item, follow the procedures in its description.</rule>
+      <rule>Some magic items are always active; others require an action or concentration.</rule>
+      <rule>Charges are limited uses; one charge produces one instance of effect.</rule>
+      <rule>Without Magic Research, a character does not know the number of remaining charges.</rule>
+      <rule>An item with no charges remaining becomes useless and non-magical.</rule>
+    </identification_and_use>
+
+    <random_magic_type_table>
+      <row><roll>01-20</roll><type>Potions</type></row>
+      <row><roll>21-25</roll><type>Rings</type></row>
+      <row><roll>26-56</roll><type>Scrolls</type></row>
+      <row><roll>57-61</roll><type>Rods, Staffs, and Wands</type></row>
+      <row><roll>62-66</roll><type>Miscellaneous Magic</type></row>
+      <row><roll>67-87</roll><type>Swords</type></row>
+      <row><roll>88-92</roll><type>Miscellaneous Weapon</type></row>
+      <row><roll>93-100</roll><type>Armor</type></row>
+    </random_magic_type_table>
+
+    <random_item_tables>
+      <note>See source tables for full d00 distributions by category; core rows are preserved below.</note>
+      <potions_table>Animal Control; Clairaudience; Clairvoyance; Climbing; Delusion; Diminution; Dragon Control; ESP; Extra-Healing; Fire Resistance; Flying; Gaseous Form; Giant Control; Giant Strength; Growth; Healing; Heroism; Human Control; Invisibility; Invulnerability; Levitation; Longevity; Oil of Sharpness; Oil of Slipperiness; Philter of Love; Plant Control; Poison; Polymorph; Speed; Super-Heroism; Sweet Water; Treasure Finding; Undead Control; Water Breathing.</potions_table>
+      <rings_table>Command Animal; Command Human; Command Plant; Delusion; Djinni Calling; Fire Resistance; Invisibility; Protection; Regeneration; Spell Storing; Spell Turning; Telekinesis; Water Walking; Weakness; Wishes; X-Ray Vision.</rings_table>
+      <scrolls_table>Cursed; Ward against Elementals; Ward against Lycanthropes; Ward against Magic; Ward against Undead; spell scrolls containing 1-7 spells; treasure maps to coin, gems, and/or magic items.</scrolls_table>
+      <rods_staffs_wands_table>Rod of Cancellation; Rod of Resurrection; Staff of Commanding [D]; Staff of Healing [D]; Staff of Power [A]; Staff of Striking [D]; Staff of Withering [D]; Staff of Wizardry [A]; Staff of the Serpent [D]; Wand of Cold; Wand of Detecting Enemies; Wand of Detecting Magic; Wand of Detecting Metals; Wand of Detecting Secret Doors; Wand of Detecting Traps; Wand of Device Negation; Wand of Fear; Wand of Fire Balls; Wand of Illusion; Wand of Lightning Bolts; Wand of Magic Missiles; Wand of Paralyzation; Wand of Polymorphing.</rods_staffs_wands_table>
+      <miscellaneous_magic_table>Amulet versus Crystal Balls and ESP; Apparatus of the Crab; Bag of Devouring; Bag of Holding; Boat, Folding; Boots of Levitation; Boots of Speed; Boots of Traveling and Springing; Bowl of Commanding Water Elementals; Bracers of Armor; Brazier of Commanding Fire Elementals; Brooch of Shielding; Broom of Flying; Censer of Controlling Air Elementals; Chime of Opening; Cloak of Protection; Crystal Ball; Crystal Ball with Clairaudience; Crystal Ball with ESP; Cube of Force; Cube of Frost Resistance; Decanter of Endless Water; Displacer Cloak; Drums of Panic; Dust of Appearance; Dust of Disappearance; Efreeti Bottle; Elven Cloak; Elven Boots; Eyes of Charming; Eyes of the Eagle; Eyes of Petrification; Flying Carpet; Gauntlets of Ogre Power; Girdle of Giant Strength; Helm of Alignment Changing; Helm of Comprehending Languages; Helm of Telepathy; Helm of Teleportation; Horn of Blasting; Medallion of ESP; Medallion of ESP (90'); Mirror of Life Trapping; Mirror of Opposition; Necklace of Adaptation; Rope of Climbing; Scarab of Protection; Stone of Controlling Earth Elementals.</miscellaneous_magic_table>
+      <weapons_table>Swords include Sword +1, specialized +1 swords, Flame Tongue, Life Drinker, locate objects, Luck Blade, Sword +2, charm person, Sword +3, Frost Brand, Vorpal, and cursed swords. Miscellaneous weapons include magical arrows, axes, bows, bolts, daggers, slings, spears, and war hammers. Armor table includes magical armor and shields from +1 to +3, as well as cursed armor and cursed shields.</weapons_table>
+    </random_item_tables>
+
+    <general_category_rules>
+      <potions>
+        <rule>Most potions contain one dose.</rule>
+        <rule>Drinking a potion takes 1 round.</rule>
+        <rule>Potions take effect in the same round they are consumed.</rule>
+        <rule>Default duration is 1d6+6 turns unless a specific potion says otherwise.</rule>
+        <rule>If a character drinks a second potion while one is active, the character is sickened and cannot act for 3 turns; neither potion has any other effect.</rule>
+      </potions>
+      <scrolls>
+        <rule>Spell scrolls contain arcane spells on 1-3 on 1d4 and divine spells on 4 on 1d4.</rule>
+        <rule>The number in parentheses on the random table is the number of spells on the scroll.</rule>
+        <rule>Spell level and specific spells are determined randomly.</rule>
+      </scrolls>
+      <weapons_and_armor>
+        <rule>Magical weapons and armor follow the same class restrictions as normal weapons and armor.</rule>
+        <rule>A plus value adds to attack and damage for weapons or improves AC for armor or shields.</rule>
+        <rule>A negative value is cursed and applies penalties instead.</rule>
+        <rule>Cursed items cannot be discarded except by dispel evil or remove curse.</rule>
+        <rule>The owner of a cursed item will not believe it is cursed and resists giving it up.</rule>
+        <rule>The possessor of a cursed weapon prefers to use it over other weapons.</rule>
+        <rule>Non-cursed magical armor weighs less than normal. After the first +1, reduce magical armor weight by 1 additional stone per further +1 to a minimum of 0.</rule>
+      </weapons_and_armor>
+    </general_category_rules>
+
+    <selected_item_mechanics>
+      <item name="animal_control_potion"><rule>Controls up to 3d6 HD of normal or giant animals within 60' as charm monster.</rule><rule>Humans, demi-humans, humanoids, and fantastic creatures cannot be controlled.</rule><rule>Intelligent animals save vs Staffs; unintelligent animals do not save.</rule><rule>When control ends, unintelligent animals flee if able; intelligent animals become hostile.</rule></item>
+      <item name="climbing_potion"><rule>Allows climbing sheer surfaces without equipment.</rule><rule>Requires proficiency throw 2+ on 1d20 per 100' climbed, at least once per climb.</rule></item>
+      <item name="diminution_potion"><rule>Shrinks drinker and carried gear to 6 inches tall.</rule><rule>If motionless, can avoid being spotted on proficiency throw 3+ on 1d20.</rule><rule>Normal damage only against targets smaller than 1'; larger targets take 1 hp per hit.</rule><rule>Cancels Growth with no ill effect.</rule></item>
+      <item name="extra_healing_potion"><rule>Full dose heals 3d6+3 damage.</rule><rule>Can instead be consumed in three equal portions, each healing 1d6+1.</rule></item>
+      <item name="fire_resistance_potion"><rule>Immunity to ordinary flame.</rule><rule>+2 to saving throws versus fire attacks.</rule><rule>Reduces magical or dragon fire damage by 1 per die to a minimum of 1 per die.</rule></item>
+      <item name="gaseous_form_potion"><rule>Transforms drinker into gas.</rule><rule>All worn or carried items drop immediately.</rule><rule>Cannot attack.</rule><rule>Movement 30' per round; can pass under doors and through small non-airtight gaps.</rule><rule>AC 11 and immune to non-magical weapons.</rule></item>
+      <item name="giant_strength_potion"><rule>Functions as hill giant strength.</rule><rule>Attack as 8 HD monster or own class and level, whichever is better.</rule><rule>Deal double normal damage.</rule><rule>Can throw rocks to 200' for 3d6 damage.</rule><rule>+16 to force open doors.</rule></item>
+      <item name="healing_potion"><rule>Heals 1d6+1 damage or cures paralysis.</rule></item>
+      <item name="heroism_potion"><rule>Usable only by assassin, dwarven vaultguard, elven spellsword, explorer, or fighter.</rule><rule>Temporarily grants extra combat levels according to the source table.</rule></item>
+      <item name="oil_of_sharpness"><rule>Applied to a weapon or 20 missiles.</rule><rule>Usually grants +3 to attack and damage or equivalent enhancement per source description.</rule></item>
+      <item name="poison_potion"><rule>Poison effect resolves according to the source potion description and relevant saves.</rule></item>
+      <item name="spell_storing_ring"><rule>Stores spells and releases them later as described in the ring entry.</rule></item>
+      <item name="spell_turning_ring"><rule>Turns spells back on the caster according to the ring entry.</rule></item>
+      <item name="wishes_ring"><rule>Contains wishes as specified in the ring entry.</rule></item>
+      <item name="cursed_scroll"><rule>Triggers the curse or harmful effect described on the cursed scroll entry when read.</rule></item>
+      <item name="scroll_of_warding"><rule>Any literate character can use it.</rule><rule>Reading it creates a 10' radius protective barrier centered on the reader.</rule><rule>The barrier moves with the reader.</rule><rule>Protected creatures cannot enter but can still attack with missiles or spells.</rule><rule>The protection lasts until dismissed or until anyone inside the area attempts melee against a protected creature type.</rule></item>
+      <item name="wand_of_fear"><rule>Produces fear effect as the wand entry describes.</rule></item>
+      <item name="wand_of_fire_balls"><rule>Produces fire ball effect per use.</rule></item>
+      <item name="bag_of_holding"><rule>Expands carrying capacity per bag entry.</rule></item>
+      <item name="boots_of_speed"><rule>Increase movement and related timing as described in item entry.</rule></item>
+      <item name="bracers_of_armor"><rule>Provide AC bonus as armor equivalent; details in item entry.</rule></item>
+      <item name="cloak_of_protection"><rule>Provides bonuses to AC and saving throws; cumulative with ring of protection.</rule></item>
+      <item name="cube_of_force"><rule>Creates force barrier according to item controls and drain rules.</rule></item>
+      <item name="displacer_cloak"><rule>Creates displacement effect making wearer harder to hit.</rule></item>
+      <item name="elven_cloak"><rule>Grants concealment as item entry describes.</rule></item>
+      <item name="flying_carpet"><rule>Provides flying movement according to carpet size and load.</rule></item>
+      <item name="girdle_of_giant_strength"><rule>Grants giant-like strength per item category.</rule></item>
+      <item name="horn_of_blasting"><rule>Produces destructive sonic effect per item entry.</rule></item>
+      <item name="rope_of_climbing"><rule>Moves and ties itself on command according to the entry.</rule></item>
+      <item name="stone_of_controlling_earth_elementals"><rule>Once per day summons and controls one earth elemental as conjure elemental.</rule><rule>User must ready the item and perform 1 turn of rituals before summoning.</rule><rule>The summoning itself takes 1 round.</rule><rule>Continuous concentration is required to command the elemental.</rule></item>
+      <item name="flame_tongue"><rule>Weapon is +2 versus regenerating or avian monsters and +3 versus undead or plant-like monsters.</rule><rule>On command it ignites, sheds torchlight, and can ignite flammables.</rule></item>
+      <item name="life_drinker"><rule>On command drains 1 HD or 1 life level from any struck target.</rule><rule>Has 1d4+4 charges; each drain uses 1 charge.</rule><rule>After charges are spent it is a normal sword +1.</rule></item>
+      <item name="luck_blade"><rule>Grants +1 on all saving throws.</rule><rule>Contains 1d4+1 wishes.</rule><rule>After the last wish, it remains a sword +1 with the saving throw bonus.</rule></item>
+      <item name="frost_brand"><rule>Functions as sword +6 versus creatures from hot environments or with fire-based attacks.</rule><rule>Sheds torchlight when temperature is below 0 degrees Fahrenheit.</rule><rule>At that temperature it cannot be concealed when drawn and its light cannot be shut off.</rule><rule>Protects wielder from fire as a ring of fire resistance.</rule><rule>Extinguishes all non-magical fires in a 10' area when touched to a flame.</rule></item>
+      <item name="vorpal_sword"><rule>On a natural 20 attack throw, decapitates a struck target unless it saves versus Death.</rule><rule>If the save succeeds, or if the target has no head, the attack instead deals double normal damage.</rule></item>
+      <item name="dwarven_thrower"><rule>For non-dwarves it is an ordinary war hammer +2.</rule><rule>For dwarves it becomes +3, can be thrown to 60', returns automatically, deals triple damage to giant humanoids, and double damage to all other targets.</rule></item>
+      <item name="slaying_arrow"><rule>Arrow +3 keyed to a specific creature type.</rule><rule>If it strikes the keyed type, the target dies instantly with no save.</rule><rule>Against other targets it is just an arrow +3.</rule></item>
+    </selected_item_mechanics>
+
+    <armor_type_table>
+      <row><roll>01-05</roll><armor_type>Hide Armor</armor_type><unmodified_ac>1</unmodified_ac><magic_weight_stone>0</magic_weight_stone></row>
+      <row><roll>06-30</roll><armor_type>Leather Armor</armor_type><unmodified_ac>2</unmodified_ac><magic_weight_stone>1</magic_weight_stone></row>
+      <row><roll>31-35</roll><armor_type>Ring Mail</armor_type><unmodified_ac>3</unmodified_ac><magic_weight_stone>2</magic_weight_stone></row>
+      <row><roll>36-40</roll><armor_type>Scale Armor</armor_type><unmodified_ac>3</unmodified_ac><magic_weight_stone>2</magic_weight_stone></row>
+      <row><roll>41-65</roll><armor_type>Chain Mail</armor_type><unmodified_ac>4</unmodified_ac><magic_weight_stone>3</magic_weight_stone></row>
+      <row><roll>66-70</roll><armor_type>Banded Plate</armor_type><unmodified_ac>5</unmodified_ac><magic_weight_stone>4</magic_weight_stone></row>
+      <row><roll>71-75</roll><armor_type>Lamellar Armor</armor_type><unmodified_ac>5</unmodified_ac><magic_weight_stone>4</magic_weight_stone></row>
+      <row><roll>76-00</roll><armor_type>Plate Armor</armor_type><unmodified_ac>6</unmodified_ac><magic_weight_stone>5</magic_weight_stone></row>
+    </armor_type_table>
+
+    <slaying_arrow_type_table>
+      <row><roll>1</roll><type>Avians</type></row><row><roll>2</roll><type>Beastmen</type></row><row><roll>3</roll><type>Clerics</type></row><row><roll>4</roll><type>Dragons</type></row><row><roll>5</roll><type>Dwarves</type></row><row><roll>6</roll><type>Elementals</type></row><row><roll>7</roll><type>Elves</type></row><row><roll>8</roll><type>Fighters</type></row><row><roll>9</roll><type>Giants</type></row><row><roll>10</roll><type>Giant animals</type></row><row><roll>11</roll><type>Golems</type></row><row><roll>12</roll><type>Mages</type></row><row><roll>13</roll><type>Mammals</type></row><row><roll>14</roll><type>Plant-like monsters</type></row><row><roll>15</roll><type>Regenerating monsters</type></row><row><roll>16</roll><type>Reptiles</type></row><row><roll>17</roll><type>Sea creatures</type></row><row><roll>18</roll><type>Thieves</type></row><row><roll>19</roll><type>Undead</type></row><row><roll>20</roll><type>Vermin</type></row>
+    </slaying_arrow_type_table>
+
+    <sentient_weapons>
+      <rule>Particularly powerful magic weapons can be sentient.</rule>
+      <rule>Judge plays a sentient weapon as an NPC.</rule>
+      <rule>Chance for a sword to be sentient is highest magical bonus x 2 percent.</rule>
+      <rule>Chance for another magic weapon to be sentient is highest magical bonus percent.</rule>
+      <rule>Double that chance for Life Drinker, Luck Blade, Vorpal Blade, and Dwarven Thrower.</rule>
+      <generation>
+        <step order="1">Determine whether the weapon is sentient.</step>
+        <step order="2">If sentient, determine Intelligence, Alignment, Ego, Willpower, and Powers.</step>
+      </generation>
+      <intelligence_table>
+        <row><roll>1</roll><int>7</int><detection_powers>1</detection_powers><spell_like_powers>0</spell_like_powers><communication>Empathy</communication></row>
+        <row><roll>2</roll><int>8</int><detection_powers>2</detection_powers><spell_like_powers>0</spell_like_powers><communication>Empathy</communication></row>
+        <row><roll>3</roll><int>9</int><detection_powers>3</detection_powers><spell_like_powers>0</spell_like_powers><communication>Empathy</communication></row>
+        <row><roll>4</roll><int>10</int><detection_powers>3</detection_powers><spell_like_powers>0</spell_like_powers><communication>Speech</communication></row>
+        <row><roll>5</roll><int>11</int><detection_powers>3</detection_powers><spell_like_powers>0</spell_like_powers><communication>Speech, Read Languages</communication></row>
+        <row><roll>6</roll><int>12</int><detection_powers>3</detection_powers><spell_like_powers>1</spell_like_powers><communication>Speech, Read Languages</communication></row>
+      </intelligence_table>
+      <alignment_table><row><roll>01-10</roll><alignment>Chaotic</alignment></row><row><roll>11-30</roll><alignment>Neutral</alignment></row><row><roll>31-00</roll><alignment>Lawful</alignment></row></alignment_table>
+      <rule>Empathy conveys intuitive knowledge of powers and use without words.</rule>
+      <rule>Read Languages is always active and functions as the arcane spell.</rule>
+      <rule>In addition to maker language, weapon knows extra languages from a 1d20 roll: 01-10 one, 11-14 two, 15-17 three, 18 four, 19 five, 20 six.</rule>
+      <alignment_rules>
+        <rule>Alignment is undetectable until touched.</rule>
+        <rule>A character may only wield a sentient sword with the same alignment.</rule>
+        <rule>Touching or wielding a sword of differing alignment causes 1d6 damage per degree of alignment difference each round.</rule>
+      </alignment_rules>
+      <ego_and_willpower>
+        <rule>Ego is 1d12.</rule>
+        <rule>Weapon base willpower = INT + EGO + 1 per spell-like power.</rule>
+        <rule>Character willpower = WIS + STR + 1 per level beyond 8.</rule>
+        <rule>If wounded but at 50% hp or more, subtract 1d4 from character willpower.</rule>
+        <rule>If below 50% hp, subtract 2d4 from character willpower.</rule>
+        <rule>Weapon gets +1d10 willpower if its alignment differs from the character's.</rule>
+        <rule>Influence checks occur when first touched, when motivation is relevant, when touched by different alignment, when another magic sword is found, and when a character has lost 50% of hp.</rule>
+        <rule>Higher willpower wins the influence check.</rule>
+        <rule>If the character loses, the Judge determines a period of control during which the weapon forces action serving its desires.</rule>
+      </ego_and_willpower>
+      <motivations>
+        <rule>5% chance to have a special motivation; roll 01-05 on d00.</rule>
+        <rule>If motivated, set INT and EGO both to 12.</rule>
+        <table name="motivation">
+          <row><roll>1</roll><target>Judge's choice</target></row>
+          <row><roll>2</roll><target>Beastmen</target></row>
+          <row><roll>3</roll><target>Constructs</target></row>
+          <row><roll>4</roll><target>Fantastic Creatures</target></row>
+          <row><roll>5</roll><target>Giant Humanoids</target></row>
+          <row><roll>6</roll><target>Humans and Demi-humans</target></row>
+          <row><roll>7</roll><target>Summoned Creatures</target></row>
+          <row><roll>8</roll><target>Oozes and Vermin</target></row>
+          <row><roll>9</roll><target>Undead</target></row>
+          <row><roll>10</roll><target>Opposed alignment</target></row>
+        </table>
+        <rule>Against a motivated target, chaotic weapons energy drain 1 level per magical bonus, lawful weapons deal 1 extra damage die per magical bonus, and neutral weapons grant the wielder an AC and saving throw bonus equal to the weapon's magical bonus.</rule>
+      </motivations>
+      <powers>
+        <rule>Sentient weapons have detection powers and spell-like powers.</rule>
+        <rule>The wielder must hold the weapon to activate or maintain a power.</rule>
+        <rule>No more than one power can be active at once.</rule>
+        <rule>Each detection power can be used up to 3 times per day.</rule>
+        <rule>All spell-like powers together can be used 3 times total per day.</rule>
+        <rule>When rolling for powers, reroll or ignore identical results where required.</rule>
+        <detection_powers_table>
+          <row><roll>01-10</roll><power>Enemies</power><details>As the wand</details></row>
+          <row><roll>11-20</roll><power>Evil</power><details>As the spell</details></row>
+          <row><roll>21-30</roll><power>Good</power><details>As the spell</details></row>
+          <row><roll>31-45</roll><power>Magic</power><details>As the spell</details></row>
+          <row><roll>46-60</roll><power>Metals</power><details>As the wand</details></row>
+          <row><roll>61-70</roll><power>Invisible or hidden</power><details>As the spell</details></row>
+          <row><roll>71-80</roll><power>Secret doors</power><details>As the wand</details></row>
+          <row><roll>81-90</roll><power>Traps</power><details>As the spell</details></row>
+          <row><roll>91-95</roll><power>Roll two times</power><details></details></row>
+          <row><roll>96-100</roll><power>Spell-like Power (1)</power><details></details></row>
+        </detection_powers_table>
+        <spell_like_powers_table>
+          <row><roll>01-10</roll><power>Clairaudience</power><details>As clairvoyance but audible instead of visual</details></row>
+          <row><roll>11-20</roll><power>Clairvoyance</power><details>As the spell</details></row>
+          <row><roll>21-25</roll><power>Double damage</power><details>Doubles damage for 1d10 rounds; if rolled twice damage x4; if rolled three times damage x6; does not modify attack throw</details></row>
+          <row><roll>26-35</roll><power>ESP</power><details>As the spell</details></row>
+          <row><roll>36-40</roll><power>Fly</power><details>As the spell for 9 turns</details></row>
+          <row><roll>41-45</roll><power>Regenerate</power><details>Heals wielder 1 hp per round while held, up to 15 hp; if rolled twice heal cap 30 hp; if rolled three times heal cap 45 hp</details></row>
+          <row><roll>46-50</roll><power>Levitate</power><details>As the spell for 15 turns</details></row>
+          <row><roll>51-57</roll><power>Phantasmal Force</power><details>As the spell</details></row>
+          <row><roll>58-67</roll><power>Telekinesis</power><details>As a ring of telekinesis</details></row>
+          <row><roll>68-77</roll><power>Telepathy</power><details>As a helm of telepathy</details></row>
+          <row><roll>78-86</roll><power>Teleportation</power><details>As the spell</details></row>
+          <row><roll>87-96</roll><power>X-Ray Vision</power><details>As a ring of x-ray vision</details></row>
+          <row><roll>97-99</roll><power>Roll twice</power><details></details></row>
+          <row><roll>00</roll><power>Roll three times</power><details></details></row>
+        </spell_like_powers_table>
+      </powers>
+    </sentient_weapons>
+  </magic_items>
+
+  <magic_item_market>
+    <selling>
+      <rule>Adventurers sell self-made items for twice the base cost to create them.</rule>
+      <rule>Adventurers sell identified found items for the base cost to create them.</rule>
+      <rule>A market must be large enough to have buyers.</rule>
+      <rule>Chance or quantity of buyers per month depends on item price and market class.</rule>
+    </selling>
+    <buying>
+      <rule>Adventurers buy magic items for twice the base cost to create them.</rule>
+      <rule>A market must be large enough to have sellers.</rule>
+      <rule>Availability per month depends on item price and market class.</rule>
+      <rule>Even large markets usually have only small quantities available.</rule>
+    </buying>
+    <transactions_by_market_class>
+      <row><price>1gp or less</price><class_i>1,700</class_i><class_ii>585</class_ii><class_iii>260</class_iii><class_iv>65</class_iv><class_v>30</class_v><class_vi>10</class_vi></row>
+      <row><price>2gp-10gp</price><class_i>100</class_i><class_ii>30</class_ii><class_iii>15</class_iii><class_iv>5</class_iv><class_v>1</class_v><class_vi>1</class_vi></row>
+      <row><price>11-100gp</price><class_i>15</class_i><class_ii>5</class_ii><class_iii>2</class_iii><class_iv>1</class_iv><class_v>25%</class_v><class_vi>10%</class_vi></row>
+      <row><price>101-1,000gp</price><class_i>7</class_i><class_ii>2</class_ii><class_iii>1</class_iii><class_iv>25%</class_iv><class_v>10%</class_v><class_vi>5%</class_vi></row>
+      <row><price>1,001-10,000gp</price><class_i>2</class_i><class_ii>1</class_ii><class_iii>25%</class_iii><class_iv>10%</class_iv><class_v>5%</class_v><class_vi>1%</class_vi></row>
+      <row><price>10,001gp or more</price><class_i>10%</class_i><class_ii>5%</class_ii><class_iii>2%</class_iii><class_iv>NA</class_iv><class_v>NA</class_v><class_vi>NA</class_vi></row>
+    </transactions_by_market_class>
+    <commissioning>
+      <rule>Commissioned magic-item creators for hire are found only in Class I markets or through adventuring contacts.</rule>
+      <rule>The commissioner pays the item's base cost, precious materials, and any required special components up front.</rule>
+      <rule>On successful completion, the commissioner pays an additional fee equal to 7,000 gp per month or twice the base cost, whichever is greater.</rule>
+      <rule>Base creation cost and time come from the Magic Item Creation rules in the magic research chapter.</rule>
+    </commissioning>
+  </magic_item_market>
+</treasure_rules_summary>

@@ -1,0 +1,1256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<campaign_play_summary source="Axioms Special Edition 2016" section="Campaign Play">
+  <monthly_cycle>
+    <time_unit>game_month</time_unit>
+
+    <stage name="start_of_month">
+      <phase name="domain_growth">
+        <rule>Each PC and named NPC ruler's domain grows according to domain growth rules.</rule>
+        <subphase name="adventuring">
+          <rule>Determine growth triggered by the ruler's adventures occurring in the prior game month.</rule>
+        </subphase>
+        <subphase name="investment">
+          <rule>Determine growth triggered by agricultural or urban investments made in the prior game month.</rule>
+        </subphase>
+        <subphase name="random_growth">
+          <rule>Determine growth from fortune and misfortune as +1d10-1d10.</rule>
+        </subphase>
+      </phase>
+
+      <phase name="congregant_growth">
+        <rule>Each divine spellcaster gains 1d10 + Charisma bonus congregants per 1,000gp spent proselytizing during the prior month's campaign activities stage.</rule>
+      </phase>
+
+      <phase name="revenue_collection">
+        <rule>Each PC and named NPC ruler collects revenue from domain and urban settlement.</rule>
+        <subphase name="domain_revenue">
+          <rule>Collect land, service, and tax revenue.</rule>
+        </subphase>
+        <subphase name="urban_revenue">
+          <rule>Collect urban revenue.</rule>
+        </subphase>
+        <subphase name="tribute">
+          <rule>Collect vassal revenue from loyal vassals.</rule>
+        </subphase>
+        <subphase name="special_taxes">
+          <rule>Collect special tax revenue from loyal vassals on whom the Tax Demanded duty was imposed or maintained last month.</rule>
+        </subphase>
+        <subphase name="loans">
+          <rule>Collect loans from loyal vassals on whom the Loan Demanded duty was imposed or maintained last month.</rule>
+        </subphase>
+        <subphase name="investment_revenue">
+          <rule>Collect revenue from investments made or held last month.</rule>
+        </subphase>
+        <subphase name="hijink_revenue">
+          <rule>Collect revenue from successful hijinks last month.</rule>
+        </subphase>
+      </phase>
+    </stage>
+
+    <stage name="campaign_activities">
+      <phase name="random_events">
+        <subphase name="favors_and_duties">
+          <rule>Roll for favors and duties imposed by NPC lords on PC vassals.</rule>
+        </subphase>
+        <subphase name="vagaries_of_recruitment">
+          <rule>Roll for Vagaries of Recruitment for each domain whose ruler is calling up vassal troops, conscripting peasants, hiring mercenaries, levying militia, or soliciting mercenaries this month.</rule>
+        </subphase>
+        <subphase name="other_vagaries">
+          <rule>Roll for other optional vagaries in use in the campaign.</rule>
+        </subphase>
+        <subphase name="wandering_monsters">
+          <rule>Make monthly domain encounter throws.</rule>
+        </subphase>
+        <subphase name="event_allocation">
+          <rule>For each random event scheduled to occur this month, roll 1d4 to determine which week it occurs.</rule>
+        </subphase>
+      </phase>
+
+      <phase name="first_week">
+        <shared_week_procedure applies_to="first_week second_week third_week fourth_week">
+          <subphase name="weekly_random_events">
+            <rule>Make weekly domain encounter throws.</rule>
+            <rule>For each random event scheduled to occur this week, roll 1d8 to determine which day it occurs; on 8, reroll or choose.</rule>
+            <rule>Weekly random events include events carried from the random events phase and events triggered by prior campaign activities, such as arriving mercenaries or interested merchants.</rule>
+          </subphase>
+          <subphase name="daily_activities">
+            <rule>For each day of the week, make daily domain encounter throws and run that day's activities.</rule>
+          </subphase>
+        </shared_week_procedure>
+      </phase>
+
+      <phase name="second_week">
+        <rule>Resolve using the shared week procedure.</rule>
+      </phase>
+
+      <phase name="third_week">
+        <rule>Resolve using the shared week procedure.</rule>
+      </phase>
+
+      <phase name="fourth_week">
+        <rule>Resolve using the shared week procedure.</rule>
+      </phase>
+    </stage>
+
+    <stage name="end_of_month">
+      <phase name="expense_payment">
+        <subphase name="living_expenses">
+          <rule>Pay PC and NPC living expenses.</rule>
+        </subphase>
+        <subphase name="hireling_wages">
+          <rule>Pay wages of henchmen, mercenaries, specialists, and other hirelings.</rule>
+        </subphase>
+        <subphase name="domain_expenses">
+          <rule>Pay domain expenses.</rule>
+        </subphase>
+        <subphase name="settlement_expenses">
+          <rule>Pay settlement expenses.</rule>
+        </subphase>
+        <subphase name="congregants">
+          <rule>Pay congregant expenses at 1gp per congregant.</rule>
+          <rule>If congregant expenses are not paid, 1d10 congregants depart per 1,000gp left unpaid.</rule>
+        </subphase>
+        <subphase name="tribute">
+          <rule>Pay tribute owed to lords.</rule>
+        </subphase>
+        <subphase name="special_taxes">
+          <rule>Pay special tax revenue if a Tax Demanded duty was imposed or maintained on the PC this month.</rule>
+        </subphase>
+        <subphase name="loans">
+          <rule>Pay loans if a Loan Demanded duty was imposed or maintained on the PC last month.</rule>
+        </subphase>
+        <rule>A ruler may leave one or more expenses unpaid and suffer the appropriate consequences.</rule>
+      </phase>
+
+      <phase name="domain_morale">
+        <rule>Resolve domain morale rolls and other domain-morale mechanics.</rule>
+        <rule>Starting with the domain with the lowest current morale score, make a domain morale roll for each domain with a PC or named NPC ruler.</rule>
+        <rule>Apply modifiers based on taxes, liturgies, campaign activities, and similar effects.</rule>
+      </phase>
+    </stage>
+  </monthly_cycle>
+
+  <activity_framework>
+    <activity_levels>
+      <level name="major">
+        <rule>Major activities are laborious tasks requiring five to seven hours.</rule>
+      </level>
+      <level name="minor">
+        <rule>Minor activities are errands or pastimes requiring about one hour or 6 turns.</rule>
+      </level>
+      <level name="trivial">
+        <rule>Trivial activities require virtually no time.</rule>
+      </level>
+    </activity_levels>
+
+    <daily_capacity>
+      <rule>Each game day, a character may perform one major activity and two minor activities.</rule>
+      <rule>Instead of one major and two minor activities, a character may perform up to eight minor activities.</rule>
+      <rule>A character may perform any number of trivial activities.</rule>
+    </daily_capacity>
+
+    <frequency_types>
+      <type name="singular">
+        <rule>Takes place within a single game day and may be repeated as often as allowed by available activity slots.</rule>
+      </type>
+      <type name="restricted">
+        <rule>Takes place within a single game day but cannot be repeated until the stated time period elapses.</rule>
+      </type>
+      <type name="ongoing">
+        <rule>Requires more than one game day and must be performed throughout the listed time period.</rule>
+        <rule>A major ongoing activity represents full-time labor on a complex project or task.</rule>
+        <rule>A minor ongoing activity represents intermittent daily effort sustained over a lengthy period.</rule>
+      </type>
+    </frequency_types>
+
+    <effort_rules>
+      <rule>Activities are either strenuous or unstrenuous.</rule>
+      <rule>For every six game days of strenuous activity, a character must rest as the day's major activity for one day.</rule>
+      <rule>If required rest is not taken after six days of strenuous activity, the character suffers a cumulative -1 per day penalty to attack throws, damage rolls, and proficiency throws until caught up on required rest.</rule>
+      <rule>For campaign play, the turn of rest required after 5 turns of strenuous activity in core ACKS is already factored into what can be accomplished.</rule>
+      <rule>Unstrenuous activities do not require rest.</rule>
+    </effort_rules>
+
+    <overtime_rules>
+      <rule>A character working overtime may perform two major activities, or one major activity and six minor activities, or twelve minor activities in one day.</rule>
+      <rule>A day of overtime on unstrenuous activities counts as one day of strenuous activity.</rule>
+      <rule>Unstrenuous overtime can be sustained for two days.</rule>
+      <rule>Each additional day of unstrenuous overtime thereafter counts as two days of strenuous activity until the character rests.</rule>
+      <rule>A day of overtime that includes any strenuous activity counts as three days of strenuous activity.</rule>
+      <rule>A day of overtime performing more than eight minor strenuous activities, or one major and two minor strenuous activities, counts as six days of strenuous activity.</rule>
+      <rule>Penalties begin on the day after the character exceeds the six-day limit.</rule>
+      <rule>Penalties remit at a rate of -1 per day of rest.</rule>
+      <rule>A character must rest a minimum of two days or any additional overtime stacks with prior overtime.</rule>
+      <rule>For ongoing activities that require a proficiency throw, apply the worst overtime penalty incurred at any point during the process.</rule>
+      <rule>A minimum -1 penalty applies to such a throw if the character worked overtime at all, even if careful pacing avoided other penalties.</rule>
+    </overtime_rules>
+
+    <eligibility_rules>
+      <rule>Most campaign activities are open to any character.</rule>
+      <rule>Some activities require specific class, level, location, proficiency, or equipment.</rule>
+    </eligibility_rules>
+  </activity_framework>
+
+  <activity_categories>
+    <category name="adventuring">
+      <activity name="dungeon_delve">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>strenuous</level_of_effort>
+        </classification>
+        <rule>Any character can delve dungeons.</rule>
+        <rule>Each 6 turns of exploration counts as one singular strenuous minor activity.</rule>
+        <rule>36 turns of exploration counts as one strenuous major activity.</rule>
+      </activity>
+
+      <activity name="fish">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character must be stationary in a river, lake, or ocean hex.</requirement>
+        <procedure>
+          <step order="1">Attempt a proficiency throw of 14+ on 1d20.</step>
+          <step order="2">If the character has Survival proficiency, apply +4.</step>
+          <step order="3">On success, catch enough food to feed 2d6 man-sized creatures for one day.</step>
+        </procedure>
+      </activity>
+
+      <activity name="forage">
+        <classification>
+          <activity_level>major_or_trivial</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character must be in a wilderness hex.</requirement>
+        <rule>Foraging normally counts as a singular major activity.</rule>
+        <rule>A character who travels as a major activity may forage at the same time as a trivial activity.</rule>
+        <procedure>
+          <step order="1">Attempt a proficiency throw of 18+ on 1d20.</step>
+          <step order="2">If the character has Survival proficiency, apply +4.</step>
+          <step order="3">On success, acquire enough food to feed 1d6 man-sized creatures for one day.</step>
+        </procedure>
+      </activity>
+
+      <activity name="harvest_parts">
+        <classification>
+          <activity_level>various</activity_level>
+          <frequency>various</frequency>
+          <ongoing_time_requirement>various</ongoing_time_requirement>
+          <level_of_effort>strenuous</level_of_effort>
+        </classification>
+        <requirement>Character must have appropriate proficiencies such as Animal Husbandry, Labor, Trapping, or similar.</requirement>
+        <rule>Harvesting up to 600gp of special components from one or more creatures counts as a singular strenuous minor activity.</rule>
+        <rule>Butchering, skinning, and fleshing up to 180 lbs. worth of creatures counts as a singular strenuous major activity.</rule>
+      </activity>
+
+      <activity name="hunt">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>strenuous</level_of_effort>
+        </classification>
+        <requirement>Character must be in a wilderness hex.</requirement>
+        <procedure>
+          <step order="1">Attempt a proficiency throw of 14+ on 1d20.</step>
+          <step order="2">If the character has Survival proficiency, apply +4.</step>
+          <step order="3">On success, acquire enough food to feed 2d6 man-sized creatures for one day.</step>
+          <step order="4">Trigger a wandering monster check from the table appropriate to the terrain.</step>
+        </procedure>
+        <derived_values>
+          <rule>A man-sized creature needs up to 4,000 calories per day of strenuous activity.</rule>
+          <rule>1,000 calories of vegetables weighs 1 lb. and costs 1cp; one day's vegetables weigh 4 lbs. and cost 4cp.</rule>
+          <rule>A character with Foraging proficiency averages 5cp of food per day.</rule>
+          <rule>1,000 calories of meat weighs 1 lb. and costs 4cp; one day's meat weighs 4 lbs. and is worth 16cp.</rule>
+          <rule>A character with Hunting proficiency averages 61cp of food per day.</rule>
+          <rule>An animal typically yields meat equal to about 40% of body weight in lbs.</rule>
+          <rule>Butchering hunted creatures for meat takes 1d6 turns and is included in the hunting activity.</rule>
+        </derived_values>
+      </activity>
+
+      <activity name="rest">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>various</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <rule>Any character can rest.</rule>
+        <rule>Resting counts as a singular unstrenuous major activity.</rule>
+        <rule>Rest is in addition to normal sleep.</rule>
+        <rule>Rest is required to recover from overtime and to recover hit points.</rule>
+        <rule>A resting character may still perform two minor activities.</rule>
+        <rule>Bed rest is resting overtime; while bed resting, a character may not perform any other activities.</rule>
+        <rule>Bed rest is required to recuperate from mortal wounds.</rule>
+      </activity>
+
+      <activity name="search">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>strenuous</level_of_effort>
+        </classification>
+        <requirement>Character must be in the wilderness.</requirement>
+        <procedure>
+          <step order="1">Searching one 6-mile hex counts as a strenuous minor activity.</step>
+          <step order="2">Judge makes a searching throw on behalf of the character or party.</step>
+          <step order="3">Set target value based on wilderness movement rate.</step>
+          <step order="4">If the character or a party member has Tracking proficiency, apply +4.</step>
+          <step order="5">On success, discover one lair in the hex.</step>
+        </procedure>
+      </activity>
+
+      <activity name="survey">
+        <classification>
+          <activity_level>minor_or_trivial</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>strenuous</level_of_effort>
+        </classification>
+        <requirement>Character must have Land Surveying proficiency.</requirement>
+        <rule>Surveying one 6-mile hex is a minor strenuous activity.</rule>
+        <rule>A character searching a hex may survey the same hex as a trivial activity.</rule>
+        <procedure>
+          <step order="1">Judge secretly makes a proficiency throw.</step>
+          <step order="2">Base target is 18+.</step>
+          <step order="3">Apply a cumulative +4 bonus for each successful search the party has conducted in that hex.</step>
+          <step order="4">If the throw fails with an unmodified 1, reveal an incorrect lair count chosen or rolled by the Judge.</step>
+          <step order="5">On any other failure, the character does not yet have enough information to make or revise an assessment.</step>
+        </procedure>
+      </activity>
+
+      <activity name="trap">
+        <classification>
+          <activity_level>varies</activity_level>
+          <frequency>varies</frequency>
+          <ongoing_time_requirement>varies</ongoing_time_requirement>
+          <level_of_effort>strenuous</level_of_effort>
+        </classification>
+        <requirement>Character must have Trapping proficiency.</requirement>
+        <rule>Trapping is a singular strenuous minor activity.</rule>
+        <rule>Each time the character undertakes the activity, apply 1sp toward the construction cost of a crude trap.</rule>
+        <rule>Crude traps cost 1% of the cost of permanent traps.</rule>
+        <rule>A crude 10-foot-cube open-earth pit costs 2sp.</rule>
+        <rule>A crude 10-foot-cube open-earth pit with spikes costs 12sp.</rule>
+        <rule>Crude traps can be found on casual inspection with a successful proficiency throw to find traps, or on deliberate inspection with a +4 bonus.</rule>
+        <rule>Crude traps can be removed with a +4 bonus.</rule>
+        <rule>Where applicable, crude traps attack at a -2 penalty and provide a +2 bonus to saves to avoid their effects.</rule>
+        <rule>After a trap is constructed, it must be managed, which entails checking it for finds, performing minor repairs, and resetting its lures.</rule>
+        <rule>Managing any existing trap counts as an ongoing strenuous minor activity per 2sp of construction cost.</rule>
+        <rule>Traps set in the wilderness may catch game.</rule>
+        <procedure>
+          <step order="1">Each day that a trap is managed, make a proficiency throw of 1d20 against a target value of 19+.</step>
+          <step order="2">On a successful result, the trap yields sufficient food for 1d6 man-sized creatures per 1sp value of the trap.</step>
+          <step order="3">If the proficiency throw fails with an unmodified 1, the trap breaks completely.</step>
+          <step order="4">For every six traps being managed, make an encounter throw to see if a wandering monster appropriate for the terrain is in the area.</step>
+          <step order="5">The monster stumbles into the trap on a throw of 5+ on 1d6; otherwise it is lurking nearby.</step>
+          <step order="6">1 to 6 traps require one encounter throw, 7 to 12 traps require two encounter throws, 13 to 18 traps require three encounter throws, and so on.</step>
+        </procedure>
+        <derived_values>
+          <rule>A trapper can maintain six 2sp pits with a strenuous major activity each day.</rule>
+          <rule>Each such trap has a 10% daily chance of yielding 2d6 x 16cp worth of meat, averaging 11cp each or 66cp total per day.</rule>
+          <rule>Each such trap has a 5% daily chance of breaking, so a new trap is needed roughly every three to four days.</rule>
+        </derived_values>
+      </activity>
+
+      <activity name="travel">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>strenuous</level_of_effort>
+        </classification>
+        <rule>Traveling 1/8 of the character's long-distance movement rate counts as a singular strenuous minor activity.</rule>
+        <rule>Traveling 6/8 of long-distance movement counts as a strenuous major activity.</rule>
+        <rule>Terrain slows movement.</rule>
+        <rule>Groups move at the rate of the slowest member.</rule>
+        <rule>Wilderness travel requires Judge checks for getting lost.</rule>
+        <rule>Each time the character or party enters a new wilderness hex, make a wandering monster check.</rule>
+        <rule>A character traveling as a major activity may forage as a trivial activity.</rule>
+      </activity>
+    </category>
+
+    <category name="divine">
+      <rule>Divine activities can only be undertaken by divine spellcasters.</rule>
+
+      <activity name="dispatch_missionaries">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>restricted</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Divine spellcaster in a domain or settlement with hirelings.</requirement>
+        <rule>May not be performed more than once per month.</rule>
+        <rule>Dispatch hirelings to perform evangelical deeds for a month.</rule>
+        <rule>Track the gp value of wages of all hirelings on missionary duty during the month and apply it to next month's congregant growth.</rule>
+      </activity>
+
+      <activity name="cast_charitable_spells">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Divine spellcaster in a domain or settlement.</requirement>
+        <rule>Cast one or more daily spells for charitable purposes.</rule>
+        <rule>Track the gp value of all charitably cast spells using spell costs from the Spell Availability by Market table and apply it to next month's congregant growth.</rule>
+      </activity>
+
+      <activity name="consecrate_altar">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>1_day_per_500gp_of_altar</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Divine spellcaster level 5+.</requirement>
+        <rule>An altar consecrated to Chaotic powers creates a sinkhole of evil.</rule>
+        <rule>An altar consecrated to Lawful powers creates a pinnacle of good.</rule>
+        <rule>The aura size is 100 square feet per 100gp spent on the altar.</rule>
+        <rule>Divine power may be spent in lieu of gp if a humbler-looking altar is desired.</rule>
+        <rule>Once consecrated, an altar retains its aura until the aura is dispelled or the altar is physically broken and blessed.</rule>
+      </activity>
+
+      <activity name="consecrate_fields">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>1_day_per_780_peasants_rounded_up</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Divine spellcaster level 5+.</requirement>
+        <procedure>
+          <step order="1">Complete the activity time.</step>
+          <step order="2">Expend 2gp of divine power per family.</step>
+          <step order="3">Make a magic research throw.</step>
+          <step order="4">On success, the fields are consecrated and Land Value increases by 1gp per peasant family during the next month's revenue collection.</step>
+          <step order="5">On an unmodified 1, the consecration goes awry and Land Value decreases by 1gp per peasant family during the next month's revenue collection.</step>
+        </procedure>
+        <rule>Fields may be consecrated repeatedly if sufficient divine power is available.</rule>
+      </activity>
+
+      <activity name="consecrate_ruler">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>restricted</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Divine spellcaster level 9+ who is the spiritual advisor of a domain ruler.</requirement>
+        <rule>May not be performed more than once per year.</rule>
+        <procedure>
+          <step order="1">Expend divine power equal to the ruler's monthly domain revenue.</step>
+          <step order="2">Make a magic research throw.</step>
+          <step order="3">On success, for the next 12 game months the ruler increases base domain morale by 1, gains +1 on all loyalty rolls by vassals, and the Judge rolls twice for vagaries and selects the more favorable result.</step>
+          <step order="4">On an unmodified 1, the consecration goes awry: base morale decreases by 1, loyalty rolls by vassals take -1, and the ruler suffers the worse of two vagary rolls.</step>
+        </procedure>
+        <rule>At the Judge's discretion, the magic research throw may be modified by the ruler's behavior in the past 12 months.</rule>
+        <rule>For exceptionally impious rulers, awry results may occur on an unmodified 1-3.</rule>
+      </activity>
+
+      <activity name="extract_divine_power">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>restricted</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Divine spellcaster with 50 or more congregants.</requirement>
+        <rule>May not be performed more than once per week.</rule>
+        <rule>Extract 10gp worth of divine power per 50 congregants.</rule>
+        <rule>If the caster is the ruler or spiritual advisor of a domain ruler, also extract between 0 and 8 divine power per 10 families in the domain.</rule>
+        <rule>Divine power can be spent or accumulated once received.</rule>
+        <rule>Under campaign play rules, divine power is not accumulated automatically; the caster must take this activity each week.</rule>
+      </activity>
+
+      <activity name="perform_blood_sacrifice">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>restricted</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Chaotic divine spellcaster.</requirement>
+        <rule>May not be performed more than once per day.</rule>
+        <rule>The spellcaster can conduct one blood sacrifice per class level each time this activity is undertaken.</rule>
+        <rule>Each blood sacrifice generates divine power equal to the XP value of the sacrificed creature.</rule>
+        <rule>Divine power can be spent or accumulated once received.</rule>
+      </activity>
+
+      <activity name="perform_ceremonial_sacrifice">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>restricted</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Lawful divine spellcaster in a domain or settlement.</requirement>
+        <rule>May not be performed more than once per day.</rule>
+        <rule>Track the gp value of all ceremonial sacrifices performed during the month and apply it to next month's congregant growth.</rule>
+      </activity>
+    </category>
+
+    <category name="domain">
+      <activity name="administer_domain">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>1/2_x[(6-mile_hexes)+(vassals)+(6-market_class_of_largest_urban_settlement)]_days</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <rule>Administering a domain includes holding court, passing laws, standing in judgment, presiding over assemblies, erecting public works, drafting budgets, performing religious ceremonies, and similar tasks.</rule>
+        <rule>Rulers who administer their domain gain +1 on domain morale rolls and +5% on domain XP that month.</rule>
+      </activity>
+
+      <activity name="call_to_arms">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>1_to_3_time_periods_by_realm_size</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Realm ruler.</requirement>
+        <rule>Each called vassal must muster a force at least equal to 1/2 the garrison of his realm.</rule>
+        <rule>Calling for the full garrison counts as demanding two duties and may provoke a Henchman Morale roll.</rule>
+        <rule>Arrival time uses weeks, months, or seasons by realm size.</rule>
+        <rule>One half of the vassal troops, rounded up, arrive in the first time period after the activity begins.</rule>
+        <rule>One quarter, rounded down with minimum 1, arrive in the second time period.</rule>
+        <rule>The remainder arrive in the third time period.</rule>
+        <rule>The ruler may stop the activity at any time; no more troops arrive thereafter.</rule>
+        <rule>1d8 days after the activity begins, and during each monthly random events phase while it continues, roll on Vagaries of Recruitment for the ruler.</rule>
+      </activity>
+
+      <activity name="conscript_troops">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>1_to_3_weeks</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Domain ruler.</requirement>
+        <rule>Up to 1 conscript per 10 peasant families can be conscripted.</rule>
+        <rule>One half of the conscripts, rounded up, arrive in the first week after the activity begins.</rule>
+        <rule>One quarter, rounded down with minimum 1, arrive in the second week.</rule>
+        <rule>The remainder arrive in the third week.</rule>
+        <rule>The ruler may stop the activity at any time; no more conscripts arrive thereafter.</rule>
+        <rule>1d8 days after the activity begins, and during each monthly random events phase while it continues, roll on Vagaries of Recruitment for the ruler.</rule>
+      </activity>
+
+      <activity name="consult_senate">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Ruler of a senatorial domain.</requirement>
+        <rule>A ruler consulting the senate may issue senate-approved decrees as a trivial activity.</rule>
+      </activity>
+
+      <activity name="hire_mercenaries">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character must have successfully solicited mercenaries.</requirement>
+        <rule>Offers may be made to individual mercenaries or to formations of companies (120), battalions (500), or brigades (2,000).</rule>
+        <rule>Each hiring offer is a singular minor activity.</rule>
+        <rule>After the offer is made, make a 2d6 reaction roll on the Reaction to Hiring Offer table.</rule>
+        <rule>Every month in which a ruler hires mercenaries, roll on Vagaries of Recruitment for the ruler.</rule>
+      </activity>
+
+      <activity name="inspect_troops">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character level 5+ with Command proficiency.</requirement>
+        <rule>Each unit inspected counts as a minor activity.</rule>
+        <rule>Inspected troops gain +1 to their first morale roll within one game day.</rule>
+      </activity>
+
+      <activity name="issue_decree">
+        <classification>
+          <activity_level>minor_or_trivial</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Domain ruler in his domain.</requirement>
+        <rule>Issuing a decree is a minor activity, or trivial if the ruler is consulting the senate on that decree.</rule>
+        <options>
+          <option>Change the rate of taxes or liturgies within the domain.</option>
+          <option>Grant a favor to a vassal.</option>
+          <option>Demand a duty of a vassal.</option>
+          <option>Free a perpetrator caught committing a crime.</option>
+          <option>Order construction of a new stronghold within the domain.</option>
+          <option>Order agricultural or urban investment within the domain.</option>
+        </options>
+        <rule>When giving favors, ordering construction, or ordering investment, pay the gp cost immediately.</rule>
+        <rule>Judges may instead deduct such costs at 500gp per day.</rule>
+        <rule>Morale rolls triggered by demanding duties are rolled immediately.</rule>
+        <rule>Funds from taxes or duties are received during the next month's revenue collection.</rule>
+      </activity>
+
+      <activity name="levy_militia">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>1_to_3_weeks</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Domain ruler.</requirement>
+        <rule>Up to 2 peasants per 10 peasant families can be levied.</rule>
+        <rule>One half of the militia, rounded up, arrive in the first week after the activity begins.</rule>
+        <rule>One quarter, rounded down with minimum 1, arrive in the second week.</rule>
+        <rule>The remainder arrive in the third week.</rule>
+        <rule>The ruler may stop the activity at any time; no more militia arrive thereafter.</rule>
+        <rule>1d8 days after the activity begins, and during each monthly random events phase while it continues, roll on Vagaries of Recruitment for the ruler.</rule>
+      </activity>
+
+      <activity name="manage_henchmen">
+        <classification>
+          <activity_level>trivial</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>varies</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <rule>A character may actively manage up to four henchmen, plus one additional henchman per point of Charisma bonus and/or Leadership proficiency bonus.</rule>
+        <rule>A henchman generally performs any campaign activities he is capable of on behalf of his employer.</rule>
+        <rule>The assigned activities may be changed whenever the henchman is accessible physically or magically.</rule>
+        <rule>A ruler with henchmen serving as vassal rulers will often need to issue a Call to Counsel decree to bring them to his location to take advantage of this activity.</rule>
+      </activity>
+
+      <activity name="military_campaign">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>by_campaign</ongoing_time_requirement>
+          <level_of_effort>strenuous</level_of_effort>
+        </classification>
+        <requirement>Character must have an army.</requirement>
+        <rule>Begins when the character leads troops out of garrison and ends when the troops are returned to garrison or command is handed over.</rule>
+        <rule>Resolve daily using campaign procedures; if no opponents are within one week's movement, the Judge may resolve by weeks instead of days.</rule>
+        <rule>1d3 game days after the activity begins, and during each weekly random events subphase while the army is on campaign, roll on Vagaries of War for the army.</rule>
+      </activity>
+
+      <activity name="oversee_investment">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>1_day_per_500gp_of_investment</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Domain ruler in his domain overseeing investment he ordered there.</requirement>
+        <rule>The investment attracts 1d10+1 new families instead of the usual 1d10 per 1,000gp.</rule>
+      </activity>
+
+      <activity name="oversee_construction">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>1_day_per_500gp_of_construction</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Domain ruler in his domain overseeing construction there.</requirement>
+        <rule>A character supervising construction as a major activity may also oversee construction as a trivial activity.</rule>
+        <rule>Overseeing increases construction rate by 5%.</rule>
+        <rule>If the ruler is also supervising construction, increase construction rate by 10%.</rule>
+      </activity>
+
+      <activity name="oversee_troop_training">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>by_troop_type</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Fighter or other character using fighter attack progression, level 5+, who rules a domain.</requirement>
+        <rule>Counts as one ongoing minor activity per 60 troops.</rule>
+        <rule>Time required depends on troop type and oversight must be maintained throughout the full training time.</rule>
+        <rule>A character training troops as a major activity may also oversee those troops as a trivial activity.</rule>
+        <rule>Troops whose training is overseen by their domain ruler gain a permanent +1 bonus to morale while they remain in his service.</rule>
+        <rule>If the ruler is also training the troops, they finish training as veterans.</rule>
+      </activity>
+
+      <activity name="solicit_mercenaries">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>1_to_3_time_periods_by_realm_size</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <rule>A character in an urban settlement may solicit mercenaries from that settlement.</rule>
+        <rule>A realm ruler, or a character acting with the ruler's permission, may solicit from the entire realm.</rule>
+        <rule>Pay the cost per time period per mercenary type.</rule>
+        <rule>One half of the mercenaries, rounded up, arrive in the first time period.</rule>
+        <rule>One quarter, rounded down with minimum 1, arrive in the second time period.</rule>
+        <rule>The remainder arrive in the third time period.</rule>
+        <rule>The activity may be stopped at any time; no more mercenaries arrive thereafter.</rule>
+        <rule>1d8 days after a ruler or authorized agent begins soliciting mercenaries, and during each monthly random events phase while it continues, roll on Vagaries of Recruitment for the ruler.</rule>
+      </activity>
+
+      <activity name="supervise_construction">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>1_day_per_500gp_of_construction</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character must have sufficient Engineering or Siege Engineering ranks.</requirement>
+        <rule>Acts as construction supervisor for a project.</rule>
+        <rule>A character supervising construction can also oversee construction as a trivial activity.</rule>
+      </activity>
+
+      <activity name="train_troops">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>by_troop_type</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character must have sufficient Manual at Arms ranks, and Riding and/or Weapon Focus where required.</requirement>
+        <rule>Train up to 60 troops.</rule>
+        <rule>Time required depends on troop type and must be maintained throughout the entire training time.</rule>
+        <rule>A character training troops can also oversee those troops as a trivial activity.</rule>
+      </activity>
+    </category>
+
+    <category name="magical">
+      <activity name="manage_assistant">
+        <classification>
+          <activity_level>trivial</activity_level>
+          <frequency>restricted</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Spellcaster level 9+.</requirement>
+        <rule>Whenever the spellcaster performs a major magical activity, he may supervise one assistant plus one additional assistant per point of Intelligence bonus as a trivial activity.</rule>
+      </activity>
+
+      <activity name="research_magic">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>by_type_of_research</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Appropriate class, level, and necessary equipment.</requirement>
+        <rule>Magical research includes researching spells, creating magic items, performing ritual spells, creating and designing constructs, creating crossbreeds, and granting unlife.</rule>
+        <rule>Duration is days, weeks, or months depending on research type.</rule>
+      </activity>
+
+      <activity name="rewrite_spell">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>7_days_per_spell_level</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Arcane spellcaster who has lost his spell book.</requirement>
+        <rule>Rewrite spells into a new spell book.</rule>
+        <rule>Requires 7 days and 1,000gp per spell level.</rule>
+      </activity>
+
+      <activity name="replace_spell">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>7_days_per_spell_level</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Arcane spellcaster with a full spell repertoire and a copy of the new spell formula.</requirement>
+        <rule>Replace one spell in the repertoire with another of equal level.</rule>
+        <rule>Replacing a spell does not cause loss of the formula for the replaced spell.</rule>
+        <rule>Requires 7 days and 1,000gp per spell level.</rule>
+      </activity>
+
+      <activity name="scribe_spell">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>7_days</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Arcane spellcaster with the spell formula from a scroll or another spellcaster's spell book and able to learn and cast spells of that level.</requirement>
+        <rule>Scribing from a scroll consumes the scroll.</rule>
+        <rule>Scribing from another spellcaster's spell book does not erase the original spell.</rule>
+        <rule>Requires 7 days regardless of spell level.</rule>
+      </activity>
+    </category>
+
+    <category name="mercantile">
+      <activity name="buy_sell_equipment">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character in an urban settlement.</requirement>
+        <rule>May buy or sell equipment subject to market-class equipment availability limits.</rule>
+      </activity>
+
+      <activity name="buy_sell_magic_items">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character in an urban settlement.</requirement>
+        <rule>May buy or sell magic items subject to market-class magic item availability limits.</rule>
+      </activity>
+
+      <activity name="buy_sell_merchandise">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character with a willing merchant buying or selling merchandise at an acceptable market price.</requirement>
+        <rule>Each transaction with a merchant counts as a minor activity.</rule>
+        <rule>A merchant never buys or sells more than the number of loads rolled.</rule>
+        <rule>Loading or unloading costs 1gp per 200 stone of merchandise.</rule>
+        <rule>A character selling goods pays customs duty equal to 2d10% of market price.</rule>
+        <rule>A character buying and selling in a domain he controls, or smuggling, need not pay customs duties.</rule>
+      </activity>
+
+      <activity name="commission_equipment">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character in an urban settlement.</requirement>
+        <rule>A volume of equipment equal to ten times the normal amount available by market class can be commissioned.</rule>
+        <rule>Commissioned equipment is not available until complete.</rule>
+        <rule>Buildings and vehicles complete at 1 day per 500gp value.</rule>
+        <rule>Animal commissions complete at 1 day per 1gp value, or by creature-training rules.</rule>
+        <rule>Other equipment commissions complete at 1 day per 5gp value.</rule>
+        <rule>Picking up completed equipment counts as a separate minor activity.</rule>
+      </activity>
+
+      <activity name="commission_magic_items">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character in a Class I market.</requirement>
+        <rule>Pay up front the base cost, the cost of precious materials, and any required special components.</rule>
+        <rule>If the spellcaster successfully completes the item, pay an additional fee equal to 7,000gp per month or twice the base cost, whichever is greater.</rule>
+        <rule>Picking up completed magic items counts as a separate minor activity.</rule>
+      </activity>
+
+      <activity name="enter_market">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character with a caravan or ship of mercantile goods at an urban settlement.</requirement>
+        <rule>Pay a toll to enter unless sneaking in by smuggling.</rule>
+        <rule>Minimum toll is 1gp per load.</rule>
+        <rule>While in the market, pay moorage or stabling fees.</rule>
+        <rule>Moorage for ships is 1gp per 10 structural hit points per day.</rule>
+        <rule>Stabling is 2sp per mule, 5sp per horse, 1gp per cart, and 2gp per wagon per day.</rule>
+        <rule>If moorage or stabling is no longer paid, the character has left the market and must pay to re-enter.</rule>
+        <rule>Characters buying and selling in their own domain, or smuggling, ignore moorage, stabling, and tolls.</rule>
+      </activity>
+
+      <activity name="hire_hirelings">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character must have successfully solicited hirelings.</requirement>
+        <rule>Each hiring offer is a singular minor activity.</rule>
+        <rule>After the offer is made, roll 2d6 on the Reaction to Hiring Offer table.</rule>
+      </activity>
+
+      <activity name="persuade_merchants">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character must have solicited a merchant.</requirement>
+        <rule>A reaction roll of 9+ is required to persuade a merchant to transact in Common Merchandise.</rule>
+        <rule>A reaction roll of 12+ is required to persuade a merchant to transact in Precious Merchandise.</rule>
+        <rule>Add the demand modifier when trying to find buyers.</rule>
+        <rule>Subtract the demand modifier when trying to find sellers.</rule>
+        <rule>If the character has a monopoly over a merchandise type, gain +3 on the roll and merchants buy or sell twice the normal number of loads of that type.</rule>
+        <rule>Only one roll per merchant is permitted; on failure, that merchant will not transact with the adventurer.</rule>
+      </activity>
+
+      <activity name="persuade_passengers">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character must have solicited a passenger.</requirement>
+        <rule>Make a reaction roll for each passenger.</rule>
+        <rule>Only an adjusted 9+ causes the passenger to voyage with the character.</rule>
+        <rule>Normal modifiers such as Charisma, Bribery, Diplomacy, Intimidation, Mystic Aura, Seduction, and similar effects apply.</rule>
+      </activity>
+
+      <activity name="persuade_shippers">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character must have solicited a shipping contract.</requirement>
+        <rule>Make a reaction roll for each shipper.</rule>
+        <rule>Only an adjusted 9+ causes the shipper to move cargo with the character.</rule>
+        <rule>Normal modifiers such as Charisma, Bribery, Diplomacy, Intimidation, Mystic Aura, Seduction, and similar effects apply.</rule>
+      </activity>
+
+      <activity name="solicit_hirelings">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>1_to_3_time_periods_by_realm_size</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <rule>A character in an urban settlement may solicit hirelings from that settlement.</rule>
+        <rule>A realm ruler, or character acting with the ruler's permission, may solicit hirelings from the entire realm.</rule>
+        <rule>Pay the cost per time period per hireling type.</rule>
+        <rule>One half of the hirelings, rounded up, become interested in the first time period.</rule>
+        <rule>One quarter, rounded down with minimum 1, become interested in the second time period.</rule>
+        <rule>The remainder become interested in the third time period.</rule>
+        <rule>The activity may be stopped at any time; no more hirelings arrive thereafter.</rule>
+      </activity>
+
+      <activity name="solicit_merchants">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>1_to_3_weeks</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character must have entered a market.</requirement>
+        <rule>Roll on the merchants column to determine the number of interested merchants, then roll loads for each merchant.</rule>
+        <rule>One half of the merchants, rounded up, become interested in the first week.</rule>
+        <rule>One quarter, rounded down with minimum 1, become interested in the second week.</rule>
+        <rule>The remainder become interested in the third week.</rule>
+        <rule>The activity may be stopped early; no more merchants become interested thereafter.</rule>
+        <rule>A new solicitation attempt may be made at any time, but the roll takes a cumulative -2 modifier for each week already spent in the market.</rule>
+        <rule>A character buying and selling in a domain he controls always gets the maximum number of merchants available.</rule>
+      </activity>
+
+      <activity name="solicit_passengers">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>1_to_3_weeks</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character must have entered a market.</requirement>
+        <rule>Determine passenger availability on the Passengers and Shipping Contracts table.</rule>
+        <rule>Roll 1d20 to determine each passenger's destination.</rule>
+        <rule>On 19+, the passenger wants travel to a distant market of choice 2d20 x 100 miles away.</rule>
+        <rule>Otherwise, the passenger wants transport to the closest market within one size class along the adventurer's route.</rule>
+        <rule>One half of the passengers, rounded up, become interested in the first week.</rule>
+        <rule>One quarter, rounded down with minimum 1, become interested in the second week.</rule>
+        <rule>The remainder become interested in the third week.</rule>
+        <rule>The activity may be stopped early; no more passengers become interested thereafter.</rule>
+      </activity>
+
+      <activity name="solicit_shipping_contracts">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>1_to_3_weeks</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Character operating a vessel or caravan.</requirement>
+        <rule>Determine the number and size of available shipping contracts on the Passengers and Shipping Contracts table.</rule>
+        <rule>Roll 1d20 to determine the destination of each shipping contract.</rule>
+        <rule>On 19+, the shipper wants cargo sent to a distant market of choice 2d20 x 100 miles away.</rule>
+        <rule>Otherwise, the shipper wants cargo transported to the closest market within one size class along the adventurer's route.</rule>
+        <rule>One half of the shippers, rounded up, become interested in the first week.</rule>
+        <rule>One quarter, rounded down with minimum 1, become interested in the second week.</rule>
+        <rule>The remainder become interested in the third week.</rule>
+        <rule>The activity may be stopped early; no more shippers become interested thereafter.</rule>
+      </activity>
+    </category>
+
+    <category name="professional">
+      <activity name="animal_husbandry">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>varies_by_patient</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Animal Husbandry proficiency.</requirement>
+        <rule>Each day, treat three animals plus one additional animal per rank of Animal Husbandry proficiency.</rule>
+        <rule>Time required varies with the patients' recovery time.</rule>
+        <rule>NPC wages are 1sp + 1sp per proficiency rank per patient per day.</rule>
+      </activity>
+
+      <activity name="create_art_or_craft_goods">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>varies_by_project</ongoing_time_requirement>
+          <level_of_effort>strenuous</level_of_effort>
+        </classification>
+        <requirement>Relevant Artistry or Crafting proficiency.</requirement>
+        <rule>Duration is determined by construction cost and the character's daily construction rate.</rule>
+        <rule>The character may stop early, leaving the art or goods unfinished.</rule>
+        <rule>NPC wages equal base construction rate: apprentice 33cp/day, journeyman 66cp/day, master 1gp 33cp/day.</rule>
+      </activity>
+
+      <activity name="gamble">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <rule>With Gambling proficiency, earn 2 + 6d6 - 3d6 cp per day per proficiency rank.</rule>
+        <rule>Without Gambling proficiency, earn 2 + 3d6 - 6d6 cp per day.</rule>
+        <procedure>
+          <step order="1">Each gambler rolls as if measuring daily gambling income.</step>
+          <step order="2">Highest total wins the first round.</step>
+          <step order="3">Losers either exit or increase the bet by rolling again and adding the new roll.</step>
+          <step order="4">Repeat until no gambler increases the bet.</step>
+          <step order="5">Highest cumulative total wins; each loser pays the winner the total amount of that loser's rolls.</step>
+        </procedure>
+        <rule>The stakes may be increased by mutual agreement.</rule>
+      </activity>
+
+      <activity name="heal">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>varies_by_patient</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Healing proficiency.</requirement>
+        <rule>Each day, treat three patients plus one additional patient per additional rank of Healing proficiency.</rule>
+        <rule>Time required varies with the patients' recovery time.</rule>
+        <rule>NPC wages are 1gp + 1gp per proficiency rank per patient per day.</rule>
+      </activity>
+
+      <activity name="labor">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>singular_or_ongoing</frequency>
+          <ongoing_time_requirement>none_or_by_employment_term</ongoing_time_requirement>
+          <level_of_effort>strenuous</level_of_effort>
+        </classification>
+        <rule>Any character can perform manual labor such as bricklaying or stonecutting.</rule>
+        <rule>When laboring directly on a construction project, laboring is a singular strenuous major activity.</rule>
+        <rule>When laboring on a construction project, the character provides 1cp per day toward the project's construction rate, or 2cp per day with the appropriate Labor proficiency.</rule>
+        <rule>A character may instead hire himself out as a day laborer for wages of 2sp per day.</rule>
+      </activity>
+
+      <activity name="perform">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>strenuous</level_of_effort>
+        </classification>
+        <requirement>Relevant Performance proficiency.</requirement>
+        <rule>NPC fees or tips by rank: apprentice 2d4cp, journeyman 4d4cp, master 8d4cp.</rule>
+        <rule>This activity may be undertaken multiple times per day up to the limit of eight minor activities.</rule>
+      </activity>
+
+      <activity name="practice_profession">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Profession proficiency.</requirement>
+        <rule>NPC wages by rank: apprentice 1gp/day, journeyman 2gp/day, master 4gp/day.</rule>
+      </activity>
+
+      <activity name="supervise_assistants">
+        <classification>
+          <activity_level>minor_or_trivial</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>varies_by_project</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Two ranks in an Artistry, Crafting, Performance, or Profession proficiency to supervise up to 2 apprentices.</requirement>
+        <requirement>Three ranks in such a proficiency to supervise up to 2 journeymen and 4 apprentices.</requirement>
+        <rule>Supervising assistants is a minor ongoing activity, or trivial if the character is working on the same project with them.</rule>
+        <rule>Supervised assistants increase their construction rate, or fee/tip if performing, by 50%.</rule>
+        <rule>On a large-scale construction project taking more than a day, the supervisor's personal construction rate is reduced by 25%.</rule>
+      </activity>
+
+      <activity name="train_creatures">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>varies_by_creature</ongoing_time_requirement>
+          <level_of_effort>strenuous</level_of_effort>
+        </classification>
+        <requirement>Animal Training proficiency appropriate to the creature.</requirement>
+        <rule>A single trainer can train and manage up to six creatures at once, or work exclusively with one creature throughout its full training.</rule>
+        <rule>Duration is determined by the monster's training period and training required.</rule>
+        <rule>Common domesticated animals typically require one month plus one month per trick.</rule>
+        <rule>NPC wages are monthly and depend on the type of creatures trained.</rule>
+      </activity>
+    </category>
+
+    <category name="syndicate">
+      <activity name="await_trial">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>by_crime</ongoing_time_requirement>
+          <level_of_effort>strenuous</level_of_effort>
+        </classification>
+        <rule>Any character caught committing a hijink must await trial in prison.</rule>
+        <rule>The character does not roll on the Crime and Punishment table until awaiting trial is complete.</rule>
+        <rule>The character may immediately finish awaiting trial by pleading guilty and accepting the lesser punishment.</rule>
+        <table name="time_languishing_by_crime">
+          <row><crime>Drunkenness, Outrage</crime><time>1d2 days</time></row>
+          <row><crime>Eavesdropping, Trespassing, Gambling</crime><time>1d4 days</time></row>
+          <row><crime>Bribery, Theft, Contraband</crime><time>1d6 days</time></row>
+          <row><crime>Assault, Vandalism</crime><time>1d8 days</time></row>
+          <row><crime>Burglary, Smuggling</crime><time>1d4 weeks</time></row>
+          <row><crime>Kidnapping, Manslaughter, Mayhem</crime><time>1d4 months</time></row>
+          <row><crime>Robbery, Racketeering</crime><time>1d6 months</time></row>
+          <row><crime>Arson, Desertion, Murder, Sedition</crime><time>1d12 months</time></row>
+          <row><crime>Heresy, High Treason, Regicide</crime><time>2d12 months</time></row>
+        </table>
+      </activity>
+
+      <activity name="bribe_magistrate">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Bribery proficiency and sufficient funds.</requirement>
+        <rule>+1 on Crime and Punishment costs 50gp.</rule>
+        <rule>+2 costs 350gp.</rule>
+        <rule>+3 costs 1,500gp.</rule>
+      </activity>
+
+      <activity name="hire_attorney">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <rule>May be hired for self or for another caught perpetrator.</rule>
+        <rule>Costs 25gp, 50gp, or 100gp and grants +1, +2, or +3 on the caught character's Crime and Punishment roll.</rule>
+      </activity>
+
+      <activity name="interplead">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Domain ruler in the domain where the perpetrator was caught.</requirement>
+        <rule>Add the ruler's Charisma modifier to the caught character's Crime and Punishment roll.</rule>
+        <rule>Add an additional +2 if the interpleader has Diplomacy, Intimidation, or Mystic Aura.</rule>
+        <rule>If the ruler controls the domain where the crime occurred, he may instead issue a decree freeing the perpetrator without trial.</rule>
+      </activity>
+
+      <activity name="lay_low">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>2d8+3_days</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <rule>Required after arson, assassination, infiltration, sabotage, smuggling, subversion, or stealing hijinks.</rule>
+        <rule>During this time the character may not plan or perform additional hijinks in the same base of operations, but may do so in other bases.</rule>
+        <rule>The character does not know how long laying low will take until it is completed.</rule>
+        <rule>If the character does not lay low, then on the next hijink in that base he is caught if the proficiency throw fails by 11 or more or is an unmodified 1-3.</rule>
+        <rule>Other hijinks do not require laying low.</rule>
+      </activity>
+
+      <activity name="order_hijink">
+        <classification>
+          <activity_level>major_or_minor</activity_level>
+          <frequency>singular</frequency>
+          <ongoing_time_requirement>none</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Boss of a syndicate.</requirement>
+        <rule>Assigning hijinks to any and all syndicate members at the boss's base counts as a singular major activity.</rule>
+        <rule>Assigning hijinks to a syndicate controlled by an underboss counts as a separate singular major activity.</rule>
+        <rule>Assigning hijinks to a small number of members, 1/6 of the syndicate membership or less, counts as a singular minor activity.</rule>
+        <rule>By custom, a boss assigns each member one hijink per month and leaves the completion deadline within that month to the perpetrator.</rule>
+        <rule>Assigning additional hijinks or imposing a deadline triggers a loyalty roll by the member.</rule>
+      </activity>
+
+      <activity name="plan_hijink">
+        <classification>
+          <activity_level>minor</activity_level>
+          <frequency>ongoing</frequency>
+          <ongoing_time_requirement>2d8+3_days</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Appropriate thief skill necessary to perform the hijink.</requirement>
+        <rule>Required for arson, assassination, infiltration, sabotage, smuggling, subversion, and stealing hijinks to avoid penalties.</rule>
+        <rule>Perpetrators level 5+ plan in 2d6+3 days.</rule>
+        <rule>Perpetrators level 9+ plan in 2d4+3 days.</rule>
+        <rule>The perpetrator does not know the required planning time until planning is completed.</rule>
+        <rule>If the hijink is performed before planning is complete, apply -1 to the proficiency throw per day of incomplete planning.</rule>
+        <rule>The penalty is revealed when the die roll is made.</rule>
+        <rule>A hijink may be planned on behalf of another perpetrator.</rule>
+        <rule>Hijinks outside the listed set neither require nor benefit from planning.</rule>
+      </activity>
+
+      <activity name="perform_hijink">
+        <classification>
+          <activity_level>major</activity_level>
+          <frequency>singular_or_ongoing</frequency>
+          <ongoing_time_requirement>1_day_or_3d6+10_days</ongoing_time_requirement>
+          <level_of_effort>unstrenuous</level_of_effort>
+        </classification>
+        <requirement>Appropriate thief skill.</requirement>
+        <rule>Hijinks that can be planned - arson, assassination, escaping, infiltration, sabotage, smuggling, and stealing - are singular unstrenuous major activities requiring 1 day.</rule>
+        <rule>Other hijinks - carousing, disinforming, slandering, spying, and treasure hunting - are ongoing unstrenuous major activities requiring 3d6+10 days.</rule>
+        <rule>Perpetrators level 5+ perform ongoing hijinks in 3d4+8 days.</rule>
+        <rule>Perpetrators level 9+ perform ongoing hijinks in 2d6+5 days.</rule>
+        <rule>The perpetrator does not know required time for an ongoing hijink until it is completed.</rule>
+        <rule>When the activity is complete, make the hijink throw.</rule>
+        <rule>If the hijink is rushed, apply -1 to the proficiency throw per day of incomplete activity.</rule>
+        <rule>The penalty is revealed when the die roll is made.</rule>
+      </activity>
+    </category>
+  </activity_categories>
+
+  <confidence_notes />
+</campaign_play_summary>

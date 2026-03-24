@@ -1,0 +1,479 @@
+<rules_summary title="domains_of_chaos" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <section name="beastman_clanholds">
+    <definition>
+      <rule>A beastman chieftain with one or more warbands may establish a beastman clanhold by securing land and capturing or constructing a stronghold.</rule>
+      <rule>Beastman clanholds are managed as domains with the special rules below.</rule>
+    </definition>
+
+    <classification>
+      <rule>Clanholds are always wilderness domains.</rule>
+      <limit>Maximum 125 peasant families per 6-mile hex.</limit>
+      <limit>Maximum 2,000 peasant families per 24-mile hex.</limit>
+      <rule>Population density is limited because beastmen rely on simple horticulture, local pastoralism, and foraging rather than intensive agriculture.</rule>
+    </classification>
+
+    <families>
+      <rule>Each clanhold family consists of 1 beastman warrior and 1 or more noncombatants.</rule>
+      <rule>Noncombatants can include females, whelps, elderly, and slaves.</rule>
+      <rule>The specific beastman race must be recorded because it affects availability of tribal warriors.</rule>
+      <rule>Ogre and troll families count as 4 families each for population limits and growth.</rule>
+    </families>
+
+    <growth>
+      <condition>The chieftain actively raids at least once per month.</condition>
+      <rule>The clanhold gains additional monthly population growth based on current number of families.</rule>
+      <rule>Use the ACKS p. 129 population growth table, treating the clanhold as 2 population categories smaller than an equivalent human domain.</rule>
+    </growth>
+
+    <settlements>
+      <limit>Urban population must remain below 250 urban families.</limit>
+      <limit>Maximum market class is VI.</limit>
+      <limit>Urban investment cannot increase settlement size or market class.</limit>
+      <limit>Urban families can never exceed 12.5% of the clanhold's peasant population.</limit>
+    </settlements>
+
+    <military>
+      <rule>Clanhold chieftains cannot conscript peasants or levy militia.</rule>
+      <rule>Clanhold chieftains may levy up to 1 tribal warrior per family.</rule>
+      <rule>Clanhold chieftains may hire other beastmen in the area as mercenaries.</rule>
+      <rule>Clanhold chieftains may employ human and demi-human mercenaries only if they are chaotic.</rule>
+    </military>
+
+    <realm_management>
+      <rule>A chieftain may establish a realm by founding additional clanholds and assigning them to henchmen, typically sub-chieftains, or by conquering and annexing an existing domain.</rule>
+      <rule>Human and demi-human domains under beastman rule reduce base morale by 2, in addition to any alignment penalty.</rule>
+    </realm_management>
+
+    <vassalage_limits>
+      <limit>Chieftains cannot call to council.</limit>
+      <limit>Chieftains cannot demand loans.</limit>
+      <limit>Chieftains cannot offer charters of monopoly.</limit>
+      <limit>Chieftains cannot offer grants of title.</limit>
+      <rule>When calling to arms, a chieftain may call half of available tribal warriors as 1 favor, or all available tribal warriors as 2 favors.</rule>
+    </vassalage_limits>
+  </section>
+
+  <section name="chaotic_domains">
+    <definition>
+      <rule>A chaotic domain is a clanhold ruled by a chaotic human, demi-human, or sapient monster of high intelligence, or managed as a vassal domain within the realm of such a ruler.</rule>
+    </definition>
+
+    <establishment>
+      <rule>A chaotic adventurer may establish a chaotic domain instead of the normal domain for class and race.</rule>
+      <condition>The decision is made when the domain is secured.</condition>
+      <step order="1">Instead of clearing beastmen from the area, recruit a clanhold chieftain as a henchman.</step>
+      <step order="2">If the current chieftain is unsuitable, replace him with a more pliable sub-chieftain.</step>
+      <step order="3">Once the clanhold chieftain is brought into service, the adventurer becomes a chaotic domain ruler.</step>
+    </establishment>
+
+    <followers>
+      <condition>An adventurer of 9th level or higher establishes a chaotic domain.</condition>
+      <rule>The ruler attracts followers and families in the usual numbers.</rule>
+      <rule>These followers and families are beastmen instead of humans or demi-humans.</rule>
+      <rule>The beastmen are of the same race as the clanhold.</rule>
+    </followers>
+
+    <exceptions_from_clanholds>
+      <rule>Chaotic domains may be civilized only if within 25 miles of a city or large town in the same realm.</rule>
+      <rule>Chaotic domains may be borderlands only if within 50 miles of civilized areas in the same realm.</rule>
+      <rule>Once population exceeds 125 peasant families per 6-mile hex, excess peasant families provide only half normal land revenue.</rule>
+      <rule>Urban settlements are not limited to 250 families or 12.5% of peasant population.</rule>
+      <rule>Urban settlements may be increased in size or market class.</rule>
+      <rule>Value of investment in chaotic domains is halved.</rule>
+      <rule>It costs 2,000gp to attract 1d10 new families.</rule>
+      <rule>It costs 50,000gp to achieve market class V.</rule>
+      <rule>Urban revenue remains 7gp per family regardless of settlement population.</rule>
+      <rule>Garrison cost is increased by 2gp.</rule>
+    </exceptions_from_clanholds>
+  </section>
+
+  <section name="chaotic_realms">
+    <definition>
+      <rule>A ruler with an existing realm of any type may annex a clanhold to that realm.</rule>
+      <rule>A realm with at least one chaotic domain is a chaotic realm.</rule>
+    </definition>
+
+    <rules>
+      <rule>Chaotic realm rulers may hire beastmen as mercenaries.</rule>
+      <rule>Chaotic realm rulers may employ human and demi-human mercenaries only if they are neutral or chaotic.</rule>
+      <rule>Lawful domain rulers become vassals of a chaotic realm ruler only if conquered and annexed.</rule>
+      <rule>Domains ruled by lawful vassals in a chaotic realm suffer a -2 morale penalty for alignment difference.</rule>
+    </rules>
+  </section>
+
+  <section name="beastmen_as_slave_labor">
+    <rule>Using beastmen as slave labor does not make a domain a chaotic domain.</rule>
+    <conversion_table name="beastman_slave_labor_to_peasant_families">
+      <row>
+        <creature>ogre</creature>
+        <count>1</count>
+        <counts_as>1 peasant family</counts_as>
+      </row>
+      <row>
+        <creature>bugbear</creature>
+        <count>3</count>
+        <counts_as>1 peasant family</counts_as>
+      </row>
+      <row>
+        <creature>lizardman</creature>
+        <count>4</count>
+        <counts_as>1 peasant family</counts_as>
+      </row>
+      <row>
+        <creature>gnoll</creature>
+        <count>4</count>
+        <counts_as>1 peasant family</counts_as>
+      </row>
+      <row>
+        <creature>hobgoblin</creature>
+        <count>5</count>
+        <counts_as>1 peasant family</counts_as>
+      </row>
+      <row>
+        <creature>orc</creature>
+        <count>5</count>
+        <counts_as>1 peasant family</counts_as>
+      </row>
+      <row>
+        <creature>goblin</creature>
+        <count>12</count>
+        <counts_as>1 peasant family</counts_as>
+      </row>
+      <row>
+        <creature>kobold</creature>
+        <count>12</count>
+        <counts_as>1 peasant family</counts_as>
+      </row>
+    </conversion_table>
+    <rule>All normal slave labor rules from ACKS pp. 250-251 apply.</rule>
+  </section>
+
+  <section name="beastman_demographics">
+    <definition>
+      <rule>A typical clanhold for each beastman race is equivalent to a typical wilderness lair of that race.</rule>
+      <rule>Ogre and troll families count as 4 families for population limits and take up 4 times the land area.</rule>
+    </definition>
+
+    <table name="beastman_clanhold_demographics">
+      <columns>
+        <column>race</column>
+        <column>average_families_per_clanhold</column>
+        <column>territory_square_miles</column>
+        <column>territory_6_mile_hexes</column>
+        <column>typical_family_composition</column>
+      </columns>
+      <row>
+        <race>bugbear</race>
+        <average_families_per_clanhold>68</average_families_per_clanhold>
+        <territory_square_miles>16</territory_square_miles>
+        <territory_6_mile_hexes>0.5</territory_6_mile_hexes>
+        <typical_family_composition>1 warrior, 1 noncombatant</typical_family_composition>
+      </row>
+      <row>
+        <race>gnoll</race>
+        <average_families_per_clanhold>68</average_families_per_clanhold>
+        <territory_square_miles>16</territory_square_miles>
+        <territory_6_mile_hexes>0.5</territory_6_mile_hexes>
+        <typical_family_composition>1 warrior, 2-3 noncombatants, 0-1 slaves</typical_family_composition>
+      </row>
+      <row>
+        <race>goblin</race>
+        <average_families_per_clanhold>192</average_families_per_clanhold>
+        <territory_square_miles>48</territory_square_miles>
+        <territory_6_mile_hexes>1.5</territory_6_mile_hexes>
+        <typical_family_composition>1 warrior, 1-2 noncombatants</typical_family_composition>
+      </row>
+      <row>
+        <race>hobgoblin</race>
+        <average_families_per_clanhold>87</average_families_per_clanhold>
+        <territory_square_miles>21</territory_square_miles>
+        <territory_6_mile_hexes>0.7</territory_6_mile_hexes>
+        <typical_family_composition>1 warrior, 4-5 noncombatants</typical_family_composition>
+      </row>
+      <row>
+        <race>kobold</race>
+        <average_families_per_clanhold>192</average_families_per_clanhold>
+        <territory_square_miles>48</territory_square_miles>
+        <territory_6_mile_hexes>1.5</territory_6_mile_hexes>
+        <typical_family_composition>1 warrior, 2 noncombatants</typical_family_composition>
+      </row>
+      <row>
+        <race>lizardman</race>
+        <average_families_per_clanhold>124</average_families_per_clanhold>
+        <territory_square_miles>31</territory_square_miles>
+        <territory_6_mile_hexes>1</territory_6_mile_hexes>
+        <typical_family_composition>1 warrior, 1 noncombatant, 1 egg</typical_family_composition>
+      </row>
+      <row>
+        <race>ogre</race>
+        <average_families_per_clanhold>38</average_families_per_clanhold>
+        <territory_square_miles>40</territory_square_miles>
+        <territory_6_mile_hexes>1.3</territory_6_mile_hexes>
+        <typical_family_composition>1 warrior, 1-2 noncombatants, 0-1 slaves</typical_family_composition>
+      </row>
+      <row>
+        <race>orc</race>
+        <average_families_per_clanhold>192</average_families_per_clanhold>
+        <territory_square_miles>48</territory_square_miles>
+        <territory_6_mile_hexes>1.5</territory_6_mile_hexes>
+        <typical_family_composition>1 warrior, 3 noncombatants</typical_family_composition>
+      </row>
+      <row>
+        <race>troglodyte</race>
+        <average_families_per_clanhold>136</average_families_per_clanhold>
+        <territory_square_miles>31</territory_square_miles>
+        <territory_6_mile_hexes>1</territory_6_mile_hexes>
+        <typical_family_composition>1 warrior, 1 noncombatant, 1 egg</typical_family_composition>
+      </row>
+      <row>
+        <race>troll</race>
+        <average_families_per_clanhold>25</average_families_per_clanhold>
+        <territory_square_miles>24</territory_square_miles>
+        <territory_6_mile_hexes>0.8</territory_6_mile_hexes>
+        <typical_family_composition>1 warrior, 2 noncombatants</typical_family_composition>
+      </row>
+    </table>
+
+    <village_rules>
+      <rule>Peasant families may live in centralized clusters and still remain peasant families.</rule>
+      <rule>A clustered set of peasant homesteads does not count as an urban settlement unless it has urban families.</rule>
+      <rule>An urban settlement is distinct mechanically because it creates a Class VI market, equipment for purchase, and/or specialists.</rule>
+      <rule>Beastman wilderness "villages" should be treated as clustered peasant homesteads representing typical clanholds, not urban settlements.</rule>
+    </village_rules>
+  </section>
+
+  <section name="beastman_geographic_distribution_by_clan">
+    <definition>
+      <rule>Use this table to build beastman realms in wilderness regions.</rule>
+      <rule>For each terrain type, the first row gives average clanholds per 24-mile hex and chance of a clanhold per 6-mile hex.</rule>
+      <rule>Remaining rows give the 1d100 result ranges for each clanhold's race.</rule>
+    </definition>
+
+    <procedure>
+      <step order="1">Select a 24-mile hex.</step>
+      <step order="2">Determine the number of clanholds for the terrain.</step>
+      <step order="3">Roll 1d100 for each clanhold to determine race from the terrain column.</step>
+      <step order="4">Treat each result as either a wilderness lair or an average clanhold from the demographics table.</step>
+      <step order="5">Place clanholds in a logical settlement pattern within the 24-mile hex.</step>
+      <step order="6">Organize the clanholds into one or more realms at the Judge's discretion.</step>
+    </procedure>
+
+    <table name="beastman_geographic_distribution_by_clan_clear_grass_scrub_woods_river_swamp">
+      <columns>
+        <column>race</column>
+        <column>clear_grass</column>
+        <column>scrub</column>
+        <column>woods</column>
+        <column>river</column>
+        <column>swamp</column>
+      </columns>
+      <row>
+        <race>total_clanholds</race>
+        <clear_grass>2 / 12%</clear_grass>
+        <scrub>3 / 20%</scrub>
+        <woods>6 / 36%</woods>
+        <river>5 / 30%</river>
+        <swamp>11 / 68%</swamp>
+      </row>
+      <row><race>bugbear</race><clear_grass>1-12</clear_grass><scrub>1-12</scrub><woods>1-14</woods><river>1-12</river><swamp>none</swamp></row>
+      <row><race>gnoll</race><clear_grass>13-25</clear_grass><scrub>13-25</scrub><woods>15-28</woods><river>14-25</river><swamp>1-9</swamp></row>
+      <row><race>goblin</race><clear_grass>26-38</clear_grass><scrub>26-38</scrub><woods>29-43</woods><river>none</river><swamp>10-18</swamp></row>
+      <row><race>hobgoblin</race><clear_grass>39-50</clear_grass><scrub>39-50</scrub><woods>44-57</woods><river>26-38</river><swamp>19-27</swamp></row>
+      <row><race>kobold</race><clear_grass>51-63</clear_grass><scrub>51-63</scrub><woods>none</woods><river>none</river><swamp>none</swamp></row>
+      <row><race>lizardman</race><clear_grass>none</clear_grass><scrub>none</scrub><woods source_state="blank_or_unclear_in_source">none</woods><river>39-63</river><swamp>28-55</swamp></row>
+      <row><race>ogre</race><clear_grass>64-75</clear_grass><scrub>64-75</scrub><woods>58-71</woods><river>64-75</river><swamp>56-64</swamp></row>
+      <row><race>orc</race><clear_grass>76-88</clear_grass><scrub>76-88</scrub><woods>72-86</woods><river>76-88</river><swamp>65-73</swamp></row>
+      <row><race>troglodyte</race><clear_grass>none</clear_grass><scrub>none</scrub><woods>none</woods><river>none</river><swamp>74-82</swamp></row>
+      <row><race>troll</race><clear_grass>89-100</clear_grass><scrub>89-100</scrub><woods>87-100</woods><river>89-100</river><swamp>83-100</swamp></row>
+    </table>
+
+    <table name="beastman_geographic_distribution_by_clan_hills_mountains_barren_desert_jungle">
+      <columns>
+        <column>race</column>
+        <column>hills</column>
+        <column>mountains</column>
+        <column>barren</column>
+        <column>desert</column>
+        <column>jungle</column>
+      </columns>
+      <row>
+        <race>total_clanholds</race>
+        <hills>5 / 31%</hills>
+        <mountains>10 / 62%</mountains>
+        <barren>12 / 75%</barren>
+        <desert>12 / 75%</desert>
+        <jungle>12 / 75%</jungle>
+      </row>
+      <row><race>bugbear</race><hills>none</hills><mountains>none</mountains><barren>1-10</barren><desert>1-10</desert><jungle>1-12</jungle></row>
+      <row><race>gnoll</race><hills>none</hills><mountains>none</mountains><barren>11-20</barren><desert>11-20</desert><jungle>13-25</jungle></row>
+      <row><race>goblin</race><hills>1-18</hills><mountains>1-18</mountains><barren>21-30</barren><desert>none</desert><jungle>26-38</jungle></row>
+      <row><race>hobgoblin</race><hills source_state="printed_as_0">0</hills><mountains source_state="printed_as_0">0</mountains><barren>31-50</barren><desert>21-40</desert><jungle source_state="blank_or_unclear_in_source">none</jungle></row>
+      <row><race>kobold</race><hills>19-36</hills><mountains>19-36</mountains><barren>none</barren><desert>none</desert><jungle source_state="blank_or_unclear_in_source">none</jungle></row>
+      <row><race>lizardman</race><hills>none</hills><mountains>none</mountains><barren>none</barren><desert>none</desert><jungle>39-50</jungle></row>
+      <row><race>ogre</race><hills>37-52</hills><mountains>37-52</mountains><barren>51-70</barren><desert>41-60</desert><jungle>51-63</jungle></row>
+      <row><race>orc</race><hills>53-68</hills><mountains>53-68</mountains><barren>71-90</barren><desert>61-80</desert><jungle>64-75</jungle></row>
+      <row><race>troglodyte</race><hills>69-84</hills><mountains>69-84</mountains><barren>none</barren><desert source_state="blank_or_unclear_in_source">none</desert><jungle>76-88</jungle></row>
+      <row><race>troll</race><hills>85-100</hills><mountains>85-100</mountains><barren>91-100</barren><desert>81-100</desert><jungle>89-100</jungle></row>
+    </table>
+  </section>
+
+  <section name="beastman_geographic_distribution_by_family">
+    <definition>
+      <rule>Use this table to build diverse wilderness domains and realms, determine what beastman families arrive when a clanhold or chaotic domain grows, or benchmark availability of beastman mercenaries.</rule>
+      <rule>The first row gives average beastman families per terrain type, listed as families per 24-mile hex / families per 6-mile hex.</rule>
+      <rule>Remaining rows give 1d100 result ranges for the race of each family, with raw percentages in parentheses.</rule>
+    </definition>
+
+    <table name="beastman_geographic_distribution_by_family_clear_grass_scrub_woods_river_swamp">
+      <columns>
+        <column>race</column>
+        <column>clear_grass</column>
+        <column>scrub</column>
+        <column>woods</column>
+        <column>river</column>
+        <column>swamp</column>
+      </columns>
+      <row>
+        <race>total_families</race>
+        <clear_grass>215 / 13</clear_grass>
+        <scrub>360 / 22</scrub>
+        <woods>560 / 35</woods>
+        <river>425 / 27</river>
+        <swamp>1135 / 70</swamp>
+      </row>
+      <row><race>bugbear</race><clear_grass>1-8 (8%)</clear_grass><scrub>1-8 (8%)</scrub><woods>1-10 (10%)</woods><river>1-9 (9%)</river><swamp>none</swamp></row>
+      <row><race>gnoll</race><clear_grass>9-16 (8%)</clear_grass><scrub>9-16 (8%)</scrub><woods>11-20 (10%)</woods><river>10-18 (9%)</river><swamp>1-6 (6%)</swamp></row>
+      <row><race>goblin</race><clear_grass>17-38 (22%)</clear_grass><scrub>17-38 (22%)</scrub><woods>21-50 (30%)</woods><river>none</river><swamp>7-23 (17%)</swamp></row>
+      <row><race>hobgoblin</race><clear_grass>39-48 (10%)</clear_grass><scrub>39-48 (10%)</scrub><woods>51-62 (12%)</woods><river>11-30 (12%)</river><swamp>24-31 (8%)</swamp></row>
+      <row><race>kobold</race><clear_grass>49-70 (22%)</clear_grass><scrub>49-70 (22%)</scrub><woods>none</woods><river>none</river><swamp>none</swamp></row>
+      <row><race>lizardman</race><clear_grass>none</clear_grass><scrub>none</scrub><woods>none</woods><river>31-65 (35%)</river><swamp>32-64 (33%)</swamp></row>
+      <row><race>ogre</race><clear_grass>71-75 (5%)</clear_grass><scrub>71-75 (5%)</scrub><woods>63-67 (5%)</woods><river>66-70 (5%)</river><swamp>66-67 (3%)</swamp></row>
+      <row><race>orc</race><clear_grass>76-97 (22%)</clear_grass><scrub>76-97 (22%)</scrub><woods>68-97 (30%)</woods><river>71-97 (27%)</river><swamp>68-84 (17%)</swamp></row>
+      <row><race>troglodyte</race><clear_grass>none</clear_grass><scrub>none</scrub><woods>none</woods><river>none</river><swamp>85-96 (12%)</swamp></row>
+      <row><race>troll</race><clear_grass>98-100 (3%)</clear_grass><scrub>98-100 (3%)</scrub><woods>98-100 (3%)</woods><river>98-100 (3%)</river><swamp>97-100 (4%)</swamp></row>
+    </table>
+
+    <table name="beastman_geographic_distribution_by_family_hills_mountains_barren_desert_jungle">
+      <columns>
+        <column>race</column>
+        <column>hills</column>
+        <column>mountains</column>
+        <column>barren</column>
+        <column>desert</column>
+        <column>jungle</column>
+      </columns>
+      <row>
+        <race>total_families</race>
+        <hills>650 / 40</hills>
+        <mountains>1300 / 80</mountains>
+        <barren>1150 / 72</barren>
+        <desert>960 / 60</desert>
+        <jungle>1300 / 80</jungle>
+      </row>
+      <row><race>bugbear</race><hills>none</hills><mountains>none</mountains><barren>1-7 (7%)</barren><desert>1-8 (8%)</desert><jungle>1-8 (8%)</jungle></row>
+      <row><race>gnoll</race><hills>none</hills><mountains>none</mountains><barren>8-14 (7%)</barren><desert>9-16 (8%)</desert><jungle>9-16 (8%)</jungle></row>
+      <row><race>goblin</race><hills>1-25 (25%)</hills><mountains>1-25 (25%)</mountains><barren>15-32 (18%)</barren><desert>none</desert><jungle>17-39 (23%)</jungle></row>
+      <row><race>hobgoblin</race><hills>none</hills><mountains>none</mountains><barren>33-50 (18%)</barren><desert>17-37 (21%)</desert><jungle>none</jungle></row>
+      <row><race>kobold</race><hills>26-50 (25%)</hills><mountains>26-50 (25%)</mountains><barren>none</barren><desert>none</desert><jungle>none</jungle></row>
+      <row><race>lizardman</race><hills>none</hills><mountains>none</mountains><barren>none</barren><desert>none</desert><jungle>40-54 (15%)</jungle></row>
+      <row><race>ogre</race><hills>51-55 (5%)</hills><mountains>51-55 (5%)</mountains><barren>51-58 (8%)</barren><desert>38-46 (9%)</desert><jungle>55-59 (5%)</jungle></row>
+      <row><race>orc</race><hills>56-80 (25%)</hills><mountains>56-80 (25%)</mountains><barren>59-97 (39%)</barren><desert>47-94 (48%)</desert><jungle>60-82 (23%)</jungle></row>
+      <row><race>troglodyte</race><hills>81-97 (17%)</hills><mountains>81-97 (17%)</mountains><barren source_state="blank_or_unclear_in_source">none</barren><desert>none</desert><jungle>83-97 (15%)</jungle></row>
+      <row><race>troll</race><hills>98-100 (3%)</hills><mountains>98-100 (3%)</mountains><barren>98-100 (3%)</barren><desert>95-100 (6%)</desert><jungle>98-100 (3%)</jungle></row>
+    </table>
+
+    <adjustment_option>
+      <rule>Judges who want sparser wilderness may reduce the suggested number of clanholds and families.</rule>
+    </adjustment_option>
+  </section>
+
+  <section name="tribal_warriors">
+    <definition>
+      <rule>In tribal cultures, all able-bodied men, and some women, serve as warriors.</rule>
+      <rule>A leader of a tribal domain may levy tribal warriors into an army.</rule>
+      <rule>Tribal domains include beastman clanholds and chaotic domains.</rule>
+    </definition>
+
+    <levy_rules>
+      <rule>Up to 1 tribal warrior per tribal family may be levied without reducing domain morale or domain revenue.</rule>
+      <rule>Any additional levies are treated as militia.</rule>
+      <rule>The levy may occur all at once or over time.</rule>
+      <rule>If the number of tribal families changes, the number of available tribal warriors changes accordingly.</rule>
+      <rule>If population is reduced, some tribal warriors must be released to return to their villages.</rule>
+      <rule>If population increases, new tribal warriors become available.</rule>
+      <rule>Tribal warrior casualties can only be replaced through population growth.</rule>
+    </levy_rules>
+
+    <service_rules>
+      <rule>When recruited, tribal warriors arrive trained and equipped according to tribal custom.</rule>
+      <rule>The troop mix levied per 120 tribal warriors is determined by the tribal warrior troop type table.</rule>
+      <rule>The Judge may create additional troop type tables for specialized nations or races.</rule>
+      <rule>While serving, tribal warriors must be paid wages appropriate to troop type, using Mercenary GP Wage per Month from Domains at War: Campaigns.</rule>
+    </service_rules>
+
+    <table name="tribal_warrior_troop_type_per_120_warriors">
+      <columns>
+        <column>troop_type</column>
+        <column>vikings</column>
+        <column>jungle tribes</column>
+        <column>steppe nomads</column>
+        <column>kobold</column>
+        <column>goblin</column>
+        <column>orc</column>
+        <column>hobgoblin</column>
+        <column>gnoll</column>
+        <column>lizardman</column>
+        <column>bugbear</column>
+        <column>ogre</column>
+      </columns>
+      <row><troop_type>light_infantry_or_hunters</troop_type><jutland>60</jutland><iv_kingdom>40</iv_kingdom><skysos>30</skysos><kobold>120</kobold><goblin>60</goblin><orc>44</orc><hobgoblin>44</hobgoblin><gnoll>55</gnoll><lizardman>70</lizardman><bugbear>70</bugbear><ogre>70</ogre></row>
+      <row><troop_type>heavy_infantry</troop_type><jutland>30</jutland><iv_kingdom>none</iv_kingdom><skysos>none</skysos><kobold>none</kobold><goblin>none</goblin><orc>30</orc><hobgoblin>30</hobgoblin><gnoll>40</gnoll><lizardman>50</lizardman><bugbear>50</bugbear><ogre>50</ogre></row>
+      <row><troop_type>hunters</troop_type><jutland>none</jutland><iv_kingdom>60</iv_kingdom><skysos>none</skysos><kobold>none</kobold><goblin>none</goblin><orc>none</orc><hobgoblin>none</hobgoblin><gnoll>none</gnoll><lizardman>none</lizardman><bugbear>none</bugbear><ogre>none</ogre></row>
+      <row><troop_type>slingers</troop_type><jutland>none</jutland><iv_kingdom>none</iv_kingdom><skysos>none</skysos><kobold>none</kobold><goblin>27</goblin><orc>none</orc><hobgoblin>none</hobgoblin><gnoll>none</gnoll><lizardman>none</lizardman><bugbear>none</bugbear><ogre>none</ogre></row>
+      <row><troop_type>bowmen</troop_type><jutland>30</jutland><iv_kingdom>20</iv_kingdom><skysos>none</skysos><kobold>none</kobold><goblin>27</goblin><orc>20</orc><hobgoblin>none</hobgoblin><gnoll>none</gnoll><lizardman>none</lizardman><bugbear>none</bugbear><ogre>none</ogre></row>
+      <row><troop_type>crossbowmen</troop_type><jutland>none</jutland><iv_kingdom>none</iv_kingdom><skysos>none</skysos><kobold>none</kobold><goblin>none</goblin><orc>20</orc><hobgoblin>none</hobgoblin><gnoll>none</gnoll><lizardman>none</lizardman><bugbear>none</bugbear><ogre>none</ogre></row>
+      <row><troop_type>longbowmen</troop_type><jutland>none</jutland><iv_kingdom>none</iv_kingdom><skysos>none</skysos><kobold>none</kobold><goblin>none</goblin><orc>none</orc><hobgoblin>24</hobgoblin><gnoll>25</gnoll><lizardman>none</lizardman><bugbear>none</bugbear><ogre>none</ogre></row>
+      <row><troop_type>composite_bowmen</troop_type><jutland>none</jutland><iv_kingdom>none</iv_kingdom><skysos>25</skysos><kobold>none</kobold><goblin>none</goblin><orc>none</orc><hobgoblin>none</hobgoblin><gnoll>none</gnoll><lizardman>none</lizardman><bugbear>none</bugbear><ogre>none</ogre></row>
+      <row><troop_type>light_cavalry</troop_type><jutland>none</jutland><iv_kingdom>none</iv_kingdom><skysos>20</skysos><kobold>none</kobold><goblin>none</goblin><orc>none</orc><hobgoblin>10</hobgoblin><gnoll>none</gnoll><lizardman>none</lizardman><bugbear>none</bugbear><ogre>none</ogre></row>
+      <row><troop_type>horse_archers</troop_type><jutland>none</jutland><iv_kingdom>none</iv_kingdom><skysos>25</skysos><kobold>none</kobold><goblin>none</goblin><orc>none</orc><hobgoblin>5</hobgoblin><gnoll>none</gnoll><lizardman source_state="printed_as_double_dash">none</lizardman><bugbear>none</bugbear><ogre>none</ogre></row>
+      <row><troop_type>medium_cavalry</troop_type><jutland>none</jutland><iv_kingdom>none</iv_kingdom><skysos>20</skysos><kobold>none</kobold><goblin>none</goblin><orc>none</orc><hobgoblin>7</hobgoblin><gnoll>none</gnoll><lizardman>none</lizardman><bugbear>none</bugbear><ogre>none</ogre></row>
+      <row><troop_type>beast_riders</troop_type><jutland>none</jutland><iv_kingdom>none</iv_kingdom><skysos>none</skysos><kobold>none</kobold><goblin>6</goblin><orc>6</orc><hobgoblin>none</hobgoblin><gnoll>none</gnoll><lizardman>none</lizardman><bugbear>none</bugbear><ogre>none</ogre></row>
+    </table>
+  </section>
+
+  <section name="tribal_warrior_morale">
+    <base_rules>
+      <rule>Tribal warriors use the base morale of their troop type.</rule>
+      <rule>Tribal warriors levied from domains with Steadfast or Stalwart domain morale gain a one-time +1 morale increase.</rule>
+      <rule>Tribal warriors levied from domains with Apathetic or Demoralized domain morale suffer a one-time -1 morale decrease.</rule>
+      <rule>Tribal warriors may gain other morale modifiers from working conditions, as mercenaries do.</rule>
+    </base_rules>
+
+    <morale_and_loyalty_triggers>
+      <rule>Tribal warriors make morale rolls in battle when casualties exceed their army's break point.</rule>
+      <rule>Tribal warriors make loyalty rolls whenever they suffer a calamity.</rule>
+      <rule>Usual calamities include routing from battle, suffering 25% or more casualties, being out of supply, or going without pay for a month.</rule>
+      <rule>Tribal warriors also make morale rolls after 3 consecutive months of service without receiving spoils from a battle or siege equal to at least their wages.</rule>
+    </morale_and_loyalty_triggers>
+
+    <departure_rules>
+      <rule>When a loyalty roll is required, use the Unit Loyalty table.</rule>
+      <rule>Tribal warriors who leave service return to their villages if possible.</rule>
+      <rule>If return is not possible, they become brigands or mercenaries.</rule>
+    </departure_rules>
+  </section>
+
+  <references>
+    <reference>ACKS p. 129 population growth table for additional clanhold growth.</reference>
+    <reference>Domains at War: Campaigns domain militia, annexation, mercenary wages, and unit loyalty subsystems.</reference>
+    <reference>ACKS pp. 250-251 slave labor rules.</reference>
+  </references>
+
+  <confidence_notes>
+    <note>The source OCR is degraded in several tables. I normalized obviously blank cells to none where the distribution pattern strongly suggests no entry, especially: woods/lizardman in clan distribution; jungle/hobgoblin and jungle/kobold in clan distribution; desert/troglodyte in clan distribution; barren/troglodyte in family distribution.</note>
+    <note>The hills and mountains hobgoblin entries in the clan distribution table are printed as 0 rather than a dash. I preserved the printed 0 rather than converting it.</note>
+    <note>The tribal warrior troop table headers were normalized from OCR-corrupted labels to jutland, iv_kingdom, skysos, and hobgoblin.</note>
+    <note>The lizardman horse_archers entry in the tribal warrior troop table is printed as a double dash. I treated it as none.</note>
+    <note>The Unit Loyalty table reference is unresolved in the source, which prints p. XX rather than a final page number.</note>
+  </confidence_notes>
+</rules_summary>

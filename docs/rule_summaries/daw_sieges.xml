@@ -1,0 +1,1226 @@
+<siege_rules title="domains_at_war_campaigns_sieges" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <definitions>
+    <definition name="siege">Attempt to capture a garrisoned stronghold or urban settlement.</definition>
+    <definition name="besieging_army">Army laying siege; also called besieger.</definition>
+    <definition name="defending_army">Army garrisoning the stronghold; also called defender.</definition>
+    <definition name="stronghold_scope">Any reference to strongholds includes urban settlements unless otherwise noted.</definition>
+    <definition name="blockade">Encircle the stronghold to deny re-supply and escape.</definition>
+    <definition name="reduction">Weaken or destroy the stronghold with bombardment, siege-mining, magic, or similar means.</definition>
+    <definition name="assault">Direct attack to capture the stronghold by force.</definition>
+    <definition name="breach">Each 1,000 shp of damage dealt to a stronghold; each breach permits 1 additional assaulting unit.</definition>
+  </definitions>
+
+  <methods_of_siege>
+    <method name="blockade">
+      <rule>Denies re-supply and escape by encirclement with units, ships, or fortifications.</rule>
+    </method>
+    <method name="reduction">
+      <rule>Deals structural damage to create breaches or destroy the stronghold.</rule>
+    </method>
+    <method name="assault">
+      <rule>Attempts capture through direct combat.</rule>
+    </method>
+    <general_rules>
+      <rule>A besieger may use one, some, or all methods.</rule>
+      <rule>Typical sequence is blockade, then reduction, then assault if the stronghold still refuses to capitulate.</rule>
+      <rule>Methods may overlap, repeat, or occur in another order as needed.</rule>
+    </general_rules>
+  </methods_of_siege>
+
+  <siege_mechanics>
+    <structural_hit_points>
+      <rule>If no map exists, estimate a stone stronghold's shp as stronghold_or_settlement_gp_value / 8, rounded up.</rule>
+      <rule>Wooden strongholds have 1/10 the shp of comparable stone strongholds.</rule>
+      <rule>Wooden strongholds have comparable unit capacity to stone strongholds.</rule>
+      <rule>If mapped, calculate total shp by summing the shp of all walls and buildings.</rule>
+    </structural_hit_points>
+    <unit_capacity>
+      <rule>If no map exists, estimate unit capacity as 1 unit per 1,000 shp, rounded up.</rule>
+      <rule>If mapped, calculate unit capacity by summing the unit capacity of all structures.</rule>
+      <rule>For each point of unit capacity, 1 unit may assault and 1 unit may defend.</rule>
+    </unit_capacity>
+    <breaches>
+      <rule>Each 1,000 shp of damage creates 1 breach.</rule>
+      <rule>Each breach permits 1 additional assaulting unit.</rule>
+      <rule>Undamaged strongholds begin with a 1:1 assaulting-to-defending unit limit based on unit capacity.</rule>
+    </breaches>
+    <tables>
+      <table name="effect_of_unit_capacity_and_structural_hit_points">
+        <columns>
+          <column>factor</column>
+          <column>effect</column>
+        </columns>
+        <row>
+          <factor>unit_capacity</factor>
+          <effect>For each point, a stronghold can be assaulted and defended by 1 unit.</effect>
+        </row>
+        <row>
+          <factor>structural_hit_points</factor>
+          <effect>For each breach (1,000 shp of damage), 1 additional unit can assault the stronghold.</effect>
+        </row>
+      </table>
+    </tables>
+  </siege_mechanics>
+
+  <blockade>
+    <overview>
+      <rule>To blockade, the besieging army must encircle the area around the stronghold with troops, ships, or fortifications.</rule>
+      <rule>Once a blockade is in place, the stronghold is cut off from its supply lines.</rule>
+      <rule>A blockade alone may win the siege if the besieger can wait for supplies to run out.</rule>
+    </overview>
+
+    <quick_reference>
+      <rule>Each 1 point of unit capacity requires 2 blockading units, or 1/2 blockading ship, or 250' of circumvallation.</rule>
+      <rule>Minimum blockade commitment is 20 units, or 10 ships, or 2,500' of circumvallation.</rule>
+    </quick_reference>
+
+    <blockading_with_units>
+      <rule>Required units = twice the stronghold's unit capacity, minimum 20 units.</rule>
+      <rule>Eligible units are infantry units of 120 troops or cavalry units of 60 troops.</rule>
+      <rule>Cavalry units count fully for blockade despite only containing 60 troops.</rule>
+      <rule>Units assigned to blockade cannot also be assigned to construction projects.</rule>
+    </blockading_with_units>
+
+    <blockading_with_ships>
+      <rule>If the stronghold can re-supply by navigable waterway, the besieger must blockade the waterway.</rule>
+      <rule>To function in a naval blockade, a ship must have a ram, a catapult, or at least 20 marines aboard.</rule>
+      <rule>If the stronghold is surrounded by water on all sides, required ships = unit_capacity / 2.</rule>
+      <rule>If only part of the perimeter faces water, required ships = unit_capacity x water_facing_percentage / 2.</rule>
+      <rule>Walls blockaded by ship do not also need to be blockaded by land units.</rule>
+      <rule>Remaining land-facing walls must still be blockaded by land.</rule>
+      <rule>If the defender has a navy, required ships increase by the size of the defending navy.</rule>
+    </blockading_with_ships>
+
+    <blockading_with_fortifications>
+      <definition name="circumvallation">Line of fortifications built outside bow-shot of the stronghold's walls.</definition>
+      <composition>
+        <entry>wooden palisades 8' high x 1' thick</entry>
+        <entry>trenches 10' wide x 5' deep</entry>
+        <entry>earthen ramparts 8' high x 1' thick</entry>
+      </composition>
+      <cost_rules>
+        <rule>Cost is 100gp per 100' length.</rule>
+        <rule>Construction is usually split into multiple projects.</rule>
+        <rule>Guideline: each project should cover at least 2,500' of circumvallation.</rule>
+        <rule>Workers are usually unskilled labor from the besieging army, but craftsmen may be used.</rule>
+        <rule>Construction may be assisted with move earth.</rule>
+      </cost_rules>
+      <effects>
+        <rule>Each 250' of circumvallation reduces the units required to maintain the blockade by 2.</rule>
+        <rule>250' of circumvallation corresponds to 1 point of unit capacity.</rule>
+        <rule>If required blockade units are reduced to 0, the stronghold is completely encircled.</rule>
+        <rule>A complete circumvallation imposes a -4 penalty on attempts to smuggle supplies into the stronghold.</rule>
+      </effects>
+    </blockading_with_fortifications>
+
+    <effects_of_blockade>
+      <supply_rules>
+        <rule>Once blockaded, the defending army loses access to its supply line.</rule>
+        <rule>Thereafter, the defending army pays supply cost from stored supplies or smuggled supplies only.</rule>
+        <rule>A blockaded stronghold is vulnerable to supply sabotage.</rule>
+      </supply_rules>
+      <stored_supplies>
+        <rule>Default stored supplies = 600gp per point of unit capacity.</rule>
+        <rule>This default amount is enough for 10 weeks if the stronghold is garrisoned at full capacity.</rule>
+        <rule>Gold and other liquid wealth held by the ruler does not count as supplies.</rule>
+        <rule>If the stronghold is not blockaded immediately, stored supplies increase by 600gp per point of unit capacity per week of preparation time.</rule>
+        <rule>Maximum stored supplies = 3,000gp per point of unit capacity.</rule>
+        <rule>Maximum storage represents 1 year's supplies.</rule>
+      </stored_supplies>
+      <loss_of_supplies>
+        <rule>When supplies are exhausted, defending troops lose 1 hp per day.</rule>
+        <rule>Unsupplied defending troops suffer a cumulative -1 to attack throws and damage rolls.</rule>
+        <rule>Unsupplied defending troops cannot heal wounds normally.</rule>
+        <rule>Each week troops are partially or completely unsupplied counts as a calamity and triggers a loyalty roll.</rule>
+      </loss_of_supplies>
+    </effects_of_blockade>
+
+    <hijinks_during_blockade>
+      <smuggling>
+        <requirements>
+          <rule>Requires a defending army leader with access to perpetrators.</rule>
+          <rule>Requires a successful Move Silently throw by the perpetrator.</rule>
+        </requirements>
+        <modifiers>
+          <rule>Modified by the besieging leader's strategic ability.</rule>
+          <rule>If a circumvallation completely encircles the stronghold, apply an additional -4 penalty.</rule>
+        </modifiers>
+        <results>
+          <rule>Success smuggles 1,000gp of supplies per class level.</rule>
+          <rule>Extra supplies may be smuggled by taking a -1 penalty on the proficiency throw per extra 1,000gp.</rule>
+        </results>
+      </smuggling>
+
+      <sabotage>
+        <requirements>
+          <rule>Requires a besieging army leader with infiltrated perpetrators inside the stronghold.</rule>
+          <rule>Requires a successful Move Silently throw.</rule>
+        </requirements>
+        <modifiers>
+          <rule>Modified by the defending leader's strategic ability.</rule>
+        </modifiers>
+        <results>
+          <rule>Success destroys 1,000gp of supplies per class level.</rule>
+          <rule>Extra supplies may be destroyed by taking a -1 penalty on the proficiency throw per extra 1,000gp.</rule>
+        </results>
+      </sabotage>
+    </hijinks_during_blockade>
+
+    <tables>
+      <table name="blockade_quick_reference">
+        <columns>
+          <column>requirement_type</column>
+          <column>value</column>
+        </columns>
+        <row>
+          <requirement_type>per_1_point_of_unit_capacity</requirement_type>
+          <value>2 blockading units</value>
+        </row>
+        <row>
+          <requirement_type>per_1_point_of_unit_capacity</requirement_type>
+          <value>1/2 blockading ship</value>
+        </row>
+        <row>
+          <requirement_type>per_1_point_of_unit_capacity</requirement_type>
+          <value>250' of circumvallation</value>
+        </row>
+        <row>
+          <requirement_type>minimum_blockade</requirement_type>
+          <value>20 units / 10 ships / 2500'</value>
+        </row>
+      </table>
+    </tables>
+  </blockade>
+
+  <reduction>
+    <overview>
+      <rule>Reduction weakens the stronghold with bombardment, siege-mining, magic, or hijinks.</rule>
+      <rule>Reduction deals damage to structural hit points.</rule>
+      <rule>If shp is reduced to 0, the stronghold is flattened rubble.</rule>
+      <rule>Each 1,000 shp of damage creates 1 breach exploitable by assault.</rule>
+    </overview>
+
+    <bombardment>
+      <rule>Each artillery piece deals daily shp damage based on artillery type and target material.</rule>
+      <rule>Wooden strongholds use the wood damage values; stone strongholds use the stone damage values.</rule>
+      <rule>If ammunition is limited, damage is reduced in proportion to ammunition available.</rule>
+
+      <ammunition>
+        <rule>Daily ammunition cost is added to the army's supply cost.</rule>
+        <rule>For the besieger, daily cost represents ammunition brought by supply train.</rule>
+        <rule>For the defender, daily cost represents stored ammunition consumed during the siege.</rule>
+        <rule>Catapults and trebuchets in siege conditions are treated as firing the cheapest available ammunition.</rule>
+        <rule>Catapults and trebuchets may fire lighter or heavier ammunition than their type indicates, with reduced accuracy.</rule>
+      </ammunition>
+
+      <scavenging_ammunition>
+        <rule>Scavenging ammunition is a construction project.</rule>
+        <rule>Construction cost for scavenged ammunition is 1/10 the daily ammo cost listed for the artillery being supported.</rule>
+        <rule>As long as workers are available for the scavenging project, the artillery may continue firing without supply-cost expenditure.</rule>
+      </scavenging_ammunition>
+
+      <artillery_duels>
+        <overview>
+          <rule>If both sides have artillery, the besieger may bombard from outside the defender's range if possible.</rule>
+          <rule>If the besieger chooses to move artillery into range, an artillery duel may occur.</rule>
+          <rule>Only artillery within range participates.</rule>
+          <rule>The besieger chooses the range at which the duel is offered.</rule>
+          <rule>The defender may accept or withdraw artillery into cover and allow bombardment.</rule>
+          <rule>A defending army may also offer an artillery duel.</rule>
+          <rule>If PCs are involved, or magic is involved, a small artillery duel may be resolved as a heroic foray instead.</rule>
+        </overview>
+        <procedure>
+          <step order="1">Each leader rolls simultaneously: 1d6 per ballista, 1d6 per catapult, and 2d6 per trebuchet participating.</step>
+          <step order="2">The besieger scores a hit on each die roll of 6.</step>
+          <step order="3">The defender scores a hit on each die roll of 5-6.</step>
+          <step order="4">A defender roll of 5 misses if the besieger has constructed fortifications, mantlets, or other cover for artillery.</step>
+          <step order="5">For each hit scored, destroy one opposing artillery piece.</step>
+          <step order="6">Heavy trebuchets require 2 hits to destroy.</step>
+          <step order="7">Hits must target artillery actually participating in the duel.</step>
+          <step order="8">Hits may only target artillery with lower range than the artillery scoring the hit.</step>
+          <step order="9">Ignore excess hits beyond those needed to destroy all eligible opposing artillery.</step>
+          <step order="10">Apply hits simultaneously.</step>
+          <step order="11">Either side may voluntarily withdraw after hits are applied.</step>
+          <step order="12">The leader with lower strategic ability decides withdrawal first.</step>
+          <step order="13">If either side withdraws, the duel ends and the winner may bombard with surviving artillery.</step>
+          <step order="14">If neither side withdraws, begin another duel turn from step 1.</step>
+        </procedure>
+      </artillery_duels>
+
+      <tables>
+        <table name="artillery_bombardment">
+          <columns>
+            <column>artillery_type</column>
+            <column>daily_damage_vs_wood</column>
+            <column>daily_damage_vs_stone</column>
+            <column>shots_fired_per_day</column>
+            <column>daily_ammo_cost</column>
+            <column>maximum_range</column>
+          </columns>
+          <row>
+            <artillery_type>medium_ballista</artillery_type>
+            <daily_damage_vs_wood>1,800</daily_damage_vs_wood>
+            <daily_damage_vs_stone>-</daily_damage_vs_stone>
+            <shots_fired_per_day>600</shots_fired_per_day>
+            <daily_ammo_cost>18gp</daily_ammo_cost>
+            <maximum_range>200'</maximum_range>
+          </row>
+          <row>
+            <artillery_type>heavy_ballista</artillery_type>
+            <daily_damage_vs_wood>1,800</daily_damage_vs_wood>
+            <daily_damage_vs_stone>60</daily_damage_vs_stone>
+            <shots_fired_per_day>600</shots_fired_per_day>
+            <daily_ammo_cost>90gp</daily_ammo_cost>
+            <maximum_range>300'</maximum_range>
+          </row>
+          <row>
+            <artillery_type>light_catapult</artillery_type>
+            <daily_damage_vs_wood>1,800</daily_damage_vs_wood>
+            <daily_damage_vs_stone>60</daily_damage_vs_stone>
+            <shots_fired_per_day>600</shots_fired_per_day>
+            <daily_ammo_cost>90gp</daily_ammo_cost>
+            <maximum_range>300'</maximum_range>
+          </row>
+          <row>
+            <artillery_type>medium_catapult</artillery_type>
+            <daily_damage_vs_wood>2,400</daily_damage_vs_wood>
+            <daily_damage_vs_stone>80</daily_damage_vs_stone>
+            <shots_fired_per_day>600</shots_fired_per_day>
+            <daily_ammo_cost>90gp</daily_ammo_cost>
+            <maximum_range>400'</maximum_range>
+          </row>
+          <row>
+            <artillery_type>heavy_catapult</artillery_type>
+            <daily_damage_vs_wood>3,600</daily_damage_vs_wood>
+            <daily_damage_vs_stone>120</daily_damage_vs_stone>
+            <shots_fired_per_day>600</shots_fired_per_day>
+            <daily_ammo_cost>90gp</daily_ammo_cost>
+            <maximum_range>400'</maximum_range>
+          </row>
+          <row>
+            <artillery_type>light_trebuchet</artillery_type>
+            <daily_damage_vs_wood>9,000</daily_damage_vs_wood>
+            <daily_damage_vs_stone>300</daily_damage_vs_stone>
+            <shots_fired_per_day>1,500</shots_fired_per_day>
+            <daily_ammo_cost>225gp</daily_ammo_cost>
+            <maximum_range>500'</maximum_range>
+          </row>
+          <row>
+            <artillery_type>medium_trebuchet</artillery_type>
+            <daily_damage_vs_wood>12,000</daily_damage_vs_wood>
+            <daily_damage_vs_stone>400</daily_damage_vs_stone>
+            <shots_fired_per_day>1,500</shots_fired_per_day>
+            <daily_ammo_cost>225gp</daily_ammo_cost>
+            <maximum_range>500'</maximum_range>
+          </row>
+          <row>
+            <artillery_type>heavy_trebuchet</artillery_type>
+            <daily_damage_vs_wood>15,000</daily_damage_vs_wood>
+            <daily_damage_vs_stone>500</daily_damage_vs_stone>
+            <shots_fired_per_day>1,500</shots_fired_per_day>
+            <daily_ammo_cost>225gp</daily_ammo_cost>
+            <maximum_range>500'</maximum_range>
+          </row>
+        </table>
+      </tables>
+    </bombardment>
+
+    <magic>
+      <rule>Certain spells and magic items can damage strongholds as listed.</rule>
+      <special_cases>
+        <entry name="transmute_rock_to_mud">
+          <rule>Cannot directly affect worked stone.</rule>
+          <rule>May transform earth beneath strongholds into mud to weaken foundations.</rule>
+          <rule>50% of the damage is recovered when the spell expires or is dispelled.</rule>
+        </entry>
+        <entry name="move_earth">
+          <rule>Cannot directly affect worked stone.</rule>
+          <rule>May shift ground beneath strongholds and cause earthquake-like structural damage.</rule>
+          <rule>Cannot be used if the stronghold is built on solid rock unless transmute rock to mud is used first.</rule>
+        </entry>
+      </special_cases>
+      <tables>
+        <table name="reduction_by_magic">
+          <columns>
+            <column>spell</column>
+            <column>shp_damage</column>
+          </columns>
+          <row>
+            <spell>cone_of_cold</spell>
+            <shp_damage>hp damage / 5</shp_damage>
+          </row>
+          <row>
+            <spell>disintegrate</spell>
+            <shp_damage>125</shp_damage>
+          </row>
+          <row>
+            <spell>fireball</spell>
+            <shp_damage>hp damage / 5</shp_damage>
+          </row>
+          <row>
+            <spell>flame_strike</spell>
+            <shp_damage>hp damage / 5</shp_damage>
+          </row>
+          <row>
+            <spell>horn_of_blasting</spell>
+            <shp_damage>125</shp_damage>
+          </row>
+          <row>
+            <spell>lightning_bolt</spell>
+            <shp_damage>hp damage / 5</shp_damage>
+          </row>
+          <row>
+            <spell>move_earth</spell>
+            <shp_damage>1,500 / turn</shp_damage>
+          </row>
+          <row>
+            <spell>searing_wind</spell>
+            <shp_damage>hp damage / 5</shp_damage>
+          </row>
+          <row>
+            <spell>transmute_rock_to_mud</spell>
+            <shp_damage>625</shp_damage>
+          </row>
+        </table>
+      </tables>
+    </magic>
+
+    <siege_mining>
+      <overview>
+        <rule>A besieging army may dig one or more siege-mines.</rule>
+        <rule>Siege-mining excavates wooden-reinforced earthen tunnels under or around the stronghold, then burns supports to collapse tunnel and structure above.</rule>
+      </overview>
+      <construction_rules>
+        <rule>Each siege-mine is a construction project costing 1,000gp.</rule>
+        <rule>Each siege-mine must be supervised by an engineer.</rule>
+        <rule>No more than 100 workers may be assigned to each siege-mine.</rule>
+        <rule>When completed and ignited, a siege-mine deals 6d6x100 shp damage.</rule>
+        <rule>If a petard is used in the siege-mine, increase damage by 100 x the petard's damage.</rule>
+        <rule>Each siege-mine contains approximately 20,000 cubic feet of tunnel.</rule>
+        <rule>Construction rate is 20 cubic feet of tunnel per 1gp per day.</rule>
+        <rule>A besieger may pursue as many siege-mine projects as desired, limited by available engineers and workers.</rule>
+      </construction_rules>
+      <risk_rules>
+        <rule>Workers assigned to siege-mining make a loyalty roll each week.</rule>
+        <rule>An unmodified loyalty roll of 2 causes a mining accident.</rule>
+        <rule>A mining accident destroys the mine, kills all assigned workers, and loses the value of the mine.</rule>
+        <rule>The supervising engineer may save versus Blast to escape death.</rule>
+      </risk_rules>
+      <countermining>
+        <rule>Each day of a mining project, the defender may make a reconnaissance roll to detect the siege-mine.</rule>
+        <rule>Once detected, the defender may order one or more countermines.</rule>
+        <rule>Each countermine is a construction project supervised by an engineer.</rule>
+        <rule>Up to 100 workers may be assigned to each countermine.</rule>
+        <rule>Countermines require weekly loyalty rolls, with an unmodified 2 causing a mining accident.</rule>
+        <rule>Each countermine's construction rate is applied as a penalty to one siege-mine project's construction rate.</rule>
+      </countermining>
+      <limits>
+        <limit>If a stronghold is built on solid rock, it cannot be reduced by siege-mining.</limit>
+        <limit>If a stronghold is entirely surrounded by water, or by a moat at least 10' deep, siege-mining is virtually impossible.</limit>
+      </limits>
+    </siege_mining>
+
+    <hijinks>
+      <arson>
+        <requirements>
+          <rule>Requires an infiltrated perpetrator.</rule>
+          <rule>Requires a successful Move Silently throw.</rule>
+        </requirements>
+        <modifiers>
+          <rule>Modified by the opposing army leader's strategic ability.</rule>
+        </modifiers>
+        <results>
+          <rule>Success destroys 4d6 x 10 shp per class level.</rule>
+          <rule>Extra damage may be attempted by taking a -1 penalty per additional 4d6 x 10 shp.</rule>
+          <rule>Damage from arson is divided by 10 if the stronghold is stone.</rule>
+        </results>
+      </arson>
+
+      <subversion>
+        <requirements>
+          <rule>Requires an infiltrated perpetrator.</rule>
+          <rule>Requires a successful Hide in Shadows throw.</rule>
+        </requirements>
+        <modifiers>
+          <rule>Modified by the opposing army leader's strategic ability.</rule>
+        </modifiers>
+        <results>
+          <rule>Success creates 1 breach in the stronghold.</rule>
+          <rule>Additional breaches may be created by taking a -1 penalty per additional breach.</rule>
+          <rule>Breaches created by subversion must be exploited immediately with an assault or are lost.</rule>
+        </results>
+      </subversion>
+    </hijinks>
+
+    <stronghold_repair>
+      <rule>After each day of reduction, the defending army may make repairs during the evening hours.</rule>
+      <rule>Repair is a construction project.</rule>
+      <rule>Wooden construction repairs at 5 shp per 1gp of construction rate.</rule>
+      <rule>Stone construction repairs at 1 shp per 1gp of construction rate.</rule>
+      <rule>Only half of all damage sustained during the siege can be repaired during the siege.</rule>
+      <rule>The remainder must be rebuilt after the siege at full construction cost.</rule>
+    </stronghold_repair>
+  </reduction>
+
+  <assault>
+    <overview>
+      <rule>If blockade and reduction fail to induce capitulation, the besieging army may assault.</rule>
+      <rule>Assault seeks capture through direct combat.</rule>
+      <rule>Assaults are decisive but costly.</rule>
+    </overview>
+
+    <resolving_assaults>
+      <turn_scale>Each assault turn represents approximately 10 minutes of hard fighting.</turn_scale>
+      <procedure>
+        <step order="1">The besieging leader selects assaulting units.</step>
+        <step order="2">Maximum assaulting units = 1 unit per point of unit capacity + 1 additional unit per breach.</step>
+        <step order="3">The leader designates which units assault through breaches; all other assaulting units are assumed to use siege ladders.</step>
+        <step order="4">Units not assigned to the assault remain in reserve and do not participate this turn.</step>
+        <step order="5">The besieging leader selects any artillery or siege equipment used in the assault; these do not count against the maximum unit limit.</step>
+        <step order="6">The defending leader selects defending units.</step>
+        <step order="7">Maximum defending units = 1 unit per point of unit capacity.</step>
+        <step order="8">Units not assigned to defense remain in reserve and do not participate this turn.</step>
+        <step order="9">The defending leader selects any artillery or siege equipment used in defense; these do not count against the maximum unit limit.</step>
+        <step order="10">Heroic PCs and NPCs may make heroic forays; all such forays are revealed and resolved simultaneously; lost units are then removed.</step>
+        <step order="11">Each leader simultaneously rolls attack throws equal to the army's remaining battle rating.</step>
+        <step order="12">Base target number is 16+, modified by assault attack throw modifiers.</step>
+        <step order="13">Each successful attack throw scores 1 hit.</step>
+        <step order="14">Each leader removes units from his army with combined battle rating equal to or greater than hits scored against his army.</step>
+        <step order="15">Hits in excess of those needed to defeat all opposing units are ignored.</step>
+        <step order="16">Apply hits simultaneously.</step>
+        <step order="17">If all defending units are defeated and the defending army has no reserves, the stronghold is captured.</step>
+        <step order="18">If all assaulting units are defeated and the besieging army has no reserves, the stronghold is liberated.</step>
+        <step order="19">If neither end state occurs, the defending army may voluntarily surrender.</step>
+        <step order="20">If the defender surrenders, the stronghold is captured.</step>
+        <step order="21">If the defender does not surrender, the besieger may renew the assault or call it off.</step>
+        <step order="22">If renewed, begin another assault turn from step 1.</step>
+        <step order="23">If called off, the assault ends but the siege continues.</step>
+        <step order="24">When the assault ends, determine casualties.</step>
+      </procedure>
+    </resolving_assaults>
+
+    <attack_throw_modifiers>
+      <rule>Assaulting unit attack throws suffer -2 unless the attacking unit is artillery, siege equipment, a flyer, or a unit assaulting through a breach.</rule>
+      <rule>Defending unit attack throws gain +2.</rule>
+    </attack_throw_modifiers>
+
+    <battle_ratings_during_assaults>
+      <rule>Only the battle ratings of assaulting or defending units count toward army BR.</rule>
+      <rule>Reserve units do not count toward BR.</rule>
+      <rule>All defending infantry units gain +1 BR due to protection of the stronghold.</rule>
+      <rule>Assaulting cavalry not using a breach have BR reduced to one-quarter of base value, rounded up.</rule>
+    </battle_ratings_during_assaults>
+
+    <artillery_and_siege_equipment>
+      <general_rules>
+        <rule>Artillery and siege equipment must be grouped into units to affect an assault.</rule>
+        <rule>Equipment not present in sufficient numbers to form a unit has no effect on the assault.</rule>
+        <rule>A leader is not required to risk artillery or siege equipment in an assault.</rule>
+        <rule>Artillery and siege equipment units have BR and function like ordinary assaulting or defending units unless a note states otherwise.</rule>
+        <rule>Artillery and siege equipment do not count against unit-capacity restrictions on assault or defense.</rule>
+        <rule>Maximum BR contributed by siege equipment is equal to the BR contributed by assaulting or defending troop units.</rule>
+      </general_rules>
+      <unit_size_rules>
+        <rule>Unit size is the minimum number of pieces required for effect.</rule>
+        <rule>For variable-size equipment such as rams, an oversized piece may qualify as a unit by itself if sufficiently large.</rule>
+      </unit_size_rules>
+      <notes>
+        <entry number="1">May make four attacks each assault turn, but breaks on an unmodified throw of 1; broken units are removed from the assault.</entry>
+        <entry number="2">May only be deployed by the besieging army.</entry>
+        <entry number="3">Provides a bonus attack throw on the first turn of an assault.</entry>
+        <entry number="4">Absorbs one hit during an assault turn; absorbing a hit destroys the gallery or mantlet unit.</entry>
+        <entry number="5">May make one attack throw each assault turn; a hit destroys a ram or screw unit.</entry>
+        <entry number="6">Reduces the BR of the defending army by one.</entry>
+      </notes>
+      <acquisition>
+        <rule>If in supply, an army may acquire artillery and siege equipment from the market.</rule>
+        <rule>Either army may construct artillery and siege equipment as construction projects.</rule>
+      </acquisition>
+      <tables>
+        <table name="artillery_and_siege_equipment_battle_ratings">
+          <columns>
+            <column>equipment_type</column>
+            <column>unit_size</column>
+            <column>battle_rating</column>
+            <column>notes</column>
+          </columns>
+          <row>
+            <equipment_type>light_ballista</equipment_type>
+            <unit_size>10</unit_size>
+            <battle_rating>1</battle_rating>
+            <notes>-</notes>
+          </row>
+          <row>
+            <equipment_type>light_repeating_ballista</equipment_type>
+            <unit_size>10</unit_size>
+            <battle_rating>1</battle_rating>
+            <notes>1</notes>
+          </row>
+          <row>
+            <equipment_type>medium_ballista</equipment_type>
+            <unit_size>10</unit_size>
+            <battle_rating>1</battle_rating>
+            <notes>-</notes>
+          </row>
+          <row>
+            <equipment_type>heavy_ballista</equipment_type>
+            <unit_size>5</unit_size>
+            <battle_rating>1</battle_rating>
+            <notes>-</notes>
+          </row>
+          <row>
+            <equipment_type>light_catapult</equipment_type>
+            <unit_size>10</unit_size>
+            <battle_rating>1</battle_rating>
+            <notes>-</notes>
+          </row>
+          <row>
+            <equipment_type>medium_catapult</equipment_type>
+            <unit_size>2</unit_size>
+            <battle_rating>1</battle_rating>
+            <notes>-</notes>
+          </row>
+          <row>
+            <equipment_type>heavy_catapult</equipment_type>
+            <unit_size>1</unit_size>
+            <battle_rating>1</battle_rating>
+            <notes>-</notes>
+          </row>
+          <row>
+            <equipment_type>light_trebuchet</equipment_type>
+            <unit_size>1</unit_size>
+            <battle_rating>2</battle_rating>
+            <notes>-</notes>
+          </row>
+          <row>
+            <equipment_type>medium_trebuchet</equipment_type>
+            <unit_size>1</unit_size>
+            <battle_rating>3</battle_rating>
+            <notes>-</notes>
+          </row>
+          <row>
+            <equipment_type>heavy_trebuchet</equipment_type>
+            <unit_size>1</unit_size>
+            <battle_rating>6</battle_rating>
+            <notes>-</notes>
+          </row>
+          <row>
+            <equipment_type>battering_ram_20</equipment_type>
+            <unit_size>6</unit_size>
+            <battle_rating>1</battle_rating>
+            <notes>2</notes>
+          </row>
+          <row>
+            <equipment_type>cauldron</equipment_type>
+            <unit_size>4</unit_size>
+            <battle_rating>-</battle_rating>
+            <notes>3</notes>
+          </row>
+          <row>
+            <equipment_type>hoist</equipment_type>
+            <unit_size>6</unit_size>
+            <battle_rating>1</battle_rating>
+            <notes>2</notes>
+          </row>
+          <row>
+            <equipment_type>movable_gallery</equipment_type>
+            <unit_size>6</unit_size>
+            <battle_rating>-</battle_rating>
+            <notes>2,4</notes>
+          </row>
+          <row>
+            <equipment_type>movable_mantlet</equipment_type>
+            <unit_size>60</unit_size>
+            <battle_rating>-</battle_rating>
+            <notes>2,4</notes>
+          </row>
+          <row>
+            <equipment_type>ram_catcher</equipment_type>
+            <unit_size>10</unit_size>
+            <battle_rating>-</battle_rating>
+            <notes>5</notes>
+          </row>
+          <row>
+            <equipment_type>screw_20</equipment_type>
+            <unit_size>6</unit_size>
+            <battle_rating>1</battle_rating>
+            <notes>2</notes>
+          </row>
+          <row>
+            <equipment_type>siege_hook</equipment_type>
+            <unit_size>10</unit_size>
+            <battle_rating>-</battle_rating>
+            <notes>2,6</notes>
+          </row>
+          <row>
+            <equipment_type>siege_tower_standard</equipment_type>
+            <unit_size>2</unit_size>
+            <battle_rating>1</battle_rating>
+            <notes>2</notes>
+          </row>
+          <row>
+            <equipment_type>siege_tower_large</equipment_type>
+            <unit_size>1</unit_size>
+            <battle_rating>2</battle_rating>
+            <notes>2</notes>
+          </row>
+          <row>
+            <equipment_type>siege_tower_huge</equipment_type>
+            <unit_size>1</unit_size>
+            <battle_rating>8</battle_rating>
+            <notes>2</notes>
+          </row>
+        </table>
+      </tables>
+    </artillery_and_siege_equipment>
+
+    <heroic_forays_during_assaults>
+      <general_rules>
+        <rule>Use the same heroic foray mechanics as battles except as noted here.</rule>
+        <rule>Units of artillery and siege equipment may appear as foes for either side.</rule>
+      </general_rules>
+      <defending_the_stronghold>
+        <rule>Missile attacks targeting creatures defending the walls suffer a -4 penalty.</rule>
+        <rule>Creatures defending the walls gain +4 on saves versus Blast from artillery, burning oil, or similar effects.</rule>
+        <rule>On a successful save, creatures defending the walls take no damage even if the effect would normally deal half damage on a success.</rule>
+      </defending_the_stronghold>
+      <encounter_distance>
+        <rule>Defending participants begin inside the stronghold.</rule>
+        <rule>Besieging participants begin outside the walls at a distance determined by stronghold site.</rule>
+        <rule>Roll encounter distance by site, then multiply by wall_height / 6'.</rule>
+        <rule>Maximum encounter distance is 600 yards.</rule>
+      </encounter_distance>
+      <foe_selection>
+        <rule>When selecting foes, defending units are worth one additional point of BR.</rule>
+      </foe_selection>
+      <tables>
+        <table name="assault_encounter_distance">
+          <columns>
+            <column>stronghold_site</column>
+            <column>encounter_distance_yds</column>
+          </columns>
+          <row>
+            <stronghold_site>badlands</stronghold_site>
+            <encounter_distance_yds>2d6x10</encounter_distance_yds>
+          </row>
+          <row>
+            <stronghold_site>desert_or_plains</stronghold_site>
+            <encounter_distance_yds>4d6x10</encounter_distance_yds>
+          </row>
+          <row>
+            <stronghold_site>fields_fallow</stronghold_site>
+            <encounter_distance_yds>4d6x10</encounter_distance_yds>
+          </row>
+          <row>
+            <stronghold_site>fields_ripe</stronghold_site>
+            <encounter_distance_yds>5d10</encounter_distance_yds>
+          </row>
+          <row>
+            <stronghold_site>fields_wild</stronghold_site>
+            <encounter_distance_yds>3d6x5</encounter_distance_yds>
+          </row>
+          <row>
+            <stronghold_site>forest_heavy_or_jungle</stronghold_site>
+            <encounter_distance_yds>5d4</encounter_distance_yds>
+          </row>
+          <row>
+            <stronghold_site>forest_light</stronghold_site>
+            <encounter_distance_yds>5d8</encounter_distance_yds>
+          </row>
+          <row>
+            <stronghold_site>marsh</stronghold_site>
+            <encounter_distance_yds>8d10</encounter_distance_yds>
+          </row>
+          <row>
+            <stronghold_site>mountains_or_hills</stronghold_site>
+            <encounter_distance_yds>4d6x10</encounter_distance_yds>
+          </row>
+        </table>
+      </tables>
+    </heroic_forays_during_assaults>
+
+    <casualties>
+      <unit_loss>
+        <rule>For each defeated unit, 50% of its troops rounded up are crippled or dead.</rule>
+        <rule>For each defeated unit, 50% of its troops rounded down are lightly wounded.</rule>
+      </unit_loss>
+      <fate_of_wounded>
+        <entry condition="besieging_army_captured_stronghold">
+          <rule>Besieging wounded recover during the next week.</rule>
+          <rule>Defending wounded become prisoners.</rule>
+          <rule>Any surrendering troops also become prisoners.</rule>
+        </entry>
+        <entry condition="defending_army_fought_off_assault">
+          <rule>Defending wounded recover during the next week.</rule>
+          <rule>Besieging wounded are left behind and become prisoners of the defenders.</rule>
+        </entry>
+      </fate_of_wounded>
+      <post_battle_unit_management>
+        <rule>Half-strength units may be consolidated into fewer full-strength units.</rule>
+      </post_battle_unit_management>
+      <prisoners>
+        <rule>Prisoners may be executed, kept as slaves, or ransomed.</rule>
+        <rule>Standard ransom or slave value is 40gp per prisoner.</rule>
+        <rule>Higher-level NPCs, monsters, and similar creatures may be worth more at Judge discretion.</rule>
+        <rule>Defenders usually cannot feed prisoners and will likely kill or ransom them.</rule>
+        <rule>Defenders may use prisoners as leverage during surrender negotiations.</rule>
+      </prisoners>
+    </casualties>
+  </assault>
+
+  <ending_sieges>
+    <general_end_conditions>
+      <entry>Defending army sallies forth and gives battle.</entry>
+      <entry>Defending army surrenders.</entry>
+      <entry>Besieging army departs the hex.</entry>
+      <entry>Besieging army captures or destroys the stronghold.</entry>
+    </general_end_conditions>
+
+    <defending_army_sallies_forth>
+      <rule>If the defender exits the stronghold and gives battle, the siege ends and a pitched battle is fought immediately.</rule>
+      <rule>If the defender loses the pitched battle, it may retreat back into the stronghold or into an adjacent 6-mile hex, subject to pursuit either way.</rule>
+      <rule>If the defender wins the pitched battle, the besieger is subject to normal retreat and pursuit rules.</rule>
+    </defending_army_sallies_forth>
+
+    <defending_army_surrenders>
+      <rule>Surrender may be voluntary or involuntary.</rule>
+      <rule>Voluntary surrender occurs through negotiation between leaders.</rule>
+      <rule>Involuntary surrender occurs when all units inside the stronghold fail loyalty rolls due to calamities.</rule>
+      <rule>Better surrender terms are more likely if the defender surrenders while some force remains intact.</rule>
+      <rule>Any surrender gives the besieging army victory.</rule>
+    </defending_army_surrenders>
+
+    <besieging_army_departs_the_hex>
+      <rule>If the besieger leaves the hex with all units, the defender wins the siege.</rule>
+      <rule>The besieger may continue the siege by leaving at least one unit in the hex.</rule>
+    </besieging_army_departs_the_hex>
+
+    <besieging_army_captures_the_stronghold>
+      <rule>The besieger wins if it captures the stronghold by assault.</rule>
+      <rule>The besieger wins if it destroys the stronghold by reduction.</rule>
+      <rule>If reduction destroys the stronghold, defending units must sally forth or surrender.</rule>
+    </besieging_army_captures_the_stronghold>
+  </ending_sieges>
+
+  <spoils_of_sieges>
+    <rule>Victorious siege spoils equal one month's wages of each defeated unit.</rule>
+    <rule>Each prisoner captured is worth 40gp if sold as a slave or ransomed.</rule>
+    <rule>Experience points are assigned as with a battle.</rule>
+    <rule>The stronghold and domain may also be pillaged for additional plunder.</rule>
+    <rule>Terms of voluntary surrender may forbid pillaging, but compliance depends on the victor.</rule>
+  </spoils_of_sieges>
+
+  <sieges_simplified>
+    <overview>
+      <rule>Use the simplified system when only outcome and duration matter.</rule>
+      <rule>Cross-reference stronghold structural hit points with besieging army unit advantage on the duration table.</rule>
+      <rule>A numerical result is the number of days to capture the stronghold.</rule>
+      <rule>A result of 0 means the stronghold is captured without a fight.</rule>
+      <rule>A result of - means the besieger is not strong enough to capture the stronghold and can only attempt to starve out the defenders by blockade.</rule>
+    </overview>
+
+    <unit_advantage>
+      <rule>Unit advantage = besieging army units - defending army units.</rule>
+      <rule>Artillery and siege engines count as bonus units on both sides.</rule>
+    </unit_advantage>
+
+    <site_duration_modifiers>
+      <rule>Some stronghold sites multiply the duration indicated by the duration table.</rule>
+    </site_duration_modifiers>
+
+    <casualties_in_simplified_sieges>
+      <rule>To assess casualties from a completed simplified siege, resolve a battle, not an assault, between besieging and defending armies.</rule>
+      <rule>This represents final collapse, sally, or cleanup after reduction.</rule>
+      <rule>Defending units that suffer Flee are treated as cowering in the rubble rather than increasing distance from attackers.</rule>
+      <rule>Defending units that suffer Rout are treated as having surrendered to the besieger.</rule>
+    </casualties_in_simplified_sieges>
+
+    <off_camera_and_intervention_guidance>
+      <rule>The simplified table is useful for off-camera sieges.</rule>
+      <rule>If PCs intervene during an ongoing simplified siege, calculate current wall condition and supplies by elapsed time.</rule>
+      <rule>When the listed duration has fully elapsed, the stronghold has 0 shp.</rule>
+      <rule>When half the listed duration has elapsed, the stronghold has 50% of its shp remaining.</rule>
+      <rule>Apply the same proportional logic for other elapsed fractions.</rule>
+    </off_camera_and_intervention_guidance>
+
+    <tables>
+      <table name="duration_of_siege">
+        <columns>
+          <column>stronghold_structural_hp</column>
+          <column>unit_advantage_1_2</column>
+          <column>unit_advantage_3_4</column>
+          <column>unit_advantage_5_10</column>
+          <column>unit_advantage_11_15</column>
+          <column>unit_advantage_16_30</column>
+          <column>unit_advantage_31_50</column>
+          <column>unit_advantage_51_75</column>
+          <column>unit_advantage_76_100</column>
+          <column>unit_advantage_101_200</column>
+          <column>unit_advantage_201_300</column>
+          <column>unit_advantage_301_400</column>
+          <column>unit_advantage_401_500</column>
+          <column>unit_advantage_501_600</column>
+          <column>unit_advantage_601_plus</column>
+        </columns>
+        <row>
+          <stronghold_structural_hp>1-3,000</stronghold_structural_hp>
+          <unit_advantage_1_2>45</unit_advantage_1_2>
+          <unit_advantage_3_4>23</unit_advantage_3_4>
+          <unit_advantage_5_10>9</unit_advantage_5_10>
+          <unit_advantage_11_15>6</unit_advantage_11_15>
+          <unit_advantage_16_30>3</unit_advantage_16_30>
+          <unit_advantage_31_50>2</unit_advantage_31_50>
+          <unit_advantage_51_75>1</unit_advantage_51_75>
+          <unit_advantage_76_100>1</unit_advantage_76_100>
+          <unit_advantage_101_200>0</unit_advantage_101_200>
+          <unit_advantage_201_300>0</unit_advantage_201_300>
+          <unit_advantage_301_400>0</unit_advantage_301_400>
+          <unit_advantage_401_500>0</unit_advantage_401_500>
+          <unit_advantage_501_600>0</unit_advantage_501_600>
+          <unit_advantage_601_plus>0</unit_advantage_601_plus>
+        </row>
+        <row>
+          <stronghold_structural_hp>4-6,000</stronghold_structural_hp>
+          <unit_advantage_1_2>90</unit_advantage_1_2>
+          <unit_advantage_3_4>45</unit_advantage_3_4>
+          <unit_advantage_5_10>18</unit_advantage_5_10>
+          <unit_advantage_11_15>12</unit_advantage_11_15>
+          <unit_advantage_16_30>6</unit_advantage_16_30>
+          <unit_advantage_31_50>4</unit_advantage_31_50>
+          <unit_advantage_51_75>2</unit_advantage_51_75>
+          <unit_advantage_76_100>2</unit_advantage_76_100>
+          <unit_advantage_101_200>1</unit_advantage_101_200>
+          <unit_advantage_201_300>1</unit_advantage_201_300>
+          <unit_advantage_301_400>0</unit_advantage_301_400>
+          <unit_advantage_401_500>0</unit_advantage_401_500>
+          <unit_advantage_501_600>0</unit_advantage_501_600>
+          <unit_advantage_601_plus>0</unit_advantage_601_plus>
+        </row>
+        <row>
+          <stronghold_structural_hp>7-9,000</stronghold_structural_hp>
+          <unit_advantage_1_2>135</unit_advantage_1_2>
+          <unit_advantage_3_4>68</unit_advantage_3_4>
+          <unit_advantage_5_10>27</unit_advantage_5_10>
+          <unit_advantage_11_15>18</unit_advantage_11_15>
+          <unit_advantage_16_30>9</unit_advantage_16_30>
+          <unit_advantage_31_50>5</unit_advantage_31_50>
+          <unit_advantage_51_75>4</unit_advantage_51_75>
+          <unit_advantage_76_100>3</unit_advantage_76_100>
+          <unit_advantage_101_200>1</unit_advantage_101_200>
+          <unit_advantage_201_300>1</unit_advantage_201_300>
+          <unit_advantage_301_400>1</unit_advantage_301_400>
+          <unit_advantage_401_500>1</unit_advantage_401_500>
+          <unit_advantage_501_600>0</unit_advantage_501_600>
+          <unit_advantage_601_plus>0</unit_advantage_601_plus>
+        </row>
+        <row>
+          <stronghold_structural_hp>10-12,000</stronghold_structural_hp>
+          <unit_advantage_1_2>180</unit_advantage_1_2>
+          <unit_advantage_3_4>90</unit_advantage_3_4>
+          <unit_advantage_5_10>36</unit_advantage_5_10>
+          <unit_advantage_11_15>24</unit_advantage_11_15>
+          <unit_advantage_16_30>12</unit_advantage_16_30>
+          <unit_advantage_31_50>7</unit_advantage_31_50>
+          <unit_advantage_51_75>5</unit_advantage_51_75>
+          <unit_advantage_76_100>4</unit_advantage_76_100>
+          <unit_advantage_101_200>2</unit_advantage_101_200>
+          <unit_advantage_201_300>1</unit_advantage_201_300>
+          <unit_advantage_301_400>1</unit_advantage_301_400>
+          <unit_advantage_401_500>1</unit_advantage_401_500>
+          <unit_advantage_501_600>1</unit_advantage_501_600>
+          <unit_advantage_601_plus>1</unit_advantage_601_plus>
+        </row>
+        <row>
+          <stronghold_structural_hp>13-15,000</stronghold_structural_hp>
+          <unit_advantage_1_2>225</unit_advantage_1_2>
+          <unit_advantage_3_4>113</unit_advantage_3_4>
+          <unit_advantage_5_10>45</unit_advantage_5_10>
+          <unit_advantage_11_15>30</unit_advantage_11_15>
+          <unit_advantage_16_30>15</unit_advantage_16_30>
+          <unit_advantage_31_50>9</unit_advantage_31_50>
+          <unit_advantage_51_75>6</unit_advantage_51_75>
+          <unit_advantage_76_100>5</unit_advantage_76_100>
+          <unit_advantage_101_200>2</unit_advantage_101_200>
+          <unit_advantage_201_300>2</unit_advantage_201_300>
+          <unit_advantage_301_400>1</unit_advantage_301_400>
+          <unit_advantage_401_500>1</unit_advantage_401_500>
+          <unit_advantage_501_600>1</unit_advantage_501_600>
+          <unit_advantage_601_plus>1</unit_advantage_601_plus>
+        </row>
+        <row>
+          <stronghold_structural_hp>16-20,000</stronghold_structural_hp>
+          <unit_advantage_1_2>-</unit_advantage_1_2>
+          <unit_advantage_3_4>150</unit_advantage_3_4>
+          <unit_advantage_5_10>60</unit_advantage_5_10>
+          <unit_advantage_11_15>40</unit_advantage_11_15>
+          <unit_advantage_16_30>20</unit_advantage_16_30>
+          <unit_advantage_31_50>12</unit_advantage_31_50>
+          <unit_advantage_51_75>8</unit_advantage_51_75>
+          <unit_advantage_76_100>6</unit_advantage_76_100>
+          <unit_advantage_101_200>3</unit_advantage_101_200>
+          <unit_advantage_201_300>2</unit_advantage_201_300>
+          <unit_advantage_301_400>2</unit_advantage_301_400>
+          <unit_advantage_401_500>1</unit_advantage_401_500>
+          <unit_advantage_501_600>1</unit_advantage_501_600>
+          <unit_advantage_601_plus>1</unit_advantage_601_plus>
+        </row>
+        <row>
+          <stronghold_structural_hp>21-30,000</stronghold_structural_hp>
+          <unit_advantage_1_2>-</unit_advantage_1_2>
+          <unit_advantage_3_4>225</unit_advantage_3_4>
+          <unit_advantage_5_10>90</unit_advantage_5_10>
+          <unit_advantage_11_15>60</unit_advantage_11_15>
+          <unit_advantage_16_30>30</unit_advantage_16_30>
+          <unit_advantage_31_50>18</unit_advantage_31_50>
+          <unit_advantage_51_75>12</unit_advantage_51_75>
+          <unit_advantage_76_100>9</unit_advantage_76_100>
+          <unit_advantage_101_200>5</unit_advantage_101_200>
+          <unit_advantage_201_300>3</unit_advantage_201_300>
+          <unit_advantage_301_400>2</unit_advantage_301_400>
+          <unit_advantage_401_500>2</unit_advantage_401_500>
+          <unit_advantage_501_600>2</unit_advantage_501_600>
+          <unit_advantage_601_plus>1</unit_advantage_601_plus>
+        </row>
+        <row>
+          <stronghold_structural_hp>31-50,000</stronghold_structural_hp>
+          <unit_advantage_1_2>-</unit_advantage_1_2>
+          <unit_advantage_3_4>-</unit_advantage_3_4>
+          <unit_advantage_5_10>150</unit_advantage_5_10>
+          <unit_advantage_11_15>100</unit_advantage_11_15>
+          <unit_advantage_16_30>50</unit_advantage_16_30>
+          <unit_advantage_31_50>30</unit_advantage_31_50>
+          <unit_advantage_51_75>20</unit_advantage_51_75>
+          <unit_advantage_76_100>15</unit_advantage_76_100>
+          <unit_advantage_101_200>8</unit_advantage_101_200>
+          <unit_advantage_201_300>5</unit_advantage_201_300>
+          <unit_advantage_301_400>4</unit_advantage_301_400>
+          <unit_advantage_401_500>3</unit_advantage_401_500>
+          <unit_advantage_501_600>3</unit_advantage_501_600>
+          <unit_advantage_601_plus>2</unit_advantage_601_plus>
+        </row>
+        <row>
+          <stronghold_structural_hp>51-75,000</stronghold_structural_hp>
+          <unit_advantage_1_2>-</unit_advantage_1_2>
+          <unit_advantage_3_4>-</unit_advantage_3_4>
+          <unit_advantage_5_10>225</unit_advantage_5_10>
+          <unit_advantage_11_15>150</unit_advantage_11_15>
+          <unit_advantage_16_30>75</unit_advantage_16_30>
+          <unit_advantage_31_50>45</unit_advantage_31_50>
+          <unit_advantage_51_75>30</unit_advantage_51_75>
+          <unit_advantage_76_100>23</unit_advantage_76_100>
+          <unit_advantage_101_200>11</unit_advantage_101_200>
+          <unit_advantage_201_300>8</unit_advantage_201_300>
+          <unit_advantage_301_400>6</unit_advantage_301_400>
+          <unit_advantage_401_500>5</unit_advantage_401_500>
+          <unit_advantage_501_600>4</unit_advantage_501_600>
+          <unit_advantage_601_plus>3</unit_advantage_601_plus>
+        </row>
+        <row>
+          <stronghold_structural_hp>76-100,000</stronghold_structural_hp>
+          <unit_advantage_1_2>-</unit_advantage_1_2>
+          <unit_advantage_3_4>-</unit_advantage_3_4>
+          <unit_advantage_5_10>-</unit_advantage_5_10>
+          <unit_advantage_11_15>200</unit_advantage_11_15>
+          <unit_advantage_16_30>100</unit_advantage_16_30>
+          <unit_advantage_31_50>60</unit_advantage_31_50>
+          <unit_advantage_51_75>40</unit_advantage_51_75>
+          <unit_advantage_76_100>30</unit_advantage_76_100>
+          <unit_advantage_101_200>15</unit_advantage_101_200>
+          <unit_advantage_201_300>10</unit_advantage_201_300>
+          <unit_advantage_301_400>8</unit_advantage_301_400>
+          <unit_advantage_401_500>6</unit_advantage_401_500>
+          <unit_advantage_501_600>5</unit_advantage_501_600>
+          <unit_advantage_601_plus>4</unit_advantage_601_plus>
+        </row>
+        <row>
+          <stronghold_structural_hp>101-125,000</stronghold_structural_hp>
+          <unit_advantage_1_2>-</unit_advantage_1_2>
+          <unit_advantage_3_4>-</unit_advantage_3_4>
+          <unit_advantage_5_10>-</unit_advantage_5_10>
+          <unit_advantage_11_15>250</unit_advantage_11_15>
+          <unit_advantage_16_30>125</unit_advantage_16_30>
+          <unit_advantage_31_50>75</unit_advantage_31_50>
+          <unit_advantage_51_75>50</unit_advantage_51_75>
+          <unit_advantage_76_100>38</unit_advantage_76_100>
+          <unit_advantage_101_200>19</unit_advantage_101_200>
+          <unit_advantage_201_300>13</unit_advantage_201_300>
+          <unit_advantage_301_400>9</unit_advantage_301_400>
+          <unit_advantage_401_500>8</unit_advantage_401_500>
+          <unit_advantage_501_600>6</unit_advantage_501_600>
+          <unit_advantage_601_plus>5</unit_advantage_601_plus>
+        </row>
+        <row>
+          <stronghold_structural_hp>126-150,000</stronghold_structural_hp>
+          <unit_advantage_1_2>-</unit_advantage_1_2>
+          <unit_advantage_3_4>-</unit_advantage_3_4>
+          <unit_advantage_5_10>-</unit_advantage_5_10>
+          <unit_advantage_11_15>-</unit_advantage_11_15>
+          <unit_advantage_16_30>200</unit_advantage_16_30>
+          <unit_advantage_31_50>120</unit_advantage_31_50>
+          <unit_advantage_51_75>80</unit_advantage_51_75>
+          <unit_advantage_76_100>60</unit_advantage_76_100>
+          <unit_advantage_101_200>30</unit_advantage_101_200>
+          <unit_advantage_201_300>20</unit_advantage_201_300>
+          <unit_advantage_301_400>15</unit_advantage_301_400>
+          <unit_advantage_401_500>12</unit_advantage_401_500>
+          <unit_advantage_501_600>10</unit_advantage_501_600>
+          <unit_advantage_601_plus>9</unit_advantage_601_plus>
+        </row>
+        <row>
+          <stronghold_structural_hp>151-200,000</stronghold_structural_hp>
+          <unit_advantage_1_2>-</unit_advantage_1_2>
+          <unit_advantage_3_4>-</unit_advantage_3_4>
+          <unit_advantage_5_10>-</unit_advantage_5_10>
+          <unit_advantage_11_15>-</unit_advantage_11_15>
+          <unit_advantage_16_30>250</unit_advantage_16_30>
+          <unit_advantage_31_50>150</unit_advantage_31_50>
+          <unit_advantage_51_75>100</unit_advantage_51_75>
+          <unit_advantage_76_100>75</unit_advantage_76_100>
+          <unit_advantage_101_200>38</unit_advantage_101_200>
+          <unit_advantage_201_300>25</unit_advantage_201_300>
+          <unit_advantage_301_400>19</unit_advantage_301_400>
+          <unit_advantage_401_500>15</unit_advantage_401_500>
+          <unit_advantage_501_600>13</unit_advantage_501_600>
+          <unit_advantage_601_plus>11</unit_advantage_601_plus>
+        </row>
+        <row>
+          <stronghold_structural_hp>201-250,000</stronghold_structural_hp>
+          <unit_advantage_1_2>-</unit_advantage_1_2>
+          <unit_advantage_3_4>-</unit_advantage_3_4>
+          <unit_advantage_5_10>-</unit_advantage_5_10>
+          <unit_advantage_11_15>-</unit_advantage_11_15>
+          <unit_advantage_16_30>-</unit_advantage_16_30>
+          <unit_advantage_31_50>180</unit_advantage_31_50>
+          <unit_advantage_51_75>120</unit_advantage_51_75>
+          <unit_advantage_76_100>90</unit_advantage_76_100>
+          <unit_advantage_101_200>45</unit_advantage_101_200>
+          <unit_advantage_201_300>30</unit_advantage_201_300>
+          <unit_advantage_301_400>23</unit_advantage_301_400>
+          <unit_advantage_401_500>18</unit_advantage_401_500>
+          <unit_advantage_501_600>15</unit_advantage_501_600>
+          <unit_advantage_601_plus>13</unit_advantage_601_plus>
+        </row>
+        <row>
+          <stronghold_structural_hp>251-300,000</stronghold_structural_hp>
+          <unit_advantage_1_2>-</unit_advantage_1_2>
+          <unit_advantage_3_4>-</unit_advantage_3_4>
+          <unit_advantage_5_10>-</unit_advantage_5_10>
+          <unit_advantage_11_15>-</unit_advantage_11_15>
+          <unit_advantage_16_30>-</unit_advantage_16_30>
+          <unit_advantage_31_50>210</unit_advantage_31_50>
+          <unit_advantage_51_75>140</unit_advantage_51_75>
+          <unit_advantage_76_100>105</unit_advantage_76_100>
+          <unit_advantage_101_200>53</unit_advantage_101_200>
+          <unit_advantage_201_300>35</unit_advantage_201_300>
+          <unit_advantage_301_400>26</unit_advantage_301_400>
+          <unit_advantage_401_500>21</unit_advantage_401_500>
+          <unit_advantage_501_600>18</unit_advantage_501_600>
+          <unit_advantage_601_plus>15</unit_advantage_601_plus>
+        </row>
+        <row>
+          <stronghold_structural_hp>301-350,000+</stronghold_structural_hp>
+          <unit_advantage_1_2>-</unit_advantage_1_2>
+          <unit_advantage_3_4>-</unit_advantage_3_4>
+          <unit_advantage_5_10>-</unit_advantage_5_10>
+          <unit_advantage_11_15>-</unit_advantage_11_15>
+          <unit_advantage_16_30>-</unit_advantage_16_30>
+          <unit_advantage_31_50>240</unit_advantage_31_50>
+          <unit_advantage_51_75>160</unit_advantage_51_75>
+          <unit_advantage_76_100>120</unit_advantage_76_100>
+          <unit_advantage_101_200>60</unit_advantage_101_200>
+          <unit_advantage_201_300>40</unit_advantage_201_300>
+          <unit_advantage_301_400>30</unit_advantage_301_400>
+          <unit_advantage_401_500>24</unit_advantage_401_500>
+          <unit_advantage_501_600>20</unit_advantage_501_600>
+          <unit_advantage_601_plus>17</unit_advantage_601_plus>
+        </row>
+      </table>
+
+      <table name="bonus_units_from_artillery_and_siege_equipment">
+        <columns>
+          <column>equipment</column>
+          <column>bonus_units</column>
+        </columns>
+        <row>
+          <equipment>ballista_light_3</equipment>
+          <bonus_units>1</bonus_units>
+        </row>
+        <row>
+          <equipment>ballista_medium_2</equipment>
+          <bonus_units>1</bonus_units>
+        </row>
+        <row>
+          <equipment>ballista_heavy</equipment>
+          <bonus_units>1</bonus_units>
+        </row>
+        <row>
+          <equipment>battering_rams_or_screws_6</equipment>
+          <bonus_units>1</bonus_units>
+        </row>
+        <row>
+          <equipment>catapult_light</equipment>
+          <bonus_units>1</bonus_units>
+        </row>
+        <row>
+          <equipment>catapult_medium</equipment>
+          <bonus_units>2</bonus_units>
+        </row>
+        <row>
+          <equipment>catapult_heavy</equipment>
+          <bonus_units>3</bonus_units>
+        </row>
+        <row>
+          <equipment>hoists_10</equipment>
+          <bonus_units>1</bonus_units>
+        </row>
+        <row>
+          <equipment>siege_tower_standard</equipment>
+          <bonus_units>1</bonus_units>
+        </row>
+        <row>
+          <equipment>siege_tower_large</equipment>
+          <bonus_units>2</bonus_units>
+        </row>
+        <row>
+          <equipment>siege_tower_huge</equipment>
+          <bonus_units>8</bonus_units>
+        </row>
+        <row>
+          <equipment>trebuchet_light</equipment>
+          <bonus_units>8</bonus_units>
+        </row>
+        <row>
+          <equipment>trebuchet_medium</equipment>
+          <bonus_units>10</bonus_units>
+        </row>
+        <row>
+          <equipment>trebuchet_heavy</equipment>
+          <bonus_units>12</bonus_units>
+        </row>
+      </table>
+
+      <table name="stronghold_site_duration_modifiers">
+        <columns>
+          <column>stronghold_site</column>
+          <column>duration_modifier</column>
+        </columns>
+        <row>
+          <stronghold_site>mountain</stronghold_site>
+          <duration_modifier>x5</duration_modifier>
+        </row>
+        <row>
+          <stronghold_site>island</stronghold_site>
+          <duration_modifier>x4</duration_modifier>
+        </row>
+        <row>
+          <stronghold_site>peninsula</stronghold_site>
+          <duration_modifier>x3</duration_modifier>
+        </row>
+        <row>
+          <stronghold_site>riverbank</stronghold_site>
+          <duration_modifier>x2</duration_modifier>
+        </row>
+      </table>
+    </tables>
+  </sieges_simplified>
+</siege_rules>

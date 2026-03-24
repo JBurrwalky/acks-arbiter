@@ -1,0 +1,921 @@
+<domain_encounter_supplement title="Wandering Into War" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <purpose>
+    <rule>Provides a system for generating and resolving wandering monster incursions into player- or NPC-run domains.</rule>
+    <rule>Requires use of ACKS and Domains at War: Campaigns.</rule>
+  </purpose>
+
+  <domain_encounters>
+    <definition>
+      <rule>Periodic incursions by wandering monsters into domains are called domain encounters.</rule>
+      <rule>Wilderness domains face the greatest danger, civilized domains the least.</rule>
+    </definition>
+
+    <classification_rules>
+      <classification name="civilized">
+        <encounter_frequency>monthly</encounter_frequency>
+        <terrain_for_frequency_table>settled terrain</terrain_for_frequency_table>
+        <wilderness_encounter_column>inhabited</wilderness_encounter_column>
+      </classification>
+      <classification name="borderlands">
+        <encounter_frequency>weekly</encounter_frequency>
+        <terrain_for_frequency_table>by terrain</terrain_for_frequency_table>
+        <wilderness_encounter_column>by terrain</wilderness_encounter_column>
+      </classification>
+      <classification name="wilderness">
+        <encounter_frequency>daily</encounter_frequency>
+        <terrain_for_frequency_table>by terrain</terrain_for_frequency_table>
+        <wilderness_encounter_column>by terrain</wilderness_encounter_column>
+      </classification>
+    </classification_rules>
+
+    <procedure name="determine_domain_encounter_throw">
+      <step order="1">Determine the domain's classification.</step>
+      <step order="2">Use classification to determine how often encounter throws occur: monthly for civilized, weekly for borderlands, daily for wilderness.</step>
+      <step order="3">Determine the domain's territory size in 6-mile hexes.</step>
+      <step order="4">Determine the predominant terrain of the domain's territory.</step>
+      <step order="5">Consult the domain encounter frequency by territory size and terrain table to find the die and target value.</step>
+      <step order="6">Roll the listed die at the required frequency.</step>
+      <step order="7">If the roll meets or exceeds the target value, a domain encounter occurs.</step>
+      <step order="8">If an encounter occurs, use the wilderness encounters by terrain table column indicated by the domain's classification.</step>
+    </procedure>
+
+    <tables>
+      <table name="domain_encounters_by_classification">
+        <columns>
+          <column>classification</column>
+          <column>frequency</column>
+          <column>terrain</column>
+          <column>wilderness_encounter_column</column>
+        </columns>
+        <row>
+          <classification>civilized</classification>
+          <frequency>monthly</frequency>
+          <terrain>settled terrain</terrain>
+          <wilderness_encounter_column>inhabited</wilderness_encounter_column>
+        </row>
+        <row>
+          <classification>borderlands</classification>
+          <frequency>weekly</frequency>
+          <terrain>by terrain</terrain>
+          <wilderness_encounter_column>by terrain</wilderness_encounter_column>
+        </row>
+        <row>
+          <classification>wilderness</classification>
+          <frequency>daily</frequency>
+          <terrain>by terrain</terrain>
+          <wilderness_encounter_column>by terrain</wilderness_encounter_column>
+        </row>
+      </table>
+
+      <table name="domain_encounter_frequency_by_territory_size_and_terrain">
+        <columns>
+          <column>territory_size</column>
+          <column>die</column>
+          <column>city_grass_scrub_settled</column>
+          <column>aerial_hills_woods</column>
+          <column>barren_desert_jungle_mountains_swamp</column>
+        </columns>
+        <row>
+          <territory_size>1 hex</territory_size>
+          <die>1d100</die>
+          <city_grass_scrub_settled>100+</city_grass_scrub_settled>
+          <aerial_hills_woods>99+</aerial_hills_woods>
+          <barren_desert_jungle_mountains_swamp>98+</barren_desert_jungle_mountains_swamp>
+        </row>
+        <row>
+          <territory_size>2 hexes</territory_size>
+          <die>1d100</die>
+          <city_grass_scrub_settled>99+</city_grass_scrub_settled>
+          <aerial_hills_woods>97+</aerial_hills_woods>
+          <barren_desert_jungle_mountains_swamp>95+</barren_desert_jungle_mountains_swamp>
+        </row>
+        <row>
+          <territory_size>3 hexes</territory_size>
+          <die>1d100</die>
+          <city_grass_scrub_settled>98+</city_grass_scrub_settled>
+          <aerial_hills_woods>95+</aerial_hills_woods>
+          <barren_desert_jungle_mountains_swamp>92+</barren_desert_jungle_mountains_swamp>
+        </row>
+        <row>
+          <territory_size>4-6 hexes</territory_size>
+          <die>1d20</die>
+          <city_grass_scrub_settled>20+</city_grass_scrub_settled>
+          <aerial_hills_woods>19+</aerial_hills_woods>
+          <barren_desert_jungle_mountains_swamp>18+</barren_desert_jungle_mountains_swamp>
+        </row>
+        <row>
+          <territory_size>7-8 hexes</territory_size>
+          <die>1d12</die>
+          <city_grass_scrub_settled>12+</city_grass_scrub_settled>
+          <aerial_hills_woods>11+</aerial_hills_woods>
+          <barren_desert_jungle_mountains_swamp>10+</barren_desert_jungle_mountains_swamp>
+        </row>
+        <row>
+          <territory_size>9-10 hexes</territory_size>
+          <die>1d10</die>
+          <city_grass_scrub_settled>10+</city_grass_scrub_settled>
+          <aerial_hills_woods>9+</aerial_hills_woods>
+          <barren_desert_jungle_mountains_swamp>8+</barren_desert_jungle_mountains_swamp>
+        </row>
+        <row>
+          <territory_size>11-13 hexes</territory_size>
+          <die>1d8</die>
+          <city_grass_scrub_settled>8+</city_grass_scrub_settled>
+          <aerial_hills_woods>7+</aerial_hills_woods>
+          <barren_desert_jungle_mountains_swamp>6+</barren_desert_jungle_mountains_swamp>
+        </row>
+        <row>
+          <territory_size>14-16 hexes</territory_size>
+          <die>1d6</die>
+          <city_grass_scrub_settled>6+</city_grass_scrub_settled>
+          <aerial_hills_woods>5+</aerial_hills_woods>
+          <barren_desert_jungle_mountains_swamp>4+</barren_desert_jungle_mountains_swamp>
+        </row>
+      </table>
+    </tables>
+  </domain_encounters>
+
+  <periodic_frequency optional="true">
+    <rule>Instead of making encounter throws each day, week, or month, the Judge may assume encounters occur at a periodic frequency based on territory size, classification, and terrain.</rule>
+    <rule>Roll the listed dice to determine the time between encounters.</rule>
+    <rule>The resulting time unit is months for civilized domains, weeks for borderlands domains, and days for wilderness domains.</rule>
+
+    <procedure name="determine_periodic_frequency">
+      <step order="1">Determine the domain's territory size and terrain.</step>
+      <step order="2">Consult the periodic domain encounter frequency by territory size and terrain table.</step>
+      <step order="3">Roll the listed expression.</step>
+      <step order="4">Interpret the result as months, weeks, or days according to classification.</step>
+    </procedure>
+
+    <table name="periodic_domain_encounter_frequency_by_territory_size_and_terrain">
+      <columns>
+        <column>domain_territory</column>
+        <column>city_grass_scrub_settled</column>
+        <column>aerial_hills_woods</column>
+        <column>barren_desert_jungle_mountains_swamp</column>
+      </columns>
+      <row>
+        <domain_territory>1 hex</domain_territory>
+        <city_grass_scrub_settled>2d100-1</city_grass_scrub_settled>
+        <aerial_hills_woods>1d100</aerial_hills_woods>
+        <barren_desert_jungle_mountains_swamp>6d12-5</barren_desert_jungle_mountains_swamp>
+      </row>
+      <row>
+        <domain_territory>2 hexes</domain_territory>
+        <city_grass_scrub_settled>1d100</city_grass_scrub_settled>
+        <aerial_hills_woods>6d10-5</aerial_hills_woods>
+        <barren_desert_jungle_mountains_swamp>3d12-2</barren_desert_jungle_mountains_swamp>
+      </row>
+      <row>
+        <domain_territory>3 hexes</domain_territory>
+        <city_grass_scrub_settled>6d12-5</city_grass_scrub_settled>
+        <aerial_hills_woods>3d12-2</aerial_hills_woods>
+        <barren_desert_jungle_mountains_swamp>4d6-3</barren_desert_jungle_mountains_swamp>
+      </row>
+      <row>
+        <domain_territory>4-6 hexes</domain_territory>
+        <city_grass_scrub_settled>2d20-1</city_grass_scrub_settled>
+        <aerial_hills_woods>3d8-2</aerial_hills_woods>
+        <barren_desert_jungle_mountains_swamp>4d4-3</barren_desert_jungle_mountains_swamp>
+      </row>
+      <row>
+        <domain_territory>7-8 hexes</domain_territory>
+        <city_grass_scrub_settled>2d12-1</city_grass_scrub_settled>
+        <aerial_hills_woods>2d6-1</aerial_hills_woods>
+        <barren_desert_jungle_mountains_swamp>2d4-1</barren_desert_jungle_mountains_swamp>
+      </row>
+      <row>
+        <domain_territory>9-10 hexes</domain_territory>
+        <city_grass_scrub_settled>2d10-1</city_grass_scrub_settled>
+        <aerial_hills_woods>1d4+1d6-1</aerial_hills_woods>
+        <barren_desert_jungle_mountains_swamp>2d3-1</barren_desert_jungle_mountains_swamp>
+      </row>
+      <row>
+        <domain_territory>11-13 hexes</domain_territory>
+        <city_grass_scrub_settled>2d8-1</city_grass_scrub_settled>
+        <aerial_hills_woods>2d4-1</aerial_hills_woods>
+        <barren_desert_jungle_mountains_swamp>1d4</barren_desert_jungle_mountains_swamp>
+      </row>
+      <row>
+        <domain_territory>14-16 hexes</domain_territory>
+        <city_grass_scrub_settled>2d6-1</city_grass_scrub_settled>
+        <aerial_hills_woods>2d3-1</aerial_hills_woods>
+        <barren_desert_jungle_mountains_swamp>1d3</barren_desert_jungle_mountains_swamp>
+      </row>
+    </table>
+  </periodic_frequency>
+
+  <dangerous_borders>
+    <definition>
+      <rule>Domains with unsecured borders count as having a larger effective territory for encounter throws.</rule>
+      <rule>Domains may be categorized as isolated, spearhead, flank, or line positions.</rule>
+      <rule>Neighbors or impassable terrain secure borders; unsecured land does not.</rule>
+      <rule>The Judge uses regional geography and judgment to determine the configuration.</rule>
+    </definition>
+
+    <configuration_definitions>
+      <configuration name="isolated">
+        <rule>Unsecured territory on all sides.</rule>
+      </configuration>
+      <configuration name="spearhead">
+        <rule>Unsecured territory to front and both flanks; rear secured.</rule>
+      </configuration>
+      <configuration name="flank">
+        <rule>Unsecured territory to front and one flank; other flank and rear secured.</rule>
+      </configuration>
+      <configuration name="line">
+        <rule>Unsecured territory to front only; flanks and rear secured.</rule>
+      </configuration>
+    </configuration_definitions>
+
+    <procedure name="determine_effective_territory_with_dangerous_borders">
+      <step order="1">Determine the domain's actual territory size in 6-mile hexes.</step>
+      <step order="2">Determine whether the domain is isolated, spearhead, flank, or line.</step>
+      <step order="3">Consult the effective domain territory with dangerous borders table.</step>
+      <step order="4">Use the effective territory size instead of actual territory size when making encounter throws.</step>
+    </procedure>
+
+    <table name="effective_domain_territory_with_dangerous_borders">
+      <columns>
+        <column>domain_territory</column>
+        <column>isolated</column>
+        <column>spearhead</column>
+        <column>flank</column>
+        <column>line</column>
+      </columns>
+      <row>
+        <domain_territory>1 hex</domain_territory>
+        <isolated>16 hexes</isolated>
+        <spearhead>8 hexes</spearhead>
+        <flank>6 hexes</flank>
+        <line>4 hexes</line>
+      </row>
+      <row>
+        <domain_territory>2 hexes</domain_territory>
+        <isolated>16 hexes</isolated>
+        <spearhead>10 hexes</spearhead>
+        <flank>7 hexes</flank>
+        <line>4 hexes</line>
+      </row>
+      <row>
+        <domain_territory>3 hexes</domain_territory>
+        <isolated>16 hexes</isolated>
+        <spearhead>12 hexes</spearhead>
+        <flank>9 hexes</flank>
+        <line>5 hexes</line>
+      </row>
+      <row>
+        <domain_territory>4-6 hexes</domain_territory>
+        <isolated>16 hexes</isolated>
+        <spearhead>14 hexes</spearhead>
+        <flank>10 hexes</flank>
+        <line>6 hexes</line>
+      </row>
+      <row>
+        <domain_territory>7-8 hexes</domain_territory>
+        <isolated>16 hexes</isolated>
+        <spearhead>16 hexes</spearhead>
+        <flank>12 hexes</flank>
+        <line>8 hexes</line>
+      </row>
+      <row>
+        <domain_territory>9-10 hexes</domain_territory>
+        <isolated>16 hexes</isolated>
+        <spearhead>16 hexes</spearhead>
+        <flank>14 hexes</flank>
+        <line>9 hexes</line>
+      </row>
+      <row>
+        <domain_territory>11-13 hexes</domain_territory>
+        <isolated>16 hexes</isolated>
+        <spearhead>16 hexes</spearhead>
+        <flank>16 hexes</flank>
+        <line>10 hexes</line>
+      </row>
+      <row>
+        <domain_territory>14-16 hexes</domain_territory>
+        <isolated>16 hexes</isolated>
+        <spearhead>16 hexes</spearhead>
+        <flank>16 hexes</flank>
+        <line>11 hexes</line>
+      </row>
+    </table>
+  </dangerous_borders>
+
+  <strongholds_garrisons_and_dungeons>
+    <strongholds_and_garrisons>
+      <rule>By default, each domain is assumed to have a stronghold and garrison of sufficient size.</rule>
+      <rule>If a civilized or borderlands domain has an insufficient garrison and/or stronghold, treat it as one classification worse for encounter throws.</rule>
+      <rule>If a wilderness domain has an insufficient garrison and/or stronghold, treat its borders as one level more dangerous for encounter throws.</rule>
+      <rule>If an already-isolated wilderness domain has an insufficient garrison and/or stronghold, it suffers one encounter throw of 1d6 every day for every 6-mile hex.</rule>
+    </strongholds_and_garrisons>
+
+    <dungeons>
+      <rule>If a domain includes one or more unoccupied or partly occupied dungeons, wandering monsters may permanently settle there as described in populating a dungeon.</rule>
+      <rule>To determine a dungeon's morale impact, total the XP value of monsters in the dungeon and divide by the number of families in the domain territory, rounding to the nearest whole number.</rule>
+      <rule>The quotient is the penalty to the domain's base morale.</rule>
+      <rule>If a domain suffers a morale penalty from monsters in its dungeon, neighboring domains treat that territory as unsecured land for dangerous borders purposes.</rule>
+      <rule>A domain with a dungeon may increase garrison expenditure to reduce or eliminate the morale penalty.</rule>
+      <rule>The morale penalty is reduced by 1 point per gp per family increase in garrison expenditure.</rule>
+      <rule>Additional expenditure beyond eliminating the penalty does not further improve morale, but may help deal with encounters.</rule>
+    </dungeons>
+
+    <procedure name="determine_dungeon_morale_penalty">
+      <step order="1">Total the experience point value of monsters in the dungeon.</step>
+      <step order="2">Divide that total by the number of families in the domain territory.</step>
+      <step order="3">Round to the nearest whole number.</step>
+      <step order="4">Apply the result as a penalty to the domain's base morale.</step>
+    </procedure>
+  </strongholds_garrisons_and_dungeons>
+
+  <resolving_domain_encounters>
+    <general_rules>
+      <rule>Not every wandering monster enters with intent to raid and pillage; some may be exploring, migrating, or trading.</rule>
+      <rule>Violent encounters do not always require the ruler to intervene personally.</rule>
+      <rule>A typical domain garrison can usually handle lesser incursions.</rule>
+    </general_rules>
+
+    <domain_encounter_generation>
+      <procedure name="generate_domain_encounter">
+        <step order="1">Roll 1d8 on the appropriate column of the wilderness encounters by terrain table and consult the resulting sub-table.</step>
+        <step order="2">Roll 1d12 on the resulting sub-table to determine the creature encountered.</step>
+        <step order="3">Find the creature's monster entry and roll against % In Lair to determine whether it is lingering or migrating.</step>
+        <step order="4">Roll the appropriate number encountered to determine how many are present.</step>
+      </procedure>
+
+      <lingering_or_migrating>
+        <rule>Wandering monsters are not encountered in their lair, but they may decide to make a lair in the domain.</rule>
+        <rule>Any wandering monsters that arrive have a percentage chance of lingering in the domain equal to their % In Lair entry.</rule>
+        <rule>Monsters are twice as likely to linger if treasure is available in an unoccupied or partly occupied dungeon.</rule>
+        <rule>If they do not linger, they are migrating.</rule>
+        <rule>Whether monsters are lingering or migrating changes their behavior.</rule>
+      </lingering_or_migrating>
+
+      <number_encountered>
+        <rule>If monsters are migrating, use the number encountered for a wandering wilderness encounter.</rule>
+        <rule>If monsters are lingering, roll again against % In Lair.</rule>
+        <rule>If the second roll is equal to or less than % In Lair, use the number encountered for a wilderness lair.</rule>
+        <rule>Otherwise, use the number encountered for a wandering wilderness encounter.</rule>
+      </number_encountered>
+
+      <treasure_type>
+        <rule>Monsters entering a domain do not normally have treasure of their own.</rule>
+        <rule>If the monsters are a huge migration or are arriving for mercantilist purposes, they have treasure according to their treasure type.</rule>
+      </treasure_type>
+    </domain_encounter_generation>
+
+    <reconnaissance>
+      <rule>When a domain encounter occurs, make a reconnaissance roll for both the domain ruler and the monsters to determine what intelligence they have about each other.</rule>
+      <rule>For reconnaissance, assume the garrison is in the domain's stronghold unless the ruler has made other arrangements.</rule>
+      <rule>The Judge determines the monsters' initial location based on geography, roads, strongholds, and settlements.</rule>
+      <rule>With poor reconnaissance, a ruler may remain unaware until the enemy begins pillaging or reaches the stronghold.</rule>
+      <rule>It is possible for monsters to settle in a domain and impose morale penalties while the ruler remains unaware of the cause.</rule>
+    </reconnaissance>
+
+    <reactions>
+      <procedure name="determine_domain_encounter_reaction">
+        <step order="1">Roll 2d6.</step>
+        <step order="2">Apply reaction adjustments.</step>
+        <step order="3">Consult the domain encounter reaction table.</step>
+        <step order="4">The ruler does not know the reaction result until it is discovered in play.</step>
+      </procedure>
+
+      <adjustments>
+        <adjustment>
+          <circumstance>domain's current morale score</circumstance>
+          <modifier>+ current morale score</modifier>
+        </adjustment>
+        <adjustment>
+          <circumstance>lawful domain encountering lawful monsters</circumstance>
+          <modifier>+2</modifier>
+        </adjustment>
+        <adjustment>
+          <circumstance>lawful or neutral domain encountering chaotic monsters</circumstance>
+          <modifier>-2</modifier>
+          <special_rule>Double this penalty if monsters' BR is greater than the garrison's BR.</special_rule>
+        </adjustment>
+        <adjustment>
+          <circumstance>chaotic domain encountering lawful monsters</circumstance>
+          <modifier>-2</modifier>
+          <special_rule>Double this penalty if monsters' BR is greater than the garrison's BR.</special_rule>
+        </adjustment>
+      </adjustments>
+
+      <table name="domain_encounter_reaction">
+        <columns>
+          <column>adjusted_die_roll</column>
+          <column>result</column>
+        </columns>
+        <row>
+          <adjusted_die_roll>2-</adjusted_die_roll>
+          <result>hostile, pillage</result>
+        </row>
+        <row>
+          <adjusted_die_roll>3-5</adjusted_die_roll>
+          <result>unfriendly, opportunistic</result>
+        </row>
+        <row>
+          <adjusted_die_roll>6-8</adjusted_die_roll>
+          <result>neutral, exploratory</result>
+        </row>
+        <row>
+          <adjusted_die_roll>9-11</adjusted_die_roll>
+          <result>mercantilist, trade</result>
+        </row>
+        <row>
+          <adjusted_die_roll>12+</adjusted_die_roll>
+          <result>friendly, help</result>
+        </row>
+      </table>
+
+      <reaction_results>
+        <result name="hostile">
+          <rule>Monsters have come to wreak havoc.</rule>
+          <rule>If the domain's garrison is deployed against them, they always fight.</rule>
+          <rule>If the garrison remains in the stronghold, monsters assault or besiege the stronghold if their BR is more than twice the garrison's BR and they possess the intelligence and means to do so.</rule>
+          <rule>Otherwise, they immediately begin pillaging the domain.</rule>
+          <rule>Lingering monsters remain until defeated or until they have pillaged the domain to the ground.</rule>
+          <rule>If a dungeon is available, lingering monsters lair there.</rule>
+          <rule>Migrating monsters depart after pillaging the domain once.</rule>
+          <rule>If monsters settle in the domain, they may affect base morale.</rule>
+        </result>
+
+        <result name="unfriendly">
+          <rule>Monsters intend violence, but can be deterred.</rule>
+          <rule>If the domain's garrison is deployed against them, they fight only if their BR equals or exceeds the garrison's BR.</rule>
+          <rule>If their BR is lower than the garrison's BR, they are driven off out of the hex or, if lingering, into an available dungeon.</rule>
+          <rule>If the garrison is not deployed, they immediately begin pillaging the domain.</rule>
+          <rule>Lingering monsters continue pillaging until driven off, defeated, or until the domain is pillaged to the ground; if a dungeon is available they then lair there.</rule>
+          <rule>Migrating monsters depart after pillaging the domain once.</rule>
+          <rule>If monsters settle in the domain, they may affect base morale.</rule>
+        </result>
+
+        <result name="neutral">
+          <rule>Monsters are migrating through the domain for their own reasons, such as exploration, scouting, hunting, or foraging.</rule>
+          <rule>If the domain's garrison is deployed against them, they become unfriendly.</rule>
+          <rule>If the garrison is not deployed, they attempt to find a place to settle if lingering, or exit peacefully after 1d4 weeks if migrating.</rule>
+          <rule>If the ruler does not deploy the garrison against them, the domain suffers a -1 penalty to its next domain morale roll.</rule>
+          <rule>If the monsters settle in the domain, they may affect base morale.</rule>
+          <rule>Re-roll settled neutral monsters' reactions if the domain's morale score changes.</rule>
+        </result>
+
+        <result name="mercantilist">
+          <rule>Monsters have come for commercial reasons.</rule>
+          <rule>If the garrison is deployed against them, they become unfriendly.</rule>
+          <rule>Otherwise, they travel toward the domain's urban settlement or stronghold to seek trade opportunities.</rule>
+          <rule>Mercantilist monsters carry treasure according to their treasure type.</rule>
+          <rule>The Judge may substitute equivalent value in merchandise for trade.</rule>
+          <rule>Mercantilist monsters without treasure may be offering mercenary services at the Judge's discretion.</rule>
+        </result>
+
+        <result name="friendly">
+          <rule>Monsters actively wish to assist the domain.</rule>
+          <rule>If the garrison is deployed against them, they become unfriendly.</rule>
+          <rule>Otherwise, they travel toward the domain's urban settlement or stronghold to offer assistance.</rule>
+          <rule>If the domain has been invaded by monsters or enemy troops, they may attack the invaders or assist the garrison.</rule>
+          <rule>Friendly monsters can be offered positions as mercenaries or henchmen with a +2 bonus.</rule>
+        </result>
+      </reaction_results>
+
+      <special_cases>
+        <encounters_between_monsters_and_adventurers>
+          <rule>Use individual reaction rolls for monsters interacting with individual adventurers.</rule>
+          <rule>Apply a -2 penalty if monsters are hostile to the domain, -1 if unfriendly, +1 if mercantilist, and +2 if friendly.</rule>
+        </encounters_between_monsters_and_adventurers>
+
+        <encounters_with_animals>
+          <rule>Animals are limited to neutral or worse results unless the domain is an elven fastness.</rule>
+          <rule>Pillaging by animals represents attacks on livestock, carrying off young, and similar depredations.</rule>
+        </encounters_with_animals>
+
+        <encounters_with_mindless_monsters>
+          <rule>Mindless monsters such as constructs and vermin are limited to neutral or worse results.</rule>
+          <rule>Pillaging by mindless monsters represents instinctual or programmed activities.</rule>
+        </encounters_with_mindless_monsters>
+
+        <pillaging_by_monsters>
+          <rule>For pillaging purposes, every 2 points of platoon-scale BR counts as 120 men.</rule>
+        </pillaging_by_monsters>
+      </special_cases>
+    </reactions>
+
+    <military_campaigns>
+      <rule>The arrival of hostile or unfriendly wandering monsters or deployment of a garrison would normally begin a military campaign.</rule>
+      <rule>Most domain encounters do not need to be handled using the detailed military campaign mechanics.</rule>
+      <rule>Typically, wandering monsters have lower BR than the garrison and are quickly driven off.</rule>
+      <rule>When the threat is interesting, the Judge may run the encounter as a Domains at War military campaign.</rule>
+      <rule>In a detailed military campaign, hostile monsters have an offensive strategic stance.</rule>
+      <rule>Unfriendly monsters have an offensive stance if their BR exceeds the garrison's BR, or evasive if attempting to retreat.</rule>
+    </military_campaigns>
+
+    <mass_combat>
+      <rule>Use the mass combat mechanics in Domains at War: Campaigns to resolve violent domain encounters.</rule>
+      <rule>These mechanics let the garrison confront monsters without adventurers while still allowing heroic forays.</rule>
+
+      <procedure name="resolve_mass_combat_without_detailed_campaign">
+        <step order="1">If hostile monsters face a garrison in its stronghold, they assault the stronghold if their BR is more than twice the garrison's BR and they possess the intelligence and means to do so; otherwise they pillage the domain.</step>
+        <step order="2">If hostile monsters face a deployed garrison, they always fight a pitched battle.</step>
+        <step order="3">If unfriendly monsters face a deployed garrison, they fight a pitched battle if their BR is equal to or greater than the garrison's BR; otherwise they are driven off.</step>
+        <step order="4">If a garrison pursues monsters into a dungeon, it assaults the dungeon.</step>
+      </procedure>
+
+      <scale_rules>
+        <rule>Because encountered monster numbers are usually between a dozen and a hundred, use platoon scale for assaults and battles.</rule>
+        <rule>Platoon-scale units are 30 man-sized infantry or 15 large creatures or cavalry.</rule>
+        <rule>Organize the garrison at platoon scale as well.</rule>
+        <rule>Platoon-scale BR is four times higher per individual creature than company-scale BR.</rule>
+      </scale_rules>
+    </mass_combat>
+  </resolving_domain_encounters>
+
+  <battle_rating_reference_tables>
+    <rule>These tables present platoon-scale battle ratings for average-sized wandering and lair wilderness encounters.</rule>
+    <rule>Some encounter sizes are adjusted slightly for ease of play.</rule>
+
+    <table name="beastmen_and_humanoids">
+      <columns>
+        <column>creature</column>
+        <column>individual_br</column>
+        <column>platoons</column>
+        <column>platoon_br</column>
+        <column>platoons_lair</column>
+        <column>platoon_br_lair</column>
+        <column>notes</column>
+      </columns>
+      <row><creature>Bugbear</creature><individual_br>0.050</individual_br><platoons>1 of 12</platoons><platoon_br>2.5</platoon_br><platoons_lair>3 of 24</platoons_lair><platoon_br_lair>5.0</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Centaur</creature><individual_br>0.189</individual_br><platoons>1 of 10</platoons><platoon_br>7.5</platoon_br><platoons_lair>2 of 10</platoons_lair><platoon_br_lair>7.5</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Dwarf</creature><individual_br>0.021</individual_br><platoons>1 of 25</platoons><platoon_br>2.0</platoon_br><platoons_lair>5 of 25</platoons_lair><platoon_br_lair>2.0</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Elf</creature><individual_br>0.033</individual_br><platoons>1 of 15</platoons><platoon_br>2.0</platoon_br><platoons_lair>5 of 15</platoons_lair><platoon_br_lair>2.0</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Faerie, Pixie</creature><individual_br>0.086</individual_br><platoons>1 of 25</platoons><platoon_br>8.5</platoon_br><platoons_lair>1 of 25</platoons_lair><platoon_br_lair>8.5</platoon_br_lair><notes>Recon modifiers: magic camouflage, aerial observation</notes></row>
+      <row><creature>Faerie, Sprite</creature><individual_br>0.011</individual_br><platoons>1 of 10</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 10</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes>Recon modifiers: aerial observation</notes></row>
+      <row><creature>Gnoll</creature><individual_br>0.025</individual_br><platoons>1 of 10</platoons><platoon_br>1.0</platoon_br><platoons_lair>3 of 20</platoons_lair><platoon_br_lair>2.0</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Gnome</creature><individual_br>0.015</individual_br><platoons>1 of 25</platoons><platoon_br>1.5</platoon_br><platoons_lair>5 of 25</platoons_lair><platoon_br_lair>1.5</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Goblin</creature><individual_br>0.004</individual_br><platoons>1 of 30</platoons><platoon_br>0.5</platoon_br><platoons_lair>6 of 30</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Halfling</creature><individual_br>0.006</individual_br><platoons>1 of 25</platoons><platoon_br>0.5</platoon_br><platoons_lair>6 of 25</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Hobgoblin</creature><individual_br>0.017</individual_br><platoons>1 of 15</platoons><platoon_br>1.0</platoon_br><platoons_lair>3 of 30</platoons_lair><platoon_br_lair>2.0</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Kobold</creature><individual_br>0.003</individual_br><platoons>1 of 30</platoons><platoon_br>0.5</platoon_br><platoons_lair>6 of 30</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Lizardman</creature><individual_br>0.036</individual_br><platoons>1 of 25</platoons><platoon_br>3.5</platoon_br><platoons_lair>5 of 25</platoons_lair><platoon_br_lair>3.5</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Merman</creature><individual_br>0.005</individual_br><platoons>1 of 12</platoons><platoon_br>0.25</platoon_br><platoons_lair>5 of 24</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Men</creature><individual_br>Varies</individual_br><platoons>Varies</platoons><platoon_br>Varies</platoon_br><platoons_lair>Varies</platoons_lair><platoon_br_lair>Varies</platoon_br_lair><notes>See Men sub-table</notes></row>
+      <row><creature>Minotaur</creature><individual_br>0.077</individual_br><platoons>1 of 5</platoons><platoon_br>1.5</platoon_br><platoons_lair>1 of 5</platoons_lair><platoon_br_lair>1.5</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Morlock</creature><individual_br>0.003</individual_br><platoons>1 of 30</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 30</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Neanderthal</creature><individual_br>0.005</individual_br><platoons>1 of 6</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 30</platoons_lair><platoon_br_lair>1.25</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Nymph, Dryad</creature><individual_br>0.042</individual_br><platoons>1 of 1</platoons><platoon_br>0</platoon_br><platoons_lair>1 of 4</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes>Recon modifier: magic camouflage</notes></row>
+      <row><creature>Nymph, Naiad</creature><individual_br>0.023</individual_br><platoons>1 of 1; 1 of 6</platoons><platoon_br>0</platoon_br><platoons_lair>1 of 20</platoons_lair><platoon_br_lair>2.0</platoon_br_lair><notes>Cannot be attacked by land-based units</notes></row>
+      <row><creature>Ogre</creature><individual_br>0.077</individual_br><platoons>1 of 5</platoons><platoon_br>2.0</platoon_br><platoons_lair>2 of 12</platoons_lair><platoon_br_lair>4.0</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Orc</creature><individual_br>0.008</individual_br><platoons>1 of 30</platoons><platoon_br>1.0</platoon_br><platoons_lair>6 of 30</platoons_lair><platoon_br_lair>3.0</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+      <row><creature>Troglodyte</creature><individual_br>0.029</individual_br><platoons>1 of 25</platoons><platoon_br>3.0</platoon_br><platoons_lair>5 of 25</platoons_lair><platoon_br_lair>3.0</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+    </table>
+
+    <table name="men">
+  <columns>
+    <column>creature</column>
+    <column>individual_br</column>
+    <column>platoons</column>
+    <column>platoon_br</column>
+    <column>platoons_lair</column>
+    <column>platoon_br_lair</column>
+    <column>notes</column>
+  </columns>
+
+  <row>
+    <creature>Berserkers</creature>
+    <individual_br>0.014</individual_br>
+    <platoons>1 of 15</platoons>
+    <platoon_br>1.0</platoon_br>
+    <platoons_lair>1 of 15</platoons_lair>
+    <platoon_br_lair>1.0</platoon_br_lair>
+    <notes>Leaders available for heroic forays</notes>
+  </row>
+
+  <row>
+    <creature>Brigands (bowmen)</creature>
+    <individual_br>0.013</individual_br>
+    <platoons>1 of 10+</platoons>
+    <platoon_br>0.5</platoon_br>
+    <platoons_lair>3 of 30+</platoons_lair>
+    <platoon_br_lair>1.5</platoon_br_lair>
+    <notes>Leaders available for heroic forays</notes>
+  </row>
+
+  <row>
+    <creature>Brigands (medium cavalry)</creature>
+    <individual_br>0.093</individual_br>
+    <platoons>1 of 10</platoons>
+    <platoon_br>3.5</platoon_br>
+    <platoons_lair>6 of 15</platoons_lair>
+    <platoon_br_lair>5.5</platoon_br_lair>
+    <notes>Recon modifiers: cavalry units</notes>
+  </row>
+
+  <row>
+    <creature>Merchants</creature>
+    <individual_br>0.025</individual_br>
+    <platoons>2 of 25</platoons>
+    <platoon_br>2.5</platoon_br>
+    <platoons_lair>2 of 25</platoons_lair>
+    <platoon_br_lair>2.5</platoon_br_lair>
+    <notes>Leaders available for heroic forays; Recon modifiers: cavalry units</notes>
+  </row>
+
+  <row>
+    <creature>Nomads (medium cavalry)</creature>
+    <individual_br>0.082</individual_br>
+    <platoons>1 of 15</platoons>
+    <platoon_br>5.0</platoon_br>
+    <platoons_lair>7 of 15</platoons_lair>
+    <platoon_br_lair>5.0</platoon_br_lair>
+    <notes>Leaders available for heroic forays</notes>
+  </row>
+
+  <row>
+    <creature>Nomads (horse archers)</creature>
+    <individual_br>0.082</individual_br>
+    <platoons>1 of 15</platoons>
+    <platoon_br>5.0</platoon_br>
+    <platoons_lair>7 of 15</platoons_lair>
+    <platoon_br_lair>5.0</platoon_br_lair>
+    <notes>Recon modifiers: cavalry units</notes>
+  </row>
+
+  <row>
+    <creature>Pirates (swordsmen)</creature>
+    <individual_br>0.006</individual_br>
+    <platoons>4 of 20+</platoons>
+    <platoon_br>0.5</platoon_br>
+    <platoons_lair>4 of 20+</platoons_lair>
+    <platoon_br_lair>0.5</platoon_br_lair>
+    <notes>Leaders available for heroic forays</notes>
+  </row>
+
+  <row>
+    <creature>Pirates (bowmen)</creature>
+    <individual_br>0.013</individual_br>
+    <platoons>2 of 30</platoons>
+    <platoon_br>1.5</platoon_br>
+    <platoons_lair>2 of 30</platoons_lair>
+    <platoon_br_lair>1.5</platoon_br_lair>
+    <notes></notes>
+  </row>
+</table>
+
+    <table name="animals">
+      <columns>
+        <column>creature</column>
+        <column>individual_br</column>
+        <column>platoons</column>
+        <column>platoon_br</column>
+        <column>platoons_lair</column>
+        <column>platoon_br_lair</column>
+        <column>notes</column>
+      </columns>
+      <row><creature>Ape, White</creature><individual_br>0.034</individual_br><platoons>1 of 4</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 4</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Baboon, Rock</creature><individual_br>0.014</individual_br><platoons>1 of 18</platoons><platoon_br>1.0</platoon_br><platoons_lair>1 of 18</platoons_lair><platoon_br_lair>1.0</platoon_br_lair><notes></notes></row>
+      <row><creature>Bat, Giant</creature><individual_br>0.094</individual_br><platoons>1 of 5</platoons><platoon_br>2.0</platoon_br><platoons_lair>1 of 5</platoons_lair><platoon_br_lair>2.0</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Bear, Black</creature><individual_br>0.010</individual_br><platoons>1 of 2</platoons><platoon_br>0.0</platoon_br><platoons_lair>1 of 2</platoons_lair><platoon_br_lair>0.0</platoon_br_lair><notes></notes></row>
+      <row><creature>Bear, Cave</creature><individual_br>0.032</individual_br><platoons>1 of 2</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 2</platoons_lair><platoon_br_lair>0.25</platoon_br_lair><notes></notes></row>
+      <row><creature>Bear, Grizzly</creature><individual_br>0.019</individual_br><platoons>1 of 2</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 2</platoons_lair><platoon_br_lair>0.25</platoon_br_lair><notes></notes></row>
+      <row><creature>Boar, Giant</creature><individual_br>0.026</individual_br><platoons>1 of 3</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 3</platoons_lair><platoon_br_lair>0.25</platoon_br_lair><notes></notes></row>
+      <row><creature>Boar, Ordinary</creature><individual_br>0.010</individual_br><platoons>1 of 4</platoons><platoon_br>0.25</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Camel</creature><individual_br>0.002</individual_br><platoons>1 of 5</platoons><platoon_br>0.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Recon modifier: cavalry unit</notes></row>
+      <row><creature>Cat, Lion</creature><individual_br>0.035</individual_br><platoons>1 of 2</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 4</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Cat, Mountain Lion</creature><individual_br>0.017</individual_br><platoons>1 of 3</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 3</platoons_lair><platoon_br_lair>0.25</platoon_br_lair><notes></notes></row>
+      <row><creature>Cat, Panther</creature><individual_br>0.052</individual_br><platoons>1 of 3</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 3</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Cat, Saber-Tooth</creature><individual_br>0.107</individual_br><platoons>1 of 2</platoons><platoon_br>1.0</platoon_br><platoons_lair>1 of 2</platoons_lair><platoon_br_lair>1.0</platoon_br_lair><notes></notes></row>
+      <row><creature>Cat, Tiger</creature><individual_br>0.050</individual_br><platoons>1 of 1</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 2</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Crocodile, Giant</creature><individual_br>0.095</individual_br><platoons>1 of 2</platoons><platoon_br>1.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Crocodile, Large</creature><individual_br>0.020</individual_br><platoons>1 of 3</platoons><platoon_br>0.25</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Crocodile, Ordinary</creature><individual_br>0.003</individual_br><platoons>1 of 5</platoons><platoon_br>0.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Dog, Hunting</creature><individual_br>0.002</individual_br><platoons>1 of 10</platoons><platoon_br>0.0</platoon_br><platoons_lair>1 of 10</platoons_lair><platoon_br_lair>0.0</platoon_br_lair><notes></notes></row>
+      <row><creature>Dog, War</creature><individual_br>0.008</individual_br><platoons>1 of 5</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 5</platoons_lair><platoon_br_lair>0.25</platoon_br_lair><notes></notes></row>
+      <row><creature>Elephant</creature><individual_br>0.038</individual_br><platoons>3 of 3</platoons><platoon_br>0.5</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Fish, Giant Catfish</creature><individual_br>0.062</individual_br><platoons>1 of 2</platoons><platoon_br>0.5</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Cannot be attacked by land-based units</notes></row>
+      <row><creature>Fish, Giant Piranha</creature><individual_br>0.015</individual_br><platoons>1 of 4</platoons><platoon_br>0.25</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Cannot be attacked by land-based units</notes></row>
+      <row><creature>Fish, Giant Rockfish</creature><individual_br>0.011</individual_br><platoons>1 of 5</platoons><platoon_br>0.25</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Cannot be attacked by land-based units</notes></row>
+      <row><creature>Fish, Giant Sturgeon</creature><individual_br>0.110</individual_br><platoons>1 of 1</platoons><platoon_br>0.5</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Cannot be attacked by land-based units</notes></row>
+      <row><creature>Hawk, Giant</creature><individual_br>0.639</individual_br><platoons>1 of 2</platoons><platoon_br>5.0</platoon_br><platoons_lair>1 of 2</platoons_lair><platoon_br_lair>5.0</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Hawk, Ordinary</creature><individual_br>0.005</individual_br><platoons>1 of 4</platoons><platoon_br>0.0</platoon_br><platoons_lair>1 of 4</platoons_lair><platoon_br_lair>0.0</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Herd Animal, 1HD</creature><individual_br>0.001</individual_br><platoons>1 of 18</platoons><platoon_br>0.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Herd Animal, 2HD</creature><individual_br>0.003</individual_br><platoons>1 of 18</platoons><platoon_br>0.25</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Herd Animal, 3HD</creature><individual_br>0.005</individual_br><platoons>1 of 18</platoons><platoon_br>0.25</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Herd Animal, 4HD</creature><individual_br>0.010</individual_br><platoons>2 of 9</platoons><platoon_br>0.25</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Horse, Heavy</creature><individual_br>(0.005)</individual_br><platoons>4 of 15</platoons><platoon_br>0.25</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Horse, Light</creature><individual_br>0.002</individual_br><platoons>4 of 15</platoons><platoon_br>0.25</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Horse, Medium</creature><individual_br>0.005</individual_br><platoons>4 of 15</platoons><platoon_br>0.25</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Lizard, Giant Draco</creature><individual_br>0.041</individual_br><platoons>1 of 3</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 3</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Lizard, Giant Gecko</creature><individual_br>0.013</individual_br><platoons>1 of 5</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 5</platoons_lair><platoon_br_lair>0.25</platoon_br_lair><notes></notes></row>
+      <row><creature>Lizard, Giant Horned</creature><individual_br>0.054</individual_br><platoons>1 of 2</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 4</platoons_lair><platoon_br_lair>1.0</platoon_br_lair><notes>Recon modifier: magical camouflage</notes></row>
+      <row><creature>Lizard, Giant Tuatara</creature><individual_br>0.028</individual_br><platoons>1 of 2</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 2</platoons_lair><platoon_br_lair>0.25</platoon_br_lair><notes></notes></row>
+      <row><creature>Mastodon</creature><individual_br>0.151</individual_br><platoons>2 of 5</platoons><platoon_br>1.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Octopus, Giant</creature><individual_br>0.01</individual_br><platoons>1 of 1</platoons><platoon_br>0.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Cannot be attacked by land-based units</notes></row>
+      <row><creature>Pteranodon</creature><individual_br>0.195</individual_br><platoons>1 of 3</platoons><platoon_br>2.5</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Pterodactyl</creature><individual_br>0.005</individual_br><platoons>1 of 5</platoons><platoon_br>0.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Rhinoceros</creature><individual_br>0.019</individual_br><platoons>1 of 7</platoons><platoon_br>0.5</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Shark, Bull</creature><individual_br>0.013</individual_br><platoons>1 of 10</platoons><platoon_br>0.5</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Cannot be attacked by land-based units</notes></row>
+      <row><creature>Shark, Great White</creature><individual_br>0.082</individual_br><platoons>1 of 3</platoons><platoon_br>1.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Cannot be attacked by land-based units</notes></row>
+      <row><creature>Shark, Mako</creature><individual_br>0.034</individual_br><platoons>1 of 7</platoons><platoon_br>1.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Cannot be attacked by land-based units</notes></row>
+      <row><creature>Snake, Giant Python</creature><individual_br>0.016</individual_br><platoons>1 of 2</platoons><platoon_br>0.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Snake, Giant Rattler</creature><individual_br>0.015</individual_br><platoons>1 of 3</platoons><platoon_br>0.25</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Snake, Pit Viper</creature><individual_br>0.006</individual_br><platoons>1 of 3</platoons><platoon_br>0.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Snake, Sea Snake</creature><individual_br>0.006</individual_br><platoons>1 of 5</platoons><platoon_br>0.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Cannot be attacked by land-based units</notes></row>
+      <row><creature>Snake, Spitting Cobra</creature><individual_br>0.005</individual_br><platoons>1 of 3</platoons><platoon_br>0.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Squid, Giant</creature><individual_br>0.018</individual_br><platoons>1 of 3</platoons><platoon_br>0.25</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Cannot be attacked by land-based units</notes></row>
+      <row><creature>Stegosaurus</creature><individual_br>0.023</individual_br><platoons>1 of 3</platoons><platoon_br>0.25</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Titanothere</creature><individual_br>0.033</individual_br><platoons>1 of 4</platoons><platoon_br>0.5</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Toad, Giant</creature><individual_br>0.002</individual_br><platoons>1 of 3</platoons><platoon_br>0.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Triceratops</creature><individual_br>0.044</individual_br><platoons>1 of 3</platoons><platoon_br>0.5</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Tyrannosaurus Rex</creature><individual_br>0.235</individual_br><platoons>1 of 1</platoons><platoon_br>1.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Varmint, Giant Ferret</creature><individual_br>0.006</individual_br><platoons>1 of 5</platoons><platoon_br>0.0</platoon_br><platoons_lair>1 of 5</platoons_lair><platoon_br_lair>0.0</platoon_br_lair><notes></notes></row>
+      <row><creature>Varmint, Giant Rat</creature><individual_br>0</individual_br><platoons>1 of 18</platoons><platoon_br>0.0</platoon_br><platoons_lair>1 of 18</platoons_lair><platoon_br_lair>0.0</platoon_br_lair><notes></notes></row>
+      <row><creature>Varmint, Giant Shrew</creature><individual_br>0.009</individual_br><platoons>1 of 5</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 5</platoons_lair><platoon_br_lair>0.25</platoon_br_lair><notes></notes></row>
+      <row><creature>Varmint, Giant Weasel</creature><individual_br>0.013</individual_br><platoons>1 of 4</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 4</platoons_lair><platoon_br_lair>0.25</platoon_br_lair><notes></notes></row>
+      <row><creature>Whale, Killer</creature><individual_br>0.044</individual_br><platoons>1 of 3</platoons><platoon_br>0.5</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Cannot be attacked by land-based units</notes></row>
+      <row><creature>Whale, Narwhal</creature><individual_br>0.054</individual_br><platoons>1 of 2</platoons><platoon_br>0.5</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Whale, Sperm</creature><individual_br>0.155</individual_br><platoons>1 of 1</platoons><platoon_br>1.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Cannot be attacked by land-based units</notes></row>
+      <row><creature>Wolf</creature><individual_br>0.006</individual_br><platoons>1 of 10</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 10</platoons_lair><platoon_br_lair>0.25</platoon_br_lair><notes></notes></row>
+      <row><creature>Wolf, Dire</creature><individual_br>0.019</individual_br><platoons>1 of 6</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 6</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes></notes></row>
+    </table>
+
+    <table name="vermin">
+      <columns>
+        <column>creature</column>
+        <column>individual_br</column>
+        <column>platoons</column>
+        <column>platoon_br</column>
+        <column>platoons_lair</column>
+        <column>platoon_br_lair</column>
+        <column>notes</column>
+      </columns>
+      <row><creature>Ankheg</creature><individual_br>0.052</individual_br><platoons>1 of 5</platoons><platoon_br>1.0</platoon_br><platoons_lair>1 of 5</platoons_lair><platoon_br_lair>1.0</platoon_br_lair><notes></notes></row>
+      <row><creature>Ant, Giant</creature><individual_br>0.064</individual_br><platoons>1 of 14</platoons><platoon_br>3.5</platoon_br><platoons_lair>1 of 14</platoons_lair><platoon_br_lair>3.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Bee, Giant</creature><individual_br>0.012</individual_br><platoons>1 of 18</platoons><platoon_br>1.0</platoon_br><platoons_lair>1 of 18</platoons_lair><platoon_br_lair>1.0</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Beetle, Giant Bombardier</creature><individual_br>0.01</individual_br><platoons>1 of 7</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 7</platoons_lair><platoon_br_lair>0.25</platoon_br_lair><notes></notes></row>
+      <row><creature>Beetle, Giant Fire</creature><individual_br>0.01</individual_br><platoons>1 of 7</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 7</platoons_lair><platoon_br_lair>0.25</platoon_br_lair><notes></notes></row>
+      <row><creature>Beetle, Giant Tiger</creature><individual_br>0.057</individual_br><platoons>1 of 4</platoons><platoon_br>1.0</platoon_br><platoons_lair>1 of 4</platoons_lair><platoon_br_lair>1.0</platoon_br_lair><notes></notes></row>
+      <row><creature>Caecilian</creature><individual_br>0.004</individual_br><platoons>1 of 2</platoons><platoon_br>0.0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Recon modifier: magical camouflage (burrowing)</notes></row>
+      <row><creature>Carcass Scavenger</creature><individual_br>0.04</individual_br><platoons>1 of 3</platoons><platoon_br>0.5</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Centipede, Giant</creature><individual_br>0.001</individual_br><platoons>1 of 13</platoons><platoon_br>0.0</platoon_br><platoons_lair>1 of 13</platoons_lair><platoon_br_lair>0.0</platoon_br_lair><notes></notes></row>
+      <row><creature>Crab, Giant</creature><individual_br>0.017</individual_br><platoons>1 of 4</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 4</platoons_lair><platoon_br_lair>0.25</platoon_br_lair><notes></notes></row>
+      <row><creature>Fly, Giant Carnivorous</creature><individual_br>0.025</individual_br><platoons>1 of 10</platoons><platoon_br>1.0</platoon_br><platoons_lair>1 of 10</platoons_lair><platoon_br_lair>1.0</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Purple Worm</creature><individual_br>0.069</individual_br><platoons>1 of 2</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 2</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes>Recon modifier: magical camouflage (burrowing)</notes></row>
+      <row><creature>Rhagodessa, Giant</creature><individual_br>0.046</individual_br><platoons>1 of 3</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 3</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Scorpion, Giant</creature><individual_br>0.13</individual_br><platoons>1 of 4</platoons><platoon_br>2.0</platoon_br><platoons_lair>1 of 4</platoons_lair><platoon_br_lair>2.0</platoon_br_lair><notes></notes></row>
+      <row><creature>Spider, Black Widow</creature><individual_br>0.052</individual_br><platoons>1 of 2</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 2</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Spider, Crab</creature><individual_br>0.034</individual_br><platoons>1 of 3</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 3</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes>Recon modifier: magical camouflage</notes></row>
+      <row><creature>Spider, Tarantula</creature><individual_br>0.078</individual_br><platoons>1 of 2</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 2</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes></notes></row>
+    </table>
+
+    <table name="fantastic_creatures">
+      <columns>
+        <column>creature</column>
+        <column>individual_br</column>
+        <column>platoons</column>
+        <column>platoon_br</column>
+        <column>platoons_lair</column>
+        <column>platoon_br_lair</column>
+        <column>notes</column>
+      </columns>
+      <row><creature>Basilisk</creature><individual_br>0.637</individual_br><platoons>3 of 1</platoons><platoon_br>2.5</platoon_br><platoons_lair>3 of 1</platoons_lair><platoon_br_lair>2.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Blink Dog</creature><individual_br>0.359</individual_br><platoons>7 of 1</platoons><platoon_br>1.5</platoon_br><platoons_lair>7 of 1</platoons_lair><platoon_br_lair>1.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Chimera</creature><individual_br>1.539</individual_br><platoons>2 of 1</platoons><platoon_br>6</platoon_br><platoons_lair>2 of 1</platoons_lair><platoon_br_lair>6</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Cockatrice</creature><individual_br>0.221</individual_br><platoons>1 of 4</platoons><platoon_br>3.5</platoon_br><platoons_lair>1 of 4</platoons_lair><platoon_br_lair>3.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Demon Boar</creature><individual_br>0.779</individual_br><platoons>2 of 1</platoons><platoon_br>3</platoon_br><platoons_lair>2 of 1</platoons_lair><platoon_br_lair>3</platoon_br_lair><notes></notes></row>
+      <row><creature>Doppelganger</creature><individual_br>0.573</individual_br><platoons>2 of 2</platoons><platoon_br>4.5</platoon_br><platoons_lair>2 of 2</platoons_lair><platoon_br_lair>4.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Dragon Turtle</creature><individual_br>5.384</individual_br><platoons>1 of 1</platoons><platoon_br>21.5</platoon_br><platoons_lair>1 of 1</platoons_lair><platoon_br_lair>21.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Dragon, Huge Venerable</creature><individual_br>18.762</individual_br><platoons>1 of 1</platoons><platoon_br>75</platoon_br><platoons_lair>1 of 1</platoons_lair><platoon_br_lair>75</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Dragon, Venerable</creature><individual_br>14.968</individual_br><platoons>1 of 1</platoons><platoon_br>60</platoon_br><platoons_lair>1 of 1</platoons_lair><platoon_br_lair>60</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Dragon, Ancient</creature><individual_br>12.842</individual_br><platoons>1 of 1</platoons><platoon_br>52</platoon_br><platoons_lair>1 of 1</platoons_lair><platoon_br_lair>52</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Dragon, Very Old</creature><individual_br>11.849</individual_br><platoons>1 of 1</platoons><platoon_br>47</platoon_br><platoons_lair>1 of 1</platoons_lair><platoon_br_lair>47</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Dragon, Old</creature><individual_br>8.047</individual_br><platoons>1 of 1</platoons><platoon_br>32</platoon_br><platoons_lair>1 of 1</platoons_lair><platoon_br_lair>32</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Dragon, Mature Adult</creature><individual_br>5.93</individual_br><platoons>2 of 1</platoons><platoon_br>24</platoon_br><platoons_lair>2 of 1</platoons_lair><platoon_br_lair>24</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Dragon, Adult</creature><individual_br>4.931</individual_br><platoons>2 of 1</platoons><platoon_br>20</platoon_br><platoons_lair>2 of 1</platoons_lair><platoon_br_lair>20</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Dragon, Juvenile</creature><individual_br>2.749</individual_br><platoons>3 of 1</platoons><platoon_br>11</platoon_br><platoons_lair>3 of 1</platoons_lair><platoon_br_lair>11</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Dragon, Young</creature><individual_br>2.057</individual_br><platoons>3 of 1</platoons><platoon_br>8</platoon_br><platoons_lair>3 of 1</platoons_lair><platoon_br_lair>8</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Dragon, Very Young</creature><individual_br>1.49</individual_br><platoons>3 of 1</platoons><platoon_br>6</platoon_br><platoons_lair>3 of 1</platoons_lair><platoon_br_lair>6</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Dragon, Spawn</creature><individual_br>0.755</individual_br><platoons>4 of 1</platoons><platoon_br>3</platoon_br><platoons_lair>4 of 1</platoons_lair><platoon_br_lair>3</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Gorgon</creature><individual_br>1.238</individual_br><platoons>2 of 1</platoons><platoon_br>5</platoon_br><platoons_lair>2 of 1</platoons_lair><platoon_br_lair>5</platoon_br_lair><notes></notes></row>
+      <row><creature>Griffon</creature><individual_br>1.124</individual_br><platoons>4 of 2</platoons><platoon_br>9</platoon_br><platoons_lair>4 of 2</platoons_lair><platoon_br_lair>9</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Harpy</creature><individual_br>0.655</individual_br><platoons>2 of 2</platoons><platoon_br>5</platoon_br><platoons_lair>2 of 2</platoons_lair><platoon_br_lair>5</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Hellhound, Greater</creature><individual_br>0.216</individual_br><platoons>2 of 3</platoons><platoon_br>2.5</platoon_br><platoons_lair>2 of 3</platoons_lair><platoon_br_lair>2.5</platoon_br_lair><notes>Recon modifier: magical scrying</notes></row>
+      <row><creature>Hellhound, Lesser</creature><individual_br>0.088</individual_br><platoons>2 of 3</platoons><platoon_br>1</platoon_br><platoons_lair>2 of 3</platoons_lair><platoon_br_lair>1</platoon_br_lair><notes>Recon modifier: magical scrying</notes></row>
+      <row><creature>Hippogriff</creature><individual_br>0.724</individual_br><platoons>2 of 4</platoons><platoon_br>11.5</platoon_br><platoons_lair>2 of 4</platoons_lair><platoon_br_lair>11.5</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Hydra, 12 Head</creature><individual_br>0.206</individual_br><platoons>1 of 1</platoons><platoon_br>1</platoon_br><platoons_lair>1 of 1</platoons_lair><platoon_br_lair>1</platoon_br_lair><notes></notes></row>
+      <row><creature>Hydra, 11 Head</creature><individual_br>0.177</individual_br><platoons>1 of 1</platoons><platoon_br>1</platoon_br><platoons_lair>1 of 1</platoons_lair><platoon_br_lair>1</platoon_br_lair><notes></notes></row>
+      <row><creature>Hydra, 10 Head</creature><individual_br>0.141</individual_br><platoons>1 of 1</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 1</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Hydra, 9 Head</creature><individual_br>0.112</individual_br><platoons>1 of 1</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 1</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Hydra, 8 Head</creature><individual_br>0.086</individual_br><platoons>1 of 1</platoons><platoon_br>0.33</platoon_br><platoons_lair>1 of 1</platoons_lair><platoon_br_lair>0.33</platoon_br_lair><notes></notes></row>
+      <row><creature>Hydra, 7 Head</creature><individual_br>0.065</individual_br><platoons>1 of 1</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 1</platoons_lair><platoon_br_lair>0.25</platoon_br_lair><notes></notes></row>
+      <row><creature>Hydra, 6 Head</creature><individual_br>0.047</individual_br><platoons>1 of 1</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 1</platoons_lair><platoon_br_lair>0.25</platoon_br_lair><notes></notes></row>
+      <row><creature>Hydra, 5 Head</creature><individual_br>0.032</individual_br><platoons>1 of 1</platoons><platoon_br>0</platoon_br><platoons_lair>1 of 1</platoons_lair><platoon_br_lair>0</platoon_br_lair><notes></notes></row>
+      <row><creature>Lamia</creature><individual_br>1.733</individual_br><platoons>1 of 1</platoons><platoon_br>7</platoon_br><platoons_lair>1 of 1</platoons_lair><platoon_br_lair>7</platoon_br_lair><notes>Recon modifier: magical camouflage (illusions)</notes></row>
+      <row><creature>Lammasu</creature><individual_br>1.832</individual_br><platoons>5 of 1</platoons><platoon_br>7.5</platoon_br><platoons_lair>5 of 1</platoons_lair><platoon_br_lair>7.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Lycanthrope, Werebear</creature><individual_br>0.38</individual_br><platoons>3 of 1</platoons><platoon_br>1.5</platoon_br><platoons_lair>3 of 1</platoons_lair><platoon_br_lair>1.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Lycanthrope, Wereboar</creature><individual_br>0.211</individual_br><platoons>2 of 3</platoons><platoon_br>2.5</platoon_br><platoons_lair>2 of 3</platoons_lair><platoon_br_lair>2.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Lycanthrope, Wererat</creature><individual_br>0.133</individual_br><platoons>2 of 4</platoons><platoon_br>2</platoon_br><platoons_lair>2 of 4</platoons_lair><platoon_br_lair>2</platoon_br_lair><notes></notes></row>
+      <row><creature>Lycanthrope, Weretiger</creature><individual_br>0.283</individual_br><platoons>1 of 2</platoons><platoon_br>2.5</platoon_br><platoons_lair>1 of 2</platoons_lair><platoon_br_lair>2.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Lycanthrope, Werewolf</creature><individual_br>0.183</individual_br><platoons>3 of 2</platoons><platoon_br>1.5</platoon_br><platoons_lair>3 of 2</platoons_lair><platoon_br_lair>1.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Manticore</creature><individual_br>2.334</individual_br><platoons>2 of 1</platoons><platoon_br>9.5</platoon_br><platoons_lair>2 of 1</platoons_lair><platoon_br_lair>9.5</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Medusa</creature><individual_br>0.598</individual_br><platoons>2 of 1</platoons><platoon_br>2.5</platoon_br><platoons_lair>2 of 1</platoons_lair><platoon_br_lair>2.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Owl Bear</creature><individual_br>0.046</individual_br><platoons>1 of 3</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 3</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Pegasus</creature><individual_br>0.845</individual_br><platoons>2 of 3</platoons><platoon_br>10</platoon_br><platoons_lair>2 of 3</platoons_lair><platoon_br_lair>10</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Phase Tiger</creature><individual_br>0.182</individual_br><platoons>1 of 3</platoons><platoon_br>2</platoon_br><platoons_lair>1 of 3</platoons_lair><platoon_br_lair>2</platoon_br_lair><notes></notes></row>
+      <row><creature>Remorhaz, 10HD</creature><individual_br>0.219</individual_br><platoons>1 of 4</platoons><platoon_br>3.5</platoon_br><platoons_lair>2 of 4</platoons_lair><platoon_br_lair>3.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Roc, Giant</creature><individual_br>20.53</individual_br><platoons>1 of 1</platoons><platoon_br>82</platoon_br><platoons_lair>1 of 1</platoons_lair><platoon_br_lair>82</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Roc, Large</creature><individual_br>5.802</individual_br><platoons>5 of 1</platoons><platoon_br>23</platoon_br><platoons_lair>5 of 1</platoons_lair><platoon_br_lair>23</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Roc, Small</creature><individual_br>2.023</individual_br><platoons>6 of 1</platoons><platoon_br>8</platoon_br><platoons_lair>6 of 1</platoons_lair><platoon_br_lair>8</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Rust Monster</creature><individual_br>0.107</individual_br><platoons>1 of 2</platoons><platoon_br>1</platoon_br><platoons_lair>1 of 2</platoons_lair><platoon_br_lair>1</platoon_br_lair><notes></notes></row>
+      <row><creature>Sea Serpent</creature><individual_br>0.02</individual_br><platoons>1 of 6</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 6</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes>Cannot be attacked by land-based units</notes></row>
+      <row><creature>Shadow</creature><individual_br>0.293</individual_br><platoons>1 of 6</platoons><platoon_br>7</platoon_br><platoons_lair>1 of 6</platoons_lair><platoon_br_lair>7</platoon_br_lair><notes>Recon modifier: magical camouflage</notes></row>
+      <row><creature>Skittering Maw</creature><individual_br>0.153</individual_br><platoons>1 of 3</platoons><platoon_br>2</platoon_br><platoons_lair>1 of 3</platoons_lair><platoon_br_lair>2</platoon_br_lair><notes></notes></row>
+      <row><creature>Stirge</creature><individual_br>0.004</individual_br><platoons>1 of 15</platoons><platoon_br>0.25</platoon_br><platoons_lair>1 of 15</platoons_lair><platoon_br_lair>0.25</platoon_br_lair><notes></notes></row>
+      <row><creature>Throghrin</creature><individual_br>0.236</individual_br><platoons>1 of 5</platoons><platoon_br>5</platoon_br><platoons_lair>1 of 5</platoons_lair><platoon_br_lair>5</platoon_br_lair><notes></notes></row>
+      <row><creature>Treant</creature><individual_br>1.131</individual_br><platoons>1 of 2</platoons><platoon_br>9</platoon_br><platoons_lair>1 of 2</platoons_lair><platoon_br_lair>9</platoon_br_lair><notes>Recon modifier: magical camouflage (if in forest)</notes></row>
+      <row><creature>Unicorn</creature><individual_br>1.143</individual_br><platoons>2 of 2</platoons><platoon_br>9</platoon_br><platoons_lair>2 of 2</platoons_lair><platoon_br_lair>9</platoon_br_lair><notes></notes></row>
+      <row><creature>Wyvern</creature><individual_br>1.497</individual_br><platoons>3 of 1</platoons><platoon_br>6</platoon_br><platoons_lair>3 of 1</platoons_lair><platoon_br_lair>6</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+    </table>
+
+    <table name="constructs">
+      <columns>
+        <column>creature</column>
+        <column>individual_br</column>
+        <column>platoons</column>
+        <column>platoon_br</column>
+        <column>platoons_lair</column>
+        <column>platoon_br_lair</column>
+        <column>notes</column>
+      </columns>
+      <row><creature>Gargoyle</creature><individual_br>0.211</individual_br><platoons>1 of 5</platoons><platoon_br>4</platoon_br><platoons_lair>1 of 5</platoons_lair><platoon_br_lair>4.0</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Golem, Amber</creature><individual_br>0.214</individual_br><platoons>1 of 1</platoons><platoon_br>1</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Recon modifier: magical scrying</notes></row>
+      <row><creature>Golem, Bone</creature><individual_br>0.305</individual_br><platoons>1 of 1</platoons><platoon_br>1</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Golem, Bronze</creature><individual_br>1.834</individual_br><platoons>1 of 1</platoons><platoon_br>7.5</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Golem, Wood</creature><individual_br>0.009</individual_br><platoons>1 of 1</platoons><platoon_br>0</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Statue, Animated Crystal</creature><individual_br>0.031</individual_br><platoons>1 of 4</platoons><platoon_br>0.5</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Statue, Animated Iron</creature><individual_br>0.036</individual_br><platoons>1 of 3</platoons><platoon_br>0.5</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+      <row><creature>Statue, Animated Stone</creature><individual_br>0.109</individual_br><platoons>1 of 2</platoons><platoon_br>1</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes></notes></row>
+    </table>
+
+    <table name="giants">
+      <columns>
+        <column>creature</column>
+        <column>individual_br</column>
+        <column>platoons</column>
+        <column>platoon_br</column>
+        <column>platoons_lair</column>
+        <column>platoon_br_lair</column>
+        <column>notes</column>
+      </columns>
+      <row><creature>Cyclops</creature><individual_br>0.533</individual_br><platoons>2 of 1</platoons><platoon_br>2</platoon_br><platoons_lair>2 of 1</platoons_lair><platoon_br_lair>2</platoon_br_lair><notes></notes></row>
+      <row><creature>Ettin</creature><individual_br>0.43</individual_br><platoons>2 of 1</platoons><platoon_br>2</platoon_br><platoons_lair>2 of 1</platoons_lair><platoon_br_lair>2</platoon_br_lair><notes></notes></row>
+      <row><creature>Giant, Hill</creature><individual_br>0.284</individual_br><platoons>5 of 1</platoons><platoon_br>1</platoon_br><platoons_lair>5 of 1</platoons_lair><platoon_br_lair>1</platoon_br_lair><notes></notes></row>
+      <row><creature>Giant, Stone</creature><individual_br>0.402</individual_br><platoons>3 of 1</platoons><platoon_br>1.5</platoon_br><platoons_lair>3 of 1</platoons_lair><platoon_br_lair>1.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Giant, Frost</creature><individual_br>0.529</individual_br><platoons>2 of 1</platoons><platoon_br>2</platoon_br><platoons_lair>3 of 1</platoons_lair><platoon_br_lair>2</platoon_br_lair><notes></notes></row>
+      <row><creature>Giant, Fire</creature><individual_br>0.817</individual_br><platoons>2 of 1</platoons><platoon_br>3</platoon_br><platoons_lair>2 of 1</platoons_lair><platoon_br_lair>3</platoon_br_lair><notes></notes></row>
+      <row><creature>Giant, Cloud</creature><individual_br>1.103</individual_br><platoons>2 of 1</platoons><platoon_br>4.5</platoon_br><platoons_lair>2 of 1</platoons_lair><platoon_br_lair>4.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Giant, Storm</creature><individual_br>1.971</individual_br><platoons>2 of 1</platoons><platoon_br>8</platoon_br><platoons_lair>2 of 1</platoons_lair><platoon_br_lair>8</platoon_br_lair><notes></notes></row>
+      <row><creature>Troll</creature><individual_br>0.367</individual_br><platoons>1 of 4</platoons><platoon_br>6</platoon_br><platoons_lair>6 of 4</platoons_lair><platoon_br_lair>6</platoon_br_lair><notes>Leaders available for heroic forays</notes></row>
+    </table>
+
+    <table name="summoned">
+      <columns>
+        <column>creature</column>
+        <column>individual_br</column>
+        <column>platoons</column>
+        <column>platoon_br</column>
+        <column>platoons_lair</column>
+        <column>platoon_br_lair</column>
+        <column>notes</column>
+      </columns>
+      <row><creature>Djinni</creature><individual_br>3.256</individual_br><platoons>1 of 1</platoons><platoon_br>13</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Efreeti</creature><individual_br>6.039</individual_br><platoons>1 of 1</platoons><platoon_br>24</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Invisible Stalker</creature><individual_br>0.613</individual_br><platoons>1 of 1</platoons><platoon_br>2.5</platoon_br><platoons_lair>N/A</platoons_lair><platoon_br_lair>N/A</platoon_br_lair><notes>Recon modifier: aerial observation, magical camouflage</notes></row>
+      <row><creature>Salamander, Flame</creature><individual_br>0.93</individual_br><platoons>5 of 1</platoons><platoon_br>4</platoon_br><platoons_lair></platoons_lair><platoon_br_lair></platoon_br_lair><notes></notes></row>
+      <row><creature>Salamander, Frost</creature><individual_br>1.529</individual_br><platoons>2 of 1</platoons><platoon_br>6</platoon_br><platoons_lair></platoons_lair><platoon_br_lair></platoon_br_lair><notes></notes></row>
+    </table>
+
+    <table name="undead">
+      <columns>
+        <column>creature</column>
+        <column>individual_br</column>
+        <column>platoons</column>
+        <column>platoon_br</column>
+        <column>platoons_lair</column>
+        <column>platoon_br_lair</column>
+        <column>notes</column>
+      </columns>
+      <row><creature>Ghoul</creature><individual_br>0.289</individual_br><platoons>3 of 3</platoons><platoon_br>3.5</platoon_br><platoons_lair>3 of 3</platoons_lair><platoon_br_lair>3.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Mummy</creature><individual_br>1.037</individual_br><platoons>6 of 1</platoons><platoon_br>4</platoon_br><platoons_lair>6 of 1</platoons_lair><platoon_br_lair>4</platoon_br_lair><notes></notes></row>
+      <row><creature>Skeleton</creature><individual_br>0.005</individual_br><platoons>1 of 18</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 18</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Spectre</creature><individual_br>2.143</individual_br><platoons>5 of 1</platoons><platoon_br>8.5</platoon_br><platoons_lair>5 of 1</platoons_lair><platoon_br_lair>8.5</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Vampire</creature><individual_br>3.45</individual_br><platoons>3 of 1</platoons><platoon_br>14</platoon_br><platoons_lair>3 of 1</platoons_lair><platoon_br_lair>14</platoon_br_lair><notes>Recon modifier: aerial observation, magical camouflage</notes></row>
+      <row><creature>Wight</creature><individual_br>0.305</individual_br><platoons>2 of 2</platoons><platoon_br>2.5</platoon_br><platoons_lair>2 of 2</platoons_lair><platoon_br_lair>2.5</platoon_br_lair><notes></notes></row>
+      <row><creature>Wraith</creature><individual_br>0.636</individual_br><platoons>2 of 2</platoons><platoon_br>5</platoon_br><platoons_lair>2 of 2</platoons_lair><platoon_br_lair>5</platoon_br_lair><notes>Recon modifier: aerial observation</notes></row>
+      <row><creature>Zombie</creature><individual_br>0.01</individual_br><platoons>1 of 14</platoons><platoon_br>0.5</platoon_br><platoons_lair>1 of 14</platoons_lair><platoon_br_lair>0.5</platoon_br_lair><notes></notes></row>
+    </table>
+  </battle_rating_reference_tables>
+
+  <confidence_notes>
+    <note>The source text references a 'huge migration' as a treasure-bearing case, but the excerpt does not include an explicit definition of huge migration. This was preserved without expansion.</note>
+    <note>Several BR table rows in the source appear OCR-corrupted or column-shifted, especially some Men entries and a few platoon/platoon_lair fields. I preserved the values as faithfully as possible, but those rows may need image verification for exact cell placement.</note>
+    <note>The source repeatedly cites ACKS or Domains at War page references as 'p. XX'; those cross-references were preserved conceptually but cannot be resolved from the excerpt.</note>
+  </confidence_notes>
+</domain_encounter_supplement>

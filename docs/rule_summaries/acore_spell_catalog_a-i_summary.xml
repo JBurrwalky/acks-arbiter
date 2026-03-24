@@ -1,0 +1,1351 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<spell_catalog title="ACKS Core Spell Catalog A-I" section="A-I" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <spell name="Animate Dead">
+    <classification><entry><type>Arcane</type><level>5</level></entry></classification>
+    <range>touch</range>
+    <duration>special</duration>
+    <targets>
+      <valid_target>mostly intact skeleton for skeleton creation</valid_target>
+      <valid_target>mostly intact corpse for zombie creation</valid_target>
+      <requirement>caster must touch the remains</requirement>
+    </targets>
+    <effects>
+      <summary>Animates dead remains as obedient skeletons or zombies that follow spoken commands.</summary>
+      <effect>Animate up to 2 x caster level Hit Dice of undead per casting.</effect>
+      <effect>Skeletons have Hit Dice equal to the creature's Hit Dice in life.</effect>
+      <effect>Human and demi-human skeletons always have 1 Hit Die regardless of the deceased character's level.</effect>
+      <effect>Zombies have 1 more Hit Die than the creature had in life.</effect>
+    </effects>
+    <duration_rules>
+      <rule>Default duration is 1 day.</rule>
+      <rule>If made permanent, the undead remain animated until destroyed or dispelled.</rule>
+    </duration_rules>
+    <procedure>
+      <step order="1">Touch the remains to be animated.</step>
+      <step order="2">Choose skeleton or zombie according to the condition of the remains.</step>
+      <step order="3">Optionally sprinkle 1 vial of unholy water per Hit Die on each undead created to make the spell permanent.</step>
+    </procedure>
+  </spell>
+
+  <spell name="Anti-Magic Shell">
+    <classification><entry><type>Arcane</type><level>6</level></entry></classification>
+    <range>10' radius</range>
+    <duration>12 turns</duration>
+    <effects>
+      <summary>Creates a personal barrier around the caster that blocks spells and spell-like effects from entering or leaving.</summary>
+      <effect>The shell blocks the caster's spells and spell-like effects as well as others'.</effect>
+      <effect>Spell-like effects are effects that duplicate a spell or magical effects resisted with a save versus Spells or Staffs &amp; Wands, excluding effects that do not duplicate a spell and are resisted with saves versus Poison, Breath, Paralysis, or Petrification.</effect>
+      <effect>Self-range spells and touch-range spells used by the caster on himself are not blocked.</effect>
+    </effects>
+    <interactions>
+      <rule>If a creature or item with an ongoing spell or spell-like effect enters the shell, that effect is dispelled as if by dispel magic.</rule>
+      <rule>Effects that cannot be dispelled, such as magic weapon bonuses, are unaffected.</rule>
+      <rule>An anti-magic shell cannot itself be dispelled.</rule>
+    </interactions>
+    <duration_rules>
+      <rule>The effect ends when the duration expires or when the caster chooses to end it.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Atonement">
+    <classification><entry><type>Divine</type><level>5</level></entry></classification>
+    <range>0'</range>
+    <duration>permanent</duration>
+    <casting_time>1 turn</casting_time>
+    <targets>
+      <requirement>The subject must be truly repentant and desirous of setting right its misdeeds.</requirement>
+    </targets>
+    <effects>
+      <summary>Removes the burden of unwilling evil acts or misdeeds from the subject.</summary>
+      <effect>May reverse magical alignment change.</effect>
+    </effects>
+  </spell>
+
+  <spell name="Augury">
+    <classification><entry><type>Divine</type><level>2</level></entry></classification>
+    <range>self</range>
+    <duration>see below</duration>
+    <effects>
+      <summary>Reveals whether a contemplated action will bring good or bad results in the immediate future.</summary>
+    </effects>
+    <procedure>
+      <step order="1">The caster asks about a particular action.</step>
+      <step order="2">The Judge secretly rolls for accuracy.</step>
+      <step order="3">The response reflects only consequences within the next 3 turns.</step>
+    </procedure>
+    <scaling>
+      <rule>Base chance for a true reply is 70% + 1% per caster level.</rule>
+    </scaling>
+    <limits>
+      <limit>The spell only sees 3 turns into the future.</limit>
+      <limit>Long-term consequences are not considered.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Bless *" reversible="true" reverse_name="Bane">
+    <classification><entry><type>Divine</type><level>2</level></entry></classification>
+    <range>0'</range>
+    <duration>6 turns</duration>
+    <area>50' radius centered on the caster</area>
+    <effects>
+      <summary>Before battle, grants the caster and allies bonuses in combat and morale.</summary>
+      <bonus>+1 attack throws.</bonus>
+      <bonus>+1 damage rolls.</bonus>
+      <bonus>+1 morale rolls for allied monsters or NPCs.</bonus>
+      <bonus>+1 saving throws against magical fear.</bonus>
+    </effects>
+    <limits>
+      <limit>Cannot be cast on creatures already engaged in melee.</limit>
+    </limits>
+    <special>
+      <rule>Divine spellcasters of 7th level or higher may instead transform 1 pint of ordinary water into holy water.</rule>
+      <rule>Creating holy water requires a sacrifice worth at least 10gp.</rule>
+      <rule>Holy water retains potency indefinitely if kept in the vial it was blessed in.</rule>
+    </special>
+    <reversed_form name="Bane">
+      <effects>
+        <summary>Applies fear and doubt to the caster's enemies within a 50' radius.</summary>
+        <penalty>-1 attack throws.</penalty>
+        <penalty>-1 damage rolls.</penalty>
+        <penalty>-1 morale rolls.</penalty>
+        <penalty>-1 saving throws against magical fear.</penalty>
+      </effects>
+      <special>Chaotic divine casters of 7th level or higher may, with a sacrifice of at least 10gp, create 1 vial of unholy water; unholy water is beneficial in animating the dead.</special>
+    </reversed_form>
+  </spell>
+
+  <spell name="Charm Animal">
+    <classification><entry><type>Divine</type><level>2</level></entry></classification>
+    <range>60'</range>
+    <duration>special</duration>
+    <targets>
+      <valid_target>normal animals</valid_target>
+      <valid_target>giant animals</valid_target>
+      <invalid_target>humans</invalid_target>
+      <invalid_target>demi-humans</invalid_target>
+      <invalid_target>humanoids</invalid_target>
+      <invalid_target>fantastic creatures</invalid_target>
+    </targets>
+    <effects>
+      <summary>Charms an animal in a manner similar to charm person.</summary>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>Unintelligent animals receive no saving throw when the spell is cast.</rule>
+      <rule>Intelligent animals, such as great apes or whales, may save to resist.</rule>
+      <rule>After being charmed, the animal receives repeat saves to break the spell: daily if 7+1 HD or more, weekly if 5-6 HD, monthly if 4 HD or fewer.</rule>
+    </saving_throw>
+    <duration_rules>
+      <rule>The charm lasts until removed by dispel magic or until the animal succeeds on a repeat saving throw.</rule>
+    </duration_rules>
+    <limits>
+      <limit>The spell does not provide any special means of communication with the animal.</limit>
+    </limits>
+    <interactions>
+      <rule>Combined with speak with animals, the spell becomes significantly more useful.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Charm Monster">
+    <classification><entry><type>Arcane</type><level>4</level></entry></classification>
+    <range>60'</range>
+    <duration>special</duration>
+    <targets>
+      <invalid_target>undead monsters</invalid_target>
+      <option>Affect up to 3d6 Hit Dice of creatures of 4 or fewer Hit Dice.</option>
+      <option>Affect one creature of more than 4 Hit Dice.</option>
+    </targets>
+    <effects>
+      <summary>Functions like charm person but without restriction by monster type or size.</summary>
+      <effect>Creatures with less than 1 HD count as 1/2 HD.</effect>
+      <effect>Creatures with bonus Hit Dice count the bonus as a flat amount.</effect>
+      <effect>In a mixed group, the caster chooses which creatures are affected first.</effect>
+      <effect>Excess Hit Dice of effect are ignored.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>Any targeted creature that succeeds on its save resists the effect.</rule>
+      <rule>After being charmed, the creature receives repeat saves: daily if 7+1 HD or more, weekly if 5-6 HD, monthly if 4 HD or fewer.</rule>
+      <rule>If the creature has INT 9 or more, it may save more frequently using charm person frequencies: daily at INT 13+, weekly at INT 9-12.</rule>
+    </saving_throw>
+    <duration_rules>
+      <rule>The charm lasts until removed by dispel magic or until the creature succeeds on a repeat saving throw.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Charm Person">
+    <classification><entry><type>Arcane</type><level>1</level></entry></classification>
+    <range>60'</range>
+    <duration>special</duration>
+    <targets>
+      <valid_target>living humanoid creature no larger than an ogre and with 4 or fewer Hit Dice</valid_target>
+      <valid_target>humans and demi-humans regardless of character level</valid_target>
+      <rule>Humanoid creatures include bugbears, dryads, dwarves, elves, gnolls, gnomes, goblins, hobgoblins, kobolds, lizardmen, men, mermen, morlocks, neanderthal, naiads, ogres, pixies, sprites, troglodytes, and similar manlike creatures.</rule>
+    </targets>
+    <effects>
+      <summary>Makes the target regard the caster as a trusted friend and ally.</summary>
+      <effect>The spell does not grant automaton-like control.</effect>
+      <effect>The target interprets the caster's words and actions in the most favorable way.</effect>
+      <effect>The caster may attempt orders, but the target will not do something it would not ordinarily do.</effect>
+      <effect>The Judge may allow an additional saving throw against extraordinary orders.</effect>
+      <effect>If the caster is attacked, the charmed creature acts to protect its friend.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <negates>true</negates>
+      <rule>If the target is currently threatened or attacked by the caster or the caster's allies, it gains a +5 bonus on its saving throw.</rule>
+      <rule>Repeat saves occur daily if INT 13 or greater, weekly if INT 9-12, monthly if INT 8 or less.</rule>
+    </saving_throw>
+    <duration_rules>
+      <rule>The charm lasts until removed by dispel magic or until the target succeeds on a repeat saving throw.</rule>
+    </duration_rules>
+    <limits>
+      <limit>The caster must speak the target's language to communicate commands, unless able to pantomime effectively.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Clairvoyance">
+    <classification><entry><type>Arcane</type><level>3</level></entry></classification>
+    <range>60'</range>
+    <duration>12 turns</duration>
+    <targets>
+      <requirement>The caster must specify a direction and approximate distance up to 60'.</requirement>
+      <requirement>A living creature must be present in the chosen area.</requirement>
+    </targets>
+    <effects>
+      <summary>Lets the caster see into another area through the eyes of a living creature there.</summary>
+      <effect>The target area need not be in line of sight.</effect>
+    </effects>
+    <saving_throw>
+      <rule>No saving throw is allowed.</rule>
+      <rule>The subject is unaware of being used.</rule>
+    </saving_throw>
+    <duration_rules>
+      <rule>After at least 1 turn has passed, the caster may choose a different subject creature and view a different location.</rule>
+      <rule>If the subject creature moves out of range, contact is lost.</rule>
+    </duration_rules>
+    <limits>
+      <limit>A lead barrier between caster and subject blocks the effect.</limit>
+      <limit>If no appropriate creature is in the chosen area, the spell fails.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Cloudkill">
+    <classification><entry><type>Arcane</type><level>5</level></entry></classification>
+    <range>special</range>
+    <duration>6 turns</duration>
+    <area>30' diameter cloud</area>
+    <effects>
+      <summary>Creates a moving cloud of poisonous gas.</summary>
+      <effect>The cloud spreads from the caster's fingertips and moves 20' per round away from the caster.</effect>
+      <effect>The gas is heavier than air and sinks down holes or slides downhill.</effect>
+      <effect>Trees or thick vegetation break up the cloud.</effect>
+      <damage>Creatures with 5 or more Hit Dice or levels take 1 point of damage each round they remain within the cloud.</damage>
+    </effects>
+    <saving_throw>
+      <type>Poison</type>
+      <rule>Each round a creature of fewer than 5 Hit Dice or levels remains within the cloud, it must save or die.</rule>
+      <rule>Even on a successful save, such creatures still take 1 point of damage that round.</rule>
+    </saving_throw>
+    <duration_rules>
+      <rule>The cloud persists for the full duration even if the caster stops concentrating.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Command Word">
+    <classification><entry><type>Divine</type><level>1</level></entry></classification>
+    <range>10'</range>
+    <duration>1 round</duration>
+    <targets>
+      <requirement>The caster must be able to speak the target's language.</requirement>
+      <invalid_target>undead</invalid_target>
+    </targets>
+    <effects>
+      <summary>Compels the target to obey a single-word command to the best of its ability.</summary>
+      <effect>The command must make sense as a single word.</effect>
+      <effect>The command "die" causes the target to faint for 1 round rather than die.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>Targets with more than 5 HD or INT over 12 receive a saving throw.</rule>
+    </saving_throw>
+  </spell>
+
+  <spell name="Commune">
+    <classification><entry><type>Divine</type><level>5</level></entry></classification>
+    <range>self</range>
+    <duration>3 turns</duration>
+    <casting_time>1 turn</casting_time>
+    <effects>
+      <summary>Puts the caster in contact with great powers that answer yes-or-no questions.</summary>
+      <effect>The contacted being answers 3 yes-or-no questions.</effect>
+    </effects>
+    <limits>
+      <limit>The spell may be performed only once per week.</limit>
+    </limits>
+    <special>
+      <rule>The contacted being may not be omniscient and may answer unclearly or incompletely at the Judge's discretion.</rule>
+      <rule>Once per year, possibly on the patron deity's feast day, the caster may ask twice the normal number of questions.</rule>
+    </special>
+  </spell>
+
+  <spell name="Confusion">
+    <classification><entry><type>Arcane</type><level>4</level></entry></classification>
+    <range>120'</range>
+    <duration>12 rounds</duration>
+    <area>30' radius circle around the target point</area>
+    <targets><target>up to 3d6 living creatures</target></targets>
+    <effects>
+      <summary>Causes affected creatures to lose the ability to determine their actions independently.</summary>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>Creatures with 2 or fewer Hit Dice receive no saving throw.</rule>
+      <rule>Creatures with more than 2 Hit Dice may save to resist.</rule>
+    </saving_throw>
+    <procedure>
+      <step order="1">On each confused creature's initiative, roll 2d6.</step>
+      <step order="2">Consult the confusion behavior table.</step>
+      <step order="3">If the indicated action cannot be carried out, the creature babbles incoherently instead.</step>
+      <step order="4">A confused creature attacked by another creature automatically retaliates on its next turn if still confused.</step>
+    </procedure>
+    <tables>
+      <table name="confusion_behavior">
+        <columns><column>roll</column><column>behavior</column></columns>
+        <row><roll>2-5</roll><behavior>Attack the caster or the caster's allies with melee or ranged weapons, or move closer if attack is not possible.</behavior></row>
+        <row><roll>6-8</roll><behavior>Do nothing but babble incoherently.</behavior></row>
+        <row><roll>9-12</roll><behavior>Attack the creature's own party, if any.</behavior></row>
+      </table>
+    </tables>
+    <special>No special advantage is gained when attacking a confused creature.</special>
+  </spell>
+
+  <spell name="Conjure Elemental">
+    <classification><entry><type>Arcane</type><level>5</level></entry></classification>
+    <range>240'</range>
+    <duration>special</duration>
+    <effects>
+      <summary>Opens a portal to an Elemental Plane and summons an elemental of Air, Earth, Fire, or Water.</summary>
+      <effect>Once summoned, the elemental serves indefinitely while the caster concentrates solely on controlling it.</effect>
+    </effects>
+    <duration_rules>
+      <rule>Spellcasting, combat, or movement above half normal rate causes loss of concentration.</rule>
+      <rule>If concentration is lost, control is lost permanently.</rule>
+    </duration_rules>
+    <limits>
+      <limit>At most one elemental of each type may be summoned by the caster per day.</limit>
+    </limits>
+    <interactions>
+      <rule>The caster may dismiss a controlled elemental to its native plane at will, on the caster's initiative in combat.</rule>
+      <rule>An uncontrolled elemental attacks the conjurer and all others in its path.</rule>
+      <rule>Once uncontrolled, only dispel magic or dispel evil can banish it.</rule>
+      <rule>An uncontrolled elemental may choose on its own to return home and will not remain on the Material Plane for long.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Contact Other Plane">
+    <classification><entry><type>Arcane</type><level>5</level></entry></classification>
+    <range>self</range>
+    <duration>special</duration>
+    <effects>
+      <summary>Sends the caster's mind to another plane to ask one-word questions of extraplanar powers.</summary>
+      <effect>Answers are brief and in a language the caster understands.</effect>
+      <effect>Possible answers include yes, no, maybe, never, irrelevant, or another one-word answer.</effect>
+    </effects>
+    <procedure>
+      <step order="1">Before casting, choose the number of questions to ask, from 3 to 12.</step>
+      <step order="2">Maintain concentration and ask questions at the rate of 1 per round.</step>
+      <step order="3">For each question, first determine whether the contacted power knows the answer.</step>
+      <step order="4">Then determine whether the answer given is true.</step>
+      <step order="5">After casting, check for insanity.</step>
+    </procedure>
+    <tables>
+      <table name="contact_other_plane_results">
+        <columns><column>questions</column><column>dont_know</column><column>true_answer</column><column>insanity</column></columns>
+        <row><questions>3</questions><dont_know>75%</dont_know><true_answer>50%</true_answer><insanity>5%</insanity></row>
+        <row><questions>4</questions><dont_know>70%</dont_know><true_answer>55%</true_answer><insanity>10%</insanity></row>
+        <row><questions>5</questions><dont_know>65%</dont_know><true_answer>60%</true_answer><insanity>15%</insanity></row>
+        <row><questions>6</questions><dont_know>60%</dont_know><true_answer>65%</true_answer><insanity>20%</insanity></row>
+        <row><questions>7</questions><dont_know>50%</dont_know><true_answer>70%</true_answer><insanity>25%</insanity></row>
+        <row><questions>8</questions><dont_know>40%</dont_know><true_answer>75%</true_answer><insanity>30%</insanity></row>
+        <row><questions>9</questions><dont_know>30%</dont_know><true_answer>80%</true_answer><insanity>35%</insanity></row>
+        <row><questions>10</questions><dont_know>20%</dont_know><true_answer>85%</true_answer><insanity>40%</insanity></row>
+        <row><questions>11</questions><dont_know>10%</dont_know><true_answer>90%</true_answer><insanity>45%</insanity></row>
+        <row><questions>12</questions><dont_know>5%</dont_know><true_answer>95%</true_answer><insanity>50%</insanity></row>
+      </table>
+    </tables>
+    <special>
+      <rule>The more questions asked, the farther away and more powerful the contacted being.</rule>
+      <rule>Do not know: the entity may or may not know and may or may not reveal whether it knows.</rule>
+      <rule>True answer: if this roll fails, the entity lies and the lie is undetectable.</rule>
+      <rule>Insanity lasts for a number of weeks equal to the number of questions asked, and the player cannot play the character during that time.</rule>
+      <rule>Reduce the insanity chance by 5% for each caster level above 11.</rule>
+    </special>
+  </spell>
+
+  <spell name="Continual Light *" reversible="true" reverse_name="Continual Darkness">
+    <classification>
+      <entry><type>Divine</type><level>3</level></entry>
+      <entry><type>Arcane</type><level>2</level></entry>
+    </classification>
+    <range>360'</range>
+    <duration>special</duration>
+    <area>30' radius full daylight, 60' radius lesser illumination</area>
+    <effects>
+      <summary>Creates a sustained sphere of light.</summary>
+      <effect>May be cast on an object, into the air, or at a creature.</effect>
+      <effect>If cast on a creature's visual organs, it can blind the creature.</effect>
+    </effects>
+    <saving_throw>
+      <type>Death</type>
+      <rule>A creature targeted for blinding may save.</rule>
+      <rule>On a successful save, the spell is cast into the air just behind the target.</rule>
+      <rule>On a failed save, the blinded creature suffers a -4 penalty to attack throws.</rule>
+    </saving_throw>
+    <duration_rules>
+      <rule>Continual light and continual darkness are indefinitely sustained by the caster without concentration.</rule>
+      <rule>A caster may indefinitely sustain one continual light or continual darkness spell per level of experience.</rule>
+      <rule>Any blindness caused by either form ends when the spell ends.</rule>
+    </duration_rules>
+    <special>A truly permanent light requires a permanency ritual.</special>
+    <reversed_form name="Continual Darkness">
+      <effects>
+        <summary>Creates complete absence of light in the area and overpowers normal light sources.</summary>
+        <effect>May be used to blind as continual light does.</effect>
+      </effects>
+    </reversed_form>
+  </spell>
+
+  <spell name="Control Weather">
+    <classification><entry><type>Arcane</type><level>6</level></entry></classification>
+    <range>0'</range>
+    <duration>see below</duration>
+    <area>localized 240-yard radius outdoors</area>
+    <effects>
+      <summary>Creates a chosen weather condition around the caster.</summary>
+    </effects>
+    <duration_rules>
+      <rule>Duration is indefinite while the caster remains stationary and concentrating.</rule>
+    </duration_rules>
+    <limits>
+      <limit>Outdoor use only.</limit>
+    </limits>
+    <tables>
+      <table name="control_weather_effects">
+        <columns><column>weather</column><column>effects</column></columns>
+        <row><weather>Calm</weather><effects>Dissipates foul weather.</effects></row>
+        <row><weather>Hot</weather><effects>Dries wet conditions; all movement divided by 2.</effects></row>
+        <row><weather>Cold</weather><effects>Water and mud freeze; all movement divided by 2.</effects></row>
+        <row><weather>Severe Winds</weather><effects>All movement divided by 2; no flying or missile weapon use possible; sandy conditions reduce visibility to 20'; ship speed increases or decreases depending on whether sailing with or against the wind.</effects></row>
+        <row><weather>Tornado</weather><effects>The caster directs the tornado, which moves 120' per round and attacks using the characteristics of a 12 HD air elemental; sea vessels have a 75% chance of suffering 8+1d4 structural hit points damage.</effects></row>
+        <row><weather>Foggy</weather><effects>Visibility drops to 20'; all movement divided by 2.</effects></row>
+        <row><weather>Rainy</weather><effects>Missile attacks at -2; mud forms in 3 turns; movement divided by 2.</effects></row>
+        <row><weather>Snowy</weather><effects>Visibility drops to 20'; all movement divided by 2.</effects></row>
+      </table>
+    </tables>
+  </spell>
+
+  <spell name="Create Food">
+    <classification><entry><type>Divine</type><level>5</level></entry></classification>
+    <range>10'</range>
+    <duration>permanent</duration>
+    <effects>
+      <summary>Creates simple but nourishing food.</summary>
+      <effect>Feeds up to 12 men and their mounts for 1 day.</effect>
+    </effects>
+    <scaling>
+      <rule>For each caster level above 8th, create enough food for 12 additional men and their mounts.</rule>
+    </scaling>
+    <duration_rules>
+      <rule>The food becomes inedible within 24 hours.</rule>
+      <rule>Purify food and water keeps the food fresh for an additional 24 hours.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Create Water">
+    <classification><entry><type>Divine</type><level>4</level></entry></classification>
+    <range>10'</range>
+    <duration>permanent</duration>
+    <effects>
+      <summary>Creates an enchanted spring from the ground or wall.</summary>
+      <effect>Provides enough water for 12 men and their mounts for 1 day.</effect>
+      <effect>Creates 50 gallons of clean rain-water-like water.</effect>
+    </effects>
+    <scaling>
+      <rule>For each caster level above 8th, supply 12 additional men and mounts.</rule>
+    </scaling>
+    <limits>
+      <limit>Appropriate vessels to contain the water must be available when the spell is cast.</limit>
+    </limits>
+    <special>
+      <rule>Water weighs about 1 stone per gallon.</rule>
+      <rule>One cubic foot of water is roughly 8 gallons.</rule>
+    </special>
+  </spell>
+
+  <spell name="Cure Blindness">
+    <classification><entry><type>Divine</type><level>3</level></entry></classification>
+    <range>touch</range>
+    <duration>instantaneous</duration>
+    <effects>
+      <summary>Cures blindness caused by injury or magic.</summary>
+      <effect>Can cure blindness caused by light or continual light.</effect>
+    </effects>
+    <limits>
+      <limit>Cannot cure blindness caused by a curse.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Cure Disease *" reversible="true" reverse_name="Cause Disease">
+    <classification><entry><type>Divine</type><level>3</level></entry></classification>
+    <range>touch</range>
+    <duration>instantaneous</duration>
+    <effects>
+      <summary>Cures disease affecting the subject.</summary>
+      <effect>Cures all diseases the subject is suffering from, including lycanthropy and mummy rot.</effect>
+      <effect>Kills green slime and other parasites afflicting the target.</effect>
+    </effects>
+    <limits>
+      <limit>Some special diseases may not be countered, or may require a caster of a certain level or higher.</limit>
+      <limit>Does not prevent reinfection after new exposure.</limit>
+    </limits>
+    <reversed_form name="Cause Disease">
+      <effects>
+        <summary>Infects the target with a wasting plague.</summary>
+        <penalty>-2 attack throws while afflicted.</penalty>
+        <effect>The target cannot be magically healed while afflicted.</effect>
+        <effect>The target naturally heals at half the normal rate.</effect>
+        <effect>The disease is fatal in 2d12 days unless cure disease is cast on the victim.</effect>
+      </effects>
+      <saving_throw>
+        <type>Spells</type>
+        <negates>true</negates>
+      </saving_throw>
+    </reversed_form>
+  </spell>
+
+  <spell name="Cure Light Wounds *" reversible="true" reverse_name="Cause Light Wounds">
+    <classification><entry><type>Divine</type><level>1</level></entry></classification>
+    <range>touch</range>
+    <duration>instantaneous</duration>
+    <effects>
+      <summary>Heals injury by touch.</summary>
+      <healing>Restore 1d6+1 hit points.</healing>
+      <effect>May instead cure paralysis, but then heals no hit points.</effect>
+    </effects>
+    <limits>
+      <limit>Cannot raise a creature above its normal hit point maximum.</limit>
+    </limits>
+    <reversed_form name="Cause Light Wounds">
+      <effects>
+        <summary>Deals damage by touch.</summary>
+        <damage>Inflicts 1d6+1 damage.</damage>
+      </effects>
+      <procedure><step order="1">Make a successful attack throw against the target.</step></procedure>
+      <special>Undead are affected in reverse: cure light wounds injures undead, while cause light wounds heals undead.</special>
+    </reversed_form>
+  </spell>
+
+  <spell name="Cure Serious Wounds *" reversible="true" reverse_name="Cause Serious Wounds">
+    <classification><entry><type>Divine</type><level>4</level></entry></classification>
+    <range>touch</range>
+    <duration>instantaneous</duration>
+    <effects>
+      <summary>Functions like cure light wounds with greater healing.</summary>
+      <healing>Restore 2d6 hit points plus 1 point per caster level.</healing>
+    </effects>
+    <reversed_form name="Cause Serious Wounds">
+      <effects>
+        <summary>Functions like cause light wounds with greater damage.</summary>
+        <damage>Inflicts 2d6 + caster level damage.</damage>
+      </effects>
+      <procedure><step order="1">Resolve as cause light wounds, including the required successful attack throw.</step></procedure>
+    </reversed_form>
+  </spell>
+
+  <spell name="Death Spell">
+    <classification><entry><type>Arcane</type><level>6</level></entry></classification>
+    <range>240'</range>
+    <duration>instantaneous</duration>
+    <area>30' radius sphere centered anywhere within range</area>
+    <effects>
+      <summary>Kills a limited total of creature Hit Dice within the area.</summary>
+      <effect>The spell kills up to 4d8 Hit Dice of creatures.</effect>
+      <effect>If more Hit Dice are present than can be killed, the weakest creatures die first.</effect>
+      <effect>Hit Dice insufficient to affect a creature are wasted.</effect>
+    </effects>
+    <saving_throw>
+      <type>Death</type>
+      <rule>Each affected creature may save to avoid death.</rule>
+    </saving_throw>
+    <limits>
+      <limit>Creatures of 8 or more Hit Dice or levels are immune.</limit>
+      <limit>Undead, golems, and any other creature that is not truly alive are immune.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Delay Poison">
+    <classification><entry><type>Divine</type><level>2</level></entry></classification>
+    <range>touch</range>
+    <duration>1 turn per level</duration>
+    <effects>
+      <summary>Delays the effects of poison rather than curing it.</summary>
+      <effect>The subject is temporarily immune to poison during the spell.</effect>
+      <effect>Any poison already in the subject or encountered during the duration has no effect until the spell ends.</effect>
+      <effect>If cast within 1 turn per caster level after a subject dies from poison, the subject is restored to life for the spell's duration at 1 hp.</effect>
+    </effects>
+    <duration_rules>
+      <rule>When the spell ends, apply pending poison effects, including saving throws and damage, unless the poison has been cured.</rule>
+      <rule>A revived character dies again when the spell ends unless the poison has been cured first.</rule>
+    </duration_rules>
+    <limits>
+      <limit>Does not heal damage poison has already caused.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Detect Evil *" reversible="true" reverse_name="Detect Good">
+    <classification>
+      <entry><type>Divine</type><level>1</level></entry>
+      <entry><type>Arcane</type><level>2</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>6 turns</duration>
+    <effects>
+      <summary>Allows the caster to detect evil.</summary>
+      <effect>Detects creatures with evil intentions.</effect>
+      <effect>Detects magic items with evil enchantments.</effect>
+      <effect>Detects undead.</effect>
+      <effect>Detects sinkholes of evil.</effect>
+      <effect>Detects summoned creatures of Chaotic alignment.</effect>
+      <effect>The caster sees detected evil as a definite red glow visible only to the caster.</effect>
+    </effects>
+    <limits>
+      <limit>Normal Chaotic characters are not detected unless they have actively evil intentions against the caster.</limit>
+      <limit>Poisons, physical traps, and natural animals are not detected.</limit>
+    </limits>
+    <reversed_form name="Detect Good">
+      <effects>
+        <summary>Works as detect evil but detects good enchantments, good intentions, and summoned creatures of Lawful alignment.</summary>
+      </effects>
+    </reversed_form>
+  </spell>
+
+  <spell name="Detect Invisible">
+    <classification><entry><type>Arcane</type><level>2</level></entry></classification>
+    <range>60'</range>
+    <duration>6 turns</duration>
+    <effects>
+      <summary>Allows the caster to see invisible characters, creatures, and objects as translucent shapes.</summary>
+    </effects>
+  </spell>
+
+  <spell name="Detect Magic">
+    <classification>
+      <entry><type>Divine</type><level>1</level></entry>
+      <entry><type>Arcane</type><level>1</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>2 turns</duration>
+    <effects>
+      <summary>Lets the caster see enchanted or enspelled objects and creatures.</summary>
+      <effect>Detected magic appears as a pale glowing yellow light visible only to the caster.</effect>
+      <effect>Invisible creatures and objects are not directly detected.</effect>
+      <effect>The emanations of invisibility magic appear as an amorphous glowing fog.</effect>
+    </effects>
+    <interactions>
+      <rule>The caster may be able to attack an invisible creature detected only by its invisibility emanations at a -2 attack penalty.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Dimension Door">
+    <classification><entry><type>Arcane</type><level>4</level></entry></classification>
+    <range>10'</range>
+    <duration>instantaneous</duration>
+    <targets>
+      <option>The caster.</option>
+      <option>Any single target creature within range.</option>
+    </targets>
+    <effects>
+      <summary>Instantly transports the subject to another location.</summary>
+      <effect>The destination may be any spot within 360' of the caster's or target creature's present location.</effect>
+      <effect>The subject arrives exactly at the desired location, whether chosen by visualization or by stated direction and distance.</effect>
+      <effect>Anything worn or carried is transported.</effect>
+      <effect>A transported creature may carry another creature if it can lift it.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>An unwilling target may save to avoid transport.</rule>
+    </saving_throw>
+    <limits>
+      <limit>If the destination lies within a solid object, the spell fails automatically.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Disintegrate">
+    <classification><entry><type>Arcane</type><level>6</level></entry></classification>
+    <range>60'</range>
+    <duration>instantaneous</duration>
+    <targets>
+      <target>one creature</target>
+      <target>one object up to a 10' x 10' x 10' cube of material</target>
+    </targets>
+    <effects>
+      <summary>Projects a ray that disintegrates the target into fine dust.</summary>
+      <effect>A disintegrated creature's equipment is unaffected.</effect>
+    </effects>
+    <saving_throw>
+      <type>Death</type>
+      <rule>A creature that succeeds on its save is unaffected.</rule>
+    </saving_throw>
+    <limits>
+      <limit>The ray can target only one creature per casting.</limit>
+      <limit>If the targeted creature saves, the spell is wasted.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Dispel Evil">
+    <classification><entry><type>Divine</type><level>5</level></entry></classification>
+    <range>30'</range>
+    <duration>1 turn</duration>
+    <effects>
+      <summary>Radiates destructive holy power against undead and enchanted creatures.</summary>
+      <effect>The caster may instead direct the spell at one monster only.</effect>
+    </effects>
+    <saving_throw>
+      <type>Death</type>
+      <rule>Undead and enchanted creatures entering within 30' must save or be destroyed.</rule>
+      <rule>On a successful save, such creatures flee the affected area.</rule>
+      <rule>If directed at one monster, that monster saves at -2.</rule>
+    </saving_throw>
+    <duration_rules>
+      <rule>The caster may take no other action and must concentrate for the entire duration.</rule>
+    </duration_rules>
+    <interactions>
+      <rule>Casting the spell on an unholy place or shrine can sometimes rid it of evil, at the Judge's discretion.</rule>
+      <rule>The spell may be used to remove a cursed item from a being within range; doing so discharges and ends the spell.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Dispel Magic">
+    <classification>
+      <entry><type>Divine</type><level>4</level></entry>
+      <entry><type>Arcane</type><level>3</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>instantaneous</duration>
+    <area>20' cube when cast as an area effect</area>
+    <targets>
+      <option>One creature or object.</option>
+      <option>An area.</option>
+    </targets>
+    <effects>
+      <summary>Ends ongoing spells and spell-like effects.</summary>
+      <effect>If targeted at a creature, may cancel all spells and spell-like effects on that creature, including ongoing potion effects.</effect>
+      <effect>If targeted at an area, may cancel such effects within the area.</effect>
+    </effects>
+    <procedure>
+      <step order="1">Choose creature/object target or area target.</step>
+      <step order="2">Effects cast by a character of equal or lower level than the dispeller end automatically.</step>
+      <step order="3">For each higher-level effect, there is a 5% chance of failure for each level the effect exceeds the caster's level.</step>
+    </procedure>
+    <limits>
+      <limit>Cannot end magical disease.</limit>
+      <limit>Cannot end geas.</limit>
+      <limit>Cannot end quest.</limit>
+      <limit>Cannot undo petrification from flesh to stone.</limit>
+      <limit>Cannot remove curses, including bestow curse and cursed items.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Divination">
+    <classification><entry><type>Divine</type><level>4</level></entry></classification>
+    <range>self</range>
+    <duration>special</duration>
+    <effects>
+      <summary>Provides useful advice regarding a specific goal, event, or activity expected within 1 week.</summary>
+      <effect>The advice may be a short phrase, cryptic rhyme, or omen.</effect>
+      <effect>If the caster does not act on the information, changing conditions may make it useless.</effect>
+    </effects>
+    <scaling>
+      <rule>Base chance for a correct divination is 60% + 1% per caster level.</rule>
+    </scaling>
+    <procedure>
+      <step order="1">The Judge secretly rolls for correctness.</step>
+      <step order="2">If the roll fails, the information received is false.</step>
+    </procedure>
+  </spell>
+
+  <spell name="ESP">
+    <classification><entry><type>Arcane</type><level>2</level></entry></classification>
+    <range>60'</range>
+    <duration>12 turns</duration>
+    <effects>
+      <summary>Lets the caster detect the surface thoughts of one or more targets.</summary>
+      <effect>Thoughts are understood regardless of language.</effect>
+    </effects>
+    <procedure>
+      <step order="1">Choose a direction.</step>
+      <step order="2">Concentrate for 1 turn to hear thoughts in that direction.</step>
+      <step order="3">Each turn, the caster may choose a new direction.</step>
+      <step order="4">The caster may stop and resume listening later, provided the duration has not expired.</step>
+    </procedure>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>A target normally does not notice the intrusion.</rule>
+      <rule>If a target is aware of being spied upon, it may save to clear its thoughts and avoid detection.</rule>
+    </saving_throw>
+    <limits>
+      <limit>Rock more than 2 inches thick blocks the spell.</limit>
+      <limit>A thin coating of lead or gold blocks the spell.</limit>
+      <limit>Undead are immune.</limit>
+      <limit>Mindless creatures such as golems are immune.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Faerie Fire">
+    <classification><entry><type>Divine</type><level>1</level></entry></classification>
+    <range>60'</range>
+    <duration>1 round per level</duration>
+    <effects>
+      <summary>Outlines creatures or objects in a pale flickering fire.</summary>
+      <effect>The fire causes no damage.</effect>
+      <bonus>All attacks against an outlined target gain +2 to attack throws.</bonus>
+    </effects>
+    <targets>
+      <requirement>The subject need only be detected in some way, such as with detect magic.</requirement>
+    </targets>
+    <scaling>
+      <rule>The caster can outline 1 man-sized creature, about 12' of fire, for every 5 levels of experience, rounded up.</rule>
+    </scaling>
+  </spell>
+
+  <spell name="Feeblemind">
+    <classification><entry><type>Arcane</type><level>5</level></entry></classification>
+    <range>180'</range>
+    <duration>permanent</duration>
+    <effects>
+      <summary>Reduces the subject to helpless idiocy.</summary>
+      <effect>The target cannot cast spells, understand language, communicate coherently, or fight effectively.</effect>
+      <effect>The target dimly remembers its friends and may follow simple instructions.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>A target creature that can cast arcane spells suffers a -4 penalty on its saving throw.</rule>
+    </saving_throw>
+    <duration_rules>
+      <rule>The effect lasts until canceled by dispel magic.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Feign Death">
+    <classification><entry><type>Divine</type><level>3</level></entry></classification>
+    <range>touch</range>
+    <duration>6 rounds plus 1 round per level</duration>
+    <targets>
+      <option>The caster.</option>
+      <option>Another willing creature of equal or fewer levels or Hit Dice than the caster.</option>
+      <requirement>Physical contact is required to affect another creature.</requirement>
+    </targets>
+    <effects>
+      <summary>Places the subject in a death-like paralytic arrest.</summary>
+      <effect>The state mimics death to any observer, even on physical examination.</effect>
+      <effect>The subject remains conscious and can hear and smell, but cannot move and is completely numb.</effect>
+      <effect>Damage to the subject is reduced by 50%.</effect>
+      <effect>Poison, paralysis, and energy drain attacks are ineffective during the spell.</effect>
+    </effects>
+    <saving_throw><rule>No saving throw is permitted.</rule></saving_throw>
+    <duration_rules>
+      <rule>If poison affecting the subject still has duration remaining when the spell ends, it takes effect when the spell ends or is negated.</rule>
+      <rule>The caster may negate the spell early, but 1 round must pass for the body to resume normal life functions.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Fellowship">
+    <classification><entry><type>Divine</type><level>1</level></entry></classification>
+    <range>self</range>
+    <duration>1 turn per level</duration>
+    <effects>
+      <summary>Alters others' social reactions to the caster.</summary>
+      <effect>Creatures failing their save are very impressed, desire friendship, and assist the caster as they can.</effect>
+      <effect>Creatures who do not fail the save are uneasy and tend to find the caster irritating.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>All creatures that socially interact with the caster must save.</rule>
+      <rule>On failure, they treat the caster as though Charisma were 2d4 points higher.</rule>
+      <rule>On success, they treat the caster as though Charisma were 1d4 points lower.</rule>
+    </saving_throw>
+    <limits>
+      <limit>Has no effect on creatures of animal intelligence or lower.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Find Traps">
+    <classification><entry><type>Divine</type><level>2</level></entry></classification>
+    <range>30'</range>
+    <duration>3 turns</duration>
+    <effects>
+      <summary>Detects magical and mechanical traps.</summary>
+      <effect>When the caster comes within 30' of a trap, it glows with a faint blue aura.</effect>
+    </effects>
+    <limits>
+      <limit>Does not detect natural hazards such as quicksand, sinkholes, or unsafe natural rock walls.</limit>
+      <limit>Does not reveal how to disarm a trap.</limit>
+      <limit>Does not reveal the trap's type or nature.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Fireball">
+    <classification><entry><type>Arcane</type><level>3</level></entry></classification>
+    <range>240'</range>
+    <duration>instantaneous</duration>
+    <area>20' diameter spherical volume</area>
+    <effects>
+      <summary>Creates an explosion of flame at the chosen point of detonation.</summary>
+      <damage>Deals 1d6 fire damage per caster level to every creature in the area.</damage>
+      <effect>The explosion creates almost no pressure.</effect>
+      <effect>Sets combustibles on fire and damages objects in the area.</effect>
+      <effect>Can melt metals with low melting points, including lead, gold, copper, silver, and bronze.</effect>
+    </effects>
+    <saving_throw>
+      <type>Blast</type>
+      <partial>half damage</partial>
+    </saving_throw>
+    <procedure>
+      <step order="1">Point and choose the distance and height where the fireball is to burst.</step>
+      <step order="2">A glowing bead travels to that point unless it strikes a material body or solid barrier first.</step>
+      <step order="3">If it strikes early, it detonates early.</step>
+      <step order="4">To pass through a narrow opening such as an arrow slit, make a missile attack throw without range adjustments; failure causes premature detonation against the barrier.</step>
+      <step order="5">If an interposing barrier is shattered or broken through by the damage, the fireball may continue beyond it to attain full volume.</step>
+    </procedure>
+  </spell>
+
+  <spell name="Flame Strike">
+    <classification><entry><type>Divine</type><level>5</level></entry></classification>
+    <range>60'</range>
+    <duration>instantaneous</duration>
+    <area>vertical column 30' high and 10' in diameter</area>
+    <effects>
+      <summary>Calls down a column of divine fire on a target.</summary>
+      <damage>Deals 6d8 damage.</damage>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <partial>3d8 damage on a successful save.</partial>
+    </saving_throw>
+  </spell>
+
+  <spell name="Flesh to Stone *" reversible="true" reverse_name="Stone to Flesh">
+    <classification><entry><type>Arcane</type><level>6</level></entry></classification>
+    <range>120'</range>
+    <duration>permanent</duration>
+    <targets>
+      <valid_target>creatures made of flesh</valid_target>
+    </targets>
+    <effects>
+      <summary>Turns the target and all carried gear into an inert stone statue.</summary>
+      <effect>If the statue is broken or damaged, the target suffers corresponding damage or deformity if restored.</effect>
+    </effects>
+    <saving_throw>
+      <type>Petrification</type>
+      <negates>true</negates>
+    </saving_throw>
+    <limits>
+      <limit>Dispel magic does not undo flesh to stone.</limit>
+    </limits>
+    <reversed_form name="Stone to Flesh">
+      <effects>
+        <summary>Restores a creature petrified by flesh to stone or similar petrification effects.</summary>
+        <effect>When used on ordinary stone not created by petrification, it converts a man-sized volume of stone into a gooey pile of organic matter.</effect>
+      </effects>
+    </reversed_form>
+  </spell>
+
+  <spell name="Floating Disc">
+    <classification><entry><type>Arcane</type><level>1</level></entry></classification>
+    <range>10'</range>
+    <duration>6 turns</duration>
+    <effects>
+      <summary>Creates an invisible concave plane of force for carrying loads.</summary>
+      <effect>The disc is 3' in diameter and 1&quot; deep at the center.</effect>
+      <effect>Maximum load is 50 stone (500 lb).</effect>
+      <effect>The disc floats level with the ground at about the caster's waist height.</effect>
+      <effect>It remains still when within 10' of the caster and follows at the caster's movement rate when the caster moves away.</effect>
+      <effect>The disc may be pushed as needed to position it.</effect>
+    </effects>
+    <limits>
+      <limit>Items must be properly supported or they fall off.</limit>
+      <limit>If moved more than 10' from the caster by other means, the disc is dispelled.</limit>
+    </limits>
+    <duration_rules>
+      <rule>When the spell ends, the disc disappears and drops its load onto the surface beneath.</rule>
+    </duration_rules>
+    <special>
+      <rule>Water weighs about 1 stone per gallon.</rule>
+      <rule>Just over 62 gallons may be carried if held in a suitable container.</rule>
+    </special>
+  </spell>
+
+  <spell name="Fly">
+    <classification><entry><type>Arcane</type><level>3</level></entry></classification>
+    <range>touch</range>
+    <duration>1 turn per level</duration>
+    <effects>
+      <summary>Allows the subject to fly freely.</summary>
+      <movement>Movement up to 120' per round (360' per turn) in any direction.</movement>
+      <effect>Flying requires only as much concentration as walking.</effect>
+      <effect>The subject may attack or cast spells normally while flying.</effect>
+    </effects>
+    <limits>
+      <limit>The subject cannot carry more weight than its maximum load aloft.</limit>
+    </limits>
+    <interactions>
+      <rule>If fly is dispelled, the subject plummets from the air.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Geas" reversible="true" reverse_name="Remove Geas">
+    <classification><entry><type>Arcane</type><level>6</level></entry></classification>
+    <range>30'</range>
+    <duration>special</duration>
+    <targets>
+      <requirement>The target must be able to understand the caster.</requirement>
+    </targets>
+    <effects>
+      <summary>Places a magical command on the target to perform or avoid a course of action.</summary>
+      <effect>Cannot compel suicide or certain death, but can compel almost any other activity.</effect>
+      <effect>The target may choose to accept the geas voluntarily, such as as part of a bargain.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>An unwilling target may save when the geas is first cast.</rule>
+    </saving_throw>
+    <duration_rules>
+      <rule>The target must obey until the geas is completed, however long that takes.</rule>
+      <rule>If the task is open-ended and cannot be completed by the target's own actions, the geas lasts for a maximum of 1 day per caster level.</rule>
+      <rule>A subject who resumes obedience has all penalties removed 24 hours later.</rule>
+    </duration_rules>
+    <special>
+      <rule>A creature ignoring a geas suffers cumulative penalties determined by the Judge until obedience resumes or the creature dies.</rule>
+      <rule>Appropriate penalties include combat penalties, lowered ability scores, loss of spells, pain, and weakness ending in death.</rule>
+      <rule>A clever subject may subvert some instructions.</rule>
+    </special>
+    <interactions>
+      <rule>Remove curse, wish, or the reverse spell remove geas can end a geas and all its effects.</rule>
+      <rule>There is a 5% chance such removal fails for each level the removing caster is lower than the caster who imposed the geas.</rule>
+      <rule>Dispel magic does not affect geas.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Glyph of Warding">
+    <classification><entry><type>Divine</type><level>3</level></entry></classification>
+    <range>touch</range>
+    <duration>special</duration>
+    <area>up to 5' squared per caster level; inscription proceeds at up to 10' squared per round</area>
+    <targets>
+      <option>Warded area.</option>
+      <option>Warded object.</option>
+    </targets>
+    <effects>
+      <summary>Creates an almost invisible magical ward that harms intruders.</summary>
+      <effect>The caster sets a password when casting.</effect>
+      <effect>Any creature entering or touching the warded area or opening the warded object without speaking the password triggers the stored effect.</effect>
+      <effect>The glyph may be shaped freely within the allowed total square footage.</effect>
+    </effects>
+    <procedure>
+      <step order="1">Trace faintly glowing lines around the warding sigil during casting.</step>
+      <step order="2">Choose either a blast glyph or a spell glyph.</step>
+      <step order="3">Set the password.</step>
+      <step order="4">When casting completes, the glyph and tracery become nearly invisible.</step>
+    </procedure>
+    <special>
+      <rule>Blast glyph: deals 2 points of fire or electricity damage per caster level to intruders.</rule>
+      <rule>Spell glyph: stores a harmful spell such as one causing blindness, paralysis, energy drain, or similar effects.</rule>
+      <rule>The cleric must be high enough level to cast the stored spell.</rule>
+    </special>
+    <saving_throw>
+      <rule>Blast glyph allows a save versus Spells for half damage.</rule>
+      <rule>Spell glyph allows an appropriate saving throw based on the stored spell.</rule>
+    </saving_throw>
+  </spell>
+
+  <spell name="Growth of Animals">
+    <classification><entry><type>Divine</type><level>3</level></entry></classification>
+    <range>120'</range>
+    <duration>12 turns</duration>
+    <targets><valid_target>animal</valid_target></targets>
+    <effects>
+      <summary>Enlarges an animal and its equipment.</summary>
+      <effect>The animal becomes twice normal size and eight times normal weight.</effect>
+      <effect>The animal deals double normal damage with all physical attacks.</effect>
+      <effect>The animal's natural Armor Class improves by 2.</effect>
+      <effect>The animal's carrying capacity doubles.</effect>
+      <effect>Equipment worn or carried enlarges as well, but any enlarged item returning to other possession instantly returns to normal size.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>Unfriendly animals may save to resist.</rule>
+      <rule>Domesticated animals normally do not resist, though they may become confused or panicked afterward at the Judge's discretion.</rule>
+    </saving_throw>
+    <limits>
+      <limit>The spell does not provide command or influence over the enlarged animals.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Growth of Plants *" reversible="true" reverse_name="Shrink Plants">
+    <classification><entry><type>Arcane</type><level>4</level></entry></classification>
+    <range>120'</range>
+    <duration>permanent</duration>
+    <area>up to 3,000 square feet</area>
+    <effects>
+      <summary>Causes normal vegetation to become thick and overgrown.</summary>
+      <effect>The caster chooses the exact dimensions up to the maximum area.</effect>
+      <effect>The resulting thicket is impassable to creatures smaller than giant size.</effect>
+      <effect>Creatures of less than giant size may hack through at up to 5' per round.</effect>
+      <effect>Giant-sized creatures move at half normal rate through the growth.</effect>
+    </effects>
+    <limits>
+      <limit>The area must already contain brush and/or trees.</limit>
+      <limit>The spell has no effect on animated plant creatures.</limit>
+    </limits>
+    <interactions>
+      <rule>The spell and its reverse are permanent until countered by the opposite form or by dispel magic.</rule>
+    </interactions>
+    <reversed_form name="Shrink Plants">
+      <effects>
+        <summary>Renders overgrown areas passable.</summary>
+        <effect>The area of effect is the same as the normal version.</effect>
+      </effects>
+    </reversed_form>
+  </spell>
+
+  <spell name="Hallucinatory Terrain">
+    <classification><entry><type>Arcane</type><level>4</level></entry></classification>
+    <range>240'</range>
+    <duration>special</duration>
+    <casting_time>1 turn</casting_time>
+    <effects>
+      <summary>Makes outdoor terrain appear to be a different natural terrain type.</summary>
+      <effect>The altered terrain looks, sounds, and smells like the chosen terrain.</effect>
+    </effects>
+    <targets>
+      <requirement>The entire terrain feature to be disguised must be within range.</requirement>
+    </targets>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>A save is allowed only to creatures that actively attempt to see through the illusion.</rule>
+    </saving_throw>
+    <duration_rules>
+      <rule>The illusion ends when touched by an intelligent creature moving into the hallucinatory terrain.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Haste *" reversible="true" reverse_name="Slow">
+    <classification><entry><type>Arcane</type><level>3</level></entry></classification>
+    <range>240'</range>
+    <duration>3 turns</duration>
+    <targets><target>1 creature per caster level</target></targets>
+    <effects>
+      <summary>Speeds up affected creatures.</summary>
+      <effect>Affected creatures move and act twice as quickly as normal.</effect>
+      <effect>Movement rates double.</effect>
+      <effect>Attacks per round double.</effect>
+      <effect>Spellcasting is not accelerated.</effect>
+      <effect>Magic items such as wands may still be used only once per round.</effect>
+    </effects>
+    <limits>
+      <limit>Multiple haste or speed effects do not stack; apply only the most powerful or longest-lasting effect.</limit>
+    </limits>
+    <interactions>
+      <rule>Haste and slow dispel each other.</rule>
+    </interactions>
+    <reversed_form name="Slow">
+      <effects>
+        <summary>Reduces affected creatures' speed and action rate.</summary>
+        <effect>Affected creatures move at half speed.</effect>
+        <effect>Affected creatures attack half as often, generally every other round.</effect>
+        <effect>Affected creatures make only half a normal move each round.</effect>
+      </effects>
+      <saving_throw>
+        <type>Spells</type>
+        <rule>Targets may save to avoid the effect.</rule>
+      </saving_throw>
+    </reversed_form>
+    <special>
+      <rule>Each application of haste causes permanent aging: humans 1 year, dwarves 2 years, elves 5 years.</rule>
+      <rule>The aging may be reversed only by effects such as wish or potion of longevity.</rule>
+    </special>
+  </spell>
+
+  <spell name="Hold Monster">
+    <classification><entry><type>Arcane</type><level>5</level></entry></classification>
+    <range>180'</range>
+    <duration>2d8 turns</duration>
+    <targets><valid_target>any living creature</valid_target></targets>
+    <effects>
+      <summary>Paralyzes a living creature.</summary>
+      <effect>The spell functions like hold person, but is not limited to humanoids.</effect>
+    </effects>
+    <saving_throw>
+      <type>Paralysis</type>
+      <negates>true</negates>
+    </saving_throw>
+  </spell>
+
+  <spell name="Hold Person">
+    <classification>
+      <entry><type>Divine</type><level>2</level></entry>
+      <entry><type>Arcane</type><level>3</level></entry>
+    </classification>
+    <range>180'</range>
+    <duration>9 turns</duration>
+    <targets>
+      <valid_target>living non-undead humanoid creature no larger than an ogre and with 4 or fewer Hit Dice</valid_target>
+      <valid_target>humans and demi-humans regardless of character level</valid_target>
+      <rule>Humanoid creatures include bugbears, dryads, dwarves, elves, gnolls, gnomes, goblins, hobgoblins, kobolds, lizardmen, men, mermen, morlocks, neanderthal, naiads, ogres, pixies, sprites, troglodytes, and similar creatures.</rule>
+      <option>One person.</option>
+      <option>1d4 creatures in a group.</option>
+    </targets>
+    <effects>
+      <summary>Paralyzes the target while leaving awareness and breathing intact.</summary>
+      <effect>Paralyzed targets cannot take any actions, including speech.</effect>
+      <effect>A winged creature falls if paralyzed in flight.</effect>
+      <effect>A paralyzed swimmer cannot swim and may drown.</effect>
+    </effects>
+    <saving_throw>
+      <type>Paralysis</type>
+      <negates>true</negates>
+      <rule>If cast at a single person, that person saves at -2.</rule>
+    </saving_throw>
+  </spell>
+
+  <spell name="Hold Portal">
+    <classification><entry><type>Arcane</type><level>1</level></entry></classification>
+    <range>10'</range>
+    <duration>2d6 turns</duration>
+    <targets><valid_target>door, gate, window, or shutter of wood, metal, or stone</valid_target></targets>
+    <effects>
+      <summary>Magically holds a portal shut.</summary>
+      <effect>The portal is treated as securely closed and normally locked.</effect>
+    </effects>
+    <limits>
+      <limit>A thief cannot attempt Pick Locks on a held portal.</limit>
+    </limits>
+    <interactions>
+      <rule>Knock negates the spell.</rule>
+      <rule>A successful dispel magic negates the spell.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Holy Chant">
+    <classification><entry><type>Divine</type><level>2</level></entry></classification>
+    <range>0'</range>
+    <duration>special</duration>
+    <area>30' radius centered on the caster</area>
+    <effects>
+      <summary>Continuous chant grants allies supernatural aid and hinders enemies.</summary>
+      <bonus>Allied attack throws, damage rolls, and saving throws gain +1.</bonus>
+      <penalty>Enemy attack throws, damage rolls, and saving throws suffer -1.</penalty>
+    </effects>
+    <duration_rules>
+      <rule>The effect continues while the caster remains stationary and focuses only on chanting.</rule>
+      <rule>The spell ends if the caster is successfully attacked and damaged, or otherwise physically distracted.</rule>
+    </duration_rules>
+    <interactions>
+      <rule>Silence 15' radius negates the spell.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Infravision">
+    <classification><entry><type>Arcane</type><level>3</level></entry></classification>
+    <range>touch</range>
+    <duration>1 day</duration>
+    <effects>
+      <summary>Grants the subject the ability to see in the dark to 60'.</summary>
+    </effects>
+  </spell>
+
+  <spell name="Insect Plague">
+    <classification><entry><type>Divine</type><level>5</level></entry></classification>
+    <range>480'</range>
+    <duration>1 day</duration>
+    <area>4 contiguous swarms, each 30' x 30'</area>
+    <effects>
+      <summary>Summons a controllable plague of swarming insects.</summary>
+      <effect>The plague consists of 4 insect swarms, each with 4 Hit Dice.</effect>
+      <effect>The swarms must be placed so each is adjacent to at least one other swarm, filling one contiguous area.</effect>
+      <effect>The swarms may be summoned in spaces already occupied by other creatures.</effect>
+      <effect>Each swarm attacks creatures in its area.</effect>
+      <effect>The whole plague obscures vision.</effect>
+      <effect>Creatures of less than 3 Hit Dice are automatically driven off.</effect>
+    </effects>
+    <duration_rules>
+      <rule>The caster must concentrate to maintain control for the spell's duration.</rule>
+      <rule>The caster loses control if successfully attacked or if the plague leaves spell range.</rule>
+      <rule>While controlled, the constituent swarms may be moved 20' per round.</rule>
+      <rule>Once control is lost, the swarms become stationary.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Invisibility">
+    <classification><entry><type>Arcane</type><level>2</level></entry></classification>
+    <range>touch</range>
+    <duration>special</duration>
+    <targets>
+      <option>One creature.</option>
+      <option>One object.</option>
+    </targets>
+    <effects>
+      <summary>Makes the touched creature or object invisible, including to infravision.</summary>
+      <effect>A creature's carried gear becomes invisible as well.</effect>
+      <effect>When cast on another creature, the caster and allies cannot see the subject unless they can normally see invisible things or use magic to do so.</effect>
+      <effect>Items dropped or put down become visible.</effect>
+      <effect>Items picked up disappear if tucked into clothing or pouches worn by the creature.</effect>
+      <effect>Light does not become invisible, though an invisible light source has no visible source.</effect>
+      <effect>Any part of an item extending more than 10' from the subject becomes visible.</effect>
+      <effect>The spell does not silence the subject, and mundane traces may still reveal it.</effect>
+    </effects>
+    <duration_rules>
+      <rule>The spell ends if the subject attacks any creature or casts any spell.</rule>
+      <rule>Actions directed at unattended objects do not end the spell unless they involve spellcasting.</rule>
+      <rule>Indirect harm is not considered an attack for ending the spell.</rule>
+      <rule>Maximum duration is 24 hours.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Invisibility 10' Radius">
+    <classification><entry><type>Arcane</type><level>3</level></entry></classification>
+    <range>touch</range>
+    <duration>special</duration>
+    <area>10' radius centered on the recipient</area>
+    <effects>
+      <summary>Functions like invisibility but affects all creatures within 10' of the recipient.</summary>
+      <effect>The center of the effect moves with the recipient.</effect>
+      <effect>Affected creatures can see themselves and each other as though unaffected.</effect>
+    </effects>
+    <duration_rules>
+      <rule>Creatures already within the area when the spell is cast become invisible.</rule>
+      <rule>Creatures entering the area later do not become invisible.</rule>
+      <rule>An affected creature other than the recipient that attacks loses invisibility only for itself.</rule>
+      <rule>If the recipient attacks, the invisibility ends for all affected creatures.</rule>
+      <rule>A creature moving out of the area becomes visible.</rule>
+    </duration_rules>
+    <interactions>
+      <rule>The spell otherwise functions as invisibility.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Invisible Stalker">
+    <classification><entry><type>Arcane</type><level>6</level></entry></classification>
+    <range>10'</range>
+    <duration>special</duration>
+    <effects>
+      <summary>Summons an invisible stalker to perform the caster's bidding.</summary>
+      <effect>The stalker appears anywhere within range.</effect>
+    </effects>
+    <duration_rules>
+      <rule>The spell lasts until dispel evil is cast on the stalker, the stalker is slain, or the assigned task is completed.</rule>
+    </duration_rules>
+    <special>The invisible stalker may not always be a reliable servant; consult its monster entry when adjudicating service.</special>
+  </spell>
+</spell_catalog>

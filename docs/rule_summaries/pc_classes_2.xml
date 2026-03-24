@@ -1,0 +1,916 @@
+<class_catalog title="111B-ACKS Players Companion-Classes-2" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <class name="Dwarven Delver">
+    <identity>
+      <name>Dwarven Delver</name>
+      <ancestry_category>dwarven</ancestry_category>
+      <source_label>111B-ACKS Players Companion-Classes-2.md</source_label>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>explorer</tag>
+        <tag>scout</tag>
+        <tag>skirmisher</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>thief_skills</tag>
+        <tag>backstab</tag>
+        <tag>trap_detection</tag>
+        <tag>subterranean_navigation</tag>
+        <tag>stronghold_builder</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>DEX</ability>
+      </prime_requisites>
+      <minimum_abilities>
+        <requirement ability="CON" score="9"/>
+      </minimum_abilities>
+      <entry_restrictions>
+        <restriction type="ancestry">dwarven</restriction>
+      </entry_restrictions>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>thief</primary_progression_family>
+      <attack_throw_progression family="thief"/>
+      <cleave_progression family="thief"/>
+      <saving_throw_progression family="thief"/>
+      <damage_bonus_progression family="thief"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d6</hit_die>
+      <maximum_level>11</maximum_level>
+      <baseline_title>Dwarven Caver</baseline_title>
+      <post_max_hit_dice_rule>After reaching 9d6 hit dice, the class gains +3 hit points per level at 10th and 11th level. Hit point modifiers from Constitution are ignored for these fixed gains.</post_max_hit_dice_rule>
+      <general_notes>
+        <rule>May use any magic item usable by thieves.</rule>
+      </general_notes>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>Leather armor or lighter.</armor>
+        <shields>None.</shields>
+        <weapons>
+          <rule>May use all missile weapons.</rule>
+          <rule>May use all axes, hammers, flails, and maces.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>May fight wielding a weapon in either hand.</rule>
+          <rule>May fight wielding a weapon two-handed.</rule>
+        </fighting_styles>
+      </permissions>
+      <restrictions>
+        <restriction>Cannot use shields.</restriction>
+        <restriction>Cannot wear armor heavier than leather.</restriction>
+      </restrictions>
+      <combat_rules>
+        <rule>At 1st level, hits an unarmored foe (AC 0) with an attack throw of 10+.</rule>
+        <rule>Attack throws and saving throws advance as thieves, by two points every four levels of experience.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <class_subsystems>
+      <thief_skills>
+        <rules>
+          <rule>Uses throw-based thief-skill target values shown in the level progression and subsystem table.</rule>
+          <rule>Find traps allows detection of deadfalls, pits, snares, and similar traps, but does not permit disarming them.</rule>
+          <rule>Backstab is available when the delver catches an opponent unaware by surprise or by moving silently and/or hiding in shadows.</rule>
+        </rules>
+        <skill_definitions>
+          <skill name="hide_in_shadows">
+            <rule>Allows concealment in shadows using the class target values.</rule>
+          </skill>
+          <skill name="move_silently">
+            <rule>Allows stealthy movement using the class target values.</rule>
+          </skill>
+          <skill name="climb_walls">
+            <rule>Allows climbing chasms, sinkholes, chimneys, and similar surfaces using the class target values.</rule>
+          </skill>
+          <skill name="find_traps">
+            <rule>Allows locating traps using the class target values.</rule>
+            <rule>Does not grant any ability to disarm traps.</rule>
+          </skill>
+          <skill name="hear_noises">
+            <rule>Allows detection of faint sounds using the class target values.</rule>
+          </skill>
+        </skill_definitions>
+        <tables>
+          <table name="thief_skills">
+            <columns>
+              <column>level</column>
+              <column>hide_in_shadows</column>
+              <column>move_silently</column>
+              <column>climb_walls</column>
+              <column>find_traps</column>
+              <column>hear_noises</column>
+              <column>backstab_multiplier</column>
+            </columns>
+            <row>
+              <value name="level">1</value>
+              <value name="hide_in_shadows">17+</value>
+              <value name="move_silently">15+</value>
+              <value name="climb_walls">4+</value>
+              <value name="find_traps">14+</value>
+              <value name="hear_noises">12+</value>
+              <value name="backstab_multiplier">x2</value>
+            </row>
+            <row>
+              <value name="level">2</value>
+              <value name="hide_in_shadows">16+</value>
+              <value name="move_silently">14+</value>
+              <value name="climb_walls">3+</value>
+              <value name="find_traps">14+</value>
+              <value name="hear_noises">11+</value>
+              <value name="backstab_multiplier">x2</value>
+            </row>
+            <row>
+              <value name="level">3</value>
+              <value name="hide_in_shadows">15+</value>
+              <value name="move_silently">13+</value>
+              <value name="climb_walls">3+</value>
+              <value name="find_traps">14+</value>
+              <value name="hear_noises">10+</value>
+              <value name="backstab_multiplier">x2</value>
+            </row>
+            <row>
+              <value name="level">4</value>
+              <value name="hide_in_shadows">14+</value>
+              <value name="move_silently">12+</value>
+              <value name="climb_walls">2+</value>
+              <value name="find_traps">13+</value>
+              <value name="hear_noises">9+</value>
+              <value name="backstab_multiplier">x2</value>
+            </row>
+            <row>
+              <value name="level">5</value>
+              <value name="hide_in_shadows">13+</value>
+              <value name="move_silently">11+</value>
+              <value name="climb_walls">2+</value>
+              <value name="find_traps">12+</value>
+              <value name="hear_noises">8+</value>
+              <value name="backstab_multiplier">x3</value>
+            </row>
+            <row>
+              <value name="level">6</value>
+              <value name="hide_in_shadows">12+</value>
+              <value name="move_silently">10+</value>
+              <value name="climb_walls">2+</value>
+              <value name="find_traps">11+</value>
+              <value name="hear_noises">7+</value>
+              <value name="backstab_multiplier">x3</value>
+            </row>
+            <row>
+              <value name="level">7</value>
+              <value name="hide_in_shadows">10+</value>
+              <value name="move_silently">8+</value>
+              <value name="climb_walls">1+</value>
+              <value name="find_traps">9+</value>
+              <value name="hear_noises">5+</value>
+              <value name="backstab_multiplier">x3</value>
+            </row>
+            <row>
+              <value name="level">8</value>
+              <value name="hide_in_shadows">8+</value>
+              <value name="move_silently">6+</value>
+              <value name="climb_walls">1+</value>
+              <value name="find_traps">7+</value>
+              <value name="hear_noises">4+</value>
+              <value name="backstab_multiplier">x3</value>
+            </row>
+            <row>
+              <value name="level">9</value>
+              <value name="hide_in_shadows">6+</value>
+              <value name="move_silently">4+</value>
+              <value name="climb_walls">1+</value>
+              <value name="find_traps">5+</value>
+              <value name="hear_noises">3+</value>
+              <value name="backstab_multiplier">x4</value>
+            </row>
+            <row>
+              <value name="level">10</value>
+              <value name="hide_in_shadows">4+</value>
+              <value name="move_silently">2+</value>
+              <value name="climb_walls">1+</value>
+              <value name="find_traps">3+</value>
+              <value name="hear_noises">2+</value>
+              <value name="backstab_multiplier">x4</value>
+            </row>
+            <row>
+              <value name="level">11</value>
+              <value name="hide_in_shadows">2+</value>
+              <value name="move_silently">1+</value>
+              <value name="climb_walls">1+</value>
+              <value name="find_traps">1+</value>
+              <value name="hear_noises">1+</value>
+              <value name="backstab_multiplier">x4</value>
+            </row>
+          </table>
+        </tables>
+      </thief_skills>
+
+      <custom_subsystem name="class_proficiency_list">
+        <definition>Selectable class proficiencies.</definition>
+        <rules>
+          <rule>Acrobatics, Alertness, Blind-Fighting, Cat Burglary, Combat Reflexes, Combat Trickery (disarm, knock down), Contortionism, Dungeon Bashing, Engineering, Fighting Style, Goblin-Slaying, Illusion Resistance, Mapping, Mountaineering, Navigation, Precise Shooting, Running, Siege Engineering, Signaling, Skirmishing, Skulking, Sniping, Survival, Swashbuckling, Tracking, Trap Finding, Trapping, Vermin Slaying, Weapon Finesse, Weapon Focus.</rule>
+        </rules>
+      </custom_subsystem>
+    </class_subsystems>
+
+    <special_abilities>
+      <ability name="backstab" level="1">
+        <summary>Attack unaware opponents for increased accuracy and multiplied damage.</summary>
+        <triggers>
+          <trigger>Target is unaware due to surprise.</trigger>
+          <trigger>Target is unaware because the delver approached using move silently and/or hide in shadows.</trigger>
+        </triggers>
+        <rules>
+          <rule>Receives a +4 bonus on the attack throw when backstabbing.</rule>
+          <rule>On a successful backstab, deals additional damage according to the backstab multiplier shown by level.</rule>
+        </rules>
+      </ability>
+
+      <ability name="expert_caver" level="1">
+        <summary>Retains reliable underground route awareness.</summary>
+        <rules>
+          <rule>When exploring underground caves, cavern complexes, and rivers, may automatically know the route he has taken to reach his current location on a proficiency throw of 9+.</rule>
+        </rules>
+        <limits>
+          <limit>Applies only if the delver was conscious during the travel.</limit>
+        </limits>
+      </ability>
+
+      <ability name="underground_senses" level="1">
+        <summary>Improved surprise and hidden-feature detection underground.</summary>
+        <rules>
+          <rule>Gains a +1 bonus on all surprise rolls when underground.</rule>
+          <rule>Can detect false walls, hidden construction, or sloped passages when underground on a proficiency throw of 14+ on 1d20 if actively searching.</rule>
+        </rules>
+      </ability>
+
+      <ability name="dwarven_hardiness" level="1">
+        <summary>Dwarven saving throw adjustments are already built into the class save table.</summary>
+        <rules>
+          <rule>Saving throw target values versus Blast/Breath are reduced by 3.</rule>
+          <rule>Saving throw target values versus all other saving throw categories are reduced by 4.</rule>
+          <rule>These adjustments are already factored into the printed saving throw table.</rule>
+        </rules>
+      </ability>
+
+      <ability name="languages" level="1">
+        <summary>Starts with multiple languages.</summary>
+        <rules>
+          <rule>Speaks Common.</rule>
+          <rule>Speaks Dwarvish.</rule>
+          <rule>Speaks Goblin.</rule>
+          <rule>Speaks Gnome.</rule>
+          <rule>Speaks Kobold.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Dwarven Caver</title>
+        <hit_dice>1d6</hit_dice>
+        <values>
+          <value name="hide_in_shadows">17+</value>
+          <value name="move_silently">15+</value>
+          <value name="climb_walls">4+</value>
+          <value name="find_traps">14+</value>
+          <value name="hear_noises">12+</value>
+          <value name="backstab_multiplier">x2</value>
+        </values>
+      </entry>
+      <entry level="2">
+        <xp_required>2,000</xp_required>
+        <title>Dwarven Tunneler</title>
+        <hit_dice>2d6</hit_dice>
+        <values>
+          <value name="hide_in_shadows">16+</value>
+          <value name="move_silently">14+</value>
+          <value name="climb_walls">3+</value>
+          <value name="find_traps">14+</value>
+          <value name="hear_noises">11+</value>
+          <value name="backstab_multiplier">x2</value>
+        </values>
+      </entry>
+      <entry level="3">
+        <xp_required>4,000</xp_required>
+        <title>Dwarven Excavator</title>
+        <hit_dice>3d6</hit_dice>
+        <values>
+          <value name="hide_in_shadows">15+</value>
+          <value name="move_silently">13+</value>
+          <value name="climb_walls">3+</value>
+          <value name="find_traps">14+</value>
+          <value name="hear_noises">10+</value>
+          <value name="backstab_multiplier">x2</value>
+        </values>
+      </entry>
+      <entry level="4">
+        <xp_required>8,000</xp_required>
+        <title>Dwarven Undertrekker</title>
+        <hit_dice>4d6</hit_dice>
+        <values>
+          <value name="hide_in_shadows">14+</value>
+          <value name="move_silently">12+</value>
+          <value name="climb_walls">2+</value>
+          <value name="find_traps">13+</value>
+          <value name="hear_noises">9+</value>
+          <value name="backstab_multiplier">x2</value>
+        </values>
+      </entry>
+      <entry level="5">
+        <xp_required>16,000</xp_required>
+        <title>Dwarven Spelunker</title>
+        <hit_dice>5d6</hit_dice>
+        <values>
+          <value name="hide_in_shadows">13+</value>
+          <value name="move_silently">11+</value>
+          <value name="climb_walls">2+</value>
+          <value name="find_traps">12+</value>
+          <value name="hear_noises">8+</value>
+          <value name="backstab_multiplier">x3</value>
+        </values>
+      </entry>
+      <entry level="6">
+        <xp_required>32,000</xp_required>
+        <title>Dwarven Expeditionary</title>
+        <hit_dice>6d6</hit_dice>
+        <values>
+          <value name="hide_in_shadows">12+</value>
+          <value name="move_silently">10+</value>
+          <value name="climb_walls">2+</value>
+          <value name="find_traps">11+</value>
+          <value name="hear_noises">7+</value>
+          <value name="backstab_multiplier">x3</value>
+        </values>
+      </entry>
+      <entry level="7">
+        <xp_required>65,000</xp_required>
+        <title>Dwarven Pathfinder</title>
+        <hit_dice>7d6</hit_dice>
+        <values>
+          <value name="hide_in_shadows">10+</value>
+          <value name="move_silently">8+</value>
+          <value name="climb_walls">1+</value>
+          <value name="find_traps">9+</value>
+          <value name="hear_noises">5+</value>
+          <value name="backstab_multiplier">x3</value>
+        </values>
+      </entry>
+      <entry level="8">
+        <xp_required>130,000</xp_required>
+        <title>Dwarven Delver</title>
+        <hit_dice>8d6</hit_dice>
+        <values>
+          <value name="hide_in_shadows">8+</value>
+          <value name="move_silently">6+</value>
+          <value name="climb_walls">1+</value>
+          <value name="find_traps">7+</value>
+          <value name="hear_noises">4+</value>
+          <value name="backstab_multiplier">x3</value>
+        </values>
+      </entry>
+      <entry level="9">
+        <xp_required>260,000</xp_required>
+        <title>Dwarven Pioneer</title>
+        <hit_dice>9d6</hit_dice>
+        <values>
+          <value name="hide_in_shadows">6+</value>
+          <value name="move_silently">4+</value>
+          <value name="climb_walls">1+</value>
+          <value name="find_traps">5+</value>
+          <value name="hear_noises">3+</value>
+          <value name="backstab_multiplier">x4</value>
+        </values>
+        <features_gained>
+          <feature_ref>stronghold_and_followers</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>390,000</xp_required>
+        <title>Dwarven Pioneer, 10th level</title>
+        <hit_dice>9d6+3</hit_dice>
+        <values>
+          <value name="hide_in_shadows">4+</value>
+          <value name="move_silently">2+</value>
+          <value name="climb_walls">1+</value>
+          <value name="find_traps">3+</value>
+          <value name="hear_noises">2+</value>
+          <value name="backstab_multiplier">x4</value>
+        </values>
+      </entry>
+      <entry level="11">
+        <xp_required>520,000</xp_required>
+        <title>Dwarven Pioneer, 11th level</title>
+        <hit_dice>9d6+6</hit_dice>
+        <values>
+          <value name="hide_in_shadows">2+</value>
+          <value name="move_silently">1+</value>
+          <value name="climb_walls">1+</value>
+          <value name="find_traps">1+</value>
+          <value name="hear_noises">1+</value>
+          <value name="backstab_multiplier">x4</value>
+        </values>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1-2</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">3-4</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">7+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">9+</value>
+        </row>
+        <row>
+          <value name="level_range">7-8</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">6+</value>
+          <value name="poison_death">6+</value>
+          <value name="blast_breath">10+</value>
+          <value name="staffs_wands">7+</value>
+          <value name="spells">8+</value>
+        </row>
+        <row>
+          <value name="level_range">9-10</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">5+</value>
+          <value name="poison_death">5+</value>
+          <value name="blast_breath">9+</value>
+          <value name="staffs_wands">6+</value>
+          <value name="spells">7+</value>
+        </row>
+        <row>
+          <value name="level_range">11</value>
+          <value name="attack_throw">5+</value>
+          <value name="petrification_paralysis">4+</value>
+          <value name="poison_death">4+</value>
+          <value name="blast_breath">8+</value>
+          <value name="staffs_wands">5+</value>
+          <value name="spells">6+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>underground_vault</structure_type>
+      <acquisition_rules>
+        <rule>May attract dwarves by constructing a new underground vault in an unsettled region.</rule>
+        <rule>Dwarves of the character's clan are first to settle there, but dwarves from other clans also come to live nearby under the character's rule.</rule>
+        <rule>The vault follows all normal rules for dwarven vaults.</rule>
+        <rule>The ruler is expected to employ only soldiers of dwarven descent, but may hire members of other races for non-soldier tasks.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="same_race_npc" number="3d6x10 1st level"/>
+      </followers>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="thief"/>
+      <general_rule_reference type="thief_skills"/>
+      <general_rule_reference type="dwarven_vaults"/>
+      <general_rule_reference type="proficiency_throw"/>
+      <general_rule_reference type="surprise"/>
+    </references>
+  </class>
+
+  <class name="Dwarven Fury">
+    <identity>
+      <name>Dwarven Fury</name>
+      <ancestry_category>dwarven</ancestry_category>
+      <source_label>111B-ACKS Players Companion-Classes-2.md</source_label>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>warrior</tag>
+        <tag>berserker</tag>
+        <tag>front_line_combatant</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>fighting_fury</tag>
+        <tag>flesh_runes</tag>
+        <tag>damage_bonus</tag>
+        <tag>savage_resilience</tag>
+        <tag>stronghold_builder</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>STR</ability>
+      </prime_requisites>
+      <minimum_abilities>
+        <requirement ability="CON" score="9"/>
+      </minimum_abilities>
+      <entry_restrictions>
+        <restriction type="ancestry">dwarven</restriction>
+      </entry_restrictions>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>fighter</primary_progression_family>
+      <attack_throw_progression family="fighter"/>
+      <cleave_progression family="fighter"/>
+      <saving_throw_progression family="fighter"/>
+      <damage_bonus_progression family="fighter"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d8</hit_die>
+      <maximum_level>13</maximum_level>
+      <baseline_title>Dwarven Grudgebearer</baseline_title>
+      <post_max_hit_dice_rule>After reaching 9d8 hit dice, the class gains +3 hit points per level at 10th through 13th level.</post_max_hit_dice_rule>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>None.</armor>
+        <shields>May use shields.</shields>
+        <weapons>
+          <rule>May use a narrow selection of traditional dwarven weapons.</rule>
+          <rule>Permitted weapons are any axes, flails, hammers, maces, and war hammers.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>May fight wielding a weapon and shield.</rule>
+          <rule>May fight wielding a weapon two-handed.</rule>
+          <rule>May fight wielding a weapon in each hand.</rule>
+        </fighting_styles>
+      </permissions>
+      <restrictions>
+        <restriction>Eschews armor entirely.</restriction>
+      </restrictions>
+      <combat_rules>
+        <rule>At 1st level, hits an unarmored foe (AC 0) with an attack throw of 10+.</rule>
+        <rule>Attack throws and saving throws advance as fighters, by two points every three levels of experience.</rule>
+        <rule>Base damage from all attacks increases by +1 at 1st level and by an additional +1 at 3rd, 6th, 9th, and 12th level.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <class_subsystems>
+      <custom_subsystem name="class_proficiency_list">
+        <definition>Selectable class proficiencies.</definition>
+        <rules>
+          <rule>Alertness, Blind Fighting, Caving, Combat Reflexes, Combat Trickery (force back, knock down, overrun, sunder, wrestle), Command, Craft, Dungeon Bashing, Dwarven Brewing, Endurance, Engineering, Fighting Style, Gambling, Goblin-Slaying, Illusion Resistance, Intimidation, Land Surveying, Leadership, Manual of Arms, Mapping, Military Strategy, Mountaineering, Siege Engineering, Vermin-Slaying, Weapon Focus.</rule>
+        </rules>
+      </custom_subsystem>
+    </class_subsystems>
+
+    <special_abilities>
+      <ability name="flesh_runes" level="1">
+        <summary>Permanent defensive runes replace armor.</summary>
+        <rules>
+          <rule>At 1st level, flesh-runes grant +2 AC and reduce damage from any non-magical attack by 1 point per die.</rule>
+          <rule>At 7th level, flesh-runes grant +4 AC and reduce damage from any non-magical attack by 2 points per die.</rule>
+          <rule>At 13th level, flesh-runes grant +6 AC and reduce damage from any non-magical attack by 3 points per die.</rule>
+          <rule>Damage reduction is applied separately to each die of damage.</rule>
+          <rule>Damage on each die can be reduced to 0, but not below 0.</rule>
+          <rule>The AC bonus stacks with potions of invulnerability, rings of protection, and similar effects.</rule>
+          <rule>The AC bonus does not stack with armor.</rule>
+          <rule>Attacks from monsters of 5 HD or more are treated as magical attacks due to ferocity.</rule>
+        </rules>
+      </ability>
+
+      <ability name="fighting_fury" level="1">
+        <summary>At-will battle fury.</summary>
+        <rules>
+          <rule>May enter a fighting fury at will.</rule>
+          <rule>While furious, gains a +2 bonus to damage rolls.</rule>
+          <rule>While furious, is immune to fear.</rule>
+        </rules>
+        <limits>
+          <limit>Cannot retreat from combat while the fighting fury is active.</limit>
+          <limit>Once begun, a fighting fury cannot be ended until combat ends.</limit>
+        </limits>
+      </ability>
+
+      <ability name="savage_resilience" level="1">
+        <summary>Improved survival and recovery from mortal wounds.</summary>
+        <rules>
+          <rule>When required to consult the Mortal Wounds table, may roll twice and choose the preferred result.</rule>
+          <rule>Subtracts class level from the number of days of bed rest required to recover.</rule>
+        </rules>
+      </ability>
+
+      <ability name="dwarven_hardiness" level="1">
+        <summary>Dwarven saving throw adjustments are already built into the class save table.</summary>
+        <rules>
+          <rule>Saving throw target values versus Blast/Breath are reduced by 3.</rule>
+          <rule>Saving throw target values versus all other saving throw categories are reduced by 4.</rule>
+          <rule>These adjustments are already factored into the printed saving throw table.</rule>
+        </rules>
+      </ability>
+
+      <ability name="languages" level="1">
+        <summary>Starts with multiple languages.</summary>
+        <rules>
+          <rule>Speaks Common.</rule>
+          <rule>Speaks Dwarvish.</rule>
+          <rule>Speaks Goblin.</rule>
+          <rule>Speaks Gnome.</rule>
+          <rule>Speaks Kobold.</rule>
+        </rules>
+      </ability>
+
+      <ability name="underground_senses" level="1">
+        <summary>Improved surprise and hidden-feature detection underground.</summary>
+        <rules>
+          <rule>Gains a +1 bonus on all surprise rolls when underground.</rule>
+          <rule>Can detect false walls, hidden construction, or sloped passages when underground on a proficiency throw of 14+ on 1d20 if actively searching.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Dwarven Grudgebearer</title>
+        <hit_dice>1d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+1</value>
+          <value name="ac_bonus">+2</value>
+          <value name="damage_reduction_per_die">1</value>
+        </values>
+      </entry>
+      <entry level="2">
+        <xp_required>3,100</xp_required>
+        <title>Dwarven Punisher</title>
+        <hit_dice>2d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+1</value>
+          <value name="ac_bonus">+2</value>
+          <value name="damage_reduction_per_die">1</value>
+        </values>
+      </entry>
+      <entry level="3">
+        <xp_required>6,200</xp_required>
+        <title>Dwarven Repriser</title>
+        <hit_dice>3d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+          <value name="ac_bonus">+2</value>
+          <value name="damage_reduction_per_die">1</value>
+        </values>
+      </entry>
+      <entry level="4">
+        <xp_required>12,400</xp_required>
+        <title>Dwarven Vindicator</title>
+        <hit_dice>4d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+          <value name="ac_bonus">+2</value>
+          <value name="damage_reduction_per_die">1</value>
+        </values>
+      </entry>
+      <entry level="5">
+        <xp_required>24,800</xp_required>
+        <title>Dwarven Retaliator</title>
+        <hit_dice>5d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+          <value name="ac_bonus">+2</value>
+          <value name="damage_reduction_per_die">1</value>
+        </values>
+      </entry>
+      <entry level="6">
+        <xp_required>49,600</xp_required>
+        <title>Dwarven Castigator</title>
+        <hit_dice>6d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+          <value name="ac_bonus">+2</value>
+          <value name="damage_reduction_per_die">1</value>
+        </values>
+      </entry>
+      <entry level="7">
+        <xp_required>100,000</xp_required>
+        <title>Dwarven Scourge</title>
+        <hit_dice>7d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+          <value name="ac_bonus">+4</value>
+          <value name="damage_reduction_per_die">2</value>
+        </values>
+      </entry>
+      <entry level="8">
+        <xp_required>200,000</xp_required>
+        <title>Dwarven Fury</title>
+        <hit_dice>8d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+          <value name="ac_bonus">+4</value>
+          <value name="damage_reduction_per_die">2</value>
+        </values>
+      </entry>
+      <entry level="9">
+        <xp_required>330,000</xp_required>
+        <title>Dwarven Avenger</title>
+        <hit_dice>9d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+          <value name="ac_bonus">+4</value>
+          <value name="damage_reduction_per_die">2</value>
+        </values>
+        <features_gained>
+          <feature_ref>stronghold_and_followers</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>460,000</xp_required>
+        <title>Dwarven Avenger, 10th level</title>
+        <hit_dice>9d8+3</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+          <value name="ac_bonus">+4</value>
+          <value name="damage_reduction_per_die">2</value>
+        </values>
+      </entry>
+      <entry level="11">
+        <xp_required>590,000</xp_required>
+        <title>Dwarven Avenger, 11th level</title>
+        <hit_dice>9d8+6</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+          <value name="ac_bonus">+4</value>
+          <value name="damage_reduction_per_die">2</value>
+        </values>
+      </entry>
+      <entry level="12">
+        <xp_required>720,000</xp_required>
+        <title>Dwarven Avenger, 12th level</title>
+        <hit_dice>9d8+9</hit_dice>
+        <values>
+          <value name="damage_bonus">+5</value>
+          <value name="ac_bonus">+4</value>
+          <value name="damage_reduction_per_die">2</value>
+        </values>
+      </entry>
+      <entry level="13">
+        <xp_required>850,000</xp_required>
+        <title>Dwarven Avenger, 13th level</title>
+        <hit_dice>9d8+12</hit_dice>
+        <values>
+          <value name="damage_bonus">+5</value>
+          <value name="ac_bonus">+6</value>
+          <value name="damage_reduction_per_die">3</value>
+        </values>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">12+</value>
+          <value name="spells">13+</value>
+        </row>
+        <row>
+          <value name="level_range">2-3</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">4</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">7+</value>
+          <value name="blast_breath">10+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">7</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">6+</value>
+          <value name="blast_breath">9+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">9+</value>
+        </row>
+        <row>
+          <value name="level_range">8-9</value>
+          <value name="attack_throw">5+</value>
+          <value name="petrification_paralysis">6+</value>
+          <value name="poison_death">5+</value>
+          <value name="blast_breath">8+</value>
+          <value name="staffs_wands">7+</value>
+          <value name="spells">8+</value>
+        </row>
+        <row>
+          <value name="level_range">10</value>
+          <value name="attack_throw">4+</value>
+          <value name="petrification_paralysis">5+</value>
+          <value name="poison_death">4+</value>
+          <value name="blast_breath">7+</value>
+          <value name="staffs_wands">6+</value>
+          <value name="spells">7+</value>
+        </row>
+        <row>
+          <value name="level_range">11-12</value>
+          <value name="attack_throw">3+</value>
+          <value name="petrification_paralysis">4+</value>
+          <value name="poison_death">3+</value>
+          <value name="blast_breath">6+</value>
+          <value name="staffs_wands">5+</value>
+          <value name="spells">6+</value>
+        </row>
+        <row>
+          <value name="level_range">13</value>
+          <value name="attack_throw">2+</value>
+          <value name="petrification_paralysis">3+</value>
+          <value name="poison_death">2+</value>
+          <value name="blast_breath">5+</value>
+          <value name="staffs_wands">4+</value>
+          <value name="spells">5+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>underground_vault</structure_type>
+      <acquisition_rules>
+        <rule>May attract dwarves from far and wide by constructing his own underground vault.</rule>
+        <rule>Dwarves of the character's clan are first to settle there, but dwarves from other clans also come to live nearby under the character's rule.</rule>
+        <rule>The vault follows all normal rules for dwarven vaults.</rule>
+        <rule>A dwarven ruler is expected to employ only soldiers of dwarven descent, but may hire members of other races for other tasks.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="same_race_npc" number="3d6x10 1st level"/>
+      </followers>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="fighter"/>
+      <general_rule_reference type="mortal_wounds"/>
+      <general_rule_reference type="dwarven_vaults"/>
+      <general_rule_reference type="proficiency_throw"/>
+      <general_rule_reference type="surprise"/>
+    </references>
+  </class>
+</class_catalog>

@@ -1,0 +1,126 @@
+{
+  "culture_id": "dwarven_karag_torum",
+  "display_name": "Karag-Torum Dwarf",
+  "race": "dwarf",
+  "terrain_affinity": {
+    "primary": "mountains",
+    "secondary": "tundra",
+    "avoidance": "swamp"
+  },
+  "climate_preference": {
+    "temperature": "subarctic",
+    "moisture": "dry"
+  },
+  "alignment_tendency": {
+    "dominant": "Lawful",
+    "secondary": "Neutral",
+    "distribution": {
+      "Lawful": 0.68,
+      "Neutral": 0.24,
+      "Chaotic": 0.08
+    },
+    "notes": "The dominant alignment must have the highest distribution value and must be ≥ 0.40. A culture's LLM-generated history may describe past alignment shifts, but at runtime the culture IS its dominant alignment. This is a hard constraint."
+  },
+  "values": {
+    "core_values": [
+      "honor",
+      "duty",
+      "tradition"
+    ],
+    "taboos": [
+      "oath-breaking",
+      "leaving clan dead unburied",
+      "defacing ancestor records"
+    ],
+    "social_structure": "clan_confederation",
+    "gender_roles": "role_divided",
+    "attitude_toward_outsiders": "wary"
+  },
+  "personality_weight_biases": {
+    "temperament": {
+      "stoic": 0.22,
+      "jovial": -0.08,
+      "nervous": -0.12,
+      "aggressive": 0.06,
+      "melancholic": 0.04,
+      "cunning": -0.02,
+      "passionate": -0.03,
+      "serene": 0.08,
+      "paranoid": -0.05,
+      "gregarious": -0.1
+    },
+    "motivation": {
+      "wealth": -0.06,
+      "power": 0.05,
+      "knowledge": 0.06,
+      "security": 0.14,
+      "revenge": -0.03,
+      "faith": 0.09,
+      "legacy": 0.14,
+      "freedom": -0.12,
+      "pleasure": -0.11,
+      "duty": 0.18,
+      "survival": 0.05,
+      "redemption": -0.3
+    },
+    "social_style": {
+      "formal": 0.19,
+      "blunt": 0.08,
+      "flattering": -0.12,
+      "laconic": 0.11,
+      "verbose": -0.05,
+      "evasive": -0.14,
+      "warm": -0.03,
+      "intimidating": 0.06,
+      "scholarly": 0.01,
+      "streetwise": -0.11
+    },
+    "moral_compass": {
+      "righteous": 0.14,
+      "honorable": 0.24,
+      "pragmatic": -0.04,
+      "opportunistic": -0.18,
+      "ruthless": -0.07,
+      "conflicted": -0.09
+    }
+  },
+  "military_tradition": {
+    "preferred_troop_types": [
+      "heavy_infantry",
+      "crossbowmen",
+      "pikemen"
+    ],
+    "fighting_style": "disciplined_formation",
+    "military_culture": "feudal_levy"
+  },
+  "economy": {
+    "primary_livelihood": "mining",
+    "secondary_livelihood": "crafts",
+    "trade_goods": [
+      "iron ingots",
+      "runic plate",
+      "quarried granite",
+      "coal pitch"
+    ],
+    "currency_attitude": "coin_economy"
+  },
+  "magic_attitude": {
+    "arcane": "regulated",
+    "divine": "central",
+    "notes": "Rune magic is licensed by clan law; unsworn sorcery is distrusted."
+  },
+  "architecture_style": {
+    "primary_material": "stone",
+    "aesthetic": "fortified",
+    "signature_feature": "vaulted gatehalls with ancestor reliefs"
+  },
+  "language": {
+    "language_name": "Torumaz",
+    "language_family": "Khazic",
+    "script": "own_script"
+  },
+  "flavor_text": {
+    "one_line": "Austere mountain dwarves who bind law, lineage, and craft into one unbroken oath.",
+    "one_paragraph": "The Karag-Torum hold that a clan survives only when every oath is recorded, every debt repaid, and every hall kept in repair for descendants yet unborn. Their citadels are severe but magnificent, with gatehalls carved in the likeness of honored dead. They respect outsiders who keep their word, but trust slowly and punish betrayal with cold finality."
+  }
+}

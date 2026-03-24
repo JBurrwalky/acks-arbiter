@@ -1,0 +1,263 @@
+<followers_rules>
+  <general_rules>
+    <rule>The follower type and equipment table expands the ACKS core follower table to include the new classes in this source.</rule>
+    <rule>Barbarian follower sets demonstrate that follower tables may be modified to reflect distinct cultures or traditions.</rule>
+    <rule>Apprentices include 1st level dwarven machinists, elven enchanters, Nobiran wonderworkers, priestesses, venturers, warlocks, and witches.</rule>
+    <rule>Leader types include 1st-3rd level anti-paladins, barbarians, mystics, paladins, shamans, Thrassian gladiators, and Zaharan ruinguards.</rule>
+    <rule>Apprentices and leader types can be created using pre-generated class templates or generated and equipped using the Character Creation rules in Chapter 1.</rule>
+  </general_rules>
+
+  <tables>
+    <follower_table class_group="Barbarians (Jutland)">
+      <columns>
+        <column>die_roll_1d100</column>
+        <column>type_and_equipment</column>
+      </columns>
+      <row>
+        <die_roll_1d100>01-25</die_roll_1d100>
+        <type_and_equipment>Archers (shortbow, hand axe, leather armor, shield)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>26-50</die_roll_1d100>
+        <type_and_equipment>Light Infantry (great axe, leather armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>51-70</die_roll_1d100>
+        <type_and_equipment>Light Infantry (spear, battle axe, leather armor, shield)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>71-85</die_roll_1d100>
+        <type_and_equipment>Heavy Infantry (two-handed sword, chain mail armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>86-100</die_roll_1d100>
+        <type_and_equipment>Heavy Infantry (spear, sword, chain mail armor, shield)</type_and_equipment>
+      </row>
+    </follower_table>
+
+    <follower_table class_group="Barbarians (Ivory Kingdoms)">
+      <columns>
+        <column>die_roll_1d100</column>
+        <column>type_and_equipment</column>
+      </columns>
+      <row>
+        <die_roll_1d100>01-25</die_roll_1d100>
+        <type_and_equipment>Hunters (bola, net, 5 darts, hand axe, hide armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>26-50</die_roll_1d100>
+        <type_and_equipment>Hunters (bola, net, 3 javelins, hand axe, leather armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>51-70</die_roll_1d100>
+        <type_and_equipment>Archers (shortbow, hand axe, leather armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>71-85</die_roll_1d100>
+        <type_and_equipment>Light Infantry (spear, club, shield, hide armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>86-100</die_roll_1d100>
+        <type_and_equipment>Light Infantry (spear, hand axe, shield, leather armor)</type_and_equipment>
+      </row>
+    </follower_table>
+
+    <follower_table class_group="Barbarians (Skysos)">
+      <columns>
+        <column>die_roll_1d100</column>
+        <column>type_and_equipment</column>
+      </columns>
+      <row>
+        <die_roll_1d100>01-25</die_roll_1d100>
+        <type_and_equipment>Light Infantry (spear, scimitar, shield, leather armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>26-50</die_roll_1d100>
+        <type_and_equipment>Archers (composite bow, scimitar, shield, leather armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>51-70</die_roll_1d100>
+        <type_and_equipment>Horse Archers (composite bow, scimitar, leather armor, light warhorse)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>71-85</die_roll_1d100>
+        <type_and_equipment>Medium Cavalry (lance, shield, lamellar armor, and medium warhorse)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>86-100</die_roll_1d100>
+        <type_and_equipment>Light Cavalry (3 javelins, sword, shield, leather armor, light warhorse)</type_and_equipment>
+      </row>
+    </follower_table>
+
+    <follower_table class_group="Bards, Bladedancers, &amp; Mystics">
+      <columns>
+        <column>die_roll_1d100</column>
+        <column>type_and_equipment</column>
+      </columns>
+      <row>
+        <die_roll_1d100>01-10</die_roll_1d100>
+        <type_and_equipment>Heavy Cavalry (lance, sword, shield, plate armor, chain barded medium warhorse)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>11-20</die_roll_1d100>
+        <type_and_equipment>Medium Cavalry (lance, shield, lamellar armor, and medium warhorse)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>21-35</die_roll_1d100>
+        <type_and_equipment>Light Cavalry (3 javelins, 2 swords, leather armor, light warhorse)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>36-55</die_roll_1d100>
+        <type_and_equipment>Heavy Infantry (pole arm, sword, shield, banded plate armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>56-80</die_roll_1d100>
+        <type_and_equipment>Light Infantry (2 swords, dagger, leather armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>81-90</die_roll_1d100>
+        <type_and_equipment>Archers (short bow, sword, leather armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>91-100</die_roll_1d100>
+        <type_and_equipment>Slingers (sling, short sword, shield, leather armor)</type_and_equipment>
+      </row>
+    </follower_table>
+
+    <follower_table class_group="Clerics, Fighters, Paladins, Anti-Paladins, &amp; Zaharan Ruinguards">
+      <columns>
+        <column>die_roll_1d100</column>
+        <column>type_and_equipment</column>
+      </columns>
+      <row>
+        <die_roll_1d100>01-05</die_roll_1d100>
+        <type_and_equipment>Cataphract Cavalry (composite bow, sword, shield, plate armor, chain barded medium warhorse)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>06-15</die_roll_1d100>
+        <type_and_equipment>Heavy Cavalry (lance, sword, shield, plate armor, chain barded medium warhorse)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>16-25</die_roll_1d100>
+        <type_and_equipment>Medium Cavalry (lance, shield, lamellar armor, and medium warhorse)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>26-35</die_roll_1d100>
+        <type_and_equipment>Light Cavalry (3 javelins, sword, shield, leather armor, light warhorse)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>36-60</die_roll_1d100>
+        <type_and_equipment>Heavy Infantry (pole arm, sword, shield, banded plate armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>61-80</die_roll_1d100>
+        <type_and_equipment>Light Infantry (spear, short sword, shield, leather armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>81-90</die_roll_1d100>
+        <type_and_equipment>Archers (short bow, short sword, leather armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>91-100</die_roll_1d100>
+        <type_and_equipment>Slingers (sling, short sword, shield, leather armor)</type_and_equipment>
+      </row>
+    </follower_table>
+
+    <follower_table class_group="Dwarven Craftpriests, Dwarven Delvers, Dwarven Furies, Dwarven Vaultguards, &amp; Gnomish Tricksters*">
+      <columns>
+        <column>die_roll_1d100</column>
+        <column>type_and_equipment</column>
+      </columns>
+      <row>
+        <die_roll_1d100>01-20</die_roll_1d100>
+        <type_and_equipment>Dwarven Heavy Infantry (great axe, plate armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>21-40</die_roll_1d100>
+        <type_and_equipment>Dwarven Heavy Infantry (war hammer, shield, banded plate armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>41-60</die_roll_1d100>
+        <type_and_equipment>Dwarven Heavy Infantry (battle axe, shield, chain mail armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>61-80</die_roll_1d100>
+        <type_and_equipment>Dwarven Crossbowman (arbalest, dagger, chain mail armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>81-100</die_roll_1d100>
+        <type_and_equipment>Dwarven Mounted Crossbowmen (crossbow, chain mail, mule)</type_and_equipment>
+      </row>
+    </follower_table>
+
+    <follower_table class_group="Elven Courtiers, Elven Rangers &amp; Elven Spellswords">
+      <columns>
+        <column>die_roll_1d100</column>
+        <column>type_and_equipment</column>
+      </columns>
+      <row>
+        <die_roll_1d100>01-15</die_roll_1d100>
+        <type_and_equipment>Elven Horse Archers (composite bow, scimitar, leather armor, light warhorse)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>16-30</die_roll_1d100>
+        <type_and_equipment>Elven Light Cavalry (lance, shield, leather armor, light warhorse)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>31-45</die_roll_1d100>
+        <type_and_equipment>Elven Light Infantry (spear, short sword, shield, leather armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>46-60</die_roll_1d100>
+        <type_and_equipment>Elven Heavy Infantry (spear, sword, shield, chain mail armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>61-75</die_roll_1d100>
+        <type_and_equipment>Elven Archers (short bow, dagger, leather armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>76-100</die_roll_1d100>
+        <type_and_equipment>Elven Longbowmen (long bow, sword, chain mail armor)</type_and_equipment>
+      </row>
+    </follower_table>
+
+    <follower_table class_group="Explorers &amp; Shamans">
+      <columns>
+        <column>die_roll_1d100</column>
+        <column>type_and_equipment</column>
+      </columns>
+      <row>
+        <die_roll_1d100>01-10</die_roll_1d100>
+        <type_and_equipment>Medium Cavalry (lance, shield, lamellar armor, and medium warhorse)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>11-25</die_roll_1d100>
+        <type_and_equipment>Light Cavalry (3 javelins, 2 swords, leather armor, light warhorse)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>26-40</die_roll_1d100>
+        <type_and_equipment>Horse Archers (composite bow, scimitar, leather armor, light warhorse)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>41-60</die_roll_1d100>
+        <type_and_equipment>Light Infantry (spear, hand axe, shield, leather armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>61-70</die_roll_1d100>
+        <type_and_equipment>Longbowmen (long bow, sword, chain mail armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>71-80</die_roll_1d100>
+        <type_and_equipment>Archers (short bow, short sword, leather armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>81-90</die_roll_1d100>
+        <type_and_equipment>Slingers (sling, short sword, shield, leather armor)</type_and_equipment>
+      </row>
+      <row>
+        <die_roll_1d100>91-100</die_roll_1d100>
+        <type_and_equipment>Hunters (bola, net, 3 javelins, hand axe, leather armor)</type_and_equipment>
+      </row>
+    </follower_table>
+  </tables>
+</followers_rules>

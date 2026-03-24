@@ -1,0 +1,721 @@
+<document>
+  <metadata>
+    <title>ACKS Core Campaigns - Magic</title>
+    <scope>
+      <included>Rules, definitions, procedures, mechanical limits, tables, and campaign subsystems present in the uploaded document.</included>
+      <omitted>Flavor text, examples, and non-mechanical exposition.</omitted>
+      <note>The Strongholds and Domains section in this document is explicitly excerpted and replaced elsewhere; only the remaining domain rules present here are summarized.</note>
+    </scope>
+  </metadata>
+
+  <section id="magic_research_overview">
+    <definition>
+      <term>Magic research</term>
+      <text>Campaign-scale magical work including spell research, item creation, ritual learning and casting, construct design and creation, crossbreeding, necromancy, and related projects.</text>
+    </definition>
+
+    <eligibility>
+      <rule>Spellcasters of levels 0-4 may only assist higher-level casters.</rule>
+      <rule>At 5th level, a spellcaster may independently research spells, scribe scrolls, and brew potions.</rule>
+      <rule>At 9th level, a spellcaster may create more powerful magic items such as weapons, rings, and staffs.</rule>
+      <rule>At 11th level, a spellcaster may learn and cast ritual spells and craft magical constructs.</rule>
+      <rule>Chaotic spellcasters of 11th level or higher may create necromantic servants and may transform themselves into undead.</rule>
+    </eligibility>
+
+    <table id="magic_research_target_by_level">
+      <title>Magic Research Target by Level</title>
+      <columns>
+        <column>Level</column>
+        <column>Magic Research Target</column>
+      </columns>
+      <rows>
+        <row><cell>0*</cell><cell>18+</cell></row>
+        <row><cell>1*</cell><cell>16+</cell></row>
+        <row><cell>2*</cell><cell>15+</cell></row>
+        <row><cell>3*</cell><cell>14+</cell></row>
+        <row><cell>4*</cell><cell>13+</cell></row>
+        <row><cell>5</cell><cell>12+</cell></row>
+        <row><cell>6</cell><cell>11+</cell></row>
+        <row><cell>7</cell><cell>10+</cell></row>
+        <row><cell>8</cell><cell>9+</cell></row>
+        <row><cell>9</cell><cell>8+</cell></row>
+        <row><cell>10</cell><cell>7+</cell></row>
+        <row><cell>11</cell><cell>6+</cell></row>
+        <row><cell>12</cell><cell>5+</cell></row>
+        <row><cell>13</cell><cell>4+</cell></row>
+        <row><cell>14</cell><cell>3+</cell></row>
+      </rows>
+      <notes>
+        <note>Levels marked with * may only assist higher-level casters.</note>
+      </notes>
+    </table>
+
+    <procedure id="general_magic_research_throw">
+      <step>Roll a magic research throw.</step>
+      <step>Compare the result to the target value listed for the spellcaster's level, modified by project-specific adjustments.</step>
+      <step>Add the spellcaster's Intelligence bonus to the die roll.</step>
+      <step>If the spellcaster has the Magical Engineering proficiency, add proficiency rank to the roll.</step>
+      <step>An unmodified die roll of 1-3 always fails.</step>
+      <result>Success occurs if the modified result equals or exceeds the target value.</result>
+      <failure>On failure, all time and money spent are lost, and any precious materials or special components used are consumed.</failure>
+    </procedure>
+  </section>
+
+  <section id="researching_spells">
+    <eligibility>
+      <rule>A spellcaster must be 5th level or higher to independently research spells.</rule>
+      <rule>An arcane caster may research a spell only if he can still learn spells of that level.</rule>
+      <rule>A divine caster may research a spell only with the permission of his deity.</rule>
+      <rule>A deity will usually remove a spell of the same level from a divine caster's spell list in exchange for granting the new spell.</rule>
+    </eligibility>
+
+    <procedure id="research_existing_spell">
+      <step>Choose a spell not otherwise available from scrolls, spell books, or deity.</step>
+      <step>Pay 1,000gp per spell level.</step>
+      <step>Spend 2 weeks per spell level in research.</step>
+      <step>Make a magic research throw.</step>
+      <modifier>The target value is increased by 1/2 the spell's level, rounded down.</modifier>
+      <success>The spell is successfully researched.</success>
+      <failure>Time, money, precious materials, and special components are lost.</failure>
+    </procedure>
+
+    <procedure id="research_new_spell">
+      <step>Describe the intended spell and its effects in detail.</step>
+      <step>The Judge determines whether the spell can be created and, if so, its spell level.</step>
+      <step>The spellcaster must be capable of casting spells of that level.</step>
+      <step>Pay and spend time as for spell research unless otherwise ruled.</step>
+      <step>Make a magic research throw.</step>
+      <modifier>For a new spell, increase the target value by the full spell level instead of half the spell level.</modifier>
+    </procedure>
+
+    <procedure id="identify_magic_item_by_research">
+      <step>Spend 1,000gp and 2 weeks researching the item.</step>
+      <step>Make a magic research throw.</step>
+      <result>On success, the item's properties are identified.</result>
+      <note>Potions and common magic items may instead be quickly identified using Alchemy and Magical Engineering, as referenced by the document.</note>
+    </procedure>
+
+    <subsection id="libraries">
+      <definition>
+        <term>Library</term>
+        <text>A required research resource for spell research and ritual learning.</text>
+      </definition>
+      <rule>A spellcaster must have access to a library to research a spell.</rule>
+      <rule>A personal library requires a minimum investment of 4,000gp to allow research on 1st-level spells.</rule>
+      <rule>Each additional spell level that may be researched requires another 2,000gp of library investment.</rule>
+      <rule>For every 10,000gp of value above the minimum required for the spell level, the spellcaster gains +1 on the magic research throw, to a maximum of +3.</rule>
+      <rule>Each time a wizard successfully researches a spell, add 10% of the gold spent for that effect to the library's value.</rule>
+      <rule>Rare or authoritative tomes found as treasure may provide additional bonuses to research specific spells or categories of spells.</rule>
+    </subsection>
+  </section>
+
+  <section id="creating_magic_items">
+    <eligibility>
+      <rule>At 5th level, a spellcaster may create scrolls and potions.</rule>
+      <rule>At 9th level, a spellcaster may create other magic items such as rods, rings, swords, and other items.</rule>
+      <rule>An arcane spellcaster may never create magic items exclusive to divine spellcasters.</rule>
+      <rule>A divine spellcaster may create any item his class is eligible to use.</rule>
+    </eligibility>
+
+    <requirements>
+      <rule>To create a magic item, the spellcaster must know the spell or spells that replicate the item's effect, or possess a sample or formula of the item.</rule>
+      <rule>If the item's effect does not correspond to an existing spell, the spellcaster must either research a new spell producing the effect or obtain a sample or formula.</rule>
+      <rule>A workshop is required.</rule>
+      <rule>Special components are required for each spell effect.</rule>
+    </requirements>
+
+    <procedure id="create_magic_item">
+      <step>Determine the item's effect category and base cost/time from the magic item creation table.</step>
+      <step>Confirm spell knowledge, formula, or sample availability.</step>
+      <step>Secure a workshop sufficient for the highest spell level or item bonus involved.</step>
+      <step>Acquire required special components.</step>
+      <step>Optionally add precious materials.</step>
+      <step>Spend the required cost and time.</step>
+      <step>Make a magic research throw.</step>
+      <modifier>The target value is increased by the spell level being enchanted into the item.</modifier>
+      <modifier>If multiple effects are enchanted, roll separately for each effect.</modifier>
+      <equivalence>A +1 item bonus counts as a 1st-level spell effect.</equivalence>
+      <equivalence>A +2 item bonus counts as a single 3rd-level spell effect.</equivalence>
+      <equivalence>A +3 item bonus counts as a single 6th-level spell effect.</equivalence>
+    </procedure>
+
+    <subsection id="formulas_and_samples">
+      <definition>
+        <term>Formula</term>
+        <text>A magical recipe for item creation.</text>
+      </definition>
+      <definition>
+        <term>Sample</term>
+        <text>An existing magic item available to the spellcaster while working.</text>
+      </definition>
+      <rule>A spellcaster automatically has a formula for any magic item he has previously created.</rule>
+      <rule>Formulas may be found as treasure.</rule>
+      <advantages>
+        <advantage>Allows creation without knowing or inventing the item's spell effects.</advantage>
+        <advantage>Reduces cost and time by 50%.</advantage>
+        <advantage>Reduces the target-value increase to 1/2 the level of the spell being imbued, instead of the full level.</advantage>
+      </advantages>
+    </subsection>
+
+    <subsection id="precious_materials">
+      <rule>For every 10,000gp of gems, jewelry, precious metals, rare woods, or elaborately carved woods added to the project, the spellcaster gains +1 on the magic research throw.</rule>
+      <rule>A character may not spend more on precious materials than the base cost of the item.</rule>
+    </subsection>
+
+    <subsection id="special_components">
+      <rule>Each spell effect in a magic item requires special components.</rule>
+      <rule>Components are usually organs or blood from monsters with total XP value equal to the gp cost of the research.</rule>
+      <rule>Component cost is in addition to the base cost of the research.</rule>
+      <rule>If the character lacks a formula when creation begins, he does not learn the required special components until the work is 50% complete.</rule>
+      <rule>The Judge determines the specific components required.</rule>
+      <rule>Different formulas for the same item may require different components.</rule>
+    </subsection>
+
+    <subsection id="workshops">
+      <definition>
+        <term>Workshop</term>
+        <text>A required item-creation resource.</text>
+      </definition>
+      <rule>A spellcaster must have access to a workshop to create magic items.</rule>
+      <rule>A personal workshop requires a minimum investment of 4,000gp to allow creation of 1st-level spell effects or item bonuses.</rule>
+      <rule>Each additional spell level or bonus requires another 2,000gp of workshop investment.</rule>
+      <rule>For every 10,000gp of value above the minimum required for the relevant spell level or bonus, the spellcaster gains +1 on the magic research throw, to a maximum of +3.</rule>
+    </subsection>
+
+    <table id="magic_item_creation_table">
+      <title>Magic Item Creation</title>
+      <columns>
+        <column>Item Type</column>
+        <column>Base Cost</column>
+        <column>Time</column>
+      </columns>
+      <rows>
+        <row><cell>One Use Effect</cell><cell>500gp x spell level</cell><cell>1 week x spell level</cell></row>
+        <row><cell>Charged Effect</cell><cell>500gp x spell level x charges*</cell><cell>2 days x spell level x charges</cell></row>
+        <row><cell>Permanent Effect, Unlimited Use</cell><cell>500gp x spell level x 50</cell><cell>100 days x spell level</cell></row>
+        <row><cell>Permanent Effect, Use 1/turn</cell><cell>500gp x spell level x 33</cell><cell>80 days x spell level</cell></row>
+        <row><cell>Permanent Effect, Use 1/3 turns</cell><cell>500gp x spell level x 25</cell><cell>70 days x spell level</cell></row>
+        <row><cell>Permanent Effect, Use 1/hour</cell><cell>500gp x spell level x 16</cell><cell>60 days x spell level</cell></row>
+        <row><cell>Permanent Effect, Use 3/day</cell><cell>500gp x spell level x 12</cell><cell>50 days x spell level</cell></row>
+        <row><cell>Permanent Effect, Use 1/day</cell><cell>500gp x spell level x 10</cell><cell>40 days x spell level</cell></row>
+        <row><cell>Permanent Effect, Use 1/week</cell><cell>500gp x spell level x 6</cell><cell>30 days x spell level</cell></row>
+        <row><cell>Magical Weapon +1</cell><cell>5,000gp**</cell><cell>1 month x weapon base cost / 10***</cell></row>
+        <row><cell>Increase weapon bonus from +1 to +2</cell><cell>+10,000gp**</cell><cell>+1 month x weapon base cost / 10***</cell></row>
+        <row><cell>Increase weapon bonus from +2 to +3</cell><cell>+20,000gp**</cell><cell>+1 month x weapon base cost / 10***</cell></row>
+        <row><cell>Magical Armor +1</cell><cell>5,000gp**</cell><cell>1 month x Armor Class</cell></row>
+        <row><cell>Increase armor bonus from +1 to +2</cell><cell>+10,000gp**</cell><cell>+1 month</cell></row>
+        <row><cell>Increase armor bonus from +2 to +3</cell><cell>+20,000gp**</cell><cell>+1 month</cell></row>
+      </rows>
+      <notes>
+        <note>*If a charged item has multiple spell effects powered by the same charges, use the base cost and time for the highest-level spell effect, plus half the base cost and time for each additional spell effect. The minimum time to create a charged item is never less than 1 week per spell level of the highest-level effect.</note>
+        <note>**If the weapon or armor has a bonus restricted to a particular class or type of opponents, the extra bonus is half price.</note>
+        <note>**If the weapon or armor is enchanted with spell-like effects, those effects are enchanted separately using the cost and time for charged or permanent effects.</note>
+        <note>***Arrows, bolts, and slingstones are enchanted in bundles of 20 at a base cost of 10gp.</note>
+      </notes>
+    </table>
+
+    <subsection id="assistants">
+      <definition>
+        <term>Assistant</term>
+        <text>A subordinate arcane helper who may perform additional magic item creation tasks under supervision.</text>
+      </definition>
+      <rule>An assistant must be a mage or other arcane spellcaster of at least 1st level employed by an arcane spellcaster of 9th level or higher.</rule>
+      <rule>A 0th-level character with two ranks in Alchemy may function as an assistant in potion creation.</rule>
+      <rule>A spellcaster of 9th level or higher may supervise one assistant, plus one additional assistant per point of Intelligence bonus.</rule>
+      <rule>Whenever the supervising spellcaster works on item creation, each assistant may be assigned one additional magic item creation task.</rule>
+      <rule>An assistant must have a formula or sample to work from.</rule>
+      <rule>The assistant's success chance is based on the assistant's own level.</rule>
+    </subsection>
+
+    <table id="sample_magic_items">
+      <title>Sample Magic Item Time, Cost, and Components</title>
+      <columns>
+        <column>Item Type</column>
+        <column>Cost</column>
+        <column>Time</column>
+        <column>Possible Special Components</column>
+      </columns>
+      <rows>
+        <row><cell>Potion of Healing</cell><cell>500gp</cell><cell>1 week</cell><cell>Blood of 1 troll</cell></row>
+        <row><cell>Scroll of Fly</cell><cell>1,500gp</cell><cell>3 weeks</cell><cell>Feathers of 3 griffons</cell></row>
+        <row><cell>Wand of Fireball (20 charges)</cell><cell>30,000gp</cell><cell>120 days</cell><cell>Fangs of 37 greater hellhounds</cell></row>
+        <row><cell>Ring of Invisibility (1/turn)</cell><cell>33,000gp</cell><cell>160 days</cell><cell>Ichor of 30 invisible stalkers</cell></row>
+        <row><cell>Sword +1</cell><cell>5,000gp</cell><cell>1 month</cell><cell>Skulls of 36 ogres or heroes</cell></row>
+        <row><cell>Sword +2</cell><cell>15,000gp</cell><cell>2 months</cell><cell>Skulls of 107 ogres or heroes</cell></row>
+        <row><cell>Sword +1, +2 v. spellcasters</cell><cell>10,000gp</cell><cell>1.5 months</cell><cell>Skulls of 36 ogres and 36 spellcasters</cell></row>
+        <row><cell>Plate Armor +1</cell><cell>5,000gp</cell><cell>6 months</cell><cell>Iron hides of 3 gorgons</cell></row>
+      </rows>
+    </table>
+  </section>
+
+  <section id="ritual_spells">
+    <eligibility>
+      <rule>Arcane and divine spellcasters of 11th level or higher may learn ritual spells.</rule>
+      <rule>Arcane ritual spells are 7th-, 8th-, and 9th-level arcane spells.</rule>
+      <rule>Divine ritual spells are 6th- and 7th-level divine spells.</rule>
+      <rule>Each ritual spell must be learned separately.</rule>
+      <rule>A spellcaster may know a number of rituals of each spell level equal to his prime requisite ability-score bonus (Intelligence for arcane, Wisdom for divine).</rule>
+    </eligibility>
+
+    <procedure id="learn_ritual">
+      <step>Spend 1,000gp per spell level.</step>
+      <step>Spend 2 weeks per spell level researching.</step>
+      <step>Use a library.</step>
+      <step>Make a magic research throw.</step>
+      <modifier>Increase the target value by the full level of the ritual being researched.</modifier>
+      <benefit>Library bonuses apply.</benefit>
+    </procedure>
+
+    <procedure id="cast_ritual">
+      <step>Spend 500gp per spell level.</step>
+      <step>Spend 1 week per spell level casting.</step>
+      <step>Use a workshop.</step>
+      <step>Provide required special components.</step>
+      <step>Optionally provide precious materials for a bonus.</step>
+      <step>Make a magic research throw.</step>
+      <modifier>Increase the target value by the full level of the ritual being cast.</modifier>
+      <benefit>Workshop bonuses apply.</benefit>
+      <rule>The special components required are learned when the ritual is learned.</rule>
+      <option>The caster may have the ritual take effect immediately.</option>
+      <option>The caster may store the ritual effect on a scroll or as a charge in a ring.</option>
+      <rule>Storing the effect adds no extra cost; it is treated as creating a single-charge magic item with that spell effect.</rule>
+    </procedure>
+
+    <ritual id="harvest">
+      <classification>Divine Ritual 6</classification>
+      <range>500 square miles (1 24-mile hex)</range>
+      <duration>12 months</duration>
+      <effect>Increase the domain's Land Value by 2gp per peasant family for 12 months.</effect>
+      <reverse_spell name="Ravage">
+        <effect>Decrease the domain's Land Value by 2gp per peasant family for 12 months.</effect>
+        <ending_conditions>
+          <condition>Expires after 12 months.</condition>
+          <condition>Can be undone by remove curse cast by a spellcaster of equal or greater level.</condition>
+          <condition>Can be undone by harvest.</condition>
+        </ending_conditions>
+      </reverse_spell>
+    </ritual>
+
+    <ritual id="resurrection">
+      <classification>Divine Ritual 7</classification>
+      <range>Touch</range>
+      <duration>Permanent</duration>
+      <effect>Functions like restore life and limb, except the subject is immediately restored to full hit points, vigor, and health with no side effects or lingering exhaustion.</effect>
+      <rule>The condition of the remains does not matter.</rule>
+      <rule>Any small portion of the creature's body is sufficient.</rule>
+      <rule>The creature may have been dead no longer than 10 years per caster level.</rule>
+      <reverse_spell name="Destruction">
+        <effect>The touched victim dies immediately and falls to dust.</effect>
+        <saving_throw>None</saving_throw>
+      </reverse_spell>
+    </ritual>
+
+    <ritual id="phase_door">
+      <classification>Arcane Ritual 7</classification>
+      <range>Touch</range>
+      <duration>1 passage per 2 levels</duration>
+      <effect>Create an ethereal passage through wood, plaster, or stone, but not through other materials.</effect>
+      <rule>The passage is 10 feet deep and 5 feet in diameter.</rule>
+      <rule>The phase door is invisible and inaccessible to all creatures except the caster.</rule>
+      <rule>Only the caster may use the passage.</rule>
+      <rule>The caster disappears when entering and reappears when exiting.</rule>
+      <rule>The caster may take one other human-sized or smaller creature through the door; this uses two passages.</rule>
+      <rule>The passage does not permit light, sound, or spell effects through it and cannot be seen through.</rule>
+      <rule>The phase door is subject to dispel magic.</rule>
+      <rule>If dispelled while a creature is inside, the creature is harmlessly ejected as with passwall.</rule>
+    </ritual>
+
+    <ritual id="permanency">
+      <classification>Arcane Ritual 8</classification>
+      <range>10 feet</range>
+      <duration>Permanent until dispelled</duration>
+      <effect>Make another lower-level arcane spell effect permanent on a creature, item, or area.</effect>
+      <limitations>
+        <rule>Cannot make permanent a spell that already has duration instantaneous or permanent.</rule>
+        <rule>Divine spells may only be made permanent with the deity's permission.</rule>
+        <rule>The Judge may forbid use with other specific spells for game-balance reasons.</rule>
+      </limitations>
+      <target_limits>
+        <rule>An area may receive any number of permanency spells.</rule>
+        <rule>An item may receive up to five permanency spells.</rule>
+        <rule>After the first permanency on an item, each additional permanency carries a cumulative 20% chance of failure.</rule>
+        <rule>If item permanency fails, the item is destroyed completely.</rule>
+        <rule>A creature may receive one permanency without risk.</rule>
+        <rule>If a creature receives additional permanencies, it suffers side effects determined on the Tampering with Mortality table.</rule>
+      </target_limits>
+      <ending_conditions>
+        <condition>It lasts until dispelled by the caster or a higher-level spellcaster.</condition>
+        <condition>When dispelled, the bound spell effect vanishes immediately.</condition>
+      </ending_conditions>
+      <distinction>Binding a spell to an item with permanency is not the same as creating a true magic item; true magic items cannot be dispelled.</distinction>
+    </ritual>
+
+    <ritual id="wish">
+      <classification>Arcane Ritual 9</classification>
+      <range>Unlimited</range>
+      <duration>See effect</duration>
+      <effect>Allows the caster to alter reality and duplicate the effects of any other spell or create comparable effects.</effect>
+      <examples_of_permitted_scope>
+        <item>Reverse events.</item>
+        <item>Bring the dead back to life.</item>
+        <item>Heal an army.</item>
+        <item>Teleport a group to any location without error.</item>
+        <item>Grant unique powers or ability bonuses at the Judge's discretion.</item>
+      </examples_of_permitted_scope>
+      <limitations>
+        <rule>Wishes are fulfilled according to the letter of the request.</rule>
+        <rule>The Judge regulates scope and final limits.</rule>
+        <rule>Hostile wishes may be fulfilled in a technically valid but indirect manner.</rule>
+      </limitations>
+    </ritual>
+  </section>
+
+  <section id="constructs">
+    <eligibility>
+      <rule>Arcane and divine spellcasters of 11th level or higher may create and design constructs.</rule>
+      <rule>Dwarven craftpriests may create and design constructs starting at 9th level.</rule>
+    </eligibility>
+
+    <procedure id="create_construct">
+      <step>Choose or obtain a formula or sample of the construct type.</step>
+      <step>Determine Hit Dice and special abilities.</step>
+      <step>Pay 2,000gp per Hit Die plus 5,000gp per special ability.</step>
+      <step>Spend 1 week plus 1 day per 1,000gp of cost.</step>
+      <step>Maintain access to a workshop worth at least the cost of the construct throughout creation.</step>
+      <step>Optionally use precious materials for a bonus.</step>
+      <step>Make a magic research throw.</step>
+      <modifier>Increase the target value by +1 per 5,000gp of construct cost.</modifier>
+      <rule>The spellcaster may only create constructs with HD no greater than twice his class level.</rule>
+      <rule>The remains of a destroyed construct may serve as a sample.</rule>
+      <workshop_bonus>For every 10,000gp of workshop value above the minimum required, gain +1 on the magic research throw.</workshop_bonus>
+    </procedure>
+
+    <procedure id="design_construct">
+      <step>Determine the new construct's Hit Dice, Armor Class, attacks, maximum damage, and special abilities within the design limits.</step>
+      <step>Pay 2,000gp per Hit Die plus 5,000gp per special ability.</step>
+      <step>Spend 1 week plus 1 day per 1,000gp of cost.</step>
+      <step>Maintain access to a library worth at least the cost of the construct throughout design.</step>
+      <step>Make a magic research throw.</step>
+      <modifier>Increase the target value by +1 per 5,000gp of construct cost.</modifier>
+      <success>A successful design creates a formula that can later be used to create the construct.</success>
+      <rule>The spellcaster may only design constructs with HD no greater than twice his class level.</rule>
+      <library_bonus>For every 10,000gp of library value above the minimum required, gain +1 on the magic research throw.</library_bonus>
+    </procedure>
+
+    <design_rules>
+      <rule>Constructs must have at least 1 HD.</rule>
+      <rule>Default Armor Class equals 1/2 the construct's Hit Dice.</rule>
+      <rule>Most constructs are immune to poison, gas, charm, hold, and sleep; these together count as one special ability.</rule>
+      <rule>Each additional immunity counts as one additional special ability.</rule>
+      <rule>A construct may have 1 to 4 attacks per round.</rule>
+      <rule>Total maximum damage per round may not exceed three times the construct's HD.</rule>
+      <rule>Damage may be divided among attacks as desired.</rule>
+      <rule>Any special attacks or powers count as special abilities.</rule>
+    </design_rules>
+  </section>
+
+  <section id="crossbreeds">
+    <eligibility>
+      <rule>Arcane spellcasters of 11th level or higher may create crossbreeds.</rule>
+    </eligibility>
+
+    <progenitor_limits>
+      <rule>Each progenitor creature must have HD no greater than the creator's class level.</rule>
+      <rule>Each progenitor may not have more than one special ability, plus one additional special ability per point of the creator's Intelligence bonus.</rule>
+    </progenitor_limits>
+
+    <design_rules>
+      <rule>The creator chooses the crossbreed's form before creation begins.</rule>
+      <alignment>
+        <rule>If either progenitor is Chaotic, the crossbreed is Chaotic.</rule>
+        <rule>If both progenitors are Lawful, the crossbreed is Lawful.</rule>
+        <rule>Otherwise the crossbreed is Neutral.</rule>
+      </alignment>
+      <movement>
+        <rule>The crossbreed may receive the movement capabilities of either progenitor or both.</rule>
+        <rule>Having both sets of movement counts as a special ability.</rule>
+      </movement>
+      <armor_class>
+        <rule>If the crossbreed uses one progenitor's movement, it has that progenitor's AC.</rule>
+        <rule>If it uses both movement modes, it takes the better AC.</rule>
+      </armor_class>
+      <hit_dice>
+        <rule>The crossbreed may have either progenitor's HD or any amount between them.</rule>
+      </hit_dice>
+      <attacks>
+        <rule>The crossbreed may receive the attacks of either progenitor or both.</rule>
+        <rule>Having attacks from both progenitors counts as a special ability.</rule>
+        <rule>If the crossbreed has more HD than the progenitor from which its attacks are drawn, attack damage scales upward proportionally to the HD increase.</rule>
+      </attacks>
+      <morale>
+        <rule>The crossbreed uses the better morale of the two progenitors.</rule>
+      </morale>
+      <special_abilities>
+        <rule>The crossbreed may have the special abilities of one, both, or neither progenitor.</rule>
+        <rule>Each special ability increases cost and difficulty.</rule>
+      </special_abilities>
+      <type>
+        <rule>All crossbreeds are fantastic creatures.</rule>
+        <rule>Depending on progenitors, they may also count as beastmen, enchanted creatures, giant humanoids, humanoids, oozes, or vermin, at Judge's discretion.</rule>
+        <rule>Crossbreeds heal naturally.</rule>
+        <rule>Crossbreeds may reproduce with others of their breed.</rule>
+        <rule>If they closely resemble one progenitor, they may also breed with that progenitor.</rule>
+      </type>
+    </design_rules>
+
+    <procedure id="create_crossbreed">
+      <step>Choose progenitors and assign final traits within the design rules.</step>
+      <step>Pay 2,000gp per Hit Die of the finished crossbreed plus 5,000gp per special ability.</step>
+      <step>Spend 1 week plus 1 day per 1,000gp of cost.</step>
+      <step>Provide the progenitor creatures; they are killed during the process.</step>
+      <step>Maintain access to a special crossbreeding laboratory worth at least the cost of the crossbreed.</step>
+      <step>Optionally use precious materials for a bonus.</step>
+      <step>Make a magic research throw.</step>
+      <modifier>Increase the target value by +1 per 5,000gp of crossbreeding cost.</modifier>
+      <rule>No special components are required beyond the progenitors.</rule>
+      <laboratory_bonus>For every 10,000gp of laboratory value above the minimum required, gain +1 on the magic research throw.</laboratory_bonus>
+    </procedure>
+
+    <control_rules>
+      <rule>A newly created crossbreed is not automatically under the caster's control.</rule>
+      <rule>If the more intelligent progenitor was intelligent and willingly participated, the crossbreed retains that progenitor's relationship to the caster.</rule>
+      <rule>Otherwise, the Judge makes a reaction roll to determine the crossbreed's reaction.</rule>
+    </control_rules>
+  </section>
+
+  <section id="necromancy">
+    <eligibility>
+      <rule>Chaotic spellcasters of 11th level or higher may transform creatures into intelligent undead.</rule>
+    </eligibility>
+
+    <limits>
+      <rule>The undead created may not have HD greater than the spellcaster's class level.</rule>
+      <rule>The undead may not have more than one special ability plus one additional special ability per point of the spellcaster's Intelligence bonus.</rule>
+    </limits>
+
+    <procedure id="grant_unlife">
+      <step>Choose a dead subject creature.</step>
+      <step>Ensure the creature has been dead no longer than 1 day per HD.</step>
+      <step>Pay 2,000gp per Hit Die plus 5,000gp per special ability.</step>
+      <step>Spend 1 day per 1,000gp of cost.</step>
+      <step>Maintain access to a private mortuary and embalming chamber worth at least the cost of the necromancy.</step>
+      <step>Provide required special components.</step>
+      <step>Optionally use precious materials for a bonus.</step>
+      <step>Make a magic research throw.</step>
+      <modifier>If the creature is willing, increase target value by +1 per 5,000gp of necromancy cost.</modifier>
+      <modifier>If the creature is unwilling, increase target value by +2 per 5,000gp of necromancy cost.</modifier>
+      <rule>The subject must be dead when the ritual is completed.</rule>
+      <rule>The success or failure is not known until the creature is dead.</rule>
+      <rule>A spellcaster may transform himself by killing himself at the conclusion of the ritual.</rule>
+      <facility_bonus>For every 10,000gp of mortuary value above the minimum required, gain +1 on the magic research throw.</facility_bonus>
+    </procedure>
+
+    <special_components>
+      <rule>Necromancy requires special components, usually organs or blood from monsters with total XP value equal to the cost of the research.</rule>
+      <rule>If the undead will have special abilities, the component creature must have at least as many special abilities.</rule>
+      <rule>If the undead requires special items such as a phylactery or coffin, these must be provided.</rule>
+      <rule>If the character does not know the components at the start, he learns them when the necromancy is 50% complete.</rule>
+      <rule>The Judge determines the specific components.</rule>
+    </special_components>
+
+    <control_rules>
+      <rule>An undead created by necromancy is not automatically under the caster's control.</rule>
+      <rule>If the subject was a willing participant, it retains its prior relationship to the caster after becoming undead.</rule>
+      <rule>Otherwise, the Judge makes a reaction roll to determine its reaction.</rule>
+    </control_rules>
+  </section>
+
+  <section id="divine_power">
+    <definition>
+      <term>Divine power</term>
+      <text>Ephemeral gp-equivalent spiritual power that divine spellcasters may apply to certain magical research projects.</text>
+    </definition>
+
+    <uses>
+      <use>The gp value of divine power may substitute for some or all special components required to create a magic item or perform a ritual spell.</use>
+      <use>The gp value of divine power may substitute for an equivalent value of precious materials used to create a magic item, perform a ritual spell, create a construct, or grant undeath.</use>
+    </uses>
+
+    <limitations>
+      <rule>Divine power may only be applied to projects that further the goals of the caster's patron deity.</rule>
+      <rule>Divine power cannot be stored.</rule>
+      <rule>It is accumulated only while actively working on an eligible magical research project.</rule>
+      <rule>Any unspent divine power remaining when the project ends is lost.</rule>
+    </limitations>
+
+    <subsection id="congregations">
+      <rule>Lawful divine spellcasters gain divine power by building congregations.</rule>
+      <rule>Every 50 congregants generate 10gp worth of divine power per week of faithful worship.</rule>
+      <qualification>
+        <rule>Congregants must share the caster's alignment.</rule>
+        <rule>Congregants must worship the caster's deity.</rule>
+        <rule>Congregants must regard the caster as their spiritual advisor.</rule>
+      </qualification>
+      <sources_of_congregants>
+        <rule>Party members, henchmen, and followers may form the core of a congregation.</rule>
+        <rule>Additional congregants may be recruited through charitable deeds, missionaries, and temple construction.</rule>
+      </sources_of_congregants>
+
+      <procedure id="monthly_proselytizing">
+        <step>Each month, total the gp value of all charitable spells cast for peasants by the caster, henchmen, and followers, using spell-market prices from the referenced table.</step>
+        <step>Add the gp value of hirelings deployed as missionaries.</step>
+        <step>Add the gp value of religious structures erected in the realm.</step>
+        <step>For each full 1,000gp of proselytizing value, gain 1d10 plus Charisma bonus congregants.</step>
+        <limit>The caster cannot gain more congregants than exist in the realm being proselytized.</limit>
+      </procedure>
+
+      <maintenance>
+        <rule>The monthly cost to maintain a congregation is 1gp per congregant.</rule>
+        <rule>If the maintenance cost is not paid, the caster loses 1d10 congregants per 1,000.</rule>
+        <rule>On a roll of 10, roll again and add the result; continue if more 10s are rolled.</rule>
+      </maintenance>
+
+      <domain_sources>
+        <rule>A divine spellcaster may also gain congregants by ruling a domain or serving as spiritual advisor to a ruler.</rule>
+        <rule>A ruler can command subjects to worship his god, but actual faith depends on domain morale.</rule>
+        <rule>The amount of divine power available from domain worship is listed on the Domain Worship table.</rule>
+        <rule>To become a ruler's spiritual advisor, the divine spellcaster generally must be the highest-level divine spellcaster with whom the ruler has Friendly relations.</rule>
+      </domain_sources>
+
+      <table id="domain_worship">
+        <title>Domain Worship</title>
+        <columns>
+          <column>Domain Morale</column>
+          <column>Divine Power per 10 Families per Week</column>
+        </columns>
+        <rows>
+          <row><cell>-4</cell><cell>0</cell></row>
+          <row><cell>-3</cell><cell>1</cell></row>
+          <row><cell>-2</cell><cell>2</cell></row>
+          <row><cell>-1</cell><cell>3</cell></row>
+          <row><cell>0</cell><cell>4</cell></row>
+          <row><cell>+1</cell><cell>5</cell></row>
+          <row><cell>+2</cell><cell>6</cell></row>
+          <row><cell>+3</cell><cell>7</cell></row>
+          <row><cell>+4</cell><cell>8</cell></row>
+        </rows>
+      </table>
+    </subsection>
+
+    <subsection id="blood_sacrifice">
+      <rule>Chaotic divine spellcasters may also gain divine power through blood sacrifice.</rule>
+      <rule>A spellcaster may conduct no more than one blood sacrifice per class level per day.</rule>
+      <rule>A blood sacrifice must be performed in a chaotic temple, graveyard, or sinkhole of evil.</rule>
+      <rule>Each blood sacrifice takes one turn and requires a magic research throw.</rule>
+      <rule>If successful, the caster gains divine power equal to the XP value of the sacrificed creature.</rule>
+      <rule>Sacrificing an unwilling chaotic creature yields no divine power.</rule>
+      <rule>Sacrificing a willing chaotic creature does yield divine power.</rule>
+    </subsection>
+  </section>
+
+  <section id="experience_from_magical_research">
+    <procedure id="xp_from_research">
+      <step>When magical research is completed, divide the project's cost by the number of months required, always dividing by at least one month.</step>
+      <step>If the monthly cost exceeds the character's gp threshold, the character earns XP equal to the difference per month of research.</step>
+      <included_costs>Base cost and precious materials.</included_costs>
+      <excluded_costs>Libraries, workshops, and special components.</excluded_costs>
+      <rule>Failing at magical research earns no XP.</rule>
+    </procedure>
+
+    <distribution_rules>
+      <rule>Followers or henchmen conducting magical research earn 50% of the normal magical research XP.</rule>
+      <rule>An assistant earns 50% of the magical research XP he would earn if conducting the research independently.</rule>
+      <rule>A follower or henchman acting as an assistant therefore earns 25% of normal magical research XP.</rule>
+      <rule>Characters do not receive XP for magical research conducted by their assistants.</rule>
+    </distribution_rules>
+  </section>
+
+  <section id="remaining_domain_rules">
+    <note>The main Strongholds and Domains rules are absent here; only the special cases below remain in force in this document.</note>
+
+    <subsection id="chaotic_domains">
+      <establishment>
+        <rule>Chaotic adventurers may establish domains of beastmen rather than humans or demi-humans.</rule>
+        <rule>The choice is made when the domain is secured.</rule>
+        <rule>Instead of clearing beastmen lairs, the adventurer must successfully hire at least one local chieftain as a henchman.</rule>
+        <rule>Once the leadership of beastmen lairs in the domain is brought into service, the character becomes a chaotic domain ruler.</rule>
+      </establishment>
+      <exceptions>
+        <rule>The ruler may hire any beastmen in the area as mercenaries.</rule>
+        <rule>Human and demi-human mercenaries and specialists must be neutral or chaotic.</rule>
+        <rule>The ruler attracts beastmen followers and families instead of normal humans.</rule>
+        <rule>Beastmen families are of weaker varieties such as kobolds, goblins, or orcs and consist of noncombatants.</rule>
+        <rule>Beastmen domains always increase in population as if they were two population categories smaller.</rule>
+        <rule>Beastmen provide only 1/2 normal land revenue.</rule>
+        <rule>Population limits per hex are reduced to 1/2 normal.</rule>
+        <rule>Beastmen in urban settlements produce only 1/2 normal urban revenue.</rule>
+        <rule>Domain morale modifiers for garrisons and festivals are doubled.</rule>
+        <rule>Lawful rulers only become vassals if conquered and annexed.</rule>
+        <rule>Conquered lawful domains suffer a -2 morale penalty due to alignment difference.</rule>
+      </exceptions>
+    </subsection>
+
+    <subsection id="dwarven_vaults">
+      <rule>A dwarven vault may only be built in a dwarven realm or wilderness, not in civilized or borderland areas of human or elven realms.</rule>
+      <rule>A dwarven vault must be underground.</rule>
+      <rule>Above-ground gates, walls, or structures may exist for defense or commerce, but may not exceed 25% of the stronghold's gp value.</rule>
+      <rule>Any above-ground structures must be made of earth or stone.</rule>
+      <rule>When completed, 3d6 x 10 1st-level dwarven NPCs move in to maintain and defend the vault at no cost.</rule>
+      <rule>If additional defenders are needed, the dwarven ruler is expected to employ only dwarven soldiers.</rule>
+      <rule>Other races may be hired for non-soldier tasks.</rule>
+      <rule>Dwarven vaults are otherwise maintained like human domains.</rule>
+    </subsection>
+
+    <subsection id="elven_fastnesses">
+      <rule>An elven fastness may only be built in an elven realm or wilderness, not in civilized or borderland areas of human or dwarven realms.</rule>
+      <rule>A fastness must be built harmoniously within a site of natural majesty.</rule>
+      <rule>Construction cost is equivalent to similar work in stone, even if the fastness is not built of stone.</rule>
+      <rule>When completed, 3d6 x 10 1st-level elven NPCs move in to help and defend the fastness at no cost.</rule>
+      <rule>If additional defenders are needed, elven spellswords may hire only elven mercenaries.</rule>
+      <rule>Non-elves may be hired as specialists and henchmen, but not as mercenaries.</rule>
+      <rule>All ordinary animals within 3 miles are friendly to the elves.</rule>
+      <rule>The elves may communicate with these animals as per speak with animals.</rule>
+      <rule>Animals warn of strangers, carry news, and deliver short messages to nearby places.</rule>
+      <rule>Spies and thieves operating against the domain suffer a -2 penalty to proficiency throws.</rule>
+      <rule>The elven ruler must defend the animals within this territory.</rule>
+      <rule>Elven fastnesses are otherwise maintained like human domains.</rule>
+    </subsection>
+  </section>
+
+  <section id="zero_level_characters_and_campaign_experience">
+    <general_rules>
+      <rule>A 0th-level character may earn XP from campaign activities.</rule>
+      <rule>At 100XP from campaign activities, a 0th-level character may advance to 1st level.</rule>
+      <rule>0th-level characters are always treated as followers or henchmen and earn 1/2 XP.</rule>
+    </general_rules>
+
+    <advancement_paths>
+      <path id="magical_research_to_mage">
+        <rule>A 0th-level character studying under an arcane spellcaster of 9th level or higher may become a 1st-level mage.</rule>
+        <rule>The character must possess Alchemy, Collegiate Wizardry, Magical Engineering, or a related proficiency at the Judge's discretion.</rule>
+        <rule>The character studies for 1d6 months.</rule>
+        <rule>The character then makes a proficiency throw of 14+, modified by Intelligence bonus or penalty.</rule>
+        <result>Success advances the character to 1st-level mage.</result>
+        <failure>Failure means the character has no gift for magic.</failure>
+      </path>
+
+      <path id="domain_or_mercantile_income">
+        <rule>A 0th-level character may earn XP from domain and mercantile income.</rule>
+        <rule>For this purpose, treat the character's gp threshold as 25gp.</rule>
+        <rule>The character advances into a class appropriate to the domain managed.</rule>
+      </path>
+
+      <path id="hijinks">
+        <rule>A 0th-level character may earn XP from hijinks.</rule>
+        <rule>Usually the only available hijink is carousing.</rule>
+        <rule>Carousing for a 0th-level character uses Hear Noises 18+.</rule>
+        <rule>When the character earns 100XP from carousing, he may become a 1st-level assassin, thief, or nightblade.</rule>
+        <rule>Only elves may become nightblades.</rule>
+        <rule>The final class depends on race and associates.</rule>
+      </path>
+    </advancement_paths>
+
+    <transition_to_first_level>
+      <rule>On advancing to 1st level, the character gains the new class's proficiency, powers, attack throws, and saving throws.</rule>
+      <rule>The character rerolls hit points using the new class's hit die and keeps whichever hp total is higher: old or new.</rule>
+      <rule>The new 1st-level character keeps any general proficiencies already known.</rule>
+      <rule>Upon reaching 2nd, 3rd, and 4th level, the character must remove one of these pre-existing general proficiencies.</rule>
+      <rule>At 4th level, the character acquires the Adventuring proficiency.</rule>
+    </transition_to_first_level>
+  </section>
+</document>

@@ -1,0 +1,144 @@
+{
+  "religion_id": "open_sky_bargains",
+  "display_name": "The Open Sky Bargains",
+  "theology": {
+    "type": "animist",
+    "syncretism": "syncretist",
+    "afterlife_belief": "spirit_world"
+  },
+  "alignment": "Chaotic",
+  "associated_cultures": [
+    "zhurani"
+  ],
+  "clergy": {
+    "title_hierarchy": [
+      "Listener",
+      "Smoke-Reader",
+      "Knot-Shaman",
+      "Gale-Speaker",
+      "Rider of Empty Horizons"
+    ],
+    "title_level_mapping": {
+      "1": "Listener",
+      "3": "Smoke-Reader",
+      "5": "Knot-Shaman",
+      "7": "Gale-Speaker",
+      "9": "Rider of Empty Horizons"
+    },
+    "gender_restriction": "none",
+    "special_class": "shaman",
+    "vestments": "felt coats hung with bone whistles, cords, and horsehair tassels",
+    "holy_symbol": "knotted sky-cord threaded through a ring of horn"
+  },
+  "practices": {
+    "holy_days_per_year": 5,
+    "holy_day_character": "mystical",
+    "worship_style": "oracular",
+    "dietary_restrictions": "ritual fasting before spirit bargains",
+    "funerary_practice": "sky_burial",
+    "stance_on_undead": "natural_cycle"
+  },
+  "political_role": {
+    "church_state_relationship": "independent",
+    "temporal_authority": "minimal",
+    "military_involvement": "chaplains_only"
+  },
+  "cosmology": {
+    "opposing_view": "misguided",
+    "opposing_view_detail": "Lawful gods are said to be deaf idols that confuse stillness for wisdom and mistake fences for truth.",
+    "notes": "See §3.3 Alignment Cosmology Rules for the hard constraints governing this field."
+  },
+  "spirits": [
+    {
+      "deity_id": "severing_wind",
+      "display_name": "The Severing Wind",
+      "epithets": [
+        "Cutter of Tethers",
+        "Whisper Between Camps"
+      ],
+      "alignment": "Chaotic",
+      "portfolios": [
+        "air",
+        "travel",
+        "storms"
+      ],
+      "holy_symbol": "three slashed ribbons on horn",
+      "sacred_animal": "hawk",
+      "domains_summary": "It rules migration, weather, and the breaking of every bond that has gone stale."
+    },
+    {
+      "deity_id": "hooffire",
+      "display_name": "Hooffire",
+      "epithets": [
+        "The Red Track",
+        "Luck Beneath the Hoof"
+      ],
+      "alignment": "Chaotic",
+      "portfolios": [
+        "fire",
+        "war",
+        "luck"
+      ],
+      "holy_symbol": "burning hoofprint",
+      "sacred_animal": "horse",
+      "domains_summary": "Hooffire governs battle frenzy, camp sparks, and fortunate timing in raid and race."
+    },
+    {
+      "deity_id": "dusk_mare",
+      "display_name": "The Dusk Mare",
+      "epithets": [
+        "She Who Carries Names",
+        "Soft-Teeth Mother"
+      ],
+      "alignment": "Neutral",
+      "portfolios": [
+        "night",
+        "prophecy",
+        "death"
+      ],
+      "holy_symbol": "mare eye beneath a crescent",
+      "sacred_animal": "mare",
+      "domains_summary": "The Dusk Mare carries the dead into the far grass and whispers omens in dreams."
+    },
+    {
+      "deity_id": "white_grass_mother",
+      "display_name": "White Grass Mother",
+      "epithets": [
+        "She of the Bending Sea",
+        "Milk in the Root"
+      ],
+      "alignment": "Neutral",
+      "portfolios": [
+        "nature",
+        "fertility",
+        "protection"
+      ],
+      "holy_symbol": "loop of pale grass around a drop",
+      "sacred_animal": "gazelle",
+      "domains_summary": "She shelters foals, children, and camps that move before enemies can close a ring."
+    },
+    {
+      "deity_id": "hollow_horizon",
+      "display_name": "The Hollow Horizon",
+      "epithets": [
+        "Far Mouth",
+        "Laughing Blue Edge"
+      ],
+      "alignment": "Chaotic",
+      "portfolios": [
+        "madness",
+        "magic",
+        "darkness"
+      ],
+      "holy_symbol": "empty circle painted blue-black",
+      "sacred_animal": "wolf",
+      "domains_summary": "This spirit governs forbidden sights, ecstatic insight, and the fearful beauty beyond known routes."
+    }
+  ],
+  "flavor_text": {
+    "one_line": "A rider's animism of bargains, omens, and spirits that resent every fence.",
+    "one_paragraph": "The Open Sky Bargains teaches that the world is crowded with hungry and capricious presences that must be courted rather than commanded. Shamans tie contracts in smoke, felt, and song, then renegotiate them as camps move and fortunes change. The faithful do not trust any cosmology that claims all things can be mapped, ranked, and enclosed.",
+    "creation_myth_summary": "Before there was earth, there was only sky folding over itself; each fold shed a spirit, and the last fold made the road.",
+    "moral_code_summary": "Honor guest-right, keep bargains while they breathe, move before stagnation poisons you, and never trust a spirit or ruler that asks for obedience without exchange."
+  }
+}

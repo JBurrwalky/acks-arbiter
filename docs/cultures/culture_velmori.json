@@ -1,0 +1,126 @@
+{
+  "culture_id": "velmori",
+  "display_name": "Velmori",
+  "race": "human",
+  "terrain_affinity": {
+    "primary": "forest",
+    "secondary": "river_valley",
+    "avoidance": "desert"
+  },
+  "climate_preference": {
+    "temperature": "temperate",
+    "moisture": "wet"
+  },
+  "alignment_tendency": {
+    "dominant": "Neutral",
+    "secondary": "Lawful",
+    "distribution": {
+      "Lawful": 0.24,
+      "Neutral": 0.54,
+      "Chaotic": 0.22
+    },
+    "notes": "The dominant alignment must have the highest distribution value and must be ≥ 0.40. A culture's LLM-generated history may describe past alignment shifts, but at runtime the culture IS its dominant alignment. This is a hard constraint."
+  },
+  "values": {
+    "core_values": [
+      "knowledge",
+      "beauty",
+      "family"
+    ],
+    "taboos": [
+      "burning elder groves",
+      "speaking an ancestor's name in mockery",
+      "wasting winter stores"
+    ],
+    "social_structure": "clan_confederation",
+    "gender_roles": "egalitarian",
+    "attitude_toward_outsiders": "tolerant"
+  },
+  "personality_weight_biases": {
+    "temperament": {
+      "stoic": 0.06,
+      "jovial": 0.0,
+      "nervous": 0.0,
+      "aggressive": -0.1,
+      "melancholic": 0.06,
+      "cunning": 0.08,
+      "passionate": -0.08,
+      "serene": 0.12,
+      "paranoid": -0.06,
+      "gregarious": -0.08
+    },
+    "motivation": {
+      "wealth": 0.0,
+      "power": -0.08,
+      "knowledge": 0.14,
+      "security": 0.06,
+      "revenge": -0.06,
+      "faith": 0.0,
+      "legacy": 0.12,
+      "freedom": -0.14,
+      "pleasure": -0.08,
+      "duty": 0.0,
+      "survival": 0.0,
+      "redemption": 0.04
+    },
+    "social_style": {
+      "formal": 0.04,
+      "blunt": -0.08,
+      "flattering": -0.1,
+      "laconic": 0.08,
+      "verbose": 0.0,
+      "evasive": 0.0,
+      "warm": 0.08,
+      "intimidating": -0.08,
+      "scholarly": 0.12,
+      "streetwise": -0.06
+    },
+    "moral_compass": {
+      "righteous": 0.06,
+      "honorable": 0.08,
+      "pragmatic": 0.08,
+      "opportunistic": -0.1,
+      "ruthless": -0.16,
+      "conflicted": 0.04
+    }
+  },
+  "military_tradition": {
+    "preferred_troop_types": [
+      "light_infantry",
+      "archers",
+      "militia"
+    ],
+    "fighting_style": "guerrilla",
+    "military_culture": "citizen_militia"
+  },
+  "economy": {
+    "primary_livelihood": "hunting_gathering",
+    "secondary_livelihood": "crafts",
+    "trade_goods": [
+      "amber resin",
+      "herbal inks",
+      "carved yew",
+      "smoked venison"
+    ],
+    "currency_attitude": "gift_economy"
+  },
+  "magic_attitude": {
+    "arcane": "revered",
+    "divine": "respected",
+    "notes": "Song-lore, dreamcraft, and shrine magic are treated as inherited family arts."
+  },
+  "architecture_style": {
+    "primary_material": "timber",
+    "aesthetic": "organic",
+    "signature_feature": "root-woven longhouses with lantern eaves"
+  },
+  "language": {
+    "language_name": "Velmor",
+    "language_family": "Nhelic",
+    "script": "borrowed"
+  },
+  "flavor_text": {
+    "one_line": "The Velmori keep memory like a living grove, binding kinship, beauty, and lore into daily life.",
+    "one_paragraph": "The Velmori dwell beneath high canopies and along blackwater streams, where homes are woven into roots, trunks, and earthen rises. Their clan elders preserve songs as legal records, genealogies as maps, and carved images as acts of devotion. They are patient hosts and stubborn defenders, more likely to outlast an enemy through concealment and memory than to seek glory in open battle."
+  }
+}

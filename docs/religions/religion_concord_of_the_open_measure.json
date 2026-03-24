@@ -1,0 +1,57 @@
+{
+  "religion_id": "concord_of_the_open_measure",
+  "display_name": "Concord of the Open Measure",
+  "theology": {
+    "type": "non_theist",
+    "syncretism": "inclusivist",
+    "afterlife_belief": "unknown"
+  },
+  "alignment": "Neutral",
+  "associated_cultures": [
+    "talreni"
+  ],
+  "clergy": {
+    "title_hierarchy": [
+      "Listener",
+      "Measure-Keeper",
+      "Hall Warden",
+      "Senior Arbiter",
+      "Circle Elder"
+    ],
+    "title_level_mapping": {
+      "1": "Listener",
+      "3": "Measure-Keeper",
+      "5": "Hall Warden",
+      "7": "Senior Arbiter",
+      "9": "Circle Elder"
+    },
+    "gender_restriction": "none",
+    "special_class": null,
+    "vestments": "undyed robes with knotted tally cords and ash-brown sashes",
+    "holy_symbol": "bronze ring marked in twelve equal parts"
+  },
+  "practices": {
+    "holy_days_per_year": 4,
+    "holy_day_character": "charitable",
+    "worship_style": "meditative",
+    "dietary_restrictions": null,
+    "funerary_practice": "burial",
+    "stance_on_undead": "natural_cycle"
+  },
+  "political_role": {
+    "church_state_relationship": "independent",
+    "temporal_authority": "minimal",
+    "military_involvement": "none"
+  },
+  "cosmology": {
+    "opposing_view": "irrelevant",
+    "opposing_view_detail": "The Concord teaches that Law and Chaos are conditions of conduct, not sovereign powers worthy of surrender.",
+    "notes": "See §3.3 Alignment Cosmology Rules for the hard constraints governing this field."
+  },
+  "flavor_text": {
+    "one_line": "A civic philosophy of balance, fairness, and restraint that treats holiness as right proportion.",
+    "one_paragraph": "The Concord of the Open Measure is less a worship of gods than a discipline of right relation: between neighbor and field, appetite and duty, word and deed. Its elders keep calendars, mediate disputes, and bless public works, insisting that the world can be made livable by honest measure and the refusal of excess. Temples resemble meeting halls, and its rites focus on remembrance, charity, and public accountability.",
+    "creation_myth_summary": "The Concord teaches no maker-god; the world endures because things keep their proper measure until folly or hunger drives them out of balance.",
+    "moral_code_summary": "Keep fair account, feed the needy in lean times, honor shared boundaries, and mistrust any cause that demands total obedience or total license."
+  }
+}

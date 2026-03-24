@@ -1,0 +1,135 @@
+{
+  "religion_id": "banner_of_the_first_standard",
+  "display_name": "The Banner of the First Standard",
+  "theology": {
+    "type": "henotheist",
+    "syncretism": "exclusivist",
+    "afterlife_belief": "ancestral_realm"
+  },
+  "alignment": "Lawful",
+  "associated_cultures": [
+    "tavraki"
+  ],
+  "clergy": {
+    "title_hierarchy": [
+      "Knot-Bearer",
+      "Standard Reader",
+      "Sky Marshal",
+      "Banner Hierophant",
+      "Voice of the First Wind"
+    ],
+    "title_level_mapping": {
+      "1": "Knot-Bearer",
+      "3": "Standard Reader",
+      "5": "Sky Marshal",
+      "7": "Banner Hierophant",
+      "9": "Voice of the First Wind"
+    },
+    "gender_restriction": "none",
+    "special_class": null,
+    "vestments": "blue felt mantles striped in white, worn over lacquered lamellar",
+    "holy_symbol": "a white banner beneath a seven-point star"
+  },
+  "practices": {
+    "holy_days_per_year": 4,
+    "holy_day_character": "martial",
+    "worship_style": "oracular",
+    "dietary_restrictions": "no horseflesh except in funeral rite",
+    "funerary_practice": "sky_burial",
+    "stance_on_undead": "abomination"
+  },
+  "political_role": {
+    "church_state_relationship": "influential",
+    "temporal_authority": "moderate",
+    "military_involvement": "holy_warriors"
+  },
+  "cosmology": {
+    "opposing_view": "demons",
+    "opposing_view_detail": "Chaotic powers are taught as storm-demons that cut reins, scatter herds, and tempt clans to oathless violence.",
+    "notes": "See §3.3 Alignment Cosmology Rules for the hard constraints governing this field."
+  },
+  "pantheon": [
+    {
+      "deity_id": "qhavar",
+      "display_name": "Qhavar",
+      "epithets": [
+        "First Standard",
+        "Lord of the Open Sky"
+      ],
+      "alignment": "Lawful",
+      "portfolios": [
+        "air",
+        "war",
+        "justice"
+      ],
+      "holy_symbol": "a white pennon crossed by a sunray",
+      "favored_weapon": "spear",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "horse",
+      "domains_summary": "Qhavar is supreme lord of ordered conquest, oath, and the high winds that guide the people."
+    },
+    {
+      "deity_id": "iskera",
+      "display_name": "Iskera",
+      "epithets": [
+        "Guide of the Far Mile",
+        "Lady of Crossings"
+      ],
+      "alignment": "Lawful",
+      "portfolios": [
+        "travel",
+        "trade",
+        "protection"
+      ],
+      "holy_symbol": "two road-knots around a bronze ring",
+      "favored_weapon": "sword",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "crane",
+      "domains_summary": "Iskera guards caravans, tribute routes, and the safe passage owed to honorable guests."
+    },
+    {
+      "deity_id": "dorun",
+      "display_name": "Dorun Horse-Father",
+      "epithets": [
+        "Keeper of Hooves",
+        "The Grazing Lord"
+      ],
+      "alignment": "Neutral",
+      "portfolios": [
+        "fertility",
+        "hunt",
+        "luck"
+      ],
+      "holy_symbol": "a horse hoof within a crescent of grass",
+      "favored_weapon": "bow",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "stallion",
+      "domains_summary": "Dorun grants healthy herds, successful ranging, and the field-luck that comes from proper signs."
+    },
+    {
+      "deity_id": "temek",
+      "display_name": "Temek",
+      "epithets": [
+        "Ashen Hearth",
+        "The Night Counter"
+      ],
+      "alignment": "Lawful",
+      "portfolios": [
+        "fire",
+        "knowledge",
+        "prophecy"
+      ],
+      "holy_symbol": "coals banked beneath a single eye",
+      "favored_weapon": "staff",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": null,
+      "domains_summary": "Temek reads omens in campfire ash and teaches the memory of routes, treaties, and bloodlines."
+    }
+  ],
+  "flavor_text": {
+    "one_line": "A stern sky-faith that binds clan freedom to inherited banners and holy oath.",
+    "one_paragraph": "Tavraki doctrine honors Qhavar above all, naming lesser powers as rightful attendants of the First Standard and servants of ordered wandering. Priests tie oath cords to banners before raids, migrations, and treaty feasts, reminding chiefs that freedom exists only inside the law of kin and route. Chaotic spirits are denounced as storm-fiends that lure riders into glory without memory, plunder without duty, and rule without witness.",
+    "creation_myth_summary": "Qhavar planted the first banner in the empty sky and stretched the steppe beneath it, assigning every clan a road, a herd-right, and a sworn place in the wind.",
+    "moral_code_summary": "Honor banner and guest-right, keep ancestral routes, obey sworn chiefs, defend kin, and reject Chaos that severs memory from freedom."
+  }
+}

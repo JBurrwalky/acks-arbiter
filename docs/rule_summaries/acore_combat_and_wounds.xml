@@ -1,0 +1,800 @@
+<acksCombatAndWoundsSummary>
+  <scope>
+    <source>106C-ACKS-Core-Combat-and-Wounds.md</source>
+    <coverage>
+      <included>Rules, definitions, procedures, and tables present in the uploaded document text.</included>
+      <note>The text references a Mortal Wounds table and a Tampering with Mortality table, but those tables are not present in the uploaded markdown. Their use and modifiers are summarized here, but their result matrices cannot be reproduced from this file alone.</note>
+    </coverage>
+  </scope>
+
+  <definitions>
+    <term name="combatant">
+      <definition>Each adventurer, monster, and group of identical monsters acting in combat.</definition>
+    </term>
+    <term name="engaged">
+      <definition>Two opposing combatants within 5 feet of each other. Engaged combatants may not move freely and must follow Defensive Movement rules.</definition>
+    </term>
+    <term name="initiative">
+      <definition>The adjusted 1d6 roll determining action order each round. Higher numbers act first. Equal numbers act simultaneously.</definition>
+    </term>
+    <term name="combat movement">
+      <definition>The distance a combatant may move in a round when taking a normal movement action.</definition>
+    </term>
+    <term name="running">
+      <definition>Movement at triple normal combat movement rate, normally without attacking.</definition>
+    </term>
+    <term name="charge">
+      <definition>A running move that ends with an attack, subject to specific requirements and modifiers.</definition>
+    </term>
+    <term name="fighting withdrawal">
+      <definition>Defensive movement backward at up to half combat movement, declared before initiative.</definition>
+    </term>
+    <term name="full retreat">
+      <definition>Defensive movement backward at more than half combat movement, with loss of attack and penalties.</definition>
+    </term>
+    <term name="attack throw">
+      <definition>A 1d20 roll with modifiers compared against the required attack value plus target Armor Class to determine a hit.</definition>
+    </term>
+    <term name="Armor Class">
+      <definition>A target modifier added to the attack throw value needed to hit. Higher AC makes a target harder to hit.</definition>
+    </term>
+    <term name="cleaving">
+      <definition>Immediate follow-up attacks against additional nearby enemies after killing or incapacitating an opponent with a melee or missile attack.</definition>
+    </term>
+    <term name="nonlethal damage">
+      <definition>Damage tracked separately that reduces hit points normally but changes Mortal Wounds resolution and healing.</definition>
+    </term>
+    <term name="prone">
+      <definition>A knocked-down state. Attackers gain +2 to attack throws against a prone target. Thieves may backstab a prone target.</definition>
+    </term>
+    <term name="held">
+      <definition>A target successfully grabbed in wrestling. Other attackers gain +4 to attack throws against the held target, and thieves may backstab it.</definition>
+    </term>
+  </definitions>
+
+  <roundStructure>
+    <initiative>
+      <procedure>
+        <step>Before initiative is rolled, combatants intending to move defensively or cast spells must declare that intention.</step>
+        <step>Each round, each combatant rolls 1d6 and adds Dexterity bonus if any.</step>
+        <step>High result acts first.</step>
+        <step>Equal initiative results act simultaneously.</step>
+        <step>As the Judge counts down initiative numbers, combatants act on their number.</step>
+        <step>A combatant may delay and act on a later initiative number.</step>
+        <step>If a player waits for another combatant to act, the player character acts on that same number simultaneously.</step>
+      </procedure>
+      <specialCases>
+        <case>
+          <name>Long-reach weapons against closing opponents</name>
+          <rule>A combatant with a long-reach weapon may attack a closing opponent on the closing opponent’s initiative number, acting simultaneously even if the reach-user rolled lower.</rule>
+        </case>
+        <case>
+          <name>Readied missile weapon against closing opponents</name>
+          <rule>If not engaged in melee and already readied at round start, a combatant may fire at a closing opponent on that opponent’s initiative number even if the shooter rolled lower.</rule>
+        </case>
+      </specialCases>
+    </initiative>
+
+    <movement>
+      <normalMovement>
+        <rule>On its initiative, a combatant may move up to its combat movement distance and then attack any opponent in range.</rule>
+        <rule>After attacking, the combatant may not move again until next round.</rule>
+        <rule>Opponents more than 5 feet apart may move freely.</rule>
+        <rule>Once opposing combatants are within 5 feet, they are engaged and must follow Defensive Movement rules.</rule>
+        <rule>Combatants attempting to cast spells may not move on their initiative.</rule>
+      </normalMovement>
+
+      <running>
+        <rule>A running combatant normally may not attack, except when charging.</rule>
+        <rule>Running movement is triple normal combat movement.</rule>
+        <rule>A character may run for a number of rounds equal to 2 × Constitution.</rule>
+        <rule>A monster without a listed Constitution may run for 24 rounds.</rule>
+        <rule>After the allowed running duration, the combatant is exhausted and may only walk at normal combat rate.</rule>
+        <rule>An exhausted combatant must rest at least 1 turn before running again.</rule>
+      </running>
+
+      <charging>
+        <requirements>
+          <requirement>Move at least 20 feet.</requirement>
+          <requirement>May move up to triple combat movement.</requirement>
+          <requirement>Path must be more or less straight toward target.</requirement>
+          <requirement>Path must be reasonably clear.</requirement>
+          <requirement>Target must be in line of sight at start of charge.</requirement>
+        </requirements>
+        <effects>
+          <effect>The attack after the charge gains +2 on the attack throw.</effect>
+          <effect>The charging combatant suffers -2 AC until its initiative comes up again.</effect>
+          <effect>Spears, lances, pole arms, and certain natural attacks deal double damage on a successful charge.</effect>
+        </effects>
+      </charging>
+
+      <setAgainstCharge>
+        <rule>Spears, pole arms, and certain other piercing weapons deal double damage when set against a charging combatant.</rule>
+        <requirements>
+          <requirement>The defender must have equal or better initiative than the charging combatant.</requirement>
+          <requirement>Setting against charge counts as holding an action.</requirement>
+        </requirements>
+        <timing>Both charging and charged combatants act on the charging combatant’s initiative number and are simultaneous.</timing>
+      </setAgainstCharge>
+
+      <defensiveMovement>
+        <declaration>Combatants using defensive movement must declare it before initiative is rolled and may not change their mind during the round.</declaration>
+
+        <fightingWithdrawal>
+          <rule>Move backward at up to half combat movement.</rule>
+          <rule>There must be a clear path.</rule>
+          <rule>If the opponent follows, the withdrawing combatant may attack that opponent on the opponent’s initiative when the opponent enters reach.</rule>
+        </fightingWithdrawal>
+
+        <fullRetreat>
+          <rule>Move backward faster than half combat movement.</rule>
+          <rule>The retreating combatant forfeits its attack that round.</rule>
+          <rule>All opponents attack the retreating combatant with +2 that round.</rule>
+          <rule>If the retreating combatant carries a shield, the shield does not apply to AC during the retreat.</rule>
+          <rule>Thieves may backstab retreating opponents.</rule>
+        </fullRetreat>
+      </defensiveMovement>
+
+      <otherMovement>
+        <rule>Instead of moving, running, charging, setting, withdrawing, or retreating, a combatant may perform a simple action accomplishable while fighting.</rule>
+        <examplesAsMechanics>
+          <item>Stand up from knocked down.</item>
+          <item>Sheathe one weapon and draw another.</item>
+          <item>Ready or loose a shield.</item>
+          <item>Pick up an item from the ground.</item>
+          <item>Retrieve an item from a pack or sack.</item>
+        </examplesAsMechanics>
+        <exception>Simply dropping a weapon and drawing a new one does not count as movement during a round.</exception>
+      </otherMovement>
+    </movement>
+  </roundStructure>
+
+  <attacking>
+    <generalProcedure>
+      <step>If not already engaged, a combatant may move and make either a missile attack or a melee attack in the same round.</step>
+      <step>A combatant may not move after attacking.</step>
+      <step>Characters normally make 1 attack per round unless another rule says otherwise.</step>
+      <step>Some monsters have multiple attacks.</step>
+      <step>To attack, roll 1d20 and apply modifiers from Strength or Dexterity, magic, and circumstances.</step>
+      <step>Compare the result to the attacker’s attack throw target number.</step>
+      <step>Add the target’s Armor Class to the required attack throw value.</step>
+      <step>If the modified roll is greater than or equal to the required number, the attack hits.</step>
+      <step>An unmodified natural 20 always hits.</step>
+      <step>An unmodified natural 1 always misses.</step>
+      <step>On a hit, roll damage according to weapon or monster attack and apply bonuses or penalties.</step>
+    </generalProcedure>
+
+    <helplessTargets>
+      <rule>All attacks against sleeping, paralyzed, or otherwise helpless targets automatically hit.</rule>
+      <rule>If the attacker is not engaged by any other opponents, the helpless target may be automatically slain.</rule>
+      <rule>Otherwise, standard damage is rolled.</rule>
+    </helplessTargets>
+
+    <monsterAttackThrowTable>
+      <row hd="1 or less" attackThrow="10+"/>
+      <row hd="1+ to 2" attackThrow="9+"/>
+      <row hd="2+ to 3" attackThrow="8+"/>
+      <row hd="3+ to 4" attackThrow="7+"/>
+      <row hd="4+ to 5" attackThrow="6+"/>
+      <row hd="5+ to 6" attackThrow="5+"/>
+      <row hd="6+ to 7" attackThrow="4+"/>
+      <row hd="7+ to 9" attackThrow="3+"/>
+      <row hd="9+ to 11" attackThrow="2+"/>
+      <row hd="11+ to 13" attackThrow="1+"/>
+      <row hd="13+ to 15" attackThrow="0+"/>
+      <row hd="15+ to 17" attackThrow="-1+"/>
+      <row hd="17+ to 19" attackThrow="-2+"/>
+      <row hd="19+ to 21" attackThrow="-3+"/>
+      <row hd="21+ or more" attackThrow="-4+"/>
+    </monsterAttackThrowTable>
+
+    <meleeCombat>
+      <rule>Melee occurs when opponents are within 5 feet.</rule>
+      <rule>Melee attack throws and damage are affected by Strength adjustments and magical weapon bonuses.</rule>
+      <rule>Characters normally have 1 attack per round.</rule>
+      <rule>Some monsters have multi-attack routines, commonly claw/claw/bite.</rule>
+      <rule>If a combatant kills or incapacitates an opponent, cleaving may grant additional attacks.</rule>
+
+      <characterAttackThrowTable>
+        <row fighterLevel="0*" clericOrThiefLevel="0" mageLevel="0" attackThrow="11+"/>
+        <row fighterLevel="1" clericOrThiefLevel="1-2" mageLevel="1-3" attackThrow="10+"/>
+        <row fighterLevel="2-3" clericOrThiefLevel="3-4" mageLevel="4-6" attackThrow="9+"/>
+        <row fighterLevel="4" clericOrThiefLevel="5-6" mageLevel="7-9" attackThrow="8+"/>
+        <row fighterLevel="5-6" clericOrThiefLevel="7-8" mageLevel="10-12" attackThrow="7+"/>
+        <row fighterLevel="7" clericOrThiefLevel="9-10" mageLevel="13-15" attackThrow="6+"/>
+        <row fighterLevel="8-9" clericOrThiefLevel="11-12" mageLevel="-" attackThrow="5+"/>
+        <row fighterLevel="10" clericOrThiefLevel="13-14" mageLevel="-" attackThrow="4+"/>
+        <row fighterLevel="11-12" clericOrThiefLevel="-" mageLevel="-" attackThrow="3+"/>
+        <row fighterLevel="13" clericOrThiefLevel="-" mageLevel="-" attackThrow="2+"/>
+        <row fighterLevel="14-15" clericOrThiefLevel="-" mageLevel="-" attackThrow="1+"/>
+        <note>*Includes all 0-level humans.</note>
+      </characterAttackThrowTable>
+
+      <dualWielding>
+        <rule>Some characters and monsters can fight with a weapon in each hand.</rule>
+        <rule>Dual wielding still grants only 1 attack using the primary weapon.</rule>
+        <rule>The off-hand weapon grants +1 to the melee attack throw.</rule>
+        <rule>If the off-hand weapon is magical, its magic bonus may also be added to the attack throw.</rule>
+        <rule>The off-hand weapon’s magic bonus does not add to damage.</rule>
+        <rule>This attack bonus stacks with the primary weapon and the way a shield stacks with armor.</rule>
+      </dualWielding>
+
+      <visibilityModifiers>
+        <rule>Combatants suffer -4 to melee attack throws if blind, in darkness, or attacking an invisible foe.</rule>
+      </visibilityModifiers>
+
+      <formationAndPositioning>
+        <rule>In a 10-foot corridor, two man-sized combatants with two-handed weapons can fight side by side.</rule>
+        <rule>In a 10-foot corridor, three man-sized combatants with spears or one-handed weapons can fight side by side.</rule>
+        <rule>Combatants with spears and pole arms may attack in melee from the second rank.</rule>
+      </formationAndPositioning>
+    </meleeCombat>
+
+    <missileAttacks>
+      <requirements>
+        <requirement>Opponents must be more than 5 feet apart.</requirement>
+        <requirement>Combatants may not make missile attacks at opponents engaged in melee unless they have Precise Shooting.</requirement>
+      </requirements>
+      <rule>Missile attacks include bows, slings, crossbows, and thrown items such as holy water or oil flasks.</rule>
+      <rule>Combatants normally have 1 missile attack per round, subject to cleaving.</rule>
+      <modifiers>
+        <rule>Missile attacks are affected by Dexterity adjustments.</rule>
+        <rule>Magic weapons affect attack throws and/or damage as specified by the item.</rule>
+        <exampleAsRule>Ammunition +1 adds +1 damage; a bow +1 adds +1 to attack.</exampleAsRule>
+      </modifiers>
+
+      <rangeRules>
+        <rule>No modifier at short range.</rule>
+        <rule>-2 to attack throw at medium range.</rule>
+        <rule>-5 to attack throw at long range.</rule>
+        <rule>Targets beyond long range cannot be hit.</rule>
+      </rangeRules>
+
+      <missileWeaponRanges>
+        <row weapon="Arbalest" short="up to 90'" medium="to 180'" long="to 360'"/>
+        <row weapon="Axe, thrown" short="up to 10'" medium="to 20'" long="to 30'"/>
+        <row weapon="Bow, Composite" short="up to 70'" medium="to 140'" long="to 210'"/>
+        <row weapon="Bow, Long" short="up to 70'" medium="to 140'" long="to 210'"/>
+        <row weapon="Bow, Short" short="up to 50'" medium="to 100'" long="to 150'"/>
+        <row weapon="Crossbow" short="up to 80'" medium="to 160'" long="to 240'"/>
+        <row weapon="Dagger, thrown" short="up to 10'" medium="to 20'" long="to 30'"/>
+        <row weapon="Dart" short="up to 15'" medium="to 30'" long="to 45'"/>
+        <row weapon="Holy water" short="up to 10'" medium="to 30'" long="to 50'"/>
+        <row weapon="Javelin" short="up to 20'" medium="to 40'" long="to 60'"/>
+        <row weapon="Oil" short="up to 10'" medium="to 30'" long="to 50'"/>
+        <row weapon="Sling" short="up to 45'" medium="to 90'" long="to 180'"/>
+        <row weapon="Spear" short="up to 20'" medium="to 40'" long="to 60'"/>
+      </missileWeaponRanges>
+
+      <cover>
+        <rule>A target entirely behind a barrier cannot be hit.</rule>
+        <rule>Partial cover may impose a Judge-assigned penalty of -1 to -4.</rule>
+      </cover>
+
+      <visibilityModifiers>
+        <rule>Characters suffer -4 to missile attack throws if firing blind, in darkness, or at an invisible foe.</rule>
+      </visibilityModifiers>
+
+      <oilFlasks>
+        <litThrownOil>
+          <directHit>
+            <condition>Modified attack throw is sufficient to hit the target normally.</condition>
+            <effect>Deals 1d8 damage to the target for 2 rounds.</effect>
+            <effect>Also deals splash damage.</effect>
+          </directHit>
+          <splash>
+            <condition>Modified attack throw is sufficient to hit ignoring target Armor Class.</condition>
+            <effect>Deals 1d3 damage to the target and all creatures within 5 feet.</effect>
+            <save>Targets may save versus Blast to avoid being splashed.</save>
+          </splash>
+          <fumble>
+            <condition>Unmodified natural 1.</condition>
+            <effect>Attacker sets self on fire and suffers damage as if directly hit.</effect>
+          </fumble>
+          <miss>
+            <condition>Any other failed result.</condition>
+            <procedure>
+              <step>Roll 1d12 for direction as a clock direction from the target.</step>
+              <step>If short range, flask lands 1d10 feet away.</step>
+              <step>If medium range, flask lands 2d10 feet away.</step>
+              <step>If long range, flask lands 5d10 feet away.</step>
+              <step>Combatants within 5 feet of landing point save versus Blast or are splashed.</step>
+            </procedure>
+          </miss>
+        </litThrownOil>
+
+        <unlitThrownOil>
+          <rule>Unlit oil does no immediate damage.</rule>
+          <rule>It can later be lit by torch or by melee or missile attacks.</rule>
+          <rule>A character splashed with unlit oil takes 1d3 damage if the oil is later lit.</rule>
+          <rule>A character directly hit by unlit oil takes 1d8 damage for 2 rounds if the oil is later lit.</rule>
+        </unlitThrownOil>
+
+        <pouredOil>
+          <rule>An oil flask may be poured on the ground and lit.</rule>
+          <rule>It covers a 5-foot diameter area.</rule>
+          <rule>It burns for 1 full turn.</rule>
+          <rule>Any creature moving through the area takes 1d8 damage.</rule>
+        </pouredOil>
+
+        <specialInteractions>
+          <rule>Oil fire does not harm monsters with a natural flame attack.</rule>
+          <rule>Burning oil deals full damage to most undead.</rule>
+        </specialInteractions>
+      </oilFlasks>
+
+      <holyWater>
+        <rule>Holy water may be thrown as a missile attack.</rule>
+        <rule>Against undead, it deals damage as burning oil.</rule>
+        <rule>Against other creatures, it is harmless.</rule>
+        <rule>Holy power is retained only in the special blessed vial it was placed in.</rule>
+      </holyWater>
+    </missileAttacks>
+
+    <castingSpells>
+      <declaration>
+        <rule>Before initiative is rolled, the spellcaster must declare that a spell will be cast and specify which spell.</rule>
+      </declaration>
+      <castingRestrictions>
+        <rule>If the caster takes damage or fails a saving throw before acting, the spell is interrupted and lost.</rule>
+        <rule>An interrupted spell still counts against spells per day.</rule>
+        <rule>The caster may not move or perform any other action during the round of casting.</rule>
+        <rule>The caster must have line of sight to the targets or area.</rule>
+      </castingRestrictions>
+      <spellTargeting>
+        <rule>Spell attacks automatically hit chosen targets within the spell’s range and area of effect.</rule>
+        <rule>Many spells allow saving throws to negate or reduce effects.</rule>
+      </spellTargeting>
+      <concentration>
+        <rule>Some spells require concentration to maintain.</rule>
+        <rule>Unless otherwise noted, a concentrating caster may move or ride at half speed.</rule>
+        <rule>A concentrating caster may not engage in combat, use items, or cast other spells.</rule>
+        <rule>If a concentrating caster takes damage or fails a saving throw, concentration is lost.</rule>
+        <rule>Some spells additionally require the caster to remain stationary while concentrating.</rule>
+      </concentration>
+    </castingSpells>
+
+    <otherActions>
+      <rule>Instead of attacking, a combatant may take another action accomplishable in a few seconds.</rule>
+      <examplesAsMechanics>
+        <item>Sheathe one weapon and draw another.</item>
+        <item>Ready or loose a shield.</item>
+        <item>Light a torch.</item>
+        <item>Drink a magic potion.</item>
+        <item>Use a wand or ring.</item>
+        <item>Turn undead.</item>
+        <item>Pick an item off the ground.</item>
+        <item>Retrieve an item from a pack or sack.</item>
+      </examplesAsMechanics>
+      <exception>Dropping a weapon and drawing a new one does not count as an action. A combatant may drop a bow, draw a sword, and attack in the same round.</exception>
+    </otherActions>
+  </attacking>
+
+  <damage>
+    <weaponDamageTable>
+      <row category="Whips" damage="1d2"/>
+      <row category="Tiny melee weapons: daggers, hatchets, clubs, bludgeons" damage="1d4"/>
+      <row category="Staff one-handed" damage="1d4"/>
+      <row category="Staff two-handed" damage="1d6"/>
+      <row category="Small one-handed melee weapons: hand axes, javelins, short swords" damage="1d6"/>
+      <row category="Medium melee weapons one-handed: flails, battle axes, maces, picks, spears, swords, warhammers" damage="1d6"/>
+      <row category="Medium melee weapons two-handed" damage="1d8"/>
+      <row category="Large two-handed melee weapons: great axes, morning stars, polearms, two-handed swords" damage="1d10"/>
+      <row category="Thrown daggers, darts, sling stones" damage="1d4"/>
+      <row category="Arrows and crossbow bolts" damage="1d6"/>
+      <row category="Dual wielding, main hand medium or small" damage="1d6"/>
+      <row category="Dual wielding, main hand tiny" damage="1d4"/>
+    </weaponDamageTable>
+
+    <weaponHandlingRules>
+      <rule>Large melee weapons designed exclusively for two-handed use impose a -1 penalty on initiative.</rule>
+      <rule>For dual wielding, off-hand weapon size does not affect damage.</rule>
+      <rule>Weapon damage is modified by Strength, magic bonuses, and class bonus if any.</rule>
+      <rule>Monster attack entries list number of attacks per round and damage values separated by slashes.</rule>
+      <rule>When a claw/claw/bite sequence is listed, claw attacks are listed before bite attacks.</rule>
+    </weaponHandlingRules>
+
+    <doubleDamage>
+      <rule>When damage is doubled, multiply only the standard damage roll by 2.</rule>
+      <rule>Bonuses to damage, such as from Strength or magic, are not doubled.</rule>
+    </doubleDamage>
+
+    <invulnerableMonsters>
+      <rule>Some monsters can be harmed only by magical or silver weapons.</rule>
+      <rule>Such monsters can always harm each other.</rule>
+      <rule>Monsters with 5 HD or more can harm such creatures through natural ferocity.</rule>
+      <rule>Weaker monsters and characters without silver or magical weapons cannot harm them.</rule>
+    </invulnerableMonsters>
+  </damage>
+
+  <woundsAndRecovery>
+    <effectsOfDamage>
+      <rule>Damage subtracts from hit points.</rule>
+      <rule>At 0 hit points or fewer, a creature is unconscious and possibly dead.</rule>
+      <rule>The exact condition is not determined until an ally treats its wounds.</rule>
+      <mortalWoundsResolution>
+        <procedure>
+          <step>When treated, roll 1d20 + 1d6 on the Mortal Wounds table.</step>
+          <step>Apply appropriate modifiers.</step>
+          <step>The modified 1d20 determines the creature’s condition.</step>
+          <step>The modified 1d6 determines any permanent wounds suffered.</step>
+        </procedure>
+        <timing>
+          <rule>A character not treated within 24 hours rolls with no treatment bonus and the full -10 penalty for being treated 1 day later.</rule>
+        </timing>
+      </mortalWoundsResolution>
+      <restoration>
+        <rule>Permanent damage penalties may be removed by restore life and limb, regeneration, ring of regeneration, or similar magic.</rule>
+        <rule>A killed character may be revived by restore life and limb, reincarnation, or other magic that restores the dead to life.</rule>
+      </restoration>
+      <tamperingWithMortality>
+        <rule>Characters treated with restore life and limb often require extensive recovery and may suffer strange side effects.</rule>
+        <procedure>
+          <step>Roll 1d20 + 1d6 on the Tampering with Mortality table.</step>
+          <step>Apply appropriate modifiers listed for that table.</step>
+          <step>The resulting side effects are permanent.</step>
+        </procedure>
+        <rule>Such side effects can only be removed with wish.</rule>
+      </tamperingWithMortality>
+    </effectsOfDamage>
+
+    <healing>
+      <naturalHealing>
+        <rule>For each full day of complete rest in reasonably sanitary conditions, a creature recovers 1d3 hit points.</rule>
+        <rule>If the rest is interrupted, no healing occurs that day.</rule>
+      </naturalHealing>
+      <magicalHealing>
+        <rule>Magical healing is instantaneous.</rule>
+        <rule>Magical and natural healing may be combined.</rule>
+        <rule>Healing proficiency may improve natural healing.</rule>
+      </magicalHealing>
+      <bedRestResults>
+        <rule>Some Mortal Wounds or Tampering with Mortality results require a period of bed rest.</rule>
+        <rule>During required bed rest, the character gains no hit points from natural or magical healing.</rule>
+        <rule>During required bed rest, the character may only speak and move at half speed.</rule>
+        <rule>If killed again before completing sufficient bed rest, the character cannot be treated or restored to life by anything less than ritual magic.</rule>
+        <rule>If the table result says bed rest can be shortened with magical healing, any healing magic is sufficient.</rule>
+        <rule>If the table result does not allow shortening, the bed rest duration cannot be reduced.</rule>
+      </bedRestResults>
+    </healing>
+
+    <nonlethalDamage>
+      <coreRules>
+        <rule>Nonlethal damage is subtracted from hit points like normal damage.</rule>
+        <rule>A creature reduced to 0 hit points or fewer by nonlethal damage alone, or by any combination of lethal and nonlethal damage, is unconscious and possibly dead.</rule>
+        <rule>The amount of nonlethal damage must still be tracked separately because it affects death likelihood and healing.</rule>
+      </coreRules>
+      <mortalWoundsInteraction>
+        <rule>When reduced to 0 or less by nonlethal damage, the creature gets +1 on the Mortal Wounds die roll per point of nonlethal damage dealt before it was knocked unconscious.</rule>
+        <rule>Additional nonlethal damage dealt after incapacitation does not improve this.</rule>
+      </mortalWoundsInteraction>
+      <recovery>
+        <rule>Once a creature resolves its condition on the Mortal Wounds table, all nonlethal damage is removed.</rule>
+        <rule>Otherwise, nonlethal damage heals at 1 hit point per hour.</rule>
+        <rule>Magic that cures hit point damage removes an equal amount of nonlethal damage.</rule>
+      </recovery>
+    </nonlethalDamage>
+  </woundsAndRecovery>
+
+  <cleaving>
+    <trigger>Whenever a combatant kills or incapacitates an opponent with a melee or missile attack.</trigger>
+    <procedure>
+      <step>The attacker may immediately make another attack throw.</step>
+      <step>The new target must be within 5 feet of the enemy just dropped.</step>
+      <step>The additional attack must use the same weapon.</step>
+      <step>If engaged in melee, the attacker may move 5 feet between each attack, subject to maximum combat movement for the round.</step>
+    </procedure>
+    <limitations>
+      <rule>No special maneuvers or other actions may be performed while cleaving.</rule>
+      <rule>Fighters, monsters, and other characters using fighter attack throws may make up to a number of cleave attacks per round equal to their Hit Dice.</rule>
+      <rule>Clerics, thieves, and others using cleric/thief attack throws may make up to half their Hit Dice in cleave attacks, rounded down.</rule>
+      <rule>Mages and others using mage attack throws may not cleave.</rule>
+    </limitations>
+    <missileWeaponCleaveLimits>
+      <row weapon="Arbalest or crossbow" maxCleaveAttacks="2"/>
+      <row weapon="Longbow" maxCleaveAttacks="3"/>
+      <row weapon="Composite bow, shortbow, sling, thrown darts, thrown daggers, thrown javelins" maxCleaveAttacks="4"/>
+    </missileWeaponCleaveLimits>
+  </cleaving>
+
+  <savingThrows>
+    <generalProcedure>
+      <step>When an effect calls for a saving throw, roll 1d20.</step>
+      <step>If the result is greater than or equal to the listed target number for the relevant category, the save succeeds.</step>
+      <step>If the result is less than the target number, the save fails.</step>
+      <step>Success may negate the effect entirely or reduce it, depending on the effect.</step>
+      <step>An attack may deal ordinary damage separately from an additional save-based effect, such as poison.</step>
+    </generalProcedure>
+
+    <categories>
+      <category name="Petrification &amp; Paralysis">
+        <definition>Effects that render the victim immobile.</definition>
+      </category>
+      <category name="Poison &amp; Death">
+        <definition>Effects where hit points are irrelevant and the result is instant death or total incapacitation, including unconsciousness, total blindness, or panicked fear.</definition>
+      </category>
+      <category name="Blast &amp; Breath">
+        <definition>Area-damaging effects, such as fireballs, lightning bolts, dragon breath, collapsing ceilings, and avalanches, unless covered by an earlier category.</definition>
+      </category>
+      <category name="Staffs &amp; Wands">
+        <definition>Magical effects from rings, rods, staffs, and wands not covered by earlier categories.</definition>
+      </category>
+      <category name="Spells">
+        <definition>Any cast-spell magical effect not covered by earlier categories.</definition>
+      </category>
+      <categorySelectionRule>When in doubt, check categories from left to right and use the first one that matches.</categorySelectionRule>
+    </categories>
+
+    <fighterSavingThrows>
+      <row level="0*" petrificationParalysis="16+" poisonDeath="15+" blastBreath="17+" staffsWands="17+" spells="18+"/>
+      <row level="1" petrificationParalysis="15+" poisonDeath="14+" blastBreath="16+" staffsWands="16+" spells="17+"/>
+      <row level="2-3" petrificationParalysis="14+" poisonDeath="13+" blastBreath="15+" staffsWands="15+" spells="16+"/>
+      <row level="4" petrificationParalysis="13+" poisonDeath="12+" blastBreath="14+" staffsWands="14+" spells="15+"/>
+      <row level="5-6" petrificationParalysis="12+" poisonDeath="11+" blastBreath="13+" staffsWands="13+" spells="14+"/>
+      <row level="7" petrificationParalysis="11+" poisonDeath="10+" blastBreath="12+" staffsWands="12+" spells="13+"/>
+      <row level="8-9" petrificationParalysis="10+" poisonDeath="9+" blastBreath="11+" staffsWands="11+" spells="12+"/>
+      <row level="10" petrificationParalysis="9+" poisonDeath="8+" blastBreath="10+" staffsWands="10+" spells="11+"/>
+      <row level="11-12" petrificationParalysis="8+" poisonDeath="7+" blastBreath="9+" staffsWands="9+" spells="10+"/>
+      <row level="13" petrificationParalysis="7+" poisonDeath="6+" blastBreath="8+" staffsWands="8+" spells="9+"/>
+      <row level="14+" petrificationParalysis="6+" poisonDeath="5+" blastBreath="7+" staffsWands="7+" spells="8+"/>
+      <note>*Includes all 0-level humans.</note>
+    </fighterSavingThrows>
+
+    <clericSavingThrows>
+      <row level="1-2" petrificationParalysis="13+" poisonDeath="10+" blastBreath="16+" staffsWands="13+" spells="15+"/>
+      <row level="3-4" petrificationParalysis="12+" poisonDeath="9+" blastBreath="15+" staffsWands="12+" spells="14+"/>
+      <row level="5-6" petrificationParalysis="11+" poisonDeath="8+" blastBreath="14+" staffsWands="11+" spells="13+"/>
+      <row level="7-8" petrificationParalysis="10+" poisonDeath="7+" blastBreath="13+" staffsWands="10+" spells="12+"/>
+      <row level="9-10" petrificationParalysis="9+" poisonDeath="6+" blastBreath="12+" staffsWands="9+" spells="11+"/>
+      <row level="11-12" petrificationParalysis="8+" poisonDeath="5+" blastBreath="11+" staffsWands="8+" spells="10+"/>
+      <row level="13-14+" petrificationParalysis="7+" poisonDeath="4+" blastBreath="10+" staffsWands="7+" spells="9+"/>
+    </clericSavingThrows>
+
+    <mageSavingThrows>
+      <row level="1-3" petrificationParalysis="13+" poisonDeath="13+" blastBreath="15+" staffsWands="11+" spells="12+"/>
+      <row level="4-6" petrificationParalysis="12+" poisonDeath="12+" blastBreath="14+" staffsWands="10+" spells="11+"/>
+      <row level="7-9" petrificationParalysis="11+" poisonDeath="11+" blastBreath="13+" staffsWands="9+" spells="10+"/>
+      <row level="10-12" petrificationParalysis="10+" poisonDeath="10+" blastBreath="12+" staffsWands="8+" spells="9+"/>
+      <row level="13-14+" petrificationParalysis="9+" poisonDeath="9+" blastBreath="11+" staffsWands="7+" spells="8+"/>
+    </mageSavingThrows>
+
+    <thiefSavingThrows>
+      <row level="1-2" petrificationParalysis="13+" poisonDeath="13+" blastBreath="16+" staffsWands="14+" spells="15+"/>
+      <row level="3-4" petrificationParalysis="12+" poisonDeath="12+" blastBreath="15+" staffsWands="13+" spells="14+"/>
+      <row level="5-6" petrificationParalysis="11+" poisonDeath="11+" blastBreath="14+" staffsWands="12+" spells="13+"/>
+      <row level="7-8" petrificationParalysis="10+" poisonDeath="10+" blastBreath="13+" staffsWands="11+" spells="12+"/>
+      <row level="9-10" petrificationParalysis="9+" poisonDeath="9+" blastBreath="12+" staffsWands="10+" spells="11+"/>
+      <row level="11-12" petrificationParalysis="8+" poisonDeath="8+" blastBreath="11+" staffsWands="9+" spells="10+"/>
+      <row level="13-14+" petrificationParalysis="7+" poisonDeath="7+" blastBreath="10+" staffsWands="8+" spells="9+"/>
+    </thiefSavingThrows>
+  </savingThrows>
+
+  <specialManeuvers>
+    <generalRule>
+      <rule>Special maneuvers replace normal attacks unless otherwise stated.</rule>
+      <rule>Unless otherwise noted, monsters with attack routines may use any or all attacks in that routine to perform special maneuvers.</rule>
+    </generalRule>
+
+    <brawling>
+      <rule>Unarmed attacks are brawling.</rule>
+      <rule>A punch deals 1d3 nonlethal damage.</rule>
+      <rule>A kick deals 1d4 nonlethal damage and is made at -2 to the attack throw.</rule>
+      <rule>Standard Strength adjustments apply.</rule>
+      <rule>All character classes may brawl; no weapon restriction applies.</rule>
+      <rule>A character in light or no armor cannot successfully punch or kick a target in metal armor; if attempted, the damage is applied to the attacker instead.</rule>
+      <rule>The Judge decides which monsters can be brawled based on AC and physical form.</rule>
+      <rule>Monsters do not brawl; they use natural attacks.</rule>
+    </brawling>
+
+    <disarm>
+      <procedure>
+        <step>Make a melee attack throw at -4.</step>
+        <step>If the attack hits, the opponent makes a saving throw versus Paralysis.</step>
+        <step>If the opponent fails, the weapon is knocked 5 feet away.</step>
+      </procedure>
+    </disarm>
+
+    <forceBack>
+      <procedure>
+        <step>Make a melee attack throw at -4.</step>
+        <step>If the attack hits, the opponent makes a saving throw versus Paralysis.</step>
+        <step>If the attacker is significantly larger, the opponent suffers -4 on the save.</step>
+        <step>If the opponent succeeds, the opponent stands ground.</step>
+        <step>If the opponent fails, the opponent is forced back a number of feet equal to the attacker’s normal damage roll.</step>
+      </procedure>
+      <collisions>
+        <rule>If forced into a wall or obstacle, the opponent is knocked down and takes 1d6 damage per 10 feet traveled.</rule>
+        <rule>If forced into a character or monster of equal or larger size, the pushed opponent is knocked down.</rule>
+        <rule>If forced into a smaller character or monster, the smaller creature is knocked down and the pushed opponent continues moving back.</rule>
+      </collisions>
+    </forceBack>
+
+    <incapacitate>
+      <rule>To make an incapacitating weapon attack, make a melee attack throw at -4.</rule>
+      <rule>If successful, the attack deals nonlethal damage instead of normal damage.</rule>
+      <rule>Brawling attacks are always nonlethal.</rule>
+    </incapacitate>
+
+    <knockDown>
+      <procedure>
+        <step>Make a melee attack throw at -4.</step>
+        <step>If the attack hits, the opponent makes a saving throw versus Paralysis.</step>
+        <step>If the opponent fails, the opponent falls prone immediately.</step>
+      </procedure>
+      <effects>
+        <rule>Attack throws against prone targets gain +2.</rule>
+        <rule>Thieves may backstab prone targets.</rule>
+        <rule>A prone combatant may stand up on its round instead of moving.</rule>
+        <rule>A prone combatant may crawl 5 feet per round.</rule>
+        <rule>A prone combatant attacking while prone suffers -4 to attack throw.</rule>
+      </effects>
+    </knockDown>
+
+    <overrun>
+      <procedure>
+        <step>Make a melee attack throw at -4 to move through an opponent without stopping to fight.</step>
+        <step>If the attack hits, the opponent makes a saving throw versus Paralysis.</step>
+        <step>If the overrunning combatant is significantly larger, the opponent suffers -4 on the save.</step>
+        <step>If the opponent succeeds, the opponent may choose to block the combatant; if blocking, the overrunning combatant may deal melee damage to the opponent as if striking in melee.</step>
+        <step>If the opponent fails, or chooses not to block, the overrunning combatant may move through and continue up to full combat movement.</step>
+      </procedure>
+      <rule>A successful overrun does not count as the combatant’s attack for the round.</rule>
+      <rule>A combatant may make multiple overruns in a round.</rule>
+    </overrun>
+
+    <sunder>
+      <procedure>
+        <step>Choose weapon or shield as target.</step>
+        <step>Make a melee attack throw.</step>
+        <step>Apply -4 to sunder staffs, spears, or polearms.</step>
+        <step>Apply -6 to sunder any other weapons or shields.</step>
+        <step>If the attack hits, the opponent makes a saving throw versus Paralysis.</step>
+      </procedure>
+      <saveModifiers>
+        <rule>Subtract the sundering weapon’s magic bonus from the target’s saving throw.</rule>
+        <rule>Add the targeted weapon or shield’s magic bonus to the saving throw.</rule>
+        <rule>Daggers, swords, and shields get +4 on the save.</rule>
+        <rule>Staffs, spears, and pole arms get -4 on the save.</rule>
+      </saveModifiers>
+      <outcomes>
+        <rule>If the saving throw succeeds, the item is unharmed.</rule>
+        <rule>If the saving throw fails, the item is broken.</rule>
+        <rule>Magic weapons and shields can only be sundered by weapons whose magic bonus is equal to or greater than theirs.</rule>
+      </outcomes>
+    </sunder>
+
+    <wrestling>
+      <procedure>
+        <step>Make a melee attack throw at -4.</step>
+        <step>If the attack hits, the opponent makes a saving throw versus Paralysis.</step>
+        <step>If the wrestler is significantly larger, the opponent suffers -4 on the save.</step>
+        <step>If the opponent succeeds, the hold is avoided.</step>
+        <step>If the opponent fails, the opponent is grabbed in a wrestling hold.</step>
+      </procedure>
+      <effectsOfHold>
+        <rule>While the hold continues, the wrestler may perform brawl, force back, disarm, or knock down each round without making another attack throw.</rule>
+        <rule>The opponent still receives any saving throw allowed by that maneuver.</rule>
+        <rule>A force back or knock down ends the hold unless the wrestler chooses to move with the held opponent.</rule>
+        <rule>Other combatants gain +4 to attack throws against the held target.</rule>
+        <rule>Thieves may backstab a held target.</rule>
+        <rule>The held target may attempt a new saving throw versus Paralysis each round to escape.</rule>
+      </effectsOfHold>
+    </wrestling>
+
+    <sizeAndShapeAdjudication>
+      <rule>Against much larger opponents or unusually shaped opponents, the Judge may grant the target +4 or more on the saving throw or rule the maneuver automatically fails.</rule>
+      <rule>When exceptionally large combatants use maneuvers against much smaller opponents, the Judge may increase the save penalty to -6, -8, or more.</rule>
+    </sizeAndShapeAdjudication>
+  </specialManeuvers>
+
+  <morale>
+    <generalRules>
+      <rule>Player characters choose for themselves whether to fight, surrender, or flee.</rule>
+      <rule>The Judge decides whether monsters surrender or run away.</rule>
+      <rule>Monster morale is rated from -6 to +4.</rule>
+      <rule>Morale -6 means the monster never fights unless absolutely cornered.</rule>
+      <rule>Morale +4 means the monster fights until killed; no morale roll is needed.</rule>
+    </generalRules>
+
+    <monsterMoraleTable>
+      <row adjustedDieRoll="2 or less" result="Retreat"/>
+      <row adjustedDieRoll="3-5" result="Fighting Withdrawal"/>
+      <row adjustedDieRoll="6-8" result="Fight On"/>
+      <row adjustedDieRoll="9-11" result="Advance and Pursue"/>
+      <row adjustedDieRoll="12+" result="Victory or Death"/>
+    </monsterMoraleTable>
+
+    <whenToRoll>
+      <rule>The Judge usually rolls morale when one side loses a member to death.</rule>
+      <rule>The Judge usually rolls morale when half of one side is killed or otherwise incapacitated.</rule>
+      <rule>If both happen in the same round, make one morale roll at -2.</rule>
+      <rule>A solo monster rolls morale when it loses half its hit points.</rule>
+    </whenToRoll>
+
+    <moraleRollProcedure>
+      <step>Roll 2d6.</step>
+      <step>Add the monster’s morale rating.</step>
+      <step>Add any other Judge-assigned adjustments.</step>
+      <step>Consult the Monster Morale table.</step>
+    </moraleRollProcedure>
+
+    <moraleOutcomes>
+      <outcome name="Retreat">
+        <rule>On next action, monsters make a full retreat.</rule>
+      </outcome>
+      <outcome name="Fighting Withdrawal">
+        <rule>On next action, monsters make a fighting withdrawal.</rule>
+        <rule>They continue withdrawing until not pursued or until at least 1d10 rounds have passed.</rule>
+        <rule>If escape is impossible, they attempt surrender and fight only as a last resort.</rule>
+      </outcome>
+      <outcome name="Fight On">
+        <rule>Monsters continue battling without retreating.</rule>
+        <rule>They do not pursue fleeing opponents.</rule>
+      </outcome>
+      <outcome name="Advance and Pursue">
+        <rule>Monsters continue the battle offensively.</rule>
+        <rule>They pursue if characters retreat.</rule>
+      </outcome>
+      <outcome name="Victory or Death">
+        <rule>Monsters fight on for the rest of the battle without further morale rolls.</rule>
+        <rule>They pursue retreating opponents.</rule>
+        <rule>They fight with ferocity and grim determination.</rule>
+      </outcome>
+    </moraleOutcomes>
+
+    <moraleModifiers>
+      <rule>The Judge may apply circumstance modifiers from -2 to +2.</rule>
+      <rule>No such modifiers are applied to monsters with morale -6 or +4.</rule>
+    </moraleModifiers>
+
+    <surrender>
+      <rule>When a character attempts to surrender to a monster, the Judge decides whether the monster listens and on what terms surrender is accepted.</rule>
+      <rule>Characters decide how to respond if an opponent tries to surrender.</rule>
+      <rule>Monsters usually try to surrender only when they cannot escape.</rule>
+    </surrender>
+  </morale>
+
+  <mountedCombat>
+    <mountedInitiativeAndMovement>
+      <rule>Rider and mount act on the rider’s initiative number.</rule>
+      <rule>When their initiative comes up, they may move up to the mount’s combat movement distance.</rule>
+      <rule>After movement, either the mount or the rider may attack, but not both.</rule>
+      <rule>The mount may run at triple normal combat movement, but then neither rider nor mount may attack except during a charge.</rule>
+      <rule>After attacks are resolved, rider and mount may not move again until next round.</rule>
+      <rule>If engaged, they must obey Defensive Movement rules.</rule>
+      <rule>A rider wishing to cast spells must keep the mount stationary.</rule>
+      <rule>Instead of moving or attacking, the rider may dismount.</rule>
+    </mountedInitiativeAndMovement>
+
+    <mountedAttacks>
+      <rule>If rider and mount remain stationary, both may attack.</rule>
+      <rule>Otherwise, only either the rider or the mount may attack after movement.</rule>
+      <rule>A rider must have the appropriate Riding proficiency for the mount to attack while mounted.</rule>
+    </mountedAttacks>
+
+    <mountedCharge>
+      <requirements>
+        <requirement>Rider and mount must be unengaged.</requirement>
+        <requirement>They must have a reasonably clear, straight path.</requirement>
+        <requirement>The target must be at least 20 feet away.</requirement>
+      </requirements>
+      <effects>
+        <effect>Both rider and mount may attack after the running move.</effect>
+        <effect>Both gain +2 on attack throws.</effect>
+        <effect>Both suffer -2 AC until their initiative comes up again.</effect>
+        <effect>Charges with spears, lances, pole arms, and certain monster natural attacks deal double damage on a successful hit.</effect>
+      </effects>
+      <specialManeuversWhileMounted>
+        <rule>When a rider uses force back or overrun, use the mount’s size to judge size-based saving throw penalties.</rule>
+      </specialManeuversWhileMounted>
+    </mountedCharge>
+
+    <mountsAndDamage>
+      <rule>Without a military saddle, a mounted character must save versus Paralysis every time the rider or mount takes damage or be knocked off the mount.</rule>
+      <rule>If a mount is reduced to half its hit points, it must make a morale roll or flee.</rule>
+      <rule>A character with Riding proficiency may attempt to calm a fleeing mount, allowing a new morale roll each round.</rule>
+      <rule>If either rider or mount is reduced to 0 hit points, the rider falls off and takes 1d6 damage.</rule>
+      <rule>Falling from an aerial mount deals 1d6 damage per 10 feet fallen.</rule>
+    </mountsAndDamage>
+  </mountedCombat>
+</acksCombatAndWoundsSummary>

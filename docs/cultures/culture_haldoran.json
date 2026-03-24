@@ -1,0 +1,126 @@
+{
+  "culture_id": "haldoran",
+  "display_name": "Haldoran",
+  "race": "human",
+  "terrain_affinity": {
+    "primary": "plains",
+    "secondary": "river_valley",
+    "avoidance": "swamp"
+  },
+  "climate_preference": {
+    "temperature": "temperate",
+    "moisture": "moderate"
+  },
+  "alignment_tendency": {
+    "dominant": "Lawful",
+    "secondary": "Neutral",
+    "distribution": {
+      "Lawful": 0.68,
+      "Neutral": 0.24,
+      "Chaotic": 0.08
+    },
+    "notes": "The dominant alignment must have the highest distribution value and must be ≥ 0.40. A culture's LLM-generated history may describe past alignment shifts, but at runtime the culture IS its dominant alignment. This is a hard constraint."
+  },
+  "values": {
+    "core_values": [
+      "law",
+      "duty",
+      "community"
+    ],
+    "taboos": [
+      "oath-breaking",
+      "withholding grain in famine",
+      "deserting the levy"
+    ],
+    "social_structure": "feudal",
+    "gender_roles": "role_divided",
+    "attitude_toward_outsiders": "wary"
+  },
+  "personality_weight_biases": {
+    "temperament": {
+      "stoic": 0.12,
+      "jovial": -0.04,
+      "nervous": -0.08,
+      "aggressive": 0.03,
+      "melancholic": 0.02,
+      "cunning": -0.05,
+      "passionate": -0.02,
+      "serene": 0.07,
+      "paranoid": -0.03,
+      "gregarious": -0.02
+    },
+    "motivation": {
+      "wealth": -0.02,
+      "power": 0.04,
+      "knowledge": -0.01,
+      "security": 0.12,
+      "revenge": -0.05,
+      "faith": 0.03,
+      "legacy": 0.07,
+      "freedom": -0.08,
+      "pleasure": -0.06,
+      "duty": 0.11,
+      "survival": -0.03,
+      "redemption": -0.12
+    },
+    "social_style": {
+      "formal": 0.15,
+      "blunt": 0.02,
+      "flattering": -0.06,
+      "laconic": 0.03,
+      "verbose": -0.04,
+      "evasive": -0.08,
+      "warm": 0.01,
+      "intimidating": 0.01,
+      "scholarly": -0.01,
+      "streetwise": -0.03
+    },
+    "moral_compass": {
+      "righteous": 0.12,
+      "honorable": 0.11,
+      "pragmatic": -0.02,
+      "opportunistic": -0.09,
+      "ruthless": -0.05,
+      "conflicted": -0.07
+    }
+  },
+  "military_tradition": {
+    "preferred_troop_types": [
+      "heavy_infantry",
+      "pikemen",
+      "heavy_cavalry"
+    ],
+    "fighting_style": "disciplined_formation",
+    "military_culture": "feudal_levy"
+  },
+  "economy": {
+    "primary_livelihood": "agriculture",
+    "secondary_livelihood": "crafts",
+    "trade_goods": [
+      "winter wheat",
+      "wool cloth",
+      "draft horses",
+      "bronze fittings"
+    ],
+    "currency_attitude": "coin_economy"
+  },
+  "magic_attitude": {
+    "arcane": "regulated",
+    "divine": "central",
+    "notes": "Licensed court magi are tolerated, but unsanctioned sorcery is treated as sedition."
+  },
+  "architecture_style": {
+    "primary_material": "stone",
+    "aesthetic": "fortified",
+    "signature_feature": "ring-walled hill keeps"
+  },
+  "language": {
+    "language_name": "Haldoran",
+    "language_family": "Haldic",
+    "script": "own_script"
+  },
+  "flavor_text": {
+    "one_line": "A field-kingdom culture of sworn duty, communal harvests, and stern local law.",
+    "one_paragraph": "Haldoran realms spread across open grainlands where village bells, charter stones, and levy roads bind lord and commoner alike. They value ordered obligation over spectacle, rewarding those who keep oaths, tend the commons, and answer the banner when raiders come. Their nobles are expected to judge openly, their priests to feed the hungry in bad years, and their mages to serve under seal and scrutiny."
+  }
+}

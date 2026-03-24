@@ -1,0 +1,79 @@
+{
+  "religion_id": "silent_forge_within",
+  "display_name": "The Silent Forge Within",
+  "theology": {
+    "type": "monotheist",
+    "syncretism": "exclusivist",
+    "afterlife_belief": "judgment_and_rebirth"
+  },
+  "alignment": "Neutral",
+  "associated_cultures": [
+    "khorvaski"
+  ],
+  "clergy": {
+    "title_hierarchy": [
+      "Ash Novice",
+      "Hammer Reader",
+      "Deep Prior",
+      "Voice of the Anvil",
+      "High Resonant"
+    ],
+    "title_level_mapping": {
+      "1": "Ash Novice",
+      "3": "Hammer Reader",
+      "5": "Deep Prior",
+      "7": "Voice of the Anvil",
+      "9": "High Resonant"
+    },
+    "gender_restriction": "none",
+    "special_class": null,
+    "vestments": "ash-gray mantles over black aprons stamped with iron seals",
+    "holy_symbol": "black anvil marked by a single silver crack"
+  },
+  "practices": {
+    "holy_days_per_year": 3,
+    "holy_day_character": "solemn",
+    "worship_style": "meditative",
+    "dietary_restrictions": "ritual fasting before smelting",
+    "funerary_practice": "cremation",
+    "stance_on_undead": "abomination"
+  },
+  "political_role": {
+    "church_state_relationship": "influential",
+    "temporal_authority": "moderate",
+    "military_involvement": "chaplains_only"
+  },
+  "cosmology": {
+    "opposing_view": "false_gods",
+    "opposing_view_detail": "The faith teaches that zealous powers of Law and Chaos are shattered echoes of the deeper Resonance and not worthy of worship.",
+    "notes": "See §3.3 Alignment Cosmology Rules for the hard constraints governing this field."
+  },
+  "pantheon": [
+    {
+      "deity_id": "urdas_inner_hammer",
+      "display_name": "Urdas the Inner Hammer",
+      "epithets": [
+        "The Deep Resonance",
+        "Smith of Silence"
+      ],
+      "alignment": "Neutral",
+      "portfolios": [
+        "forge",
+        "earth",
+        "knowledge",
+        "protection"
+      ],
+      "holy_symbol": "silver crack across a black anvil",
+      "favored_weapon": "mace",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "ram",
+      "domains_summary": "Enduring craft, stone wisdom, hidden order, and the protection of what is painstakingly built."
+    }
+  ],
+  "flavor_text": {
+    "one_line": "A stern monotheism that finds the divine in pressure, patience, and the honest labor of refinement.",
+    "one_paragraph": "The Silent Forge Within teaches that all things contain a hidden flaw and a hidden strength, both revealed only under heat, strain, and attentive silence. Its single god, Urdas, is worshiped not with ecstatic spectacle but with vows, work, and long contemplation in echoing halls. Priests serve as judges of quality, truth, and durability, blessing mines, forges, bridges, and the pacts that keep mountain communities alive.",
+    "creation_myth_summary": "Urdas struck the hollow dark once, and the world rang into being as stone, ore, ash, and living breath separated from the echo.",
+    "moral_code_summary": "Work carefully, speak only after weighing truth, maintain what others depend upon, and reject both rigid vanity and reckless appetite."
+  }
+}

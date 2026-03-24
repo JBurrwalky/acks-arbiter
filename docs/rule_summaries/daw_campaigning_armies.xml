@@ -1,0 +1,858 @@
+<campaign_rules title="Domains at War Campaigning" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <campaign_definition>
+    <rule>A military campaign begins when an army's troops leave garrison and ends when they return to garrison.</rule>
+    <rule>A short military campaign lasts one month.</rule>
+    <rule>Longer campaigns may last seasons or years.</rule>
+  </campaign_definition>
+
+  <regions>
+    <definition>Campaigns occur within regions consisting of several domains or realms.</definition>
+    <mapping_requirements>
+      <rule>Regions should be mapped beforehand on hex paper.</rule>
+      <rule>The regional map should show terrain by hex, major domains, urban settlements, navigable waterways, and roads.</rule>
+      <rule>Standard medium region hex paper is 32 small hexes wide by 48 small hexes long, with 24-mile reference hexes superimposed 8 wide by 12 long.</rule>
+      <rule>For larger regions, scale upward so each small hex equals 24 miles.</rule>
+    </mapping_requirements>
+  </regions>
+
+  <campaign_activities>
+    <time_unit_default>week</time_unit_default>
+    <weekly_procedure>
+      <step order="1" name="initiative">
+        <rule>Each army leader rolls 1d6 and adds strategic ability to determine initiative.</rule>
+        <rule>A leader may order a forced march before rolling initiative to gain +2 initiative.</rule>
+        <rule>Ties are resolved in favor of the leader with higher strategic ability; if still tied, re-roll.</rule>
+      </step>
+
+      <step order="2" name="movement_and_battles">
+        <rule>Leaders act from highest initiative downward.</rule>
+        <rule>A leader may delay his army's initiative to any lower count down to the negative value of his initiative score.</rule>
+        <rule>The army currently taking its turn is the acting army.</rule>
+
+        <substeps>
+          <step order="2a">
+            <rule>The acting army selects offensive, defensive, or evasive strategic stance.</rule>
+          </step>
+          <step order="2b">
+            <rule>The acting army moves on the regional map.</rule>
+            <rule>If movement enters a domain controlled by another leader without permission, the army has invaded the domain.</rule>
+          </step>
+          <step order="2c">
+            <rule>After movement, the Judge makes a reconnaissance roll for the acting army against nearby opposing armies.</rule>
+            <rule>The Judge then makes reconnaissance rolls for each nearby opposing army against the acting army.</rule>
+          </step>
+          <step order="2d">
+            <rule>If the acting army ends in the same 6-mile hex as another army, a battle may occur.</rule>
+            <rule>If one army is in a stronghold, a siege may result.</rule>
+          </step>
+          <step order="2e">
+            <rule>After all battles or sieges triggered by the acting army are resolved, initiative passes to the next highest leader.</rule>
+          </step>
+        </substeps>
+      </step>
+
+      <step order="3" name="supply">
+        <rule>Each army checks whether it is in supply.</rule>
+        <rule>If in supply, it pays supply cost.</rule>
+        <rule>If not in supply, it resolves the consequences of lacking supplies.</rule>
+      </step>
+
+      <step order="4" name="occupation_and_conquest">
+        <rule>Resolve the outcomes of invasions.</rule>
+        <rule>Successful invaders may occupy, conquer, and/or pillage domains.</rule>
+      </step>
+    </weekly_procedure>
+
+    <time_scale_adjustments>
+      <entry condition="opposing_armies_within_one_week_movement">
+        <rule>Shift the time increment from weeks to days.</rule>
+        <rule>Use the same procedure, but resolve movement, battles, invasion, reconnaissance, and related activities daily.</rule>
+        <rule>Supply is still checked only once per week.</rule>
+      </entry>
+      <entry condition="opposing_armies_too_far_apart_to_interact">
+        <rule>The Judge may resolve movement and activities more casually without strict weekly procedure.</rule>
+      </entry>
+    </time_scale_adjustments>
+  </campaign_activities>
+
+  <strategic_stance>
+    <stances>
+      <stance name="offensive">
+        <rule>The army actively seeks battle with opposing armies.</rule>
+      </stance>
+      <stance name="defensive">
+        <rule>The army fights if battle is offered but does not otherwise attack.</rule>
+      </stance>
+      <stance name="evasive">
+        <rule>The army avoids battle if possible.</rule>
+      </stance>
+    </stances>
+
+    <formation_requirements>
+      <rule>When choosing a stance, the army must assign one-quarter to one-third of its divisions to the vanguard.</rule>
+      <rule>When choosing a stance, the army must assign one-quarter to one-third of its divisions to the rear guard.</rule>
+      <rule>All remaining divisions are the main body.</rule>
+      <rule>Vanguard divisions lead the marching order and are most likely to fight an offensive battle.</rule>
+      <rule>Rear guard divisions protect the flank of an evading army and are most likely to fight an evasive battle.</rule>
+    </formation_requirements>
+
+    <change_rules>
+      <rule>Strategic stance may be changed freely whenever initiative is rolled.</rule>
+      <rule>With the Judge's permission, strategic stance may also be changed when a new opposing army is detected.</rule>
+    </change_rules>
+  </strategic_stance>
+
+  <movement>
+    <general_rules>
+      <rule>Armies move on the regional map.</rule>
+      <rule>Army movement is based on the encounter movement rate of its troops.</rule>
+      <rule>Travel rates are based on a full day of movement through open, clear terrain.</rule>
+      <rule>An army traveling in formation moves at the speed of its slowest unit.</rule>
+    </general_rules>
+
+    <tables>
+      <table name="encounter_to_daily_and_weekly_movement">
+        <columns>
+          <column>encounter_movement</column>
+          <column>daily_miles</column>
+          <column>daily_6_mile_hexes</column>
+          <column>weekly_miles</column>
+          <column>weekly_24_mile_hexes</column>
+        </columns>
+        <row><encounter_movement>30'</encounter_movement><daily_miles>6</daily_miles><daily_6_mile_hexes>1</daily_6_mile_hexes><weekly_miles>24</weekly_miles><weekly_24_mile_hexes>1</weekly_24_mile_hexes></row>
+        <row><encounter_movement>60'</encounter_movement><daily_miles>12</daily_miles><daily_6_mile_hexes>2</daily_6_mile_hexes><weekly_miles>48</weekly_miles><weekly_24_mile_hexes>2</weekly_24_mile_hexes></row>
+        <row><encounter_movement>90'</encounter_movement><daily_miles>18</daily_miles><daily_6_mile_hexes>3</daily_6_mile_hexes><weekly_miles>72</weekly_miles><weekly_24_mile_hexes>3</weekly_24_mile_hexes></row>
+        <row><encounter_movement>120'</encounter_movement><daily_miles>24</daily_miles><daily_6_mile_hexes>4</daily_6_mile_hexes><weekly_miles>96</weekly_miles><weekly_24_mile_hexes>4</weekly_24_mile_hexes></row>
+        <row><encounter_movement>150'</encounter_movement><daily_miles>30</daily_miles><daily_6_mile_hexes>5</daily_6_mile_hexes><weekly_miles>120</weekly_miles><weekly_24_mile_hexes>5</weekly_24_mile_hexes></row>
+        <row><encounter_movement>180'</encounter_movement><daily_miles>36</daily_miles><daily_6_mile_hexes>6</daily_6_mile_hexes><weekly_miles>144</weekly_miles><weekly_24_mile_hexes>6</weekly_24_mile_hexes></row>
+        <row><encounter_movement>210'</encounter_movement><daily_miles>42</daily_miles><daily_6_mile_hexes>7</daily_6_mile_hexes><weekly_miles>168</weekly_miles><weekly_24_mile_hexes>7</weekly_24_mile_hexes></row>
+        <row><encounter_movement>240'</encounter_movement><daily_miles>48</daily_miles><daily_6_mile_hexes>8</daily_6_mile_hexes><weekly_miles>192</weekly_miles><weekly_24_mile_hexes>8</weekly_24_mile_hexes></row>
+        <row><encounter_movement>270'</encounter_movement><daily_miles>54</daily_miles><daily_6_mile_hexes>9</daily_6_mile_hexes><weekly_miles>216</weekly_miles><weekly_24_mile_hexes>9</weekly_24_mile_hexes></row>
+        <row><encounter_movement>300'</encounter_movement><daily_miles>60</daily_miles><daily_6_mile_hexes>10</daily_6_mile_hexes><weekly_miles>240</weekly_miles><weekly_24_mile_hexes>10</weekly_24_mile_hexes></row>
+        <row><encounter_movement>330'</encounter_movement><daily_miles>66</daily_miles><daily_6_mile_hexes>11</daily_6_mile_hexes><weekly_miles>264</weekly_miles><weekly_24_mile_hexes>11</weekly_24_mile_hexes></row>
+        <row><encounter_movement>360'</encounter_movement><daily_miles>72</daily_miles><daily_6_mile_hexes>12</daily_6_mile_hexes><weekly_miles>288</weekly_miles><weekly_24_mile_hexes>12</weekly_24_mile_hexes></row>
+      </table>
+
+      <table name="terrain_movement_multipliers">
+        <columns>
+          <column>terrain</column>
+          <column>multiplier</column>
+        </columns>
+        <row><terrain>barren</terrain><multiplier>x2/3</multiplier></row>
+        <row><terrain>desert</terrain><multiplier>x2/3</multiplier></row>
+        <row><terrain>hills</terrain><multiplier>x2/3</multiplier></row>
+        <row><terrain>woods</terrain><multiplier>x2/3</multiplier></row>
+        <row><terrain>jungle</terrain><multiplier>x1/2</multiplier></row>
+        <row><terrain>swamp</terrain><multiplier>x1/2</multiplier></row>
+        <row><terrain>mountains</terrain><multiplier>x1/2</multiplier></row>
+        <row><terrain>road</terrain><multiplier>x3/2</multiplier></row>
+        <row><terrain>trail</terrain><multiplier>x3/2</multiplier></row>
+      </table>
+    </tables>
+  </movement>
+
+  <rest_and_recuperation>
+    <rule>Armies moving long distances must rest 3 days out of every 7 to resupply and care for pack animals.</rule>
+    <rule>The listed weekly movement rates already include this rest requirement.</rule>
+    <rule>If an army marches more than 4 days out of 7 without resting, all units suffer a cumulative -1 penalty to attack throws and damage rolls per extra day until required rest is made up.</rule>
+
+    <special_cases>
+      <entry name="tireless_troops">
+        <rule>Tireless troops do not need rest.</rule>
+        <rule>Tireless troops may march every day.</rule>
+        <rule>Tireless troops may forced march without penalty.</rule>
+      </entry>
+    </special_cases>
+  </rest_and_recuperation>
+
+  <forced_marching>
+    <definition>Forced marching increases travel to 12 hours per day instead of 8.</definition>
+    <rule>A leader may order a forced march before initiative is rolled or during his initiative.</rule>
+    <rule>If ordered before initiative, the army gains +2 initiative.</rule>
+    <rule>If ordered during initiative, no initiative bonus is gained.</rule>
+    <rule>Forced marching increases daily movement by 50%.</rule>
+    <rule>Each day of forced marching counts as 2 days of marching for rest and recuperation purposes.</rule>
+    <rule>The double-counting penalty applies even if the army does not exceed its normal daily movement.</rule>
+  </forced_marching>
+
+  <large_armies>
+    <definition>Armies occupying 2 or more 6-mile hexes move more slowly because of column length.</definition>
+    <tables>
+      <table name="movement_of_large_armies">
+        <columns>
+          <column>army_size</column>
+          <column>column_length</column>
+          <column>movement_multiplier</column>
+        </columns>
+        <row><army_size>up_to_12000_troops</army_size><column_length>1_hex</column_length><movement_multiplier>x1</movement_multiplier></row>
+        <row><army_size>12001_to_36000_troops</army_size><column_length>2_hexes</column_length><movement_multiplier>x3/4</movement_multiplier></row>
+        <row><army_size>36001_to_72000_troops</army_size><column_length>3_hexes</column_length><movement_multiplier>x1/2</movement_multiplier></row>
+        <row><army_size>72000_or_more_troops</army_size><column_length>4_hexes</column_length><movement_multiplier>x1/4</movement_multiplier></row>
+      </table>
+    </tables>
+
+    <rules>
+      <rule>Army-size movement multipliers apply in addition to terrain movement multipliers.</rule>
+      <rule>If a multi-hex army occupies multiple terrain types, use the worst movement multiplier.</rule>
+      <rule>A large army may split into divisions and march separately.</rule>
+      <rule>Separated divisions function as separate armies until regrouped by moving back into adjacent hexes.</rule>
+    </rules>
+  </large_armies>
+
+  <war_machines>
+    <definition>War machines include artillery, battering rams, galleries, hoists, screws, and siege towers.</definition>
+    <movement_modes>
+      <entry mode="assembled">
+        <encounter_movement>30'</encounter_movement>
+        <daily_movement>6_miles</daily_movement>
+        <weekly_movement>24_miles</weekly_movement>
+      </entry>
+      <entry mode="disassembled">
+        <encounter_movement>60'</encounter_movement>
+        <daily_movement>12_miles</daily_movement>
+        <weekly_movement>48_miles</weekly_movement>
+      </entry>
+    </movement_modes>
+    <assembly_rules>
+      <rule>Assembling or disassembling a war machine is a construction project.</rule>
+      <rule>Construction cost is 1/100 of the cost to build the war machine from scratch.</rule>
+      <rule>Minimum assembly or disassembly time is 1 day.</rule>
+      <rule>Disassembled war machines cannot be used until assembled.</rule>
+      <rule>An army surprised on the march or forced into sudden battle cannot use disassembled artillery or devices.</rule>
+    </assembly_rules>
+  </war_machines>
+
+  <supply>
+    <supply_requirements>
+      <rule>An army on campaign must remain in supply at all times.</rule>
+      <rule>To be in supply, an army must be able to pay its supply cost.</rule>
+      <rule>To be in supply, an army must have supply base value at least equal to supply cost.</rule>
+      <rule>To be in supply, an army must have a clear line of supply to its supply base.</rule>
+    </supply_requirements>
+
+    <supply_cost>
+      <base_rules>
+        <rule>Weekly supply cost is 60gp per unit of 120 infantry.</rule>
+        <rule>Weekly supply cost is 240gp per unit of 60 cavalry.</rule>
+        <rule>Other creature types use the Exotic Creatures Roster.</rule>
+        <rule>Smaller- or larger-scale units cost proportionately more or less per unit.</rule>
+        <rule>Supply cost includes food, water, pack animals, and handlers.</rule>
+        <rule>Units without a quartermaster cost double to supply.</rule>
+      </base_rules>
+
+      <tables>
+        <table name="supply_cost_by_unit_scale">
+          <columns>
+            <column>unit_scale</column>
+            <column>cost_per_infantry_unit</column>
+            <column>cost_per_cavalry_unit</column>
+          </columns>
+          <row><unit_scale>platoon</unit_scale><cost_per_infantry_unit>15gp</cost_per_infantry_unit><cost_per_cavalry_unit>60gp</cost_per_cavalry_unit></row>
+          <row><unit_scale>company</unit_scale><cost_per_infantry_unit>60gp</cost_per_infantry_unit><cost_per_cavalry_unit>240gp</cost_per_cavalry_unit></row>
+          <row><unit_scale>battalion</unit_scale><cost_per_infantry_unit>240gp</cost_per_infantry_unit><cost_per_cavalry_unit>960gp</cost_per_cavalry_unit></row>
+          <row><unit_scale>brigade</unit_scale><cost_per_infantry_unit>960gp</cost_per_infantry_unit><cost_per_cavalry_unit>3840gp</cost_per_cavalry_unit></row>
+        </table>
+      </tables>
+
+      <special_cases>
+        <entry name="carnivorous_troops">
+          <rule>Carnivorous troops or mounts usually cost 4 times as much to supply.</rule>
+          <rule>Battle casualties or captured prisoners may be fed to carnivorous troops.</rule>
+          <rule>Each casualty or prisoner provides meat value in gp equal to its base XP value.</rule>
+          <rule>If a non-Chaotic unit sees casualties or prisoners of its own race eaten by a carnivorous unit from the same army, that unit suffers a calamity and must make a loyalty roll.</rule>
+        </entry>
+
+        <entry name="hungerless_troops">
+          <rule>Hungerless troops have no supply cost.</rule>
+          <rule>Hungerless troops do not need to maintain lines of supply.</rule>
+          <rule>Hungerless troops are never out of supply.</rule>
+        </entry>
+      </special_cases>
+    </supply_cost>
+
+    <supply_base>
+      <definition>A supply base converts supply cost in gold into food, water, and provisions.</definition>
+      <rule>Any friendly or occupied city, town, or stronghold can serve as a supply base.</rule>
+      <rule>An army may use one or more supply bases.</rule>
+      <rule>Total supply base value must equal or exceed the army's supply cost.</rule>
+
+      <value_calculation>
+        <rule>Supply base value includes the monthly income after expenses of the base itself.</rule>
+        <rule>Supply base value includes the monthly income after expenses of any friendly domains in the same 24-mile hex.</rule>
+        <rule>Supply base value includes the value of any supply bases to which it has a clear line of supply.</rule>
+      </value_calculation>
+
+      <construction_and_change_rules>
+        <rule>An army may construct a small border fort as a 10,000gp construction project.</rule>
+        <rule>A constructed border fort functions as a Class VI market for supply purposes.</rule>
+        <rule>Armies may construct chains of supply bases to maintain supply from a distant capital.</rule>
+        <rule>An army may change supply bases at any time.</rule>
+        <rule>A captured stronghold may become a new supply base.</rule>
+      </construction_and_change_rules>
+    </supply_base>
+
+    <line_of_supply>
+      <definition>A line of supply is the route between the army and its supply base, or between supply bases.</definition>
+      <rule>A line of supply is clear only if it is neither blocked nor overextended.</rule>
+
+      <blocked_supply>
+        <rule>A supply line is blocked if it passes through any hex occupied by enemy forces.</rule>
+        <rule>An army with a blocked supply line is out of supply until the enemy is removed or a new unobstructed route is found.</rule>
+      </blocked_supply>
+
+      <overextended_supply>
+        <rule>A supply line is overextended if its weighted length exceeds 16 hexes, equal to 96 miles.</rule>
+        <rule>An army with an overextended line is out of supply until the line is shortened to legal length.</rule>
+
+        <weighted_length_rules>
+          <rule>Count each barren or desert hex as 4 hexes.</rule>
+          <rule>Count each jungle, mountain, or swamp hex as 2 hexes.</rule>
+          <rule>Count every 2 hill or woods hexes as 3 hexes.</rule>
+          <rule>Count every 4 road hexes as 1 hex.</rule>
+          <rule>Count every 3 settled hexes as 1 hex.</rule>
+          <rule>Do not count hexes along a navigable waterway.</rule>
+        </weighted_length_rules>
+
+        <racial_modifiers>
+          <rule>Elves treat forest terrain as settled for supply-line measurement.</rule>
+          <rule>Dwarves treat hills and mountains as settled for supply-line measurement.</rule>
+          <rule>Beastmen treat all terrain as settled for supply-line measurement.</rule>
+        </racial_modifiers>
+      </overextended_supply>
+    </line_of_supply>
+
+    <requisition_and_looting>
+      <definition>An army that is out of supply may take supplies from peasant families in domains it passes through.</definition>
+
+      <requisition_rules>
+        <rule>Orderly requisition yields 40gp of supplies per peasant family.</rule>
+        <rule>Orderly requisition leaves peasants enough supplies to survive.</rule>
+        <rule>Supplies can be requisitioned from a domain only once every 6 months.</rule>
+      </requisition_rules>
+
+      <looting_rules>
+        <rule>Additional supplies beyond requisition must be looted.</rule>
+        <rule>Looting yields up to 20gp of supplies per peasant family.</rule>
+        <rule>For each 20gp of supplies looted, 1 peasant family is lost.</rule>
+        <rule>A domain may be reduced to zero peasant families through requisition plus looting.</rule>
+        <rule>The total possible supply extracted is 60gp per family.</rule>
+      </looting_rules>
+
+      <operational_rules>
+        <rule>The domain's leader may resist requisition or looting by fighting a battle.</rule>
+        <rule>A moving army may requisition all of its supplies from one hex or fractionally from each hex traveled through.</rule>
+        <rule>Any requisitioning or looting by a moving army halves its movement rate.</rule>
+        <rule>An encamped army must requisition first from the hexes it occupies, then from adjacent hexes.</rule>
+      </operational_rules>
+    </requisition_and_looting>
+
+    <lack_of_supply>
+      <physical_effects>
+        <rule>Insufficiently supplied troops lose 1 hit point per day.</rule>
+        <rule>Insufficiently supplied troops suffer a cumulative -1 penalty to attack throws and damage rolls.</rule>
+        <rule>Insufficiently supplied troops cannot heal naturally.</rule>
+        <rule>Magic healing still functions.</rule>
+        <rule>If troops eat enough food for one day, they regain natural healing, recover 1 hit point lost to hunger, and reduce hunger penalties by 1.</rule>
+        <rule>Troops receiving food every other day or half rations daily can function almost indefinitely.</rule>
+      </physical_effects>
+
+      <psychological_effects>
+        <rule>Each week a unit is partially or completely unsupplied counts as a calamity.</rule>
+        <rule>Each such unit must make a loyalty roll.</rule>
+      </psychological_effects>
+
+      <partial_supply_allocation>
+        <rule>If an army can feed only some units, its leader chooses which units are supplied.</rule>
+        <rule>Supplied units suffer no lack-of-supply penalties and do not make the weekly lack-of-supply check.</rule>
+        <rule>Unsupplied units suffer an additional -1 penalty on their loyalty rolls because they are visibly being left to starve.</rule>
+      </partial_supply_allocation>
+    </lack_of_supply>
+
+    <simplified_supply>
+      <rule>In well-populated areas along roads and waterways, the Judge may simply deduct weekly supply cost from the leader's treasury.</rule>
+      <rule>Under the simplified method, check supply only if the army is cut off by enemies, crosses hostile or unsettled terrain, or moves more than 24 miles from a road or waterway.</rule>
+    </simplified_supply>
+  </supply>
+
+  <reconnaissance>
+    <definition>Reconnaissance rolls abstract intelligence gathering and counter-intelligence during campaigns.</definition>
+
+    <frequency>
+      <rule>After each army completes movement, the Judge makes a reconnaissance roll for that army against any nearby armies in range.</rule>
+      <rule>The Judge then makes a reconnaissance roll for each nearby army against the army that just moved.</rule>
+      <rule>The number of reconnaissance rolls is not capped; each nearby enemy in range may generate one roll.</rule>
+      <rule>Reconnaissance rolls are always made by the Judge in secret.</rule>
+      <rule>If bookkeeping is burdensome, multiple friendly armies within one 24-mile hex may be consolidated into one reconnaissance effort.</rule>
+
+      <tables>
+        <table name="reconnaissance_range">
+          <columns>
+            <column>opposing_army_size</column>
+            <column>observing_army_must_be_within</column>
+          </columns>
+          <row><opposing_army_size>120_troops_or_less</opposing_army_size><observing_army_must_be_within>1_24_mile_hex</observing_army_must_be_within></row>
+          <row><opposing_army_size>121_to_600_troops</opposing_army_size><observing_army_must_be_within>2_24_mile_hexes</observing_army_must_be_within></row>
+          <row><opposing_army_size>601_to_3000_troops</opposing_army_size><observing_army_must_be_within>3_24_mile_hexes</observing_army_must_be_within></row>
+          <row><opposing_army_size>3001_or_more_troops</opposing_army_size><observing_army_must_be_within>4_24_mile_hexes</observing_army_must_be_within></row>
+        </table>
+      </tables>
+    </frequency>
+
+    <procedure>
+      <step order="1">
+        <rule>Roll 2d6.</rule>
+      </step>
+      <step order="2">
+        <rule>Apply reconnaissance modifiers.</rule>
+      </step>
+      <step order="3">
+        <rule>Cross-reference the modified roll on the reconnaissance results table.</rule>
+      </step>
+    </procedure>
+
+    <modifier_rules>
+      <tables>
+        <table name="reconnaissance_modifiers">
+          <columns>
+            <column>category</column>
+            <column>condition</column>
+            <column>modifier</column>
+          </columns>
+
+          <row><category>army_size</category><condition>opposing_army_fewer_than_600_troops_total</condition><modifier>-2</modifier></row>
+          <row><category>army_size</category><condition>opposing_army_600_to_3000_troops</condition><modifier>-1</modifier></row>
+          <row><category>army_size</category><condition>opposing_army_3001_to_12000_troops</condition><modifier>0</modifier></row>
+          <row><category>army_size</category><condition>opposing_army_12001_to_36000_troops</condition><modifier>+1</modifier></row>
+          <row><category>army_size</category><condition>opposing_army_36001_to_72000_troops</condition><modifier>+2</modifier></row>
+          <row><category>army_size</category><condition>opposing_army_72001_or_more_troops</condition><modifier>+3</modifier></row>
+
+          <row><category>proximity</category><condition>same_6_mile_hex</condition><modifier>+2</modifier></row>
+          <row><category>proximity</category><condition>adjacent_6_mile_hexes</condition><modifier>+1</modifier></row>
+          <row><category>proximity</category><condition>same_24_mile_hex</condition><modifier>0</modifier></row>
+          <row><category>proximity</category><condition>one_or_more_24_mile_hexes_apart</condition><modifier>-1_per_hex</modifier></row>
+
+          <row><category>leadership</category><condition>observing_leader_has_higher_strategic_ability</condition><modifier>+1</modifier></row>
+          <row><category>leadership</category><condition>opposing_leader_has_higher_strategic_ability</condition><modifier>-1</modifier></row>
+
+          <row><category>magic_spies_stratagems</category><condition>observing_army_observes_with_magic</condition><modifier>+1_per_spell_effect</modifier></row>
+          <row><category>magic_spies_stratagems</category><condition>opposing_army_uses_magical_camouflage</condition><modifier>varies</modifier></row>
+          <row><category>magic_spies_stratagems</category><condition>observing_army_has_infiltrated_spy</condition><modifier>+1_per_spy</modifier></row>
+          <row><category>magic_spies_stratagems</category><condition>observing_army_observes_from_air</condition><modifier>+2</modifier></row>
+          <row><category>magic_spies_stratagems</category><condition>observing_army_has_recon_stratagem</condition><modifier>varies</modifier></row>
+          <row><category>magic_spies_stratagems</category><condition>opposing_army_has_deception_stratagem</condition><modifier>varies</modifier></row>
+
+          <row><category>scouting_and_screening</category><condition>observing_army_scouting_with_6_to_20_units</condition><modifier>+1</modifier></row>
+          <row><category>scouting_and_screening</category><condition>observing_army_scouting_with_21_to_100_units</condition><modifier>+2</modifier></row>
+          <row><category>scouting_and_screening</category><condition>observing_army_scouting_with_101_or_more_units</condition><modifier>+3</modifier></row>
+          <row><category>scouting_and_screening</category><condition>opposing_army_screened_by_6_to_20_units</condition><modifier>-1</modifier></row>
+          <row><category>scouting_and_screening</category><condition>opposing_army_screened_by_21_to_100_units</condition><modifier>-2</modifier></row>
+          <row><category>scouting_and_screening</category><condition>opposing_army_screened_by_101_or_more_units</condition><modifier>-3</modifier></row>
+          <row><category>scouting_and_screening</category><condition>observing_army_has_more_total_cavalry_units</condition><modifier>+1</modifier></row>
+          <row><category>scouting_and_screening</category><condition>opposing_army_has_more_total_cavalry_units</condition><modifier>-1</modifier></row>
+
+          <row><category>terrain</category><condition>opposing_army_in_clear_plains_or_desert</condition><modifier>0</modifier></row>
+          <row><category>terrain</category><condition>opposing_army_in_scrub_woods_jungle_swamp_or_mountains</condition><modifier>-1</modifier></row>
+          <row><category>terrain</category><condition>observing_army_more_familiar_with_region</condition><modifier>+1</modifier></row>
+          <row><category>terrain</category><condition>opposing_army_more_familiar_with_region</condition><modifier>-1</modifier></row>
+        </table>
+
+        <table name="reconnaissance_roll_results">
+          <columns>
+            <column>modified_die_roll</column>
+            <column>result</column>
+          </columns>
+          <row><modified_die_roll>2_or_less</modified_die_roll><result>catastrophe</result></row>
+          <row><modified_die_roll>3_to_5</modified_die_roll><result>failure</result></row>
+          <row><modified_die_roll>6_to_8</modified_die_roll><result>marginal_success</result></row>
+          <row><modified_die_roll>9_to_11</modified_die_roll><result>success</result></row>
+          <row><modified_die_roll>12_or_more</modified_die_roll><result>major_success</result></row>
+        </table>
+      </tables>
+
+      <details>
+        <entry name="proximity_of_dispersed_armies">
+          <rule>If only the observing army is dispersed, count proximity from its closest unit to the opposing army.</rule>
+          <rule>If only the opposing army is dispersed, count proximity from the observing army to the largest opposing division or body of troops.</rule>
+          <rule>If both armies are dispersed, count proximity from the closest observing unit to the largest opposing division.</rule>
+        </entry>
+
+        <entry name="magic_scrying">
+          <rule>Each crystal ball counts as 1 spell effect.</rule>
+          <rule>Every 3 castings of scry count as 1 spell effect.</rule>
+          <rule>The spellcaster must know someone in the opposing army or already know the army's location to use scrying.</rule>
+          <rule>If an officer is protected by amulet versus crystal balls and ESP or nondetection, that officer and units under his command cannot be scryed upon.</rule>
+          <rule>An army is fully protected from scrying only if every officer is protected.</rule>
+          <rule>Commune or contact other plane may provide information through question-and-answer mechanics or count as a +1 modifier, at the Judge's discretion.</rule>
+        </entry>
+
+        <entry name="magic_camouflage">
+          <rule>Magical camouflage reduces the effective size of the opposing army for observation purposes.</rule>
+          <rule>Each hallucinatory terrain, massmorph, or permanent illusion hides 1 company-sized unit.</rule>
+        </entry>
+
+        <entry name="scouting_and_screening_range">
+          <rule>Cavalry and flyers on garrison duty scout and screen within the domain they garrison.</rule>
+          <rule>Cavalry and flyers in an army on campaign scout and screen only their own 24-mile hex and adjacent 24-mile hexes.</rule>
+          <rule>Reconnaissance rolls between armies 3 or more 24-mile hexes apart are not modified by scouting or screening troops.</rule>
+          <rule>The scouting and screening table assumes company-sized units.</rule>
+          <rule>Treat each battalion-sized unit as 4 units for scouting and screening.</rule>
+          <rule>Treat each brigade-sized unit as 16 units for scouting and screening.</rule>
+        </entry>
+
+        <entry name="spies">
+          <rule>Infiltrated spies modify reconnaissance rolls as described in the spying hijink rules.</rule>
+        </entry>
+
+        <entry name="stratagems">
+          <rule>Reconnaissance stratagem modifiers are assigned by the Judge based on actions by PCs or major NPCs.</rule>
+        </entry>
+      </details>
+    </modifier_rules>
+
+    <results_of_reconnaissance>
+      <outcome_definitions>
+        <entry name="catastrophe">
+          <rule>The observing army receives false intelligence.</rule>
+          <rule>The Judge presents the result as if it were a major success.</rule>
+        </entry>
+        <entry name="failure">
+          <rule>The observing army gains no intelligence.</rule>
+          <rule>If the opposing army was previously undetected, the observing army may remain unaware of its existence.</rule>
+        </entry>
+        <entry name="marginal_success">
+          <rule>The observing army gains limited intelligence based on proximity.</rule>
+        </entry>
+        <entry name="success">
+          <rule>The observing army gains substantial intelligence based on proximity.</rule>
+        </entry>
+        <entry name="major_success">
+          <rule>The observing army gains the greatest available intelligence based on proximity.</rule>
+        </entry>
+      </outcome_definitions>
+
+      <intelligence_definitions>
+        <rule>Location indicates the opposing army's position relative to the observing army, with precision based on result and distance.</rule>
+        <rule>Approximate size categories are small (600 or fewer), average (600 to 3,000), large (3,001 to 12,000), huge (12,001 to 36,000), gigantic (36,001 to 72,000), and colossal (72,001 or more).</rule>
+        <rule>Number of divisions reveals command organization.</rule>
+        <rule>Number of units per division also reveals whether the army uses company-, battalion-, or brigade-sized units.</rule>
+        <rule>Type of each unit reveals unit roles such as heavy infantry, light cavalry, or war elephants.</rule>
+        <rule>Strength of each unit reveals actual troop counts and understrength units.</rule>
+      </intelligence_definitions>
+
+      <tables>
+        <table name="results_of_reconnaissance_by_proximity_and_success">
+          <columns>
+            <column>proximity</column>
+            <column>marginal_success</column>
+            <column>success</column>
+            <column>major_success</column>
+          </columns>
+          <row>
+            <proximity>same_6_mile_hex</proximity>
+            <marginal_success>location_6_mile_hex; approximate_size; number_of_divisions; number_of_units_per_division; common_prisoner</marginal_success>
+            <success>location_6_mile_hex; approximate_size; number_of_divisions; number_of_units_per_division; type_of_each_unit; valuable_prisoner</success>
+            <major_success>location_6_mile_hex; approximate_size; number_of_divisions; number_of_units_per_division; type_of_each_unit; strength_of_each_unit</major_success>
+          </row>
+          <row>
+            <proximity>same_24_mile_hex</proximity>
+            <marginal_success>location_24_mile_hex; approximate_size; number_of_divisions</marginal_success>
+            <success>location_6_mile_hex; approximate_size; number_of_divisions; number_of_units_per_division; common_prisoner</success>
+            <major_success>location_6_mile_hex; approximate_size; number_of_divisions; number_of_units_per_division; type_of_each_unit; valuable_prisoner</major_success>
+          </row>
+          <row>
+            <proximity>2_24_mile_hexes</proximity>
+            <marginal_success>location_within_2_24_mile_hexes; approximate_size</marginal_success>
+            <success>location_24_mile_hex; approximate_size; number_of_divisions</success>
+            <major_success>location_6_mile_hex; approximate_size; number_of_divisions; number_of_units_per_division; common_prisoner</major_success>
+          </row>
+          <row>
+            <proximity>3_to_4_24_mile_hexes</proximity>
+            <marginal_success>location_within_4_24_mile_hexes</marginal_success>
+            <success>location_within_2_24_mile_hexes; approximate_size</success>
+            <major_success>location_24_mile_hex; approximate_size; number_of_divisions</major_success>
+          </row>
+        </table>
+      </tables>
+    </results_of_reconnaissance>
+
+    <prisoners>
+      <acquisition_rules>
+        <rule>Some reconnaissance results produce prisoners.</rule>
+        <rule>Prisoners may be deserters, foragers, scouts, or turncoats.</rule>
+        <rule>Each prisoner knows 1d3 pieces of information.</rule>
+        <rule>For each piece of information, roll 1d4 on the prisoner information table using the appropriate prisoner value column.</rule>
+        <rule>If the same information topic is rolled twice, shift one column right on the table to increase detail.</rule>
+        <rule>The Judge should make prisoner-information rolls in secret and determine the prisoner's identity accordingly.</rule>
+      </acquisition_rules>
+
+      <tables>
+        <table name="prisoner_information">
+          <columns>
+            <column>roll</column>
+            <column>common_prisoner</column>
+            <column>valuable_prisoner</column>
+            <column>very_valuable_prisoner</column>
+          </columns>
+          <row>
+            <roll>1</roll>
+            <common_prisoner>name_class_approximate_level_and_description_of_opposing_army_leader</common_prisoner>
+            <valuable_prisoner>name_class_approximate_level_and_description_of_opposing_army_leader_and_total_number_of_officers</valuable_prisoner>
+            <very_valuable_prisoner>names_classes_approximate_levels_and_descriptions_of_opposing_army_leader_and_division_commanders_and_total_number_of_officers</very_valuable_prisoner>
+          </row>
+          <row>
+            <roll>2</roll>
+            <common_prisoner>whether_opposing_army_has_spies_in_friendly_army</common_prisoner>
+            <valuable_prisoner>whether_opposing_army_has_spies_in_friendly_army_and_identity_of_1_spy_if_any</valuable_prisoner>
+            <very_valuable_prisoner>whether_opposing_army_has_spies_in_friendly_army_and_identity_of_up_to_1d4_spies_if_any</very_valuable_prisoner>
+          </row>
+          <row>
+            <roll>3</roll>
+            <common_prisoner>whether_opposing_army_is_in_supply</common_prisoner>
+            <valuable_prisoner>whether_opposing_army_is_in_supply_and_location_of_supply_base</valuable_prisoner>
+            <very_valuable_prisoner>whether_opposing_army_is_in_supply_plus_location_description_and_supply_route_of_supply_base_including_commander_size_stronghold_value_and_garrison_if_any</very_valuable_prisoner>
+          </row>
+          <row>
+            <roll>4</roll>
+            <common_prisoner>whether_any_spellcasters_of_7th_level_or_higher_serve_in_opposing_army</common_prisoner>
+            <valuable_prisoner>whether_any_spellcasters_of_7th_level_or_higher_serve_and_identity_of_most_powerful_spellcaster</valuable_prisoner>
+            <very_valuable_prisoner>total_number_of_spellcasters_of_7th_level_or_higher_and_identity_of_most_powerful_spellcaster</very_valuable_prisoner>
+          </row>
+        </table>
+
+        <table name="results_of_interrogation">
+          <columns>
+            <column>adjusted_die_roll</column>
+            <column>result</column>
+          </columns>
+          <row><adjusted_die_roll>2_or_less</adjusted_die_roll><result>false_information</result></row>
+          <row><adjusted_die_roll>3_to_5</adjusted_die_roll><result>nothing</result></row>
+          <row><adjusted_die_roll>6_to_8</adjusted_die_roll><result>one_piece_of_information</result></row>
+          <row><adjusted_die_roll>9_to_11</adjusted_die_roll><result>two_pieces_of_information</result></row>
+          <row><adjusted_die_roll>12_or_more</adjusted_die_roll><result>all_known_information</result></row>
+        </table>
+      </tables>
+
+      <interrogation_rules>
+        <rule>The Judge may roleplay interrogation and/or roll 2d6 on the interrogation results table.</rule>
+        <rule>The roll is modified by the interrogator's Charisma, applicable proficiencies such as Bribery, Diplomacy, Intimidation, or Seduction, and other reasonable factors.</rule>
+        <rule>On 2 or less, the prisoner gives 1 piece of false information and the Judge presents it as if it were true.</rule>
+        <rule>On 3-5, the prisoner reveals nothing of value.</rule>
+        <rule>On 6-8, the prisoner reveals 1 piece of information.</rule>
+        <rule>On 9-11, the prisoner reveals 2 pieces of information.</rule>
+        <rule>On 12 or more, the prisoner reveals all known information.</rule>
+        <rule>Without magic, there is no way to know for sure how many pieces of information a prisoner has or whether it is true.</rule>
+        <rule>Magic such as charm or ESP may be used to extract or verify information.</rule>
+      </interrogation_rules>
+    </prisoners>
+  </reconnaissance>
+
+  <stratagems>
+    <definition>Stratagems are special operations to reconnoiter, scout, slay enemy scouts, deceive enemy scouts, or otherwise influence campaign intelligence.</definition>
+    <rule>For NPC stratagems, the Judge may assign a modifier from +1 to +3 to a friendly reconnaissance roll or -1 to -3 to an enemy roll.</rule>
+    <rule>If PCs carry out the stratagem personally, the Judge may resolve it using Heroic Forays rules.</rule>
+    <rule>Each 1/2 point of BR at stake in a Heroic Foray stratagem grants +1 to the army's reconnaissance roll.</rule>
+  </stratagems>
+
+  <hijinks_against_armies>
+    <access_requirement>
+      <rule>Once an opposing army has been located, a leader with access to a syndicate or other source of perpetrators may order hijinks against it.</rule>
+      <rule>Before any hijink other than spying can be performed, a perpetrator must be infiltrated into the enemy army as a spy.</rule>
+    </access_requirement>
+
+    <hijinks>
+      <hijink name="spying">
+        <rule>A successful spying hijink infiltrates a perpetrator into the opposing army.</rule>
+        <rule>The perpetrator must succeed on Hide in Shadows.</rule>
+        <rule>The perpetrator must be of the same race as the opposing army or also succeed on a Disguise proficiency throw.</rule>
+        <rule>The perpetrator must speak the language of the opposing army.</rule>
+        <rule>Each infiltrated perpetrator grants +1 on reconnaissance rolls made against the opposing army during the next month.</rule>
+        <rule>During that month, the infiltrated perpetrator may attempt assassination, carousing, disinformation, sabotage, or stealing.</rule>
+        <rule>At the end of the month, another spying hijink is required to remain infiltrated.</rule>
+        <rule>If caught, the charge is treason.</rule>
+      </hijink>
+
+      <hijink name="assassination">
+        <rule>An infiltrated perpetrator may target an identified enemy officer.</rule>
+        <rule>The perpetrator must succeed on Hide in Shadows.</rule>
+        <rule>Apply a -1 penalty per level the perpetrator is lower than the victim.</rule>
+        <rule>Further modify the throw by the target officer's morale modifier.</rule>
+        <rule>If caught, the charge is murder.</rule>
+      </hijink>
+
+      <hijink name="carousing">
+        <rule>An infiltrated perpetrator may gather information through carousing.</rule>
+        <rule>The perpetrator must succeed on Hear Noise.</rule>
+        <rule>Success grants 1 piece of common information, as if interrogating a prisoner.</rule>
+        <rule>Valuable information may be sought at -2 on the throw.</rule>
+        <rule>Very valuable information may be sought at -5 on the throw.</rule>
+        <rule>If caught, the charge is sedition.</rule>
+      </hijink>
+
+      <hijink name="disinformation">
+        <rule>An infiltrated perpetrator may spread lies and rumors through carousing.</rule>
+        <rule>The perpetrator must succeed on Hear Noise.</rule>
+        <rule>Success imposes a -2 penalty on the opposing army's reconnaissance rolls for the next month.</rule>
+        <rule>If caught, the charge is sedition.</rule>
+      </hijink>
+
+      <hijink name="sabotage">
+        <rule>An infiltrated perpetrator may attempt to destroy enemy supplies.</rule>
+        <rule>The perpetrator must succeed on Move Silently.</rule>
+        <rule>Modify the throw by the opposing leader's strategic ability.</rule>
+        <rule>Success destroys 1,000gp of supplies per class level.</rule>
+        <rule>The perpetrator may attempt to destroy additional supplies by taking -1 on the throw per extra 1,000gp.</rule>
+        <rule>If caught, the charge is arson.</rule>
+      </hijink>
+
+      <hijink name="stealing">
+        <rule>An infiltrated perpetrator may attempt to steal the flag of an enemy unit.</rule>
+        <rule>The perpetrator must succeed on Pick Pockets.</rule>
+        <rule>Modify the throw by the target unit's morale score.</rule>
+        <rule>If successful, the target unit immediately makes a loyalty roll at -1 because it has lost its flag.</rule>
+        <rule>Stealing the army's main emblem imposes a -10 penalty on the throw.</rule>
+        <rule>If the army emblem is stolen, each unit in the army makes a loyalty roll at -1.</rule>
+        <rule>If caught, the charge is sedition.</rule>
+      </hijink>
+    </hijinks>
+
+    <risks_of_hijinks>
+      <rule>Hijinks against armies are highly risky.</rule>
+      <rule>If caught, severe charges are levied and neither attorneys nor interpleaders are available.</rule>
+      <rule>If convicted, the perpetrator suffers normal punishment and is also interrogated as a prisoner.</rule>
+      <rule>A 0th-4th level perpetrator counts as a common prisoner.</rule>
+      <rule>A 5th-9th level perpetrator counts as a valuable prisoner.</rule>
+      <rule>A 10th level or higher perpetrator counts as a very valuable prisoner.</rule>
+      <rule>If the perpetrator is a PC, the Judge may allow negotiation of a reduced sentence in exchange for information.</rule>
+    </risks_of_hijinks>
+  </hijinks_against_armies>
+
+  <domains_in_war>
+    <invasion>
+      <rule>If an army enters a domain controlled by another leader without permission, it has invaded the domain.</rule>
+      <rule>An invaded domain immediately makes a domain morale roll.</rule>
+      <rule>Only garrison forces physically present in the domain count for that morale determination.</rule>
+      <rule>If the domain's own garrison is away campaigning, morale suffers from its absence.</rule>
+      <rule>A friendly army from the same realm present in the domain counts as a garrison even if not directly controlled by the domain ruler.</rule>
+    </invasion>
+
+    <occupation>
+      <definition>A domain is occupied when invading troops are numerous enough to constitute an effective garrison.</definition>
+      <rule>Calculate the wages per month of occupying troops in the domain.</rule>
+      <rule>Subtract the wages per month of the owner's troops still in the domain after battles.</rule>
+      <rule>Divide the difference by the number of peasant families.</rule>
+      <rule>If the resulting gp value of occupying troops per peasant exceeds the domain's garrison cost, the domain is occupied.</rule>
+      <rule>Domain garrison cost is generally 2-4gp.</rule>
+
+      <effects_of_occupation>
+        <rule>Control of the domain's families and revenues passes to the occupier.</rule>
+        <rule>Responsibility for garrisoning the domain passes to the occupier.</rule>
+        <rule>Responsibility for holding festivals passes to the occupier.</rule>
+        <rule>Responsibility for paying taxes and tithes passes to the occupier.</rule>
+        <rule>Taxes paid during occupation go to the occupier's lord, not the owner's lord.</rule>
+      </effects_of_occupation>
+
+      <morale_during_occupation>
+        <rule>While a domain is occupied but not conquered, track separate domain morale scores for the owner and the occupier.</rule>
+        <rule>The occupier's initial domain morale score is 0 minus the owner's domain morale.</rule>
+        <rule>Each season after occupation begins, make 2 domain morale rolls: one for the owner and one for the occupier.</rule>
+        <rule>Apply separate adjustments based on alignment, garrison strength, and other factors for each leader.</rule>
+        <rule>If the domain becomes Turbulent, Defiant, or Rebellious toward the occupier, peasants fight to restore the rightful leader.</rule>
+        <rule>If the domain becomes Turbulent, Defiant, or Rebellious toward the owner, peasants become insurgents rooting out loyalists.</rule>
+      </morale_during_occupation>
+    </occupation>
+
+    <conquest>
+      <definition>A domain is conquered when all strongholds and settlements within it have been captured.</definition>
+      <rule>A stronghold or settlement is captured when no opposing units are present within it.</rule>
+      <rule>Ungarrisoned strongholds or urban settlements may be captured automatically.</rule>
+      <rule>Garrisoned strongholds or settlements must be besieged.</rule>
+
+      <post_conquest_options>
+        <rule>A conqueror may assimilate the new domain into his personal domain only if it is adjacent and his personal domain is not at maximum size.</rule>
+        <rule>If not eligible or desired for direct assimilation, the domain may be added to the conqueror's realm under a vassal or sub-vassal.</rule>
+        <rule>A conquered domain may also be pillaged.</rule>
+      </post_conquest_options>
+    </conquest>
+
+    <pillaging>
+      <definition>Pillaging is looting and devastation of a conquered domain instead of integrating it into the realm.</definition>
+      <rule>Pillaging requires a sizable force and time based on domain size.</rule>
+      <rule>Prisoners taken from pillage may be kept as slaves or ransomed or sold for 40gp each.</rule>
+      <rule>Pillaging reduces domain population and reduces stronghold value or urban investment.</rule>
+
+      <tables>
+        <table name="domain_pillaging_requirements">
+          <columns>
+            <column>domain_size</column>
+            <column>army_required</column>
+            <column>time_required</column>
+          </columns>
+          <row><domain_size>1_to_500_families</domain_size><army_required>600_troops</army_required><time_required>1_day</time_required></row>
+          <row><domain_size>501_to_2500_families</domain_size><army_required>2400_troops</army_required><time_required>1d3_days</time_required></row>
+          <row><domain_size>2501_to_7500_families</domain_size><army_required>7200_troops</army_required><time_required>1d4_days</time_required></row>
+          <row><domain_size>7500_to_12500_families</domain_size><army_required>12000_troops</army_required><time_required>1d6_days</time_required></row>
+          <row><domain_size>12501_or_more_families</domain_size><army_required>24000_troops</army_required><time_required>1d8_days</time_required></row>
+        </table>
+
+        <table name="results_of_pillaging">
+          <columns>
+            <column>result_type</column>
+            <column>value</column>
+          </columns>
+          <row><result_type>gold_plundered</result_type><value>3d6gp_per_family</value></row>
+          <row><result_type>supplies_looted</result_type><value>1d10x5gp_per_family</value></row>
+          <row><result_type>prisoners_taken</result_type><value>1d10_per_10_families</value></row>
+          <row><result_type>families_lost</result_type><value>1d10_per_10_families</value></row>
+          <row><result_type>stronghold_reduction</result_type><value>1gp_per_1gp_plundered</value></row>
+        </table>
+      </tables>
+
+      <procedural_rules>
+        <rule>If remaining stronghold value or urban investment after pillaging cannot sustain the remaining population, excess population is lost when pillaging ends.</rule>
+        <rule>A pillaged domain immediately makes a domain morale roll at -4.</rule>
+        <rule>A domain may be pillaged repeatedly; each pillage uses the domain's current size.</rule>
+      </procedural_rules>
+
+      <special_cases>
+        <entry name="salting_the_earth">
+          <rule>Destroying a domain completely takes 4 times the normal pillaging time.</rule>
+          <rule>Salting the earth yields 20gp in plunder per family.</rule>
+          <rule>Salting the earth yields 50gp in supplies per family.</rule>
+          <rule>Salting the earth yields 1 prisoner per family.</rule>
+          <rule>The domain is destroyed and cannot be looted further.</rule>
+        </entry>
+
+        <entry name="pillaging_with_too_small_a_force">
+          <rule>An undersized army may still pillage.</rule>
+          <rule>Roll pillage results normally, then multiply gold, supplies, and prisoners by the ratio of troops available to troops required.</rule>
+          <rule>Time required is unchanged.</rule>
+        </entry>
+
+        <entry name="interrupted_pillaging">
+          <rule>An army pillaging a domain may not move.</rule>
+          <rule>An enemy army may attack the pillaging army.</rule>
+          <rule>If pillaging is interrupted before completion, roll results normally and multiply gold, supplies, and prisoners by the ratio of time spent pillaging to time required.</rule>
+          <rule>If the force is both undersized and interrupted, apply both reductions proportionately.</rule>
+        </entry>
+      </special_cases>
+
+      <experience_rule>
+        <rule>Gold earned from pillaging counts as spoils of war for experience purposes.</rule>
+      </experience_rule>
+    </pillaging>
+
+    <domain_size_handling>
+      <rule>If one hex contains a mix of domains and Class V or Class VI urban settlements, sum the families and treat them as a single domain for invasion, occupation, conquest, and pillage.</rule>
+      <rule>Urban settlements of Class IV or higher are treated as separate domains for invasion, occupation, conquest, and pillage.</rule>
+    </domain_size_handling>
+
+    <pillaging_supply_bases>
+      <rule>If the pillaged domain or settlement is serving as a supply base, add extra gold equal to 1 month's wages for the opposing army.</rule>
+      <rule>If the pillaged domain or settlement is serving as a supply base, add extra supplies equal to 1 month's supply cost for the opposing army.</rule>
+      <rule>These rules assume wages and supplies are cached at the supply base in advance and moved forward when needed.</rule>
+      <rule>The Judge may adjust the result if the actual situation differs from that assumption.</rule>
+      <rule>When an army's supply base is pillaged, its wages and supply costs are doubled for the next month.</rule>
+      <rule>The sack of a supply base counts as a calamity for morale purposes.</rule>
+    </pillaging_supply_bases>
+  </domains_in_war>
+</campaign_rules>

@@ -1,0 +1,214 @@
+<acks_rules_summary title="hench_wanted" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <document_identity>
+    <title>Hench Wanted</title>
+    <subject>finding and hiring specific henchmen</subject>
+  </document_identity>
+
+  <core_rule>
+    <rule>When seeking a specific henchman, use normal henchman hiring rules except as modified here.</rule>
+    <rule>Likelihood of finding desired henchmen varies by market class.</rule>
+    <rule>Class rarity values are baseline suggestions for an average human settlement and may be adjusted by the Judge for location or campaign conditions.</rule>
+  </core_rule>
+
+  <rarity_system>
+    <rarity_order>
+      <entry order="1">Common</entry>
+      <entry order="2">Uncommon</entry>
+      <entry order="3">Rare</entry>
+      <entry order="4">Very Rare</entry>
+      <entry order="5">Legendary</entry>
+    </rarity_order>
+
+    <procedure name="find_henchman_of_specific_class">
+      <step order="1">Determine the desired class.</step>
+      <step order="2">Determine that class's rarity from the applicable class-rarity table, subject to Judge adjustment.</step>
+      <step order="3">Consult the henchman class availability by market class table for the current market class.</step>
+      <step order="4">Roll for availability once per month for each desired class.</step>
+      <step order="5">Limit successful results by the total number of henchmen the market can support using normal henchman availability for that market.</step>
+      <step order="6">After one month, new henchmen arrive and the search may be attempted again.</step>
+    </procedure>
+
+    <tables>
+      <table name="classes_by_rarity_standard_campaign">
+        <columns>
+          <column>rarity</column>
+          <column>classes</column>
+        </columns>
+        <row>
+          <value name="rarity">Common</value>
+          <value name="classes">Fighter; Thief</value>
+        </row>
+        <row>
+          <value name="rarity">Uncommon</value>
+          <value name="classes">Assassin; Cleric; Explorer; Mage; Venturer</value>
+        </row>
+        <row>
+          <value name="rarity">Rare</value>
+          <value name="classes">Barbarian; Bard; Bladedancer; Priestess; Shaman; Warlock; Witch</value>
+        </row>
+        <row>
+          <value name="rarity">Very Rare</value>
+          <value name="classes">Anti-Paladin; Dwarven Craftpriest; Dwarven Delver; Dwarven Vaultguard; Elven Nightblade; Elven Ranger; Elven Spellsword; Gnomish Trickster; Mystic; Paladin</value>
+        </row>
+        <row>
+          <value name="rarity">Legendary</value>
+          <value name="classes">Dwarven Fury; Dwarven Machinist; Elven Courtier; Elven Enchanter; Nobiran Wonderworker; Thrassian Gladiator; Zaharan Ruinguard</value>
+        </row>
+      </table>
+
+      <table name="henchman_class_availability_by_market_class">
+        <columns>
+          <column>rarity</column>
+          <column>class_i</column>
+          <column>class_ii</column>
+          <column>class_iii</column>
+          <column>class_iv</column>
+          <column>class_v</column>
+          <column>class_vi</column>
+        </columns>
+        <row>
+          <value name="rarity">Common</value>
+          <value name="class_i">20</value>
+          <value name="class_ii">2</value>
+          <value name="class_iii">1</value>
+          <value name="class_iv">1 (50%)</value>
+          <value name="class_v">1 (30%)</value>
+          <value name="class_vi">1 (15%)</value>
+        </row>
+        <row>
+          <value name="rarity">Uncommon</value>
+          <value name="class_i">2</value>
+          <value name="class_ii">1 (20%)</value>
+          <value name="class_iii">1 (2%)</value>
+          <value name="class_iv">1 (1%)</value>
+          <value name="class_v">-</value>
+          <value name="class_vi">-</value>
+        </row>
+        <row>
+          <value name="rarity">Rare</value>
+          <value name="class_i">1 (60%)</value>
+          <value name="class_ii">1 (5%)</value>
+          <value name="class_iii">1 (1%)</value>
+          <value name="class_iv">-</value>
+          <value name="class_v">-</value>
+          <value name="class_vi">-</value>
+        </row>
+        <row>
+          <value name="rarity">Very Rare</value>
+          <value name="class_i">1 (10%)</value>
+          <value name="class_ii">1 (1%)</value>
+          <value name="class_iii">-</value>
+          <value name="class_iv">-</value>
+          <value name="class_v">-</value>
+          <value name="class_vi">-</value>
+        </row>
+        <row>
+          <value name="rarity">Legendary</value>
+          <value name="class_i">1 (1%)</value>
+          <value name="class_ii">-</value>
+          <value name="class_iii">-</value>
+          <value name="class_iv">-</value>
+          <value name="class_v">-</value>
+          <value name="class_vi">-</value>
+        </row>
+      </table>
+    </tables>
+  </rarity_system>
+
+  <henchman_level_determination>
+    <procedure name="determine_henchman_level_after_successful_hire">
+      <step order="1">Roll 1d20 on the random henchman level table.</step>
+      <step order="2">If hiring in a Class VI market, apply a -2 penalty to the roll.</step>
+      <step order="3">Read the resulting level from the table.</step>
+    </procedure>
+    <tables>
+      <table name="random_henchman_level">
+        <columns>
+          <column>roll_1d20</column>
+          <column>level</column>
+        </columns>
+        <row>
+          <value name="roll_1d20">10 or lower</value>
+          <value name="level">1</value>
+        </row>
+        <row>
+          <value name="roll_1d20">11-16</value>
+          <value name="level">2</value>
+        </row>
+        <row>
+          <value name="roll_1d20">17-18</value>
+          <value name="level">3</value>
+        </row>
+        <row>
+          <value name="roll_1d20">19-20</value>
+          <value name="level">4</value>
+        </row>
+      </table>
+    </tables>
+  </henchman_level_determination>
+
+  <commissioning>
+    <rule>Characters may commission the hire of a henchman in the same way equipment may be commissioned.</rule>
+    <rule>The character must let it be known that a specific henchman is sought and must be willing to wait to hire them.</rule>
+    <rule>The character must pay the Searching for Henchmen fee by market class for a full month.</rule>
+    <rule>After paying the fee for the month, the character rolls for availability as though the desired class were one rarity lower.</rule>
+    <rule>If the search fails, the character may continue searching and roll again each month.</rule>
+  </commissioning>
+
+  <seeking_specific_proficiencies>
+    <general_proficiency_search>
+      <rule>Finding a henchman with one rank in a specific general proficiency is Common rarity.</rule>
+      <rule>Finding a henchman with two ranks in a specific general proficiency is Uncommon rarity.</rule>
+      <rule>Finding a henchman with three ranks in a specific general proficiency is Rare rarity.</rule>
+      <rule>If such a henchman is found, generate the henchman's class as normal for a henchman found in that location.</rule>
+    </general_proficiency_search>
+
+    <class_or_combination_search>
+      <rule>For a class proficiency, or for a specific class combined with a specific general proficiency, begin with the rarity of the specific class.</rule>
+      <rule>If multiple classes can have the desired proficiency and the hiring character does not care which class is found, use the lowest applicable class rarity.</rule>
+      <rule>Increase rarity by one step for each rank in the desired proficiency or proficiencies.</rule>
+      <rule>If the modified rarity would exceed Legendary, the henchman cannot be found by this method.</rule>
+      <rule>When the method cannot produce the desired result, the hiring character must accept whatever is found, which may or may not match the request.</rule>
+    </class_or_combination_search>
+  </seeking_specific_proficiencies>
+
+  <seeking_specific_class_and_level>
+    <rule>To seek a henchman of a specific class and level, choose the desired class and level first.</rule>
+    <rule>Seeking a level 1 henchman applies no rarity modifier.</rule>
+    <rule>For each level above 1, increase rarity by one step.</rule>
+    <rule>If modified rarity would exceed Legendary, the henchman cannot be found by this method.</rule>
+    <rule>When the method cannot produce the desired result, the hiring character must accept whatever is found, which may or may not match the request.</rule>
+  </seeking_specific_class_and_level>
+
+  <rarity_evaluation_guidelines>
+    <procedure name="evaluate_class_rarity">
+      <step order="1">Start with Common rarity.</step>
+      <step order="2">Apply the listed modifiers for class traits.</step>
+      <step order="3">Cap the result at Legendary unless the Judge instead rules the class unavailable for hire.</step>
+    </procedure>
+    <modifiers>
+      <modifier condition="class is demihuman">+2 rarity</modifier>
+      <modifier condition="for each kind of magic the class can cast">+1 rarity</modifier>
+      <modifier condition="class is non-core">+1 rarity</modifier>
+      <modifier condition="class has exceptional abilities not otherwise covered">+1 rarity</modifier>
+      <modifier condition="class is an extremely specialized subset of a core class">+1 rarity</modifier>
+      <modifier condition="class has exceptional ability score requirements">+1 rarity or more</modifier>
+    </modifiers>
+    <definitions>
+      <definition term="core">For these guidelines, core means appears in ACKS Core; this definition may vary by campaign.</definition>
+    </definitions>
+    <rule>These are baseline guidelines only; listed class rarities need not exactly match the guideline result in every case.</rule>
+    <rule>If a computed rarity would exceed Legendary, the Judge may either treat it as Legendary or declare the class unavailable for hire.</rule>
+  </rarity_evaluation_guidelines>
+
+  <source_notes>
+    <rule>In the standard campaign class-rarity table, classes printed in italics are from Player's Companion.</rule>
+    <rule>In the Heroic Fantasy class-rarity table, classes printed in italics are from Player's Companion and classes printed in bold italics are from Heroic Fantasy Handbook.</rule>
+  </source_notes>
+
+  <confidence_notes>
+  </confidence_notes>
+</acks_rules_summary>
+<notes_to_build_agent> 
+  <note>The Heroic Fantasy classes, and several other classes, are not included for v1 of the app, but appear in these tables for completeness.</note>
+  <note>Build the systems that rely on these tables to be adjustable depending on which classes are included in a campaign, and to be adjustable for new, custom, or later-added classes.</note>

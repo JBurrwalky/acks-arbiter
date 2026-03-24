@@ -1,0 +1,732 @@
+<campaign_vagaries_summary title="Domains at War - Campaigns - Vagaries" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <general_rules>
+    <rule>Use of all vagaries tables is optional.</rule>
+    <rule>When a vagary result is implausible or irrelevant, the Judge should re-roll, alter the event to make it plausible, or treat it as a no_vagary result.</rule>
+    <rule>These rules add bookkeeping and complexity.</rule>
+  </general_rules>
+
+  <shared_unit_scale_rules>
+    <rule context="recruitment_and_war">When a vagary causes a leader to gain or lose units, use battalion-sized units if the leader rules a duchy or principality, brigade-sized units if the leader rules a kingdom or empire, and company-sized units in all other cases.</rule>
+    <unit_size realm_scale="duchy_or_principality">
+      <infantry>480</infantry>
+      <cavalry>240</cavalry>
+    </unit_size>
+    <unit_size realm_scale="kingdom_or_empire">
+      <infantry>1920</infantry>
+      <cavalry>960</cavalry>
+    </unit_size>
+    <unit_size realm_scale="all_other_cases">
+      <infantry>120</infantry>
+      <cavalry>60</cavalry>
+    </unit_size>
+  </shared_unit_scale_rules>
+
+  <vagaries_of_recruitment>
+    <trigger>
+      <frequency>monthly</frequency>
+      <condition>Roll each month that a leader is recruiting mercenaries, conscripts, militia, or vassal troops.</condition>
+    </trigger>
+
+    <table name="vagaries_of_recruitment">
+      <columns>
+        <column>die_roll</column>
+        <column>result</column>
+      </columns>
+      <row><die_roll>01-02</die_roll><result>war_declared</result></row>
+      <row><die_roll>03-07</die_roll><result>resignation</result></row>
+      <row><die_roll>08-12</die_roll><result>treacherous_mercenaries</result></row>
+      <row><die_roll>13-17</die_roll><result>bidding_war</result></row>
+      <row><die_roll>18-22</die_roll><result>weak_recruits</result></row>
+      <row><die_roll>23-27</die_roll><result>commander_casualty</result></row>
+      <row><die_roll>28-32</die_roll><result>brigands</result></row>
+      <row><die_roll>33-37</die_roll><result>commerce_disrupted</result></row>
+      <row><die_roll>38-42</die_roll><result>war_profiteers</result></row>
+      <row><die_roll>43-58</die_roll><result>all_quiet</result></row>
+      <row><die_roll>59-63</die_roll><result>tribute</result></row>
+      <row><die_roll>64-68</die_roll><result>commerce_improves</result></row>
+      <row><die_roll>69-73</die_roll><result>foreign_legion</result></row>
+      <row><die_roll>74-78</die_roll><result>soldier_of_fortune</result></row>
+      <row><die_roll>79-83</die_roll><result>stout_recruits</result></row>
+      <row><die_roll>84-88</die_roll><result>surplus_sellswords</result></row>
+      <row><die_roll>89-93</die_roll><result>mercenaries</result></row>
+      <row><die_roll>94-98</die_roll><result>bold_captain</result></row>
+      <row><die_roll>99-100</die_roll><result>alliance_offered</result></row>
+    </table>
+
+    <results>
+      <result name="alliance_offered">
+        <rule>Select an allied neighboring domain or realm of approximately the same size as the leader's own.</rule>
+        <rule>If no such domain or realm exists, re-roll this vagary.</rule>
+        <rule>The ally supports the leader in war by sending half its garrison.</rule>
+      </result>
+
+      <result name="all_quiet">
+        <rule>No vagary occurs this month.</rule>
+      </result>
+
+      <result name="bidding_war">
+        <rule>Increase the cost of finding and hiring mercenaries by 2d4 x 100%.</rule>
+        <rule>Mercenary wages do not change.</rule>
+        <duration>1d6 months</duration>
+      </result>
+
+      <result name="bold_captain">
+        <rule>A talented commander emerges from the army's ranks and serves the leader.</rule>
+        <assignment realm_scale="principality">mercenary_major</assignment>
+        <assignment realm_scale="kingdom">mercenary_colonel</assignment>
+        <assignment realm_scale="empire">mercenary_general</assignment>
+        <assignment realm_scale="all_other_cases">mercenary_captain</assignment>
+        <rule>Base morale score is +1 instead of -2.</rule>
+      </result>
+
+      <result name="brigands">
+        <rule>Renegade mercenaries harass the realm.</rule>
+        <rule>The brigands may be treated as an independent enemy army for Domains at War purposes.</rule>
+        <army_composition>
+          <unit type="bowmen" number="1"/>
+          <unit type="light_cavalry" number="1"/>
+          <commander role="unit_leader" count="2">5th level fighter with command characteristics of a mercenary captain</commander>
+          <commander role="army_leader" count="1">9th level fighter with command characteristics of a mercenary colonel</commander>
+          <support_chance type="cleric">30% chance of one 8th level cleric</support_chance>
+          <support_chance type="mage">50% chance of one mage of level 8+1d2</support_chance>
+        </army_composition>
+      </result>
+
+      <result name="commander_casualty">
+        <procedure>
+          <step order="1">Make a saving throw versus Death for each commander in the army, starting with the physically oldest commander.</step>
+          <step order="2">The first commander to fail dies from accident, illness, or similar circumstances.</step>
+          <step order="3">If no commander fails, the event has no effect.</step>
+        </procedure>
+        <rule>The dead commander may be restored through restore life and limb or similar magic.</rule>
+      </result>
+
+      <result name="commerce_disrupted">
+        <rule>The leader's largest urban settlement is treated as one market class smaller.</rule>
+        <duration>1d6 months</duration>
+      </result>
+
+      <result name="commerce_improves">
+        <rule>The leader's largest urban settlement is treated as one market class larger.</rule>
+        <duration>1d6 months</duration>
+      </result>
+
+      <result name="treacherous_mercenaries">
+        <procedure>
+          <step order="1">Immediately after receiving wages, check each mercenary unit in the army, starting with the unit with the lowest morale.</step>
+          <step order="2">Make a loyalty roll for each checked unit.</step>
+          <step order="3">The first unit with a result of Resignation or Enmity deserts the day after it is next paid.</step>
+          <step order="4">If no unit fails, the event has no effect.</step>
+        </procedure>
+      </result>
+
+      <result name="foreign_legion">
+        <rule>A mercenary unit from a foreign realm offers service.</rule>
+        <rule>The unit type should be one not generally available to the leader.</rule>
+        <rule>If hired, the unit suffers a -1 penalty to base morale due to language and cultural difficulties.</rule>
+      </result>
+
+      <result name="mercenaries">
+        <procedure>
+          <step order="1">Determine mercenary type by rolling on the Follower Type and Equipment by Class table, using the army leader's class.</step>
+          <step order="2">There is a 25% chance the mercenaries are veterans.</step>
+        </procedure>
+      </result>
+
+      <result name="resignation">
+        <procedure>
+          <step order="1">Make a loyalty roll for each commander in the army, starting with the commander with the lowest morale.</step>
+          <step order="2">The first commander with a result of Resignation or Enmity unexpectedly resigns.</step>
+          <step order="3">If no commander fails, the event has no effect.</step>
+        </procedure>
+        <rule>The Judge determines a plausible reason for the resignation.</rule>
+      </result>
+
+      <result name="soldier_of_fortune">
+        <rule>An experienced soldier offers to serve the leader as a henchman.</rule>
+        <procedure>
+          <step order="1">Generate the soldier of fortune using the NPC Parties rules in ACKS.</step>
+          <step order="2">Set the soldier's base level to two levels lower than the leader's level.</step>
+        </procedure>
+        <rule>The soldier expects pay and position appropriate to class and level.</rule>
+      </result>
+
+      <result name="stout_recruits">
+        <rule>Twice as many conscripts and militia recruited this month qualify for advanced training.</rule>
+      </result>
+
+      <result name="surplus_sellswords">
+        <rule>The crop of mercenaries available in the leader's realm is doubled.</rule>
+        <rule>Mercenary wages do not increase during this time, regardless of how many are hired.</rule>
+        <duration>next four time periods</duration>
+      </result>
+
+      <result name="tribute">
+        <rule>The leader gains gold equal to the lesser of one month's wages for his army or 1gp per family in his overall realm.</rule>
+      </result>
+
+      <result name="war_declared">
+        <rule>Select a rival neighboring domain or realm of approximately the same size as the leader's own.</rule>
+        <rule>If no such domain or realm exists, re-roll this vagary.</rule>
+        <rule>The rival has a full complement of vassal troops and attacks as swiftly as possible.</rule>
+      </result>
+
+      <result name="war_profiteers">
+        <rule>Increase the cost of artillery ammunition, armor, mounts, supplies, and weapons by 10%.</rule>
+        <rule>Each additional time this vagary is rolled, prices increase by an additional 10%.</rule>
+        <duration>1d4 seasons</duration>
+      </result>
+
+      <result name="weak_recruits">
+        <rule>All conscripts and militia recruited this month qualify only as light infantry.</rule>
+        <rule>This overrides the normal rule that 50% of conscripts and militia qualify to be heavy infantry or archers.</rule>
+      </result>
+    </results>
+  </vagaries_of_recruitment>
+
+  <vagaries_of_war>
+    <trigger>
+      <frequency>weekly</frequency>
+      <condition>Roll each week after checking for supply when an army is on campaign in enemy territory or out of garrison for more than one month.</condition>
+      <siege_modifier>
+        <rule>During sieges, roll twice per week and use the lower, worse result.</rule>
+      </siege_modifier>
+    </trigger>
+
+    <table name="vagaries_of_war">
+      <columns>
+        <column>die_roll</column>
+        <column>result</column>
+      </columns>
+      <row><die_roll>01-02</die_roll><result>disease</result></row>
+      <row><die_roll>03-05</die_roll><result>defection</result></row>
+      <row><die_roll>06-08</die_roll><result>desertion</result></row>
+      <row><die_roll>09-11</die_roll><result>spy_caught_friendly</result></row>
+      <row><die_roll>12-14</die_roll><result>camp_followers</result></row>
+      <row><die_roll>15-17</die_roll><result>treacherous_guides</result></row>
+      <row><die_roll>18-20</die_roll><result>commander_casualty</result></row>
+      <row><die_roll>21-24</die_roll><result>brigands</result></row>
+      <row><die_roll>25-28</die_roll><result>supply_problems</result></row>
+      <row><die_roll>29-32</die_roll><result>war_profiteers</result></row>
+      <row><die_roll>32-36</die_roll><result>siege_train_problems</result></row>
+      <row><die_roll>37-40</die_roll><result>bad_weather</result></row>
+      <row><die_roll>41-45</die_roll><result>ill_omen</result></row>
+      <row><die_roll>46-55</die_roll><result>all_quiet</result></row>
+      <row><die_roll>56-60</die_roll><result>good_omen</result></row>
+      <row><die_roll>61-64</die_roll><result>good_weather</result></row>
+      <row><die_roll>65-68</die_roll><result>artillery_magazine</result></row>
+      <row><die_roll>69-72</die_roll><result>legendary_leadership</result></row>
+      <row><die_roll>73-76</die_roll><result>supply_boon</result></row>
+      <row><die_roll>77-80</die_roll><result>friendly_peasants</result></row>
+      <row><die_roll>81-83</die_roll><result>friendly_lord</result></row>
+      <row><die_roll>84-86</die_roll><result>local_guides</result></row>
+      <row><die_roll>87-89</die_roll><result>ministers</result></row>
+      <row><die_roll>90-92</die_roll><result>spy_caught_enemy</result></row>
+      <row><die_roll>93-95</die_roll><result>mercenaries</result></row>
+      <row><die_roll>96-98</die_roll><result>defection_enemy</result></row>
+      <row><die_roll>99-100</die_roll><result>plans_discovered</result></row>
+    </table>
+
+    <results>
+      <result name="all_quiet">
+        <rule>No vagary occurs this week.</rule>
+      </result>
+
+      <result name="artillery_magazine" alias="artillery_cache">
+        <rule>The army discovers 1d4 different artillery units cached from prior campaigns.</rule>
+        <rule>Each discovered artillery unit has 1d6 days of ammunition.</rule>
+      </result>
+
+      <result name="brigands">
+        <rule>Until the brigands are dealt with, the army's supply costs increase by 10%.</rule>
+        <rule>Until the brigands are dealt with, the army suffers -1 on reconnaissance rolls.</rule>
+        <rule>The brigands may be treated as an independent enemy army for Domains at War purposes.</rule>
+        <army_composition>
+          <unit type="bowmen" number="1"/>
+          <unit type="light_cavalry" number="1"/>
+          <commander role="unit_leader" count="2">5th level fighter with command characteristics of a mercenary captain</commander>
+          <commander role="army_leader" count="1">9th level fighter with command characteristics of a mercenary colonel</commander>
+          <support_chance type="cleric">30% chance of one 8th level cleric</support_chance>
+          <support_chance type="mage">50% chance of one mage of level 8+1d2</support_chance>
+        </army_composition>
+      </result>
+
+      <result name="camp_followers">
+        <rule>The army gains camp followers.</rule>
+        <rule>While they remain, the army's movement rate is reduced by one-third.</rule>
+        <rule>Enemy spies gain a +2 bonus to conduct hijinks against the army while the followers remain.</rule>
+        <rule>If the army leader drives off the camp followers, it counts as a morale calamity.</rule>
+      </result>
+
+      <result name="commander_casualty">
+        <procedure>
+          <step order="1">Make a saving throw versus Death for each commander in the army, starting with the physically oldest commander.</step>
+          <step order="2">The first commander to fail dies.</step>
+          <step order="3">If no commander fails, the event has no effect.</step>
+        </procedure>
+        <rule>The dead commander may be restored through restore life and limb or similar magic.</rule>
+      </result>
+
+      <result name="defection">
+        <procedure>
+          <step order="1">Make a loyalty roll for each commander in the relevant army, starting with the commander with the lowest morale.</step>
+          <step order="2">The first commander with a result of Resignation or Enmity becomes a defector.</step>
+          <step order="3">If no commander fails, the event has no effect.</step>
+          <step order="4">If an opposing army is within one week's march, the defector immediately defects and brings the units under his command to the opposing army.</step>
+          <step order="5">Otherwise, the defector feigns loyalty until an opportune moment.</step>
+        </procedure>
+      </result>
+
+      <result name="defection_enemy">
+        <rule>Use the defection procedure, but the defector comes from the enemy army to the current army.</rule>
+      </result>
+
+      <result name="desertion">
+        <procedure>
+          <step order="1">Make a loyalty roll for each unit in the army, starting with the unit with the lowest morale.</step>
+          <step order="2">The first unit with a result of Resignation or Enmity deserts.</step>
+          <step order="3">If no unit fails, the event has no effect.</step>
+          <step order="4">If an enemy force is within one week's march, the deserters join the opposing army.</step>
+          <step order="5">Otherwise, the deserters disband and go home.</step>
+        </procedure>
+      </result>
+
+      <result name="disease">
+        <rule>This represents a major epidemic, not ordinary background illness.</rule>
+        <procedure>
+          <step order="1">Roll 1d100 on the disease_type table to determine the disease.</step>
+          <step order="2">Each unit makes a saving throw versus Death, applying any disease save bonus.</step>
+          <step order="3">If a unit succeeds, it avoids serious illness.</step>
+          <step order="4">If a unit fails, it becomes diseased for the listed duration and cannot move or fight.</step>
+          <step order="5">At the end of the duration, a diseased unit recovers unless it failed by the disease's listed death threshold or failed on a natural 1.</step>
+          <step order="6">A unit that dies is removed from play.</step>
+        </procedure>
+        <rule>Saving throws for disease should be made secretly by the Judge so commanders do not know which diseased units will recover.</rule>
+        <treatment_rules>
+          <rule>Diseased units can be cured by divine spellcasters and/or healers.</rule>
+          <rate>One 9th level divine spellcaster cures one sickened unit in one week.</rate>
+          <rate>Two 7th-8th level divine spellcasters cure one sickened unit in one week.</rate>
+          <rate>Three 6th level divine spellcasters or chirugeons cure one sickened unit in one week.</rate>
+          <rate>Nine physickers cure one sickened unit in one week.</rate>
+          <rule>If the number of casters or healers is greater or lesser, adjust the cure rate proportionately.</rule>
+        </treatment_rules>
+      </result>
+
+      <table name="disease_type">
+        <columns>
+          <column>die_roll</column>
+          <column>disease_type</column>
+          <column>save_bonus</column>
+          <column>duration</column>
+          <column>death_if_failed_by</column>
+        </columns>
+        <row>
+          <die_roll>1-5</die_roll>
+          <disease_type>plague</disease_type>
+          <save_bonus>0</save_bonus>
+          <duration>1d8 days</duration>
+          <death_if_failed_by>6+</death_if_failed_by>
+        </row>
+        <row>
+          <die_roll>6-15</die_roll>
+          <disease_type>putrid_fever</disease_type>
+          <save_bonus>0</save_bonus>
+          <duration>2 weeks</duration>
+          <death_if_failed_by>7+</death_if_failed_by>
+        </row>
+        <row>
+          <die_roll>16-30</die_roll>
+          <disease_type>spotted_pox</disease_type>
+          <save_bonus>+1</save_bonus>
+          <duration>3 weeks</duration>
+          <death_if_failed_by>8+</death_if_failed_by>
+        </row>
+        <row>
+          <die_roll>31-50</die_roll>
+          <disease_type>bilious_fever</disease_type>
+          <save_bonus>+2</save_bonus>
+          <duration>4 weeks</duration>
+          <death_if_failed_by>8+</death_if_failed_by>
+        </row>
+        <row>
+          <die_roll>51-75</die_roll>
+          <disease_type>ague</disease_type>
+          <save_bonus>+3</save_bonus>
+          <duration>1d4 weeks</duration>
+          <death_if_failed_by>10+</death_if_failed_by>
+        </row>
+        <row>
+          <die_roll>76-100</die_roll>
+          <disease_type>bloody_flux</disease_type>
+          <save_bonus>+4</save_bonus>
+          <duration>1 week</duration>
+          <death_if_failed_by>natural 1</death_if_failed_by>
+        </row>
+      </table>
+
+      <result name="friendly_lord">
+        <rule>A local lord offers to become a vassal or sub-vassal of the army leader.</rule>
+        <rule>The lord offers use of his stronghold as a supply base.</rule>
+        <rule>The lord pays tribute equal to his monthly income.</rule>
+        <rule>In return, the lord expects protection from looting, conquest, and pillage by the army.</rule>
+      </result>
+
+      <result name="friendly_peasants">
+        <rule>The army gains +2 on reconnaissance rolls for the next week.</rule>
+        <rule>This benefit is lost if the army requisitions or loots supplies from any domains during that week.</rule>
+      </result>
+
+      <result name="good_omen">
+        <rule>Loyalty and morale rolls gain a +1 bonus for the next week.</rule>
+        <rule>Add 10 to the army's next roll on the Vagaries of War table.</rule>
+      </result>
+
+      <result name="good_weather">
+        <rule>The army's strategic movement rate increases by 33% for the next week.</rule>
+      </result>
+
+      <result name="ill_omen">
+        <rule>Loyalty and morale rolls suffer a -1 penalty for the next week.</rule>
+        <rule>Subtract 10 from the army's next roll on the Vagaries of War table.</rule>
+      </result>
+
+      <result name="legendary_leadership">
+        <rule>The army leader's morale modifier increases by 1.</rule>
+        <rule>This benefit is lost if the leader's army is ever defeated in two consecutive battles.</rule>
+      </result>
+
+      <result name="local_guides">
+        <rule>If accepted, local guides increase the army's movement rate by 33%.</rule>
+        <duration>1 week</duration>
+      </result>
+
+      <result name="mercenaries">
+        <procedure>
+          <step order="1">Determine mercenary type by rolling on the Follower Type and Equipment by Class table, using the leader's class.</step>
+          <step order="2">There is a 25% chance the mercenaries are veterans.</step>
+        </procedure>
+      </result>
+
+      <result name="ministers">
+        <rule>2d6 clerics of level 1d4 join the campaign.</rule>
+        <rule>All units in the army gain +1 morale while the ministers remain.</rule>
+        <rule>The ministers depart if camp followers are permitted on the campaign or if the army leader acts contrary to their faith.</rule>
+      </result>
+
+      <result name="plans_discovered">
+        <rule>The benefiting army learns the opposing army's location, organization, and leadership as if it had scored a major success on a reconnaissance roll.</rule>
+        <rule>The benefiting army automatically wins the next initiative roll against the opposing army.</rule>
+      </result>
+
+      <result name="bad_weather" alias="severe_weather">
+        <rule>This result creates severe weather lasting 1d4 weeks.</rule>
+        <rule>If severe weather is rolled again while severe weather is already ongoing, add the durations together.</rule>
+        <procedure>
+          <step order="1">Cross-index the terrain of the 24-mile hex occupied by the army with the current season on the severe_weather_conditions table.</step>
+          <step order="2">Read the first line as the temperature condition.</step>
+          <step order="3">Read the second line as the atmospheric condition.</step>
+          <step order="4">If an entry gives only a percentage chance for severe weather, apply that chance; if severe weather does not occur, use mild temperature or calm atmosphere instead.</step>
+          <step order="5">Apply all weather effects cumulatively.</step>
+        </procedure>
+        <effect_rules>
+          <rule>Cold: strategic movement rate halved; 10% chance each week of a disease vagary due to exposure.</rule>
+          <rule>Hot: strategic movement rate halved; supply cost increased 25%; out-of-supply penalties doubled; mud cannot form.</rule>
+          <rule>Calm: no effect.</rule>
+          <rule>Rainy: strategic movement rate halved; reconnaissance rolls suffer -2; in clear, grass, and scrub terrain, mud halves movement again; 10% chance each week of a disease vagary due to wetness.</rule>
+          <rule>Snowy: strategic movement rate halved; reconnaissance rolls suffer -4; 10% chance each week of a disease vagary due to wetness.</rule>
+          <rule>Windy: strategic movement rate halved; in barren or desert terrain, reconnaissance rolls suffer -4 due to sandstorms.</rule>
+          <rule>All listed weather effects stack cumulatively.</rule>
+        </effect_rules>
+      </result>
+
+      <table name="severe_weather_conditions">
+        <columns>
+          <column>season</column>
+          <column>clear_grass</column>
+          <column>scrub</column>
+          <column>woods_hills</column>
+          <column>barren_desert</column>
+          <column>mountains</column>
+          <column>swamp</column>
+          <column>jungle</column>
+        </columns>
+        <row>
+          <season>spring</season>
+          <clear_grass>Mild; 75% Rainy</clear_grass>
+          <scrub>Hot; 10% Windy</scrub>
+          <woods_hills>Mild; 75% Rainy</woods_hills>
+          <barren_desert>Hot; 25% Windy</barren_desert>
+          <mountains>Mild; 25% Rainy</mountains>
+          <swamp>Mild; Rainy</swamp>
+          <jungle>Hot; 25% Rainy</jungle>
+        </row>
+        <row>
+          <season>summer</season>
+          <clear_grass>Hot; 25% Rainy</clear_grass>
+          <scrub>Hot; Calm</scrub>
+          <woods_hills>Hot; 25% Rainy</woods_hills>
+          <barren_desert>Hot; 5% Rainy</barren_desert>
+          <mountains>Mild; 25% Windy</mountains>
+          <swamp>Hot; Rainy</swamp>
+          <jungle>Hot; Rainy</jungle>
+        </row>
+        <row>
+          <season>fall</season>
+          <clear_grass>75% Cold; 10% Windy</clear_grass>
+          <scrub>Mild; 50% Windy</scrub>
+          <woods_hills>75% Cold; 10% Snowy</woods_hills>
+          <barren_desert>Hot; Calm</barren_desert>
+          <mountains>Cold; 50% Snowy</mountains>
+          <swamp>Mild; Rainy</swamp>
+          <jungle>Hot; 25% Rainy</jungle>
+        </row>
+        <row>
+          <season>winter</season>
+          <clear_grass>Cold; 10% Snowy</clear_grass>
+          <scrub>Mild; 75% Rainy</scrub>
+          <woods_hills>Cold; 25% Snowy</woods_hills>
+          <barren_desert>75% Hot; Calm</barren_desert>
+          <mountains>Cold; Snowy</mountains>
+          <swamp>Cold; Rainy</swamp>
+          <jungle>25% Hot; Rainy</jungle>
+        </row>
+      </table>
+
+      <result name="siege_train_problems">
+        <procedure>
+          <step order="1">Make a saving throw versus Death for each artillery piece in the army.</step>
+          <step order="2">If the piece has a siege engineer or artillerist assigned, it saves as a 4th level fighter; otherwise, it saves as a normal man.</step>
+          <step order="3">On a failed save, the artillery piece is broken and reduced to 0 shp.</step>
+        </procedure>
+        <rule>Broken artillery may be repaired as a construction project.</rule>
+        <rule>For repairs, wood repairs at 5 shp per gp of construction rate.</rule>
+      </result>
+
+      <result name="spy_caught_enemy">
+        <procedure>
+          <step order="1">If one or more enemy spies are infiltrated into the army, choose one randomly.</step>
+          <step order="2">If no spies are infiltrated, the army has caught a soldier who had just become a turncoat.</step>
+          <step order="3">The captured spy may be interrogated.</step>
+        </procedure>
+        <rule>The spy knows 1d4 common pieces of information about the opposing army.</rule>
+      </result>
+
+      <result name="spy_caught_friendly">
+        <rule>A friendly spy is caught and killed by the enemy.</rule>
+        <rule>No further expanded procedure is provided beyond the table entry.</rule>
+      </result>
+
+      <result name="supply_boon">
+        <rule>The army is automatically in supply this week.</rule>
+        <rule>The army leader does not pay supply cost this week.</rule>
+        <rule>The army's market class is raised by 1 for equipment availability this month.</rule>
+      </result>
+
+      <result name="supply_problems">
+        <rule>The army is out of supply this week.</rule>
+        <rule>Out-of-supply consequences are -1 hp per day, -1 to attack throws and damage rolls per day, and a morale calamity.</rule>
+      </result>
+
+      <result name="treacherous_guides">
+        <rule>If accepted, the guides increase the army's movement rate by 33% for one week.</rule>
+        <rule>The enemy gains one free hijink.</rule>
+        <rule>The enemy gains a +1 bonus on reconnaissance rolls.</rule>
+      </result>
+
+      <result name="war_profiteers">
+        <rule>Increase the cost of artillery ammunition, armor, mounts, supplies, and weapons by 10% for the duration of the campaign.</rule>
+        <rule>Each additional time this vagary is rolled, prices increase by an additional 10%.</rule>
+      </result>
+    </results>
+  </vagaries_of_war>
+
+  <vagaries_of_battle>
+    <trigger>
+      <condition>Each time PCs make a heroic foray during a battle.</condition>
+      <procedure>
+        <step order="1">Roll 1d4 to determine how many battle vagaries occur during the foray.</step>
+        <step order="2">For each vagary, roll 1d100 on the vagaries_of_battle table.</step>
+        <step order="3">Re-roll results that do not make sense in the context of the battle.</step>
+      </procedure>
+      <definition>Whenever battlefield is referenced, it means the local area where the foray is fought, not necessarily the entire battlefield.</definition>
+    </trigger>
+
+    <table name="vagaries_of_battle">
+      <columns>
+        <column>die_roll</column>
+        <column>result</column>
+      </columns>
+      <row><die_roll>01-03</die_roll><result>ambush</result></row>
+      <row><die_roll>04-07</die_roll><result>battle_standards</result></row>
+      <row><die_roll>08-12</die_roll><result>blood_and_mud</result></row>
+      <row><die_roll>13-17</die_roll><result>bombardment</result></row>
+      <row><die_roll>18-23</die_roll><result>booby_traps</result></row>
+      <row><die_roll>24-28</die_roll><result>calm_amidst_the_storm</result></row>
+      <row><die_roll>29-30</die_roll><result>culmination</result></row>
+      <row><die_roll>31-35</die_roll><result>debris</result></row>
+      <row><die_roll>36-40</die_roll><result>debris_dangerous</result></row>
+      <row><die_roll>41-45</die_roll><result>debris_heavy</result></row>
+      <row><die_roll>46-50</die_roll><result>deserters</result></row>
+      <row><die_roll>51-55</die_roll><result>fire</result></row>
+      <row><die_roll>56-60</die_roll><result>fog_and_smoke</result></row>
+      <row><die_roll>61-65</die_roll><result>high_ground</result></row>
+      <row><die_roll>66-70</die_roll><result>marauders</result></row>
+      <row><die_roll>71-75</die_roll><result>monsters</result></row>
+      <row><die_roll>76-80</die_roll><result>piles_of_dead</result></row>
+      <row><die_roll>81-85</die_roll><result>reinforcements_enemy</result></row>
+      <row><die_roll>86-90</die_roll><result>reinforcements_friendly</result></row>
+      <row><die_roll>91-95</die_roll><result>scattered_bodies</result></row>
+      <row><die_roll>96-100</die_roll><result>volley_of_arrows</result></row>
+    </table>
+
+    <results>
+      <result name="ambush">
+        <rule>PCs are surprised for the first round of the foray.</rule>
+        <rule>The distance between the heroes and each group of foes is halved.</rule>
+      </result>
+
+      <result name="battle_standards">
+        <rule>Double the BR staked for the foray.</rule>
+        <rule>All creatures on either side gain +2 to morale rolls.</rule>
+      </result>
+
+      <result name="blood_and_mud">
+        <rule>Any creature that rolls a natural 1 on an attack throw or saving throw falls prone.</rule>
+      </result>
+
+      <result name="bombardment">
+        <procedure>
+          <step order="1">1d4 rounds after the foray begins, make an attack throw with target value 18+ against each creature in the foray.</step>
+          <step order="2">Ignore armor for this attack.</step>
+          <step order="3">A hit means the creature is in the blast radius of a catapult stone.</step>
+          <step order="4">The struck creature takes 4d6 damage unless it succeeds on a saving throw versus Blast.</step>
+        </procedure>
+      </result>
+
+      <result name="booby_traps">
+        <rule>There is one battlefield trap per point of BR staked.</rule>
+        <rule>The typical trap is a concealed pit filled with sharpened stakes.</rule>
+        <procedure>
+          <step order="1">A moving PC has a 1 in 6 chance to move into an undiscovered battlefield trap.</step>
+          <step order="2">If the trap is not detected, normally requiring a proficiency throw of 18+, the PC falls 10 feet for 1d6 damage.</step>
+          <step order="3">The PC then lands on 1d4 spikes, each dealing 1d6 damage.</step>
+        </procedure>
+      </result>
+
+      <result name="calm_amidst_the_storm">
+        <rule>No vagary occurs.</rule>
+      </result>
+
+      <result name="culmination">
+        <rule>In each of the first 5 rounds of the foray, an additional 10 HD of creatures join per point of BR staked.</rule>
+      </result>
+
+      <result name="debris">
+        <rule>Creatures that run or charge must make a saving throw versus Paralysis or fall prone halfway through their move.</rule>
+      </result>
+
+      <result name="debris_dangerous">
+        <rule>Creatures that run or charge must make a saving throw versus Paralysis or suffer 1d4 damage.</rule>
+      </result>
+
+      <result name="debris_heavy">
+        <rule>Movement rates are halved.</rule>
+        <rule>Charging and running are not permitted.</rule>
+        <rule>Thieves and similar characters gain a +2 bonus to proficiency throws to hide because of ample cover.</rule>
+      </result>
+
+      <result name="deserters">
+        <procedure>
+          <step order="1">1d4 rounds after the foray begins, deserters arrive.</step>
+          <step order="2">The deserters belong to whichever side has fewer HD present in the foray.</step>
+          <step order="3">There are 10 HD of deserters per point of BR staked.</step>
+          <step order="4">They enter from their enemy's side and try to escape to their own side.</step>
+          <step order="5">They attack anyone who blocks their escape.</step>
+          <step order="6">PCs and NPCs from the deserters' side may attempt to rally them back into the fight with reaction rolls.</step>
+        </procedure>
+      </result>
+
+      <result name="fire">
+        <rule>Each round, all participants must save versus Blast or take 1d4 fire damage.</rule>
+        <rule>Line of sight is reduced to 30 feet.</rule>
+      </result>
+
+      <result name="fog_and_smoke">
+        <rule>Line of sight is reduced to 30 feet for the duration of the foray.</rule>
+      </result>
+
+      <result name="high_ground">
+        <rule>Defending creatures gain +1 AC and +1 to attack throws.</rule>
+      </result>
+
+      <result name="marauders">
+        <procedure>
+          <step order="1">1d4 rounds after the foray begins, brigands arrive.</step>
+          <step order="2">There are 10 HD of brigands per point of BR staked.</step>
+        </procedure>
+        <rule>The brigands attack weak and damaged creatures and steal carried equipment.</rule>
+      </result>
+
+      <result name="monsters">
+        <procedure>
+          <step order="1">1d4 rounds after the foray begins, monsters arrive.</step>
+          <step order="2">There are 10 HD of monsters per point of BR staked.</step>
+          <step order="3">The Judge may choose the monster type or determine it randomly from battlefield terrain.</step>
+        </procedure>
+        <rule>The monsters attack weak and damaged creatures.</rule>
+      </result>
+
+      <result name="piles_of_dead">
+        <rule>Movement rates are halved.</rule>
+        <rule>Charging and running are not permitted.</rule>
+        <rule>Corpses may be animated by necromancers.</rule>
+        <rule>Thieves and similar characters gain a +2 bonus to proficiency throws to hide because of ample cover.</rule>
+        <rule>All creatures suffer -2 to morale rolls.</rule>
+      </result>
+
+      <result name="reinforcements_enemy">
+        <rule>Use the reinforcements procedure with the joining side being the enemy.</rule>
+      </result>
+
+      <result name="reinforcements_friendly">
+        <rule>Use the reinforcements procedure with the joining side being friendly.</rule>
+      </result>
+
+      <result name="reinforcements">
+        <procedure>
+          <step order="1">1d4 rounds after the foray begins, additional troops join from one side.</step>
+          <step order="2">10 HD of creatures join per point of BR staked.</step>
+        </procedure>
+      </result>
+
+      <result name="scattered_bodies">
+        <rule>There are 1d10 x 10 bodies scattered across the battlefield.</rule>
+        <rule>Corpses may be animated by necromancers.</rule>
+        <rule>Creatures that run or charge must save versus Paralysis or fall prone halfway through their move.</rule>
+        <rule>All creatures suffer -1 to morale rolls.</rule>
+      </result>
+
+      <result name="volley_of_arrows">
+        <procedure>
+          <step order="1">1d4 rounds after the foray begins, make an attack throw against each creature in the foray.</step>
+          <step order="2">Use target value 15+, modified by AC.</step>
+          <step order="3">A hit deals 1d6 damage.</step>
+        </procedure>
+      </result>
+    </results>
+  </vagaries_of_battle>
+
+  <wishes_and_warfare>
+    <rule>Instead of using miracle or wish for more traditional effects, a caster may use either ritual spell to bring about any desired vagary of recruitment, vagary of war, or vagary of battle.</rule>
+    <rule>The chosen vagary may benefit the caster's army or harm an enemy army.</rule>
+    <rule>A miracle or wish may also undo or avoid an undesirable vagary.</rule>
+  </wishes_and_warfare>
+
+  <source_notes>
+    <note>The Vagaries of War table prints bad_weather, while the expanded rules present the mechanics under severe_weather; this summary treats them as the same result.</note>
+    <note>The Vagaries of War table prints artillery_magazine, while the expanded rules use artillery_cache; this summary treats them as the same result.</note>
+    <note>The printed Vagaries of War die ranges overlap at 32 for war_profiteers and siege_train_problems; the overlap is preserved as printed.</note>
+    <note>The friendly spy caught result is named in the table, but only the enemy spy caught version receives expanded index text.</note>
+    <note>The battle table prints separate friendly and enemy reinforcements results, while the index provides one shared reinforcements procedure; this summary applies that shared procedure to either side.</note>
+  </source_notes>
+</campaign_vagaries_summary>

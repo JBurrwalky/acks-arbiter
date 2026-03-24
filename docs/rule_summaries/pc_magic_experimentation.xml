@@ -1,0 +1,771 @@
+<magic_experimentation title="magic_experimentation" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <magic_research_baseline>
+    <rule>All magical research uses a 1d20 magic research throw against the magical research target value for the spellcaster's level.</rule>
+    <rule>The target value is increased by the difficulty of the task.</rule>
+    <task_adjustments>
+      <adjustment task="create_new_spell">Increase target value by the spell's level.</adjustment>
+      <adjustment task="design_construct">Increase target value by +1 per 5,000gp of construct cost.</adjustment>
+    </task_adjustments>
+    <modifiers>
+      <rule>Add Intelligence bonus to the die roll.</rule>
+      <rule>If the caster has Magical Engineering, add proficiency rank.</rule>
+      <rule>Add any applicable bonus from a library, workshop, or precious materials.</rule>
+    </modifiers>
+    <resolution>
+      <success>If modified roll equals or exceeds adjusted target value, research succeeds.</success>
+      <failure>If modified roll is below adjusted target value, research fails.</failure>
+      <automatic_failure>An unmodified die roll of 1-3 always fails.</automatic_failure>
+    </resolution>
+    <failure_costs>
+      <rule>Failure loses all time invested.</rule>
+      <rule>Failure loses all money invested.</rule>
+      <rule>Failure loses all precious materials invested.</rule>
+      <rule>Failure loses all special components invested.</rule>
+    </failure_costs>
+  </magic_research_baseline>
+
+  <experimentation>
+    <overview>
+      <rule>A spellcaster may experiment to improve chances of successful magical research.</rule>
+      <rule>Experimentation grants a bonus to the magic research throw.</rule>
+      <rule>If the throw is high enough, experimentation can produce a breakthrough.</rule>
+      <rule>If the throw fails, experimentation causes a mishap determined by the method used.</rule>
+    </overview>
+
+    <method_of_experimentation>
+      <table name="method_of_experimentation">
+        <columns>
+          <column>method</column>
+          <column>magic_research_throw_bonus</column>
+          <column>failed_experiment_result</column>
+          <column>minimum_level</column>
+        </columns>
+        <row>
+          <method>conventional</method>
+          <magic_research_throw_bonus>+2</magic_research_throw_bonus>
+          <failed_experiment_result>minor_mishap</failed_experiment_result>
+          <minimum_level>5</minimum_level>
+        </row>
+        <row>
+          <method>pioneering</method>
+          <magic_research_throw_bonus>+4</magic_research_throw_bonus>
+          <failed_experiment_result>major_mishap</failed_experiment_result>
+          <minimum_level>9</minimum_level>
+        </row>
+        <row>
+          <method>radical</method>
+          <magic_research_throw_bonus>+6</magic_research_throw_bonus>
+          <failed_experiment_result>catastrophic_mishap</failed_experiment_result>
+          <minimum_level>11</minimum_level>
+        </row>
+      </table>
+      <rules>
+        <rule>Conventional experimentation can only trigger minor mishaps on failure.</rule>
+        <rule>Pioneering experimentation can only trigger major mishaps on failure.</rule>
+        <rule>Radical experimentation can only trigger catastrophic mishaps on failure.</rule>
+        <rule>Because unmodified 1-3 is always failure, any experimental method carries at least a 15% chance of mishap.</rule>
+      </rules>
+    </method_of_experimentation>
+
+    <mishap_resolution>
+      <procedure>
+        <step order="1">If an experimental research throw fails, determine the appropriate mishap table by research type.</step>
+        <step order="2">Roll 1d10 on that table.</step>
+        <step order="3">Apply the result from the column matching the mishap severity: minor, major, or catastrophic.</step>
+        <step order="4">If the result instructs another roll, resolve it on the referenced sub-table or referenced core-rules table.</step>
+      </procedure>
+    </mishap_resolution>
+
+    <breakthroughs>
+      <thresholds>
+        <table name="level_of_breakthroughs">
+          <columns>
+            <column>breakthrough</column>
+            <column>threshold</column>
+            <column>required_method</column>
+            <column>minimum_level</column>
+          </columns>
+          <row>
+            <breakthrough>minor</breakthrough>
+            <threshold>target_value_exceeded_by_5_plus</threshold>
+            <required_method>any</required_method>
+            <minimum_level>7</minimum_level>
+          </row>
+          <row>
+            <breakthrough>major</breakthrough>
+            <threshold>target_value_exceeded_by_10_plus</threshold>
+            <required_method>pioneering_or_radical</required_method>
+            <minimum_level>9</minimum_level>
+          </row>
+          <row>
+            <breakthrough>revolutionary</breakthrough>
+            <threshold>target_value_exceeded_by_20_plus</threshold>
+            <required_method>radical</required_method>
+            <minimum_level>11</minimum_level>
+          </row>
+        </table>
+      </thresholds>
+      <limits>
+        <rule>Conventional experimentation cannot achieve better than a minor breakthrough.</rule>
+        <rule>Pioneering experimentation cannot achieve better than a major breakthrough.</rule>
+        <rule>Radical experimentation can achieve revolutionary breakthroughs.</rule>
+        <rule>If the throw would grant a breakthrough better than the highest one permitted by the caster's level or method, apply the highest breakthrough actually permitted.</rule>
+      </limits>
+      <table name="results_of_breakthroughs">
+        <columns>
+          <column>research_type</column>
+          <column>minor</column>
+          <column>major</column>
+          <column>revolutionary</column>
+        </columns>
+        <row>
+          <research_type>creating_construct</research_type>
+          <minor>1_ability_roll_3d6</minor>
+          <major>2_abilities_roll_2d10</major>
+          <revolutionary>3_abilities_roll_1d20</revolutionary>
+        </row>
+        <row>
+          <research_type>creating_crossbreeds</research_type>
+          <minor>1_ability_roll_3d6</minor>
+          <major>2_abilities_roll_2d10</major>
+          <revolutionary>3_abilities_roll_1d20</revolutionary>
+        </row>
+        <row>
+          <research_type>designing_construct</research_type>
+          <minor>plus_2_hd_maximum</minor>
+          <major>plus_6_hd_maximum</major>
+          <revolutionary>plus_12_hd_maximum</revolutionary>
+        </row>
+        <row>
+          <research_type>enchanting_magic_item</research_type>
+          <minor>minor_ancillary_effect</minor>
+          <major>notable_ancillary_effect</major>
+          <revolutionary>powerful_ancillary_effect</revolutionary>
+        </row>
+        <row>
+          <research_type>granting_unlife</research_type>
+          <minor>1_ability_roll_3d6</minor>
+          <major>2_abilities_roll_2d10</major>
+          <revolutionary>3_abilities_roll_1d20</revolutionary>
+        </row>
+        <row>
+          <research_type>researching_spell_or_ritual</research_type>
+          <minor>plus_one_half_spell_level_of_power</minor>
+          <major>plus_1_spell_level_of_power</major>
+          <revolutionary>plus_2_spell_levels_of_power</revolutionary>
+        </row>
+        <row>
+          <research_type>ritual_casting</research_type>
+          <minor>plus_one_half_spell_level_of_power_for_this_casting</minor>
+          <major>plus_1_spell_level_of_power_for_this_casting</major>
+          <revolutionary>plus_2_spell_levels_of_power_for_this_casting</revolutionary>
+        </row>
+      </table>
+    </breakthroughs>
+
+    <research_type_rules>
+      <research_type name="creating_crossbreeds">
+        <rule>A breakthrough gives the crossbreed special abilities not present in either progenitor.</rule>
+        <rule>These abilities represent unexpected synergies between the progenitors.</rule>
+        <rule>Minor grants 1 special ability, major grants 2, revolutionary grants 3.</rule>
+        <rule>Major and revolutionary breakthroughs tend to give more powerful abilities.</rule>
+        <rule>The Judge may choose appropriate abilities or roll on the Unexpected Abilities table using the die listed by breakthrough level.</rule>
+      </research_type>
+
+      <research_type name="creating_constructs">
+        <rule>A breakthrough gives the construct special abilities not present in the formula or sample.</rule>
+        <rule>Minor grants 1 special ability, major grants 2, revolutionary grants 3.</rule>
+        <rule>Major and revolutionary breakthroughs tend to give more powerful abilities.</rule>
+        <rule>The Judge may choose appropriate abilities or roll on the Unexpected Abilities table using the die listed by breakthrough level.</rule>
+      </research_type>
+
+      <research_type name="designing_constructs">
+        <rule>Without a breakthrough, a spellcaster can only design constructs with HD no greater than twice class level.</rule>
+        <rule>A minor breakthrough increases the design HD limit by 2.</rule>
+        <rule>A major breakthrough increases the design HD limit by 6.</rule>
+        <rule>A revolutionary breakthrough increases the design HD limit by 12.</rule>
+        <rule>Breakthroughs do not increase design time or design cost.</rule>
+        <rule>The higher HD still increases the cost and time to actually create the construct.</rule>
+      </research_type>
+
+      <research_type name="enchanting_magic_items">
+        <rule>A breakthrough gives the magic item an additional ancillary effect.</rule>
+        <minor_effects>
+          <rule>Minor ancillary effects include effects comparable to +1 versus a particular monster type or an additional 1st-3rd level spell effect.</rule>
+        </minor_effects>
+        <major_effects>
+          <rule>Notable ancillary effects include effects comparable to +2 versus a particular monster type or a 4th-6th level spell effect.</rule>
+        </major_effects>
+        <revolutionary_effects>
+          <rule>Powerful ancillary effects include effects comparable to sentience, life_drinking, luck, vorpal, dwarven_throwing, or a 7th-9th level spell effect.</rule>
+        </revolutionary_effects>
+        <rule>Any ancillary effect uses the same uses or recharge schedule as the item's primary effect.</rule>
+        <rule>The Judge may roll randomly for a spell-like ancillary effect as for a spell scroll, or choose an effect based on the item's context and history.</rule>
+      </research_type>
+
+      <research_type name="granting_unlife">
+        <rule>A breakthrough gives the undead unexpected special abilities.</rule>
+        <rule>If the undead can reproduce, a breakthrough can create a new undead subtype.</rule>
+        <rule>Minor grants 1 special ability, major grants 2, revolutionary grants 3.</rule>
+        <rule>Major and revolutionary breakthroughs tend to give more powerful abilities.</rule>
+        <rule>The Judge may choose appropriate abilities or roll on the Unexpected Abilities table using the die listed by breakthrough level.</rule>
+      </research_type>
+
+      <research_type name="researching_spells">
+        <rule>Breakthroughs increase spell power without increasing actual spell level.</rule>
+        <rule>Minor breakthrough raises spell power by 1/2 level.</rule>
+        <rule>Major breakthrough raises spell power by 1 full spell level.</rule>
+        <rule>Revolutionary breakthrough raises spell power by 2 spell levels.</rule>
+        <rule>Once created, such a spell can be learned from spellbooks and scrolls normally by other arcane casters.</rule>
+        <rule>Use spell power guidelines to determine the effective power of such spells.</rule>
+      </research_type>
+
+      <research_type name="ritual_casting">
+        <rule>Breakthroughs increase ritual spell power using the same scale as researching spells.</rule>
+        <rule>The increase applies only to that specific casting instance.</rule>
+      </research_type>
+    </research_type_rules>
+  </experimentation>
+
+  <mishap_table_associations>
+    <association research_type="designing_constructs" mishap_table="construct_design_mishaps"/>
+    <association research_type="creating_constructs" mishap_table="construct_creation_mishaps"/>
+    <association research_type="creating_crossbreeds" mishap_table="crossbreeding_mishaps"/>
+    <association research_type="enchanting_magic_items" mishap_table="magic_item_creation_and_ritual_spell_casting_mishaps"/>
+    <association research_type="ritual_spell_casting" mishap_table="magic_item_creation_and_ritual_spell_casting_mishaps"/>
+    <association research_type="granting_unlife" mishap_table="necromancy_mishaps"/>
+    <association research_type="researching_spells" mishap_table="spell_research_and_ritual_spell_research_mishaps"/>
+    <association research_type="ritual_spell_research" mishap_table="spell_research_and_ritual_spell_research_mishaps"/>
+  </mishap_table_associations>
+
+  <mishap_tables>
+    <table name="construct_design_mishaps">
+      <row roll="1">
+        <minor>Drain one magic item of all power, as if touched by a rod of cancellation.</minor>
+        <major>Drain the most powerful magic item of all power, as if touched by a rod of cancellation.</major>
+        <catastrophic>Drain all magic items of all power, as if touched by a rod of cancellation.</catastrophic>
+      </row>
+      <row roll="2">
+        <minor>Gain an annoying spell-signature side effect; roll 1d10 on the spell_signatures_sub_table. Only wish or miracle removes it.</minor>
+        <major>Gain a deleterious spell-signature side effect; roll 1d10+5 on the spell_signatures_sub_table. Only wish or miracle removes it.</major>
+        <catastrophic>Gain a debilitating spell-signature side effect; roll 1d10+10 on the spell_signatures_sub_table. Only wish or miracle removes it.</catastrophic>
+      </row>
+      <row roll="3">
+        <minor>Nervous breakdown; bed rest 1 day per 5,000gp of research cost.</minor>
+        <major>Insane for 1 week per 5,000gp of research cost.</major>
+        <catastrophic>Permanently insane; only miracle or wish cures.</catastrophic>
+      </row>
+      <row roll="4">
+        <minor>Glimpse the Logos; save vs Spells or become feebleminded. Dispel magic from a 9th+ level caster removes the effect.</minor>
+        <major>Gaze at the Logos; save vs Spells at -4 or become feebleminded. Dispel magic from a 12th+ level caster removes the effect.</major>
+        <catastrophic>Look directly upon the Logos; become feebleminded with no save. Only wish or miracle removes the effect.</catastrophic>
+      </row>
+      <row roll="5">
+        <minor>Gain a magical mutation; roll 1d10 on the magical_mutations_sub_table. Only wish or miracle removes it.</minor>
+        <major>Gain a greater magical mutation; roll 1d10+5 on the magical_mutations_sub_table. Only wish or miracle removes it.</major>
+        <catastrophic>Gain a massive magical mutation; roll 1d10+10 on the magical_mutations_sub_table. Only wish or miracle removes it.</catastrophic>
+      </row>
+      <row roll="6">
+        <minor>Disfiguring injury; roll 1d6 on the critically_wounded row of the Mortal Wounds table. Restore life and limb can heal it.</minor>
+        <major>Disabling injury; roll 1d6 on the grievously_wounded row of the Mortal Wounds table. Only regeneration, resurrection, wish, or miracle can heal it.</major>
+        <catastrophic>Crippling injury; roll 1d6 on the mortally_wounded row of the Mortal Wounds table. Only wish or miracle can heal it.</catastrophic>
+      </row>
+      <row roll="7">
+        <minor>Lose 1 random spell from repertoire; recovery costs 1 week of game time and 1,000gp per spell level.</minor>
+        <major>Lose 1d4+1 random spells from repertoire; recovery costs 1 week of game time and 1,000gp per spell level.</major>
+        <catastrophic>Lose entire spell repertoire; recovery costs 1 week of game time and 1,000gp per spell level.</catastrophic>
+      </row>
+      <row roll="8">
+        <minor>Library takes 1d6 x 1,000gp damage; save vs Blast or take 2d6 damage.</minor>
+        <major>Library takes 2d6 x 5,000gp damage; save vs Blast or take 4d6 damage.</major>
+        <catastrophic>Entire library destroyed; save vs Blast or take 8d6 damage.</catastrophic>
+      </row>
+      <row roll="9">
+        <minor>Permanently lose 1 point of Charisma.</minor>
+        <major>Permanently lose 1d3 points of Charisma.</major>
+        <catastrophic>Permanently lose 1d4+1 points of Charisma.</catastrophic>
+      </row>
+      <row roll="10">
+        <minor>Take 8d6 lightning damage; save vs Blast for half.</minor>
+        <major>Take 12d6 lightning damage; save vs Blast for half.</major>
+        <catastrophic>Disintegrated by lightning unless save vs Death succeeds.</catastrophic>
+      </row>
+    </table>
+
+    <table name="construct_creation_mishaps">
+      <row roll="1">
+        <minor>Soul enters the created construct; body becomes comatose and mindless, loses 1 Constitution per week, and dies at 0 Constitution. Magic jar returns soul. If continuing play in construct form, use Transformation rules.</minor>
+        <major>Soul enters the created construct; body becomes comatose and mindless, loses 1 Constitution per week, and dies at 0 Constitution. Only miracle or wish returns soul. If continuing play in construct form, use Transformation rules.</major>
+        <catastrophic>Soul enters the created construct and original body is destroyed. One miracle or wish recreates the body; a second returns the soul. If continuing play in construct form, use Transformation rules.</catastrophic>
+      </row>
+      <row roll="2">
+        <minor>Lose 1 level of experience unless save vs Death succeeds.</minor>
+        <major>Lose 1 level of experience.</major>
+        <catastrophic>Lose 2 levels of experience.</catastrophic>
+      </row>
+      <row roll="3">
+        <minor>Nervous breakdown; bed rest 1 day per 5,000gp of research cost.</minor>
+        <major>Insane for 1 week per 5,000gp of research cost.</major>
+        <catastrophic>Permanently insane; only miracle or wish cures.</catastrophic>
+      </row>
+      <row roll="4">
+        <minor>Construct succeeds but is uncontrollable and attacks immediately.</minor>
+        <major>Construct succeeds but is uncontrollable and attacks immediately; because it is your creation, it gains +4 saving throws against your spells.</major>
+        <catastrophic>Construct succeeds but is uncontrollable and attacks immediately; because it is your creation, it is immune to all your spells.</catastrophic>
+      </row>
+      <row roll="5">
+        <minor>Gain a magical mutation; roll 1d10 on the magical_mutations_sub_table. Only wish or miracle removes it.</minor>
+        <major>Gain greater magical mutations; roll 2d10 on the magical_mutations_sub_table. Only wish or miracle removes them.</major>
+        <catastrophic>Gain a massive magical mutation; roll 1d10+10 on the magical_mutations_sub_table. Only wish or miracle removes it.</catastrophic>
+      </row>
+      <row roll="6">
+        <minor>Disfiguring injury; roll 1d6 on the critically_wounded row of the Mortal Wounds table. Restore life and limb can heal it.</minor>
+        <major>Disabling injury; roll 1d6 on the grievously_wounded row of the Mortal Wounds table. Only regeneration, resurrection, wish, or miracle can heal it.</major>
+        <catastrophic>Crippling injury; roll 1d6 on the mortally_wounded row of the Mortal Wounds table. Only wish or miracle can heal it.</catastrophic>
+      </row>
+      <row roll="7">
+        <minor>Drain one magic item of all power, as if touched by a rod of cancellation.</minor>
+        <major>Drain the most powerful magic item of all power, as if touched by a rod of cancellation.</major>
+        <catastrophic>Drain all magic items of all power, as if touched by a rod of cancellation.</catastrophic>
+      </row>
+      <row roll="8">
+        <minor>Workshop takes 1d6 x 1,000gp damage; save vs Blast or take 2d6 damage.</minor>
+        <major>Workshop takes 2d6 x 5,000gp damage; save vs Blast or take 4d6 damage.</major>
+        <catastrophic>Entire workshop destroyed; save vs Blast or take 8d6 damage.</catastrophic>
+      </row>
+      <row roll="9">
+        <minor>Permanently lose 1 point of Wisdom.</minor>
+        <major>Permanently lose 1d3 points of Wisdom.</major>
+        <catastrophic>Permanently lose 1d4+1 points of Wisdom.</catastrophic>
+      </row>
+      <row roll="10">
+        <minor>Die in 1 turn from toxic fuel unless save vs Poison succeeds.</minor>
+        <major>Die instantly from toxic fuel unless save vs Poison succeeds.</major>
+        <catastrophic>Die instantly from toxic fuel with no save.</catastrophic>
+      </row>
+    </table>
+
+    <table name="crossbreeding_mishaps">
+      <row roll="1">
+        <minor>Accidentally crossbreed with one progenitor; physical form changes, but mental characteristics remain your own.</minor>
+        <major>Accidentally crossbreed with one progenitor; body changes deeply and mental characteristics become halfway between your own and the progenitor's.</major>
+        <catastrophic>Accidentally crossbreed with one progenitor; body changes horrifically and mental characteristics become those of the progenitor.</catastrophic>
+      </row>
+      <row roll="2">
+        <minor>Lose 1 level of experience unless save vs Death succeeds.</minor>
+        <major>Lose 1 level of experience.</major>
+        <catastrophic>Lose 2 levels of experience.</catastrophic>
+      </row>
+      <row roll="3">
+        <minor>Nervous breakdown; bed rest 1 day per 5,000gp of research cost.</minor>
+        <major>Insane for 1 week per 5,000gp of research cost.</major>
+        <catastrophic>Permanently insane; only miracle or wish cures.</catastrophic>
+      </row>
+      <row roll="4">
+        <minor>Crossbreeding succeeds, but the creature is enraged and attacks immediately.</minor>
+        <major>Crossbreeding succeeds, but the creature is enraged and attacks immediately; because it is your creation, it is immune to any charm spells you cast.</major>
+        <catastrophic>Crossbreeding succeeds, but the creature is enraged and attacks immediately; because it is your creation, it is immune to all your spells.</catastrophic>
+      </row>
+      <row roll="5">
+        <minor>Gain a magical mutation; roll 1d10 on the magical_mutations_sub_table. Only wish or miracle removes it.</minor>
+        <major>Gain greater magical mutations; roll 2d10 on the magical_mutations_sub_table. Only wish or miracle removes them.</major>
+        <catastrophic>Gain a massive magical mutation; roll 1d10+10 on the magical_mutations_sub_table. Only wish or miracle removes it.</catastrophic>
+      </row>
+      <row roll="6">
+        <minor>Disfiguring injury; roll 1d6 on the critically_wounded row of the Mortal Wounds table. Restore life and limb can heal it.</minor>
+        <major>Disabling injury; roll 1d6 on the grievously_wounded row of the Mortal Wounds table. Only regeneration, resurrection, wish, or miracle can heal it.</major>
+        <catastrophic>Crippling injury; roll 1d6 on the mortally_wounded row of the Mortal Wounds table. Only regeneration, resurrection, wish, or miracle can heal it.</catastrophic>
+      </row>
+      <row roll="7">
+        <minor>Over 1d4 days, eyes, hair, and skin permanently change color. Only wish or miracle can undo the change.</minor>
+        <major>Over 1d4 days, slowly transform into the opposite sex. Only wish or miracle can undo the change.</major>
+        <catastrophic>Over 1d4 days, slowly transform into a different demi-human race. The Judge creates a new demi-human class. Only wish or miracle can undo the change.</catastrophic>
+      </row>
+      <row roll="8">
+        <minor>Laboratory takes 1d6 x 1,000gp damage; save vs Blast or take 2d6 damage.</minor>
+        <major>Laboratory takes 2d6 x 5,000gp damage; save vs Blast or take 4d6 damage.</major>
+        <catastrophic>Entire laboratory destroyed; save vs Blast or take 8d6 damage.</catastrophic>
+      </row>
+      <row roll="9">
+        <minor>Permanently lose 1 point of Constitution.</minor>
+        <major>Permanently lose 1d3 points of Constitution.</major>
+        <catastrophic>Permanently lose 1d4+1 points of Constitution.</catastrophic>
+      </row>
+      <row roll="10">
+        <minor>Prime requisite is halved. Remove curse from a 9th+ level caster removes the curse.</minor>
+        <major>-4 penalty on all attack and saving throws, and prime requisite is halved. Remove curse from a 12th+ level caster removes the curse.</major>
+        <catastrophic>20% XP penalty, -4 penalty on all attack and saving throws, and prime requisite is halved. Only wish or miracle removes the curse.</catastrophic>
+      </row>
+    </table>
+
+    <table name="magic_item_creation_and_ritual_spell_casting_mishaps">
+      <row roll="1">
+        <minor>Open a gate to the outer spheres; 1 invisible stalker appears in the workshop and attacks.</minor>
+        <major>Open a gate to the outer spheres; 1d4 invisible stalkers appear in the workshop and attack.</major>
+        <catastrophic>Open a gate to the outer spheres; 2d4 invisible stalkers appear in the workshop and attack.</catastrophic>
+      </row>
+      <row roll="2">
+        <minor>Gain an annoying spell-signature side effect; roll 1d10 on the spell_signatures_sub_table. Only wish or miracle removes it.</minor>
+        <major>Gain a deleterious spell-signature side effect; roll 1d10+5 on the spell_signatures_sub_table. Only wish or miracle removes it.</major>
+        <catastrophic>Gain a debilitating spell-signature side effect; roll 1d10+10 on the spell_signatures_sub_table. Only wish or miracle removes it.</catastrophic>
+      </row>
+      <row roll="3">
+        <minor>Nervous breakdown; bed rest 1 day per 5,000gp of research cost.</minor>
+        <major>Insane for 1 week per 5,000gp of research cost.</major>
+        <catastrophic>Permanently insane; only miracle or wish cures.</catastrophic>
+      </row>
+      <row roll="4">
+        <minor>Lost in time and space; wish or miracle brings you back immediately, otherwise return in 1d10 months.</minor>
+        <major>Lost deep in time and space; wish or miracle brings you back immediately, otherwise return in 1d10 years.</major>
+        <catastrophic>Consigned to oblivion, another sphere, or a distant time and place; cumulative 1% chance per 100 years of reappearing, otherwise only wish or miracle can return you.</catastrophic>
+      </row>
+      <row roll="5">
+        <minor>Gain a magical mutation; roll 1d10 on the magical_mutations_sub_table. Only wish or miracle removes it.</minor>
+        <major>Gain greater magical mutations; roll 2d10 on the magical_mutations_sub_table. Only wish or miracle removes them.</major>
+        <catastrophic>Gain a massive magical mutation; roll 1d10+10 on the magical_mutations_sub_table. Only wish or miracle removes it.</catastrophic>
+      </row>
+      <row roll="6">
+        <minor>Disfiguring injury; roll 1d6 on the critically_wounded row of the Mortal Wounds table. Restore life and limb can heal it.</minor>
+        <major>Disabling injury; roll 1d6 on the grievously_wounded row of the Mortal Wounds table. Only regeneration, resurrection, wish, or miracle can heal it.</major>
+        <catastrophic>Crippling injury; roll 1d6 on the mortally_wounded row of the Mortal Wounds table. Only wish or miracle can heal it.</catastrophic>
+      </row>
+      <row roll="7">
+        <minor>Lose 1 random spell from repertoire; recovery costs 1 week of game time and 1,000gp per spell level.</minor>
+        <major>Lose 1d4+1 random spells from repertoire; recovery costs 1 week of game time and 1,000gp per spell level.</major>
+        <catastrophic>Lose entire spell repertoire; recovery costs 1 week of game time and 1,000gp per spell level.</catastrophic>
+      </row>
+      <row roll="8">
+        <minor>Workshop takes 1d6 x 1,000gp damage; save vs Blast or take 2d6 damage.</minor>
+        <major>Workshop takes 2d6 x 5,000gp damage; save vs Blast or take 4d6 damage.</major>
+        <catastrophic>Entire workshop destroyed; save vs Blast or take 8d6 damage.</catastrophic>
+      </row>
+      <row roll="9">
+        <minor>Permanently lose 1 point of Wisdom.</minor>
+        <major>Permanently lose 1d3 points of Wisdom.</major>
+        <catastrophic>Permanently lose 1d4+1 points of Wisdom.</catastrophic>
+      </row>
+      <row roll="10">
+        <minor>Die in 1 turn unless save vs Death succeeds.</minor>
+        <major>Die instantly unless save vs Death succeeds.</major>
+        <catastrophic>Disintegrated unless save vs Death succeeds.</catastrophic>
+      </row>
+    </table>
+
+    <table name="necromancy_mishaps">
+      <normalization_note>The uploaded text appears to mis-order the roll 10 minor and major entries; the table below normalizes them by severity wording.</normalization_note>
+      <row roll="1">
+        <minor>1d4 shadows appear in the embalming chamber and attack; the area remains shadowed until they are dealt with.</minor>
+        <major>1d6 wraiths appear in the embalming chamber and attack; the area remains blighted until they are dealt with.</major>
+        <catastrophic>1d8 specters appear in the embalming chamber and attack; the area remains forsaken until they are dealt with.</catastrophic>
+      </row>
+      <row roll="2">
+        <minor>Lose 1 level of experience unless save vs Death succeeds.</minor>
+        <major>Lose 1 level of experience.</major>
+        <catastrophic>Lose 2 levels of experience.</catastrophic>
+      </row>
+      <row roll="3">
+        <minor>Nervous breakdown; bed rest 1 day per 5,000gp of research cost.</minor>
+        <major>Insane for 1 week per 5,000gp of research cost.</major>
+        <catastrophic>Permanently insane; only miracle or wish cures.</catastrophic>
+      </row>
+      <row roll="4">
+        <minor>Create a mindless hostile undead that attacks immediately.</minor>
+        <major>Create a mindless hostile undead that attacks immediately; because it is your creation, it is immune to being turned by you.</major>
+        <catastrophic>Create a mindless hostile undead that attacks immediately; because it is your creation, it is immune to any spellcasting or turning attempts you make.</catastrophic>
+      </row>
+      <row roll="5">
+        <minor>Gain a magical mutation; roll 1d10 on the magical_mutations_sub_table. Only wish or miracle removes it.</minor>
+        <major>Gain a greater magical mutation; roll 1d10+5 on the magical_mutations_sub_table. Only wish or miracle removes it.</major>
+        <catastrophic>Gain a massive magical mutation; roll 1d10+10 on the magical_mutations_sub_table. Only wish or miracle removes it.</catastrophic>
+      </row>
+      <row roll="6">
+        <minor>Roll 1d6 on the 11_to_15 row of the Tampering with Mortality table.</minor>
+        <major>Roll 1d6 on the 5_to_10 row of the Tampering with Mortality table.</major>
+        <catastrophic>Roll 1d6 on the 1_to_5 row of the Tampering with Mortality table.</catastrophic>
+      </row>
+      <row roll="7">
+        <minor>Age 1d10 years; shock kills instantly unless save vs Death at +4 succeeds.</minor>
+        <major>Age 2d10 years; shock kills instantly unless save vs Death at +2 succeeds.</major>
+        <catastrophic>Age 2d20 years and wither one limb; shock kills instantly unless save vs Death succeeds.</catastrophic>
+      </row>
+      <row roll="8">
+        <minor>Embalming chamber takes 1d6 x 1,000gp damage; save vs Blast or take 2d6 damage.</minor>
+        <major>Embalming chamber takes 2d6 x 5,000gp damage; save vs Blast or take 4d6 damage.</major>
+        <catastrophic>Entire embalming chamber destroyed; save vs Blast or take 8d6 damage.</catastrophic>
+      </row>
+      <row roll="9">
+        <minor>Permanently lose 1 point of Constitution.</minor>
+        <major>Permanently lose 1d3 points of Constitution.</major>
+        <catastrophic>Permanently lose 1d4+1 points of Constitution.</catastrophic>
+      </row>
+      <row roll="10">
+        <minor>Prime requisite is halved. Remove curse from a 9th+ level caster removes the curse.</minor>
+        <major>-4 penalty on all attack and saving throws, and prime requisite is halved. Remove curse from a 12th+ level caster removes the curse.</major>
+        <catastrophic>20% XP penalty, -4 penalty on all attack and saving throws, and prime requisite is halved. Only wish or miracle removes the curse.</catastrophic>
+      </row>
+      <aging_multiplier_note>Multiply necromancy aging results by x1.5 for dwarves and gnomes, and by x2 for elves and Nobirans.</aging_multiplier_note>
+    </table>
+
+    <table name="spell_research_and_ritual_spell_research_mishaps">
+      <row roll="1">
+        <minor>Open a gate to the outer spheres; 1 invisible stalker appears in the library and attacks.</minor>
+        <major>Open a gate to the outer spheres; 1d4 invisible stalkers appear in the library and attack.</major>
+        <catastrophic>Open a gate to the outer spheres; 2d4 invisible stalkers appear in the library and attack.</catastrophic>
+      </row>
+      <row roll="2">
+        <minor>Gain an annoying spell-signature side effect; roll 1d10 on the spell_signatures_sub_table. Only wish or miracle removes it.</minor>
+        <major>Gain a deleterious spell-signature side effect; roll 1d10+5 on the spell_signatures_sub_table. Only wish or miracle removes it.</major>
+        <catastrophic>Gain a debilitating spell-signature side effect; roll 1d10+10 on the spell_signatures_sub_table. Only wish or miracle removes it.</catastrophic>
+      </row>
+      <row roll="3">
+        <minor>Nervous breakdown; bed rest 1 day per 5,000gp of research cost.</minor>
+        <major>Insane for 1 week per 5,000gp of research cost.</major>
+        <catastrophic>Permanently insane; only miracle or wish cures.</catastrophic>
+      </row>
+      <row roll="4">
+        <minor>Glimpse the Logos while formulating a spell; save vs Spells or become feebleminded. Dispel magic from a 9th+ level caster removes the effect.</minor>
+        <major>Gaze at the Logos while formulating a spell; save vs Spells at -4 or become feebleminded. Dispel magic from a 12th+ level caster removes the effect.</major>
+        <catastrophic>Look directly upon the Logos while formulating a spell; become feebleminded with no save. Only wish or miracle removes the effect.</catastrophic>
+      </row>
+      <row roll="5">
+        <minor>Gain a magical mutation; roll 1d10 on the magical_mutations_sub_table. Only wish or miracle removes it.</minor>
+        <major>Gain a greater magical mutation; roll 1d10+5 on the magical_mutations_sub_table. Only wish or miracle removes it.</major>
+        <catastrophic>Gain a massive magical mutation; roll 1d10+10 on the magical_mutations_sub_table. Only wish or miracle removes it.</catastrophic>
+      </row>
+      <row roll="6">
+        <minor>Disfiguring injury; roll 1d6 on the critically_wounded row of the Mortal Wounds table. Restore life and limb can heal it.</minor>
+        <major>Disabling injury; roll 1d6 on the grievously_wounded row of the Mortal Wounds table. Only regeneration, resurrection, wish, or miracle can heal it.</major>
+        <catastrophic>Crippling injury; roll 1d6 on the mortally_wounded row of the Mortal Wounds table. Only wish or miracle can heal it.</catastrophic>
+      </row>
+      <row roll="7">
+        <minor>Lose 1 random spell from repertoire; recovery costs 1 week of game time and 1,000gp per spell level.</minor>
+        <major>Lose 1d4+1 random spells from repertoire; recovery costs 1 week of game time and 1,000gp per spell level.</major>
+        <catastrophic>Lose entire spell repertoire; recovery costs 1 week of game time and 1,000gp per spell level.</catastrophic>
+      </row>
+      <row roll="8">
+        <minor>Library takes 1d6 x 1,000gp damage; save vs Blast or take 2d6 damage.</minor>
+        <major>Library takes 2d6 x 5,000gp damage; save vs Blast or take 4d6 damage.</major>
+        <catastrophic>Entire library destroyed; save vs Blast or take 8d6 damage.</catastrophic>
+      </row>
+      <row roll="9">
+        <minor>Permanently lose 1 point of Charisma.</minor>
+        <major>Permanently lose 1d3 points of Charisma.</major>
+        <catastrophic>Permanently lose 1d4+1 points of Charisma.</catastrophic>
+      </row>
+      <row roll="10">
+        <minor>Die in 1 turn unless save vs Death succeeds.</minor>
+        <major>Die instantly unless save vs Death succeeds.</major>
+        <catastrophic>Disintegrated unless save vs Death succeeds.</catastrophic>
+      </row>
+    </table>
+  </mishap_tables>
+
+  <sub_tables>
+    <table name="magical_mutations_sub_table">
+      <row roll="1">50% chance to shrink to tiny size as potion of diminution or grow to giant size as potion of growth. DEX immediately becomes 3. Each week at the new size restores 1 DEX until normal score is reached.</row>
+      <row roll="2">Gain characteristics of the animal the character most resembles. Increase 3 ability scores by 2 and decrease 3 other ability scores by 2.</row>
+      <row roll="3">Skin thickens like rhinoceros hide; +2 AC, but lose 1 DEX and 1 CHA.</row>
+      <row roll="4">Gain 4 CHA (maximum 18) and lose 4 STR (minimum 3).</row>
+      <row roll="5">Grow an alien forehead eye. Up to 3/day, open it to use ESP. Normal men react at -3.</row>
+      <row roll="6">Gain pallor and stench of death; -4 reaction with living creatures, but undead treat you as one of them unless you attack or cast a good-aligned spell in their presence.</row>
+      <row roll="7">Grow sharp nails; may claw for 1d4 damage, but suffer -1 on proficiency throws requiring fine manipulation. Cut nails regrow in 1 turn.</row>
+      <row roll="8">Gain fanged mouth; may bite for 1d6 damage, cannot speak human or demi-human languages intelligibly, but can still cast spells.</row>
+      <row roll="9">One arm becomes a tentacle; may attack for 1d8 damage, CHA -3, -4 on fine manipulation, weapon use, and similar rolls, and cannot use bows or two-handed weapons.</row>
+      <row roll="10">Mutate into a form appropriate to current alignment; roll on the Reincarnation table in the matching Law, Neutral, or Chaos column.</row>
+      <row roll="11">Mutate into a form inappropriate to current alignment; roll on the Reincarnation table in the opposite alignment column. Neutral has 50% chance lawful or chaotic. Alignment does not change.</row>
+      <row roll="12">Each day on awakening, save vs Spells or completely forget identity. Each dementia episode lasts 1d6 days.</row>
+      <row roll="13">Act each round as under confusion for 1d6 days, then thereafter a cumulative 5% daily chance of relapse, each relapse lasting 1d6 days.</row>
+      <row roll="14">If reduced to 1/2 hit points or less, lose 1 hp per round from bleeding until dead or staunched. A successful Healing proficiency throw or a cure spell staunches it, but bleeding resumes if again injured below 1/2 hp.</row>
+      <row roll="15">Instantly age halfway to racial maximum age; if already past halfway, age to 1 year short of racial maximum age. Save vs Death or die from shock.</row>
+      <row roll="16">Permanently lose 1d3 STR, 1d3 DEX, and 1d3 CON; movement rate is halved.</row>
+      <row roll="17">CON is halved, take double damage from bludgeoning attacks and falls, and body weight is reduced by 30%.</row>
+      <row roll="18">Wasting disease: permanently lose 1d3 CHA and 1d3 CON immediately, then 1 additional point of each per day. Cure disease delays the wasting by 1 day, but does not remove it.</row>
+      <row roll="19">Body becomes rotting flesh; CHA becomes 3, movement rate is halved, and natural healing stops.</row>
+      <row roll="20">Transform into a sentient ochre jelly; retain mental characteristics, but cannot speak, use items, cast spells, open locks, or perform similar actions. All worn or carried equipment is destroyed at transformation.</row>
+    </table>
+
+    <table name="spell_signatures_sub_table">
+      <row roll="1">After casting a spell, emit a light spell effect for 1 round; if chaotic, emit magical darkness instead.</row>
+      <row roll="2">After casting a spell, a mumbling sound fills the air for 1 round; nearby creatures can hear it with a successful Hear Noise throw unless louder noise masks it.</row>
+      <row roll="3">Whenever you cast a spell, all candles, torches, and lanterns within 1 foot per spell level are snuffed out.</row>
+      <row roll="4">Whenever you cast a spell, all non-magical plants within 1 foot per spell level wilt and die; plant-like monsters there take 1 damage per spell level.</row>
+      <row roll="5">Whenever you cast a spell, a foul aroma lingers for 1 turn per spell level; while it lingers, reaction rolls suffer -3.</row>
+      <row roll="6">After casting, everything appears hideous and rotten; suffer -2 to saving throws for 1 round per spell level.</row>
+      <row roll="7">After casting, feel disembodied and ghostly; suffer -1 initiative and -2 attack throws for 1 round per spell level.</row>
+      <row roll="8">Normal animals within 10 feet immediately attack if wild or flee if domesticated; effect lasts 1 turn per spell level.</row>
+      <row roll="9">After casting, distracting sensations impose -2 initiative for 1 round per spell level; repeated casting makes the initiative penalty cumulative. This effect ends permanently if you become undead.</row>
+      <row roll="10">Damaging spells deal 1 less damage per die, and saving throws against your magic gain +2.</row>
+      <row roll="11">After casting, emit continual light for 1 round per spell level; if chaotic, emit continual darkness instead.</row>
+      <row roll="12">After casting, a loud cacophony fills the air for 1 round; all creatures within 120 feet automatically hear it.</row>
+      <row roll="13">After casting, body becomes frigid for 1 round per spell level; unless wearing winter clothing, suffer -4 to attack throws, saving throws, and initiative. This effect ends permanently if you become undead.</row>
+      <row roll="14">After casting, body becomes feverishly hot for 1 round per spell level; if wearing anything heavier than underclothes, suffer -4 to attack throws, saving throws, and initiative. This effect ends permanently if you become undead.</row>
+      <row roll="15">After casting, lose all actions for 1 round.</row>
+      <row roll="16">Whenever you cast a spell, your shadow becomes a monster of the same name with 1 HD per spell level and attacks ceaselessly until destroyed. Casting in total darkness prevents the effect.</row>
+      <row roll="17">Whenever you cast a spell, flammable carried material ignites. If any material ignites, take 1d8 damage for 2 rounds.</row>
+      <row roll="18">Whenever you cast a spell, lose 1 pound per spell level. Once weight drops below 1.5 lb per inch of height, lose 3 CON per 10 additional pounds lost. This effect ends permanently if you become undead.</row>
+      <row roll="19">Whenever you cast a spell, age 1 year per spell level. This effect ends permanently if you become undead.</row>
+      <row roll="20">Whenever you cast a spell, take 1 point of damage per spell level. This effect ends permanently if you become undead.</row>
+    </table>
+
+    <table name="unexpected_abilities">
+      <row roll="1">
+        <name>magic_resistance</name>
+        <effect>Gain magic resistance with target value equal to 20 minus HD.</effect>
+      </row>
+      <row roll="2">
+        <name>charm</name>
+        <effect>3/day, enthrall a target that fails a save vs Spells.</effect>
+        <save_modifiers>
+          <rule>If creature has 3 HD or less, target saves at +2.</rule>
+          <rule>If creature has 9 HD or more, target saves at -2.</rule>
+        </save_modifiers>
+      </row>
+      <row roll="3">
+        <name>invisibility</name>
+        <effect>Creature is naturally invisible and may act freely, including attacking, without becoming visible.</effect>
+      </row>
+      <row roll="4">
+        <name>breath_weapon</name>
+        <effect>Gain a dragon-like breath weapon usable 3/day, dealing 1d6 damage per HD; save vs Blast for half damage.</effect>
+        <subtable name="breath_weapon_type_1d8">
+          <row roll="1">fire</row>
+          <row roll="2">lightning</row>
+          <row roll="3">freezing_vapors</row>
+          <row roll="4">poison_vapor</row>
+          <row roll="5">scouring_wind</row>
+          <row roll="6">acid</row>
+          <row roll="7">blistering_steam</row>
+          <row roll="8">fetid_gas</row>
+        </subtable>
+        <rule>Area and special properties follow dragon breath rules.</rule>
+      </row>
+      <row roll="5">
+        <name>flying</name>
+        <effect>Gain flight with exploration movement 10 feet per HD.</effect>
+        <conditional_rules>
+          <rule>If already able to fly, gain dive attacks dealing double damage.</rule>
+          <rule>If a dive attack hits a victim smaller than the creature, the victim is grabbed and carried off unless save vs Paralysis succeeds.</rule>
+          <rule>If the creature already has a dive attack, re-roll this result.</rule>
+        </conditional_rules>
+      </row>
+      <row roll="6">
+        <name>poison</name>
+        <effect>Victims of primary attack(s) save vs Poison or die.</effect>
+        <save_modifiers>
+          <rule>If creature has 3 HD or less, victims save at +2.</rule>
+          <rule>If creature has 9 HD or more, victims save at -2.</rule>
+        </save_modifiers>
+      </row>
+      <row roll="7">
+        <name>immunity</name>
+        <subtable name="immunity_type_1d10">
+          <row roll="1">fire</row>
+          <row roll="2">lightning</row>
+          <row roll="3">cold</row>
+          <row roll="4">acid</row>
+          <row roll="5">sleep_charm_and_hold</row>
+          <row roll="6">poison</row>
+          <row roll="7">fear</row>
+          <row roll="8">blunt_weapons</row>
+          <row roll="9">edged_weapons</row>
+          <row roll="10">non_magical_weapons</row>
+        </subtable>
+      </row>
+      <row roll="8">
+        <name>swallow_attack</name>
+        <effect>Can swallow whole victims smaller than itself on an unmodified attack throw of 19 or 20.</effect>
+        <follow_up>A swallowed victim takes damage each round equal to the creature's most damaging attack until the creature is killed or the victim dies.</follow_up>
+      </row>
+      <row roll="9">
+        <name>ongoing_damage</name>
+        <effect>After hitting a victim, deal each following round damage equal to the creature's most damaging attack.</effect>
+        <limit>Special effects such as energy drain and poison are not ongoing unless separately present.</limit>
+      </row>
+      <row roll="10">
+        <name>bonus_attack</name>
+        <effect>Gain one bonus attack identical to the primary attack.</effect>
+      </row>
+      <row roll="11">
+        <name>infravision</name>
+        <effect>Gain 60-foot infravision.</effect>
+        <conditional_rules>
+          <rule>If already has infravision, increase it to 90 feet.</rule>
+          <rule>If already has 90-foot infravision, re-roll this result.</rule>
+        </conditional_rules>
+      </row>
+      <row roll="12">
+        <name>regeneration</name>
+        <effect>Regenerate like a troll: 3 hp per round unless damaged by fire or acid, and may re-attach lost limbs.</effect>
+      </row>
+      <row roll="13">
+        <name>grab</name>
+        <effect>Victims of the primary attack must save vs Paralysis or be grabbed.</effect>
+        <follow_up>Grabbed victims are helpless until they escape by making a successful save vs Paralysis on their turn.</follow_up>
+      </row>
+      <row roll="14">
+        <name>aura</name>
+        <effect>Gain a damaging aura with radius 2 feet per HD that deals 1d8 damage per round to susceptible creatures.</effect>
+        <subtable name="aura_type_1d8">
+          <row roll="1">fire</row>
+          <row roll="2">lightning</row>
+          <row roll="3">freezing_vapors</row>
+          <row roll="4">poison_vapor</row>
+          <row roll="5">scouring_wind</row>
+          <row roll="6">acid</row>
+          <row roll="7">blistering_steam</row>
+          <row roll="8">fetid_gas</row>
+        </subtable>
+      </row>
+      <row roll="15">
+        <name>paralysis</name>
+        <effect>Victims of primary attack(s) save vs Paralysis or are paralyzed for 2d4 turns.</effect>
+      </row>
+      <row roll="16">
+        <name>massive_size</name>
+        <effect>HD are doubled and all attacks deal double normal damage.</effect>
+      </row>
+      <row roll="17">
+        <name>acid</name>
+        <effect>Successful attacks destroy non-magical armor or clothing. Non-magical weapons that strike the creature dissolve immediately after dealing damage.</effect>
+        <special_rule>Magical weapons and armor may save using the wearer's save vs Death, adding the item's magical bonus if applicable.</special_rule>
+      </row>
+      <row roll="18">
+        <name>petrification</name>
+        <procedure>
+          <step order="1">Roll 1d6 to determine trigger.</step>
+          <step order="2">On 1-3, victims who meet the creature's gaze must save vs Petrification or turn to stone.</step>
+          <step order="3">On 4-6, victims struck by the creature's attacks must save vs Petrification or turn to stone.</step>
+        </procedure>
+      </row>
+      <row roll="19">
+        <name>energy_drain</name>
+        <effect>Victims of the primary attack lose experience levels.</effect>
+        <scaling>
+          <rule>If creature has 6 HD or less, drain 1 level.</rule>
+          <rule>If creature has 7 HD or more, drain 2 levels.</rule>
+        </scaling>
+      </row>
+      <row roll="20">
+        <name>spell_like_abilities</name>
+        <effect>Gain 1d4 spell-like abilities, each usable 1/day.</effect>
+        <generation>Generate as for spell scrolls, or select abilities appropriate to the creature's other powers.</generation>
+      </row>
+      <general_rules>
+        <rule>Re-roll any result that duplicates an ability the creature already has, except where a row says otherwise.</rule>
+        <rule>At the Judge's discretion, abilities may be selected instead of rolled if they better fit the creature's existing powers.</rule>
+        <rule>At the Judge's discretion, later results may be adjusted to match earlier results.</rule>
+        <rule>All granted abilities are cumulative.</rule>
+      </general_rules>
+    </table>
+  </sub_tables>
+
+  <external_rule_references>
+    <reference>Magical research target values by caster level are taken from ACKS core rules.</reference>
+    <reference>Mortal Wounds table is used by multiple mishap results.</reference>
+    <reference>Tampering with Mortality table is used by necromancy mishaps.</reference>
+    <reference>Transformation rules are used if a caster continues play after soul transfer into a construct body.</reference>
+    <reference>Reincarnation table is used by magical mutation results 10 and 11.</reference>
+    <reference>Dragon breath area and special properties are used by unexpected ability breath_weapon.</reference>
+    <reference>Spell power guidelines are used to evaluate effective power for breakthrough-created spells.</reference>
+  </external_rule_references>
+</magic_experimentation>

@@ -1,0 +1,1717 @@
+<spell_catalog title="ACKS Core Spell Catalog" section="K-W" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <spell name="Knock">
+    <classification>
+      <entry><type>Arcane</type><level>2</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>special</duration>
+    <effects>
+      <summary>Opens one means of preventing access.</summary>
+      <effect>Opens stuck, barred, locked, held, or wizard locked doors.</effect>
+      <effect>Opens known secret doors and locked or trick-opening boxes or chests.</effect>
+      <effect>Loosens welds, shackles, or chains if they hold shut something that can be opened.</effect>
+    </effects>
+    <limits>
+      <limit>Each casting undoes only one means of preventing access.</limit>
+      <limit>Does not raise a portcullis or operate similar mechanisms.</limit>
+      <limit>Does not affect ropes, vines, and similar restraints.</limit>
+    </limits>
+    <interactions>
+      <rule>When used on a wizard locked door, the wizard lock is not removed; its function is suspended for 1 turn.</rule>
+      <rule>In all other cases, the opened object does not relock or become stuck again on its own.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Levitate">
+    <classification>
+      <entry><type>Arcane</type><level>2</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>6 turns plus 1 turn per level</duration>
+    <targets>
+      <valid_target>Caster, another willing creature, or an unattended object.</valid_target>
+      <requirement>An attended object must be possessed by a willing creature.</requirement>
+    </targets>
+    <effects>
+      <summary>Moves the subject vertically by concentration.</summary>
+      <movement>Subject can be moved up or down up to 20' each round.</movement>
+      <effect>The caster directs movement mentally by concentration.</effect>
+      <effect>The subject cannot be moved horizontally by the spell.</effect>
+      <effect>The subject may move laterally by clambering or pushing against surfaces, generally at half normal land speed.</effect>
+      <effect>A levitating creature can carry its normal weight allowance.</effect>
+    </effects>
+    <combat_profile>
+      <rule>A levitating creature attacking with a weapon takes a cumulative attack throw penalty: -1 on the first attack, -2 on the second, and so on to a maximum of -5.</rule>
+      <rule>A full round spent stabilizing resets the next attack penalty to -1.</rule>
+    </combat_profile>
+  </spell>
+
+  <spell name="Light" reversible="true" reverse_name="Darkness">
+    <classification>
+      <entry><type>Divine</type><level>1</level></entry>
+      <entry><type>Arcane</type><level>1</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>6 turns plus 1 turn per level</duration>
+    <area>30' radius bright light and 20' additional dim light.</area>
+    <targets>
+      <option>Target location.</option>
+      <option>Movable object.</option>
+      <option>Target's eyes for blinding use.</option>
+    </targets>
+    <effects>
+      <summary>Creates torch-equivalent magical light.</summary>
+      <effect>If cast into an area, the effect is immobile.</effect>
+      <effect>If cast on an object, the light moves with the object.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>If cast on a target's eyes to blind, the target may save versus Spells to avoid the effect entirely.</rule>
+    </saving_throw>
+    <limits>
+      <limit>Light does not function inside an area of magical darkness.</limit>
+      <limit>A blinding use does not produce the normal area of illumination.</limit>
+    </limits>
+    <interactions>
+      <rule>Light cast against darkness of an equal or lower level caster counters and dispels both spells instantly.</rule>
+    </interactions>
+    <reversed_form name="Darkness">
+      <effects>
+        <summary>Creates magical darkness using the same area and duration.</summary>
+        <effect>Blocks infravision.</effect>
+        <effect>Negates mundane light sources.</effect>
+      </effects>
+      <saving_throw>
+        <rule>If cast on a target's eyes to blind, the target may save versus Spells to avoid the effect entirely.</rule>
+      </saving_throw>
+      <limits>
+        <limit>A blinding use does not produce the normal area of darkness.</limit>
+      </limits>
+      <interactions>
+        <rule>Darkness cast against light of an equal or lower level caster counters and dispels both spells instantly.</rule>
+      </interactions>
+    </reversed_form>
+  </spell>
+
+  <spell name="Lightning Bolt">
+    <classification>
+      <entry><type>Arcane</type><level>3</level></entry>
+    </classification>
+    <range>180'</range>
+    <duration>instantaneous</duration>
+    <area>60' long and treated as 5' wide for game purposes.</area>
+    <effects>
+      <summary>Releases a line of electrical energy.</summary>
+      <damage>Deals 1d6 electricity damage per caster level to each creature in the area.</damage>
+      <effect>Sets fire to combustibles and damages objects in its path.</effect>
+      <effect>Can melt lead, gold, copper, silver, bronze, and other low-melting-point metals.</effect>
+    </effects>
+    <saving_throw>
+      <type>Blast</type>
+      <partial>Successful save halves damage.</partial>
+    </saving_throw>
+    <scaling>
+      <rule>Damage scales at 1d6 per caster level.</rule>
+    </scaling>
+    <interactions>
+      <rule>If the bolt shatters or breaks through an interposing barrier, it may continue if range remains.</rule>
+      <rule>If it cannot continue, it may reflect toward the caster or in a random direction at the Judge's option.</rule>
+      <rule>Creatures already affected do not take damage again from reflection of the same bolt.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Locate Object">
+    <classification>
+      <entry><type>Divine</type><level>3</level></entry>
+      <entry><type>Arcane</type><level>2</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>6 turns</duration>
+    <effects>
+      <summary>Senses the direction of a well-known or clearly visualized object.</summary>
+      <effect>If searching for a general item and more than one is in range, the nearest one is located.</effect>
+    </effects>
+    <targets>
+      <valid_target>Well-known or clearly visualized object.</valid_target>
+      <requirement>A unique item can only be specified if the caster has observed it firsthand, not through divination.</requirement>
+      <invalid_target>Creatures.</invalid_target>
+    </targets>
+    <limits>
+      <limit>Blocked by even a thin sheet of lead or gold.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Lower Water">
+    <classification>
+      <entry><type>Arcane</type><level>6</level></entry>
+    </classification>
+    <range>240'</range>
+    <duration>10 turns</duration>
+    <effects>
+      <summary>Lowers water or similar liquid in a large area.</summary>
+      <effect>Reduces depth by up to 2' per caster level, to a minimum depth of 1 inch.</effect>
+      <effect>Creates a roughly square depression with sides up to 10' long per caster level.</effect>
+      <effect>In very large and deep bodies of water, creates a whirlpool that sweeps ships and similar craft downward, puts them at risk, and prevents normal movement from leaving the area for the duration.</effect>
+    </effects>
+    <scaling>
+      <rule>Depth lowered scales at 2' per caster level.</rule>
+      <rule>Side length scales at up to 10' per caster level.</rule>
+    </scaling>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>Water elementals and other water-based creatures may save versus Spells to negate the spell's slow-like effect.</rule>
+    </saving_throw>
+    <interactions>
+      <rule>Against water elementals and other water-based creatures, functions as slow, the reverse of haste.</rule>
+    </interactions>
+    <limits>
+      <limit>No effect on creatures other than water elementals and other water-based creatures.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Magic Jar">
+    <classification>
+      <entry><type>Arcane</type><level>5</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>special</duration>
+    <targets>
+      <requirement>The magic jar must be an inanimate object within spell range and known to the caster when the spell is cast.</requirement>
+      <target>Nearby living creature within 120' of the magic jar.</target>
+    </targets>
+    <effects>
+      <summary>Transfers the caster's soul into a receptacle, then allows body possession.</summary>
+      <effect>Upon casting, the caster's soul enters the magic jar and the caster's body becomes lifeless but does not decay normally.</effect>
+      <effect>The caster may attempt to possess a nearby living creature, forcing that creature's soul into the jar.</effect>
+      <effect>The caster may return to the jar, restoring the trapped soul to its body, and then attempt to possess another body.</effect>
+      <effect>The spell ends when the caster's soul returns to the caster's own body, leaving the receptacle empty.</effect>
+    </effects>
+    <saving_throw>
+      <type>Death</type>
+      <rule>A target creature may save versus Death to resist possession.</rule>
+      <rule>If the save succeeds, the caster remains in the jar and that target is immune to further attempts for 1 game turn.</rule>
+    </saving_throw>
+    <duration_rules>
+      <rule>If possession succeeds, the caster retains Intelligence, Wisdom, Charisma, level, class, attack bonus, saving throws, and mental abilities, including spellcasting.</rule>
+      <rule>The host body retains Strength, Dexterity, Constitution, hit points, and natural abilities.</rule>
+      <rule>Extra limbs do not grant extra attacks.</rule>
+      <rule>The caster gains no special abilities of the possessed body.</rule>
+    </duration_rules>
+    <limits>
+      <limit>Possession is blocked by protection from evil and similar wards.</limit>
+    </limits>
+    <procedure>
+      <step order="1">Cast the spell and transfer the caster's soul into an inanimate object within range.</step>
+      <step order="2">Attempt to possess a living creature within 120' of the jar.</step>
+      <step order="3">If the target resists, remain in the jar; if the target fails, the caster possesses the body and the target's soul is trapped in the jar.</step>
+      <step order="4">The caster may return to the jar and then try another host.</step>
+    </procedure>
+    <interactions>
+      <rule>If the caster's spirit is in the jar and the jar is broken by dispel magic or physical damage, the caster's spirit returns to the caster's body if that body is within 120'; otherwise the caster dies. In either case, the spell ends.</rule>
+      <rule>If dispel evil drives the caster from the host body and the jar is within 120' of the host, the caster returns to the jar, the host soul returns to its body, and the caster cannot possess that host again for 1 full turn. If the jar is not within 120', both the caster's and host's spirits depart and the host body dies. In either case, the spell ends.</rule>
+      <rule>If the host soul is in the jar and the jar is broken, then if the jar is within 120' of the host body, the caster's spirit departs, the host returns to its body, and the spell ends. Otherwise the host spirit departs and the caster remains stranded in the host body; the spell does not end until the caster is later driven out, such as by dispel evil.</rule>
+      <rule>If the spell ends while the caster's body is unoccupied by a spirit, that body truly dies.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Magic Missile">
+    <classification>
+      <entry><type>Arcane</type><level>1</level></entry>
+    </classification>
+    <range>150'</range>
+    <duration>instantaneous</duration>
+    <targets>
+      <target>One or more creatures designated before damage is rolled.</target>
+      <invalid_target>Specific body parts.</invalid_target>
+      <invalid_target>Inanimate objects.</invalid_target>
+    </targets>
+    <effects>
+      <summary>Creates unerring missiles of magical energy.</summary>
+      <damage>Each missile deals 1d6+1 damage.</damage>
+      <effect>A missile strikes unerringly if the target has less than total cover and less than total concealment, even in melee.</effect>
+      <effect>Each missile can strike only one creature.</effect>
+    </effects>
+    <scaling>
+      <rule>At 1st level, fire 1 missile.</rule>
+      <rule>For every 5 caster levels beyond 1st, fire 2 additional missiles.</rule>
+      <rule>At 6th level, fire 3 missiles.</rule>
+      <rule>At 13th level, fire 5 missiles maximum.</rule>
+    </scaling>
+  </spell>
+
+  <spell name="Magic Mouth">
+    <classification>
+      <entry><type>Arcane</type><level>1</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>special</duration>
+    <targets>
+      <valid_target>Chosen non-living object.</valid_target>
+    </targets>
+    <effects>
+      <summary>Places a conditional speaking mouth on a non-living object.</summary>
+      <effect>The mouth speaks when a specified event occurs.</effect>
+      <effect>The message may be up to 3 words per caster level.</effect>
+      <effect>The message may be in any language known by the caster.</effect>
+      <effect>The message may take up to 10 minutes to deliver.</effect>
+      <effect>The mouth may speak at any volume from a whisper to a yell.</effect>
+      <effect>The mouth visually moves according to the words spoken.</effect>
+      <effect>May be placed on any object, including a tree, rock, statue, or similar object.</effect>
+    </effects>
+    <scaling>
+      <rule>Message length scales at 3 words per caster level.</rule>
+      <rule>Trigger range is 10' per caster level.</rule>
+    </scaling>
+    <limits>
+      <limit>The voice resembles but is not identical to the caster's.</limit>
+      <limit>The mouth cannot use command words or activate magical effects.</limit>
+      <limit>Only visual and audible triggers may be used.</limit>
+      <limit>The mouth cannot distinguish level, Hit Dice, or class except by external garb.</limit>
+      <limit>The mouth can only respond to visible or audible triggers and actions in line of sight or within hearing distance.</limit>
+    </limits>
+    <interactions>
+      <rule>Triggers react to appearances rather than truth.</rule>
+      <rule>Disguises and illusions can fool triggers.</rule>
+      <rule>Normal darkness does not defeat visual triggers, but magical darkness or invisibility does.</rule>
+      <rule>Silent movement or magical silence defeats audible triggers.</rule>
+      <rule>Audible triggers may be keyed to general noise types, a specific noise, or a spoken word.</rule>
+      <rule>Visible or audible actions may serve as triggers.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Massmorph">
+    <classification>
+      <entry><type>Arcane</type><level>4</level></entry>
+    </classification>
+    <range>240'</range>
+    <duration>special</duration>
+    <area>Up to 100 man-sized creatures within a 120' radius of the caster at casting.</area>
+    <targets>
+      <valid_target>Willing man-sized creatures chosen by the caster.</valid_target>
+      <option>The caster may include self.</option>
+    </targets>
+    <effects>
+      <summary>Conceals creatures by making them appear to be natural terrain features.</summary>
+      <effect>Affected creatures appear to be natural effects of the terrain.</effect>
+      <effect>Concealed creatures remain hidden as long as they stay still.</effect>
+    </effects>
+    <limits>
+      <limit>Only creatures the caster chooses and that are willing are affected.</limit>
+    </limits>
+    <duration_rules>
+      <entry condition="an affected creature moves or attacks">The illusion ends for that creature only.</entry>
+      <entry condition="other affected creatures remain still">They remain hidden.</entry>
+    </duration_rules>
+    <interactions>
+      <rule>The caster may end the spell early by speaking a single word.</rule>
+      <rule>Dispel magic ends the illusion.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Mirror Image">
+    <classification>
+      <entry><type>Arcane</type><level>2</level></entry>
+    </classification>
+    <range>self</range>
+    <duration>6 turns</duration>
+    <effects>
+      <summary>Creates illusory duplicates of the caster.</summary>
+      <effect>Creates 1d4 figments.</effect>
+      <effect>Figments cluster around the caster and mimic the caster's actions.</effect>
+      <effect>Figments always look exactly like the caster.</effect>
+      <effect>Enemies attacking or directly targeting the caster with spells always hit a figment instead.</effect>
+    </effects>
+    <procedure>
+      <step order="1">Create 1d4 figments around the caster.</step>
+      <step order="2">When an attack or direct attack spell is aimed at the caster, resolve it against a figment instead.</step>
+      <step order="3">Destroy the struck figment.</step>
+    </procedure>
+    <limits>
+      <limit>Any attack against an image destroys it, whether the attack throw succeeds or not.</limit>
+      <limit>Attack spells cast directly on a figment destroy it with no saving throw.</limit>
+    </limits>
+    <interactions>
+      <rule>Area-effect spells are not directly cast on the caster, so all figments appear affected exactly as the caster is.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Move Earth">
+    <classification>
+      <entry><type>Arcane</type><level>6</level></entry>
+    </classification>
+    <range>240'</range>
+    <duration>6 turns</duration>
+    <effects>
+      <summary>Moves large volumes of soil and can alter surface features.</summary>
+      <effect>Earth in the area can be moved at 60' per turn according to the caster's wishes.</effect>
+      <effect>The range extends downward until 240' or solid rock is reached.</effect>
+    </effects>
+    <limits>
+      <limit>Affects soil only, not stone.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Neutralize Poison" reversible="true" reverse_name="Poison">
+    <classification>
+      <entry><type>Divine</type><level>4</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>instantaneous</duration>
+    <targets>
+      <valid_target>Creature or object touched.</valid_target>
+    </targets>
+    <effects>
+      <summary>Detoxifies venom in a creature or object.</summary>
+      <effect>A poisoned creature suffers no further effects from the poison.</effect>
+      <effect>If cast on a creature slain by poison within the last 10 rounds, the creature is revived with 1 hit point.</effect>
+      <effect>If cast on a poisonous object, the poison is permanently rendered ineffective.</effect>
+    </effects>
+    <reversed_form name="Poison">
+      <effects>
+        <summary>Makes the caster's touch deadly.</summary>
+        <effect>The caster must make a successful attack throw.</effect>
+      </effects>
+      <saving_throw>
+        <type>Poison</type>
+        <rule>If the attack hits, the target must save versus Poison or die.</rule>
+      </saving_throw>
+      <duration_rules>
+        <rule>The poisonous touch lasts 1 round per level of ability or until discharged.</rule>
+        <rule>Only one creature can be affected.</rule>
+      </duration_rules>
+    </reversed_form>
+  </spell>
+
+  <spell name="Passwall">
+    <classification>
+      <entry><type>Arcane</type><level>5</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>3 turns</duration>
+    <effects>
+      <summary>Creates a temporary passage through eligible walls.</summary>
+      <effect>Creates a passage through wooden, plaster, or stone walls.</effect>
+      <effect>The passage is up to 10' deep.</effect>
+      <effect>If a wall is thicker than the passage depth, the spell creates only a niche or short tunnel.</effect>
+      <effect>Multiple castings can create a continuing passage through very thick walls.</effect>
+    </effects>
+    <limits>
+      <limit>Does not create a passage through metal or harder materials.</limit>
+    </limits>
+    <duration_rules>
+      <entry condition="spell ends by duration, dispel magic, or caster's choice">The hole closes and creatures inside are ejected from the nearest exit.</entry>
+    </duration_rules>
+  </spell>
+
+  <spell name="Phantasmal Force">
+    <classification>
+      <entry><type>Arcane</type><level>2</level></entry>
+    </classification>
+    <range>240'</range>
+    <duration>concentration</duration>
+    <area>Up to 20' x 20' x 20'.</area>
+    <effects>
+      <summary>Creates a visual illusion of an object, creature, or force.</summary>
+      <effect>The caster may move the image within the effect's size limits.</effect>
+      <effect>The image persists while the caster concentrates.</effect>
+      <effect>If used to create illusory creatures, they have AC 0 and disappear when hit.</effect>
+      <effect>If used to simulate an attack spell or attacking creature, it deals illusory damage equal to the normal damage of the simulated attack form.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>A successful save versus Spells avoids all illusory damage.</rule>
+    </saving_throw>
+    <limits>
+      <limit>The illusion creates no sound, smell, texture, or temperature.</limit>
+      <limit>Illusory damage is not real.</limit>
+    </limits>
+    <duration_rules>
+      <entry condition="a victim is 'killed' or injured by the illusion">The victim realizes after 1d3 rounds that the damage was not real.</entry>
+    </duration_rules>
+  </spell>
+
+  <spell name="Polymorph Other">
+    <classification>
+      <entry><type>Arcane</type><level>4</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>permanent</duration>
+    <targets>
+      <valid_target>One living creature.</valid_target>
+      <invalid_target>Incorporeal or gaseous creatures.</invalid_target>
+      <requirement>New form must have no more Hit Dice than the caster's level.</requirement>
+      <requirement>New form must have fewer than twice the Hit Dice of the old form.</requirement>
+      <invalid_target>A specific individual duplicate.</invalid_target>
+    </targets>
+    <effects>
+      <summary>Permanently transforms a target into another living creature form.</summary>
+      <effect>The target gains the physical capabilities and statistics of the new form.</effect>
+      <effect>The target also gains the alignment, behavioral and mental traits, physical attacks, and special, supernatural, or spell-like abilities of the new form.</effect>
+      <effect>If the new form is substantially less intelligent, the target may not remember its former life.</effect>
+      <effect>The target keeps the same hit points regardless of the new form's Hit Dice.</effect>
+      <effect>A creature with shape-changing ability, such as a doppleganger, may revert to its natural form in 1 round.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <negates>Unwilling targets that save are unaffected.</negates>
+    </saving_throw>
+    <duration_rules>
+      <rule>The spell lasts until dispel magic or the target's death.</rule>
+      <rule>If the target is slain, the corpse reverts to its original form.</rule>
+    </duration_rules>
+    <limits>
+      <limit>Cannot produce an incorporeal or gaseous form.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Polymorph Self">
+    <classification>
+      <entry><type>Arcane</type><level>4</level></entry>
+    </classification>
+    <range>self</range>
+    <duration>6 turns plus 1 turn per level</duration>
+    <targets>
+      <requirement>Assumed form must be a living creature with no more Hit Dice than the caster's level.</requirement>
+    </targets>
+    <effects>
+      <summary>Transforms the caster into another living creature form.</summary>
+      <effect>The caster gains the physical capabilities and statistics of the new form.</effect>
+      <effect>The caster retains the caster's own mental abilities.</effect>
+      <effect>The caster gains all physical attacks of the form.</effect>
+      <effect>If slain, the caster reverts to original form.</effect>
+      <effect>The caster may end the spell before the full duration.</effect>
+    </effects>
+    <limits>
+      <limit>Cannot assume an incorporeal or gaseous form.</limit>
+      <limit>Does not grant special, supernatural, or spell-like abilities of the assumed form.</limit>
+      <limit>Dragon breath and similar abilities are not gained.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Prayer">
+    <classification>
+      <entry><type>Divine</type><level>3</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>1 round per level</duration>
+    <effects>
+      <summary>Grants allies a blessing and hinders enemies.</summary>
+      <bonus>Friendly creatures in range gain +1 to attack throws, damage rolls, and saving throws.</bonus>
+      <penalty>Enemies in range suffer -1 to attack throws, damage rolls, and saving throws.</penalty>
+    </effects>
+    <limits>
+      <limit>Does not require concentration after casting.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Projected Image">
+    <classification>
+      <entry><type>Arcane</type><level>6</level></entry>
+    </classification>
+    <range>240'</range>
+    <duration>6 turns</duration>
+    <effects>
+      <summary>Creates a quasi-real illusory version of the caster.</summary>
+      <effect>The image looks, sounds, and smells like the caster.</effect>
+      <effect>The image mimics gestures, actions, and speech.</effect>
+      <effect>Further spells cast by the caster appear to originate from the image.</effect>
+    </effects>
+    <duration_rules>
+      <entry condition="line of sight between caster and image is broken">The spell ends.</entry>
+      <entry condition="the image is struck in combat">The spell ends.</entry>
+    </duration_rules>
+    <limits>
+      <limit>The spell grants no additional sensory capability; the caster does not see through the image beyond the caster's own direct sight.</limit>
+      <limit>Spell ranges are measured from the caster's actual position, not the image's position.</limit>
+    </limits>
+    <interactions>
+      <rule>Dimension door, teleport, and similar effects that break line of sight dispel the image.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Protection from Evil" reversible="true" reverse_name="Protection from Good">
+    <classification>
+      <entry><type>Divine</type><level>1</level></entry>
+      <entry><type>Arcane</type><level>1</level></entry>
+    </classification>
+    <range>self</range>
+    <duration>concentration</duration>
+    <area>10' radius barrier around the caster.</area>
+    <effects>
+      <summary>Creates a stationary protective barrier.</summary>
+      <bonus>All within the radius gain +1 AC against attacks by evil creatures.</bonus>
+      <bonus>All within the radius gain +1 on saving throws against attacks or effects created by evil creatures.</bonus>
+      <effect>Those who leave and re-enter, or who enter after casting, also receive protection.</effect>
+      <effect>Prevents bodily contact by enchanted creatures such as constructed, summoned, or undead creatures, whether evil or not.</effect>
+      <effect>Natural weapon attacks requiring touch by blocked enchanted creatures automatically fail and the creatures recoil.</effect>
+    </effects>
+    <duration_rules>
+      <rule>Protection lasts as long as the caster remains stationary and concentrates.</rule>
+      <entry condition="the caster or a protected creature attacks a blocked creature, casts a spell on one, or tries to force the barrier against one">Protection against contact by enchanted creatures ends.</entry>
+    </duration_rules>
+    <special>
+      <rule>For this spell, evil creatures include hostile creatures of an alignment other than the caster's alignment, plus inherently evil creatures such as undead and summoned creatures of Chaotic alignment.</rule>
+    </special>
+    <reversed_form name="Protection from Good">
+      <effects>
+        <summary>Functions as protection from evil but against good creatures instead of evil ones.</summary>
+        <effect>Protects from hostile creatures of an alignment other than the caster's alignment.</effect>
+        <effect>Prevents bodily contact by enchanted creatures.</effect>
+      </effects>
+      <special>
+        <rule>Instead of protecting from inherently evil creatures, it protects from inherently good creatures such as summoned creatures of Lawful alignment.</rule>
+      </special>
+    </reversed_form>
+  </spell>
+
+  <spell name="Protection from Evil, Sustained" reversible="true" reverse_name="Protection from Good, Sustained">
+    <classification>
+      <entry><type>Divine</type><level>4</level></entry>
+      <entry><type>Arcane</type><level>3</level></entry>
+    </classification>
+    <range>0'</range>
+    <duration>12 turns</duration>
+    <effects>
+      <summary>Functions as protection from evil with fixed sustained duration.</summary>
+      <effect>The barrier moves with the caster.</effect>
+    </effects>
+    <limits>
+      <limit>No concentration is required.</limit>
+    </limits>
+    <reversed_form name="Protection from Good, Sustained">
+      <effects>
+        <summary>Functions as the reversed form of protection from evil with a duration of 12 turns.</summary>
+      </effects>
+      <limits>
+        <limit>No concentration is required.</limit>
+      </limits>
+    </reversed_form>
+  </spell>
+
+  <spell name="Protection from Normal Missiles">
+    <classification>
+      <entry><type>Arcane</type><level>3</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>12 turns</duration>
+    <effects>
+      <summary>Completely protects the subject from small non-magical missile attacks.</summary>
+      <effect>Blocks normal arrows, sling bullets, crossbow bolts, thrown daggers, and similar small non-magical missiles.</effect>
+    </effects>
+    <limits>
+      <limit>Does not block magical arrows, hurled boulders, or similar attacks.</limit>
+      <limit>Normal missiles fired from magic bows count as magical and are not blocked.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Purify Food and Water">
+    <classification>
+      <entry><type>Divine</type><level>1</level></entry>
+    </classification>
+    <range>10'</range>
+    <duration>instantaneous</duration>
+    <targets>
+      <valid_target>Food and water.</valid_target>
+      <invalid_target>Creatures.</invalid_target>
+      <invalid_target>Magic potions.</invalid_target>
+    </targets>
+    <effects>
+      <summary>Makes contaminated food and water safe.</summary>
+      <effect>Purifies spoiled, rotten, poisonous, or otherwise contaminated food and water.</effect>
+      <effect>Purifies 1 ration of food, 6 skins of water, or enough normal food to feed 12 people.</effect>
+      <effect>Unholy water and similar food or drink of significance is spoiled.</effect>
+    </effects>
+    <limits>
+      <limit>Does not prevent later natural decay or spoilage.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Quest" reversible="true">
+    <classification>
+      <entry><type>Divine</type><level>5</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>special</duration>
+    <targets>
+      <valid_target>Creature that can understand the caster.</valid_target>
+    </targets>
+    <effects>
+      <summary>Places a magical command requiring or forbidding a course of action.</summary>
+      <effect>Can compel service or restraint from a specific action or course of activity.</effect>
+      <effect>May cause almost any course of activity short of suicide or certain death.</effect>
+      <effect>The affected creature must follow the instructions until the quest is completed.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>An unwilling target may save versus Spells when the spell is first cast.</rule>
+      <rule>The target may voluntarily accept the quest instead, usually as part of a bargain.</rule>
+    </saving_throw>
+    <duration_rules>
+      <rule>If the task is open-ended and cannot be completed by the recipient's own actions, the spell lasts a maximum of 1 day per caster level.</rule>
+      <rule>A clever recipient may subvert some instructions.</rule>
+      <rule>If the recipient ignores the quest, cumulative penalties chosen by the Judge apply until obedience resumes or the recipient dies.</rule>
+      <rule>Examples of penalties include combat penalties, lowered ability scores, loss of spells, pain, weakness, and death.</rule>
+      <rule>Penalties are removed 24 hours after the subject resumes obeying the quest.</rule>
+    </duration_rules>
+    <interactions>
+      <rule>Dispel magic does not affect quest.</rule>
+    </interactions>
+    <reversed_form name="Reverse of Quest">
+      <effects>
+        <summary>Ends quest and all its effects.</summary>
+      </effects>
+      <interactions>
+        <rule>The spell may also be ended by remove curse cast by a caster at least 2 levels higher than the caster of quest, or by wish.</rule>
+      </interactions>
+    </reversed_form>
+  </spell>
+
+  <spell name="Restore Life and Limb" reversible="true" reverse_name="Finger of Death">
+    <classification>
+      <entry><type>Divine</type><level>5</level></entry>
+    </classification>
+    <range>touch (120')</range>
+    <duration>instantaneous</duration>
+    <targets>
+      <valid_target>Deceased creature that was truly alive.</valid_target>
+      <invalid_target>Constructs, elementals, undead, and other creatures not truly alive.</invalid_target>
+    </targets>
+    <effects>
+      <summary>Restores life to the dead and repairs permanent bodily damage.</summary>
+      <effect>Raises a creature dead no longer than 2 days at 7th level, plus 4 additional days per level above 7th.</effect>
+      <effect>Repairs lethal damage and permanent wounds such as lost limbs, disfiguring scars, and shattered spines.</effect>
+    </effects>
+    <scaling>
+      <rule>Maximum time dead is 2 days at 7th level and increases by 4 days per caster level above 7th.</rule>
+    </scaling>
+    <limits>
+      <limit>Cannot restore a creature that died of old age.</limit>
+      <limit>Cannot restore a creature that lost its head.</limit>
+      <limit>Cannot restore a creature whose body was cremated.</limit>
+    </limits>
+    <interactions>
+      <rule>Each time a character benefits from this spell, roll on the Tampering with Mortality table in Chapter 6 and apply the result.</rule>
+      <rule>If cast on an undead monster, the monster must save versus Death or be instantly destroyed.</rule>
+    </interactions>
+    <reversed_form name="Finger of Death">
+      <effects>
+        <summary>Creates a death ray against one creature.</summary>
+      </effects>
+      <saving_throw>
+        <type>Death</type>
+        <rule>The target dies unless it saves versus Death.</rule>
+      </saving_throw>
+      <limits>
+        <limit>Lawful clerics may only use finger of death in life-or-death situations against Chaotic foes.</limit>
+      </limits>
+    </reversed_form>
+  </spell>
+
+  <spell name="Read Languages">
+    <classification>
+      <entry><type>Arcane</type><level>1</level></entry>
+    </classification>
+    <range>self</range>
+    <duration>2 turns</duration>
+    <effects>
+      <summary>Allows reading of almost any written language.</summary>
+      <effect>Includes treasure maps, secret symbols, and other codes.</effect>
+    </effects>
+    <limits>
+      <limit>There must be at least one living creature somewhere on the same plane that can naturally read the language or code.</limit>
+      <limit>Truly unknown or dead languages or codes cannot be comprehended.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Reincarnate">
+    <classification>
+      <entry><type>Arcane</type><level>6</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>instantaneous</duration>
+    <effects>
+      <summary>Returns a dead character to life in a newly created young adult body.</summary>
+      <effect>All physical ills and afflictions are repaired.</effect>
+      <effect>The condition of the remains does not matter so long as some small portion of the body still exists.</effect>
+      <effect>Roll on the Reincarnation table to determine the new form.</effect>
+      <effect>The reincarnated character recalls most of its former life and form.</effect>
+    </effects>
+    <procedure>
+      <step order="1">Confirm that some small portion of the original body still exists.</step>
+      <step order="2">Create an entirely new young adult body.</step>
+      <step order="3">Roll on the Reincarnation table.</step>
+      <step order="4">If the result is human or demi-human, return at the same class level with minimum experience, keep original Intelligence, Wisdom, and Charisma, and reroll Strength, Dexterity, and Constitution.</step>
+      <step order="5">If the result is monster, roll on the alignment-appropriate monster column and apply monster-form rules.</step>
+    </procedure>
+    <special>
+      <rule>If reincarnated as a monster, the new form gains all abilities of that form, including movement forms and speeds, natural armor, natural attacks, extraordinary abilities, and similar traits.</rule>
+      <rule>A monster form does not automatically know the language of the new form.</rule>
+      <rule>If the monster form's Hit Dice are below the character's former class level, increase the monster's Hit Dice to that former class level.</rule>
+      <rule>A reincarnated monster may increase in Hit Dice through adventuring.</rule>
+      <rule>Advancing a 1 HD monster to 2 HD requires 3,000 XP plus 500 XP per special ability (*).</rule>
+      <rule>The XP required doubles with each additional HD.</rule>
+      <rule>Values greater than 20,000 XP are rounded to the nearest 1,000.</rule>
+      <rule>When extending the monster table, do not include monsters with more than 6 HD, and each added monster must be at least minimally semi-intelligent.</rule>
+    </special>
+    <tables>
+      <table name="reincarnation">
+        <columns>
+          <column>roll_1d10</column>
+          <column>law_1d6</column>
+          <column>neutral_1d6</column>
+          <column>chaos_1d10</column>
+        </columns>
+        <row>
+          <roll_1d10>1 Human (pick Class)</roll_1d10>
+          <law_1d6>1 Gnome</law_1d6>
+          <neutral_1d6>1 Pixie/Sprite</neutral_1d6>
+          <chaos_1d10>1 Kobold</chaos_1d10>
+        </row>
+        <row>
+          <roll_1d10>2 Human (pick Class)</roll_1d10>
+          <law_1d6>2 Neanderthal</law_1d6>
+          <neutral_1d6>2 Rock Baboon</neutral_1d6>
+          <chaos_1d10>2 Goblin</chaos_1d10>
+        </row>
+        <row>
+          <roll_1d10>3 Human (pick Class)</roll_1d10>
+          <law_1d6>3 Blink Dog</law_1d6>
+          <neutral_1d6>3 Ape</neutral_1d6>
+          <chaos_1d10>3 Orc</chaos_1d10>
+        </row>
+        <row>
+          <roll_1d10>4 Human (pick Class)</roll_1d10>
+          <law_1d6>4 Pegasus</law_1d6>
+          <neutral_1d6>4 Centaur</neutral_1d6>
+          <chaos_1d10>4 Hobgoblin</chaos_1d10>
+        </row>
+        <row>
+          <roll_1d10>5 Human (pick Class)</roll_1d10>
+          <law_1d6>5 Unicorn</law_1d6>
+          <neutral_1d6>5 Griffin</neutral_1d6>
+          <chaos_1d10>5 Gnoll</chaos_1d10>
+        </row>
+        <row>
+          <roll_1d10>6 Elf (pick Class)</roll_1d10>
+          <law_1d6>6 Roc, Small</law_1d6>
+          <neutral_1d6>6 Werebear</neutral_1d6>
+          <chaos_1d10>6 Bugbear</chaos_1d10>
+        </row>
+        <row>
+          <roll_1d10>7 Dwarf (pick Class)</roll_1d10>
+          <law_1d6></law_1d6>
+          <neutral_1d6></neutral_1d6>
+          <chaos_1d10>7 Wererat</chaos_1d10>
+        </row>
+        <row>
+          <roll_1d10>8 Original Race (pick Class)</roll_1d10>
+          <law_1d6></law_1d6>
+          <neutral_1d6></neutral_1d6>
+          <chaos_1d10>8 Ogre</chaos_1d10>
+        </row>
+        <row>
+          <roll_1d10>9 Original Race (pick Class)</roll_1d10>
+          <law_1d6></law_1d6>
+          <neutral_1d6></neutral_1d6>
+          <chaos_1d10>9 Werewolf</chaos_1d10>
+        </row>
+        <row>
+          <roll_1d10>10 Monster</roll_1d10>
+          <law_1d6></law_1d6>
+          <neutral_1d6></neutral_1d6>
+          <chaos_1d10>10 Minotaur</chaos_1d10>
+        </row>
+      </table>
+    </tables>
+  </spell>
+
+  <spell name="Remove Curse" reversible="true" reverse_name="Bestow Curse">
+    <classification>
+      <entry><type>Divine</type><level>3</level></entry>
+      <entry><type>Arcane</type><level>4</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>instantaneous</duration>
+    <effects>
+      <summary>Removes curses from creatures and frees creatures from cursed items.</summary>
+      <effect>Instantly removes all curses on a creature.</effect>
+      <effect>If cast on a cursed item, does not remove the item's curse but allows the afflicted creature to remove and discard it.</effect>
+      <effect>Any curse from a caster of equal or lower level than the remove curse caster ends automatically.</effect>
+    </effects>
+    <limits>
+      <limit>Certain special curses may be unaffected or may require a minimum caster level to remove.</limit>
+    </limits>
+    <interactions>
+      <rule>For each level by which the original cursing caster exceeds the remove curse caster, there is a 5% chance remove curse fails.</rule>
+    </interactions>
+    <reversed_form name="Bestow Curse">
+      <targets>
+        <valid_target>Creature or object.</valid_target>
+      </targets>
+      <saving_throw>
+        <type>Spells</type>
+        <negates>Target may save versus Spells to resist.</negates>
+      </saving_throw>
+      <effects>
+        <summary>Places a curse chosen by the caster.</summary>
+      </effects>
+      <procedure>
+        <step order="1">Choose one standard curse effect or invent a curse no more powerful than the listed options.</step>
+      </procedure>
+      <tables>
+        <table name="bestow_curse_options">
+          <columns>
+            <column>option</column>
+          </columns>
+          <row><option>-4 decrease to one ability score, minimum 1.</option></row>
+          <row><option>-4 penalty on attack throws and saves.</option></row>
+          <row><option>Prime requisite halved, minimum 1.</option></row>
+          <row><option>Each round of combat, 50% chance to act normally; otherwise no action.</option></row>
+        </table>
+      </tables>
+      <limits>
+        <limit>The bestowed curse cannot be dispelled.</limit>
+        <limit>It can be removed by remove curse.</limit>
+        <limit>There is no limit to the number of different curses a character may suffer.</limit>
+      </limits>
+    </reversed_form>
+  </spell>
+
+  <spell name="Remove Fear" reversible="true" reverse_name="Cause Fear">
+    <classification>
+      <entry><type>Divine</type><level>1</level></entry>
+    </classification>
+    <range>touch (120')</range>
+    <duration>instantaneous (2 turns)</duration>
+    <effects>
+      <summary>Calms the touched creature and removes fear.</summary>
+      <effect>If the subject is fleeing from magical fear, it receives a new saving throw to resist that fear.</effect>
+    </effects>
+    <saving_throw>
+      <rule>The new save against existing magical fear is made at +1 per caster level.</rule>
+    </saving_throw>
+    <reversed_form name="Cause Fear">
+      <targets>
+        <valid_target>One creature within 120'.</valid_target>
+      </targets>
+      <saving_throw>
+        <type>Death</type>
+        <rule>If the target fails its save versus Death, it flees for 2 turns.</rule>
+      </saving_throw>
+      <limits>
+        <limit>Creatures with 6 or more Hit Dice are immune.</limit>
+      </limits>
+    </reversed_form>
+  </spell>
+
+  <spell name="Resist Cold">
+    <classification>
+      <entry><type>Divine</type><level>1</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>6 turns</duration>
+    <effects>
+      <summary>Grants temporary resistance and immunity to cold effects.</summary>
+      <immunity>Minor cold, such as winter weather without adequate clothing, is ignored.</immunity>
+      <bonus>Against more significant cold, the subject gains +2 on saving throws.</bonus>
+      <effect>Damage from significant cold is reduced by 1 point per die rolled.</effect>
+    </effects>
+    <limits>
+      <limit>Each die of damage still inflicts at least 1 point.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Resist Fire">
+    <classification>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>6 turns</duration>
+    <effects>
+      <summary>Grants temporary resistance and immunity to fire and heat.</summary>
+      <immunity>Minor heat or fire, such as normal flames, is ignored.</immunity>
+      <bonus>Against more significant heat or fire, the subject gains +2 on saving throws.</bonus>
+      <effect>Damage from significant heat or fire is reduced by 1 point per die rolled.</effect>
+    </effects>
+    <limits>
+      <limit>Each die of damage still inflicts at least 1 point.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Sanctuary">
+    <classification>
+      <entry><type>Divine</type><level>1</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>2 rounds plus 1 round per level</duration>
+    <effects>
+      <summary>Forces direct attackers to save or ignore the warded creature.</summary>
+      <effect>Any opponent attempting to strike or otherwise directly attack the warded creature must save.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>If the save succeeds, the opponent may attack normally and is unaffected by that casting of sanctuary.</rule>
+      <rule>If the save fails, the opponent will not attack the warded creature and attacks another creature instead.</rule>
+    </saving_throw>
+    <limits>
+      <limit>Area effects may still affect the warded creature.</limit>
+      <limit>The warded creature may not take offensive actions while sanctuary lasts.</limit>
+      <limit>The warded creature may cast non-offensive spells to aid companions.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Shield">
+    <classification>
+      <entry><type>Arcane</type><level>1</level></entry>
+    </classification>
+    <range>self</range>
+    <duration>3 turns</duration>
+    <effects>
+      <summary>Creates a mobile invisible force shield.</summary>
+      <effect>Negates magic missile attacks against the caster.</effect>
+      <bonus>Gives AC 7 against missile attacks.</bonus>
+      <bonus>Gives AC 5 against melee attacks.</bonus>
+    </effects>
+    <limits>
+      <limit>Armor Class benefits do not apply against attacks from behind.</limit>
+      <limit>Magic missiles are blocked from all directions.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Shimmer">
+    <classification>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>self</range>
+    <duration>1 turn per level</duration>
+    <effects>
+      <summary>Surrounds the caster with a protective shimmering aura.</summary>
+      <bonus>+2 to all saving throws.</bonus>
+      <penalty>Attack throws against the caster are at -2.</penalty>
+    </effects>
+  </spell>
+
+  <spell name="Silence 15' Radius">
+    <classification>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>180'</range>
+    <duration>12 turns</duration>
+    <area>15' radius around the target.</area>
+    <targets>
+      <option>Point in space.</option>
+      <option>Mobile object.</option>
+      <option>Creature.</option>
+      <option>Item in another creature's possession.</option>
+    </targets>
+    <effects>
+      <summary>Creates complete silence within the area.</summary>
+      <effect>Conversation is impossible.</effect>
+      <effect>Spells cannot be cast within the silence.</effect>
+      <effect>No sound issues from, enters, or passes through the area.</effect>
+      <effect>If centered on a creature or carried object, the silence moves with it.</effect>
+      <effect>Provides defense against sonic or language-based attacks or spells.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>An unwilling creature may save versus Spells to negate the spell.</rule>
+      <rule>If an item in another creature's possession is targeted, that creature may also save versus Spells to negate.</rule>
+    </saving_throw>
+  </spell>
+
+  <spell name="Sleep">
+    <classification>
+      <entry><type>Arcane</type><level>1</level></entry>
+    </classification>
+    <range>240'</range>
+    <duration>4d4 turns</duration>
+    <targets>
+      <requirement>All targets must be visible and within range.</requirement>
+      <option>One specific creature of 4+1 HD or less.</option>
+      <option>A group totaling up to 2d8 HD, with each creature 4 HD or less.</option>
+    </targets>
+    <effects>
+      <summary>Puts eligible creatures into magical slumber.</summary>
+      <effect>Creatures with the fewest Hit Dice are affected first.</effect>
+      <effect>Insufficient remaining Hit Dice are wasted.</effect>
+      <effect>Sleeping creatures are helpless.</effect>
+      <effect>Unengaged opponents can kill sleeping creatures in 1 round.</effect>
+    </effects>
+    <procedure>
+      <step order="1">Choose either one specific creature of 4+1 HD or less, or a group totaling up to 2d8 HD of creatures of 4 HD or less.</step>
+      <step order="2">For creatures under 1 HD, count each as 1 HD.</step>
+      <step order="3">For creatures with bonus HD, ignore the bonus and use the flat HD value.</step>
+      <step order="4">Apply the effect starting with creatures of the fewest HD.</step>
+    </procedure>
+    <limits>
+      <limit>Creatures with more than 4+1 HD cannot be affected.</limit>
+      <limit>Does not affect creatures already unconscious.</limit>
+      <limit>Does not affect undead, constructs, oozes, or other creatures that do not rest.</limit>
+    </limits>
+    <duration_rules>
+      <entry condition="a sleeping creature is slapped or wounded">The creature awakens.</entry>
+      <entry condition="normal noise occurs">The creature does not awaken.</entry>
+    </duration_rules>
+  </spell>
+
+  <spell name="Smite Undead" reversible="true" reverse_name="Animate Dead">
+    <classification>
+      <entry><type>Divine</type><level>4</level></entry>
+    </classification>
+    <range>240' (touch)</range>
+    <duration>special</duration>
+    <area>All undead within a 60' diameter sphere.</area>
+    <effects>
+      <summary>Instantly destroys undead up to a Hit Dice total equal to the caster's level.</summary>
+      <effect>Excess effectiveness beyond the destroyed undead is lost.</effect>
+    </effects>
+    <saving_throw>
+      <type>Death</type>
+      <rule>Skeletons and zombies receive no save.</rule>
+      <rule>Other undead may save versus Death to avoid destruction.</rule>
+    </saving_throw>
+    <scaling>
+      <rule>Total undead Hit Dice destroyed equals the caster's level.</rule>
+    </scaling>
+    <limits>
+      <limit>Undead with 8 or more Hit Dice or levels are immune.</limit>
+    </limits>
+    <reversed_form name="Animate Dead">
+      <equivalent_spell>Functions exactly like the 5th level arcane spell animate dead.</equivalent_spell>
+    </reversed_form>
+  </spell>
+
+  <spell name="Snake Charm">
+    <classification>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>see below</duration>
+    <targets>
+      <valid_target>Snakes only.</valid_target>
+    </targets>
+    <effects>
+      <summary>Makes snakes indifferent to the caster and others.</summary>
+      <effect>The caster can affect snakes whose total Hit Dice equal the caster's level.</effect>
+      <effect>An attacked charmed snake defends itself against its attacker only.</effect>
+      <effect>Attacking one charmed snake does not end the charm on the others.</effect>
+    </effects>
+    <scaling>
+      <rule>Total affected snake Hit Dice equals the caster's level.</rule>
+    </scaling>
+    <duration_rules>
+      <entry condition="cast on snakes engaged in melee combat with the caster">Duration is 1d4+1 rounds.</entry>
+      <entry condition="cast on snakes not currently hostile">Duration is 1d4+1 turns.</entry>
+    </duration_rules>
+  </spell>
+
+  <spell name="Speak with Animals">
+    <classification>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>special</range>
+    <duration>6 turns</duration>
+    <targets>
+      <valid_target>One normal or giant animal in sight and able to hear the caster.</valid_target>
+      <invalid_target>Intelligent animal races.</invalid_target>
+      <invalid_target>Fantastic creatures.</invalid_target>
+    </targets>
+    <effects>
+      <summary>Lets the caster communicate with animals.</summary>
+      <effect>The caster may change which animal is being addressed once per round.</effect>
+      <effect>The spell does not alter the animal's reaction or attitude.</effect>
+    </effects>
+    <interactions>
+      <rule>Use a standard reaction roll to determine the animal's attitude.</rule>
+      <rule>More intelligent animals tend to be terse and evasive; less intelligent animals tend to make inane comments.</rule>
+      <rule>A friendly animal may be willing to grant a favor or service.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Speak with Dead">
+    <classification>
+      <entry><type>Divine</type><level>3</level></entry>
+    </classification>
+    <range>10'</range>
+    <duration>1 turn</duration>
+    <targets>
+      <valid_target>Corpse that is mostly intact.</valid_target>
+      <invalid_target>Corpse that has been turned into an undead creature.</invalid_target>
+    </targets>
+    <effects>
+      <summary>Animates a corpse enough to answer questions.</summary>
+      <effect>The corpse answers several questions from the caster.</effect>
+      <effect>Knowledge is limited to what the creature knew in life, including languages spoken.</effect>
+      <effect>Answers are often brief, cryptic, or repetitive.</effect>
+      <effect>A damaged corpse may give partial or partly correct answers.</effect>
+    </effects>
+    <scaling>
+      <rule>The caster may ask 1 question per 2 caster levels.</rule>
+    </scaling>
+    <limits>
+      <limit>Unused questions are lost if duration expires.</limit>
+      <limit>The body must have a mouth to speak.</limit>
+      <limit>If the corpse was the target of speak with dead within the last week, the spell fails.</limit>
+      <limit>The corpse cannot learn new information.</limit>
+      <limit>The corpse does not remember being questioned.</limit>
+    </limits>
+    <special>
+      <rule>The spell does not contact the creature's soul; it draws on imprinted knowledge stored in the corpse.</rule>
+    </special>
+  </spell>
+
+  <spell name="Speak with Plants">
+    <classification>
+      <entry><type>Divine</type><level>4</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>3 turns</duration>
+    <targets>
+      <valid_target>Normal plants and plant creatures.</valid_target>
+    </targets>
+    <effects>
+      <summary>Lets the caster communicate with plants.</summary>
+      <effect>Normal plants can communicate only about their immediate vicinity and cannot provide or recognize detailed creature descriptions or events beyond that vicinity.</effect>
+      <effect>The spell does not alter the plant's reaction or attitude.</effect>
+      <effect>Normal plants generally communicate freely.</effect>
+      <effect>Friendly plant creatures may perform a favor or service.</effect>
+      <effect>Normal plants usually are not animate and generally cannot perform services beyond answering questions.</effect>
+    </effects>
+    <interactions>
+      <rule>Intelligent plant creatures behave like other monsters and may be terse or evasive.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Spiritual Weapon">
+    <classification>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>1 round/level</duration>
+    <targets>
+      <valid_target>Any foe chosen by the caster within range.</valid_target>
+    </targets>
+    <effects>
+      <summary>Creates a force weapon that attacks once per round.</summary>
+      <damage>Deals 1d6 damage per strike, +1 per 3 caster levels, maximum +4.</damage>
+      <effect>Uses the caster's normal attack throws.</effect>
+      <effect>Strikes as a magical weapon.</effect>
+      <effect>Can damage creatures only hit by magical weapons.</effect>
+      <effect>The weapon's form is appropriate to the cleric and deity.</effect>
+    </effects>
+    <scaling>
+      <rule>Damage bonus increases by +1 per 3 caster levels to a maximum of +4.</rule>
+    </scaling>
+    <duration_rules>
+      <entry condition="the weapon moves beyond spell range">The weapon disappears.</entry>
+      <entry condition="the caster loses sight of the weapon">The weapon disappears.</entry>
+      <entry condition="the caster ceases directing the weapon">The weapon disappears.</entry>
+    </duration_rules>
+    <limits>
+      <limit>The weapon cannot be attacked or harmed by physical attacks.</limit>
+    </limits>
+    <interactions>
+      <rule>Dispel magic, disintegrate, or a rod of cancellation dispels the spiritual weapon.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Sticks to Snakes">
+    <classification>
+      <entry><type>Divine</type><level>4</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>6 turns</duration>
+    <targets>
+      <valid_target>Normal wooden sticks.</valid_target>
+      <invalid_target>Magical sticks such as enchanted staffs.</invalid_target>
+    </targets>
+    <effects>
+      <summary>Transforms sticks into normal snakes under the caster's command.</summary>
+      <effect>Transforms 2d8 sticks into snakes per every 4 caster levels.</effect>
+      <effect>There is a 50% chance the snakes are poisonous.</effect>
+      <effect>The snakes obey the caster's commands.</effect>
+    </effects>
+    <scaling>
+      <rule>Transforms 2d8 sticks per 4 caster levels.</rule>
+    </scaling>
+    <duration_rules>
+      <entry condition="the snakes are slain, dispelled, or the spell expires">They revert to their original stick form.</entry>
+    </duration_rules>
+  </spell>
+
+  <spell name="Strength of Mind" reversible="true" reverse_name="Weakness of Mind">
+    <classification>
+      <entry><type>Divine</type><level>5</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>12 turns</duration>
+    <effects>
+      <summary>Improves the target's saving throws.</summary>
+      <bonus>+4 to saving throws versus Death, Staffs, Wands, Paralysis, Petrification, and Spells.</bonus>
+    </effects>
+    <reversed_form name="Weakness of Mind">
+      <effects>
+        <summary>Reduces the target's saving throws.</summary>
+        <penalty>-4 to saving throws.</penalty>
+      </effects>
+      <saving_throw>
+        <rule>No saving throw is allowed against weakness of mind.</rule>
+      </saving_throw>
+    </reversed_form>
+  </spell>
+
+  <spell name="Striking">
+    <classification>
+      <entry><type>Divine</type><level>3</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>3 turns</duration>
+    <targets>
+      <valid_target>One weapon within range.</valid_target>
+    </targets>
+    <effects>
+      <summary>Empowers a weapon with extra magical damage.</summary>
+      <damage>Each successful attack with the weapon deals +1d6 damage.</damage>
+      <effect>If cast on a normal weapon, it allows attacks against monsters only hit by magical weapons.</effect>
+    </effects>
+    <limits>
+      <limit>Provides no bonus to attack throws.</limit>
+      <limit>Against creatures only hit by magical weapons, only the extra 1d6 magical damage applies.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Sword of Fire">
+    <classification>
+      <entry><type>Divine</type><level>5</level></entry>
+    </classification>
+    <range>0'</range>
+    <duration>12 turns</duration>
+    <effects>
+      <summary>Creates a magical fiery sword in the caster's hand.</summary>
+      <bonus>Attack throw and damage bonuses equal caster level divided by 3, rounded up.</bonus>
+      <effect>Sets inflammable substances alight.</effect>
+      <effect>Can harm undead and incorporeal creatures.</effect>
+      <effect>The caster may cause the sword to appear and disappear at will.</effect>
+    </effects>
+    <scaling>
+      <rule>Attack and damage bonus equals caster level / 3, rounded up.</rule>
+    </scaling>
+  </spell>
+
+  <spell name="Telekinesis">
+    <classification>
+      <entry><type>Arcane</type><level>5</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>6 rounds</duration>
+    <targets>
+      <valid_target>Object or creature within range.</valid_target>
+    </targets>
+    <effects>
+      <summary>Moves objects or creatures by concentration.</summary>
+      <effect>A subject weighing no more than 2 stone (20 lb) per caster level may be moved up to 20' per round.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>A creature may save versus Spells to negate the effect on itself.</rule>
+      <rule>A creature may also save to negate the effect on an object it holds or carries.</rule>
+      <rule>If concentration is lost and later resumed, the subject gets a new saving throw.</rule>
+    </saving_throw>
+    <scaling>
+      <rule>Maximum weight moved is 2 stone (20 lb) per caster level.</rule>
+    </scaling>
+    <limits>
+      <limit>While concentrating, the caster may move no more than half speed.</limit>
+      <limit>While concentrating, the caster may make no attacks and cast no spells.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Teleport">
+    <classification>
+      <entry><type>Arcane</type><level>5</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>instantaneous</duration>
+    <targets>
+      <valid_target>Creature touched, carrying up to full encumbrance load.</valid_target>
+    </targets>
+    <effects>
+      <summary>Instantly transports the subject to a designated destination.</summary>
+      <effect>If successful, the subject arrives at ground level in a suitable open place.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <negates>An unwilling target may save versus Spells to resist.</negates>
+    </saving_throw>
+    <procedure>
+      <step order="1">Determine the caster's familiarity with the destination.</step>
+      <step order="2">Roll d% and consult the familiarity table.</step>
+      <step order="3">Apply the result: on target, off target, or lost.</step>
+    </procedure>
+    <special>
+      <rule>A very familiar place is one the caster has been to very often, such as home or laboratory.</rule>
+      <rule>Studied carefully means the caster knows the place well by direct sight, repeated visits, or at least 1 hour of magical or other study.</rule>
+      <rule>Seen casually means the caster has seen the place more than once but is not very familiar with it.</rule>
+      <rule>Viewed once means the caster has seen it once.</rule>
+      <rule>If the subject arrives off target into solid matter, the subject is instantly killed.</rule>
+      <rule>If the off-target location is above ground, the subject takes falling damage.</rule>
+      <rule>Lost subjects do not reappear.</rule>
+      <rule>The caster cannot intentionally teleport a subject into thin air, off target, or into solid matter.</rule>
+    </special>
+    <tables>
+      <table name="teleport_familiarity">
+        <columns>
+          <column>familiarity</column>
+          <column>on_target</column>
+          <column>off_target</column>
+          <column>lost</column>
+        </columns>
+        <row>
+          <familiarity>Very familiar</familiarity>
+          <on_target>01-95</on_target>
+          <off_target>96-99</off_target>
+          <lost>00</lost>
+        </row>
+        <row>
+          <familiarity>Studied carefully</familiarity>
+          <on_target>01-80</on_target>
+          <off_target>81-90</off_target>
+          <lost>91-00</lost>
+        </row>
+        <row>
+          <familiarity>Seen casually</familiarity>
+          <on_target>01-50</on_target>
+          <off_target>51-75</off_target>
+          <lost>76-00</lost>
+        </row>
+        <row>
+          <familiarity>Viewed once</familiarity>
+          <on_target>01-30</on_target>
+          <off_target>31-65</off_target>
+          <lost>66-00</lost>
+        </row>
+      </table>
+    </tables>
+  </spell>
+
+  <spell name="Tongues" reversible="true" reverse_name="Garble">
+    <classification>
+      <entry><type>Divine</type><level>4</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>1 turn</duration>
+    <area>Any intelligent creature within 60' of the caster.</area>
+    <effects>
+      <summary>Allows understanding and speaking the language of any intelligent creature within range.</summary>
+    </effects>
+    <reversed_form name="Garble">
+      <targets>
+        <valid_target>Any intelligent creature within 60' of the caster.</valid_target>
+      </targets>
+      <effects>
+        <summary>Prevents a target from communicating with other intelligent creatures.</summary>
+        <effect>If the target is benefiting from tongues, garble negates tongues.</effect>
+        <effect>Otherwise, the target cannot speak or understand the languages of other intelligent creatures.</effect>
+        <effect>The target still thinks clearly and understands its own words.</effect>
+        <effect>The target may still cast spells.</effect>
+        <effect>The target may not immediately realize the condition and may think others cannot understand it.</effect>
+      </effects>
+      <saving_throw>
+        <rule>No saving throw is permitted.</rule>
+      </saving_throw>
+    </reversed_form>
+  </spell>
+
+  <spell name="Transmute Rock to Mud" reversible="true" reverse_name="Transmute Mud to Rock">
+    <classification>
+      <entry><type>Arcane</type><level>5</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>3d6 days (permanent)</duration>
+    <area>Up to 3,000 square feet across and up to 10' deep.</area>
+    <targets>
+      <valid_target>Natural, uncut, unworked rock.</valid_target>
+    </targets>
+    <effects>
+      <summary>Changes natural rock into mud.</summary>
+      <effect>Creatures entering the mud become mired.</effect>
+      <effect>Mired creatures move at 1/10 normal speed and suffer -2 AC.</effect>
+    </effects>
+    <saving_throw>
+      <type>Blast</type>
+      <partial>If cast on a cave ceiling, creatures in the area take 8d6 damage, half on a successful save versus Blast.</partial>
+    </saving_throw>
+    <limits>
+      <limit>Magical stone is unaffected.</limit>
+      <limit>Buildings, bridges, and other worked-stone structures are unaffected.</limit>
+    </limits>
+    <interactions>
+      <rule>If cast on a cave ceiling, the mud falls, forms a mire on the floor, and may cause a wider cave-in at the Judge's discretion.</rule>
+      <rule>Mud remains until the duration expires or transmute mud to rock restores it.</rule>
+      <rule>When mud becomes rock, the final shape may differ because the mud may have moved or shifted.</rule>
+    </interactions>
+    <reversed_form name="Transmute Mud to Rock">
+      <effects>
+        <summary>Changes mud back into rock for the same volume.</summary>
+      </effects>
+      <duration>permanent</duration>
+    </reversed_form>
+  </spell>
+
+  <spell name="True Seeing">
+    <classification>
+      <entry><type>Divine</type><level>5</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>1 turn plus 1 round per level</duration>
+    <effects>
+      <summary>Allows the subject to see things as they really are within 120'.</summary>
+      <effect>Sees through normal and magical darkness.</effect>
+      <effect>Notices secret doors.</effect>
+      <effect>Sees exact locations of displaced creatures or objects.</effect>
+      <effect>Sees through normal and magical disguises.</effect>
+      <effect>Sees invisible creatures and objects normally.</effect>
+      <effect>Sees through illusions.</effect>
+      <effect>Sees the true form of polymorphed, changed, or transmuted things.</effect>
+    </effects>
+    <limits>
+      <limit>Does not penetrate solid objects.</limit>
+      <limit>Does not grant X-ray vision or equivalent.</limit>
+      <limit>Does not negate concealment, including fog and similar effects.</limit>
+      <limit>Cannot be enhanced through a crystal ball, clairvoyance, or similar magic.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Ventriloquism">
+    <classification>
+      <entry><type>Arcane</type><level>1</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>2 turns</duration>
+    <effects>
+      <summary>Makes the caster's voice seem to originate elsewhere within range.</summary>
+    </effects>
+  </spell>
+
+  <spell name="Vigor">
+    <classification>
+      <entry><type>Divine</type><level>4</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>1 turn per level</duration>
+    <effects>
+      <summary>Temporarily enhances the subject's resilience and strength.</summary>
+      <bonus>+2 to saving throws.</bonus>
+      <bonus>+1d10 hit points.</bonus>
+      <bonus>+1d3 Strength.</bonus>
+      <effect>Extra hit points are lost first when the subject takes damage.</effect>
+      <effect>Strength can be increased to a maximum of 19.</effect>
+      <effect>Strength 19 grants +4 attack throws and damage rolls.</effect>
+    </effects>
+    <limits>
+      <limit>The extra hit points cannot be restored by healing.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Wall of Fire">
+    <classification>
+      <entry><type>Arcane</type><level>4</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>2 turns</duration>
+    <area>Up to 1,200 square feet; may be straight or curved into a protective circle.</area>
+    <effects>
+      <summary>Creates an immobile opaque wall of violet flame.</summary>
+      <effect>May be shaped to any dimensions the caster desires within the area limit.</effect>
+      <damage>Creatures with more than 4 HD take 1d6 damage when passing through.</damage>
+      <effect>Deals double damage to undead and creatures that use cold or are accustomed to cold.</effect>
+    </effects>
+    <limits>
+      <limit>Impenetrable to monsters with fewer than 4 HD.</limit>
+      <limit>Cannot appear where objects or creatures already are.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Wall of Ice">
+    <classification>
+      <entry><type>Arcane</type><level>4</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>2 turns</duration>
+    <area>Up to 1,200 square feet; may be straight or curved into a protective circle.</area>
+    <effects>
+      <summary>Creates an immobile translucent wall of ice.</summary>
+      <effect>May be shaped to any dimensions the caster desires within the area limit.</effect>
+      <damage>Creatures with more than 4 HD take 1d6 damage when breaking through.</damage>
+      <effect>Deals double damage to creatures that use fire or are accustomed to hot conditions.</effect>
+    </effects>
+    <limits>
+      <limit>Impenetrable to monsters with fewer than 4 HD.</limit>
+      <limit>Cannot appear where objects or creatures already are.</limit>
+      <limit>Must rest on a solid surface.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Wall of Iron">
+    <classification>
+      <entry><type>Arcane</type><level>6</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>permanent</duration>
+    <area>Normally 1&quot; thick and up to 1,000 square feet; thicker walls reduce area proportionally.</area>
+    <effects>
+      <summary>Creates a flat vertical wall of iron.</summary>
+      <effect>If the caster wishes and the wall's area is sufficient, it may bond to surrounding nonliving material.</effect>
+      <effect>The wall may be created upright but unattached so it can tip and fall.</effect>
+    </effects>
+    <procedure>
+      <step order="1">Create the wall in contact with the ground as a flat plane.</step>
+      <step order="2">If created upright and unattached, determine tipping direction randomly on a 50/50 basis unless creatures push it.</step>
+      <step order="3">Creatures may push it in one direction with a successful Open Doors proficiency throw.</step>
+      <step order="4">Creatures with room to flee may save versus Blast to escape.</step>
+      <step order="5">Ogre-size or smaller creatures that fail the save take 10d6 damage.</step>
+    </procedure>
+    <limits>
+      <limit>Cannot be less than 1&quot; thick.</limit>
+      <limit>Cannot appear where objects or creatures already are.</limit>
+      <limit>Must always be a flat plane.</limit>
+      <limit>Edges may be shaped to fit available space.</limit>
+      <limit>The wall cannot crush creatures larger than ogre size.</limit>
+    </limits>
+    <duration_rules>
+      <rule>The wall is permanent unless destroyed or dispel magic is cast on it.</rule>
+    </duration_rules>
+    <special>
+      <rule>As ordinary iron, it is subject to rust, perforation, and other natural phenomena.</rule>
+    </special>
+  </spell>
+
+  <spell name="Wall of Stone">
+    <classification>
+      <entry><type>Arcane</type><level>5</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>permanent</duration>
+    <area>Up to 1,000 cubic feet.</area>
+    <effects>
+      <summary>Creates a shaped stone wall.</summary>
+      <effect>The wall may take almost any shape the caster desires.</effect>
+      <effect>Can be used as a bridge, ramp, or similarly shaped structure.</effect>
+      <effect>Can be crudely shaped to include crenellations, battlements, and similar features.</effect>
+    </effects>
+    <limits>
+      <limit>Cannot appear where objects or creatures already are.</limit>
+      <limit>Must rest on a solid surface.</limit>
+      <limit>For non-vertical or unsupported forms, the wall must merge with and be solidly supported by existing stone.</limit>
+    </limits>
+    <duration_rules>
+      <rule>The wall is permanent unless destroyed or dispelled with dispel magic.</rule>
+    </duration_rules>
+    <interactions>
+      <rule>If spanning more than 20', the wall must be arched and buttressed, reducing the effective area by half.</rule>
+      <rule>Adding crenellations, battlements, and similar shaping also reduces the area.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Water Breathing">
+    <classification>
+      <entry><type>Arcane</type><level>3</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>1 day</duration>
+    <effects>
+      <summary>Allows the affected creature to breathe underwater at any depth.</summary>
+      <effect>Does not interfere with breathing air.</effect>
+    </effects>
+    <limits>
+      <limit>Does not grant special underwater movement.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Web">
+    <classification>
+      <entry><type>Arcane</type><level>2</level></entry>
+    </classification>
+    <range>10'</range>
+    <duration>48 turns</duration>
+    <area>10' x 10' x 10'.</area>
+    <effects>
+      <summary>Creates a mass of sticky strands that entangles creatures.</summary>
+      <effect>Creatures in the web become entangled and cannot move.</effect>
+      <effect>Attacking a creature in a web does not entangle the attacker, but moving through the area does.</effect>
+      <effect>The strands are flammable.</effect>
+    </effects>
+    <procedure>
+      <step order="1">Creatures caught in the web become entangled.</step>
+      <step order="2">Determine escape time by strength category.</step>
+      <step order="3">If the web is ignited, creatures within take fire damage for 2 rounds and are then freed if they survive.</step>
+    </procedure>
+    <tables>
+      <table name="web_escape_by_strength">
+        <columns>
+          <column>strength_category</column>
+          <column>escape_time</column>
+        </columns>
+        <row>
+          <strength_category>Normal human strength or less</strength_category>
+          <escape_time>2d4 turns</escape_time>
+        </row>
+        <row>
+          <strength_category>Strong humans (Strength 13-17)</strength_category>
+          <escape_time>1 turn</escape_time>
+        </row>
+        <row>
+          <strength_category>Ogre strength or stronger (Strength 18)</strength_category>
+          <escape_time>4 rounds</escape_time>
+        </row>
+        <row>
+          <strength_category>Giants or similar great strength</strength_category>
+          <escape_time>2 rounds</escape_time>
+        </row>
+      </table>
+    </tables>
+    <interactions>
+      <rule>Flaming webs deal 1d6 fire damage for 2 rounds to all creatures within them, after which surviving creatures are free.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Wizard Eye">
+    <classification>
+      <entry><type>Arcane</type><level>4</level></entry>
+    </classification>
+    <range>240'</range>
+    <duration>6 turns</duration>
+    <effects>
+      <summary>Creates an invisible magical eye through which the caster can see.</summary>
+      <effect>The eye has infravision.</effect>
+      <effect>Otherwise it sees exactly as the caster would, including benefits from detect magic, see invisible, or detect evil if those spells affect the caster.</effect>
+      <effect>It can be created anywhere the caster can see within 240'.</effect>
+      <effect>It can move at 40' per round as directed by the caster.</effect>
+    </effects>
+    <limits>
+      <limit>The eye may never move more than 240' from the caster.</limit>
+      <limit>The eye cannot pass through solid objects.</limit>
+      <limit>It may pass through openings as small as 1&quot; in diameter.</limit>
+      <limit>The caster must concentrate to use the eye.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Wizard Lock">
+    <classification>
+      <entry><type>Arcane</type><level>2</level></entry>
+    </classification>
+    <range>10'</range>
+    <duration>permanent</duration>
+    <targets>
+      <valid_target>Door, chest, or portal.</valid_target>
+    </targets>
+    <effects>
+      <summary>Magically locks the target.</summary>
+      <effect>The original caster can freely pass the lock without affecting it.</effect>
+      <effect>Any arcane spellcaster 3 or more levels higher than the caster of the wizard lock can also freely pass it.</effect>
+    </effects>
+    <limits>
+      <limit>Otherwise, the secured object can only be opened by breaking in or by successful dispel magic or knock.</limit>
+    </limits>
+  </spell>
+</spell_catalog>

@@ -1,0 +1,79 @@
+{
+  "religion_id": "measure_of_the_unblinking_sun",
+  "display_name": "The Measure of the Unblinking Sun",
+  "theology": {
+    "type": "monotheist",
+    "syncretism": "exclusivist",
+    "afterlife_belief": "paradise_and_damnation"
+  },
+  "alignment": "Lawful",
+  "associated_cultures": [
+    "sulqaim"
+  ],
+  "clergy": {
+    "title_hierarchy": [
+      "Candle Scribe",
+      "Measure Reader",
+      "Sun Magistrate",
+      "Canon Interpreter",
+      "Grand Luminary"
+    ],
+    "title_level_mapping": {
+      "1": "Candle Scribe",
+      "3": "Measure Reader",
+      "5": "Sun Magistrate",
+      "7": "Canon Interpreter",
+      "9": "Grand Luminary"
+    },
+    "gender_restriction": "none",
+    "special_class": null,
+    "vestments": "white linen robes, blue sashes, and gold ink marks on the wrists",
+    "holy_symbol": "a staring sun above a balanced rod"
+  },
+  "practices": {
+    "holy_days_per_year": 3,
+    "holy_day_character": "solemn",
+    "worship_style": "congregational",
+    "dietary_restrictions": "fast from dawn to dusk on judgment feasts",
+    "funerary_practice": "mummification",
+    "stance_on_undead": "abomination"
+  },
+  "political_role": {
+    "church_state_relationship": "state_religion",
+    "temporal_authority": "extensive",
+    "military_involvement": "holy_warriors"
+  },
+  "cosmology": {
+    "opposing_view": "false_gods",
+    "opposing_view_detail": "Chaotic beings are taught as mirage-lords whose glamour hides theft, false witness, and rebellion against rightful measure.",
+    "notes": "See §3.3 Alignment Cosmology Rules for the hard constraints governing this field."
+  },
+  "pantheon": [
+    {
+      "deity_id": "sathir",
+      "display_name": "Sathir the Unblinking",
+      "epithets": [
+        "Lord of Measure",
+        "The Witness Above All"
+      ],
+      "alignment": "Lawful",
+      "portfolios": [
+        "sun",
+        "justice",
+        "knowledge",
+        "protection"
+      ],
+      "holy_symbol": "a single-rayed eye within a square",
+      "favored_weapon": "mace",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "ibis",
+      "domains_summary": "Sathir sees every bargain, judges every lie, and teaches that truth and proportion preserve life in the waste."
+    }
+  ],
+  "flavor_text": {
+    "one_line": "A desert monotheism of truth, precise law, and the merciful order of measured survival.",
+    "one_paragraph": "The faithful of Sathir believe all error begins in mismeasure: a false weight, a hidden cup, a secret vow, or a selfish hoarding of water. Temple courts, archives, and schools are treated as one institution because the same divine gaze is thought to judge both record and soul. Chaotic powers are dismissed as mirage idols, deceivers who promise easy abundance while leading peoples into thirst, fraud, and ruin.",
+    "creation_myth_summary": "Sathir looked upon the formless waste, divided heat from night, counted the stars, and from those measures taught mortals how to endure.",
+    "moral_code_summary": "Tell the truth, keep fair account, guard public water and law, submit appetite to measure, and oppose Chaos in deception, excess, and revolt."
+  }
+}

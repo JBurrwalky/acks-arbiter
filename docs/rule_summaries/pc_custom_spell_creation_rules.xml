@@ -1,0 +1,979 @@
+<custom_spell_creation_rules title="ACKS Players Companion Custom Spell Rules" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true" example_spells_excluded="true">
+  <scope>
+    <rule>This summary preserves only reusable spell-construction mechanics and excludes named example spells used for illustration.</rule>
+  </scope>
+
+  <power_guidelines>
+    <rule>These guidelines are used to assign spell level to newly created spells.</rule>
+    <rule>Without breakthroughs through experimentation, new spells built with these guidelines are generally confined to more mundane levels of spell power than the most exceptional existing spells.</rule>
+    <rule>Replicating unusually powerful benchmark spells requires breakthroughs through experimentation.</rule>
+  </power_guidelines>
+
+  <determining_spell_level>
+    <rule>To preserve the ACKS feel of magic, damaging spells should be restricted to odd spell levels.</rule>
+    <rule>Each spell level spans 10 spell points.</rule>
+    <rule>1st level spells cost 1-10 spell points, 2nd level spells cost 11-20 spell points, and so on.</rule>
+    <rule>A spell's spell points are calculated from its type, effect cost, target factor, duration factor, range factor, saving throw factor, and source factor.</rule>
+    <derived_rule>Spell level can be derived as the 10-point band containing the final spell point total.</derived_rule>
+  </determining_spell_level>
+
+  <spell_characteristics>
+    <type_definitions>
+      <type name="blast">
+        <summary>Deals damage or detrimental effects to individual targets or areas by evoking a medium such as arcane force, fire, or toxic gas.</summary>
+        <distinction>Damage dealt directly through magic is a death spell instead of a blast spell.</distinction>
+        <interaction>Blast spells with an elemental component benefit from Elementalism proficiency.</interaction>
+      </type>
+      <type name="death">
+        <summary>Deals damage or detrimental effects directly and uses necromantic energy, including life draining and animating the dead.</summary>
+        <interaction>Death spells usually require saves versus death to avoid their effects and therefore benefit from Secrets of the Dark Arts or Black Lore of Zahar.</interaction>
+        <interaction>If a death spell involves necromantic potence, level draining, or undead, it counts as necromantic for Secrets of the Dark Arts and Black Lore of Zahar.</interaction>
+      </type>
+      <type name="detection">
+        <summary>Detects categories of creatures, powers, or objects within range.</summary>
+        <interaction>Detection spells are not modified by a specific class power or proficiency unless the Judge creates one.</interaction>
+      </type>
+      <type name="enchantment">
+        <summary>Charms, commands, holds, mesmerizes, or otherwise affects the will of target creatures.</summary>
+        <interaction>Mastery of Charms and Illusions applies to all enchantment spells.</interaction>
+      </type>
+      <type name="healing">
+        <summary>Regenerates, revitalizes, reincarnates, or resurrects creatures.</summary>
+        <interaction>Healing spells may be reversed to damage or kill, in which case they function like weak death spells.</interaction>
+        <interaction>Reversed healing spells that require a save versus death benefit from Secrets of the Dark Arts or Black Lore of Zahar.</interaction>
+      </type>
+      <type name="illusion">
+        <summary>Creates phantasmal images and sounds, conceals or manipulates light and motion, and manufactures figments of the imagination.</summary>
+        <distinction>Illusions do not directly affect target consciousness; enchantments do.</distinction>
+        <interaction>Mastery of Charms and Illusions applies to all illusion spells.</interaction>
+      </type>
+      <type name="movement">
+        <summary>Moves creatures directly through magical power or allows them to move by magical power.</summary>
+        <distinction>A spell that grants movement by giving the target the characteristics of another creature is a transmogrification spell instead.</distinction>
+      </type>
+      <type name="protection">
+        <summary>Enhances armor class and saving throws, wards off foes, and directly protects against spells, weapons, and elements.</summary>
+        <distinction>A spell that protects by giving the target the characteristics of another creature is a transmogrification spell instead.</distinction>
+        <interaction>Protection spells are not modified by a specific class power or proficiency unless the Judge creates one.</interaction>
+      </type>
+      <type name="summoning">
+        <summary>Calls creatures from elsewhere to serve the spellcaster.</summary>
+        <interaction>Summoning spells that call creatures from the elemental planes benefit from Elementalism proficiency.</interaction>
+        <interaction>The Judge may create class powers or proficiencies for summoning specialization.</interaction>
+      </type>
+      <type name="transmogrification">
+        <summary>Transforms the physical and or mental characteristics of creatures or objects, either completely or partially.</summary>
+        <interaction>Transmogrification spells benefit from the Transmogrification proficiency.</interaction>
+        <interaction>Some transmogrification spells with an elemental component, usually stone, benefit from Elementalism proficiency.</interaction>
+      </type>
+      <type name="wall">
+        <summary>Creates barriers of physical, elemental, or magical substance.</summary>
+        <distinction>Wall spells use energies similar to blast spells but emphasize malleable or mobile areas of effect with long duration.</distinction>
+        <interaction>Wall spells with an elemental component benefit from Elementalism proficiency.</interaction>
+        <interaction>Unusual wall spells may benefit from other proficiencies when their substance or effect matches that specialty; undead-based walls benefit from Secrets of the Black Arts and Black Lore of Zahar.</interaction>
+      </type>
+    </type_definitions>
+
+    <cost_component_definitions>
+      <component name="effect_cost">
+        <rule>Each effect has a base cost in spell points.</rule>
+        <rule>Effect modifiers multiply the base cost.</rule>
+        <rule>When a spell has multiple effects and only some are modified, apply modifiers to each effect separately and then sum the totals.</rule>
+      </component>
+      <component name="target_factor">
+        <rule>Targets are generally creatures or areas.</rule>
+        <rule>An area-targeted spell affects all creatures and objects in the area unless it has a selective targeting modifier.</rule>
+        <rule>A creature-targeted spell lets the caster choose the affected creatures unless a targeting modifier prevents that choice.</rule>
+        <rule>Spells that affect more creatures or larger areas have higher target factors.</rule>
+      </component>
+      <component name="range_factor">
+        <rule>Longer ranges cost more spell points.</rule>
+        <rule>Range 0' means the caster must be close enough to touch the target.</rule>
+        <rule>A spell with range 0' does not require an attack throw unless attack throw required is selected as a targeting modifier.</rule>
+        <rule>A range 0' spell that requires an attack throw is designated as touch range.</rule>
+      </component>
+      <component name="duration_factor">
+        <rule>Longer durations cost more spell points.</rule>
+        <definition term="instantaneous">The spell's energy comes and goes the instant the spell is cast, though consequences may last.</definition>
+        <definition term="indefinite">The spell lasts until dispelled or otherwise canceled.</definition>
+      </component>
+      <component name="saving_throw_factor">
+        <rule>Spells with no saving throw have higher saving throw factors.</rule>
+        <rule>Spells entirely avoided with a saving throw have lower saving throw factors.</rule>
+        <rule>Spells partly avoided with a saving throw use intermediate saving throw factors.</rule>
+        <rule>Spells with only beneficial effects always use a saving throw factor of 1.</rule>
+      </component>
+      <component name="source_factor">
+        <rule>A spell's source is arcane or divine.</rule>
+        <rule>Source factor depends on both spell type and source.</rule>
+      </component>
+    </cost_component_definitions>
+
+    <build_procedure>
+      <step order="1">Choose the spell's type.</step>
+      <step order="2">Consult that type's spell characteristics tables.</step>
+      <step order="3">Choose the spell's effect or effects.</step>
+      <step order="4">Choose the spell's target or targets.</step>
+      <step order="5">Choose the spell's duration.</step>
+      <step order="6">Choose the spell's range.</step>
+      <step order="7">Choose the spell's saving throw.</step>
+      <step order="8">Choose the spell's source.</step>
+      <step order="9">Multiply total effect cost by target factor, duration factor, range factor, saving throw factor, and source factor.</step>
+      <step order="10">Round the final spell point total to the nearest whole number.</step>
+    </build_procedure>
+
+    <formula>
+      <expression>(base_cost_of_all_effects) x (target_factor) x (duration_factor) x (range_factor) x (saving_throw_factor) x (source_factor)</expression>
+    </formula>
+
+    <rounding_rule>
+      <rule>Round the final spell point total to the nearest whole number.</rule>
+      <rule>When the fractional value is exactly .5, round down if the preceding whole number is even and round up if it is odd.</rule>
+    </rounding_rule>
+  </spell_characteristics>
+
+  <spell_type_tables>
+    <spell_type name="blast">
+      <notes>
+        <rule>All damaging blast spells deal variable damage based on caster level.</rule>
+        <rule>To create a fixed-damage blast spell, select an appropriate variable damage effect and apply a maximum damage modifier equal to or lower than the caster level required to cast the spell.</rule>
+      </notes>
+      <tables>
+        <table name="effects">
+          <row category="damaging_effects" label="1d4 damage per level" value="20"/>
+          <row category="damaging_effects" label="1d6 damage per level" value="27"/>
+          <row category="damaging_effects" label="1d6+1 damage per level" value="33"/>
+          <row category="damaging_effects" label="1d8 damage per level" value="35"/>
+          <row category="damaging_effects" label="1d10 or 2d4 damage per level" value="44"/>
+          <row category="damaging_effects" label="1d12 damage per level" value="52"/>
+          <row category="maximum_damage_modifiers" label="Maximum 1d damage" value="x0.1"/>
+          <row category="maximum_damage_modifiers" label="Maximum 2d damage" value="x0.25"/>
+          <row category="maximum_damage_modifiers" label="Maximum 3d damage" value="x0.33"/>
+          <row category="maximum_damage_modifiers" label="Maximum 4d damage" value="x0.5"/>
+          <row category="maximum_damage_modifiers" label="Maximum 5d damage" value="x0.7"/>
+          <row category="maximum_damage_modifiers" label="Maximum 6d damage" value="x0.8"/>
+          <row category="maximum_damage_modifiers" label="Maximum 7d damage" value="x0.9"/>
+          <row category="maximum_damage_modifiers" label="No maximum damage" value="x1"/>
+          <row category="additional_effects" label="Nausea-inducing (as per stinking cloud)" value="10"/>
+          <row category="additional_effects" label="Gusting (as per gust of wind)" value="20"/>
+          <row category="effect_modifiers" label="Blast is elemental (fire, earth, water, air)" value="x1"/>
+        </table>
+        <table name="targeting">
+          <row category="target_by_number_of_creatures" label="1 creature" value="x1"/>
+          <row category="target_by_number_of_creatures" label="1 creature + 1 per 5 additional levels" value="x2"/>
+          <row category="target_by_number_of_creatures" label="1 creature + 2 per 5 additional levels" value="x3"/>
+          <row category="target_by_number_of_creatures" label="1 creature + 1 per 2 additional levels" value="x4"/>
+          <row category="target_by_number_of_creatures" label="1 creature per level within 30' diameter" value="x5"/>
+          <row category="target_by_number_of_creatures" label="1 creature per level" value="x7"/>
+          <row category="target_by_area_of_effect" label="5' diameter sphere" value="x1"/>
+          <row category="target_by_area_of_effect" label="10' diameter sphere" value="x1.25"/>
+          <row category="target_by_area_of_effect" label="10' long x 10' wide x 10' deep cube" value="x1.5"/>
+          <row category="target_by_area_of_effect" label="10' diameter x 30' tall cylinder" value="x1.5"/>
+          <row category="target_by_area_of_effect" label="15' diameter sphere" value="x1.5"/>
+          <row category="target_by_area_of_effect" label="60' long x 5' wide line" value="x1.75"/>
+          <row category="target_by_area_of_effect" label="20' diameter sphere" value="x2"/>
+          <row category="target_by_area_of_effect" label="20' long x 20' wide x 20' deep cube" value="x2.25"/>
+          <row category="target_by_area_of_effect" label="40' long x 20' wide cone" value="x2.5"/>
+          <row category="target_by_area_of_effect" label="25' diameter sphere" value="x4"/>
+          <row category="target_by_area_of_effect" label="60' long x 10' wide cone" value="x4.5"/>
+          <row category="target_by_area_of_effect" label="30' diameter sphere" value="x5"/>
+          <row category="target_by_area_of_effect" label="60' long x 30' wide cone" value="x6"/>
+          <row category="targeting_modifiers" label="Selective targeting within area of effect" value="x3"/>
+          <row category="targeting_modifiers" label="Attack throw required to hit target" value="x0.35"/>
+        </table>
+        <table name="range">
+          <row label="0'/Touch" value="x0.4"/>
+          <row label="15'" value="x0.5"/>
+          <row label="30'" value="x0.6"/>
+          <row label="60'" value="x0.7"/>
+          <row label="90'" value="x0.8"/>
+          <row label="120'" value="x0.9"/>
+          <row label="150'" value="x1"/>
+          <row label="180'" value="x1.1"/>
+          <row label="240'" value="x1.2"/>
+          <row label="360'" value="x1.5"/>
+        </table>
+        <table name="duration">
+          <row label="Instantaneous" value="x1"/>
+          <row label="1 round" value="x1.1"/>
+          <row label="Concentration or until target makes save" value="x2"/>
+          <row label="1 round per level" value="x4"/>
+          <row label="Concentration" value="x4"/>
+        </table>
+        <table name="saving_throw">
+          <row label="No saving throw permitted" value="x1"/>
+          <row label="Saving throw reduces spell effect by half" value="x0.75"/>
+          <row label="Saving throw avoids spell effect" value="x0.5"/>
+        </table>
+        <table name="source">
+          <row label="Arcane" value="x1"/>
+          <row label="Divine" value="x2.25"/>
+        </table>
+      </tables>
+      <footnotes>
+        <footnote>Touch means an attack throw to target is required.</footnote>
+      </footnotes>
+    </spell_type>
+
+    <spell_type name="death">
+      <notes>
+        <rule>All damaging death spells deal variable damage based on caster level.</rule>
+      </notes>
+      <tables>
+        <table name="effects">
+          <row category="destructive_effect_on_target" label="Target held helpless" value="15"/>
+          <row category="destructive_effect_on_target" label="Target temporarily drained of 1 HD or life level" value="15"/>
+          <row category="destructive_effect_on_target" label="Target suffers mortal wound" value="60"/>
+          <row category="destructive_effect_on_target" label="Target slain" value="85"/>
+          <row category="destructive_effect_on_target" label="Target permanently drained of 1 HD or life level" value="100"/>
+          <row category="destructive_effect_on_target" label="Target disintegrated" value="135"/>
+          <row category="damage_to_targets" label="1d4 damage per level" value="27"/>
+          <row category="damage_to_targets" label="1d6 damage per level" value="33"/>
+          <row category="damage_to_targets" label="1d6+1 damage per level" value="35"/>
+          <row category="damage_to_targets" label="1d8 damage per level" value="44"/>
+          <row category="damage_to_targets" label="1d10 damage per level" value="52"/>
+          <row category="damage_to_targets" label="1d12 damage per level" value="60"/>
+          <row category="maximum_damage_modifiers" label="Maximum 1d damage" value="x0.1"/>
+          <row category="maximum_damage_modifiers" label="Maximum 2d damage" value="x0.3"/>
+          <row category="maximum_damage_modifiers" label="Maximum 3d damage" value="x0.5"/>
+          <row category="maximum_damage_modifiers" label="Maximum 4d damage" value="x0.7"/>
+          <row category="maximum_damage_modifiers" label="Maximum 5d damage" value="x0.9"/>
+          <row category="maximum_damage_modifiers" label="Maximum 6d damage" value="x1.1"/>
+          <row category="maximum_damage_modifiers" label="Maximum 7d damage" value="x1.3"/>
+          <row category="maximum_damage_modifiers" label="No maximum damage" value="x1.5"/>
+          <row category="other_death_related_effects" label="Imbue target with necromantic potence" value="10"/>
+          <row category="other_death_related_effects" label="Animate dead target as undead skeleton/zombie" value="10"/>
+          <row category="other_death_related_effects" label="De-animate undead skeleton/zombie" value="27"/>
+        </table>
+        <table name="targeting">
+          <row category="target_by_number_of_creatures" label="1 creature" value="x1"/>
+          <row category="target_by_number_of_creatures" label="1 HD of creatures per level within 60' diameter" value="x1.5"/>
+          <row category="target_by_number_of_creatures" label="1 HD of creatures per level" value="x1.75"/>
+          <row category="target_by_number_of_creatures" label="1 creature + 1 per 5 additional levels" value="x2"/>
+          <row category="target_by_number_of_creatures" label="1 creature + 2 per 5 additional levels" value="x3"/>
+          <row category="target_by_number_of_creatures" label="4d8 HD of creatures within 30' diameter" value="x3"/>
+          <row category="target_by_number_of_creatures" label="1 creature + 1 per 2 additional levels" value="x4"/>
+          <row category="target_by_number_of_creatures" label="4d8 HD of creatures" value="x4"/>
+          <row category="target_by_number_of_creatures" label="1 creature per level within 30' diameter" value="x5"/>
+          <row category="target_by_number_of_creatures" label="1 creature per level" value="x7"/>
+          <row category="targeting_modifiers" label="Attack throw required to hit target" value="x0.35"/>
+          <row category="targeting_modifiers" label="Creatures with fewest HD are affected first" value="x0.5"/>
+          <row category="targeting_modifiers" label="Creatures with 8 HD or more cannot be targeted" value="x0.75"/>
+          <row category="targeting_modifiers" label="Able to target object (10' x 10' x 10')" value="x1.25"/>
+        </table>
+        <table name="range">
+          <row label="0'/Touch" value="x0.4"/>
+          <row label="15'" value="x0.5"/>
+          <row label="30'" value="x0.6"/>
+          <row label="60'" value="x0.7"/>
+          <row label="90'" value="x0.8"/>
+          <row label="120'" value="x0.9"/>
+          <row label="150'" value="x1"/>
+          <row label="180'" value="x1.1"/>
+          <row label="240'" value="x1.2"/>
+          <row label="360'" value="x1.5"/>
+        </table>
+        <table name="duration">
+          <row label="Instantaneous" value="x1"/>
+          <row label="Concentration or until target makes save" value="x1.75"/>
+          <row label="1 round per level" value="x4"/>
+          <row label="Concentration" value="x4"/>
+          <row label="1 turn" value="x5"/>
+          <row label="1 hour" value="x6"/>
+          <row label="1 hour per level" value="x7"/>
+          <row label="1 day" value="x7"/>
+        </table>
+        <table name="saving_throw">
+          <row label="No saving throw permitted" value="x1"/>
+          <row label="Saving throw reduces spell effect by half" value="x0.75"/>
+          <row label="Saving throw avoids spell effect" value="x0.5"/>
+        </table>
+        <table name="source">
+          <row label="Arcane" value="x1"/>
+          <row label="Divine" value="x1.5"/>
+          <row category="source_modifiers" label="Divine spell affecting undead or life energy" value="x0.5"/>
+        </table>
+      </tables>
+    </spell_type>
+
+    <spell_type name="detection">
+      <tables>
+        <table name="effects">
+          <row label="Detect evil/good in range" value="5"/>
+          <row label="Detect ritual magic in range" value="5"/>
+          <row label="Detect danger in range" value="8"/>
+          <row label="Detect known object in range" value="8"/>
+          <row label="Detect invisible in range" value="10"/>
+          <row label="Detect magic in range" value="10"/>
+          <row label="Detect poison in range" value="10"/>
+          <row label="Detect undead in range" value="10"/>
+          <row label="Detect treasure in range" value="15"/>
+          <row label="Detect charm in range" value="20"/>
+          <row label="Detect secret doors in range" value="20"/>
+          <row label="Detect trap in range" value="20"/>
+          <row label="Detect curse in range" value="30"/>
+          <row category="effect_modifiers" label="Spell takes 1 turn to cast" value="x0.8"/>
+          <row category="effect_modifiers" label="Spell can only be performed once per week" value="x0.2"/>
+        </table>
+        <table name="targeting">
+          <row label="All areas/creatures/objects within range" value="x1"/>
+          <row label="1 small area/object/creature within range" value="x0.7"/>
+        </table>
+        <table name="range">
+          <row label="Self" value="x0.2"/>
+          <row label="0'" value="x0.5"/>
+          <row label="30'" value="x0.8"/>
+          <row label="60'" value="x1"/>
+          <row label="120'" value="x1.5"/>
+          <row label="240'" value="x2"/>
+          <row label="360'" value="x3"/>
+          <row label="1/2 mile" value="x4"/>
+          <row label="1 mile" value="x5"/>
+          <row label="5 miles" value="x6"/>
+          <row label="25 miles" value="x7"/>
+          <row label="100 miles" value="x8"/>
+        </table>
+        <table name="duration">
+          <row label="Concentration" value="x1"/>
+          <row label="1 round per level" value="x0.25"/>
+          <row label="1 turn" value="x0.5"/>
+          <row label="2 turns" value="x1"/>
+          <row label="3 turns" value="x1.2"/>
+          <row label="4 turns" value="x1.5"/>
+          <row label="5 turns" value="x1.7"/>
+          <row label="6 turns" value="x2"/>
+          <row label="1 turn per level" value="x2"/>
+          <row label="1 day" value="x8"/>
+        </table>
+        <table name="saving_throw">
+          <row label="No saving throw permitted" value="x1"/>
+          <row label="Saving throw avoids spell effect (e.g. not detected)" value="x0.5"/>
+        </table>
+        <table name="source">
+          <row label="Arcane" value="x1"/>
+          <row label="Divine" value="x1"/>
+          <row category="source_modifiers" label="Divine detecting invisibility or known objects" value="x1.5"/>
+          <row category="source_modifiers" label="Divine detecting secret doors or treasure" value="x2"/>
+          <row category="source_modifiers" label="Arcane detecting evil or traps" value="x2"/>
+          <row category="source_modifiers" label="Arcane detecting charm, curse, or danger" value="x3"/>
+        </table>
+      </tables>
+    </spell_type>
+
+    <spell_type name="enchantment">
+      <tables>
+        <table name="effects">
+          <row label="Target confused for duration of spell" value="11"/>
+          <row label="Target asleep for duration of spell" value="15"/>
+          <row label="Target mesmerized for duration of spell" value="30"/>
+          <row label="Target charmed for duration of spell" value="30"/>
+          <row label="Target feebleminded for duration of spell" value="30"/>
+          <row label="Target held for duration of spell" value="36"/>
+          <row label="Target flees in panic for 30 rounds" value="40"/>
+          <row label="Target commanded for duration of spell" value="60"/>
+        </table>
+        <table name="targeting">
+          <row category="target_by_hd_of_creatures" label="1 creature of up to 4+1 HD" value="x1"/>
+          <row category="target_by_hd_of_creatures" label="1 creature of any HD" value="x1.1"/>
+          <row category="target_by_hd_of_creatures" label="1d4 creatures of up to 4 HD" value="x1.2"/>
+          <row category="target_by_hd_of_creatures" label="1d4 creatures of any HD" value="x1.5"/>
+          <row category="target_by_hd_of_creatures" label="6 HD worth of creatures" value="x1.75"/>
+          <row category="target_by_hd_of_creatures" label="2d8 or 3d6 HD of creatures of up to 4 HD" value="x2.25"/>
+          <row category="target_by_hd_of_creatures" label="1 creature up to 4+1 HD or 2d8 HD of creatures of 4 HD-" value="x2.3"/>
+          <row category="target_by_hd_of_creatures" label="1 creature of any HD or 3d6 HD of creatures of 4 HD-" value="x2.5"/>
+          <row category="target_by_hd_of_creatures" label="2d8 or 3d6 HD worth of creatures of any HD" value="x3"/>
+          <row category="target_by_hd_of_creatures" label="24 HD worth of creatures" value="x4"/>
+          <row category="target_by_hd_of_creatures" label="3d6 creatures" value="x5"/>
+          <row category="target_by_area_of_effect" label="60' long x 30' wide cone" value="x5"/>
+          <row category="target_by_area_of_effect" label="480' diameter sphere" value="x8"/>
+          <row category="targeting_modifiers" label="Only target undead creatures" value="x0.75"/>
+          <row category="targeting_modifiers" label="Only target living creatures" value="x0.75"/>
+          <row category="targeting_modifiers" label="Only target animals and giant animals" value="x0.5"/>
+          <row category="targeting_modifiers" label="Only target humanoids" value="x0.5"/>
+          <row category="targeting_modifiers" label="Only target plants" value="x0.5"/>
+          <row category="targeting_modifiers" label="Attack throw required to target spell" value="x0.4"/>
+          <row category="targeting_modifiers" label="Creatures with fewest HD are affected first" value="x0.5"/>
+        </table>
+        <table name="range">
+          <row label="0'/Touch" value="x0.4"/>
+          <row label="15'" value="x0.6"/>
+          <row label="30'" value="x0.8"/>
+          <row label="60'" value="x1"/>
+          <row label="120'" value="x1.1"/>
+          <row label="180'" value="x1.25"/>
+          <row label="240'" value="x1.5"/>
+          <row label="360'" value="x1.75"/>
+        </table>
+        <table name="duration">
+          <row label="Concentration, must remain stationary" value="x0.8"/>
+          <row label="Concentration, maximum 1 round per level" value="x0.9"/>
+          <row label="Concentration" value="x1"/>
+          <row label="Instantaneous" value="x1"/>
+          <row label="1 round per level" value="x1.1"/>
+          <row label="12 rounds" value="x1.15"/>
+          <row label="1 turn per level" value="x1.2"/>
+          <row label="2d8 or 4d4 turns" value="x1.2"/>
+          <row label="6 turns" value="x1.2"/>
+          <row label="9 turns" value="x1.25"/>
+          <row label="Until saving throw succeeds" value="x1.33"/>
+          <row label="Indefinite (permanent until dispelled)" value="x2.2"/>
+        </table>
+        <table name="saving_throw">
+          <row label="No saving throw permitted (initially)" value="x1"/>
+          <row label="Saving throw avoids spell effect" value="x0.5"/>
+          <row label="Saving throw avoids spell effect (intelligent only)" value="x0.6"/>
+          <row label="Saving throw avoids spell effect (more than 2 HD)" value="x0.75"/>
+          <row category="saving_throw_modifiers" label="Saving throw is at -4 if target is arcane caster" value="x1.1"/>
+          <row category="saving_throw_modifiers" label="Saving throw is at -2 if only 1 creature targeted" value="x1.1"/>
+        </table>
+        <table name="source">
+          <row category="arcane_source" label="Arcane enchantment other than hold" value="x1"/>
+          <row category="arcane_source" label="Arcane hold" value="x1.5"/>
+          <row category="divine_source" label="Divine charm, command, confusion, feeblemind, sleep" value="x1.5"/>
+          <row category="divine_source" label="Divine fear" value="x1.33"/>
+          <row category="divine_source" label="Divine hold" value="x1"/>
+          <row category="source_modifiers" label="Arcane enchantment exclusively affecting undead" value="x1.25"/>
+          <row category="source_modifiers" label="Arcane enchantment exclusively affecting animals" value="x2"/>
+          <row category="source_modifiers" label="Divine charm affecting exclusively humanoids" value="x2"/>
+          <row category="source_modifiers" label="Divine command affecting exclusively humanoids" value="x1.33"/>
+          <row category="source_modifiers" label="Divine enchantment exclusively affecting undead" value="x0.66"/>
+        </table>
+      </tables>
+    </spell_type>
+
+    <spell_type name="healing">
+      <notes>
+        <rule>Damage and trauma cured or caused by healing spells is always inflicted instantaneously.</rule>
+        <rule>If a healing spell has a duration, that duration allows the spellcaster to apply the effect to additional targets on subsequent rounds.</rule>
+      </notes>
+      <tables>
+        <table name="effects">
+          <row category="cure_or_cause_damage" label="1d6+1 or flat 3 points" value="10"/>
+          <row category="cure_or_cause_damage" label="2d6 or flat 5 points" value="20"/>
+          <row category="cure_or_cause_damage" label="2d6 + 1/2 level" value="30"/>
+          <row category="cure_or_cause_damage" label="2d6 + level" value="40"/>
+          <row category="cure_or_cause_damage" label="4d6 + level" value="50"/>
+          <row category="cure_or_inflict_trauma" label="Blindness" value="30"/>
+          <row category="cure_or_inflict_trauma" label="Disease" value="30"/>
+          <row category="cure_or_inflict_trauma" label="Poison" value="40"/>
+          <row category="cure_or_inflict_trauma" label="Reincarnation" value="40"/>
+          <row category="cure_or_inflict_trauma" label="Restoration of life and limb / death ray" value="50"/>
+          <row category="cure_or_inflict_trauma" label="Regeneration / withering" value="60"/>
+          <row category="cure_or_inflict_trauma" label="Resurrection / destruction" value="60"/>
+        </table>
+        <table name="targeting">
+          <row category="target_by_number_of_creatures" label="1 creature" value="x1"/>
+          <row category="target_by_number_of_creatures" label="1 creature + 1 per 5 additional levels" value="x2"/>
+          <row category="target_by_number_of_creatures" label="1 creature + 2 per 5 additional levels" value="x3"/>
+          <row category="target_by_number_of_creatures" label="1 creature + 1 per 2 additional levels" value="x4"/>
+          <row category="target_by_number_of_creatures" label="1 creature per level within 30' diameter" value="x5"/>
+          <row category="target_by_number_of_creatures" label="1 creature per level" value="x7"/>
+          <row category="targeting_modifiers" label="Attack throw required to target spell" value="x1"/>
+          <row category="targeting_modifiers" label="No attack throw required to target spell" value="x1.4"/>
+        </table>
+        <table name="range">
+          <row label="Self" value="x0.75"/>
+          <row label="0'/Touch" value="x1"/>
+          <row label="15'" value="x1.1"/>
+          <row label="30'" value="x1.2"/>
+          <row label="60'" value="x1.3"/>
+          <row label="120'" value="x1.4"/>
+        </table>
+        <table name="duration">
+          <row label="Instantaneous" value="x1"/>
+          <row label="Concentration, maximum 1 round per level" value="x3"/>
+          <row label="Concentration" value="x4"/>
+          <row label="1 round per level" value="x5"/>
+        </table>
+        <table name="saving_throw">
+          <row label="Beneficial effect" value="x1"/>
+          <row label="No saving throw permitted" value="x1"/>
+          <row label="Saving throw reduces spell effect by half" value="x0.75"/>
+          <row label="Saving throw avoids spell effect" value="x0.5"/>
+        </table>
+        <table name="source">
+          <row label="Arcane" value="x1.5"/>
+          <row label="Divine" value="x1"/>
+        </table>
+      </tables>
+      <footnotes>
+        <footnote>Touch means an attack throw to target is required.</footnote>
+        <footnote>No saving throw permitted, saving throw reduces spell effect by half, and saving throw avoids spell effect apply to the reverse version of a healing spell only.</footnote>
+      </footnotes>
+    </spell_type>
+
+    <spell_type name="illusion">
+      <tables>
+        <table name="effects">
+          <row label="Create illusion, non-visual mono-sensory" value="3"/>
+          <row label="Create illusion, visual mono-sensory" value="9"/>
+          <row label="Create illusion, bi-sensory" value="12"/>
+          <row label="Create illusion, multi-sensory" value="15"/>
+          <row label="Target becomes completely inaudible" value="22"/>
+          <row label="Target becomes complete invisible" value="24"/>
+          <row label="Target surrounded by mirror images" value="24"/>
+          <row label="Send phantasmal killer against target" value="130"/>
+          <row category="effect_modifiers" label="Illusion limited to 1 obviously fake, harmless category" value="x0.2"/>
+          <row category="effect_modifiers" label="Illusion limited to 1 category" value="x0.7"/>
+          <row category="effect_modifiers" label="Illusion static" value="x0.7"/>
+          <row category="effect_modifiers" label="Illusion dynamic (animated/moving)" value="x1"/>
+          <row category="effect_modifiers" label="Illusion under control of caster for duration" value="x2"/>
+        </table>
+        <table name="targeting">
+          <row category="target_by_number_of_creatures" label="1 creature" value="x1"/>
+          <row category="target_by_number_of_creatures" label="1 or more creatures within 10' radius" value="x1.5"/>
+          <row category="target_by_number_of_creatures" label="1-100 creatures within 120' radius" value="x4.5"/>
+          <row category="target_by_area_of_effect" label="1' x 1' x 1' cube" value="x1"/>
+          <row category="target_by_area_of_effect" label="10' x 10' x 10' cube" value="x2"/>
+          <row category="target_by_area_of_effect" label="15' x 15' x 15' cube" value="x2.1"/>
+          <row category="target_by_area_of_effect" label="20' x 20' x 20' cube" value="x2.2"/>
+          <row category="target_by_area_of_effect" label="30' x 30' x 30' cube" value="x2.3"/>
+          <row category="target_by_area_of_effect" label="40' x 40' x 40' cube" value="x2.4"/>
+          <row category="target_by_area_of_effect" label="480' diameter sphere" value="x8.5"/>
+        </table>
+        <table name="range">
+          <row label="Self" value="x0.33"/>
+          <row label="0'" value="x0.5"/>
+          <row label="30'" value="x0.75"/>
+          <row label="60'" value="x1"/>
+          <row label="10' per level" value="x1"/>
+          <row label="240'" value="x1.2"/>
+        </table>
+        <table name="duration">
+          <row label="1 round per level" value="x1"/>
+          <row label="Concentration" value="x1"/>
+          <row label="Concentration plus 1 round" value="x1.1"/>
+          <row label="Concentration plus 2 rounds" value="x1.2"/>
+          <row label="Concentration plus 3 rounds" value="x1.3"/>
+          <row label="Concentration plus 4 rounds" value="x1.4"/>
+          <row label="1 turn" value="x1.75"/>
+          <row label="2 turns" value="x2"/>
+          <row label="3 turns" value="x2.25"/>
+          <row label="6 turns" value="x2.5"/>
+          <row label="1 day" value="x3"/>
+          <row label="Indefinite (permanent until disbelieved or expires)" value="x3.25"/>
+          <row category="duration_modifiers" label="Expires if illusion successfully attacked" value="x0.75"/>
+          <row category="duration_modifiers" label="Expires if illusion touched by intelligent creature" value="x0.75"/>
+          <row category="duration_modifiers" label="Expires if target creature speaks" value="x0.9"/>
+          <row category="duration_modifiers" label="Expires if target creature successfully attacked" value="x0.9"/>
+          <row category="duration_modifiers" label="Expires if target creature casts spell" value="x0.75"/>
+          <row category="duration_modifiers" label="Expires if target creature attacks" value="x0.75"/>
+          <row category="duration_modifiers" label="Expires if target creature moves" value="x0.5"/>
+          <row category="duration_modifiers" label="Duration does not begin until triggered" value="x2.75"/>
+        </table>
+        <table name="saving_throw">
+          <row label="Beneficial effect" value="x1"/>
+          <row label="No saving throw permitted (cannot disbelieve)" value="x1"/>
+          <row label="Saving throw avoids spell effect (disbelieved)" value="x0.5"/>
+        </table>
+        <table name="source">
+          <row label="Arcane" value="x1"/>
+          <row label="Divine" value="x1.5"/>
+        </table>
+      </tables>
+      <footnotes>
+        <footnote>A beneficial illusion is one whose target is the recipient of the beneficial effect, such as invisibility or mirror images.</footnote>
+      </footnotes>
+    </spell_type>
+
+    <spell_type name="movement">
+      <tables>
+        <table name="effects">
+          <row label="Target's normal movement rate doubled" value="5"/>
+          <row label="Target can climb sheer surfaces at 20' per round" value="12"/>
+          <row label="Target can walk on water at normal rate" value="15"/>
+          <row label="Target's attack routine doubled" value="20"/>
+          <row label="Target can fly" value="35"/>
+          <row label="Target can fly and carry others (as broom of flying)" value="45"/>
+          <row label="Target can fly and carry others (as magic carpet)" value="50"/>
+          <row label="Caster can move target vertically 20' per round" value="20"/>
+          <row label="Caster can move target any direction 20' per round" value="40"/>
+          <row label="Caster teleports target any place within 360'" value="300"/>
+          <row label="Caster teleports target any place within 1 mile" value="450"/>
+          <row label="Caster teleports target any place within 10 miles" value="600"/>
+          <row label="Caster teleports target any place within 100 miles" value="900"/>
+          <row label="Caster teleports target any place in same plane" value="1250"/>
+          <row label="Caster teleports target any place in existence" value="2500"/>
+          <row category="effect_modifiers" label="All willing targets of spell aged 1 to 5 years" value="x0.3"/>
+          <row category="effect_modifiers" label="Teleport effect has chance of error" value="x0.5"/>
+          <row category="effect_modifiers" label="Teleport effect limited to one specific destination" value="x0.66"/>
+          <row category="effect_modifiers" label="Willing target unstable while affected" value="x0.66"/>
+          <row category="effect_modifiers" label="Unwilling target unstable while affected" value="x1.5"/>
+          <row category="effect_modifiers" label="Willing target cannot carry anything while affected" value="x0.66"/>
+          <row category="effect_modifiers" label="Unwilling target cannot carry anything if affected" value="x1.5"/>
+          <row category="effect_modifiers" label="Target has normal carrying capacity while affected" value="x1"/>
+        </table>
+        <table name="targeting">
+          <row category="target_by_number_of_creatures" label="1 willing creature or object" value="x1"/>
+          <row category="target_by_number_of_creatures" label="1 willing creature or object + 1 per 5 additional levels" value="x1.5"/>
+          <row category="target_by_number_of_creatures" label="1 willing creature or object + 2 per 5 additional levels" value="x2.5"/>
+          <row category="target_by_number_of_creatures" label="1 willing creature or object + 1 per 2 additional levels" value="x3"/>
+          <row category="target_by_number_of_creatures" label="1 willing creature or object per level" value="x4"/>
+          <row category="target_modifiers" label="Attack throw required (versus unwilling target only)" value="x0.66"/>
+          <row category="target_modifiers" label="Only objects can be targeted" value="x0.8"/>
+          <row category="target_modifiers" label="Only creatures can be targeted" value="x0.8"/>
+          <row category="target_modifiers" label="Target must weigh 2 stone per caster level or less" value="x0.8"/>
+          <row category="target_modifiers" label="Unwilling targets permitted (must affect creatures)" value="x1.5"/>
+          <row category="target_modifiers" label="Caster can designate new target to affect" value="x2"/>
+        </table>
+        <table name="range">
+          <row label="Self" value="x0.75"/>
+          <row label="0'/Touch" value="x1"/>
+          <row label="10'" value="x1.1"/>
+          <row label="30'" value="x1.2"/>
+          <row label="60'" value="x1.33"/>
+          <row label="120'" value="x1.66"/>
+          <row label="180'" value="x1.75"/>
+          <row label="240'" value="x2"/>
+        </table>
+        <table name="duration">
+          <row label="1 round (instantaneous)" value="x0.1"/>
+          <row label="6 rounds" value="x0.6"/>
+          <row label="1 turn" value="x0.75"/>
+          <row label="3 turns" value="x0.9"/>
+          <row label="6 turns" value="x1"/>
+          <row label="1 turn per level" value="x1"/>
+          <row label="6 turns plus 1 turn per level" value="x1.5"/>
+          <row label="12 turns" value="x2"/>
+          <row label="8 hours" value="x4"/>
+          <row category="duration_modifiers" label="Concentration required to sustain spell" value="x0.6"/>
+        </table>
+        <table name="saving_throw">
+          <row label="Beneficial effect" value="x1"/>
+          <row label="Saving throw permitted for unwilling targets" value="x1"/>
+          <row label="No saving throw permitted for unwilling targets" value="x4"/>
+        </table>
+        <table name="source">
+          <row label="Arcane" value="x1"/>
+          <row label="Divine" value="x1.25"/>
+        </table>
+      </tables>
+      <footnotes>
+        <footnote>Touch means an attack throw to target is required.</footnote>
+      </footnotes>
+    </spell_type>
+
+    <spell_type name="protection">
+      <tables>
+        <table name="effects">
+          <row category="armor" label="AC 5 v. missiles and melee" value="5"/>
+          <row category="armor" label="AC 7 v. missiles and AC 5 v. melee" value="10"/>
+          <row category="armor" label="AC 7 v. melee and AC 5 v. missiles" value="10"/>
+          <row category="armor" label="AC 7 v. missiles and melee" value="20"/>
+          <row category="enhancements" label="+1 bonus to armor class or saving throws" value="5"/>
+          <row category="enhancements" label="+2 bonus to armor class or saving throws" value="10"/>
+          <row category="enhancements" label="+3 bonus to armor class or saving throws" value="20"/>
+          <row category="enhancements" label="+4 bonus to armor class or saving throws" value="33"/>
+          <row category="magic_invulnerabilities" label="Invulnerability to specific spell" value="Level x5"/>
+          <row category="magic_invulnerabilities" label="Invulnerability to 1 effect of spell type" value="25"/>
+          <row category="magic_invulnerabilities" label="Invulnerability to 1 type of spell" value="55"/>
+          <row category="magic_invulnerabilities" label="Invulnerability to all 1st level spells" value="25"/>
+          <row category="magic_invulnerabilities" label="Invulnerability to all 1st-2nd level spells" value="35"/>
+          <row category="magic_invulnerabilities" label="Invulnerability to all 1st-3rd level spells" value="55"/>
+          <row category="magic_invulnerabilities" label="Invulnerability to all 1st-4th level spells" value="85"/>
+          <row category="magic_invulnerabilities" label="Invulnerability to all 1st-5th level spells" value="125"/>
+          <row category="magic_invulnerabilities" label="Invulnerability to all 1st-6th level spells" value="175"/>
+          <row category="resistances_and_immunities" label="Resistance to normal missiles or normal melee" value="10"/>
+          <row category="resistances_and_immunities" label="Resistance to damage type" value="15"/>
+          <row category="resistances_and_immunities" label="Immunity to normal missiles or normal melee" value="15"/>
+          <row category="resistances_and_immunities" label="Resistance to all normal weapons" value="20"/>
+          <row category="resistances_and_immunities" label="Immunity to all normal weapons" value="40"/>
+          <row category="resistances_and_immunities" label="Immunity to damage type" value="36"/>
+          <row category="wards" label="Ward versus certain monsters" value="3"/>
+          <row category="wards" label="Ward versus monster type" value="6"/>
+          <row category="wards" label="Ward versus magic" value="25"/>
+          <row category="effect_modifiers" label="Saving throw bonus limited to 4 of 5 categories" value="x0.7"/>
+          <row category="effect_modifiers" label="Saving throw bonus limited to 3 of 5 categories" value="x0.5"/>
+          <row category="effect_modifiers" label="Protection only applies versus evil" value="x0.9"/>
+        </table>
+        <table name="targeting">
+          <row category="target_by_number_of_creatures" label="1 creature" value="x1"/>
+          <row category="target_by_number_of_creatures" label="1 creature + 1 per 5 additional levels" value="x2"/>
+          <row category="target_by_number_of_creatures" label="1 creature + 2 per 5 additional levels" value="x3"/>
+          <row category="target_by_number_of_creatures" label="1 creature + 1 per 2 additional levels" value="x4"/>
+          <row category="target_by_number_of_creatures" label="1 creature per level within 30' diameter" value="x5"/>
+          <row category="target_by_number_of_creatures" label="1 creature per level" value="x7"/>
+          <row category="creature_targeting_modifiers" label="Protection in 5' radius sphere around target" value="x1.25"/>
+          <row category="creature_targeting_modifiers" label="Protection in 7.5' radius sphere around target" value="x1.5"/>
+          <row category="creature_targeting_modifiers" label="Protection in 10' radius sphere around target" value="x1.75"/>
+          <row category="creature_targeting_modifiers" label="Protection in 12.5' radius sphere around target" value="x2.5"/>
+          <row category="creature_targeting_modifiers" label="Protection in 15' radius sphere around target" value="x3"/>
+          <row category="creature_targeting_modifiers" label="Protection in 30' radius sphere around target" value="x10"/>
+          <row category="target_by_area_of_effect" label="10' diameter sphere" value="x1.1"/>
+          <row category="target_by_area_of_effect" label="10' long x 10' wide x 10' deep cube" value="x1.25"/>
+          <row category="target_by_area_of_effect" label="15' diameter sphere" value="x1.33"/>
+          <row category="target_by_area_of_effect" label="20' diameter sphere" value="x1.5"/>
+          <row category="target_by_area_of_effect" label="20' long x 20' wide x 20' deep cube" value="x1.75"/>
+          <row category="target_by_area_of_effect" label="25' diameter sphere" value="x3"/>
+          <row category="target_by_area_of_effect" label="30' diameter sphere" value="x5"/>
+        </table>
+        <table name="range">
+          <row label="Self" value="x0.75"/>
+          <row label="0'" value="x1"/>
+          <row label="30'" value="x1.1"/>
+          <row label="60'" value="x1.2"/>
+          <row label="90'" value="x1.3"/>
+          <row label="120'" value="x1.4"/>
+          <row label="150'" value="x1.5"/>
+          <row label="180'" value="x1.6"/>
+        </table>
+        <table name="duration">
+          <row label="Instantaneous" value="x0.5"/>
+          <row label="1 round per level" value="x0.75"/>
+          <row label="Concentration" value="x1"/>
+          <row label="1 turn" value="x1"/>
+          <row label="3 turns" value="x1.2"/>
+          <row label="6 turns" value="x1.33"/>
+          <row label="1 turn per level" value="x1.33"/>
+          <row label="12 turns" value="x1.75"/>
+          <row category="duration_modifiers" label="Caster must remain stationary for duration" value="x0.5"/>
+          <row category="duration_modifiers" label="Concentration required to sustain to max duration" value="x0.6"/>
+        </table>
+        <table name="saving_throw">
+          <row label="Beneficial effect" value="x1"/>
+          <row label="No saving throw permitted" value="x4"/>
+          <row label="Saving throw avoids spell effect" value="x0.5"/>
+          <row category="saving_throw_modifiers" label="Saving throw is at -2 if only 1 creature targeted" value="x1.1"/>
+        </table>
+        <table name="source">
+          <row label="Arcane" value="x1"/>
+          <row label="Divine" value="x1"/>
+        </table>
+      </tables>
+      <footnotes>
+        <footnote>Invulnerability to 1 effect of spell type applies to non-damaging spell effects only.</footnote>
+        <footnote>The -2 saving throw modifier for only 1 creature targeted applies only if the spell can target multiple creatures.</footnote>
+      </footnotes>
+    </spell_type>
+
+    <spell_type name="summoning">
+      <tables>
+        <table name="effects">
+          <row label="Summon a creature" value="65"/>
+          <row label="Summon creatures totaling up to caster's level in HD" value="75"/>
+          <row label="Summon 1d4 creatures" value="100"/>
+          <row label="Summon 4 creatures" value="150"/>
+          <row label="Summon 2d4 creatures" value="250"/>
+          <row label="Summon 3d4 creatures" value="500"/>
+          <row category="maximum_hit_dice_modifiers" label="Creature may have up to 1 HD" value="x0.15"/>
+          <row category="maximum_hit_dice_modifiers" label="Creature may have up to 2 HD" value="x0.25"/>
+          <row category="maximum_hit_dice_modifiers" label="Creature may have up to 4 HD" value="x0.4"/>
+          <row category="maximum_hit_dice_modifiers" label="Creature may have up to 6 HD" value="x0.6"/>
+          <row category="maximum_hit_dice_modifiers" label="Creature may have up to 10 HD" value="x0.8"/>
+          <row category="maximum_hit_dice_modifiers" label="Creature may have up to 14 HD" value="x1"/>
+          <row category="maximum_hit_dice_modifiers" label="Creature may have up to 18 HD" value="x1.33"/>
+          <row category="maximum_hit_dice_modifiers" label="Creature may have up to 25 HD" value="x2"/>
+          <row category="maximum_hit_dice_modifiers" label="Creature may have up to 36 HD" value="x2.5"/>
+          <row category="maximum_special_ability_modifiers" label="Creature may have up to 3 special abilities (***)" value="x2.33"/>
+          <row category="maximum_special_ability_modifiers" label="Creature may have up to 2 special abilities (**)" value="x1.66"/>
+          <row category="maximum_special_ability_modifiers" label="Creature may have up to 1 special ability (*)" value="x1"/>
+          <row category="effect_modifiers" label="Summoning may be of any type and species" value="x1.25"/>
+          <row category="effect_modifiers" label="Summoning restricted to general type" value="x1"/>
+          <row category="effect_modifiers" label="Summoning restricted to certain monsters" value="x0.7"/>
+          <row category="effect_modifiers" label="Summoned creatures passively hostile to caster" value="x0.8"/>
+          <row category="effect_modifiers" label="Summoned creatures actively hostile to caster" value="x0.5"/>
+          <row category="effect_modifiers" label="Caster must concentrate to control creatures" value="x0.5"/>
+          <row category="effect_modifiers" label="Spell takes one turn to cast" value="x0.8"/>
+          <row category="effect_modifiers" label="Spell can only be performed once per week" value="x0.8"/>
+          <row category="effect_modifiers" label="Spell can only be performed once per day" value="x0.9"/>
+        </table>
+        <table name="targeting">
+          <row label="Targets summoned only from within spell's range" value="x0.66"/>
+          <row label="Targets summoned from thin air (alternative plane, etc.)" value="x1"/>
+        </table>
+        <table name="range">
+          <row label="10'" value="x1"/>
+          <row label="30'" value="x1.1"/>
+          <row label="60'" value="x1.15"/>
+          <row label="120'" value="x1.25"/>
+          <row label="240'" value="x1.33"/>
+          <row label="360'" value="x1.4"/>
+          <row label="480'" value="x1.6"/>
+        </table>
+        <table name="duration">
+          <row label="1 turn" value="x0.5"/>
+          <row label="3 turns" value="x0.6"/>
+          <row label="1 turn per level" value="x0.6"/>
+          <row label="6 turns" value="x0.75"/>
+          <row label="6 turns plus 1 turn per level" value="x1"/>
+          <row label="12 turns" value="x1"/>
+          <row label="1 day" value="x1.25"/>
+          <row label="33 1/3 days" value="x1.75"/>
+          <row label="Until one specific task is completed" value="x2"/>
+          <row label="Indefinite (permanent until dispelled)" value="x2.5"/>
+          <row category="duration_modifiers" label="Creature can be dismissed while controlled" value="x1.1"/>
+          <row category="duration_modifiers" label="Creature freed if performs exceptional task" value="x0.66"/>
+        </table>
+        <table name="saving_throw">
+          <row label="No saving throw permitted" value="x1"/>
+          <row label="Saving throw avoids spell effect" value="x0.5"/>
+        </table>
+        <table name="source">
+          <row label="Arcane" value="x1"/>
+          <row label="Divine" value="x1.2"/>
+        </table>
+      </tables>
+    </spell_type>
+
+    <spell_type name="transmogrification">
+      <tables>
+        <table name="effects">
+          <row category="total_transformation_effects" label="Transform to a statue" value="15"/>
+          <row category="total_transformation_effects" label="Transform to the form of a living creature" value="35"/>
+          <row category="total_transformation_effects" label="Transform to the form of an undead creature" value="35"/>
+          <row category="total_transformation_effects" label="Gain new form's physical characteristics" value="10"/>
+          <row category="total_transformation_effects" label="Gain new form's physical attacks" value="10"/>
+          <row category="total_transformation_effects" label="Gain new form's special abilities" value="20"/>
+          <row category="total_transformation_effect_modifiers" label="Dynamically change form during spell duration" value="x1.5"/>
+          <row category="total_transformation_effect_modifiers" label="Form limited to particular type of creature" value="x0.75"/>
+          <row category="total_transformation_effect_modifiers" label="HD limited to caster level and 2 x target level" value="x0.75"/>
+          <row category="total_transformation_effect_modifiers" label="Mental characteristics replaced by new form's" value="x0.2"/>
+          <row category="partial_transformation_effects" label="Current form gains ability to breathe water" value="10"/>
+          <row category="partial_transformation_effects" label="Current form gains infravision" value="15"/>
+          <row category="partial_transformation_effects" label="Current form gains proficiency-like ability" value="20"/>
+          <row category="partial_transformation_effects" label="Current form gains ability to blend into surroundings" value="20"/>
+          <row category="partial_transformation_effects" label="Current form gains ability to leap in great bounds" value="20"/>
+          <row category="partial_transformation_effects" label="Current form gains ability to climb like a spider" value="20"/>
+          <row category="partial_transformation_effects" label="Current form gains ability to move noiselessly" value="20"/>
+          <row category="partial_transformation_effects" label="Current form gains sight of an eagle" value="20"/>
+          <row category="partial_transformation_effects" label="Current form grows to giant size / shrinks to tiny size" value="25"/>
+          <row category="partial_transformation_effects" label="Current form becomes gaseous" value="30"/>
+          <row category="partial_transformation_effects" label="Current form becomes incorporeal" value="40"/>
+          <row category="partial_transformation_effects" label="Current form gains strength of an ogre" value="40"/>
+          <row category="partial_transformation_effects" label="Current form gains flight of a giant hawk" value="60"/>
+          <row category="partial_transformation_effects" label="Current form gains strength of a giant" value="80"/>
+          <row category="partial_transformation_effects" label="Current form gains regenerative powers of troll" value="160"/>
+        </table>
+        <table name="targeting">
+          <row category="target_by_number_of_creatures" label="1 living corporeal creature" value="x1"/>
+          <row category="target_by_number_of_creatures" label="1 living corporeal creature + 1 per 5 additional levels" value="x2"/>
+          <row category="target_by_number_of_creatures" label="1 living corporeal creature + 2 per 5 additional levels" value="x3"/>
+          <row category="target_by_number_of_creatures" label="1 living corporeal creature + 1 per 2 additional levels" value="x4"/>
+          <row category="target_by_number_of_creatures" label="1 living corporeal creature per level" value="x7"/>
+          <row category="target_by_area_of_effect" label="3,000 square feet of unintelligent plants" value="x0.3"/>
+          <row category="target_by_area_of_effect" label="3,000 square feet of unworked stone" value="x0.45"/>
+          <row category="target_modifiers" label="Target may be undead creature" value="x1.25"/>
+          <row category="target_modifiers" label="Target may be incorporeal or gaseous creature" value="x1.5"/>
+          <row category="target_modifiers" label="Attack throw required (versus unwilling targets only)" value="x0.75"/>
+        </table>
+        <table name="range">
+          <row label="Self" value="x0.5"/>
+          <row label="0'/Touch" value="x0.6"/>
+          <row label="30'" value="x0.9"/>
+          <row label="60'" value="x1"/>
+          <row label="120'" value="x1.5"/>
+          <row label="360'" value="x2"/>
+        </table>
+        <table name="duration">
+          <row label="1 turn" value="x0.7"/>
+          <row label="3 turns" value="x0.8"/>
+          <row label="1 turn per level" value="x0.8"/>
+          <row label="6 turns" value="x1"/>
+          <row label="6 turns plus 1 turn per level" value="x1.5"/>
+          <row label="12 turns" value="x2"/>
+          <row label="1 day" value="x3"/>
+          <row label="3d6 days" value="x3.5"/>
+          <row label="Indefinite (permanent until dispelled)" value="x3.5"/>
+          <row category="duration_modifiers" label="Target may cancel spell at will" value="x1.3"/>
+        </table>
+        <table name="saving_throw">
+          <row label="Beneficial effect" value="x1"/>
+          <row label="No saving throw permitted" value="x4"/>
+          <row label="Saving throw avoids spell effect" value="x1"/>
+        </table>
+        <table name="source">
+          <row label="Arcane" value="x1"/>
+          <row label="Divine" value="x1.25"/>
+        </table>
+      </tables>
+    </spell_type>
+
+    <spell_type name="wall">
+      <tables>
+        <table name="effects">
+          <row category="base_effects" label="Attacks creatures within 5' as 2 HD monster" value="25"/>
+          <row category="base_effects" label="Attacks creatures within 5' as 4 HD monster" value="60"/>
+          <row category="base_effects" label="Attacks creatures within 5' as 8 HD monster" value="120"/>
+          <row category="base_effects" label="Causes fear upon sight" value="45"/>
+          <row category="base_effects" label="Causes cloudkill to creatures that pass through" value="27"/>
+          <row category="base_effects" label="Causes mortal wounds roll on creatures that pass through" value="60"/>
+          <row category="base_effects" label="Causes death on creatures that pass through" value="85"/>
+          <row category="base_effects" label="Causes disintegration on creatures that pass through" value="135"/>
+          <row category="base_effects" label="Deals 1d6 damage to creatures that pass through" value="10"/>
+          <row category="base_effects" label="Deals 2d6 damage to creatures that pass through" value="20"/>
+          <row category="base_effects" label="Impermeable to creatures" value="25"/>
+          <row category="base_effects" label="Impermeable to creatures with less than 4 HD" value="20"/>
+          <row category="base_effects" label="Impermeable to magic" value="10"/>
+          <row category="base_effects" label="Impermeable to vision and light (opaque)" value="10"/>
+          <row category="base_effects" label="Impermeable to vision (translucent)" value="5"/>
+          <row category="destructibility_modifiers" label="Not affected by disintegrate" value="x3"/>
+          <row category="destructibility_modifiers" label="Not affected by dispel magic" value="x1.5"/>
+          <row category="destructibility_modifiers" label="Not affected by physical and magical effects" value="x1"/>
+          <row category="destructibility_modifiers" label="Affected as smoke by physical and magical effects" value="x0.9"/>
+          <row category="destructibility_modifiers" label="Affected as iron by physical and magical effects" value="x0.8"/>
+          <row category="destructibility_modifiers" label="Affected as stone by physical and magical effects" value="x0.7"/>
+          <row category="destructibility_modifiers" label="Affected as earth by physical and magical effects" value="x0.6"/>
+          <row category="destructibility_modifiers" label="Affected as flesh or bone by physical and magical effects" value="x0.5"/>
+          <row category="destructibility_modifiers" label="Affected as wood by physical and magical effects" value="x0.4"/>
+          <row category="destructibility_modifiers" label="Affected as undead by turn undead" value="x0.75"/>
+          <row category="manipulability_modifiers" label="Wall may be readily shaped by reducing area" value="x1"/>
+          <row category="manipulability_modifiers" label="Area may be crudely shaped by reducing area" value="x0.8"/>
+          <row category="manipulability_modifiers" label="Thickness may be reduced to increase area" value="x1.5"/>
+          <row category="manipulability_modifiers" label="Wall may be bonded to surrounding material" value="x1.2"/>
+          <row category="manipulability_modifiers" label="Wall must be bonded to surrounding material" value="x0.75"/>
+          <row category="manipulability_modifiers" label="Wall must be solidly supported" value="x0.75"/>
+          <row category="manipulability_modifiers" label="Wall must always be a flat, vertical plane" value="x0.75"/>
+          <row category="manipulability_modifiers" label="Wall must always be a sphere" value="x0.75"/>
+          <row category="manipulability_modifiers" label="Wall must always be in contact with ground" value="x0.75"/>
+          <row category="general_effect_modifiers" label="Wall is elemental (fire, earth, water, air)" value="x1"/>
+          <row category="general_effect_modifiers" label="Wall moves away from caster at 20' per turn" value="x1.5"/>
+        </table>
+        <table name="range">
+          <row label="0'" value="x0.4"/>
+          <row label="30'" value="x0.6"/>
+          <row label="60'" value="x0.8"/>
+          <row label="120'" value="x1"/>
+          <row label="180'" value="x1.2"/>
+          <row label="240'" value="x1.5"/>
+          <row label="360'" value="x2"/>
+        </table>
+        <table name="duration">
+          <row label="Concentration" value="x0.5"/>
+          <row label="1 turn" value="x0.75"/>
+          <row label="2 turns" value="x1"/>
+          <row label="3 turns" value="x1.5"/>
+          <row label="6 turns" value="x2"/>
+          <row label="8 hours" value="x2.33"/>
+          <row label="Indefinite (until dispelled or destroyed)" value="x2.66"/>
+        </table>
+        <table name="targeting">
+          <row category="wall_area" label="100 square feet" value="x0.5"/>
+          <row category="wall_area" label="500 square feet" value="x0.75"/>
+          <row category="wall_area" label="750 square feet" value="x1"/>
+          <row category="wall_area" label="1,000 square feet" value="x1.25"/>
+          <row category="wall_area" label="1,200 square feet" value="x1.5"/>
+          <row category="wall_area" label="1,500 square feet" value="x2"/>
+          <row category="wall_thickness" label="1 inch" value="x0.75"/>
+          <row category="wall_thickness" label="1 foot" value="x1"/>
+          <row category="wall_thickness" label="10 feet" value="x2"/>
+          <row category="wall_thickness" label="20 feet" value="x3"/>
+          <row category="targeting_modifiers" label="May not be evoked where objects or creatures are" value="x1"/>
+          <row category="targeting_modifiers" label="May be evoked where objects or creatures are" value="x2"/>
+        </table>
+        <table name="saving_throw">
+          <row label="No saving throw permitted" value="x1"/>
+          <row label="Saving throw reduces spell effect by half" value="x0.75"/>
+          <row label="Saving throw avoids spell effect" value="x0.5"/>
+        </table>
+        <table name="source">
+          <row label="Arcane" value="x1"/>
+          <row label="Divine" value="x1.5"/>
+        </table>
+      </tables>
+      <footnotes>
+        <footnote>A saving throw versus a wall reduces or avoids the wall's damaging effects, but does not change permeability or destructibility.</footnote>
+        <footnote>The wall thickness table is normalized from obvious OCR corruption: 1 inch = x0.75 and 1 foot = x1.</footnote>
+      </footnotes>
+    </spell_type>
+  </spell_type_tables>
+</custom_spell_creation_rules>

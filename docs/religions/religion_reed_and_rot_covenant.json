@@ -1,0 +1,97 @@
+{
+  "religion_id": "reed_and_rot_covenant",
+  "display_name": "The Reed and Rot Covenant",
+  "theology": {
+    "type": "dualist",
+    "syncretism": "inclusivist",
+    "afterlife_belief": "judgment_and_rebirth"
+  },
+  "alignment": "Neutral",
+  "associated_cultures": [
+    "mirefen"
+  ],
+  "clergy": {
+    "title_hierarchy": [
+      "Mud Novice",
+      "Reed Tender",
+      "Mire Witness",
+      "Balance-Keeper",
+      "Twin-Voice"
+    ],
+    "title_level_mapping": {
+      "1": "Mud Novice",
+      "3": "Reed Tender",
+      "5": "Mire Witness",
+      "7": "Balance-Keeper",
+      "9": "Twin-Voice"
+    },
+    "gender_restriction": "none",
+    "special_class": null,
+    "vestments": "reed cloaks lacquered against damp, half green and half black",
+    "holy_symbol": "crossed reed and bone tied with twine"
+  },
+  "practices": {
+    "holy_days_per_year": 2,
+    "holy_day_character": "mystical",
+    "worship_style": "ecstatic",
+    "dietary_restrictions": "no eating hatchling crocodiles",
+    "funerary_practice": "mummification",
+    "stance_on_undead": "natural_cycle"
+  },
+  "political_role": {
+    "church_state_relationship": "independent",
+    "temporal_authority": "minimal",
+    "military_involvement": "none"
+  },
+  "cosmology": {
+    "opposing_view": "equal_and_opposite",
+    "opposing_view_detail": "The Covenant teaches that binding growth and liberating decay are both sacred forces; denial of either breeds monstrosity.",
+    "notes": "See §3.3 Alignment Cosmology Rules for the hard constraints governing this field."
+  },
+  "pantheon": [
+    {
+      "deity_id": "netha_reed_mother",
+      "display_name": "Netha Reed-Mother",
+      "epithets": [
+        "Binder of Banks",
+        "She Who Makes Nesting Places"
+      ],
+      "alignment": "Lawful",
+      "portfolios": [
+        "water",
+        "protection",
+        "mercy"
+      ],
+      "holy_symbol": "green reed looped into a circle",
+      "favored_weapon": "staff",
+      "clergy_alignment_requirement": "Lawful",
+      "sacred_animal": "heron",
+      "domains_summary": "Shelter, still water, nesting grounds, and every bond that keeps life from washing away."
+    },
+    {
+      "deity_id": "vorru_rot_father",
+      "display_name": "Vorru Rot-Father",
+      "epithets": [
+        "Opener of the Peat",
+        "Lord of the Returning Mud"
+      ],
+      "alignment": "Chaotic",
+      "portfolios": [
+        "plague",
+        "darkness",
+        "destruction"
+      ],
+      "holy_symbol": "black bone wrapped in marsh moss",
+      "favored_weapon": "dagger",
+      "clergy_alignment_requirement": "Chaotic",
+      "sacred_animal": "crocodile",
+      "domains_summary": "Necessary decay, ruin of stagnant power, and the dark wet cycle that returns all things."
+    }
+  ],
+  "flavor_text": {
+    "one_line": "A swamp dualism that honors both the binding reed and the devouring rot as necessary truths.",
+    "one_paragraph": "The Reed and Rot Covenant is a hard faith for hard wetlands. Mirefen priests insist that life survives only where holding and releasing remain in tension: reeds bind soil while rot feeds the next season, nesting grounds protect life while flood and decay cull what cannot endure. Its rites are eerie, emotional, and practical at once, blessing births, peat burials, medicinal molds, and the draining away of old grievances.",
+    "creation_myth_summary": "When the first waters settled, Netha braided banks from living reeds while Vorru churned the black mud below, making a world where life could root only because death kept it fed.",
+    "moral_code_summary": "Preserve what shelters kin, destroy what stagnates beyond saving, take from the marsh with offerings, and never mistake preservation for permanence."
+  }
+}

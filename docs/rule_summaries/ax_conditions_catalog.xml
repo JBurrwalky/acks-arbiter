@@ -1,0 +1,405 @@
+<conditions_summary title="conditions" summary_scope="rules, procedures, definitions" flavor_excluded="true">
+  <overview>
+    <rule>Conditions alter a creature's capabilities.</rule>
+    <rule>Conditions may be caused by spells, class powers, proficiencies, monster attacks, or other effects.</rule>
+    <rule>A condition lasts until it is countered or until the duration specified by the effect that imposed it ends.</rule>
+    <rule>If multiple effects impose the same condition, each instance tracks its own duration, but the condition's effects do not worsen.</rule>
+    <rule>A creature either has a condition or does not.</rule>
+  </overview>
+
+  <general_rules>
+    <rule>If a condition prevents spellcasting, it also prevents use of spell-like abilities that require one full round or more and prevents use of scrolls.</rule>
+    <rule>If a condition prevents movement, it also prevents actions in lieu of moving, including standing up from prone, sheathing one weapon and drawing another, readying or loosing a shield, picking an item up from the ground, and retrieving an item from a pack or sack.</rule>
+    <rule>If a condition prevents attacking, it also prevents actions in lieu of attacking that could not be taken as actions in lieu of moving, including drinking a magic potion, lighting a torch, using a magic item, or turning undead.</rule>
+  </general_rules>
+
+  <escape_rules>
+    <rule>The grabbed, grappled, and restrained conditions can be ended with a successful escape.</rule>
+    <attempt type="grabbed_or_grappled">
+      <option>Slip free with a saving throw versus Paralysis.</option>
+      <option>Break free with a proficiency throw to open doors.</option>
+      <modifier>If the creature has Contortionism, it gains a +4 bonus on either throw.</modifier>
+      <modifier>If the opponent is large or imposing, the escape throw may suffer a penalty.</modifier>
+      <result>If the throw succeeds, the creature escapes.</result>
+    </attempt>
+    <attempt type="restrained">
+      <option>The creature may sometimes slip free or break free using the same methods as for grabbed or grappled.</option>
+      <option>The creature may sometimes cut itself free by dealing a specified amount of damage to the restraining creature or appendage.</option>
+      <result>Required damage to cut free is specified in the restraining monster's description.</result>
+    </attempt>
+  </escape_rules>
+
+  <conditions>
+
+    <condition name="blinded">
+      <effects>
+        <effect>Suffers a -2 penalty to surprise rolls.</effect>
+        <effect>Suffers a -4 penalty to all attack throws.</effect>
+        <effect>Movement rate is reduced to 1/4 normal.</effect>
+      </effects>
+    </condition>
+
+    <condition name="charging">
+      <effects>
+        <effect>Gains a +2 bonus to melee attack throws.</effect>
+        <effect>Suffers a -2 penalty to Armor Class.</effect>
+        <effect>If equipped with an appropriate weapon or natural weapon, deals double damage.</effect>
+      </effects>
+      <termination>
+        <rule>Ends on the creature's next initiative.</rule>
+      </termination>
+    </condition>
+
+    <condition name="choking_vomiting">
+      <effects>
+        <effect>Cannot attack.</effect>
+        <effect>Cannot cast spells.</effect>
+        <effect>Cannot move.</effect>
+        <effect>Cannot speak.</effect>
+        <effect>Can still defend itself and is not vulnerable.</effect>
+      </effects>
+    </condition>
+
+    <condition name="concentrating">
+      <effects>
+        <effect>Can sustain a continuous spell or effect that requires concentration.</effect>
+      </effects>
+      <termination>
+        <rule>Ends immediately if the creature takes damage.</rule>
+        <rule>Ends immediately if the creature fails a saving throw.</rule>
+        <rule>Ends immediately if the creature attacks.</rule>
+        <rule>Ends immediately if the creature casts a spell.</rule>
+        <rule>Ends immediately if the creature moves more than one-half its combat movement distance during a round.</rule>
+        <rule>Ends immediately if the creature moves more than one-half its exploration movement rate during a turn.</rule>
+        <rule>Ends immediately if the creature moves more than one-half its wilderness movement rate during a day.</rule>
+        <rule>Taking an action in lieu of moving does not end this condition.</rule>
+        <rule>If mounted, use the mount's movement rates instead of the creature's movement rates to determine whether the condition ends.</rule>
+        <rule>If standing on a vehicle controlled by others, ignore the vehicle's movement and use the creature's movement across the vehicle.</rule>
+      </termination>
+    </condition>
+
+    <condition name="concentrating_and_stationary">
+      <effects>
+        <effect>Can sustain a continuous spell or effect that requires stationary concentration.</effect>
+      </effects>
+      <termination>
+        <rule>Ends immediately if the creature takes damage.</rule>
+        <rule>Ends immediately if the creature fails a saving throw.</rule>
+        <rule>Ends immediately if the creature attacks.</rule>
+        <rule>Ends immediately if the creature casts a spell.</rule>
+        <rule>Ends immediately if the creature moves.</rule>
+        <rule>Ends immediately if the creature takes an action in lieu of moving.</rule>
+        <rule>If mounted, use the mount's movement rates instead of the creature's movement rates to determine whether the condition ends.</rule>
+        <rule>If standing on a vehicle controlled by others, ignore the vehicle's movement and use the creature's movement across the vehicle.</rule>
+      </termination>
+    </condition>
+
+    <condition name="deafened">
+      <effects>
+        <effect>Suffers a -2 penalty to surprise rolls.</effect>
+        <effect>Suffers a -4 penalty on ceremony throws and spellsinging throws.</effect>
+        <effect>Has a 2 in 6 chance to fail any attempt to cast a spell, read a scroll, or utter a command word.</effect>
+      </effects>
+    </condition>
+
+    <condition name="engaged">
+      <effects>
+        <effect>Cannot move except as part of an overrun, to perform defensive movement, or to take one of the following actions in lieu of moving: sheathing one weapon and drawing another, readying or loosing a shield, picking an item off the ground, or retrieving an item from a pack or sack.</effect>
+      </effects>
+      <termination>
+        <rule>Ends immediately when the creature is no longer within 5 feet of an opponent that is not helpless.</rule>
+      </termination>
+    </condition>
+
+    <condition name="exhausted">
+      <effects>
+        <effect>Cannot run.</effect>
+        <effect>Cannot charge.</effect>
+      </effects>
+      <termination>
+        <rule>Ends when the creature rests for one turn.</rule>
+      </termination>
+    </condition>
+
+    <condition name="fatigued">
+      <effects>
+        <effect>Suffers a cumulative -1 penalty on attack throws, proficiency throws, and damage rolls per day.</effect>
+      </effects>
+      <termination>
+        <rule>Ends when the creature rests with rest as its major activity for one day.</rule>
+      </termination>
+    </condition>
+
+    <condition name="feebleminded">
+      <effects>
+        <effect>Cannot attack.</effect>
+        <effect>Cannot cast spells.</effect>
+        <effect>Cannot speak coherently.</effect>
+        <effect>Cannot understand complex instructions.</effect>
+      </effects>
+    </condition>
+
+    <condition name="frightened">
+      <effects>
+        <effect>Cannot attack.</effect>
+        <effect>Cannot cast spells.</effect>
+        <effect>Cannot speak except brief exclamations of peril or warning.</effect>
+        <effect>Runs from the source of fear at full movement rate until the condition ends.</effect>
+      </effects>
+      <conditional_effects>
+        <entry condition="cannot_flee">
+          <effect>Cowers in terror.</effect>
+          <effect>Suffers a -2 penalty to Armor Class.</effect>
+          <effect>Cannot attack, cast spells, move, or take any other actions.</effect>
+          <effect>Can still defend itself and is not vulnerable.</effect>
+        </entry>
+        <entry condition="engaged">
+          <effect>Cowers in terror until able to disengage with defensive movement.</effect>
+        </entry>
+      </conditional_effects>
+    </condition>
+
+    <condition name="grabbed">
+      <effects>
+        <effect>Cannot attack, cast spells, move, or take any other action except attempting to escape.</effect>
+        <effect>Also has the vulnerable condition.</effect>
+      </effects>
+      <opponent_options>
+        <option>The creature that grabbed it can automatically deal damage on its initiative each round without an attack throw.</option>
+        <option>Automatic damage counts as that creature's attack with the natural weapon used to grab.</option>
+        <option>The grabbed creature still receives saving throws against special effects of the attack.</option>
+        <option>The grabbing creature may move while bringing the grabbed creature with it.</option>
+      </opponent_options>
+      <movement_rules>
+        <rule>The grabbed creature's weight in pounds divided by 12 counts as stones of encumbrance for the grabbing creature.</rule>
+        <rule>If this causes the grabbing creature to exceed maximum load, it cannot move.</rule>
+        <rule>Regardless of encumbrance, the grabbing creature cannot charge or run unless the grabbed creature is at least one size category smaller.</rule>
+      </movement_rules>
+      <termination>
+        <rule>Ends immediately when the grabbed creature escapes.</rule>
+        <rule>Ends immediately when the grabbing creature releases it.</rule>
+      </termination>
+    </condition>
+
+    <condition name="grappled">
+      <alias>grabbed_by_wrestling</alias>
+      <effects>
+        <effect>Cannot attack, cast spells, move, or take any other action except attempting to escape.</effect>
+        <effect>Also has the vulnerable condition.</effect>
+      </effects>
+      <opponent_options>
+        <option>The creature maintaining the grapple can perform a brawl, force back, disarm, or knock down action each round without an attack throw as long as the grapple continues.</option>
+        <option>The opponent still receives a saving throw.</option>
+        <option>The grappling creature may move while bringing the grappled creature with it.</option>
+      </opponent_options>
+      <movement_rules>
+        <rule>The grappled creature's weight in pounds divided by 12 counts as stones of encumbrance for the grappling creature.</rule>
+        <rule>If this causes the grappling creature to exceed maximum load, it cannot move.</rule>
+        <rule>Regardless of encumbrance, the grappling creature cannot charge or run unless the grappled creature is at least one size category smaller.</rule>
+      </movement_rules>
+      <termination>
+        <rule>Ends immediately when the grappled creature escapes.</rule>
+        <rule>Ends immediately when the grappling creature releases it.</rule>
+        <rule>Ends immediately when the grappling creature performs a force back or knock down.</rule>
+      </termination>
+    </condition>
+
+    <condition name="gyrating">
+      <effects>
+        <effect>If the creature has a surface it can push against, it moves at 1/2 normal movement rate.</effect>
+        <effect>If it does not have a surface it can push against, it cannot move.</effect>
+        <effect>It may still take actions in lieu of moving without penalty.</effect>
+        <effect>It suffers a cumulative penalty to attack throws each time it attacks: first attack -1, second -2, and so on to a maximum penalty of -5.</effect>
+      </effects>
+      <reset_rule>
+        <rule>A full round spent stabilizing resets the attack penalty progression so the next attack begins again at -1.</rule>
+      </reset_rule>
+    </condition>
+
+    <condition name="helpless">
+      <effects>
+        <effect>Cannot attack.</effect>
+        <effect>Cannot cast spells.</effect>
+        <effect>Cannot move.</effect>
+        <effect>Cannot take actions in lieu of attacking or moving.</effect>
+        <effect>Gains no Armor Class benefit from a shield.</effect>
+        <effect>Can be ambushed or backstabbed by creatures capable of doing so.</effect>
+        <effect>Attack throws against it gain a +2 bonus, or +4 if the attacker ambushes or backstabs it.</effect>
+        <effect>Damage is ordinary damage, or multiplied damage if from ambush or backstab.</effect>
+      </effects>
+      <special_attack_rules>
+        <rule>Melee attack throws automatically hit if the attacker is the same size category or larger than the helpless creature.</rule>
+        <rule>If the attacker is not engaged and the attack is capable of damaging the helpless creature, the helpless creature may be automatically slain.</rule>
+        <rule>An attacker that automatically slays a helpless creature may not cleave thereafter.</rule>
+        <rule>Otherwise, the helpless creature may be dealt the attack's ordinary damage.</rule>
+      </special_attack_rules>
+    </condition>
+
+    <condition name="infuriated">
+      <effects>
+        <effect>Attacks any creatures it can detect.</effect>
+        <effect>Prioritizes the creature that most recently damaged it; otherwise attacks the nearest target.</effect>
+        <effect>If it has no eligible targets, it waits motionless until a target appears.</effect>
+        <effect>Gains a +2 bonus to attack throws.</effect>
+        <effect>Suffers a -2 penalty to Armor Class.</effect>
+        <effect>Is immune to fear.</effect>
+        <effect>Ignores morale rolls.</effect>
+        <effect>Cannot speak.</effect>
+      </effects>
+    </condition>
+
+    <condition name="mesmerized">
+      <effects>
+        <effect>Cannot attack.</effect>
+        <effect>Cannot cast spells.</effect>
+        <effect>Cannot move.</effect>
+        <effect>Cannot speak.</effect>
+        <effect>Can still defend itself and is not vulnerable.</effect>
+      </effects>
+    </condition>
+
+    <condition name="nauseated">
+      <effects>
+        <effect>Cannot attack.</effect>
+        <effect>Cannot cast spells.</effect>
+        <effect>Cannot speak.</effect>
+        <effect>Can move away from the source of nausea.</effect>
+        <effect>Cannot otherwise move or take actions in lieu of moving.</effect>
+        <effect>Can still defend itself and is not vulnerable.</effect>
+      </effects>
+    </condition>
+
+    <condition name="paralyzed">
+      <effects>
+        <effect>Is helpless.</effect>
+        <effect>Cannot speak.</effect>
+      </effects>
+    </condition>
+
+    <condition name="petrified">
+      <effects>
+        <effect>Is helpless.</effect>
+        <effect>Cannot see, hear, smell, taste, touch, speak, or think.</effect>
+        <effect>Does not age.</effect>
+        <effect>Is immune to all enchantments and transmogrifications except stone to flesh.</effect>
+        <effect>Is immune to all death spells except disintegrate.</effect>
+        <effect>Is damaged as a stone structure.</effect>
+        <effect>Has 1 structural hit point per 2,000 pounds, rounded up.</effect>
+      </effects>
+    </condition>
+
+    <condition name="prone">
+      <effects>
+        <effect>May only crawl at 5 feet movement, take an action in lieu of moving, or stand up by using an action in lieu of moving.</effect>
+        <effect>If engaged, it is subject to the engaged condition's movement restrictions, so it can only crawl using defensive movement and cannot stand up in lieu of moving.</effect>
+        <effect>Can attack, but suffers a -4 penalty to attack throws.</effect>
+        <effect>Can stand up in lieu of attacking.</effect>
+        <effect>Can be backstabbed by creatures capable of doing so.</effect>
+        <effect>Attack throws against it gain a +2 bonus, or +4 if the attacker backstabs.</effect>
+        <effect>Damage is ordinary damage, or multiplied damage if from backstab.</effect>
+      </effects>
+      <termination>
+        <rule>Ends immediately when the creature stands up.</rule>
+      </termination>
+    </condition>
+
+    <condition name="recuperating">
+      <effects>
+        <effect>Cannot be healed above 1 hit point.</effect>
+        <effect>Cannot attack.</effect>
+        <effect>Cannot cast spells.</effect>
+        <effect>Movement rate is reduced to 1/4 normal.</effect>
+      </effects>
+      <termination>
+        <rule>Ends when the required number of recuperation days is completed.</rule>
+      </termination>
+    </condition>
+
+    <condition name="restrained">
+      <effects>
+        <effect>Cannot move.</effect>
+        <effect>Can still attack.</effect>
+        <effect>Can still cast spells.</effect>
+        <effect>Can still take actions in lieu of attacking.</effect>
+        <effect>Can attempt to escape.</effect>
+        <effect>Also has the vulnerable condition.</effect>
+      </effects>
+      <opponent_options>
+        <option>The restraining creature can automatically deal damage on its initiative each round without an attack throw.</option>
+        <option>Automatic damage counts as the restraining creature's attack with the special natural weapon used to restrain.</option>
+        <option>The restrained creature still receives saving throws against special effects of the attack.</option>
+        <option>The restraining creature may move itself while bringing the restrained creature with it.</option>
+      </opponent_options>
+      <penalties>
+        <rule>If restrained by multiple causes, the creature suffers an additional -1 penalty to attack throws for each additional cause of restraint.</rule>
+      </penalties>
+      <movement_rules>
+        <rule>The restrained creature's weight in pounds divided by 12 counts as stones of encumbrance for the restraining creature.</rule>
+        <rule>If this causes the restraining creature to exceed maximum load, it cannot move.</rule>
+        <rule>Regardless of encumbrance, the restraining creature cannot charge or run unless the restrained creature is at least one size category smaller.</rule>
+      </movement_rules>
+      <appendage_rules>
+        <rule>If restrained by long appendages, the restraining creature may, in lieu of an attack with that appendage, move the restrained creature with the appendage while remaining stationary.</rule>
+        <rule>If a movement rate for moving restrained opponents is listed, use that rate.</rule>
+        <rule>If no special rate is listed, the restrained creature can be moved at the restraining creature's combat movement rate, subject to encumbrance.</rule>
+        <rule>The restrained creature's weight in pounds divided by 12 counts as stones of encumbrance for the restraining appendage or appendages.</rule>
+        <rule>For appendage load, normal load equals the creature's normal load multiplied by the number of appendages restraining the creature, divided by the total number of appendages.</rule>
+      </appendage_rules>
+      <termination>
+        <rule>Ends immediately when the restrained creature escapes.</rule>
+        <rule>Ends immediately when the restraining creature releases it.</rule>
+        <rule>If restrained by multiple causes, each cause must be escaped separately.</rule>
+      </termination>
+    </condition>
+
+    <condition name="slumbering">
+      <effects>
+        <effect>Is helpless.</effect>
+        <effect>Cannot see.</effect>
+        <effect>Cannot hear.</effect>
+        <effect>Cannot speak.</effect>
+      </effects>
+      <termination>
+        <rule>Ends immediately if the creature is attacked.</rule>
+        <rule>Ends immediately if the creature is damaged.</rule>
+        <rule>Ends immediately if the creature is moved.</rule>
+      </termination>
+    </condition>
+
+    <condition name="stunned">
+      <effects>
+        <effect>Cannot attack.</effect>
+        <effect>Cannot cast spells.</effect>
+        <effect>Cannot move.</effect>
+        <effect>Cannot take actions in lieu of attacking or moving.</effect>
+        <effect>Is vulnerable.</effect>
+      </effects>
+    </condition>
+
+    <condition name="unconscious">
+      <effects>
+        <effect>Is helpless.</effect>
+      </effects>
+      <termination>
+        <rule>Ends when the creature is slain.</rule>
+        <rule>Ends when the creature's wounds are treated; when this occurs, roll 1d20+1d6 on the Mortal Wounds table and apply listed modifiers.</rule>
+        <rule>Ends if 24 hours pass; when this occurs, roll 1d20+1d6 on the Mortal Wounds table with no bonus for treatment and with the full -10 penalty for being treated 1 day later.</rule>
+      </termination>
+    </condition>
+
+    <condition name="vulnerable">
+      <effects>
+        <effect>Gains no Armor Class benefit from a shield.</effect>
+        <effect>Can be ambushed or backstabbed by creatures capable of doing so.</effect>
+        <effect>Attack throws against it gain a +2 bonus, or +4 if the attacker ambushes or backstabs it.</effect>
+        <effect>Damage is ordinary damage, or multiplied damage if from ambush or backstab.</effect>
+      </effects>
+    </condition>
+
+  </conditions>
+
+  <confidence_notes>
+    <note>The source contains probable wording errors that I normalized cautiously without changing mechanics: the grabbed entry briefly says "while a creature is grappled" where context indicates "grabbed"; the grabbed and grappled entries say the creature is vulnerable "while it is grabbed"; the prone entry says attackers get +4 if they backstab the stunned creature, which appears to mean the prone creature.</note>
+    <note>I preserved the source's distinction between grabbed, grappled, and restrained, but the exact intended scope of some movement wording in grabbed versus grappled may rely on surrounding core combat terminology not included in this excerpt.</note>
+  </confidence_notes>
+</conditions_summary>

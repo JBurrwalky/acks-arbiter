@@ -1,0 +1,1587 @@
+<class_catalog title="Demi-Human Classes" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <class name="Dwarven Vaultguard">
+    <identity>
+      <name>Dwarven Vaultguard</name>
+      <ancestry_category>dwarven</ancestry_category>
+      <source_label>102D-ACKS Core-Characters-DemiHuman-Classes.md</source_label>
+      <class_group>demi_human_classes</class_group>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>fighter</tag>
+        <tag>vault_defender</tag>
+        <tag>stronghold_ruler</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>martial</tag>
+        <tag>underground_specialist</tag>
+        <tag>stone_detection</tag>
+        <tag>dwarven_hardiness</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>STR</ability>
+      </prime_requisites>
+      <minimum_abilities>
+        <requirement ability="CON" score="9"/>
+      </minimum_abilities>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>fighter</primary_progression_family>
+      <attack_throw_progression family="fighter"/>
+      <cleave_progression family="fighter"/>
+      <saving_throw_progression family="fighter"/>
+      <damage_bonus_progression family="fighter"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d8</hit_die>
+      <maximum_level>13</maximum_level>
+      <baseline_title>Sentry</baseline_title>
+      <post_max_hit_dice_rule>After 9th level, hit dice stop increasing; fixed hit point increases are added as shown in level progression. Hit point modifiers from Constitution are ignored for these fixed increases.</post_max_hit_dice_rule>
+      <general_notes>
+        <rule>At 1st level, attacks an unarmored foe (AC 0) on 10+.</rule>
+        <rule>Attack throws and saving throws advance as fighter, improving by 2 every 3 levels of experience.</rule>
+      </general_notes>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>Any armor</armor>
+        <shields>May use shields</shields>
+        <weapons>
+          <rule>May use any weapon except prohibited oversized weapons.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>May fight with weapon and shield.</rule>
+          <rule>May fight wielding a weapon two-handed.</rule>
+          <rule>May fight wielding a weapon in each hand.</rule>
+        </fighting_styles>
+      </permissions>
+      <restrictions>
+        <restriction>Cannot use human-sized two-handed weapons such as two-handed swords or polearms.</restriction>
+        <restriction>Cannot use longbows.</restriction>
+      </restrictions>
+      <combat_rules>
+        <rule>Base damage from successful missile and melee attacks increases by +1 at 1st level and by an additional +1 at 3rd, 6th, 9th, and 12th level.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <special_abilities>
+      <ability name="underground_surprise_bonus" level="1">
+        <summary>Gains improved surprise underground.</summary>
+        <rules>
+          <rule>Gain a +1 bonus to surprise rolls when underground.</rule>
+        </rules>
+      </ability>
+
+      <ability name="stonework_detection" level="1">
+        <summary>Can detect unusual underground construction.</summary>
+        <rules>
+          <rule>When actively searching, may detect traps, false walls, hidden construction, or sloped passages with a proficiency throw of 14+ on 1d20.</rule>
+        </rules>
+        <limits>
+          <limit>Does not function without active searching.</limit>
+        </limits>
+      </ability>
+
+      <ability name="dwarven_hardiness" level="1">
+        <summary>Receives improved saving throws.</summary>
+        <rules>
+          <rule>Target values for saving throws versus Blast/Breath are reduced by 3.</rule>
+          <rule>Target values for all other saving throws are reduced by 4.</rule>
+          <rule>These adjustments are already factored into the printed attack and saving throw table.</rule>
+        </rules>
+      </ability>
+
+      <ability name="languages" level="1">
+        <summary>Speaks standard dwarven class languages.</summary>
+        <rules>
+          <rule>Speaks Common.</rule>
+          <rule>Speaks Dwarvish.</rule>
+          <rule>Speaks Goblin.</rule>
+          <rule>Speaks Gnome.</rule>
+          <rule>Speaks Kobold.</rule>
+        </rules>
+      </ability>
+
+      <ability name="vault_establishment" level="9">
+        <summary>May construct an underground vault and attract dwarven settlers and defenders.</summary>
+        <rules>
+          <rule>At 9th level, may construct an underground vault.</rule>
+          <rule>Dwarves of the character's clan are first to settle there, but dwarves from other clans also come to live nearby and be ruled by the character.</rule>
+          <rule>A total of 3d6x10 1st level NPCs of the same race move in to help maintain and defend the vault at no cost to the character.</rule>
+          <rule>The character is expected to employ only soldiers of dwarven descent, but may hire members of other races for other tasks.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Sentry</title>
+        <hit_dice>1d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+1</value>
+        </values>
+        <features_gained>
+          <feature_ref>underground_surprise_bonus</feature_ref>
+          <feature_ref>stonework_detection</feature_ref>
+          <feature_ref>dwarven_hardiness</feature_ref>
+          <feature_ref>languages</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="2">
+        <xp_required>2,200</xp_required>
+        <title>Warden</title>
+        <hit_dice>2d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+1</value>
+        </values>
+      </entry>
+      <entry level="3">
+        <xp_required>4,400</xp_required>
+        <title>Shieldbearer</title>
+        <hit_dice>3d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+      </entry>
+      <entry level="4">
+        <xp_required>8,800</xp_required>
+        <title>Defender</title>
+        <hit_dice>4d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+      </entry>
+      <entry level="5">
+        <xp_required>17,500</xp_required>
+        <title>Sentinel</title>
+        <hit_dice>5d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+      </entry>
+      <entry level="6">
+        <xp_required>35,000</xp_required>
+        <title>Guardian</title>
+        <hit_dice>6d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="7">
+        <xp_required>70,000</xp_required>
+        <title>Champion</title>
+        <hit_dice>7d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="8">
+        <xp_required>140,000</xp_required>
+        <title>Vaultguard</title>
+        <hit_dice>8d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="9">
+        <xp_required>270,000</xp_required>
+        <title>Vaultlord</title>
+        <hit_dice>9d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+        <features_gained>
+          <feature_ref>vault_establishment</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>400,000</xp_required>
+        <title>Vaultlord, 10th level</title>
+        <hit_dice>9d8+3*</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+      </entry>
+      <entry level="11">
+        <xp_required>530,000</xp_required>
+        <title>Vaultlord, 11th level</title>
+        <hit_dice>9d8+6*</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+      </entry>
+      <entry level="12">
+        <xp_required>660,000</xp_required>
+        <title>Vaultlord, 12th level</title>
+        <hit_dice>9d8+9*</hit_dice>
+        <values>
+          <value name="damage_bonus">+5</value>
+        </values>
+      </entry>
+      <entry level="13">
+        <xp_required>790,000</xp_required>
+        <title>Vaultlord, 13th level</title>
+        <hit_dice>9d8+11*</hit_dice>
+        <values>
+          <value name="damage_bonus">+5</value>
+        </values>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">12+</value>
+          <value name="spells">13+</value>
+        </row>
+        <row>
+          <value name="level_range">2-3</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">4</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">7+</value>
+          <value name="blast_breath">10+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">7</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">6+</value>
+          <value name="blast_breath">9+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">9+</value>
+        </row>
+        <row>
+          <value name="level_range">8-9</value>
+          <value name="attack_throw">5+</value>
+          <value name="petrification_paralysis">6+</value>
+          <value name="poison_death">5+</value>
+          <value name="blast_breath">8+</value>
+          <value name="staffs_wands">7+</value>
+          <value name="spells">8+</value>
+        </row>
+        <row>
+          <value name="level_range">10</value>
+          <value name="attack_throw">4+</value>
+          <value name="petrification_paralysis">5+</value>
+          <value name="poison_death">4+</value>
+          <value name="blast_breath">7+</value>
+          <value name="staffs_wands">6+</value>
+          <value name="spells">7+</value>
+        </row>
+        <row>
+          <value name="level_range">11-12</value>
+          <value name="attack_throw">3+</value>
+          <value name="petrification_paralysis">4+</value>
+          <value name="poison_death">3+</value>
+          <value name="blast_breath">6+</value>
+          <value name="staffs_wands">5+</value>
+          <value name="spells">6+</value>
+        </row>
+        <row>
+          <value name="level_range">13</value>
+          <value name="attack_throw">2+</value>
+          <value name="petrification_paralysis">3+</value>
+          <value name="poison_death">2+</value>
+          <value name="blast_breath">5+</value>
+          <value name="staffs_wands">4+</value>
+          <value name="spells">5+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>underground_vault</structure_type>
+      <acquisition_rules>
+        <rule>Construct an underground vault.</rule>
+        <rule>Dwarves of the character's clan arrive first, followed by dwarves from other clans.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="same_race_first_level_npcs" number="3d6x10"/>
+      </followers>
+      <cost_rules>
+        <rule>Followers move in at no cost to the character.</rule>
+      </cost_rules>
+      <loyalty_or_morale_rules>
+        <rule>The character is expected to employ only soldiers of dwarven descent.</rule>
+        <rule>Members of other races may be hired for non-soldier tasks.</rule>
+      </loyalty_or_morale_rules>
+    </stronghold_and_followers>
+  </class>
+
+  <class name="Dwarven Craftpriest">
+    <identity>
+      <name>Dwarven Craftpriest</name>
+      <ancestry_category>dwarven</ancestry_category>
+      <source_label>102D-ACKS Core-Characters-DemiHuman-Classes.md</source_label>
+      <class_group>demi_human_classes</class_group>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>cleric</tag>
+        <tag>craft_priest</tag>
+        <tag>stronghold_ruler</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>divine_spellcaster</tag>
+        <tag>turn_undead</tag>
+        <tag>crafting</tag>
+        <tag>stone_detection</tag>
+        <tag>dwarven_hardiness</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>WIS</ability>
+      </prime_requisites>
+      <minimum_abilities>
+        <requirement ability="CON" score="9"/>
+      </minimum_abilities>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>cleric</primary_progression_family>
+      <attack_throw_progression family="cleric"/>
+      <cleave_progression family="cleric"/>
+      <saving_throw_progression family="cleric"/>
+      <damage_bonus_progression family="cleric"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d6</hit_die>
+      <maximum_level>10</maximum_level>
+      <baseline_title>Dwarven Craft-Catechist</baseline_title>
+      <post_max_hit_dice_rule>After 9th level, hit dice stop increasing; fixed hit point increases are added as shown in level progression. Hit point modifiers from Constitution are ignored for these fixed increases.</post_max_hit_dice_rule>
+      <general_notes>
+        <rule>At 1st level, attacks an unarmored foe (AC 0) on 10+.</rule>
+        <rule>Attack throws and saving throws advance as cleric, improving by 2 every 4 levels of experience.</rule>
+      </general_notes>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>Any armor</armor>
+        <shields>May use shields</shields>
+        <weapons>
+          <rule>May use battle axe, great axe, hand axe, flail, mace, morning star, and warhammer.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>May fight with weapon and shield.</rule>
+          <rule>May fight wielding a weapon two-handed.</rule>
+        </fighting_styles>
+      </permissions>
+      <restrictions>
+        <restriction>May not dual wield weapons.</restriction>
+      </restrictions>
+    </combat_profile>
+
+    <spellcasting_profile>
+      <tradition>divine</tradition>
+      <access_rules>
+        <rule>Begins casting divine spells at 2nd level.</rule>
+        <rule>Uses the same spell progression as clerics.</rule>
+        <rule>Uses the same rules for learning and casting spells as clerics.</rule>
+        <rule>Selects spells from the cleric spell list.</rule>
+      </access_rules>
+    </spellcasting_profile>
+
+    <class_subsystems>
+      <turning>
+        <definition>May turn undead like a cleric.</definition>
+      </turning>
+
+      <custom_subsystem name="craft_journeyman">
+        <definition>Each craftpriest is a journeyman in one specific craft.</definition>
+        <rules>
+          <rule>With access to craftsman's tools, can produce 20gp worth of items per month.</rule>
+          <rule>Can supervise 3 apprentices in the chosen craft.</rule>
+          <rule>When examining works of the chosen craft, can identify masterwork items, rare materials, and famous artisans with a proficiency throw of 8+ on 1d20.</rule>
+          <rule>Gains a +3 bonus on proficiency throws for other proficiencies learned.</rule>
+        </rules>
+      </custom_subsystem>
+    </class_subsystems>
+
+    <special_abilities>
+      <ability name="religious_identification" level="1">
+        <summary>Identifies religious symbols and observances.</summary>
+        <rules>
+          <rule>Automatically identifies religious symbols, trappings, and holy days of the dwarven faith.</rule>
+          <rule>Recognizes those of other faiths with a proficiency throw of 8+ on 1d20.</rule>
+        </rules>
+      </ability>
+
+      <ability name="underground_surprise_bonus" level="1">
+        <summary>Gains improved surprise underground.</summary>
+        <rules>
+          <rule>Gain a +1 bonus to surprise rolls when underground.</rule>
+        </rules>
+      </ability>
+
+      <ability name="stonework_detection" level="1">
+        <summary>Can detect unusual underground construction.</summary>
+        <rules>
+          <rule>When actively searching, may detect traps, false walls, hidden construction, or sloped passages with a proficiency throw of 14+ on 1d20.</rule>
+        </rules>
+        <limits>
+          <limit>Does not function without active searching.</limit>
+        </limits>
+      </ability>
+
+      <ability name="dwarven_hardiness" level="1">
+        <summary>Receives improved saving throws.</summary>
+        <rules>
+          <rule>Target values for saving throws versus Blast/Breath are reduced by 3.</rule>
+          <rule>Target values for all other saving throws are reduced by 4.</rule>
+          <rule>These adjustments are already factored into the printed attack and saving throw table.</rule>
+        </rules>
+      </ability>
+
+      <ability name="languages" level="1">
+        <summary>Speaks standard dwarven class languages.</summary>
+        <rules>
+          <rule>Speaks Common.</rule>
+          <rule>Speaks Dwarvish.</rule>
+          <rule>Speaks Goblin.</rule>
+          <rule>Speaks Gnome.</rule>
+          <rule>Speaks Kobold.</rule>
+        </rules>
+      </ability>
+
+      <ability name="spell_research_scrolls_and_potions" level="5">
+        <summary>May begin lower-tier magical creation and research.</summary>
+        <rules>
+          <rule>At 5th level, may research spells.</rule>
+          <rule>At 5th level, may scribe scrolls.</rule>
+          <rule>At 5th level, may brew potions.</rule>
+        </rules>
+      </ability>
+
+      <ability name="greater_magic_item_creation" level="9">
+        <summary>May create higher-tier magic items and magical constructs.</summary>
+        <rules>
+          <rule>At 9th level, may create more powerful magic items such as weapons, rings, and staffs.</rule>
+          <rule>At 9th level, may craft magical constructs such as golems.</rule>
+        </rules>
+      </ability>
+
+      <ability name="vault_establishment" level="9">
+        <summary>May construct an underground vault and attract dwarven settlers and defenders.</summary>
+        <rules>
+          <rule>At 9th level, may construct a vault.</rule>
+          <rule>Dwarves of the character's clan are first to settle there, but dwarves from other clans also come to live nearby and be ruled by the character.</rule>
+          <rule>A total of 3d6x10 1st level NPCs of the same race move in to help maintain and defend the vault at no cost to the character.</rule>
+          <rule>The character is expected to employ only soldiers of dwarven descent, but may hire members of other races for other tasks.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Dwarven Craft-Catechist</title>
+        <hit_dice>1d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">0</slot>
+          <slot spell_level="2">0</slot>
+          <slot spell_level="3">0</slot>
+          <slot spell_level="4">0</slot>
+          <slot spell_level="5">0</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>religious_identification</feature_ref>
+          <feature_ref>underground_surprise_bonus</feature_ref>
+          <feature_ref>stonework_detection</feature_ref>
+          <feature_ref>dwarven_hardiness</feature_ref>
+          <feature_ref>languages</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="2">
+        <xp_required>2,400</xp_required>
+        <title>Dwarven Craft-Acolyte</title>
+        <hit_dice>2d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">1</slot>
+          <slot spell_level="2">0</slot>
+          <slot spell_level="3">0</slot>
+          <slot spell_level="4">0</slot>
+          <slot spell_level="5">0</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>divine_spellcasting</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="3">
+        <xp_required>4,800</xp_required>
+        <title>Dwarven Craftpriest</title>
+        <hit_dice>3d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">0</slot>
+          <slot spell_level="3">0</slot>
+          <slot spell_level="4">0</slot>
+          <slot spell_level="5">0</slot>
+        </spell_slots>
+      </entry>
+      <entry level="4">
+        <xp_required>9,600</xp_required>
+        <title>Dwarven Craft-Curate</title>
+        <hit_dice>4d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">1</slot>
+          <slot spell_level="3">0</slot>
+          <slot spell_level="4">0</slot>
+          <slot spell_level="5">0</slot>
+        </spell_slots>
+      </entry>
+      <entry level="5">
+        <xp_required>19,200</xp_required>
+        <title>Dwarven Craft-Vicar</title>
+        <hit_dice>5d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">0</slot>
+          <slot spell_level="4">0</slot>
+          <slot spell_level="5">0</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>spell_research_scrolls_and_potions</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="6">
+        <xp_required>38,400</xp_required>
+        <title>Dwarven Craft-Rector</title>
+        <hit_dice>6d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">1</slot>
+          <slot spell_level="4">1</slot>
+          <slot spell_level="5">0</slot>
+        </spell_slots>
+      </entry>
+      <entry level="7">
+        <xp_required>75,000</xp_required>
+        <title>Dwarven Craft-Prelate</title>
+        <hit_dice>7d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">2</slot>
+          <slot spell_level="4">1</slot>
+          <slot spell_level="5">1</slot>
+        </spell_slots>
+      </entry>
+      <entry level="8">
+        <xp_required>150,000</xp_required>
+        <title>Dwarven Craft-Bishop</title>
+        <hit_dice>8d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">2</slot>
+          <slot spell_level="4">2</slot>
+          <slot spell_level="5">1</slot>
+        </spell_slots>
+      </entry>
+      <entry level="9">
+        <xp_required>280,000</xp_required>
+        <title>Dwarven Craft-Lord</title>
+        <hit_dice>9d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">2</slot>
+          <slot spell_level="5">2</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>greater_magic_item_creation</feature_ref>
+          <feature_ref>vault_establishment</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>410,000</xp_required>
+        <title>Dwarven Craft-Lord, 10th level</title>
+        <hit_dice>9d6+2*</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">4</slot>
+          <slot spell_level="2">4</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">2</slot>
+        </spell_slots>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1-2</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">6+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">3-4</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">5+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">4+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">7+</value>
+          <value name="spells">9+</value>
+        </row>
+        <row>
+          <value name="level_range">7-8</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">6+</value>
+          <value name="poison_death">3+</value>
+          <value name="blast_breath">10+</value>
+          <value name="staffs_wands">6+</value>
+          <value name="spells">8+</value>
+        </row>
+        <row>
+          <value name="level_range">9-10</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">5+</value>
+          <value name="poison_death">2+</value>
+          <value name="blast_breath">9+</value>
+          <value name="staffs_wands">5+</value>
+          <value name="spells">7+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>underground_vault</structure_type>
+      <acquisition_rules>
+        <rule>Construct a vault.</rule>
+        <rule>Dwarves of the character's clan arrive first, followed by dwarves from other clans.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="same_race_first_level_npcs" number="3d6x10"/>
+      </followers>
+      <cost_rules>
+        <rule>Followers move in at no cost to the character.</rule>
+      </cost_rules>
+      <loyalty_or_morale_rules>
+        <rule>The character is expected to employ only soldiers of dwarven descent.</rule>
+        <rule>Members of other races may be hired for non-soldier tasks.</rule>
+      </loyalty_or_morale_rules>
+    </stronghold_and_followers>
+  </class>
+
+  <class name="Elven Spellsword">
+    <identity>
+      <name>Elven Spellsword</name>
+      <ancestry_category>elven</ancestry_category>
+      <source_label>102D-ACKS Core-Characters-DemiHuman-Classes.md</source_label>
+      <class_group>demi_human_classes</class_group>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>fighter</tag>
+        <tag>mage</tag>
+        <tag>stronghold_ruler</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>arcane_spellcaster</tag>
+        <tag>martial</tag>
+        <tag>armored_spellcasting</tag>
+        <tag>wilderness_specialist</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>STR</ability>
+        <ability>INT</ability>
+      </prime_requisites>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>fighter</primary_progression_family>
+      <attack_throw_progression family="fighter"/>
+      <cleave_progression family="fighter"/>
+      <saving_throw_progression family="fighter"/>
+      <damage_bonus_progression family="fighter"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d6</hit_die>
+      <maximum_level>10</maximum_level>
+      <baseline_title>Arcanist-Guardian</baseline_title>
+      <post_max_hit_dice_rule>After 9th level, hit dice stop increasing; fixed hit point increases are added as shown in level progression. Hit point modifiers from Constitution are ignored for these fixed increases.</post_max_hit_dice_rule>
+      <general_notes>
+        <rule>At 1st level, attacks an unarmored foe (AC 0) on 10+.</rule>
+        <rule>Attack throws and saving throws advance as fighter, improving by 2 every 3 levels of experience.</rule>
+      </general_notes>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>Any armor</armor>
+        <shields>May use shields</shields>
+        <weapons>
+          <rule>May use any weapon.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>May fight with weapon and shield.</rule>
+          <rule>May fight with a two-handed weapon.</rule>
+          <rule>May fight wielding a weapon in each hand.</rule>
+        </fighting_styles>
+      </permissions>
+      <combat_rules>
+        <rule>Base damage from successful missile and melee attacks increases by +1 at 1st level and by an additional +1 at 3rd, 6th, and 9th level.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <spellcasting_profile>
+      <tradition>arcane</tradition>
+      <access_rules>
+        <rule>Casts spells as a mage.</rule>
+        <rule>Uses the same spell list as mages.</rule>
+        <rule>Uses the same rules for learning and casting spells as mages.</rule>
+        <rule>Follows the same spell progression as mages up to 10th level.</rule>
+        <rule>May cast spells while wearing armor.</rule>
+        <rule>May use any magic item available to fighters or mages.</rule>
+      </access_rules>
+    </spellcasting_profile>
+
+    <special_abilities>
+      <ability name="wilderness_surprise_bonus" level="1">
+        <summary>Gains improved surprise in wilderness settings.</summary>
+        <rules>
+          <rule>Gain a +1 bonus to surprise rolls when in the wilderness.</rule>
+        </rules>
+      </ability>
+
+      <ability name="detect_hidden_and_secret_doors" level="1">
+        <summary>Detects concealed doors more effectively than other characters.</summary>
+        <rules>
+          <rule>When actively searching, detects hidden and secret doors with a proficiency throw of 8+ on 1d20.</rule>
+          <rule>On casual inspection, detects hidden and secret doors with a proficiency throw of 14+ on 1d20.</rule>
+        </rules>
+      </ability>
+
+      <ability name="ghoul_paralysis_immunity" level="1">
+        <summary>Unaffected by ghoul paralysis.</summary>
+        <rules>
+          <rule>Completely unaffected by the paralysis inflicted by ghouls.</rule>
+        </rules>
+      </ability>
+
+      <ability name="elven_save_bonus" level="1">
+        <summary>Receives improved saving throws against certain categories.</summary>
+        <rules>
+          <rule>Target values for all saving throws versus Petrification/Paralysis are reduced by 1.</rule>
+          <rule>Target values for all saving throws versus Spells are reduced by 1.</rule>
+        </rules>
+      </ability>
+
+      <ability name="languages" level="1">
+        <summary>Speaks standard elven class languages.</summary>
+        <rules>
+          <rule>Speaks Common.</rule>
+          <rule>Speaks Elven.</rule>
+          <rule>Speaks Gnoll.</rule>
+          <rule>Speaks Hobgoblin.</rule>
+          <rule>Speaks Orc.</rule>
+        </rules>
+      </ability>
+
+      <ability name="spell_research_scrolls_and_potions" level="5">
+        <summary>May begin lower-tier magical creation and research.</summary>
+        <rules>
+          <rule>At 5th level, may research spells.</rule>
+          <rule>At 5th level, may scribe scrolls.</rule>
+          <rule>At 5th level, may brew potions.</rule>
+        </rules>
+      </ability>
+
+      <ability name="greater_magic_item_creation" level="9">
+        <summary>May create higher-tier magic items.</summary>
+        <rules>
+          <rule>At 9th level, may create more powerful magic items such as weapons, rings, and staffs.</rule>
+        </rules>
+      </ability>
+
+      <ability name="fastness_establishment" level="9">
+        <summary>May establish a fastness in a natural setting and attract elven followers.</summary>
+        <rules>
+          <rule>At 9th level, may establish a fastness in a natural setting such as a forest or glen.</rule>
+          <rule>The keep must blend seamlessly with nature rather than impose upon it.</rule>
+          <rule>A total of 3d6x10 1st level elven NPCs move in to help with and defend the fastness at no cost to the character.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Arcanist-Guardian</title>
+        <hit_dice>1d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+1</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">1</slot>
+          <slot spell_level="2">0</slot>
+          <slot spell_level="3">0</slot>
+          <slot spell_level="4">0</slot>
+          <slot spell_level="5">0</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>wilderness_surprise_bonus</feature_ref>
+          <feature_ref>detect_hidden_and_secret_doors</feature_ref>
+          <feature_ref>ghoul_paralysis_immunity</feature_ref>
+          <feature_ref>elven_save_bonus</feature_ref>
+          <feature_ref>languages</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="2">
+        <xp_required>4,000</xp_required>
+        <title>Warrior-Seer</title>
+        <hit_dice>2d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+1</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">0</slot>
+          <slot spell_level="3">0</slot>
+          <slot spell_level="4">0</slot>
+          <slot spell_level="5">0</slot>
+        </spell_slots>
+      </entry>
+      <entry level="3">
+        <xp_required>8,000</xp_required>
+        <title>Theurgist-Swordmaster</title>
+        <hit_dice>3d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">1</slot>
+          <slot spell_level="3">0</slot>
+          <slot spell_level="4">0</slot>
+          <slot spell_level="5">0</slot>
+        </spell_slots>
+      </entry>
+      <entry level="4">
+        <xp_required>16,000</xp_required>
+        <title>Magician-Hero</title>
+        <hit_dice>4d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">0</slot>
+          <slot spell_level="4">0</slot>
+          <slot spell_level="5">0</slot>
+        </spell_slots>
+      </entry>
+      <entry level="5">
+        <xp_required>32,000</xp_required>
+        <title>Thaumaturge-Exemplar</title>
+        <hit_dice>5d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">1</slot>
+          <slot spell_level="4">0</slot>
+          <slot spell_level="5">0</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>spell_research_scrolls_and_potions</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="6">
+        <xp_required>64,000</xp_required>
+        <title>Myrmidon-Enchanter</title>
+        <hit_dice>6d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">2</slot>
+          <slot spell_level="4">0</slot>
+          <slot spell_level="5">0</slot>
+        </spell_slots>
+      </entry>
+      <entry level="7">
+        <xp_required>130,000</xp_required>
+        <title>Sorcerer-Champion</title>
+        <hit_dice>7d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">2</slot>
+          <slot spell_level="4">1</slot>
+          <slot spell_level="5">0</slot>
+        </spell_slots>
+      </entry>
+      <entry level="8">
+        <xp_required>260,000</xp_required>
+        <title>Epic Hero-Mage</title>
+        <hit_dice>8d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">2</slot>
+          <slot spell_level="4">2</slot>
+          <slot spell_level="5">0</slot>
+        </spell_slots>
+      </entry>
+      <entry level="9">
+        <xp_required>430,000</xp_required>
+        <title>Wizard-Lord</title>
+        <hit_dice>9d6</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">2</slot>
+          <slot spell_level="5">1</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>greater_magic_item_creation</feature_ref>
+          <feature_ref>fastness_establishment</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>600,000</xp_required>
+        <title>Wizard-Lord, 10th level</title>
+        <hit_dice>9d6+2*</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">2</slot>
+        </spell_slots>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">14+</value>
+          <value name="poison_death">14+</value>
+          <value name="blast_breath">16+</value>
+          <value name="staffs_wands">16+</value>
+          <value name="spells">16+</value>
+        </row>
+        <row>
+          <value name="level_range">2-3</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">13+</value>
+          <value name="poison_death">13+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">15+</value>
+          <value name="spells">15+</value>
+        </row>
+        <row>
+          <value name="level_range">4</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">12+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">14+</value>
+          <value name="spells">14+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">11+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">13+</value>
+          <value name="spells">13+</value>
+        </row>
+        <row>
+          <value name="level_range">7</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">12+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">8-9</value>
+          <value name="attack_throw">5+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">10</value>
+          <value name="attack_throw">4+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">10+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">10+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>fastness</structure_type>
+      <acquisition_rules>
+        <rule>Establish a fastness in a natural setting such as a forest or glen.</rule>
+        <rule>The keep must blend seamlessly with nature.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="first_level_elven_npcs" number="3d6x10"/>
+      </followers>
+      <cost_rules>
+        <rule>Followers move in at no cost to the character.</rule>
+      </cost_rules>
+      <loyalty_or_morale_rules>
+        <rule>Followers help with and defend the fastness.</rule>
+      </loyalty_or_morale_rules>
+    </stronghold_and_followers>
+  </class>
+
+  <class name="Elven Nightblade">
+    <identity>
+      <name>Elven Nightblade</name>
+      <ancestry_category>elven</ancestry_category>
+      <source_label>102D-ACKS Core-Characters-DemiHuman-Classes.md</source_label>
+      <class_group>demi_human_classes</class_group>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>thief</tag>
+        <tag>mage</tag>
+        <tag>assassin</tag>
+        <tag>stronghold_ruler</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>arcane_spellcaster</tag>
+        <tag>stealth</tag>
+        <tag>backstab</tag>
+        <tag>acrobatics</tag>
+        <tag>armored_spellcasting</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>DEX</ability>
+        <ability>INT</ability>
+      </prime_requisites>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>thief</primary_progression_family>
+      <attack_throw_progression family="thief"/>
+      <cleave_progression family="thief"/>
+      <saving_throw_progression family="thief"/>
+      <damage_bonus_progression family="thief"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d6</hit_die>
+      <maximum_level>11</maximum_level>
+      <baseline_title>Arcanist-Avenger</baseline_title>
+      <post_max_hit_dice_rule>After 9th level, hit dice stop increasing; fixed hit point increases are added as shown in level progression. Hit point modifiers from Constitution are ignored for these fixed increases.</post_max_hit_dice_rule>
+      <general_notes>
+        <rule>At 1st level, attacks an unarmored foe (AC 0) on 10+.</rule>
+        <rule>Attack throws and saving throws advance as thief, improving by 2 every 4 levels of experience.</rule>
+      </general_notes>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>Leather armor or lighter</armor>
+        <shields>May not use shields</shields>
+        <weapons>
+          <rule>May use any missile weapons.</rule>
+          <rule>May use any one-handed melee weapons.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>May fight with a one-handed weapon in each hand.</rule>
+          <rule>May wield a one-handed weapon with two hands.</rule>
+        </fighting_styles>
+      </permissions>
+      <restrictions>
+        <restriction>Cannot wear armor heavier than leather.</restriction>
+        <restriction>Cannot use shields.</restriction>
+        <restriction>Cannot use exclusively two-handed melee weapons such as great axes or polearms.</restriction>
+      </restrictions>
+    </combat_profile>
+
+    <spellcasting_profile>
+      <tradition>arcane</tradition>
+      <access_rules>
+        <rule>Casts spells as a mage of one-half the character's level.</rule>
+        <rule>Uses the same spell list as mages.</rule>
+        <rule>Uses the same rules for learning and casting spells as mages.</rule>
+        <rule>May cast spells while wearing armor.</rule>
+        <rule>May use any magical items available to mages or thieves.</rule>
+      </access_rules>
+    </spellcasting_profile>
+
+    <class_subsystems>
+      <thief_skills>
+        <rules>
+          <rule>May move silently as a thief of the same level.</rule>
+          <rule>May hide in shadows as a thief of the same level.</rule>
+          <rule>May climb walls as a thief of the same level.</rule>
+          <rule>May backstab as a thief of the same level.</rule>
+        </rules>
+        <skill_definitions>
+          <skill name="move_silently">
+            <rule>Uses thief move silently capability at same level.</rule>
+          </skill>
+          <skill name="hide_in_shadows">
+            <rule>Uses thief hide in shadows capability at same level.</rule>
+          </skill>
+          <skill name="climb_walls">
+            <rule>Uses thief climb walls capability at same level.</rule>
+          </skill>
+          <skill name="backstab">
+            <rule>Uses thief backstab capability at same level.</rule>
+          </skill>
+        </skill_definitions>
+      </thief_skills>
+
+      <custom_subsystem name="acrobatics">
+        <definition>May tumble behind opponents to enable backstabs.</definition>
+        <procedure>
+          <step order="1">In lieu of moving during a round, attempt a proficiency throw to tumble behind an opponent in melee.</step>
+          <step order="2">Base target is 20+ on 1d20.</step>
+          <step order="3">Reduce the required throw by 1 per level of experience possessed.</step>
+          <step order="4">If successful, the nightblade moves behind the opponent.</step>
+          <step order="5">The opponent loses the benefit of any shield.</step>
+          <step order="6">The nightblade may backstab the opponent, gaining +4 to the attack throw and bonus damage based on level.</step>
+        </procedure>
+      </custom_subsystem>
+    </class_subsystems>
+
+    <special_abilities>
+      <ability name="agility_saving_bonus" level="1">
+        <summary>Improved saves in situations where agility can avoid the danger.</summary>
+        <rules>
+          <rule>Gain a +2 bonus to saving throws where agility would help avoid the situation.</rule>
+          <rule>Examples given include tilting floors and pit traps.</rule>
+        </rules>
+      </ability>
+
+      <ability name="wilderness_surprise_bonus" level="1">
+        <summary>Gains improved surprise in wilderness settings.</summary>
+        <rules>
+          <rule>Gain a +1 bonus to surprise rolls when in the wilderness.</rule>
+        </rules>
+      </ability>
+
+      <ability name="detect_hidden_and_secret_doors" level="1">
+        <summary>Detects concealed doors more effectively than other characters.</summary>
+        <rules>
+          <rule>When actively searching, detects hidden and secret doors with a proficiency throw of 8+ on 1d20.</rule>
+          <rule>On casual inspection, detects hidden and secret doors with a proficiency throw of 14+ on 1d20.</rule>
+        </rules>
+      </ability>
+
+      <ability name="ghoul_paralysis_immunity" level="1">
+        <summary>Unaffected by ghoul paralysis.</summary>
+        <rules>
+          <rule>Completely unaffected by the paralysis inflicted by ghouls.</rule>
+        </rules>
+      </ability>
+
+      <ability name="elven_save_bonus" level="1">
+        <summary>Receives improved saving throws against certain categories.</summary>
+        <rules>
+          <rule>Target values for all saving throws versus Spells are reduced by 1.</rule>
+          <rule>Target values for all saving throws versus Paralysis are reduced by 1.</rule>
+          <rule>Target values for all saving throws versus Petrification are reduced by 1.</rule>
+        </rules>
+      </ability>
+
+      <ability name="languages" level="1">
+        <summary>Speaks standard elven class languages.</summary>
+        <rules>
+          <rule>Speaks Common.</rule>
+          <rule>Speaks Elven.</rule>
+          <rule>Speaks Gnoll.</rule>
+          <rule>Speaks Hobgoblin.</rule>
+          <rule>Speaks Orc.</rule>
+        </rules>
+      </ability>
+
+      <ability name="hideout_establishment" level="9">
+        <summary>May construct a hideout and attract apprentices.</summary>
+        <rules>
+          <rule>At 9th level, may construct a hideout.</rule>
+          <rule>When the hideout is built, the character gains 2d6 1st level nightblades as apprentices who come to learn under a master.</rule>
+          <rule>If hired, these apprentices must be paid standard rates for ruffians.</rule>
+          <rule>These nightblades serve the character with some loyalty.</rule>
+          <rule>At least one apprentice is an infiltrator working for the local rivals of the character and sent to watch the character.</rule>
+        </rules>
+      </ability>
+
+      <ability name="spell_research_scrolls_and_potions_as_fifth_level_mage" level="10">
+        <summary>May begin lower-tier magical creation and research using a fixed effective mage level.</summary>
+        <rules>
+          <rule>At 10th level, may research spells as if a 5th level mage.</rule>
+          <rule>At 10th level, may scribe magical scrolls as if a 5th level mage.</rule>
+          <rule>At 10th level, may brew potions as if a 5th level mage.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Arcanist-Avenger</title>
+        <hit_dice>1d6</hit_dice>
+        <values>
+          <value name="acrobatics_throw">20+</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">0</slot>
+          <slot spell_level="2">0</slot>
+          <slot spell_level="3">0</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>agility_saving_bonus</feature_ref>
+          <feature_ref>wilderness_surprise_bonus</feature_ref>
+          <feature_ref>detect_hidden_and_secret_doors</feature_ref>
+          <feature_ref>ghoul_paralysis_immunity</feature_ref>
+          <feature_ref>elven_save_bonus</feature_ref>
+          <feature_ref>languages</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="2">
+        <xp_required>2,775</xp_required>
+        <title>Seer-Enforcer</title>
+        <hit_dice>2d6</hit_dice>
+        <values>
+          <value name="acrobatics_throw">19+</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">1</slot>
+          <slot spell_level="2">0</slot>
+          <slot spell_level="3">0</slot>
+        </spell_slots>
+      </entry>
+      <entry level="3">
+        <xp_required>5,550</xp_required>
+        <title>Theurgist-Torturer</title>
+        <hit_dice>3d6</hit_dice>
+        <values>
+          <value name="acrobatics_throw">18+</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">0</slot>
+          <slot spell_level="3">0</slot>
+        </spell_slots>
+      </entry>
+      <entry level="4">
+        <xp_required>11,100</xp_required>
+        <title>Magician-Slayer</title>
+        <hit_dice>4d6</hit_dice>
+        <values>
+          <value name="acrobatics_throw">17+</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">0</slot>
+          <slot spell_level="3">0</slot>
+        </spell_slots>
+      </entry>
+      <entry level="5">
+        <xp_required>22,200</xp_required>
+        <title>Thaumaturge-Destroyer</title>
+        <hit_dice>5d6</hit_dice>
+        <values>
+          <value name="acrobatics_throw">16+</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">1</slot>
+          <slot spell_level="3">0</slot>
+        </spell_slots>
+      </entry>
+      <entry level="6">
+        <xp_required>45,000</xp_required>
+        <title>Enchanter-Executioner</title>
+        <hit_dice>6d6</hit_dice>
+        <values>
+          <value name="acrobatics_throw">15+</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">1</slot>
+          <slot spell_level="3">0</slot>
+        </spell_slots>
+      </entry>
+      <entry level="7">
+        <xp_required>90,000</xp_required>
+        <title>Sorcerer-Blackguard</title>
+        <hit_dice>7d6</hit_dice>
+        <values>
+          <value name="acrobatics_throw">14+</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">0</slot>
+        </spell_slots>
+      </entry>
+      <entry level="8">
+        <xp_required>180,000</xp_required>
+        <title>Mage-Assassin</title>
+        <hit_dice>8d6</hit_dice>
+        <values>
+          <value name="acrobatics_throw">13+</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">0</slot>
+        </spell_slots>
+      </entry>
+      <entry level="9">
+        <xp_required>330,000</xp_required>
+        <title>Nightblade</title>
+        <hit_dice>9d6</hit_dice>
+        <values>
+          <value name="acrobatics_throw">12+</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">1</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>hideout_establishment</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>480,000</xp_required>
+        <title>Nightblade, 10th level</title>
+        <hit_dice>9d6+2*</hit_dice>
+        <values>
+          <value name="acrobatics_throw">11+</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">1</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>spell_research_scrolls_and_potions_as_fifth_level_mage</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="11">
+        <xp_required>630,000</xp_required>
+        <title>Nightblade, 11th level</title>
+        <hit_dice>9d6+4*</hit_dice>
+        <values>
+          <value name="acrobatics_throw">10+</value>
+        </values>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">2</slot>
+        </spell_slots>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1-2</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">13+</value>
+          <value name="blast_breath">16+</value>
+          <value name="staffs_wands">14+</value>
+          <value name="spells">14+</value>
+        </row>
+        <row>
+          <value name="level_range">3-4</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">12+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">13+</value>
+          <value name="spells">13+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">11+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">12+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">7-8</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">9-10</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">11</value>
+          <value name="attack_throw">5+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">9+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>hideout</structure_type>
+      <acquisition_rules>
+        <rule>Construct a hideout.</rule>
+        <rule>When the hideout is built, apprentices come to learn under a master.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="first_level_nightblade_apprentices" number="2d6"/>
+      </followers>
+      <cost_rules>
+        <rule>If hired, apprentices must be paid standard rates for ruffians.</rule>
+      </cost_rules>
+      <loyalty_or_morale_rules>
+        <rule>Apprentices serve with some loyalty.</rule>
+        <rule>At least one apprentice is an infiltrator working for local rivals.</rule>
+      </loyalty_or_morale_rules>
+    </stronghold_and_followers>
+  </class>
+</class_catalog>

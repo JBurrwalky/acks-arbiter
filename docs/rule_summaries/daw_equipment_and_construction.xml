@@ -1,0 +1,837 @@
+<equipment_and_construction_summary title="Domains at War: Campaigns - Equipment and Construction" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <army_equipment>
+    <cost_table>
+      <item name="Archery Target"><cost>3sp</cost></item>
+      <item name="Army Emblem, Silver (1lb)"><cost>10gp</cost></item>
+      <item name="Army Emblem, Gold (1lb)"><cost>100gp</cost></item>
+      <item name="Barding, Colossal"><cost>2,400-36,000gp</cost></item>
+      <item name="Barding, Gigantic"><cost>480-7,200gp</cost></item>
+      <item name="Barding, Huge"><cost>120-1,800gp</cost></item>
+      <item name="Boardgame"><cost>5gp</cost></item>
+      <item name="Chariot, Heavy"><cost>240gp</cost></item>
+      <item name="Chariot, Light"><cost>120gp</cost></item>
+      <item name="Chariot, Medium"><cost>180gp</cost></item>
+      <item name="Craftsman's Tools (any)"><cost>25gp</cost></item>
+      <item name="Craftsman's Workshop (any)"><cost>350gp</cost></item>
+      <item name="Crutch"><cost>1gp</cost></item>
+      <item name="Dice (pair)"><cost>5sp</cost></item>
+      <item name="Earplugs (pair)"><cost>1sp</cost></item>
+      <item name="Flag, Pennant"><cost>3gp</cost></item>
+      <item name="Flag, Banner"><cost>12gp</cost></item>
+      <item name="Flag, Standard"><cost>50gp+</cost></item>
+      <item name="Helmet, Heavy"><cost>20gp</cost></item>
+      <item name="Helmet, Light"><cost>included in armor; 5gp if purchased separately</cost></item>
+      <item name="Howdah, Colossal"><cost>600-1,200gp</cost></item>
+      <item name="Howdah, Gigantic"><cost>120-240gp</cost></item>
+      <item name="Howdah, Huge"><cost>30-60gp</cost></item>
+      <item name="Laborers' Tools"><cost>9gp</cost></item>
+      <item name="Musical Instrument, Military"><cost>25gp</cost></item>
+      <item name="Mess Kit"><cost>3gp</cost></item>
+      <item name="Pavilion (20 men)"><cost>100gp</cost></item>
+      <item name="Pell"><cost>12gp</cost></item>
+      <item name="Prosthesis, Arm"><cost>25gp</cost></item>
+      <item name="Prosthesis, Hand"><cost>5gp</cost></item>
+      <item name="Prosthesis, Foot"><cost>3gp</cost></item>
+      <item name="Prosthesis, Leg"><cost>15gp</cost></item>
+      <item name="Quintain"><cost>15gp</cost></item>
+      <item name="Rucksack (holds 2 stone)"><cost>1gp</cost></item>
+      <item name="Shield, Mirrored"><cost>250gp</cost></item>
+      <item name="Surgical Saw, Large"><cost>10gp</cost></item>
+      <item name="Surgical Saw, Small"><cost>3gp</cost></item>
+      <item name="Tent, Large (8 men)"><cost>20gp</cost></item>
+      <item name="Tent, Small (2 men)"><cost>3gp</cost></item>
+      <item name="Whistle"><cost>1gp</cost></item>
+    </cost_table>
+
+    <definitions>
+      <item name="Archery Target">
+        <rule>Training device for marksmanship.</rule>
+        <rule>Cost is already included in missile troop training costs.</rule>
+        <encumbrance>2 stone</encumbrance>
+      </item>
+
+      <item name="Army Emblem">
+        <rule>Mounted above an army standard.</rule>
+        <rule>If an army standard has no emblem, the army's morale score is reduced by 1.</rule>
+        <rule>Loss of an army standard and/or emblem reduces morale by 1 and counts as a calamity.</rule>
+      </item>
+
+      <item name="Barding">
+        <rule>Large barding uses the horse barding type as the base reference.</rule>
+        <rule>Huge barding costs and weighs 3 times horse barding of the same type.</rule>
+        <rule>Gigantic barding costs and weighs 12 times horse barding of the same type.</rule>
+        <rule>Colossal barding costs and weighs 60 times horse barding of the same type.</rule>
+        <table name="barding_cost_and_encumbrance_by_size_and_material">
+          <columns>
+            <column>material</column>
+            <column>large_cost</column>
+            <column>large_encumbrance</column>
+            <column>huge_cost</column>
+            <column>huge_encumbrance</column>
+            <column>gigantic_cost</column>
+            <column>gigantic_encumbrance</column>
+            <column>colossal_cost</column>
+            <column>colossal_encumbrance</column>
+          </columns>
+          <row><material>Leather</material><large_cost>40gp</large_cost><large_encumbrance>1st</large_encumbrance><huge_cost>120gp</huge_cost><huge_encumbrance>3st</huge_encumbrance><gigantic_cost>480gp</gigantic_cost><gigantic_encumbrance>12st</gigantic_encumbrance><colossal_cost>2,400gp</colossal_cost><colossal_encumbrance>60st</colossal_encumbrance></row>
+          <row><material>Scale</material><large_cost>75gp</large_cost><large_encumbrance>2st</large_encumbrance><huge_cost>225gp</huge_cost><huge_encumbrance>6st</huge_encumbrance><gigantic_cost>900gp</gigantic_cost><gigantic_encumbrance>24st</gigantic_encumbrance><colossal_cost>4,500gp</colossal_cost><colossal_encumbrance>120st</colossal_encumbrance></row>
+          <row><material>Chain</material><large_cost>150gp</large_cost><large_encumbrance>3st</large_encumbrance><huge_cost>450gp</huge_cost><huge_encumbrance>9st</huge_encumbrance><gigantic_cost>1,800gp</gigantic_cost><gigantic_encumbrance>36st</gigantic_encumbrance><colossal_cost>9,000gp</colossal_cost><colossal_encumbrance>180st</colossal_encumbrance></row>
+          <row><material>Lamellar</material><large_cost>300gp</large_cost><large_encumbrance>4st</large_encumbrance><huge_cost>900gp</huge_cost><huge_encumbrance>12st</huge_encumbrance><gigantic_cost>3,600gp</gigantic_cost><gigantic_encumbrance>48st</gigantic_encumbrance><colossal_cost>18,000gp</colossal_cost><colossal_encumbrance>240st</colossal_encumbrance></row>
+          <row><material>Plate</material><large_cost>600gp</large_cost><large_encumbrance>5st</large_encumbrance><huge_cost>1,800gp</huge_cost><huge_encumbrance>15st</huge_encumbrance><gigantic_cost>7,200gp</gigantic_cost><gigantic_encumbrance>60st</gigantic_encumbrance><colossal_cost>36,000gp</colossal_cost><colossal_encumbrance>300st</colossal_encumbrance></row>
+        </table>
+      </item>
+
+      <item name="Chariots">
+        <shared_rules>
+          <rule>Each chariot has three built-in weapon cases holding a composite bow, 3 javelins, and 20 arrows.</rule>
+          <rule>Movement through desert, forest, mountain, or swamp requires a road.</rule>
+        </shared_rules>
+        <table name="chariot_characteristics">
+          <columns>
+            <column>type</column>
+            <column>driver</column>
+            <column>warriors</column>
+            <column>animals</column>
+            <column>move_multiplier</column>
+            <column>max_move</column>
+            <column>ac</column>
+            <column>front_and_flank_ac_bonus</column>
+            <column>shp</column>
+            <column>chariot_dimensions</column>
+            <column>cab_dimensions</column>
+            <column>minimum_combined_normal_load</column>
+            <column>normal_load_transport</column>
+            <column>maximum_load_transport</column>
+          </columns>
+          <row>
+            <type>Light</type>
+            <driver>1</driver>
+            <warriors>1</warriors>
+            <animals>1-2</animals>
+            <move_multiplier>x3/4</move_multiplier>
+            <max_move>180'</max_move>
+            <ac>0</ac>
+            <front_and_flank_ac_bonus>0</front_and_flank_ac_bonus>
+            <shp>1</shp>
+            <chariot_dimensions>5'9" x 11'6"</chariot_dimensions>
+            <cab_dimensions>3'3" x 1'8" x 2'6"</cab_dimensions>
+            <minimum_combined_normal_load>40 stone</minimum_combined_normal_load>
+            <normal_load_transport>combined normal load at 3/4 movement</normal_load_transport>
+            <maximum_load_transport>combined maximum load at 3/8 movement</maximum_load_transport>
+          </row>
+          <row>
+            <type>Medium</type>
+            <driver>1</driver>
+            <warriors>2</warriors>
+            <animals>2-3</animals>
+            <move_multiplier>x2/3</move_multiplier>
+            <max_move>120'</max_move>
+            <ac>1</ac>
+            <front_and_flank_ac_bonus>+1</front_and_flank_ac_bonus>
+            <shp>1</shp>
+            <chariot_dimensions>6'6" x 13'</chariot_dimensions>
+            <cab_dimensions>4' x 3' x 3'</cab_dimensions>
+            <minimum_combined_normal_load>60 stone</minimum_combined_normal_load>
+            <normal_load_transport>combined normal load at 2/3 movement</normal_load_transport>
+            <maximum_load_transport>combined maximum load at 1/3 movement</maximum_load_transport>
+          </row>
+          <row>
+            <type>Heavy</type>
+            <driver>1</driver>
+            <warriors>3</warriors>
+            <animals>3-4</animals>
+            <move_multiplier>x1/2</move_multiplier>
+            <max_move>90'</max_move>
+            <ac>2</ac>
+            <front_and_flank_ac_bonus>+2</front_and_flank_ac_bonus>
+            <shp>2</shp>
+            <chariot_dimensions>7' x 15'</chariot_dimensions>
+            <cab_dimensions>4'6" x 3'3" x 3'9"</cab_dimensions>
+            <minimum_combined_normal_load>80 stone</minimum_combined_normal_load>
+            <normal_load_transport>combined normal load at 1/2 movement</normal_load_transport>
+            <maximum_load_transport>combined maximum load at 1/4 movement</maximum_load_transport>
+          </row>
+        </table>
+      </item>
+
+      <item name="Craftsman's Tools">
+        <rule>Required to make Craft proficiency throws.</rule>
+        <rule>Each craft requires its own specific tools.</rule>
+        <encumbrance>1 stone</encumbrance>
+      </item>
+
+      <item name="Craftsman's Workshop">
+        <rule>Contains enough tools and furnishings for up to 8 craftsmen to work together.</rule>
+        <rule>A master craftsman must have access to a workshop to increase the productivity of journeymen and apprentices.</rule>
+        <rule>Each craft requires its own specific workshop.</rule>
+        <setup_space>20' x 20'</setup_space>
+        <transport_encumbrance>64 stone</transport_encumbrance>
+      </item>
+
+      <item name="Crutch">
+        <rule>Used by characters with missing or maimed legs who lack prostheses.</rule>
+        <encumbrance>1 stone</encumbrance>
+      </item>
+
+      <item name="Earplugs">
+        <rule>Protect the wearer from loud sounds.</rule>
+      </item>
+
+      <item name="Flag">
+        <rule>Pennants identify company-sized units or individual heroes.</rule>
+        <rule>Banners identify battalion- or regiment-sized units.</rule>
+        <rule>Standards identify brigade-sized units, divisions, and armies.</rule>
+        <rule>Standards may be topped by army emblems.</rule>
+        <rule>If a unit or division lacks a flag of the appropriate size, its morale score is reduced by 1.</rule>
+        <rule>Loss of a unit's flag reduces morale by 1 and counts as a calamity.</rule>
+        <table name="flag_types">
+          <columns>
+            <column>type</column>
+            <column>dimensions_as_described</column>
+            <column>encumbrance_with_pole</column>
+            <column>use</column>
+          </columns>
+          <row><type>Pennant</type><dimensions_as_described>3' wide by 1' long</dimensions_as_described><encumbrance_with_pole>1/4 stone</encumbrance_with_pole><use>company-sized unit or individual hero insignia</use></row>
+          <row><type>Banner</type><dimensions_as_described>6' long by 2' wide</dimensions_as_described><encumbrance_with_pole>1 stone</encumbrance_with_pole><use>battalion- or regiment-sized unit insignia</use></row>
+          <row><type>Standard</type><dimensions_as_described>12' long by 4' tall or more</dimensions_as_described><encumbrance_with_pole>4 stone</encumbrance_with_pole><use>brigades, divisions, and armies</use></row>
+        </table>
+      </item>
+
+      <item name="Helmet, Heavy">
+        <rule>Must be purchased separately from armor.</rule>
+        <rule>Imposes -1 to surprise rolls.</rule>
+        <rule>Imposes -4 to proficiency throws to hear noise.</rule>
+        <rule>Grants +2 on d20 rolls on the Mortal Wounds table.</rule>
+      </item>
+
+      <item name="Helmet, Light">
+        <rule>Included in the cost of any suit of armor.</rule>
+        <rule>If armor is worn without a helmet, decrease armor class by 1 point.</rule>
+        <rule>If purchased separately for 5gp, it provides no in-game benefit.</rule>
+      </item>
+
+      <item name="Howdah">
+        <rule>May be built for riding or war.</rule>
+        <rule>War howdahs cost and weigh twice as much as riding howdahs.</rule>
+        <table name="howdah_by_size">
+          <columns>
+            <column>size</column>
+            <column>riding_dimensions</column>
+            <column>riding_weight</column>
+            <column>riding_ac</column>
+            <column>riding_shp</column>
+            <column>normal_capacity</column>
+            <column>squeezed_capacity</column>
+            <column>squeeze_penalties</column>
+            <column>war_weight</column>
+            <column>war_ac</column>
+            <column>war_shp</column>
+            <column>war_occupant_bonus</column>
+          </columns>
+          <row><size>Huge</size><riding_dimensions>4' x 3' x 3'</riding_dimensions><riding_weight>6 stone</riding_weight><riding_ac>0</riding_ac><riding_shp>1</riding_shp><normal_capacity>2 man-sized creatures</normal_capacity><squeezed_capacity>4 man-sized creatures</squeezed_capacity><squeeze_penalties>-4 attack throws; -2 AC</squeeze_penalties><war_weight>15 stone</war_weight><war_ac>1</war_ac><war_shp>1</war_shp><war_occupant_bonus>+3 AC and +3 saves vs Blast from artillery, burning oil, or similar effects</war_occupant_bonus></row>
+          <row><size>Gigantic</size><riding_dimensions>7' x 5' x 4'</riding_dimensions><riding_weight>18 stone</riding_weight><riding_ac>0</riding_ac><riding_shp>1</riding_shp><normal_capacity>6 man-sized creatures</normal_capacity><squeezed_capacity>12 man-sized creatures</squeezed_capacity><squeeze_penalties>not separately stated</squeeze_penalties><war_weight>36 stone</war_weight><war_ac>1</war_ac><war_shp>1</war_shp><war_occupant_bonus>+4 AC and +4 saves vs Blast from artillery, burning oil, or similar effects</war_occupant_bonus></row>
+          <row><size>Colossal</size><riding_dimensions>12' x 10' x 4'6"</riding_dimensions><riding_weight>60 stone</riding_weight><riding_ac>0</riding_ac><riding_shp>1</riding_shp><normal_capacity>20 man-sized creatures</normal_capacity><squeezed_capacity>40 man-sized creatures</squeezed_capacity><squeeze_penalties>not separately stated</squeeze_penalties><war_weight>120 stone</war_weight><war_ac>1</war_ac><war_shp>2</war_shp><war_occupant_bonus>+4 AC and +4 saves vs Blast from artillery, burning oil, or similar effects</war_occupant_bonus></row>
+        </table>
+      </item>
+
+      <item name="Laborers' Tools">
+        <rule>Required for troops assisting on construction projects.</rule>
+        <encumbrance>1 stone</encumbrance>
+      </item>
+
+      <item name="Musical Instrument, Military">
+        <rule>Used to call to arms, issue orders, call to quarters, and signal commands.</rule>
+      </item>
+
+      <item name="Pavilion">
+        <capacity>20 men</capacity>
+        <dimensions>24' diameter, 12' height</dimensions>
+        <encumbrance>72 stone</encumbrance>
+      </item>
+
+      <item name="Pell">
+        <rule>Training device for infantry sword-and-shield practice.</rule>
+        <rule>Cost is already included in infantry training costs.</rule>
+        <encumbrance>15-30 stone</encumbrance>
+      </item>
+
+      <item name="Prosthesis">
+        <rule>Basic prostheses are made of wood or bronze.</rule>
+        <rule>Iron prostheses cost x2; silver x5; gold x50.</rule>
+        <rule>A prosthetic arm or hand restores ability to use a shield.</rule>
+        <rule>A prosthetic arm or hand may instead be replaced with a weapon such as a club, hook, or short sword.</rule>
+        <rule>A prosthetic leg or foot allows walking without a crutch but does not remove movement or Dexterity penalties from limb loss.</rule>
+      </item>
+
+      <item name="Quintain">
+        <rule>Training device for cavalry lance-and-sword practice.</rule>
+        <rule>Cost is already included in cavalry training costs.</rule>
+        <encumbrance>20 stone</encumbrance>
+      </item>
+
+      <item name="Rucksack">
+        <capacity>2 stone</capacity>
+      </item>
+
+      <item name="Shield, Mirrored">
+        <rule>May be used as a mirror when fighting a monster with a gaze attack to reduce penalties from averting one's gaze.</rule>
+        <rule>A monster with a petrifying gaze that attacks a character wielding a mirror shield has a 1-2 on 1d6 chance of seeing its own reflection unless it averts its own eyes.</rule>
+      </item>
+
+      <item name="Surgical Saw">
+        <rule>Used for amputations when healing mortally, grievously, or critically wounded characters suffering from permanent wounds.</rule>
+        <rule>Small saw grants +2 on Healing proficiency throws for this use.</rule>
+        <rule>Large saw grants +4 on Healing proficiency throws for this use.</rule>
+        <encumbrance_when_large>1 stone</encumbrance_when_large>
+      </item>
+
+      <item name="Tent">
+        <table name="tent_types">
+          <columns>
+            <column>type</column>
+            <column>dimensions</column>
+            <column>capacity</column>
+            <column>encumbrance</column>
+          </columns>
+          <row><type>Small</type><dimensions>6' x 4'</dimensions><capacity>2 men</capacity><encumbrance>2 stone</encumbrance></row>
+          <row><type>Large</type><dimensions>12' diameter round or 10' square</dimensions><capacity>8 men</capacity><encumbrance>16 stone</encumbrance></row>
+        </table>
+      </item>
+
+      <item name="Whistle">
+        <rule>Emits a shrill sound audible at great distance.</rule>
+      </item>
+    </definitions>
+  </army_equipment>
+
+  <artillery_and_siege_equipment>
+    <cost_table>
+      <item name="Ballista, Light (75lb)"><cost>40gp</cost></item>
+      <item name="Ballista, Light Repeating (75lb)"><cost>200gp</cost></item>
+      <item name="Light Ballista Shot, Crude (1lb)"><cost>1cp</cost></item>
+      <item name="Light Ballista Shot, Ballistic (1lb)"><cost>1gp</cost></item>
+      <item name="Ballista, Medium (800lb)"><cost>80gp</cost></item>
+      <item name="Medium Ballista Shot, Crude (3lb)"><cost>3cp</cost></item>
+      <item name="Medium Ballista Shot, Ballistic (3lb)"><cost>2gp</cost></item>
+      <item name="Ballista, Heavy (3,200lb)"><cost>180gp</cost></item>
+      <item name="Heavy Ballista Shot, Crude (6lb)"><cost>15cp</cost></item>
+      <item name="Heavy Ballista Shot, Ballistic (6lb)"><cost>3gp</cost></item>
+      <item name="Catapult, Light (1,200lb)"><cost>100gp</cost></item>
+      <item name="Light Catapult Shot, Crude (6lb)"><cost>15cp</cost></item>
+      <item name="Light Catapult Shot, Ballistic (6lb)"><cost>3gp</cost></item>
+      <item name="Light Catapult Shot, Pitch (6lb)"><cost>15gp</cost></item>
+      <item name="Catapult, Medium (1,800lb)"><cost>200gp</cost></item>
+      <item name="Heavy Catapult Shot, Crude (30lb)"><cost>1gp</cost></item>
+      <item name="Heavy Catapult Shot, Ballistic (30lb)"><cost>10gp</cost></item>
+      <item name="Heavy Catapult Shot, Pitch (30lb)"><cost>50gp</cost></item>
+      <item name="Catapult, Heavy (4 tons)"><cost>600gp</cost></item>
+      <item name="Superheavy Catapult Shot, Crude (90lb)"><cost>4gp</cost></item>
+      <item name="Superheavy Catapult Shot, Ballistic (90lb)"><cost>20gp</cost></item>
+      <item name="Superheavy Catapult Shot, Pitch (90lb)"><cost>100gp</cost></item>
+      <item name="Trebuchet, Light (8 tons)"><cost>1,200gp</cost></item>
+      <item name="Light Trebuchet Shot, Crude (60lb)"><cost>3gp</cost></item>
+      <item name="Light Trebuchet Shot, Ballistic (60lb)"><cost>15gp</cost></item>
+      <item name="Light Trebuchet Shot, Pitch (60lb)"><cost>75gp</cost></item>
+      <item name="Trebuchet, Medium (15 tons)"><cost>1,600gp</cost></item>
+      <item name="Medium Trebuchet Shot, Crude (90lb)"><cost>4gp</cost></item>
+      <item name="Medium Trebuchet Shot, Ballistic (90lb)"><cost>20gp</cost></item>
+      <item name="Medium Trebuchet Shot, Pitch (90lb)"><cost>100gp</cost></item>
+      <item name="Trebuchet, Heavy (30 tons)"><cost>2,500gp</cost></item>
+      <item name="Heavy Trebuchet Shot, Crude (180lb)"><cost>8gp</cost></item>
+      <item name="Heavy Trebuchet Shot, Ballistic (180lb)"><cost>30gp</cost></item>
+      <item name="Heavy Trebuchet Shot, Pitch (180lb)"><cost>150gp</cost></item>
+      <item name="Battering Ram"><cost>200gp</cost></item>
+      <item name="Cauldron, Suspended"><cost>50gp</cost></item>
+      <item name="Fascine (10' x 10' x 10')"><cost>100gp</cost></item>
+      <item name="Hoist"><cost>300gp</cost></item>
+      <item name="Movable Gallery (12' x 12' x 20')"><cost>300gp</cost></item>
+      <item name="Movable Mantlet (8' x 6')"><cost>50gp</cost></item>
+      <item name="Petard"><cost>125gp/lb</cost></item>
+      <item name="Ram Catcher"><cost>50gp</cost></item>
+      <item name="Screw"><cost>200gp</cost></item>
+      <item name="Siege Hook"><cost>50gp</cost></item>
+      <item name="Siege Ladder"><cost>1sp/10'</cost></item>
+      <item name="Siege Tower, Standard (40' tall)"><cost>2,500gp</cost></item>
+      <item name="Siege Tower, Large (90' tall)"><cost>10,000gp</cost></item>
+      <item name="Siege Tower, Huge (135' tall)"><cost>40,000gp</cost></item>
+    </cost_table>
+
+    <artillery_characteristics_rules>
+      <rule>Artillery are siege weapons designed to bombard and destroy enemy ships and structures.</rule>
+      <rule>AC is the armor class of the artillery piece.</rule>
+      <rule>SHP is the structural hit points of the artillery piece.</rule>
+      <rule>Trebuchet weight includes ballast/counterweight.</rule>
+      <rule>Artillery is most effective with the listed ammunition weight.</rule>
+      <rule>If firing lighter or heavier ammunition than designated, reduce maximum range by 25%.</rule>
+      <rule>Artillery cannot attack targets closer than minimum range or farther than maximum range.</rule>
+      <rule>Against ships or structures, a successful hit deals SHP damage to the target and listed area damage to creatures in the area of effect.</rule>
+      <rule>Against creatures, a successful hit deals damage to the struck creature and the listed area of effect.</rule>
+      <rule>Creatures in the area of effect may save vs Blast to avoid or reduce damage as applicable; the direct target cannot avoid damage from the direct hit.</rule>
+      <rule>If the modified artillery attack throw, ignoring the creature's AC, would have hit, a miss still lands near enough to affect the creature as part of the area of effect.</rule>
+      <rule>Pitch ammunition deals fire damage to ships and wooden structures each turn until extinguished.</rule>
+      <rule>Pitch ammunition deals fire damage to creatures each round while they remain in the area or until the fire is extinguished.</rule>
+      <rule>Five creatures extinguish a fire in 3 turns; each additional five creatures reduces the time by 1 turn to a minimum of 1 turn.</rule>
+      <rule>Artillery attacks as the lowest-level crew member.</rule>
+      <rule>Crews without an artillerist suffer -4 to attack throws.</rule>
+      <rule>Crude ammunition imposes -2 to attack throws.</rule>
+      <rule>Crews without an artillerist specialist halve their rate of fire.</rule>
+    </artillery_characteristics_rules>
+
+    <artillery_characteristics_table>
+      <columns>
+        <column>type</column>
+        <column>ac</column>
+        <column>shp</column>
+        <column>weight</column>
+        <column>ammo_weight</column>
+        <column>min_range</column>
+        <column>max_range</column>
+        <column>damage</column>
+        <column>crew</column>
+        <column>rate_of_fire</column>
+      </columns>
+      <row><type>Ballista, Light</type><ac>0</ac><shp>1</shp><weight>75lb</weight><ammo_weight>1lb</ammo_weight><min_range>0'</min_range><max_range>200'</max_range><damage>1d10 (5' line)</damage><crew>1-2</crew><rate_of_fire>1 crew: 1/4 rounds; 2 crew: 1/2 rounds</rate_of_fire></row>
+      <row><type>Ballista, Light Repeating</type><ac>0</ac><shp>1</shp><weight>75lb</weight><ammo_weight>1lb</ammo_weight><min_range>0'</min_range><max_range>200'</max_range><damage>1d10 (5' line)</damage><crew>1-2</crew><rate_of_fire>1 crew: 1/1 round; 2 crew: 2/1 round</rate_of_fire></row>
+      <row><type>Ballista, Medium</type><ac>1</ac><shp>1</shp><weight>800lb</weight><ammo_weight>3lb</ammo_weight><min_range>0'</min_range><max_range>200'</max_range><damage>3d6 (5' line)</damage><crew>2-4</crew><rate_of_fire>2 crew: 1/10 rounds; 3 crew: 1/8 rounds; 4 crew: 1/5 rounds</rate_of_fire></row>
+      <row><type>Ballista, Heavy</type><ac>1</ac><shp>2-3</shp><weight>3,200lb</weight><ammo_weight>6lb</ammo_weight><min_range>0'</min_range><max_range>300'</max_range><damage>3d6 (15' line); 3d6 (5' radius)</damage><crew>2-4</crew><rate_of_fire>2 crew: 1/10 rounds; 3 crew: 1/8 rounds; 4 crew: 1/5 rounds</rate_of_fire></row>
+      <row><type>Catapult, Light</type><ac>0</ac><shp>1</shp><weight>1,200lb</weight><ammo_weight>6lb</ammo_weight><min_range>150'</min_range><max_range>300'</max_range><damage>3d6 (5' radius); 1d6 fire (5' radius)</damage><crew>2-4</crew><rate_of_fire>2 crew: 1/10 rounds; 3 crew: 1/8 rounds; 4 crew: 1/5 rounds</rate_of_fire></row>
+      <row><type>Catapult, Medium</type><ac>1</ac><shp>1-2</shp><weight>1,800lb</weight><ammo_weight>30lb</ammo_weight><min_range>200'</min_range><max_range>400'</max_range><damage>4d6 (10' radius); 2d6 fire (10' radius)</damage><crew>2-4</crew><rate_of_fire>2 crew: 1/10 rounds; 3 crew: 1/8 rounds; 4 crew: 1/5 rounds</rate_of_fire></row>
+      <row><type>Catapult, Heavy</type><ac>1</ac><shp>3-5</shp><weight>4 tons</weight><ammo_weight>90lb</ammo_weight><min_range>200'</min_range><max_range>400'</max_range><damage>6d6 (15' radius); 3d6 fire (15' radius)</damage><crew>4-8</crew><rate_of_fire>4 crew: 1/10 rounds; 6 crew: 1/8 rounds; 8 crew: 1/5 rounds</rate_of_fire></row>
+      <row><type>Trebuchet, Light</type><ac>1</ac><shp>6-10</shp><weight>8 tons</weight><ammo_weight>60lb</ammo_weight><min_range>200'</min_range><max_range>500'</max_range><damage>6d6 (15' radius); 3d6 fire (15' radius)</damage><crew>20-40</crew><rate_of_fire>20 crew: 1/4 rounds; 30 crew: 1/3 rounds; 40 crew: 1/2 rounds</rate_of_fire></row>
+      <row><type>Trebuchet, Medium</type><ac>1</ac><shp>12-18</shp><weight>15 tons</weight><ammo_weight>90lb</ammo_weight><min_range>200'</min_range><max_range>500'</max_range><damage>8d6 (15' radius); 4d6 fire (15' radius)</damage><crew>40-80</crew><rate_of_fire>40 crew: 1/4 rounds; 60 crew: 1/3 rounds; 80 crew: 1/2 rounds</rate_of_fire></row>
+      <row><type>Trebuchet, Heavy</type><ac>2</ac><shp>28-32</shp><weight>30 tons</weight><ammo_weight>180lb</ammo_weight><min_range>200'</min_range><max_range>500'</max_range><damage>10d6 (20' radius); 5d6 fire (20' radius)</damage><crew>50-100</crew><rate_of_fire>50 crew: 1/4 rounds; 75 crew: 1/3 rounds; 100 crew: 1/2 rounds</rate_of_fire></row>
+    </artillery_characteristics_table>
+
+    <artillery_type_rules>
+      <type name="Ballista">
+        <rule>Light ballista can damage creatures only; they cannot damage structures.</rule>
+        <rule>Medium ballista can damage creatures and wooden structures, but cannot damage stone.</rule>
+        <rule>Heavy ballista can damage creatures, wood, and stone.</rule>
+      </type>
+      <type name="Ballista, Repeating">
+        <rule>Magazine holds 20 bolts.</rule>
+        <rule>On an unmodified attack throw of 1, the weapon malfunctions.</rule>
+        <rule>A siege engineer requires 1 turn to repair a malfunction; the weapon cannot fire during repair.</rule>
+      </type>
+      <type name="Catapult">
+        <rule>All catapults can damage creatures, wood, and stone.</rule>
+        <rule>Catapults suffer -4 to attack throws against man-sized creatures.</rule>
+        <rule>Catapults suffer -2 to attack throws against large creatures.</rule>
+        <rule>Catapults suffer an additional -1 to attack throws per 10' of movement the creature moved.</rule>
+      </type>
+      <type name="Trebuchet">
+        <rule>Trebuchets share catapult targeting benefits and drawbacks against creatures and structures.</rule>
+        <rule>Traction trebuchets reduce cost by 20%.</rule>
+        <rule>Counterweight trebuchets gain +2 to attack throws.</rule>
+      </type>
+    </artillery_type_rules>
+
+    <siege_equipment_definitions>
+      <item name="Battering Ram">
+        <rule>Typical size is 20' long, 2' diameter, 4,000lb.</rule>
+        <rule>Larger rams cost 10gp per foot.</rule>
+        <rule>Requires 5 man-sized crew per 5' of ram.</rule>
+        <rule>Moves 30' per round by crew, or may be mounted in a movable gallery.</rule>
+        <rule>May batter once every other round once adjacent to a structure.</rule>
+        <rule>Each blow deals 4d10 SHP to wooden structures and 1d4 SHP to stone structures.</rule>
+        <rule>A 20' ram has AC 2 and 4 SHP, or 1 SHP per 5'.</rule>
+        <rule>For variant dimensions, adjust price, SHP, and damage proportionately.</rule>
+      </item>
+
+      <item name="Cauldron, Suspended">
+        <rule>Affects a 10' radius area or all creatures on a siege ladder.</rule>
+        <rule>Deals 1d8 damage per round for 2 rounds.</rule>
+        <rule>Save vs Blast reduces damage to 1d3.</rule>
+      </item>
+
+      <item name="Fascine">
+        <rule>Purchased in 10' x 10' x 10' cubes.</rule>
+        <rule>Used to reinforce fortifications, fill moats, or cross wet terrain.</rule>
+      </item>
+
+      <item name="Hoist">
+        <rule>Transports up to 4 man-sized creatures in a basket.</rule>
+        <rule>Basket ascends or descends in 1 round.</rule>
+        <rule>Resetting the counterweight takes 4 rounds between ascents.</rule>
+        <rule>Ascending creatures gain partial cover; missile attacks against them suffer -2.</rule>
+        <rule>Can be mounted in movable galleries or siege towers.</rule>
+        <rule>Hoist has AC 0 and 5-10 SHP.</rule>
+      </item>
+
+      <item name="Movable Gallery">
+        <rule>Provides cover for troops operating against a wall.</rule>
+        <rule>Missile attacks against creatures inside suffer -4.</rule>
+        <rule>Occupants gain +4 to saves vs Blast from artillery, burning oil, or similar effects.</rule>
+        <rule>Typical size is 12' tall, 12' wide, 20' long; protects 20 man-sized creatures.</rule>
+        <rule>Gallery has AC 1 and 10 SHP.</rule>
+        <rule>Can mount a battering ram, hoist, or screw purchased separately.</rule>
+        <rule>Moves 30' per round if occupied by at least 10 man-sized creatures.</rule>
+        <rule>Larger galleries cost 1gp per square foot.</rule>
+      </item>
+
+      <item name="Movable Mantlet">
+        <rule>Missile attacks against creatures protected by the mantlet suffer -4.</rule>
+        <rule>Protected creatures gain +4 to saves vs Blast from artillery, burning oil, or similar effects.</rule>
+        <rule>Typical size is 8' by 6' and protects 2 man-sized creatures.</rule>
+        <rule>Mantlet has AC 1 and 2 SHP.</rule>
+        <rule>Shield includes slits allowing archery fire.</rule>
+      </item>
+
+      <item name="Petard">
+        <procedure>
+          <step order="1">Lighting the fuse requires a Siege Engineering proficiency throw of 6+.</step>
+          <step order="2">On success, the petard detonates in 1d4 rounds.</step>
+          <step order="3">On failure, the fuse is not lit.</step>
+          <step order="4">On an unmodified 1, the petard fumbles and detonates immediately.</step>
+        </procedure>
+        <table name="petard_damage_by_weight">
+          <columns>
+            <column>weight</column>
+            <column>blast_radius</column>
+            <column>creature_damage</column>
+          </columns>
+          <row><weight>1lb</weight><blast_radius>5'</blast_radius><creature_damage>1d6</creature_damage></row>
+          <row><weight>6lb</weight><blast_radius>10'</blast_radius><creature_damage>2d6</creature_damage></row>
+          <row><weight>18lb</weight><blast_radius>15'</blast_radius><creature_damage>3d6</creature_damage></row>
+          <row><weight>40lb</weight><blast_radius>20'</blast_radius><creature_damage>4d6</creature_damage></row>
+        </table>
+        <rule>Creatures may save vs Blast for half damage.</rule>
+        <rule>Petards deal full damage to SHP of ships and buildings.</rule>
+      </item>
+
+      <item name="Ram Catcher">
+        <procedure>
+          <step order="1">Make an attack throw against the ram at -4.</step>
+          <step order="2">If hit, the ram saves vs Paralysis using the lowest level member of its crew.</step>
+          <step order="3">On failed save, the ram is dislodged and takes 1d6 SHP damage.</step>
+        </procedure>
+      </item>
+
+      <item name="Screw">
+        <rule>Typical size is 20' long.</rule>
+        <rule>Larger screws cost 10gp per foot.</rule>
+        <rule>Requires 2-5 man-sized crew per 5'.</rule>
+        <rule>Moves 30' per round by crew, or may be mounted in a movable gallery.</rule>
+        <rule>May bore once every other round once adjacent to a structure.</rule>
+        <rule>Each bore deals 3d10 SHP to wooden structures and 1d4+1 SHP to stone structures.</rule>
+        <rule>A 20' screw has AC 2 and 4 SHP, or 1 SHP per 5'.</rule>
+        <rule>For variant dimensions, adjust price, SHP, and damage proportionately.</rule>
+      </item>
+
+      <item name="Siege Hook">
+        <procedure>
+          <step order="1">Make an attack throw against the target creature at -4, also applying any cover modifier.</step>
+          <step order="2">If hit, the target saves vs Paralysis.</step>
+          <step order="3">On failed save, the target is knocked off the wall and takes falling damage of 1d6 per 10'.</step>
+        </procedure>
+      </item>
+
+      <item name="Siege Ladder">
+        <rule>Creatures climb at 1/4 normal movement rate.</rule>
+        <rule>A defender may push a ladder away with a successful proficiency throw to open doors.</rule>
+        <rule>Each man-sized creature on the ladder applies a -1 penalty to that throw.</rule>
+      </item>
+
+      <item name="Siege Tower">
+        <shared_rules>
+          <rule>Missile attacks against creatures inside the tower suffer -4.</rule>
+          <rule>Occupants gain +4 to saves vs Blast from artillery, burning oil, or similar effects.</rule>
+          <rule>If properly crewed, a siege tower moves 30' per round.</rule>
+          <rule>External crew may be replaced by draft animals or exotic creatures at 1 external crew per 10 stone of normal load.</rule>
+        </shared_rules>
+        <table name="siege_tower_characteristics">
+          <columns>
+            <column>size</column>
+            <column>base</column>
+            <column>height</column>
+            <column>stories</column>
+            <column>internal_crew</column>
+            <column>external_crew</column>
+            <column>total_troops</column>
+            <column>total_siege_engines</column>
+            <column>armor_class</column>
+            <column>structural_hit_points</column>
+            <column>per_floor_engine_capacity</column>
+            <column>drawbridge_floor</column>
+            <column>parapet_size</column>
+          </columns>
+          <row><size>Standard</size><base>20'</base><height>40'</height><stories>4</stories><internal_crew>12</internal_crew><external_crew>108</external_crew><total_troops>60</total_troops><total_siege_engines>800gp</total_siege_engines><armor_class>0</armor_class><structural_hit_points>50-100</structural_hit_points><per_floor_engine_capacity>200gp</per_floor_engine_capacity><drawbridge_floor>30'</drawbridge_floor><parapet_size>10' square at 40'</parapet_size></row>
+          <row><size>Large</size><base>40'</base><height>90'</height><stories>6</stories><internal_crew>60</internal_crew><external_crew>420</external_crew><total_troops>360</total_troops><total_siege_engines>2,400gp</total_siege_engines><armor_class>1</armor_class><structural_hit_points>180-220</structural_hit_points><per_floor_engine_capacity>400gp</per_floor_engine_capacity><drawbridge_floor>75'</drawbridge_floor><parapet_size>20' square at 90'</parapet_size></row>
+          <row><size>Huge</size><base>65'</base><height>135'</height><stories>9</stories><internal_crew>200</internal_crew><external_crew>1,000</external_crew><total_troops>1,080</total_troops><total_siege_engines>5,400gp</total_siege_engines><armor_class>2</armor_class><structural_hit_points>400-600</structural_hit_points><per_floor_engine_capacity>600gp</per_floor_engine_capacity><drawbridge_floor>75'</drawbridge_floor><parapet_size>30' square at 135'</parapet_size></row>
+        </table>
+      </item>
+    </siege_equipment_definitions>
+  </artillery_and_siege_equipment>
+
+  <equipment_availability_on_campaign>
+    <rule>An army of 1,200 troops (12 units) or more functions as its own market for equipment availability.</rule>
+    <rule>This benefit is lost if supply lines are blocked or over-extended.</rule>
+    <table name="army_size_to_market_class">
+      <columns>
+        <column>army_size</column>
+        <column>market_class</column>
+      </columns>
+      <row><army_size>72,000 troops or more</army_size><market_class>II</market_class></row>
+      <row><army_size>36,001-72,000 troops</army_size><market_class>III</market_class></row>
+      <row><army_size>12,001-36,000 troops</army_size><market_class>IV</market_class></row>
+      <row><army_size>3,001-12,000 troops</army_size><market_class>V</market_class></row>
+      <row><army_size>1,200-3,000 troops</army_size><market_class>VI</market_class></row>
+    </table>
+  </equipment_availability_on_campaign>
+
+  <strongholds_and_structures>
+    <stronghold_structures_table>
+      <row><name>Barbican (gatehouse, 2 small towers, and a drawbridge)</name><cost>38,000gp</cost><shp>2,500</shp><ac>6</ac><unit_capacity>4</unit_capacity></row>
+      <row><name>Battlement (100' long, crenellated parapets)</name><cost>500gp</cost><shp>100</shp><ac>6</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Building, stone (20' high, 30' square)</name><cost>3,000gp</cost><shp>200</shp><ac>5</ac><unit_capacity>1</unit_capacity></row>
+      <row><name>Building, wood (20' high, 30' square)</name><cost>1,500gp</cost><shp>60</shp><ac>2</ac><unit_capacity>1</unit_capacity></row>
+      <row><name>Corridor, dungeon (10' x 10' x 10')</name><cost>500gp</cost><shp>80</shp><ac>6</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Drawbridge, wood (10' x 20', 1' thick)</name><cost>250gp</cost><shp>7</shp><ac>2</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Gatehouse (20' high, 30' x 20')</name><cost>6,500gp</cost><shp>1,000</shp><ac>6</ac><unit_capacity>2</unit_capacity></row>
+      <row><name>Keep, square (80' high, 60' square)</name><cost>75,000gp</cost><shp>15,000</shp><ac>6</ac><unit_capacity>12</unit_capacity></row>
+      <row><name>Moat, unfilled (100' x 20' x 10' deep)</name><cost>400gp</cost><shp>(500)</shp><ac>0</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Moat, filled (100' x 20' x 10' deep)</name><cost>800gp</cost><shp>(1,000)</shp><ac>0</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Palisade, wood (10' high, 100' long, 1' thick)</name><cost>125gp</cost><shp>5</shp><ac>2</ac><unit_capacity>1</unit_capacity></row>
+      <row><name>Rampart, earthen (10' high, 100' long, 15' thick)</name><cost>2,500gp</cost><shp>750</shp><ac>4</ac><unit_capacity>1</unit_capacity></row>
+      <row><name>Tower, small round (30' high, 20' diameter)</name><cost>15,000gp</cost><shp>750</shp><ac>7</ac><unit_capacity>1</unit_capacity></row>
+      <row><name>Tower, medium round (40' high, 20' diameter)</name><cost>22,500gp</cost><shp>1,000</shp><ac>7</ac><unit_capacity>1</unit_capacity></row>
+      <row><name>Tower, large round (40' high, 30' diameter)</name><cost>30,000gp</cost><shp>1,600</shp><ac>7</ac><unit_capacity>2</unit_capacity></row>
+      <row><name>Tower, huge round (60' high, 30' diameter)</name><cost>54,000gp</cost><shp>2,400</shp><ac>7</ac><unit_capacity>5</unit_capacity></row>
+      <row><name>Wall, stone castle (20' high, 100' long, 10' thick)</name><cost>5,000gp</cost><shp>1,500</shp><ac>6</ac><unit_capacity>1.5-3</unit_capacity></row>
+      <row><name>Wall, stone castle (30' high, 100' long, 10' thick)</name><cost>7,500gp</cost><shp>2,250</shp><ac>6</ac><unit_capacity>1.5-4.5</unit_capacity></row>
+      <row><name>Wall, stone castle (40' high, 100' long, 10' thick)</name><cost>12,500gp</cost><shp>3,000</shp><ac>6</ac><unit_capacity>1.5-6</unit_capacity></row>
+      <row><name>Wall, stone castle (50' high, 100' long, 10' thick)</name><cost>17,500gp</cost><shp>3,750</shp><ac>6</ac><unit_capacity>1.5-7.5</unit_capacity></row>
+      <row><name>Wall, stone castle (60' high, 100' long, 10' thick)</name><cost>22,500gp</cost><shp>4,500</shp><ac>6</ac><unit_capacity>1.5-9</unit_capacity></row>
+      <rule>Dimensions marked in the source as alterable may be changed so long as square footage remains the same.</rule>
+    </stronghold_structures_table>
+
+    <structure_accessories_table>
+      <row><name>Arrow Slit/Window</name><cost>10gp</cost><shp>2</shp><ac>0</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Door, wood (3' x 7')</name><cost>10gp</cost><shp>3</shp><ac>1</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Door, reinforced wood (3' x 7')</name><cost>20gp</cost><shp>5</shp><ac>2</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Door, iron/stone (3' x 7')</name><cost>50gp</cost><shp>12</shp><ac>6</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Door, secret (3' x 7')</name><cost>material x5</cost><shp>by material</shp><ac>by material</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Floor/Roof, flagstone or tile (10' x 10')</name><cost>40gp</cost><shp>5</shp><ac>4</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Floor/Roof, wood (10' x 10')</name><cost>10gp</cost><shp>3</shp><ac>2</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Shutters (window)</name><cost>5gp</cost><shp>1</shp><ac>2</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Shifting Wall (10' x 10')</name><cost>1000gp</cost><shp>60</shp><ac>6</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Stairs, wood (one flight, 3' x 10')</name><cost>20gp</cost><shp>5</shp><ac>2</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Stairs, stone (one flight, 3' x 10')</name><cost>60gp</cost><shp>15</shp><ac>6</ac><unit_capacity>-</unit_capacity></row>
+      <rule>Upgrading a structure to include these accessories during construction costs 25% of the accessories' base cost.</rule>
+    </structure_accessories_table>
+
+    <civilian_structures_table>
+      <row><name>Cottage, wood (20' high, 30' square)</name><cost>300gp</cost><shp>6</shp><ac>1</ac><unit_capacity>1</unit_capacity></row>
+      <row><name>Hut, pit (8' high, 8' square)</name><cost>15gp</cost><shp>1</shp><ac>1</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Hut, sod or wattle (10' high, 10' square)</name><cost>25gp</cost><shp>1</shp><ac>1</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Hut, mudbrick or wood (10' high, 10' square)</name><cost>50gp</cost><shp>2</shp><ac>1</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Longhouse, wood (15' high, 30' long, 15' wide)</name><cost>300gp</cost><shp>5</shp><ac>1</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Roundhouse, wood (15' high, 15' diameter)</name><cost>125gp</cost><shp>4</shp><ac>1</ac><unit_capacity>-</unit_capacity></row>
+      <row><name>Townhouse, stone (20' high, 30' square)</name><cost>1,200gp</cost><shp>100</shp><ac>4</ac><unit_capacity>1</unit_capacity></row>
+      <rule>Dimensions marked in the source as alterable may be changed so long as square footage remains the same.</rule>
+    </civilian_structures_table>
+
+    <structure_characteristics>
+      <rule>Ordinary wooden construction has AC 1.</rule>
+      <rule>Reinforced wooden construction has AC 2.</rule>
+      <rule>Earthen construction has AC 4.</rule>
+      <rule>Soft stone has AC 5.</rule>
+      <rule>Thick heavy stone has AC 6.</rule>
+      <rule>Round structures gain +1 AC.</rule>
+      <rule>When a structure reaches 0 or less SHP, it collapses in 1d10 rounds.</rule>
+      <rule>Rule of thumb: 1 SHP per ton of weight.</rule>
+      <rule>Man-sized weapons and light ballista cannot damage wooden structures.</rule>
+      <rule>Huge creatures and magic deal only 1/5 damage to wooden structures.</rule>
+      <rule>Artillery heavier than light ballista, and gigantic or larger creatures, deal normal damage to wooden structures.</rule>
+      <rule>Wood-throwing artillery and huge creatures cannot damage stone or earthen structures.</rule>
+      <rule>Stone-throwing artillery and gigantic creatures deal only 1/10 damage to stone structures.</rule>
+      <rule>Colossal creatures and magic deal only 1/5 damage to stone structures.</rule>
+      <rule>Petards deal normal damage to stone structures.</rule>
+      <rule>Unit capacity is the number of company-sized units a fortified structure can garrison.</rule>
+    </structure_characteristics>
+
+    <structure_definitions>
+      <item name="Arrow Slit">
+        <rule>Missile attacks against creatures behind arrow slits suffer -4.</rule>
+        <rule>Defenders gain +4 to saves vs Blast from artillery, burning oil, or similar effects.</rule>
+        <rule>On a successful save, protected creatures take no damage even when the effect would normally deal half.</rule>
+        <rule>Standard density is 1 arrow slit per 5' of wall.</rule>
+      </item>
+
+      <item name="Barbican">
+        <rule>Consists of a gatehouse, two small towers, and a drawbridge.</rule>
+        <rule>May sit outside the stronghold and connect to the walls by a short neck.</rule>
+        <unit_capacity>4</unit_capacity>
+      </item>
+
+      <item name="Battlement">
+        <rule>Missile attacks against protected defenders suffer -4.</rule>
+        <rule>Protected defenders gain +4 to saves vs Blast from artillery, burning oil, or similar effects.</rule>
+        <rule>On a successful save, protected creatures take no damage even when the effect would normally deal half.</rule>
+      </item>
+
+      <item name="Building">
+        <rule>Standard fortified building is 20' high and 30' square, with wooden doors, floors, roof, and stairs.</rule>
+        <rule>Its walls are thicker than comparable civilian structures, resulting in higher SHP.</rule>
+        <rule>Variant dimensions adjust price and SHP proportionately.</rule>
+        <unit_capacity>1</unit_capacity>
+      </item>
+
+      <item name="Drawbridge">
+        <rule>Standard drawbridge is 10' wide, 20' high, and 1' thick.</rule>
+        <rule>Variant dimensions adjust price and SHP proportionately.</rule>
+      </item>
+
+      <item name="Gatehouse">
+        <rule>Standard gatehouse is 20' high, 30' wide, 20' long, with 10' thick walls and a metal portcullis.</rule>
+        <rule>Variant dimensions adjust price and SHP proportionately.</rule>
+        <unit_capacity>2</unit_capacity>
+      </item>
+
+      <item name="Keep">
+        <rule>Standard keep is 80' high and 60' square with 10' thick stone walls.</rule>
+        <rule>Interior has wooden doors and stairs between 8 floors.</rule>
+        <rule>Variant square keeps adjust price and SHP proportionately.</rule>
+        <rule>Round keeps cost 50% more and gain +1 AC.</rule>
+        <unit_capacity>12</unit_capacity>
+      </item>
+
+      <item name="Moat">
+        <rule>Standard moat is 100' long, 20' wide, 10' deep.</rule>
+        <rule>Variant dimensions adjust price proportionately.</rule>
+        <rule>Moats do not have SHP.</rule>
+        <rule>Moats may be filled with fascines.</rule>
+      </item>
+
+      <item name="Palisade">
+        <rule>Standard palisade is 10' high, 100' long, 1' thick.</rule>
+        <rule>Variant dimensions adjust price and SHP proportionately.</rule>
+        <rule>A 100' palisade can be defended by 1 unit.</rule>
+      </item>
+
+      <item name="Rampart">
+        <rule>Standard rampart is 10' high, 100' long, 15' thick.</rule>
+        <rule>Variant dimensions adjust price and SHP proportionately.</rule>
+        <rule>A 100' rampart can be defended by 1 unit.</rule>
+        <rule>Earthworks such as mottes and siege ramps use this construction method.</rule>
+      </item>
+
+      <item name="Tower">
+        <rule>Towers have 5' thick round walls, wooden doors, floors, and stairs.</rule>
+        <rule>They have 1 story per 10' of height.</rule>
+        <rule>Variant round towers adjust price and SHP proportionately.</rule>
+        <rule>Square towers cost 50% less but lose 1 AC.</rule>
+        <rule>Small and medium towers hold 1 unit; large towers hold 2; huge towers hold 5.</rule>
+      </item>
+
+      <item name="Wall">
+        <rule>Standard stone wall is 100' long and 10' thick, with normal listed heights of 20'-60'.</rule>
+        <rule>Variant dimensions adjust price and SHP proportionately.</rule>
+        <rule>Walls may be built up to 200' high.</rule>
+        <rule>Construction over 60' high doubles cost.</rule>
+        <rule>A 100' wall can be defended by 1.5 units on top of the wall, plus an additional 1.5 units per 10' of height firing through arrow slits.</rule>
+        <rule>For multi-story arrow defense, 1 arrow slit per 5' per story is required.</rule>
+        <rule>Add the length of all wall sections together to determine total defending capacity.</rule>
+      </item>
+    </structure_definitions>
+  </strongholds_and_structures>
+
+  <construction_projects>
+    <overview>
+      <rule>Construction is handled as construction projects.</rule>
+      <rule>Default project type is stronghold construction.</rule>
+      <rule>Other project types include shipbuilding, siege engine manufacture, field fortification, ammunition scavenging, and sapping.</rule>
+    </overview>
+
+    <construction_cost_rate_and_supervision>
+      <rule>Construction cost equals the base cost of the project in gp.</rule>
+      <rule>Each worker contributes a construction rate in gp value per day toward the construction cost.</rule>
+      <rule>A worker's construction rate is normally identical to the worker's wage rate.</rule>
+      <rule>Optional simplification: every laborer may be treated as having a construction rate of 1 2/3 sp per day, so 3,000 laborers construct 500gp per day.</rule>
+      <rule>Unskilled laborers have wage and construction rate of 3gp/month or 1sp/day.</rule>
+      <rule>Skilled laborers have wage and construction rate of 6gp/month or 2sp/day.</rule>
+      <rule>About 1 in 4 laborers is usually a skilled laborer.</rule>
+      <rule>Apprentice craftsmen construct 10gp/month; journeymen 20gp/month; masters 40gp/month.</rule>
+      <rule>A master craftsman may manage up to 2 journeymen and 4 apprentices to increase their construction rate by 50%.</rule>
+      <rule>On a large-scale construction project taking more than a day, a master craftsman managing junior craftsmen reduces the master's own personal construction rate by 25%.</rule>
+      <rule>Usually there is no more than 1 master craftsman per 100 laborers.</rule>
+      <rule>A siege engineer works at a journeyman craftsman construction rate.</rule>
+      <rule>An engineer works at a master craftsman construction rate.</rule>
+      <rule>Characters with only 1 rank of Siege Engineering count as skilled laborers, not siege engineers.</rule>
+      <rule>Monstrous workers multiply normal unskilled laborer construction rate by normal load divided by 5, rounded down.</rule>
+      <rule>Every project requires a construction supervisor.</rule>
+      <rule>A siege engineer may supervise 1 project up to 25,000gp construction cost.</rule>
+      <rule>An engineer may supervise 1 project up to 100,000gp construction cost.</rule>
+      <rule>Multiple engineers or siege engineers may combine to supervise larger projects.</rule>
+
+      <wage_and_construction_rates_table>
+        <row><worker>Unskilled Laborer</worker><construction_rate_month>3gp</construction_rate_month><construction_rate_day>1sp</construction_rate_day><wage_rate_month>3gp</wage_rate_month></row>
+        <row><worker>Skilled Laborer</worker><construction_rate_month>6gp</construction_rate_month><construction_rate_day>2sp</construction_rate_day><wage_rate_month>6gp</wage_rate_month></row>
+        <row><worker>Apprentice Craftsman</worker><construction_rate_month>10gp / 15gp under managed large project</construction_rate_month><construction_rate_day>33cp / 5sp under managed large project</construction_rate_day><wage_rate_month>10gp</wage_rate_month></row>
+        <row><worker>Journeyman Craftsman</worker><construction_rate_month>20gp / 30gp under managed large project</construction_rate_month><construction_rate_day>66cp / 1gp under managed large project</construction_rate_day><wage_rate_month>20gp</wage_rate_month></row>
+        <row><worker>Master Craftsman</worker><construction_rate_month>40gp / 30gp while managing large project</construction_rate_month><construction_rate_day>1gp, 33cp / 1gp while managing large project</construction_rate_day><wage_rate_month>75gp</wage_rate_month></row>
+        <row><worker>Master, 2 Journeymen, and 4 Apprentices</worker><construction_rate_month>150gp</construction_rate_month><construction_rate_day>5gp</construction_rate_day><wage_rate_month>150gp</wage_rate_month></row>
+        <row><worker>Siege Engineer</worker><construction_rate_month>20gp</construction_rate_month><construction_rate_day>66cp</construction_rate_day><wage_rate_month>50gp</wage_rate_month></row>
+        <row><worker>Engineer</worker><construction_rate_month>40gp</construction_rate_month><construction_rate_day>1gp, 33cp</construction_rate_day><wage_rate_month>250gp</wage_rate_month></row>
+      </wage_and_construction_rates_table>
+
+      <wage_notes>
+        <rule>Troops on labor detail must still be paid their normal wage rate.</rule>
+        <rule>Slaves or prisoners need not be paid wages.</rule>
+      </wage_notes>
+    </construction_cost_rate_and_supervision>
+
+    <construction_sites>
+      <rule>A construction site is the geographic area around a project, generally about 1/2 mile in diameter.</rule>
+      <rule>The exact border is Judge-defined.</rule>
+      <rule>All similar construction at the same site must be consolidated into one construction project.</rule>
+      <rule>A maximum of 12,000 workers may work on one site.</rule>
+      <rule>The first 3,000 workers operate at full construction rate.</rule>
+      <rule>Any additional workers beyond 3,000 operate at only 33% of normal construction rate, but still draw full wages.</rule>
+      <rule>Using more than 3,000 workers therefore increases wage cost above the base labor cost while reducing total construction time.</rule>
+    </construction_sites>
+
+    <construction_materials>
+      <rule>Nearby forests and quarries are assumed; local raw material gathering is already included in labor cost.</rule>
+      <rule>If raw materials must be transported from long distance, increase labor cost by 10%, 20%, or more.</rule>
+      <rule>Buying raw materials at market costs 25% of total project cost and reduces labor cost by 25%.</rule>
+      <rule>Scavenging raw materials from nearby buildings reduces labor cost by 25%, but reduces the buildings' value by twice that amount.</rule>
+    </construction_materials>
+
+    <assisting_construction_with_magic>
+      <rule>A spellcaster with Engineering proficiency, or working under an engineer, may assist construction with magic.</rule>
+      <rule>Move earth applies only to ditches, moats, and earthen ramparts.</rule>
+      <rule>Move earth gives a construction rate of 12,500gp per turn for those projects, for 6 turns, for 75,000gp total per casting.</rule>
+      <rule>Transmute rock to mud increases workers' construction rate by 50% for the spell duration of 3d6 days by allowing stone to be worked as earth.</rule>
+      <rule>Using transmute rock to mud plus move earth to pour transformed mud into wooden molds lets workers construct stone structures as if wooden, doubling workers' construction rate.</rule>
+      <rule>Using wall of stone to create molds for the transformed mud adds 500gp of construction per wall of stone casting.</rule>
+      <rule>Wall of stone may also resurface existing stone at 5,000gp of stronghold value per casting.</rule>
+      <rule>Wall of stone may instantly and permanently erect a stone structure of up to 250gp value.</rule>
+      <rule>Such wall of stone structures are critically weak to dispel magic; any dispel magic functions as disintegrate against them.</rule>
+
+      <table name="spells_cast_and_construction_effect">
+        <row><spells_cast>Move earth</spells_cast><construction_effect>Gain 12,500gp per turn construction rate on ditches, moats, and ramparts only</construction_effect></row>
+        <row><spells_cast>Transmute rock to mud</spells_cast><construction_effect>Increase construction rate of workers at construction site by 50%</construction_effect></row>
+        <row><spells_cast>Move earth and transmute rock to mud</spells_cast><construction_effect>Increase construction rate of workers at construction site by 100%</construction_effect></row>
+        <row><spells_cast>Move earth and transmute rock to mud with wall of stone</spells_cast><construction_effect>Gain 500gp of construction per wall of stone spell cast</construction_effect></row>
+        <row><spells_cast>Wall of stone</spells_cast><construction_effect>Decorative resurfacing of 5,000gp of stronghold</construction_effect></row>
+      </table>
+    </assisting_construction_with_magic>
+
+    <artillery_and_siege_equipment_construction>
+      <rule>Constructing artillery or siege equipment is handled as a construction project.</rule>
+      <rule>Normal construction-site limits do not apply; any number of siege engines may be constructed simultaneously at the same site if enough supervisors are available.</rule>
+      <rule>Huge siege towers are capped at 1,200 workers.</rule>
+      <rule>Large siege towers are capped at 300 workers.</rule>
+      <rule>All other artillery and siege equipment are capped at 50 workers.</rule>
+      <rule>Because of these worker caps, craftsmen usually do most of the work.</rule>
+    </artillery_and_siege_equipment_construction>
+
+    <ship_construction>
+      <rule>Building a ship is handled as a construction project.</rule>
+      <rule>The construction site must be adjacent to a navigable waterway.</rule>
+      <rule>Normal construction-site limits do not apply; any number of ships may be built simultaneously at the same site if enough supervisors are available.</rule>
+      <rule>The number of workers able to work on a ship equals the ship's maximum crew.</rule>
+    </ship_construction>
+  </construction_projects>
+</equipment_and_construction_summary>

@@ -1,0 +1,135 @@
+{
+  "religion_id": "the_gilded_memory",
+  "display_name": "The Gilded Memory",
+  "theology": {
+    "type": "henotheist",
+    "syncretism": "syncretist",
+    "afterlife_belief": "ancestral_realm"
+  },
+  "alignment": "Neutral",
+  "associated_cultures": [
+    "dwarven_ormaz_kheled"
+  ],
+  "clergy": {
+    "title_hierarchy": [
+      "Counter of Ash",
+      "Ledger Priest",
+      "Vault Reader",
+      "Balance Elder",
+      "Keeper of the Final Account"
+    ],
+    "title_level_mapping": {
+      "1": "Counter of Ash",
+      "3": "Ledger Priest",
+      "5": "Vault Reader",
+      "7": "Balance Elder",
+      "9": "Keeper of the Final Account"
+    },
+    "gender_restriction": "none",
+    "special_class": null,
+    "vestments": "dark blue robes sewn with brass tally marks and clan seals",
+    "holy_symbol": "coin balanced over a sealed ancestor tablet"
+  },
+  "practices": {
+    "holy_days_per_year": 4,
+    "holy_day_character": "charitable",
+    "worship_style": "meditative",
+    "dietary_restrictions": null,
+    "funerary_practice": "entombment",
+    "stance_on_undead": "feared_but_accepted"
+  },
+  "political_role": {
+    "church_state_relationship": "influential",
+    "temporal_authority": "moderate",
+    "military_involvement": "chaplains_only"
+  },
+  "cosmology": {
+    "opposing_view": "equal_and_opposite",
+    "opposing_view_detail": "Law and Chaos are both real divine currents; wise folk bargain with neither blindly and let the ancestors weigh excess.",
+    "notes": "See §3.3 Alignment Cosmology Rules for the hard constraints governing this field."
+  },
+  "pantheon": [
+    {
+      "deity_id": "azrumek",
+      "display_name": "Azrumek",
+      "epithets": [
+        "Ledger-King",
+        "Lord of Fair Weight"
+      ],
+      "alignment": "Neutral",
+      "portfolios": [
+        "trade",
+        "luck",
+        "knowledge"
+      ],
+      "holy_symbol": "open ledger ringed by four stamped coins",
+      "favored_weapon": "mace",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "crow",
+      "domains_summary": "Master of bargains, measured fortune, and remembered value."
+    },
+    {
+      "deity_id": "nara_vale",
+      "display_name": "Nara Vale",
+      "epithets": [
+        "Vault-Mother",
+        "Mistress of the Sealed Door"
+      ],
+      "alignment": "Neutral",
+      "portfolios": [
+        "death",
+        "protection",
+        "earth"
+      ],
+      "holy_symbol": "sealed stone door beneath a crescent key",
+      "favored_weapon": "spear",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "mole",
+      "domains_summary": "Guardian of tombs, ancestral rest, and the earth that keeps memory."
+    },
+    {
+      "deity_id": "gheldrun",
+      "display_name": "Gheldrun",
+      "epithets": [
+        "The Assayer",
+        "Fire of Proof"
+      ],
+      "alignment": "Neutral",
+      "portfolios": [
+        "forge",
+        "prophecy",
+        "magic"
+      ],
+      "holy_symbol": "crucible with a single eye in the flame",
+      "favored_weapon": "mace",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "lizard",
+      "domains_summary": "Patron of testing, refinement, rune-craft, and truths revealed through heat."
+    },
+    {
+      "deity_id": "vemra",
+      "display_name": "Vemra",
+      "epithets": [
+        "Road-Counter",
+        "Mistress of Returns"
+      ],
+      "alignment": "Neutral",
+      "portfolios": [
+        "travel",
+        "mercy",
+        "justice"
+      ],
+      "holy_symbol": "road knot tied around a measure-rod",
+      "favored_weapon": "sword",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "ibex",
+      "domains_summary": "Watcher of caravans, fair restitution, and merciful settlement of debts."
+    }
+  ],
+  "flavor_text": {
+    "one_line": "A measured faith of ledgers and tombs, where wealth matters because memory must be maintained.",
+    "one_paragraph": "The Gilded Memory teaches that wealth is a trust rather than a sin or glory, useful only when properly recorded, inherited, and spent to strengthen the chain between living clan and honored dead. Its priests arbitrate debts, preserve vault genealogies, and bless trade so long as bargains do not poison communal memory. Extremes of law or chaos are regarded as costly imbalances best corrected before they become ruin.",
+    "creation_myth_summary": "Azrumek counted the first stones, named their worth, and raised the first ancestor vault so the dead could remember what the living would otherwise squander.",
+    "moral_code_summary": "Keep exact records, enrich family without despoiling the clan, honor the dead with maintenance and gifts, and avoid zeal that turns fairness into tyranny or anarchy."
+  }
+}

@@ -1,0 +1,883 @@
+<additional_rules_summary title="ACKS Core Additional Rules" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <aging_and_death>
+    <starting_age_table>
+      <entry>
+        <class>Assassin</class>
+        <starting_age>17+1d6</starting_age>
+      </entry>
+      <entry>
+        <class>Bard</class>
+        <starting_age>14+1d8</starting_age>
+      </entry>
+      <entry>
+        <class>Bladedancer</class>
+        <starting_age>17+1d6</starting_age>
+      </entry>
+      <entry>
+        <class>Cleric</class>
+        <starting_age>17+1d6</starting_age>
+      </entry>
+      <entry>
+        <class>Dwarven Craftpriest</class>
+        <starting_age>25+2d8</starting_age>
+      </entry>
+      <entry>
+        <class>Dwarven Vaultguard</class>
+        <starting_age>23+3d4</starting_age>
+      </entry>
+      <entry>
+        <class>Elven Nightblade</class>
+        <starting_age>75+5d4</starting_age>
+      </entry>
+      <entry>
+        <class>Elven Spellsword</class>
+        <starting_age>75+5d4</starting_age>
+      </entry>
+      <entry>
+        <class>Explorer</class>
+        <starting_age>17+1d6</starting_age>
+      </entry>
+      <entry>
+        <class>Fighter</class>
+        <starting_age>15+1d8</starting_age>
+      </entry>
+      <entry>
+        <class>Mage</class>
+        <starting_age>17+3d6</starting_age>
+      </entry>
+      <entry>
+        <class>Thief</class>
+        <starting_age>15+1d8</starting_age>
+      </entry>
+    </starting_age_table>
+
+    <age_categories>
+      <race name="Beastman">
+        <youth>12-15</youth>
+        <adult>16-30</adult>
+        <middle_aged>31-45</middle_aged>
+        <old>46-60</old>
+        <ancient>61-75</ancient>
+      </race>
+      <race name="Dwarf">
+        <youth>15-25</youth>
+        <adult>26-50</adult>
+        <middle_aged>51-75</middle_aged>
+        <old>76-115</old>
+        <ancient>116-150</ancient>
+      </race>
+      <race name="Elf">
+        <youth>15-50</youth>
+        <adult>51-200</adult>
+        <middle_aged>none</middle_aged>
+        <old>none</old>
+        <ancient>none</ancient>
+        <special_rule>Elves do not progress past adult.</special_rule>
+      </race>
+      <race name="Gnome">
+        <youth>15-25</youth>
+        <adult>26-62</adult>
+        <middle_aged>63-95</middle_aged>
+        <old>96-135</old>
+        <ancient>136-175</ancient>
+      </race>
+      <race name="Human">
+        <youth>13-17</youth>
+        <adult>18-35</adult>
+        <middle_aged>36-55</middle_aged>
+        <old>56-75</old>
+        <ancient>76-95</ancient>
+      </race>
+      <race name="Halfling">
+        <youth>14-21</youth>
+        <adult>22-42</adult>
+        <middle_aged>43-65</middle_aged>
+        <old>66-95</old>
+        <ancient>96-125</ancient>
+      </race>
+    </age_categories>
+
+    <ability_score_adjustments_by_age>
+      <entry age_category="Youth">
+        <progressive>-2 STR, -2 INT, -2 WIS</progressive>
+        <cumulative>-2 STR, -2 INT, -2 WIS</cumulative>
+      </entry>
+      <entry age_category="Adult">
+        <progressive>+2 STR, +2 INT, +2 WIS</progressive>
+        <cumulative>No adjustments</cumulative>
+      </entry>
+      <entry age_category="Middle Aged">
+        <progressive>-2 STR, -2 DEX, -2 CON</progressive>
+        <cumulative>-2 STR, -2 DEX, -2 CON</cumulative>
+      </entry>
+      <entry age_category="Old">
+        <progressive>-2 STR, -2 DEX, -2 CON, -2 CHA</progressive>
+        <cumulative>-4 STR, -4 DEX, -4 CON, -2 CHA</cumulative>
+      </entry>
+      <entry age_category="Ancient">
+        <progressive>-2 STR, -2 DEX, -2 CON, -2 CHA</progressive>
+        <cumulative>-6 STR, -6 DEX, -6 CON, -4 CHA</cumulative>
+      </entry>
+    </ability_score_adjustments_by_age>
+
+    <aging_rules>
+      <rule>Apply the listed progressive ability score adjustment at each new age category.</rule>
+      <rule>For a character generated at an advanced age, the cumulative adjustment for the current age category may be used instead.</rule>
+      <rule>Ability score adjustments from aging cannot reduce an ability score below a class minimum.</rule>
+      <rule>Ability score adjustments from aging can never reduce an ability score below 3.</rule>
+    </aging_rules>
+
+    <death_from_old_age>
+      <save_type>Save versus Death</save_type>
+      <timing_rule>Each required save must be made within 1d12 months of reaching the triggering age.</timing_rule>
+      <triggers>
+        <trigger>Racial minimum old age plus current Constitution score.</trigger>
+        <trigger>Racial minimum ancient age plus current Constitution score.</trigger>
+        <trigger>Racial maximum listed age, and each year thereafter.</trigger>
+      </triggers>
+      <special_rules>
+        <rule>Use the character's current Constitution after age-based adjustments when determining the trigger age.</rule>
+        <rule>Restore life and limb does not raise characters who die from old age.</rule>
+      </special_rules>
+    </death_from_old_age>
+  </aging_and_death>
+
+  <poisons>
+    <overview>
+      <rule>Optional poison use includes monster venoms, plant toxins, and magical poisons.</rule>
+      <rule>At Judge discretion, markets may sell monster venoms, plant toxins, and magical poisons.</rule>
+    </overview>
+
+    <conditions>
+      <condition name="sickness">
+        <effect>Move at half speed and cannot fight or perform other actions.</effect>
+      </condition>
+    </conditions>
+
+    <monster_venoms>
+      <acquisition>
+        <rule>Naturalism proficiency identifies venomous monsters and distinguishes their poisons with a successful proficiency throw of 11+.</rule>
+        <rule>Extracting venom from a slain monster requires 1 day and a successful Animal Husbandry proficiency throw of 11+.</rule>
+        <rule>If the extraction throw is an unmodified 1, the extractor is scratched by fang or stinger and must immediately save versus Poison as if hit by the monster.</rule>
+      </acquisition>
+      <dose_rules>
+        <rule>Each monster yields one dose of venom.</rule>
+        <rule>One dose treats twenty missiles or one melee weapon.</rule>
+        <rule>Venom applied to weapons is less effective than the monster's natural venom delivery.</rule>
+      </dose_rules>
+      <venom_table>
+        <entry>
+          <name>Giant Centipede</name>
+          <cost_per_dose>50gp</cost_per_dose>
+          <onset_time>1 turn</onset_time>
+          <save_modifier>+2</save_modifier>
+          <failed_save_effect>Sickness 1d10 days</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Spitting Cobra</name>
+          <cost_per_dose>100gp</cost_per_dose>
+          <onset_time>1 turn</onset_time>
+          <save_modifier>+2</save_modifier>
+          <failed_save_effect>1d6 damage</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Giant Crab Spider</name>
+          <cost_per_dose>100gp</cost_per_dose>
+          <onset_time>1d10 turns</onset_time>
+          <save_modifier>+4</save_modifier>
+          <failed_save_effect>1d10 damage</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Pit Viper</name>
+          <cost_per_dose>200gp</cost_per_dose>
+          <onset_time>1d10 turns</onset_time>
+          <save_modifier>+2</save_modifier>
+          <failed_save_effect>1d10 damage</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Giant Killer Bee</name>
+          <cost_per_dose>250gp</cost_per_dose>
+          <onset_time>1 turn</onset_time>
+          <save_modifier>+2</save_modifier>
+          <failed_save_effect>1d10 damage</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Carcass Scavenger</name>
+          <cost_per_dose>250gp</cost_per_dose>
+          <onset_time>1 turn</onset_time>
+          <save_modifier>+2</save_modifier>
+          <failed_save_effect>Paralysis 2d4 turns</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Sea Snake</name>
+          <cost_per_dose>275gp</cost_per_dose>
+          <onset_time>1d10 turns</onset_time>
+          <save_modifier>+2</save_modifier>
+          <failed_save_effect>4d4 damage</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Giant Black Widow</name>
+          <cost_per_dose>300gp</cost_per_dose>
+          <onset_time>1d6 turns</onset_time>
+          <save_modifier>+2</save_modifier>
+          <failed_save_effect>4d4 damage</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Giant Rattlesnake</name>
+          <cost_per_dose>300gp</cost_per_dose>
+          <onset_time>1d10 turns</onset_time>
+          <save_modifier>+2</save_modifier>
+          <failed_save_effect>2d10 damage</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Giant Tarantula</name>
+          <cost_per_dose>350gp</cost_per_dose>
+          <onset_time>1d6 turns</onset_time>
+          <save_modifier>+2</save_modifier>
+          <failed_save_effect>2d10 damage</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Giant Scorpion</name>
+          <cost_per_dose>400gp</cost_per_dose>
+          <onset_time>1 turn</onset_time>
+          <save_modifier>+2</save_modifier>
+          <failed_save_effect>2d10 damage</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Rockfish</name>
+          <cost_per_dose>500gp</cost_per_dose>
+          <onset_time>1 round</onset_time>
+          <save_modifier>+1</save_modifier>
+          <failed_save_effect>4d6 damage</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Wyvern</name>
+          <cost_per_dose>700gp</cost_per_dose>
+          <onset_time>1 round</onset_time>
+          <save_modifier>+1</save_modifier>
+          <failed_save_effect>6d6 damage</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Purple Worm</name>
+          <cost_per_dose>1500gp</cost_per_dose>
+          <onset_time>Instant</onset_time>
+          <save_modifier>none</save_modifier>
+          <failed_save_effect>Death</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Dragon Blood</name>
+          <cost_per_dose>1500gp</cost_per_dose>
+          <onset_time>Instant</onset_time>
+          <save_modifier>none</save_modifier>
+          <failed_save_effect>Death</failed_save_effect>
+        </entry>
+      </venom_table>
+    </monster_venoms>
+
+    <plant_toxins>
+      <gathering>
+        <rule>A character with Naturalism proficiency may search for a fresh poisonous plant specimen once each week.</rule>
+        <rule>A successful proficiency throw against the plant's listed target value gathers enough fresh plant to extract one dose.</rule>
+        <rule>Dried belladonna and dried wolfsbane are commonly available in markets, but are harder to extract than fresh plants.</rule>
+      </gathering>
+      <extraction>
+        <rule>Extracting toxin takes 1 week per plant.</rule>
+        <rule>Fresh plants require a successful Alchemy proficiency throw of 14+.</rule>
+        <rule>Dried plants require a successful Alchemy proficiency throw of 17+.</rule>
+        <rule>If either the gather throw or extract throw is an unmodified 1, the character is exposed and must immediately save versus Poison or suffer the toxin's effects.</rule>
+      </extraction>
+      <dose_rules>
+        <rule>Each plant yields one dose of toxin.</rule>
+        <rule>If the toxin can be used on weapons, one dose treats twenty missiles or one melee weapon.</rule>
+        <rule>If the toxin can be used in food or drink, one dose poisons one meal or one drink.</rule>
+        <rule>Extracted plant toxins generally cannot be detected by smell or taste.</rule>
+      </dose_rules>
+      <toxin_table>
+        <entry>
+          <name>Belladonna</name>
+          <naturalism_throw>11+</naturalism_throw>
+          <cost_per_dose>350gp</cost_per_dose>
+          <delivery_modes>
+            <mode type="injury">1 turn</mode>
+            <mode type="ingestion">1d3 turns</mode>
+          </delivery_modes>
+          <save_modifier>+2</save_modifier>
+          <failed_save_effect>2d8 damage and confusion 1d4 turns</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Curare</name>
+          <naturalism_throw>20+</naturalism_throw>
+          <cost_per_dose>1500gp</cost_per_dose>
+          <delivery_modes>
+            <mode type="injury">Instant</mode>
+          </delivery_modes>
+          <save_modifier>none</save_modifier>
+          <failed_save_effect>2d12 damage and paralysis 2d4 turns</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Foxglove</name>
+          <naturalism_throw>14+</naturalism_throw>
+          <cost_per_dose>275gp</cost_per_dose>
+          <delivery_modes>
+            <mode type="ingestion">1d6 turns</mode>
+          </delivery_modes>
+          <save_modifier>-3</save_modifier>
+          <failed_save_effect>2d8 damage and confusion 1d4 turns</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Hellebore</name>
+          <naturalism_throw>8+</naturalism_throw>
+          <cost_per_dose>225gp</cost_per_dose>
+          <delivery_modes>
+            <mode type="injury">1 turn</mode>
+            <mode type="ingestion">1d3 turns</mode>
+          </delivery_modes>
+          <save_modifier>+2</save_modifier>
+          <failed_save_effect>1d6 damage and sickness 1d10 days</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Hemlock</name>
+          <naturalism_throw>8+</naturalism_throw>
+          <cost_per_dose>225gp</cost_per_dose>
+          <delivery_modes>
+            <mode type="ingestion">2d4 turns</mode>
+          </delivery_modes>
+          <save_modifier>+4</save_modifier>
+          <failed_save_effect>2d12 damage and sickness 1d10 days</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Henbane</name>
+          <naturalism_throw>8+</naturalism_throw>
+          <cost_per_dose>350gp</cost_per_dose>
+          <delivery_modes>
+            <mode type="injury">1 turn</mode>
+            <mode type="ingestion">1d6 turns</mode>
+          </delivery_modes>
+          <save_modifier>+2</save_modifier>
+          <failed_save_effect>1d6 damage and feeblemind 1d4 hours</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Wolfsbane</name>
+          <naturalism_throw>11+</naturalism_throw>
+          <cost_per_dose>350gp</cost_per_dose>
+          <delivery_modes>
+            <mode type="injury">1 turn</mode>
+            <mode type="ingestion">2d4 turns</mode>
+          </delivery_modes>
+          <save_modifier>+2</save_modifier>
+          <failed_save_effect>2d8 damage and paralysis 2d4 turns</failed_save_effect>
+        </entry>
+        <entry>
+          <name>Yew</name>
+          <naturalism_throw>4+</naturalism_throw>
+          <cost_per_dose>200gp</cost_per_dose>
+          <delivery_modes>
+            <mode type="injury">1 hour</mode>
+            <mode type="ingestion">1d6 hours</mode>
+          </delivery_modes>
+          <save_modifier>+4</save_modifier>
+          <failed_save_effect>1d10 damage</failed_save_effect>
+        </entry>
+      </toxin_table>
+    </plant_toxins>
+
+    <magical_poisons>
+      <creation_rules>
+        <rule>Magical poisons are created using the magic research rules.</rule>
+        <rule>The most common magical poison is a poison potion created using the 4th level reversed divine spell poison.</rule>
+      </creation_rules>
+      <dose_rules>
+        <rule>One poison potion treats twenty missiles or one melee weapon.</rule>
+      </dose_rules>
+      <effects>
+        <rule>A weapon treated with magical poison kills instantly unless the victim succeeds on a saving throw versus Poison.</rule>
+        <rule>Magical poison is also fatal if ingested.</rule>
+      </effects>
+    </magical_poisons>
+
+    <use_of_poison>
+      <evaporation>
+        <rule>On the first day after application, poison does full damage.</rule>
+        <rule>On the second day after application, poison does half damage.</rule>
+        <rule>By the third day after application, the poison is gone.</rule>
+        <rule>Partially evaporated deadly poisons grant the victim a +2 bonus on the saving throw after the first day and a +4 bonus after the second day.</rule>
+        <rule>For melee weapons, each hit counts as one day of evaporation. The poison does half damage on the second hit and is gone after that.</rule>
+      </evaporation>
+      <self_injury>
+        <rule>If a character attacks with a poisoned weapon and rolls an unmodified 1, he has pricked himself.</rule>
+        <rule>He must immediately save versus Poison or suffer the poison's effects.</rule>
+      </self_injury>
+    </use_of_poison>
+  </poisons>
+
+  <slavery>
+    <overview>
+      <rule>Optional slavery rules divide slaves into five types: slave laborers, slave soldiers, household slaves, pleasure slaves, and professional slaves.</rule>
+    </overview>
+
+    <slave_types>
+      <slave_type name="slave_laborers">
+        <purchase_cost>40gp each</purchase_cost>
+        <upkeep>2gp per month each</upkeep>
+        <base_morale>-4</base_morale>
+        <rules>
+          <rule>Slave laborers can perform labor-related tasks.</rule>
+          <rule>On a domain, every 5 slave laborers count as 1 peasant family for all purposes.</rule>
+          <rule>If 25% or more of a domain's population is slave laborers, domain morale is reduced by 1.</rule>
+          <rule>If 50% or more of a domain's population is slave laborers, domain morale is reduced by 2.</rule>
+          <rule>If the domain is 100% slave labor, domain morale is reduced by 4.</rule>
+        </rules>
+      </slave_type>
+
+      <slave_type name="slave_soldiers">
+        <purchase_cost>Variable by race, training, and equipment</purchase_cost>
+        <upkeep>3gp per month each</upkeep>
+        <morale_rules>
+          <rule>Slave soldiers enslaved as children have the same morale scores as normal mercenaries of their type.</rule>
+          <rule>Slave soldiers enslaved as adults have morale -4.</rule>
+          <rule>Supplemental pay, better food, access to women, and similar benefits can increase morale.</rule>
+        </morale_rules>
+      </slave_type>
+
+      <slave_type name="household_slaves">
+        <purchase_cost>100gp each</purchase_cost>
+        <upkeep>3gp per month each</upkeep>
+        <base_morale>-2</base_morale>
+        <rules>
+          <rule>Household slaves perform domestic chores.</rule>
+          <rule>Better working conditions, kind treatment, gifts, or extended liberties can increase morale.</rule>
+        </rules>
+      </slave_type>
+
+      <slave_type name="pleasure_slaves">
+        <purchase_cost>100gp to 1000gp, with exceptional slaves able to command higher prices</purchase_cost>
+        <upkeep>12gp per month each</upkeep>
+        <base_morale>-2</base_morale>
+        <rules>
+          <rule>Pleasure slaves usually have one or more ranks in Seduction, Performance (dance), or Labor (massage).</rule>
+          <rule>Better working conditions, kind treatment, gifts, or extended liberties can increase morale.</rule>
+        </rules>
+      </slave_type>
+
+      <slave_type name="professional_slaves">
+        <purchase_cost_formula>(33 × a free professional's monthly wages) - 36gp</purchase_cost_formula>
+        <upkeep>3gp per month each</upkeep>
+        <base_morale>-2</base_morale>
+        <rules>
+          <rule>Professional slaves are trained experts such as scribes, tutors, or accountants.</rule>
+          <rule>Better working conditions, kind treatment, gifts, or extended liberties can increase morale.</rule>
+        </rules>
+      </slave_type>
+    </slave_types>
+
+    <slave_troop_type_table>
+      <entry>
+        <troop_type>Militia (spear)</troop_type>
+        <man>40</man>
+        <dwarf>unavailable</dwarf>
+        <elf>unavailable</elf>
+        <goblin>unavailable</goblin>
+        <orc>unavailable</orc>
+      </entry>
+      <entry>
+        <troop_type>Light Infantry (3 javelins, short sword, shield, leather armor)</troop_type>
+        <man>215</man>
+        <dwarf>unavailable</dwarf>
+        <elf>315</elf>
+        <goblin>85</goblin>
+        <orc>185</orc>
+      </entry>
+      <entry>
+        <troop_type>Heavy Infantry (spear, sword, shield, banded plate armor)</troop_type>
+        <man>415</man>
+        <dwarf>650</dwarf>
+        <elf>800</elf>
+        <goblin>unavailable</goblin>
+        <orc>285</orc>
+      </entry>
+      <entry>
+        <troop_type>Slingers (sling, short sword, shield, leather armor)</troop_type>
+        <man>185</man>
+        <dwarf>unavailable</dwarf>
+        <elf>unavailable</elf>
+        <goblin>85</goblin>
+        <orc>unavailable</orc>
+      </entry>
+      <entry>
+        <troop_type>Bowman (short bow, short sword, leather armor)</troop_type>
+        <man>275</man>
+        <dwarf>unavailable</dwarf>
+        <elf>650</elf>
+        <goblin>85</goblin>
+        <orc>175</orc>
+      </entry>
+      <entry>
+        <troop_type>Crossbowmen (arbalest, short sword, chainmail)</troop_type>
+        <man>600</man>
+        <dwarf>750</dwarf>
+        <elf>unavailable</elf>
+        <goblin>unavailable</goblin>
+        <orc>415</orc>
+      </entry>
+      <entry>
+        <troop_type>Longbowmen (long bow, sword, chainmail)</troop_type>
+        <man>650</man>
+        <dwarf>unavailable</dwarf>
+        <elf>1400</elf>
+        <goblin>unavailable</goblin>
+        <orc>unavailable</orc>
+      </entry>
+      <entry>
+        <troop_type>Light Cavalry (3 javelins, sword, shield, leather armor, light warhorse)</troop_type>
+        <man>1150</man>
+        <dwarf>unavailable</dwarf>
+        <elf>2150</elf>
+        <goblin>unavailable</goblin>
+        <orc>unavailable</orc>
+      </entry>
+      <entry>
+        <troop_type>Mounted Crossbowman (crossbow, short sword, chainmail, mule)</troop_type>
+        <man>unavailable</man>
+        <dwarf>1575</dwarf>
+        <elf>unavailable</elf>
+        <goblin>unavailable</goblin>
+        <orc>unavailable</orc>
+      </entry>
+      <entry>
+        <troop_type>Horse Archers (composite bow, scimitar, leather armor, light warhorse)</troop_type>
+        <man>1700</man>
+        <dwarf>unavailable</dwarf>
+        <elf>3200</elf>
+        <goblin>unavailable</goblin>
+        <orc>unavailable</orc>
+      </entry>
+      <entry>
+        <troop_type>Medium Cavalry (lance, sword, shield, lamellar, medium warhorse)</troop_type>
+        <man>1800</man>
+        <dwarf>unavailable</dwarf>
+        <elf>unavailable</elf>
+        <goblin>unavailable</goblin>
+        <orc>unavailable</orc>
+      </entry>
+      <entry>
+        <troop_type>Heavy Cavalry (lance, sword, shield, plate armor, chain barded medium warhorse)</troop_type>
+        <man>2500</man>
+        <dwarf>unavailable</dwarf>
+        <elf>unavailable</elf>
+        <goblin>unavailable</goblin>
+        <orc>unavailable</orc>
+      </entry>
+      <entry>
+        <troop_type>Cataphract Cavalry (composite bow, lance, sword, shield, plate, chain barded medium warhorse)</troop_type>
+        <man>3125</man>
+        <dwarf>unavailable</dwarf>
+        <elf>5250</elf>
+        <goblin>unavailable</goblin>
+        <orc>unavailable</orc>
+      </entry>
+      <entry>
+        <troop_type>Beast Riders (spear, short sword, shield, leather or scale armor, dire wolf or giant boar)</troop_type>
+        <man>unavailable</man>
+        <dwarf>unavailable</dwarf>
+        <elf>unavailable</elf>
+        <goblin>1200</goblin>
+        <orc>unavailable</orc>
+      </entry>
+    </slave_troop_type_table>
+  </slavery>
+
+  <sinkholes_of_evil>
+    <definition>
+      <rule>Sinkholes of evil are corrupted places where profane powers and undead are strengthened and the divine and the living are weakened.</rule>
+      <rule>Sinkholes may be shadowed, blighted, or forsaken.</rule>
+    </definition>
+
+    <effect_summary_table>
+      <entry type="Shadowed">
+        <corpse_reanimation>10% in 1d12 months</corpse_reanimation>
+        <reversed_or_necromantic_spell_effects>+2 class levels</reversed_or_necromantic_spell_effects>
+        <lawful_divine_spell_effects>No effect</lawful_divine_spell_effects>
+        <turn_undead>No effect</turn_undead>
+        <necromancy_magic_research>+1 bonus</necromancy_magic_research>
+        <undead_in_sinkhole>No effect</undead_in_sinkhole>
+        <animating_undead>No effect</animating_undead>
+        <blood_sacrifice>Yes</blood_sacrifice>
+      </entry>
+      <entry type="Blighted">
+        <corpse_reanimation>20% in 1d4 days</corpse_reanimation>
+        <reversed_or_necromantic_spell_effects>+2 class levels</reversed_or_necromantic_spell_effects>
+        <lawful_divine_spell_effects>No effect</lawful_divine_spell_effects>
+        <turn_undead>-4 class levels</turn_undead>
+        <necromancy_magic_research>+2 bonus</necromancy_magic_research>
+        <undead_in_sinkhole>No effect</undead_in_sinkhole>
+        <animating_undead>No effect</animating_undead>
+        <blood_sacrifice>Yes</blood_sacrifice>
+      </entry>
+      <entry type="Forsaken">
+        <corpse_reanimation>80% in 1d4 rounds</corpse_reanimation>
+        <reversed_or_necromantic_spell_effects>+2 class levels</reversed_or_necromantic_spell_effects>
+        <lawful_divine_spell_effects>-2 class levels</lawful_divine_spell_effects>
+        <turn_undead>Forbidden</turn_undead>
+        <necromancy_magic_research>+3 bonus</necromancy_magic_research>
+        <undead_in_sinkhole>+2 attack throws, saving throws, damage rolls, and AC</undead_in_sinkhole>
+        <animating_undead>+2 hit points per Hit Die and double normal Hit Dice created</animating_undead>
+        <blood_sacrifice>Yes</blood_sacrifice>
+      </entry>
+    </effect_summary_table>
+
+    <shadowed_sinkholes>
+      <sources>
+        <source name="chaotic_altar">
+          <rule>A chaotic altar creates a shadowed sinkhole immediately when erected.</rule>
+          <rule>Area equals 100 square feet per 100gp spent on the altar.</rule>
+          <rule>At Judge discretion, the altar's gp value may be satisfied by special components or blood sacrifices instead of standard treasure.</rule>
+        </source>
+        <source name="place_of_death">
+          <rule>Each year, a place of death has a percentage chance to become shadowed equal to the number of dead interred divided by the site's square footage, rounded up.</rule>
+          <rule>When the sinkhole develops, its size is 100 square feet per 20 dead interred.</rule>
+          <rule>A sinkhole does not develop if the dead are cremated by a Lawful divine spellcaster.</rule>
+          <rule>A sinkhole does not develop if one or more shrines to Lawful powers are erected on the site with a total value of at least 5gp per dead interred.</rule>
+        </source>
+      </sources>
+      <effects>
+        <rule>Corpses in a shadowed sinkhole have a 10% chance to return as undead in 1d12 months unless burned.</rule>
+        <rule>Chaotic spellcasters casting reversed divine spells or necromantic spells in a shadowed sinkhole resolve those spells as if 2 class levels higher.</rule>
+        <rule>Necromancy research in a shadowed sinkhole gains a +1 bonus to magic research throws.</rule>
+        <rule>A shadowed sinkhole may be used for blood sacrifice.</rule>
+      </effects>
+    </shadowed_sinkholes>
+
+    <blighted_sinkholes>
+      <creation>
+        <rule>A blighted sinkhole forms where a chaotic altar stands on a shadowed place of death.</rule>
+        <rule>The blighted area extends only where the altar's shadowing and the place of death's shadowing overlap.</rule>
+        <rule>Areas affected by only one source remain merely shadowed.</rule>
+      </creation>
+      <effects>
+        <rule>Corpses in a blighted sinkhole have a 20% chance to return as undead in 1d4 days unless burned.</rule>
+        <rule>Chaotic spellcasters casting reversed divine spells or necromantic spells in a blighted sinkhole resolve those spells as if 2 class levels higher.</rule>
+        <rule>Lawful divine spellcasters turn undead as if 4 class levels lower.</rule>
+        <rule>Necromancy research in a blighted sinkhole gains a +2 bonus to magic research throws.</rule>
+        <rule>A blighted sinkhole may be used for blood sacrifice.</rule>
+      </effects>
+    </blighted_sinkholes>
+
+    <forsaken_sinkholes>
+      <creation>
+        <rule>A blighted area may become forsaken through rare planar conjunctions or terrible ritual magic.</rule>
+        <rule>Forsaken sinkholes are very rare and occur at Judge discretion.</rule>
+      </creation>
+      <effects>
+        <rule>Corpses in a forsaken sinkhole have an 80% chance to return as undead in 1d4 rounds unless burned.</rule>
+        <rule>Chaotic spellcasters casting reversed divine spells or necromantic spells in a forsaken sinkhole resolve those spells as if 2 class levels higher.</rule>
+        <rule>Lawful divine spellcasters cast spells as if 2 class levels lower for spell effects.</rule>
+        <rule>Lawful divine spellcasters may not turn undead in a forsaken sinkhole.</rule>
+        <rule>Undead in a forsaken sinkhole gain +2 to attack throws, saving throws, damage rolls, and AC.</rule>
+        <rule>Necromancy research in a forsaken sinkhole gains a +3 bonus to magic research throws.</rule>
+        <rule>Undead created in a forsaken sinkhole gain a permanent +2 hit points per Hit Die.</rule>
+        <rule>Animate dead cast in a forsaken sinkhole creates twice the normal number of Hit Dice of undead.</rule>
+        <rule>A forsaken sinkhole may be used for blood sacrifice.</rule>
+      </effects>
+    </forsaken_sinkholes>
+
+    <cleansing_sinkholes>
+      <temporary_cleansing>
+        <rule>A bless spell temporarily reduces the sinkhole's severity within a 100 foot diameter area for the spell's duration.</rule>
+        <rule>While affected by bless, a shadowed area becomes cleansed, a blighted area becomes shadowed, and a forsaken area becomes blighted.</rule>
+        <rule>A vial of holy water sprinkled on a 10 foot diameter area has the same temporary effect as bless.</rule>
+      </temporary_cleansing>
+      <permanent_cleansing>
+        <rule>To permanently cleanse a sinkhole, remove its source of corruption.</rule>
+        <rule>If the source is a chaotic altar, destroy it either with dispel evil or by physically smashing it and then applying holy water or bless to the remains.</rule>
+        <rule>Destroying the altar removes the sinkhole created by that altar.</rule>
+        <rule>If the source is a place of death, dispel evil instantly cleanses the sinkhole, but it will eventually return unless the source is permanently addressed.</rule>
+        <rule>To permanently cleanse a place of death, a Lawful divine spellcaster must cremate the dead interred there or erect a shrine to the Lawful powers of sufficient value.</rule>
+        <rule>Cleansing a blighted sinkhole requires addressing both the chaotic altar and the place of death separately.</rule>
+        <rule>A forsaken sinkhole can only be permanently cleansed by ritual magic.</rule>
+        <rule>The ritual to cleanse a forsaken sinkhole is usually forgotten between occurrences and must normally be researched anew by Lawful forces.</rule>
+      </permanent_cleansing>
+    </cleansing_sinkholes>
+  </sinkholes_of_evil>
+
+  <transformations>
+    <core_rules>
+      <rule>An adventurer transformed into an intelligent monster may continue to be played with Judge permission.</rule>
+      <rule>The Judge determines the transformed character's alignment based on the transformation context. Transformed characters generally adopt the alignment of the new form unless exceptionally strong-willed or purposeful.</rule>
+      <rule>The transformed character gains the movement modes, speeds, natural armor, natural attacks, extraordinary abilities, and other abilities of the new form.</rule>
+      <rule>If the monster's Hit Dice are lower than the character's former class level, raise the monster's Hit Dice to the former class level.</rule>
+      <rule>A transformed character may gain additional Hit Dice through adventuring.</rule>
+    </core_rules>
+    <advancement>
+      <rule>For a 1 HD monster to advance to 2 HD, required XP equals 3000 plus 500 per special ability marker (*).</rule>
+      <rule>The XP required doubles with each additional Hit Die.</rule>
+      <rule>XP values greater than 20000 are rounded to the nearest 1000.</rule>
+    </advancement>
+    <class_abilities>
+      <rule>In most cases, the transformed character loses all class abilities.</rule>
+      <rule>At Judge discretion, transformed spellcasters may retain spellcasting.</rule>
+      <rule>Retained divine spellcasting counts as one special ability marker (*).</rule>
+      <rule>Retained arcane spellcasting counts as two special ability markers (**).</rule>
+      <rule>As the transformed character gains Hit Dice, retained spellcasting advances using the prior class's spellcasting progression, subject to that class's maximum level.</rule>
+    </class_abilities>
+  </transformations>
+
+  <playing_with_advanced_characters>
+    <tiers>
+      <tier name="adventurer">
+        <level_range>4th-6th level</level_range>
+        <campaign_scope>Action and exploration oriented campaigns with experienced players.</campaign_scope>
+      </tier>
+      <tier name="conqueror">
+        <level_range>7th-10th level</level_range>
+        <campaign_scope>Campaigns focused on establishing and expanding domains.</campaign_scope>
+      </tier>
+      <tier name="king">
+        <level_range>11th level or higher</level_range>
+        <campaign_scope>Campaigns focused on realm management and warfare.</campaign_scope>
+      </tier>
+    </tiers>
+
+    <ability_scores_and_hit_points>
+      <ability_score_generation>
+        <rule>Roll 3d6 in order five times and choose one full set of rolls as the character's ability scores.</rule>
+        <rule>Conquerors may reroll one ability score from the chosen set and must use the new roll.</rule>
+        <rule>Kings may reroll two ability scores from the chosen set and must use the new rolls.</rule>
+      </ability_score_generation>
+      <hit_points>
+        <rule>Advanced characters receive maximum hit points at 1st level.</rule>
+        <rule>Remaining Hit Dice are rolled normally.</rule>
+      </hit_points>
+    </ability_scores_and_hit_points>
+
+    <starting_experience_points>
+      <tier name="adventurer">
+        <xp>20000</xp>
+        <notes>
+          <note>Places elven spellswords at 4th level, thieves at 6th level, and most other classes at 5th level.</note>
+        </notes>
+      </tier>
+      <tier name="conqueror">
+        <xp>310000</xp>
+        <notes>
+          <note>Places elven spellswords at 8th level, clerics and thieves at 10th level, and most other classes at 9th level.</note>
+        </notes>
+      </tier>
+      <tier name="king">
+        <xp>620000</xp>
+        <notes>
+          <note>Most racial classes are at or near maximum level.</note>
+          <note>Mages are 11th level, clerics and thieves are 13th level, and most other classes are 12th level.</note>
+        </notes>
+      </tier>
+    </starting_experience_points>
+
+    <class_and_level>
+      <rule>Advanced characters may choose any class they qualify for.</rule>
+      <rule>Level is determined by the class's progression table and the campaign's fixed starting experience point total.</rule>
+    </class_and_level>
+
+    <proficiencies_and_spell_repertoire>
+      <proficiencies>
+        <rule>All advanced characters begin knowing any proficiencies they qualify for based on class, level, and Intelligence score.</rule>
+      </proficiencies>
+      <spell_repertoire>
+        <rule>Mages, elven nightblades, and elven spellswords begin with the maximum number of spells in their repertoire.</rule>
+        <rule>Adventurers determine all repertoire spells randomly.</rule>
+        <rule>Conquerors choose half their repertoire spells and determine the rest randomly.</rule>
+        <rule>Kings choose all spells in their repertoire.</rule>
+      </spell_repertoire>
+    </proficiencies_and_spell_repertoire>
+
+    <starting_wealth>
+      <tier name="adventurer">16000gp</tier>
+      <tier name="conqueror">240000gp</tier>
+      <tier name="king">815000gp</tier>
+      <permitted_uses>
+        <use>Purchase equipment such as weapons, armor, ships, and mounts.</use>
+        <use>Establish libraries, workshops, laboratories, or mortuaries.</use>
+        <use>Purchase precious materials or special components.</use>
+        <use>Build castles, hideouts, sanctums, or other strongholds.</use>
+        <use>Purchase merchandise at base price.</use>
+        <use>Trade wealth for rolls for magic items.</use>
+        <use>Recruit hirelings.</use>
+      </permitted_uses>
+      <remainder_rule>Unspent starting wealth may be converted into coin, gems, or jewels.</remainder_rule>
+    </starting_wealth>
+
+    <magic_items>
+      <trade_limits>
+        <rule>Each listed trade may be made once by adventurers and conquerors.</rule>
+        <rule>Kings may make each listed trade twice, funds permitting.</rule>
+      </trade_limits>
+      <trade_options>
+        <trade>
+          <cost>1000gp</cost>
+          <result>15% chance of two random magic items.</result>
+        </trade>
+        <trade>
+          <cost>3000gp</cost>
+          <result>25% chance of one weapon or armor, 25% chance of one potion, and 10% chance of one miscellaneous magic item.</result>
+        </trade>
+        <trade>
+          <cost>10000gp</cost>
+          <result>50% chance of four randomly determined magic items, one random potion, and one random scroll.</result>
+        </trade>
+        <trade>
+          <cost>30000gp</cost>
+          <result>1d4 random potions, 1d4 random scrolls, and 50% chance of six randomly determined magic items.</result>
+        </trade>
+        <trade>
+          <cost>100000gp</cost>
+          <result>2d4 random potions, 2d4 random scrolls, and 75% chance each for 1d3 swords, 1d3 armor, 1d3 miscellaneous weapons, 1d3 wands/staffs/rods, 1d3 rings, and 1d3 miscellaneous magic items.</result>
+        </trade>
+      </trade_options>
+      <special_rules>
+        <rule>The Judge may randomly determine or choose the actual magic items.</rule>
+        <rule>Re-roll cursed items.</rule>
+        <rule>Characters capable of magic research may substitute formulas for actual magic items at a 2:1 ratio.</rule>
+        <rule>Example conversion: 1d4 random potions may be replaced with 2d4 potion formulas.</rule>
+      </special_rules>
+    </magic_items>
+
+    <recruiting_hirelings>
+      <henchmen>
+        <rule>An advanced character may begin with henchmen up to the limit allowed by Charisma.</rule>
+        <rule>A henchman may be any class or level.</rule>
+        <rule>The advanced character must spend gp equal to the henchman's experience points.</rule>
+        <rule>The advanced character must provide the henchman's equipment and magic items.</rule>
+      </henchmen>
+      <specialists_and_mercenaries>
+        <rule>An advanced character may also begin with specialists and mercenaries.</rule>
+        <rule>For each specialist or mercenary, the advanced character must spend gp equal to six months of wages.</rule>
+        <rule>This cost represents past retainer expenses.</rule>
+      </specialists_and_mercenaries>
+    </recruiting_hirelings>
+
+    <domains>
+      <conqueror_tier>
+        <rule>Conqueror-tier characters of 9th level or higher who use starting wealth to build a stronghold begin play with a domain.</rule>
+        <rule>Create the domain as if the stronghold has just been completed, including rolling starting land value, peasant families, and followers.</rule>
+        <rule>If the character builds a hideout, the syndicate has the standard followers: 2d6 1st level characters of the boss's class, plus 1d6 more per level beyond 9th.</rule>
+        <rule>If the character builds a sanctum, the sanctum has the standard followers: 1d6 apprentices and 2d6 normal men.</rule>
+        <rule>Dungeons built by conqueror-tier characters begin empty.</rule>
+      </conqueror_tier>
+
+      <king_tier>
+        <rule>King-tier characters who use starting wealth to build a stronghold begin play with a realm.</rule>
+        <rule>The realm includes a personal domain and several vassal realms.</rule>
+        <rule>The personal domain begins with the maximum number of families allowed by the stronghold's size.</rule>
+        <rule>The number of vassal realms equals the character's number of henchmen.</rule>
+        <rule>Each vassal realm is normally equivalent to a duchy, though the Judge may alter the scope.</rule>
+        <rule>King-tier thieves, assassins, and elven nightblades who build a hideout begin with a syndicate of maximum size for the location and hideout.</rule>
+        <rule>If such a character has thief, assassin, or nightblade henchmen of 9th level or higher, those henchmen may build hideouts and establish a criminal guild.</rule>
+        <rule>Syndicates within that criminal guild have 2d6 members each.</rule>
+        <rule>King-tier mages who build a sanctum begin with 6 third-level mage apprentices and 12 normal men.</rule>
+        <rule>If a king-tier mage builds a dungeon, it should begin populated until full.</rule>
+      </king_tier>
+
+      <location_rule>
+        <rule>The Judge may determine the starting location of strongholds, domains, and realms, or allow the characters to choose locations on the regional map.</rule>
+      </location_rule>
+    </domains>
+  </playing_with_advanced_characters>
+</additional_rules_summary>

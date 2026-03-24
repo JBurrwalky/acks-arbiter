@@ -1,0 +1,658 @@
+<rules_summary title="lairs_and_encounters_monster_stats_and_training_rules" source_file="121E-Lairs_&amp;_Encounters-monster-stats-and-training-rules.docx" summary_scope="rules,definitions,procedures,tables" flavor_excluded="true">
+  <source_note>Summarized from the uploaded section. Example stat-blocks and illustrative examples are omitted unless they add unique mechanics.</source_note>
+  <ability_scores_for_monsters>
+    <default_scores rule="Most monsters are assumed to have 9 in all ability scores unless assigned otherwise."/>
+    <general_rules>
+      <rule>Monster ability scores are measured relative to their own species, not to the human average.</rule>
+      <rule>Scores less than 9 or greater than 12 apply bonuses or penalties to related rolls and throws, using normal character modifiers except where this section overrides them.</rule>
+    </general_rules>
+    <strength>
+      <rule>Adjust attack throws and damage rolls for natural attacks by cross-referencing Strength score against the average damage of each natural attack.</rule>
+      <load_rule non_humanoid="adjust maximum load by strength_modifier × (normal_load ÷ 10)" humanoid="adjust maximum load by strength_modifier × (normal_load ÷ 5), rounded to nearest stone" rounding="round 0.5 up if negative, down if positive"/>
+      <table name="strength_attack_and_damage_modifiers">
+        <columns><column>ability_score</column><column>avg_damage_2_or_less</column><column>avg_damage_3_to_6</column><column>avg_damage_7_to_12</column><column>avg_damage_13_to_24</column><column>avg_damage_25_or_more</column></columns>
+        <row ability_score="3" avg_damage_2_or_less="-2" avg_damage_3_to_6="-3" avg_damage_7_to_12="-6" avg_damage_13_to_24="-8" avg_damage_25_or_more="-12"/>
+        <row ability_score="4" avg_damage_2_or_less="-1" avg_damage_3_to_6="-2" avg_damage_7_to_12="-5" avg_damage_13_to_24="-7" avg_damage_25_or_more="-10"/>
+        <row ability_score="5" avg_damage_2_or_less="-1" avg_damage_3_to_6="-2" avg_damage_7_to_12="-4" avg_damage_13_to_24="-6" avg_damage_25_or_more="-8"/>
+        <row ability_score="6" avg_damage_2_or_less="0" avg_damage_3_to_6="-1" avg_damage_7_to_12="-3" avg_damage_13_to_24="-4" avg_damage_25_or_more="-6"/>
+        <row ability_score="7" avg_damage_2_or_less="0" avg_damage_3_to_6="-1" avg_damage_7_to_12="-2" avg_damage_13_to_24="-3" avg_damage_25_or_more="-4"/>
+        <row ability_score="8" avg_damage_2_or_less="0" avg_damage_3_to_6="-1" avg_damage_7_to_12="-1" avg_damage_13_to_24="-2" avg_damage_25_or_more="-3"/>
+        <row ability_score="9" avg_damage_2_or_less="0" avg_damage_3_to_6="0" avg_damage_7_to_12="0" avg_damage_13_to_24="-1" avg_damage_25_or_more="-2"/>
+        <row ability_score="10" avg_damage_2_or_less="0" avg_damage_3_to_6="0" avg_damage_7_to_12="0" avg_damage_13_to_24="0" avg_damage_25_or_more="0"/>
+        <row ability_score="11" avg_damage_2_or_less="0" avg_damage_3_to_6="0" avg_damage_7_to_12="0" avg_damage_13_to_24="0" avg_damage_25_or_more="0"/>
+        <row ability_score="12" avg_damage_2_or_less="0" avg_damage_3_to_6="0" avg_damage_7_to_12="0" avg_damage_13_to_24="+1" avg_damage_25_or_more="+2"/>
+        <row ability_score="13" avg_damage_2_or_less="0" avg_damage_3_to_6="+1" avg_damage_7_to_12="+1" avg_damage_13_to_24="+2" avg_damage_25_or_more="+3"/>
+        <row ability_score="14" avg_damage_2_or_less="0" avg_damage_3_to_6="+1" avg_damage_7_to_12="+2" avg_damage_13_to_24="+3" avg_damage_25_or_more="+4"/>
+        <row ability_score="15" avg_damage_2_or_less="0" avg_damage_3_to_6="+1" avg_damage_7_to_12="+3" avg_damage_13_to_24="+4" avg_damage_25_or_more="+6"/>
+        <row ability_score="16" avg_damage_2_or_less="+1" avg_damage_3_to_6="+2" avg_damage_7_to_12="+4" avg_damage_13_to_24="+6" avg_damage_25_or_more="+8"/>
+        <row ability_score="17" avg_damage_2_or_less="+1" avg_damage_3_to_6="+2" avg_damage_7_to_12="+5" avg_damage_13_to_24="+7" avg_damage_25_or_more="+10"/>
+        <row ability_score="18" avg_damage_2_or_less="+2" avg_damage_3_to_6="+3" avg_damage_7_to_12="+6" avg_damage_13_to_24="+8" avg_damage_25_or_more="+12"/>
+      </table>
+    </strength>
+    <intelligence>
+      <rule>Sapient monsters gain bonus proficiencies and languages from Intelligence as characters do.</rule>
+      <rule>Sapient monsters that cast arcane spells increase spells in repertoire at each spell level by their Intelligence bonus.</rule>
+      <rule>Animals, vermin, and fantastic creatures of animal intelligence do not gain proficiencies, languages, or spells from Intelligence.</rule>
+      <rule>For creatures of animal intelligence, Intelligence determines trainability: maximum tricks known equals 5 plus Intelligence modifier.</rule>
+      <rule>If a creature of animal intelligence has Intelligence modifier plus trainability modifier of 5 or more, the Judge may treat it as semi-sapient and capable of primitive communication, simple math, and basic tool use.</rule>
+      <rule>Mindless monsters, including most constructs except gargoyles and all oozes, have no Intelligence score or trainability modifier.</rule>
+    </intelligence>
+    <dexterity>
+      <rule>For non-humanoid monsters, encounter movement adjustment equals 10' × Dexterity bonus × (movement_rate ÷ 120').</rule>
+      <rule>Combat movement adjustment equals one-third of encounter movement adjustment.</rule>
+      <rule>Wilderness movement adjustment equals the lower of Dexterity bonus or Constitution bonus × 2 miles × (movement_rate ÷ 120').</rule>
+    </dexterity>
+    <constitution>
+      <rule>For living monsters, Constitution represents health and vitality; for constructs, sturdiness; for undead, negative animus.</rule>
+      <rule>Add Constitution bonus or penalty to each Hit Die roll.</rule>
+      <rule>Hit Dice gained beyond the maximum normally permitted for the monster’s size do not receive Constitution bonus.</rule>
+    </constitution>
+    <charisma>
+      <rule>Add Charisma bonus or penalty to the monster’s morale and to the morale of monsters it leads.</rule>
+      <rule>Mindless monsters do not have Charisma scores.</rule>
+    </charisma>
+  </ability_scores_for_monsters>
+  <proficiencies_for_monsters>
+    <rule>Most sapient monsters have proficiencies, but routine non-adventuring proficiencies can usually be ignored unless the monster is notably intelligent, dangerous, or trained.</rule>
+    <starting_proficiencies>
+      <rule>Each sapient monster begins with Monster proficiency, one class proficiency, and one general proficiency.</rule>
+      <monster_proficiency_definition>The Monster proficiency covers the creature’s species-appropriate survival and everyday capabilities, serving as the monster equivalent of Adventuring.</monster_proficiency_definition>
+    </starting_proficiencies>
+    <additional_proficiencies>
+      <rule>Gain additional general proficiencies equal to Intelligence bonus.</rule>
+      <rule>If the monster has more Hit Dice than normal for its species, treat each extra Hit Die as a fighter level for gaining additional class and general proficiencies.</rule>
+      <rule>Gain one additional general proficiency when reaching middle-aged, old, and ancient age categories.</rule>
+    </additional_proficiencies>
+    <transformed_monsters>
+      <rule>If a sapient monster is transformed into another creature type with different or absent age categories, it continues gaining age-based proficiencies according to its original age categories.</rule>
+      <rule>Once it reaches its original ancient age category, it no longer gains proficiencies from age even if it survives indefinitely.</rule>
+    </transformed_monsters>
+    <ageless_monsters>
+      <rule>Creatures lacking some or all age categories gain fewer or no age-based proficiencies.</rule>
+      <rule>Elves remain adult until death and therefore do not gain proficiencies for old or ancient categories.</rule>
+    </ageless_monsters>
+  </proficiencies_for_monsters>
+  <monstrous_henchmen>
+    <recruitment>
+      <rule>Characters with Beast Friendship or Friends of Birds and Beasts can recruit animals, including giant and prehistoric animals, as henchmen.</rule>
+      <rule>All adventurers can recruit sapient beastmen, giants, humanoids, fantastic creatures, and undead as henchmen.</rule>
+      <rule>Monstrous henchmen count against normal henchman limits.</rule>
+      <rule>Normal animals may be bought in markets; some sapient monsters may be hired in large towns and cities; otherwise monstrous henchmen are recruited from encounters.</rule>
+      <rule>A monster must have fewer Hit Dice than its employer has levels. Monsters of 14 HD or more can only be recruited by more powerful monsters.</rule>
+      <rule>Employment can be offered at the start of an encounter only if the monster’s reaction is Neutral, Indifferent, or Friendly, or after combat if it is defeated and captured.</rule>
+      <rule>The adventurer must be able to communicate intelligibly with the monster.</rule>
+      <rule>Use a 2d6 reaction roll to determine response to an employment offer. Use the normal reaction-to-hiring table for market or peaceful encounters; use the Irrefusable Offer table for defeated and captured monsters.</rule>
+      <rule>Apply the adventurer’s Charisma modifier and any Diplomacy, Intimidation, or similar bonuses to the recruitment roll.</rule>
+      <rule>Apply a -2 penalty if adventurer and monster have opposite alignments.</rule>
+      <rule>If the monster is independent, apply its morale modifier as a penalty to recruitment. If it belonged to a defeated group, apply its prior leader’s morale modifier instead.</rule>
+      <rule>The Judge may apply other situational modifiers.</rule>
+      <table name="irrefusable_offer">
+        <columns><column>adjusted_die_roll</column><column>result</column><column>effect</column></columns>
+        <row adjusted_die_roll="2–" result="Betrayal" effect="Pretends to accept in order to betray the employer when possible; actively works against the employer’s interests."/>
+        <row adjusted_die_roll="3–5" result="Escape" effect="Pretends to accept to save its life; deserts when safe opportunity appears, possibly harming the employer during escape."/>
+        <row adjusted_die_roll="6–8" result="Hesitate" effect="Accepts with uncertain loyalties; begins with morale -2 instead of 0."/>
+        <row adjusted_die_roll="9–11" result="Accept" effect="Becomes loyal; begins with morale 0."/>
+        <row adjusted_die_roll="12+" result="Accept with élan" effect="Accepts enthusiastically; begins with morale +1."/>
+      </table>
+    </recruitment>
+    <payment>
+      <rule>Sapient monstrous henchmen typically receive at least 15% of the employer’s income plus a monthly fee for food, lodging, and expenses.</rule>
+      <rule>Determine monthly fee using the normal henchman monthly fee table, substituting Hit Dice for level.</rule>
+      <rule>Animal henchmen do not require a share of income, but their upkeep equals supply cost plus additional wages equal to a henchman of the same Hit Dice.</rule>
+    </payment>
+    <advancement>
+      <rule>To advance from 1 HD to 2 HD, a monstrous henchman requires 3,000 XP plus 500 XP per special ability (*).</rule>
+      <rule>The XP requirement doubles with each additional Hit Die; round values greater than 20,000 XP to the nearest 1,000.</rule>
+      <table name="monster_size_and_hit_dice_limits">
+        <columns><column>size</column><column>maximum_hit_dice</column></columns>
+        <row size="Man-Sized or less" maximum_hit_dice="9"/>
+        <row size="Large" maximum_hit_dice="13"/>
+        <row size="Huge" maximum_hit_dice="17"/>
+        <row size="Gigantic" maximum_hit_dice="25"/>
+        <row size="Colossal" maximum_hit_dice="40"/>
+      </table>
+      <rule>Sapient monsters may exceed their size-based maximum by up to 5 additional Hit Dice, gaining a fixed 2 hp per extra Hit Die and no Constitution bonus.</rule>
+      <rule>Enchanted creatures and undead may advance in Hit Dice without limit.</rule>
+      <improvements_per_hit_die>
+        <rule>Attack throws, hit points, and saving throws improve by 1 per Hit Die gained.</rule>
+        <rule>Armor Class improves by 1 per 2 Hit Dice, to a maximum improvement equal to the monster’s own starting Hit Dice.</rule>
+        <rule>Average damage increases by 2 hp total, divided among attacks as the Judge decides.</rule>
+        <rule>Sapient monsters may gain proficiencies as fighters when advancing; monsters of animal intelligence gain one additional trainable trick.</rule>
+      </improvements_per_hit_die>
+    </advancement>
+  </monstrous_henchmen>
+  <noncombatant_and_age_rules>
+    <noncombatant_monsters>
+      <rule>Species may distinguish combatants from noncombatants because of sexual dimorphism, unequal combat training, or both.</rule>
+      <rule>Noncombatants usually have 25% to 75% of the Hit Dice and average hit points of combatants of the same species.</rule>
+      <rule>Noncombatant Armor Class, damage, and morale are usually adjusted to match a similar creature of reduced Hit Dice.</rule>
+      <rule>Noncombatants with fewer than 1/4 HD have 1 hp and do not fight at all.</rule>
+    </noncombatant_monsters>
+    <young_and_old_monsters>
+      <rule>Unless the monster listing states otherwise, young and aged monsters use the Monster Age Adjustment and Monster Age Damage Calculator tables.</rule>
+      <rule>Baby monsters are two size categories smaller than adults; child monsters are one size category smaller; adolescent and older monsters are full size.</rule>
+      <rule>For Hit Dice calculations, treat each printed +1 or -1 as ±0.25 HD; round to the nearest 0.25 and convert back to + or - notation.</rule>
+      <rule>Creatures reduced below 1/4 HD have 1 hp and do not fight.</rule>
+      <rule>For movement adjustment, multiply the table’s movement adjustment by movement_rate ÷ 120' and round to nearest 5'.</rule>
+      <rule>For maximum load adjustment, round to nearest stone; round 0.5 up if negative, down if positive.</rule>
+      <rule>For damage adjustment, cross-reference the original attack damage against the Monster Age Damage Calculator.</rule>
+      <table name="monster_age_adjustment_and_damage_calculator">
+        <columns><column>monster_age</column><column>ac_adjustment</column><column>mv_adjustment_per_120</column><column>hd_fraction</column><column>maximum_load_fraction</column></columns>
+        <age_row monster_age="Baby" ac_adjustment="-3" mv_adjustment_per_120="-30'" hd_fraction="33%" maximum_load_fraction="33%">
+          <damage_band source_average_damage="1" adjusted_damage="33%"/>
+          <damage_band source_average_damage="1.5" adjusted_damage="-"/>
+          <damage_band source_average_damage="2" adjusted_damage="-"/>
+          <damage_band source_average_damage="2.5" adjusted_damage="-"/>
+          <damage_band source_average_damage="3.5" adjusted_damage="1"/>
+          <damage_band source_average_damage="4.5" adjusted_damage="1"/>
+          <damage_band source_average_damage="5.5" adjusted_damage="1"/>
+          <damage_band source_average_damage="6.5" adjusted_damage="1d2"/>
+          <damage_band source_average_damage="7" adjusted_damage="1d2"/>
+          <damage_band source_average_damage="9-10" adjusted_damage="1d3"/>
+          <damage_band source_average_damage="11" adjusted_damage="1d4"/>
+          <damage_band source_average_damage="13.5" adjusted_damage="1d6"/>
+          <damage_band source_average_damage="16.5" adjusted_damage="2d3"/>
+          <damage_band source_average_damage="18" adjusted_damage="1d8"/>
+          <damage_band source_average_damage="22" adjusted_damage="1d10"/>
+          <damage_band source_average_damage="27.5" adjusted_damage="1d12"/>
+          <damage_band source_average_damage="33.5" adjusted_damage="4d3"/>
+        </age_row>
+        <age_row monster_age="Child" ac_adjustment="-2" mv_adjustment_per_120="-20'" hd_fraction="50%" maximum_load_fraction="50%">
+          <damage_band source_average_damage="1" adjusted_damage="50%"/>
+          <damage_band source_average_damage="1.5" adjusted_damage="-"/>
+          <damage_band source_average_damage="2" adjusted_damage="1"/>
+          <damage_band source_average_damage="2.5" adjusted_damage="1"/>
+          <damage_band source_average_damage="3.5" adjusted_damage="1d2"/>
+          <damage_band source_average_damage="4.5" adjusted_damage="1d2"/>
+          <damage_band source_average_damage="5.5" adjusted_damage="1d3"/>
+          <damage_band source_average_damage="6.5" adjusted_damage="1d4"/>
+          <damage_band source_average_damage="7" adjusted_damage="1d6"/>
+          <damage_band source_average_damage="9-10" adjusted_damage="1d8"/>
+          <damage_band source_average_damage="11" adjusted_damage="1d10"/>
+          <damage_band source_average_damage="13.5" adjusted_damage="2d6"/>
+          <damage_band source_average_damage="16.5" adjusted_damage="2d8"/>
+          <damage_band source_average_damage="18" adjusted_damage="4d4"/>
+          <damage_band source_average_damage="22" adjusted_damage="2d10"/>
+          <damage_band source_average_damage="27.5" adjusted_damage="3d8"/>
+          <damage_band source_average_damage="33.5" adjusted_damage="3d10"/>
+        </age_row>
+        <age_row monster_age="Adolescent" ac_adjustment="-1" mv_adjustment_per_120="-10'" hd_fraction="75%" maximum_load_fraction="75%">
+          <damage_band source_average_damage="1" adjusted_damage="75%"/>
+          <damage_band source_average_damage="1.5" adjusted_damage="-"/>
+          <damage_band source_average_damage="2" adjusted_damage="1"/>
+          <damage_band source_average_damage="2.5" adjusted_damage="1d2"/>
+          <damage_band source_average_damage="3.5" adjusted_damage="1d3"/>
+          <damage_band source_average_damage="4.5" adjusted_damage="1d4"/>
+          <damage_band source_average_damage="5.5" adjusted_damage="1d6"/>
+          <damage_band source_average_damage="6.5" adjusted_damage="1d8"/>
+          <damage_band source_average_damage="7" adjusted_damage="1d10"/>
+          <damage_band source_average_damage="9-10" adjusted_damage="1d12"/>
+          <damage_band source_average_damage="11" adjusted_damage="2d8"/>
+          <damage_band source_average_damage="13.5" adjusted_damage="3d6"/>
+          <damage_band source_average_damage="16.5" adjusted_damage="3d8"/>
+          <damage_band source_average_damage="18" adjusted_damage="4d6"/>
+          <damage_band source_average_damage="22" adjusted_damage="3d10"/>
+          <damage_band source_average_damage="27.5" adjusted_damage="6d6"/>
+          <damage_band source_average_damage="33.5" adjusted_damage="6d8"/>
+        </age_row>
+        <age_row monster_age="Middle-Aged" ac_adjustment="-1" mv_adjustment_per_120="-10'" hd_fraction="75%" maximum_load_fraction="95%">
+          <damage_band source_average_damage="1" adjusted_damage="95%"/>
+          <damage_band source_average_damage="1.5" adjusted_damage="-"/>
+          <damage_band source_average_damage="2" adjusted_damage="1"/>
+          <damage_band source_average_damage="2.5" adjusted_damage="1d2"/>
+          <damage_band source_average_damage="3.5" adjusted_damage="1d3"/>
+          <damage_band source_average_damage="4.5" adjusted_damage="1d4"/>
+          <damage_band source_average_damage="5.5" adjusted_damage="1d6"/>
+          <damage_band source_average_damage="6.5" adjusted_damage="1d8"/>
+          <damage_band source_average_damage="7" adjusted_damage="1d10"/>
+          <damage_band source_average_damage="9-10" adjusted_damage="1d12"/>
+          <damage_band source_average_damage="11" adjusted_damage="2d8"/>
+          <damage_band source_average_damage="13.5" adjusted_damage="3d6"/>
+          <damage_band source_average_damage="16.5" adjusted_damage="3d8"/>
+          <damage_band source_average_damage="18" adjusted_damage="4d6"/>
+          <damage_band source_average_damage="22" adjusted_damage="3d10"/>
+          <damage_band source_average_damage="27.5" adjusted_damage="6d6"/>
+          <damage_band source_average_damage="33.5" adjusted_damage="6d8"/>
+        </age_row>
+        <age_row monster_age="Old" ac_adjustment="-2" mv_adjustment_per_120="-20'" hd_fraction="50%" maximum_load_fraction="90%">
+          <damage_band source_average_damage="1" adjusted_damage="90%"/>
+          <damage_band source_average_damage="1.5" adjusted_damage="-"/>
+          <damage_band source_average_damage="2" adjusted_damage="1"/>
+          <damage_band source_average_damage="2.5" adjusted_damage="1"/>
+          <damage_band source_average_damage="3.5" adjusted_damage="1d2"/>
+          <damage_band source_average_damage="4.5" adjusted_damage="1d2"/>
+          <damage_band source_average_damage="5.5" adjusted_damage="1d3"/>
+          <damage_band source_average_damage="6.5" adjusted_damage="1d4"/>
+          <damage_band source_average_damage="7" adjusted_damage="1d6"/>
+          <damage_band source_average_damage="9-10" adjusted_damage="1d8"/>
+          <damage_band source_average_damage="11" adjusted_damage="1d10"/>
+          <damage_band source_average_damage="13.5" adjusted_damage="2d6"/>
+          <damage_band source_average_damage="16.5" adjusted_damage="2d8"/>
+          <damage_band source_average_damage="18" adjusted_damage="4d4"/>
+          <damage_band source_average_damage="22" adjusted_damage="2d10"/>
+          <damage_band source_average_damage="27.5" adjusted_damage="3d8"/>
+          <damage_band source_average_damage="33.5" adjusted_damage="3d10"/>
+        </age_row>
+        <age_row monster_age="Ancient" ac_adjustment="-3" mv_adjustment_per_120="-30'" hd_fraction="33%" maximum_load_fraction="85%">
+          <damage_band source_average_damage="1" adjusted_damage="85%"/>
+          <damage_band source_average_damage="1.5" adjusted_damage="-"/>
+          <damage_band source_average_damage="2" adjusted_damage="-"/>
+          <damage_band source_average_damage="2.5" adjusted_damage="-"/>
+          <damage_band source_average_damage="3.5" adjusted_damage="1"/>
+          <damage_band source_average_damage="4.5" adjusted_damage="1"/>
+          <damage_band source_average_damage="5.5" adjusted_damage="1"/>
+          <damage_band source_average_damage="6.5" adjusted_damage="1d2"/>
+          <damage_band source_average_damage="7" adjusted_damage="1d2"/>
+          <damage_band source_average_damage="9-10" adjusted_damage="1d3"/>
+          <damage_band source_average_damage="11" adjusted_damage="1d4"/>
+          <damage_band source_average_damage="13.5" adjusted_damage="1d6"/>
+          <damage_band source_average_damage="16.5" adjusted_damage="2d3"/>
+          <damage_band source_average_damage="18" adjusted_damage="1d8"/>
+          <damage_band source_average_damage="22" adjusted_damage="1d10"/>
+          <damage_band source_average_damage="27.5" adjusted_damage="1d12"/>
+          <damage_band source_average_damage="33.5" adjusted_damage="4d3"/>
+        </age_row>
+        <note>* Movement adjustment is per 120' of encounter movement and applies to non-humanoid monsters only.</note>
+      </table>
+    </young_and_old_monsters>
+    <aging_for_monsters_with_ability_scores>
+      <rule>If using monster ability scores, age effects for AC, movement, Hit Dice, and damage can be calculated by applying ability penalties instead of the age table: -6 for baby/ancient, -4 for child/old, and -2 for adolescent/middle-aged.</rule>
+      <rule>Size and maximum load adjustments still use the Monster Age Adjustment table.</rule>
+      <rule>The Judge may use either method when the results differ.</rule>
+    </aging_for_monsters_with_ability_scores>
+    <noncombatant_monsters_and_experience_points>
+      <rule>A noncombatant monster of 1 HD or less requires 100 XP plus 15 XP per hit point bonus or special ability (*) to become a combatant.</rule>
+      <rule>The XP requirement doubles with each HD; round values over 20,000 XP to the nearest 1,000.</rule>
+      <rule>Upon becoming a combatant, the monster immediately gains +1 hit point per full Hit Die; each 4 hit points gained this way equals 1 Hit Die.</rule>
+      <rule>After becoming a combatant, it may gain Hit Dice or levels normally.</rule>
+    </noncombatant_monsters_and_experience_points>
+  </noncombatant_and_age_rules>
+  <taming_and_training_monsters>
+    <overview>
+      <rule>Taming teaches a monster to submit to handling without threatening or injuring its handler and companions.</rule>
+      <rule>Training teaches one or more tricks.</rule>
+      <rule>Animal trainers perform taming and training.</rule>
+      <rule>Animals, vermin, and fantastic creatures of animal intelligence must be tamed before training.</rule>
+      <rule>Fantastic creatures of sapient intelligence, giants, and humanoids cannot be tamed, but may voluntarily accept training.</rule>
+      <rule>Sapient creatures generally only need training when serving as mounts or war mounts.</rule>
+      <rule>Constructs, enchanted creatures, oozes, and undead can neither be tamed nor trained.</rule>
+      <rule>Initial taming requires one training period. Teaching the first trick requires one additional training period. Each later trick requires one-half training period.</rule>
+      <rule>Sapient monsters that voluntarily accept training skip taming and may proceed directly to tricks.</rule>
+      <rule>Training period assumes training begins when the creature is a baby or child.</rule>
+      <rule>If training starts when the creature is an adolescent or adult, taming time is multiplied by 6 and each trick’s training time is multiplied by 2.</rule>
+      <rule>Maximum tricks known is normally 2d4, or 5 plus/minus Intelligence modifier when the optional monster ability score rules are used, modified further by trainability modifier where applicable.</rule>
+      <rule>The trainer learns the creature’s trick limit when it is tamed.</rule>
+    </overview>
+    <animal_trainers>
+      <rule>Each rank in Animal Training covers one creature type.</rule>
+      <rule>Creatures sharing a Monster Listings entry are generally the same type, except dire, giant, and prehistoric animals, which count as separate types.</rule>
+      <rule>To train multiple creature types, take Animal Training multiple times.</rule>
+      <rule>To train dire, giant, prehistoric animals, or fantastic creatures, first take Animal Training for a similar normal animal type.</rule>
+      <table name="animal_trainer_wages">
+        <columns><column>trainer_type</column><column>wage</column></columns>
+        <row trainer_type="Domestic animal (Dog, hawk, horse, etc.)" wage="25gp/month"/>
+        <row trainer_type="Wild animal (Bear, cat, etc.)" wage="75gp/month"/>
+        <row trainer_type="Dire, giant, or prehistoric animal (any)" wage="150gp/month"/>
+        <row trainer_type="Fantastic creature or vermin (any)" wage="250gp/month"/>
+      </table>
+      <rule>If a creature is gigantic size or larger, handlers cost at least 150 gp per month.</rule>
+      <rule>To train mounts for combat, the trainer must also be a marshal of the appropriate type and earns whichever wage is higher.</rule>
+      <rule>Light cavalry marshals generally earn 60 gp per month; heavy cavalry marshals generally earn 120 gp per month.</rule>
+      <rule>A single trainer can train and manage up to six monsters at once.</rule>
+      <rule>Monster whispering means one trainer works one-on-one with one monster for the entire training period; this increases maximum tricks by 2.</rule>
+      <rule>Adult flying creatures can only be trained by monster whispering.</rule>
+    </animal_trainers>
+    <tricks>
+      <trick name="attack">Attack apparent enemies; the handler may designate a particular target.</trick>
+      <trick name="carry">Allow the handler to ride on its back.</trick>
+      <trick name="come">Come to the handler even when it otherwise would not.</trick>
+      <trick name="defend">Defend the handler or another designated character, even without a fresh command when a threat is present.</trick>
+      <trick name="down">Break off combat or otherwise back down. Without this trick the creature keeps fighting until forced to flee or until its opponent is defeated.</trick>
+      <trick name="fetch">Retrieve an indicated item, or a random object if none is designated.</trick>
+      <trick name="guard">Stay in place and prevent others from approaching.</trick>
+      <trick name="heel">Follow the handler closely even into places it normally would not go.</trick>
+      <trick name="perform">Carry out simple display tricks.</trick>
+      <trick name="seek">Search an area for anything obviously alive or animate.</trick>
+      <trick name="stay">Remain in place until the handler returns; do not challenge passersby, but still defend itself if needed.</trick>
+      <trick name="track">Track a presented scent.</trick>
+      <trick name="work">Carry, pull, or push more than normal load.</trick>
+      <rule>A trained monster obeys its trainer and any additional handlers the trainer introduces to it.</rule>
+      <rule>Handlers need not have the matching Animal Training proficiency, but without it they can safely control only one monster at a time unless role rules say otherwise.</rule>
+    </tricks>
+    <roles>
+      <role name="drover" code="D" trick_cost="7" morale_change="No morale change">
+        <summary>Brings livestock together and moves the herd.</summary>
+        <handling proficient="6" unproficient="1"/>
+      </role>
+      <role name="guard" code="G" trick_cost="7" morale_change="+2 morale, maximum +2">
+        <summary>Attacks designated targets and defends designated characters or locations; accompanies handlers when requested and remains loyally in place when handlers are absent.</summary>
+        <handling proficient="20" unproficient="6 if taught commands"/>
+        <note>Creatures lacking the right intelligence or temperament are usually trained as hunters instead.</note>
+      </role>
+      <role name="hunter" code="H" trick_cost="2" morale_change="No morale change">
+        <summary>Accompanies handlers on hunts, tracks and kills designated targets.</summary>
+        <handling proficient="6" unproficient="1"/>
+        <note>Requires constant monitoring and discipline.</note>
+      </role>
+      <role name="livestock" code="L" trick_cost="1" morale_change="No morale change">
+        <summary>Is easily herded; does not accept riders, pull loads, or carry burdens.</summary>
+        <handling proficient="any number if same social group and proficient or under drover control" unproficient="1"/>
+        <note>Domesticated herd animals can serve as livestock without taming or training.</note>
+      </role>
+      <role name="mount" code="M" trick_cost="5" morale_change="No morale change">
+        <summary>Carries a rider and accepts directions; no barding; no melee charges except against natural predators; does not attack with natural weapons while carrying a rider.</summary>
+        <handling proficient="outside battle: up to 6 mounts if proficient, one ridden and others ponied; in battle: ridden mount only with Riding proficiency" unproficient="lead one safely; riding without proficiency requires save vs Paralysis each round or fall"/>
+        <note>Sapient riding creatures must also be trained as mounts.</note>
+      </role>
+      <role name="war_mount" code="WM" trick_cost="8" morale_change="+2 morale, maximum +2, except sapient creatures do not gain this morale increase">
+        <summary>Carries a rider into battle, accepts barding, charges into melee, and attacks the rider’s target with natural weapons.</summary>
+        <handling proficient="same as mount" unproficient="same as mount"/>
+        <note>An unridden war mount functions as a guard creature.</note>
+      </role>
+      <role name="workbeast" code="WB" trick_cost="2" morale_change="No morale change">
+        <summary>Pulls heavy loads or carries burdens; does not accept a rider.</summary>
+        <handling proficient="6" unproficient="1"/>
+        <note>In stress or battle reacts according to natural instincts.</note>
+      </role>
+    </roles>
+    <magic_and_monster_training>
+      <rule spell_or_power="animal_friendship">Ordinary animals within 5 miles of an elven fastness are always considered tame for training by resident elves.</rule>
+      <rule spell_or_power="beast_friendship_or_friends_of_birds_and_beasts">Animal henchmen recruited by this power are automatically tame toward the character, can be monster-whisperer trained for any role their trick limit allows, do not require separate Animal Training for that character, and the character always counts as proficient when handling them.</rule>
+      <rule spell_or_power="charm">A charmed creature is immediately considered tame for training by the spellcaster. Appropriate Animal Training is still required. Training proceeds at child rates even if the creature is older. If the charm ends, the creature becomes wild again until re-charmed.</rule>
+      <rule spell_or_power="speak_with_animals">The character always counts as proficient when handling trained animals in their roles. A friendly untrained animal may be handled as if trained for any role it can fulfill, though the character is not treated as actually proficient unless he has the relevant proficiency. The character automatically counts as monster whispering when training animals he can speak with.</rule>
+    </magic_and_monster_training>
+    <encounters_with_tamed_monsters>
+      <rule>If a tame trained monster is uncontrolled, make a reaction roll when a character approaches it.</rule>
+      <rule>Apply +2 if the approaching character has the appropriate Animal Training proficiency.</rule>
+      <rule>Characters with Beast Friendship or under Speak with Animals count as proficient for this purpose.</rule>
+      <rule>On a reaction roll of 9 or higher, the character immediately becomes the animal’s handler.</rule>
+    </encounters_with_tamed_monsters>
+    <taming_and_training_by_race>
+      <rule>If a trainer has affinity with the monster, guard training counts as only two tricks.</rule>
+      <rule>If a trainer has no affinity, base training period is doubled for all purposes and morale of the trained monster is reduced by 2 while handled by that trainer.</rule>
+      <rule>Mounts refuse riders with no affinity; treat attempted riding anyway as unproficient riding.</rule>
+      <rule>War mounts accept no-affinity riders but function only as normal mounts for them.</rule>
+      <table name="monster_taming_and_training_by_race">
+        <columns><column>training_race</column><column>affinity</column><column>no_affinity</column></columns>
+        <row training_race="Bugbear" affinity="None" no_affinity="Dogs (all), Horses (all)"/>
+        <row training_race="Centaur" affinity="Horses (all)" no_affinity="None"/>
+        <row training_race="Dwarf" affinity="Grizzly Bears" no_affinity="Horses (all)"/>
+        <row training_race="Elf" affinity="Giant Hawks, Panthers" no_affinity="None"/>
+        <row training_race="Cyclops" affinity="Herd Animals (all)" no_affinity="Dogs (all), Horses (all)"/>
+        <row training_race="Ettin" affinity="Cave Bears" no_affinity="Dogs (all), Horses (all)"/>
+        <row training_race="Faerie, Pixie" affinity="Giant Bats, Ordinary Hawks," no_affinity="None"/>
+        <row training_race="Faerie, Sprite" affinity="Giant Bats, Ordinary Hawks," no_affinity="None"/>
+        <row training_race="Giant, Hill" affinity="Cave Bears, Dire Wolves" no_affinity="Dogs (all), Horses (all)"/>
+        <row training_race="Giant, Stone" affinity="Cave Bears" no_affinity="Dogs (all), Horses (all)"/>
+        <row training_race="Giant, Frost" affinity="Dire Wolves, Polar Bears" no_affinity="Dogs (all), Horses (all)"/>
+        <row training_race="Giant, Fire" affinity="Hell Hounds, Hydras" no_affinity="Dogs (all), Horses (all)"/>
+        <row training_race="Giant, Cloud" affinity="Dire Wolfs, Giant Hawks, Lions" no_affinity="None"/>
+      </table>
+    </taming_and_training_by_race>
+  </taming_and_training_monsters>
+  <monster_taming_and_training_characteristics>
+    <definitions>
+      <rule field="diminutive">Name for the creature’s young.</rule>
+      <rule field="weight">Adult weight in pounds. Adolescents weigh 75% of adult weight. Children weigh 25% to 75% of adult weight, averaging 50%. Babies weigh 5% to 25% of adult weight, averaging 15%. Eggs weigh 5% of adult weight.</rule>
+      <rule field="size_category">Use size categories M, L, H, G, and C. If height and weight imply different categories, weight usually determines size.</rule>
+      <table name="size_category_by_length_and_weight">
+        <columns><column>size_category</column><column>length_or_height</column><column>weight</column></columns>
+        <row size_category="man_sized" length_or_height="Less than 8' long/tall" weight="Up to 400 lbs"/>
+        <row size_category="large" length_or_height="8' to 12' long/tall" weight="401 to 2,000 lbs"/>
+        <row size_category="huge" length_or_height="12' to 20' long/tall" weight="2,001 to 8,000 lbs"/>
+        <row size_category="gigantic" length_or_height="20' to 32' long/tall" weight="8,001 to 32,000 lbs"/>
+        <row size_category="colossal" length_or_height="32' or more long/tall" weight="More than 32,000 lbs"/>
+      </table>
+      <rule field="normal_load">Most creatures carry normal load at full movement and maximum load equal to twice normal load at half movement.</rule>
+      <rule field="humanoid_loads">Humanoids may carry normal load at full movement, half again normal load at three-quarters movement, twice normal load at half movement, and four times normal load at one-quarter movement.</rule>
+      <rule field="role">Role codes are D, G, H, L, M, WM, and WB. Training is N/A for sapient creatures unless typically used as mounts.</rule>
+      <rule field="trained_value">Market price for a tamed and trained adolescent or adult. Animals and creatures of animal intelligence may be sold as property in most realms. Sapient creatures may only be sold as slaves in Chaotic realms permitting slavery; otherwise they must be hired as mercenaries.</rule>
+      <rule field="ability_score_price_adjustments_high">Each ability score of 13-15 adds 25% to cost. Each ability score of 16-17 adds 100%. Each ability score of 18 adds 400%.</rule>
+      <rule field="ability_score_price_adjustments_low">Reduce price by 15% for each score of 3, by 10% for each score of 4-5, and by 5% for each score of 6-8.</rule>
+      <rule field="lifespan">Format is Baby/Child/Adolescent/Adult/Middle Aged/Old/Ancient/Maximum. Oviparous creatures use E instead of 0 to indicate beginning life as an egg.</rule>
+      <rule field="adult_child_baby_value">These values are for untamed, untrained creatures. Adolescents are priced as adults. Eggs are priced as babies. A dash means the age category is essentially worthless and usually unavailable for sale.</rule>
+      <rule field="dragon_age_pricing">Each dragon age category is purchased as an adult creature; there is no separate baby form within a later dragon age category.</rule>
+      <rule field="supply_cost">Cost per week to maintain an adult creature. Eggs, herbivores grazing on a pasture, and carnivores hunting on a range require no supplied provisions.</rule>
+      <rule field="supply_cost_for_young">For baby, child, and adolescent creatures, multiply adult supply cost by the creature’s age as a fraction of age at adulthood, rounding to nearest 0.5 gp.</rule>
+      <rule field="training_period">Months required to tame a creature or teach its first trick. Dash means the creature cannot be trained.</rule>
+      <rule field="trainability_modifier">Modifier to maximum tricks. S means sapient and not limited to a trick count, though sapient creatures still need mount or war mount training when serving in those roles. Dash means the creature cannot be trained.</rule>
+    </definitions>
+    <animals>
+      <entry name="Ape, White" diminutive="Infant" weight="360" size="M" normal_load="22" lifespan="0/3/6/9/16/24/32/40" role="G" trained_value="465" adult_value="390" child_value="185" baby_value="35" supply_cost="0.5" training_period="1" tm="+3"/>
+      <entry name="Baboon, Rock" diminutive="Infant" weight="230" size="M" normal_load="14" lifespan="0/4/7.5/12/18/27/36/45" role="G" trained_value="250" adult_value="215" child_value="90" baby_value="25" supply_cost="0.5" training_period="1" tm="+3"/>
+      <entry name="Bat, Giant" diminutive="Pup" weight="75" size="L" normal_load="9" lifespan="0/0.5/2/4/9.6/14.4/19.2/24" role="WM" trained_value="2,250" adult_value="1,225" child_value="985" baby_value="900" supply_cost="16" training_period="5" tm="+1"/>
+      <entry name="Bear, Black" diminutive="Cub" weight="550" size="L" normal_load="18" lifespan="0/2/4/8/14/21/28/35" role="H" trained_value="435" adult_value="135" child_value="130" baby_value="75" supply_cost="4" training_period="2" tm="+1"/>
+      <entry name="Bear, Cave" diminutive="Cub" weight="1,100" size="L" normal_load="36" lifespan="0/2/4/8/14/21/28/35" role="H" trained_value="1,165" adult_value="1,150" child_value="425" baby_value="250" supply_cost="4" training_period="3" tm="0"/>
+      <entry name="Bear, Cave, Riding" diminutive="Cub" weight="1,100" size="L" normal_load="36" lifespan="0/2/4/8/14/21/28/35" role="WM" trained_value="11,750" adult_value="1,150" child_value="425" baby_value="250" supply_cost="4" training_period="3" tm="0"/>
+      <entry name="Bear, Grizzly" diminutive="Cub" weight="800" size="L" normal_load="25" lifespan="0/2/4/8/14/21/28/35" role="H" trained_value="766" adult_value="445" child_value="255" baby_value="150" supply_cost="4" training_period="3" tm="+1"/>
+      <entry name="Bear, Grizzly, Riding" diminutive="Cub" weight="800" size="L" normal_load="25" lifespan="0/2/4/8/14/21/28/35" role="WM" trained_value="3,000" adult_value="445" child_value="255" baby_value="150" supply_cost="4" training_period="3" tm="+1"/>
+      <entry name="Bear, Polar" diminutive="Cub" weight="1,400" size="L" normal_load="45" lifespan="0/2/4/8/14/21/28/35" role="H" trained_value="1,650" adult_value="1,525" child_value="633" baby_value="400" supply_cost="4" training_period="3" tm="+1"/>
+      <entry name="Bear, Polar, Riding" diminutive="Cub" weight="1,400" size="L" normal_load="45" lifespan="0/2/4/8/14/21/28/35" role="WM" trained_value="5,750" adult_value="1,525" child_value="633" baby_value="400" supply_cost="4" training_period="3" tm="+1"/>
+      <entry name="Boar, Giant" diminutive="Piglet" weight="930" size="L" normal_load="30" lifespan="0/1/5/9/15/22/30/37" role="H" trained_value="550" adult_value="200" child_value="15" baby_value="0.35" supply_cost="16" training_period="2" tm="+2"/>
+      <entry name="Boar, Giant, Riding" diminutive="Piglet" weight="930" size="L" normal_load="30" lifespan="0/1/5/9/15/22/30/37" role="WM" trained_value="1,400" adult_value="200" child_value="15" baby_value="0.35" supply_cost="16" training_period="2" tm="+2"/>
+      <entry name="Boar, Ordinary" diminutive="Piglet" weight="375" size="M" normal_load="12" lifespan="0/0.8/2/4/6/9/12/15" role="L" trained_value="3" adult_value="3" child_value="1.5" baby_value="1" supply_cost="0.5" training_period="2" tm="-1"/>
+      <entry name="Camel" diminutive="Calf" weight="1,000" size="L" normal_load="30" lifespan="0/2/5/8/20/30/40/50" role="M" trained_value="100" adult_value="10" child_value="15.5" baby_value="8.25" supply_cost="4" training_period="5" tm="+1"/>
+      <entry name="Cat, Lion" diminutive="Cub" weight="375" size="L" normal_load="25" lifespan="0/1.25/2.5/5/10/15/20" role="H" trained_value="750" adult_value="140" child_value="325" baby_value="240" supply_cost="16" training_period="3.5" tm="+1"/>
+      <entry name="Cat, Mountain Lion" diminutive="Cub" weight="210" size="M" normal_load="12" lifespan="0/1/2.5/5/10/15/20/25" role="H" trained_value="425" adult_value="60" child_value="155" baby_value="125" supply_cost="2" training_period="2.5" tm="+1"/>
+      <entry name="Cat, Panther" diminutive="Cub" weight="300" size="M" normal_load="18" lifespan="0/1.25/2.5/5/10/15/20/25" role="H" trained_value="1,150" adult_value="600" child_value="545" baby_value="420" supply_cost="2" training_period="5.5" tm="+1"/>
+      <entry name="Cat, Saber-Tooth" diminutive="Cub" weight="800" size="L" normal_load="48" lifespan="0/2.5/5/7.5/14/21/28" role="H" trained_value="2,475" adult_value="1,135" child_value="750" baby_value="415" supply_cost="16" training_period="5.5" tm="+1"/>
+      <entry name="Cat, Saber-Tooth, Riding" diminutive="Cub" weight="800" size="L" normal_load="48" lifespan="0/2.5/5/7.5/14/21/28" role="W" trained_value="8,500" adult_value="1,135" child_value="750" baby_value="415" supply_cost="16" training_period="5.5" tm="+1"/>
+      <entry name="Cat, Tiger" diminutive="Cub" weight="500" size="L" normal_load="30" lifespan="0/2/4/6/12/16/21/30" role="H" trained_value="1,250" adult_value="180" child_value="400" baby_value="245" supply_cost="16" training_period="5.5" tm="+1"/>
+      <entry name="Crocodile, Giant" diminutive="Hatchling" weight="17,600" size="G" normal_load="400" lifespan="E/0.5/5/20/100/150/200/250" role="H" trained_value="21,000" adult_value="1,800" child_value="1,100" baby_value="15" supply_cost="192" training_period="11" tm="-2"/>
+      <entry name="Crocodile, Large" diminutive="Hatchling" weight="3,300" size="H" normal_load="65" lifespan="E/0.25/4/10/28/42/56/70" role="H" trained_value="4,275" adult_value="650" child_value="400" baby_value="0.25" supply_cost="48" training_period="11" tm="-2"/>
+      <entry name="Crocodile, Ordinary" diminutive="Hatchling" weight="375" size="L" normal_load="8" lifespan="E/0.2/3/8/22/33/44/55" role="H" trained_value="600" adult_value="90" child_value="55" baby_value="0.03" supply_cost="16" training_period="8" tm="-2"/>
+      <entry name="Dog, Hunting" diminutive="Pup" weight="60" size="M" normal_load="2" lifespan="0/0.15/0.5/1.5/6/9/12/15" role="H" trained_value="10" adult_value="1.5" child_value="5" baby_value="4.25" supply_cost="0.5" training_period="1" tm="+1"/>
+      <entry name="Dog, War" diminutive="Pup" weight="180" size="M" normal_load="6" lifespan="0/0.15/1/2/5/7.5/10/12" role="G" trained_value="75" adult_value="1.75" child_value="5" baby_value="4" supply_cost="0.5" training_period="1" tm="+2"/>
+      <entry name="Donkey" diminutive="Foal" weight="500" size="L" normal_load="10" lifespan="0/0.5/2/6/20/30/40/50" role="WB" trained_value="8" adult_value="5" child_value="6" baby_value="5" supply_cost="4" training_period="1" tm="+2"/>
+      <entry name="Elephant" diminutive="Calf" weight="9,000" size="G" normal_load="180" lifespan="0/5/12/18/34/51/68/85" role="WB" trained_value="1,500" adult_value="1,335" child_value="720" baby_value="265" supply_cost="48" training_period="3" tm="+3"/>
+      <entry name="Elephant, War" diminutive="Calf" weight="9,000" size="G" normal_load="180" lifespan="0/5/12/18/34/51/68/85" role="WM" trained_value="3,500" adult_value="1,335" child_value="720" baby_value="265" supply_cost="48" training_period="3" tm="+3"/>
+      <entry name="Fish, Giant Catfish" diminutive="Fry" weight="2,700" size="L" normal_load="55" lifespan="E/0.25/10/36/108/162/216/270" role="H" trained_value="4,100" adult_value="650" child_value="225" baby_value="130" supply_cost="4" training_period="6" tm="-3"/>
+      <entry name="Fish, Giant Piranha" diminutive="Fry" weight="750" size="M" normal_load="15" lifespan="E/0.125/5/18/50/75/100/125" role="H" trained_value="1,875" adult_value="250" child_value="8" baby_value="2" supply_cost="2" training_period="12" tm="-3"/>
+      <entry name="Fish, Giant Rockfish" diminutive="Fry" weight="6,800" size="H" normal_load="135" lifespan="E/0.5/24/84/252/378/504" role="H" trained_value="5,150" adult_value="900" child_value="70" baby_value="0.13" supply_cost="12" training_period="9" tm="-3"/>
+      <entry name="Fish, Giant Sturgeon" diminutive="Fry" weight="20,500" size="G" normal_load="400" lifespan="E/0.33/15/54/152/228/304" role="H" trained_value="13,500" adult_value="1,500" child_value="450" baby_value="225" supply_cost="192" training_period="6" tm="-3"/>
+      <entry name="Hawk, Giant" diminutive="Eyas" weight="155" size="L" normal_load="30" lifespan="E/0.2/5/4/62/93/124/155" role="WM" trained_value="15,175" adult_value="2,725" child_value="2,300" baby_value="2,215" supply_cost="16" training_period="2" tm="+1"/>
+      <entry name="Hawk, Ordinary" diminutive="Eyas" weight="9" size="M" normal_load="2" lifespan="E/0.1/0.75/2/4/6/8/10" role="H" trained_value="20" adult_value="1" child_value="0.75" baby_value="0.25" supply_cost="0.5" training_period="2" tm="+1"/>
+      <entry name="Herd Animal, 1HD" diminutive="Lamb, Kid" weight="95" size="M" normal_load="2" lifespan="0/0.25/0.5/1/4/8/12/15" role="L" trained_value="2" adult_value="2" child_value="1.75" baby_value="1.5" supply_cost="0.5" training_period="6" tm="-1"/>
+      <entry name="Herd Animal, 2HD" diminutive="Calf, Fawn" weight="350" size="L" normal_load="7" lifespan="0/0.25/1/2/6/9/12/15" role="L" trained_value="3" adult_value="3" child_value="2" baby_value="1.75" supply_cost="4" training_period="6" tm="-1"/>
+      <entry name="Herd Animal, 3HD" diminutive="Calf, Fawn" weight="800" size="L" normal_load="16" lifespan="0/0.5/2/4/8/12/16/20" role="L" trained_value="10" adult_value="10" child_value="3.5" baby_value="3" supply_cost="4" training_period="6" tm="-1"/>
+      <entry name="Herd Animal, 4HD" diminutive="Calf, Fawn" weight="1,400" size="L" normal_load="28" lifespan="0/1/2.5/5/10/15/20/25" role="L" trained_value="15" adult_value="15" child_value="5" baby_value="3.25" supply_cost="4" training_period="6" tm="-1"/>
+      <entry name="Horse, Heavy" diminutive="Foal" weight="2,000" size="L" normal_load="40" lifespan="0/0.5/2/5/12/18/24/30" role="WB" trained_value="40" adult_value="20" child_value="20" baby_value="15" supply_cost="4" training_period="2" tm="+1"/>
+      <entry name="Horse, Heavy War" diminutive="Foal" weight="2,000" size="L" normal_load="40" lifespan="0/0.5/2/5/12/18/24/30" role="WM" trained_value="700" adult_value="20" child_value="20" baby_value="15" supply_cost="4" training_period="2" tm="+1"/>
+      <entry name="Horse, Light" diminutive="Foal" weight="1,000" size="L" normal_load="20" lifespan="0/0.5/2/5/12/18/24/30" role="M" trained_value="75" adult_value="10" child_value="18" baby_value="15" supply_cost="4" training_period="2" tm="+1"/>
+      <entry name="Horse, Light War" diminutive="Foal" weight="1,000" size="L" normal_load="20" lifespan="0/0.5/2/5/12/18/24/30" role="WM" trained_value="150" adult_value="10" child_value="18" baby_value="15" supply_cost="4" training_period="2" tm="+1"/>
+      <entry name="Horse, Medium" diminutive="Foal" weight="1,500" size="L" normal_load="30" lifespan="0/0.5/2/5/12/18/24/30" role="M" trained_value="40" adult_value="15" child_value="15" baby_value="12" supply_cost="4" training_period="2" tm="+1"/>
+      <entry name="Horse, Medium Draft" diminutive="Foal" weight="1,500" size="L" normal_load="30" lifespan="0/0.5/2/5/12/18/24/30" role="WB" trained_value="30" adult_value="15" child_value="15" baby_value="12" supply_cost="4" training_period="2" tm="+1"/>
+      <entry name="Horse, Medium War" diminutive="Foal" weight="1,500" size="L" normal_load="30" lifespan="0/0.5/2/5/12/18/24/30" role="WM" trained_value="250" adult_value="15" child_value="15" baby_value="12" supply_cost="4" training_period="2" tm="+1"/>
+      <entry name="Hyena" diminutive="Cub" weight="125" size="M" normal_load="4" lifespan="0/1/3/6/12/16/19/24" role="H" trained_value="215" adult_value="1.25" child_value="2" baby_value="1" supply_cost="4" training_period="3.5" tm="+1"/>
+      <entry name="Hyena, Giant" diminutive="Cub" weight="1,110" size="L" normal_load="37" lifespan="0/1.75/5/10/20/27/34/41" role="H" trained_value="2,500" adult_value="850" child_value="675" baby_value="425" supply_cost="16" training_period="5.5" tm="+1"/>
+      <entry name="Lizard, Giant Draco" diminutive="Hatchling" weight="170" size="M" normal_load="3" lifespan="E/0.75/3/5.5/22/33/44/55" role="H" trained_value="1,000" adult_value="140" child_value="205" baby_value="160" supply_cost="0.5" training_period="10" tm="-2"/>
+      <entry name="Lizard, Giant Gecko" diminutive="Hatchling" weight="110" size="M" normal_load="2" lifespan="E/2/9.5/21/40/60/80/100" role="H" trained_value="875" adult_value="65" child_value="18" baby_value="10" supply_cost="0.5" training_period="10" tm="-2"/>
+      <entry name="Lizard, Giant Horned" diminutive="Hatchling" weight="200" size="M" normal_load="4" lifespan="E/1/7/12/30/45/60/75" role="H" trained_value="1,625" adult_value="400" child_value="90" baby_value="75" supply_cost="0.5" training_period="10" tm="-2"/>
+      <entry name="Lizard, Giant Tuatara" diminutive="Hatchling" weight="250" size="L" normal_load="5" lifespan="E/4/20/40/80/120/160/200" role="H" trained_value="1,950" adult_value="665" child_value="30" baby_value="0.05" supply_cost="4" training_period="10" tm="-2"/>
+      <entry name="Mastodon" diminutive="Calf" weight="18,000" size="G" normal_load="360" lifespan="0/6/15/22/30/45/60/75" role="WM" trained_value="20,500" adult_value="1,800" child_value="650" baby_value="165" supply_cost="48" training_period="3" tm="+1"/>
+      <entry name="Mule" diminutive="Foal" weight="1,000" size="L" normal_load="20" lifespan="0/0.5/2/5/16/24/32/40" role="WB" trained_value="20" adult_value="10" child_value="10" baby_value="8" supply_cost="4" training_period="2" tm="+2"/>
+      <entry name="Octopus, Giant" diminutive="Hatchling" weight="110" size="H" normal_load="4" lifespan="0/0.5/1/2/5/7/10/12" role="G" trained_value="6,000" adult_value="1,600" child_value="2,625" baby_value="2,400" supply_cost="12" training_period="6" tm="+2"/>
+      <entry name="Pteranodon" diminutive="Hatchling" weight="200" size="L" normal_load="6" lifespan="E/0.2/2/7/10/15/20/25" role="H" trained_value="4,350" adult_value="1,885" child_value="1,925" baby_value="1,850" supply_cost="16" training_period="5" tm="-1"/>
+      <entry name="Pterodactyl" diminutive="Hatchling" weight="30" size="M" normal_load="2" lifespan="E/0.1/1/4/6/9/12/15" role="H" trained_value="335" adult_value="145" child_value="150" baby_value="145" supply_cost="2" training_period="5" tm="-1"/>
+      <entry name="Rhinoceros" diminutive="Calf" weight="5,000" size="H" normal_load="100" lifespan="0/2/5/10/16/24/32/40" role="H" trained_value="3,000" adult_value="775" child_value="475" baby_value="190" supply_cost="12" training_period="6" tm="0"/>
+      <entry name="Rhinoceros, Wooly" diminutive="Calf" weight="7,000" size="H" normal_load="140" lifespan="0/2/5.5/11/16/24/32/40" role="H" trained_value="5,000" adult_value="785" child_value="635" baby_value="250" supply_cost="12" training_period="6" tm="0"/>
+      <entry name="Shark, Bull" diminutive="Pup" weight="290" size="M" normal_load="6" lifespan="0/1.25/4.5/18/32/48/64/80" role="H" trained_value="850" adult_value="80" child_value="18" baby_value="1" supply_cost="2" training_period="6" tm="-3"/>
+      <entry name="Shark, Great White" diminutive="Pup" weight="4,000" size="H" normal_load="80" lifespan="0/2/12/25/40/60/80/100" role="H" trained_value="7,500" adult_value="1,750" child_value="325" baby_value="1" supply_cost="48" training_period="5.5" tm="-2"/>
+      <entry name="Shark, Mako" diminutive="Pup" weight="1,050" size="L" normal_load="21" lifespan="0/1.5/8/12/22/33/44/55" role="H" trained_value="2,500" adult_value="950" child_value="100" baby_value="0.5" supply_cost="16" training_period="6" tm="-3"/>
+      <entry name="Snake, Giant Python" diminutive="Snakelet" weight="175" size="L" normal_load="10" lifespan="E/0.66/4/9/18/27/36/45" role="H" trained_value="325" adult_value="1.75" child_value="5" baby_value="0.05" supply_cost="16" training_period="4.5" tm="-2"/>
+      <entry name="Snake, Giant Rattler" diminutive="Snakelet" weight="28" size="L" normal_load="2" lifespan="0/0.5/3.75/8/14/21/28/35" role="H" trained_value="285" adult_value="0.25" child_value="100" baby_value="90" supply_cost="16" training_period="5" tm="-3"/>
+      <entry name="Snake, Pit Viper" diminutive="Snakelet" weight="15" size="M" normal_load="1" lifespan="0/0.33/3.5/7/12/18/24/30" role="H" trained_value="170" adult_value="0.15" child_value="50" baby_value="45" supply_cost="2" training_period="5" tm="-3"/>
+      <entry name="Snake, Sea Snake" diminutive="Snakelet" weight="21" size="M" normal_load="1" lifespan="0/0.25/3.25/6/10/15/20/25" role="H" trained_value="170" adult_value="0.20" child_value="75" baby_value="70" supply_cost="2" training_period="5" tm="-3"/>
+      <entry name="Snake, Spitting Cobra" diminutive="Snakelet" weight="8" size="M" normal_load="1" lifespan="E/0.2/3/5/8/12/16/20" role="H" trained_value="165" adult_value="0.10" child_value="50" baby_value="45" supply_cost="2" training_period="5" tm="-3"/>
+      <entry name="Squid, Giant" diminutive="Hatchling" weight="600" size="H" normal_load="80" lifespan="E/0.5/1/2/5/7/10/12" role="G" trained_value="4,750" adult_value="575" child_value="100" baby_value="235" supply_cost="12" training_period="12" tm="+1"/>
+      <entry name="Stegosaurus" diminutive="Hatchling" weight="11,000" size="G" normal_load="220" lifespan="E/0.5/5/23/66/99/132/165" role="H" trained_value="3,250" adult_value="1,000" child_value="350" baby_value="325" supply_cost="48" training_period="12" tm="-1"/>
+      <entry name="Stegosaurus, Riding" diminutive="Hatchling" weight="11,000" size="G" normal_load="220" lifespan="E/0.5/5/23/66/99/132/165" role="R" trained_value="5,000" adult_value="1,000" child_value="145" baby_value="130" supply_cost="48" training_period="12" tm="-1"/>
+      <entry name="Titanothere" diminutive="Calf" weight="12,850" size="G" normal_load="250" lifespan="0/2.5/6/12/24/36/48/60" role="H" trained_value="3,500" adult_value="1,200" child_value="585" baby_value="360" supply_cost="48" training_period="12" tm="-1"/>
+      <entry name="Toad, Giant" diminutive="Tadpole" weight="250" size="M" normal_load="8" lifespan="0/0.33/8/16/36/54/72/90" role="H" trained_value="650" adult_value="45" child_value="4" baby_value="0.02" supply_cost="0.5" training_period="5" tm="-2"/>
+      <entry name="Triceratops" diminutive="Hatchling" weight="13,000" size="G" normal_load="260" lifespan="E/0.5/5.5/24/68/102/136/170" role="H" trained_value="3,500" adult_value="1,000" child_value="325" baby_value="300" supply_cost="48" training_period="12" tm="-1"/>
+      <entry name="Triceratops, Riding" diminutive="Hatchling" weight="13,000" size="G" normal_load="260" lifespan="E/0.5/5.5/24/68/102/136/170" role="R" trained_value="5,500" adult_value="1,000" child_value="325" baby_value="300" supply_cost="48" training_period="12" tm="-1"/>
+      <entry name="Tyrannosaurus Rex" diminutive="Hatchling" weight="15,000" size="G" normal_load="300" lifespan="E/0.5/8/25/70/105/140/175" role="H" trained_value="35,000" adult_value="6,050" child_value="1,215" baby_value="3,400" supply_cost="192" training_period="12" tm="-1"/>
+      <entry name="T. Rex, Riding" diminutive="Hatchling" weight="15,000" size="G" normal_load="300" lifespan="E/0.5/8/25/70/105/140/175" role="R" trained_value="48,500" adult_value="5,250" child_value="1,215" baby_value="3,400" supply_cost="192" training_period="12" tm="-1"/>
+      <entry name="Varmint, Giant Ferret" diminutive="Kit" weight="135" size="M" normal_load="3" lifespan="0/0.75/2/5/9/13.5/18/22.5" role="H" trained_value="165" adult_value="15" child_value="25" baby_value="17" supply_cost="2" training_period="2.5" tm="0"/>
+      <entry name="Varmint, Giant Rat" diminutive="Pup" weight="33" size="M" normal_load="1" lifespan="0/0.25/0.5/2/4/6/8/10" role="H" trained_value="90" adult_value="5" child_value="3.5" baby_value="3" supply_cost="0.5" training_period="2.5" tm="0"/>
+      <entry name="Varmint, Giant Shrew" diminutive="Pup" weight="215" size="M" normal_load="4" lifespan="0/0.25/0.5/2/7/11/14/18" role="H" trained_value="150" adult_value="10" child_value="35" baby_value="30" supply_cost="0.5" training_period="3" tm="0"/>
+      <entry name="Varmint, Giant Weasel" diminutive="Kit" weight="2,000" size="L" normal_load="40" lifespan="0/1.25/2.75/7/16/24/32/40" role="H" trained_value="1,000" adult_value="250" child_value="350" baby_value="235" supply_cost="4" training_period="3" tm="0"/>
+      <entry name="Whale, Killer" diminutive="Calf" weight="7,700" size="H" normal_load="150" lifespan="0/2/7/14/20/30/40/50" role="H" trained_value="3,750" adult_value="1,050" child_value="75" baby_value="3.5" supply_cost="48" training_period="3" tm="+2"/>
+      <entry name="Whale, Narwhal" diminutive="Calf" weight="3,500" size="H" normal_load="70" lifespan="0/1.5/6/12/18/27/36/45" role="H" trained_value="3,250" adult_value="2,325" child_value="300" baby_value="155" supply_cost="12" training_period="2" tm="+2"/>
+      <entry name="Whale, Sperm" diminutive="Calf" weight="120,000" size="C" normal_load="2,400" lifespan="0/4/8/16/32/48/64/80" role="H" trained_value="60,000" adult_value="25,000" child_value="1,235" baby_value="75" supply_cost="960" training_period="3.5" tm="+2"/>
+      <entry name="Wolf" diminutive="Pup" weight="176" size="M" normal_load="6" lifespan="0/0.66/2/3/6/9/12/15" role="H" trained_value="60" adult_value="1.75" child_value="3" baby_value="0.15" supply_cost="2" training_period="1" tm="+1"/>
+      <entry name="Wolf, Guard" diminutive="Pup" weight="176" size="M" normal_load="6" lifespan="0/0.66/2/3/6/9/12/15" role="G" trained_value="150" adult_value="1.75" child_value="3" baby_value="0.15" supply_cost="2" training_period="1" tm="+1"/>
+      <entry name="Wolf, Dire" diminutive="Pup" weight="585" size="L" normal_load="20" lifespan="0/0.66/2/4/8/12/16/20" role="G" trained_value="415" adult_value="140" child_value="60" baby_value="25" supply_cost="16" training_period="2" tm="+1"/>
+      <entry name="Wolf, Dire, Riding" diminutive="Pup" weight="585" size="L" normal_load="20" lifespan="0/0.66/2/4/8/12/16/20" role="WM" trained_value="700" adult_value="140" child_value="60" baby_value="25" supply_cost="16" training_period="2" tm="+1"/>
+    </animals>
+    <beastmen_and_humanoids>
+      <entry name="Bugbear" diminutive="Whelp" weight="400" size="M" normal_load="13" lifespan="0/1.2/14.5/19.5/36/54/72/90" role="N/A" trained_value="1,115+" adult_value="75" child_value="70" baby_value="21" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Bugbear, Dire" diminutive="Whelp" weight="1,000" size="L" normal_load="35" lifespan="0/1.5/18/24/45/68/90/112" role="N/A" trained_value="10,500+" adult_value="7,845" child_value="2,250" baby_value="" supply_cost="16" training_period="1" tm="S"/>
+      <entry name="Centaur" diminutive="Foal" weight="2,100" size="L" normal_load="42" lifespan="0/1.8/22/29/54/81/108/135" role="N/A" trained_value="4,500" adult_value="3,000" child_value="1,150" baby_value="650" supply_cost="4" training_period="1" tm="S"/>
+      <entry name="Dwarf" diminutive="Child" weight="150" size="M" normal_load="5" lifespan="0/3/15/26/51/76/116/150" role="N/A" trained_value="100+" adult_value="40" child_value="20" baby_value="-" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Elf" diminutive="Child" weight="115" size="M" normal_load="5" lifespan="0/4/15/51/-/-/-/200" role="N/A" trained_value="800+" adult_value="40" child_value="20" baby_value="-" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Faerie, Pixie" diminutive="Pixel" weight="16" size="M" normal_load="1" lifespan="0/4/15/51/-/-/-/200" role="N/A" trained_value="2,050" adult_value="1,525" child_value="825" baby_value="375" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Faerie, Sprite" diminutive="Pixel" weight="5" size="M" normal_load="" lifespan="0/4/15/51/-/-/-/200" role="N/A" trained_value="250" adult_value="185" child_value="125" baby_value="25" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Gnoll" diminutive="Whelp" weight="300" size="M" normal_load="10" lifespan="0/1.15/14/18.5/34/51/68/85" role="N/A" trained_value="575+" adult_value="56" child_value="28" baby_value="-" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Gnoll, Dire" diminutive="Whelp" weight="745" size="L" normal_load="25" lifespan="0/1.5/17/23/42/64/85/105" role="N/A" trained_value="5,000+" adult_value="3,675" child_value="1,000" baby_value="600" supply_cost="16" training_period="1" tm="S"/>
+      <entry name="Gnome" diminutive="Baby" weight="65" size="M" normal_load="4" lifespan="0/3.5/15/26/63/96/136/175" role="N/A" trained_value="350+" adult_value="32" child_value="16" baby_value="-" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Goblin" diminutive="Whelp" weight="45" size="M" normal_load="3" lifespan="0/0.75/9/12/22/33/44/55" role="N/A" trained_value="85+" adult_value="16" child_value="6" baby_value="-" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Grimlock" diminutive="Whelp" weight="220" size="M" normal_load="7" lifespan="0/1.5/3/4.5/30/45/60/75" role="N/A" trained_value="375" adult_value="40" child_value="4" baby_value="-" supply_cost="2" training_period="1" tm="S"/>
+      <entry name="Halfling" diminutive="Child" weight="42" size="M" normal_load="3" lifespan="0/2.5/14/22/43/66/96/125" role="N/A" trained_value="145+" adult_value="24" child_value="12" baby_value="-" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Hobgoblin" diminutive="Whelp" weight="215" size="M" normal_load="7" lifespan="0/1/12/16/30/45/60/75" role="N/A" trained_value="475+" adult_value="40" child_value="20" baby_value="-" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Human" diminutive="Child" weight="150" size="M" normal_load="5" lifespan="0/2/13/18/38/57/76/95" role="N/A" trained_value="85+" adult_value="40" child_value="20" baby_value="-" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Kobold" diminutive="Whelp" weight="40" size="M" normal_load="3" lifespan="0/0.66/8/11/20/30/40/50" role="N/A" trained_value="40+" adult_value="16" child_value="8" baby_value="-" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Lizardman" diminutive="Hatchling" weight="250" size="M" normal_load="8" lifespan="E/1.05/13/17.5/32/48/64/80" role="N/A" trained_value="750+" adult_value="45" child_value="22" baby_value="-" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Merman" diminutive="Merchild" weight="400" size="M" normal_load="12" lifespan="0/3/6/9/60/90/120/150" role="N/A" trained_value="130" adult_value="65" child_value="30" baby_value="-" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Minotaur" diminutive="Calf" weight="700" size="L" normal_load="25" lifespan="0/1.4/17/22.5/42/63/84/105" role="N/A" trained_value="1,850+" adult_value="320" child_value="275" baby_value="100" supply_cost="4" training_period="1" tm="S"/>
+      <entry name="Morlock" diminutive="Child" weight="150" size="M" normal_load="5" lifespan="0/1.5/3/4.5/30/45/60/75" role="N/A" trained_value="70" adult_value="10" child_value="5" baby_value="-" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Neanderthal" diminutive="Child" weight="220" size="M" normal_load="7" lifespan="0/1.5/3/4.5/30/45/60/75" role="N/A" trained_value="130" adult_value="50" child_value="25" baby_value="-" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Nymph, Dryad" diminutive="Nymphlet" weight="95" size="M" normal_load="3" lifespan="0/4/15/51/-/-/-/200" role="N/A" trained_value="1,000" adult_value="750" child_value="515" baby_value="210" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Nymph, Naiad" diminutive="Nymphlet" weight="95" size="M" normal_load="3" lifespan="0/4/15/51/-/-/-/200" role="N/A" trained_value="550" adult_value="415" child_value="265" baby_value="85" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Ogre" diminutive="Whelp" weight="600" size="L" normal_load="20" lifespan="0/1.33/16/22/40/60/80/100" role="N/A" trained_value="1,275+" adult_value="275" child_value="350" baby_value="215" supply_cost="4" training_period="1" tm="S"/>
+      <entry name="Ogre, Dire" diminutive="Whelp" weight="1,500" size="L" normal_load="40" lifespan="0/1.75/20/27/50/75/100/125" role="N/A" trained_value="17,500+" adult_value="13,000" child_value="3,150" baby_value="2,000" supply_cost="16" training_period="1" tm="S"/>
+      <entry name="Orc" diminutive="Whelp" weight="200" size="M" normal_load="7" lifespan="0/1/12/16/30/45/60/75" role="N/A" trained_value="185+" adult_value="40" child_value="20" baby_value="-" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Orc, Dire" diminutive="Whelp" weight="525" size="M" normal_load="17" lifespan="0/1/12/16/30/45/60/75" role="N/A" trained_value="2,850+" adult_value="1,315" child_value="325" baby_value="170" supply_cost="2" training_period="1" tm="S"/>
+      <entry name="Thrassian" diminutive="Hatchling" weight="585" size="M" normal_load="20" lifespan="E/1.33/16/21/40/60/80/100" role="N/A" trained_value="2,750+" adult_value="160" child_value="325" baby_value="165" supply_cost="2" training_period="1" tm="S"/>
+      <entry name="Troglodyte" diminutive="Brood" weight="150" size="M" normal_load="5" lifespan="E/0.95/11.5/15/28/42/56/70" role="N/A" trained_value="700+" adult_value="30" child_value="72" baby_value="45" supply_cost="0.5" training_period="1" tm="S"/>
+    </beastmen_and_humanoids>
+    <fantastic_creatures>
+      <entry name="Amphisbaena" diminutive="Snakeloop" weight="215" size="L" normal_load="14" lifespan="E/1/5/10/20/30/40/50" role="H" trained_value="6,250" adult_value="1,475" child_value="600" baby_value="465" supply_cost="16" training_period="6" tm="-3"/>
+      <entry name="Arane" diminutive="Araneling" weight="570" size="L" normal_load="120" lifespan="E/1.5/24/95/150/225/300" role="N/A" trained_value="9,750" adult_value="7,250" child_value="4,500" baby_value="3,400" supply_cost="16" training_period="1" tm="S"/>
+      <entry name="Basilisk" diminutive="Hatchling" weight="300" size="M" normal_load="20" lifespan="E/1.25/5/8.5/20/30/40/50" role="H" trained_value="15,000" adult_value="12,450" child_value="6,650" baby_value="5,285" supply_cost="2" training_period="6" tm="0"/>
+      <entry name="Blink Dog" diminutive="Pup" weight="180" size="M" normal_load="4" lifespan="0/1/2/4/20/30/40/50" role="N/A" trained_value="8,500" adult_value="6,375" child_value="6,000" baby_value="5,000" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Chimera" diminutive="Spawn" weight="4,000" size="H" normal_load="80" lifespan="E/2/4/8/16/24/32/40" role="WM" trained_value="36,500" adult_value="22,500" child_value="17,000" baby_value="11,500" supply_cost="48" training_period="1" tm="S"/>
+      <entry name="Cockatrice" diminutive="Chick" weight="25" size="M" normal_load="1" lifespan="E/.07/0.5/1/6/9/12/15" role="H" trained_value="5,000" adult_value="2,750" child_value="4,215" baby_value="4,150" supply_cost="2" training_period="1" tm="0"/>
+      <entry name="Demon Boar" diminutive="Piglet" weight="930" size="L" normal_load="30" lifespan="0/1.5/18/23.4/44/66/88/110" role="N/A" trained_value="18,500" adult_value="13,875" child_value="6,000" baby_value="4,500" supply_cost="16" training_period="1" tm="S"/>
+      <entry name="Doppelganger" diminutive="Spawn" weight="150" size="M" normal_load="5" lifespan="0/4/15/51/80/120/160/200" role="N/A" trained_value="13,500" adult_value="10,285" child_value="6,000" baby_value="2,925" supply_cost="2" training_period="1" tm="S"/>
+      <entry name="Dragon Turtle" diminutive="Spawn" weight="115,000" size="C" normal_load="2,300" lifespan="E/7/33/67/100/135/535/1350" role="WM" trained_value="130,000" adult_value="97,500" child_value="70,000" baby_value="35,000" supply_cost="960" training_period="1" tm="S"/>
+      <entry name="Dragon, Huge Ven." diminutive="Spawn" weight="60,500" size="C" normal_load="1,200" lifespan="E/5/25/50/75/100/400/1000*" role="WM" trained_value="450,000" adult_value="317,000" child_value="N/A" baby_value="N/A" supply_cost="960" training_period="1" tm="S"/>
+      <entry name="Dragon, Venerable" diminutive="Spawn" weight="36,000" size="C" normal_load="720" lifespan="E/5/25/50/75/100/400/1000*" role="WM" trained_value="360,000" adult_value="255,000" child_value="N/A" baby_value="N/A" supply_cost="960" training_period="1" tm="S"/>
+      <entry name="Dragon, Ancient" diminutive="Spawn" weight="30,000" size="C" normal_load="585" lifespan="E/5/25/50/75/100/400/1000*" role="WM" trained_value="310,000" adult_value="220,000" child_value="N/A" baby_value="N/A" supply_cost="960" training_period="1" tm="S"/>
+      <entry name="Dragon, Very Old" diminutive="Spawn" weight="23,000" size="C" normal_load="460" lifespan="E/5/25/50/75/100/400/1000*" role="WM" trained_value="290,000" adult_value="205,000" child_value="N/A" baby_value="N/A" supply_cost="960" training_period="1" tm="S"/>
+      <entry name="Dragon, Old" diminutive="Spawn" weight="17,750" size="G" normal_load="350" lifespan="E/5/25/50/75/100/400/1000*" role="WM" trained_value="185,000" adult_value="130,000" child_value="N/A" baby_value="N/A" supply_cost="192" training_period="1" tm="S"/>
+      <entry name="Dragon, Mat. Adult" diminutive="Spawn" weight="13,000" size="G" normal_load="260" lifespan="E/5/25/50/75/100/400/1000*" role="WM" trained_value="140,000" adult_value="97,500" child_value="N/A" baby_value="N/A" supply_cost="192" training_period="1" tm="S"/>
+      <entry name="Dragon, Adult" diminutive="Spawn" weight="9,000" size="G" normal_load="180" lifespan="E/5/25/50/75/100/400/1000*" role="WM" trained_value="115,000" adult_value="80,000" child_value="N/A" baby_value="N/A" supply_cost="192" training_period="1" tm="S"/>
+      <entry name="Dragon, Juvenile" diminutive="Spawn" weight="5,900" size="H" normal_load="120" lifespan="E/5/25/50/75/100/400/1000*" role="WM" trained_value="65,000" adult_value="43,500" child_value="N/A" baby_value="N/A" supply_cost="48" training_period="1" tm="S"/>
+      <entry name="Dragon, Young" diminutive="Spawn" weight="3,300" size="H" normal_load="65" lifespan="E/5/25/50/75/100/400/1000*" role="WM" trained_value="50,000" adult_value="33,500" child_value="N/A" baby_value="N/A" supply_cost="48" training_period="1" tm="S"/>
+      <entry name="Dragon, Very Young" diminutive="Spawn" weight="1,500" size="H" normal_load="30" lifespan="E/5/25/50/75/100/400/1000*" role="WM" trained_value="35,000" adult_value="31,500" child_value="N/A" baby_value="N/A" supply_cost="48" training_period="1" tm="S"/>
+      <entry name="Dragon, Spawn" diminutive="Spawn" weight="400" size="L" normal_load="8" lifespan="E/5/25/50/75/100/400/1000*" role="WM" trained_value="20,000" adult_value="17,000" child_value="N/A" baby_value="N/A" supply_cost="16" training_period="1" tm="S"/>
+      <entry name="Farahavar" diminutive="Faraval" weight="410" size="M" normal_load="8" lifespan="E/3/14/28/110/165/220/275" role="N/A" trained_value="120,000" adult_value="90,000" child_value="10,500" baby_value="6,150" supply_cost="2" training_period="1" tm="S"/>
+      <entry name="Gorgon" diminutive="Calf" weight="4,000" size="H" normal_load="80" lifespan="0/1.33/2.7/8/16/24/32/40" role="G" trained_value="36,000" adult_value="1,600" child_value="14,225" baby_value="10,500" supply_cost="48" training_period="1" tm="0"/>
+      <entry name="Griffon" diminutive="Fledgling" weight="500" size="L" normal_load="45" lifespan="E/0.25/0.5/3.3/22/33/44/55" role="WM" trained_value="30,000" adult_value="4,000" child_value="9,750" baby_value="9,250" supply_cost="16" training_period="3" tm="+2"/>
+      <entry name="Hag" diminutive="Brat" weight="175" size="M" normal_load="6" lifespan="4/15/51/80/120/160/200" role="N/A" trained_value="70,000" adult_value="52,500" child_value="26,150" baby_value="12,825" supply_cost="2" training_period="1" tm="S"/>
+      <entry name="Harpy" diminutive="Fledgling" weight="150" size="M" normal_load="9" lifespan="E/0.15/2/6/20/30/40/50" role="N/A" trained_value="15,500" adult_value="12,750" child_value="8,000" baby_value="7,750" supply_cost="2" training_period="1" tm="S"/>
+      <entry name="Hellhound, Greater" diminutive="Pup" weight="1,370" size="L" normal_load="45" lifespan="0/1.08/3.5/5/8/12/16/20" role="N/A" trained_value="5,250" adult_value="4,000" child_value="2,050" baby_value="1,525" supply_cost="16" training_period="4" tm="S"/>
+      <entry name="Hellhound, Gr., Riding" diminutive="Pup" weight="1,370" size="L" normal_load="45" lifespan="0/1.08/3.5/5/8/12/16/20" role="WM" trained_value="5,250" adult_value="4,000" child_value="2,050" baby_value="1,525" supply_cost="16" training_period="4" tm="S"/>
+      <entry name="Hellhound, Lesser" diminutive="Pup" weight="325" size="M" normal_load="10" lifespan="0/0.75/2.5/3.5/4.8/7.2/9.6/12" role="N/A" trained_value="2,100" adult_value="1,575" child_value="1,050" baby_value="915" supply_cost="2" training_period="4" tm="S"/>
+      <entry name="Hippogriff" diminutive="Foal" weight="1,000" size="L" normal_load="45" lifespan="E/0.42/1/3/20/30/40/50" role="WM" trained_value="17,250" adult_value="8,825" child_value="8,325" baby_value="7,715" supply_cost="4" training_period="2" tm="+3"/>
+      <entry name="Hydra, 12 Head" diminutive="Hydralet" weight="4,800" size="H" normal_load="96" lifespan="E/1.5/9/20/40/60/80/100" role="G" trained_value="12,150" adult_value="6,900" child_value="945" baby_value="475" supply_cost="48" training_period="1" tm="+3"/>
+      <entry name="Hydra, 11 Head" diminutive="Hydralet" weight="4,600" size="H" normal_load="92" lifespan="E/1.5/9/20/40/60/80/100" role="G" trained_value="10,500" adult_value="5,825" child_value="790" baby_value="400" supply_cost="48" training_period="1" tm="+3"/>
+      <entry name="Hydra, 10 Head" diminutive="Hydralet" weight="4,400" size="H" normal_load="88" lifespan="E/1.5/9/20/40/60/80/100" role="G" trained_value="9,250" adult_value="5,000" child_value="630" baby_value="315" supply_cost="48" training_period="1" tm="+3"/>
+      <entry name="Hydra, 9 Head" diminutive="Hydralet" weight="4,200" size="H" normal_load="84" lifespan="E/1.5/9/20/40/60/80/100" role="G" trained_value="8,000" adult_value="4,250" child_value="500" baby_value="250" supply_cost="48" training_period="1" tm="+3"/>
+      <entry name="Hydra, 8 Head" diminutive="Hydralet" weight="4,000" size="H" normal_load="80" lifespan="E/1.5/9/20/40/60/80/100" role="G" trained_value="7,000" adult_value="3,600" child_value="375" baby_value="180" supply_cost="48" training_period="1" tm="+3"/>
+      <entry name="Hydra, 7 Head" diminutive="Hydralet" weight="3,800" size="H" normal_load="76" lifespan="E/1.5/9/20/40/60/80/100" role="G" trained_value="5,450" adult_value="2,625" child_value="300" baby_value="150" supply_cost="48" training_period="1" tm="+3"/>
+      <entry name="Hydra, 6 Head" diminutive="Hydralet" weight="3,600" size="H" normal_load="72" lifespan="E/1.5/9/20/40/60/80/100" role="G" trained_value="4,300" adult_value="1,900" child_value="288" baby_value="140" supply_cost="48" training_period="1" tm="+3"/>
+      <entry name="Hydra, 5 Head" diminutive="Hydralet" weight="3,400" size="H" normal_load="68" lifespan="E/1.5/9/20/40/60/80/100" role="G" trained_value="3,175" adult_value="1,175" child_value="275" baby_value="135" supply_cost="48" training_period="1" tm="+3"/>
+      <entry name="Khepri" diminutive="Larvae" weight="240" size="M" normal_load="8" lifespan="E/-/-/0.1/120/180/240/300" role="N/A" trained_value="92,250" adult_value="70,000" child_value="N/A" baby_value="N/A" supply_cost="2" training_period="1" tm="S"/>
+      <entry name="Kraken" diminutive="Hatchling" weight="10,000" size="C" normal_load="330" lifespan="E/8/16/32/64/96/128/160" role="G" trained_value="110,000" adult_value="60,000" child_value="18,225" baby_value="2,100" supply_cost="960" training_period="6" tm="+3"/>
+      <entry name="Lamia" diminutive="Whelp" weight="1,500" size="L" normal_load="30" lifespan="E/1.65/20/27/50/75/100/125" role="N/A" trained_value="41,200" adult_value="30,900" child_value="18,750" baby_value="13,725" supply_cost="16" training_period="1" tm="S"/>
+      <entry name="Lammasu" diminutive="Cub" weight="500" size="L" normal_load="25" lifespan="E/5/19/62.5/100/150/200/250" role="N/A" trained_value="43,500" adult_value="32,625" child_value="28,500" baby_value="11,650" supply_cost="16" training_period="1" tm="S"/>
+      <entry name="Leyak" diminutive="N/A" weight="25" size="M" normal_load="2" lifespan="-/-/-/-/-/-/-/1000" role="N/A" trained_value="17,500" adult_value="13,125" child_value="N/A" baby_value="N/A" supply_cost="2" training_period="1" tm="S"/>
+      <entry name="Lycanthrope, Werebear" diminutive="Cub" weight="1,100" size="L" normal_load="36" lifespan="0/2/13/18/38/57/76/95" role="N/A" trained_value="9,000" adult_value="6,750" child_value="4,575" baby_value="3,025" supply_cost="16" training_period="1" tm="S"/>
+      <entry name="Lycanthrope, Wereboar" diminutive="Piglet" weight="680" size="L" normal_load="22" lifespan="0/2/13/18/38/57/76/95" role="N/A" trained_value="5,000" adult_value="3,750" child_value="3,475" baby_value="2,315" supply_cost="4" training_period="1" tm="S"/>
+      <entry name="Lycanthrope, Wererat" diminutive="Pup" weight="150" size="M" normal_load="5" lifespan="0/2/13/18/38/57/76/95" role="N/A" trained_value="3,150" adult_value="2,365" child_value="3,025" baby_value="2,100" supply_cost="2" training_period="1" tm="S"/>
+      <entry name="Lycanthrope, Weretiger" diminutive="Cub" weight="500" size="L" normal_load="30" lifespan="0/2/13/18/38/57/76/95" role="N/A" trained_value="6,725" adult_value="5,050" child_value="4,100" baby_value="2,775" supply_cost="16" training_period="1" tm="S"/>
+      <entry name="Lycanthrope, Werewolf" diminutive="Pup" weight="175" size="M" normal_load="6" lifespan="0/2/13/18/38/57/76/95" role="N/A" trained_value="4,350" adult_value="3,250" child_value="3,125" baby_value="2,150" supply_cost="2" training_period="1" tm="S"/>
+      <entry name="Manticore" diminutive="Cub" weight="1,000" size="L" normal_load="20" lifespan="E/0.5/5/12/18/24/30" role="WM" trained_value="55,500" adult_value="41,350" child_value="32,400" baby_value="27,000" supply_cost="16" training_period="1" tm="S"/>
+      <entry name="Medusa" diminutive="Spawn" weight="150" size="M" normal_load="5" lifespan="0/2/13/18/38/57/76/95" role="N/A" trained_value="14,250" adult_value="11,000" child_value="7,000" baby_value="4,900" supply_cost="2" training_period="1" tm="S"/>
+      <entry name="Owl Bear" diminutive="Hatchling" weight="1,500" size="L" normal_load="50" lifespan="0/2/4/8/14/21/28/35" role="G" trained_value="2,325" adult_value="250" child_value="375" baby_value="150" supply_cost="16" training_period="2" tm="+3"/>
+      <entry name="Pegasus" diminutive="Foal" weight="1,500" size="L" normal_load="30" lifespan="E/0.5/2/4/12/18/24/30" role="WM" trained_value="20,000" adult_value="17,000" child_value="11,600" baby_value="10,600" supply_cost="4" training_period="1" tm="S"/>
+      <entry name="Phase Tiger" diminutive="Cub" weight="500" size="L" normal_load="30" lifespan="0/2/4/6/12/16/21/30" role="WM" trained_value="4,350" adult_value="2,500" child_value="1,900" baby_value="1,300" supply_cost="16" training_period="1" tm="S"/>
+      <entry name="Remorhaz, 10HD" diminutive="Spawn" weight="10,000" size="G" normal_load="200" lifespan="E/0.75/2/9/18/27/36/45" role="H" trained_value="12,850" adult_value="8,650" child_value="5,775" baby_value="4,666" supply_cost="192" training_period="1.5" tm="-1"/>
+      <entry name="Roc, Giant" diminutive="Fledgling" weight="15,000" size="C" normal_load="300" lifespan="E/7.5/15/30/126/189/252/315" role="WM" trained_value="485,000" adult_value="340,000" child_value="130,000" baby_value="30,000" supply_cost="960" training_period="3" tm="S"/>
+      <entry name="Roc, Large" diminutive="Fledgling" weight="3,000" size="G" normal_load="60" lifespan="E/5/10/21/84/126/168/210" role="WM" trained_value="138,000" adult_value="90,000" child_value="37,000" baby_value="15,000" supply_cost="192" training_period="3" tm="S"/>
+      <entry name="Roc, Small" diminutive="Fledgling" weight="800" size="H" normal_load="15" lifespan="E/4/7.5/15/60/90/120" role="WM" trained_value="50,000" adult_value="33,000" child_value="17,750" baby_value="9,000" supply_cost="48" training_period="3" tm="S"/>
+      <entry name="Rust Monster" diminutive="Spawn" weight="200" size="M" normal_load="4" lifespan="E/0.75/1.5/2.3/15/22.5/30/37.5" role="H" trained_value="2,250" adult_value="1,250" child_value="1,350" baby_value="1,200" supply_cost="0" training_period="1" tm="-2"/>
+      <entry name="Sea Serpent" diminutive="Snakelet" weight="6,500" size="H" normal_load="130" lifespan="E/1/5/20/40/60/85/100" role="H" trained_value="11,350" adult_value="320" child_value="265" baby_value="130" supply_cost="48" training_period="12" tm="-2"/>
+      <entry name="Skittering Maw" diminutive="Wriggler" weight="4,000" size="H" normal_load="96" lifespan="E/3.66/11.3/21/58/87/116/145" role="H" trained_value="18,500" adult_value="5,000" child_value="890" baby_value="450" supply_cost="48" training_period="10.5" tm="-2"/>
+      <entry name="Sorcerous Sphere" diminutive="Magic Ball" weight="815" size="L" normal_load="16" lifespan="E/8/16/24/160/240/320/400" role="N/A" trained_value="100,000" adult_value="75,000" child_value="48,000" baby_value="12,000" supply_cost="16" training_period="1" tm="S"/>
+      <entry name="Sphinx" diminutive="Cub" weight="1,925" size="H" normal_load="40" lifespan="E/0.5/1.5/18/75/110/150/185" role="N/A" trained_value="200,000" adult_value="150,000" child_value="45,000" baby_value="40,000" supply_cost="48" training_period="1" tm="S"/>
+      <entry name="Stirge" diminutive="Brood" weight="1" size="M" normal_load="0" lifespan="E/0.16/0.3/0.5/3/5/6.5/8" role="H" trained_value="1,000" adult_value="13" child_value="N/A" baby_value="N/A" supply_cost="0.5" training_period="9" tm="-2"/>
+      <entry name="Throghrin" diminutive="Whelp" weight="215" size="M" normal_load="7" lifespan="0/1/12/16/30/45/60" role="N/A" trained_value="5,600" adult_value="4,200" child_value="3,250" baby_value="2,715" supply_cost="0.5" training_period="1" tm="S"/>
+      <entry name="Treant" diminutive="Sapling" weight="3,185" size="H" normal_load="0" lifespan="0/2/20/90/400/600/800/1000" role="N/A" trained_value="27,000" adult_value="20,250" child_value="12,850" baby_value="9,000" supply_cost="12" training_period="1" tm="S"/>
+      <entry name="Unicorn" diminutive="Foal" weight="1,500" size="L" normal_load="30" lifespan="0/0.5/2/4/400/600/800/1000" role="WM" trained_value="28,500" adult_value="25,000" child_value="16,600" baby_value="15,150" supply_cost="4" training_period="1" tm="S"/>
+      <entry name="Wyvern" diminutive="Hatchling" weight="1,500" size="H" normal_load="30" lifespan="E/2/4/6/36/54/72/90" role="WM" trained_value="35,500" adult_value="10,000" child_value="14,000" baby_value="9,600" supply_cost="48" training_period="3" tm="+3"/>
+      <entry name="Yali" diminutive="Cub" weight="585" size="L" normal_load="55" lifespan="0/1.5/3/6/12/18/24/30" role="G" trained_value="14,000" adult_value="8,800" child_value="5,165" baby_value="3,800" supply_cost="16" training_period="1" tm="+3"/>
+    </fantastic_creatures>
+    <giants>
+      <entry name="Cyclops" diminutive="Whelp" weight="7,000" size="H" normal_load="90" lifespan="0/2.45/29.5/39/73/110/146/182.5" role="N/A" trained_value="12,750" adult_value="9,550" child_value="2,300" baby_value="925" supply_cost="12" training_period="1" tm="S"/>
+      <entry name="Ettin" diminutive="Whelp" weight="2,800" size="H" normal_load="75" lifespan="0/1.95/23.5/31/58/87/116/145" role="N/A" trained_value="10,200" adult_value="7,650" child_value="2,600" baby_value="1,625" supply_cost="12" training_period="1" tm="S"/>
+      <entry name="Giant, Hill" diminutive="Giantling" weight="1,100" size="H" normal_load="35" lifespan="0/1.55/18.5/25/46/69/92/115" role="N/A" trained_value="6,750" adult_value="5,000" child_value="1,175" baby_value="825" supply_cost="12" training_period="1" tm="S"/>
+      <entry name="Giant, Stone" diminutive="Giantling" weight="1,500" size="H" normal_load="50" lifespan="0/1.65/20/27/50/75/100/125" role="N/A" trained_value="9,500" adult_value="7,125" child_value="1,875" baby_value="1,300" supply_cost="12" training_period="1" tm="S"/>
+      <entry name="Giant, Frost" diminutive="Giantling" weight="2,800" size="H" normal_load="75" lifespan="0/1.95/23.5/31/58/87/116/145" role="N/A" trained_value="12,500" adult_value="9,375" child_value="2,400" baby_value="1,500" supply_cost="12" training_period="1" tm="S"/>
+      <entry name="Giant, Fire" diminutive="Giantling" weight="3,200" size="H" normal_load="85" lifespan="0/2/24/32/60/90/120/150" role="N/A" trained_value="19,500" adult_value="14,625" child_value="3,600" baby_value="2,250" supply_cost="12" training_period="1" tm="S"/>
+      <entry name="Giant, Cloud" diminutive="Giantling" weight="7,000" size="H" normal_load="90" lifespan="0/2.45/29.5/39/73/109.5/146/182.5" role="N/A" trained_value="26,250" adult_value="20,000" child_value="4,800" baby_value="2,550" supply_cost="12" training_period="1" tm="S"/>
+      <entry name="Giant, Storm" diminutive="Giantling" weight="12,000" size="G" normal_load="155" lifespan="0/2.8/34/45/84/126/168/210" role="N/A" trained_value="46,850" adult_value="35,000" child_value="17,750" baby_value="9,750" supply_cost="48" training_period="1" tm="S"/>
+      <entry name="Troll" diminutive="Whelp" weight="850" size="L" normal_load="28" lifespan="0/1.4/17/22.5/42/63/84/105" role="N/A" trained_value="8,725" adult_value="6,500" child_value="3,250" baby_value="2,375" supply_cost="16" training_period="1" tm="S"/>
+      <entry name="Troll, Dire" diminutive="Whelp" weight="1,650" size="L" normal_load="43" lifespan="0/1.66/20/26/50/75/100/125" role="N/A" trained_value="43,250" adult_value="32,500" child_value="5,150" baby_value="3,500" supply_cost="16" training_period="1" tm="S"/>
+    </giants>
+    <oozes>
+      <entry name="Black Pudding" diminutive="Custard" weight="Up to 50,000" size="G" normal_load="0" lifespan="0/.125/1.75/3.5/-/-/-/1000+" role="-" trained_value="-" adult_value="9,435" child_value="5,300" baby_value="937" supply_cost="95" training_period="-" tm="-"/>
+      <entry name="Gelatinous Cube" diminutive="Box" weight="Up to 80,000" size="H" normal_load="0" lifespan="0/.125/1/2.25/-/-/-/1000+" role="-" trained_value="-" adult_value="550" child_value="400" baby_value="195" supply_cost="0" training_period="-" tm="-"/>
+      <entry name="Green Slime" diminutive="Smear" weight="Up to 515" size="H" normal_load="0" lifespan="0/.01/.42/.82/-/-/-/1000+" role="-" trained_value="-" adult_value="300" child_value="260" baby_value="230" supply_cost="0" training_period="-" tm="-"/>
+      <entry name="Grey Ooze" diminutive="Deposit" weight="Up to 3,100" size="H" normal_load="0" lifespan="0/.125/0.25/0.5/-/-/-/1000+" role="-" trained_value="-" adult_value="465" child_value="445" baby_value="340" supply_cost="0" training_period="-" tm="--"/>
+    </oozes>
+    <vermin>
+      <entry name="Ankheg" diminutive="Nymph" weight="800" size="L" normal_load="72" lifespan="E/0.7/1.2/2.4/3.1/4.6/6.2/7.7" role="WB" trained_value="2,785" adult_value="815" child_value="1,675" baby_value="1,450" supply_cost="16" training_period="4" tm="-2"/>
+      <entry name="Ankheg, Hunting" diminutive="Nymph" weight="800" size="L" normal_load="72" lifespan="E/0.7/1.2/2.4/3.1/4.6/6.2/7.7" role="H" trained_value="3,125" adult_value="725" child_value="1,675" baby_value="1,450" supply_cost="16" training_period="4" tm="-2"/>
+      <entry name="Ant, Giant" diminutive="Larva" weight="150" size="M" normal_load="3" lifespan="E/1.3/6/8.5/14/21/28/35" role="H" trained_value="1,275" adult_value="235" child_value="150" baby_value="115" supply_cost="0.5" training_period="6" tm="0"/>
+      <entry name="Bee, Giant" diminutive="Larva" weight="3" size="M" normal_load="0" lifespan="E/0.1/0.3/0.7/2.2/3.3/4.4/5.5" role="H" trained_value="275" adult_value="-" child_value="125" baby_value="120" supply_cost="0.5" training_period="6" tm="0"/>
+      <entry name="Beetle, Gt. Bombardier" diminutive="Larva" weight="128" size="M" normal_load="55" lifespan="E/0.2/1.7/3.8/3.6/5.5/7.3/9.1" role="WB" trained_value="600" adult_value="20" child_value="125" baby_value="120" supply_cost="0.5" training_period="4.75" tm="-2"/>
+      <entry name="Beetle, Gt. Bomb., Hunt." diminutive="Larva" weight="128" size="M" normal_load="55" lifespan="E/0.2/1.7/3.8/3.6/5.5/7.3/9.1" role="H" trained_value="630" adult_value="20" child_value="125" baby_value="120" supply_cost="0.5" training_period="4.75" tm="-2"/>
+      <entry name="Beetle, Giant Fire" diminutive="Larva" weight="75" size="M" normal_load="30" lifespan="E/0.2/1.5/3.3/3.2/4.8/6.4/8" role="WB" trained_value="585" adult_value="15" child_value="175" baby_value="165" supply_cost="0.5" training_period="4.75" tm="-2"/>
+      <entry name="Beetle, Giant Fire, Hunt." diminutive="Larva" weight="75" size="M" normal_load="30" lifespan="E/0.2/1.5/3.3/3.2/4.8/6.4/8" role="H" trained_value="600" adult_value="15" child_value="175" baby_value="165" supply_cost="0.5" training_period="4.75" tm="-2"/>
+      <entry name="Beetle, Giant Tiger" diminutive="Larva" weight="600" size="M" normal_load="250" lifespan="E/0.3/2.5/5.6/5.4/8/10.7/13.4" role="WB" trained_value="1,365" adult_value="65" child_value="350" baby_value="315" supply_cost="2" training_period="7.5" tm="0"/>
+      <entry name="Beetle, Giant Tiger, Hunt." diminutive="Larva" weight="600" size="M" normal_load="250" lifespan="E/0.3/2.5/5.6/5.4/8/10.7/13.4" role="H" trained_value="1,365" adult_value="65" child_value="350" baby_value="315" supply_cost="2" training_period="7.5" tm="0"/>
+      <entry name="Caecilian" diminutive="Larva" weight="475" size="H" normal_load="10" lifespan="E/4/8/21/34/51/68/85" role="H" trained_value="4,350" adult_value="915" child_value="415" baby_value="185" supply_cost="12" training_period="11" tm="-2"/>
+      <entry name="Carcass Scavenger" diminutive="Hatchling" weight="200" size="L" normal_load="4" lifespan="E/1.7/5.2/10.4/28/42/56/70" role="H" trained_value="1,700" adult_value="535" child_value="185" baby_value="125" supply_cost="16" training_period="4.5" tm="-3"/>
+      <entry name="Centipede, Giant" diminutive="Hatchling" weight="0.25" size="M" normal_load="0" lifespan="E/0.3/1/2/5.2/7.8/10.4/13" role="H" trained_value="550" adult_value="180" child_value="115" baby_value="110" supply_cost="0.5" training_period="5" tm="-3"/>
+      <entry name="Crab, Giant" diminutive="Hatchling" weight="500" size="L" normal_load="210" lifespan="E/2/8/13/26/39/52/65" role="WB" trained_value="1,200" adult_value="235" child_value="110" baby_value="35" supply_cost="4" training_period="6" tm="-2"/>
+      <entry name="Crab, Giant, Hunting" diminutive="Hatchling" weight="500" size="L" normal_load="210" lifespan="E/2/8/13/26/39/52/65" role="H" trained_value="1,300" adult_value="175" child_value="110" baby_value="35" supply_cost="4" training_period="6" tm="-2"/>
+      <entry name="Fly, Giant Carnivorous" diminutive="Maggot" weight="4" size="M" normal_load="0" lifespan="E/0.1/0.7/1.2/1.8/2.7/3.6/4.5" role="H" trained_value="600" adult_value="20" child_value="125" baby_value="125" supply_cost="2" training_period="5" tm="-2"/>
+      <entry name="Locust, Cavern" diminutive="Nymph" weight="15" size="M" normal_load="5" lifespan="E/0.3/0.7/1/1.3/2/2.7/3.3" role="H" trained_value="1,185" adult_value="30" child_value="375" baby_value="350" supply_cost="0.5" training_period="9" tm="-3"/>
+      <entry name="Purple Worm" diminutive="Spawn" weight="16,000" size="C" normal_load="320" lifespan="E/10/25/50/80/120/160/200" role="H" trained_value="43,000" adult_value="9,750" child_value="915" baby_value="450" supply_cost="960" training_period="6" tm="-3"/>
+      <entry name="Rhagodessa, Giant" diminutive="Spawn" weight="215" size="L" normal_load="90" lifespan="E/0.66/2/13/26/39/52/65" role="H" trained_value="1,450" adult_value="485" child_value="615" baby_value="535" supply_cost="16" training_period="5" tm="+1"/>
+      <entry name="Scorpion, Giant" diminutive="Scorpling" weight="230" size="L" normal_load="96" lifespan="E/1/2.5/25/50/75/100/125" role="G" trained_value="4,250" adult_value="415" child_value="1,150" baby_value="950" supply_cost="16" training_period="12" tm="+1"/>
+      <entry name="Spider, Black Widow" diminutive="Spiderling" weight="240" size="L" normal_load="100" lifespan="E/0.5/1.5/14/22/33/44/55" role="WM" trained_value="3,750" adult_value="145" child_value="750" baby_value="675" supply_cost="16" training_period="12" tm="+2"/>
+      <entry name="Spider, Crab" diminutive="Spiderling" weight="125" size="L" normal_load="50" lifespan="E/0.33/1/12/18/27/36/45" role="WM" trained_value="3,150" adult_value="125" child_value="675" baby_value="625" supply_cost="16" training_period="12" tm="+2"/>
+      <entry name="Spider, Tarantula" diminutive="Spiderling" weight="500" size="L" normal_load="100" lifespan="E/2/4/95/150/225/300/375" role="WM" trained_value="5,250" adult_value="775" child_value="800" baby_value="475" supply_cost="16" training_period="10" tm="+2"/>
+    </vermin>
+  </monster_taming_and_training_characteristics>
+  <uncertainties>
+    <item confidence="0.83">The Monster Age Damage Calculator header is visually compressed in the DOCX extraction. The age rows and adjusted results are preserved, and the source-average-damage bands include one inferred band of 6.5 to keep the 17-column structure consistent with the extracted rows.</item>
+    <item confidence="0.84">Several role-code cells in the characteristics tables appear corrupted in the source extraction: Cat, Saber-Tooth, Riding has role code "W"; Stegosaurus, Riding, Triceratops, Riding, and T. Rex, Riding have role code "R". The printed role code was preserved exactly rather than normalized.</item>
+    <item confidence="0.86">Bugbear, Dire has a blank baby_value cell in the DOCX extraction. The blank is preserved.</item>
+    <item confidence="0.88">Faerie, Sprite has a blank normal_load cell in the DOCX extraction. The blank is preserved.</item>
+  </uncertainties>
+</rules_summary>

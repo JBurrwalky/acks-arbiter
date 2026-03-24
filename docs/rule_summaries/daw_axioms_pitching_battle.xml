@@ -1,0 +1,647 @@
+<pitching_battle_summary title="Pitching Battle!" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <definitions>
+    <definition name="battle_phase_countdown" abbreviation="bpc">
+      <rule>Controls how quickly armies move between missile, skirmish, and melee engagement.</rule>
+      <rule>Higher values make closing or disengaging slower.</rule>
+    </definition>
+    <definition name="battle_turn">
+      <rule>One battle turn equals approximately 10 minutes of game time.</rule>
+      <rule>Ten phases of any type equal one battle turn.</rule>
+    </definition>
+    <definition name="phase">
+      <rule>One phase equals approximately 1 minute of game time, or 6 melee rounds.</rule>
+    </definition>
+    <definition name="participating_units">
+      <rule>Units assigned to the current battle zone for the current phase.</rule>
+    </definition>
+    <definition name="battle_rating" abbreviation="br">
+      <rule>A unit's value on the battlefield.</rule>
+      <rule>An army's BR for a phase equals the sum of the BR of all participating units, adjusted by applicable rules.</rule>
+    </definition>
+  </definitions>
+
+  <battle_preparation>
+    <set_battle_phase_countdown>
+      <rule>Before battle, determine the battlefield's starting BPC.</rule>
+      <rule>The Judge may assign the value by terrain judgment or roll 1d8 on the terrain table for the battle hex.</rule>
+      <rule>In heavy rain or snow, increase the terrain minimum by 1.</rule>
+      <tables>
+        <table name="battle_phase_countdown_by_terrain">
+          <columns>
+            <column>terrain_type</column>
+            <column>roll_1</column>
+            <column>roll_2_to_4</column>
+            <column>roll_5_to_7</column>
+            <column>roll_8</column>
+          </columns>
+          <row>
+            <terrain_type>clear_or_grass</terrain_type>
+            <roll_1>1</roll_1>
+            <roll_2_to_4>1</roll_2_to_4>
+            <roll_5_to_7>1</roll_5_to_7>
+            <roll_8>2</roll_8>
+          </row>
+          <row>
+            <terrain_type>barren</terrain_type>
+            <roll_1>1</roll_1>
+            <roll_2_to_4>1</roll_2_to_4>
+            <roll_5_to_7>2</roll_5_to_7>
+            <roll_8>2</roll_8>
+          </row>
+          <row>
+            <terrain_type>desert</terrain_type>
+            <roll_1>1</roll_1>
+            <roll_2_to_4>1</roll_2_to_4>
+            <roll_5_to_7>2</roll_5_to_7>
+            <roll_8>2</roll_8>
+          </row>
+          <row>
+            <terrain_type>hills</terrain_type>
+            <roll_1>1</roll_1>
+            <roll_2_to_4>1</roll_2_to_4>
+            <roll_5_to_7>1</roll_5_to_7>
+            <roll_8>2</roll_8>
+          </row>
+          <row>
+            <terrain_type>scrub</terrain_type>
+            <roll_1>1</roll_1>
+            <roll_2_to_4>1</roll_2_to_4>
+            <roll_5_to_7>1</roll_5_to_7>
+            <roll_8>2</roll_8>
+          </row>
+          <row>
+            <terrain_type>woods</terrain_type>
+            <roll_1>1</roll_1>
+            <roll_2_to_4>1</roll_2_to_4>
+            <roll_5_to_7>1</roll_5_to_7>
+            <roll_8>2</roll_8>
+          </row>
+          <row>
+            <terrain_type>mountains</terrain_type>
+            <roll_1>1</roll_1>
+            <roll_2_to_4>2</roll_2_to_4>
+            <roll_5_to_7>2</roll_5_to_7>
+            <roll_8>3</roll_8>
+          </row>
+          <row>
+            <terrain_type>jungle</terrain_type>
+            <roll_1>1</roll_1>
+            <roll_2_to_4>1</roll_2_to_4>
+            <roll_5_to_7>2</roll_5_to_7>
+            <roll_8>3</roll_8>
+          </row>
+          <row>
+            <terrain_type>swamp</terrain_type>
+            <roll_1>1</roll_1>
+            <roll_2_to_4>2</roll_2_to_4>
+            <roll_5_to_7>2</roll_5_to_7>
+            <roll_8>3</roll_8>
+          </row>
+        </table>
+      </tables>
+    </set_battle_phase_countdown>
+
+    <assess_terrain_advantage>
+      <terrain_levels>
+        <entry>regular</entry>
+        <entry>advantageous</entry>
+        <entry>highly_advantageous</entry>
+      </terrain_levels>
+      <rule>The Judge may determine terrain advantage by campaign circumstances or use the following random procedure.</rule>
+      <procedure>
+        <step order="1">The defending leader rolls 1d6 and adds Strategic Ability to determine a terrain advantage score.</step>
+        <step order="2">Compare that score to the terrain table to determine whether the defender begins in regular, advantageous, or highly advantageous terrain.</step>
+        <step order="3">The attacking leader rolls 1d6 and adds Strategic Ability.</step>
+        <step order="4">If the attacker's score exceeds the defender's score, the attacker may either occupy advantageous terrain or reduce the defender's terrain advantage by one step.</step>
+        <step order="5">If the attacker's score is at least double the defender's score, the attacker may instead do one of the following: reduce the defender's terrain by two steps; reduce the defender's terrain by one step and occupy advantageous terrain; or occupy highly advantageous terrain.</step>
+        <step order="6">Terrain advantage cannot be reduced below regular terrain.</step>
+      </procedure>
+      <tables>
+        <table name="terrain_advantage_targets">
+          <columns>
+            <column>terrain_type</column>
+            <column>advantageous_target</column>
+            <column>highly_advantageous_target</column>
+          </columns>
+          <row><terrain_type>clear_or_grass</terrain_type><advantageous_target>6+</advantageous_target><highly_advantageous_target>10+</highly_advantageous_target></row>
+          <row><terrain_type>barren</terrain_type><advantageous_target>5+</advantageous_target><highly_advantageous_target>9+</highly_advantageous_target></row>
+          <row><terrain_type>desert</terrain_type><advantageous_target>5+</advantageous_target><highly_advantageous_target>9+</highly_advantageous_target></row>
+          <row><terrain_type>hills</terrain_type><advantageous_target>4+</advantageous_target><highly_advantageous_target>7+</highly_advantageous_target></row>
+          <row><terrain_type>scrub</terrain_type><advantageous_target>4+</advantageous_target><highly_advantageous_target>7+</highly_advantageous_target></row>
+          <row><terrain_type>woods</terrain_type><advantageous_target>4+</advantageous_target><highly_advantageous_target>7+</highly_advantageous_target></row>
+          <row><terrain_type>mountains</terrain_type><advantageous_target>4+</advantageous_target><highly_advantageous_target>6+</highly_advantageous_target></row>
+          <row><terrain_type>jungle</terrain_type><advantageous_target>4+</advantageous_target><highly_advantageous_target>6+</highly_advantageous_target></row>
+          <row><terrain_type>swamp</terrain_type><advantageous_target>4+</advantageous_target><highly_advantageous_target>6+</highly_advantageous_target></row>
+        </table>
+      </tables>
+    </assess_terrain_advantage>
+
+    <defender_determination>
+      <rule>If both armies are on offense and no clear defender exists, determine the defender as follows.</rule>
+      <procedure>
+        <step order="1">If one army is surprised, it is the defender.</step>
+        <step order="2">If both armies are aware of each other, the army that arrived first in the hex is the defender.</step>
+        <step order="3">If both armies arrived simultaneously, the smaller army is the defender.</step>
+      </procedure>
+    </defender_determination>
+
+    <surprise>
+      <rule>A surprised army leader suffers a -2 penalty to terrain advantage score.</rule>
+      <rule>The opposing leader gains a +2 bonus to terrain advantage score.</rule>
+      <rule>A surprised army may not make attack throws during the first three battle phases.</rule>
+      <rule>Units attacking a surprised army gain a phase-based bonus on attack throws during the first three battle phases.</rule>
+      <rule>Heroes may still make heroic forays even if their army is surprised.</rule>
+    </surprise>
+
+    <deploy_troops>
+      <rule>After determining BPC and terrain positions, both leaders secretly deploy units and reveal simultaneously.</rule>
+      <rule>Heroes participating in the battle must also be deployed at this time.</rule>
+      <zones>
+        <zone name="missile_zone">
+          <rule>For long-range engagement.</rule>
+          <eligibility>
+            <entry>Unit is equipped with arbalests, crossbows, composite bows, long bows, or short bows.</entry>
+            <entry>Unit consists of spellcasters capable of casting at least three offensive mass combat spells with range at least 120'.</entry>
+            <entry>Unit consists of monsters with a special attack with range at least 120'.</entry>
+            <entry>Unit consists of flyers.</entry>
+          </eligibility>
+        </zone>
+        <zone name="skirmish_zone">
+          <rule>For loose screening and disruption ahead of the main line.</rule>
+          <eligibility>
+            <entry>Unit is eligible for missile zone.</entry>
+            <entry>Unit is light infantry with slings, 3 or more javelins, or 5 or more darts.</entry>
+            <entry>Unit is light cavalry with 3 or more javelins.</entry>
+          </eligibility>
+        </zone>
+        <zone name="melee_zone">
+          <rule>Represents the main battle line.</rule>
+          <eligibility>
+            <entry>Any unit.</entry>
+          </eligibility>
+        </zone>
+        <zone name="reserve_zone">
+          <rule>Represents forces behind or beside the main line available to reinforce, exploit, or fill gaps.</rule>
+          <eligibility>
+            <entry>Any unit.</entry>
+          </eligibility>
+        </zone>
+      </zones>
+      <judge_rule>The Judge is final arbiter of zone eligibility.</judge_rule>
+    </deploy_troops>
+  </battle_preparation>
+
+  <battle_ratings>
+    <rule>BR values in source rosters are for company-sized units.</rule>
+    <rule>If one army uses larger-scale units than the other, scale BR upward proportionately or split the larger units into smaller units.</rule>
+    <rule>If both armies use the same nonstandard unit scale, use standard BR values without scaling.</rule>
+    <strategic_ability>
+      <rule>At Strategic Ability +3 or better, each unit in the commander's division gains +0.5 BR.</rule>
+      <rule>At Strategic Ability +6 or better, each unit in the commander's division gains +1.0 BR.</rule>
+    </strategic_ability>
+    <overwhelmed_commanders>
+      <rule>A commander can effectively command a number of units up to his Leadership Ability.</rule>
+      <rule>If the number of units in the commander's division exceeds Leadership Ability, the BR of each excess unit is halved.</rule>
+    </overwhelmed_commanders>
+  </battle_ratings>
+
+  <attack_throw_modifiers>
+    <tables>
+      <table name="attack_throw_modifiers_by_phase">
+        <columns>
+          <column>modifier_source</column>
+          <column>missile</column>
+          <column>skirmish</column>
+          <column>melee</column>
+        </columns>
+        <row><modifier_source>lieutenant_leading_unit</modifier_source><missile>0</missile><skirmish>+1</skirmish><melee>+2</melee></row>
+        <row><modifier_source>opposing_army_surprised_first_three_battle_phases_only</modifier_source><missile>+1</missile><skirmish>+2</skirmish><melee>+4</melee></row>
+        <row><modifier_source>opposing_army_in_advantageous_terrain</modifier_source><missile>-1</missile><skirmish>-2</skirmish><melee>-3</melee></row>
+        <row><modifier_source>opposing_army_in_highly_advantageous_terrain</modifier_source><missile>-2</missile><skirmish>-3</skirmish><melee>-4</melee></row>
+      </table>
+    </tables>
+    <rule>An army that escalates by advancing or withdrawing loses advantageous terrain benefits.</rule>
+  </attack_throw_modifiers>
+
+  <advantageous_terrain>
+    <rule>Attack throws against units in advantageous or highly advantageous terrain take the penalties listed on the attack throw modifier table.</rule>
+    <rule>If an army advances or withdraws during any phase, it immediately loses terrain advantage.</rule>
+    <rule>The opposing army does not gain the vacated terrain advantage.</rule>
+    <rule>Lost terrain advantage cannot be regained later in the battle.</rule>
+  </advantageous_terrain>
+
+  <battle_resolution>
+    <general_sequence>
+      <rule>Resolve the battle as a series of battle turns composed of missile, skirmish, and melee phases as controlled by BPC changes.</rule>
+      <rule>Each phase begins by setting BPC to the battlefield's starting count for that phase band.</rule>
+    </general_sequence>
+
+    <phase name="missile">
+      <attack_target>18+</attack_target>
+      <procedure>
+        <step order="1">Set BPC to starting count based on terrain.</step>
+        <step order="2">All units in missile zone are participating units.</step>
+        <step order="3">Each side totals participating BR.</step>
+        <step order="4">Heroes in the missile zone may make heroic forays; reveal and resolve forays simultaneously, then remove lost units.</step>
+        <step order="5">Each side rolls attack throws equal to its remaining BR. Each successful attack throw scores 1 hit.</step>
+        <step order="6">Each side removes participating units with combined BR equal to or greater than hits suffered.</step>
+        <step order="7">If hits remain after all participating units are defeated, apply remaining hits in order to skirmish zone, then melee zone, then reserve zone.</step>
+        <step order="8">Apply hits simultaneously.</step>
+        <step order="9">Check morale. If one army has all units routed or destroyed after morale, the battle ends.</step>
+        <step order="10">Redeploy secretly and simultaneously: move units from any zone to reserve and/or from reserve to missile zone, up to Leadership Ability units. A unit may not move into and then out of reserve in the same redeployment step.</step>
+        <step order="11">Each side secretly chooses advance, hold, or withdraw, then reveals simultaneously.</step>
+        <step order="12">Any army in advantageous or highly advantageous terrain must choose hold or lose terrain advantage.</step>
+      </procedure>
+      <post_choice_outcomes>
+        <outcome condition="both_withdraw">
+          <rule>Increase BPC by 2.</rule>
+          <rule>If BPC is now at least twice the starting count, the battle ends in a draw.</rule>
+          <rule>Neither army may pursue.</rule>
+          <rule>Otherwise conduct another missile phase.</rule>
+        </outcome>
+        <outcome condition="one_withdraws_other_holds">
+          <rule>Increase BPC by 1.</rule>
+          <rule>If BPC is now at least twice the starting count, the battle ends and the withdrawing army is treated as having made a voluntary withdrawal.</rule>
+          <rule>Otherwise conduct another missile phase.</rule>
+        </outcome>
+        <outcome condition="both_hold">
+          <rule>Conduct another missile phase.</rule>
+        </outcome>
+        <outcome condition="both_advance">
+          <rule>Reduce BPC by 2.</rule>
+          <rule>If BPC is now 0 or less, begin skirmish phase.</rule>
+          <rule>Otherwise conduct another missile phase.</rule>
+        </outcome>
+        <outcome condition="one_advances_other_holds">
+          <rule>Reduce BPC by 1.</rule>
+          <rule>If BPC is now 0 or less, begin skirmish phase.</rule>
+          <rule>Otherwise conduct another missile phase.</rule>
+        </outcome>
+        <outcome condition="one_advances_other_withdraws">
+          <rule>Both leaders roll initiative score = 1d6 + Strategic Ability.</rule>
+          <rule>If advancing leader wins, reduce BPC by 1; if BPC is now 0 or less, begin skirmish phase, otherwise conduct another missile phase.</rule>
+          <rule>If withdrawing leader wins, increase BPC by 1; if BPC is now at least twice the starting count, the battle ends and the withdrawing army counts as having made a voluntary withdrawal, otherwise conduct another missile phase.</rule>
+        </outcome>
+      </post_choice_outcomes>
+    </phase>
+
+    <phase name="skirmish">
+      <attack_target>16+</attack_target>
+      <procedure>
+        <step order="1">Set BPC to starting count based on terrain.</step>
+        <step order="2">All units in skirmish zone are participating units.</step>
+        <step order="3">Each side totals participating BR.</step>
+        <step order="4">Heroes may make heroic forays.</step>
+        <step order="5">Each side rolls attack throws equal to remaining BR. Each success scores 1 hit.</step>
+        <step order="6">Each side removes participating units with combined BR equal to or greater than hits suffered.</step>
+        <step order="7">If hits remain after all participating units are defeated, apply remaining hits to melee zone, then reserve zone.</step>
+        <step order="8">Apply hits simultaneously.</step>
+        <step order="9">Check morale. If one army has all units routed or destroyed after morale, the battle ends.</step>
+        <step order="10">Redeploy secretly and simultaneously: move units from any zone to reserve and/or from reserve to skirmish zone, up to Leadership Ability units. A unit may not move into and then out of reserve in the same redeployment step.</step>
+        <step order="11">Each side secretly chooses advance, hold, or withdraw/fall_back, then reveals simultaneously.</step>
+        <step order="12">Any army in advantageous or highly advantageous terrain must choose hold or lose terrain advantage.</step>
+      </procedure>
+      <post_choice_outcomes>
+        <outcome condition="both_withdraw">
+          <rule>Increase BPC by 2.</rule>
+          <rule>If BPC is now greater than the starting count, begin missile phase.</rule>
+          <rule>Otherwise conduct another skirmish phase.</rule>
+        </outcome>
+        <outcome condition="one_withdraws_other_holds">
+          <rule>Increase BPC by 1.</rule>
+          <rule>If BPC is now greater than the starting count, begin missile phase.</rule>
+          <rule>Otherwise conduct another skirmish phase.</rule>
+        </outcome>
+        <outcome condition="both_hold">
+          <rule>Conduct another skirmish phase.</rule>
+        </outcome>
+        <outcome condition="both_advance">
+          <rule>Reduce BPC by 2.</rule>
+          <rule>If BPC is now 0 or less, begin melee phase.</rule>
+          <rule>Otherwise conduct another skirmish phase.</rule>
+        </outcome>
+        <outcome condition="one_advances_other_holds">
+          <rule>Reduce BPC by 1.</rule>
+          <rule>If BPC is now 0 or less, begin melee phase.</rule>
+          <rule>Otherwise conduct another skirmish phase.</rule>
+        </outcome>
+        <outcome condition="one_advances_other_withdraws">
+          <rule>Both leaders roll initiative score = 1d6 + Strategic Ability.</rule>
+          <rule>If advancing leader wins, reduce BPC by 1; if BPC is now 0 or less, begin melee phase, otherwise conduct another skirmish phase.</rule>
+          <rule>If withdrawing leader wins, increase BPC by 1; if BPC is now greater than the starting count, begin missile phase, otherwise conduct another skirmish phase.</rule>
+        </outcome>
+      </post_choice_outcomes>
+    </phase>
+
+    <phase name="melee">
+      <attack_target>14+</attack_target>
+      <procedure>
+        <step order="1">Set BPC to starting count based on terrain.</step>
+        <step order="2">All units in melee zone are participating units.</step>
+        <step order="3">Each side totals participating BR.</step>
+        <step order="4">Heroes may make heroic forays.</step>
+        <step order="5">Each side rolls attack throws equal to remaining BR. Each success scores 1 hit.</step>
+        <step order="6">Each side removes participating units with combined BR equal to or greater than hits suffered.</step>
+        <step order="7">If hits remain after all participating units are defeated, apply remaining hits to reserve zone, then skirmish zone, then missile zone.</step>
+        <step order="8">Apply hits simultaneously.</step>
+        <step order="9">Check morale. If one army has all units routed or destroyed after morale, the battle ends.</step>
+        <step order="10">Redeploy secretly and simultaneously: move units from any zone to reserve and/or from reserve to melee zone, up to Leadership Ability units. A unit may not move into and then out of reserve in the same redeployment step.</step>
+        <step order="11">Each side secretly chooses advance, hold, or withdraw, then reveals simultaneously.</step>
+        <step order="12">Any army in advantageous or highly advantageous terrain must choose hold or lose terrain advantage.</step>
+      </procedure>
+      <post_choice_outcomes>
+        <outcome condition="both_withdraw">
+          <rule>Increase BPC by 2.</rule>
+          <rule>If BPC is now greater than the starting count, begin skirmish phase.</rule>
+          <rule>Otherwise conduct another melee phase.</rule>
+        </outcome>
+        <outcome condition="one_withdraws_other_holds">
+          <rule>Increase BPC by 1.</rule>
+          <rule>If BPC is now greater than the starting count, begin skirmish phase.</rule>
+          <rule>Otherwise conduct another melee phase.</rule>
+        </outcome>
+        <outcome condition="both_hold">
+          <rule>Conduct another melee phase.</rule>
+        </outcome>
+        <outcome condition="both_advance">
+          <rule>Reduce BPC by 2.</rule>
+          <rule>If BPC is now 0 or less, set BPC to 0 and conduct another melee phase.</rule>
+        </outcome>
+        <outcome condition="one_advances_other_holds">
+          <rule>Reduce BPC by 1.</rule>
+          <rule>If BPC is now 0 or less, set BPC to 0 and conduct another melee phase.</rule>
+        </outcome>
+        <outcome condition="one_advances_other_withdraws">
+          <rule>Both leaders roll initiative score = 1d6 + Strategic Ability.</rule>
+          <rule>If advancing leader wins, reduce BPC by 1; if BPC is now 0 or less, set BPC to 0 and conduct another melee phase.</rule>
+          <rule>If withdrawing leader wins, increase BPC by 1; if BPC is now greater than the starting count, begin skirmish phase, otherwise conduct another melee phase.</rule>
+        </outcome>
+      </post_choice_outcomes>
+    </phase>
+
+    <battle_end_transition>
+      <rule>A battle ends when all units of one army have voluntarily withdrawn, routed, and/or been destroyed.</rule>
+      <rule>After battle end, the losing army retreats, the winning army may pursue, casualties are calculated, and the winning army seizes spoils of war.</rule>
+    </battle_end_transition>
+  </battle_resolution>
+
+  <heroes_in_battle>
+    <overview>
+      <rule>Heroes are resolved by zooming in on a particular fight called a heroic foray.</rule>
+    </overview>
+
+    <qualifying_heroes>
+      <rule>A character must be present on the battlefield and meet one of the following criteria.</rule>
+      <criteria>
+        <entry>Any PC qualifies.</entry>
+        <entry>A monster with at least 9 HD qualifies.</entry>
+        <entry>An NPC with at least 7 experience levels qualifies.</entry>
+        <entry>A henchman of a qualifying hero with at least 4 experience levels qualifies.</entry>
+      </criteria>
+      <scale_adjustments>
+        <rule>In platoon-scale battles, decrease the level or HD requirements by 2.</rule>
+        <rule>In battalion-scale battles, increase the level or HD requirements by 2.</rule>
+        <rule>In brigade-scale battles, increase the level or HD requirements by 4.</rule>
+      </scale_adjustments>
+    </qualifying_heroes>
+
+    <heroic_forays>
+      <rule>Each phase gives an opportunity for a heroic foray during step d.</rule>
+      <rule>All heroes may fight in one foray or in separate forays, at Judge discretion.</rule>
+      <procedure>
+        <step order="1">Each hero stakes from 0 to 3 BR.</step>
+        <step order="2">Total BR staked determines how many foes the heroes face.</step>
+        <step order="3">Select foes from units participating in the current phase.</step>
+        <step order="4">Foes enter in 1 to 4 separate groups, approximately equal in size.</step>
+        <step order="5">Partial units may be used, reducing BR and creature count proportionately.</step>
+        <step order="6">For each group, determine encounter distance from the battlefield encounter distance table using current terrain and current phase.</step>
+        <step order="7">Resolve the foray using normal ACKS combat rules.</step>
+        <step order="8">Heroes may use spells, magic items, and other powers normally.</step>
+        <step order="9">Heroes may leave by Defensive Movement but may not re-enter the same foray.</step>
+        <step order="10">The foray ends when all heroes or all foes are defeated, or after 6 combat rounds.</step>
+        <step order="11">Foes who voluntarily withdraw or fail morale and flee count as defeated.</step>
+        <step order="12">When the foray ends, the opposing army loses units with combined BR equal to total BR of foes defeated.</step>
+      </procedure>
+      <tables>
+        <table name="heroic_foray_br_staked_descriptions">
+          <columns>
+            <column>br_staked</column>
+            <column>description</column>
+          </columns>
+          <row><br_staked>0</br_staked><description>entering_the_foray</description></row>
+          <row><br_staked>0.5</br_staked><description>leading_from_the_front</description></row>
+          <row><br_staked>1</br_staked><description>heroically_charging_into_battle</description></row>
+          <row><br_staked>1.5</br_staked><description>attacking_in_front_of_the_vanguard</description></row>
+          <row><br_staked>2</br_staked><description>cutting_a_swath_of_glory</description></row>
+          <row><br_staked>2.5</br_staked><description>carving_his_name_into_the_epics</description></row>
+          <row><br_staked>3</br_staked><description>seeking_glorious_death</description></row>
+        </table>
+
+        <table name="battlefield_encounter_distance_yards">
+          <columns>
+            <column>terrain</column>
+            <column>missile</column>
+            <column>skirmish</column>
+            <column>melee</column>
+          </columns>
+          <row><terrain>badlands_or_hills</terrain><missile>2d6x10</missile><skirmish>2d6x5</skirmish><melee>1d6x5</melee></row>
+          <row><terrain>desert_or_plains</terrain><missile>4d6x10</missile><skirmish>2d6x10</skirmish><melee>2d6x5</melee></row>
+          <row><terrain>fields_fallow</terrain><missile>4d6x10</missile><skirmish>2d6x10</skirmish><melee>2d6x5</melee></row>
+          <row><terrain>fields_ripe</terrain><missile>5d10</missile><skirmish>3d8</skirmish><melee>2d6</melee></row>
+          <row><terrain>fields_wild</terrain><missile>3d6x5</missile><skirmish>5d10</skirmish><melee>3d8</melee></row>
+          <row><terrain>forest_heavy_or_jungle</terrain><missile>5d4</missile><skirmish>2d6</skirmish><melee>1d6</melee></row>
+          <row><terrain>forest_light</terrain><missile>5d8</missile><skirmish>5d4</skirmish><melee>2d6</melee></row>
+          <row><terrain>marsh</terrain><missile>8d10</missile><skirmish>4d10</skirmish><melee>2d10</melee></row>
+          <row><terrain>mountains</terrain><missile>4d6x10</missile><skirmish>2d6x10</skirmish><melee>2d6x5</melee></row>
+        </table>
+      </tables>
+    </heroic_forays>
+
+    <heroes_versus_heroes>
+      <rule>If both armies have heroes foraying in the same battle turn, heroes from each army may face one another.</rule>
+      <rule>Use the higher of the two sides' total BR staked.</rule>
+      <rule>Each side is supported by allied troops equal to that BR drawn from its own army.</rule>
+      <rule>If one side staked more BR than the other, all NPC troops on that side gain +2 morale during the foray.</rule>
+      <rule>A hero-versus-hero foray ends when all heroes and creatures on one side are defeated or after 6 combat rounds.</rule>
+      <rule>Each side loses units with combined BR equal to the total BR that side lost in the foray.</rule>
+    </heroes_versus_heroes>
+
+    <unopposed_forays>
+      <rule>If heroes foray and no opposing units are participating in the current phase, the foray is unopposed.</rule>
+      <rule>An unopposed foray is treated as occurring against units in the next zone.</rule>
+      <rule>An unopposed foray in missile phase is treated as a skirmish-phase foray.</rule>
+      <rule>An unopposed foray in melee phase may target units in any zone.</rule>
+    </unopposed_forays>
+
+    <lulls_in_the_fighting>
+      <rule>Between battle turns there is a lull in which heroes may treat injuries, use magical healing, or otherwise prepare.</rule>
+      <rule>If heroes from either army make attacks or cast spells affecting the opposing army, the lull ends immediately and another battle turn begins.</rule>
+      <rule>If uninterrupted, the lull lasts 1 turn (10 minutes).</rule>
+    </lulls_in_the_fighting>
+  </heroes_in_battle>
+
+  <ending_battles>
+    <annihilation>
+      <rule>The battle ends immediately if all units of either army are destroyed.</rule>
+    </annihilation>
+
+    <voluntary_withdrawal>
+      <rule>The battle ends immediately if either army voluntarily withdraws.</rule>
+      <rule>Voluntary withdrawal may be preferable to suffering morale collapse and pursuit.</rule>
+    </voluntary_withdrawal>
+
+    <morale_collapse>
+      <rule>Morale checks model gradual breakdown and rout rather than fighting to the last unit.</rule>
+      <rule>During the morale phase, every unit in an army must make a morale roll if both of the following are true:</rule>
+      <conditions>
+        <entry>One or more units in the army were destroyed during the preceding combat round.</entry>
+        <entry>The total number of units destroyed so far is equal to or greater than the army's break point.</entry>
+      </conditions>
+      <rule>An army's break point is 1/3 of its starting number of units, rounded up.</rule>
+    </morale_collapse>
+
+    <morale_rolls>
+      <procedure>
+        <step order="1">Roll 2d6.</step>
+        <step order="2">Add the unit's morale score.</step>
+        <step order="3">Apply army and unit morale modifiers.</step>
+        <step order="4">Consult the unit morale table.</step>
+      </procedure>
+      <tables>
+        <table name="unit_morale_results">
+          <columns>
+            <column>adjusted_die_roll</column>
+            <column>result</column>
+          </columns>
+          <row><adjusted_die_roll>2-</adjusted_die_roll><result>rout</result></row>
+          <row><adjusted_die_roll>3-5</adjusted_die_roll><result>flee</result></row>
+          <row><adjusted_die_roll>6-8</adjusted_die_roll><result>waver</result></row>
+          <row><adjusted_die_roll>9-11</adjusted_die_roll><result>stand_firm</result></row>
+          <row><adjusted_die_roll>12+</adjusted_die_roll><result>rally</result></row>
+        </table>
+
+        <table name="morale_roll_modifiers">
+          <columns>
+            <column>modifier_source</column>
+            <column>modifier</column>
+          </columns>
+          <row><modifier_source>army_leader_present_on_battlefield</modifier_source><modifier>+1/2 morale modifier, round up</modifier></row>
+          <row><modifier_source>army_has_lost_1_2_or_more_but_less_than_2_3_of_starting_br</modifier_source><modifier>-2</modifier></row>
+          <row><modifier_source>army_has_lost_2_3_or_more_of_starting_br</modifier_source><modifier>-5</modifier></row>
+          <row><modifier_source>army_has_destroyed_more_br_than_opposing_army</modifier_source><modifier>+2</modifier></row>
+          <row><modifier_source>army_has_lost_more_br_than_opposing_army</modifier_source><modifier>-2</modifier></row>
+          <row><modifier_source>army_cannot_retreat</modifier_source><modifier>+2</modifier></row>
+          <row><modifier_source>army_defending_homeland_or_sacred_ground</modifier_source><modifier>judge_discretion</modifier></row>
+          <row><modifier_source>commander_attached_to_unit</modifier_source><modifier>+ morale modifier</modifier></row>
+          <row><modifier_source>unit_is_wavering</modifier_source><modifier>-2</modifier></row>
+          <row><modifier_source>unit_is_fleeing</modifier_source><modifier>-5</modifier></row>
+        </table>
+      </tables>
+      <results>
+        <result name="rout">
+          <rule>Unit routs off the battlefield, takes no further part, and counts as destroyed for battle resolution.</rule>
+        </result>
+        <result name="flee">
+          <rule>Unit retreats in disorder and may not attack next battle turn.</rule>
+          <rule>If the battle ends before the unit can attack again, it counts as routed.</rule>
+        </result>
+        <result name="waver">
+          <rule>Unit's BR is halved when attacking next battle turn.</rule>
+        </result>
+        <result name="stand_firm">
+          <rule>No effect.</rule>
+        </result>
+        <result name="rally">
+          <rule>Unit's BR is increased by half when attacking next battle turn.</rule>
+        </result>
+      </results>
+      <rule>The army general chooses the order in which units make morale rolls.</rule>
+      <rule>Resolve each morale result before rolling for the next unit.</rule>
+      <rule>Earlier morale outcomes may affect later ones and can produce cascade failure.</rule>
+    </morale_rolls>
+  </ending_battles>
+
+  <aftermath_of_battles>
+    <retreat>
+      <rule>The defeated army immediately retreats.</rule>
+      <rule>A retreating army normally retreats 1 6-mile hex along its line of supply.</rule>
+      <rule>If a friendly stronghold or urban settlement is in the same hex, the army may retreat into it.</rule>
+      <rule>The victorious army may then begin a siege under the normal siege rules.</rule>
+      <rule>If the line of supply is occupied by enemy troops, the defeated army may retreat into an adjacent empty hex and risk loss of supply, or retreat along the line of supply and risk a second battle if detected.</rule>
+    </retreat>
+
+    <pursuit>
+      <rule>The victorious army may pursue the retreating army unless both armies withdrew simultaneously.</rule>
+      <rule>Pursuit occurs in the same 6-mile hex where the battle occurred.</rule>
+      <rule>The pursuing army does not follow into the defeated army's new hex.</rule>
+      <eligibility>
+        <step order="1">If the defeated army ended the battle with no cavalry or flyer units, all victorious units are eligible to pursue.</step>
+        <step order="2">Otherwise only cavalry units in the victorious army are eligible to pursue.</step>
+      </eligibility>
+      <procedure>
+        <step order="1">The victorious commander makes one pursuit throw for each eligible pursuing unit.</step>
+        <step order="2">Add +4 if all cavalry or flyer units of the defeated army were destroyed or routed.</step>
+        <step order="3">Each successful throw eliminates one enemy unit.</step>
+        <step order="4">If the defeated army ended the battle without cavalry or flyers, the victorious commander chooses which units are eliminated.</step>
+        <step order="5">Otherwise the defeated army's general chooses which units are eliminated.</step>
+      </procedure>
+      <tables>
+        <table name="pursuit_throw_targets">
+          <columns>
+            <column>pursuing_unit</column>
+            <column>target</column>
+          </columns>
+          <row><pursuing_unit>light_cavalry_or_flyer</pursuing_unit><target>11+</target></row>
+          <row><pursuing_unit>other_cavalry</pursuing_unit><target>14+</target></row>
+          <row><pursuing_unit>light_infantry</pursuing_unit><target>14+</target></row>
+          <row><pursuing_unit>other_infantry</pursuing_unit><target>18+</target></row>
+        </table>
+      </tables>
+      <pursuit_against_evading_armies>
+        <rule>For battles against evading armies, each battle turn imposes a cumulative -1 penalty to later pursuit throws against the defeated evading army.</rule>
+        <rule>A natural roll of 20 always eliminates a unit regardless of modifiers.</rule>
+      </pursuit_against_evading_armies>
+    </pursuit>
+
+    <casualties>
+      <destroyed_units>
+        <rule>50% of troops, rounded up, are crippled or dead.</rule>
+        <rule>The remaining 50%, rounded down, are lightly wounded.</rule>
+        <rule>Victorious army wounded return to their unit in 1 week.</rule>
+        <rule>Defeated army wounded become prisoners.</rule>
+      </destroyed_units>
+      <routed_units>
+        <rule>25% of troops, rounded up, are crippled or dead.</rule>
+        <rule>Another 25%, rounded up, are lightly wounded.</rule>
+        <rule>For victorious routed units, 50% of wounded are lost to desertion, rounded up; the remainder return in 1 week.</rule>
+        <rule>For defeated routed units, 50% of wounded become prisoners, rounded up; the rest are lost to desertion.</rule>
+      </routed_units>
+      <rule>Half-strength units may be consolidated into a smaller number of full-strength units.</rule>
+    </casualties>
+
+    <spoils_of_war>
+      <rule>Spoils from victory equal one month's wages of each destroyed or routed enemy unit.</rule>
+      <rule>Each prisoner is worth 40gp if sold or ransomed.</rule>
+      <rule>Higher-level NPCs, monsters, and similar creatures may be worth more at Judge discretion.</rule>
+      <rule>Kept prisoners may be used as construction workers.</rule>
+      <rule>Casualties and prisoners may be consumed as supplies by carnivorous units.</rule>
+    </spoils_of_war>
+
+    <experience_points>
+      <from_spoils>
+        <rule>Each participant, including commanders, heroes, and creatures in units, earns 1 XP per gp personally collected from spoils.</rule>
+        <rule>Troops expect at least 50% of spoils to be distributed pro rata according to wages.</rule>
+        <rule>If this does not occur, make a loyalty roll for unpaid troops.</rule>
+        <rule>Troop XP may be tracked on a unit-by-unit basis.</rule>
+        <rule>0-level characters may advance to 1st level under normal ACKS advancement rules; in general, 100 XP promotes a 0-level character to 1st-level fighter.</rule>
+      </from_spoils>
+      <from_combat>
+        <rule>Army commanders earn XP equal to the value of enemy units defeated minus the value of friendly units defeated.</rule>
+        <rule>50% of this XP goes to the army leader.</rule>
+        <rule>The remaining 50% is divided among commanders proportionately by the number of units each commander led.</rule>
+        <rule>Characters also gain XP for creatures they personally defeat.</rule>
+        <rule>Troops in units do not gain XP from combat; they gain XP only from spoils.</rule>
+      </from_combat>
+    </experience_points>
+  </aftermath_of_battles>
+</pitching_battle_summary>

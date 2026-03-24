@@ -1,0 +1,57 @@
+{
+  "religion_id": "path_of_the_still_pool",
+  "display_name": "Path of the Still Pool",
+  "theology": {
+    "type": "non_theist",
+    "syncretism": "inclusivist",
+    "afterlife_belief": "judgment_and_rebirth"
+  },
+  "alignment": "Neutral",
+  "associated_cultures": [
+    "orunai_mistweavers"
+  ],
+  "clergy": {
+    "title_hierarchy": [
+      "Listener",
+      "Pool Walker",
+      "Mist Reader",
+      "Veil Abbot",
+      "Keeper of Silence"
+    ],
+    "title_level_mapping": {
+      "1": "Listener",
+      "3": "Pool Walker",
+      "5": "Mist Reader",
+      "7": "Veil Abbot",
+      "9": "Keeper of Silence"
+    },
+    "gender_restriction": "none",
+    "special_class": null,
+    "vestments": "plain grey-green wraps with mirrored prayer beads",
+    "holy_symbol": "three concentric ripples within a circle"
+  },
+  "practices": {
+    "holy_days_per_year": 4,
+    "holy_day_character": "mystical",
+    "worship_style": "meditative",
+    "dietary_restrictions": "no meat during retreat weeks",
+    "funerary_practice": "cremation",
+    "stance_on_undead": "natural_cycle"
+  },
+  "political_role": {
+    "church_state_relationship": "independent",
+    "temporal_authority": "minimal",
+    "military_involvement": "pacifist"
+  },
+  "cosmology": {
+    "opposing_view": "irrelevant",
+    "opposing_view_detail": "Lawful and Chaotic powers may exist, but obsession with them only deepens illusion and imbalance.",
+    "notes": "See §3.3 Alignment Cosmology Rules for the hard constraints governing this field."
+  },
+  "flavor_text": {
+    "one_line": "A neutral ascetic path that seeks release from passion through contemplation, discipline, and measured living.",
+    "one_paragraph": "The Path teaches that suffering begins when the self clings too tightly to triumph, grief, law, or rebellion. Its monasteries are libraries of lived experience where silence, debate, song, and fasting are tools for seeing the world as it is. Priests speak rarely on the will of gods; instead, they guide others toward clarity, accepting that every soul is weighed by its own habits and then returned to life shaped by what it has learned.",
+    "creation_myth_summary": "In the beginning there was only a still surface. Thought, desire, and fear made the first ripples, and from those ripples all living forms arose.",
+    "moral_code_summary": "Master desire before it masters you, seek understanding over victory, keep balance in prosperity and grief, and do no cruelty for the sake of certainty."
+  }
+}

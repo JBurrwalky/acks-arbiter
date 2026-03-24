@@ -1,0 +1,2040 @@
+<spell_catalog title="114B ACKS Players Companion Spell Catalog F-U" section="spell entries and ritual spell index" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <spell name="Fate">
+    <classification>
+      <entry><type>Divine</type><level>4</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>Until it happens</duration>
+    <effects>
+      <summary>Grants prophetic insight into a particular character's future.</summary>
+      <effect>Reveals a general indication of the target's fate; exact date and place are not provided.</effect>
+      <effect>No character may have more than one fate at a time.</effect>
+    </effects>
+    <procedure>
+      <step order="1">Judge determines the fate or rolls on the fate table.</step>
+      <step order="2">Apply the revealed fate to the target character until fulfilled or otherwise nullified.</step>
+    </procedure>
+    <tables>
+      <table name="fate_results">
+        <columns><column>roll_1d10</column><column>answer</column></columns>
+        <row><roll_1d10>1</roll_1d10><answer>You shall set your eyes on the heavens; time enough for the earth in the grave.</answer></row>
+        <row><roll_1d10>2</roll_1d10><answer>You shall be anointed, before you die, as one who walked among the high.</answer></row>
+        <row><roll_1d10>3</roll_1d10><answer>You shall have, in the end, many true vassals, but one false friend.</answer></row>
+        <row><roll_1d10>4</roll_1d10><answer>Your many victories shall be won at the cost of many a woman's son.</answer></row>
+        <row><roll_1d10>5</roll_1d10><answer>Precious jewels shall buy you only tools and fools.</answer></row>
+        <row><roll_1d10>6</roll_1d10><answer>When the battle is won, a great lord shall be undone.</answer></row>
+        <row><roll_1d10>7</roll_1d10><answer>By steel you shall lead, and by steel you shall bleed.</answer></row>
+        <row><roll_1d10>8</roll_1d10><answer>Reap what you have sown; blood, sorrow, or throne.</answer></row>
+        <row><roll_1d10>9</roll_1d10><answer>You shall be remembered for your deeds, or for your greeds.</answer></row>
+        <row><roll_1d10>10</roll_1d10><answer>The world shall lie at your feet until the day of your defeat.</answer></row>
+      </table>
+    </tables>
+    <special>
+      <rule>Fate is not entirely unalterable; gross stupidity, recklessness, suicide, or willful avoidance may still prevent ordinary fulfillment.</rule>
+      <rule>In most cases the fate is fulfilled, even if only poetically or at the moment of death.</rule>
+      <rule>Divine access restricted to Priestess, Shaman, and Witch.</rule>
+    </special>
+  </spell>
+
+  <spell name="Fear">
+    <classification>
+      <entry><type>Arcane</type><level>4</level></entry>
+      <entry><type>Divine</type><level>5</level></entry>
+    </classification>
+    <range>0'</range>
+    <duration>instantaneous</duration>
+    <area>60' long, 30' wide cone from the caster's hands</area>
+    <effects>
+      <summary>Forces creatures in a cone to flee.</summary>
+      <condition_effect>Creatures that fail the save flee from the caster at running speed for 30 rounds.</condition_effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <negates>true</negates>
+    </saving_throw>
+    <special>
+      <rule>Used to create wands of fear.</rule>
+      <rule>Divine access restricted to Priestess and Witch.</rule>
+    </special>
+  </spell>
+
+  <spell name="Find Treasure">
+    <classification>
+      <entry><type>Arcane</type><level>4</level></entry>
+    </classification>
+    <range>360'</range>
+    <duration>3 turns</duration>
+    <effects>
+      <summary>Senses the most valuable treasure within range.</summary>
+      <effect>After concentrating for 1 turn, the caster senses the direction and distance of the most valuable treasure within 360'.</effect>
+    </effects>
+    <limits>
+      <limit>Treasure must be worth at least 50gp total to be detected.</limit>
+      <limit>Magical wards and lead block detection.</limit>
+    </limits>
+    <special>
+      <rule>Physical barriers other than magical wards or lead do not impede detection.</rule>
+      <rule>Used to create potions of treasure finding.</rule>
+    </special>
+  </spell>
+
+  <spell name="Fly">
+    <classification>
+      <entry><type>Divine</type><level>4</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>1 turn per level</duration>
+    <effects>
+      <summary>Equivalent to the 3rd level arcane spell of the same name, except for classification, range, and duration as listed here.</summary>
+    </effects>
+    <special>
+      <rule>Divine access restricted to Witch.</rule>
+    </special>
+  </spell>
+
+  <spell name="Gaseous Form">
+    <classification>
+      <entry><type>Arcane</type><level>3</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>6 turns</duration>
+    <targets>
+      <target>One creature</target>
+    </targets>
+    <effects>
+      <summary>Transforms the subject into a translucent cloud of gas.</summary>
+      <effect>Everything carried or worn immediately falls to the floor.</effect>
+      <effect>The gaseous subject cannot attack.</effect>
+      <movement>Moves at 30' per round.</movement>
+      <effect>Can flow below doors and through other small spaces that are not sealed airtight.</effect>
+      <effect>Has AC 11.</effect>
+      <immunity>Immune to non-magical weapons.</immunity>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <condition>Allowed if the target is unwilling.</condition>
+      <negates>true</negates>
+    </saving_throw>
+    <special>
+      <rule>Used to create potions of gaseous form.</rule>
+    </special>
+  </spell>
+
+  <spell name="Giant Strength">
+    <classification>
+      <entry><type>Arcane</type><level>4</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>3 turns</duration>
+    <effects>
+      <summary>Temporarily grants the strength of a hill giant.</summary>
+      <effect>Recipient attacks as an 8 HD monster or as his own class and level, whichever is better.</effect>
+      <damage>Recipient inflicts double normal damage with attacks.</damage>
+      <attack>Recipient can throw rocks to 200' for 3d6 damage.</attack>
+      <bonus>+16 to force open doors.</bonus>
+    </effects>
+    <limits>
+      <limit>Does not combine with other magical effects that influence Strength.</limit>
+    </limits>
+    <interactions>
+      <rule>Stacks with the character's normal Strength bonus or penalty.</rule>
+      <result>A weak recipient has the strength of a weak giant; a very strong recipient has the strength of a very strong giant.</result>
+    </interactions>
+    <special>
+      <rule>Used to create girdles of giant strength and potions of giant strength.</rule>
+    </special>
+  </spell>
+
+  <spell name="Glitterdust">
+    <classification>
+      <entry><type>Arcane</type><level>2</level></entry>
+      <entry><type>Divine</type><level>3</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>1 round per level</duration>
+    <area>10' radius</area>
+    <effects>
+      <summary>Covers the area in glowing dust that blinds and outlines hidden creatures.</summary>
+      <condition_effect>Creatures that fail the save are blinded for the duration.</condition_effect>
+      <effect>Invisible or hidden creatures in the area are visibly outlined.</effect>
+      <effect>Outlined creatures cannot thereafter benefit from invisibility or hiding in shadows while the glitterdust remains.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <negates>Blinding only</negates>
+    </saving_throw>
+    <duration_rules>
+      <rule>The glitterdust cannot be removed.</rule>
+      <rule>It vanishes when the duration expires or if dispelled.</rule>
+    </duration_rules>
+    <special>
+      <rule>Divine access restricted to Sylvan Witch.</rule>
+    </special>
+  </spell>
+
+  <spell name="Globe of Invulnerability">
+    <classification>
+      <entry><type>Arcane</type><level>6</level></entry>
+    </classification>
+    <range>0'</range>
+    <duration>1 round per level</duration>
+    <effects>
+      <summary>Equivalent to minor globe of invulnerability, except it blocks spells and spell effects of up to 4th level.</summary>
+    </effects>
+  </spell>
+
+  <spell name="Growth *" reversible="true" reverse_name="diminution">
+    <classification>
+      <entry><type>Arcane</type><level>3</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>12 turns</duration>
+    <effects>
+      <summary>Doubles the recipient's size.</summary>
+      <damage>Recipient deals double normal damage with attacks.</damage>
+      <bonus>+16 to force open doors.</bonus>
+      <effect>Attack throws do not improve because increased strength is offset by unfamiliarity with giant size.</effect>
+    </effects>
+    <limits>
+      <limit>Strength bonus does not combine with other magical effects that influence Strength.</limit>
+    </limits>
+    <interactions>
+      <rule>Stacks with the character's normal Strength bonus or penalty.</rule>
+      <rule>If a creature under growth is subjected to diminution, or vice versa, both spells are cancelled.</rule>
+    </interactions>
+    <reversed_form name="diminution">
+      <effects>
+        <summary>Shrinks the target and everything carried to 6 inches tall.</summary>
+        <effect>If the diminished character remains motionless, he can avoid being spotted with a proficiency throw of 3+ on 1d20.</effect>
+        <damage>The character deals normal damage only to opponents smaller than 1'; larger opponents take only 1 point of damage from any successful hit.</damage>
+      </effects>
+      <saving_throw>
+        <type>Spells</type>
+        <condition>Allowed if the target is unwilling.</condition>
+        <negates>true</negates>
+      </saving_throw>
+      <special>Used to create potions of diminution.</special>
+    </reversed_form>
+    <special>
+      <rule>Used to create potions of growth.</rule>
+    </special>
+  </spell>
+
+  <spell name="Growth of Plants">
+    <classification>
+      <entry><type>Divine</type><level>5</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>permanent</duration>
+    <effects>
+      <summary>Equivalent to the 4th level arcane spell of the same name, except for classification, range, and duration as listed here.</summary>
+    </effects>
+    <special>
+      <rule>Divine access restricted to Witch.</rule>
+    </special>
+  </spell>
+
+  <spell name="Gust of Wind">
+    <classification>
+      <entry><type>Arcane</type><level>2</level></entry>
+    </classification>
+    <range>0'</range>
+    <duration>1 round</duration>
+    <area>10' wide, 60' long line from the caster</area>
+    <effects>
+      <summary>Creates a strong blast of air with size-based effects.</summary>
+      <effect>Tiny creatures are knocked down and rolled 1d4x10', taking 1d4 nonlethal damage per 10'.</effect>
+      <effect>Flying tiny or smaller creatures are blown back 2d6x10' and take 2d6 nonlethal damage.</effect>
+      <effect>Small creatures are knocked prone, or if flying are blown back 1d6x10'.</effect>
+      <effect>Man-sized creatures cannot move forward against the wind, or if flying are blown back 1d6x5'.</effect>
+      <effect>Creatures of ogre size or larger move normally within the gust.</effect>
+      <penalty>-4 to missile attack throws within or through the gust.</penalty>
+      <penalty>-4 to proficiency throws to hear noise within or through the gust.</penalty>
+    </effects>
+    <saving_throw>
+      <type>Blast</type>
+      <negates>true</negates>
+    </saving_throw>
+    <interactions>
+      <rule>Automatically extinguishes candles, torches, and other unprotected flames.</rule>
+      <rule>Protected flames such as lanterns have a 50% chance of being extinguished.</rule>
+      <rule>Can fan large fires, overturn delicate awnings, create dust spray, or blow vapors out of range, at Judge's discretion.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Hypnotic Pattern">
+    <classification>
+      <entry><type>Arcane</type><level>2</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>concentration</duration>
+    <effects>
+      <summary>Mesmerizes creatures that see the pattern.</summary>
+      <condition_effect>Affected creatures stand motionless and take no action, even to defend themselves.</condition_effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <negates>true</negates>
+    </saving_throw>
+    <limits>
+      <limit>Can mesmerize a maximum of 24 total Hit Dice or levels.</limit>
+      <limit>Creatures with the fewest HD are affected first.</limit>
+      <limit>Lasts only while the caster remains stationary and concentrates.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Inaudibility">
+    <classification>
+      <entry><type>Arcane</type><level>2</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>special</duration>
+    <effects>
+      <summary>Makes the target move and fight noiselessly.</summary>
+      <effect>Items carried or picked up by the recipient also become noiseless while in the recipient's possession.</effect>
+      <effect>Items leaving the recipient's possession regain normal audibility if fired, dropped, or put down.</effect>
+    </effects>
+    <duration_rules>
+      <rule>Ends if the recipient speaks, suffers damage, fails a saving throw, or casts a spell.</rule>
+      <rule>Merely attacking or interacting with objects does not end the effect.</rule>
+      <rule>Maximum duration is 24 hours.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Infravision">
+    <classification>
+      <entry><type>Divine</type><level>4</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>1 day</duration>
+    <effects>
+      <summary>Equivalent to the 3rd level arcane spell of the same name, except for classification, range, and duration as listed here.</summary>
+    </effects>
+    <special><rule>Divine access restricted to Witch.</rule></special>
+  </spell>
+
+  <spell name="Invisibility">
+    <classification>
+      <entry><type>Divine</type><level>3</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>special</duration>
+    <effects>
+      <summary>Equivalent to the 2nd level arcane spell of the same name, except for classification, range, and duration as listed here.</summary>
+    </effects>
+    <special><rule>Divine access restricted to Witch.</rule></special>
+  </spell>
+
+  <spell name="Invulnerability to Evil">
+    <classification>
+      <entry><type>Divine</type><level>3</level></entry>
+    </classification>
+    <range>self</range>
+    <duration>1 turn</duration>
+    <effects>
+      <summary>Protects the caster from normal, non-magical attacks by evil creatures.</summary>
+      <effect>Magic or silver weapons can still harm the caster.</effect>
+      <effect>Any number of normal swords, arrows, clubs, or natural weapons wielded by evil creatures are fended off.</effect>
+      <effect>Evil monsters affected only by silver or magical weapons can still harm the subject.</effect>
+      <effect>Evil monsters with 5 HD or more can affect the subject through natural ferocity.</effect>
+    </effects>
+    <limits>
+      <limit>For this spell, evil creatures include hostile creatures of an alignment other than the caster's, undead, and summoned creatures of Chaotic alignment.</limit>
+    </limits>
+    <special><rule>Divine access restricted to Bladedancer.</rule></special>
+  </spell>
+
+  <spell name="Jump">
+    <classification>
+      <entry><type>Arcane</type><level>1</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>3 turns</duration>
+    <effects>
+      <summary>Grants prodigious leaping ability.</summary>
+      <movement>May leap 10' vertically and 30' horizontally from a standing start.</movement>
+      <bonus>+10 on Acrobatics throws.</bonus>
+      <effect>Recipient needs no rest if engaged in ordinary movement.</effect>
+    </effects>
+    <special><rule>Used to create boots of traveling and springing.</rule></special>
+  </spell>
+
+  <spell name="Levitate">
+    <classification>
+      <entry><type>Divine</type><level>3</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>6 turns + 1 turn per level</duration>
+    <effects>
+      <summary>Equivalent to the 2nd level arcane spell of the same name, except for classification, range, and duration as listed here.</summary>
+    </effects>
+    <special><rule>Divine access restricted to Witch.</rule></special>
+  </spell>
+
+  <spell name="Locate Animal or Plant">
+    <classification>
+      <entry><type>Divine</type><level>1</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>6 turns</duration>
+    <effects>
+      <summary>Reveals the direction to the closest specimen of a named animal or plant type within range.</summary>
+      <effect>If no specimen is currently within range, the caster learns that instead.</effect>
+      <effect>If a specimen later comes into range during the duration, the caster learns its direction at that time.</effect>
+      <bonus>+4 on Naturalism proficiency throws to locate poisonous plants.</bonus>
+    </effects>
+    <targets>
+      <requirement>Caster must name a specific type of animal or plant.</requirement>
+      <invalid_target>Intelligent creatures.</invalid_target>
+      <invalid_target>Fantastic creatures such as owlbears or wyverns.</invalid_target>
+      <invalid_target>Plant-like monsters.</invalid_target>
+    </targets>
+    <saving_throw>
+      <rule>Animal or plant gets no saving throw.</rule>
+    </saving_throw>
+    <special><rule>Divine access restricted to Shaman and Witch.</rule></special>
+  </spell>
+
+  <spell name="Locate Object">
+    <classification>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>6 turns</duration>
+    <effects>
+      <summary>Equivalent to the 2nd level arcane spell of the same name, except for classification, range, and duration as listed here.</summary>
+    </effects>
+    <special><rule>Divine access restricted to Witch.</rule></special>
+  </spell>
+
+  <spell name="Lower Water">
+    <classification>
+      <entry><type>Divine</type><level>5</level></entry>
+    </classification>
+    <range>240'</range>
+    <duration>10 turns</duration>
+    <effects>
+      <summary>Equivalent to the 6th level arcane spell of the same name, except for classification, range, and duration as listed here.</summary>
+    </effects>
+    <special><rule>Divine access restricted to Priestess.</rule></special>
+  </spell>
+
+  <spell name="Magic Carpet">
+    <classification>
+      <entry><type>Arcane</type><level>4</level></entry>
+      <entry><type>Divine</type><level>5</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>1 turn per level</duration>
+    <targets>
+      <requirement>Target carpet, rug, or tapestry must be at least 4' x 6' and no larger than 10' x 15'.</requirement>
+    </targets>
+    <effects>
+      <summary>Transforms a suitable carpet into a flying vehicle under the caster's command.</summary>
+      <effect>Controlling the carpet requires as much concentration as riding a horse.</effect>
+      <movement>With one human-sized passenger, movement is 300' per turn.</movement>
+      <movement>With two human-sized passengers, movement is 240' per turn.</movement>
+      <movement>With three human-sized passengers, movement is 180' per turn.</movement>
+    </effects>
+    <limits>
+      <limit>No more than three human-sized creatures or 60 stone total may be carried.</limit>
+    </limits>
+    <interactions>
+      <rule>If the spell is dispelled, the carpet and its passengers plummet from the air.</rule>
+    </interactions>
+    <special>
+      <rule>Used to create flying carpets.</rule>
+      <rule>Divine access restricted to Witch.</rule>
+    </special>
+  </spell>
+
+  <spell name="Magic Mouth">
+    <classification>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>special</duration>
+    <effects>
+      <summary>Equivalent to the 1st level arcane spell of the same name, except for classification and range as listed here.</summary>
+    </effects>
+    <special><rule>Divine access restricted to Witch.</rule></special>
+  </spell>
+
+  <spell name="Magic Rope">
+    <classification>
+      <entry><type>Arcane</type><level>1</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>1 turn per level</duration>
+    <targets>
+      <requirement>Up to 50' of rope.</requirement>
+      <requirement>Rope must be at least finger-thick and in reasonable condition.</requirement>
+      <requirement>A creature must hold one end when the magic is invoked.</requirement>
+    </targets>
+    <effects>
+      <summary>Enchants rope to move on command and support heavy loads.</summary>
+      <effect>Supports 100 stone (1,000lb) regardless of normal carrying capacity.</effect>
+      <movement>Moves at 10' per round in any directed path and can fasten itself securely where directed.</movement>
+      <effect>Can unfasten itself and return in the same manner.</effect>
+    </effects>
+    <special><rule>Used to create ropes of climbing.</rule></special>
+  </spell>
+
+  <spell name="Mass Infravision">
+    <classification>
+      <entry><type>Arcane</type><level>5</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>1 day</duration>
+    <effects>
+      <summary>Grants multiple subjects infravision to 60'.</summary>
+    </effects>
+    <scaling>
+      <rule>Affects one subject, plus one subject per two caster levels beyond 1st.</rule>
+      <rule>Affects five subjects at 9th level, six subjects at 11th level, and a maximum of seven subjects at 13th level.</rule>
+    </scaling>
+  </spell>
+
+  <spell name="Minor Globe of Invulnerability">
+    <classification>
+      <entry><type>Arcane</type><level>4</level></entry>
+    </classification>
+    <range>0'</range>
+    <duration>1 round per level</duration>
+    <area>5' radius sphere around the caster</area>
+    <effects>
+      <summary>Prevents 1st, 2nd, and 3rd level spells or spell effects from penetrating the globe.</summary>
+      <effect>Areas of effect of such spells exclude the protected area.</effect>
+      <effect>4th level and higher spells are unaffected.</effect>
+      <effect>Spells cast outward from within the globe pass through it freely.</effect>
+    </effects>
+    <interactions>
+      <rule>Can be destroyed by dispel magic.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Mirror Image">
+    <classification>
+      <entry><type>Divine</type><level>3</level></entry>
+    </classification>
+    <range>self</range>
+    <duration>6 turns</duration>
+    <effects>
+      <summary>Equivalent to the 2nd level arcane spell of the same name, except for classification, range, and duration as listed here.</summary>
+    </effects>
+    <special><rule>Divine access restricted to Witch.</rule></special>
+  </spell>
+
+  <spell name="Necromantic Potence">
+    <classification>
+      <entry><type>Arcane</type><level>2</level></entry>
+      <entry><type>Divine</type><level>3</level></entry>
+    </classification>
+    <range>caster</range>
+    <duration>1 hour per level</duration>
+    <effects>
+      <summary>Imbues the caster with necromantic power and temporary hit points.</summary>
+      <healing>Grants 1d10 temporary hit points +1 hp per caster level.</healing>
+      <effect>Temporary hit points are lost first if damage is suffered.</effect>
+      <effect>While active, the caster is treated as an inherently evil summoned creature for detect evil and protection from evil effects.</effect>
+    </effects>
+    <duration_rules>
+      <rule>Temporary hit points cannot be regained through rest or healing magic.</rule>
+      <rule>Temporary hit points disappear when the duration expires.</rule>
+    </duration_rules>
+    <interactions>
+      <rule>A dispel evil or dispel magic strips the caster of the temporary hit points unless the caster succeeds on a save versus Spells.</rule>
+    </interactions>
+    <saving_throw>
+      <type>Spells</type>
+      <condition>Allowed to keep temporary hit points against dispel evil or dispel magic.</condition>
+    </saving_throw>
+    <special><rule>Divine access restricted to Chthonic Witch.</rule></special>
+  </spell>
+
+  <spell name="Nondetection">
+    <classification>
+      <entry><type>Arcane</type><level>3</level></entry>
+      <entry><type>Divine</type><level>4</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>1 hour per level</duration>
+    <effects>
+      <summary>Protects the target from crystal balls and any type of ESP.</summary>
+      <effect>Protection also prevents a crystal ball from spying on items the recipient is wearing and on the recipient's present location.</effect>
+      <effect>An attempt to spy reveals only that the target is magically protected.</effect>
+    </effects>
+    <special>
+      <rule>Used to create amulets versus crystal balls and ESP.</rule>
+      <rule>Divine access restricted to Witch.</rule>
+    </special>
+  </spell>
+
+  <spell name="Oblivion">
+    <classification>
+      <entry><type>Arcane</type><level>6</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>instantaneous</duration>
+    <effects>
+      <summary>Condemns the touched creature to oblivion if it fails its save.</summary>
+      <effect>On failure, the creature vanishes and cannot return except by wish or miracle.</effect>
+      <effect>Rescued characters are insane for 3d4 weeks after return.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <negates>true</negates>
+    </saving_throw>
+  </spell>
+
+  <spell name="Obscuring Cloud">
+    <classification>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>0'</range>
+    <duration>1 turn per level</duration>
+    <area>Billowing cloud 1' high and 10' in diameter per caster level</area>
+    <effects>
+      <summary>Creates a harmless mist that blocks line of sight for most creatures.</summary>
+      <effect>The caster and creatures able to see invisible can see dimly through the cloud.</effect>
+      <effect>All others within the cloud are effectively blind.</effect>
+    </effects>
+    <special><rule>Divine access restricted to Shaman and Sylvan Witch.</rule></special>
+  </spell>
+
+  <spell name="Ogre Power">
+    <classification>
+      <entry><type>Arcane</type><level>2</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>3 turns</duration>
+    <effects>
+      <summary>Grants the strength and prowess of an ogre.</summary>
+      <effect>Recipient has effective Strength 18.</effect>
+      <bonus>+3 to attack throws and damage rolls and other benefits of Strength 18.</bonus>
+      <attack>Can strike barehanded for 1d4 damage.</attack>
+      <effect>Can carry an extra 10 stone.</effect>
+    </effects>
+    <special><rule>Used to create gauntlets of ogre power.</rule></special>
+  </spell>
+
+  <spell name="Panic">
+    <classification>
+      <entry><type>Arcane</type><level>5</level></entry>
+    </classification>
+    <range>0'</range>
+    <duration>instantaneous</duration>
+    <area>All creatures within 240' except those inside a 10' radius safe zone</area>
+    <effects>
+      <summary>Causes affected creatures to flee in fear.</summary>
+      <condition_effect>Failed targets flee at running speed for 30 rounds.</condition_effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <negates>true</negates>
+    </saving_throw>
+    <special><rule>Used to create drums of panic.</rule></special>
+  </spell>
+
+  <spell name="Pass Without Trace">
+    <classification>
+      <entry><type>Divine</type><level>1</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>1 turn per level</duration>
+    <effects>
+      <summary>Allows the recipient to move without leaving evidence of passage.</summary>
+      <effect>Works across fresh snow, brush, and similar surfaces without leaving normal traces.</effect>
+    </effects>
+    <interactions>
+      <rule>Detect magic or true seeing cast within three turns reveals the recipient's passage.</rule>
+    </interactions>
+    <special><rule>Divine access restricted to Shaman.</rule></special>
+  </spell>
+
+  <spell name="Permanent Illusion">
+    <classification>
+      <entry><type>Arcane</type><level>6</level></entry>
+    </classification>
+    <range>240'</range>
+    <duration>permanent</duration>
+    <area>Up to 40' x 40' x 40'</area>
+    <effects>
+      <summary>Creates a permanent multi-sensory illusion of an object, creature, or force.</summary>
+      <effect>Includes visual, auditory, olfactory, and thermal components.</effect>
+      <effect>Can be static or dynamic.</effect>
+      <effect>Dynamic illusions are non-interactive and repeat every round.</effect>
+      <effect>Those who successfully disbelieve see a translucent outline.</effect>
+      <damage>Illusory damage is not real.</damage>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>Successful disbelief shows the illusion as a translucent outline.</rule>
+      <rule>Successful saves also avoid all illusory damage.</rule>
+    </saving_throw>
+    <duration_rules>
+      <rule>Lasts until dispelled.</rule>
+      <rule>Creatures apparently killed or injured realize they are unharmed after 1d6 rounds.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Phantasmal Force">
+    <classification>
+      <entry><type>Divine</type><level>3</level></entry>
+    </classification>
+    <range>240'</range>
+    <duration>concentration</duration>
+    <effects>
+      <summary>Equivalent to the 2nd level arcane spell of the same name, except for classification, range, and duration as listed here.</summary>
+    </effects>
+    <special><rule>Divine access restricted to Witch.</rule></special>
+  </spell>
+
+  <spell name="Phantasmal Killer">
+    <classification>
+      <entry><type>Arcane</type><level>5</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>1 round per level</duration>
+    <targets><target>One creature</target></targets>
+    <effects>
+      <summary>Creates an illusion of the target's greatest fear that attacks the target.</summary>
+      <attack>Attacks once per round after creation, rolling to hit as a 4 HD monster.</attack>
+      <condition_effect>If it scores even one successful attack throw, the target dies of fright.</condition_effect>
+      <effect>The killer is invulnerable to attacks and can pass through any barriers.</effect>
+      <effect>Only the caster and the target can see it.</effect>
+      <effect>Others cannot assist the target in disbelieving.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>The target gets one chance to disbelieve.</rule>
+    </saving_throw>
+    <limits>
+      <limit>Only defenses are disbelieving it, incapacitating the caster, or avoiding being hit for the duration.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Polymorph Self">
+    <classification>
+      <entry><type>Divine</type><level>5</level></entry>
+    </classification>
+    <range>self</range>
+    <duration>6 turns plus 1 turn per level</duration>
+    <effects>
+      <summary>Equivalent to the 4th level arcane spell of the same name, except for classification, range, and duration as listed here.</summary>
+    </effects>
+    <special><rule>Divine access restricted to Witch.</rule></special>
+  </spell>
+
+  <spell name="Predict Weather">
+    <classification>
+      <entry><type>Divine</type><level>1</level></entry>
+    </classification>
+    <range>1 mile per level</range>
+    <duration>12 hours</duration>
+    <effects>
+      <summary>Accurately predicts the weather within range for the next 12 hours.</summary>
+    </effects>
+    <limits><limit>Provides foreknowledge only; does not control the weather.</limit></limits>
+    <special><rule>Divine access restricted to Shaman and Witch.</rule></special>
+  </spell>
+
+  <spell name="Produce Fire">
+    <classification>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>0'</range>
+    <duration>2 turns per level</duration>
+    <effects>
+      <summary>Creates a small flame in the caster's palm.</summary>
+      <effect>The flame is harmless to the caster and sheds light like a normal torch.</effect>
+      <effect>Touching combustible materials ignites them without extinguishing the magical flame.</effect>
+      <attack>The flame may be thrown to 30'; it disappears 1 round after leaving the caster's hand.</attack>
+      <effect>The caster may make the flame disappear and reappear by concentration once per round.</effect>
+      <effect>Other items may be held and used in the hand while the fire is out.</effect>
+    </effects>
+    <special><rule>Divine access restricted to Shaman.</rule></special>
+  </spell>
+
+  <spell name="Programmed Illusion">
+    <classification>
+      <entry><type>Arcane</type><level>6</level></entry>
+    </classification>
+    <range>240'</range>
+    <duration>special</duration>
+    <area>40' x 40' x 40' illusion placed on an area or object</area>
+    <targets>
+      <requirement>Must be placed upon a particular area or object.</requirement>
+    </targets>
+    <effects>
+      <summary>Places a spectral-force style multi-sensory illusion that activates on a specified trigger.</summary>
+      <effect>Can be static or dynamic.</effect>
+      <effect>Dynamic sequences are non-interactive.</effect>
+      <effect>Dynamic sequences cannot exceed 1 round per caster level.</effect>
+      <effect>Those who successfully disbelieve see a translucent outline.</effect>
+      <damage>Illusory damage is not real.</damage>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>Successful disbelief shows the illusion as a translucent outline.</rule>
+      <rule>Successful saves also avoid all illusory damage.</rule>
+    </saving_throw>
+    <duration_rules>
+      <rule>After triggering, the illusion lasts until dispelled or until a maximum of 1 round per caster level elapses.</rule>
+      <rule>Creatures apparently killed or injured realize they are unharmed after 1d6 rounds.</rule>
+    </duration_rules>
+    <limits>
+      <limit>Only visual and audible triggers can be used.</limit>
+      <limit>Cannot distinguish level, Hit Dice, or class except by external garb.</limit>
+    </limits>
+    <interactions>
+      <rule>Triggers react to appearances; disguises and illusions can fool them.</rule>
+      <rule>Normal darkness does not defeat a visual trigger, but magical darkness or invisibility does.</rule>
+      <rule>Silent movement or magical silence defeats audible triggers.</rule>
+      <rule>Audible triggers can key on general noises, specific noises, spoken words, or visible or audible actions.</rule>
+      <rule>Trigger range is 10' per caster level and only to visible or audible events within line of sight or hearing distance.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Protection from Normal Missiles">
+    <classification>
+      <entry><type>Divine</type><level>3</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>12 turns</duration>
+    <effects>
+      <summary>Equivalent to the 3rd level arcane spell of the same name, except for classification, range, and duration as listed here.</summary>
+    </effects>
+    <special><rule>Divine access restricted to Priestess.</rule></special>
+  </spell>
+
+  <spell name="Protection from Normal Weapons">
+    <classification>
+      <entry><type>Arcane</type><level>5</level></entry>
+      <entry><type>Divine</type><level>5</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>3 turns</duration>
+    <effects>
+      <summary>Completely protects the subject from normal, non-magical attacks.</summary>
+      <effect>Magic or silver weapons can still harm the subject.</effect>
+      <effect>Any number of normal swords, arrows, clubs, or natural weapons are fended off.</effect>
+      <effect>Monsters that themselves can only be affected by silver or magical weapons can still harm the subject.</effect>
+      <effect>Monsters with 5 HD or more can affect the subject through natural ferocity.</effect>
+    </effects>
+    <special><rule>Divine access restricted to Priestess.</rule></special>
+  </spell>
+
+  <spell name="Purify Food and Water *" reversible="true" reverse_name="putrefy food and water">
+    <classification>
+      <entry><type>Divine</type><level>1</level></entry>
+    </classification>
+    <range>10'</range>
+    <duration>instantaneous</duration>
+    <effects>
+      <summary>Makes contaminated food and water suitable for eating and drinking.</summary>
+      <effect>Purifies one ration of food, 6 skins of water, or enough normal food to feed a dozen people.</effect>
+    </effects>
+    <limits>
+      <limit>Does not prevent later natural decay or spoilage.</limit>
+      <limit>Has no effect on creatures or on magic potions.</limit>
+    </limits>
+    <interactions>
+      <rule>Unholy water and similar significant food or drink are spoiled by this spell.</rule>
+    </interactions>
+    <reversed_form name="putrefy food and water">
+      <effects>
+        <summary>Spoils one ration of food, 6 skins of water, or enough normal food to feed a dozen people.</summary>
+        <condition_effect>Anyone consuming the spoiled food or water is violently ill for 2 hours (12 turns), able to do nothing but retch and heave.</condition_effect>
+      </effects>
+      <saving_throw>
+        <type>Poison</type>
+        <negates>Illness</negates>
+      </saving_throw>
+    </reversed_form>
+    <special><rule>Divine access restricted to Witch.</rule></special>
+  </spell>
+
+  <spell name="Read Languages">
+    <classification>
+      <entry><type>Divine</type><level>1</level></entry>
+    </classification>
+    <range>self</range>
+    <duration>2 turns</duration>
+    <effects>
+      <summary>Equivalent to the 1st level arcane spell of the same name, except for classification and duration as listed here.</summary>
+    </effects>
+    <special><rule>Divine access restricted to Witch.</rule></special>
+  </spell>
+
+  <spell name="Reincarnate">
+    <classification>
+      <entry><type>Divine</type><level>5</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>instantaneous</duration>
+    <effects>
+      <summary>Equivalent to the 6th level arcane spell of the same name, except for classification, range, and duration as listed here.</summary>
+    </effects>
+    <special><rule>Divine access restricted to Shaman.</rule></special>
+  </spell>
+
+  <spell name="Righteous Wrath">
+    <classification>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>1 turn</duration>
+    <targets>
+      <target>Willing creatures</target>
+    </targets>
+    <effects>
+      <summary>Imbues subjects with righteous wrath against enemies of the faith.</summary>
+      <bonus>+2 bonus to attack throws.</bonus>
+      <immunity>Immune to fear.</immunity>
+      <penalty>-2 penalty to AC.</penalty>
+      <effect>Subjects cannot retreat from combat once it has begun.</effect>
+    </effects>
+    <scaling>
+      <rule>Affects one creature initially, one additional creature at 6th level, and another at 11th level.</rule>
+    </scaling>
+    <duration_rules>
+      <rule>Ends when combat ends or when 1 turn elapses, whichever comes first.</rule>
+    </duration_rules>
+    <special><rule>Divine access restricted to Cleric.</rule></special>
+  </spell>
+
+  <spell name="Salving Rest">
+    <classification>
+      <entry><type>Divine</type><level>1</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>special</duration>
+    <effects>
+      <summary>Improves healing during complete rest.</summary>
+      <healing>Subject heals an extra 1d3 hit points during each day of complete rest.</healing>
+    </effects>
+    <duration_rules>
+      <rule>Ends if the subject stops completely resting or takes any damage.</rule>
+    </duration_rules>
+    <special><rule>Divine access restricted to Priestess and Witch.</rule></special>
+  </spell>
+
+  <spell name="Scouring Wind">
+    <classification>
+      <entry><type>Arcane</type><level>5</level></entry>
+    </classification>
+    <range>0'</range>
+    <duration>1 round</duration>
+    <area>10' wide, 60' long line from the caster</area>
+    <effects>
+      <summary>Creates a damaging blast of wind and debris with additional size-based effects.</summary>
+      <damage>Creatures in the area take 1d4 damage per caster level from abrasion and debris.</damage>
+      <effect>Tiny creatures that fail the save are knocked down and rolled 1d4x10', taking 1d4 nonlethal damage per 10'.</effect>
+      <effect>Flying tiny or smaller creatures that fail the save are blown back 2d6x10' and take 2d6 nonlethal damage.</effect>
+      <effect>Small creatures that fail the save are knocked prone, or if flying are blown back 1d6x10'.</effect>
+      <effect>Man-sized creatures that fail the save cannot move forward against the wind, or if flying are blown back 1d6x5'.</effect>
+      <effect>Creatures of ogre size or larger move normally within the wind.</effect>
+      <penalty>-4 to missile attack throws within or through the wind.</penalty>
+      <penalty>-4 to proficiency throws to hear noise within or through the wind.</penalty>
+    </effects>
+    <saving_throw>
+      <type>Blast</type>
+      <partial>Half damage on success; save failure is required for the additional size-based effects.</partial>
+    </saving_throw>
+    <interactions>
+      <rule>Automatically extinguishes candles, torches, and other unprotected flames.</rule>
+      <rule>Protected flames such as lanterns have a 50% chance of being extinguished.</rule>
+      <rule>Can fan large fires, overturn delicate awnings, create dust spray, or blow vapors out of range, at Judge's discretion.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Scry">
+    <classification>
+      <entry><type>Arcane</type><level>4</level></entry>
+      <entry><type>Divine</type><level>5</level></entry>
+    </classification>
+    <range>special</range>
+    <duration>1 turn</duration>
+    <targets>
+      <requirement>Caster must have access to a mirror, crystal, reflective pool, or other surface to display the images.</requirement>
+    </targets>
+    <effects>
+      <summary>Shows images of distant creatures, objects, or places.</summary>
+      <effect>Images are clearer the more familiar the caster is with the subject viewed.</effect>
+    </effects>
+    <duration_rules>
+      <rule>Each use lasts up to 1 turn.</rule>
+      <rule>The caster must fully concentrate and remain stationary.</rule>
+    </duration_rules>
+    <interactions>
+      <rule>Clairaudience can be cast with scry to hear sounds and conversations at the location viewed.</rule>
+      <rule>ESP can be cast with scry to hear the thoughts of one observed creature.</rule>
+    </interactions>
+    <limits>
+      <limit>The caster cannot otherwise cast spells at or communicate with what is viewed.</limit>
+    </limits>
+    <special>
+      <rule>Used to create crystal balls.</rule>
+      <rule>Divine access restricted to Priestess and Witch.</rule>
+    </special>
+  </spell>
+
+  <spell name="Sharpness">
+    <classification>
+      <entry><type>Arcane</type><level>1</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>3 turns</duration>
+    <targets>
+      <target>Blade of an edged or pointed weapon</target>
+    </targets>
+    <effects>
+      <summary>Temporarily enhances the weapon to the equivalent of a magic weapon +1.</summary>
+      <effect>Weapons already enchanted gain an additional +1 while the spell lasts.</effect>
+      <effect>One casting affects 20 arrows, 2 one-handed weapons, or 1 two-handed weapon.</effect>
+    </effects>
+    <special><rule>Used to create oil of sharpness.</rule></special>
+  </spell>
+
+  <spell name="Silent Step">
+    <classification>
+      <entry><type>Arcane</type><level>1</level></entry>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>1 turn per level</duration>
+    <effects>
+      <summary>Allows the touched character to move almost noiselessly.</summary>
+      <bonus>+8 to proficiency throws to move silently.</bonus>
+      <effect>Characters affected can always move silently with a throw of at least 12+.</effect>
+    </effects>
+    <special>
+      <rule>Used to create elven boots.</rule>
+      <rule>Divine access restricted to Sylvan Witch.</rule>
+    </special>
+  </spell>
+
+  <spell name="Skinchange">
+    <classification>
+      <entry><type>Arcane</type><level>3</level></entry>
+      <entry><type>Divine</type><level>4</level></entry>
+    </classification>
+    <range>self</range>
+    <duration>1 turn per level</duration>
+    <effects>
+      <summary>Allows the caster to assume the form of a normal or giant animal.</summary>
+      <effect>Gains the physical capabilities, physical attacks, special abilities, and statistics of the assumed animal form.</effect>
+      <effect>Retains own mental abilities.</effect>
+      <effect>Can change to a new animal form each round.</effect>
+      <effect>If slain, reverts to original form.</effect>
+    </effects>
+    <duration_rules>
+      <rule>Caster can continue changing forms freely until reverting to original form or the duration expires.</rule>
+    </duration_rules>
+    <special><rule>Divine access restricted to Shaman.</rule></special>
+  </spell>
+
+  <spell name="Sleep">
+    <classification>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>240'</range>
+    <duration>4d4 turns</duration>
+    <effects>
+      <summary>Equivalent to the 1st level arcane spell of the same name, except for classification, range, and duration as listed here.</summary>
+    </effects>
+    <special><rule>Divine access restricted to Witch.</rule></special>
+  </spell>
+
+  <spell name="Slipperiness">
+    <classification>
+      <entry><type>Arcane</type><level>1</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>3 turns</duration>
+    <targets>
+      <option>Character</option>
+      <option>Objects</option>
+      <option>One 10' x 10' patch of floor</option>
+    </targets>
+    <effects>
+      <summary>Makes a character, object, or floor nearly impossible to grasp or stand on.</summary>
+      <effect>Affected characters cannot be restrained or grabbed by grasping attacks, including ropes, chains, cuffs, or constricting creatures, magical or otherwise.</effect>
+      <effect>One casting affects 20 arrows, 2 one-handed weapons, 1 two-handed weapon, or one 10' x 10' floor patch.</effect>
+      <effect>Characters must make an attack throw vs AC 10 each round to grab or keep hold of affected objects.</effect>
+      <effect>Anyone moving or even standing on an affected floor must make a proficiency throw of 20+ each round or fall down.</effect>
+    </effects>
+    <special><rule>Used to create oil of slipperiness.</rule></special>
+  </spell>
+
+  <spell name="Spectral Force">
+    <classification>
+      <entry><type>Arcane</type><level>4</level></entry>
+      <entry><type>Divine</type><level>5</level></entry>
+    </classification>
+    <range>240'</range>
+    <duration>concentration plus 3 rounds</duration>
+    <area>Up to 30' x 30' x 30'</area>
+    <effects>
+      <summary>Creates a movable multi-sensory illusion of an object, creature, or force.</summary>
+      <effect>Includes visual, auditory, olfactory, tactile, and thermal components.</effect>
+      <effect>The caster can move the image within the effect's size limits.</effect>
+      <effect>If the illusion depicts creatures, they have AC 0 and disappear if hit in combat.</effect>
+      <damage>If used to simulate an attack spell or attacking creature, illusory damage equals the normal damage for the simulated attack form.</damage>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <rule>Successful saves avoid all illusory damage.</rule>
+    </saving_throw>
+    <duration_rules>
+      <rule>The image persists while the caster concentrates and for 3 rounds afterward.</rule>
+      <rule>Those apparently killed or injured realize they are unharmed after 1d6 rounds.</rule>
+    </duration_rules>
+    <special><rule>Divine access restricted to Witch.</rule></special>
+  </spell>
+
+  <spell name="Spell Storing">
+    <classification>
+      <entry><type>Arcane</type><level>4</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>special</duration>
+    <targets>
+      <target>Necklace, ring, or similar item</target>
+    </targets>
+    <effects>
+      <summary>Prepares an item to hold up to six spells.</summary>
+      <effect>Only the caster of spell storing may store spells in the item.</effect>
+      <effect>Any character who puts the item on automatically knows which spells are stored and may discharge them.</effect>
+      <effect>Stored spells are discharged as if cast by a spellcaster of the minimum level required to cast each spell.</effect>
+    </effects>
+    <procedure>
+      <step order="1">Cast spell storing on the item.</step>
+      <step order="2">Within 1 turn, cast each spell to be stored into the item, one at a time.</step>
+      <step order="3">Any wearer may later discharge the stored spells until they expire or are used.</step>
+    </procedure>
+    <limits>
+      <limit>Maximum of six stored spells.</limit>
+    </limits>
+    <duration_rules>
+      <rule>Stored spells remain until discharged or until one day passes, whichever comes first.</rule>
+    </duration_rules>
+    <special><rule>Used to create rings of spell storing.</rule></special>
+  </spell>
+
+  <spell name="Sphere of Visibility">
+    <classification>
+      <entry><type>Divine</type><level>3</level></entry>
+    </classification>
+    <range>0'</range>
+    <duration>3 turns</duration>
+    <area>Sphere with radius 5' per caster level</area>
+    <effects>
+      <summary>Negates invisibility within the sphere.</summary>
+      <effect>Anything invisible becomes visible while in the area.</effect>
+    </effects>
+    <limits>
+      <limit>Does not necessarily reveal creatures obscured by cover, darkness, or similar concealment.</limit>
+    </limits>
+    <special><rule>Divine access restricted to Priestess.</rule></special>
+  </spell>
+
+  <spell name="Spider Climb">
+    <classification>
+      <entry><type>Arcane</type><level>1</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>3 turns</duration>
+    <effects>
+      <summary>Allows the recipient to climb vertical surfaces and hang from ceilings.</summary>
+      <movement>Climbs at combat movement rate 20'.</movement>
+      <effect>Needs no climbing gear or handholds.</effect>
+      <effect>Can attack with a one-handed weapon, cast spells, and defend normally while climbing.</effect>
+    </effects>
+    <limits>
+      <limit>At least three limbs must be free to spider climb.</limit>
+      <limit>Cannot charge or run while climbing.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Spirit of Healing">
+    <classification>
+      <entry><type>Divine</type><level>4</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>1 round per level</duration>
+    <effects>
+      <summary>Creates a healing force the caster directs each round.</summary>
+      <healing>Heals a creature within 60' of 1d6+1 damage each round.</healing>
+      <effect>The spirit can continue healing the same creature or be directed to another creature on subsequent rounds.</effect>
+      <effect>May cure paralysis instead of curing any points of damage.</effect>
+      <effect>Cannot increase hit points above the creature's normal maximum.</effect>
+    </effects>
+    <duration_rules>
+      <rule>The caster must concentrate for the duration.</rule>
+      <rule>If concentration is lost, the spirit vanishes and the spell ends.</rule>
+    </duration_rules>
+    <special><rule>Divine access restricted to Priestess.</rule></special>
+  </spell>
+
+  <spell name="Stinking Cloud">
+    <classification>
+      <entry><type>Arcane</type><level>2</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>1 round per level</duration>
+    <area>20' x 20' x 20' cloud</area>
+    <effects>
+      <summary>Creates foul vapors that render creatures helpless with nausea.</summary>
+      <condition_effect>Failed targets are helpless due to nausea.</condition_effect>
+    </effects>
+    <saving_throw>
+      <type>Poison</type>
+      <rule>Creatures entering or remaining in the cloud must save.</rule>
+    </saving_throw>
+    <duration_rules>
+      <rule>Nausea lasts while the creature remains in the cloud and for 1d4+1 rounds after leaving.</rule>
+      <rule>A creature that succeeds on its save but remains in the cloud must continue saving each round.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Summon Animals">
+    <classification>
+      <entry><type>Divine</type><level>4</level></entry>
+    </classification>
+    <range>360'</range>
+    <duration>3 turns</duration>
+    <targets>
+      <option>One or more known animals</option>
+      <option>Specific animal types</option>
+      <option>Every normal animal within range</option>
+    </targets>
+    <effects>
+      <summary>Summons normal animals within range to aid the caster.</summary>
+      <effect>Animals arrive at their fastest movement rate.</effect>
+      <effect>For the duration, summoned animals understand the spellcaster's speech and help as best they can.</effect>
+      <effect>Summoned animals usually flee if harmed.</effect>
+      <effect>If the caster is under attack when an animal arrives, it immediately attacks the caster's opponent.</effect>
+      <effect>Can calm and befriend hostile wildlife already present by effectively 'summoning' them.</effect>
+    </effects>
+    <scaling>
+      <rule>Responding animals may total up to the caster's level in Hit Dice.</rule>
+    </scaling>
+    <limits>
+      <limit>Affects only normal animals.</limit>
+      <limit>Does not affect fantastic creatures, giant-sized animals, humanoids, or vermin such as insects or oozes.</limit>
+    </limits>
+    <special>
+      <rule>Treat normal small creatures such as birds, hares, and squirrels as swarms.</rule>
+      <rule>Divine access restricted to Shaman and Sylvan Witch.</rule>
+    </special>
+  </spell>
+
+  <spell name="Summon Berserkers">
+    <classification>
+      <entry><type>Arcane</type><level>1</level></entry>
+    </classification>
+    <range>10'</range>
+    <duration>3 turns</duration>
+    <effects>
+      <summary>Summons 4 berserkers to fight for the caster.</summary>
+      <effect>Berserkers appear anywhere within range.</effect>
+      <effect>Berserkers are completely loyal.</effect>
+    </effects>
+    <duration_rules>
+      <rule>Persist until slain, dispelled, or until 3 turns elapse.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Summon Djinni">
+    <classification>
+      <entry><type>Arcane</type><level>6</level></entry>
+    </classification>
+    <range>10'</range>
+    <duration>1 day</duration>
+    <effects>
+      <summary>Summons a djinni to serve and obey the summoner.</summary>
+      <effect>The djinni appears anywhere within range.</effect>
+    </effects>
+    <casting_time>1 turn</casting_time>
+    <duration_rules>
+      <rule>Serves for 1 day, until slain, or until dispelled.</rule>
+    </duration_rules>
+    <limits>
+      <limit>May be performed safely only once per week.</limit>
+      <limit>If cast sooner, the summoned djinni is hostile and immediately attacks.</limit>
+    </limits>
+    <special><rule>Used to create rings of djinni calling.</rule></special>
+  </spell>
+
+  <spell name="Summon Fantastic Creature">
+    <classification>
+      <entry><type>Arcane</type><level>4</level></entry>
+    </classification>
+    <range>10'</range>
+    <duration>6 turns</duration>
+    <effects>
+      <summary>Summons a specified fantastic creature to the caster's service.</summary>
+      <effect>The creature appears anywhere within range and serves and obeys the summoner.</effect>
+    </effects>
+    <targets>
+      <valid_target>Blink dog</valid_target>
+      <valid_target>Centaur</valid_target>
+      <valid_target>Chimera</valid_target>
+      <valid_target>Griffon</valid_target>
+      <valid_target>Harpy</valid_target>
+      <valid_target>Hell hound</valid_target>
+      <valid_target>Hippogriff</valid_target>
+      <valid_target>10-headed hydra</valid_target>
+      <valid_target>Manticore</valid_target>
+      <valid_target>Minotaur</valid_target>
+      <valid_target>Owl bear</valid_target>
+      <valid_target>Pegasus</valid_target>
+      <valid_target>Phase tiger</valid_target>
+      <valid_target>Small rocs</valid_target>
+      <valid_target>Rust monster</valid_target>
+      <valid_target>Sea serpent</valid_target>
+      <valid_target>Stirge</valid_target>
+      <valid_target>Treant</valid_target>
+      <valid_target>Unicorn</valid_target>
+      <valid_target>Any similar fantastic creature of 10 HD or less with one or fewer special abilities</valid_target>
+    </targets>
+    <duration_rules>
+      <rule>Persists until the creature is slain, dispelled, or until 6 turns elapse.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Summon Hero">
+    <classification>
+      <entry><type>Arcane</type><level>2</level></entry>
+    </classification>
+    <range>10'</range>
+    <duration>3 turns</duration>
+    <effects>
+      <summary>Summons a 4th level fighter hero from another sphere of existence to serve the caster.</summary>
+      <effect>The hero is completely loyal and can fight, guard, open doors, and perform other heroic tasks.</effect>
+    </effects>
+    <special>
+      <rule>Hero statistics: AC 8, Move 90', F4, hp 20, #AT 1, +1 to attack throws, Dmg 1d6+4, SV F4, ML 12, AL N, +1 initiative.</rule>
+      <rule>Hero is armed with sword +1, shield, and plate armor.</rule>
+      <rule>Persists until slain, dispelled, or until 3 turns elapse.</rule>
+      <rule>The hero's magic sword and other equipment disappear when the hero disappears.</rule>
+    </special>
+  </spell>
+
+  <spell name="Summon Weather">
+    <classification>
+      <entry><type>Divine</type><level>5</level></entry>
+    </classification>
+    <range>5 miles or more</range>
+    <duration>6 turns per level</duration>
+    <effects>
+      <summary>Pulls a nearby weather condition to the caster's location.</summary>
+    </effects>
+    <limits>
+      <limit>The caster summons weather but does not control it.</limit>
+    </limits>
+    <scaling>
+      <rule>Range of summoning is 5 miles at level 7, plus 1 mile for each caster level above 7th.</rule>
+    </scaling>
+    <special><rule>Divine access restricted to Shaman and Witch.</rule></special>
+  </spell>
+
+  <spell name="Summon Winged Steed">
+    <classification>
+      <entry><type>Arcane</type><level>3</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>1 day</duration>
+    <effects>
+      <summary>Calls a pegasus to serve as a winged steed.</summary>
+      <effect>The pegasus appears within range, tacked and saddled for riding.</effect>
+      <effect>The caster may ride it or command it to carry another creature.</effect>
+    </effects>
+    <limits>
+      <limit>The pegasus will submit to no more than one rider.</limit>
+      <limit>The spell does not grant Riding proficiency.</limit>
+    </limits>
+    <duration_rules>
+      <rule>Persists until the pegasus is slain, dispelled, or until 1 day passes.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Swift Sword">
+    <classification>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>self</range>
+    <duration>3 turns</duration>
+    <effects>
+      <summary>Doubles the caster's normal attacks per round.</summary>
+      <effect>Movement is not accelerated.</effect>
+      <effect>Spellcasting is not accelerated.</effect>
+      <effect>Magic items such as wands may still be used only once per round.</effect>
+    </effects>
+    <limits>
+      <limit>Multiple speed effects do not combine; use only the most powerful or longest lasting effect.</limit>
+    </limits>
+    <special><rule>Divine access restricted to Bladedancer.</rule></special>
+  </spell>
+
+  <spell name="Telepathy">
+    <classification>
+      <entry><type>Arcane</type><level>3</level></entry>
+      <entry><type>Divine</type><level>4</level></entry>
+    </classification>
+    <range>90'</range>
+    <duration>concentration</duration>
+    <effects>
+      <summary>Reads the thoughts of a creature within range and allows two-way telepathic communication with that creature.</summary>
+      <effect>The caster may send a telepathic message to anyone whose surface thoughts he is reading.</effect>
+    </effects>
+    <limits>
+      <limit>Requires full concentration; the caster may not move or take any action.</limit>
+    </limits>
+    <special>
+      <rule>Used to create helms of telepathy.</rule>
+      <rule>Divine access restricted to Witch.</rule>
+    </special>
+  </spell>
+
+  <spell name="Torpor">
+    <classification>
+      <entry><type>Arcane</type><level>6</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>permanent</duration>
+    <targets>
+      <target>Undead creature</target>
+      <requirement>Target must be in its tomb, coffin, sarcophagus, ossuary, or other final resting place.</requirement>
+    </targets>
+    <effects>
+      <summary>Puts an undead creature into indefinite pseudo-sleep.</summary>
+      <effect>Undead such as zombies, mummies, and liches do not decay while in torpor.</effect>
+      <effect>Hungering undead such as ghouls and vampires need not feed while in torpor.</effect>
+      <effect>An awakened undead may choose to return to torpor or remain awake after resolving the reason for awakening.</effect>
+    </effects>
+    <saving_throw>
+      <type>Death</type>
+      <condition>Allowed if the target is unwilling.</condition>
+      <negates>true</negates>
+    </saving_throw>
+    <duration_rules>
+      <rule>The undead awakens if its final resting place is disturbed.</rule>
+      <rule>The caster may set other awakening conditions, such as a particular alignment of the stars or outer planes.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Trance">
+    <classification>
+      <entry><type>Divine</type><level>1</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>1 round per level</duration>
+    <effects>
+      <summary>Places the caster in a deep trance that detects specific supernatural presences.</summary>
+      <effect>Each round, the caster can detect the presence and location of one of the following within range: curses, incorporeal undead, permanent magical effects, sinkholes of evil, or summoned creatures.</effect>
+    </effects>
+    <limits>
+      <limit>While in trance, the caster cannot move, speak, or take any action.</limit>
+    </limits>
+    <special><rule>Divine access restricted to Shaman and Witch.</rule></special>
+  </spell>
+
+  <spell name="Trollblood">
+    <classification>
+      <entry><type>Arcane</type><level>6</level></entry>
+    </classification>
+    <range>self</range>
+    <duration>1 turn</duration>
+    <effects>
+      <summary>Grants troll-like regeneration.</summary>
+      <healing>Regenerates 3 hit points per round.</healing>
+      <effect>If reduced below 0 hp, the caster continues to regenerate.</effect>
+      <effect>If the caster reaches 1 or more hp before expiration, no bed rest is needed.</effect>
+      <effect>Lost limbs or body parts from mortal wounds crawl back and instantly reattach if held to the stump.</effect>
+    </effects>
+    <limits>
+      <limit>Only damage taken while the spell is active can be regenerated.</limit>
+      <limit>Does not regenerate damage or mortal wounds suffered before the spell was cast.</limit>
+      <limit>Cannot regenerate damage caused by acid or fire.</limit>
+    </limits>
+  </spell>
+
+  <spell name="Uncanny Gyration">
+    <classification>
+      <entry><type>Arcane</type><level>2</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>6 rounds</duration>
+    <targets>
+      <target>One creature</target>
+      <requirement>Target cannot weigh more in stones than the caster could physically lift.</requirement>
+    </targets>
+    <effects>
+      <summary>Violently whirls a target through the air and lets the caster fling it.</summary>
+      <movement>Caster may mentally fling the target up to 20' per round in any direction.</movement>
+      <damage>If flung into a hard surface, the target takes 2d6 damage.</damage>
+      <effect>Grounded or surface-braced non-flyers move at half speed; otherwise they gyrate helplessly.</effect>
+      <penalty>Attacking while gyrating imposes cumulative penalties of -1 on the first attack throw, -2 on the second, and so on, to a maximum of -5.</penalty>
+      <effect>A full round spent stabilizing resets the penalty progression to -1.</effect>
+      <effect>Targets able to fly move normally and suffer no attack penalties.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <negates>true</negates>
+    </saving_throw>
+    <duration_rules>
+      <rule>The caster must concentrate to sustain the spell.</rule>
+      <rule>If concentration ends, the target usually plummets violently and takes additional damage as appropriate.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Unseen Servant">
+    <classification>
+      <entry><type>Arcane</type><level>1</level></entry>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>6 turns plus 1 turn per level</duration>
+    <effects>
+      <summary>Creates an invisible, mindless, shapeless servant for simple tasks.</summary>
+      <effect>Can fetch items, open doors, hold chairs, clean, and perform similar simple tasks.</effect>
+      <effect>Performs only one activity at a time but continues that task until ordered otherwise or the spell expires.</effect>
+      <movement>Combat movement 20' per round.</movement>
+      <effect>Can carry up to 2 stone (20lb) or pull 4 stone (40lb) across a smooth surface.</effect>
+      <effect>Can trigger traps, but cannot activate pressure plates requiring more than 20 pounds of force.</effect>
+      <effect>Cannot fight.</effect>
+      <immunity>Cannot be harmed by normal attacks.</immunity>
+    </effects>
+    <interactions>
+      <rule>Can be dispelled.</rule>
+      <rule>Can be dissipated by receiving 6 points of damage from area attacks.</rule>
+    </interactions>
+    <limits>
+      <limit>If sent outside the spell's range, it dissipates instantly.</limit>
+    </limits>
+    <special><rule>Divine access restricted to Witch.</rule></special>
+  </spell>
+
+  <spell name="Ventriloquism">
+    <classification>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>2 turns</duration>
+    <effects>
+      <summary>Equivalent to the 1st level arcane spell of the same name, except for classification, range, and duration as listed here.</summary>
+    </effects>
+    <special><rule>Divine access restricted to Witch.</rule></special>
+  </spell>
+
+  <spell name="Wall of Corpses">
+    <classification>
+      <entry><type>Arcane</type><level>6</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>2 turns</duration>
+    <area>Up to 1,200 square feet, shaped as desired</area>
+    <effects>
+      <summary>Conjures a durable wall of writhing animated corpses.</summary>
+      <condition_effect>Creatures that first see the wall and fail the save flee in terror for 30 rounds.</condition_effect>
+      <attack>Creatures approaching within 5' are attacked each round as if by a zombie.</attack>
+      <effect>Wall has AC 4 and 2 Hit Dice per caster level.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <negates>Initial fear</negates>
+    </saving_throw>
+    <limits>
+      <limit>Cannot be evoked where objects or creatures already are.</limit>
+    </limits>
+    <interactions>
+      <rule>Dispel magic or disintegrate destroys the wall immediately.</rule>
+      <rule>Can also be affected by normal or magical attacks, fire, cold, lightning, or other physical or magical effects.</rule>
+      <rule>A cleric may turn it as an Infernal creature; successful turning makes it an inert fleshy barrier for the duration of the turning.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Wall of Force">
+    <classification>
+      <entry><type>Arcane</type><level>6</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>2 turns</duration>
+    <area>Up to 1,200 square feet, shaped as desired</area>
+    <effects>
+      <summary>Creates an invisible, impenetrable wall of force.</summary>
+    </effects>
+    <limits>
+      <limit>Cannot be evoked where objects or creatures already are.</limit>
+    </limits>
+    <interactions>
+      <rule>Unaffected by normal or magical attacks, fire, cold, lightning, or any other physical or magical effect.</rule>
+      <rule>Dispel magic does not affect it.</rule>
+      <rule>Disintegrate destroys it.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Wall of Smoke">
+    <classification>
+      <entry><type>Arcane</type><level>1</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>1 turn</duration>
+    <area>Up to 1,000 square feet, shaped as desired</area>
+    <effects>
+      <summary>Creates an immobile opaque wall of smoke.</summary>
+      <effect>Impermeable to vision and light.</effect>
+      <effect>Presents no obstacle to movement.</effect>
+      <effect>Presents no obstacle to magical effects except those that require line of sight to target.</effect>
+    </effects>
+    <limits>
+      <limit>Cannot be evoked where objects or creatures already are.</limit>
+    </limits>
+    <interactions>
+      <rule>Water or strong winds affect it like ordinary smoke.</rule>
+      <rule>Disintegrate or dispel magic destroys it instantly.</rule>
+      <rule>Otherwise it dissipates in 1 turn.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Wall of Wood">
+    <classification>
+      <entry><type>Arcane</type><level>4</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>permanent</duration>
+    <area>Normally up to 1,200 square feet at 1&quot; thickness</area>
+    <effects>
+      <summary>Brings a wooden wall into existence.</summary>
+      <effect>Wall is normally 1&quot; thick.</effect>
+      <effect>Wall can be made thicker with proportionate reduction in area.</effect>
+      <effect>Wall cannot be made thinner than 1&quot;.</effect>
+      <effect>May be shaped almost any way the caster desires.</effect>
+      <effect>Need not be vertical, but must rest on a firm foundation.</effect>
+    </effects>
+    <limits>
+      <limit>Cannot be evoked where objects or creatures already are.</limit>
+    </limits>
+    <interactions>
+      <rule>Permanent unless destroyed or dispelled with dispel magic.</rule>
+      <rule>If used as a bridge or ramp, area is reduced by half.</rule>
+      <rule>Crude battlements and ramparts also reduce area.</rule>
+    </interactions>
+  </spell>
+
+  <spell name="Warp Wood">
+    <classification>
+      <entry><type>Divine</type><level>2</level></entry>
+    </classification>
+    <range>240'</range>
+    <duration>permanent</duration>
+    <effects>
+      <summary>Warps and bends wooden weapons, wands, and staffs.</summary>
+    </effects>
+    <scaling>
+      <rule>Affects one arrow or bolt per caster level.</rule>
+      <rule>A spear, javelin, or wand counts as 2 arrows.</rule>
+      <rule>A club, bow, or staff counts as 4 arrows.</rule>
+    </scaling>
+    <limits>
+      <limit>Has no effect on wooden items other than weapons, wands, and staffs.</limit>
+    </limits>
+    <saving_throw>
+      <type>Spells</type>
+      <condition>Allowed for magical wooden items by the wielder.</condition>
+      <modifier>+1 to the save for each charge or point of magical bonus the item possesses.</modifier>
+    </saving_throw>
+    <special><rule>Divine access restricted to Shaman.</rule></special>
+  </spell>
+
+  <spell name="Water Breathing">
+    <classification>
+      <entry><type>Divine</type><level>3</level></entry>
+      <entry><type>Divine</type><level>4</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>1 day</duration>
+    <effects>
+      <summary>Equivalent to the 3rd level arcane spell of the same name, except for classification, range, and duration as listed here.</summary>
+    </effects>
+    <special>
+      <rule>Divine 3 access restricted to Shaman.</rule>
+      <rule>Divine 4 access restricted to Witch.</rule>
+    </special>
+  </spell>
+
+  <spell name="Water Walking">
+    <classification>
+      <entry><type>Divine</type><level>3</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>6 turns plus 1 turn per level</duration>
+    <effects>
+      <summary>Allows the subject to walk on water as though it were solid dry land.</summary>
+      <effect>The subject can still attack creatures in or beneath the water's surface.</effect>
+    </effects>
+    <limits>
+      <limit>The subject cannot swim or submerge without ending the effect.</limit>
+    </limits>
+    <special>
+      <rule>Used to create rings of water walking.</rule>
+      <rule>Divine access restricted to Shaman and Priestess.</rule>
+    </special>
+  </spell>
+
+  <spell name="Winged Flight">
+    <classification>
+      <entry><type>Divine</type><level>3</level></entry>
+    </classification>
+    <range>self</range>
+    <duration>1 turn per level</duration>
+    <effects>
+      <summary>Grants the caster wings and flight.</summary>
+      <movement>Fly in any direction at 120' per round (360' per turn).</movement>
+      <effect>Requires only as much concentration as walking, so the caster can attack or cast spells normally.</effect>
+      <effect>The appearance of the wings is determined by alignment, deity, and spell signature.</effect>
+    </effects>
+    <limits>
+      <limit>The caster cannot carry aloft more than maximum load.</limit>
+    </limits>
+    <interactions>
+      <rule>If dispelled, the caster plummets from the air.</rule>
+    </interactions>
+    <special><rule>Divine access restricted to Bladedancer and Shaman.</rule></special>
+  </spell>
+
+  <spell name="X-Ray Vision">
+    <classification>
+      <entry><type>Arcane</type><level>5</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>concentration</duration>
+    <effects>
+      <summary>Allows the caster to see through solid material.</summary>
+      <effect>Can see through up to 30' of stone.</effect>
+      <effect>Can see through up to 60' of wood and other low-density material.</effect>
+      <effect>Can visually examine a 10' square area each turn.</effect>
+      <effect>Secret doors, hidden recesses, and traps in the examined area are evident.</effect>
+    </effects>
+    <limits>
+      <limit>Requires full concentration; the caster cannot move or take any other action.</limit>
+      <limit>Lead or gold blocks the vision.</limit>
+    </limits>
+    <special><rule>Used to create rings of x-ray vision.</rule></special>
+  </spell>
+
+  <spell name="Cancellation">
+    <classification>
+      <entry><type>Arcane Ritual</type><level>7</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>instantaneous</duration>
+    <targets><target>Magic item</target></targets>
+    <effects>
+      <summary>Permanently removes all power from a magic item and makes it ordinary.</summary>
+    </effects>
+    <limits>
+      <limit>Normally does not affect artifacts or relics.</limit>
+      <limit>At Judge's discretion, artifacts or relics might be susceptible if special components of great rarity are used.</limit>
+    </limits>
+    <special><rule>Used to create rods of cancellation.</rule></special>
+  </spell>
+
+  <spell name="Cataclysm">
+    <classification>
+      <entry><type>Divine Ritual</type><level>7</level></entry>
+    </classification>
+    <range>special</range>
+    <duration>1 day</duration>
+    <area>One domain up to 16 6-mile hexes or 1 24-mile hex</area>
+    <effects>
+      <summary>Unleashes a divine catastrophe that devastates a target domain.</summary>
+      <effect>The specific form depends on the deity, but the damage procedure is the same regardless of form.</effect>
+      <effect>Can affect both the domain and any urban settlement within the domain; treat each separately.</effect>
+    </effects>
+    <targets>
+      <requirement>Caster must have either visited the target domain or personally met the target domain's ruler.</requirement>
+    </targets>
+    <limits>
+      <limit>Cannot be cast against the domain of a ruler of the same alignment and religion as the divine caster.</limit>
+    </limits>
+    <procedure>
+      <step order="1">Begin the ritual; ominous signs and portents intensify as completion approaches.</step>
+      <step order="2">Before completion, a miracle or wish can avert the cataclysm, or the ritual can be stopped by killing the caster.</step>
+      <step order="3">If not averted, when the ritual completes, each affected stronghold and each affected urban settlement loses 3d6x1000gp in value per 1,000 families in the domain or settlement.</step>
+      <step order="4">Each affected domain or settlement also loses 1d10x100 families per 1,000 families.</step>
+      <step order="5">If remaining stronghold value or urban investment is too low to sustain the population, excess population immediately scatters.</step>
+      <step order="6">The affected domain makes an immediate domain morale roll with a -4 penalty.</step>
+    </procedure>
+    <special>
+      <rule>Usually reserved for punishing terrible heresies or during holy wars.</rule>
+      <rule>Special component is always divine power.</rule>
+    </special>
+  </spell>
+
+  <spell name="Energy Drain">
+    <classification>
+      <entry><type>Arcane Ritual</type><level>7</level></entry>
+      <entry><type>Divine Ritual</type><level>7</level></entry>
+    </classification>
+    <range>60'</range>
+    <duration>instantaneous</duration>
+    <effects>
+      <summary>Permanently drains one Hit Die or life level from the target.</summary>
+    </effects>
+    <saving_throw><rule>No saving throw.</rule></saving_throw>
+    <special><rule>Used to create swords of life drinking.</rule></special>
+  </spell>
+
+  <spell name="Forbiddance">
+    <classification>
+      <entry><type>Divine Ritual</type><level>6</level></entry>
+    </classification>
+    <range>120'</range>
+    <duration>permanent</duration>
+    <area>Up to 100 cubic feet per caster level</area>
+    <effects>
+      <summary>Seals an area against extradimensional beings and extradimensional travel.</summary>
+      <effect>No dimension door or teleportation spell or spell effect can enter, leave, or function within the area.</effect>
+      <effect>No summoned creatures can be conjured within the area by any means.</effect>
+      <damage>Creatures entering with alignment one degree different take 6d6 damage.</damage>
+      <damage>Creatures entering with alignment two degrees different take 12d6 damage.</damage>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <partial>Half damage from alignment-based damage.</partial>
+    </saving_throw>
+    <duration_rules>
+      <rule>Lasts until dispelled by the caster or a higher-level spellcaster.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Life Trapping">
+    <classification>
+      <entry><type>Arcane Ritual</type><level>9</level></entry>
+    </classification>
+    <range>0'</range>
+    <duration>special</duration>
+    <targets>
+      <target>Reflective device such as a mirror, crystal, or polished jewel</target>
+    </targets>
+    <effects>
+      <summary>Creates an extradimensional compartment that traps the first qualifying reflected creature.</summary>
+      <effect>The first human-sized or smaller creature that sees its reflection must save or be trapped bodily with all clothing and equipment.</effect>
+      <effect>Trapped creatures do not age, breathe, or eat and are completely powerless.</effect>
+      <effect>Anyone holding the device may call the prisoner's reflection to the surface and converse with the prisoner.</effect>
+    </effects>
+    <saving_throw>
+      <type>Spells</type>
+      <negates>true</negates>
+    </saving_throw>
+    <duration_rules>
+      <rule>Ends if the device is broken or is subjected to dispel evil or dispel magic by a higher-level spellcaster.</rule>
+      <rule>When the spell ends, the trapped creature is freed.</rule>
+    </duration_rules>
+    <special><rule>Used to create mirrors of life trapping.</rule></special>
+  </spell>
+
+  <spell name="Longevity *" reversible="true" reverse_name="decrepitude">
+    <classification>
+      <entry><type>Divine Ritual</type><level>6</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>instantaneous</duration>
+    <effects>
+      <summary>Makes the touched creature 10 years younger.</summary>
+      <effect>Can reverse natural aging and aging from magic or creature effects.</effect>
+      <effect>Age cannot be reduced below 15, or mid-adolescence for non-humans.</effect>
+    </effects>
+    <limits>
+      <limit>Each application carries a cumulative 1% chance that all previous age reversals from longevity effects, including potions, are negated.</limit>
+    </limits>
+    <reversed_form name="decrepitude">
+      <effects>
+        <summary>Ages the victim by 10 years.</summary>
+      </effects>
+      <saving_throw>
+        <rule>No saving throw against the aging itself.</rule>
+        <rule>Creatures with short lifespans, such as humans, must save versus Death or die from the shock of sudden aging.</rule>
+      </saving_throw>
+      <special>Used to create staffs of withering.</special>
+    </reversed_form>
+    <special><rule>Used to create potions of longevity.</rule></special>
+  </spell>
+
+  <spell name="Miracle">
+    <classification>
+      <entry><type>Divine Ritual</type><level>7</level></entry>
+    </classification>
+    <range>unlimited</range>
+    <duration>see below</duration>
+    <effects>
+      <summary>Can accomplish the effects of any other spell, or comparable effects, through divine intercession.</summary>
+      <effect>May reverse events, restore the dead to life, heal an entire army, or teleport an entire group to any location without error.</effect>
+    </effects>
+    <limits>
+      <limit>Fulfillment depends on the deity's approval, not precise wording.</limit>
+      <limit>Miracles that do not advance the deity's agenda go unfulfilled.</limit>
+      <limit>Unless obviously self-sacrificing, a granted miracle subjects the caster to a quest.</limit>
+    </limits>
+    <special><rule>Special component is always divine power.</rule></special>
+  </spell>
+
+  <spell name="Opposition">
+    <classification>
+      <entry><type>Arcane Ritual</type><level>8</level></entry>
+    </classification>
+    <range>0'</range>
+    <duration>special</duration>
+    <targets><target>Reflective device such as a mirror, crystal, or polished jewel</target></targets>
+    <effects>
+      <summary>Places a dweomer that creates a hostile duplicate of the first qualifying creature that sees its reflection.</summary>
+      <effect>The first human-sized or smaller creature seeing its reflection is confronted by a duplicate with all possessions and powers, including magic.</effect>
+      <effect>The duplicate has an opposite and inimical disposition and attacks immediately and relentlessly.</effect>
+      <effect>When either the original or the duplicate is defeated or destroyed, the duplicate and its items disappear completely.</effect>
+    </effects>
+    <special><rule>Used to create mirrors of opposition.</rule></special>
+  </spell>
+
+  <spell name="Plague">
+    <classification>
+      <entry><type>Arcane Ritual</type><level>9</level></entry>
+    </classification>
+    <range>special</range>
+    <duration>1 month per level</duration>
+    <effects>
+      <summary>Creates a spreading pestilence that devastates population and morale.</summary>
+    </effects>
+    <procedure>
+      <step order="1">Initially target one 6-mile hex.</step>
+      <step order="2">Each month, the plague affects one additional adjacent 6-mile hex.</step>
+      <step order="3">Each affected hex loses 1d10 families per 100 families each month.</step>
+      <step order="4">Any die that rolls a 10 explodes: roll again and add the new result, repeating for additional 10s.</step>
+      <step order="5">Any time a plague-affected domain must make a morale roll, reduce its morale score by 1 before making the roll.</step>
+    </procedure>
+  </spell>
+
+  <spell name="Regeneration *" reversible="true" reverse_name="withering">
+    <classification>
+      <entry><type>Divine Ritual</type><level>6</level></entry>
+    </classification>
+    <range>30'</range>
+    <duration>permanent</duration>
+    <targets><target>Living subject</target></targets>
+    <effects>
+      <summary>Heals permanent wounds and regenerates lost body parts.</summary>
+      <effect>Repairs severed parts, broken bones, ruined organs, and other permanent wounds.</effect>
+      <healing>Cures 4d8 damage +1 point per caster level.</healing>
+      <effect>Removes any requirement for bed rest.</effect>
+      <effect>Unlike restore life and limb, does not require a roll on Tampering With Mortality.</effect>
+    </effects>
+    <procedure>
+      <step order="1">If severed members are present and touching the creature, regeneration is instantly complete.</step>
+      <step order="2">Otherwise, physical regeneration takes 1 turn.</step>
+    </procedure>
+    <reversed_form name="withering">
+      <effects>
+        <summary>Deals damage and inflicts a permanent wound chosen by the caster.</summary>
+        <damage>Deals 4d8 damage +1 point per caster level.</damage>
+        <effect>May ruin lips and tongue (5/6 on Mortal Wounds), destroy eyes (5/5), wither one leg (10/4) or arm (10/3), or damage hearts and lungs (15/1).</effect>
+      </effects>
+      <saving_throw>
+        <type>Spells</type>
+        <negates>true</negates>
+      </saving_throw>
+      <special>Used to create staffs of withering.</special>
+    </reversed_form>
+  </spell>
+
+  <spell name="Spell Turning">
+    <classification>
+      <entry><type>Arcane Ritual</type><level>7</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>special</duration>
+    <effects>
+      <summary>Reflects incoming spells back against their casters.</summary>
+      <effect>The protected creature is unaffected by reflected spells.</effect>
+      <effect>The recipient's own spells can still affect the recipient.</effect>
+      <effect>Allied spells are also reflected even if beneficial.</effect>
+    </effects>
+    <limits>
+      <limit>Affects spells only, not monster powers or magical effects that are not spells.</limit>
+    </limits>
+    <scaling>
+      <rule>Reflects one spell per level of the ritual caster.</rule>
+    </scaling>
+    <duration_rules>
+      <rule>Ends when dispel magic is applied or when the maximum number of spells has been turned.</rule>
+    </duration_rules>
+    <interactions>
+      <rule>If two creatures protected by spell turning cast at one another, the spell bounces between them until one of the rituals ends.</rule>
+    </interactions>
+    <special><rule>Used to create rings of spell turning.</rule></special>
+  </spell>
+
+  <spell name="Summon Efreeti">
+    <classification>
+      <entry><type>Arcane Ritual</type><level>8</level></entry>
+    </classification>
+    <range>10'</range>
+    <duration>33 2 / 3 days</duration>
+    <effects>
+      <summary>Summons an efreeti to serve and obey the summoner.</summary>
+      <effect>Service ends after 33⅔ days, when it grants a wish, when slain, or when dispelled.</effect>
+      <effect>Efreet resent being summoned and will twist orders wherever possible.</effect>
+    </effects>
+    <special><rule>Used to create efreeti bottles.</rule></special>
+  </spell>
+
+  <spell name="Temporal Stasis">
+    <classification>
+      <entry><type>Arcane Ritual</type><level>8</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>permanent</duration>
+    <effects>
+      <summary>Places the subject into temporal stasis.</summary>
+      <effect>Time ceases to flow for the subject.</effect>
+      <effect>The subject does not age, its condition does not change, and no force or effect can harm it.</effect>
+    </effects>
+    <saving_throw>
+      <type>Death</type>
+      <condition>Allowed if the target is unwilling.</condition>
+      <negates>true</negates>
+    </saving_throw>
+    <duration_rules>
+      <rule>Persists until dispelled by the caster or a higher-level spellcaster, or until a condition set at casting is met.</rule>
+      <rule>A common ending condition is a particular alignment of the stars or outer planes.</rule>
+    </duration_rules>
+  </spell>
+
+  <spell name="Undead Legion">
+    <classification>
+      <entry><type>Arcane Ritual</type><level>9</level></entry>
+    </classification>
+    <range>touch</range>
+    <duration>permanent</duration>
+    <targets>
+      <requirement>Can only be cast in a place of death such as a cemetery, catacomb, or battleground.</requirement>
+    </targets>
+    <effects>
+      <summary>Raises a vast undead army from the dead in the area.</summary>
+      <effect>Creates a number of Hit Dice of skeletons or zombies equal to 200 times the caster's level, limited by the number of dead present.</effect>
+      <effect>Whether the army is skeletons or zombies depends on the condition of the corpses.</effect>
+      <effect>Skeleton HD equals the creature's HD in life, excluding class levels; human and demi-human skeletons are always 1 HD.</effect>
+      <effect>Zombies have one more HD than the creature had in life.</effect>
+    </effects>
+    <duration_rules>
+      <rule>Normally lasts one week.</rule>
+      <rule>May be made permanent by sprinkling 1 vial of unholy water per Hit Die on each undead.</rule>
+      <rule>If made permanent, the undead remain until destroyed or dispelled.</rule>
+    </duration_rules>
+    <interactions>
+      <rule>If cast in a sinkhole of evil, calculate effects as if the caster were one or more levels higher than actual.</rule>
+    </interactions>
+  </spell>
+</spell_catalog>

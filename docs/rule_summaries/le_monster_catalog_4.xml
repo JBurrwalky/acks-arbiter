@@ -1,0 +1,2203 @@
+<monster_catalog title="124-Lairs_&amp;_Encounters-Monster-Catalog-4" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+<monster>
+      <identity>
+        <name>Giant Lizard</name>
+        <variant_name>Draco</variant_name>
+        <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+      </identity>
+      <classification>
+        <alignment>Neutral</alignment>
+      <tags><tag>glide</tag></tags>
+      </classification>
+      <stat_block>
+        <percent_in_lair>25%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Lounge" number="1d3"/><in_lair collective_noun="Lair" number="1d6"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Lounge" number="1d3"/><in_lair collective_noun="Lair" number="1d6"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/>
+<mode type="fly" exploration="210'" combat="70'"/></movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="4 + 2" special_ability_markers=""/>
+      <attacks>1 (bite)</attacks>
+      <damage>1d10</damage>
+      <save>F3</save>
+      <morale>-1</morale>
+      <treasure_type>None</treasure_type>
+      <xp>140</xp>
+      </stat_block>
+      <encounter_profile>
+        <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Lounge" number="1d3"/>
+        <group environment="dungeon_in_lair" noun="Lair" number="1d6"/>
+        <group environment="wilderness_outside_lair" noun="Lounge" number="1d3"/>
+        <group environment="wilderness_in_lair" noun="Lair" number="1d6"/>
+      </collective_nouns>
+      </encounter_profile>
+      <combat_profile>
+
+      </combat_profile>
+      <special_abilities>
+        <ability name="glide">
+        <effect>Can glide through the air using skin flaps beneath its limbs.</effect>
+      </ability>
+      </special_abilities>
+      <ecology_and_behavior>
+        <habitat><rule>Lives primarily above ground but may enter dungeons for shelter or food.</rule></habitat>
+      </ecology_and_behavior>
+      <treasure_and_rewards>
+        <treasure_type>None</treasure_type>
+      </treasure_and_rewards>
+      <procedures>
+
+      </procedures>
+      <tables>
+
+      </tables>
+      <references>
+
+      </references>
+    </monster>
+<monster>
+  <identity>
+    <name>Giant Lizard</name>
+    <variant_name>Gecko</variant_name>
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral</alignment>
+  <tags><tag>climb</tag><tag>ceiling_walker</tag><tag>ambush</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>25%</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="Lounge" number="1d6"/><in_lair collective_noun="Lair" number="1d10"/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="Lounge" number="1d6"/><in_lair collective_noun="Lair" number="1d10"/></wilderness_encounter>
+  <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+  <armor_class>4</armor_class>
+  <hit_dice printed="3 + 1" special_ability_markers=""/>
+  <attacks>1 (bite)</attacks>
+  <damage>1d8</damage>
+  <save>F2</save>
+  <morale>-1</morale>
+  <treasure_type>None</treasure_type>
+  <xp>65</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="dungeon_outside_lair" noun="Lounge" number="1d6"/>
+    <group environment="dungeon_in_lair" noun="Lair" number="1d10"/>
+    <group environment="wilderness_outside_lair" noun="Lounge" number="1d6"/>
+    <group environment="wilderness_in_lair" noun="Lair" number="1d10"/>
+  </collective_nouns>
+  </encounter_profile>
+  <combat_profile>
+
+  </combat_profile>
+  <special_abilities>
+    <ability name="climb_surfaces">
+    <effect>Can walk on sheer cliffs and upside down.</effect>
+  </ability>
+  </special_abilities>
+  <ecology_and_behavior>
+    <habitat><rule>Nocturnal.</rule></habitat>
+  <behavior_rules><rule>May spring on prey from above.</rule></behavior_rules>
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>None</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Giant Lizard</name>
+    <variant_name>Horned Chameleon</variant_name>
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral</alignment>
+  <tags><tag>camouflage</tag><tag>tongue_attack</tag><tag>knockdown</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>25%</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="Lounge" number="1d3"/><in_lair collective_noun="Lair" number="1d6"/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="Lounge" number="1d3"/><in_lair collective_noun="Lair" number="1d6"/></wilderness_encounter>
+  <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+  <armor_class>7</armor_class>
+  <hit_dice printed="5*" special_ability_markers="*"/>
+  <attacks>2 (bite, horn)</attacks>
+  <damage>2d4/1d6</damage>
+  <save>F3</save>
+  <morale>-1</morale>
+  <treasure_type>None</treasure_type>
+  <xp>350</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="dungeon_outside_lair" noun="Lounge" number="1d3"/>
+    <group environment="dungeon_in_lair" noun="Lair" number="1d6"/>
+    <group environment="wilderness_outside_lair" noun="Lounge" number="1d3"/>
+    <group environment="wilderness_in_lair" noun="Lair" number="1d6"/>
+  </collective_nouns>
+  </encounter_profile>
+  <combat_profile>
+
+  </combat_profile>
+  <special_abilities>
+    <ability name="camouflage">
+    <effect>Characters encountering it suffer a -3 penalty to surprise rolls.</effect>
+  </ability>
+  <ability name="sticky_tongue">
+    <effect>Can lash its tongue to 5'. On a hit, the victim is yanked to the mouth and automatically bitten for 2d4 damage without another attack throw.</effect>
+  </ability>
+  <ability name="tail_lash">
+    <effect>On a successful tail lash, the opponent is knocked down and may not attack that round.</effect>
+  </ability>
+  </special_abilities>
+  <ecology_and_behavior>
+
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>None</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Giant Lizard</name>
+    <variant_name>Tuatara</variant_name>
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral</alignment>
+  <tags><tag>infravision</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>25%</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="Lounge" number="1d2"/><in_lair collective_noun="Lair" number="1d4"/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="Lounge" number="1d2"/><in_lair collective_noun="Lair" number="1d4"/></wilderness_encounter>
+  <movement><mode type="land" exploration="90'" combat="30'"/></movement>
+  <armor_class>5</armor_class>
+  <hit_dice printed="6" special_ability_markers=""/>
+  <attacks>3 (2 claws, bite)</attacks>
+  <damage>1d4/1d4/2d6</damage>
+  <save>F4</save>
+  <morale>-2</morale>
+  <treasure_type>None</treasure_type>
+  <xp>320</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="dungeon_outside_lair" noun="Lounge" number="1d2"/>
+    <group environment="dungeon_in_lair" noun="Lair" number="1d4"/>
+    <group environment="wilderness_outside_lair" noun="Lounge" number="1d2"/>
+    <group environment="wilderness_in_lair" noun="Lair" number="1d4"/>
+  </collective_nouns>
+  </encounter_profile>
+  <combat_profile>
+
+  </combat_profile>
+  <special_abilities>
+    <ability name="infravision">
+    <effect>Has infravision to 90' when it lowers its special membrane-like eyelids.</effect>
+  </ability>
+  </special_abilities>
+  <ecology_and_behavior>
+
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>None</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+
+  </references>
+</monster>
+<monster>
+      <identity>
+        <name>Lizardman</name>
+
+        <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+      </identity>
+      <classification>
+        <alignment>Chaotic</alignment>
+      <tags><tag>swim</tag><tag>weapon_damage_bonus</tag><tag>village_leadership</tag></tags>
+      </classification>
+      <stat_block>
+        <percent_in_lair>30%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Gang" number="2d4"/><in_lair collective_noun="Lair" number="1 warband"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Warband" number="1d8 gangs"/><in_lair collective_noun="Village" number="1d10 warbands"/></wilderness_encounter>
+      <movement><mode type="land" exploration="60'" combat="20'"/>
+<mode type="swim" exploration="120'" combat="40'"/></movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="2 + 1" special_ability_markers=""/>
+      <attacks>3 or 1 (2 claws and 1 bite, or weapon)</attacks>
+      <damage>1d3/1d3/1d8 or by weapon + 1</damage>
+      <save>F2</save>
+      <morale>+2</morale>
+      <treasure_type>L (per warband)</treasure_type>
+      <xp>35</xp>
+      </stat_block>
+      <encounter_profile>
+        <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Gang" number="2d4"/>
+        <group environment="dungeon_in_lair" noun="Lair" number="1 warband"/>
+        <group environment="wilderness_outside_lair" noun="Warband" number="1d8 gangs"/>
+        <group environment="wilderness_in_lair" noun="Village" number="1d10 warbands"/>
+      </collective_nouns>
+      <lair_composition>
+        <member role="champion_per_gang" number="1"/>
+        <member role="sub_chieftain_per_warband" number="1"/>
+        <member role="chieftain_per_lair_or_village" number="1"/>
+        <member role="females" number="1d4x10 per 20 lizardmen"/>
+        <member role="eggs" number="1d4x20 per 20 lizardmen"/>
+        <member role="shaman_in_village" number="75% chance"/>
+        <member role="witch_doctor_in_village" number="50% chance"/>
+      </lair_composition>
+      <population_rules>
+        <rule>Females fight as gnolls.</rule>
+        <rule>Eggs do not fight.</rule>
+        <rule>Village shaman is statistically a sub-chieftain with Clerical abilities of level 1d6.</rule>
+        <rule>Village witch doctor is statistically a champion with Mage abilities of level 1d4.</rule>
+      </population_rules>
+      <terrain>
+        <primary>Marshes and banks of bodies of water.</primary>
+        <secondary>Dungeons with aquatic entrances.</secondary>
+      </terrain>
+      </encounter_profile>
+      <combat_profile>
+        <attack_routines>
+        <attack_routine name="natural_attacks">
+          <usage>alternative</usage>
+          <attack_sequence>
+            <attack type="claw" count="2" damage="1d3"/>
+            <attack type="bite" count="1" damage="1d8"/>
+          </attack_sequence>
+        </attack_routine>
+        <attack_routine name="weapon_attack">
+          <usage>alternative</usage>
+          <attack_sequence>
+            <attack type="weapon" count="1" damage="by weapon + 1"/>
+          </attack_sequence>
+          <notes>Common weapons include spiked clubs, javelins, and barbed darts; barbed darts are treated as daggers when thrown.</notes>
+        </attack_routine>
+      </attack_routines>
+      <morale_modifiers><modifier condition="chieftain alive" value="+1"/></morale_modifiers>
+      </combat_profile>
+      <special_abilities>
+        <ability name="leader_stat_blocks">
+        <notes>Champion: AC 5, HD 3+1, hp 17, natural attacks +1 damage, weapons +2 damage. Sub-chieftain: AC 6, HD 4+1, hp 21, natural attacks +2 damage, weapons +3 damage. Chieftain: AC 7, HD 6+2, hp 30, natural attacks +2 damage, weapons +3 damage.</notes>
+      </ability>
+      </special_abilities>
+      <ecology_and_behavior>
+        <diet><rule>Feeds on humanoid flesh.</rule></diet>
+      </ecology_and_behavior>
+      <treasure_and_rewards>
+        <treasure_type>L (per warband)</treasure_type>
+      </treasure_and_rewards>
+      <procedures>
+
+      </procedures>
+      <tables>
+
+      </tables>
+      <references>
+
+      </references>
+    </monster>
+<monster>
+      <identity>
+        <name>Locust, Cavern</name>
+
+        <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+      </identity>
+      <classification>
+        <alignment>Neutral</alignment>
+      <tags><tag>fly</tag><tag>poison_immunity</tag><tag>wandering_monster_trigger</tag><tag>odor_attack</tag></tags>
+      </classification>
+      <stat_block>
+        <percent_in_lair>30%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Plague" number="1d10"/><in_lair collective_noun="Nest" number="2d10"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="none" number=""/></wilderness_encounter>
+      <movement><mode type="land" exploration="60'" combat="20'"/>
+<mode type="fly" exploration="180'" combat="60'"/></movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="2*" special_ability_markers="*"/>
+      <attacks>1 (bite, slam, spit)</attacks>
+      <damage>1d2/1d4/see below</damage>
+      <save>F2</save>
+      <morale>-3</morale>
+      <treasure_type>None</treasure_type>
+      <xp>29</xp>
+      </stat_block>
+      <encounter_profile>
+        <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Plague" number="1d10"/>
+        <group environment="dungeon_in_lair" noun="Nest" number="2d10"/>
+      </collective_nouns>
+      </encounter_profile>
+      <combat_profile>
+        <attack_effects>
+        <attack_effect attack_name="slam">
+          <trigger>Occurs when panicked locusts flee into creatures.</trigger>
+          <damage>1d4</damage>
+          <effect>Requires a successful attack throw.</effect>
+        </attack_effect>
+        <attack_effect attack_name="spit">
+          <trigger>Used if forced into combat.</trigger>
+          <to_hit_rule>Attack throw is always resolved against AC 0 because the effect occurs whether or not armor is bypassed.</to_hit_rule>
+          <save type="Poison" on_success="no incapacitation" on_failure="incapacitated by stench"/>
+          <duration>1 turn</duration>
+          <follow_up>After 1 turn the target becomes immune to the odor. Until the spittle is rinsed off, any creature coming within 5' of the target must save versus Poison or be wracked with vomiting.</follow_up>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <immunities>
+          <immunity>Yellow mold</immunity>
+          <immunity>Other poisons</immunity>
+        </immunities>
+      </defenses>
+      <mobility_rules><rule>When disturbed, locusts typically jump up to 60' away.</rule></mobility_rules>
+      </combat_profile>
+      <special_abilities>
+        <ability name="shriek">
+        <effect>All locusts in a group shriek when disturbed, attracting wandering monsters.</effect>
+      </ability>
+      <ability name="panic_flight">
+        <effect>Panicked flight is in a random direction; it moves toward the group half the time.</effect>
+      </ability>
+      </special_abilities>
+      <ecology_and_behavior>
+        <diet><rule>Eats plants and underground fungus.</rule></diet>
+      </ecology_and_behavior>
+      <treasure_and_rewards>
+        <treasure_type>None</treasure_type>
+      </treasure_and_rewards>
+      <procedures>
+        <procedure name="wandering_monster_attraction">
+        <condition>One or more cavern locusts are attacking.</condition>
+        <steps>
+          <step number="1">Roll an encounter throw each round.</step>
+          <step number="2">If wandering monsters are indicated, they arrive in 1d4 rounds.</step>
+        </steps>
+      </procedure>
+      </procedures>
+      <tables>
+
+      </tables>
+      <references>
+        <general_rule_reference type="poison"/>
+      </references>
+    </monster>
+<monster>
+  <identity>
+    <name>Werebear</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral</alignment>
+      <tags><tag>lycanthropy</tag><tag>shapechanger</tag><tag>animal_summoning</tag><tag>normal_weapon_immunity_in_animal_form</tag><tag>hug</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>10%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Sloth" number="1d4"/><in_lair collective_noun="Lair" number="1d4"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Sloth" number="1d4"/><in_lair collective_noun="Lair" number="1d4"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>7 (1)</armor_class>
+      <hit_dice printed="6*" special_ability_markers="*"/>
+      <attacks>3 (2 claws, bite)</attacks>
+      <damage>2d4/2d4/2d8</damage>
+      <save>F6</save>
+      <morale>+2</morale>
+      <treasure_type>L</treasure_type>
+      <xp>570</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Sloth" number="1d4"/>
+        <group environment="dungeon_in_lair" noun="Lair" number="1d4"/>
+        <group environment="wilderness_outside_lair" noun="Sloth" number="1d4"/>
+        <group environment="wilderness_in_lair" noun="Lair" number="1d4"/>
+      </collective_nouns>
+  </encounter_profile>
+  <combat_profile>
+    <defenses>
+        <immunities>
+          <immunity>All attacks from normal weapons while in animal form.</immunity>
+        </immunities>
+      </defenses>
+  </combat_profile>
+  <special_abilities>
+    <ability name="shapechange">
+        <effect>Can take the form of one kind of animal. When killed, reverts to human form.</effect>
+      </ability>
+      <ability name="summon_kindred_animal">
+        <effect>Can summon 1d2 animals of its type; they appear in 1d4 rounds.</effect>
+      </ability>
+      <ability name="wolfsbane_ward">
+        <effect>If touched by wolfsbane, must save versus Poison or flee in fear.</effect>
+      </ability>
+      <ability name="animal_form_communication">
+        <effect>In animal form, may communicate only with animals of its type and may not speak humanoid languages.</effect>
+      </ability>
+      <ability name="lycanthropy_disease">
+        <effect>Transmitted when a creature loses 50% or more of its total hit points to the lycanthrope's claws and bite.</effect>
+        <notes>Victim becomes the attacker's lycanthrope type in 2d6 days, with secondary characteristics appearing several days before full transformation. Only humans transform; demi-humans and other humanoids die after 2d6 days instead. Cure disease cures acquired lycanthropy only if cast before the disease fully takes hold. Inherited lycanthropy cannot be cured.</notes>
+      </ability>
+      <ability name="inherited_lycanthropy">
+        <effect>If one parent is a lycanthrope, child has a 50% chance to become a lycanthrope at puberty. If both parents are lycanthropes, chance is 100%.</effect>
+        <notes>If parents are different lycanthrope types, determine the child's type randomly between the parental types.</notes>
+      </ability>
+      <ability name="animal_sense">
+        <effect>Horses and other domestic animals sense nearby lycanthropes and act restless or bolt.</effect>
+      </ability>
+      <ability name="crushing_hug">
+  <effect>If both claw attacks hit in the same round, it may grab the opponent in a crushing hug for 2d8 damage.</effect>
+</ability>
+  </special_abilities>
+  <ecology_and_behavior>
+    <social_structure><rule>Never wears armor because it hinders shape-changing.</rule></social_structure>
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>L</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+    <general_rule_reference type="poison"/>
+      <general_rule_reference type="disease"/>
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Wereboar</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral</alignment>
+      <tags><tag>lycanthropy</tag><tag>shapechanger</tag><tag>animal_summoning</tag><tag>normal_weapon_immunity_in_animal_form</tag><tag>rage</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>20%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Sounder" number="1d4"/><in_lair collective_noun="Lair" number="2d4"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Herd" number="2d4"/><in_lair collective_noun="Lair" number="2d4"/></wilderness_encounter>
+      <movement><mode type="land" exploration="150'" combat="50'"/></movement>
+      <armor_class>5 (0)</armor_class>
+      <hit_dice printed="4 + 1*" special_ability_markers="*"/>
+      <attacks>1 (tusk bite)</attacks>
+      <damage>2d6</damage>
+      <save>F4</save>
+      <morale>+1</morale>
+      <treasure_type>J</treasure_type>
+      <xp>215</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Sounder" number="1d4"/>
+        <group environment="dungeon_in_lair" noun="Lair" number="2d4"/>
+        <group environment="wilderness_outside_lair" noun="Herd" number="2d4"/>
+        <group environment="wilderness_in_lair" noun="Lair" number="2d4"/>
+      </collective_nouns>
+  </encounter_profile>
+  <combat_profile>
+    <defenses>
+        <immunities>
+          <immunity>All attacks from normal weapons while in animal form.</immunity>
+        </immunities>
+      </defenses>
+  </combat_profile>
+  <special_abilities>
+    <ability name="shapechange">
+        <effect>Can take the form of one kind of animal. When killed, reverts to human form.</effect>
+      </ability>
+      <ability name="summon_kindred_animal">
+        <effect>Can summon 1d2 animals of its type; they appear in 1d4 rounds.</effect>
+      </ability>
+      <ability name="wolfsbane_ward">
+        <effect>If touched by wolfsbane, must save versus Poison or flee in fear.</effect>
+      </ability>
+      <ability name="animal_form_communication">
+        <effect>In animal form, may communicate only with animals of its type and may not speak humanoid languages.</effect>
+      </ability>
+      <ability name="lycanthropy_disease">
+        <effect>Transmitted when a creature loses 50% or more of its total hit points to the lycanthrope's claws and bite.</effect>
+        <notes>Victim becomes the attacker's lycanthrope type in 2d6 days, with secondary characteristics appearing several days before full transformation. Only humans transform; demi-humans and other humanoids die after 2d6 days instead. Cure disease cures acquired lycanthropy only if cast before the disease fully takes hold. Inherited lycanthropy cannot be cured.</notes>
+      </ability>
+      <ability name="inherited_lycanthropy">
+        <effect>If one parent is a lycanthrope, child has a 50% chance to become a lycanthrope at puberty. If both parents are lycanthropes, chance is 100%.</effect>
+        <notes>If parents are different lycanthrope types, determine the child's type randomly between the parental types.</notes>
+      </ability>
+      <ability name="animal_sense">
+        <effect>Horses and other domestic animals sense nearby lycanthropes and act restless or bolt.</effect>
+      </ability>
+      <ability name="rage">
+  <effect>When enraged, gains +2 to attack throws and fights until no enemies remain or it is killed.</effect>
+</ability>
+  </special_abilities>
+  <ecology_and_behavior>
+    <social_structure><rule>Never wears armor because it hinders shape-changing.</rule></social_structure>
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>J</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+    <general_rule_reference type="poison"/>
+      <general_rule_reference type="disease"/>
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Wererat</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Chaotic</alignment>
+      <tags><tag>lycanthropy</tag><tag>shapechanger</tag><tag>animal_summoning</tag><tag>normal_weapon_immunity_in_animal_form</tag><tag>stealth</tag><tag>ratman_form</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>30%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Pack" number="1d8"/><in_lair collective_noun="Lair" number="2d6"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Plague" number="2d6"/><in_lair collective_noun="Lair" number="2d6"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>2 (0)</armor_class>
+      <hit_dice printed="3*" special_ability_markers="*"/>
+      <attacks>1 (bite or weapon)</attacks>
+      <damage>1d4 or weapon</damage>
+      <save>F3</save>
+      <morale>0</morale>
+      <treasure_type>G</treasure_type>
+      <xp>65</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Pack" number="1d8"/>
+        <group environment="dungeon_in_lair" noun="Lair" number="2d6"/>
+        <group environment="wilderness_outside_lair" noun="Plague" number="2d6"/>
+        <group environment="wilderness_in_lair" noun="Lair" number="2d6"/>
+      </collective_nouns>
+  </encounter_profile>
+  <combat_profile>
+    <defenses>
+        <immunities>
+          <immunity>All attacks from normal weapons while in animal form.</immunity>
+        </immunities>
+      </defenses>
+  </combat_profile>
+  <special_abilities>
+    <ability name="shapechange">
+        <effect>Can take the form of one kind of animal. When killed, reverts to human form.</effect>
+      </ability>
+      <ability name="summon_kindred_animal">
+        <effect>Can summon 1d2 animals of its type; they appear in 1d4 rounds.</effect>
+      </ability>
+      <ability name="wolfsbane_ward">
+        <effect>If touched by wolfsbane, must save versus Poison or flee in fear.</effect>
+      </ability>
+      <ability name="animal_form_communication">
+        <effect>In animal form, may communicate only with animals of its type and may not speak humanoid languages.</effect>
+      </ability>
+      <ability name="lycanthropy_disease">
+        <effect>Transmitted when a creature loses 50% or more of its total hit points to the lycanthrope's claws and bite.</effect>
+        <notes>Victim becomes the attacker's lycanthrope type in 2d6 days, with secondary characteristics appearing several days before full transformation. Only humans transform; demi-humans and other humanoids die after 2d6 days instead. Cure disease cures acquired lycanthropy only if cast before the disease fully takes hold. Inherited lycanthropy cannot be cured.</notes>
+      </ability>
+      <ability name="inherited_lycanthropy">
+        <effect>If one parent is a lycanthrope, child has a 50% chance to become a lycanthrope at puberty. If both parents are lycanthropes, chance is 100%.</effect>
+        <notes>If parents are different lycanthrope types, determine the child's type randomly between the parental types.</notes>
+      </ability>
+      <ability name="animal_sense">
+        <effect>Horses and other domestic animals sense nearby lycanthropes and act restless or bolt.</effect>
+      </ability>
+      <ability name="ratman_form">
+  <effect>Can assume an intermediate ratman form.</effect>
+  <notes>In ratman form, can use weapons and humanoid speech while retaining animal-form immunity to natural weapons and the ability to communicate with rats.</notes>
+</ability>
+<ability name="stealth">
+  <effect>Characters encountering wererats suffer a -2 penalty to surprise rolls.</effect>
+</ability>
+  </special_abilities>
+  <ecology_and_behavior>
+    <social_structure><rule>Never wears armor because it hinders shape-changing.</rule></social_structure>
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>G</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+    <general_rule_reference type="poison"/>
+      <general_rule_reference type="disease"/>
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Weretiger</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral</alignment>
+      <tags><tag>lycanthropy</tag><tag>shapechanger</tag><tag>animal_summoning</tag><tag>normal_weapon_immunity_in_animal_form</tag><tag>stealth</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>15%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Troop" number="1d4"/><in_lair collective_noun="Lair" number="1d4"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Troop" number="1d4"/><in_lair collective_noun="Lair" number="1d4"/></wilderness_encounter>
+      <movement><mode type="land" exploration="150'" combat="50'"/></movement>
+      <armor_class>6 (0)</armor_class>
+      <hit_dice printed="5*" special_ability_markers="*"/>
+      <attacks>3 (2 claws, bite)</attacks>
+      <damage>1d6/1d6/2d6</damage>
+      <save>F5</save>
+      <morale>+1</morale>
+      <treasure_type>J</treasure_type>
+      <xp>350</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Troop" number="1d4"/>
+        <group environment="dungeon_in_lair" noun="Lair" number="1d4"/>
+        <group environment="wilderness_outside_lair" noun="Troop" number="1d4"/>
+        <group environment="wilderness_in_lair" noun="Lair" number="1d4"/>
+      </collective_nouns>
+  </encounter_profile>
+  <combat_profile>
+    <defenses>
+        <immunities>
+          <immunity>All attacks from normal weapons while in animal form.</immunity>
+        </immunities>
+      </defenses>
+  </combat_profile>
+  <special_abilities>
+    <ability name="shapechange">
+        <effect>Can take the form of one kind of animal. When killed, reverts to human form.</effect>
+      </ability>
+      <ability name="summon_kindred_animal">
+        <effect>Can summon 1d2 animals of its type; they appear in 1d4 rounds.</effect>
+      </ability>
+      <ability name="wolfsbane_ward">
+        <effect>If touched by wolfsbane, must save versus Poison or flee in fear.</effect>
+      </ability>
+      <ability name="animal_form_communication">
+        <effect>In animal form, may communicate only with animals of its type and may not speak humanoid languages.</effect>
+      </ability>
+      <ability name="lycanthropy_disease">
+        <effect>Transmitted when a creature loses 50% or more of its total hit points to the lycanthrope's claws and bite.</effect>
+        <notes>Victim becomes the attacker's lycanthrope type in 2d6 days, with secondary characteristics appearing several days before full transformation. Only humans transform; demi-humans and other humanoids die after 2d6 days instead. Cure disease cures acquired lycanthropy only if cast before the disease fully takes hold. Inherited lycanthropy cannot be cured.</notes>
+      </ability>
+      <ability name="inherited_lycanthropy">
+        <effect>If one parent is a lycanthrope, child has a 50% chance to become a lycanthrope at puberty. If both parents are lycanthropes, chance is 100%.</effect>
+        <notes>If parents are different lycanthrope types, determine the child's type randomly between the parental types.</notes>
+      </ability>
+      <ability name="animal_sense">
+        <effect>Horses and other domestic animals sense nearby lycanthropes and act restless or bolt.</effect>
+      </ability>
+      <ability name="stealth">
+  <effect>Characters encountering weretigers suffer a -2 penalty to surprise rolls.</effect>
+</ability>
+  </special_abilities>
+  <ecology_and_behavior>
+    <social_structure><rule>Never wears armor because it hinders shape-changing.</rule></social_structure>
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>J</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+    <general_rule_reference type="poison"/>
+      <general_rule_reference type="disease"/>
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Werewolf</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Chaotic</alignment>
+      <tags><tag>lycanthropy</tag><tag>shapechanger</tag><tag>animal_summoning</tag><tag>normal_weapon_immunity_in_animal_form</tag><tag>pack_hunter</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>25%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Pack" number="1d6"/><in_lair collective_noun="Lair" number="2d6"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Route" number="2d6"/><in_lair collective_noun="Lair" number="2d6"/></wilderness_encounter>
+      <movement><mode type="land" exploration="180'" combat="60'"/></movement>
+      <armor_class>4 (0)</armor_class>
+      <hit_dice printed="4*" special_ability_markers="*"/>
+      <attacks>1 (bite)</attacks>
+      <damage>2d4</damage>
+      <save>F4</save>
+      <morale>0</morale>
+      <treasure_type>J</treasure_type>
+      <xp>135</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Pack" number="1d6"/>
+        <group environment="dungeon_in_lair" noun="Lair" number="2d6"/>
+        <group environment="wilderness_outside_lair" noun="Route" number="2d6"/>
+        <group environment="wilderness_in_lair" noun="Lair" number="2d6"/>
+      </collective_nouns>
+  </encounter_profile>
+  <combat_profile>
+    <defenses>
+        <immunities>
+          <immunity>All attacks from normal weapons while in animal form.</immunity>
+        </immunities>
+      </defenses>
+  </combat_profile>
+  <special_abilities>
+    <ability name="shapechange">
+        <effect>Can take the form of one kind of animal. When killed, reverts to human form.</effect>
+      </ability>
+      <ability name="summon_kindred_animal">
+        <effect>Can summon 1d2 animals of its type; they appear in 1d4 rounds.</effect>
+      </ability>
+      <ability name="wolfsbane_ward">
+        <effect>If touched by wolfsbane, must save versus Poison or flee in fear.</effect>
+      </ability>
+      <ability name="animal_form_communication">
+        <effect>In animal form, may communicate only with animals of its type and may not speak humanoid languages.</effect>
+      </ability>
+      <ability name="lycanthropy_disease">
+        <effect>Transmitted when a creature loses 50% or more of its total hit points to the lycanthrope's claws and bite.</effect>
+        <notes>Victim becomes the attacker's lycanthrope type in 2d6 days, with secondary characteristics appearing several days before full transformation. Only humans transform; demi-humans and other humanoids die after 2d6 days instead. Cure disease cures acquired lycanthropy only if cast before the disease fully takes hold. Inherited lycanthropy cannot be cured.</notes>
+      </ability>
+      <ability name="inherited_lycanthropy">
+        <effect>If one parent is a lycanthrope, child has a 50% chance to become a lycanthrope at puberty. If both parents are lycanthropes, chance is 100%.</effect>
+        <notes>If parents are different lycanthrope types, determine the child's type randomly between the parental types.</notes>
+      </ability>
+      <ability name="animal_sense">
+        <effect>Horses and other domestic animals sense nearby lycanthropes and act restless or bolt.</effect>
+      </ability>
+      <ability name="pack_leader">
+  <effect>A pack of at least 5 individuals includes a pack leader with 5 Hit Dice, 30 hit points, and +2 damage.</effect>
+</ability>
+  </special_abilities>
+  <ecology_and_behavior>
+    <social_structure><rule>Never wears armor because it hinders shape-changing.</rule></social_structure>
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>J</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+    <general_rule_reference type="poison"/>
+      <general_rule_reference type="disease"/>
+  </references>
+</monster>
+<monster>
+      <identity>
+        <name>Manticore</name>
+
+        <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+      </identity>
+      <classification>
+        <alignment>Chaotic</alignment>
+      <tags><tag>fly</tag><tag>ranged_spikes</tag></tags>
+      </classification>
+      <stat_block>
+        <percent_in_lair>20%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Flight" number="1d2"/><in_lair collective_noun="Lair" number="1d4"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Wing" number="1d4"/><in_lair collective_noun="Lair" number="1d4"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/>
+<mode type="fly" exploration="180'" combat="60'"/></movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="6 + 1*" special_ability_markers="*"/>
+      <attacks>3 (2 claws, bite) or 1 (spikes)</attacks>
+      <damage>1d4/1d4/2d4 or see below</damage>
+      <save>F6</save>
+      <morale>+1</morale>
+      <treasure_type>K</treasure_type>
+      <xp>680</xp>
+      </stat_block>
+      <encounter_profile>
+        <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Flight" number="1d2"/>
+        <group environment="dungeon_in_lair" noun="Lair" number="1d4"/>
+        <group environment="wilderness_outside_lair" noun="Wing" number="1d4"/>
+        <group environment="wilderness_in_lair" noun="Lair" number="1d4"/>
+      </collective_nouns>
+      <terrain><primary>Mountains</primary><secondary>Dungeons</secondary></terrain>
+      </encounter_profile>
+      <combat_profile>
+        <attack_routines>
+        <attack_routine name="melee">
+          <usage>alternative</usage>
+          <attack_sequence>
+            <attack type="claw" count="2" damage="1d4"/>
+            <attack type="bite" count="1" damage="2d4"/>
+          </attack_sequence>
+        </attack_routine>
+        <attack_routine name="spike_volley">
+          <usage>alternative</usage>
+          <attack_sequence><attack type="spikes" count="6 per round" damage="1d6 each"/></attack_sequence>
+          <notes>May use this attack while airborne.</notes>
+        </attack_routine>
+      </attack_routines>
+      <targeting_constraints><constraint>Spikes have a range of 180'.</constraint></targeting_constraints>
+      </combat_profile>
+      <special_abilities>
+        <ability name="tail_spikes">
+        <effect>Has 24 barbed spikes in its tail and can throw 6 spikes per round.</effect>
+        <limitation>Spikes regrow at a rate of 2 per day.</limitation>
+      </ability>
+      </special_abilities>
+      <ecology_and_behavior>
+        <diet><rule>Feeds on human flesh.</rule></diet>
+      </ecology_and_behavior>
+      <treasure_and_rewards>
+        <treasure_type>K</treasure_type>
+      </treasure_and_rewards>
+      <procedures>
+
+      </procedures>
+      <tables>
+
+      </tables>
+      <references>
+
+      </references>
+    </monster>
+<monster>
+  <identity>
+    <name>Mastodon</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral</alignment>
+  <tags><tag>charge</tag><tag>trample</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>None</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="none" number=""/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="Herd" number="2d8"/></wilderness_encounter>
+  <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+  <armor_class>6</armor_class>
+  <hit_dice printed="15" special_ability_markers=""/>
+  <attacks>2 (tusks) or 1 (trample)</attacks>
+  <damage>2d6/2d6 or 4d8</damage>
+  <save>F8</save>
+  <morale>0</morale>
+  <treasure_type>Special</treasure_type>
+  <xp>1,800</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns><group environment="wilderness_outside_lair" noun="Herd" number="2d8"/></collective_nouns>
+  </encounter_profile>
+  <combat_profile>
+    <attack_routines>
+    <attack_routine name="tusk_attack">
+      <usage>alternative</usage>
+      <attack_sequence><attack type="tusks" count="2" damage="2d6"/></attack_sequence>
+    </attack_routine>
+    <attack_routine name="trample">
+      <usage>alternative</usage>
+      <attack_sequence><attack type="trample" count="1" damage="4d8"/></attack_sequence>
+    </attack_routine>
+  </attack_routines>
+  <mobility_rules><rule>When distance permits, may charge with tusk attacks to deal double damage.</rule></mobility_rules>
+  <targeting_constraints><constraint>Trample attack receives +4 to attack throws against man-sized or smaller opponents.</constraint></targeting_constraints>
+  </combat_profile>
+  <special_abilities>
+
+  </special_abilities>
+  <ecology_and_behavior>
+
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>Special</treasure_type>
+  <harvest_or_resource_value><resource name="ivory_tusk" value="2d4x100gp each"/></harvest_or_resource_value>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Medusa</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Chaotic</alignment>
+  <tags><tag>gaze</tag><tag>petrification</tag><tag>poison</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>50%</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="Coterie" number="1d3"/><in_lair collective_noun="Lair" number="1d4"/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="Coven" number="1d4"/><in_lair collective_noun="Lair" number="1d4"/></wilderness_encounter>
+  <movement><mode type="land" exploration="90'" combat="30'"/></movement>
+  <armor_class>1</armor_class>
+  <hit_dice printed="4***" special_ability_markers="***"/>
+  <attacks>1 (snakebite or special)</attacks>
+  <damage>1d6, poison</damage>
+  <save>F7</save>
+  <morale>0</morale>
+  <treasure_type>H</treasure_type>
+  <xp>245</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="dungeon_outside_lair" noun="Coterie" number="1d3"/>
+    <group environment="dungeon_in_lair" noun="Lair" number="1d4"/>
+    <group environment="wilderness_outside_lair" noun="Coven" number="1d4"/>
+    <group environment="wilderness_in_lair" noun="Lair" number="1d4"/>
+  </collective_nouns>
+  </encounter_profile>
+  <combat_profile>
+    <attack_effects>
+    <attack_effect attack_name="snakebite">
+      <damage>1d6</damage>
+      <save type="Poison" on_success="survive" on_failure="death after 1 turn"/>
+    </attack_effect>
+  </attack_effects>
+  <defenses>
+    <special_defense><name>high_save_progression</name><effect>Saves as a 7 Hit Dice monster despite having 4 Hit Dice.</effect></special_defense>
+  </defenses>
+  </combat_profile>
+  <special_abilities>
+    <ability name="petrifying_gaze">
+    <effect>Any character meeting the medusa's gaze must save versus Petrification or turn to stone.</effect>
+  </ability>
+  <ability name="disguise">
+    <effect>May disguise itself with a hooded robe before revealing its nature.</effect>
+  </ability>
+  </special_abilities>
+  <ecology_and_behavior>
+
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>H</treasure_type>
+  <treasure_rules><rule>Half of a medusa's lair treasure is likely to be on petrified victims and is accessible only if they are restored to flesh.</rule></treasure_rules>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+    <general_rule_reference type="petrification"/>
+  <general_rule_reference type="poison"/>
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Berserker</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral</alignment>
+      <tags><tag>1st_level_fighter</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>20%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Gang" number="1d6"/><in_lair collective_noun="Lair" number="1 warband"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Warband" number="1d8 gangs"/><in_lair collective_noun="Lair" number="1 warband"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>2</armor_class>
+      <hit_dice printed="1+1*" special_ability_markers="*"/>
+      <attacks>1</attacks>
+      <damage>1d12 or weapon +1</damage>
+      <save>F1</save>
+      <morale>+4</morale>
+      <treasure_type>J (per warband)</treasure_type>
+      <xp>21</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="dungeon_outside_lair" noun="Gang" number="1d6"/>
+    <group environment="dungeon_in_lair" noun="Lair" number="1 warband"/>
+    <group environment="wilderness_outside_lair" noun="Warband" number="1d8 gangs"/>
+    <group environment="wilderness_in_lair" noun="Lair" number="1 warband"/>
+  </collective_nouns>
+  <lair_composition><member role="leader_per_warband" number="1 4th level fighter with Berserkergang proficiency"/></lair_composition>
+  </encounter_profile>
+  <combat_profile>
+    <combat_rules><rule>Uses leather armor and great axes, two-handed swords, or pole arms.</rule></combat_rules>
+  </combat_profile>
+  <special_abilities>
+        <ability name="base_level"><effect>Base individuals are treated as 1st level fighters.</effect></ability>
+    <ability name="battle_rage">
+    <effect>Whenever fighting humanoids, gains +2 to attack value and fights fearlessly until killed.</effect>
+  </ability>
+  <ability name="leader_magic_items"><notes><rule>Leaders and other leveled characters each have a 5% chance per level to possess a magic item in each item category.</rule></notes></ability>
+  </special_abilities>
+  <ecology_and_behavior>
+
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+        <treasure_rules><rule>Printed treasure type is lair treasure.</rule></treasure_rules>
+    <treasure_type>J (per warband)</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+    <general_rule_reference type="magic_items_on_leaders"/>
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Brigand</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Chaotic</alignment>
+      <tags><tag>1st_level_fighter</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>20%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="Gang" number="2d4"/><in_lair collective_noun="Outpost" number="1 band"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Band" number="1d10 gangs"/><in_lair collective_noun="Camp" number="2d6 bands"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>Armor type</armor_class>
+      <hit_dice printed="1" special_ability_markers=""/>
+      <attacks>1</attacks>
+      <damage>1d8 or weapon +1</damage>
+      <save>F1</save>
+      <morale>0</morale>
+      <treasure_type>H (per band)</treasure_type>
+      <xp>10</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="dungeon_outside_lair" noun="Gang" number="2d4"/>
+    <group environment="dungeon_in_lair" noun="Outpost" number="1 band"/>
+    <group environment="wilderness_outside_lair" noun="Band" number="1d10 gangs"/>
+    <group environment="wilderness_in_lair" noun="Camp" number="2d6 bands"/>
+  </collective_nouns>
+  <lair_composition>
+    <member role="leaders_per_band" number="1 4th level fighter and 2 2nd level fighters"/>
+    <member role="captain_per_camp" number="1 brigand captain, 9th level fighter"/>
+    <member role="lieutenants_per_camp" number="1 5th level fighter per 2 bands"/>
+    <member role="cleric_in_camp" number="30% chance, 8th level"/>
+    <member role="mage_in_camp" number="50% chance, level 8+1d2"/>
+  </lair_composition>
+  </encounter_profile>
+  <combat_profile>
+    <combat_rules>
+    <rule>50% of gangs wear leather armor and shields and carry short swords and short bows.</rule>
+    <rule>50% of gangs wear chainmail and shields, carry long swords, and ride light warhorses.</rule>
+    <rule>Band leaders wear plate armor, carry long swords and lances, and ride medium warhorses with chain barding.</rule>
+  </combat_rules>
+  </combat_profile>
+  <special_abilities>
+        <ability name="base_level"><effect>Base individuals are treated as 1st level fighters.</effect></ability>
+    <ability name="leader_magic_items"><notes><rule>Leaders and other leveled characters each have a 5% chance per level to possess a magic item in each item category.</rule></notes></ability>
+  </special_abilities>
+  <ecology_and_behavior>
+
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+        <treasure_rules><rule>Printed treasure type is lair treasure.</rule></treasure_rules>
+    <treasure_type>H (per band)</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+    <general_rule_reference type="magic_items_on_leaders"/>
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Pirate</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral or Chaotic</alignment>
+      <tags><tag>1st_level_fighter</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>10%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="none" number=""/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Fleet" number="by vessel type"/><in_lair collective_noun="Island" number="1 fleet"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>Armor type</armor_class>
+      <hit_dice printed="1" special_ability_markers=""/>
+      <attacks>1</attacks>
+      <damage>1d8 or weapon +1</damage>
+      <save>F1</save>
+      <morale>-2</morale>
+      <treasure_type>Varies (per fleet)</treasure_type>
+      <xp>10</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="dungeon_outside_lair" noun="none" number=""/>
+    <group environment="wilderness_outside_lair" noun="Fleet" number="by vessel type"/>
+    <group environment="wilderness_in_lair" noun="Island" number="1 fleet"/>
+  </collective_nouns>
+  <lair_composition>
+    <member role="4th_level_fighters" number="1 per 30 pirates"/>
+    <member role="5th_level_fighters" number="1 per 50 pirates"/>
+    <member role="hostages" number="1d4 per 50 pirates"/>
+    <member role="captain" number="1 8th level fighter if fleet has fewer than 200 pirates"/>
+    <member role="pirate_king" number="1 11th level fighter if fleet has 200 or more pirates"/>
+    <member role="first_mate" number="1 8th level fighter with a pirate king"/>
+    <member role="mage_with_pirate_king" number="75% chance, level 8+1d2"/>
+  </lair_composition>
+  <population_rules>
+    <rule>70% are chaotic buccaneers that attack any ship.</rule>
+    <rule>30% are neutral privateers that attack only enemy national shipping.</rule>
+    <rule>The number of pirates encountered equals the full required crew of the ships in the fleet, including sailors, marines, and rowers.</rule>
+  </population_rules>
+  <terrain><primary>Any lake, river, or sea.</primary><secondary>Remote island lairs.</secondary></terrain>
+  </encounter_profile>
+  <combat_profile>
+    <combat_rules>
+    <rule>All pirates wear leather armor and carry swords.</rule>
+    <rule>40% also carry crossbows or short bows.</rule>
+    <rule>Marines and sailors are always pirates. Riverboat and longship rowers are pirates. Galley rowers are captive slaves.</rule>
+    <rule>Slaves are unarmed and do not fight.</rule>
+  </combat_rules>
+  </combat_profile>
+  <special_abilities>
+        <ability name="base_level"><effect>Base individuals are treated as 1st level fighters.</effect></ability>
+    <ability name="treasure_map">
+    <effect>When pirates are encountered away from their lair, the captain or king has a treasure map to the lair.</effect>
+  </ability>
+  <ability name="leader_magic_items"><notes><rule>Leaders and other leveled characters each have a 5% chance per level to possess a magic item in each item category.</rule></notes></ability>
+  </special_abilities>
+  <ecology_and_behavior>
+
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+        <treasure_rules><rule>Printed treasure type is not restricted to lairs.</rule></treasure_rules>
+    <treasure_type>Varies (per fleet)</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+    <table name="pirate_ship">
+    <row><column name="pirate_ship_type">Boat, river</column><column name="ships_in_fleet">2d4</column><column name="pirate_sailors">4</column><column name="pirate_marines">-</column><column name="slave_rowers">-</column><column name="treasure_type">L</column></row>
+    <row><column name="pirate_ship_type">Galley, large</column><column name="ships_in_fleet">1d3</column><column name="pirate_sailors">20</column><column name="pirate_marines">50</column><column name="slave_rowers">180</column><column name="treasure_type">O</column></row>
+    <row><column name="pirate_ship_type">Galley, small</column><column name="ships_in_fleet">1d6</column><column name="pirate_sailors">10</column><column name="pirate_marines">20</column><column name="slave_rowers">60</column><column name="treasure_type">L</column></row>
+    <row><column name="pirate_ship_type">Galley, war</column><column name="ships_in_fleet">1d3</column><column name="pirate_sailors">30</column><column name="pirate_marines">75</column><column name="slave_rowers">300</column><column name="treasure_type">O, L</column></row>
+    <row><column name="pirate_ship_type">Longship</column><column name="ships_in_fleet">1d4</column><column name="pirate_sailors">75</column><column name="pirate_marines">-</column><column name="slave_rowers">-</column><column name="treasure_type">O</column></row>
+    <row><column name="pirate_ship_type">Troop Transport, large</column><column name="ships_in_fleet">1d4</column><column name="pirate_sailors">20</column><column name="pirate_marines">50</column><column name="slave_rowers">-</column><column name="treasure_type">O</column></row>
+    <row><column name="pirate_ship_type">Troop Transport, small</column><column name="ships_in_fleet">1d6</column><column name="pirate_sailors">12</column><column name="pirate_marines">25</column><column name="slave_rowers">-</column><column name="treasure_type">O</column></row>
+  </table>
+  </tables>
+  <references>
+    <general_rule_reference type="magic_items_on_leaders"/>
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Merchant</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral</alignment>
+      <tags><tag>1st_level_fighter</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="none" number=""/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Caravan" number="1d4x10 wagons"/></wilderness_encounter>
+      <movement><mode type="land" exploration="90'" combat="30'"/></movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="1" special_ability_markers=""/>
+      <attacks>1</attacks>
+      <damage>1d8 or weapon +1</damage>
+      <save>F1</save>
+      <morale>Varies</morale>
+      <treasure_type>J (per 10 wagons)</treasure_type>
+      <xp>10</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns><group environment="wilderness_outside_lair" noun="Caravan" number="1d4x10 wagons"/></collective_nouns>
+  <population_rules>
+    <rule>Caravans consist of 10-40 large wagons.</rule>
+    <rule>Each wagon is drawn by 4 heavy draft horses.</rule>
+    <rule>For every 10 wagons there are 5 merchants on medium riding horses.</rule>
+    <rule>For every 10 wagons there are 20 1st level fighter guards led by 2 3rd level fighters on medium riding horses.</rule>
+    <rule>Each caravan has 1 guard captain, a 5th level fighter on a medium warhorse.</rule>
+  </population_rules>
+  </encounter_profile>
+  <combat_profile>
+    <combat_rules>
+    <rule>Merchants wear chainmail and carry crossbows and daggers.</rule>
+    <rule>Guards wear chainmail and carry swords, crossbows, and daggers.</rule>
+    <rule>The guard captain wears plate armor and carries sword, crossbow, and dagger.</rule>
+    <rule>Riding and draft animal types may vary by terrain.</rule>
+  </combat_rules>
+  </combat_profile>
+  <special_abilities>
+        <ability name="base_level"><effect>Base individuals are treated as 1st level fighters.</effect></ability>
+    <ability name="leader_magic_items"><notes><rule>Leaders and other leveled characters each have a 5% chance per level to possess a magic item in each item category.</rule></notes></ability>
+  </special_abilities>
+  <ecology_and_behavior>
+
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+        <treasure_rules><rule>Printed treasure type is not restricted to lairs.</rule></treasure_rules>
+    <treasure_type>J (per 10 wagons)</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+    <general_rule_reference type="magic_items_on_leaders"/>
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Nomad</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral</alignment>
+      <tags><tag>1st_level_fighter</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>10%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="none" number=""/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="Caravan" number="1d4x10"/><in_lair collective_noun="Camp" number="2d6 caravans"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>Armor type</armor_class>
+      <hit_dice printed="1" special_ability_markers=""/>
+      <attacks>1</attacks>
+      <damage>1d8 or weapon +1</damage>
+      <save>F1</save>
+      <morale>0</morale>
+      <treasure_type>E (per caravan)</treasure_type>
+      <xp>10</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="wilderness_outside_lair" noun="Caravan" number="1d4x10"/>
+    <group environment="wilderness_in_lair" noun="Camp" number="2d6 caravans"/>
+  </collective_nouns>
+  <lair_composition>
+    <member role="leaders_per_caravan" number="1 4th level fighter and 2 2nd level fighters"/>
+    <member role="chieftain_per_camp" number="1 8th level fighter"/>
+    <member role="elite_guard" number="1 5th level fighter per 4 caravans"/>
+    <member role="cleric_in_camp" number="50% chance, 9th level"/>
+    <member role="mage_in_camp" number="25% chance, 8th level"/>
+    <member role="trained_hunting_dogs" number="70% chance, 4d6"/>
+    <member role="adult_noncombatants" number="100% of able-bodied adults"/>
+    <member role="young" number="200% of able-bodied adults"/>
+  </lair_composition>
+  </encounter_profile>
+  <combat_profile>
+    <combat_rules>
+    <rule>Armor distribution: leather 50%, chain 30%, lamellar 20%.</rule>
+    <rule>All carry short swords and daggers.</rule>
+    <rule>50% carry composite bows and ride light riding horses.</rule>
+    <rule>50% carry lances and ride light warhorses.</rule>
+    <rule>Leaders carry both lance and bow, wear lamellar armor, and ride light warhorses.</rule>
+  </combat_rules>
+  </combat_profile>
+  <special_abilities>
+        <ability name="base_level"><effect>Base individuals are treated as 1st level fighters.</effect></ability>
+    <ability name="leader_magic_items"><notes><rule>Leaders and other leveled characters each have a 5% chance per level to possess a magic item in each item category.</rule></notes></ability>
+  </special_abilities>
+  <ecology_and_behavior>
+
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+        <treasure_rules><rule>Printed treasure type is lair treasure.</rule></treasure_rules>
+    <treasure_type>E (per caravan)</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+    <general_rule_reference type="magic_items_on_leaders"/>
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Mermen</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral</alignment>
+  <tags><tag>swim</tag><tag>undersea_village</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>25%</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="none" number=""/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="Band" number="1d20"/><in_lair collective_noun="Village" number="2d20 bands"/></wilderness_encounter>
+  <movement><mode type="swim" exploration="120'" combat="40'"/></movement>
+  <armor_class>3</armor_class>
+  <hit_dice printed="1" special_ability_markers=""/>
+  <attacks>1 (weapon)</attacks>
+  <damage>1d6 or weapon type</damage>
+  <save>F1</save>
+  <morale>0</morale>
+  <treasure_type>B (per band)</treasure_type>
+  <xp>10</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="wilderness_outside_lair" noun="Band" number="1d20"/>
+    <group environment="wilderness_in_lair" noun="Village" number="2d20 bands"/>
+  </collective_nouns>
+  <lair_composition>
+    <member role="leader_per_band" number="1 2 Hit Dice leader"/>
+    <member role="exceptional_leader_per_village" number="1 4 Hit Dice leader"/>
+    <member role="giant_fish" number="70% chance, 3d6"/>
+    <member role="mermaids" number="100% of mermen"/>
+    <member role="young" number="100% of mermen"/>
+    <member role="giant_rockfish_guards" number="3d6"/>
+  </lair_composition>
+  <terrain><primary>Large bodies of water.</primary></terrain>
+  </encounter_profile>
+  <combat_profile>
+    <combat_rules><rule>Typically use daggers, spears, and tridents.</rule></combat_rules>
+  </combat_profile>
+  <special_abilities>
+
+  </special_abilities>
+  <ecology_and_behavior>
+    <social_structure><rule>Generally keep to themselves, though they may trade fish and other sea bounty to human villages.</rule></social_structure>
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>B (per band)</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Minotaur</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Chaotic</alignment>
+  <tags><tag>tracking</tag><tag>weapon_damage_bonus</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>20%</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="Gang" number="1d6"/><in_lair collective_noun="Lair" number="1d8"/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="Warband" number="1d8"/><in_lair collective_noun="Lair" number="1d8"/></wilderness_encounter>
+  <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+  <armor_class>3</armor_class>
+  <hit_dice printed="6" special_ability_markers=""/>
+  <attacks>2 or 1 (gore, 1 bite or weapon)</attacks>
+  <damage>1d6/1d6 or by weapon +2</damage>
+  <save>F6</save>
+  <morale>+4</morale>
+  <treasure_type>L, G</treasure_type>
+  <xp>320</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="dungeon_outside_lair" noun="Gang" number="1d6"/>
+    <group environment="dungeon_in_lair" noun="Lair" number="1d8"/>
+    <group environment="wilderness_outside_lair" noun="Warband" number="1d8"/>
+    <group environment="wilderness_in_lair" noun="Lair" number="1d8"/>
+  </collective_nouns>
+  <terrain><primary>Dungeons</primary></terrain>
+  <reaction_or_pursuit_behavior><rule>Relentlessly chases fleeing prey.</rule></reaction_or_pursuit_behavior>
+  </encounter_profile>
+  <combat_profile>
+    <attack_routines>
+    <attack_routine name="natural_attacks">
+      <usage>alternative</usage>
+      <attack_sequence>
+        <attack type="gore" count="1" damage="1d6"/>
+        <attack type="bite" count="1" damage="1d6"/>
+      </attack_sequence>
+    </attack_routine>
+    <attack_routine name="weapon_attack">
+      <usage>alternative</usage>
+      <attack_sequence><attack type="weapon" count="1" damage="by weapon +2"/></attack_sequence>
+    </attack_routine>
+  </attack_routines>
+  </combat_profile>
+  <special_abilities>
+    <ability name="tracking">
+    <effect>Tracks enemies it loses sight of with a proficiency throw of 18+.</effect>
+  </ability>
+  </special_abilities>
+  <ecology_and_behavior>
+    <diet><rule>Feasts on slain humanoids.</rule></diet>
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>L, G</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Morlock</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Chaotic</alignment>
+  <tags><tag>infravision</tag><tag>daylight_penalty</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>35%</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="Gang" number="1d12"/><in_lair collective_noun="Lair" number="1 warband"/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="Warband" number="1d8 gangs"/><in_lair collective_noun="Lair" number="1 warband"/></wilderness_encounter>
+  <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+  <armor_class>1</armor_class>
+  <hit_dice printed="1" special_ability_markers=""/>
+  <attacks>1 (weapon)</attacks>
+  <damage>As weapon</damage>
+  <save>F1</save>
+  <morale>+1</morale>
+  <treasure_type>E (per warband)</treasure_type>
+  <xp>10</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="dungeon_outside_lair" noun="Gang" number="1d12"/>
+    <group environment="dungeon_in_lair" noun="Lair" number="1 warband"/>
+    <group environment="wilderness_outside_lair" noun="Warband" number="1d8 gangs"/>
+    <group environment="wilderness_in_lair" noun="Lair" number="1 warband"/>
+  </collective_nouns>
+  <lair_composition>
+    <member role="champion_per_gang" number="1"/>
+    <member role="sub_chieftain_per_warband" number="1"/>
+    <member role="chieftain_per_lair" number="1"/>
+    <member role="trained_white_apes" number="75% chance, 3d6"/>
+    <member role="females" number="100% of males"/>
+    <member role="young" number="200% of males"/>
+  </lair_composition>
+  </encounter_profile>
+  <combat_profile>
+    <combat_rules><rule>Favors spears and swords, but can wield any weapons.</rule></combat_rules>
+  <targeting_constraints><constraint>Suffers -2 to attack throws in daylight.</constraint></targeting_constraints>
+  </combat_profile>
+  <special_abilities>
+    <ability name="infravision">
+    <effect>Has infravision to 90'.</effect>
+  </ability>
+  <ability name="leader_stat_blocks">
+    <notes>Champion: AC 2, HD 1+1, hp 8. Sub-chieftain: AC 3, HD 2, hp 12, +1 damage. Chieftain: AC 4, HD 3, hp 15, +2 damage.</notes>
+  </ability>
+  </special_abilities>
+  <ecology_and_behavior>
+    <diet><rule>Carnivorous; favors humanoid flesh.</rule></diet>
+  <social_structure><rule>Enemies of neanderthals, dwarves, and gnomes; sometimes joins orcs and goblins.</rule></social_structure>
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>E (per warband)</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Mule</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral</alignment>
+  <tags><tag>pack_animal</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>None</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="Rake" number="1d8"/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="Herd" number="2d6"/></wilderness_encounter>
+  <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+  <armor_class>2</armor_class>
+  <hit_dice printed="2" special_ability_markers=""/>
+  <attacks>1 (kick or bite)</attacks>
+  <damage>1d4 or 1d3</damage>
+  <save>0 level human</save>
+  <morale>0</morale>
+  <treasure_type>None</treasure_type>
+  <xp>20</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="dungeon_outside_lair" noun="Rake" number="1d8"/>
+    <group environment="wilderness_outside_lair" noun="Herd" number="2d6"/>
+  </collective_nouns>
+  </encounter_profile>
+  <combat_profile>
+
+  </combat_profile>
+  <special_abilities>
+    <ability name="pack_capacity">
+    <effect>Carries 20 stone comfortably and a maximum of 40 stone.</effect>
+    <limitation>At 40 stone, movement is reduced to 60' per turn.</limitation>
+  </ability>
+  <ability name="ornery">
+    <effect>May attack if particularly provoked.</effect>
+  </ability>
+  </special_abilities>
+  <ecology_and_behavior>
+
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>None</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+    <procedure name="dungeon_pack_use">
+    <condition>Judge permits and dungeon conditions allow.</condition>
+    <outcome>A mule may be taken into the dungeon to transport equipment or treasure.</outcome>
+  </procedure>
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Mummy</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Chaotic</alignment>
+  <tags><tag>undead</tag><tag>paralysis_fear</tag><tag>curse</tag><tag>weapon_resistance</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>20%</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="Throng" number="1d4"/><in_lair collective_noun="Tomb" number="1d12"/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="Horde" number="1d12"/><in_lair collective_noun="Tomb" number="1d12"/></wilderness_encounter>
+  <movement><mode type="land" exploration="60'" combat="20'"/></movement>
+  <armor_class>6</armor_class>
+  <hit_dice printed="5 + 1*" special_ability_markers="*"/>
+  <attacks>1 (fist)</attacks>
+  <damage>1d12, mummy rot</damage>
+  <save>F5</save>
+  <morale>+4</morale>
+  <treasure_type>N x2</treasure_type>
+  <xp>460</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="dungeon_outside_lair" noun="Throng" number="1d4"/>
+    <group environment="dungeon_in_lair" noun="Tomb" number="1d12"/>
+    <group environment="wilderness_outside_lair" noun="Horde" number="1d12"/>
+    <group environment="wilderness_in_lair" noun="Tomb" number="1d12"/>
+  </collective_nouns>
+  </encounter_profile>
+  <combat_profile>
+    <attack_effects>
+    <attack_effect attack_name="fist">
+      <damage>1d12</damage>
+      <effect>Contracts mummy rot.</effect>
+    </attack_effect>
+  </attack_effects>
+  <defenses>
+        <immunities><immunity>All attacks except magical weapons, spells, and fire-based attacks.</immunity></immunities>
+    <immunities>
+      <immunity>Poison</immunity>
+      <immunity>Charm</immunity>
+      <immunity>Sleep</immunity>
+      <immunity>Hold</immunity>
+    </immunities>
+    <resistances><resistance>Takes only half damage from magical weapons, spells, and fire-based attacks.</resistance></resistances>
+  </defenses>
+  </combat_profile>
+  <special_abilities>
+    <ability name="paralyzing_dread">
+    <effect>Any being seeing a mummy must save versus Paralysis or become paralyzed with dread.</effect>
+    <termination>Effect ends if the mummy leaves the victim's range of vision or engages in combat.</termination>
+  </ability>
+  <ability name="mummy_rot">
+    <effect>Mummy rot is a curse, not a natural disease.</effect>
+    <notes>Targets cannot benefit from magical healing and heal naturally at only 1/10 the normal rate. Remove curse removes mummy rot.</notes>
+  </ability>
+  </special_abilities>
+  <ecology_and_behavior>
+
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>N x2</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+    <general_rule_reference type="undead"/>
+  <general_rule_reference type="paralysis"/>
+  <general_rule_reference type="curse"/>
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Neanderthal</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Lawful</alignment>
+  <tags><tag>humanoid</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>40%</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="Band" number="1d10"/><in_lair collective_noun="Lair" number="1d6 bands"/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="Band" number="1d10"/><in_lair collective_noun="Lair" number="1d6 bands"/></wilderness_encounter>
+  <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+  <armor_class>1</armor_class>
+  <hit_dice printed="2" special_ability_markers=""/>
+  <attacks>1 (weapon)</attacks>
+  <damage>2d4 or weapon</damage>
+  <save>F2</save>
+  <morale>-1</morale>
+  <treasure_type>E</treasure_type>
+  <xp>20</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="dungeon_outside_lair" noun="Band" number="1d10"/>
+    <group environment="dungeon_in_lair" noun="Lair" number="1d6 bands"/>
+    <group environment="wilderness_outside_lair" noun="Band" number="1d10"/>
+    <group environment="wilderness_in_lair" noun="Lair" number="1d6 bands"/>
+  </collective_nouns>
+  <lair_composition>
+    <member role="champion_per_band" number="1, AC 2, HD 3, hp 15"/>
+    <member role="chieftain_per_lair" number="1, HD 6, +2 damage"/>
+    <member role="trained_white_apes" number="75% chance, 3d6"/>
+    <member role="women" number="100% of males"/>
+    <member role="children" number="200% of males"/>
+  </lair_composition>
+  </encounter_profile>
+  <combat_profile>
+    <combat_rules><rule>Typically uses spears and weapons with stone blades.</rule></combat_rules>
+  </combat_profile>
+  <special_abilities>
+
+  </special_abilities>
+  <ecology_and_behavior>
+    <social_structure><rule>Despises kobolds, goblins, and morlocks, and enjoys the company of gnomes and dwarves.</rule></social_structure>
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>E</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Nymph</name>
+    <variant_name>Dryad</variant_name>
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral</alignment>
+  <tags><tag>charm</tag><tag>tree_bound</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>10%</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="none" number=""/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="Solitary" number="1"/><in_lair collective_noun="Grove" number="1d6"/></wilderness_encounter>
+  <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+  <armor_class>4</armor_class>
+  <hit_dice printed="2*" special_ability_markers="*"/>
+  <attacks>Charm</attacks>
+  <damage>-</damage>
+  <save>E4</save>
+  <morale>-2</morale>
+  <treasure_type>D</treasure_type>
+  <xp>29</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="wilderness_outside_lair" noun="Solitary" number="1"/>
+    <group environment="wilderness_in_lair" noun="Grove" number="1d6"/>
+  </collective_nouns>
+  <population_rules><rule>Up to 6 dryads may rarely be encountered together.</rule></population_rules>
+  </encounter_profile>
+  <combat_profile>
+
+  </combat_profile>
+  <special_abilities>
+    <ability name="tree_bond">
+    <effect>Bound to a particular tree.</effect>
+    <termination>If the tree is killed, the dryad dies.</termination>
+  </ability>
+  <ability name="tree_merge">
+    <effect>May physically join with its tree and disappear.</effect>
+  </ability>
+  <ability name="range_limit">
+    <effect>May not move more than 240' from its tree.</effect>
+    <termination>If farther away, dies after 1 turn.</termination>
+  </ability>
+  <ability name="charm">
+    <effect>A target that fails a saving throw versus Spells goes to the dryad's tree and disappears within it.</effect>
+    <notes>Any individual who does this is lost forever.</notes>
+  </ability>
+  </special_abilities>
+  <ecology_and_behavior>
+
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>D</treasure_type>
+  <treasure_rules><rule>Treasure from past victims or infatuations is often stored at the base of the tree under the roots.</rule></treasure_rules>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+    <general_rule_reference type="charm"/>
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Nymph</name>
+    <variant_name>Naiad</variant_name>
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral</alignment>
+  <tags><tag>charm</tag><tag>swim</tag><tag>water_breathing</tag><tag>summon_fish</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>95%</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="none" number=""/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="Solitary" number="1"/><in_lair collective_noun="Watery lair" number="2d20"/></wilderness_encounter>
+  <movement><mode type="swim" exploration="120'" combat="40'"/></movement>
+  <armor_class>2</armor_class>
+  <hit_dice printed="1*" special_ability_markers="*"/>
+  <attacks>1 (dagger)</attacks>
+  <damage>1d4</damage>
+  <save>E1</save>
+  <morale>-2</morale>
+  <treasure_type>D</treasure_type>
+  <xp>13</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="wilderness_outside_lair" noun="Solitary" number="1"/>
+    <group environment="wilderness_in_lair" noun="Watery lair" number="2d20"/>
+  </collective_nouns>
+  <terrain><primary>Lakes, large ponds, and rivers.</primary></terrain>
+  </encounter_profile>
+  <combat_profile>
+
+  </combat_profile>
+  <special_abilities>
+    <ability name="charm">
+    <effect>A target that fails a saving throw versus Spells is taken into the naiad's watery domain and serves for 12 months.</effect>
+  </ability>
+  <ability name="water_breathing">
+    <effect>Can cast water breathing at will on a character.</effect>
+    <duration>24 hours per casting</duration>
+  </ability>
+  <ability name="summon_giant_bass">
+    <trigger>If charm fails.</trigger>
+    <effect>May summon a giant bass for protection.</effect>
+    <notes>Giant bass: AL N, MV 120' (40'), AC 2, HD 2, #AT 1, Dmg 1d6, Save F1, ML 0.</notes>
+  </ability>
+  </special_abilities>
+  <ecology_and_behavior>
+
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>D</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+    <general_rule_reference type="charm"/>
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Ochre Jelly</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral</alignment>
+  <tags><tag>acid</tag><tag>split</tag><tag>ooze</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>None</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="Solitary" number="1"/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="none" number=""/></wilderness_encounter>
+  <movement><mode type="land" exploration="30'" combat="10'"/></movement>
+  <armor_class>1</armor_class>
+  <hit_dice printed="5*" special_ability_markers="*"/>
+  <attacks>1 (envelopment)</attacks>
+  <damage>2d6</damage>
+  <save>F3</save>
+  <morale>N/A</morale>
+  <treasure_type>None</treasure_type>
+  <xp>350</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns><group environment="dungeon_outside_lair" noun="Solitary" number="1"/></collective_nouns>
+  </encounter_profile>
+  <combat_profile>
+    <attack_effects>
+    <attack_effect attack_name="acidic_slime">
+      <damage>2d6 to bare flesh</damage>
+      <effect>Eats through cloth, wood, and leather after 1 round, but cannot affect stone or metal.</effect>
+    </attack_effect>
+  </attack_effects>
+  <mobility_rules><rule>Has no fixed form and can squeeze under doors and into small spaces.</rule></mobility_rules>
+  <defenses>
+    <resistances><resistance>Fire and cold affect it normally.</resistance></resistances>
+  </defenses>
+  </combat_profile>
+  <special_abilities>
+    <ability name="division">
+    <trigger>Hit by lightning or weapons.</trigger>
+    <effect>Divides into 1d3+2 smaller amoebas with 2 Hit Dice each.</effect>
+    <notes>Smaller jellies deal 1d6 damage to flesh and are not further affected by lightning or weapons.</notes>
+  </ability>
+  </special_abilities>
+  <ecology_and_behavior>
+
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>None</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+    <general_rule_reference type="acid"/>
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Octopus, Giant</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Neutral</alignment>
+  <tags><tag>swim</tag><tag>constrict</tag><tag>ink_cloud</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>None</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="none" number=""/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="Pod" number="1d2"/></wilderness_encounter>
+  <movement><mode type="swim" exploration="90'" combat="30'"/></movement>
+  <armor_class>2</armor_class>
+  <hit_dice printed="8**" special_ability_markers="**"/>
+  <attacks>8 (tentacles) or 1 (bite)</attacks>
+  <damage>1d3 (per tentacle)/1d6</damage>
+  <save>F4</save>
+  <morale>-1</morale>
+  <treasure_type>None</treasure_type>
+  <xp>1,600</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns><group environment="wilderness_outside_lair" noun="Pod" number="1d2"/></collective_nouns>
+  <terrain><primary>Temperate or tropical ocean waters.</primary></terrain>
+  </encounter_profile>
+  <combat_profile>
+    <attack_routines>
+    <attack_routine name="tentacles">
+      <usage>alternative</usage>
+      <attack_sequence><attack type="tentacle" count="8" damage="1d3 each"/></attack_sequence>
+    </attack_routine>
+    <attack_routine name="bite">
+      <usage>alternative</usage>
+      <attack_sequence><attack type="bite" count="1" damage="1d6"/></attack_sequence>
+    </attack_routine>
+  </attack_routines>
+  <attack_effects>
+    <attack_effect attack_name="tentacle_constriction">
+      <effect>Each tentacle that hits constricts and deals 1d3 damage each successive round.</effect>
+      <follow_up>Each constricting tentacle imposes a cumulative -1 penalty to the victim's attack throws.</follow_up>
+    </attack_effect>
+  </attack_effects>
+  <mobility_rules><rule>When fleeing, moves at triple speed: 270' per round.</rule></mobility_rules>
+  </combat_profile>
+  <special_abilities>
+    <ability name="sever_tentacle">
+    <effect>A tentacle can be cut off by a single blow dealing 6 or more points of damage.</effect>
+  </ability>
+  <ability name="ink_cloud">
+    <trigger>When losing an encounter.</trigger>
+    <effect>Sprays a 40' radius cloud of black ink to obscure its retreat.</effect>
+  </ability>
+  </special_abilities>
+  <ecology_and_behavior>
+
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>None</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Ogre</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Chaotic</alignment>
+  <tags><tag>weapon_damage_bonus</tag><tag>village_leadership</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>20%</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="Gang" number="1d6"/><in_lair collective_noun="Lair" number="1 warband"/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="Warband" number="1d3 gangs"/><in_lair collective_noun="Village" number="1d10 warbands"/></wilderness_encounter>
+  <movement><mode type="land" exploration="90'" combat="30'"/></movement>
+  <armor_class>4</armor_class>
+  <hit_dice printed="4 + 1" special_ability_markers=""/>
+  <attacks>1 (large club or weapon)</attacks>
+  <damage>1d10 or weapon +3</damage>
+  <save>F4</save>
+  <morale>+2</morale>
+  <treasure_type>L (per warband) and special</treasure_type>
+  <xp>140</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="dungeon_outside_lair" noun="Gang" number="1d6"/>
+    <group environment="dungeon_in_lair" noun="Lair" number="1 warband"/>
+    <group environment="wilderness_outside_lair" noun="Warband" number="1d3 gangs"/>
+    <group environment="wilderness_in_lair" noun="Village" number="1d10 warbands"/>
+  </collective_nouns>
+  <lair_composition>
+    <member role="champion_per_gang" number="1"/>
+    <member role="sub_chieftain_per_warband" number="1"/>
+    <member role="chieftain_per_lair_or_village" number="1"/>
+    <member role="females" number="2d6 per 10 ogres"/>
+    <member role="young" number="2d4 per 10 ogres"/>
+    <member role="prisoners_in_village" number="30% chance, 2d8"/>
+    <member role="shaman_in_village" number="50% chance"/>
+    <member role="witch_doctor_in_village" number="25% chance"/>
+  </lair_composition>
+  <population_rules>
+    <rule>Female ogres fight as bugbears.</rule>
+    <rule>Young ogres fight as goblins.</rule>
+    <rule>Village shaman is statistically a sub-chieftain with Clerical abilities of level 1d4.</rule>
+    <rule>Village witch doctor is statistically a champion with Mage abilities of level 1d2.</rule>
+  </population_rules>
+  <terrain><primary>Rock shelters and caves</primary><secondary>Dungeons</secondary></terrain>
+  </encounter_profile>
+  <combat_profile>
+    <combat_rules><rule>Usually fights with large clubs or axes. Great strength grants +3 damage with weapons.</rule></combat_rules>
+  <morale_modifiers><modifier condition="chieftain alive" value="+1"/></morale_modifiers>
+  </combat_profile>
+  <special_abilities>
+    <ability name="carried_treasure">
+    <effect>When found away from its lair, each ogre carries a sack containing 1d6x100gp.</effect>
+  </ability>
+  <ability name="leader_stat_blocks">
+    <notes>Champion: AC 5, HD 5+1, hp 33, 2d6 with great club or +3 with man-sized weapons. Sub-chieftain: AC 6, HD 6+1, hp 37, 2d6+1 with large weapons or +3 with man-sized weapons. Chieftain: AC 7, HD 8+2, hp 45, 2d6+1 with great club or axe or +4 with man-sized weapons.</notes>
+  </ability>
+  </special_abilities>
+  <ecology_and_behavior>
+    <social_structure><rule>Despises neanderthals and attacks them when encountered.</rule></social_structure>
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>L (per warband) and special</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+
+  </references>
+</monster>
+<monster>
+  <identity>
+    <name>Orc</name>
+
+    <source_label>124-Lairs_&amp;_Encounters-Monster-Catalog-4.md</source_label>
+  </identity>
+  <classification>
+    <alignment>Chaotic</alignment>
+  <tags><tag>daylight_penalty</tag><tag>village_leadership</tag></tags>
+  </classification>
+  <stat_block>
+    <percent_in_lair>35%</percent_in_lair>
+  <dungeon_encounter><outside_lair collective_noun="Gang" number="2d4"/><in_lair collective_noun="Lair" number="1 warband"/></dungeon_encounter>
+  <wilderness_encounter><outside_lair collective_noun="Warband" number="2d6 gangs"/><in_lair collective_noun="Village" number="1d10 warbands"/></wilderness_encounter>
+  <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+  <armor_class>3</armor_class>
+  <hit_dice printed="1" special_ability_markers=""/>
+  <attacks>1 (weapon)</attacks>
+  <damage>1d6 or weapon</damage>
+  <save>F1</save>
+  <morale>0</morale>
+  <treasure_type>G (per warband)</treasure_type>
+  <xp>10</xp>
+  </stat_block>
+  <encounter_profile>
+    <collective_nouns>
+    <group environment="dungeon_outside_lair" noun="Gang" number="2d4"/>
+    <group environment="dungeon_in_lair" noun="Lair" number="1 warband"/>
+    <group environment="wilderness_outside_lair" noun="Warband" number="2d6 gangs"/>
+    <group environment="wilderness_in_lair" noun="Village" number="1d10 warbands"/>
+  </collective_nouns>
+  <lair_composition>
+    <member role="champion_per_gang" number="1"/>
+    <member role="sub_chieftain_per_warband" number="1"/>
+    <member role="chieftain_per_lair_or_village" number="1"/>
+    <member role="females" number="100% of males"/>
+    <member role="young" number="200% of males"/>
+    <member role="prisoners_in_village" number="1d20 per 100 orcs"/>
+    <member role="ogre_guards_in_village" number="50% chance, 1d4+1"/>
+    <member role="troll_guards_in_village" number="25% chance, 1d4"/>
+    <member role="shaman_in_village" number="75% chance"/>
+    <member role="witch_doctor_in_village" number="50% chance"/>
+  </lair_composition>
+  <population_rules>
+    <rule>Female orcs fight as goblins.</rule>
+    <rule>Young orcs do not fight.</rule>
+    <rule>Village shaman is statistically a bodyguard with Clerical abilities of level 1d6.</rule>
+    <rule>Village witch doctor is statistically a champion with Mage abilities of level 1d4.</rule>
+  </population_rules>
+  <terrain><primary>Subterranean</primary><secondary>Surface at night</secondary></terrain>
+  </encounter_profile>
+  <combat_profile>
+    <combat_rules><rule>Prefers scimitars, spears, flails, axes, polearms, short bows, and crossbows.</rule></combat_rules>
+  <targeting_constraints><constraint>Suffers -1 to attack throws in sunlight.</constraint></targeting_constraints>
+  <morale_modifiers><modifier condition="chieftain alive" value="+2"/></morale_modifiers>
+  </combat_profile>
+  <special_abilities>
+    <ability name="leader_stat_blocks">
+    <notes>Champion: AC 4, HD 1+1, hp 8, +1 damage. Sub-chieftain: AC 5, HD 2, hp 12, +1 damage. Chieftain: AC 6, HD 4, hp 20, +2 damage.</notes>
+  </ability>
+  </special_abilities>
+  <ecology_and_behavior>
+    <social_structure><rule>Keeps slaves of human, demi-human, and humanoid races.</rule></social_structure>
+  </ecology_and_behavior>
+  <treasure_and_rewards>
+    <treasure_type>G (per warband)</treasure_type>
+  </treasure_and_rewards>
+  <procedures>
+
+  </procedures>
+  <tables>
+
+  </tables>
+  <references>
+
+  </references>
+</monster>
+</monster_catalog>

@@ -1,0 +1,218 @@
+<wilderness_lair_rules title="lairs_and_encounters_wilderness_rules" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <overview>
+    <rule>Lair listings are provided for monsters described as having lairs.</rule>
+    <rule>Each lair is unique and should appear only once in the campaign.</rule>
+    <uses>
+      <use>Dynamic points of interest discovered during wilderness travel.</use>
+      <use>Obstacles that must be addressed when securing land for a domain.</use>
+    </uses>
+  </overview>
+
+  <dynamic_points_of_interest>
+    <definitions>
+      <definition term="static_point_of_interest">A pre-placed settlement, dungeon, or other locale with a fixed location on the regional map from the start of play.</definition>
+      <definition term="dynamic_point_of_interest">A monster lair from wilderness encounter tables whose location is not fixed until first encountered in lair.</definition>
+    </definitions>
+    <regional_map_guidance>
+      <rule>A typical regional map of 40 x 30 6-mile hexes is recommended to contain 45 static points of interest.</rule>
+      <rule>Dynamic points of interest reduce the need to pre-stock all empty hexes.</rule>
+    </regional_map_guidance>
+    <placement_procedure>
+      <step order="1">When a wilderness encounter throw results in an encounter with a monster in its lair, place that monster's dynamic point of interest in the hex where the encounter occurred.</step>
+      <step order="2">Once placed, the point of interest becomes static and remains fixed in that hex for the rest of the campaign.</step>
+      <step order="3">Record the hex number on the regional map for later return.</step>
+    </placement_procedure>
+  </dynamic_points_of_interest>
+
+  <securing_land>
+    <hex_definition>
+      <rule>A 6-mile hex covers 31 square miles, about 24,000 acres.</rule>
+      <rule>A hex can support many peasants when settled and farmed.</rule>
+      <rule>Before peasants can settle a hex, the hex must be cleared of monster lairs present within it, subject to Judge discretion on whether undiscovered lairs actually prevent secure settlement.</rule>
+    </hex_definition>
+
+    <tables>
+      <table name="lairs_per_hex">
+        <columns>
+          <column>terrain</column>
+          <column>wilderness</column>
+          <column>borderlands</column>
+          <column>civilized</column>
+        </columns>
+        <row>
+          <terrain>clear, grass</terrain>
+          <wilderness>1d2</wilderness>
+          <borderlands>-</borderlands>
+          <civilized>-</civilized>
+        </row>
+        <row>
+          <terrain>scrub, hills</terrain>
+          <wilderness>1d4</wilderness>
+          <borderlands>1d3-2</borderlands>
+          <civilized>-</civilized>
+        </row>
+        <row>
+          <terrain>barren, desert</terrain>
+          <wilderness>1d6</wilderness>
+          <borderlands>1d2-1</borderlands>
+          <civilized>-</civilized>
+        </row>
+        <row>
+          <terrain>mountains, woods</terrain>
+          <wilderness>2d4</wilderness>
+          <borderlands>1d4-2</borderlands>
+          <civilized>1d6-5</civilized>
+        </row>
+        <row>
+          <terrain>swamp</terrain>
+          <wilderness>2d4+1</wilderness>
+          <borderlands>1d3-1</borderlands>
+          <civilized>1d4-3</civilized>
+        </row>
+        <row>
+          <terrain>jungle</terrain>
+          <wilderness>2d8</wilderness>
+          <borderlands>1d2</borderlands>
+          <civilized>1d3-2</civilized>
+        </row>
+      </table>
+    </tables>
+
+    <lair_generation_procedure>
+      <step order="1">Cross-reference terrain type and hex classification on the lairs_per_hex table and roll to determine the number of lairs present.</step>
+      <step order="2">Treat any result less than 0 as 0.</step>
+      <step order="3">If the table entry is "-", no random lairs are present.</step>
+      <step order="4">For each lair indicated, roll on the appropriate column of the Wilderness Encounters by Terrain table to determine the monster type in the lair.</step>
+      <step order="5">For each resulting monster, select a lair from the book's lair listings and place it within the hex.</step>
+    </lair_generation_procedure>
+
+    <density_guidance>
+      <rule>Most wilderness hexes will have three to six lairs.</rule>
+      <rule>More settled hexes will have fewer lairs.</rule>
+      <rule>Lairs are denser in terrain with many hiding places, such as jungles and swamps, and less dense in open terrain with long lines of sight.</rule>
+    </density_guidance>
+  </securing_land>
+
+  <searching_for_lairs>
+    <core_rules>
+      <rule>A party must find a lair before it can clear it.</rule>
+      <rule>Searching for lairs in the wilderness functions like searching for traps in a dungeon in that a lair may exist without being found by a given search attempt.</rule>
+      <rule>Fast-moving parties are better at finding lairs than parties slowed by encumbrance or terrain.</rule>
+      <rule>If the Judge has a detailed small-scale map of the 6-mile hex, the Judge may adjudicate searching directly from that map instead of using the abstract search system.</rule>
+    </core_rules>
+
+    <abstract_search_procedure>
+      <step order="1">For each hour of searching, equal to six turns, make one secret searching throw on behalf of the party using 1d20.</step>
+      <step order="2">Determine the target value from the party's daily movement rate through the hex using the lair_search_target_values table.</step>
+      <step order="3">If the die roll equals or exceeds the target value, the party discovers a lair if at least one lair is present.</step>
+      <step order="4">If more than one lair is present, choose one or determine it randomly.</step>
+    </abstract_search_procedure>
+
+    <tables>
+      <table name="lair_search_target_values">
+        <columns>
+          <column>wilderness_movement</column>
+          <column>target_value</column>
+        </columns>
+        <row><wilderness_movement>11 miles or less</wilderness_movement><target_value>18+</target_value></row>
+        <row><wilderness_movement>12-23 miles</wilderness_movement><target_value>17+</target_value></row>
+        <row><wilderness_movement>24-35 miles</wilderness_movement><target_value>16+</target_value></row>
+        <row><wilderness_movement>36-47 miles</wilderness_movement><target_value>15+</target_value></row>
+        <row><wilderness_movement>48-59 miles</wilderness_movement><target_value>14+</target_value></row>
+        <row><wilderness_movement>60-71 miles</wilderness_movement><target_value>13+</target_value></row>
+        <row><wilderness_movement>72-83 miles</wilderness_movement><target_value>12+</target_value></row>
+        <row><wilderness_movement>84-95 miles</wilderness_movement><target_value>11+</target_value></row>
+        <row><wilderness_movement>96-107 miles</wilderness_movement><target_value>10+</target_value></row>
+        <row><wilderness_movement>108-119 miles</wilderness_movement><target_value>9+</target_value></row>
+        <row><wilderness_movement>120-131 miles</wilderness_movement><target_value>8+</target_value></row>
+        <row><wilderness_movement>132-143 miles</wilderness_movement><target_value>7+</target_value></row>
+        <row><wilderness_movement>144-155 miles</wilderness_movement><target_value>6+</target_value></row>
+        <row><wilderness_movement>156-167 miles</wilderness_movement><target_value>5+</target_value></row>
+        <row><wilderness_movement>168-179 miles</wilderness_movement><target_value>4+</target_value></row>
+        <row><wilderness_movement>180-191 miles</wilderness_movement><target_value>3+</target_value></row>
+        <row><wilderness_movement>192 miles or more</wilderness_movement><target_value>2+</target_value></row>
+      </table>
+    </tables>
+
+    <tracking>
+      <rule>If any party member has the Tracking proficiency, the party receives a +4 bonus on the lair search roll.</rule>
+      <rule>If the adjusted die roll equals or exceeds the listed target value, the party discovers one lair within the hex.</rule>
+    </tracking>
+
+    <aerial_reconnaissance>
+      <rule>If the party is capable of air travel, double its daily wilderness movement rate.</rule>
+      <rule>When searching clear, grass, scrub, hills, barren, desert, or mountain terrain by air, the party receives one search throw every three turns, or thirty minutes, instead of one per hour.</rule>
+    </aerial_reconnaissance>
+
+    <wandering_monsters>
+      <rule>Adventurers searching a hex are subject to one wandering encounter throw per hour while searching.</rule>
+      <rule>Searching parties are more likely to encounter monsters than parties merely passing through quickly.</rule>
+      <rule>If the party accidentally wanders into a lair, substitute the newly encountered lair for one of the previously generated lairs, or substitute one of the previously generated lairs for the newly encountered lair.</rule>
+    </wandering_monsters>
+
+    <splitting_up>
+      <rule>If the party splits into smaller sub-parties, each sub-party may make a separate searching throw.</rule>
+      <rule>Each sub-party is also subject to wandering encounters separately and must handle them on its own.</rule>
+      <rule>If sub-parties are close enough to assist each other in encounters, they are not meaningfully split and are effectively searching the same area.</rule>
+    </splitting_up>
+
+    <land_surveying>
+      <assessment_rules>
+        <rule>A character with the Land Surveying proficiency may attempt to assess the total number of lairs in a hex based on terrain, evidence of cultivation, and similar factors.</rule>
+        <rule>The character may attempt one assessment on first arriving in the hex, and one additional assessment each time the hex is searched.</rule>
+      </assessment_rules>
+      <procedure>
+        <step order="1">The Judge secretly rolls 1d20 on the character's behalf.</step>
+        <step order="2">The base target value is 18+.</step>
+        <step order="3">Apply a cumulative +4 bonus for each successful search the party has conducted in that hex up to that point.</step>
+        <step order="4">On success, the character correctly assesses the number of lairs in the hex, and the Judge reveals that number.</step>
+        <step order="5">If the throw fails with an unmodified 1, the character makes an incorrect assessment, and the Judge rolls or chooses a false number to reveal.</step>
+        <step order="6">On any other failure, the character does not yet have enough information to make or revise an assessment.</step>
+      </procedure>
+      <limits>
+        <limit>Without definitive magic such as commune, a party can never be certain it has found all possible lairs in a hex.</limit>
+        <limit>A lair may remain undiscovered for weeks, years, or generations.</limit>
+      </limits>
+      <judge_guidance>
+        <rule>The Judge decides whether an undiscovered lair prevents the hex from being considered secured for settlement.</rule>
+        <rule>This judgment depends on how disruptive the undiscovered lair would be to settlement.</rule>
+      </judge_guidance>
+    </land_surveying>
+  </searching_for_lairs>
+
+  <hirelings>
+    <specialist name="scout">
+      <types>
+        <type name="pathfinder">
+          <wage>25gp/month</wage>
+          <rule>Pathfinders are 1st level explorers with the Pathfinder template.</rule>
+          <duty>Can be hired to search hexes for lairs.</duty>
+        </type>
+        <type name="land_surveyor">
+          <wage>25gp/month</wage>
+          <rule>Land surveyors are 1st level explorers with the Cartographer template.</rule>
+          <duty>Can be hired to assess the number of lairs in a hex.</duty>
+        </type>
+      </types>
+      <availability>
+        <rule>Both scout types are hired on a monthly basis.</rule>
+        <rule>They are available in urban settlements in the same numbers as navigators.</rule>
+      </availability>
+      <protection_requirements>
+        <rule>Scouts expect protection while on duty from their employer or from a number of mercenaries equal to the maximum number of lairs in the hex or hexes they are assigned to explore.</rule>
+      </protection_requirements>
+      <behavior>
+        <rule>Scouts attempt to evade wandering monsters.</rule>
+        <rule>They will not fight for their employer.</rule>
+        <rule>They will not enter lairs unless recruited as henchmen.</rule>
+      </behavior>
+    </specialist>
+  </hirelings>
+
+  <references>
+    <reference>Wilderness Encounters by Terrain table is required to determine lair monster types.</reference>
+    <reference>ACKS p. 94 is referenced for aerial movement doubling.</reference>
+    <reference>Player's Companion p. 66 is referenced for Pathfinder and Cartographer templates.</reference>
+    <reference>Commune is cited as an example of definitive magic that could confirm whether all lairs have been found.</reference>
+  </references>
+</wilderness_lair_rules>

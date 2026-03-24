@@ -1,0 +1,154 @@
+{
+  "religion_id": "tidecrown_communion",
+  "display_name": "Tidecrown Communion",
+  "theology": {
+    "type": "polytheist",
+    "syncretism": "syncretist",
+    "afterlife_belief": "spirit_world"
+  },
+  "alignment": "Neutral",
+  "associated_cultures": [
+    "ithranei"
+  ],
+  "clergy": {
+    "title_hierarchy": [
+      "Bell Acolyte",
+      "Wharf Priest",
+      "Tide Reader",
+      "Harbor Hierophant",
+      "Crown of Soundings"
+    ],
+    "title_level_mapping": {
+      "1": "Bell Acolyte",
+      "3": "Wharf Priest",
+      "5": "Tide Reader",
+      "7": "Harbor Hierophant",
+      "9": "Crown of Soundings"
+    },
+    "gender_restriction": "none",
+    "special_class": null,
+    "vestments": "sea-blue sashes over white linen, hung with shell bells and brass keys",
+    "holy_symbol": "five-wave crown around a harbor stone"
+  },
+  "practices": {
+    "holy_days_per_year": 8,
+    "holy_day_character": "festival",
+    "worship_style": "congregational",
+    "dietary_restrictions": "no salted fish on first tide",
+    "funerary_practice": "sea_burial",
+    "stance_on_undead": "feared_but_accepted"
+  },
+  "political_role": {
+    "church_state_relationship": "influential",
+    "temporal_authority": "moderate",
+    "military_involvement": "chaplains_only"
+  },
+  "cosmology": {
+    "opposing_view": "equal_and_opposite",
+    "opposing_view_detail": "The Communion treats order and turmoil as real sea-forces to be sounded, bargained with, and survived rather than denied.",
+    "notes": "See §3.3 Alignment Cosmology Rules for the hard constraints governing this field."
+  },
+  "pantheon": [
+    {
+      "deity_id": "meris_tidemother",
+      "display_name": "Meris Tidemother",
+      "epithets": [
+        "Harboring Wave",
+        "Mother Below the Keel"
+      ],
+      "alignment": "Neutral",
+      "portfolios": [
+        "sea",
+        "protection",
+        "fertility"
+      ],
+      "holy_symbol": "curved wave cradling a pearl",
+      "favored_weapon": "spear",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "seal",
+      "domains_summary": "Safe harbors, fecund waters, and the sheltering bounty of the coast."
+    },
+    {
+      "deity_id": "ovran_lampblack",
+      "display_name": "Ovran Lampblack",
+      "epithets": [
+        "Counter of Cargo",
+        "Friend of Night Markets"
+      ],
+      "alignment": "Neutral",
+      "portfolios": [
+        "trade",
+        "luck",
+        "travel"
+      ],
+      "holy_symbol": "black lantern over a coin-mark",
+      "favored_weapon": "dagger",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "gull",
+      "domains_summary": "Commerce by wit, fortunate ventures, and roads or sea lanes that remain open."
+    },
+    {
+      "deity_id": "talcyr_stormglass",
+      "display_name": "Talcyr Stormglass",
+      "epithets": [
+        "Reader of Lightning",
+        "He Who Knows the Mast's Cry"
+      ],
+      "alignment": "Neutral",
+      "portfolios": [
+        "storms",
+        "prophecy",
+        "air"
+      ],
+      "holy_symbol": "lightning trapped in a glass lozenge",
+      "favored_weapon": "staff",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "albatross",
+      "domains_summary": "Squalls, foresight, and the knowledge earned by reading danger before it breaks."
+    },
+    {
+      "deity_id": "senna_deep_calm",
+      "display_name": "Senna Deep-Calm",
+      "epithets": [
+        "Lady of the Last Current",
+        "Mercy in the Black Below"
+      ],
+      "alignment": "Neutral",
+      "portfolios": [
+        "water",
+        "mercy",
+        "death"
+      ],
+      "holy_symbol": "still droplet over a dark line",
+      "favored_weapon": "mace",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "whale",
+      "domains_summary": "The quiet deep, merciful endings, and rites for those claimed by water."
+    },
+    {
+      "deity_id": "braxel_reef_spear",
+      "display_name": "Braxel Reef-Spear",
+      "epithets": [
+        "Breaker of Nets",
+        "The Painted Wake"
+      ],
+      "alignment": "Neutral",
+      "portfolios": [
+        "hunt",
+        "war",
+        "beauty"
+      ],
+      "holy_symbol": "spearhead wreathed in coral fronds",
+      "favored_weapon": "spear",
+      "clergy_alignment_requirement": null,
+      "sacred_animal": "shark",
+      "domains_summary": "Hazardous pursuit, necessary violence, and the fierce beauty of contest at sea."
+    }
+  ],
+  "flavor_text": {
+    "one_line": "A bustling maritime pantheon whose rites keep ships moving, harbors prosperous, and the sea only partly offended.",
+    "one_paragraph": "The Tidecrown Communion is woven through every Ithranei port, from fish auctions to launching rites for warships and merchantmen alike. No sailor honors every god equally: captains favor Talcyr in storm season, dockmasters placate Ovran, and grieving families whisper to Senna at black tide. The faith is practical, theatrical, and public, full of bells, painted shrines, and negotiated offerings made to keep fortune from turning too sharply.",
+    "creation_myth_summary": "The first coast rose where five waves met and would not yield, each becoming a godly current that shaped wind, cargo, storm, grave, and catch.",
+    "moral_code_summary": "Pay crews fairly, keep harbor lights lit, honor bargains made before witness, pour offerings before dangerous voyages, and do not confuse profit with license."
+  }
+}

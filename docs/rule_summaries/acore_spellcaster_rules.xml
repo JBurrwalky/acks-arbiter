@@ -1,0 +1,397 @@
+<acks_rules_summary>
+  <section id="spells_and_spellcasters">
+    <definitions>
+      <definition term="spell">
+        <text>Spells are level-based magical effects. Lower-level characters can learn only lower-level spells; higher-level characters can access higher-level spells.</text>
+      </definition>
+      <definition term="spellcaster">
+        <text>Only special classes can cast spells.</text>
+      </definition>
+      <definition term="types_of_spellcasters">
+        <arcane>mages, elven nightblades, elven spellswords</arcane>
+        <divine>clerics, bladedancers, dwarven craftpriests</divine>
+        <rule>If a rule does not specify arcane or divine, it applies to both.</rule>
+      </definition>
+      <definition term="spell_repertoire">
+        <text>A spellcaster’s available spells are called the spell repertoire.</text>
+      </definition>
+    </definitions>
+  </section>
+
+  <section id="casting_spells">
+    <rules>
+      <rule>Per day, a spellcaster may cast the number of spells of each level shown on the Spells Progression table for that class.</rule>
+      <rule>Spellcasters do not prepare or memorize specific spells in advance.</rule>
+      <rule>At the time of casting, a spellcaster may choose any spell in the spellcaster’s repertoire that is of a level the caster can cast and for which the caster still has an unused daily spell slot of that level.</rule>
+      <rule>After all available spells for the day are expended, the caster must have 8 hours of uninterrupted rest and 1 hour of concentrated study or prayer before casting again.</rule>
+      <rule>A spellcaster must be able to move hands and speak to cast.</rule>
+      <rule>A spellcaster cannot cast while gagged.</rule>
+      <rule>A spellcaster cannot cast while hands are tied.</rule>
+      <rule>A spellcaster cannot cast while in an area affected by silence.</rule>
+      <rule>A spellcaster may take no other actions in the same round the caster intends to cast a spell.</rule>
+      <rule>A PC must announce intent to cast before initiative is determined at the beginning of the round.</rule>
+      <rule>If the caster takes damage before the spell is cast, the spell is disrupted and fails.</rule>
+      <rule>If the caster is required to make a saving throw before the spell is cast and fails it, the spell is disrupted and fails.</rule>
+      <rule>A disrupted spell still counts against spells per day as though cast.</rule>
+      <rule>Unless otherwise noted, the intended target must be within the caster’s visual range.</rule>
+      <rule>The target may be a specific monster, a specific character, or an area of effect.</rule>
+    </rules>
+  </section>
+
+  <section id="divine_spell_repertoire">
+    <rules>
+      <rule>Divine spellcasters receive spells directly from the deity they serve.</rule>
+      <rule>Their repertoire automatically includes each spell of each level they can cast from the spell list made available to them by their deity.</rule>
+      <rule>A divine spellcaster does not necessarily have access to every divine spell in existence.</rule>
+      <rule>Each day, usually in the morning, a well-rested divine spellcaster must pray for at least 1 hour to be able to cast spells.</rule>
+      <rule>The exact divine spells available to a cleric depend on the deity served.</rule>
+      <rule>The Judge determines which spells are appropriate for a given cleric based on the deity or power served.</rule>
+      <rule>The bladedancer spell list is an example of a deity-specific divine spell list.</rule>
+    </rules>
+  </section>
+
+  <section id="arcane_spell_repertoire">
+    <rules>
+      <rule>Arcane spellcasters have a limited repertoire of spells.</rule>
+      <rule>The base number and level of spells in an arcane spellcaster’s repertoire equals the number and level of spells the caster can cast per day.</rule>
+      <rule>The number of spells of each level in the repertoire is increased by the caster’s Intelligence bonus.</rule>
+      <rule>A formula for each spell in the repertoire is recorded in spell books.</rule>
+      <rule>A blank spell book costs 20gp and has 100 pages.</rule>
+      <rule>Each spell formula uses 1 page per spell level.</rule>
+      <rule>Arcane casters may possess spell formula not currently in repertoire.</rule>
+      <rule>Maintaining a spell in repertoire is separate from merely possessing its formula.</rule>
+      <rule>Spell formula accumulated over time are used when changing repertoire.</rule>
+    </rules>
+
+    <starting_repertoire>
+      <rule>A 1st-level arcane spellcaster begins with a base of one 1st-level spell in repertoire.</rule>
+      <rule>The Judge selects the initial spell.</rule>
+      <rule>If the mage has INT 13 or higher, the mage may begin with additional 1st-level spells up to the Intelligence bonus.</rule>
+      <procedure name="random_additional_starting_spells">
+        <step order="1">For each point of Intelligence bonus, roll 1d12 on the arcane 1st-level spell list.</step>
+        <step order="2">Add the indicated spell to the repertoire.</step>
+        <step order="3">If a duplicate is rolled, do not reroll.</step>
+        <step order="4">The character begins play with fewer than the maximum possible spells if duplicates reduce the total.</step>
+      </procedure>
+    </starting_repertoire>
+
+    <adding_spells>
+      <rules>
+        <rule>Arcane spellcasters add new spells in several ways as they gain levels.</rule>
+        <rule>Mages and elven spellswords are assumed to belong to the local mages’ guild or be apprenticed to a higher-level NPC.</rule>
+        <rule>When they gain a level, they may return to their masters and be out of play for 1 game week per spell while adding new spells to repertoire.</rule>
+        <rule>Their masters teach them spells equal to the number and level of spells the caster can use in a single day.</rule>
+        <rule>Characters of 9th level or above do not have masters to teach them spells.</rule>
+        <rule>Without a master, mages and elven spellswords must rely on found scrolls, found spell books, or spell research.</rule>
+      </rules>
+
+      <procedure name="add_spell_from_scroll_or_spellbook">
+        <step order="1">Obtain a new spell from a scroll or another arcane spellcaster’s spell book.</step>
+        <step order="2">Check whether the character can still learn new spells of that spell level.</step>
+        <step order="3">If the spell level is too high for the character to cast, it cannot enter the repertoire yet, but the formula may be saved for later.</step>
+        <step order="4">Spend 1 week of study to add the spell to the repertoire.</step>
+        <step order="5">If the source is a scroll, scribing uses up the scroll.</step>
+        <step order="6">If the source is a spell book, copying does not erase the original spell.</step>
+      </procedure>
+
+      <reading_restrictions>
+        <rule>A scroll or spell book can be read only by its creator or by an arcane spellcaster who can read the language it is written in.</rule>
+        <rule>Arcane spellcasters may use read languages to read a scroll or spell book written in an unfamiliar language.</rule>
+      </reading_restrictions>
+    </adding_spells>
+
+    <loss_and_recovery_of_spellbooks>
+      <rules>
+        <rule>If an arcane spellcaster loses access to spell books, the caster’s repertoire deteriorates over time.</rule>
+        <rule>Each week without access to spell books, the caster loses 1 spell level from repertoire.</rule>
+        <rule>This continues until the caster knows no spells at all.</rule>
+      </rules>
+      <procedure name="rewrite_lost_or_destroyed_spellbooks">
+        <step order="1">For each spell to be rewritten, count total spell levels being restored.</step>
+        <step order="2">Spend 1 week and 1,000gp per spell level.</step>
+        <step order="3">The character must devote complete concentration to this activity.</step>
+        <step order="4">The character may not engage in any other activity during this time.</step>
+      </procedure>
+      <cost_formula>
+        <time>1 week per spell level restored</time>
+        <gold>1,000gp per spell level restored</gold>
+      </cost_formula>
+    </loss_and_recovery_of_spellbooks>
+
+    <replacing_spells_in_repertoire>
+      <rules>
+        <rule>An arcane spellcaster with a full repertoire may replace a known spell with another spell of equal level.</rule>
+        <rule>The caster must possess a copy of the new spell’s formula.</rule>
+        <rule>Replacing a spell in repertoire does not cause loss of the replaced spell’s formula.</rule>
+      </rules>
+      <procedure name="replace_spell_in_repertoire">
+        <step order="1">Choose one spell currently in repertoire.</step>
+        <step order="2">Choose another spell of equal level for which the caster has the formula.</step>
+        <step order="3">Spend 1 week and 1,000gp per spell level.</step>
+        <step order="4">During this time, the caster must engage in no other activity.</step>
+        <step order="5">At completion, the old spell is removed from repertoire and the new spell is added.</step>
+      </procedure>
+      <cost_formula>
+        <time>1 week per spell level replaced</time>
+        <gold>1,000gp per spell level replaced</gold>
+      </cost_formula>
+    </replacing_spells_in_repertoire>
+  </section>
+
+  <section id="reversible_spells">
+    <definitions>
+      <definition term="reversible_spell">
+        <text>Any spell marked with an asterisk (*) on the spell list may be cast in reverse.</text>
+      </definition>
+    </definitions>
+    <rules>
+      <rule>A reversed spell produces the opposite effect of the normal spell.</rule>
+      <rule>If a spell is not marked with an asterisk, it is not reversible.</rule>
+      <rule>Arcane spellcasters treat the normal and reversed versions as separate spells.</rule>
+      <rule>In general, divine spellcasters know both the normal and reversed forms of any reversible spell on their spell list.</rule>
+      <rule>Lawful divine spellcasters prefer normal forms and use reversed forms only against Chaotic opponents.</rule>
+      <rule>Chaotic divine spellcasters freely use reversed forms and use normal forms to aid comrades and followers.</rule>
+      <rule>A deity may restrict a divine spellcaster from using normal or reversed forms of particular spells, at Judge discretion.</rule>
+      <rule>If the reversed effect is not self-evident, the individual spell description explains it.</rule>
+    </rules>
+  </section>
+
+  <section id="spell_signatures">
+    <definitions>
+      <definition term="spell_signature">
+        <text>The distinctive sensory effects associated with a caster’s version of a spell.</text>
+      </definition>
+    </definitions>
+    <rules>
+      <rule>Each spellcaster should write a short description of the signature for each spell the caster can cast.</rule>
+      <rule>For arcane spellcasters, a spell signature may reflect a school/style of magic or the caster’s personal style.</rule>
+      <rule>For divine spellcasters, a spell signature reflects the caster’s relationship with the deity.</rule>
+      <rule>A character’s proficiencies may suggest appropriate spell signatures.</rule>
+      <rule>Characters with Sensing Power can sense the spell signature of arcane casters for up to 24 hours after a spell has been cast.</rule>
+      <rule>Characters with Collegiate Wizard or Theology may identify particular schools or faiths by spell signature on a proficiency throw of 11+.</rule>
+    </rules>
+  </section>
+
+  <section id="spell_lists">
+    <table id="arcane_spell_list">
+      <notes>
+        <note>An asterisk (*) marks a reversible spell.</note>
+        <note>The source table formatting is damaged in the uploaded document; entries below are normalized from the visible table text without adding new spells beyond what is present.</note>
+      </notes>
+      <spell_level level="1">
+        <spell index="1" reversible="false">Charm Person</spell>
+        <spell index="2" reversible="false">Detect Magic</spell>
+        <spell index="3" reversible="false">Floating Disc</spell>
+        <spell index="4" reversible="false">Hold Portal</spell>
+        <spell index="5" reversible="true">Light</spell>
+        <spell index="6" reversible="false">Magic Missile</spell>
+        <spell index="7" reversible="false">Magic Mouth</spell>
+        <spell index="8" reversible="true">Protection from Evil</spell>
+        <spell index="9" reversible="false">Read Languages</spell>
+        <spell index="10" reversible="false">Shield</spell>
+        <spell index="11" reversible="false">Sleep</spell>
+        <spell index="12" reversible="false">Ventriloquism</spell>
+      </spell_level>
+      <spell_level level="2">
+        <spell index="1" reversible="true">Continual Light</spell>
+        <spell index="2" reversible="true">Detect Evil</spell>
+        <spell index="3" reversible="false">Detect Invisible</spell>
+        <spell index="4" reversible="false">ESP</spell>
+        <spell index="5" reversible="false">Invisibility</spell>
+        <spell index="6" reversible="false">Knock</spell>
+        <spell index="7" reversible="false">Levitate</spell>
+        <spell index="8" reversible="false">Locate Object</spell>
+        <spell index="9" reversible="false">Mirror Image</spell>
+        <spell index="10" reversible="false">Phantasmal Force</spell>
+        <spell index="11" reversible="false">Web</spell>
+        <spell index="12" reversible="false">Wizard Lock</spell>
+      </spell_level>
+      <spell_level level="3">
+        <spell index="1" reversible="false">Clairvoyance</spell>
+        <spell index="2" reversible="false">Dispel Magic</spell>
+        <spell index="3" reversible="false">Fireball</spell>
+        <spell index="4" reversible="false">Fly</spell>
+        <spell index="5" reversible="true">Haste</spell>
+        <spell index="6" reversible="false">Hold Person</spell>
+        <spell index="7" reversible="false">Infravision</spell>
+        <spell index="8" reversible="false">Invisibility 10&apos; radius</spell>
+        <spell index="9" reversible="false">Lightning Bolt</spell>
+        <spell index="10" reversible="true">Protection from Evil, Sustained</spell>
+        <spell index="11" reversible="false">Protection from Normal Missiles</spell>
+        <spell index="12" reversible="false">Water Breathing</spell>
+      </spell_level>
+      <spell_level level="4">
+        <spell index="1" reversible="false">Charm Monster</spell>
+        <spell index="2" reversible="false">Confusion</spell>
+        <spell index="3" reversible="false">Dimension Door</spell>
+        <spell index="4" reversible="true">Growth of Plants</spell>
+        <spell index="5" reversible="false">Hallucinatory Terrain</spell>
+        <spell index="6" reversible="false">Massmorph</spell>
+        <spell index="7" reversible="false">Polymorph Other</spell>
+        <spell index="8" reversible="false">Polymorph Self</spell>
+        <spell index="9" reversible="true">Remove Curse</spell>
+        <spell index="10" reversible="false">Wall of Fire</spell>
+        <spell index="12" reversible="false">Wizard Eye</spell>
+      </spell_level>
+      <spell_level level="5">
+        <spell index="1" reversible="false">Animate Dead</spell>
+        <spell index="2" reversible="false">Cloudkill</spell>
+        <spell index="3" reversible="false">Conjure Elemental</spell>
+        <spell index="4" reversible="false">Contact Other Plane</spell>
+        <spell index="5" reversible="false">Feeblemind</spell>
+        <spell index="6" reversible="false">Hold Monster</spell>
+        <spell index="7" reversible="false">Magic Jar</spell>
+        <spell index="8" reversible="false">Passwall</spell>
+        <spell index="9" reversible="false">Telekinesis</spell>
+        <spell index="10" reversible="false">Teleport</spell>
+        <spell index="12" reversible="false">Wall of Stone</spell>
+      </spell_level>
+      <spell_level level="6">
+        <spell index="1" reversible="false">Anti-Magic Shell</spell>
+        <spell index="2" reversible="false">Control Weather</spell>
+        <spell index="3" reversible="false">Death Spell</spell>
+        <spell index="4" reversible="false">Disintegrate</spell>
+        <spell index="5" reversible="true">Flesh to Stone</spell>
+        <spell index="6" reversible="true">Geas</spell>
+        <spell index="7" reversible="false">Invisible Stalker</spell>
+        <spell index="8" reversible="false">Lower Water</spell>
+        <spell index="9" reversible="false">Move</spell>
+        <spell index="10" reversible="false">Projected Image</spell>
+        <spell index="12" reversible="false">Wall of Iron</spell>
+      </spell_level>
+    </table>
+
+    <table id="divine_spell_list_cleric">
+      <notes>
+        <note>An asterisk (*) marks a reversible spell.</note>
+      </notes>
+      <spell_level level="1">
+        <spell index="1" reversible="false">Command Word</spell>
+        <spell index="2" reversible="true">Cure Light Wounds</spell>
+        <spell index="3" reversible="true">Detect Evil</spell>
+        <spell index="4" reversible="false">Detect Magic</spell>
+        <spell index="5" reversible="true">Light</spell>
+        <spell index="6" reversible="true">Protection from Evil</spell>
+        <spell index="7" reversible="false">Purify Food and Water</spell>
+        <spell index="8" reversible="true">Remove Fear</spell>
+        <spell index="9" reversible="false">Resist Cold</spell>
+        <spell index="10" reversible="false">Sanctuary</spell>
+      </spell_level>
+      <spell_level level="2">
+        <spell index="1" reversible="false">Augury</spell>
+        <spell index="2" reversible="true">Bless</spell>
+        <spell index="3" reversible="false">Delay Poison</spell>
+        <spell index="4" reversible="false">Find Traps</spell>
+        <spell index="5" reversible="false">Hold Person</spell>
+        <spell index="6" reversible="false">Resist Fire</spell>
+        <spell index="7" reversible="false">Silence 15&apos; radius</spell>
+        <spell index="8" reversible="false">Snake Charm</spell>
+        <spell index="9" reversible="false">Speak with Animals</spell>
+        <spell index="10" reversible="false">Spiritual Weapon</spell>
+      </spell_level>
+      <spell_level level="3">
+        <spell index="1" reversible="true">Continual Light</spell>
+        <spell index="2" reversible="false">Cure Blindness</spell>
+        <spell index="3" reversible="true">Cure Disease</spell>
+        <spell index="4" reversible="false">Feign Death</spell>
+        <spell index="5" reversible="false">Glyph of Warding</spell>
+        <spell index="6" reversible="false">Growth of Animals</spell>
+        <spell index="7" reversible="false">Locate Object</spell>
+        <spell index="8" reversible="true">Remove Curse</spell>
+        <spell index="9" reversible="false">Speak with Dead</spell>
+        <spell index="10" reversible="false">Striking</spell>
+      </spell_level>
+      <spell_level level="4">
+        <spell index="1" reversible="false">Create Water</spell>
+        <spell index="2" reversible="true">Cure Serious Wounds</spell>
+        <spell index="3" reversible="false">Dispel Magic</spell>
+        <spell index="4" reversible="false">Divination</spell>
+        <spell index="5" reversible="true">Neutralize Poison</spell>
+        <spell index="6" reversible="true">Protection from Evil, Sustained</spell>
+        <spell index="7" reversible="true">Smite Undead</spell>
+        <spell index="8" reversible="false">Speak with Plants</spell>
+        <spell index="9" reversible="false">Sticks to Snakes</spell>
+        <spell index="10" reversible="false">Tongues</spell>
+      </spell_level>
+      <spell_level level="5">
+        <spell index="1" reversible="false">Atonement</spell>
+        <spell index="2" reversible="false">Commune</spell>
+        <spell index="3" reversible="false">Create Food</spell>
+        <spell index="4" reversible="false">Dispel Evil</spell>
+        <spell index="5" reversible="false">Flame Strike</spell>
+        <spell index="6" reversible="false">Insect Plague</spell>
+        <spell index="7" reversible="true">Quest</spell>
+        <spell index="8" reversible="true">Restore Life and Limb</spell>
+        <spell index="9" reversible="true">Strength of Mind</spell>
+        <spell index="10" reversible="false">True Seeing</spell>
+      </spell_level>
+    </table>
+
+    <table id="divine_spell_list_bladedancer">
+      <notes>
+        <note>An asterisk (*) marks a reversible spell.</note>
+        <note>The source table formatting is damaged in the uploaded document; entries below are normalized from the visible table text.</note>
+      </notes>
+      <spell_level level="1">
+        <spell index="1" reversible="false">Command Word</spell>
+        <spell index="2" reversible="true">Cure Light Wounds</spell>
+        <spell index="3" reversible="true">Detect Evil</spell>
+        <spell index="4" reversible="false">Detect Magic</spell>
+        <spell index="5" reversible="false">Faerie Fire</spell>
+        <spell index="6" reversible="false">Fellowship</spell>
+        <spell index="7" reversible="true">Light</spell>
+        <spell index="8" reversible="true">Protection from Evil</spell>
+        <spell index="9" reversible="true">Remove Fear</spell>
+        <spell index="10" reversible="false">Resist Cold</spell>
+      </spell_level>
+      <spell_level level="2">
+        <spell index="1" reversible="true">Bless</spell>
+        <spell index="2" reversible="false">Charm Animal</spell>
+        <spell index="3" reversible="false">Find Traps</spell>
+        <spell index="4" reversible="false">Hold Person</spell>
+        <spell index="5" reversible="false">Holy Chant</spell>
+        <spell index="6" reversible="false">Resist Fire</spell>
+        <spell index="7" reversible="false">Silence 15&apos; radius</spell>
+        <spell index="8" reversible="false">Shimmer</spell>
+        <spell index="9" reversible="false">Speak with Animals</spell>
+        <spell index="10" reversible="false">Spiritual Weapon</spell>
+      </spell_level>
+      <spell_level level="3">
+        <spell index="1" reversible="true">Continual Light</spell>
+        <spell index="2" reversible="false">Cure Blindness</spell>
+        <spell index="3" reversible="true">Cure Disease</spell>
+        <spell index="4" reversible="false">Glyph of Warding</spell>
+        <spell index="5" reversible="false">Growth of Animals</spell>
+        <spell index="6" reversible="false">Locate Object</spell>
+        <spell index="7" reversible="false">Prayer</spell>
+        <spell index="8" reversible="true">Remove Curse</spell>
+        <spell index="9" reversible="false">Speak with Dead</spell>
+        <spell index="10" reversible="false">Striking</spell>
+      </spell_level>
+      <spell_level level="4">
+        <spell index="1" reversible="false">Create Water</spell>
+        <spell index="2" reversible="true">Cure Serious Wounds</spell>
+        <spell index="3" reversible="false">Dispel Magic</spell>
+        <spell index="4" reversible="false">Divination</spell>
+        <spell index="5" reversible="true">Neutralize Poison</spell>
+        <spell index="6" reversible="true">Protection from Evil, Sustained</spell>
+        <spell index="7" reversible="true">Smite Undead</spell>
+        <spell index="8" reversible="false">Speak with Plants</spell>
+        <spell index="9" reversible="false">Vigor</spell>
+        <spell index="10" reversible="false">Tongues</spell>
+      </spell_level>
+      <spell_level level="5">
+        <spell index="1" reversible="false">Atonement</spell>
+        <spell index="2" reversible="false">Commune</spell>
+        <spell index="3" reversible="false">Create Food</spell>
+        <spell index="4" reversible="false">Dispel Evil</spell>
+        <spell index="5" reversible="false">Flame Strike</spell>
+        <spell index="6" reversible="false">Insect Plague</spell>
+        <spell index="7" reversible="true">Quest</spell>
+        <spell index="8" reversible="true">Restore Life and Limb</spell>
+        <spell index="9" reversible="false">Sword of Fire</spell>
+        <spell index="10" reversible="false">True Seeing</spell>
+      </spell_level>
+    </table>
+  </section>
+</acks_rules_summary>

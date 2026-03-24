@@ -1,0 +1,851 @@
+<monster_parts_rules_summary title="monster_parts_mundane_and_special" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <source>
+    <file_name>121D-Lairs_&amp;_Encounters-monster-parts-rules.docx</file_name>
+    <coverage>monster parts (mundane), venoms, special components, special component lists</coverage>
+  </source>
+
+  <general_rules>
+    <identification>
+      <rule>Adventurers can identify the value of a monster's parts with a Naturalism proficiency throw of 11+ or a Loremastery throw.</rule>
+      <rule>Required proficiencies for efficient harvesting vary by part type and are specified in the relevant subsection.</rule>
+    </identification>
+    <sale_and_xp>
+      <rule>Harvested monster parts may be sold at market value, subject to equipment availability in markets.</rule>
+      <rule>Recovering monster parts during adventures does not grant treasure XP.</rule>
+      <rule>Monster parts may instead be sold as trade goods using mercantile venture rules.</rule>
+      <rule>For mercantile ventures, treat the base market value of the monster parts as the cost of goods sold.</rule>
+      <rule>Mercantile sale of monster parts can grant XP under mercantile venture rules.</rule>
+    </sale_and_xp>
+  </general_rules>
+
+  <mundane_parts>
+    <antlers_horns_and_tusks>
+      <rules>
+        <rule>Common animal horns are worth 10gp per stone of weight.</rule>
+        <rule>Exotic horns are worth 40gp to 100gp per stone of encumbrance.</rule>
+        <rule>Only male mammals should have antlers.</rule>
+        <rule>Horns can be sold or used as raw materials by a weaponsmith.</rule>
+        <rule>Horns can be used as precious materials when enchanting magical weapons.</rule>
+        <rule>Horns must be captured intact or they are worthless.</rule>
+        <rule>Horns are intact if the monster was not damaged with an area-of-effect attack.</rule>
+        <rule>A character with an axe or other cutting tool can remove horns from a dead or helpless monster in 6 rounds per stone of encumbrance.</rule>
+        <rule>Before sale, horns must be cleansed, trimmed, and polished.</rule>
+        <rule>Preparing a horn requires Animal Husbandry or Trapping proficiency and 1 turn per stone of encumbrance.</rule>
+        <rule>Baby, child, and adolescent monsters never have antlers, horns, or tusks.</rule>
+      </rules>
+      <table name="antlers_horns_and_tusks">
+        <row monster="Basilisk" number="1 horn" unit_rate="1 st / 80gp" value_roll="2d10" average="11gp, 1/6 st"/>
+        <row monster="Boar, Giant*" number="2 tusks" unit_rate="1 st / 20gp" value_roll="1" average="2gp, 1/6 st"/>
+        <row monster="Boar, Ordinary*" number="2 tusks" unit_rate="1 st / 10gp" value_roll="1d10 (sp)" average="1gp, 1/6 st"/>
+        <row monster="Cat, Saber-Tooth*" number="2 tusks" unit_rate="1 st / 40gp" value_roll="1d3" average="4gp, 1/6 st"/>
+        <row monster="Chimera*" number="2 horns" unit_rate="1 st / 80gp" value_roll="1d12x10" average="130gp, 1 4/6 st"/>
+        <row monster="Dragon Turtle*" number="2 horns" unit_rate="1 st / 80gp" value_roll="2d6x250" average="3,600gp, 45 st"/>
+        <row monster="Dragon, Huge Ven.*" number="2 horns" unit_rate="1 st / 80gp" value_roll="2d8x100" average="1,800gp, 22 3/6 st"/>
+        <row monster="Dragon, Venerable*" number="2 horns" unit_rate="1 st / 80gp" value_roll="1d10x100" average="1,120gp, 14 st"/>
+        <row monster="Dragon, Ancient*" number="2 horns" unit_rate="1 st / 80gp" value_roll="1d8x100" average="960gp, 12 st"/>
+        <row monster="Dragon, Very Old*" number="2 horns" unit_rate="1 st / 80gp" value_roll="1d6x100" average="720gp, 9 st"/>
+        <row monster="Dragon, Old*" number="2 horns" unit_rate="1 st / 80gp" value_roll="1d10x50" average="560gp, 7 st"/>
+        <row monster="Dragon, Mature Adult*" number="2 horns" unit_rate="1 st / 80gp" value_roll="1d3x100" average="400gp, 5 st"/>
+        <row monster="Dragon, Adult*" number="2 horns" unit_rate="1 st / 80gp" value_roll="3d8x10" average="280gp, 3 3/6 st"/>
+        <row monster="Dragon, Juvenile*" number="2 horns" unit_rate="1 st / 80gp" value_roll="2d6+1x10" average="160gp, 2 st"/>
+        <row monster="Dragon, Young*" number="2 horns" unit_rate="1 st / 80gp" value_roll="2d6+1x5" average="80gp, 1 st"/>
+        <row monster="Dragon, Very Young*" number="2 horns" unit_rate="1 st / 80gp" value_roll="2d3x10" average="40gp, 3/6 st"/>
+        <row monster="Dragon, Spawn*" number="2 horns" unit_rate="1 st / 80gp" value_roll="2d6-1" average="12gp, 1/6 st"/>
+        <row monster="Elephant*" number="2 tusks" unit_rate="1 st / 100gp" value_roll="1d6x100" average="700gp, 7 st"/>
+        <row monster="Gorgon*" number="2 horns" unit_rate="1 st / 60gp" value_roll="1d10x50" average="540gp, 9 st"/>
+        <row monster="Herd Animal, 1HD" number="2 antlers" unit_rate="1 st / 10gp" value_roll="1d10 (sp)" average="1gp, 1/6 st"/>
+        <row monster="Herd Animal, 2HD" number="2 antlers" unit_rate="1 st / 10gp" value_roll="2d6 (sp)" average="1.5gp, 1/6 st"/>
+        <row monster="Herd Animal, 3HD" number="2 antlers" unit_rate="1 st / 10gp" value_roll="1d8/2" average="4.5gp, 3/6 st"/>
+        <row monster="Herd Animal, 4HD" number="2 antlers" unit_rate="1 st / 10gp" value_roll="1d10" average="10gp, 1 st"/>
+        <row monster="Lizard, Giant Horned" number="1 horn" unit_rate="1 st / 10gp" value_roll="1d3" average="2gp, 1/6 st"/>
+        <row monster="Mastodon*" number="2 tusks" unit_rate="1 st / 100gp" value_roll="2d4x100" average="1,000gp, 10 st"/>
+        <row monster="Minotaur*" number="2 horns" unit_rate="1 st / 80gp" value_roll="4d6gp" average="14gp, 1/6 st"/>
+        <row monster="Remorhaz, 10HD" number="2 horns" unit_rate="1 st / 80gp" value_roll="2d12x25" average="320gp, 4 st"/>
+        <row monster="Rhinoceros*" number="1 horn" unit_rate="1 st / 450gp" value_roll="2d2x100" average="300gp, 4/6 st"/>
+        <row monster="Rhinoceros, Wooly*" number="1 horn" unit_rate="1 st / 450gp" value_roll="3d3x100" average="600gp, 1 2/6 st"/>
+        <row monster="Titanothere*" number="1 horn" unit_rate="1 st / 60gp" value_roll="7d6x5" average="240gp, 4 st"/>
+        <row monster="Triceratops" number="3 horns" unit_rate="1 st / 40gp" value_roll="1d4x10" average="75gp, 1 5/6 st"/>
+        <row monster="Unicorn*" number="1 horn" unit_rate="1 st / 1,000gp" value_roll="4d4x100" average="1,000gp, 1 st"/>
+        <row monster="Whale, Narwhal*" number="1 horn" unit_rate="1 st / 1,000gp" value_roll="1d6x1,000" average="3,500gp, 3 3/6 st"/>
+        <row monster="Wyvern" number="2 horns" unit_rate="1 st / 80gp" value_roll="1d4x8" average="40gp, 3/6 st"/>
+        <row monster="Yali*" number="2 tusks" unit_rate="1 st / 450gp" value_roll="1d4x25" average="125gp, 2/6 st"/>
+      </table>
+    </antlers_horns_and_tusks>
+
+    <claws_fangs_stingers_and_talons>
+      <rules>
+        <rule>Natural weapons harvested as trophies have encumbrance of 1 stone per 10gp of value.</rule>
+        <rule>If a monster has one or more claw or talon attacks, each claw or talon is worth gp equal to the maximum damage of that claw or talon attack.</rule>
+        <rule>If a monster has a bite attack, each fang is worth sp equal to the average damage of the bite.</rule>
+        <rule>If the monster can swallow man-sized creatures, its fangs are worth 10x the normal fang value, typically changing sp to gp.</rule>
+        <rule>For game purposes, a monster's fangs are its two largest and sharpest teeth or mandibles.</rule>
+        <rule>Very impressive teeth that function as tusks are handled under antlers_horns_and_tusks instead.</rule>
+        <rule>If a monster has a sting attack, its stinger is worth sp equal to the maximum damage of the sting.</rule>
+        <rule>If the sting delivers poison, stinger value is multiplied by 10.</rule>
+        <rule>For non-adult monsters, calculate natural weapon value using age-adjusted damage.</rule>
+        <rule>For monsters with STR 13 or more, include the damage bonus from high STR when calculating natural weapon value.</rule>
+      </rules>
+    </claws_fangs_stingers_and_talons>
+
+    <feathers_and_plumage>
+      <rules>
+        <rule>Large colorful feathers are typically worth 1gp to 6gp each and have encumbrance of 1 stone per 25 feathers.</rule>
+        <rule>Particularly impressive feathers can be larger and more valuable.</rule>
+        <rule>Giant roc feathers can be up to 20' long and worth 120gp each.</rule>
+        <rule>Feathers can be sold or used as raw materials by a fletcher.</rule>
+        <rule>Feathers can be used as precious materials when enchanting magical arrows or cloaks.</rule>
+        <rule>Feathers must be captured intact to maintain value.</rule>
+        <rule>Feathers are intact if the monster was not damaged with an area-of-effect attack.</rule>
+        <rule>Damaged feathers are worthless.</rule>
+        <rule>Plucking feathers takes 1 turn per stone of feathers.</rule>
+        <rule>Only notable feathers have market value: the 10 primary and 14 secondary flight feathers of each wing, plus the 12 tail flight feathers, for 60 total on a standard feathered creature.</rule>
+        <rule>Crossbreeds have fewer marketable feathers depending on body form.</rule>
+        <rule>Some marketable feathers may be missing due to age, weather, illness, or battle.</rule>
+        <rule>Baby, child, and adolescent monsters have feathers worth 25%, 50%, and 75% of adult value.</rule>
+      </rules>
+      <table name="feathers_and_plumage">
+        <row monster="Cockatrice" number_of_feathers="6d10" feather_length="16&quot; – 30&quot;" feathers_per_stone="85" value_per_feather="1d2 gp" typical_plumage="33 feathers, 50gp, and 2/6 st"/>
+        <row monster="Faravahar" number_of_feathers="6d10" feather_length="40&quot; – 75&quot;" feathers_per_stone="12" value_per_feather="2d6 gp" typical_plumage="33 feathers, 230gp and 2 4/6 st"/>
+        <row monster="Griffon*" number_of_feathers="4d12*" feather_length="42&quot; – 82&quot;" feathers_per_stone="12" value_per_feather="2d6 gp" typical_plumage="24 feathers, 170gp and 2 st"/>
+        <row monster="Harpy" number_of_feathers="4d12" feather_length="40&quot; – 54&quot;" feathers_per_stone="25" value_per_feather="1d6 gp" typical_plumage="25 feathers, 90gp and 1 st"/>
+        <row monster="Hawk, Giant*" number_of_feathers="6d10*" feather_length="29&quot; – 55&quot;" feathers_per_stone="25" value_per_feather="1d6 gp" typical_plumage="33 feathers, 115gp and 1 2/6 st"/>
+        <row monster="Hawk, Ordinary" number_of_feathers="6d10" feather_length="11&quot; – 22&quot;" feathers_per_stone="150" value_per_feather="1d3 sp" typical_plumage="33 feathers, 66sp, 1/6 st"/>
+        <row monster="Hippogriff*" number_of_feathers="4d12*" feather_length="54&quot; – 102&quot;" feathers_per_stone="8" value_per_feather="3d6 gp" typical_plumage="24 feathers, 250gp and 3 st"/>
+        <row monster="Lammasu" number_of_feathers="4d12" feather_length="42&quot; – 82&quot;" feathers_per_stone="12" value_per_feather="2d6 gp" typical_plumage="24 feathers, 170gp and 2 st"/>
+        <row monster="Owl Bear" number_of_feathers="3d10" feather_length="29&quot; – 55&quot;" feathers_per_stone="25" value_per_feather="1d6 gp" typical_plumage="16 feathers, 60gp and 4/6 st"/>
+        <row monster="Pegasus*" number_of_feathers="4d12*" feather_length="62&quot; – 116&quot;" feathers_per_stone="6" value_per_feather="4d6 gp" typical_plumage="24 feathers, 335gp and 4 st"/>
+        <row monster="Roc, Giant*" number_of_feathers="6d10*" feather_length="11' – 20'" feathers_per_stone="1" value_per_feather="6d20 gp" typical_plumage="33 feathers, 2,100gp and 33 st"/>
+        <row monster="Roc, Large*" number_of_feathers="6d10*" feather_length="6' – 12'" feathers_per_stone="4" value_per_feather="7d6 gp" typical_plumage="33 feathers, 800gp and 8 2/6 st"/>
+        <row monster="Roc, Small*" number_of_feathers="6d10*" feather_length="51&quot; – 94&quot;" feathers_per_stone="8" value_per_feather="3d6 gp" typical_plumage="33 feathers, 350gp and 4 st"/>
+        <row monster="Sphinx" number_of_feathers="4d12*" feather_length="70&quot; – 128&quot;" feathers_per_stone="5" value_per_feather="4d8 gp" typical_plumage="25 feathers, 450gp and 5 st"/>
+      </table>
+    </feathers_and_plumage>
+
+    <pelts_and_meats>
+      <rules>
+        <rule>Adventurers may skin, flesh, and butcher slain monsters to harvest pelts and meat.</rule>
+        <rule>Time, amount yielded, and value are based on monster weight.</rule>
+        <rule>Proper preparation requires Animal Husbandry, Labor (butchery), Labor (farming), or Trapping.</rule>
+        <rule>Without one of the required proficiencies, each process takes double time and yields half amount.</rule>
+        <rule>Characters may collaborate in butchering by dividing monster weight among themselves.</rule>
+        <rule>All participating characters must have the appropriate craftsman's tools, even if unproficient.</rule>
+        <rule>Laborers can be hired at 1sp per 8 hours to skin, flesh, and butcher kills.</rule>
+        <rule>Labor cost equals 0.000625gp × monster weight in lbs.</rule>
+        <rule>Net profit after hired labor equals 0.01gp × monster weight in lbs.</rule>
+        <rule>Pelts can be made into rugs, capes, coats, and trophies.</rule>
+        <rule>Sewing or stuffing is a construction project with labor cost equal to final value minus value of pelts used.</rule>
+        <rule>Fur pelts of rare, durable, warm, or striking fur are worth 5gp per stone or more, up to 100gp per stone.</rule>
+        <rule>Intact fur pelts require that the monster was slain with one attack, or entirely with blunt weapons, or by cold, death magic, electricity, or poison while losing less than half its hit points to other attacks.</rule>
+        <rule>Damaged fur pelts are worth 1gp per stone.</rule>
+        <rule>Armored hides can be sold or used as raw materials by an armorer.</rule>
+        <rule>Armored hides can be used as precious materials when enchanting magical armor and shields.</rule>
+        <rule>Intact armored hides require that the monster was slain with one attack, or by cold, death magic, electricity, or poison while losing half its hit points or less to other attacks.</rule>
+        <rule>Damaged armored hides are worth 1gp per stone.</rule>
+        <rule>All pelts and armored hides must be skinned and fleshed before sale.</rule>
+        <rule>Baby, child, and adolescent monsters have pelts and meat worth 25%, 50%, and 75% of adult value.</rule>
+        <rule>If STR, CON, or CHA are 13-15, add 25% of pelt value for each such ability.</rule>
+        <rule>If STR, CON, or CHA are 16-17, add 100% of pelt value for each such ability.</rule>
+        <rule>If STR, CON, or CHA are 18, add 400% of pelt value for each such ability.</rule>
+        <rule>Bonuses from ability scores stack.</rule>
+        <rule>If STR, CON, or CHA are 3, reduce pelt value by 75% for each such ability.</rule>
+        <rule>If STR, CON, or CHA are 4-5, reduce pelt value by 50% for each such ability.</rule>
+        <rule>If STR, CON, or CHA are 6-8, reduce pelt value by 25% for each such ability.</rule>
+        <rule>Penalties from ability scores stack.</rule>
+        <rule>If stacked penalties reduce pelt value to 0 or less, the pelt is worthless.</rule>
+        <rule>Decimal stone weights are converted to items for encumbrance by rounding to the nearest 1/6.</rule>
+      </rules>
+      <tables>
+        <table name="skinning_fleshing_and_butchering">
+          <row process="Skinning and Fleshing" time_required="Monster Weight in lbs. / 10" product="Pelt" amount_yielded="0.00265 × Monster Weight in lbs." value="1 × Pelt Encumbrance"/>
+          <row process="Butchering" time_required="Monster Weight in lbs. / 5" product="Meat" amount_yielded="0.0265 × Monster Weight in lbs." value="0.3 × Meat Encumbrance"/>
+        </table>
+        <table name="pelt_goods">
+          <row good="Rug" value="2d4 × Pelt Value" encumbrance="Pelt Weight(s)" pelts_required="1 / Pelt Weight (rounded up)"/>
+          <row good="Cape" value="4d6 × Pelt Value" encumbrance="1" pelts_required="2 / Pelt Weight (rounded up)"/>
+          <row good="Coat" value="1d6 × 10 × Pelt Value" encumbrance="1" pelts_required="3 / Pelt Weight (rounded up)"/>
+          <row good="Trophy" value="3d4 × Pelt Value" encumbrance="Pelt Weight × 7" pelts_required="1"/>
+        </table>
+        <table name="armored_hides">
+          <row monster="Ankheg" encumbrance="2 1/6" value="80"/>
+          <row monster="Beetle, Giant Tiger" encumbrance="1 4/6" value="25"/>
+          <row monster="Crab, Giant*" encumbrance="1 2/6" value="50"/>
+          <row monster="Crocodile, Giant" encumbrance="47" value="800"/>
+          <row monster="Crocodile, Large" encumbrance="8 4/6" value="150"/>
+          <row monster="Dragon Turtle*" encumbrance="305" value="17,000"/>
+          <row monster="Dragon, Huge Ven.*" encumbrance="160" value="9,150"/>
+          <row monster="Dragon, Venerable*" encumbrance="95" value="5,500"/>
+          <row monster="Dragon, Ancient*" encumbrance="80" value="4,500"/>
+          <row monster="Dragon, Very Old*" encumbrance="60" value="2,250"/>
+          <row monster="Dragon, Old*" encumbrance="47" value="1,200"/>
+          <row monster="Dragon, Mature Adult*" encumbrance="35" value="575"/>
+          <row monster="Dragon, Adult*" encumbrance="24" value="400"/>
+          <row monster="Dragon, Young" encumbrance="8 4/6" value="100"/>
+          <row monster="Dragon, Very Young" encumbrance="4" value="50"/>
+          <row monster="Dragon, Juvenile" encumbrance="16" value="125"/>
+          <row monster="Elephant" encumbrance="24" value="165"/>
+          <row monster="Fish, Giant Sturgeon" encumbrance="54" value="2,000"/>
+          <row monster="Gorgon" encumbrance="11" value="175"/>
+          <row monster="Mastodon" encumbrance="48" value="350"/>
+          <row monster="Remorhaz" encumbrance="25" value="1,500"/>
+          <row monster="Rhinoceros" encumbrance="13" value="100"/>
+          <row monster="Rhinoceros, Wooly" encumbrance="19" value="140"/>
+          <row monster="Shark, Great White" encumbrance="11" value="175"/>
+          <row monster="Stegosaurus*" encumbrance="30" value="225"/>
+          <row monster="Triceratops" encumbrance="34" value="385"/>
+          <row monster="Tyrannosaurus Rex" encumbrance="40" value="300"/>
+        </table>
+        <table name="foe_fur">
+          <row monster="Ape, White" encumbrance="1" value="50"/>
+          <row monster="Baboon, Rock" encumbrance="4/6" value="25"/>
+          <row monster="Bear, Black" encumbrance="1 3/6" value="45"/>
+          <row monster="Bear, Cave" encumbrance="3" value="160"/>
+          <row monster="Bear, Grizzly" encumbrance="2 1/6" value="75"/>
+          <row monster="Bear, Polar" encumbrance="3 4/6" value="200"/>
+          <row monster="Boar, Giant" encumbrance="2 3/6" value="80"/>
+          <row monster="Cat, Lion" encumbrance="1" value="50"/>
+          <row monster="Cat, Mountain Lion" encumbrance="4/6" value="25"/>
+          <row monster="Cat, Panther" encumbrance="5/6" value="35"/>
+          <row monster="Cat, Saber-Tooth" encumbrance="2 1/6" value="115"/>
+          <row monster="Cat, Tiger" encumbrance="1 2/6" value="75"/>
+          <row monster="Chimera (fur only)" encumbrance="3 1/6" value="350"/>
+          <row monster="Hyena" encumbrance="2/6" value="12"/>
+          <row monster="Hyena, Giant" encumbrance="2 5/6" value="105"/>
+          <row monster="Mammal, Small" encumbrance="1/6" value="0.85"/>
+          <row monster="Mammal, Small Rare" encumbrance="1/6" value="16.5"/>
+          <row monster="Manticore" encumbrance="2 4/6" value="265"/>
+          <row monster="Mastodon" encumbrance="48" value="240"/>
+          <row monster="Owl Bear (fur only)" encumbrance="2" value="110"/>
+          <row monster="Phase Tiger*" encumbrance="1 2/6" value="130"/>
+          <row monster="Rhinoceros, Wooly" encumbrance="18 3/6" value="345"/>
+          <row monster="Sphinx" encumbrance="5 1/6" value="225"/>
+          <row monster="Varmint, Giant Ferret" encumbrance="2/6" value="7"/>
+          <row monster="Varmint, Giant Rat" encumbrance="1/6" value="1"/>
+          <row monster="Varmint, Giant Shrew" encumbrance="4/6" value="8"/>
+          <row monster="Varmint, Giant Weasel" encumbrance="5 2/6" value="115"/>
+          <row monster="Wolf" encumbrance="3/6" value="15"/>
+          <row monster="Wolf, Dire" encumbrance="1 4/6" value="50"/>
+          <row monster="Yali" encumbrance="2 2/6" value="135"/>
+        </table>
+      </tables>
+    </pelts_and_meats>
+
+    <venoms>
+      <rules>
+        <rule>Characters with Naturalism can identify venomous monsters and distinguish their poisons with a proficiency throw of 11+.</rule>
+        <rule>Extracting venom from a slain monster requires 1 day and a successful Animal Husbandry proficiency throw of 11+.</rule>
+        <rule>If the extraction throw is an unmodified 1, the extractor is scratched by fang or stinger and must immediately save versus Poison as if hit by the monster.</rule>
+        <rule>Each venomous monster yields 1 dose of venom.</rule>
+        <rule>One dose treats 20 missiles or 1 melee weapon.</rule>
+        <rule>Weapon-applied venoms are less effective than the monster's native delivery method.</rule>
+        <rule>Baby and child monsters do not have enough venom to extract.</rule>
+        <rule>Adolescent monsters have a full dose of venom.</rule>
+      </rules>
+      <table name="monster_venoms">
+        <row monster="Giant Centipede" cost_per_dose="50gp" onset_time="1 turn" save_modifier="+2" failed_save_effect="Sickness 1d10 days"/>
+        <row monster="Spitting Cobra" cost_per_dose="100gp" onset_time="1 turn" save_modifier="+2" failed_save_effect="1d6 damage"/>
+        <row monster="Giant Crab Spider" cost_per_dose="100gp" onset_time="1d10 turns" save_modifier="+4" failed_save_effect="1d10 damage"/>
+        <row monster="Pit Viper" cost_per_dose="200gp" onset_time="1d10 turns" save_modifier="+2" failed_save_effect="1d10 damage"/>
+        <row monster="Amphisbaena" cost_per_dose="200gp" onset_time="1d10 turns" save_modifier="+2" failed_save_effect="1d10 damage"/>
+        <row monster="Child of Nasga" cost_per_dose="200gp" onset_time="1d10 turns" save_modifier="+2" failed_save_effect="1d10 damage"/>
+        <row monster="Arane" cost_per_dose="225gp" onset_time="1d8 turns" save_modifier="+2" failed_save_effect="1d10 damage"/>
+        <row monster="Giant Killer Bee" cost_per_dose="250gp" onset_time="1 turn" save_modifier="+2" failed_save_effect="1d10 damage"/>
+        <row monster="Carcass Scavenger" cost_per_dose="250gp" onset_time="1 turn" save_modifier="+2" failed_save_effect="Paralysis 2d4 turns"/>
+        <row monster="Sea Snake" cost_per_dose="275gp" onset_time="1d10 turns" save_modifier="+2" failed_save_effect="4d4 damage"/>
+        <row monster="Giant Black Widow" cost_per_dose="300gp" onset_time="1d6 turns" save_modifier="+2" failed_save_effect="4d4 damage"/>
+        <row monster="Giant Rattlesnake" cost_per_dose="300gp" onset_time="1d10 turns" save_modifier="+2" failed_save_effect="2d10 damage"/>
+        <row monster="Giant Tarantula" cost_per_dose="350gp" onset_time="1d6 turns" save_modifier="+2" failed_save_effect="2d10 damage"/>
+        <row monster="Giant Scorpion" cost_per_dose="400gp" onset_time="1 turn" save_modifier="+2" failed_save_effect="2d10 damage"/>
+        <row monster="Rockfish" cost_per_dose="500gp" onset_time="1 round" save_modifier="+1" failed_save_effect="4d6 damage"/>
+        <row monster="Wyvern" cost_per_dose="700gp" onset_time="1 round" save_modifier="+1" failed_save_effect="6d6 damage"/>
+        <row monster="Rakshasa" cost_per_dose="1,000gp" onset_time="1 round" save_modifier="-" failed_save_effect="Death"/>
+        <row monster="Purple Worm" cost_per_dose="1,500gp" onset_time="Instant" save_modifier="-" failed_save_effect="Death"/>
+        <row monster="Dragon Blood" cost_per_dose="1,500gp" onset_time="Instant" save_modifier="-" failed_save_effect="Death"/>
+      </table>
+      <condition>
+        <rule>Sickened characters move at ½ speed and cannot fight or perform other actions.</rule>
+      </condition>
+    </venoms>
+  </mundane_parts>
+
+  <special_components>
+    <definition>
+      <rule>When a monster dies, a residue of its soul may linger in certain organs or bodily fluids.</rule>
+      <rule>These parts are special components usable in magic item creation and ritual spell casting.</rule>
+    </definition>
+
+    <identifying_special_components>
+      <rules>
+        <rule>Alchemy, Collegiate Wizardry, Magical Engineering, or Naturalism can identify the type of body part that is usually a special component for a species.</rule>
+        <rule>The base proficiency throw is 14+.</rule>
+        <rule>Reduce the target by 4 for each additional proficiency rank possessed in any of the relevant proficiencies, to a minimum target of 2+.</rule>
+        <rule>Failure means the adventurer does not know the typical special component for that species.</rule>
+        <rule> Loremastery may be used instead at its normal unmodified target value.</rule>
+        <rule>Roll 1d20 for unusual residue placement; on a natural 20, the monster has unusual special component(s) of the Judge's choice.</rule>
+        <rule>A spellcaster able to detect magic can determine the exact special component(s) of a particular slain monster.</rule>
+        <rule>Such spellcasters can also inspect harvested parts to determine whether they truly are special components.</rule>
+        <rule>This inspection takes 1 turn and requires a magic research throw.</rule>
+        <rule>On a failed magic research throw, the spellcaster gleans no information.</rule>
+        <rule>The spellcaster may retry every turn for as long as detect magic remains available.</rule>
+      </rules>
+    </identifying_special_components>
+
+    <harvesting_special_components>
+      <intactness_rules>
+        <rule>Special components can only be harvested if captured intact.</rule>
+      </intactness_rules>
+      <table name="ruinous_effects_by_component_type">
+        <row component_type="Appendage (claw, tentacle, teeth, etc.)" ruinous_effects="disintegration; any area of effect damage"/>
+        <row component_type="Bones (femur, jawbone, etc.)" ruinous_effects="disintegration; any blunt weapon damage"/>
+        <row component_type="Covering (feather, fur, hair, etc.)" ruinous_effects="disintegration; any area of effect damage"/>
+        <row component_type="Exterior organ (eyes, scrotum, etc.)" ruinous_effects="disintegration; any area of effect damage"/>
+        <row component_type="Internal organ (heart, kidney, etc.)" ruinous_effects="disintegration; poison"/>
+        <row component_type="Remnant (ectoplasm, slag, residue, etc.)" ruinous_effects="disintegration"/>
+      </table>
+      <optional_rule name="permanent_wounds_and_harvesting">
+        <rule>When a monster is slain, roll on the Mortal Wounds table to see whether special components remain intact.</rule>
+        <rule>Select the Timing modifier based on when harvesting occurs.</rule>
+        <rule>Apply the +2 treatment modifier if the harvester has the prerequisite proficiency.</rule>
+        <rule>If the permanent wound damages or destroys the component, it cannot be harvested.</rule>
+        <rule>An instant kill result, defined as 0 or less on the modified d20, destroys all special components.</rule>
+      </optional_rule>
+      <table name="prerequisite_proficiencies_by_monster_type">
+        <row monster_type="Animal" prerequisite_proficiencies="Animal Husbandry, Labor (Butchery), or Trapping"/>
+        <row monster_type="Beastmen" prerequisite_proficiencies="Animal Husbandry and/or Healing 2 (combined ranks)"/>
+        <row monster_type="Construct" prerequisite_proficiencies="Magical Engineering"/>
+        <row monster_type="Fantastic Creature" prerequisite_proficiencies="Animal Husbandry and/or Healing 3 (combined ranks)"/>
+        <row monster_type="Giant" prerequisite_proficiencies="Healing"/>
+        <row monster_type="Humanoid" prerequisite_proficiencies="Healing"/>
+        <row monster_type="Oozes" prerequisite_proficiencies="Alchemy"/>
+        <row monster_type="Summoned" prerequisite_proficiencies="Alchemy 2"/>
+        <row monster_type="Undead" prerequisite_proficiencies="Alchemy 2 (incorporeal) or Healing 2 (corporeal)"/>
+        <row monster_type="Vermin" prerequisite_proficiencies="Animal Husbandry 2"/>
+      </table>
+      <rules>
+        <rule>Appendages, external organs, and remnants can be harvested by any adventurer.</rule>
+        <rule>Harvesting appendages, external organs, and remnants takes 6 rounds per stone of encumbrance.</rule>
+        <rule>Bones, coverings, internal organs, and more exotic components require the listed prerequisite proficiencies.</rule>
+        <rule>Harvesters using prerequisite proficiencies must also have the appropriate craftsman's tools for the proficiency used.</rule>
+        <rule>Harvesting proficiency-gated components takes 1 turn per 100gp value of the component, minimum 1 turn.</rule>
+      </rules>
+    </harvesting_special_components>
+
+    <storing_special_components>
+      <rules>
+        <rule>Improperly stored special components have a cumulative 5% chance per day of losing all value.</rule>
+        <rule>Proper storage requires metamphora.</rule>
+        <rule>Metamphora cost 5gp and weigh 1 stone for every 60gp of value they can store.</rule>
+      </rules>
+    </storing_special_components>
+
+    <value_and_encumbrance>
+      <rules>
+        <rule>With rare exceptions, a monster's total special component value equals its XP value.</rule>
+        <rule>Special component encumbrance is assumed to equal required metamphora encumbrance: 1 stone per 60gp value.</rule>
+        <rule>Bracketed restrictions in the table limit some associated spell effects to subsets of an entry.</rule>
+        <rule>Each monster type has default associated spell effects.</rule>
+        <rule>Every special component from a monster can be used for magical research relating to the default effects for that monster type.</rule>
+        <rule>Lawful monsters with innate divine magic are great-souled creatures.</rule>
+        <rule>Great-souled creatures have special components worth 10 times XP value.</rule>
+        <rule>Most ordinary animals cannot be harvested for special components.</rule>
+        <rule>Ordinary animals become harvestable only if they are dire, giant, prehistoric, or have total ability modifiers of +3 or more.</rule>
+        <rule>Creatures summoned temporarily by spells or scrolls can never be harvested for special components.</rule>
+        <rule>Creatures summoned by charged or permanent magic items can be harvested only up to maximum cumulative component value equal to the item's gp value.</rule>
+        <rule>Creatures permanently bound to this sphere, or slain in their own sphere, can be fully harvested.</rule>
+        <rule>If a monster part has both mundane and special-component value, and special-component value is only a fraction of mundane value, only that fraction of the part is consumed as a component.</rule>
+        <rule>If special-component value is less than mundane value, the remainder may be sold for mundane value minus special-component value.</rule>
+        <rule>If special-component value is equal to or greater than mundane value, the whole part is required as the component.</rule>
+        <rule>Baby, child, and adolescent monsters normally cannot be harvested for special components, except at Judge discretion.</rule>
+      </rules>
+    </value_and_encumbrance>
+
+    <expanding_and_modifying_special_component_lists>
+      <rules>
+        <rule>The published lists are suggestive rather than exhaustive.</rule>
+        <rule>Each creature should have at least one special component.</rule>
+        <rule>Add one special component if the monster can carry a man-sized rider in flight.</rule>
+        <rule>Add one special component if the monster has at least 4 HD and three or more attacks per round.</rule>
+        <rule>Add one special component for each asterisk indicating special ability.</rule>
+        <rule>Creatures of purely artificial, elemental, incorporeal, or ooze substance should always have just one special component.</rule>
+        <rule>Associated effects may be selected by correspondence to the monster's abilities.</rule>
+        <rule>Associated effects may be selected by similarity to the monster's abilities or behavior.</rule>
+        <rule>Associated effects may be selected by polarity, using opposite behaviors or abilities.</rule>
+        <rule>Associated effects may be selected by contagion, using control, contact, or summoning effects related to the creature's type.</rule>
+        <rule>Associate winged flight only if wings are unnatural additions to the body form.</rule>
+        <rule>Associate flight only if the creature can carry a man-sized rider.</rule>
+        <rule>Associate infravision only if sight range is exceptional at 90'+.</rule>
+        <rule>Associate water breathing only if it is unnatural to the creature's body form.</rule>
+        <rule>Associate similar but inexact effects only if creature HD exceeds the spell level of the effect.</rule>
+        <rule>Total associated spell effects per monster should be capped at the greater of Hit Dice or number of special components.</rule>
+        <rule>Number of special components may be adjusted up or down by one or two to fit desired associated effects.</rule>
+      </rules>
+    </expanding_and_modifying_special_component_lists>
+
+    <divine_power_model>
+      <rules>
+        <rule>Total divine power possessed by a creature equals 10 times its XP value.</rule>
+        <rule>On death, about 90% transmigrates quickly and about 10% remains as residual special-component value.</rule>
+        <rule>On sacrifice, 80% passes to the worshipped entity, 10% is retained by the sacrificer, and 10% remains residual in blood and organs.</rule>
+        <rule>XP value = special component value = sacrifice value.</rule>
+        <rule>A living creature bleeds off divine power each day equal to 6% of its XP value.</rule>
+        <rule>When a cleric leads congregants in worship, the cleric collects about 10% of that bled-off divine power and the god receives the rest.</rule>
+        <rule>Dead creatures continue losing residual divine power over time unless their parts are properly stored.</rule>
+      </rules>
+    </divine_power_model>
+
+    <special_component_lists>
+      <table name="animals">
+        <row monster="Animal, Ordinary* (any)" component="by monster" encumbrance="by monster" value="by monster" effects="charm animal [2 HD+], summon animal [4 HD+], predict weather"/>
+        <row monster="Animal, Giant (any)" component="by monster" encumbrance="by monster" value="by monster" effects="growth of animals"/>
+        <row monster="Ape, White" component="skull" encumbrance="1 2/6" value="80" effects="mirror image, speak with animals"/>
+        <row monster="Baboon, Rock" component="skull" encumbrance="2/6" value="20" effects="mirror image, speak with animals"/>
+        <row monster="Bat, Giant" component="ears" encumbrance="2/6" value="20" effects="silence 15' radius"/>
+        <row monster="Bat, Giant Vampiric" component="ears" encumbrance="2/6" value="20" effects="silence 15' radius"/>
+        <row monster="Bat, Giant Vampiric" component="fangs" encumbrance="1/6" value="10" effects="hold person, hold monster, cause light wounds"/>
+        <row monster="Bear, Black*" component="claws" encumbrance="3/6" value="30" effects="dismember"/>
+        <row monster="Bear, Black*" component="stomach" encumbrance="5/6" value="50" effects="sleep"/>
+        <row monster="Bear, Grizzly*" component="claws" encumbrance="1 4/6" value="100" effects="dismember"/>
+        <row monster="Bear, Grizzly*" component="stomach" encumbrance="1 4/6" value="100" effects="sleep"/>
+        <row monster="Bear, Cave" component="claws" encumbrance="2 4/6" value="160" effects="dismember"/>
+        <row monster="Bear, Cave" component="stomach" encumbrance="2 4/6" value="160" effects="locate animal or plant, sleep"/>
+        <row monster="Bear, Polar*" component="claws" encumbrance="4" value="240" effects="dismember"/>
+        <row monster="Bear, Polar*" component="stomach" encumbrance="3 2/6" value="200" effects="resist cold, sleep"/>
+        <row monster="Boar, Ordinary*" component="tusks" encumbrance="5/6" value="50" effects="curse of swine"/>
+        <row monster="Boar, Giant" component="tusks" encumbrance="3 2/6" value="200" effects="curse of swine, righteous wrath"/>
+        <row monster="Camel*" component="kidneys" encumbrance="2/6" value="20" effects="create water"/>
+        <row monster="Cat, Mountain Lion*" component="claws" encumbrance="1" value="65" effects="swift sword"/>
+        <row monster="Cat, Lion*" component="claws" encumbrance="1 4/6" value="100" effects="swift sword"/>
+        <row monster="Cat, Lion*" component="heart" encumbrance="1 4/6" value="100" effects="command animals, command person, remove fear"/>
+        <row monster="Cat, Panther*" component="claws" encumbrance="5/6" value="50" effects="swift sword"/>
+        <row monster="Cat, Panther*" component="heart" encumbrance="3/6" value="30" effects="haste"/>
+        <row monster="Cat, Tiger*" component="claws" encumbrance="2 4/6" value="160" effects="silent step, swift sword"/>
+        <row monster="Cat, Tiger*" component="eyes" encumbrance="2 4/6" value="160" effects="strength of mind"/>
+        <row monster="Cat, Sabre-tooth" component="claws" encumbrance="5" value="300" effects="swift sword"/>
+        <row monster="Cat, Sabre-tooth" component="tusks" encumbrance="5" value="300" effects="sharpness, striking, +1 weapons"/>
+        <row monster="Crocodile, Large*" component="skull" encumbrance="5 2/6" value="320" effects="sharpness, silent step, striking, +1 weapons"/>
+        <row monster="Crocodile, Giant" component="skull" encumbrance="30" value="1,800" effects="sharpness, silent step, striking, +2 weapons"/>
+        <row monster="Dog, Hunting*" component="heart" encumbrance="2/6" value="15" effects="fellowship, locate animal or plant, locate object"/>
+        <row monster="Dog, War*" component="heart" encumbrance="3/6" value="35" effects="detect danger, fellowship"/>
+        <row monster="Elephant*" component="tusks" encumbrance="11 4/6" value="700" effects="striking, vigor"/>
+        <row monster="Fish, Giant Piranha" component="teeth" encumbrance="1" value="65" effects="righteous wrath"/>
+        <row monster="Fish, Giant Rockfish" component="gills" encumbrance="1" value="60" effects="water breathing"/>
+        <row monster="Fish, Giant Rockfish" component="poisoned spines" encumbrance="3 2/6" value="200" effects="neutralize poison, poison"/>
+        <row monster="Fish, Giant Rockfish" component="rocky scales" encumbrance="3 2/6" value="200" effects="chameleon, invisibility"/>
+        <row monster="Fish, Giant Sturgeon" component="teeth" encumbrance="13 2/6" value="800" effects="earth's teeth, sharpness"/>
+        <row monster="Fish, Giant Sturgeon" component="stomach" encumbrance="12 2/6" value="750" effects="find treasure, hold person"/>
+        <row monster="Hawk, Giant" component="eyes" encumbrance="3/6" value="30" effects="eyes of eagle"/>
+        <row monster="Hawk, Giant" component="flight feathers" encumbrance="3/6" value="35" effects="fly"/>
+        <row monster="Herd Animal* (any)" component="genitals" encumbrance="1/6 – 1 4/6" value="10-80" effects="fellowship, sanctuary"/>
+        <row monster="Horse, Riding* (any)" component="mane" encumbrance="2/6 – 1" value="20-65" effects="floating disc, vigor"/>
+        <row monster="Horse, War* (any)" component="mane" encumbrance="2/6 – 1" value="20-65" effects="floating disc, haste, vigor"/>
+        <row monster="Hyena*" component="jawbone" encumbrance="3/6" value="35" effects="dismember, striking"/>
+        <row monster="Hyena, Giant" component="jawbone" encumbrance="6 2/6" value="380" effects="dismember, striking, +2 weapons"/>
+        <row monster="Lizard, Giant Draco" component="wings" encumbrance="2 2/6" value="140" effects="jump"/>
+        <row monster="Lizard, Giant Gecko" component="feet" encumbrance="1" value="65" effects="spider climb"/>
+        <row monster="Lizard, Giant Chameleon" component="dorsal scales" encumbrance="3 2/6" value="200" effects="chameleon, invisibility"/>
+        <row monster="Lizard, Giant Chameleon" component="tongue" encumbrance="2 2/6" value="150" effects="choking grip, hold person, striking"/>
+        <row monster="Lizard Giant Tuatara" component="eyelids" encumbrance="5 2/6" value="320" effects="infravision, mass infravision"/>
+        <row monster="Octopus, Giant" component="radial muscles" encumbrance="8 2/6" value="500" effects="haste"/>
+        <row monster="Octopus, Giant" component="ink sac" encumbrance="10" value="600" effects="darkness, obscuring cloud"/>
+        <row monster="Octopus, Giant" component="tentacles" encumbrance="8 2/6" value="500" effects="choking grip, hold person"/>
+        <row monster="Rhinoceros*" component="horn" encumbrance="5 2/6" value="320" effects="cure disease, detect poison, neutralize poison, salving rest"/>
+        <row monster="Rhinoceros, Woolly" component="horn" encumbrance="6" value="600" effects="cure disease, detect poison, neutralize poison, salving rest"/>
+        <row monster="Shark, Great White*" component="tail" encumbrance="8 2/6" value="500" effects="righteous wrath, vigor"/>
+        <row monster="Shark, Great White*" component="skull" encumbrance="10" value="600" effects="sharpness, +1 weapons"/>
+        <row monster="Snake, Spitting Cobra*" component="fangs" encumbrance="1/6" value="6" effects="cause blindness, poison"/>
+        <row monster="Snake, Spitting Cobra*" component="tongue" encumbrance="1/6" value="6" effects="snake charm, sticks to snakes"/>
+        <row monster="Snake, Pit Viper*" component="fangs" encumbrance="2/6" value="18" effects="poison"/>
+        <row monster="Snake, Pit Viper*" component="pit organs" encumbrance="1/6" value="10" effects="haste"/>
+        <row monster="Snake, Pit Viper*" component="tongue" encumbrance="1/6" value="10" effects="snake charm, sticks to snakes"/>
+        <row monster="Snake, Sea Snake*" component="fangs" encumbrance="3/6" value="35" effects="poison"/>
+        <row monster="Snake, Sea Snake*" component="tongue" encumbrance="3/6" value="30" effects="snake charm, sticks to snakes"/>
+        <row monster="Snake, Giant Python" component="spine" encumbrance="5" value="300" effects="choking grip, hold person"/>
+        <row monster="Snake, Giant Python" component="tongue" encumbrance="5/6" value="50" effects="snake charm, sticks to snakes"/>
+        <row monster="Snake, Giant Rattlesnake" component="fangs" encumbrance="4/6" value="45" effects="poison"/>
+        <row monster="Snake, Giant Rattlesnake" component="tongue" encumbrance="4/6" value="45" effects="snake charm, sticks to snakes"/>
+        <row monster="Snake, Giant Rattlesnake" component="rattle" encumbrance="4/6" value="45" effects="cause fear"/>
+        <row monster="Squid, Giant" component="ink sac" encumbrance="5" value="300" effects="darkness, obscuring cloud"/>
+        <row monster="Squid, Giant" component="tentacles" encumbrance="4 3/6" value="270" effects="choking grip, hold person"/>
+        <row monster="Stegosaurus" component="neck plates" encumbrance="16 4/6" value="1,000" effects="shield, vigor"/>
+        <row monster="Titanothere" component="horn" encumbrance="10" value="600" effects="striking, +1 weapon"/>
+        <row monster="Titanothere" component="hooves" encumbrance="10" value="600" effects="vigor"/>
+        <row monster="Toad, Giant" component="tongue" encumbrance="3/6" value="35" effects="earth's teeth, choking grip"/>
+        <row monster="Toad, Giant" component="stomach" encumbrance="2/6" value="15" effects="find treasure"/>
+        <row monster="Triceratops" component="primary horn" encumbrance="10" value="600" effects="striking, +1 weapon"/>
+        <row monster="Triceratops" component="head plate" encumbrance="10" value="600" effects="shield"/>
+        <row monster="Tyrannosaurus Rex" component="skull" encumbrance="46 4/6" value="2,800" effects="dismember, sharpness, +3 weapons"/>
+        <row monster="Varmint, Giant Ferret" component="snout" encumbrance="1/6" value="15" effects="locate animal or plant"/>
+        <row monster="Varmint, Giant Rat" component="tail" encumbrance="1/6" value="5" effects="cause disease, cure disease, delay disease, plague"/>
+        <row monster="Varmint, Giant Shrew" component="paws" encumbrance="1/6" value="10" effects="haste, jump"/>
+        <row monster="Varmint, Giant Weasel" component="teeth" encumbrance="2" value="115" effects="cause light wounds, choking grip"/>
+        <row monster="Varmint, Giant Weasel" component="whiskers" encumbrance="1 4/6" value="100" effects="locate animal or plant"/>
+        <row monster="Whale, Narwhal" component="horn" encumbrance="20" value="1,200" effects="detect curse, detect danger, detect evil, detect poison"/>
+        <row monster="Whale, Sperm" component="air sacs" encumbrance="110" value="6,500" effects="adaptation, lower water, obscuring cloud"/>
+        <row monster="Whale, Sperm" component="spermaceti" encumbrance="100" value="6,000" effects="light, produce flame, slipperiness, water walking"/>
+        <row monster="Wolf*" component="teeth" encumbrance="3/6" value="35" effects="bane, fellowship, skinchange"/>
+        <row monster="Wolf, Dire" component="teeth" encumbrance="2 2/6" value="140" effects="bane, fellowship, skinchange"/>
+      </table>
+
+      <table name="beastmen">
+        <row monster="Beastman (any)" component="canine teeth or by monster" encumbrance="by monster" value="by monster" effects="vigor"/>
+        <row monster="Beastmen, Dire (any)" component="canine teeth or by monster" encumbrance="by monster" value="by monster" effects="ogre power, righteous wrath, remove fear, vigor"/>
+        <row monster="Bugbear" component="feet" encumbrance="1" value="65" effects="silent step"/>
+        <row monster="Bugbear, dire" component="feet" encumbrance="9 3/6" value="570" effects="silent step"/>
+        <row monster="Centaur" component="hooves" encumbrance="1 2/6" value="80" effects="haste, swift sword"/>
+        <row monster="Merman" component="caudal fin" encumbrance="1" value="10" effects="water breathing"/>
+        <row monster="Minotaur" component="horns" encumbrance="5 2/6" value="320" effects="locate animal or plant, righteous wrath"/>
+        <row monster="Ogre" component="knucklebones" encumbrance="2 2/6" value="140" effects="ogre power"/>
+        <row monster="Ogre, dire" component="knucklebones" encumbrance="13 1/6" value="790" effects="giant strength"/>
+        <row monster="Thrassian" component="eyes" encumbrance="1 1/6" value="70" effects="command person, infravision"/>
+        <row monster="Thrassian" component="wings" encumbrance="1 1/6" value="70" effects="ogre power, winged flight"/>
+        <row monster="Troglodyte" component="glands" encumbrance="2/6" value="20" effects="chameleon, stinking cloud"/>
+      </table>
+
+      <table name="constructs">
+        <row monster="Construct (any)" component="by monster" encumbrance="by monster" value="by monster" effects="adaptation"/>
+        <row monster="Gargoyle" component="leering head" encumbrance="2 2/6" value="135" effects="protection from normal weapons, winged flight"/>
+        <row monster="Golem, Amber" component="amber heart" encumbrance="26" value="1,550" effects="detect invisible, locate animal or plant, sphere of visibility"/>
+        <row monster="Golem, Bone" component="skull" encumbrance="18 2/6" value="1,100" effects="resist cold, resist fire, swift sword"/>
+        <row monster="Golem, Bronze" component="bronze slag" encumbrance="77" value="4,600" effects="giant strength, produce fire, sword of fire, +4 weapons"/>
+        <row monster="Golem, Iron" component="iron slag" encumbrance="98" value="5,900" effects="cloudkill, giant strength, resist cold, resist fire, +4 weapons"/>
+        <row monster="Golem, Stone" component="stone rubble" encumbrance="50" value="3,000" effects="anti-magic shell, giant strength, globe of invulnerability, slow, trans. rock to mud"/>
+        <row monster="Golem, Wood" component="heartwood" encumbrance="5/6" value="50" effects="wall of wood, warp wood"/>
+        <row monster="Statue, Animated Crystal" component="crystal skull" encumbrance="1" value="65" effects="detect evil"/>
+        <row monster="Statue, Animated Stone" component="lava slag" encumbrance="5 5/6" value="350" effects="burning hands"/>
+        <row monster="Statue, Animated Iron" component="iron head" encumbrance="3 2/6" value="200" effects="protection from normal weapons"/>
+      </table>
+
+      <table name="giants">
+        <row monster="Giant Humanoid (any)" component="by monster" encumbrance="by monster" value="by monster" effects="giant strength, growth"/>
+        <row monster="Cyclops" component="eye" encumbrance="23 2/6" value="1,400" effects="bestow curse, clairvoyance, scry, wizard eye"/>
+        <row monster="Ettin" component="y-shaped spinal cord" encumbrance="14 1/6" value="850" effects="detect danger, ESP, telepathy"/>
+        <row monster="Giant, Hill" component="pituitary gland" encumbrance="10" value="600" effects="magic missile"/>
+        <row monster="Giant, Stone" component="pituitary gland" encumbrance="11 4/6" value="700" effects="magic missile"/>
+        <row monster="Giant, Frost" component="pituitary gland" encumbrance="14 1/6" value="850" effects="magic missile, resist cold"/>
+        <row monster="Giant, Fire" component="pituitary gland" encumbrance="16 4/6" value="1,000" effects="magic missile, resist fire"/>
+        <row monster="Giant, Cloud" component="pituitary gland" encumbrance="20" value="1,200" effects="eyes of the eagle, magic missile"/>
+        <row monster="Giant, Storm" component="pituitary gland" encumbrance="30" value="1,800" effects="call lightning, lightning bolt, magic missile, water breathing"/>
+        <row monster="Troll" component="blood" encumbrance="4 4/6" value="280" effects="regeneration, trollblood"/>
+        <row monster="Troll" component="claws" encumbrance="3 2/6" value="200" effects="swift strike"/>
+        <row monster="Troll" component="severed limb" encumbrance="3 2/6" value="200" effects="restore life and limb"/>
+        <row monster="Troll, Dire" component="blood" encumbrance="9" value="540" effects="regeneration, remove fear, righteous wrath, trollblood, vigor"/>
+        <row monster="Troll, Dire" component="claws" encumbrance="6 2/6" value="380" effects="giant strength, swift strike"/>
+        <row monster="Troll, Dire" component="severed limb" encumbrance="6 2/6" value="380" effects="restore life and limb"/>
+      </table>
+
+      <table name="fantastic_creatures">
+        <row monster="Fantastic Creature (any)" component="by monster" encumbrance="by monster" value="by monster" effects="summon fantastic creature"/>
+        <row monster="Amphisbaena" component="fangs (each)" encumbrance="2" value="120" effects="poison"/>
+        <row monster="Amphisbaena" component="flesh" encumbrance="5 4/6" value="340" effects="charm person, snake charm, sticks to snakes"/>
+        <row monster="Amphisbaena" component="spine (each)" encumbrance="2" value="120" effects="choking grip, hold person"/>
+        <row monster="Arane" component="central eye pair" encumbrance="5 5/6" value="350" effects="detect magic, dispel magic, spell storing"/>
+        <row monster="Arane" component="mandibles" encumbrance="4" value="240" effects="poison"/>
+        <row monster="Arane" component="leg tarsus" encumbrance="4" value="240" effects="spider climb"/>
+        <row monster="Arane" component="spinneret" encumbrance="4" value="240" effects="web"/>
+        <row monster="Basilisk" component="eyes" encumbrance="8 2/6" value="500" effects="cone of paralysis, flesh to stone, hypnotic pattern"/>
+        <row monster="Basilisk" component="gizzard" encumbrance="8 2/6" value="500" effects="stone to flesh, transmute rock to mud"/>
+        <row monster="Blink Dog" component="brain" encumbrance="1 4/6" value="100" effects="dimension door, teleport"/>
+        <row monster="Blink Dog" component="heart" encumbrance="3/6" value="35" effects="detect danger, fellowship"/>
+        <row monster="Chimera" component="dragon wingtips" encumbrance="6 4/6" value="400" effects="burning hands, fireball, fly, winged flight"/>
+        <row monster="Chimera" component="lion claws" encumbrance="5" value="300" effects="sharpness, swift strike"/>
+        <row monster="Chimera" component="lion mane" encumbrance="5" value="300" effects="command animals, command person, remove fear, strength of mind"/>
+        <row monster="Chimera" component="goat horns" encumbrance="5" value="300" effects="polymorph other"/>
+        <row monster="Cockatrice" component="beak" encumbrance="3 2/6" value="200" effects="hold person, hold monster, flesh to stone"/>
+        <row monster="Cockatrice" component="gizzard" encumbrance="2 3/6" value="150" effects="stone to flesh, transmute rock to mud"/>
+        <row monster="Demon Boar" component="blood" encumbrance="11 4/6" value="700" effects="curse of swine, skinchange"/>
+        <row monster="Demon Boar" component="skin" encumbrance="10" value="600" effects="protection from normal weapons"/>
+        <row monster="Demon Boar" component="tongue" encumbrance="11 4/6" value="700" effects="charm person, charm monster, enslave"/>
+        <row monster="Doppelganger" component="eyes" encumbrance="1" value="65" effects="death spell, fate, mirror image, opposition"/>
+        <row monster="Doppelganger" component="skin" encumbrance="1 1/6" value="70" effects="alter self, chameleon, polymorph (any)"/>
+        <row monster="Dragon (any)" component="see dragon sub-table" encumbrance="special" value="special" effects="special"/>
+        <row monster="Dragon Turtle" component="beak" encumbrance="53 2/6" value="3,200" effects="dismember, sharpness, swift strike"/>
+        <row monster="Dragon Turtle" component="lungs" encumbrance="53 2/6" value="3,200" effects="cone of cold, water breathing"/>
+        <row monster="Dragon Turtle" component="shell-plates" encumbrance="51 4/6" value="3,100" effects="cataclysm, lower water, water walking"/>
+        <row monster="Farahavar" component="brain" encumbrance="10" value="600" effects="detect magic, detect ritual magic, dispel magic, spell storing"/>
+        <row monster="Farahavar" component="flight feathers" encumbrance="8 2/6" value="500" effects="fly, winged flight, summon winged steed"/>
+        <row monster="Farahavar" component="hands" encumbrance="8 2/6" value="500" effects="cure disease, cure wounds, lower water, move earth"/>
+        <row monster="Farahavar" component="heart" encumbrance="8 2/6" value="500" effects="atonement, bless, commune, cure disease, detect evil"/>
+        <row monster="Farahavar" component="tongue" encumbrance="8 2/6" value="500" effects="angelic choir, bless, holy chant, prayer, tongues"/>
+        <row monster="Gorgon" component="gizzard" encumbrance="6 4/6" value="400" effects="stone to flesh, transmute rock to mud"/>
+        <row monster="Gorgon" component="iron horns" encumbrance="6 4/6" value="400" effects="striking, wall of iron"/>
+        <row monster="Gorgon" component="lungs" encumbrance="13 2/6" value="800" effects="cloudkill, flesh to stone"/>
+        <row monster="Griffon" component="eyes" encumbrance="2 3/6" value="150" effects="command animal, command person, eyes of eagle, remove fear"/>
+        <row monster="Griffon" component="flight feathers" encumbrance="2 3/6" value="150" effects="fly, winged flight"/>
+        <row monster="Griffon" component="talons" encumbrance="2 3/6" value="150" effects="striking, sharpness, uncanny gyration"/>
+        <row monster="Hag" component="eyes" encumbrance="15 5/6" value="950" effects="clairaudience, clairvoyance, scry, wizard eye"/>
+        <row monster="Hag" component="hair" encumbrance="15 5/6" value="950" effects="alter self, charm person"/>
+        <row monster="Hag" component="teeth" encumbrance="15 5/6" value="950" effects="augury, divination, fate"/>
+        <row monster="Hag" component="tongue" encumbrance="15 5/6" value="950" effects="bestow curse, tongues"/>
+        <row monster="Harpy" component="vocal cords" encumbrance="3/6" value="35" effects="charm person, charm monster, enslave, enthrall"/>
+        <row monster="Harpy" component="wings" encumbrance="3/6" value="30" effects="winged flight"/>
+        <row monster="Hell Hound, Lesser" component="set of teeth" encumbrance="3/6" value="35" effects="burning hands, produce fire, resist fire"/>
+        <row monster="Hell Hound, Lesser" component="tongue" encumbrance="3/6" value="30" effects="detect invisible, sphere of visibility"/>
+        <row monster="Hell Hound, Greater" component="set of teeth" encumbrance="8 2/6" value="500" effects="burning hands, fireball, flame strike, produce fire, resist fire, wall of fire"/>
+        <row monster="Hell Hound, Greater" component="tongue" encumbrance="5" value="300" effects="detect invisible, sphere of visibility"/>
+        <row monster="Hippogriff" component="eyes" encumbrance="3/6" value="30" effects="eyes of the eagle"/>
+        <row monster="Hippogriff" component="flight feathers" encumbrance="3/6" value="35" effects="fly, winged flight"/>
+        <row monster="Hydra (12 heads)" component="blood" encumbrance="11 4/6" value="700" effects="longevity, vigor, regeneration [regenerating], water breathing [aquatic]"/>
+        <row monster="Hydra (12 heads)" component="scales" encumbrance="11 4/6" value="700" effects="mirror image, opposition"/>
+        <row monster="Hydra (12 heads)" component="set of skulls" encumbrance="11 4/6" value="700" effects="swift strike"/>
+        <row monster="Khepri" component="brain" encumbrance="10" value="600" effects="clairaudience, clairvoyance, telepathy"/>
+        <row monster="Khepri" component="chitinous crown" encumbrance="10" value="600" effects="charm monster"/>
+        <row monster="Khepri" component="facial ovipositors" encumbrance="10" value="600" effects="cause fear, fear, hold person, panic"/>
+        <row monster="Khepri" component="embryonic larvae" encumbrance="10" value="600" effects="cause disease, enslave"/>
+        <row monster="Khepri" component="mandibles" encumbrance="10" value="600" effects="choking grip, detect invisible"/>
+        <row monster="Khepri" component="spinal fluid" encumbrance="10" value="600" effects="levitate, water walking"/>
+        <row monster="Kraken" component="small tentacle" encumbrance="66 4/6" value="4,000" effects="choking grip, hold person"/>
+        <row monster="Kraken" component="large tentacle" encumbrance="70 5/6" value="4,250" effects="cataclysm, all water elemental effects"/>
+        <row monster="Kraken" component="ink sac" encumbrance="66 4/6" value="4,000" effects="darkness, obscuring cloud"/>
+        <row monster="Kraken" component="stomach" encumbrance="66 4/6" value="4,000" effects="find treasure"/>
+        <row monster="Lamia" component="fingers" encumbrance="11 4/6" value="700" effects="confusion, feeblemind, weakness of mind"/>
+        <row monster="Lamia" component="hair" encumbrance="11 4/6" value="700" effects="all illusion effects"/>
+        <row monster="Lamia" component="heart" encumbrance="11 4/6" value="700" effects="all enchantment effects"/>
+        <row monster="Lamia" component="tongue" encumbrance="6 4/6" value="400" effects="read languages, tongues"/>
+        <row monster="Lammasu" component="blood" encumbrance="155" value="9,300" effects="cure wounds, dispel evil, divine grace, protection from evil, spell storing"/>
+        <row monster="Lammasu" component="flight feathers" encumbrance="6 4/6" value="400" effects="winged flight"/>
+        <row monster="Lammasu" component="heart" encumbrance="155" value="9,300" effects="anti-magic shell, dispel magic, globe of invulnerability"/>
+        <row monster="Leyak" component="blood" encumbrance="5 5/6" value="350" effects="longevity, regeneration"/>
+        <row monster="Leyak" component="entrails" encumbrance="4" value="240" effects="fly, spell storing"/>
+        <row monster="Leyak" component="eyes" encumbrance="4" value="240" effects="cause fear, fear, panic"/>
+        <row monster="Leyak" component="tongue" encumbrance="4" value="240" effects="cause wounds, choking grip"/>
+        <row monster="Lycanthrope, Werebear" component="blood" encumbrance="4 5/6" value="290" effects="protection from normal weapons, skinchange"/>
+        <row monster="Lycanthrope, Werebear" component="scalp" encumbrance="4 4/6" value="270" effects="dismember, sharpness, sleep"/>
+        <row monster="Lycanthrope, Wereboar" component="blood" encumbrance="2" value="115" effects="protection from normal weapons, skinchange"/>
+        <row monster="Lycanthrope, Wereboar" component="scalp" encumbrance="1 4/6" value="100" effects="righteous wrath, summon berserkers"/>
+        <row monster="Lycanthrope, Wererat" component="blood" encumbrance="3/6" value="35" effects="protection from normal weapons, skinchange"/>
+        <row monster="Lycanthrope, Wererat" component="scalp" encumbrance="3/6" value="30" effects="silent step, speak with animals"/>
+        <row monster="Lycanthrope, Weretiger" component="blood" encumbrance="3" value="180" effects="protection from normal weapons, skinchange"/>
+        <row monster="Lycanthrope, Weretiger" component="scalp" encumbrance="2 5/6" value="170" effects="silent step, swift strike"/>
+        <row monster="Lycanthrope, Werewolf" component="blood" encumbrance="1 1/6" value="70" effects="protection from normal weapons, skinchange"/>
+        <row monster="Lycanthrope, Werewolf" component="scalp" encumbrance="1" value="65" effects="fellowship, summon hero"/>
+        <row monster="Manticore" component="barbed spikes" encumbrance="6" value="360" effects="magic missile, spiritual weapon"/>
+        <row monster="Manticore" component="wingtips" encumbrance="5 2/6" value="320" effects="winged flight"/>
+        <row monster="Medusa" component="eyes" encumbrance="1 4/6" value="100" effects="cone of paralysis, flesh to stone, hypnotic pattern"/>
+        <row monster="Medusa" component="hair-lock of snakes" encumbrance="5/6" value="50" effects="poison, neutralize poison"/>
+        <row monster="Medusa" component="skin" encumbrance="5/6" value="50" effects="stone to flesh"/>
+        <row monster="Medusa" component="tongue" encumbrance="5/6" value="50" effects="bless, bane, divine grace"/>
+        <row monster="Owl Bear" component="claws" encumbrance="1 4/6" value="100" effects="dismember"/>
+        <row monster="Owl Bear" component="stomach" encumbrance="1 4/6" value="100" effects="sleep"/>
+        <row monster="Pegasus" component="mane" encumbrance="1/6" value="15" effects="summon winged steed, vigor"/>
+        <row monster="Pegasus" component="flight feathers" encumbrance="1/6" value="20" effects="fly, winged flight"/>
+        <row monster="Phase Tiger" component="pelt" encumbrance="5 2/6" value="320" effects="phase door, projected image, shimmer"/>
+        <row monster="Remorhaz (10HD)" component="gizzard" encumbrance="25" value="1,500" effects="disintegrate, fireball, flame strike, produce flame, wall of fire"/>
+        <row monster="Remorhaz (10HD)" component="stomach" encumbrance="5" value="300" effects="find treasure"/>
+        <row monster="Remorhaz (10HD)" component="teeth" encumbrance="7 3/6" value="450" effects="earth's teeth, sharpness"/>
+        <row monster="Roc (any)" component="eyes" encumbrance="2/8/65" value="120/480/3900" effects="eyes of the eagle, scry [giant roc]"/>
+        <row monster="Roc (any)" component="flight feathers" encumbrance="3.5/12/70" value="210/720/4200" effects="fly, gust of wind, all air elemental effects [giant roc]"/>
+        <row monster="Roc (any)" component="talons" encumbrance="4/15/75" value="240/900/4500" effects="sharpness, striking, swift strike, uncanny gyration, cataclysm [giant roc]"/>
+        <row monster="Rust Monster" component="antennae" encumbrance="3 2/6" value="200" effects="cancellation, disintegrate"/>
+        <row monster="Sea Serpent" component="stomach" encumbrance="5 2/6" value="320" effects="choking grip, find treasure"/>
+        <row monster="Shadow" component="residue" encumbrance="1" value="60" effects="enervate, nondetection"/>
+        <row monster="Skittering Maw" component="dorsal fin" encumbrance="8 2/6" value="500" effects="righteous wrath"/>
+        <row monster="Skittering Maw" component="gills" encumbrance="8 2/6" value="500" effects="water breathing"/>
+        <row monster="Skittering Maw" component="teeth" encumbrance="10" value="600" effects="poison, sharpness"/>
+        <row monster="Sorcerous Sphere" component="brain" encumbrance="20" value="1,200" effects="all enchantment effects"/>
+        <row monster="Sorcerous Sphere" component="eye" encumbrance="20" value="1,200" effects="wizard eye, all detection effects"/>
+        <row monster="Sorcerous Sphere" component="maw" encumbrance="20" value="1,200" effects="magic mouth, ventriloquism, telepathy"/>
+        <row monster="Sorcerous Sphere" component="tentacle" encumbrance="20" value="1,200" effects="all blast effects"/>
+        <row monster="Sphinx" component="flight feathers" encumbrance="15" value="900" effects="fly, winged flight"/>
+        <row monster="Sphinx" component="heart" encumbrance="20" value="1,200" effects="anti-magic shell, globe of invulnerability, spell turning"/>
+        <row monster="Sphinx" component="tongue" encumbrance="15" value="900" effects="cause fear, fear, panic"/>
+        <row monster="Stirge" component="proboscis" encumbrance="1 per 10" value="6" effects="cause light wounds, choking grip"/>
+        <row monster="Stirge" component="wings" encumbrance="1 per 10" value="6" effects="levitation"/>
+        <row monster="Throghrin" component="blood" encumbrance="2/6" value="20" effects="trollblood"/>
+        <row monster="Throghrin" component="claws" encumbrance="1" value="60" effects="hold person, hold monster"/>
+        <row monster="Treant" component="heartwood" encumbrance="10" value="600" effects="command plant, control plants, speak with plants"/>
+        <row monster="Treant" component="leg-trunks" encumbrance="8 2/6" value="500" effects="growth of plants, massmorph, wall of wood, warp wood"/>
+        <row monster="Unicorn" component="horn" encumbrance="16 4/6" value="1,000" effects="all healing effects, detect evil, divine grace, purify food and water"/>
+        <row monster="Unicorn" component="hooves" encumbrance="5 5/6" value="350" effects="dimension door, haste, vigor"/>
+        <row monster="Wyvern" component="eyes" encumbrance="2" value="120" effects="eyes of the eagle"/>
+        <row monster="Wyvern" component="stinger" encumbrance="6" value="360" effects="poison"/>
+        <row monster="Wyvern" component="talons" encumbrance="6" value="360" effects="sharpness, striking, uncanny gyration"/>
+        <row monster="Wyvern" component="wingtips" encumbrance="5" value="300" effects="fly"/>
+        <row monster="Yali" component="heart" encumbrance="6 4/6" value="400" effects="detect evil, strength of mind"/>
+        <row monster="Yali" component="tail" encumbrance="6 4/6" value="400" effects="choking grip, hold person"/>
+        <row monster="Yali" component="tusks" encumbrance="8 2/6" value="500" effects="sharpness, striking, weapon +3"/>
+      </table>
+
+      <table name="dragons_sub_table">
+        <row dragon_age="Dragon, Spawn" added_component="gizzard" encumbrance="2/6 each" value="15 each" effects="call dragon, find treasure; plus all effects associated with color"/>
+        <row dragon_age="Dragon, Very Young" added_component="wingtips" encumbrance="1 each" value="65 each" effects="fly, winged flight"/>
+        <row dragon_age="Dragon, Young" added_component="front claws" encumbrance="3 3/6 each" value="205 each" effects="swift strike"/>
+        <row dragon_age="Dragon, Juvenile" added_component="teeth" encumbrance="5 2/6 each" value="320 each" effects="sharpness"/>
+        <row dragon_age="Dragon, Adult" added_component="1 component from abilities list" encumbrance="8 2/6 each" value="500 each" effects="effects associated with special ability"/>
+        <row dragon_age="Dragon, Mature Adult" added_component="No new component" encumbrance="10 5/6 each" value="650 each" effects="no new effects"/>
+        <row dragon_age="Dragon, Old" added_component="No new component" encumbrance="13 3/6 each" value="815 each" effects="no new effects"/>
+        <row dragon_age="Dragon, Very Old" added_component="1 component from abilities list" encumbrance="17 each" value="1,020 each" effects="effect associated with special ability"/>
+        <row dragon_age="Dragon, Ancient" added_component="No new component" encumbrance="20 each" value="1,200 each" effects="no new effects"/>
+        <row dragon_age="Dragon, Venerable" added_component="1 component from abilities list" encumbrance="26 4/6 each" value="1,600 each" effects="effect associated with special ability plus cataclysm (all components)"/>
+        <row dragon_color_or_kind="Dragon, Black" component="piceous gland" encumbrance="By age" value="By age" effects="disintegrate, magic missile, resist acid"/>
+        <row dragon_color_or_kind="Dragon, Blue" component="caesious gland" encumbrance="By age" value="By age" effects="call lightning, lighting bolt, resist electricity"/>
+        <row dragon_color_or_kind="Dragon, Brown" component="fuscous gland" encumbrance="By age" value="By age" effects="control winds, gust of wind, scouring wind"/>
+        <row dragon_color_or_kind="Dragon, Green" component="luteous gland" encumbrance="By age" value="By age" effects="cloudkill, poison, stinking cloud"/>
+        <row dragon_color_or_kind="Dragon, Metallic" component="nacreous gland" encumbrance="By age" value="By age" effects="burning hands, fireball, flame strike, resist fire, wall of fire"/>
+        <row dragon_color_or_kind="Dragon, Red" component="pyrrhous gland" encumbrance="By age" value="By age" effects="burning hands, fireball, flame strike, resist fire, wall of fire"/>
+        <row dragon_color_or_kind="Dragon, Sea" component="aqueous gland" encumbrance="By age" value="By age" effects="cone of cold, lower water, water breathing"/>
+        <row dragon_color_or_kind="Dragon, White" component="niveous gland" encumbrance="By age" value="By age" effects="cone of cold, resist cold, wall of ice"/>
+        <row dragon_color_or_kind="Dragon, Wyrm" component="caseous gland" encumbrance="By age" value="By age" effects="cause disease, cloudkill, plague"/>
+        <row dragon_ability="poisonous blood or polymorph" component="blood" encumbrance="By age" value="By age" effects="poison [poisonous blood], polymorph [polymorph]"/>
+        <row dragon_ability="massive size or fear aura" component="heart" encumbrance="By age" value="By age" effects="growth, vigor [massive size], fear, panic [fear aura]"/>
+        <row dragon_ability="paralyzing blow" component="horn" encumbrance="By age" value="By age" effects="hold person, hold monster [paralyzing blow]"/>
+        <row dragon_ability="decapitating bite" component="jawbone" encumbrance="By age" value="By age" effects="dismember, death spell, finger of death [decapitating bite]"/>
+        <row dragon_ability="horrific stench" component="lungs" encumbrance="By age" value="By age" effects="stinking cloud [horrific stench]"/>
+        <row dragon_ability="clutching claws" component="rear claws" encumbrance="By age" value="By age" effects="striking, uncanny gyration [clutching claws]"/>
+        <row dragon_ability="elemental aura" component="secondary elemental gland" encumbrance="By age" value="By age" effects="wall of ice/fire [elemental aura]"/>
+        <row dragon_ability="tail lash" component="tail bone" encumbrance="By age" value="By age" effects="giant strength [tail lash]"/>
+        <row dragon_ability="gem-encrusted hide or invulnerability" component="ventral scales" encumbrance="By age" value="By age" effects="any protection effects [gem-encrusted hide, invulnerability]"/>
+        <row dragon_ability="wing claws" component="wing claws" encumbrance="By age" value="By age" effects="haste [wing claws]"/>
+      </table>
+
+      <table name="humanoids">
+        <row monster="Humanoid (any)" component="heart or by monster" encumbrance="by monster" value="by monster" effects="summon berserker, summon hero"/>
+        <row monster="Dwarf" component="scalp" encumbrance="1/6" value="10" effects="find traps, find treasure"/>
+        <row monster="Elf" component="liver" encumbrance="2/6" value="15" effects="detect secret doors, longevity"/>
+        <row monster="Faerie, Pixie" component="pixie dust wings" encumbrance="1/6" value="13" effects="faerie fire, glitterdust, invisibility, invisibility 10' radius, diminution, winged flight"/>
+        <row monster="Faerie, Sprite" component="tongue" encumbrance="1 per 20" value="3" effects="bestow curse"/>
+        <row monster="Faerie, Sprite" component="wings" encumbrance="1 per 20" value="3" effects="faerie fire, diminution, winged flight"/>
+        <row monster="Gnome" component="eyes" encumbrance="1/6" value="10" effects="infravision, mass infravision"/>
+        <row monster="Grimlock" component="ears" encumbrance="2/6" value="20" effects="cause blindness, silence 15' radius"/>
+        <row monster="Halfling" component="none" encumbrance="0" value="0" effects="worthless for all purposes"/>
+        <row monster="Morlock" component="eyes" encumbrance="1/6" value="10" effects="Infravision, mass infravision"/>
+        <row monster="Nymph, Dryad" component="hair" encumbrance="2/6" value="15" effects="charm person, charm monster, enslave"/>
+        <row monster="Nymph, Dryad" component="heartwood" encumbrance="2/6" value="15" effects="growth of plants, speak with plants"/>
+        <row monster="Nymph, Naiad" component="gills" encumbrance="1 per 10" value="6" effects="summon animals, water breathing"/>
+        <row monster="Nymph, Naiad" component="tears" encumbrance="1 per 10" value="6" effects="charm person, charm monster, enslave"/>
+      </table>
+
+      <table name="oozes">
+        <row monster="Ooze (any)" component="by monster" encumbrance="by monster" value="by monster" effects="conjure ooze, putrefy food and water"/>
+        <row monster="Black Pudding" component="burnt remnants" encumbrance="26 5/6" value="1,550" effects="adaptation, cause wounds, disintegrate, opposition, resist cold"/>
+        <row monster="Gelatinous Cube" component="burnt remnants" encumbrance="2 2/6" value="135" effects="chameleon, cause wounds, hold person, hold monster"/>
+        <row monster="Gray Ooze" component="electrocuted remnants" encumbrance="1" value="65" effects="cause wounds, resist cold, resist fire, slipperiness, warp wood"/>
+        <row monster="Green Slime" component="sterilized residue" encumbrance="3/6" value="38" effects="cause disease, cure disease, delay disease, plague, slipperiness"/>
+        <row monster="Ochre Jelly" component="burnt or frozen remnants" encumbrance="5 5/6" value="350" effects="cause wounds, warp wood"/>
+        <row monster="Yellow Mold" component="dried spores" encumbrance="4/6" value="40" effects="cloudkill, cure disease, death spell, delay disease"/>
+      </table>
+
+      <table name="summoned_creatures">
+        <row monster="Summoned Creature (any)" component="by monster" encumbrance="by monster" value="by monster" effects="contact other plane"/>
+        <row monster="Child of Nasga" component="fangs" encumbrance="10" value="600" effects="poison"/>
+        <row monster="Child of Nasga" component="golden eyes" encumbrance="11 4/6" value="700" effects="charm person, enthrall, hypnotic pattern"/>
+        <row monster="Child of Nasga" component="heart" encumbrance="10" value="600" effects="torpor"/>
+        <row monster="Child of Nasga" component="pit organs" encumbrance="10" value="600" effects="infravision"/>
+        <row monster="Child of Nasga" component="spine" encumbrance="10" value="600" effects="choking grip, hold person"/>
+        <row monster="Dao" component="brown ichor" encumbrance="18 2/6" value="1,100" effects="all illusion effects, create food and water, invisibility, move earth, transmute rock to mud"/>
+        <row monster="Djinni" component="silver ichor" encumbrance="21 4/6" value="1,300" effects="all illusion effects, create food and water, control weather, gaseous form, invisibility, magic carpet, summon djinni, scouring wind"/>
+        <row monster="Elemental, Air" component="gaseous residue" encumbrance="18 2/6 – 50" value="1,100 – 3,000" effects="all air elemental effects"/>
+        <row monster="Elemental, Earth" component="solid residue" encumbrance="18 2/6 – 50" value="1,100 – 3,000" effects="all earth elemental effects"/>
+        <row monster="Elemental, Fire" component="burning residue" encumbrance="18 2/6 – 50" value="1,100 – 3,000" effects="all fire elemental effects"/>
+        <row monster="Elemental, Water" component="watery residue" encumbrance="18 2/6 – 50" value="1,100 – 3,000" effects="all water elemental effects"/>
+        <row monster="Efreeti" component="brass ichor" encumbrance="50" value="2,950" effects="all illusion effects, create food and water, invisibility, flame strike, magic carpet, summon efreeti, wall of fire"/>
+        <row monster="Invisible Stalker" component="clear ichor" encumbrance="18 2/6" value="1,100" effects="invisibility, invisibility 10' radius, invisible stalker, locate object, nondetection"/>
+        <row monster="Marid" component="blue ichor" encumbrance="65" value="3,900" effects="all illusion effects, create food and water, invisible, lower water, obscuring cloud, purify water, water breathing"/>
+        <row monster="Rakshasa" component="brain" encumbrance="6" value="360" effects="detect good"/>
+        <row monster="Rakshasa" component="eyes" encumbrance="12" value="720" effects="invisibility, invisibility 10' radius"/>
+        <row monster="Rakshasa" component="hair" encumbrance="12" value="720" effects="fly"/>
+        <row monster="Rakshasa" component="heart" encumbrance="12" value="720" effects="hallucinatory terrain"/>
+        <row monster="Rakshasa" component="ichor" encumbrance="18 5/6" value="1,130" effects="polymorph self"/>
+        <row monster="Salamander, Flame" component="red ichor" encumbrance="18 2/6" value="1,100" effects="burning hands, flame strike, fireball, produce fire, resist fire, wall of fire"/>
+        <row monster="Salamander, Frost" component="white ichor" encumbrance="35" value="2,100" effects="cone of cold, resist cold, swift strike, wall of ice"/>
+      </table>
+
+      <table name="undead">
+        <row monster="Undead (any)" component="by monster" encumbrance="by monster" value="by monster" effects="control undead, smite undead, speak with dead"/>
+        <row monster="Blood Hound" component="skull" encumbrance="2/6" value="24" effects="animate dead, deathless minion"/>
+        <row monster="Blood Hound" component="tongue bone" encumbrance="2/6" value="24" effects="cause light wounds, choking grip"/>
+        <row monster="Death Charger" component="human skull" encumbrance="4/6" value="45" effects="animate dead, deathless minion"/>
+        <row monster="Death Charger" component="human humerus" encumbrance="4/6" value="40" effects="striking"/>
+        <row monster="Death Charger" component="horse hooves" encumbrance="4/6" value="40" effects="vigor"/>
+        <row monster="Desert Ghoul" component="claws" encumbrance="3/6" value="30" effects="cause disease"/>
+        <row monster="Desert Ghoul" component="skin" encumbrance="3/6" value="35" effects="alter self, deathless minion"/>
+        <row monster="Draugr" component="cremated ashes" encumbrance="30 4/6 – 51 4/6" value="1,840 – 3,100" effects="bestow curse, cause disease, cause fear, darkness, faerie fire, gaseous form, giant strength, passwall, protection from normal weapons, skinchange; divination, summon weather [9 HD+]"/>
+        <row monster="Flay Fiend" component="skin sack" encumbrance="2/6" value="19" effects="choking grip, hold person, uncanny gyration"/>
+        <row monster="Ghoul" component="claws" encumbrance="2/6" value="20" effects="cause disease, hold person, hold monster"/>
+        <row monster="Ghoul" component="skin" encumbrance="1/6" value="10" effects="deathless minion"/>
+        <row monster="Haugbui" component="claw-like hands" encumbrance="5/6" value="50" effects="swift sword, undead legion"/>
+        <row monster="Haugbui" component="skin" encumbrance="1/6" value="15" effects="deathless minion"/>
+        <row monster="Hoarflesh" component="eyes" encumbrance="5/6" value="50" effects="cone of cold, wall of ice"/>
+        <row monster="Hoarflesh" component="claws" encumbrance="1/6" value="10" effects="striking"/>
+        <row monster="Hoarflesh" component="frozen skin" encumbrance="2/6" value="20" effects="deathless minion, resist cold"/>
+        <row monster="Mummy" component="right hand" encumbrance="4 3/6" value="260" effects="cause disease"/>
+        <row monster="Mummy" component="wrappings" encumbrance="3 2/6" value="200" effects="cause fear, fear, panic, protection from normal weapons, resist cold"/>
+        <row monster="Mummy Lord" component="canopic organs" encumbrance="11 4/6" value="700" effects="magic jar, insect plague, summon weather"/>
+        <row monster="Mummy Lord" component="dried skin" encumbrance="10" value="600" effects="necromantic potence"/>
+        <row monster="Mummy Lord" component="eyes" encumbrance="10" value="600" effects="bestow curse, charm person"/>
+        <row monster="Mummy Lord" component="hands" encumbrance="10" value="600" effects="cause disease, finger of death, ogre power"/>
+        <row monster="Mummy Lord" component="wrappings" encumbrance="10" value="600" effects="cause fear, fear, panic, protection from normal weapons, resist cold"/>
+        <row monster="Nathaghol" component="brains" encumbrance="10" value="600" effects="locate object"/>
+        <row monster="Nathaghol" component="feet" encumbrance="10" value="600" effects="silent step, spider climb"/>
+        <row monster="Nathaghol" component="skin" encumbrance="10" value="600" effects="chameleon, regenerate"/>
+        <row monster="Nathaghol" component="stomach" encumbrance="19 1/6" value="1,150" effects="bestow curse"/>
+        <row monster="Necropede" component="head" encumbrance="5 5/6" value="290" effects="animate dead, deathless minion, wall of corpses"/>
+        <row monster="Necropede" component="upper arms" encumbrance="4" value="240" effects="choking grip, dismember"/>
+        <row monster="Necropede" component="lower arms" encumbrance="4" value="240" effects="spider climb, swift strike"/>
+        <row monster="Skeleton" component="skull" encumbrance="1/6" value="13" effects="animate dead, deathless minion, undead legion"/>
+        <row monster="Spectre" component="ectoplasm" encumbrance="13 4/6" value="820" effects="energy drain, enervate, necromantic potence, protection from normal weapons, unseen servant"/>
+        <row monster="Vampire (9 HD)" component="blood" encumbrance="10" value="600" effects="deathless minion, necromantic potence, torpor"/>
+        <row monster="Vampire (9 HD)" component="eyes" encumbrance="10" value="600" effects="charm, command person, enslave, summon animals"/>
+        <row monster="Vampire (9 HD)" component="fangs" encumbrance="11 4/6" value="700" effects="enervate, energy drain"/>
+        <row monster="Vampire (9 HD)" component="heart (impaled)" encumbrance="10" value="600" effects="gaseous form, torpor"/>
+        <row monster="Vampire (9 HD)" component="skin (unburnt)" encumbrance="10" value="600" effects="protection from normal weapons, skinchange"/>
+        <row monster="Venous Sentinel" component="heart" encumbrance="4/6" value="38" effects="cause light wounds, swift strike"/>
+        <row monster="Wight" component="claws" encumbrance="1" value="60" effects="energy drain, enervate"/>
+        <row monster="Wight" component="skin" encumbrance="1/6" value="10" effects="protection from normal weapons"/>
+        <row monster="Wight" component="skull" encumbrance="1/6" value="10" effects="deathless minion"/>
+        <row monster="Wraith" component="ectoplasm" encumbrance="3 2/6" value="200" effects="energy drain, enervate, necromantic potence, protection from normal weapons, unseen servant"/>
+        <row monster="Zombie" component="brain" encumbrance="2/6" value="20" effects="animate dead, deathless minion, undead legion"/>
+        <row monster="Zombie" component="cadaver" encumbrance="1/6" value="10" effects="wall of corpses"/>
+      </table>
+
+      <table name="vermin">
+        <row monster="Vermin (any)" component="by monster" encumbrance="by monster" value="by monster" effects="feeblemind"/>
+        <row monster="Ankheg" component="acid gland" encumbrance="5" value="300" effects="magic missile"/>
+        <row monster="Ankheg" component="antennae" encumbrance="2" value="125" effects="detect danger, locate animal or plant"/>
+        <row monster="Ankheg" component="mandible" encumbrance="2" value="125" effects="choking grip, hold person, sharpness"/>
+        <row monster="Ant, Giant" component="antennae" encumbrance="1 2/6" value="80" effects="find treasure, insect plague"/>
+        <row monster="Bee, Giant" component="stinger" encumbrance="1 per 10" value="6" effects="cure light wounds, insect plague, poison"/>
+        <row monster="Beetle, Giant Fire" component="light organs" encumbrance="1/6" value="15" effects="insect plague, faerie fair, light, produce fire"/>
+        <row monster="Beetle, Giant Bomb." component="acid vestibule" encumbrance="2/6" value="20" effects="magic missile, insect plague"/>
+        <row monster="Beetle, Giant Tiger" component="chitinous spurs" encumbrance="1" value="65" effects="insect plague, shield"/>
+        <row monster="Caecilian" component="stomach" encumbrance="4 3/6" value="270" effects="find treasure"/>
+        <row monster="Caecilian" component="teeth" encumbrance="5" value="300" effects="earth's teeth"/>
+        <row monster="Carcass Scavenger" component="set of feelers" encumbrance="1" value="65" effects="swift sword"/>
+        <row monster="Carcass Scavenger" component="stinger tips" encumbrance="1 1/6" value="70" effects="hold person, hold monster"/>
+        <row monster="Centipede, Giant" component="legs" encumbrance="1 per 20" value="3" effects="slow"/>
+        <row monster="Centipede, Giant" component="mandibles" encumbrance="1 per 20" value="3" effects="sleep"/>
+        <row monster="Crab, Giant" component="carapace fragment" encumbrance="5/6" value="50" effects="shield"/>
+        <row monster="Fly, Giant Carnivorous" component="tarsal segments" encumbrance="2/6" value="20" effects="jump, uncanny gyration"/>
+        <row monster="Leech, Giant" component="sucker" encumbrance="6 4/6" value="400" effects="cause light wounds, enervate"/>
+        <row monster="Leech, Giant" component="salivary gland" encumbrance="4 3/6" value="270" effects="cure light wounds, salving rest"/>
+        <row monster="Locust, Cavern" component="antennae" encumbrance="1/6" value="10" effects="insect plague, jump"/>
+        <row monster="Locust, Cavern" component="salivary gland" encumbrance="2/6" value="20" effects="magic missile, stinking cloud"/>
+        <row monster="Purple Worm" component="stinger" encumbrance="25" value="1,500" effects="poison"/>
+        <row monster="Purple Worm" component="stomach" encumbrance="5" value="300" effects="find treasure, locate object"/>
+        <row monster="Purple Worm" component="teeth" encumbrance="40" value="2,400" effects="earth's teeth, move earth, passwall"/>
+        <row monster="Rhagodessa, Giant" component="mandibles" encumbrance="1" value="65" effects="sharpness, striking"/>
+        <row monster="Rhagodessa, Giant" component="suction pits" encumbrance="2 3/6" value="150" effects="hold person, spider climb"/>
+        <row monster="Rot Grub" component="dried grub" encumbrance="1 per 12" value="5" effects="cause wounds, death spell, finger of death"/>
+        <row monster="Scorpion, Giant" component="carapace" encumbrance="3/6" value="35" effects="protection from normal missiles, shield"/>
+        <row monster="Scorpion, Giant" component="stinger" encumbrance="1 4/6" value="100" effects="poison"/>
+        <row monster="Shrieker" component="mushroom-cap" encumbrance="5/6" value="50" effects="confusion, detect danger, magic mouth, inaudibility, silence 15' radius"/>
+        <row monster="Spider, Giant Black Widow" component="mandibles" encumbrance="3/6" value="30" effects="poison"/>
+        <row monster="Spider, Giant Black Widow" component="leg tarsus" encumbrance="2/6" value="20" effects="spider climb"/>
+        <row monster="Spider, Giant Black Widow" component="spinneret" encumbrance="2/6" value="20" effects="web"/>
+        <row monster="Spider, Giant Crab" component="mandibles" encumbrance="2/6" value="20" effects="poison"/>
+        <row monster="Spider, Giant Crab" component="leg tarsus" encumbrance="1/6" value="10" effects="spider climb"/>
+        <row monster="Spider, Giant Crab" component="palps" encumbrance="1/6" value="10" effects="chameleon"/>
+        <row monster="Spider, Giant Tarantula" component="barbed bristles" encumbrance="2" value="120" effects="magic missile, poison"/>
+        <row monster="Spider, Giant Tarantula" component="leg tarsus" encumbrance="4/6" value="40" effects="spider climb"/>
+        <row monster="Spider, Giant Tarantula" component="spinneret" encumbrance="4/6" value="40" effects="web"/>
+      </table>
+    </special_component_lists>
+  </special_components>
+
+  <confidence_notes>
+    <note confidence="0.86">The Boar, Giant tusk value roll in the antlers_horns_and_tusks table appears OCR-corrupted as "1". I preserved the source reading, but the average suggests a lost die expression.</note>
+    <note confidence="0.84">Several multi-component rows were split by OCR and reconstructed as separate rows: Thrassian, Faerie, Sprite, Nymph, Dryad, Nymph, Naiad, and Zombie.</note>
+    <note confidence="0.83">Hell Hound, Greater appears split across lines; I reconstructed the teeth effects as ending with wall of fire and the tongue effects as detect invisible plus sphere of visibility.</note>
+    <note confidence="0.82">Roc (any) encumbrance/value triples appear to be compressed small/large/giant values. I preserved the source numbers exactly.</note>
+    <note confidence="0.81">Snake, Sea Snake includes OCR errors reading "snack charm" and singular "sticks to snake". I normalized this to snake charm and sticks to snakes.</note>
+    <note confidence="0.79">A few capitalization and spelling forms appear OCR-inconsistent, such as Faravahar/Farahavar and Infravision/infravision. I used the form nearest the relevant table entry when possible.</note>
+  </confidence_notes>
+</monster_parts_rules_summary>

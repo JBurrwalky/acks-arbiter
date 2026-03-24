@@ -1,0 +1,1877 @@
+<class_catalog title="ACKS Core Classes" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <class name="fighter">
+    <identity>
+      <name>Fighter</name>
+      <ancestry_category default="human">human</ancestry_category>
+      <source_label>102B-ACKS Core-Characters-Core-Classes.md</source_label>
+      <class_group>core_class</class_group>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>martial_combatant</tag>
+        <tag>leader</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>all_weapons</tag>
+        <tag>all_armor</tag>
+        <tag>damage_bonus_progression</tag>
+        <tag>stronghold_class</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>STR</ability>
+      </prime_requisites>
+      <minimum_abilities>
+        <rule>None.</rule>
+      </minimum_abilities>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>fighter</primary_progression_family>
+      <attack_throw_progression family="fighter"/>
+      <cleave_progression family="fighter"/>
+      <saving_throw_progression family="fighter"/>
+      <damage_bonus_progression family="fighter"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d8</hit_die>
+      <maximum_level>14</maximum_level>
+      <baseline_title>Man-at-Arms</baseline_title>
+      <post_max_hit_dice_rule>After 9 Hit Dice, gains +2 hit points per level through 14th level; Constitution hit point modifiers do not apply to these fixed increases.</post_max_hit_dice_rule>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>Any armor.</armor>
+        <shields>Any shields.</shields>
+        <weapons>
+          <rule>May use all weapons.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>May fight with weapon and shield.</rule>
+          <rule>May fight with a two-handed weapon.</rule>
+          <rule>May fight with a weapon in each hand.</rule>
+        </fighting_styles>
+      </permissions>
+      <combat_rules>
+        <rule>Attack throw against an unarmored foe (AC 0) is 10+ at 1st level.</rule>
+        <rule>Attack throws and saving throws improve by 2 points every 3 levels.</rule>
+        <rule>Base damage from successful melee and missile attacks is increased by +1 at 1st level and by an additional +1 at 3rd, 6th, 9th, and 12th level.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <special_abilities>
+      <ability name="battlefield_leadership" level="5">
+        <summary>Personally led henchmen and mercenaries gain improved morale.</summary>
+        <rules>
+          <rule>Any henchmen and mercenaries hired by the fighter gain a +1 bonus to morale when the fighter personally leads them.</rule>
+          <rule>This bonus stacks with modifiers from Charisma and proficiencies.</rule>
+        </rules>
+      </ability>
+
+      <ability name="castle_and_command" level="9">
+        <summary>The fighter may build a castle and become a major military leader.</summary>
+        <rules>
+          <rule>The fighter may build a castle if sufficient gold is available.</rule>
+          <rule>Building the castle allows the fighter to take a leadership rank in society.</rule>
+          <rule>Campaign rules for castles are referenced externally.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Man-at-Arms</title>
+        <hit_dice>1d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+1</value>
+        </values>
+      </entry>
+      <entry level="2">
+        <xp_required>2,000</xp_required>
+        <title>Warrior</title>
+        <hit_dice>2d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+1</value>
+        </values>
+      </entry>
+      <entry level="3">
+        <xp_required>4,000</xp_required>
+        <title>Swordmaster</title>
+        <hit_dice>3d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+      </entry>
+      <entry level="4">
+        <xp_required>8,000</xp_required>
+        <title>Hero</title>
+        <hit_dice>4d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+      </entry>
+      <entry level="5">
+        <xp_required>16,000</xp_required>
+        <title>Exemplar</title>
+        <hit_dice>5d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+2</value>
+        </values>
+        <features_gained>
+          <feature_ref>battlefield_leadership</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="6">
+        <xp_required>32,000</xp_required>
+        <title>Myrmidon</title>
+        <hit_dice>6d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="7">
+        <xp_required>65,000</xp_required>
+        <title>Champion</title>
+        <hit_dice>7d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="8">
+        <xp_required>130,000</xp_required>
+        <title>Epic Hero</title>
+        <hit_dice>8d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+3</value>
+        </values>
+      </entry>
+      <entry level="9">
+        <xp_required>250,000</xp_required>
+        <title>Warlord</title>
+        <hit_dice>9d8</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+        <features_gained>
+          <feature_ref>castle_and_command</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>370,000</xp_required>
+        <title>Warlord, 10th lvl</title>
+        <hit_dice>9d8+2</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+      </entry>
+      <entry level="11">
+        <xp_required>490,000</xp_required>
+        <title>Warlord, 11th lvl</title>
+        <hit_dice>9d8+4</hit_dice>
+        <values>
+          <value name="damage_bonus">+4</value>
+        </values>
+      </entry>
+      <entry level="12">
+        <xp_required>610,000</xp_required>
+        <title>Warlord, 12th lvl</title>
+        <hit_dice>9d8+6</hit_dice>
+        <values>
+          <value name="damage_bonus">+5</value>
+        </values>
+      </entry>
+      <entry level="13">
+        <xp_required>730,000</xp_required>
+        <title>Warlord, 13th lvl</title>
+        <hit_dice>9d8+8</hit_dice>
+        <values>
+          <value name="damage_bonus">+5</value>
+        </values>
+      </entry>
+      <entry level="14">
+        <xp_required>850,000</xp_required>
+        <title>Overlord</title>
+        <hit_dice>9d8+10</hit_dice>
+        <values>
+          <value name="damage_bonus">+5</value>
+        </values>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">15+</value>
+          <value name="poison_death">14+</value>
+          <value name="blast_breath">16+</value>
+          <value name="staffs_wands">16+</value>
+          <value name="spells">17+</value>
+        </row>
+        <row>
+          <value name="level_range">2-3</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">14+</value>
+          <value name="poison_death">13+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">15+</value>
+          <value name="spells">16+</value>
+        </row>
+        <row>
+          <value name="level_range">4</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">13+</value>
+          <value name="poison_death">12+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">14+</value>
+          <value name="spells">15+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">11+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">13+</value>
+          <value name="spells">14+</value>
+        </row>
+        <row>
+          <value name="level_range">7</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">12+</value>
+          <value name="spells">13+</value>
+        </row>
+        <row>
+          <value name="level_range">8-9</value>
+          <value name="attack_throw">5+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">10</value>
+          <value name="attack_throw">4+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">10+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">11-12</value>
+          <value name="attack_throw">3+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">7+</value>
+          <value name="blast_breath">9+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">13</value>
+          <value name="attack_throw">2+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">6+</value>
+          <value name="blast_breath">8+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">9+</value>
+        </row>
+        <row>
+          <value name="level_range">14</value>
+          <value name="attack_throw">1+</value>
+          <value name="petrification_paralysis">6+</value>
+          <value name="poison_death">5+</value>
+          <value name="blast_breath">7+</value>
+          <value name="staffs_wands">7+</value>
+          <value name="spells">8+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>castle</structure_type>
+      <acquisition_rules>
+        <rule>May build a castle if sufficient gold is available.</rule>
+        <rule>May take a leadership rank in society after establishing the castle.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="0_level_mercenaries" number="1d4+1x100"/>
+        <follower type="fighters_1st_to_3rd_level" number="1d6"/>
+      </followers>
+      <cost_rules>
+        <rule>If hired, followers must be paid standard mercenary rates.</rule>
+      </cost_rules>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="fighter"/>
+      <general_rule_reference type="mercenary_hiring"/>
+      <general_rule_reference type="castle_rules"/>
+    </references>
+  </class>
+
+  <class name="mage">
+    <identity>
+      <name>Mage</name>
+      <ancestry_category default="human">human</ancestry_category>
+      <source_label>102B-ACKS Core-Characters-Core-Classes.md</source_label>
+      <class_group>core_class</class_group>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>arcane_spellcaster</tag>
+        <tag>researcher</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>repertoire_spellcasting</tag>
+        <tag>ritual_arcane_magic</tag>
+        <tag>item_creation</tag>
+        <tag>stronghold_class</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>INT</ability>
+      </prime_requisites>
+      <minimum_abilities>
+        <rule>None.</rule>
+      </minimum_abilities>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>mage</primary_progression_family>
+      <attack_throw_progression family="mage"/>
+      <cleave_progression family="mage"/>
+      <saving_throw_progression family="mage"/>
+      <damage_bonus_progression family="mage"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d4</hit_die>
+      <maximum_level>14</maximum_level>
+      <baseline_title>Arcanist</baseline_title>
+      <post_max_hit_dice_rule>After 9 Hit Dice, gains +1 hit point per level through 14th level; Constitution hit point modifiers do not apply to these fixed increases.</post_max_hit_dice_rule>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>None.</armor>
+        <shields>None.</shields>
+        <weapons>
+          <rule>May use quarterstaffs, clubs, daggers, and darts.</rule>
+        </weapons>
+      </permissions>
+      <restrictions>
+        <restriction>May not wear armor.</restriction>
+        <restriction>May not use shields.</restriction>
+        <restriction>May not fight with two weapons.</restriction>
+      </restrictions>
+      <combat_rules>
+        <rule>Attack throw against an unarmored foe (AC 0) is 10+ at 1st level.</rule>
+        <rule>Attack throws and saving throws improve by 2 points every 6 levels.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <spellcasting_profile>
+      <tradition>arcane</tradition>
+      <access_rules>
+        <rule>Can learn and cast arcane spells.</rule>
+        <rule>Daily spell use is limited by the spell slots shown in level progression.</rule>
+        <rule>Spell selection is limited to the mage's repertoire.</rule>
+      </access_rules>
+      <repertoire_rules>
+        <rule>The repertoire can include a number of spells up to the number and level of spells listed for the mage's level, increased by the mage's Intelligence bonus.</rule>
+      </repertoire_rules>
+      <ritual_access>
+        <rule>At 11th level, may learn and cast ritual arcane spells of 7th, 8th, and 9th level.</rule>
+      </ritual_access>
+      <casting_limits>
+        <rule>Only spells in the repertoire may be cast.</rule>
+      </casting_limits>
+    </spellcasting_profile>
+
+    <special_abilities>
+      <ability name="spell_research_scrolls_and_potions" level="5">
+        <summary>Unlocks research and lesser magical item creation.</summary>
+        <rules>
+          <rule>May research spells.</rule>
+          <rule>May scribe magical scrolls.</rule>
+          <rule>May brew potions.</rule>
+        </rules>
+      </ability>
+
+      <ability name="major_magic_item_creation" level="9">
+        <summary>Unlocks creation of more powerful magic items.</summary>
+        <rules>
+          <rule>May create magic items such as weapons, rings, and staffs.</rule>
+        </rules>
+      </ability>
+
+      <ability name="advanced_arcane_creation" level="11">
+        <summary>Unlocks high-end ritual and magical creation options.</summary>
+        <rules>
+          <rule>May craft magical constructs.</rule>
+          <rule>May create magical cross-breeds.</rule>
+          <rule>If chaotic, may create necromantic servants and become undead.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Arcanist</title>
+        <hit_dice>1d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">1</slot>
+          <slot spell_level="2">-</slot>
+          <slot spell_level="3">-</slot>
+          <slot spell_level="4">-</slot>
+          <slot spell_level="5">-</slot>
+          <slot spell_level="6">-</slot>
+        </spell_slots>
+      </entry>
+      <entry level="2">
+        <xp_required>2,500</xp_required>
+        <title>Seer</title>
+        <hit_dice>2d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">-</slot>
+          <slot spell_level="3">-</slot>
+          <slot spell_level="4">-</slot>
+          <slot spell_level="5">-</slot>
+          <slot spell_level="6">-</slot>
+        </spell_slots>
+      </entry>
+      <entry level="3">
+        <xp_required>5,000</xp_required>
+        <title>Theurgist</title>
+        <hit_dice>3d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">1</slot>
+          <slot spell_level="3">-</slot>
+          <slot spell_level="4">-</slot>
+          <slot spell_level="5">-</slot>
+          <slot spell_level="6">-</slot>
+        </spell_slots>
+      </entry>
+      <entry level="4">
+        <xp_required>10,000</xp_required>
+        <title>Magician</title>
+        <hit_dice>4d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">-</slot>
+          <slot spell_level="4">-</slot>
+          <slot spell_level="5">-</slot>
+          <slot spell_level="6">-</slot>
+        </spell_slots>
+      </entry>
+      <entry level="5">
+        <xp_required>20,000</xp_required>
+        <title>Thaumaturge</title>
+        <hit_dice>5d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">1</slot>
+          <slot spell_level="4">-</slot>
+          <slot spell_level="5">-</slot>
+          <slot spell_level="6">-</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>spell_research_scrolls_and_potions</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="6">
+        <xp_required>40,000</xp_required>
+        <title>Enchanter</title>
+        <hit_dice>6d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">2</slot>
+          <slot spell_level="4">-</slot>
+          <slot spell_level="5">-</slot>
+          <slot spell_level="6">-</slot>
+        </spell_slots>
+      </entry>
+      <entry level="7">
+        <xp_required>80,000</xp_required>
+        <title>Sorcerer</title>
+        <hit_dice>7d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">2</slot>
+          <slot spell_level="4">1</slot>
+          <slot spell_level="5">-</slot>
+          <slot spell_level="6">-</slot>
+        </spell_slots>
+      </entry>
+      <entry level="8">
+        <xp_required>160,000</xp_required>
+        <title>Mage</title>
+        <hit_dice>8d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">2</slot>
+          <slot spell_level="4">2</slot>
+          <slot spell_level="5">-</slot>
+          <slot spell_level="6">-</slot>
+        </spell_slots>
+      </entry>
+      <entry level="9">
+        <xp_required>310,000</xp_required>
+        <title>Wizard</title>
+        <hit_dice>9d4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">2</slot>
+          <slot spell_level="5">1</slot>
+          <slot spell_level="6">-</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>major_magic_item_creation</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>460,000</xp_required>
+        <title>Wizard, 10th lvl</title>
+        <hit_dice>9d4+1</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">2</slot>
+          <slot spell_level="6">-</slot>
+        </spell_slots>
+      </entry>
+      <entry level="11">
+        <xp_required>610,000</xp_required>
+        <title>Wizard, 11th lvl</title>
+        <hit_dice>9d4+2</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">4</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">2</slot>
+          <slot spell_level="6">1</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>advanced_arcane_creation</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="12">
+        <xp_required>760,000</xp_required>
+        <title>Wizard, 12th lvl</title>
+        <hit_dice>9d4+3</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">4</slot>
+          <slot spell_level="2">4</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">3</slot>
+          <slot spell_level="6">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="13">
+        <xp_required>910,000</xp_required>
+        <title>Wizard, 13th lvl</title>
+        <hit_dice>9d4+4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">4</slot>
+          <slot spell_level="2">4</slot>
+          <slot spell_level="3">4</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">3</slot>
+          <slot spell_level="6">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="14">
+        <xp_required>1,060,000</xp_required>
+        <title>Archmage</title>
+        <hit_dice>9d4+5</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">4</slot>
+          <slot spell_level="2">4</slot>
+          <slot spell_level="3">4</slot>
+          <slot spell_level="4">4</slot>
+          <slot spell_level="5">3</slot>
+          <slot spell_level="6">3</slot>
+        </spell_slots>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1-3</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">13+</value>
+          <value name="poison_death">13+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">4-6</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">12+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">7-9</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">11+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">10-12</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">9+</value>
+        </row>
+        <row>
+          <value name="level_range">13-14</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">7+</value>
+          <value name="spells">8+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>sanctum</structure_type>
+      <acquisition_rules>
+        <rule>May build a sanctum, often a great tower.</rule>
+        <rule>If the mage builds a dungeon beneath or near the tower, monsters will start to arrive to dwell within, followed shortly by adventurers seeking to fight them.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="apprentices_1st_to_3rd_level" number="1d6"/>
+        <follower type="normal_men_seeking_to_become_mages" number="2d6"/>
+      </followers>
+      <cost_rules>
+        <rule>Apprentices and seekers must be provided food and lodging, but need not be paid wages.</rule>
+      </cost_rules>
+      <loyalty_or_morale_rules>
+        <rule>Their Intelligence scores are above average, but many become discouraged and quit after 1d6 months.</rule>
+      </loyalty_or_morale_rules>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="mage"/>
+      <general_rule_reference type="arcane_magic"/>
+      <general_rule_reference type="ritual_spells"/>
+      <general_rule_reference type="magic_item_creation"/>
+      <general_rule_reference type="sanctum_rules"/>
+    </references>
+  </class>
+
+  <class name="cleric">
+    <identity>
+      <name>Cleric</name>
+      <ancestry_category default="human">human</ancestry_category>
+      <source_label>102B-ACKS Core-Characters-Core-Classes.md</source_label>
+      <class_group>core_class</class_group>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>divine_spellcaster</tag>
+        <tag>holy_warrior</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>turn_undead</tag>
+        <tag>ritual_divine_magic</tag>
+        <tag>item_creation</tag>
+        <tag>stronghold_class</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>WIS</ability>
+      </prime_requisites>
+      <minimum_abilities>
+        <rule>None.</rule>
+      </minimum_abilities>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>cleric</primary_progression_family>
+      <attack_throw_progression family="cleric"/>
+      <cleave_progression family="cleric"/>
+      <saving_throw_progression family="cleric"/>
+      <damage_bonus_progression family="cleric"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d6</hit_die>
+      <maximum_level>14</maximum_level>
+      <baseline_title>Catechist</baseline_title>
+      <post_max_hit_dice_rule>After 9 Hit Dice, gains +1 hit point per level through 14th level; Constitution hit point modifiers do not apply to these fixed increases.</post_max_hit_dice_rule>
+      <general_notes>
+        <rule>The source includes a pre-generated priest template. If the cleric's INT is 13 or greater, one or more additional general proficiencies may be selected before play, subject to the Starting Proficiencies rules.</rule>
+      </general_notes>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>Any armor.</armor>
+        <shields>Any shields.</shields>
+        <weapons>
+          <rule>Weapons permitted are determined by the strictures of the cleric's religious order.</rule>
+          <rule>If no religious orders are specified, the default cleric is assumed to worship Ammonar and may use only blunt weapons such as warhammers, maces, clubs, quarterstaffs, and slings.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>May use shields.</rule>
+          <rule>May use two-handed weapons if permitted by the order.</rule>
+        </fighting_styles>
+      </permissions>
+      <restrictions>
+        <restriction>Default Ammonar clerics may not use blood-shedding weapons.</restriction>
+        <restriction>Default Ammonar clerics may not fight with a weapon in each hand.</restriction>
+      </restrictions>
+      <combat_rules>
+        <rule>Attack throw against an unarmored foe (AC 0) is 10+ at 1st level.</rule>
+        <rule>Attack throws and saving throws improve by 2 points every 4 levels.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <spellcasting_profile>
+      <tradition>divine</tradition>
+      <access_rules>
+        <rule>Beginning at 2nd level, may manifest divine spells granted through prayer and worship.</rule>
+        <rule>Number and level of divine spells available are determined by level progression.</rule>
+      </access_rules>
+      <ritual_access>
+        <rule>At 11th level, may learn and cast ritual divine spells of 6th and 7th level.</rule>
+      </ritual_access>
+      <casting_limits>
+        <rule>To use spells and turn undead, the cleric must uphold the doctrines of the faith and deity.</rule>
+        <rule>If the cleric falls from favor by violating doctrine or clergy rules, the Judge may impose penalties, including attack penalties or reduced spells available.</rule>
+      </casting_limits>
+    </spellcasting_profile>
+
+    <class_subsystems>
+      <turning>
+        <definition>Call upon divine power to turn away, destroy, or in some chaotic sects control undead.</definition>
+        <rules>
+          <rule>Turning potency depends on cleric level and undead type.</rule>
+          <rule>On the turning table, "-" means the cleric is too low level to affect that undead type.</rule>
+          <rule>"T" means the undead are automatically turned.</rule>
+          <rule>"D" means the undead are automatically destroyed.</rule>
+          <rule>A numbered entry means the player must roll that number or higher on 1d20 to turn the undead.</rule>
+          <rule>On a successful numeric turning attempt, or on a "T" result, roll 2d6; the total equals the total Hit Dice of undead turned.</rule>
+          <rule>On a "D" result, roll 2d6; the total equals the total Hit Dice of undead destroyed.</rule>
+          <rule>At least one undead monster is always turned or destroyed on a successful use of turning, regardless of the 2d6 total.</rule>
+          <rule>There is no daily limit on attempts to turn undead.</rule>
+          <rule>If an attempt to turn undead fails during an encounter, the cleric cannot attempt to turn undead again for the rest of that encounter.</rule>
+          <rule>Turned undead flee for 10 rounds by the best and fastest means available.</rule>
+          <rule>If turned undead cannot flee, they cower, take no actions, and suffer a -2 penalty to AC.</rule>
+          <rule>If the cleric attacks turned undead in melee, the turning effect ends.</rule>
+          <rule>The cleric may use spells or missile weapons against turned undead without breaking the effect.</rule>
+          <rule>Other characters may attack turned undead in any fashion without breaking the effect.</rule>
+          <rule>Destroyed undead are immediately reduced to ash.</rule>
+          <rule>Certain chaotic sects control undead instead of turning them.</rule>
+          <rule>Controlled undead last for 1 turn per cleric level, or 1 day per cleric level if the result would have destroyed them.</rule>
+          <rule>Controlled undead behave as if charmed and obey the cleric as friends.</rule>
+          <rule>If controlled undead are turned or destroyed by a cleric before control ends, the control ends immediately.</rule>
+          <rule>If control ends naturally, the undead flee as if turned.</rule>
+          <rule>Infernal includes very powerful undead or unholy beings such as demons and devils.</rule>
+        </rules>
+        <procedure>
+          <step order="1">Consult the turning table for the undead type and cleric level.</step>
+          <step order="2">If the result is "-", the attempt cannot affect that undead type.</step>
+          <step order="3">If the result is a number, roll 1d20 and succeed on that number or higher.</step>
+          <step order="4">If the result is "T", skip the 1d20 roll and resolve turning automatically.</step>
+          <step order="5">If the result is "D", skip the 1d20 roll and resolve destruction automatically.</step>
+          <step order="6">Roll 2d6 to determine the total Hit Dice affected.</step>
+          <step order="7">Apply the effect to at least one undead on a successful result, even if the 2d6 total would otherwise be insufficient.</step>
+        </procedure>
+        <tables>
+          <table name="turning_undead">
+            <columns>
+              <column>undead_type</column>
+              <column>1</column>
+              <column>2</column>
+              <column>3</column>
+              <column>4</column>
+              <column>5</column>
+              <column>6</column>
+              <column>7</column>
+              <column>8</column>
+              <column>9</column>
+              <column>10</column>
+              <column>11</column>
+              <column>12</column>
+              <column>13</column>
+              <column>14+</column>
+            </columns>
+            <row>
+              <value name="undead_type">Skeleton</value>
+              <value name="1">10+</value>
+              <value name="2">7+</value>
+              <value name="3">4+</value>
+              <value name="4">T</value>
+              <value name="5">T</value>
+              <value name="6">D</value>
+              <value name="7">D</value>
+              <value name="8">D</value>
+              <value name="9">D</value>
+              <value name="10">D</value>
+              <value name="11">D</value>
+              <value name="12">D</value>
+              <value name="13">D</value>
+              <value name="14+">D</value>
+            </row>
+            <row>
+              <value name="undead_type">Zombie</value>
+              <value name="1">13+</value>
+              <value name="2">10+</value>
+              <value name="3">7+</value>
+              <value name="4">4+</value>
+              <value name="5">T</value>
+              <value name="6">T</value>
+              <value name="7">D</value>
+              <value name="8">D</value>
+              <value name="9">D</value>
+              <value name="10">D</value>
+              <value name="11">D</value>
+              <value name="12">D</value>
+              <value name="13">D</value>
+              <value name="14+">D</value>
+            </row>
+            <row>
+              <value name="undead_type">Ghoul</value>
+              <value name="1">16+</value>
+              <value name="2">13+</value>
+              <value name="3">10+</value>
+              <value name="4">7+</value>
+              <value name="5">4+</value>
+              <value name="6">T</value>
+              <value name="7">T</value>
+              <value name="8">D</value>
+              <value name="9">D</value>
+              <value name="10">D</value>
+              <value name="11">D</value>
+              <value name="12">D</value>
+              <value name="13">D</value>
+              <value name="14+">D</value>
+            </row>
+            <row>
+              <value name="undead_type">Wight</value>
+              <value name="1">19+</value>
+              <value name="2">16+</value>
+              <value name="3">13+</value>
+              <value name="4">10+</value>
+              <value name="5">7+</value>
+              <value name="6">4+</value>
+              <value name="7">T</value>
+              <value name="8">T</value>
+              <value name="9">D</value>
+              <value name="10">D</value>
+              <value name="11">D</value>
+              <value name="12">D</value>
+              <value name="13">D</value>
+              <value name="14+">D</value>
+            </row>
+            <row>
+              <value name="undead_type">Wraith</value>
+              <value name="1">-</value>
+              <value name="2">19+</value>
+              <value name="3">16+</value>
+              <value name="4">13+</value>
+              <value name="5">10+</value>
+              <value name="6">7+</value>
+              <value name="7">4+</value>
+              <value name="8">T</value>
+              <value name="9">T</value>
+              <value name="10">D</value>
+              <value name="11">D</value>
+              <value name="12">D</value>
+              <value name="13">D</value>
+              <value name="14+">D</value>
+            </row>
+            <row>
+              <value name="undead_type">Mummy</value>
+              <value name="1">-</value>
+              <value name="2">-</value>
+              <value name="3">19+</value>
+              <value name="4">16+</value>
+              <value name="5">13+</value>
+              <value name="6">10+</value>
+              <value name="7">7+</value>
+              <value name="8">4+</value>
+              <value name="9">T</value>
+              <value name="10">T</value>
+              <value name="11">D</value>
+              <value name="12">D</value>
+              <value name="13">D</value>
+              <value name="14+">D</value>
+            </row>
+            <row>
+              <value name="undead_type">Spectre</value>
+              <value name="1">-</value>
+              <value name="2">-</value>
+              <value name="3">-</value>
+              <value name="4">19+</value>
+              <value name="5">16+</value>
+              <value name="6">13+</value>
+              <value name="7">10+</value>
+              <value name="8">7+</value>
+              <value name="9">4+</value>
+              <value name="10">T</value>
+              <value name="11">T</value>
+              <value name="12">D</value>
+              <value name="13">D</value>
+              <value name="14+">D</value>
+            </row>
+            <row>
+              <value name="undead_type">Vampire</value>
+              <value name="1">-</value>
+              <value name="2">-</value>
+              <value name="3">-</value>
+              <value name="4">-</value>
+              <value name="5">19+</value>
+              <value name="6">16+</value>
+              <value name="7">13+</value>
+              <value name="8">10+</value>
+              <value name="9">7+</value>
+              <value name="10">4+</value>
+              <value name="11">T</value>
+              <value name="12">T</value>
+              <value name="13">D</value>
+              <value name="14+">D</value>
+            </row>
+            <row>
+              <value name="undead_type">Infernal</value>
+              <value name="1">-</value>
+              <value name="2">-</value>
+              <value name="3">-</value>
+              <value name="4">-</value>
+              <value name="5">-</value>
+              <value name="6">19+</value>
+              <value name="7">16+</value>
+              <value name="8">13+</value>
+              <value name="9">10+</value>
+              <value name="10">7+</value>
+              <value name="11">4+</value>
+              <value name="12">T</value>
+              <value name="13">T</value>
+              <value name="14+">D</value>
+            </row>
+          </table>
+        </tables>
+      </turning>
+    </class_subsystems>
+
+    <special_abilities>
+      <ability name="spell_research_scrolls_and_potions" level="5">
+        <summary>Unlocks research and lesser magical item creation.</summary>
+        <rules>
+          <rule>May research spells.</rule>
+          <rule>May scribe scrolls.</rule>
+          <rule>May brew potions.</rule>
+        </rules>
+      </ability>
+
+      <ability name="major_magic_item_creation" level="9">
+        <summary>Unlocks creation of more powerful magic items.</summary>
+        <rules>
+          <rule>May create magic items such as weapons, rings, and staffs.</rule>
+        </rules>
+      </ability>
+
+      <ability name="advanced_divine_creation" level="11">
+        <summary>Unlocks high-end ritual and magical creation options.</summary>
+        <rules>
+          <rule>May craft magical constructs such as golems and animated statues.</rule>
+          <rule>If chaotic, may create necromantic servants and become undead.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Catechist</title>
+        <hit_dice>1d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">-</slot>
+          <slot spell_level="2">-</slot>
+          <slot spell_level="3">-</slot>
+          <slot spell_level="4">-</slot>
+          <slot spell_level="5">-</slot>
+        </spell_slots>
+      </entry>
+      <entry level="2">
+        <xp_required>1,500</xp_required>
+        <title>Acolyte</title>
+        <hit_dice>2d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">1</slot>
+          <slot spell_level="2">-</slot>
+          <slot spell_level="3">-</slot>
+          <slot spell_level="4">-</slot>
+          <slot spell_level="5">-</slot>
+        </spell_slots>
+      </entry>
+      <entry level="3">
+        <xp_required>3,000</xp_required>
+        <title>Priest</title>
+        <hit_dice>3d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">-</slot>
+          <slot spell_level="3">-</slot>
+          <slot spell_level="4">-</slot>
+          <slot spell_level="5">-</slot>
+        </spell_slots>
+      </entry>
+      <entry level="4">
+        <xp_required>6,000</xp_required>
+        <title>Curate</title>
+        <hit_dice>4d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">1</slot>
+          <slot spell_level="3">-</slot>
+          <slot spell_level="4">-</slot>
+          <slot spell_level="5">-</slot>
+        </spell_slots>
+      </entry>
+      <entry level="5">
+        <xp_required>12,000</xp_required>
+        <title>Vicar</title>
+        <hit_dice>5d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">-</slot>
+          <slot spell_level="4">-</slot>
+          <slot spell_level="5">-</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>spell_research_scrolls_and_potions</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="6">
+        <xp_required>24,000</xp_required>
+        <title>Rector</title>
+        <hit_dice>6d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">1</slot>
+          <slot spell_level="4">1</slot>
+          <slot spell_level="5">-</slot>
+        </spell_slots>
+      </entry>
+      <entry level="7">
+        <xp_required>50,000</xp_required>
+        <title>Prelate</title>
+        <hit_dice>7d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">2</slot>
+          <slot spell_level="2">2</slot>
+          <slot spell_level="3">2</slot>
+          <slot spell_level="4">1</slot>
+          <slot spell_level="5">1</slot>
+        </spell_slots>
+      </entry>
+      <entry level="8">
+        <xp_required>100,000</xp_required>
+        <title>Bishop</title>
+        <hit_dice>8d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">2</slot>
+          <slot spell_level="4">2</slot>
+          <slot spell_level="5">1</slot>
+        </spell_slots>
+      </entry>
+      <entry level="9">
+        <xp_required>200,000</xp_required>
+        <title>Patriarch</title>
+        <hit_dice>9d6</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">3</slot>
+          <slot spell_level="2">3</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">2</slot>
+          <slot spell_level="5">2</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>major_magic_item_creation</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="10">
+        <xp_required>300,000</xp_required>
+        <title>Patriarch, 10th lvl</title>
+        <hit_dice>9d6+1</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">4</slot>
+          <slot spell_level="2">4</slot>
+          <slot spell_level="3">3</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">2</slot>
+        </spell_slots>
+      </entry>
+      <entry level="11">
+        <xp_required>400,000</xp_required>
+        <title>Patriarch, 11th lvl</title>
+        <hit_dice>9d6+2</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">4</slot>
+          <slot spell_level="2">4</slot>
+          <slot spell_level="3">4</slot>
+          <slot spell_level="4">3</slot>
+          <slot spell_level="5">3</slot>
+        </spell_slots>
+        <features_gained>
+          <feature_ref>advanced_divine_creation</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="12">
+        <xp_required>500,000</xp_required>
+        <title>Patriarch, 12th lvl</title>
+        <hit_dice>9d6+3</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">5</slot>
+          <slot spell_level="2">5</slot>
+          <slot spell_level="3">4</slot>
+          <slot spell_level="4">4</slot>
+          <slot spell_level="5">3</slot>
+        </spell_slots>
+      </entry>
+      <entry level="13">
+        <xp_required>600,000</xp_required>
+        <title>Patriarch, 13th lvl</title>
+        <hit_dice>9d6+4</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">5</slot>
+          <slot spell_level="2">5</slot>
+          <slot spell_level="3">5</slot>
+          <slot spell_level="4">4</slot>
+          <slot spell_level="5">3</slot>
+        </spell_slots>
+      </entry>
+      <entry level="14">
+        <xp_required>700,000</xp_required>
+        <title>Theocrat</title>
+        <hit_dice>9d6+5</hit_dice>
+        <spell_slots>
+          <slot spell_level="1">6</slot>
+          <slot spell_level="2">5</slot>
+          <slot spell_level="3">5</slot>
+          <slot spell_level="4">5</slot>
+          <slot spell_level="5">4</slot>
+        </spell_slots>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1-2</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">13+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">16+</value>
+          <value name="staffs_wands">13+</value>
+          <value name="spells">15+</value>
+        </row>
+        <row>
+          <value name="level_range">3-4</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">12+</value>
+          <value name="spells">14+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">13+</value>
+        </row>
+        <row>
+          <value name="level_range">7-8</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">7+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">9-10</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">6+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">11-12</value>
+          <value name="attack_throw">5+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">5+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">13-14</value>
+          <value name="attack_throw">4+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">4+</value>
+          <value name="blast_breath">10+</value>
+          <value name="staffs_wands">7+</value>
+          <value name="spells">9+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>fortified_church</structure_type>
+      <acquisition_rules>
+        <rule>May establish or build a fortified church.</rule>
+        <rule>If currently in favor with the deity, may buy or build the fortified church at half the normal price due to divine intervention.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="0_level_soldiers" number="5d6x10"/>
+        <follower type="clerics_1st_to_3rd_level_same_religion" number="1d6"/>
+      </followers>
+      <cost_rules>
+        <rule>Followers must be provided food and lodging, but need not be paid wages.</rule>
+      </cost_rules>
+      <loyalty_or_morale_rules>
+        <rule>Followers are completely loyal and have morale +4.</rule>
+        <rule>The Judge determines the proportions of archers, infantry, and other soldier types.</rule>
+      </loyalty_or_morale_rules>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="cleric"/>
+      <general_rule_reference type="divine_magic"/>
+      <general_rule_reference type="turning_undead"/>
+      <general_rule_reference type="ritual_spells"/>
+      <general_rule_reference type="magic_item_creation"/>
+      <general_rule_reference type="fortified_church_rules"/>
+    </references>
+  </class>
+
+  <class name="thief">
+    <identity>
+      <name>Thief</name>
+      <ancestry_category default="human">human</ancestry_category>
+      <source_label>102B-ACKS Core-Characters-Core-Classes.md</source_label>
+      <class_group>core_class</class_group>
+    </identity>
+
+    <classification>
+      <role_tags>
+        <tag>skill_specialist</tag>
+        <tag>stealth_combatant</tag>
+      </role_tags>
+      <capability_tags>
+        <tag>thief_skills</tag>
+        <tag>backstab</tag>
+        <tag>read_languages</tag>
+        <tag>arcane_scroll_use</tag>
+        <tag>stronghold_class</tag>
+      </capability_tags>
+    </classification>
+
+    <requirements>
+      <prime_requisites>
+        <ability>DEX</ability>
+      </prime_requisites>
+      <minimum_abilities>
+        <rule>None.</rule>
+      </minimum_abilities>
+    </requirements>
+
+    <progression_mapping>
+      <primary_progression_family>thief</primary_progression_family>
+      <attack_throw_progression family="thief"/>
+      <cleave_progression family="thief"/>
+      <saving_throw_progression family="thief"/>
+      <damage_bonus_progression family="thief"/>
+    </progression_mapping>
+
+    <core_statistics>
+      <hit_die>1d4</hit_die>
+      <maximum_level>14</maximum_level>
+      <baseline_title>Footpad</baseline_title>
+      <post_max_hit_dice_rule>After 9 Hit Dice, gains +2 hit points per level through 14th level; Constitution hit point modifiers do not apply to these fixed increases.</post_max_hit_dice_rule>
+      <general_notes>
+        <rule>A thief will usually belong to a Thieves' Guild in the local town.</rule>
+        <rule>At the Judge's discretion, a thief may have to forfeit part of earnings to the guild in exchange for protection.</rule>
+      </general_notes>
+    </core_statistics>
+
+    <combat_profile>
+      <permissions>
+        <armor>Leather armor or lighter.</armor>
+        <shields>None.</shields>
+        <weapons>
+          <rule>May use any missile weapons.</rule>
+          <rule>May use any one-handed melee weapons.</rule>
+        </weapons>
+        <fighting_styles>
+          <rule>May fight with a one-handed weapon in each hand.</rule>
+          <rule>May wield a one-handed weapon with two hands.</rule>
+        </fighting_styles>
+      </permissions>
+      <restrictions>
+        <restriction>May not wear armor heavier than leather.</restriction>
+        <restriction>May not use shields.</restriction>
+        <restriction>May not use exclusively two-handed melee weapons such as great axes or polearms.</restriction>
+      </restrictions>
+      <combat_rules>
+        <rule>Attack throw against an unarmored foe (AC 0) is 10+ at 1st level.</rule>
+        <rule>Attack throws and saving throws improve by 2 points every 4 levels.</rule>
+      </combat_rules>
+    </combat_profile>
+
+    <class_subsystems>
+      <thief_skills>
+        <rules>
+          <rule>Thief skills improve by level according to the thief skills table.</rule>
+          <rule>When a thief uses a listed skill, roll 1d20 as a proficiency throw.</rule>
+          <rule>The Judge will usually make these rolls because the thief is not always aware of failure.</rule>
+          <rule>After applying relevant modifiers, success occurs when the result is greater than or equal to the target value for the thief's level and the relevant skill.</rule>
+          <rule>A roll of 20 is always a success.</rule>
+          <rule>A roll of 1 is always a failure.</rule>
+        </rules>
+        <skill_definitions>
+          <skill name="open_locks">
+            <rule>Requires thieves' tools.</rule>
+            <rule>May attempt to pick a particular mechanical lock only once.</rule>
+            <rule>If the attempt fails, the thief cannot try that same lock again until reaching a higher experience level.</rule>
+            <rule>The Judge may apply modifiers based on the complexity of the lock.</rule>
+          </skill>
+          <skill name="find_and_remove_traps">
+            <rule>Through careful inspection and probing, the thief may find hidden traps and attempt to disable or discharge them harmlessly.</rule>
+            <rule>The thief may attempt to find or remove a trap only once in a given area.</rule>
+            <rule>Finding a trap and removing a trap are separate applications; the trap must be found before it can be removed.</rule>
+            <rule>The Judge may apply modifiers based on the complexity of the trap.</rule>
+            <rule>If the attempt fails, the thief cannot try again until reaching a higher experience level.</rule>
+          </skill>
+          <skill name="pick_pockets">
+            <rule>If the throw is less than half the target value, the intended victim notices the attempt.</rule>
+            <rule>If noticed, the Judge makes a reaction roll with a -3 penalty to determine the victim's reaction.</rule>
+            <rule>Apply a -1 penalty to the proficiency throw for each level the thief is lower than the victim.</rule>
+          </skill>
+          <skill name="move_silently">
+            <rule>On success, the thief moves with total silence.</rule>
+            <rule>The thief always believes the attempt succeeded until others react.</rule>
+            <rule>Moving silently at up to one-half normal combat movement causes no penalty.</rule>
+            <rule>Moving faster than one-half speed applies a -5 penalty to the throw.</rule>
+            <rule>Running applies a -10 penalty to the throw.</rule>
+          </skill>
+          <skill name="climb_walls">
+            <rule>Requires one proficiency throw for each 100 feet climbed.</rule>
+            <rule>If the throw fails, the thief falls a distance equal to half the attempted distance, plus the distance already covered by any previous successful throws.</rule>
+            <rule>Falling damage is 1d6 per 10 feet.</rule>
+            <rule>Climbing speed is one-quarter normal combat movement.</rule>
+          </skill>
+          <skill name="hide_in_shadows">
+            <rule>The thief may attempt to remain unseen in darkness.</rule>
+            <rule>The thief always believes the attempt succeeded until others react.</rule>
+            <rule>The thief remains hidden only while motionless.</rule>
+            <rule>If the thief moves, a new proficiency throw is required.</rule>
+          </skill>
+          <skill name="hear_noise">
+            <rule>The thief may listen in caves, hallways, at doors, and similar locations.</rule>
+            <rule>The thief must be quiet and in a quiet environment.</rule>
+          </skill>
+        </skill_definitions>
+        <tables>
+          <table name="thief_skills">
+            <columns>
+              <column>level</column>
+              <column>open_locks</column>
+              <column>find_and_remove_traps</column>
+              <column>pick_pockets</column>
+              <column>move_silently</column>
+              <column>climb_walls</column>
+              <column>hide_in_shadows</column>
+              <column>hear_noise</column>
+            </columns>
+            <row>
+              <value name="level">1</value>
+              <value name="open_locks">18+</value>
+              <value name="find_and_remove_traps">18+</value>
+              <value name="pick_pockets">17+</value>
+              <value name="move_silently">17+</value>
+              <value name="climb_walls">6+</value>
+              <value name="hide_in_shadows">19+</value>
+              <value name="hear_noise">14+</value>
+            </row>
+            <row>
+              <value name="level">2</value>
+              <value name="open_locks">17+</value>
+              <value name="find_and_remove_traps">17+</value>
+              <value name="pick_pockets">16+</value>
+              <value name="move_silently">16+</value>
+              <value name="climb_walls">5+</value>
+              <value name="hide_in_shadows">18+</value>
+              <value name="hear_noise">13+</value>
+            </row>
+            <row>
+              <value name="level">3</value>
+              <value name="open_locks">16+</value>
+              <value name="find_and_remove_traps">16+</value>
+              <value name="pick_pockets">15+</value>
+              <value name="move_silently">15+</value>
+              <value name="climb_walls">5+</value>
+              <value name="hide_in_shadows">17+</value>
+              <value name="hear_noise">12+</value>
+            </row>
+            <row>
+              <value name="level">4</value>
+              <value name="open_locks">15+</value>
+              <value name="find_and_remove_traps">15+</value>
+              <value name="pick_pockets">14+</value>
+              <value name="move_silently">14+</value>
+              <value name="climb_walls">4+</value>
+              <value name="hide_in_shadows">16+</value>
+              <value name="hear_noise">11+</value>
+            </row>
+            <row>
+              <value name="level">5</value>
+              <value name="open_locks">14+</value>
+              <value name="find_and_remove_traps">14+</value>
+              <value name="pick_pockets">13+</value>
+              <value name="move_silently">13+</value>
+              <value name="climb_walls">4+</value>
+              <value name="hide_in_shadows">15+</value>
+              <value name="hear_noise">10+</value>
+            </row>
+            <row>
+              <value name="level">6</value>
+              <value name="open_locks">12+</value>
+              <value name="find_and_remove_traps">13+</value>
+              <value name="pick_pockets">12+</value>
+              <value name="move_silently">12+</value>
+              <value name="climb_walls">4+</value>
+              <value name="hide_in_shadows">14+</value>
+              <value name="hear_noise">9+</value>
+            </row>
+            <row>
+              <value name="level">7</value>
+              <value name="open_locks">10+</value>
+              <value name="find_and_remove_traps">11+</value>
+              <value name="pick_pockets">10+</value>
+              <value name="move_silently">10+</value>
+              <value name="climb_walls">3+</value>
+              <value name="hide_in_shadows">12+</value>
+              <value name="hear_noise">8+</value>
+            </row>
+            <row>
+              <value name="level">8</value>
+              <value name="open_locks">8+</value>
+              <value name="find_and_remove_traps">9+</value>
+              <value name="pick_pockets">8+</value>
+              <value name="move_silently">8+</value>
+              <value name="climb_walls">3+</value>
+              <value name="hide_in_shadows">10+</value>
+              <value name="hear_noise">7+</value>
+            </row>
+            <row>
+              <value name="level">9</value>
+              <value name="open_locks">6+</value>
+              <value name="find_and_remove_traps">7+</value>
+              <value name="pick_pockets">6+</value>
+              <value name="move_silently">6+</value>
+              <value name="climb_walls">3+</value>
+              <value name="hide_in_shadows">8+</value>
+              <value name="hear_noise">6+</value>
+            </row>
+            <row>
+              <value name="level">10</value>
+              <value name="open_locks">4+</value>
+              <value name="find_and_remove_traps">5+</value>
+              <value name="pick_pockets">4+</value>
+              <value name="move_silently">4+</value>
+              <value name="climb_walls">3+</value>
+              <value name="hide_in_shadows">6+</value>
+              <value name="hear_noise">5+</value>
+            </row>
+            <row>
+              <value name="level">11</value>
+              <value name="open_locks">3+</value>
+              <value name="find_and_remove_traps">3+</value>
+              <value name="pick_pockets">2+</value>
+              <value name="move_silently">2+</value>
+              <value name="climb_walls">2+</value>
+              <value name="hide_in_shadows">4+</value>
+              <value name="hear_noise">4+</value>
+            </row>
+            <row>
+              <value name="level">12</value>
+              <value name="open_locks">2+</value>
+              <value name="find_and_remove_traps">2+</value>
+              <value name="pick_pockets">-1+</value>
+              <value name="move_silently">2+</value>
+              <value name="climb_walls">2+</value>
+              <value name="hide_in_shadows">3+</value>
+              <value name="hear_noise">3+</value>
+            </row>
+            <row>
+              <value name="level">13</value>
+              <value name="open_locks">1+</value>
+              <value name="find_and_remove_traps">2+</value>
+              <value name="pick_pockets">-3+</value>
+              <value name="move_silently">1+</value>
+              <value name="climb_walls">1+</value>
+              <value name="hide_in_shadows">2+</value>
+              <value name="hear_noise">2+</value>
+            </row>
+            <row>
+              <value name="level">14</value>
+              <value name="open_locks">1+</value>
+              <value name="find_and_remove_traps">1+</value>
+              <value name="pick_pockets">-5+</value>
+              <value name="move_silently">1+</value>
+              <value name="climb_walls">1+</value>
+              <value name="hide_in_shadows">1+</value>
+              <value name="hear_noise">1+</value>
+            </row>
+          </table>
+        </tables>
+      </thief_skills>
+    </class_subsystems>
+
+    <special_abilities>
+      <ability name="backstab" level="1">
+        <summary>Attack an unaware opponent for improved accuracy and multiplied damage.</summary>
+        <triggers>
+          <trigger>Target is unaware of the thief's presence, whether by surprise or by the thief moving silently and/or hiding in shadows to approach.</trigger>
+        </triggers>
+        <rules>
+          <rule>The backstab attack gains a +4 bonus to the attack throw.</rule>
+          <rule>If successful, damage is multiplied by level band.</rule>
+          <rule>Levels 1-4 deal double normal damage.</rule>
+          <rule>Levels 5-8 deal triple normal damage.</rule>
+          <rule>Levels 9-12 deal quadruple normal damage.</rule>
+          <rule>Levels 13+ deal quintuple normal damage.</rule>
+        </rules>
+      </ability>
+
+      <ability name="read_languages" level="4">
+        <summary>Read languages, ciphers, treasure maps, and dead languages.</summary>
+        <rules>
+          <rule>Requires a proficiency throw of 5+ on 1d20.</rule>
+          <rule>Does not apply to magical writings.</rule>
+          <rule>If the throw fails, the thief cannot attempt to read that particular writing again until reaching a higher experience level.</rule>
+        </rules>
+      </ability>
+
+      <ability name="arcane_scroll_use" level="10">
+        <summary>Read and cast magic from arcane scrolls.</summary>
+        <rules>
+          <rule>Requires a proficiency throw of 3+ on 1d20.</rule>
+          <rule>If the throw fails, the spell does not function as expected and may create a harmful effect at the Judge's discretion.</rule>
+        </rules>
+      </ability>
+    </special_abilities>
+
+    <level_progression>
+      <entry level="1">
+        <xp_required>0</xp_required>
+        <title>Footpad</title>
+        <hit_dice>1d4</hit_dice>
+        <values>
+          <value name="backstab_multiplier">x2</value>
+        </values>
+        <features_gained>
+          <feature_ref>backstab</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="2">
+        <xp_required>1,250</xp_required>
+        <title>Hood</title>
+        <hit_dice>2d4</hit_dice>
+        <values>
+          <value name="backstab_multiplier">x2</value>
+        </values>
+      </entry>
+      <entry level="3">
+        <xp_required>2,500</xp_required>
+        <title>Robber</title>
+        <hit_dice>3d4</hit_dice>
+        <values>
+          <value name="backstab_multiplier">x2</value>
+        </values>
+      </entry>
+      <entry level="4">
+        <xp_required>5,000</xp_required>
+        <title>Burglar</title>
+        <hit_dice>4d4</hit_dice>
+        <values>
+          <value name="backstab_multiplier">x2</value>
+        </values>
+        <features_gained>
+          <feature_ref>read_languages</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="5">
+        <xp_required>10,000</xp_required>
+        <title>Rogue</title>
+        <hit_dice>5d4</hit_dice>
+        <values>
+          <value name="backstab_multiplier">x3</value>
+        </values>
+      </entry>
+      <entry level="6">
+        <xp_required>20,000</xp_required>
+        <title>Scoundrel</title>
+        <hit_dice>6d4</hit_dice>
+        <values>
+          <value name="backstab_multiplier">x3</value>
+        </values>
+      </entry>
+      <entry level="7">
+        <xp_required>40,000</xp_required>
+        <title>Pilferer</title>
+        <hit_dice>7d4</hit_dice>
+        <values>
+          <value name="backstab_multiplier">x3</value>
+        </values>
+      </entry>
+      <entry level="8">
+        <xp_required>80,000</xp_required>
+        <title>Thief</title>
+        <hit_dice>8d4</hit_dice>
+        <values>
+          <value name="backstab_multiplier">x3</value>
+        </values>
+      </entry>
+      <entry level="9">
+        <xp_required>180,000</xp_required>
+        <title>Master Thief</title>
+        <hit_dice>9d4</hit_dice>
+        <values>
+          <value name="backstab_multiplier">x4</value>
+        </values>
+      </entry>
+      <entry level="10">
+        <xp_required>280,000</xp_required>
+        <title>Master Thief, 10th level</title>
+        <hit_dice>9d4+2</hit_dice>
+        <values>
+          <value name="backstab_multiplier">x4</value>
+        </values>
+        <features_gained>
+          <feature_ref>arcane_scroll_use</feature_ref>
+        </features_gained>
+      </entry>
+      <entry level="11">
+        <xp_required>380,000</xp_required>
+        <title>Master Thief, 11th level</title>
+        <hit_dice>9d4+4</hit_dice>
+        <values>
+          <value name="backstab_multiplier">x4</value>
+        </values>
+      </entry>
+      <entry level="12">
+        <xp_required>480,000</xp_required>
+        <title>Master Thief, 12th level</title>
+        <hit_dice>9d4+6</hit_dice>
+        <values>
+          <value name="backstab_multiplier">x4</value>
+        </values>
+      </entry>
+      <entry level="13">
+        <xp_required>580,000</xp_required>
+        <title>Master Thief, 13th level</title>
+        <hit_dice>9d4+8</hit_dice>
+        <values>
+          <value name="backstab_multiplier">x5</value>
+        </values>
+      </entry>
+      <entry level="14">
+        <xp_required>680,000</xp_required>
+        <title>Prince of Thieves</title>
+        <hit_dice>9d4+10</hit_dice>
+        <values>
+          <value name="backstab_multiplier">x5</value>
+        </values>
+      </entry>
+    </level_progression>
+
+    <derived_tables>
+      <table name="attack_and_saving_throws">
+        <columns>
+          <column>level_range</column>
+          <column>attack_throw</column>
+          <column>petrification_paralysis</column>
+          <column>poison_death</column>
+          <column>blast_breath</column>
+          <column>staffs_wands</column>
+          <column>spells</column>
+        </columns>
+        <row>
+          <value name="level_range">1-2</value>
+          <value name="attack_throw">10+</value>
+          <value name="petrification_paralysis">13+</value>
+          <value name="poison_death">13+</value>
+          <value name="blast_breath">16+</value>
+          <value name="staffs_wands">14+</value>
+          <value name="spells">15+</value>
+        </row>
+        <row>
+          <value name="level_range">3-4</value>
+          <value name="attack_throw">9+</value>
+          <value name="petrification_paralysis">12+</value>
+          <value name="poison_death">12+</value>
+          <value name="blast_breath">15+</value>
+          <value name="staffs_wands">13+</value>
+          <value name="spells">14+</value>
+        </row>
+        <row>
+          <value name="level_range">5-6</value>
+          <value name="attack_throw">8+</value>
+          <value name="petrification_paralysis">11+</value>
+          <value name="poison_death">11+</value>
+          <value name="blast_breath">14+</value>
+          <value name="staffs_wands">12+</value>
+          <value name="spells">13+</value>
+        </row>
+        <row>
+          <value name="level_range">7-8</value>
+          <value name="attack_throw">7+</value>
+          <value name="petrification_paralysis">10+</value>
+          <value name="poison_death">10+</value>
+          <value name="blast_breath">13+</value>
+          <value name="staffs_wands">11+</value>
+          <value name="spells">12+</value>
+        </row>
+        <row>
+          <value name="level_range">9-10</value>
+          <value name="attack_throw">6+</value>
+          <value name="petrification_paralysis">9+</value>
+          <value name="poison_death">9+</value>
+          <value name="blast_breath">12+</value>
+          <value name="staffs_wands">10+</value>
+          <value name="spells">11+</value>
+        </row>
+        <row>
+          <value name="level_range">11-12</value>
+          <value name="attack_throw">5+</value>
+          <value name="petrification_paralysis">8+</value>
+          <value name="poison_death">8+</value>
+          <value name="blast_breath">11+</value>
+          <value name="staffs_wands">9+</value>
+          <value name="spells">10+</value>
+        </row>
+        <row>
+          <value name="level_range">13-14</value>
+          <value name="attack_throw">4+</value>
+          <value name="petrification_paralysis">7+</value>
+          <value name="poison_death">7+</value>
+          <value name="blast_breath">10+</value>
+          <value name="staffs_wands">8+</value>
+          <value name="spells">9+</value>
+        </row>
+      </table>
+    </derived_tables>
+
+    <stronghold_and_followers>
+      <unlock_level>9</unlock_level>
+      <structure_type>hideout</structure_type>
+      <acquisition_rules>
+        <rule>May establish a hideout.</rule>
+        <rule>A successful character may use followers to start a Thieves' Guild.</rule>
+      </acquisition_rules>
+      <followers>
+        <follower type="thief_apprentices_1st_level" number="2d6"/>
+      </followers>
+      <cost_rules>
+        <rule>If hired, apprentices must be paid standard rates for ruffians.</rule>
+      </cost_rules>
+    </stronghold_and_followers>
+
+    <references>
+      <progression_reference family="thief"/>
+      <general_rule_reference type="thief_skills"/>
+      <general_rule_reference type="arcane_scrolls"/>
+      <general_rule_reference type="hideout_rules"/>
+    </references>
+  </class>
+</class_catalog>

@@ -1,0 +1,1849 @@
+<monster_catalog title="108G-ACKS Core-Monster-Catalog-6" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <monster>
+    <identity>
+      <name>Owl Bear</name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>hug_attack</tag>
+        <tag>carnivore</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>30%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Sloth" number="1d4"/>
+        <in_lair collective_noun="Den" number="1d4"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Sloth" number="1d4"/>
+        <in_lair collective_noun="Den" number="1d4"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+      </movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="5" special_ability_markers=""/>
+      <attacks>3 (2 claws, bite)</attacks>
+      <damage>1d8/1d8/1d8</damage>
+      <save>F3</save>
+      <morale>+1</morale>
+      <treasure_type>I</treasure_type>
+      <xp>200</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Sloth" number="1d4"/>
+        <group environment="dungeon_in_lair" noun="Den" number="1d4"/>
+        <group environment="wilderness_outside_lair" noun="Sloth" number="1d4"/>
+        <group environment="wilderness_in_lair" noun="Den" number="1d4"/>
+      </collective_nouns>
+      <terrain>
+        <primary>wooded areas</primary>
+        <secondary>caves</secondary>
+        <secondary>dungeons</secondary>
+      </terrain>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="default_attack">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="claw" count="2" damage="1d8"/>
+            <attack type="bite" count="1" damage="1d8"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+      <attack_effects>
+        <attack_effect attack_name="hug">
+          <trigger>Hits with both paws in the same round.</trigger>
+          <damage>2d8</damage>
+          <effect>Inflicts hug damage.</effect>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities>
+      <ability name="hug">
+        <trigger>Successful hit with both paw attacks in the same round.</trigger>
+        <effect>Deals 2d8 points of damage.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <diet>
+        <rule>Mean-spirited carnivore.</rule>
+      </diet>
+      <habitat>
+        <rule>Known to live in wooded areas.</rule>
+        <rule>Equally likely to reside in caves or dungeons.</rule>
+      </habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>I</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Pegasus</name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Lawful</alignment>
+      <tags>
+        <tag>flyer</tag>
+        <tag>mount</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>15%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="None" number="None"/>
+        <in_lair collective_noun="None" number="None"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Flock" number="1d12"/>
+        <in_lair collective_noun="Nest" number="1d12"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="240'" combat="80'"/>
+        <mode type="fly" exploration="480'" combat="160'"/>
+      </movement>
+      <armor_class>3</armor_class>
+      <hit_dice printed="2 + 2" special_ability_markers=""/>
+      <attacks>2 (hooves)</attacks>
+      <damage>1d6/1d6</damage>
+      <save>F2</save>
+      <morale>0</morale>
+      <treasure_type>None</treasure_type>
+      <xp>35</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="wilderness_outside_lair" noun="Flock" number="1d12"/>
+        <group environment="wilderness_in_lair" noun="Nest" number="1d12"/>
+      </collective_nouns>
+      <lair_composition>
+        <member role="eggs" number="1d6" chance="50%"/>
+        <member role="young" number="1d4" chance="50%"/>
+      </lair_composition>
+      <reaction_or_pursuit_behavior>
+        <rule>Pegasi avoid hippogriffs.</rule>
+      </reaction_or_pursuit_behavior>
+    </encounter_profile>
+    <combat_profile>
+      <mobility_rules>
+        <rule>Can carry up to 30 stone (300lb) and move at full movement.</rule>
+        <rule>Can carry a maximum of 60 stone (600lb) with movement halved.</rule>
+      </mobility_rules>
+    </combat_profile>
+    <special_abilities>
+      <ability name="trainable_mount">
+        <trigger>Eggs or young are captured.</trigger>
+        <effect>Eggs and young can be raised and trained as mounts by lawful characters.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <social_structure>
+        <rule>Wild and shy; not easily tamed.</rule>
+      </social_structure>
+      <behavior_rules>
+        <rule>Avoid hippogriffs, which are their natural predators.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>None</treasure_type>
+    </treasure_and_rewards>
+    <procedures>
+      <procedure name="aerie_contents">
+        <condition>A pegasi aerie is encountered.</condition>
+        <steps>
+          <step number="1">Roll 50% chance.</step>
+          <step number="2">If successful, presence is 1d6 eggs or 1d4 young.</step>
+        </steps>
+        <outcome>Eggs or young may be present in the aerie.</outcome>
+      </procedure>
+    </procedures>
+    <tables/>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Phase Tiger</name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Neutral</alignment>
+      <intelligence>intelligent</intelligence>
+      <tags>
+        <tag>illusion</tag>
+        <tag>attack_penalty_aura</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>25%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Clowder" number="1d4"/>
+        <in_lair collective_noun="Den" number="1d4"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Clowder" number="1d4"/>
+        <in_lair collective_noun="Den" number="1d4"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="150'" combat="50'"/>
+      </movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="6" special_ability_markers=""/>
+      <attacks>2 (tentacles)</attacks>
+      <damage>2d4/2d4</damage>
+      <save>F6</save>
+      <morale>0</morale>
+      <treasure_type>K</treasure_type>
+      <xp>320</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Clowder" number="1d4"/>
+        <group environment="dungeon_in_lair" noun="Den" number="1d4"/>
+        <group environment="wilderness_outside_lair" noun="Clowder" number="1d4"/>
+        <group environment="wilderness_in_lair" noun="Den" number="1d4"/>
+      </collective_nouns>
+      <reaction_or_pursuit_behavior>
+        <rule>Will seek to kill any blink dogs encountered.</rule>
+      </reaction_or_pursuit_behavior>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="default_attack">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="tentacle" count="2" damage="2d4"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+      <defenses>
+        <special_defense>
+          <name>phase_illusion</name>
+          <effect>All opponents receive a -2 penalty to attack throws against the phase tiger.</effect>
+        </special_defense>
+        <special_defense>
+          <name>enhanced_saving_throws</name>
+          <effect>Phase tiger gains a +2 bonus on saving throws.</effect>
+        </special_defense>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="phase_illusion">
+        <trigger>Constant.</trigger>
+        <effect>Projects an illusion of itself 3' from where it actually stands.</effect>
+        <notes>All opponents suffer -2 to attack throws; phase tiger gains +2 on saving throws.</notes>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Seeks to kill blink dogs.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>K</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Pterodactyl</name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>flyer</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="None" number="None"/>
+        <in_lair collective_noun="None" number="None"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Flight" number="2d4"/>
+        <in_lair collective_noun="None" number="None"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+        <mode type="fly" exploration="180'" combat="60'"/>
+      </movement>
+      <armor_class>2</armor_class>
+      <hit_dice printed="1" special_ability_markers=""/>
+      <attacks>1 (bite)</attacks>
+      <damage>1d3</damage>
+      <save>F1</save>
+      <morale>-1</morale>
+      <treasure_type>None</treasure_type>
+      <xp>10</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="wilderness_outside_lair" noun="Flight" number="2d4"/>
+      </collective_nouns>
+      <terrain>
+        <primary>warm environments</primary>
+        <secondary>tropical environments</secondary>
+      </terrain>
+    </encounter_profile>
+    <combat_profile>
+      <targeting_constraints>
+        <constraint>Typically attacks small animals or beings up to the size of a halfling.</constraint>
+        <constraint>May attack larger beings if particularly famished.</constraint>
+      </targeting_constraints>
+      <mobility_rules>
+        <rule>Glides through the air while watching for prey on the ground.</rule>
+      </mobility_rules>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Usually found in warm or tropical environments.</rule>
+      </habitat>
+      <behavior_rules>
+        <rule>Hunts prey on the ground while gliding.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>None</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables>
+      <table name="pterodactyl_and_pteranodon_stat_block">
+        <row>
+          <column name="variant">Pterodactyl</column>
+          <column name="percent_in_lair">None</column>
+          <column name="dungeon_encounter">None</column>
+          <column name="wilderness_encounter">Flight (2d4)</column>
+          <column name="alignment">Neutral</column>
+          <column name="movement">120' (40')</column>
+          <column name="fly">180' (60')</column>
+          <column name="armor_class">2</column>
+          <column name="hit_dice">1</column>
+          <column name="attacks">1 (bite)</column>
+          <column name="damage">1d3</column>
+          <column name="save">F1</column>
+          <column name="morale">-1</column>
+          <column name="treasure_type">None</column>
+          <column name="xp">10</column>
+        </row>
+        <row>
+          <column name="variant">Pteranodon</column>
+          <column name="percent_in_lair">None</column>
+          <column name="dungeon_encounter">None</column>
+          <column name="wilderness_encounter">Flight (1d4)</column>
+          <column name="alignment">Neutral</column>
+          <column name="movement">-</column>
+          <column name="fly">240' (120')</column>
+          <column name="armor_class">3</column>
+          <column name="hit_dice">5</column>
+          <column name="attacks">1 (bite)</column>
+          <column name="damage">1d12</column>
+          <column name="save">F3</column>
+          <column name="morale">0</column>
+          <column name="treasure_type">None</column>
+          <column name="xp">200</column>
+        </row>
+      </table>
+    </tables>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Pteranodon</name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>flyer</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="None" number="None"/>
+        <in_lair collective_noun="None" number="None"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Flight" number="1d4"/>
+        <in_lair collective_noun="None" number="None"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="-" combat="-"/>
+        <mode type="fly" exploration="240'" combat="120'"/>
+      </movement>
+      <armor_class>3</armor_class>
+      <hit_dice printed="5" special_ability_markers=""/>
+      <attacks>1 (bite)</attacks>
+      <damage>1d12</damage>
+      <save>F3</save>
+      <morale>0</morale>
+      <treasure_type>None</treasure_type>
+      <xp>200</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="wilderness_outside_lair" noun="Flight" number="1d4"/>
+      </collective_nouns>
+      <terrain>
+        <primary>warm environments</primary>
+        <secondary>tropical environments</secondary>
+      </terrain>
+    </encounter_profile>
+    <combat_profile/>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Usually found in warm or tropical environments.</rule>
+      </habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>None</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Purple Worm</name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>poison</tag>
+        <tag>swallow_whole</tag>
+        <tag>tunneler</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Clew" number="1d2"/>
+        <in_lair collective_noun="None" number="None"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Herd" number="1d4"/>
+        <in_lair collective_noun="None" number="None"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="60'" combat="20'"/>
+      </movement>
+      <armor_class>3</armor_class>
+      <hit_dice printed="15**" special_ability_markers="**"/>
+      <attacks>2 (bite, sting)</attacks>
+      <damage>2d8/1d8, poison</damage>
+      <save>F8</save>
+      <morale>+2</morale>
+      <treasure_type>P x2</treasure_type>
+      <xp>4,200</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Clew" number="1d2"/>
+        <group environment="wilderness_outside_lair" noun="Herd" number="1d4"/>
+      </collective_nouns>
+      <terrain>
+        <primary>below the earth</primary>
+      </terrain>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="open_space_assault">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="bite" count="1" damage="2d8"/>
+            <attack type="sting" count="1" damage="1d8, poison"/>
+          </attack_sequence>
+        </attack_routine>
+        <attack_routine name="confined_tunnel_assault">
+          <usage>conditional</usage>
+          <notes>When encountered inside one of its tunnels and the tunnel is only as wide as the worm, it cannot attack with both attacks in the same round.</notes>
+        </attack_routine>
+      </attack_routines>
+      <attack_effects>
+        <attack_effect attack_name="sting">
+          <damage>1d8</damage>
+          <save type="Poison" on_success="No death effect." on_failure="Victim dies."/>
+          <effect>Poison sting.</effect>
+        </attack_effect>
+        <attack_effect attack_name="bite_swallow_whole">
+          <trigger>Attack throw is at least 4 higher than the target value, or an unmodified attack throw of 20.</trigger>
+          <effect>Swallows whole creatures up to horse size.</effect>
+          <follow_up>Swallowed creature takes 3d6 damage per round inside the belly.</follow_up>
+        </attack_effect>
+      </attack_effects>
+      <targeting_constraints>
+        <constraint>Swallow whole applies only to creatures up to horse size.</constraint>
+      </targeting_constraints>
+    </combat_profile>
+    <special_abilities>
+      <ability name="swallow_whole">
+        <trigger>Bite attack succeeds by at least 4 over target value, or an unmodified 20 is rolled.</trigger>
+        <effect>Swallows whole a creature up to horse size.</effect>
+        <duration>Until the creature dies or the worm is killed.</duration>
+        <notes>Swallowed creature takes 3d6 damage per round.</notes>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Burrows deep underground and usually surfaces only to consume prey.</rule>
+      </habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>P x2</treasure_type>
+      <treasure_rules>
+        <rule>Any encounter may yield treasure even though the creature has no lair.</rule>
+        <rule>If treasure is present, it is always found inside the creature's belly.</rule>
+      </treasure_rules>
+    </treasure_and_rewards>
+    <procedures>
+      <procedure name="swallow_whole_resolution">
+        <condition>A purple worm swallows a creature whole.</condition>
+        <steps>
+          <step number="1">Creature takes 3d6 damage per round inside the belly.</step>
+          <step number="2">If the swallowed creature has a sharp weapon, it may attack from inside with a -4 penalty to its attack throw.</step>
+          <step number="3">Damage stops when either the swallowed creature dies or the worm is killed.</step>
+          <step number="4">If the swallowed creature dies and remains in the belly for 6 turns, it is irrecoverably digested.</step>
+        </steps>
+        <outcome>Victim is damaged, may attempt internal attacks if equipped, and may be digested permanently after 6 turns if dead.</outcome>
+      </procedure>
+    </procedures>
+    <tables/>
+    <references>
+      <general_rule_reference type="poison"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Remorhaz</name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>burrower</tag>
+        <tag>heat_aura</tag>
+        <tag>weapon_destruction</tag>
+        <tag>swallow_whole</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>25%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Solitary" number="1"/>
+        <in_lair collective_noun="Nest" number="1d6"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Herd" number="1d6"/>
+        <in_lair collective_noun="Colony" number="3d6"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="90'" combat="30'"/>
+        <mode type="burrow" exploration="60'" combat="20'"/>
+      </movement>
+      <armor_class>10</armor_class>
+      <hit_dice printed="10 - 15**" special_ability_markers="**"/>
+      <attacks>1 (bite)</attacks>
+      <damage>2d8</damage>
+      <save>F16</save>
+      <morale>+4</morale>
+      <treasure_type>P (10-12 HD); K, P (13 HD); M, P (14-15 HD) (per remorhaz)</treasure_type>
+      <xp>2,250 - 4,200</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Solitary" number="1"/>
+        <group environment="dungeon_in_lair" noun="Nest" number="1d6"/>
+        <group environment="wilderness_outside_lair" noun="Herd" number="1d6"/>
+        <group environment="wilderness_in_lair" noun="Colony" number="3d6"/>
+      </collective_nouns>
+      <terrain>
+        <primary>snow</primary>
+        <secondary>ice</secondary>
+      </terrain>
+      <reaction_or_pursuit_behavior>
+        <rule>Hides under snow and ice until it hears movement above, then attacks from below and surprises prey.</rule>
+      </reaction_or_pursuit_behavior>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="bite">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="bite" count="1" damage="2d8"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+      <attack_effects>
+        <attack_effect attack_name="swallow_whole">
+          <trigger>Unmodified attack throw of 20.</trigger>
+          <effect>Swallows whole creatures of up to man size.</effect>
+          <follow_up>Swallowed creature takes 10d10 points of damage per round from the gizzard.</follow_up>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <special_defense>
+          <name>incinerating_heat</name>
+          <effect>Anything touching the body, or attacking it with natural weapons, takes 10d10 points of fire damage.</effect>
+        </special_defense>
+        <special_defense>
+          <name>weapon_destruction</name>
+          <effect>Non-magical melee weapons are automatically destroyed by the creature's heat. Magical weapons may save versus Blast to avoid destruction, adding their magic bonus to the roll.</effect>
+        </special_defense>
+      </defenses>
+      <targeting_constraints>
+        <constraint>Swallow whole applies only to creatures up to man size.</constraint>
+      </targeting_constraints>
+    </combat_profile>
+    <special_abilities>
+      <ability name="incinerating_heat">
+        <trigger>Constant while attacking; applies on bodily contact and to attacks made with natural weapons against the remorhaz.</trigger>
+        <effect>Inflicts 10d10 fire damage.</effect>
+      </ability>
+      <ability name="swallow_whole">
+        <trigger>Unmodified attack throw of 20.</trigger>
+        <effect>Swallows whole a creature up to man size.</effect>
+        <duration>Until the remorhaz is killed or the swallowed creature dies.</duration>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Hides beneath snow and ice.</rule>
+      </habitat>
+      <behavior_rules>
+        <rule>Attacks from below and surprises prey after hearing movement above.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>P (10-12 HD); K, P (13 HD); M, P (14-15 HD) (per remorhaz)</treasure_type>
+      <treasure_rules>
+        <rule>Any encounter may yield treasure, whether wandering or in lair.</rule>
+        <rule>If treasure is present, it is always found inside the creature's belly.</rule>
+      </treasure_rules>
+    </treasure_and_rewards>
+    <procedures>
+      <procedure name="weapon_contact_resolution">
+        <condition>A melee weapon contacts the remorhaz.</condition>
+        <steps>
+          <step number="1">If the weapon is non-magical, it is automatically destroyed.</step>
+          <step number="2">If the weapon is magical, roll a saving throw versus Blast and add the weapon's magic bonus to the roll.</step>
+          <step number="3">If the save fails, the weapon is destroyed.</step>
+        </steps>
+        <outcome>Melee weapons may be destroyed by the creature's heat.</outcome>
+      </procedure>
+      <procedure name="swallow_whole_resolution">
+        <condition>A remorhaz swallows a creature whole.</condition>
+        <steps>
+          <step number="1">The swallowed creature takes 10d10 damage per round from the gizzard.</step>
+          <step number="2">Only a dagger may be used to attack from inside the belly.</step>
+          <step number="3">Attacks made from inside suffer a -4 penalty to attack throws.</step>
+          <step number="4">The process continues until either the remorhaz is killed or the swallowed creature dies.</step>
+          <step number="5">If the swallowed creature dies and remains in the belly for 6 turns, it is irrecoverably digested.</step>
+        </steps>
+        <outcome>Victim takes ongoing damage, has highly limited counterattack options, and may be digested permanently.</outcome>
+      </procedure>
+    </procedures>
+    <tables/>
+    <references>
+      <general_rule_reference type="blast"/>
+      <general_rule_reference type="fire"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Rhagodessa, Giant</name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>climb</tag>
+        <tag>pull_and_bite</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>35%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Clutter" number="1d4"/>
+        <in_lair collective_noun="Den" number="1d6"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Cluster" number="1d6"/>
+        <in_lair collective_noun="Den" number="1d6"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="150'" combat="50'"/>
+        <mode type="climb" exploration="150'" combat="50'"/>
+      </movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="4 + 2*" special_ability_markers="*"/>
+      <attacks>1 (leg or bite)</attacks>
+      <damage>0 or 2d8</damage>
+      <save>F2</save>
+      <morale>+1</morale>
+      <treasure_type>I</treasure_type>
+      <xp>215</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Clutter" number="1d4"/>
+        <group environment="dungeon_in_lair" noun="Den" number="1d6"/>
+        <group environment="wilderness_outside_lair" noun="Cluster" number="1d6"/>
+        <group environment="wilderness_in_lair" noun="Den" number="1d6"/>
+      </collective_nouns>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="leg_pull">
+          <usage>alternative</usage>
+          <attack_sequence>
+            <attack type="front_leg" count="1" damage="0"/>
+          </attack_sequence>
+          <notes>Front legs have suction pits and do not deal damage.</notes>
+        </attack_routine>
+        <attack_routine name="bite">
+          <usage>alternative</usage>
+          <attack_sequence>
+            <attack type="bite" count="1" damage="2d8"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+      <attack_effects>
+        <attack_effect attack_name="front_leg_pull">
+          <trigger>Front leg attack hits successfully.</trigger>
+          <effect>Pulls the opponent to the mandibles.</effect>
+          <follow_up>Mandibles deal 2d8 points of damage on the second round with no extra attack throw needed.</follow_up>
+        </attack_effect>
+      </attack_effects>
+      <mobility_rules>
+        <rule>Able to climb walls.</rule>
+      </mobility_rules>
+    </combat_profile>
+    <special_abilities>
+      <ability name="pull_to_mandibles">
+        <trigger>Successful hit with a front leg.</trigger>
+        <effect>Pulls opponent into the mandibles.</effect>
+        <duration>Second round follow-up.</duration>
+        <notes>Mandibles inflict 2d8 damage on the second round with no extra attack throw needed.</notes>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Nocturnal carnivorous arachnid.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>I</treasure_type>
+    </treasure_and_rewards>
+    <procedures>
+      <procedure name="leg_pull_resolution">
+        <condition>The front leg attack hits.</condition>
+        <steps>
+          <step number="1">The successful leg hit deals no damage.</step>
+          <step number="2">The target is pulled to the mandibles.</step>
+          <step number="3">On the second round, the mandibles deal 2d8 damage with no extra attack throw needed.</step>
+        </steps>
+        <outcome>Target suffers automatic mandible damage on the second round.</outcome>
+      </procedure>
+    </procedures>
+    <tables/>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Rhinoceros</name>
+      <variant_name>Ordinary</variant_name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>charge</tag>
+        <tag>trample</tag>
+        <tag>stampede</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="None" number="None"/>
+        <in_lair collective_noun="None" number="None"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Herd" number="1d12"/>
+        <in_lair collective_noun="None" number="None"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+      </movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="6" special_ability_markers=""/>
+      <attacks>1 (gore or trample)</attacks>
+      <damage>2d4 or 2d8</damage>
+      <save>F3</save>
+      <morale>-2</morale>
+      <treasure_type>None</treasure_type>
+      <xp>320</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="wilderness_outside_lair" noun="Herd" number="1d12"/>
+      </collective_nouns>
+      <reaction_or_pursuit_behavior>
+        <rule>Willing to charge intruders.</rule>
+        <rule>A threatened herd stampedes in a randomly determined direction.</rule>
+      </reaction_or_pursuit_behavior>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="gore">
+          <usage>alternative</usage>
+          <attack_sequence>
+            <attack type="gore" count="1" damage="2d4"/>
+          </attack_sequence>
+        </attack_routine>
+        <attack_routine name="trample">
+          <usage>alternative</usage>
+          <attack_sequence>
+            <attack type="trample" count="1" damage="2d8"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+      <attack_effects>
+        <attack_effect attack_name="trample">
+          <to_hit_rule>+4 to attack throw when attempting to trample an opponent that is man-sized or smaller.</to_hit_rule>
+          <damage>2d8</damage>
+        </attack_effect>
+        <attack_effect attack_name="charge_gore">
+          <trigger>Distance permits a charge.</trigger>
+          <damage>2d4, doubled</damage>
+          <effect>Charge with gore attack deals double damage.</effect>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities>
+      <ability name="stampede">
+        <trigger>Herd is threatened.</trigger>
+        <effect>Entire herd stampedes.</effect>
+        <notes>Direction is determined randomly.</notes>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Infamous for bad temper and willingness to charge intruders.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>None</treasure_type>
+    </treasure_and_rewards>
+    <procedures>
+      <procedure name="charge_resolution">
+        <condition>Distance permits a rhinoceros charge.</condition>
+        <steps>
+          <step number="1">Use the gore attack.</step>
+          <step number="2">Double the damage dealt by the gore attack.</step>
+        </steps>
+        <outcome>Charge inflicts double gore damage.</outcome>
+      </procedure>
+      <procedure name="stampede_resolution">
+        <condition>A herd is threatened.</condition>
+        <steps>
+          <step number="1">Determine stampede direction randomly.</step>
+        </steps>
+        <outcome>The herd stampedes in the determined direction.</outcome>
+      </procedure>
+    </procedures>
+    <tables>
+      <table name="rhinoceros_stat_block_variants">
+        <row>
+          <column name="variant">Ordinary</column>
+          <column name="percent_in_lair">None</column>
+          <column name="dungeon_encounter">None</column>
+          <column name="wilderness_encounter">Herd (1d12)</column>
+          <column name="alignment">Neutral</column>
+          <column name="movement">120' (40')</column>
+          <column name="armor_class">4</column>
+          <column name="hit_dice">6</column>
+          <column name="attacks">1 (gore or trample)</column>
+          <column name="damage">2d4 or 2d8</column>
+          <column name="save">F3</column>
+          <column name="morale">-2</column>
+          <column name="treasure_type">None</column>
+          <column name="xp">320</column>
+        </row>
+        <row>
+          <column name="variant">Woolly</column>
+          <column name="percent_in_lair">None</column>
+          <column name="dungeon_encounter">None</column>
+          <column name="wilderness_encounter">Herd (1d8)</column>
+          <column name="alignment">Neutral</column>
+          <column name="movement">120' (40')</column>
+          <column name="armor_class">5</column>
+          <column name="hit_dice">8</column>
+          <column name="attacks">1 (gore or trample)</column>
+          <column name="damage">2d6 or 2d12</column>
+          <column name="save">F4</column>
+          <column name="morale">-2</column>
+          <column name="treasure_type">None</column>
+          <column name="xp">600</column>
+        </row>
+      </table>
+    </tables>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Rhinoceros</name>
+      <variant_name>Woolly</variant_name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>charge</tag>
+        <tag>trample</tag>
+        <tag>stampede</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="None" number="None"/>
+        <in_lair collective_noun="None" number="None"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Herd" number="1d8"/>
+        <in_lair collective_noun="None" number="None"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+      </movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="8" special_ability_markers=""/>
+      <attacks>1 (gore or trample)</attacks>
+      <damage>2d6 or 2d12</damage>
+      <save>F4</save>
+      <morale>-2</morale>
+      <treasure_type>None</treasure_type>
+      <xp>600</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="wilderness_outside_lair" noun="Herd" number="1d8"/>
+      </collective_nouns>
+      <reaction_or_pursuit_behavior>
+        <rule>Willing to charge intruders.</rule>
+        <rule>A threatened herd stampedes in a randomly determined direction.</rule>
+      </reaction_or_pursuit_behavior>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="gore">
+          <usage>alternative</usage>
+          <attack_sequence>
+            <attack type="gore" count="1" damage="2d6"/>
+          </attack_sequence>
+        </attack_routine>
+        <attack_routine name="trample">
+          <usage>alternative</usage>
+          <attack_sequence>
+            <attack type="trample" count="1" damage="2d12"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+      <attack_effects>
+        <attack_effect attack_name="trample">
+          <to_hit_rule>+4 to attack throw when attempting to trample an opponent that is man-sized or smaller.</to_hit_rule>
+          <damage>2d12</damage>
+        </attack_effect>
+        <attack_effect attack_name="charge_gore">
+          <trigger>Distance permits a charge.</trigger>
+          <damage>2d6, doubled</damage>
+          <effect>Charge with gore attack deals double damage.</effect>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities>
+      <ability name="stampede">
+        <trigger>Herd is threatened.</trigger>
+        <effect>Entire herd stampedes.</effect>
+        <notes>Direction is determined randomly.</notes>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior/>
+    <treasure_and_rewards>
+      <treasure_type>None</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Roc</name>
+      <variant_name>Small</variant_name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Lawful</alignment>
+      <tags>
+        <tag>flyer</tag>
+        <tag>dive_attack</tag>
+        <tag>grab</tag>
+        <tag>mount</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>10%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="None" number="None"/>
+        <in_lair collective_noun="None" number="None"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Flight" number="1d12"/>
+        <in_lair collective_noun="Aerie" number="1d12"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="60'" combat="20'"/>
+        <mode type="fly" exploration="480'" combat="160'"/>
+      </movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="6*" special_ability_markers="*"/>
+      <attacks>3 (2 talons, bite)</attacks>
+      <damage>1d4+1/1d4+1/2d6</damage>
+      <save>F3</save>
+      <morale>0</morale>
+      <treasure_type>I, M</treasure_type>
+      <xp>570</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="wilderness_outside_lair" noun="Flight" number="1d12"/>
+        <group environment="wilderness_in_lair" noun="Aerie" number="1d12"/>
+      </collective_nouns>
+      <lair_composition>
+        <member role="eggs" number="1d6" chance="50%"/>
+        <member role="young" number="1d4" chance="50%"/>
+      </lair_composition>
+      <terrain>
+        <primary>high elevations</primary>
+        <secondary>warm environments</secondary>
+      </terrain>
+      <reaction_or_pursuit_behavior>
+        <rule>Fights to the death to defend young.</rule>
+        <rule>Reaction rolls are at -2 toward chaotic beings and -1 toward neutral beings.</rule>
+      </reaction_or_pursuit_behavior>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="default_attack">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="talon" count="2" damage="1d4+1"/>
+            <attack type="bite" count="1" damage="2d6"/>
+          </attack_sequence>
+        </attack_routine>
+        <attack_routine name="dive_attack">
+          <usage>conditional</usage>
+          <notes>When flying, may swoop into a dive attack with talons for double damage.</notes>
+        </attack_routine>
+      </attack_routines>
+      <attack_effects>
+        <attack_effect attack_name="dive_talons">
+          <trigger>Roc is flying and uses a dive attack.</trigger>
+          <damage>Double talon damage.</damage>
+        </attack_effect>
+        <attack_effect attack_name="grab_with_talons">
+          <trigger>Hits a creature smaller than itself with both talons.</trigger>
+          <effect>Automatically grabs the creature; no saving throw.</effect>
+          <follow_up>If the creature is light enough, it may be carried off.</follow_up>
+        </attack_effect>
+      </attack_effects>
+      <mobility_rules>
+        <rule>Can carry up to 15 stone (150lb) at full movement.</rule>
+        <rule>Can carry a maximum of 30 stone (300lb) at half movement.</rule>
+      </mobility_rules>
+      <targeting_constraints>
+        <constraint>Automatic grab applies only to creatures smaller than the roc.</constraint>
+        <constraint>Carry-off requires the grabbed creature to be light enough for the roc to carry.</constraint>
+      </targeting_constraints>
+      <morale_modifiers>
+        <modifier condition="defending young" value="fight to the death"/>
+      </morale_modifiers>
+    </combat_profile>
+    <special_abilities>
+      <ability name="trainable_mount">
+        <trigger>Eggs or young are captured.</trigger>
+        <effect>Can be trained as mounts by lawful characters.</effect>
+      </ability>
+      <ability name="lawful_reaction_preference">
+        <trigger>Encounters with non-lawful beings.</trigger>
+        <effect>Reaction rolls are penalized by -2 against chaotic beings and -1 against neutral beings.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Lives in high elevations and warm environments.</rule>
+      </habitat>
+      <diet>
+        <rule>Frequently consumes large mammals, including horses and cattle.</rule>
+      </diet>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>I, M</treasure_type>
+    </treasure_and_rewards>
+    <procedures>
+      <procedure name="grab_escape_resolution">
+        <condition>A roc grabs a creature with both talons.</condition>
+        <steps>
+          <step number="1">If the creature is light enough, the roc may carry it off.</step>
+          <step number="2">To escape, the creature must make a successful saving throw versus Paralysis at -4.</step>
+        </steps>
+        <outcome>Grabbed creature escapes or is carried off.</outcome>
+      </procedure>
+      <procedure name="aerie_contents">
+        <condition>A roc aerie is encountered.</condition>
+        <steps>
+          <step number="1">Roll 50% chance.</step>
+          <step number="2">If successful, presence is 1d6 eggs or 1d4 young.</step>
+        </steps>
+        <outcome>Eggs or young may be present.</outcome>
+      </procedure>
+    </procedures>
+    <tables>
+      <table name="roc_stat_block_variants">
+        <row>
+          <column name="variant">Small</column>
+          <column name="percent_in_lair">10%</column>
+          <column name="dungeon_encounter">None</column>
+          <column name="wilderness_encounter">Flight (1d12) / Aerie (1d12)</column>
+          <column name="alignment">Lawful</column>
+          <column name="movement">60' (20')</column>
+          <column name="fly">480' (160')</column>
+          <column name="armor_class">5</column>
+          <column name="hit_dice">6*</column>
+          <column name="attacks">3 (2 talons, bite)</column>
+          <column name="damage">1d4+1/1d4+1/2d6</column>
+          <column name="save">F3</column>
+          <column name="morale">0</column>
+          <column name="treasure_type">I, M</column>
+          <column name="xp">570</column>
+        </row>
+        <row>
+          <column name="variant">Large</column>
+          <column name="percent_in_lair">10%</column>
+          <column name="dungeon_encounter">None</column>
+          <column name="wilderness_encounter">Flight (1d8) / Aerie (1d8)</column>
+          <column name="alignment">Lawful</column>
+          <column name="movement">60' (20')</column>
+          <column name="fly">480' (160')</column>
+          <column name="armor_class">7</column>
+          <column name="hit_dice">12*</column>
+          <column name="attacks">3 (2 talons, bite)</column>
+          <column name="damage">1d8/1d8/2d10</column>
+          <column name="save">F6</column>
+          <column name="morale">+1</column>
+          <column name="treasure_type">K, P</column>
+          <column name="xp">2,100</column>
+        </row>
+        <row>
+          <column name="variant">Giant</column>
+          <column name="percent_in_lair">10%</column>
+          <column name="dungeon_encounter">None</column>
+          <column name="wilderness_encounter">Solitary (1) / Aerie (1d2)</column>
+          <column name="alignment">Lawful</column>
+          <column name="movement">60' (20')</column>
+          <column name="fly">480' (160')</column>
+          <column name="armor_class">9</column>
+          <column name="hit_dice">36*</column>
+          <column name="attacks">3 (2 talons, bite)</column>
+          <column name="damage">3d6/3d6/8d6</column>
+          <column name="save">F9</column>
+          <column name="morale">+2</column>
+          <column name="treasure_type">M, P</column>
+          <column name="xp">12,500</column>
+        </row>
+      </table>
+    </tables>
+    <references>
+      <general_rule_reference type="paralysis"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Roc</name>
+      <variant_name>Large</variant_name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Lawful</alignment>
+      <tags>
+        <tag>flyer</tag>
+        <tag>dive_attack</tag>
+        <tag>grab</tag>
+        <tag>mount</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>10%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="None" number="None"/>
+        <in_lair collective_noun="None" number="None"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Flight" number="1d8"/>
+        <in_lair collective_noun="Aerie" number="1d8"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="60'" combat="20'"/>
+        <mode type="fly" exploration="480'" combat="160'"/>
+      </movement>
+      <armor_class>7</armor_class>
+      <hit_dice printed="12*" special_ability_markers="*"/>
+      <attacks>3 (2 talons, bite)</attacks>
+      <damage>1d8/1d8/2d10</damage>
+      <save>F6</save>
+      <morale>+1</morale>
+      <treasure_type>K, P</treasure_type>
+      <xp>2,100</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="wilderness_outside_lair" noun="Flight" number="1d8"/>
+        <group environment="wilderness_in_lair" noun="Aerie" number="1d8"/>
+      </collective_nouns>
+    </encounter_profile>
+    <combat_profile>
+      <mobility_rules>
+        <rule>Can carry up to 60 stone (600lb) at full movement.</rule>
+        <rule>Can carry a maximum of 120 stone (1,200lb) at half movement.</rule>
+      </mobility_rules>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior/>
+    <treasure_and_rewards>
+      <treasure_type>K, P</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Roc</name>
+      <variant_name>Giant</variant_name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Lawful</alignment>
+      <tags>
+        <tag>flyer</tag>
+        <tag>dive_attack</tag>
+        <tag>grab</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>10%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="None" number="None"/>
+        <in_lair collective_noun="None" number="None"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Solitary" number="1"/>
+        <in_lair collective_noun="Aerie" number="1d2"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="60'" combat="20'"/>
+        <mode type="fly" exploration="480'" combat="160'"/>
+      </movement>
+      <armor_class>9</armor_class>
+      <hit_dice printed="36*" special_ability_markers="*"/>
+      <attacks>3 (2 talons, bite)</attacks>
+      <damage>3d6/3d6/8d6</damage>
+      <save>F9</save>
+      <morale>+2</morale>
+      <treasure_type>M, P</treasure_type>
+      <xp>12,500</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="wilderness_outside_lair" noun="Solitary" number="1"/>
+        <group environment="wilderness_in_lair" noun="Aerie" number="1d2"/>
+      </collective_nouns>
+    </encounter_profile>
+    <combat_profile>
+      <mobility_rules>
+        <rule>Can easily carry up to 300 stone (3,000lb) at full movement.</rule>
+        <rule>Can carry a maximum of 600 stone (6,000lb) at half movement.</rule>
+      </mobility_rules>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior/>
+    <treasure_and_rewards>
+      <treasure_type>M, P</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Rot Grub</name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>burrowing_infestation</tag>
+        <tag>contact_attack</tag>
+      </tags>
+      <spell_interactions>
+        <interaction>
+          <spell_or_effect>cure disease</spell_or_effect>
+          <result>destroys rot grubs in a victim's body</result>
+        </interaction>
+      </spell_interactions>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Brood" number="5d4"/>
+        <in_lair collective_noun="None" number="None"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Brood" number="5d4"/>
+        <in_lair collective_noun="None" number="None"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="10'" combat="2'"/>
+      </movement>
+      <armor_class>0</armor_class>
+      <hit_dice printed="1 hit point" special_ability_markers=""/>
+      <attacks>See below</attacks>
+      <damage>See below</damage>
+      <save>0 level human</save>
+      <morale>N/A</morale>
+      <treasure_type>None</treasure_type>
+      <xp>5</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Brood" number="5d4"/>
+        <group environment="wilderness_outside_lair" noun="Brood" number="5d4"/>
+      </collective_nouns>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="contact_burrow">
+          <trigger>Contact with a living being.</trigger>
+          <effect>Rot grubs begin burrowing into the body.</effect>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities>
+      <ability name="burrow_into_body">
+        <trigger>Contact with a living being.</trigger>
+        <effect>Begins vigorous burrowing into the victim's body.</effect>
+        <duration>Until destroyed, the victim dies, or the victim is cured.</duration>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Can be found in animal waste and other foul refuse.</rule>
+      </habitat>
+      <diet>
+        <rule>Prefer to consume tissue that is still alive.</rule>
+      </diet>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>None</treasure_type>
+    </treasure_and_rewards>
+    <procedures>
+      <procedure name="rot_grub_infestation_resolution">
+        <condition>Rot grubs make contact with a living being.</condition>
+        <steps>
+          <step number="1">Apply fire to the site of contact at once to prevent further burrowing.</step>
+          <step number="2">Burning a grub inflicts 1d6 points of damage to the character.</step>
+          <step number="3">If not stopped immediately, the rot grubs reach the heart within 1d3 turns.</step>
+          <step number="4">When they reach the heart, the victim dies.</step>
+          <step number="5">The spell cure disease destroys rot grubs in the victim's body.</step>
+        </steps>
+        <outcome>Immediate burning or cure disease can prevent death; otherwise the victim dies within 1d3 turns.</outcome>
+      </procedure>
+    </procedures>
+    <tables/>
+    <references>
+      <general_rule_reference type="disease"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Rust Monster</name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>metal_rusting</tag>
+        <tag>weapon_immunity</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>10%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Pack" number="1d4"/>
+        <in_lair collective_noun="Den" number="1d4"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Pack" number="1d4"/>
+        <in_lair collective_noun="Den" number="1d4"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+      </movement>
+      <armor_class>7</armor_class>
+      <hit_dice printed="5" special_ability_markers=""/>
+      <attacks>1 (antenna)</attacks>
+      <damage>See below</damage>
+      <save>F3</save>
+      <morale>-1</morale>
+      <treasure_type>None</treasure_type>
+      <xp>200</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Pack" number="1d4"/>
+        <group environment="dungeon_in_lair" noun="Den" number="1d4"/>
+        <group environment="wilderness_outside_lair" noun="Pack" number="1d4"/>
+        <group environment="wilderness_in_lair" noun="Den" number="1d4"/>
+      </collective_nouns>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="antenna_contact">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="antenna" count="1" damage="special"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+      <attack_effects>
+        <attack_effect attack_name="antenna_rust">
+          <trigger>Metal armor or weapon is struck by the antennae.</trigger>
+          <effect>Ordinary metal item instantly becomes permanently useless from severe rusting.</effect>
+        </attack_effect>
+        <attack_effect attack_name="hide_rust">
+          <trigger>Metal weapon contacts the rust monster's hide, including when it is attacked with a metal weapon.</trigger>
+          <effect>Ordinary metal weapon instantly becomes permanently useless from severe rusting.</effect>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <immunities>
+          <immunity>Ordinary metal weapons do not harm rust monsters.</immunity>
+        </immunities>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="rusting_contact">
+        <trigger>Ordinary metal armor or weapons are struck by antennae or contact the rust monster's hide.</trigger>
+        <effect>Item instantly becomes utterly and permanently useless from severe rusting.</effect>
+      </ability>
+      <ability name="magic_item_corrosion">
+        <trigger>Magic metal item contacts the antennae or hide.</trigger>
+        <effect>Magic bonuses are lost 1 at a time until the item becomes ordinary; a later contact then rusts it.</effect>
+        <notes>Each current plus grants a 10% probability of surviving contact unscathed.</notes>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <diet>
+        <rule>Feeds upon the rust it creates.</rule>
+      </diet>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>None</treasure_type>
+    </treasure_and_rewards>
+    <procedures>
+      <procedure name="magic_item_corrosion_resolution">
+        <condition>A magical metal item contacts the rust monster's antennae or hide.</condition>
+        <steps>
+          <step number="1">Determine whether the item survives contact unscathed; its chance equals 10% per current magic bonus.</step>
+          <step number="2">If the item does not survive contact unscathed, reduce its magic bonus by 1.</step>
+          <step number="3">Repeat on later contacts until the item becomes ordinary.</step>
+          <step number="4">After the item becomes ordinary, any subsequent contact rusts it into uselessness.</step>
+        </steps>
+        <outcome>Magic items lose bonuses incrementally and are eventually destroyed.</outcome>
+      </procedure>
+    </procedures>
+    <tables/>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Salamander</name>
+      <variant_name>Flame</variant_name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Neutral</alignment>
+      <intelligence>intelligent</intelligence>
+      <tags>
+        <tag>heat_aura</tag>
+        <tag>fire_immunity</tag>
+        <tag>nonmagical_weapon_immunity</tag>
+      </tags>
+      <spell_interactions>
+        <interaction>
+          <spell_or_effect>sleep</spell_or_effect>
+          <result>unaffected</result>
+        </interaction>
+        <interaction>
+          <spell_or_effect>charm</spell_or_effect>
+          <result>unaffected</result>
+        </interaction>
+      </spell_interactions>
+    </classification>
+    <stat_block>
+      <percent_in_lair>25%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Band" number="1d4+1"/>
+        <in_lair collective_noun="Nest" number="2d4"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Swarm" number="2d4"/>
+        <in_lair collective_noun="Nest" number="2d4"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+      </movement>
+      <armor_class>7</armor_class>
+      <hit_dice printed="8*" special_ability_markers="*"/>
+      <attacks>3 (2 claws, bite)</attacks>
+      <damage>1d4/1d4/1d8</damage>
+      <save>F8</save>
+      <morale>0</morale>
+      <treasure_type>Q</treasure_type>
+      <xp>1,100</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Band" number="1d4+1"/>
+        <group environment="dungeon_in_lair" noun="Nest" number="2d4"/>
+        <group environment="wilderness_outside_lair" noun="Swarm" number="2d4"/>
+        <group environment="wilderness_in_lair" noun="Nest" number="2d4"/>
+      </collective_nouns>
+      <terrain>
+        <primary>molten lava of volcanoes</primary>
+        <secondary>very hot and arid regions</secondary>
+      </terrain>
+      <reaction_or_pursuit_behavior>
+        <rule>Always fights frost salamanders if in the same vicinity.</rule>
+      </reaction_or_pursuit_behavior>
+    </encounter_profile>
+    <combat_profile>
+      <defenses>
+        <immunities>
+          <immunity>All fire-based damage.</immunity>
+          <immunity>Non-magical weapons.</immunity>
+          <immunity>Sleep spells.</immunity>
+          <immunity>Charm spells.</immunity>
+        </immunities>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="scorching_heat">
+        <trigger>Constant.</trigger>
+        <effect>All creatures within 20' that are susceptible to fire damage receive 1d8 damage per round.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Often lives in molten lava of volcanoes or in very hot and arid regions.</rule>
+      </habitat>
+      <behavior_rules>
+        <rule>Natural enemy of the frost salamander; always fights it if nearby.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>Q</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables>
+      <table name="salamander_stat_block_variants">
+        <row>
+          <column name="variant">Flame</column>
+          <column name="percent_in_lair">25%</column>
+          <column name="dungeon_encounter">Band (1d4+1) / Nest (2d4)</column>
+          <column name="wilderness_encounter">Swarm (2d4) / Nest (2d4)</column>
+          <column name="alignment">Neutral</column>
+          <column name="movement">120' (40')</column>
+          <column name="armor_class">7</column>
+          <column name="hit_dice">8*</column>
+          <column name="attacks">3 (2 claws, bite)</column>
+          <column name="damage">1d4/1d4/1d8</column>
+          <column name="save">F8</column>
+          <column name="morale">0</column>
+          <column name="treasure_type">Q</column>
+          <column name="xp">1,100</column>
+        </row>
+        <row>
+          <column name="variant">Frost</column>
+          <column name="percent_in_lair">25%</column>
+          <column name="dungeon_encounter">Band (1d3) / Nest (1d3)</column>
+          <column name="wilderness_encounter">Band (1d3) / Nest (1d3)</column>
+          <column name="alignment">Chaotic</column>
+          <column name="movement">120' (40')</column>
+          <column name="armor_class">6</column>
+          <column name="hit_dice">12*</column>
+          <column name="attacks">5 (4 claws, bite)</column>
+          <column name="damage">1d6 (each claw) / 2d6</column>
+          <column name="save">F12</column>
+          <column name="morale">0</column>
+          <column name="treasure_type">Q</column>
+          <column name="xp">2,100</column>
+        </row>
+      </table>
+    </tables>
+    <references>
+      <general_rule_reference type="fire"/>
+      <general_rule_reference type="sleep"/>
+      <general_rule_reference type="charm"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Salamander</name>
+      <variant_name>Frost</variant_name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>cold_aura</tag>
+        <tag>cold_immunity</tag>
+        <tag>nonmagical_weapon_immunity</tag>
+      </tags>
+      <spell_interactions>
+        <interaction>
+          <spell_or_effect>sleep</spell_or_effect>
+          <result>unaffected</result>
+        </interaction>
+        <interaction>
+          <spell_or_effect>charm</spell_or_effect>
+          <result>unaffected</result>
+        </interaction>
+      </spell_interactions>
+    </classification>
+    <stat_block>
+      <percent_in_lair>25%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Band" number="1d3"/>
+        <in_lair collective_noun="Nest" number="1d3"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Band" number="1d3"/>
+        <in_lair collective_noun="Nest" number="1d3"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+      </movement>
+      <armor_class>6</armor_class>
+      <hit_dice printed="12*" special_ability_markers="*"/>
+      <attacks>5 (4 claws, bite)</attacks>
+      <damage>1d6 (each claw)/2d6</damage>
+      <save>F12</save>
+      <morale>0</morale>
+      <treasure_type>Q</treasure_type>
+      <xp>2,100</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Band" number="1d3"/>
+        <group environment="dungeon_in_lair" noun="Nest" number="1d3"/>
+        <group environment="wilderness_outside_lair" noun="Band" number="1d3"/>
+        <group environment="wilderness_in_lair" noun="Nest" number="1d3"/>
+      </collective_nouns>
+      <terrain>
+        <primary>icy regions</primary>
+        <secondary>cold regions</secondary>
+      </terrain>
+      <reaction_or_pursuit_behavior>
+        <rule>Always fights flame salamanders if in the same vicinity.</rule>
+      </reaction_or_pursuit_behavior>
+    </encounter_profile>
+    <combat_profile>
+      <defenses>
+        <immunities>
+          <immunity>All cold-based damage.</immunity>
+          <immunity>Non-magical weapons.</immunity>
+          <immunity>Sleep spells.</immunity>
+          <immunity>Charm spells.</immunity>
+        </immunities>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="bone_chilling_cold">
+        <trigger>Constant.</trigger>
+        <effect>All creatures within 20' that are susceptible to cold damage receive 1d8 damage per round.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Prefers icy and cold regions.</rule>
+      </habitat>
+      <behavior_rules>
+        <rule>Natural enemy of the flame salamander; always fights it if nearby.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>Q</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="cold"/>
+      <general_rule_reference type="sleep"/>
+      <general_rule_reference type="charm"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Scorpion, Giant</name>
+      <source_label>108G-ACKS Core-Monster-Catalog-6.md</source_label>
+      <entry_scope>base_creature</entry_scope>
+    </identity>
+    <classification>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>poison</tag>
+        <tag>sting_combo</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>50%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="Scourge" number="1d6"/>
+        <in_lair collective_noun="Nest" number="1d6"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="Scourge" number="1d6"/>
+        <in_lair collective_noun="Nest" number="1d6"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="150'" combat="50'"/>
+      </movement>
+      <armor_class>7</armor_class>
+      <hit_dice printed="4*" special_ability_markers="*"/>
+      <attacks>3 (2 claws, sting)</attacks>
+      <damage>1d10/1d10/1d4, poison</damage>
+      <save>F2</save>
+      <morale>+3</morale>
+      <treasure_type>None</treasure_type>
+      <xp>135</xp>
+    </stat_block>
+    <encounter_profile>
+      <collective_nouns>
+        <group environment="dungeon_outside_lair" noun="Scourge" number="1d6"/>
+        <group environment="dungeon_in_lair" noun="Nest" number="1d6"/>
+        <group environment="wilderness_outside_lair" noun="Scourge" number="1d6"/>
+        <group environment="wilderness_in_lair" noun="Nest" number="1d6"/>
+      </collective_nouns>
+      <terrain>
+        <primary>dungeons</primary>
+        <secondary>rock shelters</secondary>
+        <secondary>ruins</secondary>
+        <secondary>hot environments</secondary>
+      </terrain>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="default_attack">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="claw" count="2" damage="1d10"/>
+            <attack type="sting" count="1" damage="1d4, poison"/>
+          </attack_sequence>
+        </attack_routine>
+      </attack_routines>
+      <attack_effects>
+        <attack_effect attack_name="sting">
+          <trigger>Sting attack hits.</trigger>
+          <damage>1d4</damage>
+          <save type="Poison" on_success="No death effect." on_failure="Victim dies."/>
+          <effect>Poison sting.</effect>
+        </attack_effect>
+        <attack_effect attack_name="claw_to_sting_combo">
+          <trigger>Any claw successfully strikes.</trigger>
+          <to_hit_rule>Sting attack receives a +2 bonus to attack.</to_hit_rule>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities>
+      <ability name="claw_set_up_sting">
+        <trigger>Any claw hits successfully.</trigger>
+        <effect>Sting attack receives +2 to attack.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <habitat>
+        <rule>Can be found in dungeons, rock shelters, ruins, and hot environments.</rule>
+      </habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>None</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="poison"/>
+    </references>
+  </monster>
+</monster_catalog>

@@ -1,0 +1,84 @@
+<aging_rules>
+  <table name="character_starting_age">
+    <columns>
+      <column>class</column>
+      <column>starting_age</column>
+    </columns>
+    <row>
+      <class>Anti-Paladin</class>
+      <starting_age>17+1d6</starting_age>
+    </row>
+    <row>
+      <class>Barbarian</class>
+      <starting_age>14+1d8</starting_age>
+    </row>
+    <row>
+      <class>Dwarven Fury</class>
+      <starting_age>23+3d4</starting_age>
+    </row>
+    <row>
+      <class>Dwarven Machinist</class>
+      <starting_age>28+2d8</starting_age>
+    </row>
+    <row>
+      <class>Dwarven Delver</class>
+      <starting_age>21+3d4</starting_age>
+    </row>
+    <row>
+      <class>Elven Courtier</class>
+      <starting_age>75+5d4</starting_age>
+    </row>
+    <row>
+      <class>Elven Enchanter</class>
+      <starting_age>80+5d4</starting_age>
+    </row>
+    <row>
+      <class>Elven Ranger</class>
+      <starting_age>70+5d4</starting_age>
+    </row>
+    <row>
+      <class>Gnomish Trickster</class>
+      <starting_age>50+4d4</starting_age>
+    </row>
+    <row>
+      <class>Mystic</class>
+      <starting_age>17+3d6</starting_age>
+    </row>
+    <row>
+      <class>Nobiran Wonderworker</class>
+      <starting_age>17+3d6</starting_age>
+    </row>
+    <row>
+      <class>Paladin</class>
+      <starting_age>17+1d6</starting_age>
+    </row>
+    <row>
+      <class>Priestess</class>
+      <starting_age>17+1d6</starting_age>
+    </row>
+    <row>
+      <class>Shaman</class>
+      <starting_age>17+1d6</starting_age>
+    </row>
+    <row>
+      <class>Thrassian Gladiator</class>
+      <starting_age>14+1d6</starting_age>
+    </row>
+    <row>
+      <class>Venturer</class>
+      <starting_age>17+2d4</starting_age>
+    </row>
+    <row>
+      <class>Warlock</class>
+      <starting_age>17+3d6</starting_age>
+    </row>
+    <row>
+      <class>Witch</class>
+      <starting_age>17+1d6</starting_age>
+    </row>
+    <row>
+      <class>Zaharan Ruinguard</class>
+      <starting_age>17+1d6</starting_age>
+    </row>
+  </table>
+</aging_rules>

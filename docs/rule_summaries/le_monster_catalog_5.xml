@@ -1,0 +1,1763 @@
+<monster_catalog title="125-Lairs_&amp;_Encounters-Monster-Catalog-5" summary_scope="rules, procedures, definitions, tables" flavor_excluded="true">
+  <monster>
+    <identity>
+      <name>Golem</name>
+      <variant_name>Amber</variant_name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>construct</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>construct</tag>
+        <tag>track</tag>
+        <tag>detect_invisible</tag>
+      </tags>
+      <spell_interactions>
+        <interaction>
+          <spell_or_effect>hold</spell_or_effect>
+          <result>unaffected</result>
+          <notes>All golems are unaffected.</notes>
+        </interaction>
+        <interaction>
+          <spell_or_effect>charm</spell_or_effect>
+          <result>unaffected</result>
+          <notes>All golems are unaffected.</notes>
+        </interaction>
+        <interaction>
+          <spell_or_effect>sleep</spell_or_effect>
+          <result>unaffected</result>
+          <notes>All golems are unaffected.</notes>
+        </interaction>
+      </spell_interactions>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="solitary" number="1"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="solitary" number="1"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="180'" combat="60'"/>
+      </movement>
+      <armor_class>3</armor_class>
+      <hit_dice printed="10*" special_ability_markers="*"/>
+      <attacks>3 (2 claws, bite)</attacks>
+      <damage>2d6/2d6/2d10</damage>
+      <save>F5</save>
+      <morale>N/A</morale>
+      <treasure_type>None</treasure_type>
+      <xp>1,550</xp>
+    </stat_block>
+    <encounter_profile/>
+    <combat_profile>
+      <defenses>
+        <immunities>
+          <immunity>ordinary weapons</immunity>
+          <immunity>poison</immunity>
+          <immunity>gases</immunity>
+        </immunities>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="detect_invisibility">
+        <effect>Detects invisibility to a range of 60'.</effect>
+      </ability>
+      <ability name="tracking">
+        <effect>Can track any being.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior/>
+    <treasure_and_rewards>
+      <treasure_type>None</treasure_type>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="poison"/>
+      <general_rule_reference type="other">gases</general_rule_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Golem</name>
+      <variant_name>Bone</variant_name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>construct</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>construct</tag>
+        <tag>multi_weapon</tag>
+      </tags>
+      <spell_interactions>
+        <interaction><spell_or_effect>hold</spell_or_effect><result>unaffected</result><notes>All golems are unaffected.</notes></interaction>
+        <interaction><spell_or_effect>charm</spell_or_effect><result>unaffected</result><notes>All golems are unaffected.</notes></interaction>
+        <interaction><spell_or_effect>sleep</spell_or_effect><result>unaffected</result><notes>All golems are unaffected.</notes></interaction>
+      </spell_interactions>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="solitary" number="1"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="solitary" number="1"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>7</armor_class>
+      <hit_dice printed="8*" special_ability_markers="*"/>
+      <attacks>4 (weapons)</attacks>
+      <damage>weapon type</damage>
+      <save>F4</save>
+      <morale>N/A</morale>
+      <treasure_type>None</treasure_type>
+      <xp>1,100</xp>
+    </stat_block>
+    <encounter_profile/>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="weapon_attacks">
+          <usage>default</usage>
+          <attack_sequence>
+            <attack type="weapon" count="4" damage="weapon type"/>
+          </attack_sequence>
+          <notes>May direct attacks at up to two opponents each round.</notes>
+        </attack_routine>
+      </attack_routines>
+      <defenses>
+        <immunities>
+          <immunity>ordinary weapons</immunity>
+          <immunity>poison</immunity>
+          <immunity>gases</immunity>
+          <immunity>electrical attacks</immunity>
+          <immunity>fire-based attacks</immunity>
+          <immunity>cold-based attacks</immunity>
+        </immunities>
+      </defenses>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior/>
+    <treasure_and_rewards><treasure_type>None</treasure_type></treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="poison"/>
+      <general_rule_reference type="other">gases</general_rule_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Golem</name>
+      <variant_name>Bronze</variant_name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>construct</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>construct</tag>
+        <tag>reactive_damage</tag>
+      </tags>
+      <spell_interactions>
+        <interaction><spell_or_effect>hold</spell_or_effect><result>unaffected</result><notes>All golems are unaffected.</notes></interaction>
+        <interaction><spell_or_effect>charm</spell_or_effect><result>unaffected</result><notes>All golems are unaffected.</notes></interaction>
+        <interaction><spell_or_effect>sleep</spell_or_effect><result>unaffected</result><notes>All golems are unaffected.</notes></interaction>
+      </spell_interactions>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="solitary" number="1"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="solitary" number="1"/></wilderness_encounter>
+      <movement><mode type="land" exploration="240'" combat="80'"/></movement>
+      <armor_class>9</armor_class>
+      <hit_dice printed="20*" special_ability_markers="*"/>
+      <attacks>1 (fist)</attacks>
+      <damage>3d10</damage>
+      <save>F10</save>
+      <morale>N/A</morale>
+      <treasure_type>None</treasure_type>
+      <xp>4,600</xp>
+    </stat_block>
+    <encounter_profile/>
+    <combat_profile>
+      <defenses>
+        <immunities>
+          <immunity>ordinary weapons</immunity>
+          <immunity>poison</immunity>
+          <immunity>gases</immunity>
+        </immunities>
+      </defenses>
+      <attack_effects>
+        <attack_effect attack_name="molten_spatter">
+          <trigger>When struck by a bladed weapon.</trigger>
+          <damage>2d6</damage>
+          <save type="Breath" on_success="avoid damage entirely" on_failure="take full damage"/>
+          <effect>Molten metal gushes forth onto the attacker.</effect>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior/>
+    <treasure_and_rewards><treasure_type>None</treasure_type></treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="breath"/>
+      <general_rule_reference type="poison"/>
+      <general_rule_reference type="other">gases</general_rule_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Golem</name>
+      <variant_name>Wood</variant_name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>construct</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>construct</tag>
+        <tag>fire_vulnerability</tag>
+      </tags>
+      <spell_interactions>
+        <interaction><spell_or_effect>hold</spell_or_effect><result>unaffected</result><notes>All golems are unaffected.</notes></interaction>
+        <interaction><spell_or_effect>charm</spell_or_effect><result>unaffected</result><notes>All golems are unaffected.</notes></interaction>
+        <interaction><spell_or_effect>sleep</spell_or_effect><result>unaffected</result><notes>All golems are unaffected.</notes></interaction>
+      </spell_interactions>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="solitary" number="1"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="solitary" number="1"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>2</armor_class>
+      <hit_dice printed="2 + 2*" special_ability_markers="*"/>
+      <attacks>1 (fist)</attacks>
+      <damage>1d8</damage>
+      <save>F1</save>
+      <morale>N/A</morale>
+      <treasure_type>None</treasure_type>
+      <xp>47</xp>
+    </stat_block>
+    <encounter_profile/>
+    <combat_profile>
+      <defenses>
+        <immunities>
+          <immunity>ordinary weapons</immunity>
+          <immunity>poison</immunity>
+          <immunity>gases</immunity>
+        </immunities>
+        <vulnerabilities>
+          <vulnerability>Saving throws against fire are made at -2.</vulnerability>
+          <vulnerability>Fire attacks deal +1 damage per damage die rolled.</vulnerability>
+        </vulnerabilities>
+      </defenses>
+      <mobility_rules>
+        <rule>Suffers -1 to initiative.</rule>
+      </mobility_rules>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior/>
+    <treasure_and_rewards><treasure_type>None</treasure_type></treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="poison"/>
+      <general_rule_reference type="other">gases</general_rule_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Gorgon</name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>breath</tag>
+        <tag>petrification</tag>
+        <tag>charge</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>40%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="group" number="1d2"/>
+        <in_lair collective_noun="den" number="1d4"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="gang" number="1d4"/>
+        <in_lair collective_noun="den" number="1d4"/>
+      </wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>7</armor_class>
+      <hit_dice printed="8**" special_ability_markers="**"/>
+      <attacks>1 (gore or breath)</attacks>
+      <damage>2d6 or petrify</damage>
+      <save>F8</save>
+      <morale>0</morale>
+      <treasure_type>K</treasure_type>
+      <xp>1,600</xp>
+    </stat_block>
+    <encounter_profile>
+      <terrain>
+        <primary>hills</primary>
+        <secondary>prairies</secondary>
+        <secondary>caves</secondary>
+        <secondary>hidden dells</secondary>
+      </terrain>
+      <reaction_or_pursuit_behavior>
+        <rule>Attacks opponents on sight.</rule>
+      </reaction_or_pursuit_behavior>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="gore"><usage>default or charge</usage><attack_sequence><attack type="gore" count="1" damage="2d6"/></attack_sequence></attack_routine>
+        <attack_routine name="breath"><usage>alternative</usage><attack_sequence><attack type="breath" count="1" damage="petrify"/></attack_sequence></attack_routine>
+      </attack_routines>
+      <attack_effects>
+        <attack_effect attack_name="gore_charge">
+          <trigger>When distance permits.</trigger>
+          <damage>double gore damage</damage>
+          <effect>Charges with its gore attack.</effect>
+        </attack_effect>
+        <attack_effect attack_name="petrifying_breath">
+          <effect>Breath weapon is a gas cloud 10' wide and 60' long.</effect>
+          <save type="Petrification" on_success="no effect" on_failure="turned to stone"/>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <special_defense>
+          <name>self_immunity</name>
+          <effect>Unaffected by its own breath weapon.</effect>
+        </special_defense>
+      </defenses>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <habitat><rule>Lives on hills and prairies; dens are in caves or hidden dells.</rule></habitat>
+      <behavior_rules><rule>Exceptionally aggressive.</rule></behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>K</treasure_type>
+      <treasure_rules>
+        <rule>Treasure in a den is on petrified victims.</rule>
+        <rule>Treasure is only accessible if the victims are restored to flesh.</rule>
+      </treasure_rules>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="petrification"/>
+      <general_rule_reference type="breath"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Gray Ooze</name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+    </identity>
+    <classification>
+      <monster_type>ooze</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>acid</tag>
+        <tag>burrower</tag>
+        <tag>clinging</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="solitary" number="1"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="solitary" number="1"/></wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="10'" combat="3'"/>
+        <mode type="burrow" exploration="10'" combat="3'"/>
+      </movement>
+      <armor_class>2</armor_class>
+      <hit_dice printed="3*" special_ability_markers="*"/>
+      <attacks>1 (envelopment)</attacks>
+      <damage>2d8</damage>
+      <save>F2</save>
+      <morale>N/A</morale>
+      <treasure_type>None</treasure_type>
+      <xp>65</xp>
+    </stat_block>
+    <encounter_profile/>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="acidic_strike">
+          <to_hit_rule>Successful strike against an unarmored being deals damage from acidic slime.</to_hit_rule>
+          <damage>2d8</damage>
+          <effect>After a successful hit, any non-magical armor or clothing on the victim is destroyed immediately.</effect>
+          <follow_up>Once it has hit, the ooze clings to the opponent and deals 2d8 damage every round until neutralized.</follow_up>
+        </attack_effect>
+        <attack_effect attack_name="weapon_corrosion">
+          <trigger>When struck by a non-magical metal or wooden weapon.</trigger>
+          <effect>The weapon dissolves immediately after dealing damage.</effect>
+        </attack_effect>
+        <attack_effect attack_name="magical_item_save">
+          <trigger>When magical weapons, armor, or clothing would be dissolved.</trigger>
+          <save type="Death" on_success="item survives" on_failure="item is destroyed"/>
+          <effect>Use the wearer's save versus Death and add any magical bonus to the roll if applicable.</effect>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <immunities>
+          <immunity>fire-based attacks</immunity>
+          <immunity>cold-based attacks</immunity>
+        </immunities>
+      </defenses>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior/>
+    <treasure_and_rewards><treasure_type>None</treasure_type></treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="acid"/>
+      <general_rule_reference type="poison">Death save is used for item survival only.</general_rule_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Green Slime</name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+    </identity>
+    <classification>
+      <monster_type>ooze</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>clinging</tag>
+        <tag>digestion</tag>
+        <tag>vibration_sense</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="solitary" number="1"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="none" number="0"/></wilderness_encounter>
+      <movement><mode type="land" exploration="3'" combat="1'"/></movement>
+      <armor_class>NA (always hit)</armor_class>
+    </stat_block>
+    <encounter_profile/>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="cling_and_digest">
+          <trigger>Drops from high places onto victims or clings to an opponent who steps on it.</trigger>
+          <effect>Once covering a victim, it digests all clothing and armor in 6 rounds.</effect>
+          <follow_up>After contacting bare skin, it completely digests the victim in 1d4 rounds and creates more slime in its place.</follow_up>
+          <limitations><limitation>Does not digest stone.</limitation></limitations>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <immunities>
+          <immunity>impervious to most attacks</immunity>
+        </immunities>
+        <vulnerabilities>
+          <vulnerability>Susceptible to fire.</vulnerability>
+        </vulnerabilities>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="vibration_sense">
+        <effect>Senses movement through subtle vibrations.</effect>
+      </ability>
+      <ability name="fire_on_covered_victim">
+        <trigger>When green slime covering a character is burned.</trigger>
+        <effect>Fire damage is divided evenly between the slime and the character.</effect>
+      </ability>
+      <ability name="cure_disease_vulnerability">
+        <effect>Green slime is killed instantly by a cure disease spell.</effect>
+      </ability>
+      <ability name="scraping_resistance">
+        <effect>Clings in such a way that scraping it off is ineffective.</effect>
+      </ability>
+      <ability name="finality_of_digestion">
+        <effect>No magical revival is possible once the victim is completely digested, because nothing material remains.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior/>
+    <treasure_and_rewards/>
+    <procedures>
+      <procedure name="digestion_sequence">
+        <steps>
+          <step number="1">Green slime reaches a victim by dropping from above or by being stepped on.</step>
+          <step number="2">It digests clothing and armor in 6 rounds.</step>
+          <step number="3">After bare skin contact, it digests the victim in 1d4 rounds.</step>
+          <step number="4">The victim is replaced by more green slime.</step>
+        </steps>
+      </procedure>
+    </procedures>
+    <tables/>
+    <references>
+      <general_rule_reference type="other">cure disease</general_rule_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Griffon</name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>flyer</tag>
+        <tag>dive</tag>
+        <tag>grab</tag>
+        <tag>mount</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>25%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="none" number="0"/></dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="pride" number="2d8"/>
+        <in_lair collective_noun="aerie" number="2d8"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+        <mode type="fly" exploration="360'" combat="120'"/>
+      </movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="7"/>
+      <attacks>3 (2 talons, bite)</attacks>
+      <damage>1d4/1d4/2d8</damage>
+      <save>F4</save>
+      <morale>+1</morale>
+      <treasure_type>P</treasure_type>
+      <xp>440</xp>
+    </stat_block>
+    <encounter_profile>
+      <reaction_or_pursuit_behavior>
+        <rule>If a horse is within 120' of a griffon, the griffon automatically attacks if it fails a morale roll.</rule>
+      </reaction_or_pursuit_behavior>
+      <lair_composition>
+        <member role="eggs" number="1d6" condition="50% chance when aerie is encountered"/>
+        <member role="young" number="1d4" condition="50% chance when aerie is encountered"/>
+      </lair_composition>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="dive_talons">
+          <trigger>While flying.</trigger>
+          <damage>double talon damage</damage>
+          <effect>Can make a dive attack with its talons.</effect>
+        </attack_effect>
+        <attack_effect attack_name="grab">
+          <trigger>If both talons hit a creature smaller than itself.</trigger>
+          <save type="Paralysis" on_success="not grabbed" on_failure="grabbed"/>
+          <effect>Grabbed creatures of dwarf size or less may be carried off.</effect>
+        </attack_effect>
+      </attack_effects>
+      <mobility_rules>
+        <rule>Can carry up to 45 stone (450lb) at full movement.</rule>
+        <rule>Can carry up to 90 stone (900lb) at half movement.</rule>
+      </mobility_rules>
+      <morale_modifiers>
+        <modifier condition="defending young" value="fight to attack any being that comes near"/>
+      </morale_modifiers>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <diet><rule>Has a taste for horse flesh.</rule></diet>
+      <behavior_rules><rule>Intensely protective of young.</rule></behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>P</treasure_type>
+      <treasure_rules><rule>Eggs or young may be captured to be raised and trained as mounts.</rule></treasure_rules>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="paralysis"/>
+      <general_rule_reference type="morale"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Halfling</name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+    </identity>
+    <classification>
+      <monster_type>humanoid</monster_type>
+      <alignment>Lawful</alignment>
+      <tags>
+        <tag>community</tag>
+        <tag>militia</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>90%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="band" number="3d6"/>
+        <in_lair collective_noun="delving" number="1 meet"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="meet" number="1d4 bands"/>
+        <in_lair collective_noun="shire" number="1d10 meets"/>
+      </wilderness_encounter>
+      <movement><mode type="land" exploration="90'" combat="30'"/></movement>
+      <armor_class>2</armor_class>
+      <hit_dice printed="1 - 1"/>
+      <attacks>1 (weapon)</attacks>
+      <damage>1d6 or weapon</damage>
+      <save>E1</save>
+      <morale>-1</morale>
+      <treasure_type>D (per meet)</treasure_type>
+      <xp>5</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="reeve" number="1 per band"/>
+        <member role="sheriff" number="1 per delving or shire"/>
+        <member role="militia" number="5d4" condition="in shire"/>
+        <member role="adult_noncombatants" number="100% of able-bodied adults" condition="in shire"/>
+        <member role="young" number="200% of able-bodied adults" condition="in shire"/>
+      </lair_composition>
+      <population_rules>
+        <rule>Each band is led by a reeve with 2 Hit Dice.</rule>
+        <rule>Each delving or shire is led by a sheriff with 1d6+1 Hit Dice.</rule>
+        <rule>Shire militia members have 2 Hit Dice each.</rule>
+      </population_rules>
+    </encounter_profile>
+    <combat_profile/>
+    <special_abilities/>
+    <ecology_and_behavior/>
+    <treasure_and_rewards><treasure_type>D (per meet)</treasure_type></treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Harpy</name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>flyer</tag>
+        <tag>charm</tag>
+        <tag>song</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>25%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="flight" number="1d6"/>
+        <in_lair collective_noun="nest" number="2d4"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="wing" number="2d4"/>
+        <in_lair collective_noun="nest" number="2d4"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="60'" combat="20'"/>
+        <mode type="fly" exploration="150'" combat="50'"/>
+      </movement>
+      <armor_class>2</armor_class>
+      <hit_dice printed="3*" special_ability_markers="*"/>
+      <attacks>3 (2 claws, weapon, see below)</attacks>
+      <damage>1d4/1d4/1d6, see below</damage>
+      <save>F6</save>
+      <morale>-1</morale>
+      <treasure_type>E</treasure_type>
+      <xp>65</xp>
+    </stat_block>
+    <encounter_profile/>
+    <combat_profile/>
+    <special_abilities>
+      <ability name="song">
+        <trigger>If a character hears the magical song.</trigger>
+        <effect>Failure on a saving throw versus Spells indicates the victim has been charmed.</effect>
+        <save type="Spells" on_success="immune to this song for the rest of the encounter" on_failure="charmed"/>
+        <notes>Any being under the charm moves close to the harpy and makes no attacks.</notes>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Uses magical song to entrance travelers.</rule>
+        <rule>Kills and consumes victims after toying with them.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards><treasure_type>E</treasure_type></treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references><general_rule_reference type="charm"/></references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Hawk</name>
+      <variant_name>Ordinary</variant_name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>flyer</tag>
+        <tag>dive</tag>
+        <tag>hunter</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>20%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="none" number="0"/></dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="flock" number="1d6"/>
+        <in_lair collective_noun="aerie" number="1d6"/>
+      </wilderness_encounter>
+      <movement><mode type="fly" exploration="480'" combat="160'"/></movement>
+      <armor_class>1</armor_class>
+      <hit_dice printed="1d4 hit points"/>
+      <attacks>2 (talons)</attacks>
+      <damage>1d2/1d2</damage>
+      <save>0 level human</save>
+      <morale>-1</morale>
+      <treasure_type>None</treasure_type>
+      <xp>5</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="eggs" number="1d6" condition="50% chance when aerie is encountered"/>
+        <member role="young" number="1d4" condition="50% chance when aerie is encountered"/>
+      </lair_composition>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="dive_talons">
+          <trigger>While flying.</trigger>
+          <damage>double talon damage</damage>
+          <effect>Can make a dive attack.</effect>
+        </attack_effect>
+        <attack_effect attack_name="grab">
+          <trigger>If both talons hit a creature smaller than itself.</trigger>
+          <save type="Paralysis" on_success="not grabbed" on_failure="grabbed"/>
+          <effect>Grabbed creatures of dwarf size or less may be carried off.</effect>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <behavior_rules><rule>Unless trained, attacks only small prey such as dogs, rabbits, and similar animals.</rule></behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>None</treasure_type>
+      <treasure_rules><rule>Eggs or young can be raised and trained as hunters.</rule></treasure_rules>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references><general_rule_reference type="paralysis"/></references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Hawk</name>
+      <variant_name>Giant</variant_name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>flyer</tag>
+        <tag>dive</tag>
+        <tag>grab</tag>
+        <tag>mount</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>20%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="none" number="0"/></dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="flock" number="1d3"/>
+        <in_lair collective_noun="aerie" number="1d3"/>
+      </wilderness_encounter>
+      <movement><mode type="fly" exploration="450'" combat="150'"/></movement>
+      <armor_class>3</armor_class>
+      <hit_dice printed="3 + 3"/>
+      <attacks>2 (talons)</attacks>
+      <damage>1d4/1d4</damage>
+      <save>F2</save>
+      <morale>0</morale>
+      <treasure_type>None</treasure_type>
+      <xp>65</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="eggs" number="1d6" condition="50% chance when aerie is encountered"/>
+        <member role="young" number="1d4" condition="50% chance when aerie is encountered"/>
+      </lair_composition>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="dive_talons">
+          <trigger>While flying.</trigger>
+          <damage>double talon damage</damage>
+          <effect>Can make a dive attack.</effect>
+        </attack_effect>
+        <attack_effect attack_name="grab">
+          <trigger>If both talons hit a creature smaller than itself.</trigger>
+          <save type="Paralysis" on_success="not grabbed" on_failure="grabbed"/>
+          <effect>Grabbed creatures of dwarf size or less may be carried off.</effect>
+        </attack_effect>
+      </attack_effects>
+      <mobility_rules>
+        <rule>Can carry up to 30 stone (300lb) at full movement.</rule>
+        <rule>Can carry up to 60 stone (600lb) at half movement.</rule>
+      </mobility_rules>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <behavior_rules><rule>Capable of attacking prey roughly human-sized or smaller.</rule></behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>None</treasure_type>
+      <treasure_rules><rule>Eggs or young can be raised and trained as mounts.</rule></treasure_rules>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references><general_rule_reference type="paralysis"/></references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Hell Hound</name>
+      <variant_name>Lesser</variant_name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>fire</tag>
+        <tag>breath</tag>
+        <tag>detect_invisible</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>30%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="pack" number="2d4"/>
+        <in_lair collective_noun="den" number="2d4"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="pack" number="2d4"/>
+        <in_lair collective_noun="den" number="2d4"/>
+      </wilderness_encounter>
+      <movement><mode type="land" exploration="120'"/></movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="3*" special_ability_markers="*"/>
+      <attacks>1 (bite or breath)</attacks>
+      <damage>1d6 or see below</damage>
+      <save>F3</save>
+      <morale>+1</morale>
+      <treasure_type>F</treasure_type>
+      <xp>65</xp>
+    </stat_block>
+    <encounter_profile/>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="bite"><usage>70%</usage><attack_sequence><attack type="bite" count="1" damage="1d6"/></attack_sequence></attack_routine>
+        <attack_routine name="breath"><usage>30%</usage><attack_sequence><attack type="breath" count="1" damage="1d6 per Hit Die"/></attack_sequence></attack_routine>
+      </attack_routines>
+      <attack_effects>
+        <attack_effect attack_name="fire_breath">
+          <effect>Affects one target.</effect>
+          <damage>1d6 per Hit Die of the attacking hell hound</damage>
+          <save type="Breath" on_success="half damage" on_failure="full damage"/>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <immunities><immunity>all non-magical fire</immunity></immunities>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="detect_invisibility">
+        <effect>Imperfectly detects invisibility to a range of 60' with 75% probability of detection.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <habitat><rule>Often found around volcanic activity, with creatures that prefer hot environments, or in dungeons.</rule></habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards><treasure_type>F</treasure_type></treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references><general_rule_reference type="breath"/></references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Hell Hound</name>
+      <variant_name>Greater</variant_name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>fire</tag>
+        <tag>breath</tag>
+        <tag>detect_invisible</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>30%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="pack" number="2d4"/>
+        <in_lair collective_noun="den" number="2d4"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="pack" number="2d4"/>
+        <in_lair collective_noun="den" number="2d4"/>
+      </wilderness_encounter>
+      <movement><mode type="land" exploration="120'"/></movement>
+      <armor_class>5</armor_class>
+      <hit_dice printed="7*" special_ability_markers="*"/>
+      <attacks>1 (bite or breath)</attacks>
+      <damage>1d6 or see below</damage>
+      <save>F7</save>
+      <morale>+1</morale>
+      <treasure_type>P</treasure_type>
+      <xp>790</xp>
+    </stat_block>
+    <encounter_profile/>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="bite"><usage>70%</usage><attack_sequence><attack type="bite" count="1" damage="1d6"/></attack_sequence></attack_routine>
+        <attack_routine name="breath"><usage>30%</usage><attack_sequence><attack type="breath" count="1" damage="1d6 per Hit Die"/></attack_sequence></attack_routine>
+      </attack_routines>
+      <attack_effects>
+        <attack_effect attack_name="fire_breath">
+          <effect>Affects one target.</effect>
+          <damage>1d6 per Hit Die of the attacking hell hound</damage>
+          <save type="Breath" on_success="half damage" on_failure="full damage"/>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <immunities><immunity>all non-magical fire</immunity></immunities>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="detect_invisibility">
+        <effect>Imperfectly detects invisibility to a range of 60' with 75% probability of detection.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <habitat><rule>Often found around volcanic activity, with creatures that prefer hot environments, or in dungeons.</rule></habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards><treasure_type>P</treasure_type></treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references><general_rule_reference type="breath"/></references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Herd Animals</name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>herd</tag>
+        <tag>butt_attack</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="none" number="0"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="herd" number="3d10"/></wilderness_encounter>
+      <movement><mode type="land" exploration="240'" combat="80'"/></movement>
+    </stat_block>
+    <encounter_profile>
+      <population_rules>
+        <rule>Region and climate determine the specific kind of herd animal encountered.</rule>
+        <rule>In any large group there are 4 females or young for every 1 male.</rule>
+        <rule>Adult males have 1d4 additional hit points.</rule>
+        <rule>Young have half the standard adult hit points.</rule>
+      </population_rules>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="butt">
+          <effect>Adult males use horns or antlers to butt opponents.</effect>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Most herd animals flee from predators.</rule>
+        <rule>Males of larger species occasionally fight to protect females and young.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards/>
+    <procedures/>
+    <tables>
+      <table name="herd_animal_types">
+        <row>
+          <column name="examples">antelope, deer, goats</column>
+          <column name="hit_dice">1 or 2 HD</column>
+          <column name="butt_damage">1d4</column>
+        </row>
+        <row>
+          <column name="examples">caribou, cattle, oxen</column>
+          <column name="hit_dice">3 HD</column>
+          <column name="butt_damage">1d6</column>
+        </row>
+        <row>
+          <column name="examples">buffalo, elk, moose</column>
+          <column name="hit_dice">4 HD</column>
+          <column name="butt_damage">1d8</column>
+        </row>
+      </table>
+    </tables>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Hippogriff</name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>flyer</tag>
+        <tag>dive</tag>
+        <tag>grab</tag>
+        <tag>mount</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>10%</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="none" number="0"/></dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="herd" number="2d8"/>
+        <in_lair collective_noun="aerie" number="2d8"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="180'" combat="60'"/>
+        <mode type="fly" exploration="360'" combat="120'"/>
+      </movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="3 + 1"/>
+      <attacks>3 (2 talons, bite)</attacks>
+      <damage>1d6/1d6/1d10</damage>
+      <save>F2</save>
+      <morale>0</morale>
+      <treasure_type>F</treasure_type>
+      <xp>65</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="eggs" number="1d6" condition="50% chance when aerie is encountered"/>
+        <member role="young" number="1d4" condition="50% chance when aerie is encountered"/>
+      </lair_composition>
+      <terrain><primary>high mountains</primary></terrain>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="dive_talons">
+          <trigger>While flying.</trigger>
+          <damage>double talon damage</damage>
+          <effect>Can make a dive attack with its talons.</effect>
+        </attack_effect>
+        <attack_effect attack_name="grab">
+          <trigger>If both talons hit a creature smaller than itself.</trigger>
+          <save type="Paralysis" on_success="not grabbed" on_failure="grabbed"/>
+          <effect>Grabbed creatures of dwarf size or less may be carried off.</effect>
+        </attack_effect>
+      </attack_effects>
+      <mobility_rules>
+        <rule>Can carry up to 45 stone (450lb) at full movement.</rule>
+        <rule>Can carry up to 90 stone (900lb) at half movement.</rule>
+      </mobility_rules>
+      <morale_modifiers><modifier condition="defending young" value="fight to the death"/></morale_modifiers>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <habitat><rule>Typically nests high in the mountains.</rule></habitat>
+      <diet>
+        <rule>Voracious omnivore.</rule>
+        <rule>Has a particular taste for pegasi meat.</rule>
+      </diet>
+      <behavior_rules><rule>Will hunt humanoids as readily as other meals.</rule></behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards>
+      <treasure_type>F</treasure_type>
+      <treasure_rules><rule>Eggs or young can be captured, raised, and trained as mounts.</rule></treasure_rules>
+    </treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references><general_rule_reference type="paralysis"/></references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Hobgoblin</name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+    </identity>
+    <classification>
+      <monster_type>beastman</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>warband</tag>
+        <tag>village</tag>
+        <tag>leaders</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>25%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="gang" number="1d6"/>
+        <in_lair collective_noun="lair" number="1 warband"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="warband" number="1d8 gangs"/>
+        <in_lair collective_noun="village" number="1d10 warbands"/>
+      </wilderness_encounter>
+      <movement><mode type="land" exploration="90'" combat="30'"/></movement>
+      <armor_class>3</armor_class>
+      <hit_dice printed="1 + 1"/>
+      <attacks>1 (weapon)</attacks>
+      <damage>1d8 or weapon</damage>
+      <save>F1</save>
+      <morale>0</morale>
+      <treasure_type>E (per warband)</treasure_type>
+      <xp>15</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="champion" number="1 per gang"/>
+        <member role="sub_chieftain" number="1 per warband"/>
+        <member role="chieftain" number="1 per lair or village"/>
+        <member role="females" number="150% of males" condition="in lair or village"/>
+        <member role="young" number="300% of males" condition="in lair or village"/>
+        <member role="trained_albino_apes" number="2d6" condition="60% chance in village"/>
+        <member role="shaman" number="1" condition="90% chance in village"/>
+        <member role="witch_doctor" number="1" condition="75% chance in village"/>
+      </lair_composition>
+      <population_rules>
+        <rule>Champion: AC5, 2 Hit Dice, 9 hit points, +1 damage rolls from strength.</rule>
+        <rule>Sub-chieftain: AC6, 3 Hit Dice, 13 hit points, +2 damage rolls.</rule>
+        <rule>Chieftain: AC7, 5 Hit Dice, 21 hit points, +3 damage rolls.</rule>
+        <rule>Female hobgoblins fight as goblins; young never fight.</rule>
+        <rule>Shaman is statistically equivalent to a sub-chieftain and has Clerical abilities at level 1d8.</rule>
+        <rule>Witch doctor is statistically equivalent to a champion and has Mage abilities at level 1d6.</rule>
+      </population_rules>
+    </encounter_profile>
+    <combat_profile>
+      <morale_modifiers><modifier condition="chieftain alive" value="+1"/></morale_modifiers>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior>
+      <behavior_rules><rule>Suffers no daylight penalties.</rule></behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards><treasure_type>E (per warband)</treasure_type></treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Horse</name>
+      <variant_name>Light</variant_name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>mount</tag>
+        <tag>warhorse</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="none" number="0"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="herd" number="1d10x10"/></wilderness_encounter>
+      <movement><mode type="land" exploration="240'" combat="80'"/></movement>
+      <armor_class>2</armor_class>
+      <hit_dice printed="2"/>
+      <attacks>1 or 2 (hooves)</attacks>
+      <damage>1d4/1d4</damage>
+      <save>F1</save>
+      <morale>-2 or 0</morale>
+      <treasure_type>None</treasure_type>
+      <xp>20</xp>
+    </stat_block>
+    <encounter_profile/>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="war_training">
+          <trigger>If trained for war.</trigger>
+          <effect>Gains +2 morale and one extra hoof attack.</effect>
+          <follow_up>The rider may attack with a charge, dealing double damage with a lance, and the war horse may attack with its hooves during the charge as well.</follow_up>
+        </attack_effect>
+      </attack_effects>
+      <mobility_rules>
+        <rule>Can carry up to 20 stone (200lb) at full movement.</rule>
+        <rule>Can carry up to 40 stone (400lb) at half movement.</rule>
+      </mobility_rules>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior><behavior_rules><rule>Most wild horses are light horses.</rule></behavior_rules></ecology_and_behavior>
+    <treasure_and_rewards><treasure_type>None</treasure_type></treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references><general_rule_reference type="morale"/></references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Horse</name>
+      <variant_name>Medium</variant_name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <tags><tag>mount</tag><tag>warhorse</tag></tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="none" number="0"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="herd" number="1d10x10"/></wilderness_encounter>
+      <movement><mode type="land" exploration="180'" combat="60'"/></movement>
+      <armor_class>2</armor_class>
+      <hit_dice printed="3"/>
+      <attacks>1 or 2 (hooves)</attacks>
+      <damage>1d6/1d6</damage>
+      <save>F2</save>
+      <morale>-1 or +1</morale>
+      <treasure_type>None</treasure_type>
+      <xp>50</xp>
+    </stat_block>
+    <encounter_profile/>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="war_training">
+          <trigger>If trained for war.</trigger>
+          <effect>Gains +2 morale and one extra hoof attack.</effect>
+          <follow_up>The rider may attack with a charge, dealing double damage with a lance, and the war horse may attack with its hooves during the charge as well.</follow_up>
+        </attack_effect>
+      </attack_effects>
+      <mobility_rules>
+        <rule>Can carry up to 30 stone (300lb) at full movement.</rule>
+        <rule>Can carry up to 60 stone (600lb) at half movement.</rule>
+      </mobility_rules>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior><behavior_rules><rule>Ideal for war.</rule></behavior_rules></ecology_and_behavior>
+    <treasure_and_rewards><treasure_type>None</treasure_type></treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references><general_rule_reference type="morale"/></references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Horse</name>
+      <variant_name>Heavy</variant_name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+      <entry_scope>variant</entry_scope>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <tags><tag>mount</tag><tag>warhorse</tag></tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="none" number="0"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="herd" number="1d10x10"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>2</armor_class>
+      <hit_dice printed="3+3"/>
+      <attacks>1 or 2 (hooves)</attacks>
+      <damage>1d8/1d8</damage>
+      <save>F2</save>
+      <morale>-2 or 0</morale>
+      <treasure_type>None</treasure_type>
+      <xp>65</xp>
+    </stat_block>
+    <encounter_profile/>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="war_training">
+          <trigger>If trained for war.</trigger>
+          <effect>Gains +2 morale and one extra hoof attack.</effect>
+          <follow_up>The rider may attack with a charge, dealing double damage with a lance, and the war horse may attack with its hooves during the charge as well.</follow_up>
+        </attack_effect>
+      </attack_effects>
+      <mobility_rules>
+        <rule>Can carry up to 40 stone (400lb) at full movement.</rule>
+        <rule>Can carry up to 80 stone (800lb) at half movement.</rule>
+      </mobility_rules>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior><behavior_rules><rule>Most breeds are too placid to be trained for war; heavy warhorses are very expensive.</rule></behavior_rules></ecology_and_behavior>
+    <treasure_and_rewards><treasure_type>None</treasure_type></treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references><general_rule_reference type="morale"/></references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Hydra</name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>multi_headed</tag>
+        <tag>regeneration</tag>
+        <tag>aquatic_variant</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>20%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="solitary" number="1"/>
+        <in_lair collective_noun="lair" number="1"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="solitary" number="1"/>
+        <in_lair collective_noun="lair" number="1"/>
+      </wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="5 to 12*" special_ability_markers="*"/>
+      <hit_points_rule>Has Hit Dice equal to head count and maximum hit points on each Hit Die.</hit_points_rule>
+      <attacks>As head number (bites)</attacks>
+      <damage>1d10 per head</damage>
+      <save>F5 to F12</save>
+      <morale>+2</morale>
+      <treasure_type>I (5-7 HD), K (8-9 HD), or M (10-12 HD)</treasure_type>
+      <xp>350-2,100</xp>
+    </stat_block>
+    <encounter_profile>
+      <population_rules><rule>Hydras have 5-12 (1d8+4) heads.</rule></population_rules>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="bite">
+          <damage>1d10 per head</damage>
+          <effect>Each head attempts to bite an opponent each round; total attacks per round equal current head count.</effect>
+        </attack_effect>
+        <attack_effect attack_name="head_loss">
+          <trigger>For each 8 points of damage suffered.</trigger>
+          <effect>One head becomes useless.</effect>
+          <termination>When all heads are destroyed, the hydra dies.</termination>
+        </attack_effect>
+      </attack_effects>
+      <defenses>
+        <special_defense>
+          <name>save_progression</name>
+          <effect>Saves as a Fighter equal in level to its Hit Dice.</effect>
+        </special_defense>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="regenerating_hydra">
+        <trigger>1d4 rounds after the hydra loses a head.</trigger>
+        <effect>Grows 2 new heads, to a maximum of 12 heads.</effect>
+        <exception>Heads do not regrow if cauterized with fire before regrowth.</exception>
+      </ability>
+      <ability name="aquatic_hydra">
+        <effect>Has all standard hydra characteristics and abilities, but has fins rather than legs and lives underwater.</effect>
+      </ability>
+      <ability name="judge_created_variants">
+        <effect>The Judge may create other hydra variations, including hydras with fire breath for 8 points of damage per head or poisonous venom bites.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior/>
+    <treasure_and_rewards>
+      <treasure_type>I (5-7 HD), K (8-9 HD), or M (10-12 HD)</treasure_type>
+    </treasure_and_rewards>
+    <procedures>
+      <procedure name="head_destruction">
+        <steps>
+          <step number="1">Track total damage dealt to the hydra.</step>
+          <step number="2">Each time accumulated damage reaches another 8 points, one head becomes useless.</step>
+          <step number="3">When all heads are useless, the hydra dies.</step>
+        </steps>
+      </procedure>
+    </procedures>
+    <tables/>
+    <references>
+      <general_rule_reference type="breath"/>
+      <general_rule_reference type="poison"/>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Invisible Stalker</name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+    </identity>
+    <classification>
+      <monster_type>summoned_creature</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>invisible</tag>
+        <tag>summoned</tag>
+        <tag>task_bound</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="solitary" number="1"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="solitary" number="1"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+      <armor_class>6</armor_class>
+      <hit_dice printed="8*" special_ability_markers="*"/>
+      <attacks>1 (fist)</attacks>
+      <damage>4d4</damage>
+      <save>F8</save>
+      <morale>+4</morale>
+      <treasure_type>None</treasure_type>
+      <xp>1,100</xp>
+    </stat_block>
+    <encounter_profile/>
+    <combat_profile/>
+    <special_abilities>
+      <ability name="summoned_service">
+        <effect>Undertakes whatever task the summoner commands, even if the task sends it hundreds or thousands of miles away.</effect>
+        <limitation>Obeys only the summoner and follows the command until the task is completed.</limitation>
+      </ability>
+      <ability name="hostility_to_protracted_tasks">
+        <effect>Resents protracted missions or complex tasks and seeks to pervert instructions accordingly.</effect>
+      </ability>
+      <ability name="dispelled_return">
+        <effect>May be dispelled and returns to its home plane.</effect>
+      </ability>
+      <ability name="surprise_penalty">
+        <effect>Creatures that cannot detect invisible suffer a -3 penalty to avoid being surprised by invisible stalkers.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior/>
+    <treasure_and_rewards><treasure_type>None</treasure_type></treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="other">invisibility detection</general_rule_reference>
+      <general_rule_reference type="other">surprise</general_rule_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Kobold</name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+    </identity>
+    <classification>
+      <monster_type>beastman</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>warband</tag>
+        <tag>village</tag>
+        <tag>infravision</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>40%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="gang" number="4d4"/>
+        <in_lair collective_noun="lair" number="1 warband"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="warband" number="1d6 gangs"/>
+        <in_lair collective_noun="village" number="1d10 warbands"/>
+      </wilderness_encounter>
+      <movement><mode type="land" exploration="60'" combat="20'"/></movement>
+      <armor_class>2</armor_class>
+      <hit_dice printed="1d4 hit points"/>
+      <attacks>1 (weapon)</attacks>
+      <damage>1d4 or weapon -1</damage>
+      <save>0 level human</save>
+      <morale>-2</morale>
+      <treasure_type>E (per warband)</treasure_type>
+      <xp>5</xp>
+    </stat_block>
+    <encounter_profile>
+      <lair_composition>
+        <member role="champion" number="1 per gang"/>
+        <member role="sub_chieftain" number="1 per warband"/>
+        <member role="chieftain" number="1 per lair or village"/>
+        <member role="females" number="50% of males" condition="in lair or village"/>
+        <member role="young" number="150% of males" condition="in lair or village"/>
+        <member role="guards" number="5d4" condition="in village"/>
+        <member role="boars" number="1d4+1" condition="70% chance in village kennel"/>
+        <member role="giant_weasels" number="1d4" condition="30% chance in village kennel"/>
+        <member role="shaman" number="1" condition="75% chance in village"/>
+        <member role="witch_doctor" number="1" condition="50% chance in village"/>
+      </lair_composition>
+      <population_rules>
+        <rule>Champion: AC3, 1-1 Hit Die, 4 hit points, 1d6 damage per attack.</rule>
+        <rule>Sub-chieftain: 1 Hit Die, 8 hit points, 1d6 damage per attack.</rule>
+        <rule>Chieftain: AC5, 2 Hit Dice, 12 hit points, 1d8 damage per attack or by weapon with +1 bonus to damage rolls.</rule>
+        <rule>Females and young do not fight.</rule>
+        <rule>Guards are statistically equivalent to sub-chieftains.</rule>
+        <rule>Shaman is statistically equivalent to a sub-chieftain and has Clerical abilities at level 1d6.</rule>
+        <rule>Witch doctor is statistically equivalent to a champion and has Mage abilities at level 1d4.</rule>
+      </population_rules>
+    </encounter_profile>
+    <combat_profile>
+      <morale_modifiers><modifier condition="chieftain alive" value="+2"/></morale_modifiers>
+    </combat_profile>
+    <special_abilities>
+      <ability name="infravision">
+        <effect>Has extended infravision to 90'.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <habitat><rule>Lives exclusively underground.</rule></habitat>
+    </ecology_and_behavior>
+    <treasure_and_rewards><treasure_type>E (per warband)</treasure_type></treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references/>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Lamia</name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Chaotic</alignment>
+      <tags>
+        <tag>illusion</tag>
+        <tag>wisdom_drain</tag>
+        <tag>spell_like_abilities</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>40%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="solitary" number="1"/>
+        <in_lair collective_noun="lair" number="1"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="solitary" number="1"/>
+        <in_lair collective_noun="lair" number="1"/>
+      </wilderness_encounter>
+      <movement><mode type="land" exploration="240'" combat="80'"/></movement>
+      <armor_class>7</armor_class>
+      <hit_dice printed="9***" special_ability_markers="***"/>
+      <attacks>1 (hoof or weapon)</attacks>
+      <damage>1d6 + WIS drain or by weapon</damage>
+      <save>F9</save>
+      <morale>+1</morale>
+      <treasure_type>N</treasure_type>
+      <xp>2,500</xp>
+    </stat_block>
+    <encounter_profile>
+      <terrain><primary>ruins</primary><secondary>labyrinths</secondary></terrain>
+    </encounter_profile>
+    <combat_profile/>
+    <special_abilities>
+      <ability name="illusion">
+        <effect>Uses an illusion ability as phantasmal force affecting both sight and sound.</effect>
+        <duration>Permanent until touched or dispelled.</duration>
+      </ability>
+      <ability name="charm_person">
+        <limitation>Once per day.</limitation>
+      </ability>
+      <ability name="mirror_image">
+        <limitation>Once per day.</limitation>
+      </ability>
+      <ability name="command_word">
+        <limitation>At will.</limitation>
+      </ability>
+      <ability name="wisdom_drain">
+        <trigger>Merely touching an opponent.</trigger>
+        <effect>Drains 1 point of WIS permanently.</effect>
+        <termination>When an opponent reaches WIS 3, he becomes completely obedient to the lamia.</termination>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <diet><rule>Feeds on the blood and flesh of humanoids.</rule></diet>
+      <communication>
+        <rule>Speaks the common tongue.</rule>
+        <rule>Frequently speaks ancient evil languages such as Zaharan.</rule>
+      </communication>
+      <behavior_rules>
+        <rule>Prefers not to fight fairly.</rule>
+        <rule>Uses illusions to lure adventurers into perilous situations where it can destroy them.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards><treasure_type>N</treasure_type></treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="charm"/>
+      <general_rule_reference type="other">phantasmal force</general_rule_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Lammasu</name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+    </identity>
+    <classification>
+      <monster_type>fantastic_creature</monster_type>
+      <alignment>Lawful</alignment>
+      <tags>
+        <tag>flyer</tag>
+        <tag>cleric_spellcasting</tag>
+        <tag>magic_resistance</tag>
+        <tag>protection_from_evil</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>30%</percent_in_lair>
+      <dungeon_encounter>
+        <outside_lair collective_noun="flight" number="2d4"/>
+        <in_lair collective_noun="lair" number="2d4"/>
+      </dungeon_encounter>
+      <wilderness_encounter>
+        <outside_lair collective_noun="flight" number="2d4"/>
+        <in_lair collective_noun="lair" number="2d4"/>
+      </wilderness_encounter>
+      <movement>
+        <mode type="land" exploration="120'" combat="40'"/>
+        <mode type="fly" exploration="240'" combat="80'"/>
+      </movement>
+      <armor_class>4</armor_class>
+      <hit_dice printed="7+7***" special_ability_markers="***"/>
+      <attacks>2 (claws)</attacks>
+      <damage>1d6/1d6</damage>
+      <save>F7</save>
+      <morale>+1</morale>
+      <treasure_type>R</treasure_type>
+      <xp>1,900</xp>
+    </stat_block>
+    <encounter_profile>
+      <reaction_or_pursuit_behavior>
+        <rule>Almost always enters combat if it observes a good creature assailed by evil.</rule>
+      </reaction_or_pursuit_behavior>
+    </encounter_profile>
+    <combat_profile>
+      <attack_routines>
+        <attack_routine name="claws"><usage>default</usage><attack_sequence><attack type="claw" count="2" damage="1d6/1d6"/></attack_sequence></attack_routine>
+        <attack_routine name="spells"><usage>alternative</usage><notes>May fight with spells instead of claws.</notes></attack_routine>
+      </attack_routines>
+      <defenses>
+        <special_defense>
+          <name>magic_resistance</name>
+          <effect>Can ignore any spell or spell-like effect with a Magic Resistance throw of 7+.</effect>
+        </special_defense>
+      </defenses>
+    </combat_profile>
+    <special_abilities>
+      <ability name="cleric_spellcasting">
+        <effect>Casts divine spells as a 7th level Cleric.</effect>
+      </ability>
+      <ability name="enhanced_cure_spells">
+        <effect>When casting any cure spell, heals twice the normal amount.</effect>
+      </ability>
+      <ability name="sustained_protection_from_evil">
+        <effect>Constantly radiates sustained protection from evil with twice the effect of the normal spell.</effect>
+      </ability>
+    </special_abilities>
+    <ecology_and_behavior>
+      <behavior_rules>
+        <rule>Not aggressive or violent by nature.</rule>
+        <rule>May aid good beings in times of need.</rule>
+      </behavior_rules>
+    </ecology_and_behavior>
+    <treasure_and_rewards><treasure_type>R</treasure_type></treasure_and_rewards>
+    <procedures/>
+    <tables/>
+    <references>
+      <general_rule_reference type="other">divine magic</general_rule_reference>
+      <general_rule_reference type="other">protection from evil</general_rule_reference>
+    </references>
+  </monster>
+
+  <monster>
+    <identity>
+      <name>Leech, Giant</name>
+      <source_label>125-Lairs_&amp;_Encounters-Monster-Catalog-5.md</source_label>
+    </identity>
+    <classification>
+      <monster_type>animal</monster_type>
+      <alignment>Neutral</alignment>
+      <tags>
+        <tag>latch</tag>
+        <tag>blood_drain</tag>
+        <tag>aquatic</tag>
+      </tags>
+    </classification>
+    <stat_block>
+      <percent_in_lair>None</percent_in_lair>
+      <dungeon_encounter><outside_lair collective_noun="none" number="0"/></dungeon_encounter>
+      <wilderness_encounter><outside_lair collective_noun="brood" number="1d4"/></wilderness_encounter>
+      <movement><mode type="land" exploration="120'" combat="40'"/></movement>
+    </stat_block>
+    <encounter_profile>
+      <terrain><primary>marshy terrain</primary><secondary>stagnant water</secondary></terrain>
+    </encounter_profile>
+    <combat_profile>
+      <attack_effects>
+        <attack_effect attack_name="latch_and_drain">
+          <trigger>When the giant leech hits in combat.</trigger>
+          <effect>Latches onto the victim with its round barbed mouth and drinks 1d6 hit points of blood each round.</effect>
+          <termination>Releases only if the victim dies or the leech is killed.</termination>
+        </attack_effect>
+      </attack_effects>
+    </combat_profile>
+    <special_abilities/>
+    <ecology_and_behavior><habitat><rule>Lives in marshy terrain and other bodies of stagnant water.</rule></habitat></ecology_and_behavior>
+    <treasure_and_rewards/>
+    <procedures/>
+    <tables/>
+    <references/>
+  </monster>
+
+  <confidence_notes>
+    <note>Green Slime stat block is incomplete in the uploaded markdown. Only percent_in_lair, encounter pattern, alignment, movement, and armor_class were preserved directly; hit dice, save, morale, treasure_type, and xp were omitted rather than inferred.</note>
+    <note>Herd Animals and Giant Leech entries have visibly truncated stat blocks in the uploaded markdown. Only preserved fields were encoded.</note>
+    <note>Invisible Stalker, Kobold, and Lammasu stat blocks were reconstructed from flattened/corrupted table rows with high but not absolute confidence.</note>
+    <note>The Hydra treasure type line was normalized as "I (5-7 HD), K (8-9 HD), or M (10-12 HD)" because the source line is missing punctuation in the markdown.</note>
+    <note>The Ordinary Hawk grab text appears to contain a source/markup error because it says "If a griffon hits..." in the ordinary hawk paragraph. The grab mechanic was retained for Ordinary Hawk, but this may be a transcription issue in the source.</note>
+    <note>Horse morale values were preserved exactly as printed ("-2 or 0", "-1 or +1"), but the source does not explicitly label which value is untrained versus war-trained in the stat line; the war-training rule in prose was preserved separately.</note>
+    <note>Classification values such as fantastic_creature, beastman, construct, ooze, animal, and summoned_creature were normalized to fit the Monster Catalog schema when the source did not explicitly print a type line.</note>
+  </confidence_notes>
+</monster_catalog>
