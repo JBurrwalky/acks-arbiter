@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Read(//c/Users/jttau/acks-arbiter/**)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
