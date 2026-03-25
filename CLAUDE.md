@@ -7,7 +7,7 @@ You are the build agent for **ACKS Arbiter**, a sandbox RPG video game that func
 - **Build mechanically, narrate retroactively.** All game logic is deterministic. LLM is for narration only at runtime.
 - **Engine-first, LLM-second.** Every system must work with mock/template provider before LLM integration.
 - **Banker's rounding** (round half to even) everywhere. No exceptions.
-- **Four combat progression types:** fighter, cleric, thief, mage. ("Crusader" is a class, "cleric" is the progression type.)
+- **Four combat progression types:** fighter, cleric, thief, mage. ("Crusader" is an ACKS II change, not present in ACSK 1e, "cleric" is both a class and the progression type.)
 - **Three territory classifications:** Civilized, Borderlands, Wilderness. No "Outlands" or "Unsettled."
 - **"Turn undead"** not "rebuke undead" per ACKS 1e conventions.
 
@@ -150,6 +150,18 @@ At the end of each session, append an entry with:
 | Autoload singletons | PascalCase, truly global only | `GameState`, `CampaignRepository`, `LLMManager`, `AudioRouter` |
 | Constants | SCREAMING_SNAKE_CASE | `MAX_PARTY_SIZE`, `COMBAT_ROUND_SECONDS` |
 | Action vocabulary entries | snake_case verbs | `attack_melee`, `move_to_hex`, `cast_spell` |
+
+## Coding Conventions Maintenance
+
+The file `docs/coding_conventions.md` is a living document that grows as the project grows. **Review and update it when any of the following happen during a session:**
+
+- You establish a new pattern that isn't documented (add it).
+- You find yourself making a judgment call about style or structure that future sessions will face again (document the decision).
+- You create a new autoload, signal pattern, database table pattern, or cross-subsystem interface (add the concrete example to the relevant section).
+- You discover that a [PROVISIONAL] convention should be confirmed or changed based on actual implementation experience (update it and remove the tag).
+- You encounter a convention that doesn't work in practice (flag it for Jedidiah's review, don't silently change it).
+
+When updating, add the new content in the appropriate section — do not append a changelog at the bottom. The document should always read as a coherent reference, not a log. Note the date of significant changes in a one-line comment at the top of the affected section.
 
 ### Architecture Patterns
 
