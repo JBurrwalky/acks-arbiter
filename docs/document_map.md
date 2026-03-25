@@ -1,0 +1,188 @@
+# Document Map
+
+Quick-reference index of all rule summaries and design documents.
+Read this every session to identify which files to load for your current task.
+
+## Source Precedence (highest first)
+
+Axioms (ax_) > HFH excerpted > Player's Companion (pc_) > Lairs & Encounters (le_) > Domains at War (daw_) > ACKS Core (acore_)
+
+---
+
+## Rules — ACKS Core (`acore_*`)
+
+### Core Systems
+
+| File | Contents | Key Topics |
+|------|----------|------------|
+| `acore_basics_and_characters.xml` | Character creation, ability scores, core class progression tables | abilities, creation, XP, levels, saves |
+| `acore_core_classes.xml` | Fighter, Mage, Cleric, Thief — role tags, capability tags, progression | classes, fighter, mage, cleric, thief |
+| `acore_demihuman_classes.xml` | Dwarven Vaultguard, Elven Spellsword, etc. — ancestry, abilities | dwarf, elf, halfling, demihuman |
+| `acore_campaign_classes.xml` | Assassin and other campaign-tier classes — backstab, stronghold rules | assassin, campaign classes |
+| `acore_equipment.xml` | Equipment, encumbrance, hirelings, henchmen, mercenaries, starting wealth | gear, encumbrance, hiring, wages |
+| `acore_proficiencies_rules_and_catalog.xml` | Proficiency system, class/general proficiency lists, INT bonus slots | proficiencies, skills, training |
+| `acore_combat_and_wounds.xml` | Combat sequence, initiative, attack throws, damage, engagement rules | combat, initiative, attack, damage, wounds |
+| `acore_spellcaster_rules.xml` | Arcane vs. divine, spell repertoire, spellcasting procedures | spellcasting, arcane, divine, repertoire |
+| `acore_adventures_and_encounters.xml` | Dungeon/wilderness/sea adventure procedures, encounter tables | exploration, encounters, dungeon, wilderness, sea |
+| `acore_treasure_and_magic_items_rules.xml` | Treasure generation, treasure types, magic item tables, XP from treasure | treasure, magic items, gems, XP |
+| `acore_axioms_strongholds_and_domains.xml` | Domain acquisition, stronghold construction, realm management, territory | domains, strongholds, population, territory |
+| `acore-setting-construction-rules.xml` | Campaign map, region, and dungeon construction procedures and tables | setting, map, region, dungeon design |
+| `acore-campaign-general-and-magic-research.xml` | Magic research, spell research, item creation, ritual casting, constructs | research, crafting, rituals, constructs |
+| `acore-campaign-hijinks.xml` | Hideouts for assassins/nightblades/thieves, syndicate management | hijinks, thieves, assassins, syndicates |
+| `acore_aging_poisons_high-level-start_optional_rules.xml` | Starting age tables, aging effects, poison rules, high-level start, optionals | aging, poison, optional rules |
+| `acore-monster-stocking-rules.xml` | Wandering monster tables, encounter throw mechanics, NPC party creation | stocking, wandering monsters, encounter tables |
+
+### Monster Catalogs
+
+| File | Contents | Key Topics |
+|------|----------|------------|
+| `acore_monster_catalog_a-dop.xml` | Monsters: Bat through Doppelganger | bat, centaur, cockatrice, doppelganger |
+| `acore_monster_catalog_drag-gno.xml` | Monsters: Dragon Turtle through Gnome | dragon turtle, dwarf, elemental, elf, gargoyle |
+| `acore_monster_catalog_gol-lee.xml` | Monsters: Golem variants through Leech | golem, griffon, harpy, hellhound |
+| `acore_monster_catalog_liz-orc.xml` | Monsters: Lizardman through Orc | lizardman, lycanthrope, medusa, minotaur, ogre, orc |
+| `acore_monster_catalog_owl-sco.xml` | Monsters: Owl Bear through Scorpion | owl bear, pegasus, purple worm, rust monster |
+| `acore_monster_catalog_sea-tre.xml` | Monsters: Sea creatures through Treant — aquatic mechanics | sea serpent, shadow, skeleton, sphinx, treant |
+| `acore_monster_catalog_tri-wol.xml` | Monsters: Triceratops through Wyvern — dinosaurs, exotic | triceratops, unicorn, vampire, wight, wyvern |
+| `acore_monster_catalog_dragons.xml` | Dragon stat blocks, age categories, breath weapons, spellcasting | dragons, breath weapon, age, dragon types |
+
+### Spell Catalogs
+
+| File | Contents | Key Topics |
+|------|----------|------------|
+| `acore_spell_catalog_a-i_summary.xml` | Spells A–I: classifications, ranges, durations, effects | animate dead, charm, fireball, healing |
+| `acore_spell_catalog_k-w_summary.xml` | Spells K–W: mechanics, ranges, durations, limitations | lightning bolt, polymorph, teleport, wish |
+
+---
+
+## Rules — Player's Companion (`pc_*`)
+
+### Classes
+
+| File | Contents | Key Topics |
+|------|----------|------------|
+| `pc_classes_1.xml` | Anti-Paladin: fighter progression, aura of protection, detect good | anti-paladin, fighter, evil |
+| `pc_classes_2.xml` | Dwarven Delver: thief skills, backstab, trap detection, subterranean nav | delver, dwarf, thief skills |
+| `pc_classes_3.xml` | Paladin: fighter magic items, lay on hands, detect evil, disease immunity | paladin, fighter, divine |
+| `pc_classes_4.xml` | Elven Courtier: arcane casting, inspiring courage, performance magic | courtier, elf, arcane, social |
+
+### Systems
+
+| File | Contents | Key Topics |
+|------|----------|------------|
+| `pc_equipment_catalog.xml` | Extended equipment pricing by category (clothing, weapons, armor, etc.) | equipment, prices, gear |
+| `pc_proficiencies_catalog.xml` | Additional proficiencies for anti-paladins, barbarians, machinists, delvers | proficiencies, barbarian, machinist |
+| `pc_followers_tables_rules.xml` | Follower recruitment rules and equipment tables by class | followers, recruitment, barbarian, apprentice |
+| `pc_aging_tables.xml` | Starting age by class using dice expressions | aging, starting age |
+| `pc_custom_spell_creation_rules.xml` | Custom spell construction: spell points, characteristics, level guidelines | spell creation, custom spells, spell points |
+| `pc_magic_experimentation.xml` | Magic research experimentation: task adjustments, modifiers, success/failure | experimentation, research, magic |
+
+### Spell Catalogs
+
+| File | Contents | Key Topics |
+|------|----------|------------|
+| `pc_spell_catalog_a-e.xml` | PC spells A–E (e.g., Adaptation — 5th-level arcane) | adaptation, arcane spells |
+| `pc_spell_catalog_f-u.xml` | PC spells F–U (e.g., Fate — 4th-level divine) | fate, divine spells |
+
+---
+
+## Rules — Domains at War (`daw_*`)
+
+| File | Contents | Key Topics |
+|------|----------|------------|
+| `daw_armies_recruitment.xml` | Mercenaries, conscripts, militia, followers, slave soldiers, vassal troops | recruitment, mercenaries, militia |
+| `daw_campaigning_armies.xml` | Campaign phases, regional hex mapping, weekly campaign procedures | campaign, march, supply, hex |
+| `daw_campaigns_troop_tables_summary.xml` | Demi-human, human, beastman troop stats — mercenary variants, battle ratings | troops, battle rating, cavalry |
+| `daw_equipment_and_construction.xml` | Military equipment and construction costs (barding, chariots, workshops) | military equipment, construction |
+| `daw_sieges.xml` | Blockade, reduction, assault methods, breach definitions, siege damage | siege, assault, blockade |
+| `daw_vagaries.xml` | Random campaign event tables, scaling for duchy/kingdom/empire leaders | vagaries, random events, warfare |
+| `daw_axioms_pitching_battle.xml` | Battle phase mechanics (10 min), turns, battle rating calculations | pitched battle, phases, melee rounds |
+
+---
+
+## Rules — Lairs & Encounters (`le_*`)
+
+### Monster Systems
+
+| File | Contents | Key Topics |
+|------|----------|------------|
+| `le_monster_characteristics_stats.xml` | Core monster definitions: % in lair, encounter patterns, infravision | monster stats, lair percentage, encounters |
+| `le_monster_creation.xml` | Monster creation procedures: HD, AC, attacks, special abilities, formulas | monster design, creation, HD |
+| `le_monster_parts.xml` | Harvesting, identifying, and selling monster parts and venoms | harvesting, parts, venom, components |
+| `le_monster_training_rules.xml` | Monster ability scores, STR modifiers for attacks/damage, load by creature | training, monster STR, load |
+| `le_wilderness_lair_rules.xml` | Lair generation and placement, dynamic vs. static points of interest | lairs, wilderness, placement |
+
+### Monster Catalogs
+
+| File | Contents | Key Topics |
+|------|----------|------------|
+| `le_monster_catalog_1.xml` | L&E monsters: Triceratops and T–Z range creatures | triceratops, large creatures |
+| `le_monster_catalog_2_summary.xml` | L&E monsters: Sea Serpent and aquatic/exotic creatures | sea serpent, aquatic |
+| `le_monster_catalog_summary_3.xml` | L&E monsters: Owl Bear and forest creatures with lair rules | owl bear, forest |
+| `le_monster_catalog_4.xml` | L&E monsters: Giant Lizard (Draco) variants with movement stats | giant lizard, draco |
+| `le_monster_catalog_5.xml` | L&E monsters: Golem variants with construct abilities, spell interactions | golem, construct |
+| `le_monster_catalog_6.xml` | L&E monsters: Dragon Turtle with underwater lair, breath weapon | dragon turtle, underwater |
+| `le_monster_catalog_7.xml` | L&E monsters: Bat variants with echolocation and swarm behavior | bat, swarm, echolocation |
+| `le_monster_catalog_8_summary.xml` | L&E monsters: Ankheg with burrowing, acid, grab mechanics | ankheg, burrowing |
+| `le_monster_catalog_dragons.xml` | L&E dragons: age categories, breath weapons, spellcasting, habitats | dragons, age, breath weapon |
+
+---
+
+## Rules — Axioms Magazine (`ax_*`)
+
+| File | Contents | Key Topics |
+|------|----------|------------|
+| `ax_campaign_play.xml` | Monthly domain cycle: adventuring, investment, random growth, congregants | campaign, monthly cycle, domain growth |
+| `ax_codex_and_scroll_magic.xml` | Magical books/codices: format, language, topic, complexity, reading time | codex, scroll, magical books |
+| `ax_conditions_catalog.xml` | Condition system: grabbed, grappled, restrained — escape mechanics | conditions, grapple, restrained |
+| `ax_domain_level_encounters.xml` | Wandering monster incursions into domains by civilization/terrain type | domain encounters, incursions |
+| `ax_domains_of_chaos.xml` | Beastman clanholds as wilderness domains, population limits, families | beastmen, chaos, clanhold |
+| `ax_henchmen_recruitment_expanded.xml` | Finding/hiring specific henchmen, rarity classes (Common to Legendary) | henchmen, recruitment, rarity |
+| `ax_mortal_wounds_and_tampering.xml` | Mortal wound recovery: 1d20+1d6 rolls, CON/HD/damage modifiers | mortal wounds, recovery, tampering |
+| `ax_non_combatants.xml` | Noncombatant subtype: faster leveling, combat/durability penalties | noncombatants, civilians |
+| `ax_reactions_and_influencing.xml` | Attitude framework (hostile to friendly), intimidation, influence timing | reactions, attitude, intimidation |
+| `ax_thief_skill_update.xml` | DEX modifier on thief skills, encumbrance bonuses for climbing/hiding | thief skills, DEX, stealth |
+| `ax_venturer_class.xml` | Venturer class: merchant/trader role, mercantile/language capabilities | venturer, merchant, trade |
+
+---
+
+## Generation Design Documents (`generation/`)
+
+All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints sections within each.
+
+| File | Contents | Status | Key Dependencies |
+|------|----------|--------|------------------|
+| `gdd-setting-generation.md` | Campaign setting generation: 24-mile hex map, geography, climate, politics, demographics | Draft | `acore-setting-construction-rules`, `acore_axioms_strongholds_and_domains`, `ax_domains_of_chaos`, `gdd-terrain-system`, `gdd-dungeon-layout` |
+| `gdd-terrain-system.md` | Terrain tag layering (elevation + ground cover), encounter table mapping, movement costs | Draft | `acore_adventures_and_encounters`, `acore-monster-stocking-rules`, `acore-setting-construction-rules` |
+| `gdd-settlement-layout.md` | Settlement spatial generation: streets, districts, POIs, walls by population/market class | Draft | `acore-setting-construction-rules`, `gdd-terrain-system`, `gdd-setting-generation` |
+| `gdd-dungeon-layout.md` | Dungeon map generation: rooms, corridors, doors, stairs — data structure for stocking | Draft | `acore-setting-construction-rules` |
+| `gdd-dungeon-factions.md` | Faction identification and territorial grouping in dungeons, shared alert state | Draft | `acore-setting-construction-rules`, `le_monster_characteristics_stats`, `acore_monster_catalog_*`, `gdd-dungeon-layout`, `gdd-npc-personality` |
+| `gdd-trap-generation.md` | Parametric trap generation: type, trigger, effect, detection/disarm difficulty | Draft | `acore-setting-construction-rules`, `acore_combat_and_wounds`, `acore_adventures_and_encounters`, `gdd-dungeon-layout` |
+| `gdd-stronghold-construction.md` | Stronghold design, commissioning, cost calculation, worker hiring, monthly progress | Draft | `daw_equipment_and_construction`, `acore_axioms_strongholds_and_domains`, `gdd-settlement-layout`, `gdd-dungeon-layout`, `gdd-ui-ux-design` (not yet created) |
+| `gdd-npc-personality.md` | NPC personality, motivation, and behavioral generation for narration and AI | Draft | `acore-setting-construction-rules`, `ax_henchmen_recruitment_expanded`, `acore_equipment`, `gdd-setting-generation`, `gdd-settlement-layout` |
+| `gdd-henchman-class-selection.md` | Deterministic class selection for 0th-level henchmen reaching 500 XP | Draft | `acore_basics_and_characters`, `acore_core_classes`, `acore_demihuman_classes`, `acore_campaign_classes`, `pc_classes_*`, `gdd-npc-personality`, `gdd-cultural-religious-generation` |
+| `gdd-cultural-religious-generation.md` | Culture and religion data structures/generation — feeds NPC, settlement, domain, cleric | Draft | `acore_core_classes`, `acore-setting-construction-rules`, `acore_axioms_strongholds_and_domains`, `gdd-setting-generation`, `gdd-npc-personality`, `gdd-settlement-layout`, `gdd-name-generation` (not yet created) |
+| `gdd_combat_behavior_tags.md` | Combat AI tag system: deterministic action selection, scoring, tie-breaking per tag | Draft | Morale rules (implicit); no explicit XML dependencies listed |
+
+---
+
+## Architecture Documents (`docs/`)
+
+| File | Contents |
+|------|----------|
+| `acks_arbiter_design_brief_v11.md` | Master architecture document — system design, subsystem interfaces, data flow |
+| `document_map.md` | This file — index of all rule and design documents |
+| `rule_system_map.md` | System-to-file dependency map and cross-references |
+| `coding_conventions.md` | Coding standards and patterns (to be created) |
+
+---
+
+## File Counts
+
+- **ACKS Core XML:** 26 files (16 core systems + 8 monster catalogs + 2 spell catalogs)
+- **Player's Companion XML:** 12 files (4 classes + 6 systems + 2 spell catalogs)
+- **Domains at War XML:** 7 files
+- **Lairs & Encounters XML:** 14 files (5 monster systems + 9 monster catalogs)
+- **Axioms XML:** 11 files
+- **Total XML:** 70 files
+- **GDDs:** 11 files
+- **Grand total indexed:** 81 files
