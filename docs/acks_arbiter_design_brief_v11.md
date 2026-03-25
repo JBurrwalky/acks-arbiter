@@ -94,7 +94,7 @@ Monster catalog (split alphabetically): `acore_monster_catalog_a-dop.xml`, `acor
 | `gdd-cultural-religious-generation.md` | Culture and religion generation for settings |
 | `gdd-henchman-class-selection.md` | Henchman class selection at level-up |
 | `gdd-ui-ux-design.md` | Full UI/UX specification (visual style, screen layouts, interaction patterns, Godot implementation) |
-| `combat_behavior_tags.md` | Eight-family combat AI behavior tag system |
+| `gdd_combat_behavior_tags.md` | Eight-family combat AI behavior tag system |
 
 ### 3.5 Documents Still Needed
 

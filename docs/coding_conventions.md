@@ -451,13 +451,16 @@ var damage := _damage_calculator.calculate(attacker, weapon, target)
 
 ## 5. Autoload Rules
 
-### 5.1 The Four Autoloads
+### 5.1 The Five Autoloads
 
-Only four autoload singletons exist. This list is **closed** — do not add new autoloads without explicit approval from Jedidiah.
+<!-- 2026-03-25: EventBus added per explicit session request -->
+
+Only five autoload singletons exist. This list is **closed** — do not add new autoloads without explicit approval from Jedidiah.
 
 | Autoload | Responsibility | Lives in |
 |----------|---------------|----------|
 | `GameState` | Current session state, active party, timekeeping | `engine/autoloads/game_state.gd` |
+| `EventBus` | Cross-subsystem signal bus (all past-tense signals) | `engine/autoloads/event_bus.gd` |
 | `CampaignRepository` | All SQLite read/write, migration runner | `engine/autoloads/campaign_repository.gd` |
 | `LLMManager` | Provider routing, request/response, token tracking | `engine/autoloads/llm_manager.gd` |
 | `AudioRouter` | SFX/music playback, audio bus management | `engine/autoloads/audio_router.gd` |

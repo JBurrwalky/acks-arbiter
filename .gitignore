@@ -1,0 +1,25 @@
+# Godot 4 — generated caches and editor state (do not commit)
+.godot/
+
+# Godot import metadata (auto-regenerated from source assets)
+*.import
+
+# Godot export artefacts
+export/
+*.pck
+*.exe
+*.x86_64
+*.arm64
+*.apk
+*.aab
+*.ipa
+
+# OS junk
+.DS_Store
+Thumbs.db
+*.tmp
+*~
+
+# SQLite runtime databases (generated at runtime in user://)
+# These live outside the project folder in the OS user data dir,
+# so nothing to ignore here — but keep this note for reference.

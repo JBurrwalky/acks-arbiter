@@ -4,7 +4,10 @@
       "Read(//c/Users/jttau/acks-arbiter/**)",
       "Bash(done)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(grep -E \"\\\\.\\(godot|tscn\\)$\")",
+      "Bash(for dir:*)",
+      "Bash(do echo:*)"
     ]
   }
 }
