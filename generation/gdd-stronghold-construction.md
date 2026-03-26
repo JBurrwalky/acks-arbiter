@@ -3,9 +3,9 @@
 **Authority:** HYBRID — Structure catalog, construction rates, supervision rules, materials rules, magic-assisted construction, and domain stronghold value thresholds come from ACKS sourcebooks (DaW, ACore, Axioms) and are sacred. Grid placement logic, the commission pipeline, size preset definitions, accessory sub-menu behavior, NPC stronghold generation, and construction interruption handling are PROJECT-DESIGNED and may be modified freely.
 **Status:** Draft
 **Depends on ACKS rules:** `daw_equipment_and_construction.xml` (structure catalog, accessories, civilian structures, construction projects, worker rates, supervision, materials, magic assistance), `acore_axioms_strongholds_and_domains.xml` (minimum stronghold value, domain classification, followers)
-**Depends on GDDs:** `gdd-ui-ux-design.md` (G-08 Domain Management, G-10 Stronghold Planner), `gdd-settlement-layout.md` (market class for hiring workers), `gdd-dungeon-layout.md` (shared edge-based wall model, dungeon-to-stronghold claiming)
+**Depends on GDDs:** `gdd-ui-ux-design.md` (G-08 Domain Management, G-10 Stronghold Planner), `gdd-settlement-layout.md` (market class for hiring workers), `gdd-dungeon-layout.md` (shared cell-based wall model, dungeon-to-stronghold claiming), `gdd-combat-map-generation.md` (unified diamond grid system, cell-based wall model definition)
 **Modifiable by Claude Code:** Sections marked PROJECT-DESIGNED — yes, suggest improvements freely. Sections marked ACKS RULES — never modify.
-**Last updated:** 2026-03-24
+**Last updated:** 2026-03-25
 
 ---
 
@@ -169,7 +169,7 @@ The G-10 Stronghold Planner is a single tool with archetype-specific palettes an
 | **Sanctum** | Mage | Towers (all sizes), buildings, dungeon corridors and rooms, libraries, workshops (use building with tagged purpose) | Vertical-focused: tower as primary structure with optional underground dungeon annex | Warns if no tower is present. Dungeon rooms beneath sanctum are optional but flagged as "arcane power attractor" if present. |
 | **Fastness/Vault** | Elf / dwarf (racial variants) | Same as Fortress but adds racial-specific decorative tags (aesthetic only, no mechanical difference) | Same as Fortress | Same as Fortress, plus enforces location restriction (wilderness only, or own-race civilized/borderlands) |
 
-All archetypes share the same underlying grid, edge model, and structure data format. The archetype only controls which structures appear in the palette, what validation warnings fire, and what follower mechanics apply on completion.
+All archetypes share the same underlying grid, cell-based wall model, and structure data format. The archetype only controls which structures appear in the palette, what validation warnings fire, and what follower mechanics apply on completion.
 
 ### 3.2 Archetype Selection Flow
 
@@ -185,11 +185,11 @@ All archetypes share the same underlying grid, edge model, and structure data fo
 
 ### 4.1 Grid Specification
 
-The planner uses the same 5' square grid as the dungeon and combat systems (per design brief §4.3). The stronghold footprint IS the battle map if the stronghold is ever attacked.
+The planner uses the project's unified 5' diamond grid (per `gdd-combat-map-generation.md` §3). The stronghold footprint IS the battle map if the stronghold is ever attacked.
 
 - **Grid size:** The planner starts with a default 200' × 200' (40 × 40 cells) grid. The player can expand the grid in 50' (10-cell) increments up to a maximum of 500' × 500' (100 × 100 cells). Larger strongholds may use multiple adjacent grids if needed, but this is a v2 consideration.
-- **Edge-based walls:** Walls exist on cell edges, not as cell fills, consistent with the dungeon layout system.
-- **Elevation:** The grid is 2D (top-down). Height information is stored per-structure-piece as metadata (a 60' wall is placed on the grid as a 2-cell-thick line with `height: 60` in its data). The optional isometric preview renders height; the planner grid does not.
+- **Cell-based walls:** Walls are impassable cells, consistent with the project-wide wall model (per `gdd-combat-map-generation.md` §9.2). A 5' wall is 1 cell thick; a 10' wall is 2 cells thick. Doors are cells that toggle between passable and impassable.
+- **Elevation:** The grid is 2D (top-down). Height information is stored per-structure-piece as metadata (a 60' wall is placed on the grid as a 2-cell-thick line with `height: 60` in its data). The isometric renderer uses per-cell elevation scores (0-30, each unit = 2.5 feet, per `gdd-combat-map-generation.md` §4) to render height during battle map view.
 
 ### 4.2 Structure-to-Grid Mapping
 
@@ -220,7 +220,7 @@ Height is selected from a dropdown when placing the wall. Cost, SHP, and unit ca
 | Huge square | Derived: 50% less cost, -1 AC | 6 × 6 cells | Square |
 | Custom | Player-defined height and diameter (multiples of 10') | Calculated | Round or square |
 
-Round towers on the square grid use a circular occupancy mask: cells whose center falls within the circle are marked as tower interior. This produces an approximate circle. The isometric preview renders the actual round shape; the grid shows the cell mask.
+Round towers on the diamond grid use a circular occupancy mask: cells whose center falls within the circle are marked as tower interior. This produces an approximate circle. The isometric renderer draws the actual round shape; the grid stores the cell mask.
 
 **Keep presets:**
 
@@ -259,8 +259,8 @@ Unit capacity scales proportionately with the structure's defending surface area
 ### 4.4 Placement Rules
 
 - **Snap to grid:** All structures snap to 5' cell boundaries.
-- **Wall connection:** Walls connect end-to-end and to tower/gatehouse edges. The system highlights valid connection points when a wall endpoint is near a compatible structure. Walls placed adjacent to towers merge their edge cells.
-- **Tower anchoring:** Towers may be placed freestanding or at wall corners/midpoints. When placed at a wall junction, the tower's footprint overlaps the wall endpoints and the system merges the wall edges with the tower perimeter.
+- **Wall connection:** Walls connect end-to-end and to tower/gatehouse cells. The system highlights valid connection points when a wall cell is adjacent to a compatible structure. Walls placed adjacent to towers share perimeter cells — the tower's outer wall cells and the connecting wall cells form a continuous barrier.
+- **Tower anchoring:** Towers may be placed freestanding or at wall corners/midpoints. When placed at a wall junction, the tower's footprint abuts or overlaps the wall's endpoint cells, forming a continuous run of impassable cells.
 - **Moat adjacency:** Moats must be placed adjacent to walls, ramparts, or palisades (on the exterior side). The system prevents moat placement on the interior of an enclosure.
 - **Building placement:** Buildings may be placed anywhere on the grid — inside or outside wall perimeters.
 - **Dungeon corridors/rooms:** For hideout and sanctum archetypes, dungeon corridors and rooms are placed on underground layer toggles. The planner supports up to 3 layers for v1: surface, underground level 1, and underground level 2. Stairs connect adjacent layers. Claimed dungeons (§8.4) may display more layers if the source dungeon had them, but new PC-built underground construction is capped at 2 underground levels.
@@ -587,7 +587,7 @@ When a player initiates a claim, the system appraises the existing structure's G
      from the structure catalog
 
 2. Count and price walls:
-   - For each wall edge in the layout, determine wall thickness:
+   - For each wall cell run in the layout, determine wall thickness:
      a. Standard dungeon walls (10'+ thick, matching a catalog entry):
         value at the published stone wall rate per linear foot
      b. Thinner walls (5' or less, common in dungeon interiors):
@@ -642,12 +642,12 @@ construction to make up the difference.
      You must commission [Y-X]gp of additional construction."
 4. Player confirms the claim
 5. System wraps the DungeonLayout in a StrongholdLayout shell:
-   - The dungeon's grid, cells, edges, rooms, doors, and stairs are
+   - The dungeon's grid, cells, rooms, doors, and stairs are
      preserved exactly as-is
    - A StrongholdLayout record is created with:
      - source_type: "claimed_dungeon"
      - source_dungeon_id: the original dungeon's ID
-     - The dungeon's edge-based wall model becomes the stronghold's
+     - The dungeon's cell-based wall model becomes the stronghold's
        battle map AND interior navigation map
    - The stronghold appears in G-10 (planner) in edit mode
 6. If shortfall exists, the planner opens with the existing layout
@@ -655,7 +655,7 @@ construction to make up the difference.
    (new walls, towers, buildings, additional underground rooms)
 ```
 
-**Grid compatibility:** Both systems use the same 5' square grid with edge-based walls. A DungeonLayout can be directly embedded in a StrongholdLayout without grid conversion. New construction placed via the planner must connect to existing dungeon corridors/rooms at valid door or opening positions — the overlap prevention system treats existing dungeon cells as occupied space that new structures connect to but do not overwrite.
+**Grid compatibility:** Both systems use the same 5' diamond grid with cell-based walls (per `gdd-combat-map-generation.md` §3 and §9.2). A DungeonLayout can be directly embedded in a StrongholdLayout without grid conversion. New construction placed via the planner must connect to existing dungeon corridors/rooms at valid door or opening positions — the overlap prevention system treats existing dungeon cells as occupied space that new structures connect to but do not overwrite.
 
 **Post-claiming modifications:** Once claimed, the structure is editable through the stronghold planner's edit mode (§8.5). The player can commission demolitions (clearing rubble, removing walls, widening corridors) and expansions (adding surface fortifications, extending underground areas, adding accessory features). All modifications follow the standard commission pipeline (§5).
 
@@ -707,9 +707,8 @@ From G-08 (Domain Management), the player selects a completed stronghold and cho
    - It retains its SHP and defensive properties until demolition
      completes (workers are carefully dismantling, not destroying)
    - If attacked during demolition, the structure is still defensible
-5. On completion: the structure's grid cells become empty (open ground
-   or solid rock for underground), edges revert to wall/open as
-   appropriate, and the battle map is regenerated
+5. On completion: the structure's grid cells become passable (open ground
+   or revert to rock for underground), and the battle map is regenerated
 6. Recovered salvage materials are added to the domain treasury
 ```
 
@@ -738,17 +737,17 @@ Every stronghold — player-built and NPC-generated — must have navigable inte
 2. **Player strongholds can be defended** with interior tactical positioning during sieges that breach the outer perimeter.
 3. **Strongholds claimed from dungeons** (§8.4) seamlessly integrate their existing interior layout.
 
-**Interior generation principle:** When a structure piece (building, tower, keep, gatehouse) is placed on the grid, the system auto-generates a simple interior layout within the structure's footprint. The interior uses the same edge-based wall model as dungeons — walls on cell edges, doors as edge states, stairs connecting floors.
+**Interior generation principle:** When a structure piece (building, tower, keep, gatehouse) is placed on the grid, the system auto-generates a simple interior layout within the structure's footprint. The interior uses the same cell-based wall model as dungeons — walls are impassable cells, doors are cells with open/closed state, stairs are passable cells connecting floors.
 
 **Auto-generated interior rules by structure type:**
 
 ```
 Tower:
   - Ground floor: single room filling the tower's circular/square mask
-  - One entry door on a perimeter edge (facing courtyard or wall walk)
+  - One entry door cell on a perimeter wall (facing courtyard or wall walk)
   - Internal stairs (wood or stone, per accessory selection) connecting
     each floor to the one above
-  - Each upper floor: single room with arrow slit edges on exterior walls
+  - Each upper floor: single room with arrow slit cells on exterior walls
   - Top floor: open battlement ring (if battlements accessory is present)
   - Total rooms = number of stories (height / 10', typically 3-6)
 
@@ -769,13 +768,13 @@ Building (civilian):
 
 Gatehouse:
   - Ground floor: gate passage (open corridor through the structure)
-    with portcullis edge and door edges at both ends
+    with portcullis cell and door cells at both ends
   - Upper floor(s): guard room(s) overlooking the gate passage
     (murder holes represented as a special floor cell type)
-  - Arrow slits on exterior edges
+  - Arrow slit cells on exterior walls
 
 Dungeon corridors/rooms (underground layer):
-  - Already use the edge-based wall model natively
+  - Already use the cell-based wall model natively
   - No additional interior generation needed — they ARE the interior
 ```
 
@@ -785,14 +784,14 @@ After a structure is placed and its interior auto-generated, the player may twea
 
 ```
 Allowed tweaks:
-  - Move doors: relocate a door to a different edge of the same room
+  - Move doors: relocate a door cell to a different perimeter position of the same room
     (cannot remove the last door from a room — every room must have
     at least one door or stair access)
   - Move stairs: relocate internal stairs to a different cell within
     the structure's footprint
-  - Add/remove interior doors: subdivide a large room by adding a
-    door-edge, or open up two adjacent rooms by removing a wall-edge
-    and replacing it with an open/door edge
+  - Add/remove interior doors: subdivide a large room by converting a
+    wall cell to a door cell, or open up two adjacent rooms by converting
+    a wall cell to an open passable cell or door cell
   - Door type selection: change any door between open archway, wood
     door, reinforced door, iron door, locked, trapped, or secret door
     (costs apply per accessory rates for non-standard doors)
@@ -869,7 +868,7 @@ StrongholdLayout:
   #   count: int                    # Number of this accessory on this structure
   #   cost: int                     # Total cost (at 25% if during construction, 100% if retrofit)
   #   shp: int                      # Per-unit SHP
-  #   edge_positions: Array[...]    # Where on the structure (for battle map rendering)
+  #   cell_positions: Array[...]    # Which cells on the structure (for battle map rendering)
   
   total_value: int                # Sum of all structure + accessory costs
   total_shp: int                  # Sum of all SHP
@@ -889,7 +888,7 @@ StrongholdLayout:
   #   floors: Array[FloorLayout]
   #   FloorLayout:
   #     floor_number: int           # 0 = ground, 1 = first upper, -1 = underground
-  #     cells: Array[Array[CellData]]  # Edge-based wall model, same as dungeon
+  #     cells: Array[Array[CellData]]  # Cell-based wall model, same as dungeon
   #     rooms: Array[RoomData]      # Same RoomData format as DungeonLayout
   #     stairs: Array[StairData]    # Connects to floor_number ± 1
   #   NOTE: For claimed dungeons, interior_layouts is populated directly
@@ -897,7 +896,7 @@ StrongholdLayout:
   #   is auto-generated per §8.6 rules.
   
   # Battle map integration
-  battle_map_cells: Array[Array[CellData]]   # Edge-based wall model, same format as dungeon layouts
+  battle_map_cells: Array[Array[CellData]]   # Cell-based wall model, same format as dungeon layouts
   # Generated from structures array + interior_layouts; rebuilt whenever the layout changes
 ```
 
@@ -987,13 +986,13 @@ The completed (or in-progress) stronghold layout doubles as the battle map for a
 
 When the stronghold is attacked:
 
-1. Convert `StrongholdLayout.structures` to `battle_map_cells` using the same edge-based wall model as dungeon layouts.
-2. Each structure's footprint becomes walls on the grid edges.
-3. Doors become door edges (with type: wood/reinforced/iron/secret).
-4. Arrow slits become special edge markers that grant the -4 ranged attack penalty and +4 save bonus.
+1. Convert `StrongholdLayout.structures` to `battle_map_cells` using the project's cell-based wall model (per `gdd-combat-map-generation.md` §9.2).
+2. Each structure's footprint becomes wall cells (impassable) on the grid.
+3. Doors become door cells (passable when open, impassable when closed; type: wood/reinforced/iron/secret).
+4. Arrow slits become special wall cells that grant the -4 ranged attack penalty and +4 save bonus to defenders behind them.
 5. Battlements grant their defensive bonuses to units positioned on top of walls.
 6. Moats become impassable terrain cells (or passable only with fascines/bridges).
-7. Interior spaces become open cells for defender positioning.
+7. Interior spaces become open passable cells for defender positioning.
 
 This conversion is deterministic and produces identical results each time. The battle map is cached and only regenerated if the stronghold layout changes.
 
@@ -1013,9 +1012,9 @@ The battle map system auto-suggests defender positions based on unit capacity. E
 - **Moderate interruption depth: DECIDED.** Attacks pause construction and may damage incomplete structures. Workers disperse and must be rehired. Severe damage (>50% of a structure's current SHP) requires rebuild. No worker casualty tracking or morale effects on workers.
 - **Strongholds and buildings only: DECIDED.** Ships, siege engines, and field fortifications are separate GDDs. This document does not cover them.
 - **NPC generation included: DECIDED.** Auto-composition of valid NPC strongholds is defined here, using template-based budget allocation and simplified grid placement.
-- **Dungeon-stronghold bridge via shared grid: DECIDED.** Dungeons and strongholds share the same 5' edge-based wall model. A claimed dungeon wraps its DungeonLayout in a StrongholdLayout shell with no grid conversion. Appraised value calculated from equivalent construction costs. Shortfalls addressed by expansion through the planner. (§8.4)
+- **Dungeon-stronghold bridge via shared grid: DECIDED.** Dungeons and strongholds share the same 5' diamond grid with cell-based walls. A claimed dungeon wraps its DungeonLayout in a StrongholdLayout shell with no grid conversion. Appraised value calculated from equivalent construction costs. Shortfalls addressed by expansion through the planner. (§8.4)
 - **Post-completion edit mode: DECIDED.** Completed strongholds can be reopened in G-10 in edit mode for expansions, demolitions, and accessory retrofits. Demolition costs 10% of original construction cost with 50% materials salvage. Expansions follow the standard commission pipeline. Accessory changes are instantaneous. (§8.5)
-- **Auto-generated navigable interiors: DECIDED.** Every placed structure gets an auto-generated interior (rooms, doors, stairs per floor) using the edge-based wall model. Players can tweak door/stair placement but not exterior walls or room count. NPC strongholds use auto-generated interiors directly, making them raidable as dungeon-like spaces. (§8.6)
+- **Auto-generated navigable interiors: DECIDED.** Every placed structure gets an auto-generated interior (rooms, doors, stairs per floor) using the cell-based wall model. Players can tweak door/stair placement but not exterior walls or room count. NPC strongholds use auto-generated interiors directly, making them raidable as dungeon-like spaces. (§8.6)
 - **Interior tweak scope limited: DECIDED.** Players can move doors, move stairs, add/remove interior doors, and change door types. Players cannot move exterior walls, add rooms beyond the footprint, change floor count, or draw freeform interior walls. This keeps the planner manageable while allowing meaningful customization.
 - **Barbican as atomic unit: DECIDED.** Barbicans are placed as a single grid stamp (gatehouse + 2 towers + drawbridge) matching the ACKS fixed-price listing. No component-level assembly.
 - **Two underground levels for v1: DECIDED.** The planner supports up to 2 underground levels for new construction. Claimed dungeons may display deeper levels from their source layout. Expansion to deeper PC-built construction is post-v1.
@@ -1030,4 +1029,4 @@ All open questions have been resolved.
 1. ~~**Barbican as composite vs. atomic:**~~ **RESOLVED.** Barbicans are placed as a single atomic piece (one grid stamp = gatehouse + 2 towers + drawbridge), matching the ACKS listing as a single fixed-price unit. The player places one barbican piece; its internal components are not individually configurable beyond accessory defaults.
 2. ~~**Underground dungeon depth for sanctums:**~~ **RESOLVED.** The planner supports up to 2 underground levels for v1. This covers the typical sanctum (tower above, dungeon beneath) and hideout (surface concealment, 2-level underground complex). Claimed dungeons (§8.4) may display and navigate more than 2 levels if the original dungeon had them, but new PC-built underground construction is capped at 2 levels. Expansion to deeper construction is a post-v1 enhancement once the system is proven.
 3. ~~**Palisade-to-wall upgrade path:**~~ **RESOLVED in §8.5.** Demolition of the palisade followed by construction of a wall in the same position, offered as a combined "Upgrade" action. Salvage value of the palisade offsets part of the wall cost. The hex has no perimeter defense at that segment during the transition.
-4. ~~**Existing dungeon integration:**~~ **RESOLVED in §8.4.** Both systems use the same 5' grid with edge-based walls. DungeonLayout is wrapped directly in a StrongholdLayout shell with no grid conversion. The dungeon's rooms, doors, corridors, and stairs become the stronghold's interior navigation map. Shortfalls in value are addressed by commissioning new construction through the planner's edit mode.
+4. ~~**Existing dungeon integration:**~~ **RESOLVED in §8.4.** Both systems use the same 5' diamond grid with cell-based walls. DungeonLayout is wrapped directly in a StrongholdLayout shell with no grid conversion. The dungeon's rooms, doors, corridors, and stairs become the stronghold's interior navigation map. Shortfalls in value are addressed by commissioning new construction through the planner's edit mode.

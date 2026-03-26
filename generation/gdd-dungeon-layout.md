@@ -4,7 +4,7 @@
 **Status:** Draft
 **Depends on ACKS rules:** `acore-setting-construction-rules.xml` (dungeon stocking tables, dungeon type/flavor table, special features — applied after layout, not during)
 **Modifiable by Claude Code:** Yes — suggest improvements freely. The algorithm, parameters, and room templates are all engineering decisions.
-**Last updated:** 2026-03-10
+**Last updated:** 2026-03-25
 
 ---
 
@@ -39,9 +39,9 @@ These come from the sourcebooks and MUST be respected:
 
 **Room stocking probabilities** — 1d6 per room: 1 = monster, 2 = monster with treasure, 3 = trap (with treasure on 1-2 on 1d6), 4 = special, 5-6 = empty. Applied AFTER layout generation, not during. (Exact probabilities defined in `acore-setting-construction-rules.xml`.)
 
-**5-foot grid** — all rooms and corridors are on a 5' × 5' square grid per §4.3 of the design brief.
+**5-foot diamond grid** — all rooms and corridors are on the project's unified 5' × 5' isometric diamond grid (per `gdd-combat-map-generation.md` §3). Dungeon maps are diamond maps with diamond cells, the same grid system used by all tactical-scale maps in the project (combat battle maps, strongholds, building interiors). The generation algorithm operates in 2D grid coordinates; the diamond geometry is a property of the grid system itself.
 
-**Edge-based walls** — walls exist on edges between cells, not as cell fills. The generator must produce wall data in this format.
+**Cell-based walls** — walls are impassable cells, not edge properties. A wall cell occupies a full 5' × 5' grid cell. Doors are also cells that toggle between passable and impassable. This is the project's unified wall model shared across all tactical-scale maps (per `gdd-combat-map-generation.md` §9.2). The donjon-derived generation algorithm already operates cell-based internally (walls on even cells, rooms/corridors on odd cells), so the generator's native output IS the final wall model with no conversion step required.
 
 **Dungeon placement guidance** — large dungeons should not be placed too close to each other. The most dangerous dungeons should be deep in the wilderness or otherwise hard to access. Medium and small dungeons/lairs can be within 3-5 hexes of settlements (including Market Class III). There are published precedents for very large dungeons beneath major settlements, so any placement is valid as long as large dungeons are spaced apart and the most lethal ones aren't trivially accessible.
 
@@ -64,7 +64,7 @@ For large dungeons, the room count is per level, not total. A 4-level large dung
 
 ## 4. Algorithm Overview
 
-The generator is adapted from the donjon random dungeon generator (Creative Commons BY-NC 3.0, by drow/donjon.bin.sh), translated to GDScript and extended with dungeon-type theming, ACKS-compatible wall models, and faction-aware spatial properties.
+The generator is adapted from the donjon random dungeon generator (Creative Commons BY-NC 3.0, by drow/donjon.bin.sh), translated to GDScript and extended with dungeon-type theming, ACKS-compatible cell-based walls, and faction-aware spatial properties.
 
 ### 4.1 Core Pipeline
 
@@ -76,7 +76,7 @@ The generator is adapted from the donjon random dungeon generator (Creative Comm
 5. TUNNEL CORRIDORS → recursive maze carving fills remaining space with corridors connecting room doors
 6. PLACE STAIRS → find suitable corridor dead-ends or room locations for up/down stairs
 7. CLEAN → remove percentage of dead-end corridors (configurable)
-8. CONVERT TO EDGE MODEL → translate cell bitmask grid to the project's edge-based wall model (walls on cell edges)
+8. FINALIZE CELLS → convert bitmask grid to CellData grid (passable/impassable, terrain_feature, door_state per bitmask flags). No wall model conversion needed — the cell grid IS the wall model.
 9. DETECT ROOMS → flood-fill connected open regions to assign room IDs
 10. APPLY THEME → adjust door types, corridor widths, room shapes based on dungeon type
 11. OUTPUT → DungeonLayout data structure ready for ACKS stocking
@@ -104,7 +104,7 @@ STAIR_DN   = 0x00400000  # Stairs down
 STAIR_UP   = 0x00800000  # Stairs up
 ```
 
-After generation, this is converted to the project's edge-based wall model for runtime use.
+After generation, the bitmask grid is converted to the project's standard CellData grid for runtime use. Because the project uses cell-based walls, this is a direct translation of bitmask flags to CellData properties — no structural conversion is needed.
 
 ### 4.3 Grid Sizing
 
@@ -117,7 +117,7 @@ The generation grid uses odd-numbered dimensions (following donjon's convention 
 | Medium | 51 × 51 | ~125' × 125' | Room to spread out |
 | Large (per level) | 79 × 79 | ~195' × 195' | Spacious, multiple wings |
 
-Each grid cell represents a 5' square. The effective area is smaller than grid_size × 5' because the grid uses every-other-cell for rooms/corridors.
+Each grid cell represents a 5' × 5' area in world space (rendered as an isometric diamond). The effective area is smaller than grid_size × 5' because the grid uses every-other-cell for rooms/corridors.
 
 ---
 
@@ -353,27 +353,27 @@ The entrance to the dungeon (connection to the overworld map) is placed as a spe
 
 ---
 
-## 10. Edge-Model Conversion
+## 10. Cell Finalization and Room Detection
 
-After generation, convert from the bitmask cell grid to the project's edge-based wall model (§4.3 of design brief).
+After generation, convert the bitmask grid to the project's standard CellData grid and detect rooms.
 
-### 10.1 Procedure
+### 10.1 Cell Finalization
 
-For each cell in the grid:
-1. Check the cell and its four neighbors (N, S, E, W)
-2. For each edge between this cell and a neighbor:
-   - If both cells are ROOM or CORRIDOR: edge state = `open`
-   - If one is open and one is solid: edge state = `wall`
-   - If the shared edge has a door flag: edge state = `door` (with door subtype from the bitmask)
-   - If the shared edge has a secret door flag: edge state = `secret_door` (with detected = false)
-3. Store edge states in the project's standard format: each edge is owned by the cell pair and referenced from both cells
+For each cell in the bitmask grid, produce a CellData:
+1. If cell has ROOM or CORRIDOR flag: `passable = true`, `terrain_feature = "open"`
+2. If cell has NOTHING flag (solid rock): `passable = false`, `terrain_feature = "rock"`
+3. If cell has PERIMETER flag and no ENTRANCE: `passable = false`, `terrain_feature = "wall_stone"` (or theme-appropriate wall type)
+4. If cell has a door flag (DOOR, LOCKED, TRAPPED, SECRET, PORTCULLIS): `passable` depends on door state, `terrain_feature` = door type, `door_state` = initial state per type, `door_detected = false` for SECRET doors
+5. If cell has STAIR_UP or STAIR_DN: `passable = true`, `terrain_feature = "stairs_up"` or `"stairs_down"`
+
+Door cells sit between two floor cells. When closed, a door cell is impassable (blocks movement) and blocks LOS (except for portcullis, which blocks movement but not LOS). When open, a door cell is passable and does not block LOS.
 
 ### 10.2 Room Detection
 
-After edge conversion, run flood-fill to assign room IDs:
-1. For each unassigned open cell, flood-fill to all connected open cells bounded by walls/doors
+After cell finalization, run flood-fill to assign room IDs:
+1. For each unassigned passable cell, flood-fill to all connected passable cells bounded by impassable cells and door cells
 2. Assign a room ID to the group
-3. Record room metadata: constituent cells, bounding box, area, center point, door list
+3. Record room metadata: constituent cells, bounding box, area, center point, door list (door cells adjacent to the room's floor cells)
 4. This produces the `Room` data structures that the ACKS stocking procedure will populate
 
 ---
@@ -394,10 +394,18 @@ DungeonLayout:
   
   cells: Array[Array[CellData]]  # 2D grid
   # CellData:
-  #   edges: { north: EdgeState, south: EdgeState, east: EdgeState, west: EdgeState }
+  #   elevation: int              # 0-30, each unit = 2.5 feet (per gdd-combat-map-generation.md §4)
+  #   terrain_feature: string     # "open", "rock", "wall_stone", "wall_wood", "door",
+  #                               #   "door_locked", "door_secret", "portcullis",
+  #                               #   "stairs_up", "stairs_down"
+  #   passable: bool              # false for walls, rock, closed doors
+  #   blocks_los: bool            # false for open, stairs; true for walls, rock, closed doors
+  #                               #   (portcullis: blocks movement but not LOS)
+  #   door_state: string or null  # null if not a door; "open", "closed", "locked", "stuck"
+  #   door_detected: bool         # For secret doors — false until found
   #   room_id: int or null
   #   is_corridor: bool
-  #   contents: null             # Populated by stocking, not layout
+  #   contents: null              # Populated by stocking, not layout
   
   rooms: Array[RoomData]
   # RoomData:
@@ -413,8 +421,7 @@ DungeonLayout:
   
   doors: Array[DoorData]
   # DoorData:
-  #   position: Vector2i         # Grid cell of the door
-  #   edge_direction: string     # Which edge the door is on (north/south/east/west)
+  #   position: Vector2i         # Grid cell of the door (the door IS this cell)
   #   type: string               # arch / unlocked / locked / trapped / secret / portcullis
   #   connects: Array[int]       # Room IDs this door connects (may include corridor pseudo-room)
   
@@ -455,11 +462,11 @@ The generator is called by the region zoom-in pipeline (§14A.3) or dungeon stoc
 
 ### 12.3 Rendering
 
-The output `DungeonLayout` is rendered by the dungeon map renderer (§4.3 of design brief) using Godot's TileMap system. The edge-based wall model maps directly to TileMap terrain/autotile rules for wall rendering. Room interiors and corridors are floor tiles.
+The output `DungeonLayout` is rendered by the dungeon map renderer using Godot's isometric TileMap system (per `gdd-combat-map-generation.md` §12). Wall cells, floor cells, door cells, and corridor cells each map to tile types. Room interiors and corridors are floor tiles; wall cells and rock cells are impassable solid tiles. The cell-based wall model maps cleanly to TileMap autotile rules — each cell IS either passable or impassable, and the autotile system handles visual wall-face presentation based on neighbor adjacency.
 
 ### 12.4 Stronghold Claiming
 
-A cleared dungeon may be claimed as a stronghold or sanctum by a qualifying character (see `gdd-stronghold-construction.md` §8.4). When this occurs, the DungeonLayout is wrapped in a StrongholdLayout shell — the dungeon's grid, cells, edges, rooms, doors, and stairs become the stronghold's interior navigation map and battle map. Both systems share the same 5' edge-based wall model, so no grid conversion is required. The stronghold planner's edit mode (§8.5) then allows the player to commission expansions (surface fortifications, additional underground rooms) that connect to the existing dungeon layout.
+A cleared dungeon may be claimed as a stronghold or sanctum by a qualifying character (see `gdd-stronghold-construction.md` §8.4). When this occurs, the DungeonLayout is wrapped in a StrongholdLayout shell — the dungeon's grid, cells, rooms, doors, and stairs become the stronghold's interior navigation map and battle map. Both systems share the same 5' cell-based diamond grid and wall model, so no conversion is required. The stronghold planner's edit mode (§8.5) then allows the player to commission expansions (surface fortifications, additional underground rooms) that connect to the existing dungeon layout.
 
 ---
 
@@ -489,7 +496,7 @@ engine/subsystems/generation/dungeon_layout/
   dungeon_theme.gd             # Theme parameter definitions
   dungeon_theme_data.json      # Theme table (the §5.2 table as data)
   grid_operations.gd           # Cell bitmask operations, room placement, tunneling
-  edge_converter.gd            # Bitmask grid → edge-based wall model conversion
+  cell_finalizer.gd            # Bitmask grid → CellData grid conversion
   room_detector.gd             # Flood-fill room detection
   encounter_table_builder.gd   # Themed encounter table construction
 ```
@@ -511,3 +518,4 @@ engine/subsystems/generation/dungeon_layout/
 
 - **2026-03-10:** Initial draft. Algorithm adapted from donjon dungeon generator. Dungeon type theming table designed from ACKS flavor table. ACKS placement constraints documented.
 - **2026-03-10 (rev 2):** All four open questions resolved. Cellular automata for cavern types. Dual room purpose system (original + current). Multi-level rules split by structure type (subterranean vs above-ground). Corridor width standardized to 10' default with width variation by theme. Room purpose tables added per dungeon type. Corridor generation updated for 2-cell-wide default carving.
+- **2026-03-25:** Grid system unified with project-wide diamond grid (per `gdd-combat-map-generation.md` §3). Replaced edge-based wall model with cell-based walls — walls are impassable cells, doors are cells with state. Eliminated edge-model conversion step (§10); generator's native cell output IS the final wall model. Updated CellData to include elevation, door_state, door_detected fields. Updated file organization (edge_converter.gd → cell_finalizer.gd).

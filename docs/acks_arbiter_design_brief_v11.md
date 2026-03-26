@@ -83,7 +83,7 @@ Monster catalog (split alphabetically): `acore_monster_catalog_a-dop.xml`, `acor
 | `gdd-setting-generation.md` | 8-layer world generation pipeline (heightmap → climate → politics → demographics → names → infrastructure → LLM narrative → validation) |
 | `gdd-terrain-system.md` | Terrain tag system (elevation + biome + water + civilization layers), encounter table selection logic, deforestation/forestation |
 | `gdd-terrain-wilderness.md` | Wilderness hex generation and subdivision |
-| `gdd-dungeon-layout.md` | Procedural dungeon map generation (adapted from donjon, CC BY-NC 3.0), cellular automata caverns, edge-based walls, dual room purpose |
+| `gdd-dungeon-layout.md` | Procedural dungeon map generation (adapted from donjon, CC BY-NC 3.0), cellular automata caverns, cell-based walls, dual room purpose |
 | `gdd-dungeon-factions.md` | Dungeon faction generation, inter-group relationships, territory assignment |
 | `gdd-settlement-layout.md` | City/settlement spatial generation (Voronoi blocks, street graphs, districts, vertical layers) |
 | `gdd-settlement-stocking.md` | On-demand settlement content generation (buildings, occupants, encounters, commerce, undercity) |
@@ -138,8 +138,8 @@ The game world is a nested spatial hierarchy. The party exists at one level at a
 | Local | Hex grid (flat-top) | 1.5-mile hex | Cell-to-cell | Wilderness / Domain |
 | Sea Voyage | Hex grid (flat-top) | 24-mile or 6-mile hex | Cell-to-cell | Sea voyage |
 | Settlement (any layer) | Irregular polygon blocks | City block | Node-to-node on street graph | Urban |
-| Dungeon / Interior | Square grid | 5' × 5' square | Square-to-square | Dungeon exploration |
-| Battle (temporary) | Square grid | 5' × 5' square | Square-to-square | Combat |
+| Dungeon / Interior | Diamond grid (isometric) | 5' × 5' cell | Cell-to-cell | Dungeon exploration |
+| Battle (temporary) | Diamond grid (isometric) | 5' × 5' cell | Cell-to-cell | Combat |
 
 Hex scales are nested: a 24-mile hex contains 6-mile hexes, which contain 1.5-mile hexes. Settlements have arbitrary vertical layers (surface, upper levels, undercity levels) sharing the same coordinate system. Transition points link all layers.
 
@@ -175,11 +175,11 @@ Irregular polygon blocks on a street graph. Movement is node-to-node on the stre
 
 ### 6.3 Dungeon / Interior Maps
 
-5' square grid with edge-based walls. Pre-rendered isometric 2D view. Each party member individually positioned. Light radius via Godot 2D lighting. Near-side wall transparency for occluded areas. Rooms detected by flood-fill from wall model. Full spec in `gdd-dungeon-layout.md`.
+5' diamond grid (isometric) with cell-based walls. Pre-rendered isometric 2D view. Each party member individually positioned. Light radius via Godot 2D lighting. Near-side wall transparency for occluded areas. Rooms detected by flood-fill from wall model. Full spec in `gdd-dungeon-layout.md`.
 
 ### 6.4 Battle Maps
 
-When combat triggers outside a dungeon, a temporary 5' battle map is needed.
+When combat triggers outside a dungeon, a temporary 5' isometric diamond grid battle map is needed.
 
 - **Primary:** Procedural generation based on terrain type (forest → trees/undergrowth; city commercial → buildings/stalls/crates). Does not persist after combat.
 - **Secondary:** Pre-keyed battle maps attached to specific locations. Persists as campaign data.
@@ -477,7 +477,7 @@ Core autoloads declare their responsibilities, signals, and dependencies in a li
 Engine fundamentals that must work before anything else:
 
 - Hex map rendering (Godot TileMap, flat-top), terrain taxonomy, fog of war
-- Dungeon square grid with edge-based walls, room auto-detection
+- Dungeon square grid with cell-based walls, room auto-detection
 - Settlement map (single-district minimum)
 - Navigation stack and transitions (state machine)
 - Session runner state machine with all exploration loops
