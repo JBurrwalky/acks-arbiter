@@ -1,3 +1,13 @@
 [gd_scene format=3 uid="uid://arbiter_main_scene"]
 
+[ext_resource type="Script" path="res://scenes/main_scene.gd" id="1_main_script"]
+[ext_resource type="Script" path="res://engine/subsystems/exploration/hex_map_controller.gd" id="2_controller"]
+[ext_resource type="PackedScene" path="res://scenes/maps/hex_map.tscn" id="3_hex_map"]
+
 [node name="Main" type="Node"]
+script = ExtResource("1_main_script")
+
+[node name="HexMapController" type="Node" parent="."]
+script = ExtResource("2_controller")
+
+[node name="HexMap" parent="." instance=ExtResource("3_hex_map")]

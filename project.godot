@@ -23,3 +23,6 @@ config/icon="res://icon.svg"
 
 GameState="*res://engine/autoloads/game_state.gd"
 EventBus="*res://engine/autoloads/event_bus.gd"
+CampaignRepository="*res://engine/autoloads/campaign_repository.gd"
+LLMManager="*res://engine/autoloads/llm_manager.gd"
+AudioRouter="*res://engine/autoloads/audio_router.gd"

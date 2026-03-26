@@ -317,3 +317,227 @@ This file is the project's cross-session memory. Claude Code reads it at the sta
 1. Create `docs/document_map.md` — index all 63 XML rule files and 11 GDDs with brief descriptions.
 2. Create `docs/rule_system_map.md` — map game systems to their rule file dependencies.
 3. Create `docs/coding_conventions.md` maintain consistent coding conventions across sessions.
+
+---
+
+## Session 2026-03-25 — Hex Map Rendering, Terrain Taxonomy, and Fog of War
+
+**Task:** Build the hex map rendering, terrain taxonomy, and fog of war system per the detailed implementation spec.
+**Model used:** Sonnet 4.6
+**Completed:**
+- Created `engine/shared_types/hex_terrain_data.gd` (class HexTerrainData) — terrain tag data model with four layers (elevation, biome, water, civilization). Implements `encounter_table_weights()`, `movement_cost_category()`, `from_dict()`, `is_valid()`.
+- Created `engine/shared_types/hex_map_data.gd` (class HexMapData) — container for a hex map layer. MapScale and FogState enums. `load_from_file()` and `from_dict()` factory methods.
+- Created `engine/subsystems/exploration/hex_map_controller.gd` (class HexMapController, extends Node) — game logic for party movement and fog of war. Static hex math methods: `get_neighbors()`, `hex_distance()`, `is_adjacent()`, `get_hex_ring()`, `axial_to_godot_map()`, `godot_map_to_axial()`. Game methods: `load_map()`, `move_party()`, `can_move_to()`, `_update_visibility()`.
+- Created `scenes/maps/hex_map_renderer.gd` (extends Node2D, no class_name) — renders HexMapData onto TileMapLayer nodes. Programmatically creates terrain tileset (17 cols × 1 row, solid-color placeholder tiles) and fog tileset (2 cols). Handles mouse input to emit `hex_clicked(coord)`.
+- Created `scenes/maps/hex_map.tscn` — scene with HexMap (Node2D), TerrainLayer (TileMapLayer), FogLayer (TileMapLayer), EntityLayer (Node2D), PartyToken (Polygon2D).
+- Created `data/test_hex_map.json` — 31-hex test region "Ashford Vale" demonstrating all terrain types (ocean, river, swamp, woods, hills/woods, mountains, desert, jungle, civilized with city, borderlands).
+- Created `scenes/main_scene.gd` — test harness wiring renderer to controller, loading test map, connecting hex clicks to movement.
+- Updated `scenes/Main.tscn` — added HexMapController node, instantiated HexMap scene, attached main_scene.gd.
+- Created `tests/test_hex_terrain_data.gd` — 15 plain-GDScript assert tests for HexTerrainData.
+- Created `tests/test_hex_map_controller.gd` — 17 plain-GDScript assert tests for HexMapController (static math + game logic).
+- Created new directories: `engine/subsystems/`, `engine/subsystems/exploration/`, `scenes/maps/`, `tests/`.
+
+**Decisions made:**
+- Renderer has no `class_name` — it is only ever referenced by scene instantiation, not by code.
+- Test files use plain `assert()` — no test framework dependency. Each file has a `run_all_tests()` method and individual `test_*()` functions for future harness wiring.
+- Fog of war uses 1-hex sight radius (center + immediate neighbors = 7 hexes visible). Can be changed in `_update_visibility()`.
+- Terrain tileset is programmatically generated from solid-color Image rectangles — no external sprite assets needed for iteration. Each biome has a distinct color; hills are ×0.83 brightness, mountains ×0.67.
+- Even-q offset chosen for axial-to-Godot conversion (`TILE_LAYOUT_FLAT`). If Godot's actual behavior proves to use odd-q, swap `(q - (q & 1))` to `(q + (q & 1))` in both `axial_to_godot_map` and `godot_map_to_axial`.
+- Ocean check in `encounter_table_weights()` fires before `has_city` check — an ocean hex cannot logically be a city hex, but ocean-first ordering keeps the sentinel clean.
+
+**Interfaces defined or changed:**
+
+HexTerrainData:
+- `encounter_table_weights() -> Dictionary` — keys: "city", "inhabited", "_natural", "clear_grass_scrub", "woods", "jungle", "swamp", "barren_desert", "mountains_hills", "ocean"
+- `movement_cost_category() -> String` — values: "mountains", "swamp", "jungle", "woods", "hills", "desert", "clear", "ocean"
+- `from_dict(data: Dictionary) -> HexTerrainData` (static)
+- `is_valid() -> bool`
+
+HexMapData (enums used as cross-system contract):
+- `MapScale`: CAMPAIGN_24MI, REGIONAL_6MI, LOCAL_15MI
+- `FogState`: HIDDEN, EXPLORED, VISIBLE
+
+HexMapController signals (connect renderer or other systems to these):
+- `map_loaded(map_id: String)`
+- `hex_first_revealed(coord: Vector2i)`
+- `visibility_updated()`
+- `party_moved(from_hex: Vector2i, to_hex: Vector2i)`
+
+HexMapRenderer signal:
+- `hex_clicked(coord: Vector2i)` — emitted on left-click over a valid hex
+
+HexMapController public methods:
+- `load_map(map_data: HexMapData) -> void`
+- `move_party(target: Vector2i) -> bool`
+- `can_move_to(target: Vector2i) -> bool`
+- `get_map() -> HexMapData`
+
+Static coordinate conversion (used by renderer and tests):
+- `axial_to_godot_map(axial: Vector2i) -> Vector2i`
+- `godot_map_to_axial(map: Vector2i) -> Vector2i`
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_hex_terrain_data.gd` — 15 tests covering encounter weights for all territory/biome/elevation combinations, movement cost priority, and validity checking.
+- `tests/test_hex_map_controller.gd` — 17 tests covering neighbor enumeration, distance calculation, adjacency, coordinate conversion roundtrip, party movement (success and failure), fog state transitions (HIDDEN → VISIBLE → EXPLORED, never back to HIDDEN), and hex ring generation.
+
+**Known issues:**
+- TileSet programmatic creation: Godot 4 may require TileSet source_id to be explicitly specified when calling `add_source()`. If fog tiles show on wrong layer or at wrong coords, check that `FOG_SOURCE_ID = 0` matches the actual source index assigned by Godot.
+- Even-q vs odd-q offset: The `axial_to_godot_map` conversion uses even-q offset. This must be verified visually in the editor — if hexes appear offset by half a row, swap to odd-q by changing `(q - (q & 1))` to `(q + (q & 1))` in both conversion functions.
+- The test harness files (`test_*.gd`) are not yet connected to any autorun mechanism. They need to be instantiated and have `run_all_tests()` called to execute. Future session should add a test runner scene.
+- `data/test_hex_map.json` is loaded via `res://` path — this works in the Godot editor but would need to be copied to `user://` or bundled properly for export builds.
+
+**Next session should:**
+1. Open the project in the Godot 4.6 editor and verify the scene loads without errors.
+2. Fix even-q vs odd-q offset if hexes appear misaligned.
+3. Wire the test runner: create a scene that instantiates both test scripts and calls `run_all_tests()`, confirm all 32 tests pass.
+4. Create `docs/document_map.md` and `docs/rule_system_map.md` (deferred from prior sessions).
+5. Begin wilderness encounter table resolution — connect `EventBus.hex_entered` to an encounter check system that uses `HexTerrainData.encounter_table_weights()`.
+
+---
+
+## Session 2026-03-25 — Shared Types, DB Schema, CampaignRepository, LLMManager, AudioRouter
+
+**Task:** Build the shared types package, database schema, CampaignRepository autoload, and LLMManager/AudioRouter stubs.
+**Model used:** Sonnet 4.6
+
+**Completed:**
+- Created `engine/shared_types/character_data.gd` — class CharacterData. Full PC/henchman/NPC data model. Static `ability_modifier()` using ACKS match table, `from_dict()`, `to_dict()`.
+- Created `engine/shared_types/action_payload.gd` — class ActionPayload. Action vocabulary payload with `from_dict()`, `is_valid()`.
+- Created `engine/shared_types/encounter_data.gd` — class EncounterData. Universal encounter group descriptor with `from_dict()`.
+- Created `engine/shared_types/inventory_item.gd` — class InventoryItem. Encumbrance in 1/6-stone units. `from_dict()`, `to_dict()`, `encumbrance_stone()`.
+- Created `engine/shared_types/response_envelope.gd` — class ResponseEnvelope. LLM response wrapper with static factories `ok()`, `fail()`, `fallback()`.
+- Created `engine/shared_types/event_payload.gd` — class EventPayload. Generic domain/exploration event payload with `from_dict()`.
+- Created `db/migrations/001_initial_schema.sql` — full initial schema (all Tier 1 tables; idempotent with IF NOT EXISTS).
+- Created `db/schema.sql` — canonical schema file including schema_migrations table plus full 001 content.
+- Created `engine/autoloads/campaign_repository.gd` — CampaignRepository autoload. Migration runner, full CRUD for campaigns, characters, parties, hex maps, domains. No class_name.
+- Created `engine/autoloads/llm_manager.gd` — LLMManager autoload stub. Returns ResponseEnvelope.fallback() for all requests. No class_name.
+- Created `engine/autoloads/audio_router.gd` — AudioRouter autoload stub. No-op play_sfx, play_music, stop_music. No class_name.
+- Updated `project.godot` — added CampaignRepository, LLMManager, AudioRouter to [autoload] section. All 5 autoloads now registered.
+- Updated `docs/coding_conventions.md` — removed [PROVISIONAL] tags from §3.5 (method ordering), §6.2 (repository pattern), §6.4 (transactions), §7.2 (shared types), §8.2 (error propagation). Added confirmed notes with rationale.
+
+**Decisions made:**
+- `db/` directory created at Godot project root (alongside `engine/`, `scenes/`, etc.) so migration SQL files are accessible via `res://db/migrations/` at runtime.
+- CharacterData uses `String` for `id` (not `int`) to match the TEXT PRIMARY KEY in the schema and the `generate_id()` hex string format.
+- `is_active` in `from_dict()` defaults to `1` (active) since DB default is 1; `is_dead` defaults to `0`.
+- `save_character()` does a SELECT-then-INSERT-or-UPDATE upsert pattern (not SQL UPSERT) to give callers a clean bool return and consistent behavior across SQLite versions.
+- ResponseEnvelope uses static factory methods instead of direct construction to enforce invariants (success/error state consistency).
+
+**Interfaces defined or changed:**
+
+CharacterData (`engine/shared_types/character_data.gd`):
+- `static func ability_modifier(score: int) -> int`
+- `static func from_dict(data: Dictionary) -> CharacterData`
+- `func to_dict() -> Dictionary`
+
+ActionPayload (`engine/shared_types/action_payload.gd`):
+- `static func from_dict(data: Dictionary) -> ActionPayload`
+- `func is_valid() -> bool`
+
+EncounterData (`engine/shared_types/encounter_data.gd`):
+- `static func from_dict(data: Dictionary) -> EncounterData`
+
+InventoryItem (`engine/shared_types/inventory_item.gd`):
+- `static func from_dict(data: Dictionary) -> InventoryItem`
+- `func to_dict() -> Dictionary`
+- `func encumbrance_stone() -> float`
+
+ResponseEnvelope (`engine/shared_types/response_envelope.gd`):
+- `static func ok(text: String, context_id: String, provider: String) -> ResponseEnvelope`
+- `static func fail(error: String, context_id: String) -> ResponseEnvelope`
+- `static func fallback(text: String, context_id: String) -> ResponseEnvelope`
+
+EventPayload (`engine/shared_types/event_payload.gd`):
+- `static func from_dict(d: Dictionary) -> EventPayload`
+
+CampaignRepository public methods:
+- `static func generate_id() -> String`
+- `func create_campaign(name: String, world_name: String) -> String`
+- `func get_campaign(id: String) -> Dictionary`
+- `func list_campaigns() -> Array`
+- `func update_campaign_calendar(id: String, day: int) -> void`
+- `func create_character(data: Dictionary) -> String`
+- `func get_character(id: String) -> Dictionary`
+- `func save_character(data: Dictionary) -> bool`
+- `func update_character_hp(id: String, new_hp: int) -> void`
+- `func list_party_characters(party_id: String) -> Array`
+- `func create_party(campaign_id: String, name: String) -> String`
+- `func get_party(id: String) -> Dictionary`
+- `func add_party_member(party_id: String, character_id: String, slot: String) -> bool`
+- `func update_party_position(party_id: String, map_id: String, q: int, r: int) -> void`
+- `func save_hex_map(map_data: HexMapData, campaign_id: String) -> bool`
+- `func load_hex_map(map_id: String) -> HexMapData`
+- `func update_hex_fog(map_id: String, q: int, r: int, fog_state: String) -> void`
+- `func create_domain(data: Dictionary) -> String`
+- `func get_domain(id: String) -> Dictionary`
+- `func list_campaign_domains(campaign_id: String) -> Array`
+
+LLMManager public methods:
+- `func request_narration(context: Dictionary) -> ResponseEnvelope`
+- `func is_configured() -> bool`
+
+AudioRouter public methods:
+- `func play_sfx(_sound_id: String) -> void`
+- `func play_music(_track_id: String) -> void`
+- `func stop_music() -> void`
+
+**Database changes:**
+- Created `db/migrations/001_initial_schema.sql` — initial schema with 11 tables: campaigns, characters, parties, party_members, character_conditions, character_proficiencies, inventory_items, character_spells, hex_maps, hex_cells, domains.
+- Created `db/schema.sql` — canonical current-state schema (includes schema_migrations table + full 001 content).
+- Migration runner in `_run_migrations()` bootstraps schema_migrations, enumerates files, applies unapplied ones in order.
+
+**Tests added/updated:** None this session. (Existing 32 tests for HexTerrainData and HexMapController are unaffected.)
+
+**Known issues:**
+- `db/migrations/` directory must be present at `res://db/migrations/` in the exported build. Godot's `DirAccess.open("res://...")` works in editor and PCK exports, but the .sql files must be included in the export preset's "Include Files" filter (`db/migrations/*.sql`). Add this to export setup when preparing the first build.
+- `load_hex_map()` calls `HexMapData._scale_from_string()` — this static method must exist on HexMapData. It was not explicitly present in the session that created hex_map_data.gd; verify it exists or add it before wiring DB load into the map scene.
+- LLMManager and AudioRouter are stubs only. `request_narration()` always returns a fallback. Full implementation deferred.
+
+**Next session should:**
+1. Wire CampaignRepository into the hex map scene: replace the JSON file load in main_scene.gd with `CampaignRepository.save_hex_map()` on first run, then `CampaignRepository.load_hex_map()` on subsequent runs. Verify round-trip through SQLite preserves all terrain and fog data.
+2. Verify `HexMapData._scale_from_string()` exists; add if missing.
+3. Build the session runner state machine (the top-level game loop: campaign select → session start → exploration → encounter resolution → session end).
+4. Begin the combat loop (initiative, attack throws, damage, conditions).
+5. Create `docs/document_map.md` and `docs/rule_system_map.md` (still deferred).
+
+---
+
+## Session 2026-03-25 — CampaignRepository wiring + test runner scene
+
+**Task:** Wire CampaignRepository into main_scene.gd test harness; add test runner scene.
+**Model used:** Sonnet 4.6
+
+**Completed:**
+- Verified `HexMapData._scale_from_string()` exists at `hex_map_data.gd:104` — known issue resolved, no changes needed.
+- Rewrote `scenes/main_scene.gd` — replaces raw JSON load with DB-backed load/seed pattern:
+  - `_load_or_seed_map()`: checks DB first via `CampaignRepository.load_hex_map(TEST_MAP_ID)`; on miss, loads JSON and seeds DB + campaign/party records.
+  - `_ready()`: saves fog state to DB after `_controller.load_map()` initializes it; uses `GameState.start_session()` instead of direct `transition_to()`.
+  - `_on_hex_clicked()`: persists updated fog to DB after each party move.
+  - `_ensure_test_campaign()`: uses `INSERT OR IGNORE` directly via `CampaignRepository.db` to seed fixed-ID test records idempotently (avoids push_error noise from `get_campaign()` on first run).
+- Created `tests/test_runner.gd` — Node script that instantiates both test suites and calls `run_all_tests()` on each; supports headless `OS.exit_code` for CI.
+- Created `tests/test_runner.tscn` — scene with TestRunner (Node) + HexTerrainDataTests + HexMapControllerTests as children.
+
+**Decisions made:**
+- `main_scene.gd` accesses `CampaignRepository.db` directly for the fixed-ID test campaign seed. This is intentional for the test harness — production code will go through the repository API. A comment documents this distinction.
+- `load_map()` in HexMapController always resets fog to HIDDEN before revealing starting position. This means DB-loaded fog states are not used to resume exploration — correct behavior for the test harness (always starts fresh). Production session resumption will need a `resume_map()` variant that skips fog reset.
+- Test runner uses plain `_run_suite()` wrapper but cannot catch assert failures (GDScript `assert()` aborts the calling script, not the whole process). Visual confirmation via the print statement at end of each suite is the signal of success.
+
+**Interfaces defined or changed:** None.
+
+**Database changes:** None (schema unchanged; `main_scene.gd` now seeds the DB on first run using existing schema).
+
+**Tests added/updated:**
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — test runner wiring for all 32 existing tests. Run with: open `test_runner.tscn` in Godot editor, or `godot --headless --path . res://tests/test_runner.tscn`.
+
+**Known issues:**
+- `load_map()` always resets fog to HIDDEN — DB-persisted fog from a prior session is ignored. For production, a `resume_map(map_data)` method is needed that skips the reset step and respects saved fog states.
+- Full `save_hex_map()` (31 INSERT OR REPLACE) is called on every hex click. Acceptable for the test map; a larger map would benefit from targeted `update_hex_fog()` calls on changed cells only.
+- Test runner cannot distinguish assert-failure crashes from suite completion — if an assert fires mid-suite, the runner gets no signal; the process terminates. This is a known GDScript limitation. Godot 4's `assert()` behavior is acceptable for dev; a future session could add GUT or a custom try/catch wrapper.
+
+**Next session should:**
+1. Open project in Godot 4.6 editor; verify Main.tscn loads without errors; run test_runner.tscn and confirm both suites print "all tests passed."
+2. Verify even-q vs odd-q hex offset visually — if rows appear shifted by half a hex, swap `(q - (q & 1))` to `(q + (q & 1))` in `hex_map_controller.gd` (both `axial_to_godot_map` and `godot_map_to_axial`).
+3. Create `docs/document_map.md` and `docs/rule_system_map.md` — still the highest-priority deferred task for build-session navigation.
+4. Build the wilderness encounter check system: connect `EventBus.hex_entered` → encounter roll → `HexTerrainData.encounter_table_weights()` dispatch.
+5. Build the session runner state machine (campaign select → session start → exploration loop → session end).

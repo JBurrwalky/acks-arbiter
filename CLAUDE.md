@@ -20,7 +20,7 @@ You are the build agent for **ACKS Arbiter**, a sandbox RPG video game that func
 
 **Godot-specific constraints:**
 - `class_name` declarations MUST NOT appear in autoload scripts (causes "hides an autoload singleton" error).
-- godot-sqlite: `query()` returns boolean; results in `db.query_result`; path uses `"user://"` not `"res://"`.
+- godot-sqlite: `query(sql)` for no-param queries (returns bool); `query_with_bindings(sql, array)` for parameterized queries (returns bool); results in `db.query_result`; path uses `"user://"` not `"res://"`. **`query()` does NOT accept a second argument.**
 
 ---
 

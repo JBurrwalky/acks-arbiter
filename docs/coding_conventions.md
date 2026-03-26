@@ -334,7 +334,7 @@ var damage := roll_dice(weapon.damage_dice)  # strength bonus removed in refacto
 
 ### 3.5 Method Ordering Within a File
 
-[PROVISIONAL — confirm during first implementation]
+<!-- Confirmed by hex_map_controller.gd, hex_map_renderer.gd, and campaign_repository.gd — 2026-03-25 -->
 
 ```
 1. class_name / extends
@@ -505,15 +505,20 @@ var db := SQLite.new()
 db.path = "user://campaign.db"  # user:// not res://
 db.open_db()
 
-# query() returns bool; results go to db.query_result
-var success := db.query("SELECT * FROM characters WHERE id = ?", [character_id])
+# query(sql) — no parameters; returns bool
+db.query("SELECT * FROM characters ORDER BY name")
+
+# query_with_bindings(sql, array) — parameterized; returns bool
+# NEVER pass a second argument to query() — it only accepts 1.
+var success := db.query_with_bindings("SELECT * FROM characters WHERE id = ?", [character_id])
 if success and db.query_result.size() > 0:
     var row: Dictionary = db.query_result[0]
     return row
 
 # BAD
-db.path = "res://campaign.db"   # res:// is read-only in exports
-var results = db.query(sql)     # query() returns bool, not results
+db.path = "res://campaign.db"                      # res:// is read-only in exports
+var results = db.query(sql)                        # query() returns bool, not results
+db.query("SELECT * FROM characters WHERE id = ?", [character_id])  # WRONG: query() only takes 1 arg
 ```
 
 ### 6.2 Repository Pattern
@@ -527,10 +532,13 @@ var character: Dictionary = CampaignRepository.get_character(char_id)
 # BAD — subsystem opens its own database connection
 var db := SQLite.new()
 db.path = "user://campaign.db"
-db.query("SELECT * FROM characters WHERE id = ?", [char_id])
+db.query_with_bindings("SELECT * FROM characters WHERE id = ?", [char_id])
 ```
 
-[PROVISIONAL — confirm repository method patterns during first implementation]
+<!-- Confirmed by CampaignRepository — 2026-03-25 -->
+<!-- Boolean DB fields are stored as INTEGER (0/1) and converted on read. The `save_<thing>` methods
+     perform upsert (SELECT-then-INSERT-or-UPDATE). Methods that may fail return `bool`; methods that
+     return an entity return `Dictionary` (null for not-found is represented by empty `{}`). -->
 
 Repository methods follow this naming:
 - `get_<thing>(id)` — single record by primary key
@@ -574,18 +582,18 @@ CREATE TABLE characters (...);
 
 ### 6.4 Transactions
 
-[PROVISIONAL — confirm pattern during first CampaignRepository implementation]
+<!-- Confirmed by CampaignRepository.save_hex_map() — 2026-03-25 -->
 
 ```gdscript
 # GOOD — wrap multi-statement operations in transactions
 func save_character_with_proficiencies(char_data: Dictionary, proficiencies: Array) -> bool:
     db.query("BEGIN TRANSACTION")
-    var success := db.query("INSERT INTO characters ...")
+    var success := db.query_with_bindings("INSERT INTO characters ...", [...])
     if not success:
         db.query("ROLLBACK")
         return false
     for prof in proficiencies:
-        success = db.query("INSERT INTO character_proficiencies ...")
+        success = db.query_with_bindings("INSERT INTO character_proficiencies ...", [...])
         if not success:
             db.query("ROLLBACK")
             return false
@@ -624,7 +632,11 @@ territory_type INTEGER NOT NULL  -- 0=civilized, 1=borderlands... what was 2 aga
 
 Canonical data shapes live in `engine/shared_types/`. These are the contracts between subsystems.
 
-[PROVISIONAL — confirm exact class structure during first shared_types implementation]
+<!-- Confirmed by CharacterData, InventoryItem, ActionPayload, EncounterData, ResponseEnvelope, EventPayload — 2026-03-25 -->
+<!-- Types persisted to DB add `to_dict() -> Dictionary` (booleans → 0/1 integers). Types that are
+     read-only at runtime (HexTerrainData, EncounterData) may omit `to_dict()`. All types have a
+     `static func from_dict(data: Dictionary) -> ClassName` factory using `.get(key, default)` for
+     resilience. -->
 
 ```gdscript
 # engine/shared_types/character_data.gd
@@ -681,14 +693,14 @@ print("failed")                           # print instead of push_error, no cont
 
 ### 8.2 Error Propagation
 
-[PROVISIONAL — confirm pattern during first subsystem implementation]
+<!-- Confirmed by CampaignRepository — 2026-03-25 -->
 
 Functions that can fail return a typed result or use a success boolean pattern:
 
 ```gdscript
 # GOOD — return null on failure with logged error
 func get_character(character_id: int) -> CharacterData:
-    var success := db.query("SELECT * FROM characters WHERE id = ?", [character_id])
+    var success := db.query_with_bindings("SELECT * FROM characters WHERE id = ?", [character_id])
     if not success or db.query_result.size() == 0:
         push_error("CampaignRepository: Character not found. ID: %d" % character_id)
         return null
