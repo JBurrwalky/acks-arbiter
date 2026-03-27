@@ -541,3 +541,142 @@ AudioRouter public methods:
 3. Create `docs/document_map.md` and `docs/rule_system_map.md` — still the highest-priority deferred task for build-session navigation.
 4. Build the wilderness encounter check system: connect `EventBus.hex_entered` → encounter roll → `HexTerrainData.encounter_table_weights()` dispatch.
 5. Build the session runner state machine (campaign select → session start → exploration loop → session end).
+---
+
+## Session 2026-03-27 — Override System
+
+**Task:** Design and implement the full Override System — a Ctrl+Alt+O dev-mode panel for direct game state manipulation, dice pre-determination, and session snapshots.
+**Model used:** Opus 4.6 (planning phase), Sonnet 4.6 (implementation)
+
+**Completed:**
+- Created `db/migrations/002_override_log.sql` — three new tables: `override_log` (append-only audit trail), `game_snapshots` (capped at 10 per campaign), `dungeon_entrances` (hex placement stub for future dungeon generator).
+- Updated `db/schema.sql` — now reflects migration 002.
+- Added `var dice_overrides: Dictionary = {}` to `engine/autoloads/game_state.gd`.
+- Added 5 signals to `engine/autoloads/event_bus.gd`: `override_applied`, `snapshot_saved`, `snapshot_restored`, `dice_override_queued`, `dice_override_consumed`.
+- Added 14 new methods to `engine/autoloads/campaign_repository.gd`: inventory CRUD, condition CRUD, `update_hex_terrain_field`, `create_dungeon_entrance`, and full snapshot management. Added private helpers `_query_rows` and `_insert_rows`.
+- Created `engine/subsystems/override/override_manager.gd` (class OverrideManager, extends Node) — full logic layer with dice queue, character/inventory/world/spawn overrides, and snapshot save/restore.
+- Created `scenes/ui/override/override_panel.gd` (extends CanvasLayer) — fully programmatic UI with 7 tabs: Characters, Inventory, World, Spawning, Dice, Snapshots, Log.
+- Created `scenes/ui/override/override_panel.tscn`.
+- Updated `project.godot` — added `override_panel_toggle` action bound to Ctrl+Alt+O (physical_keycode=79).
+- Updated `scenes/Main.tscn` — added OverrideManager and OverridePanel as children of Main.
+- Updated `scenes/main_scene.gd` — calls `_override_panel.setup(_override_manager, _controller)` after session start.
+- Created `tests/test_override_manager.gd` — 14 tests covering dice queue, stat mutation, XP floor, condition apply/remove, status toggle, gold add/subtract/floor, snapshot round-trip.
+- Updated `tests/test_runner.gd` and `tests/test_runner.tscn` — added OverrideManagerTests (now 3 suites total).
+
+**Decisions made:**
+- OverrideManager is NOT an autoload. Dice override queue lives in `GameState.dice_overrides` so the future dice subsystem can read it without depending on OverrideManager.
+- Gold tracked as `inventory_items` row with `item_key = "coin_gp"`. Subtracting below zero floors at 0.
+- Dungeon placement via override creates a `dungeon_entrances` stub (empty `dungeon_data`). Marked `[STUB]` in code.
+- Settlement placement marks hex as civilized + has_city=1. Does not generate layout.
+- Snapshot restore is transactional: DELETE all campaign-scoped rows, then re-INSERT from JSON blob. Pruned to max 10 per campaign.
+- Warning dialog shows once per session (in-memory flag).
+
+**Interfaces defined or changed:**
+
+GameState additions:
+- `var dice_overrides: Dictionary = {}`
+
+EventBus additions:
+- `signal override_applied(override_type: String, target_id: String, field: String)`
+- `signal snapshot_saved(snapshot_id: String, label: String)`
+- `signal snapshot_restored(snapshot_id: String)`
+- `signal dice_override_queued(roll_type: String, forced_value: int)`
+- `signal dice_override_consumed(roll_type: String, forced_value: int)`
+
+OverrideManager public API (injected into OverridePanel via setup()):
+- Dice: `queue_dice_override`, `clear_dice_override`, `clear_all_dice_overrides`, `consume_dice_override -> int`
+- Character: `override_character_stat`, `override_character_xp`, `override_character_condition`, `override_character_status`
+- Inventory: `override_add_item`, `override_remove_item`, `override_adjust_gold`
+- World: `override_hex_terrain`, `override_fog_reveal_all`, `override_fog_hide_all`, `override_fog_set_hex`, `override_place_settlement`
+- Spawning: `override_spawn_encounter`, `override_place_dungeon`
+- Snapshots: `save_session_snapshot`, `restore_session_snapshot`, `list_session_snapshots`
+
+Dice roll type vocabulary (18 types):
+encounter_check, surprise_check, initiative, attack_throw, damage_roll,
+saving_throw_petrification, saving_throw_poison, saving_throw_blast,
+saving_throw_wands, saving_throw_spells, morale_check, reaction_roll,
+thief_skill_throw, proficiency_throw, domain_event_roll, hijink_roll,
+mortal_wound_roll, tampering_with_mortality
+
+**Database changes:**
+- Migration 002: `override_log`, `game_snapshots`, `dungeon_entrances` tables added.
+
+**Tests added/updated:**
+- `tests/test_override_manager.gd` — 14 tests (new suite, 46 total across all suites).
+
+**Known issues:**
+- Override panel is fully programmatic (no Godot editor-visible widget tree). Cannot be visually tweaked in editor without converting to a proper scene graph.
+- Ctrl+Alt+O binding in project.godot uses physical_keycode=79. Verify it triggers in-engine; if not, reassign in Project Settings > Input Map.
+- Snapshot restore does NOT reload the in-memory HexMapController/renderer. After restore during active exploration, renderer shows stale fog until map reloads. Fix: emit a map_reload_needed signal from restore_session_snapshot() in a future session.
+- override_place_dungeon() is a stub. Wire to dungeon layout generator when that system is built.
+
+**Next session should:**
+1. Open project in Godot 4.6; run test_runner.tscn; confirm all 3 suites pass.
+2. Verify Ctrl+Alt+O opens the Override Panel with the warning dialog.
+3. Build the dice subsystem: DiceSystem class, roll(sides, count, modifier), integration with GameState.dice_overrides via OverrideManager.consume_dice_override().
+4. Build the session runner state machine (campaign select to exploration loop).
+
+---
+
+## Session 2026-03-27 — Hex Map Camera, Tooltip, Terrain Propagation, Override Panel UX
+
+**Task:** Fix 6 issues identified in review: (1) tiles rendering off-screen, (2) no camera scroll, (3) no hex hover tooltip, (4) terrain override not reflecting visually, (5) terrain value field was free text, (6) fog override missing reveal-selected.
+**Model used:** claude-sonnet-4-6 (implementation)
+
+**Completed:**
+- `scenes/maps/hex_map.tscn` — Added Camera2D child and HexHUD CanvasLayer (layer=10) with TooltipPanel (PanelContainer, mouse_filter=IGNORE) and TooltipLabel (Label).
+- `scenes/maps/hex_map_renderer.gd` — Full rewrite:
+  - Added `@onready` refs for Camera2D, TooltipPanel, TooltipLabel.
+  - Added `PAN_SPEED = 200.0` and `EDGE_MARGIN = 40.0` constants.
+  - `_process(delta)`: arrow-key pan + mouse-to-edge pan (40px margin); Camera2D limits constrain naturally.
+  - `center_on_hex(coord)`: moves camera to pixel center of given axial hex.
+  - `_compute_camera_limits()`: iterates all hex pixel positions, sets Camera2D limit_left/right/top/bottom with 1-tile padding.
+  - `_on_map_loaded()`: now calls `_compute_camera_limits()` then `center_on_hex(party_hex)`.
+  - `_unhandled_input()`: added `InputEventMouseMotion` branch → `_update_tooltip(event.position)`.
+  - `_update_tooltip(viewport_pos)`: shows terrain info for EXPLORED/VISIBLE hexes; hides for HIDDEN or off-map.
+  - `_terrain_tooltip_text(coord, terrain)`: formats 9-line tooltip (hex coord, elevation, biome, water, territory, city, families/owners/cleared as stubs).
+  - `_repaint_tile(coord)`: repaints a single terrain tile using in-memory HexTerrainData.
+  - `setup(controller)`: now also connects `controller.hex_terrain_updated` → `_repaint_tile`.
+- `engine/subsystems/exploration/hex_map_controller.gd`:
+  - Added `signal hex_terrain_updated(coord: Vector2i)`.
+  - Added `func update_hex_terrain(coord, field, new_value)`: updates in-memory HexTerrainData field (all 6 fields), emits `hex_terrain_updated`.
+- `engine/subsystems/override/override_manager.gd`:
+  - `override_hex_terrain()` signature: added `controller: HexMapController = null` param (default null = backward compat).
+  - After DB write: calls `controller.update_hex_terrain(coord, field, new_value)` if controller is non-null.
+- `scenes/ui/override/override_panel.gd`:
+  - `_world_terrain_value: LineEdit` replaced with `_world_terrain_value_opt: OptionButton`.
+  - Added `_world_fog_reveal_hex_btn: Button` var.
+  - Added `TERRAIN_VALUE_OPTIONS` const dict mapping each terrain field to its valid string values.
+  - `_build_world_tab()`: OptionButton wired; connects `item_selected` → `_on_world_terrain_field_changed`; initial population via `_on_world_terrain_field_changed(0)`.
+  - Added "Reveal Target Hex" button in fog bulk row → `_on_world_fog_reveal_selected()`.
+  - `_on_world_terrain_apply()`: reads from OptionButton, maps water "none" → "", sends `_hex_controller` to `override_hex_terrain`.
+  - Added `_on_world_terrain_field_changed(idx)`: repopulates value OptionButton for selected field.
+  - Added `_on_world_fog_reveal_selected()`: calls `override_fog_set_hex(..., "visible", _hex_controller)`.
+
+**Decisions made:**
+- Tooltip suppressed on HIDDEN hexes; shown only on EXPLORED or VISIBLE. (Design decision confirmed by Jedidiah.)
+- Camera pan uses arrow keys + mouse-to-edge (40px). Speed: 200px/s. Camera2D's built-in limits handle clamping.
+- Terrain value dropdown uses human-readable strings; water "none" maps to "" before passing to OverrideManager.
+- `update_hex_terrain` in HexMapController updates in-memory data only (DB write already done by OverrideManager before this call).
+
+**Interfaces defined or changed:**
+- `HexMapController.hex_terrain_updated(coord: Vector2i)` — new signal.
+- `HexMapController.update_hex_terrain(coord: Vector2i, field: String, new_value)` — new method.
+- `OverrideManager.override_hex_terrain(map_id, coord, field, new_value, controller: HexMapController = null)` — added optional controller param (backward compatible).
+- `HexMapRenderer.center_on_hex(coord: Vector2i)` — new public method.
+
+**Bugs fixed during session:**
+- `hex_map_controller.gd:update_hex_terrain()` — "Invalid operands 'int' and 'bool' in operator '=='" on `has_city` field. GDScript does not allow comparing int and bool with ==. Fixed by replacing the multi-type check with `str(new_value) in ["1", "true", "True"]`, which coerces safely regardless of input type (int 1 → "1", bool true → "True", string "1" → "1").
+
+**Known issues:**
+- Tooltip panel size on first show may be Vector2.ZERO (Godot layout runs after first frame); fallback size 160×130 is used until layout settles — should be fine for 2nd+ frame.
+- Camera panning from mouse-to-edge only fires when mouse is inside the viewport rect (guarded). Arrow-key pan fires always.
+- Snapshot restore does NOT reload in-memory HexMapController/renderer (still pending).
+
+**Next session should:**
+1. Open project in Godot 4.6; run test_runner.tscn; confirm all 3 suites pass.
+2. Test hex map: verify camera centers on party, arrow keys + mouse-to-edge panning works.
+3. Test hover tooltip: explore a few hexes, confirm tooltip shows terrain info; hidden hexes show no tooltip.
+4. Test terrain override: change a hex's biome in Override Panel; confirm tile color updates immediately.
+5. Build the dice subsystem: DiceSystem class, roll(sides, count, modifier), integration with GameState.dice_overrides.
+6. Build the session runner state machine (campaign select to exploration loop).

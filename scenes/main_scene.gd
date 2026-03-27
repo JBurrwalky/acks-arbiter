@@ -13,6 +13,8 @@ const TEST_MAP_JSON_PATH := "res://data/test_hex_map.json"
 
 @onready var _hex_map_renderer = $HexMap
 @onready var _controller: HexMapController = $HexMapController
+@onready var _override_manager: OverrideManager = $OverrideManager
+@onready var _override_panel = $OverridePanel
 
 
 func _ready() -> void:
@@ -34,6 +36,9 @@ func _ready() -> void:
 	# Start session via GameState (sets campaign_id, party_id, transitions to EXPLORATION)
 	GameState.start_session(TEST_CAMPAIGN_ID, TEST_PARTY_ID)
 	GameState.set_exploration_context(GameState.ExplorationContext.WILDERNESS)
+
+	# Inject dependencies into the override panel
+	_override_panel.setup(_override_manager, _controller)
 
 
 ## Returns a HexMapData from DB if it exists, otherwise loads from JSON and seeds the DB.

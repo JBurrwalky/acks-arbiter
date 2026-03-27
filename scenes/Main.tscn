@@ -3,6 +3,8 @@
 [ext_resource type="Script" path="res://scenes/main_scene.gd" id="1_main_script"]
 [ext_resource type="Script" path="res://engine/subsystems/exploration/hex_map_controller.gd" id="2_controller"]
 [ext_resource type="PackedScene" path="res://scenes/maps/hex_map.tscn" id="3_hex_map"]
+[ext_resource type="Script" path="res://engine/subsystems/override/override_manager.gd" id="4_override_mgr"]
+[ext_resource type="PackedScene" path="res://scenes/ui/override/override_panel.tscn" id="5_override_panel"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main_script")
@@ -11,3 +13,8 @@ script = ExtResource("1_main_script")
 script = ExtResource("2_controller")
 
 [node name="HexMap" parent="." instance=ExtResource("3_hex_map")]
+
+[node name="OverrideManager" type="Node" parent="."]
+script = ExtResource("4_override_mgr")
+
+[node name="OverridePanel" parent="." instance=ExtResource("5_override_panel")]

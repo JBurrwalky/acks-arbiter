@@ -26,3 +26,11 @@ EventBus="*res://engine/autoloads/event_bus.gd"
 CampaignRepository="*res://engine/autoloads/campaign_repository.gd"
 LLMManager="*res://engine/autoloads/llm_manager.gd"
 AudioRouter="*res://engine/autoloads/audio_router.gd"
+
+[input]
+
+override_panel_toggle={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":true,"shift_pressed":false,"ctrl_pressed":true,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":79,"key_label":0,"unicode":111,"location":0,"echo":false,"script":null)
+]
+}

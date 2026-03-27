@@ -25,6 +25,7 @@ signal map_loaded(map_id: String)
 signal hex_first_revealed(coord: Vector2i)
 signal visibility_updated()
 signal party_moved(from_hex: Vector2i, to_hex: Vector2i)
+signal hex_terrain_updated(coord: Vector2i)
 
 
 # ---------------------------------------------------------------------------
@@ -136,6 +137,24 @@ func load_map(map_data: HexMapData) -> void:
 
 func get_map() -> HexMapData:
 	return _map_data
+
+
+## Updates a single terrain field on a hex in-memory and emits hex_terrain_updated.
+## Called by OverrideManager after writing the change to the DB.
+func update_hex_terrain(coord: Vector2i, field: String, new_value) -> void:
+	if _map_data == null:
+		return
+	var terrain: HexTerrainData = _map_data.get_hex(coord)
+	if terrain == null:
+		return
+	match field:
+		"elevation":      terrain.elevation = new_value
+		"biome":          terrain.biome = new_value
+		"water":          terrain.water = new_value
+		"civilization":   terrain.civilization = new_value
+		"has_city":       terrain.has_city = str(new_value) in ["1", "true", "True"]
+		"original_biome": terrain.original_biome = new_value
+	hex_terrain_updated.emit(coord)
 
 
 ## Returns true if the party can legally move to [param target] this turn.

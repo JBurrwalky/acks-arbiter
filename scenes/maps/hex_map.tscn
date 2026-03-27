@@ -12,3 +12,14 @@ script = ExtResource("1_renderer")
 [node name="EntityLayer" type="Node2D" parent="."]
 
 [node name="PartyToken" type="Polygon2D" parent="EntityLayer"]
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="HexHUD" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="TooltipPanel" type="PanelContainer" parent="HexHUD"]
+visible = false
+mouse_filter = 2
+
+[node name="TooltipLabel" type="Label" parent="HexHUD/TooltipPanel"]

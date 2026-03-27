@@ -6,8 +6,12 @@ extends Node2D
 ##   HexMap (Node2D, this script)
 ##   ├── TerrainLayer (TileMapLayer)
 ##   ├── FogLayer (TileMapLayer)
-##   └── EntityLayer (Node2D)
-##       └── PartyToken (Polygon2D)
+##   ├── EntityLayer (Node2D)
+##   │   └── PartyToken (Polygon2D)
+##   ├── Camera2D
+##   └── HexHUD (CanvasLayer, layer=10)
+##       └── TooltipPanel (PanelContainer)
+##           └── TooltipLabel (Label)
 ##
 ## Call setup(controller) after adding to the scene tree.
 ## The renderer connects to controller signals and reacts to state changes.
@@ -38,6 +42,10 @@ const FOG_SOURCE_ID := 0
 const FOG_HIDDEN_ATLAS := Vector2i(0, 0)
 const FOG_EXPLORED_ATLAS := Vector2i(1, 0)
 
+# Camera panning
+const PAN_SPEED := 200.0
+const EDGE_MARGIN := 40.0
+
 
 # ---------------------------------------------------------------------------
 # Node references
@@ -47,6 +55,9 @@ const FOG_EXPLORED_ATLAS := Vector2i(1, 0)
 @onready var _fog_layer: TileMapLayer = $FogLayer
 @onready var _entity_layer: Node2D = $EntityLayer
 @onready var _party_token: Polygon2D = $EntityLayer/PartyToken
+@onready var _camera: Camera2D = $Camera2D
+@onready var _tooltip_panel: PanelContainer = $HexHUD/TooltipPanel
+@onready var _tooltip_label: Label = $HexHUD/TooltipPanel/TooltipLabel
 
 
 # ---------------------------------------------------------------------------
@@ -82,6 +93,40 @@ func _ready() -> void:
 	_party_token.color = Color(1.0, 0.9, 0.1)  # yellow
 
 
+func _process(delta: float) -> void:
+	if _camera == null or _map_data == null:
+		return
+
+	var pan_dir := Vector2.ZERO
+
+	# Arrow key panning
+	if Input.is_action_pressed("ui_left"):
+		pan_dir.x -= 1.0
+	if Input.is_action_pressed("ui_right"):
+		pan_dir.x += 1.0
+	if Input.is_action_pressed("ui_up"):
+		pan_dir.y -= 1.0
+	if Input.is_action_pressed("ui_down"):
+		pan_dir.y += 1.0
+
+	# Mouse-to-edge panning (only when window has focus)
+	var vp_size := get_viewport().get_visible_rect().size
+	var mouse_pos := get_viewport().get_mouse_position()
+	if mouse_pos.x >= 0.0 and mouse_pos.x <= vp_size.x and \
+	   mouse_pos.y >= 0.0 and mouse_pos.y <= vp_size.y:
+		if mouse_pos.x < EDGE_MARGIN:
+			pan_dir.x -= 1.0
+		elif mouse_pos.x > vp_size.x - EDGE_MARGIN:
+			pan_dir.x += 1.0
+		if mouse_pos.y < EDGE_MARGIN:
+			pan_dir.y -= 1.0
+		elif mouse_pos.y > vp_size.y - EDGE_MARGIN:
+			pan_dir.y += 1.0
+
+	if pan_dir != Vector2.ZERO:
+		_camera.position += pan_dir.normalized() * PAN_SPEED * delta
+
+
 # ---------------------------------------------------------------------------
 # Public interface
 # ---------------------------------------------------------------------------
@@ -92,6 +137,15 @@ func setup(controller: HexMapController) -> void:
 	controller.map_loaded.connect(_on_map_loaded)
 	controller.visibility_updated.connect(_on_visibility_updated)
 	controller.party_moved.connect(_on_party_moved)
+	controller.hex_terrain_updated.connect(_repaint_tile)
+
+
+## Center the camera on the given axial coord.
+func center_on_hex(coord: Vector2i) -> void:
+	if _camera == null or _terrain_layer == null:
+		return
+	var godot_coord := HexMapController.axial_to_godot_map(coord)
+	_camera.position = _terrain_layer.map_to_local(godot_coord)
 
 
 # ---------------------------------------------------------------------------
@@ -103,6 +157,8 @@ func _on_map_loaded(_map_id: String) -> void:
 	_refresh_terrain_layer()
 	_refresh_fog_layer()
 	_update_party_token_position()
+	_compute_camera_limits()
+	center_on_hex(_map_data.party_hex)
 
 
 func _on_visibility_updated() -> void:
@@ -162,6 +218,83 @@ func _update_party_token_position() -> void:
 	_party_token.position = _terrain_layer.map_to_local(godot_coord)
 
 
+## Repaints a single terrain tile after an in-memory terrain update.
+func _repaint_tile(coord: Vector2i) -> void:
+	if _map_data == null:
+		return
+	var terrain: HexTerrainData = _map_data.get_hex(coord)
+	if terrain == null:
+		return
+	var godot_coord := HexMapController.axial_to_godot_map(coord)
+	var atlas_col := _terrain_atlas_col(terrain)
+	_terrain_layer.set_cell(godot_coord, 0, Vector2i(atlas_col, 0))
+
+
+## Computes Camera2D limits from the map's pixel bounding box plus 1-tile padding.
+func _compute_camera_limits() -> void:
+	if _camera == null or _map_data == null:
+		return
+	var min_pos := Vector2(INF, INF)
+	var max_pos := Vector2(-INF, -INF)
+	for coord in _map_data.hexes.keys():
+		var godot_coord := HexMapController.axial_to_godot_map(coord)
+		var pixel_pos := _terrain_layer.map_to_local(godot_coord)
+		min_pos.x = minf(min_pos.x, pixel_pos.x)
+		min_pos.y = minf(min_pos.y, pixel_pos.y)
+		max_pos.x = maxf(max_pos.x, pixel_pos.x)
+		max_pos.y = maxf(max_pos.y, pixel_pos.y)
+	var pad_x := float(TERRAIN_TILE_SIZE.x)
+	var pad_y := float(TERRAIN_TILE_SIZE.y)
+	_camera.limit_left   = int(min_pos.x - pad_x)
+	_camera.limit_right  = int(max_pos.x + pad_x)
+	_camera.limit_top    = int(min_pos.y - pad_y)
+	_camera.limit_bottom = int(max_pos.y + pad_y)
+
+
+# ---------------------------------------------------------------------------
+# Tooltip
+# ---------------------------------------------------------------------------
+
+## Show terrain info near the cursor for EXPLORED/VISIBLE hexes; hide for HIDDEN.
+func _update_tooltip(viewport_pos: Vector2) -> void:
+	if _map_data == null or _tooltip_panel == null:
+		return
+	var local_pos := _terrain_layer.get_local_mouse_position()
+	var godot_coord := _terrain_layer.local_to_map(local_pos)
+	var axial_coord := HexMapController.godot_map_to_axial(godot_coord)
+	if not _map_data.is_valid_coord(axial_coord):
+		_tooltip_panel.visible = false
+		return
+	var fog := _map_data.get_fog_state(axial_coord)
+	if fog == HexMapData.FogState.HIDDEN:
+		_tooltip_panel.visible = false
+		return
+	var terrain: HexTerrainData = _map_data.get_hex(axial_coord)
+	if terrain == null:
+		_tooltip_panel.visible = false
+		return
+	_tooltip_label.text = _terrain_tooltip_text(axial_coord, terrain)
+	_tooltip_panel.visible = true
+	# Position near cursor; clamp so panel stays on screen
+	var vp_size := get_viewport().get_visible_rect().size
+	var offset := Vector2(16.0, 16.0)
+	# Wait one frame for size to be valid after first show
+	var panel_size := _tooltip_panel.size if _tooltip_panel.size != Vector2.ZERO else Vector2(160.0, 130.0)
+	var tip_pos := viewport_pos + offset
+	tip_pos.x = minf(tip_pos.x, vp_size.x - panel_size.x - 4.0)
+	tip_pos.y = minf(tip_pos.y, vp_size.y - panel_size.y - 4.0)
+	_tooltip_panel.position = tip_pos
+
+
+func _terrain_tooltip_text(coord: Vector2i, terrain: HexTerrainData) -> String:
+	var water_str := terrain.water if not terrain.water.is_empty() else "none"
+	return (
+		"Hex (%d, %d)\nElevation: %s\nBiome: %s\nWater: %s\nTerritory: %s\nCity: %s\nFamilies: —\nOwners: —\nCleared: —"
+		% [coord.x, coord.y, terrain.elevation, terrain.biome, water_str,
+		   terrain.civilization, "yes" if terrain.has_city else "no"]
+	)
+
+
 # ---------------------------------------------------------------------------
 # Input
 # ---------------------------------------------------------------------------
@@ -174,6 +307,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _map_data != null and _map_data.is_valid_coord(axial_coord):
 			hex_clicked.emit(axial_coord)
 			get_viewport().set_input_as_handled()
+	elif event is InputEventMouseMotion:
+		_update_tooltip(event.position)
 
 
 # ---------------------------------------------------------------------------

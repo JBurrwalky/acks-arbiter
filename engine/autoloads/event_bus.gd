@@ -172,3 +172,27 @@ signal campaign_saved(campaign_id: String)
 
 ## A campaign load operation completed successfully.
 signal campaign_loaded(campaign_id: String)
+
+
+# ---------------------------------------------------------------------------
+# Override system signals
+# ---------------------------------------------------------------------------
+
+## An override was applied to game state.
+## [param override_type] matches the override_log.override_type vocabulary.
+## [param target_id] is the entity affected (character id, hex id, etc.).
+## [param field] is the field or category changed (empty for bulk operations).
+signal override_applied(override_type: String, target_id: String, field: String)
+
+## A session snapshot was saved successfully.
+signal snapshot_saved(snapshot_id: String, label: String)
+
+## A session snapshot was restored (live game state replaced with snapshot).
+signal snapshot_restored(snapshot_id: String)
+
+## A dice override was queued. The next roll of [param roll_type] will use
+## [param forced_value] instead of a random result.
+signal dice_override_queued(roll_type: String, forced_value: int)
+
+## A queued dice override was consumed by the dice subsystem.
+signal dice_override_consumed(roll_type: String, forced_value: int)

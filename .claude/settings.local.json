@@ -16,7 +16,8 @@
       "Bash(find C:/Users/jttau/acks-arbiter/tests C:/Users/jttau/acks-arbiter/engine/shared_types -name *.gd)",
       "Bash(find /c/Users/jttau/acks-arbiter -type f -name *sqlite*)",
       "Bash(grep -E \"\\\\.\\(md|txt|gd\\)$\")",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(\"C:/Users/jttau/acks-arbiter/build_log.md\":*)"
     ]
   }
 }

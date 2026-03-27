@@ -72,6 +72,12 @@ var campaign_id: String = ""
 ## Identifier for the active party record in the database.
 var party_id: String = ""
 
+## Pending dice override queue. Keys are roll_type strings (snake_case from the
+## action vocabulary, e.g. "attack_throw", "encounter_check"). Values are the
+## forced integer result. Consumed by the dice subsystem on the next matching roll.
+## Written by OverrideManager; read by the dice subsystem when built.
+var dice_overrides: Dictionary = {}
+
 
 # ---------------------------------------------------------------------------
 # Public methods

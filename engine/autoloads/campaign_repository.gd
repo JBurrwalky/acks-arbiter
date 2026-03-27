@@ -382,3 +382,333 @@ func list_campaign_domains(campaign_id: String) -> Array:
 		[campaign_id]
 	)
 	return db.query_result.duplicate()
+
+
+# ---------------------------------------------------------------------------
+# Inventory CRUD (used by OverrideManager and future inventory subsystem)
+# ---------------------------------------------------------------------------
+
+func get_inventory_items(character_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM inventory_items WHERE character_id = ?",
+		[character_id]
+	)
+	return db.query_result.duplicate()
+
+
+func add_inventory_item(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO inventory_items
+			(id, character_id, item_key, name, quantity, encumbrance_sixths, slot, is_equipped, notes)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		data.get("character_id", ""),
+		data.get("item_key", ""),
+		data.get("name", ""),
+		data.get("quantity", 1),
+		data.get("encumbrance_sixths", 0),
+		data.get("slot", "pack"),
+		1 if data.get("is_equipped", false) else 0,
+		data.get("notes", ""),
+	]):
+		push_error("CampaignRepository.add_inventory_item: failed. character=%s item=%s" % [
+			data.get("character_id", "?"), data.get("name", "?")
+		])
+		return ""
+	return id
+
+
+func remove_inventory_item(item_id: String) -> bool:
+	if not db.query_with_bindings("DELETE FROM inventory_items WHERE id = ?", [item_id]):
+		push_error("CampaignRepository.remove_inventory_item: failed. id=%s" % item_id)
+		return false
+	return true
+
+
+# ---------------------------------------------------------------------------
+# Condition CRUD (used by OverrideManager and future combat subsystem)
+# ---------------------------------------------------------------------------
+
+func get_conditions(character_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM character_conditions WHERE character_id = ?",
+		[character_id]
+	)
+	return db.query_result.duplicate()
+
+
+func add_condition(character_id: String, condition_name: String) -> int:
+	## Returns the AUTOINCREMENT row id, or -1 on failure.
+	if not db.query_with_bindings(
+		"INSERT INTO character_conditions (character_id, condition_name) VALUES (?, ?)",
+		[character_id, condition_name]
+	):
+		push_error("CampaignRepository.add_condition: failed. character=%s condition=%s" % [
+			character_id, condition_name
+		])
+		return -1
+	db.query("SELECT last_insert_rowid() AS id")
+	if db.query_result.is_empty():
+		return -1
+	return db.query_result[0]["id"] as int
+
+
+func remove_condition(condition_id: int) -> bool:
+	if not db.query_with_bindings(
+		"DELETE FROM character_conditions WHERE id = ?",
+		[condition_id]
+	):
+		push_error("CampaignRepository.remove_condition: failed. id=%d" % condition_id)
+		return false
+	return true
+
+
+# ---------------------------------------------------------------------------
+# Hex terrain field override
+# ---------------------------------------------------------------------------
+
+## Updates a single terrain field for one hex cell.
+## [param field] must be one of the column names in hex_cells (validated here).
+## The DB CHECK constraint will reject invalid values for that column.
+func update_hex_terrain_field(map_id: String, q: int, r: int, field: String, value) -> bool:
+	const ALLOWED_FIELDS := [
+		"elevation", "biome", "water", "civilization", "has_city", "original_biome"
+	]
+	if field not in ALLOWED_FIELDS:
+		push_error("CampaignRepository.update_hex_terrain_field: invalid field '%s'" % field)
+		return false
+	# field name comes from the allowlist above; value is parameterized
+	var sql := "UPDATE hex_cells SET %s = ? WHERE map_id = ? AND q = ? AND r = ?" % field
+	if not db.query_with_bindings(sql, [value, map_id, q, r]):
+		push_error("CampaignRepository.update_hex_terrain_field: failed. field=%s q=%d r=%d" % [
+			field, q, r
+		])
+		return false
+	return true
+
+
+# ---------------------------------------------------------------------------
+# Dungeon entrance CRUD
+# ---------------------------------------------------------------------------
+
+func create_dungeon_entrance(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO dungeon_entrances (id, campaign_id, map_id, hex_q, hex_r, name, dungeon_data)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		data.get("campaign_id", ""),
+		data.get("map_id", ""),
+		data.get("hex_q", 0),
+		data.get("hex_r", 0),
+		data.get("name", "Unknown Dungeon"),
+		data.get("dungeon_data", ""),
+	]):
+		push_error("CampaignRepository.create_dungeon_entrance: failed. name=%s" % data.get("name", "?"))
+		return ""
+	return id
+
+
+# ---------------------------------------------------------------------------
+# Snapshot management (used by OverrideManager)
+# ---------------------------------------------------------------------------
+
+## Serialise all mutable campaign-scoped rows to a JSON blob and store it.
+## Returns the new snapshot id, or "" on failure.
+func save_snapshot(campaign_id: String, label: String) -> String:
+	var snap := {
+		"snapshot_version": 1,
+		"campaign_id": campaign_id,
+		"captured_at": Time.get_datetime_string_from_system(),
+		"characters":               _query_rows("SELECT * FROM characters WHERE campaign_id = ?", [campaign_id]),
+		"character_conditions":     _query_rows("""
+			SELECT cc.* FROM character_conditions cc
+			INNER JOIN characters c ON c.id = cc.character_id
+			WHERE c.campaign_id = ?
+		""", [campaign_id]),
+		"character_proficiencies":  _query_rows("""
+			SELECT cp.* FROM character_proficiencies cp
+			INNER JOIN characters c ON c.id = cp.character_id
+			WHERE c.campaign_id = ?
+		""", [campaign_id]),
+		"inventory_items":          _query_rows("""
+			SELECT ii.* FROM inventory_items ii
+			INNER JOIN characters c ON c.id = ii.character_id
+			WHERE c.campaign_id = ?
+		""", [campaign_id]),
+		"character_spells":         _query_rows("""
+			SELECT cs.* FROM character_spells cs
+			INNER JOIN characters c ON c.id = cs.character_id
+			WHERE c.campaign_id = ?
+		""", [campaign_id]),
+		"parties":                  _query_rows("SELECT * FROM parties WHERE campaign_id = ?", [campaign_id]),
+		"party_members":            _query_rows("""
+			SELECT pm.* FROM party_members pm
+			INNER JOIN parties p ON p.id = pm.party_id
+			WHERE p.campaign_id = ?
+		""", [campaign_id]),
+		"hex_maps":                 _query_rows("SELECT * FROM hex_maps WHERE campaign_id = ?", [campaign_id]),
+		"hex_cells":                _query_rows("""
+			SELECT hc.* FROM hex_cells hc
+			INNER JOIN hex_maps hm ON hm.id = hc.map_id
+			WHERE hm.campaign_id = ?
+		""", [campaign_id]),
+		"domains":                  _query_rows("SELECT * FROM domains WHERE campaign_id = ?", [campaign_id]),
+		"dungeon_entrances":        _query_rows("SELECT * FROM dungeon_entrances WHERE campaign_id = ?", [campaign_id]),
+	}
+
+	var id := generate_id()
+	var json_str := JSON.stringify(snap)
+	if not db.query_with_bindings(
+		"INSERT INTO game_snapshots (id, campaign_id, label, snapshot_data) VALUES (?, ?, ?, ?)",
+		[id, campaign_id, label, json_str]
+	):
+		push_error("CampaignRepository.save_snapshot: insert failed. campaign=%s label=%s" % [
+			campaign_id, label
+		])
+		return ""
+	prune_oldest_snapshots(campaign_id, 10)
+	return id
+
+
+## Restore a snapshot: replaces all campaign-scoped rows with snapshot data.
+## Runs inside a transaction; rolls back on any failure.
+func restore_snapshot(snapshot_id: String) -> bool:
+	if not db.query_with_bindings(
+		"SELECT * FROM game_snapshots WHERE id = ?", [snapshot_id]
+	) or db.query_result.is_empty():
+		push_error("CampaignRepository.restore_snapshot: not found. id=%s" % snapshot_id)
+		return false
+
+	var snap_row: Dictionary = db.query_result[0]
+	var campaign_id: String = snap_row["campaign_id"]
+	var parsed = JSON.parse_string(snap_row["snapshot_data"])
+	if parsed == null:
+		push_error("CampaignRepository.restore_snapshot: JSON parse failed. id=%s" % snapshot_id)
+		return false
+	var snap: Dictionary = parsed
+
+	db.query("BEGIN TRANSACTION")
+
+	# Delete order: leaf tables first, then root tables
+	var delete_steps := [
+		["DELETE FROM party_members WHERE party_id IN (SELECT id FROM parties WHERE campaign_id = ?)", [campaign_id]],
+		["DELETE FROM character_conditions WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id]],
+		["DELETE FROM character_proficiencies WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id]],
+		["DELETE FROM inventory_items WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id]],
+		["DELETE FROM character_spells WHERE character_id IN (SELECT id FROM characters WHERE campaign_id = ?)", [campaign_id]],
+		["DELETE FROM hex_cells WHERE map_id IN (SELECT id FROM hex_maps WHERE campaign_id = ?)", [campaign_id]],
+		["DELETE FROM parties WHERE campaign_id = ?", [campaign_id]],
+		["DELETE FROM characters WHERE campaign_id = ?", [campaign_id]],
+		["DELETE FROM hex_maps WHERE campaign_id = ?", [campaign_id]],
+		["DELETE FROM domains WHERE campaign_id = ?", [campaign_id]],
+		["DELETE FROM dungeon_entrances WHERE campaign_id = ?", [campaign_id]],
+	]
+	for step in delete_steps:
+		if not db.query_with_bindings(step[0], step[1]):
+			push_error("CampaignRepository.restore_snapshot: delete step failed")
+			db.query("ROLLBACK")
+			return false
+
+	# Insert order: root tables first, then leaves
+	var insert_steps := [
+		["characters",              snap.get("characters", [])],
+		["hex_maps",                snap.get("hex_maps", [])],
+		["parties",                 snap.get("parties", [])],
+		["domains",                 snap.get("domains", [])],
+		["dungeon_entrances",       snap.get("dungeon_entrances", [])],
+		["party_members",           snap.get("party_members", [])],
+		["character_conditions",    snap.get("character_conditions", [])],
+		["character_proficiencies", snap.get("character_proficiencies", [])],
+		["inventory_items",         snap.get("inventory_items", [])],
+		["character_spells",        snap.get("character_spells", [])],
+		["hex_cells",               snap.get("hex_cells", [])],
+	]
+	for step in insert_steps:
+		if not _insert_rows(step[0], step[1]):
+			push_error("CampaignRepository.restore_snapshot: insert failed for table '%s'" % step[0])
+			db.query("ROLLBACK")
+			return false
+
+	db.query("COMMIT")
+	return true
+
+
+func list_snapshots(campaign_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT id, campaign_id, label, created_at FROM game_snapshots WHERE campaign_id = ? ORDER BY created_at DESC",
+		[campaign_id]
+	)
+	return db.query_result.duplicate()
+
+
+func delete_snapshot(snapshot_id: String) -> bool:
+	if not db.query_with_bindings("DELETE FROM game_snapshots WHERE id = ?", [snapshot_id]):
+		push_error("CampaignRepository.delete_snapshot: failed. id=%s" % snapshot_id)
+		return false
+	return true
+
+
+## Delete oldest snapshots so at most [param max_count] remain for this campaign.
+func prune_oldest_snapshots(campaign_id: String, max_count: int) -> void:
+	db.query_with_bindings(
+		"SELECT COUNT(*) AS cnt FROM game_snapshots WHERE campaign_id = ?",
+		[campaign_id]
+	)
+	if db.query_result.is_empty():
+		return
+	var count: int = db.query_result[0]["cnt"] as int
+	var excess := count - max_count
+	if excess <= 0:
+		return
+	db.query_with_bindings("""
+		DELETE FROM game_snapshots WHERE id IN (
+			SELECT id FROM game_snapshots WHERE campaign_id = ?
+			ORDER BY created_at ASC
+			LIMIT ?
+		)
+	""", [campaign_id, excess])
+
+
+# ---------------------------------------------------------------------------
+# Private helpers
+# ---------------------------------------------------------------------------
+
+func _query_rows(sql: String, bindings: Array) -> Array:
+	## Runs a query and returns a duplicate of the result array.
+	if not db.query_with_bindings(sql, bindings):
+		push_error("CampaignRepository._query_rows: query failed. sql='%s'" % sql.substr(0, 60))
+		return []
+	return db.query_result.duplicate()
+
+
+func _insert_rows(table: String, rows: Array) -> bool:
+	## Inserts all rows into [param table] using INSERT OR REPLACE.
+	## Column names are derived from the first row's dictionary keys.
+	## [param table] must be a hardcoded string from the caller — never user input.
+	if rows.is_empty():
+		return true
+	var first: Dictionary = rows[0]
+	var cols: Array = first.keys()
+	var placeholders: Array = []
+	for _c in cols:
+		placeholders.append("?")
+	var sql := "INSERT OR REPLACE INTO %s (%s) VALUES (%s)" % [
+		table,
+		", ".join(cols),
+		", ".join(placeholders),
+	]
+	for row in rows:
+		var values: Array = []
+		for col in cols:
+			values.append(row[col])
+		if not db.query_with_bindings(sql, values):
+			return false
+	return true
