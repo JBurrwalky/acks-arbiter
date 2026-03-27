@@ -121,17 +121,20 @@ const MAXPARTYSIZE := 8        # No underscores
 
 ### 1.6 Autoload Singletons — PascalCase
 
-Only four autoloads exist (see Section 5). Reference them by their PascalCase name directly.
+Six autoloads exist (see Section 5). Reference them by their PascalCase name directly.
 
 ```gdscript
 # GOOD
-GameState.current_session_id
+GameState.dice_mode
+EventBus.dice_rolled.emit(result.to_dict())
 CampaignRepository.get_character(char_id)
+DiceSystem.roll_digital(20, 1, 2, "attack_throw")
 LLMManager.request_narration(context)
 AudioRouter.play_sfx("sword_clash")
 
 # BAD
-game_state.current_session_id  # autoloads are PascalCase
+game_state.dice_mode   # autoloads are PascalCase
+dice_system.roll(...)  # same
 ```
 
 ### 1.7 Action Vocabulary — snake_case Verbs
@@ -183,42 +186,51 @@ enum TERRITORY { Civilized, Borderlands, Wilderness }   # screaming type, mixed 
 
 ### 2.1 Engine Directory Structure
 
+<!-- Updated 2026-03-27 to reflect actual project state -->
+
 ```
-acks-arbiter/         (Godot project root — inside the repo)
+acks-arbiter/               (Godot project root = repo root)
+├── project.godot           # Autoload registrations, input map
 ├── engine/
-│   ├── autoloads/              # Only the four global singletons
+│   ├── autoloads/          # Six global singletons (see §5.1)
 │   │   ├── game_state.gd
+│   │   ├── event_bus.gd
 │   │   ├── campaign_repository.gd
 │   │   ├── llm_manager.gd
-│   │   └── audio_router.gd
-│   ├── shared_types/           # Cross-subsystem data shape definitions
-│   │   ├── character_data.gd
+│   │   ├── audio_router.gd
+│   │   └── dice_system.gd
+│   ├── shared_types/       # Cross-subsystem data shapes (class_name, RefCounted)
 │   │   ├── action_payload.gd
+│   │   ├── character_data.gd
 │   │   ├── encounter_data.gd
-│   │   ├── map_metadata.gd
-│   │   └── response_envelope.gd
+│   │   ├── event_payload.gd
+│   │   ├── hex_map_data.gd
+│   │   ├── hex_terrain_data.gd
+│   │   ├── inventory_item.gd
+│   │   ├── response_envelope.gd
+│   │   └── roll_result.gd
 │   └── subsystems/
-│       ├── combat/             # Combat resolution, conditions, morale
-│       ├── exploration/        # Dungeon, wilderness, settlement, sea procedures
-│       ├── character/          # Creation, stats, XP, leveling, henchmen, aging
-│       ├── domain/             # Strongholds, followers, domain events, monthly cycle
-│       └── magic/              # Spellcasting, spell research, magic items
+│       ├── exploration/    # HexMapController
+│       ├── override/       # OverrideManager (dev-mode state manipulation)
+│       ├── combat/         # (planned)
+│       ├── character/      # (planned)
+│       ├── domain/         # (planned)
+│       └── magic/          # (planned)
 ├── scenes/
-│   ├── maps/                   # Map display scenes (hex, dungeon, settlement, battle)
-│   ├── ui/                     # UI panel scenes
-│   └── combat/                 # Combat-specific visual scenes
-├── ui/                         # UI controller scripts and theme resources
-├── tests/                      # All test scripts
+│   ├── Main.tscn           # Root scene (instantiates all children)
+│   ├── main_scene.gd       # Test harness wiring
+│   ├── maps/               # hex_map.tscn, hex_map_renderer.gd
+│   └── ui/
+│       ├── override/       # override_panel.gd / .tscn
+│       └── dice/           # dice_prompt.gd / .tscn
+├── tests/                  # All test scripts + test_runner.tscn
 ├── db/
-│   ├── schema.sql              # Canonical schema (always reflects current state)
-│   └── migrations/             # Versioned migration files
-├── data/                       # Clean runtime JSON
-├── llm_context/                # Stripped rule summaries for LLM system prompts
-└── assets/
-    ├── sprites/
-    ├── audio/
-    ├── fonts/
-    └── placeholders/           # Generated stub assets
+│   ├── schema.sql          # Canonical schema (update after every migration)
+│   └── migrations/         # 001_initial_schema, 002_override_log, 003_dice_roll_log
+├── data/                   # Runtime JSON (test_hex_map.json)
+├── rules/                  # SACRED XML rule summaries — never modify
+├── generation/             # GDD markdown files — modifiable
+└── docs/                   # Architecture docs, this file, maps
 ```
 
 ### 2.2 Where New Files Go
@@ -364,7 +376,42 @@ func _calculate_modifier(score: int) -> int:
 var internal_state: int = 0  # is this part of the public API?
 ```
 
-### 3.7 Static Methods
+### 3.7 `class_name` Rules
+
+<!-- Confirmed 2026-03-27 across all engine files -->
+
+| Script type | Use `class_name`? | Why |
+|---|---|---|
+| Autoload scripts | **Never** | Godot error: "hides an autoload singleton" |
+| Shared types (`engine/shared_types/`) | **Always** | Enables typed references (`var r: RollResult`) |
+| Subsystem manager nodes | **Yes** | Lets parent scenes reference them by type |
+| UI scene scripts (CanvasLayer, Node2D) | **No** | Only referenced via scene instantiation, never by code |
+| Test scripts | **No** | Only instantiated by test_runner.tscn |
+
+### 3.8 Coroutine (`await`) Patterns
+
+<!-- Added 2026-03-27 after DiceSystem.player_roll() -->
+
+GDScript marks a function as a **coroutine** if it contains `await` anywhere in its body — even branches that never execute the `await`. This has cascading consequences:
+
+```gdscript
+# If a function uses await internally, ALL callers must also await it.
+# This propagates up the call chain.
+var result := await DiceSystem.player_roll(20, 1, 2, "attack_throw", "Attack")
+
+# Awaiting a signal with multiple parameters returns an Array:
+var args: Array = await EventBus.player_roll_resolved
+var roll_type: String     = args[0]
+var raw_total: int        = args[1]
+var was_player_entered: bool = args[2]
+
+# Coroutines CANNOT be tested in synchronous test suites — test the
+# underlying logic via synchronous helper methods (roll_digital, etc.) instead.
+```
+
+**Design rule:** Keep coroutines at system boundaries (DiceSystem, future SessionRunner). Internal subsystem logic should be synchronous — pass results via signals or return values, not by `await`-ing deep inside game logic.
+
+### 3.9 Static Methods
 
 Use static methods for pure functions that don't need instance state. Prefer them in utility contexts.
 
@@ -447,23 +494,49 @@ emit_signal("combatant_defeated", combatant_id, true)
 var damage := _damage_calculator.calculate(attacker, weapon, target)
 ```
 
+### 4.4 Signal Payload Conventions
+
+<!-- Added 2026-03-27 from EventBus patterns -->
+
+Cross-subsystem signals pass **String IDs**, not object references. Complex data uses **Dictionary payloads** with keys documented immediately above the signal declaration.
+
+```gdscript
+# GOOD — String IDs, documented Dictionary payload
+## [param outcome] keys:
+##   result: String  — "victory", "defeat", "fled", "surrendered"
+##   rounds: int     — number of rounds the combat lasted
+signal combat_ended(encounter_id: String, outcome: Dictionary)
+
+# GOOD — simple typed parameters for small payloads
+signal hp_changed(character_id: String, old_hp: int, new_hp: int)
+
+# BAD — passing object references across subsystem boundaries
+signal combat_ended(encounter: EncounterData, outcome: CombatOutcome)
+```
+
+**EventBus signal groups** (keep signals organized under section headers):
+Combat, Exploration, Character, Domain, Magic, LLM/Narration, Persistence, Override system, Dice system.
+
 ---
 
 ## 5. Autoload Rules
 
-### 5.1 The Five Autoloads
+### 5.1 The Six Autoloads
 
-<!-- 2026-03-25: EventBus added per explicit session request -->
+<!-- 2026-03-25: EventBus added. 2026-03-27: DiceSystem added (approved by Jedidiah — dice needed by every subsystem). -->
 
-Only five autoload singletons exist. This list is **closed** — do not add new autoloads without explicit approval from Jedidiah.
+Six autoload singletons exist. This list requires **explicit approval from Jedidiah** to extend. The bar is "needed by every subsystem" — if only one or two callers use it, make it a scene-local node instead.
 
 | Autoload | Responsibility | Lives in |
 |----------|---------------|----------|
-| `GameState` | Current session state, active party, timekeeping | `engine/autoloads/game_state.gd` |
-| `EventBus` | Cross-subsystem signal bus (all past-tense signals) | `engine/autoloads/event_bus.gd` |
-| `CampaignRepository` | All SQLite read/write, migration runner | `engine/autoloads/campaign_repository.gd` |
-| `LLMManager` | Provider routing, request/response, token tracking | `engine/autoloads/llm_manager.gd` |
-| `AudioRouter` | SFX/music playback, audio bus management | `engine/autoloads/audio_router.gd` |
+| `GameState` | Session state machine, dice mode, settings persistence | `engine/autoloads/game_state.gd` |
+| `EventBus` | Cross-subsystem signal bus (40+ signals, all past-tense) | `engine/autoloads/event_bus.gd` |
+| `CampaignRepository` | All SQLite read/write, migration runner, ID generation | `engine/autoloads/campaign_repository.gd` |
+| `LLMManager` | Provider routing, request/response, token tracking (stub) | `engine/autoloads/llm_manager.gd` |
+| `AudioRouter` | SFX/music playback, audio bus management (stub) | `engine/autoloads/audio_router.gd` |
+| `DiceSystem` | Dice rolling (digital/physical/hybrid), override consumption, roll log | `engine/autoloads/dice_system.gd` |
+
+**Load order matters.** DiceSystem depends on GameState, EventBus, and CampaignRepository — it must be registered after them in `project.godot`.
 
 ### 5.2 Autoload Constraints
 
@@ -549,13 +622,13 @@ Repository methods follow this naming:
 
 ### 6.3 Migration Files
 
-Migrations live in `db/migrations/` with sequential numbering:
+Migrations live in `db/migrations/` with sequential zero-padded numbering. The migration runner (`CampaignRepository._run_migrations()`) parses the version from the filename prefix (e.g. `001_` → version 1), skips already-applied versions, and records each in `schema_migrations`.
 
 ```
 db/migrations/
-├── 001_initial_schema.sql
-├── 002_add_domain_tables.sql
-├── 003_add_character_conditions.sql
+├── 001_initial_schema.sql       # Tier 1 tables: campaigns, characters, parties, hex_maps, etc.
+├── 002_override_log.sql         # override_log, game_snapshots, dungeon_entrances
+├── 003_dice_roll_log.sql        # dice_rolls (session-only, capped at 200 rows)
 ```
 
 **Rules:**
@@ -614,6 +687,47 @@ combat_progression TEXT NOT NULL CHECK(combat_progression IN ('fighter', 'cleric
 territory_type INTEGER NOT NULL  -- 0=civilized, 1=borderlands... what was 2 again?
 ```
 
+### 6.6 Primary Key Conventions
+
+<!-- Added 2026-03-27 — confirmed in schema.sql -->
+
+| Table category | Primary key type | Example |
+|---|---|---|
+| Entity tables (characters, campaigns, domains) | `TEXT PRIMARY KEY` | `id TEXT PRIMARY KEY` — hex string from `CampaignRepository.generate_id()` |
+| Log/audit tables (override_log, dice_rolls) | `INTEGER PRIMARY KEY AUTOINCREMENT` | Sequential, auto-assigned |
+| Join tables (party_members) | Composite `PRIMARY KEY (a_id, b_id)` | No separate id column |
+| Spatial tables (hex_cells) | Composite `PRIMARY KEY (map_id, q, r)` | Coordinate-based natural key |
+
+**ID generation:** `CampaignRepository.generate_id()` produces a collision-resistant hex string (not a proper UUID, but sufficient for single-player). All entity tables use these text IDs.
+
+### 6.7 Settings Persistence
+
+<!-- Added 2026-03-27 — GameState.save_settings() / load_settings() -->
+
+Persistent user preferences (not game state) are stored in a Godot `ConfigFile` at `user://settings.cfg`. Game state belongs in SQLite; settings belong in ConfigFile.
+
+```gdscript
+# Pattern: section/key pairs
+const _SETTINGS_PATH := "user://settings.cfg"
+
+func save_settings() -> void:
+    var config := ConfigFile.new()
+    config.set_value("dice", "mode", dice_mode)
+    config.save(_SETTINGS_PATH)
+
+func load_settings() -> void:
+    var config := ConfigFile.new()
+    if config.load(_SETTINGS_PATH) != OK:
+        return  # first launch — use defaults
+    dice_mode = config.get_value("dice", "mode", DiceMode.HYBRID) as DiceMode
+```
+
+| Data | Where it goes | Why |
+|---|---|---|
+| Character HP, inventory, position | SQLite (CampaignRepository) | Game state — queryable, transactional |
+| Dice mode, UI preferences | ConfigFile (`user://settings.cfg`) | User preference — survives across campaigns |
+| Pending dice overrides | `GameState.dice_overrides` (in-memory Dictionary) | Ephemeral dev-mode state — not persisted |
+
 ---
 
 ## 7. Resource and Data Patterns
@@ -632,11 +746,27 @@ territory_type INTEGER NOT NULL  -- 0=civilized, 1=borderlands... what was 2 aga
 
 Canonical data shapes live in `engine/shared_types/`. These are the contracts between subsystems.
 
-<!-- Confirmed by CharacterData, InventoryItem, ActionPayload, EncounterData, ResponseEnvelope, EventPayload — 2026-03-25 -->
-<!-- Types persisted to DB add `to_dict() -> Dictionary` (booleans → 0/1 integers). Types that are
-     read-only at runtime (HexTerrainData, EncounterData) may omit `to_dict()`. All types have a
-     `static func from_dict(data: Dictionary) -> ClassName` factory using `.get(key, default)` for
-     resilience. -->
+<!-- Confirmed across all 9 types — 2026-03-27 -->
+
+**All shared types:**
+
+| Type | Purpose | `from_dict` | `to_dict` |
+|---|---|---|---|
+| `ActionPayload` | Action vocabulary entry (actor, action, params) | Yes | No |
+| `CharacterData` | PC/henchman/NPC stat block | Yes | Yes |
+| `EncounterData` | Encounter group descriptor | Yes | No |
+| `EventPayload` | Domain/exploration event | Yes | No |
+| `HexMapData` | Hex map container with fog states | Yes | No |
+| `HexTerrainData` | Terrain tags for a single hex | Yes | No |
+| `InventoryItem` | Item with quantity and encumbrance | Yes | Yes |
+| `ResponseEnvelope` | LLM response wrapper | Static factories | No |
+| `RollResult` | Resolved dice roll with all metadata | No | Yes |
+
+**Serialisation rules:**
+- Types persisted to DB **must** have `to_dict() -> Dictionary`. Booleans convert to 0/1 integers.
+- Types constructed from DB rows or JSON **must** have `static func from_dict(data: Dictionary) -> ClassName` using `.get(key, default)` for resilience.
+- Read-only runtime types (HexTerrainData, EncounterData) may omit `to_dict()`.
+- All shared types use `class_name ClassName` and `extends RefCounted`.
 
 ```gdscript
 # engine/shared_types/character_data.gd
@@ -769,32 +899,33 @@ func test_1() -> void:              # meaningless
 func fighter_cleave_test() -> void:  # missing test_ prefix
 ```
 
-### 9.2 Test Structure
+### 9.2 Test Framework — Plain `assert()` with `run_all_tests()`
 
-[PROVISIONAL — confirm test framework during first test implementation. Godot 4 has GdUnit4 and gut as popular options.]
+<!-- Confirmed 2026-03-27 — no external test framework; plain GDScript assert. -->
 
-Each test follows arrange-act-assert:
+No external test framework (no GdUnit4, no gut). Each test suite is a plain Node script with individual `test_*()` functions called from a `run_all_tests()` method. GDScript `assert()` aborts the calling script on failure.
 
 ```gdscript
-func test_xp_threshold_for_0th_level_henchman_is_500() -> void:
-    # Arrange
-    var henchman := CharacterData.new()
-    henchman.level = 0
-    henchman.xp = 499
+extends Node
 
-    # Act
-    var can_level := XpCalculator.can_level_up(henchman)
+func run_all_tests() -> void:
+    test_d6_in_range()
+    test_modifier_applied()
+    test_override_consumed()
+    # ... list every test function explicitly
+    print("MyTests: all tests passed")  # only reached if no assert fired
 
-    # Assert
-    assert_false(can_level)
-
-    # Act — at threshold
-    henchman.xp = 500
-    can_level = XpCalculator.can_level_up(henchman)
-
-    # Assert
-    assert_true(can_level)
+func test_d6_in_range() -> void:
+    var r := DiceSystem.roll_digital(6)
+    assert(r.modified_total >= 1 and r.modified_total <= 6,
+        "d6 result out of range: %d" % r.modified_total)
 ```
+
+**Test runner:** `tests/test_runner.tscn` instantiates all suites as child nodes. `test_runner.gd` iterates suites, calls `run_all_tests()` on each, counts passes/failures. Exits with code 0/1 for CI (`godot --headless --path . res://tests/test_runner.tscn`).
+
+**Limitation:** `assert()` aborts the suite on failure — the runner cannot catch individual assert failures or continue past them. The "all tests passed" print at the end of each suite is the success signal.
+
+**Coroutine tests:** Functions containing `await` cannot be called from the synchronous `run_all_tests()` loop. Test the underlying synchronous helpers instead.
 
 ### 9.3 Unit vs Integration Tests
 
@@ -825,43 +956,31 @@ func test_npc_dialogue_falls_back_to_template() -> void:
 
 ---
 
-## 10. Action Vocabulary Registration
+## 10. Action Vocabulary and Roll Types
 
-[PROVISIONAL — confirm file location and format during first action vocabulary implementation]
+### 10.1 Action Vocabulary
 
-### 10.1 Definition Location
+[PROVISIONAL — full action vocabulary definition file not yet created. Actions are currently defined implicitly by the subsystems that handle them. A formal `action_vocabulary.gd` will be created when the session runner and combat systems are built.]
 
-Action vocabulary definitions live in a single canonical file:
-`engine/shared_types/action_vocabulary.gd`
-
-### 10.2 Action Definition Structure
-
-Each action specifies:
-
-```gdscript
-# Proposed structure — confirm during implementation
-var ACTION_ATTACK_MELEE := {
-    "id": "attack_melee",
-    "display_name": "Melee Attack",
-    "category": "combat",
-    "parameters": {
-        "attacker_id": TYPE_INT,
-        "target_id": TYPE_INT,
-        "weapon_id": TYPE_INT,
-    },
-    "preconditions": ["attacker_alive", "target_in_melee_range", "weapon_equipped"],
-    "effects": ["damage_roll", "possible_cleave"],
-    "context_tags": ["combat", "melee"],
-}
-```
-
-### 10.3 Registration Rules
-
+**Rules for when it's built:**
 - Register actions when the subsystem that owns them is built — not speculatively.
 - Every action is validated before execution by the rules engine.
 - Unknown, malformed, or rule-violating actions are rejected with a logged error.
 - Both UI clicks and text input resolve to the same action vocabulary entries.
-- The LLM references this vocabulary in system prompts for input interpretation.
+
+### 10.2 Dice Roll Type Vocabulary
+
+<!-- Confirmed 2026-03-27 — 19 roll types defined in OverrideManager and used by DiceSystem -->
+
+Roll types are snake_case strings identifying the mechanical purpose of a dice roll. Used by the override queue (GameState.dice_overrides) and the roll log (dice_rolls table). Canonical list defined in `override_manager.gd` header comment and mirrored in `override_panel.gd::ROLL_TYPES`.
+
+**Player-facing rolls** (prompted in PHYSICAL/HYBRID mode — use `DiceSystem.player_roll()`):
+`player_surprise_check`, `initiative`, `attack_throw`, `damage_roll`, `saving_throw_petrification`, `saving_throw_poison`, `saving_throw_blast`, `saving_throw_wands`, `saving_throw_spells`, `thief_skill_throw`, `proficiency_throw`, `mortal_wound_roll`, `tampering_with_mortality`
+
+**GM/digital-only rolls** (never prompted — use `DiceSystem.roll_digital()`):
+`encounter_check`, `monster_surprise_check`, `morale_check`, `reaction_roll`, `domain_event_roll`, `hijink_roll`
+
+**Adding a new roll type:** Add to both the `OverrideManager` header comment and the `ROLL_TYPES` array in `override_panel.gd`. The DiceSystem itself is type-agnostic — any string works as a roll_type.
 
 ---
 
@@ -936,7 +1055,81 @@ These are not coding style — they are mechanical rules that must be followed i
 | Calendar | 13 months x 28 days. Weeks = 7 days. | Design brief |
 | Max party size | 8 PCs. | Design brief |
 | Henchmen per PC | Determined by CHA modifier + 4. | `acore_basics_and_characters.xml` |
+| Three character tiers | `full` (PCs), `named` (henchmen/recurring NPCs), `transient` (throwaway). | Design brief |
+| Three character types | `pc`, `henchman`, `npc`. Stored as TEXT with CHECK constraint. | `db/schema.sql` |
+| Encumbrance unit | 1/6-stone (6 units = 1 stone). Column: `encumbrance_sixths`. | `acore_equipment.xml` |
+| Inventory slots | `hands_main`, `hands_off`, `body`, `head`, `belt`, `pack`, `mount`. | Design brief |
+| Fog of war states | `HIDDEN` → `EXPLORED` → `VISIBLE`. Never transition backwards. | `hex_map_data.gd` |
+| Three dice modes | `DIGITAL`, `PHYSICAL`, `HYBRID` (default). Persisted in `user://settings.cfg`. | Design brief §8.4 |
 
 ---
 
-*Last major update: 2026-03-25 — Initial creation from CLAUDE.md and design brief v11.*
+## 13. UI Panel Conventions
+
+<!-- Added 2026-03-27 from OverridePanel and DicePrompt patterns -->
+
+### 13.1 CanvasLayer Stacking
+
+UI panels that overlay the game use CanvasLayer nodes with explicit layer assignments. Higher numbers draw on top.
+
+| Layer | Purpose | Example |
+|---|---|---|
+| 0 | Normal game content | Default |
+| 10 | Map HUD (tooltips, coordinates) | HexHUD in hex_map_renderer.gd |
+| 64 | Modal prompts (dice rolls, dialogs) | DicePrompt |
+| 128 | Developer override panel | OverridePanel |
+
+When adding a new overlay, pick a layer between the closest existing values. The override panel should always be the topmost layer (so the GM can intervene at any time).
+
+### 13.2 Programmatic UI Construction
+
+Dev-mode UI panels (OverridePanel, DicePrompt) build all widgets in `_build_ui()` called from `_ready()`. This avoids editor-only layouts and keeps the panel definition in one file.
+
+```gdscript
+# Pattern: CanvasLayer + programmatic children
+extends CanvasLayer
+
+func _ready() -> void:
+    layer = 64
+    visible = false       # hidden until activated
+    _build_ui()
+    EventBus.some_signal.connect(_on_some_signal)
+
+func _build_ui() -> void:
+    # ... create all Controls as children
+```
+
+**No `class_name`** on these scripts — they are only referenced via scene instantiation in Main.tscn, never by code.
+
+### 13.3 Scene Tree — Main.tscn
+
+<!-- Updated 2026-03-27 -->
+
+```
+Main (Node, script: main_scene.gd)
+├── HexMapController (Node, script: hex_map_controller.gd)
+├── HexMap (instance of hex_map.tscn)
+├── OverrideManager (Node, script: override_manager.gd)
+├── OverridePanel (instance of override_panel.tscn)
+└── DicePrompt (instance of dice_prompt.tscn)
+```
+
+`main_scene.gd` wires the controller to the renderer and the override panel to the manager in `_ready()`. Subsystem managers are plain Node children — not autoloads.
+
+---
+
+## 14. ACKS-Specific Implementation Rules (continued)
+
+### 14.1 Dice Conventions
+
+| Rule | Details |
+|---|---|
+| d3 is first-class | Roll `randi_range(1, 3)` directly. Do not roll d6 and divide. |
+| Override = modified total | A forced override value represents the final result (with modifiers). DiceSystem back-calculates raw_total. |
+| Player enters raw total | When using physical dice, the player enters the sum of dice only. The app applies modifiers. |
+| Natural 1 / natural 20 | Only flagged on single-die d20 rolls (`count == 1`). Multi-die rolls never set these flags. |
+| Session-only roll log | `dice_rolls` table cleared on `GameState.session_ended`. Capped at 200 rows (oldest auto-pruned). |
+
+---
+
+*Last major update: 2026-03-27 — Sweep of all code built since 2026-03-25. Updated autoload list (6), directory tree, shared types table, test framework, roll type vocabulary, CanvasLayer layering, coroutine patterns, primary key conventions, settings persistence, UI panel patterns, dice conventions.*

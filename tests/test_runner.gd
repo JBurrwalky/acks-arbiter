@@ -11,6 +11,7 @@ extends Node
 @onready var _terrain_tests = $HexTerrainDataTests
 @onready var _controller_tests = $HexMapControllerTests
 @onready var _override_tests = $OverrideManagerTests
+@onready var _dice_tests = $DiceSystemTests
 
 
 func _ready() -> void:
@@ -21,7 +22,7 @@ func run() -> void:
 	var passed := 0
 	var failed := 0
 
-	for suite in [_terrain_tests, _controller_tests, _override_tests]:
+	for suite in [_terrain_tests, _controller_tests, _override_tests, _dice_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

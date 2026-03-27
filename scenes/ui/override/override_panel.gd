@@ -95,6 +95,7 @@ var _dice_value: SpinBox
 var _dice_queue_btn: Button
 var _dice_queue_list: ItemList
 var _dice_clear_all_btn: Button
+var _dice_export_btn: Button
 
 # Per-tab node refs (Snapshots tab)
 var _snap_label: LineEdit
@@ -111,7 +112,8 @@ var _log_refresh_btn: Button
 # Dice roll types — must match OverrideManager vocabulary
 const ROLL_TYPES := [
 	"encounter_check",
-	"surprise_check",
+	"player_surprise_check",
+	"monster_surprise_check",
 	"initiative",
 	"attack_throw",
 	"damage_roll",
@@ -464,6 +466,14 @@ func _on_dice_clear_selected() -> void:
 func _on_dice_clear_all() -> void:
 	_override_manager.clear_all_dice_overrides()
 	_refresh_dice_tab()
+
+
+func _on_dice_export_log() -> void:
+	var path: String = DiceSystem.export_roll_log()
+	if path.is_empty():
+		push_error("OverridePanel: dice log export failed")
+	else:
+		print("OverridePanel: roll log exported to %s" % path)
 
 
 # ---------------------------------------------------------------------------
@@ -904,6 +914,19 @@ func _build_dice_tab() -> void:
 	_dice_clear_all_btn.text = "Cancel All"
 	_dice_clear_all_btn.pressed.connect(_on_dice_clear_all)
 	dice_btns.add_child(_dice_clear_all_btn)
+
+	tab.add_child(_section_label("Roll Log"))
+	var export_row := HBoxContainer.new()
+	tab.add_child(export_row)
+	var export_hint := Label.new()
+	export_hint.text = "Export session rolls to user:// as JSON"
+	export_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	export_hint.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	export_row.add_child(export_hint)
+	_dice_export_btn = Button.new()
+	_dice_export_btn.text = "Export Log"
+	_dice_export_btn.pressed.connect(_on_dice_export_log)
+	export_row.add_child(_dice_export_btn)
 
 
 func _build_snapshots_tab() -> void:

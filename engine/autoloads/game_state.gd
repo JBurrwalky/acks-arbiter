@@ -14,6 +14,15 @@ extends Node
 # Enums
 # ---------------------------------------------------------------------------
 
+## Dice rolling mode. Saved to and loaded from user://settings.cfg.
+## Changed at runtime via the in-game settings menu.
+enum DiceMode {
+	DIGITAL,  ## App rolls automatically. No player input required for any roll.
+	PHYSICAL, ## App always prompts the player to enter results from physical dice.
+	HYBRID,   ## Default. Player-facing rolls (PC attacks, saves, skills) prompt;
+	          ## NPC/GM rolls (encounter checks, morale, reaction) are always digital.
+}
+
 ## Every top-level phase the application can be in.
 enum State {
 	MAIN_MENU,          ## Title screen and campaign selection
@@ -74,9 +83,15 @@ var party_id: String = ""
 
 ## Pending dice override queue. Keys are roll_type strings (snake_case from the
 ## action vocabulary, e.g. "attack_throw", "encounter_check"). Values are the
-## forced integer result. Consumed by the dice subsystem on the next matching roll.
-## Written by OverrideManager; read by the dice subsystem when built.
+## forced modified_total (final result including modifiers). Consumed by DiceSystem
+## on the next matching roll. Written by OverrideManager; read by DiceSystem.
 var dice_overrides: Dictionary = {}
+
+## Active dice rolling mode. Default is HYBRID. Persisted to user://settings.cfg.
+## Change at runtime with set_dice_mode(); never write this var directly.
+var dice_mode: DiceMode = DiceMode.HYBRID
+
+const _SETTINGS_PATH := "user://settings.cfg"
 
 
 # ---------------------------------------------------------------------------
@@ -141,3 +156,27 @@ func end_session() -> void:
 ## Returns true if a campaign is currently loaded.
 func is_in_session() -> bool:
 	return not campaign_id.is_empty()
+
+
+## Change the active dice mode and persist the setting.
+func set_dice_mode(mode: DiceMode) -> void:
+	dice_mode = mode
+	save_settings()
+
+
+## Persist current settings to user://settings.cfg.
+func save_settings() -> void:
+	var config := ConfigFile.new()
+	config.set_value("dice", "mode", dice_mode)
+	var err := config.save(_SETTINGS_PATH)
+	if err != OK:
+		push_error("GameState.save_settings: could not write settings file (err=%d)" % err)
+
+
+## Load settings from user://settings.cfg. Called once at startup.
+## No-ops gracefully if the file doesn't exist yet (first launch).
+func load_settings() -> void:
+	var config := ConfigFile.new()
+	if config.load(_SETTINGS_PATH) != OK:
+		return  # File not present — use defaults
+	dice_mode = config.get_value("dice", "mode", DiceMode.HYBRID) as DiceMode

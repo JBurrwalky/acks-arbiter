@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" path="res://scenes/maps/hex_map.tscn" id="3_hex_map"]
 [ext_resource type="Script" path="res://engine/subsystems/override/override_manager.gd" id="4_override_mgr"]
 [ext_resource type="PackedScene" path="res://scenes/ui/override/override_panel.tscn" id="5_override_panel"]
+[ext_resource type="PackedScene" path="res://scenes/ui/dice/dice_prompt.tscn" id="6_dice_prompt"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main_script")
@@ -18,3 +19,5 @@ script = ExtResource("2_controller")
 script = ExtResource("4_override_mgr")
 
 [node name="OverridePanel" parent="." instance=ExtResource("5_override_panel")]
+
+[node name="DicePrompt" parent="." instance=ExtResource("6_dice_prompt")]

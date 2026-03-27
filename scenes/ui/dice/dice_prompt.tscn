@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dice_prompt_scene"]
+
+[ext_resource type="Script" path="res://scenes/ui/dice/dice_prompt.gd" id="1_dice_prompt"]
+
+[node name="DicePrompt" type="CanvasLayer"]
+script = ExtResource("1_dice_prompt")

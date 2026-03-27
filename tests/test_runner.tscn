@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://tests/test_hex_terrain_data.gd" id="2_terrain_tests"]
 [ext_resource type="Script" path="res://tests/test_hex_map_controller.gd" id="3_controller_tests"]
 [ext_resource type="Script" path="res://tests/test_override_manager.gd" id="4_override_tests"]
+[ext_resource type="Script" path="res://tests/test_dice_system.gd" id="5_dice_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -16,3 +17,6 @@ script = ExtResource("3_controller_tests")
 
 [node name="OverrideManagerTests" type="Node" parent="."]
 script = ExtResource("4_override_tests")
+
+[node name="DiceSystemTests" type="Node" parent="."]
+script = ExtResource("5_dice_tests")

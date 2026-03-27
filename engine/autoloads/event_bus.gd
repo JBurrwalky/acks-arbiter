@@ -196,3 +196,22 @@ signal dice_override_queued(roll_type: String, forced_value: int)
 
 ## A queued dice override was consumed by the dice subsystem.
 signal dice_override_consumed(roll_type: String, forced_value: int)
+
+## Emitted by DiceSystem after every roll resolves (digital, player-prompted, or overridden).
+## [param roll] is a Dictionary form of RollResult. Keys:
+##   roll_type, sides, count, modifier, individual_results (Array[int]),
+##   raw_total, modified_total, was_overridden, was_player_entered, natural_one, natural_max
+signal dice_rolled(roll: Dictionary)
+
+## Emitted by DiceSystem when a player-facing roll needs manual input (PHYSICAL/HYBRID mode).
+## DicePrompt listens for this signal and shows the roll UI.
+## [param context] keys: roll_type (String), sides (int), count (int),
+##                       modifier (int), description (String)
+signal player_roll_requested(context: Dictionary)
+
+## Emitted by DicePrompt when the player confirms a roll result.
+## DiceSystem awaits this signal inside player_roll() to resume the coroutine.
+## [param roll_type] matches the roll_type from the preceding player_roll_requested.
+## [param raw_total] is the raw dice total only — modifier has NOT been applied.
+## [param was_player_entered] false if player clicked "Roll Dice"; true if typed manually.
+signal player_roll_resolved(roll_type: String, raw_total: int, was_player_entered: bool)
