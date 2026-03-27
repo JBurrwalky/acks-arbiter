@@ -7,7 +7,16 @@
       "Bash(git commit:*)",
       "Bash(grep -E \"\\\\.\\(godot|tscn\\)$\")",
       "Bash(for dir:*)",
-      "Bash(do echo:*)"
+      "Bash(do echo:*)",
+      "Bash(find C:/Users/jttau/acks-arbiter -name *.gd)",
+      "Bash(mkdir -p \"C:/Users/jttau/acks-arbiter/engine/subsystems/exploration\")",
+      "Bash(mkdir -p \"C:/Users/jttau/acks-arbiter/scenes/maps\")",
+      "Bash(git:*)",
+      "Bash(find C:/Users/jttau/acks-arbiter/engine/subsystems C:/Users/jttau/acks-arbiter/scenes/maps -name *.gd -o -name *.tscn)",
+      "Bash(find C:/Users/jttau/acks-arbiter/tests C:/Users/jttau/acks-arbiter/engine/shared_types -name *.gd)",
+      "Bash(find /c/Users/jttau/acks-arbiter -type f -name *sqlite*)",
+      "Bash(grep -E \"\\\\.\\(md|txt|gd\\)$\")",
+      "Bash(xargs grep:*)"
     ]
   }
 }
