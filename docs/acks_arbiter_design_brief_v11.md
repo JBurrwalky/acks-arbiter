@@ -225,6 +225,8 @@ Major states: Wilderness Exploration, Urban Exploration, Dungeon Exploration, En
 The game tracks time at multiple granularities: combat rounds (10 seconds), exploration turns (10 minutes), wilderness travel turns (hours), and campaign days/months.
 IMPORTANT: The game is to run on a in-game calendar of 13 months with 28 days each, exactly. Otherwise, weeks are 7 days, a dayis 24 hours, an hours is 60 minutes, etc. as normal.
 
+Dawn and dusk times are provided per-hex per-day by the weather system (gdd-weather-generation.md§6), which derives them from hex latitude and calendar day. Season definitions are ingdd-calendar-seasons.md.
+
 **Day-cycle scheduling (multi-party):** Each game day, all active parties declare intended activities simultaneously, then each party's day resolves in sequence. Split parties synchronize via this system. Cross-party interruptions insert at the appropriate time-of-day.
 
 ### 8.4 Dice System

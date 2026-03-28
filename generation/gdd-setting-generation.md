@@ -3,7 +3,7 @@
 **Authority:** PROJECT-DESIGNED — the generation algorithms are not derived from any ACKS sourcebook. ACKS demographic, economic, and realm-sizing constraints are defined in the XML rules reference library and applied as constraints on the generation output.
 **Status:** Draft
 **Depends on ACKS rules:** `acore-setting-construction-rules.xml` (realm sizing, population density, territory classification, settlement size/market class tables, domain economics that constrain viable realm configurations), `acore_axioms_strongholds_and_domains.xml` (stronghold and domain rules), `ax_domains_of_chaos.xml` (beastman clanhold demographics, geographic distribution by terrain, chaotic domain rules)
-**Depends on project GDDs:** `gdd-terrain-system.md` (terrain tag definitions, biome mapping, deforestation rules), `gdd-dungeon-layout.md` (dungeon seed requirements)
+**Depends on project GDDs:** `gdd-terrain-system.md` (terrain tag definitions, biome mapping, deforestation rules), `gdd-dungeon-layout.md` (dungeon seed requirements), gdd-calendar-seasons.md(season definitions consumed during narrative generation),gdd-weather-generation.md (downstream consumer of Layer 2 output)
 **Modifiable by Claude Code:** Yes — all algorithms, parameters, and generation logic are engineering decisions.
 **Last updated:** 2026-03-24
 
@@ -177,6 +177,23 @@ temperature = base_temperature + elevation_adjustment
 
 **User parameter:** `latitude_range` — determines how much temperature varies north-to-south. "Tropical" = narrow range, "Temperate" = moderate, "Polar" = wide range.
 
+**Latitude range presets (canonical values):**
+
+| latitude_range | South Edge | North Edge | Span |
+|---|---|---|---|
+| Tropical | 5°N | 20°N | 15° |
+| Subtropical | 20°N | 38°N | 18° |
+| Temperate | 35°N | 55°N | 20° |
+| Continental | 45°N | 65°N | 20° |
+| Polar | 60°N | 75°N | 15° |
+
+**User parameter:** `hemisphere` — north (default) or south. Affects season-to-climate mapping per `gdd-calendar-seasons.md` §4.
+
+**Effective latitude per hex** (stored as persistent hex data, consumed by `gdd-weather-generation.md` for dawn/dusk):
+```
+effective_latitude = map_south_latitude + (hex.y / map_height) * latitude_span
+```
+
 ### 5.2 Precipitation
 
 Derived from a second noise layer plus geographic modifiers:
@@ -232,7 +249,7 @@ After biome assignment, apply swamp conversion:
 
 ### 5.5 Layer 2 Output
 
-Each hex now has: elevation tag, biome tag, water tags, and a Köppen code. This feeds directly into `gdd-terrain-system.md` for encounter and movement resolution.
+Each hex now has: elevation tag, biome tag, water tags, a Köppen code, and an effective latitude. This feeds directly into `gdd-terrain-system.md` for encounter and movement resolution. After all hexes are assigned, the weather system scans the map to build the **active Köppen set** — the unique codes actually present — and loads only those climate profiles (see `gdd-weather-generation.md` §5.6).
 
 ---
 
@@ -706,8 +723,8 @@ data/name_banks/
 - **Settlement stocking** — reads settlement size, market class, demographic weights
 - **Dungeon generation** (`gdd-dungeon-layout.md`) — reads dungeon seeds to generate dungeon maps
 - **Encounter system** — reads terrain tags and territory classification for encounter table selection
-- **Weather system** — reads Köppen codes for weather table selection
-- **Domain simulation** — reads realm data, ruler profiles, economic parameters
+- **Weather system** (`gdd-weather-generation.md`) — reads Köppen codes, effective latitude, elevation, coastal proximity, and prevailing wind direction
+- **Calendar/seasons system** (`gdd-calendar-seasons.md`) — reads hemisphere parameter- **Domain simulation** — reads realm data, ruler profiles, economic parameters
 - **LLM context assembly** — reads setting narrative, cultural data, faction relationships
 - **NPC generation** — reads demographic weights for name/culture/religion selection
 

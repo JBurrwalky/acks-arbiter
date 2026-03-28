@@ -718,10 +718,11 @@ The single Town Street template can be expanded to district-specific variants:
 
 ### 13.2 Weather Effects on Battle Maps
 
-Weather conditions (from `daw_vagaries.xml`) could modify generated maps:
-- Rain → mud surface type replaces dirt, shallow water expands in swamp
-- Snow → snow surface type, reduced visibility (LOS range cap)
-- Fog → severe LOS range cap regardless of terrain openness
+At combat initiation, the combat map generator queries the current hex weather state from the weather system (`gdd-weather-generation.md` §4). Weather state channels map to battle map modifications:
+- precipitation_level 2+ (rain) → mud surface type replaces dirt; shallow water expands in swamp
+- precipitation_type snow at level 2+ → snow surface type
+- visibility_multiplier < 0.5 → LOS range cap at (base_LOS × visibility_multiplier)
+- fog == true → severe LOS range cap (visibility_multiplier 0.1)
 
 ### 13.3 Time-of-Day Effects
 

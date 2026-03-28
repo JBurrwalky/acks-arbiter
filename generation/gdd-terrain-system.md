@@ -2,7 +2,7 @@
 
 **Authority:** PROJECT-DESIGNED — the terrain tag system, biome/elevation layering, encounter table selection logic, and deforestation/forestation rules are not derived from any ACKS sourcebook. The encounter tables themselves and movement costs are ACKS rules defined in the XML rules reference library.
 **Status:** Draft
-**Depends on ACKS rules:** `acore_adventures_and_encounters.xml` (movement costs by terrain), `acore-monster-stocking-rules.xml` (wilderness encounter tables by terrain), `acore-setting-construction-rules.xml` (territory classification, population density)
+**Depends on ACKS rules:** `acore_adventures_and_encounters.xml` (movement costs by terrain), `acore-monster-stocking-rules.xml` (wilderness encounter tables by terrain), `acore-setting-construction-rules.xml` (territory classification, population density), gdd-weather-generation.md
 **Modifiable by Claude Code:** Yes — the tag system, generation algorithms, and weighting formulas are all engineering decisions.
 **Last updated:** 2026-03-19
 
@@ -374,7 +374,7 @@ Placeholder rendering can use simple colored hexes with text labels during devel
 - **Exploration system** — reads terrain for visibility, foraging, getting lost probabilities
 - **Region zoom-in** — reads 24-mile hex tags to generate constituent 6-mile hex tags (terrain inheritance with variation)
 - **Dungeon/lair placement** — reads territory classification and terrain for placement logic
-- **Weather system** — reads Köppen code (stored alongside tags) for weather table selection
+- **Weather system** (gdd-weather-generation.md) — reads Köppen code, elevation tags, and coastal proximity for seasonal climate profile selection and weather generation
 - **LLM narration** — receives terrain description for narrative context
 - **Domain system** — reads terrain for agricultural productivity, population capacity
 
