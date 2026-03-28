@@ -611,3 +611,102 @@ Timekeeping public API (new autoload):
 - Added `func set_day_cycle(dawn_hour: int, dusk_hour: int) -> void` — persists via `_auto_save()`.
 - Added `func get_dawn_hour() -> int` and `func get_dusk_hour() -> int` read accessors.
 - Added 3 tests to `test_timekeeping.gd`: `test_set_day_cycle_changes_is_daylight()`, `test_set_day_cycle_changes_dawn_dusk_signals()`, `test_set_day_cycle_defaults_are_6_and_20()` (27 tests total in suite).
+
+---
+
+## Session 2026-03-28 — Calendar & Seasons Subsystem
+
+**Task:** Update and correct the Timekeeping system to account for the new information provided by `gdd-calendar-seasons.md`. Create the CalendarSeasons subsystem. Update document_map.md and rule_system_map.md for new documents added since those files were created.
+**Model used:** claude-opus-4-6 (planning), claude-sonnet-4-6 (implementation)
+
+**Completed:**
+- Updated `docs/document_map.md` — added entries for `gdd-poi-generation.md`, `gdd-calendar-seasons.md`, `gdd-weather-generation.md`; corrected `coding_conventions.md` entry (was "to be created"); updated GDD count to 14, grand total to 84.
+- Updated `docs/rule_system_map.md` — added Calendar & Seasons system, Weather system, and Wilderness Points of Interest system sections; updated Wilderness & Hex Exploration and Setting & World Generation GDD lists; updated high-traffic file cross-reference table; updated GDD dependency graph and implementation order.
+- Created `engine/subsystems/calendar/calendar_constants.gd` (class CalendarConstants) — season start/end boundary days, astronomical event days (solstice/equinox), and TRANSITION_WINDOW_DAYS constant.
+- Created `engine/subsystems/calendar/calendar_seasons.gd` (class CalendarSeasons) — static season lookup, season index, hemisphere inversion, transition blend descriptor, and season progress label.
+- Updated `engine/autoloads/timekeeping.gd`:
+  - Added private constants `_SEASON_STARTS` and `_SEASON_NAMES` for internal season boundary detection.
+  - Added `signal season_changed(new_season: String)` — fires at each season boundary crossing.
+  - Added `func get_day_of_year() -> int` — returns 1–364, the current day within the year. Required by CalendarSeasons consumers.
+  - Added season boundary detection in `_emit_boundary_signals` loop — emits `season_changed` alongside `day_changed` when a season boundary is crossed.
+- Updated `tests/test_timekeeping.gd` — added `season_changed` signal capture and 7 new tests (4 for `get_day_of_year`, 3 for `season_changed`). Suite: 27 → 34 tests.
+- Created `tests/test_calendar_seasons.gd` — 25 tests covering all CalendarSeasons and CalendarConstants functions.
+- Updated `tests/test_runner.gd` and `tests/test_runner.tscn` — added CalendarSeasonsTests (6 suites total, ~126 tests).
+
+**Decisions made:**
+- CalendarSeasons uses static functions only — it is a pure computation module, not instantiated. No autoload needed.
+- Timekeeping does NOT depend on CalendarSeasons at runtime. The `_SEASON_STARTS` array in Timekeeping duplicates minimal boundary logic to keep the autoload self-contained and avoid load-order coupling.
+- `season_changed` fires on the same advance call as `day_changed` for the entering day — consistent with how `month_changed` and `year_changed` are already emitted.
+- GDD §3 table lists the Winter→Spring window as "Day 361–Day 3." This is inconsistent with the "centered on Day 1" rule that applies to all other transitions. Implementation uses the consistent rule (Day 362–Day 4, centered on Day 1). The discrepancy is documented in `calendar_seasons.gd` comments and in the test.
+- `get_transition_blend()` returns weight approaching 1.0 (max 6/7) within the window; the day after the window snaps to fully in-season. This matches the GDD's `days_into_transition / 7` formula.
+
+**Interfaces defined or changed:**
+
+Timekeeping additions:
+- `signal season_changed(new_season: String)` — "spring", "summer", "autumn", or "winter"
+- `func get_day_of_year() -> int` — returns 1–364
+
+CalendarConstants public API (new class, engine/subsystems/calendar/calendar_constants.gd):
+- `const SPRING_START_DAY := 1`, `SUMMER_START_DAY := 92`, `AUTUMN_START_DAY := 183`, `WINTER_START_DAY := 274`
+- `const SPRING_END_DAY := 91`, `SUMMER_END_DAY := 182`, `AUTUMN_END_DAY := 273`, `WINTER_END_DAY := 364`
+- `const VERNAL_EQUINOX_DAY := 46`, `SUMMER_SOLSTICE_DAY := 137`, `AUTUMNAL_EQUINOX_DAY := 228`, `WINTER_SOLSTICE_DAY := 319`
+- `const TRANSITION_WINDOW_DAYS := 7`
+
+CalendarSeasons public API (new class, engine/subsystems/calendar/calendar_seasons.gd):
+- `const SPRING/SUMMER/AUTUMN/WINTER: String` — season name constants
+- `const SEASON_NAMES: Array` — indexed [spring, summer, autumn, winter]
+- `static func get_season(day_of_year: int) -> String`
+- `static func get_season_index(day_of_year: int) -> int` — 0–3
+- `static func get_climate_season(day_of_year: int, hemisphere: String) -> String`
+- `static func get_transition_blend(day_of_year: int) -> Dictionary` — {in_transition, outgoing_season, incoming_season, weight}
+- `static func get_season_progress(day_of_year: int) -> String` — "early", "mid", or "late"
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_timekeeping.gd` — 7 new tests (34 total in suite).
+- `tests/test_calendar_seasons.gd` — 25 tests (new suite).
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — CalendarSeasonsTests added (6 suites total, ~126 tests).
+
+**Known issues:**
+- `game_day` in `dice_rolls` is still always 0. Wire `Timekeeping.get_total_days()` into `dice_system.gd:_log_and_emit()` once session runner is built.
+- Signal counters in `test_timekeeping.gd` are cumulative (known GDScript limitation — noted in prior session).
+
+**Next session should:**
+1. Open project in Godot 4.6; run `test_runner.tscn`; confirm all 6 suites pass including 34 Timekeeping tests and 25 CalendarSeasons tests.
+2. Wire `Timekeeping.load_state(campaign_id)` into `main_scene.gd` after `GameState.start_session()`.
+3. Build the weather generation subsystem per `gdd-weather-generation.md` — it depends on CalendarSeasons and is the next downstream consumer.
+4. Build the session runner state machine (campaign select → session start → exploration loop → session end).
+
+---
+
+## Session 2026-03-28 — Coding Conventions Update
+
+**Task:** Update `docs/coding_conventions.md` to reflect patterns established in the Calendar & Seasons session.
+**Model used:** claude-opus-4-6
+
+**Completed:**
+- Updated `docs/coding_conventions.md`:
+  - **§2.1** — Added `calendar/` to subsystems directory tree.
+  - **§3.7** — Added row for pure static/constants classes (`class_name` yes — enables `CalendarSeasons.get_season(day)` without instantiation).
+  - **§3.9** — Added "Pure static computation class" subsection with CalendarSeasons/CalendarConstants as canonical examples; explains when to prefer this over autoloads.
+  - **§5.3** — Added "Pure computation (no instance state)" row to alternatives-to-autoloads table, pointing to §3.9.
+  - **§6.8** — Added `get_day_of_year()` usage pattern with CalendarSeasons; added `season_changed` signal usage pattern (connect once, don't manually track transitions in `_on_day_changed`).
+  - **§12** — Added three ACKS implementation rule rows: Seasons (4×91-day definitions), Climate vs. calendar season (hemisphere inversion rule for weather/domain vs. LLM narrative), Solstices and equinoxes (midpoint placement, CalendarConstants values).
+  - Updated footer line.
+
+**Decisions made:** None — documentation-only session.
+
+**Interfaces defined or changed:** None.
+
+**Database changes:** None.
+
+**Tests added/updated:** None.
+
+**Known issues:** None introduced this session.
+
+**Next session should:**
+1. Open project in Godot 4.6; run `test_runner.tscn`; confirm all 6 suites pass.
+2. Wire `Timekeeping.load_state(campaign_id)` into `main_scene.gd` after `GameState.start_session()`.
+3. Build the weather generation subsystem per `gdd-weather-generation.md`.
+4. Build the session runner state machine.

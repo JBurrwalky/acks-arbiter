@@ -162,6 +162,9 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 | `gdd-henchman-class-selection.md` | Deterministic class selection for 0th-level henchmen reaching 500 XP | Draft | `acore_basics_and_characters`, `acore_core_classes`, `acore_demihuman_classes`, `acore_campaign_classes`, `pc_classes_*`, `gdd-npc-personality`, `gdd-cultural-religious-generation` |
 | `gdd-cultural-religious-generation.md` | Culture and religion data structures/generation — feeds NPC, settlement, domain, cleric | Draft | `acore_core_classes`, `acore-setting-construction-rules`, `acore_axioms_strongholds_and_domains`, `gdd-setting-generation`, `gdd-npc-personality`, `gdd-settlement-layout`, `gdd-name-generation` (not yet created) |
 | `gdd_combat_behavior_tags.md` | Combat AI tag system: deterministic action selection, scoring, tie-breaking per tag | Draft | Morale rules (implicit); no explicit XML dependencies listed |
+| `gdd-poi-generation.md` | Wilderness POI generation: type taxonomy (7 archetypes), terrain affinity, placement budget, mechanical skeleton, rumor/quest hook seeding | Draft | `acore-setting-construction-rules`, `le_wilderness_lair_rules`, `acore_adventures_and_encounters`, `gdd-setting-generation`, `gdd-terrain-system`, `gdd-cultural-religious-generation`, `gdd-npc-personality`, `gdd-quest-rumor-system` (not yet created) |
+| `gdd-calendar-seasons.md` | Calendar seasonal layer: 4×91-day seasons, solstice/equinox dates, hemisphere inversion model, 7-day transition blending | Draft | `gdd-setting-generation` (hemisphere parameter) |
+| `gdd-weather-generation.md` | Deterministic weather simulation: 6-channel per-hex daily state (temperature, precipitation, cloud, wind, visibility, humidity), dawn/dusk calculation, DaW weather mapping | Draft | `daw_vagaries`, `acore_adventures_and_encounters`, `gdd-calendar-seasons`, `gdd-setting-generation`, `gdd-terrain-system`, `gdd-combat-map-generation` (not yet created) |
 
 ---
 
@@ -172,7 +175,7 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 | `acks_arbiter_design_brief_v11.md` | Master architecture document — system design, subsystem interfaces, data flow |
 | `document_map.md` | This file — index of all rule and design documents |
 | `rule_system_map.md` | System-to-file dependency map and cross-references |
-| `coding_conventions.md` | Coding standards and patterns (to be created) |
+| `coding_conventions.md` | Living reference for GDScript, SQLite, and architecture patterns — naming, signals, autoloads, DB access, testing |
 
 ---
 
@@ -184,5 +187,5 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 - **Lairs & Encounters XML:** 14 files (5 monster systems + 9 monster catalogs)
 - **Axioms XML:** 11 files
 - **Total XML:** 70 files
-- **GDDs:** 11 files
-- **Grand total indexed:** 81 files
+- **GDDs:** 14 files
+- **Grand total indexed:** 84 files

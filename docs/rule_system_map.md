@@ -54,8 +54,8 @@ When working on system X:
 
 ### Wilderness & Hex Exploration
 - **Rule files:** `acore_adventures_and_encounters`, `acore-monster-stocking-rules`, `le_wilderness_lair_rules`
-- **GDDs:** `gdd-terrain-system`, `gdd-setting-generation`
-- **Depends on:** Monsters & Encounters, Equipment (encumbrance -> movement rates)
+- **GDDs:** `gdd-terrain-system`, `gdd-setting-generation`, `gdd-poi-generation`, `gdd-weather-generation`
+- **Depends on:** Monsters & Encounters, Equipment (encumbrance -> movement rates), Weather (travel modifiers, visibility, foraging), Calendar & Seasons (daylight hours)
 - **Depended on by:** Domain Play (territory classification), Setting Generation
 
 ### Urban & Settlement
@@ -97,11 +97,29 @@ When working on system X:
 - **Depends on:** Characters (class, level), Spells & Magic (research prerequisites)
 - **Depended on by:** Domain Play (monthly cycle), Session Runner (timekeeping)
 
+### Calendar & Seasons
+- **Rule files:** (none — no ACKS sourcebook defines a calendar or seasonal system)
+- **GDDs:** `gdd-calendar-seasons`
+- **Depends on:** Setting Generation (hemisphere parameter from campaign creation)
+- **Depended on by:** Weather, Domain Play (agricultural yield phases, seasonal trade), Timekeeping (daylight hours, day-cycle scheduling), LLM Context (seasonal narrative)
+
+### Weather
+- **Rule files:** `daw_vagaries` (severe weather conditions, DaW effects), `acore_adventures_and_encounters` (encounter distance/visibility, terrain movement multipliers, wind conditions for sea travel)
+- **GDDs:** `gdd-weather-generation`
+- **Depends on:** Calendar & Seasons (season lookup, solstice/equinox dates, transition blending), Setting Generation (Köppen climate codes per hex, effective latitude), Terrain (terrain tags for biome-specific weather profiles)
+- **Depended on by:** Wilderness Exploration (travel speed, encounter distance, foraging modifiers), Domain Play (army supply costs, disease chance), Combat (visibility), Timekeeping (dawn/dusk times), LLM Context (weather descriptions)
+
+### Wilderness Points of Interest
+- **Rule files:** `acore-setting-construction-rules` (45-POI regional density target), `le_wilderness_lair_rules` (lair density — POI budget excludes lairs), `acore_adventures_and_encounters` (wilderness encounter tables by terrain)
+- **GDDs:** `gdd-poi-generation`
+- **Depends on:** Setting Generation (regional map, demographics), Terrain (terrain tags for affinity filtering), Culture & Religion (historical context for POI narrative), NPC Systems (rumor knowledge categories)
+- **Depended on by:** Wilderness Exploration (discoverable locations), NPC Systems (rumor table seeds), Quest/Rumor System (quest hooks)
+
 ### Setting & World Generation
 - **Rule files:** `acore-setting-construction-rules`, `acore-monster-stocking-rules`, `acore_axioms_strongholds_and_domains` (demographics)
-- **GDDs:** `gdd-setting-generation`, `gdd-terrain-system`, `gdd-cultural-religious-generation`
+- **GDDs:** `gdd-setting-generation`, `gdd-terrain-system`, `gdd-cultural-religious-generation`, `gdd-poi-generation`, `gdd-calendar-seasons`, `gdd-weather-generation`
 - **Depends on:** Monsters & Encounters, Domain Play (demographics)
-- **Depended on by:** All exploration contexts, Urban & Settlement, Dungeon Exploration
+- **Depended on by:** All exploration contexts, Urban & Settlement, Dungeon Exploration, Calendar & Seasons (hemisphere), Weather (climate codes)
 
 ### Thief Skills & Hijinks
 - **Rule files:** `acore-campaign-hijinks`, `ax_thief_skill_update`
@@ -125,6 +143,8 @@ Files appearing in 3+ systems — changes to these have wide blast radius:
 | `ax_campaign_play` | Campaign Play, Domain Play (monthly cycle) |
 | `daw_equipment_and_construction` | Armies & Warfare, Domain Play (stronghold costs) |
 | `acore-monster-stocking-rules` | Monsters & Encounters, Wilderness, Setting Generation |
+| `daw_vagaries` | Armies & Warfare, Weather |
+| `le_wilderness_lair_rules` | Monsters & Encounters, Wilderness, Wilderness POI (budget exclusion) |
 
 ---
 
@@ -142,8 +162,11 @@ gdd-terrain-system
      -> gdd-dungeon-layout
         -> gdd-dungeon-factions
         -> gdd-trap-generation
+     -> gdd-calendar-seasons
+        -> gdd-weather-generation
+     -> gdd-poi-generation
 
-gdd-npc-personality (cross-cuts: settlement, dungeon factions, henchman selection)
+gdd-npc-personality (cross-cuts: settlement, dungeon factions, henchman selection, POI generation)
 gdd_combat_behavior_tags (standalone — used by combat subsystem only)
 ```
 
@@ -151,11 +174,14 @@ gdd_combat_behavior_tags (standalone — used by combat subsystem only)
 1. `gdd-terrain-system` (foundational — no GDD dependencies)
 2. `gdd_combat_behavior_tags` (standalone)
 3. `gdd-setting-generation` (needs terrain)
-4. `gdd-dungeon-layout` (needs setting for context)
-5. `gdd-npc-personality` (needs setting, settlement)
-6. `gdd-settlement-layout` (needs setting, terrain)
-7. `gdd-cultural-religious-generation` (needs setting, NPC personality)
-8. `gdd-dungeon-factions` (needs dungeon layout, NPC personality)
-9. `gdd-trap-generation` (needs dungeon layout)
-10. `gdd-stronghold-construction` (needs settlement, dungeon layout)
-11. `gdd-henchman-class-selection` (needs NPC personality, culture/religion)
+4. `gdd-calendar-seasons` (needs setting for hemisphere parameter)
+5. `gdd-weather-generation` (needs calendar/seasons, setting, terrain)
+6. `gdd-dungeon-layout` (needs setting for context)
+7. `gdd-npc-personality` (needs setting, settlement)
+8. `gdd-settlement-layout` (needs setting, terrain)
+9. `gdd-cultural-religious-generation` (needs setting, NPC personality)
+10. `gdd-poi-generation` (needs setting, terrain, culture/religion, NPC personality)
+11. `gdd-dungeon-factions` (needs dungeon layout, NPC personality)
+12. `gdd-trap-generation` (needs dungeon layout)
+13. `gdd-stronghold-construction` (needs settlement, dungeon layout)
+14. `gdd-henchman-class-selection` (needs NPC personality, culture/religion)

@@ -28,6 +28,9 @@ var _year_count: int = 0
 var _dawn_count: int = 0
 var _dusk_count: int = 0
 
+var _season_count: int = 0
+var _last_season: String = ""
+
 
 func _ready() -> void:
 	Timekeeping.day_changed.connect(_on_day_changed)
@@ -35,6 +38,7 @@ func _ready() -> void:
 	Timekeeping.year_changed.connect(_on_year_changed)
 	Timekeeping.dawn.connect(_on_dawn)
 	Timekeeping.dusk.connect(_on_dusk)
+	Timekeeping.season_changed.connect(_on_season_changed)
 
 
 func _on_day_changed(d: int, m: int, y: int) -> void:
@@ -59,6 +63,11 @@ func _on_dusk() -> void:
 	_dusk_count += 1
 
 
+func _on_season_changed(s: String) -> void:
+	_season_count += 1
+	_last_season = s
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -75,8 +84,10 @@ func _reset() -> void:
 	_month_count = 0
 	_last_month  = []
 	_year_count  = 0
-	_dawn_count  = 0
-	_dusk_count  = 0
+	_dawn_count    = 0
+	_dusk_count    = 0
+	_season_count  = 0
+	_last_season   = ""
 
 
 # ---------------------------------------------------------------------------
@@ -129,6 +140,17 @@ func run_all_tests() -> void:
 
 	# 9. Persistence round-trip
 	test_persistence_round_trip()
+
+	# 10. get_day_of_year
+	test_get_day_of_year_first_day()
+	test_get_day_of_year_last_day_of_year()
+	test_get_day_of_year_year_wrap()
+	test_get_day_of_year_summer_start()
+
+	# 11. season_changed signal
+	test_season_changed_fires_on_summer_start()
+	test_season_changed_fires_on_year_wrap_to_spring()
+	test_season_changed_does_not_fire_mid_season()
 
 	print("Timekeeping: all tests passed.")
 
@@ -477,3 +499,73 @@ func test_persistence_round_trip() -> void:
 
 	# Clean up — reset campaign_id so future tests don't auto-save
 	Timekeeping._campaign_id = ""
+
+
+# ---------------------------------------------------------------------------
+# 10. get_day_of_year
+# ---------------------------------------------------------------------------
+
+func test_get_day_of_year_first_day() -> void:
+	_reset()
+	# Elapsed = 0 rounds → Day 1, Month 1, Year 1 → day_of_year = 1
+	assert(Timekeeping.get_day_of_year() == 1,
+		"day_of_year at start should be 1")
+
+
+func test_get_day_of_year_last_day_of_year() -> void:
+	_reset()
+	# Advance 363 days → Day 364 of Year 1 (0-indexed total_days = 363)
+	Timekeeping._elapsed_rounds = 363 * Timekeeping.ROUNDS_PER_DAY
+	assert(Timekeeping.get_day_of_year() == 364,
+		"363 days elapsed should be day_of_year 364 (got %d)" % Timekeeping.get_day_of_year())
+
+
+func test_get_day_of_year_year_wrap() -> void:
+	_reset()
+	# Advance 364 days → Year 2, Month 1, Day 1 → day_of_year wraps back to 1
+	Timekeeping._elapsed_rounds = 364 * Timekeeping.ROUNDS_PER_DAY
+	assert(Timekeeping.get_day_of_year() == 1,
+		"364 days elapsed should wrap day_of_year back to 1")
+
+
+func test_get_day_of_year_summer_start() -> void:
+	_reset()
+	# Summer starts on day_of_year 92 (0-indexed total_days = 91)
+	Timekeeping._elapsed_rounds = 91 * Timekeeping.ROUNDS_PER_DAY
+	assert(Timekeeping.get_day_of_year() == 92,
+		"91 days elapsed should be day_of_year 92 (first day of summer)")
+
+
+# ---------------------------------------------------------------------------
+# 11. season_changed signal
+# ---------------------------------------------------------------------------
+
+func test_season_changed_fires_on_summer_start() -> void:
+	_reset()
+	# Start at day_of_year 91 (last day of spring), advance 1 day → crosses into summer
+	Timekeeping._elapsed_rounds = 90 * Timekeeping.ROUNDS_PER_DAY
+	Timekeeping.advance_days(1)
+	assert(_season_count == 1,
+		"season_changed should fire once when advancing into summer (got %d)" % _season_count)
+	assert(_last_season == "summer",
+		"new season should be 'summer' (got '%s')" % _last_season)
+
+
+func test_season_changed_fires_on_year_wrap_to_spring() -> void:
+	_reset()
+	# Start on day_of_year 364 (last day of winter), advance 1 day → new year, spring
+	Timekeeping._elapsed_rounds = 363 * Timekeeping.ROUNDS_PER_DAY
+	Timekeeping.advance_days(1)
+	assert(_season_count == 1,
+		"season_changed should fire when year wraps back to spring (got %d)" % _season_count)
+	assert(_last_season == "spring",
+		"new season after year wrap should be 'spring' (got '%s')" % _last_season)
+
+
+func test_season_changed_does_not_fire_mid_season() -> void:
+	_reset()
+	# Advance 10 days starting from day_of_year 10 — stays within spring, no season change
+	Timekeeping._elapsed_rounds = 9 * Timekeeping.ROUNDS_PER_DAY
+	Timekeeping.advance_days(10)
+	assert(_season_count == 0,
+		"season_changed should not fire when advancing within the same season")

@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://tests/test_override_manager.gd" id="4_override_tests"]
 [ext_resource type="Script" path="res://tests/test_dice_system.gd" id="5_dice_tests"]
 [ext_resource type="Script" path="res://tests/test_timekeeping.gd" id="6_timekeeping_tests"]
+[ext_resource type="Script" path="res://tests/test_calendar_seasons.gd" id="7_calendar_seasons_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -24,3 +25,6 @@ script = ExtResource("5_dice_tests")
 
 [node name="TimekeepingTests" type="Node" parent="."]
 script = ExtResource("6_timekeeping_tests")
+
+[node name="CalendarSeasonsTests" type="Node" parent="."]
+script = ExtResource("7_calendar_seasons_tests")

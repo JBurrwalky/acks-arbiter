@@ -210,6 +210,7 @@ acks-arbiter/               (Godot project root = repo root)
 │   │   ├── response_envelope.gd
 │   │   └── roll_result.gd
 │   └── subsystems/
+│       ├── calendar/       # CalendarConstants, CalendarSeasons (pure static computation)
 │       ├── exploration/    # HexMapController
 │       ├── override/       # OverrideManager (dev-mode state manipulation)
 │       ├── combat/         # (planned)
@@ -378,13 +379,14 @@ var internal_state: int = 0  # is this part of the public API?
 
 ### 3.7 `class_name` Rules
 
-<!-- Confirmed 2026-03-27 across all engine files -->
+<!-- Confirmed 2026-03-27 across all engine files. Pure static class pattern added 2026-03-28 (CalendarSeasons, CalendarConstants). -->
 
 | Script type | Use `class_name`? | Why |
 |---|---|---|
 | Autoload scripts | **Never** | Godot error: "hides an autoload singleton" |
 | Shared types (`engine/shared_types/`) | **Always** | Enables typed references (`var r: RollResult`) |
 | Subsystem manager nodes | **Yes** | Lets parent scenes reference them by type |
+| Pure static/constants classes | **Yes** | Enables direct calls: `CalendarSeasons.get_season(day)` without instantiation |
 | UI scene scripts (CanvasLayer, Node2D) | **No** | Only referenced via scene instantiation, never by code |
 | Test scripts | **No** | Only instantiated by test_runner.tscn |
 
@@ -433,6 +435,34 @@ static func ability_modifier(score: int) -> int:
 static func get_current_hp():
     return GameState.active_character.hp  # accesses global state — make this an instance method
 ```
+
+**Pure static computation class** — when an entire class is nothing but constants and static functions (no instance variables, no `_ready()`), write it as a class with `class_name` but never instantiate it. Callers use the class name directly.
+
+```gdscript
+# calendar_seasons.gd — pure static class
+class_name CalendarSeasons
+
+const SPRING := "spring"
+const SUMMER := "summer"
+
+static func get_season(day_of_year: int) -> String:
+    if day_of_year <= 91: return SPRING
+    # ...
+
+# calendar_constants.gd — pure constants class
+class_name CalendarConstants
+
+const VERNAL_EQUINOX_DAY := 46
+const SUMMER_SOLSTICE_DAY := 137
+```
+
+```gdscript
+# Callers — no instantiation, just use the class name
+var season := CalendarSeasons.get_season(Timekeeping.get_day_of_year())
+var equinox := CalendarConstants.VERNAL_EQUINOX_DAY
+```
+
+This pattern is preferred over autoloads for pure computation modules with no instance state. It avoids adding to the autoload list while still giving callers a clean global namespace. The canonical examples are `CalendarSeasons` and `CalendarConstants` in `engine/subsystems/calendar/`.
 
 ---
 
@@ -563,6 +593,7 @@ extends Node
 | Need | Solution |
 |------|----------|
 | Manager for one scene tree | Add a manager Node as child of that scene |
+| Pure computation (lookup tables, formulas, no instance state) | `class_name` class with only `const` and `static func` — see §3.9 |
 | Shared utility functions | Static methods in a regular class (no autoload needed) |
 | Data shared between two subsystems | Define in `engine/shared_types/`, pass via signals or method args |
 | Event bus for a subsystem | Local signal hub node within that subsystem's scene |
@@ -781,6 +812,37 @@ Timekeeping.set_day_cycle(8, 16)   # dawn at 08:00, dusk at 16:00
 # Do NOT manipulate _dawn_hour / _dusk_hour directly from outside Timekeeping —
 # set_day_cycle() is the only public write path and it handles persistence.
 Timekeeping._dawn_hour = 8   # BAD — bypasses _auto_save()
+```
+
+**Day-of-year and seasons:** `get_day_of_year()` returns a 1–364 value reset at each year boundary. This is what `CalendarSeasons` functions expect.
+
+```gdscript
+# GOOD — feed get_day_of_year() into CalendarSeasons
+var day := Timekeeping.get_day_of_year()
+var season := CalendarSeasons.get_season(day)
+var climate_season := CalendarSeasons.get_climate_season(day, "south")
+
+# BAD — deriving day-of-year manually
+var total_days := Timekeeping.get_total_days()
+var day_of_year := total_days % 364 + 1   # duplicates logic, breaks encapsulation
+```
+
+**`season_changed` signal:** Fires at the same time as `day_changed` when the clock crosses into a new season (days 1, 92, 183, and 274 of the year). Consumers that need to react to season changes (domain simulation, weather system, LLM context) connect to this signal rather than inspecting the season on every `day_changed`.
+
+```gdscript
+# GOOD — connect once, react to season changes
+func _ready() -> void:
+    Timekeeping.season_changed.connect(_on_season_changed)
+
+func _on_season_changed(new_season: String) -> void:
+    _update_agricultural_phase(new_season)
+
+# BAD — checking season on every day change
+func _on_day_changed(_d, _m, _y) -> void:
+    var season := CalendarSeasons.get_season(Timekeeping.get_day_of_year())
+    if season != _last_season:  # manually tracking transitions the signal already handles
+        _update_agricultural_phase(season)
+        _last_season = season
 ```
 
 ---
@@ -1110,6 +1172,9 @@ These are not coding style — they are mechanical rules that must be followed i
 | Calendar | 13 months × 28 days = 364 days/year. Weeks = 7 days. Months stored as int 1–13. | Design brief |
 | Time granularities | Round=10s, Minute=6 rounds, Turn=60 rounds (10 min), Hour=360 rounds, Day=8640 rounds. | ACKS Adventures |
 | Dawn/dusk hours | Default dawn=6, dusk=20. `is_daylight()` = `hour >= dawn and hour < dusk`. Changed at runtime via `Timekeeping.set_day_cycle(dawn, dusk)` — the seasons/weather system calls this; defaults hold before that system is built. | Design brief |
+| Seasons | 4 seasons × 91 days: Spring=days 1–91, Summer=92–182, Autumn=183–273, Winter=274–364. Use `Timekeeping.get_day_of_year()` (returns 1–364) and `CalendarSeasons.get_season()`. | `gdd-calendar-seasons.md` |
+| Climate vs. calendar season | For weather, domain, and mechanical effects: call `CalendarSeasons.get_climate_season(day, hemisphere)`. Southern-hemisphere campaigns invert the climate mapping. Narrative/LLM may use `get_season()` for cultural season names. | `gdd-calendar-seasons.md` |
+| Solstices and equinoxes | Fall at season midpoints, not boundaries. Constants in `CalendarConstants`: VERNAL_EQUINOX_DAY=46, SUMMER_SOLSTICE_DAY=137, AUTUMNAL_EQUINOX_DAY=228, WINTER_SOLSTICE_DAY=319. | `gdd-calendar-seasons.md` |
 | Max party size | 8 PCs. | Design brief |
 | Henchmen per PC | Determined by CHA modifier + 4. | `acore_basics_and_characters.xml` |
 | Three character tiers | `full` (PCs), `named` (henchmen/recurring NPCs), `transient` (throwaway). | Design brief |
@@ -1189,4 +1254,4 @@ Main (Node, script: main_scene.gd)
 
 ---
 
-*Last major update: 2026-03-27 — Sweep of all code built since 2026-03-25. Updated autoload list (6), directory tree, shared types table, test framework, roll type vocabulary, CanvasLayer layering, coroutine patterns, primary key conventions, settings persistence, UI panel patterns, dice conventions.*
+*Last major update: 2026-03-28 — Calendar & seasons system. Added pure static computation class pattern (§3.9), updated `class_name` rules table (§3.7), alternatives to autoloads (§5.3), Timekeeping patterns for `get_day_of_year()` and `season_changed` (§6.8), seasons/climate/solstice ACKS rules (§12), calendar subsystem in directory tree (§2.1).*

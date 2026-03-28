@@ -58,6 +58,14 @@ const MONTHS_PER_YEAR := 13
 ## Custom calendar: 364 days per year (13 × 28). Never changes — no leap year.
 const DAYS_PER_YEAR := 364
 
+## 0-indexed day_in_year values (total_days % DAYS_PER_YEAR) for season starts.
+## Used internally by _emit_boundary_signals for season_changed detection.
+## Spring=0, Summer=91, Autumn=182, Winter=273.
+const _SEASON_STARTS: Array = [0, 91, 182, 273]
+
+## Season names indexed to match _SEASON_STARTS.
+const _SEASON_NAMES: Array = ["spring", "summer", "autumn", "winter"]
+
 
 # ---------------------------------------------------------------------------
 # Signals
@@ -92,6 +100,11 @@ signal dawn()
 
 ## Emitted each time the clock crosses into the dusk hour (default 20:00).
 signal dusk()
+
+## Emitted when the clock crosses into a new season.
+## Fires within the same advance call as the triggering day_changed signal.
+## [param new_season] is one of: "spring", "summer", "autumn", "winter".
+signal season_changed(new_season: String)
 
 
 # ---------------------------------------------------------------------------
@@ -223,6 +236,12 @@ func get_current_day_of_month() -> int:
 ## Wraps every 7 days regardless of month/year boundaries.
 func get_day_of_week() -> int:
 	return (_elapsed_rounds / ROUNDS_PER_DAY) % 7 + 1
+
+
+## Current day of year (1–364). Resets to 1 at each year boundary.
+## Feed this into CalendarSeasons.get_season() / get_climate_season().
+func get_day_of_year() -> int:
+	return (_elapsed_rounds / ROUNDS_PER_DAY) % DAYS_PER_YEAR + 1
 
 
 # ---------------------------------------------------------------------------
@@ -462,7 +481,7 @@ func _emit_boundary_signals(old_elapsed: int, new_elapsed: int) -> void:
 			elif hour_of_day == _dusk_hour:
 				dusk.emit()
 
-	# Day/month/year boundaries — emit once per boundary crossed.
+	# Day/month/year/season boundaries — emit once per boundary crossed.
 	var old_days := old_elapsed / ROUNDS_PER_DAY
 	var new_days := new_elapsed / ROUNDS_PER_DAY
 	for d in range(old_days + 1, new_days + 1):
@@ -474,6 +493,11 @@ func _emit_boundary_signals(old_elapsed: int, new_elapsed: int) -> void:
 			# First month of a year → year boundary
 			if date["month"] == 1:
 				year_changed.emit(date["year"])
+		# Season boundaries: Spring starts day_in_year 0, Summer 91, Autumn 182, Winter 273.
+		var day_in_year := d % DAYS_PER_YEAR
+		var season_idx := _SEASON_STARTS.find(day_in_year)
+		if season_idx != -1:
+			season_changed.emit(_SEASON_NAMES[season_idx])
 
 
 ## Update the global clock to match the furthest-ahead party.
