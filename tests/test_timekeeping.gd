@@ -1,0 +1,479 @@
+extends Node
+
+## Unit tests for the Timekeeping autoload.
+## Run via test_runner.tscn. Uses plain assert() — no external framework.
+##
+## Tests cover:
+##   1. Calendar math (year/month/day boundaries)
+##   2. Granularity conversions (rounds ↔ minutes ↔ turns ↔ hours ↔ days)
+##   3. Boundary signal emission (day_changed, month_changed, dawn, dusk)
+##   4. advance_to_hour edge cases
+##   5. is_daylight() at boundary hours
+##   6. Multi-party time sync
+##   7. Persistence round-trip (save / load)
+
+
+# ---------------------------------------------------------------------------
+# Signal capture — connected in _ready(), used across all signal tests.
+# ---------------------------------------------------------------------------
+
+var _day_count: int = 0
+var _last_day: Array = []   # [day, month, year]
+
+var _month_count: int = 0
+var _last_month: Array = [] # [month, year]
+
+var _year_count: int = 0
+
+var _dawn_count: int = 0
+var _dusk_count: int = 0
+
+
+func _ready() -> void:
+	Timekeeping.day_changed.connect(_on_day_changed)
+	Timekeeping.month_changed.connect(_on_month_changed)
+	Timekeeping.year_changed.connect(_on_year_changed)
+	Timekeeping.dawn.connect(_on_dawn)
+	Timekeeping.dusk.connect(_on_dusk)
+
+
+func _on_day_changed(d: int, m: int, y: int) -> void:
+	_day_count += 1
+	_last_day = [d, m, y]
+
+
+func _on_month_changed(m: int, y: int) -> void:
+	_month_count += 1
+	_last_month = [m, y]
+
+
+func _on_year_changed(_y: int) -> void:
+	_year_count += 1
+
+
+func _on_dawn() -> void:
+	_dawn_count += 1
+
+
+func _on_dusk() -> void:
+	_dusk_count += 1
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+## Reset Timekeeping's internal state to a known baseline for each test.
+func _reset() -> void:
+	Timekeeping._elapsed_rounds = 0
+	Timekeeping._dawn_hour      = 6
+	Timekeeping._dusk_hour      = 20
+	Timekeeping._party_clocks.clear()
+	Timekeeping._campaign_id    = ""
+	_day_count   = 0
+	_last_day    = []
+	_month_count = 0
+	_last_month  = []
+	_year_count  = 0
+	_dawn_count  = 0
+	_dusk_count  = 0
+
+
+# ---------------------------------------------------------------------------
+# run_all_tests
+# ---------------------------------------------------------------------------
+
+func run_all_tests() -> void:
+	# 1. Calendar math
+	test_calendar_364_days_is_one_year()
+	test_calendar_28_days_is_one_month()
+	test_calendar_13_months_is_one_year()
+
+	# 2. Granularity conversions
+	test_granularity_6_rounds_is_one_minute()
+	test_granularity_60_rounds_is_one_turn()
+	test_granularity_10_minutes_is_one_turn()
+	test_granularity_6_turns_is_one_hour()
+	test_granularity_24_hours_is_one_day()
+
+	# 3. Boundary signals
+	test_signal_day_changed_fires_on_day_boundary()
+	test_signal_month_changed_fires_on_month_boundary()
+	test_signal_40_days_fires_correct_counts()
+	test_signal_year_changed_fires_on_year_boundary()
+
+	# 4. advance_to_hour
+	test_advance_to_hour_from_hour_14_to_6()
+	test_advance_to_hour_no_advance_when_exact()
+	test_advance_to_hour_mid_hour_wraps_to_next_day()
+
+	# 5. Dawn / dusk signals
+	test_dawn_fires_crossing_hour_6()
+	test_dusk_fires_crossing_hour_20()
+
+	# 6. is_daylight
+	test_is_daylight_true_at_hour_6()
+	test_is_daylight_true_at_hour_19()
+	test_is_daylight_false_at_hour_5()
+	test_is_daylight_false_at_hour_20()
+
+	# 7. Multi-party sync
+	test_multi_party_global_tracks_leader()
+	test_multi_party_sync_equalizes_all_parties()
+	test_multi_party_get_time_gap()
+
+	# 8. Day-cycle configuration
+	test_set_day_cycle_changes_is_daylight()
+	test_set_day_cycle_changes_dawn_dusk_signals()
+	test_set_day_cycle_defaults_are_6_and_20()
+
+	# 9. Persistence round-trip
+	test_persistence_round_trip()
+
+	print("Timekeeping: all tests passed.")
+
+
+# ---------------------------------------------------------------------------
+# 1. Calendar math
+# ---------------------------------------------------------------------------
+
+func test_calendar_364_days_is_one_year() -> void:
+	_reset()
+	Timekeeping._elapsed_rounds = 364 * Timekeeping.ROUNDS_PER_DAY
+	var date := Timekeeping.get_date()
+	assert(date["year"]  == 2, "364 days should be year 2")
+	assert(date["month"] == 1, "year boundary should land on month 1")
+	assert(date["day"]   == 1, "year boundary should land on day 1")
+
+
+func test_calendar_28_days_is_one_month() -> void:
+	_reset()
+	Timekeeping._elapsed_rounds = 28 * Timekeeping.ROUNDS_PER_DAY
+	var date := Timekeeping.get_date()
+	assert(date["year"]  == 1, "still year 1 at 28 days")
+	assert(date["month"] == 2, "28 days should be month 2")
+	assert(date["day"]   == 1, "month boundary should land on day 1")
+
+
+func test_calendar_13_months_is_one_year() -> void:
+	_reset()
+	# 13 months × 28 days = 364 days = exactly 1 year
+	Timekeeping._elapsed_rounds = 13 * 28 * Timekeeping.ROUNDS_PER_DAY
+	var date := Timekeeping.get_date()
+	assert(date["year"]  == 2, "13 × 28 days should be year 2")
+	assert(date["month"] == 1, "should land on month 1 of year 2")
+	assert(date["day"]   == 1, "should land on day 1")
+
+
+# ---------------------------------------------------------------------------
+# 2. Granularity conversions
+# ---------------------------------------------------------------------------
+
+func test_granularity_6_rounds_is_one_minute() -> void:
+	_reset()
+	Timekeeping._elapsed_rounds = 6
+	assert(Timekeeping.get_total_minutes() == 1, "6 rounds = 1 minute")
+
+
+func test_granularity_60_rounds_is_one_turn() -> void:
+	_reset()
+	Timekeeping._elapsed_rounds = 60
+	assert(Timekeeping.get_total_turns() == 1, "60 rounds = 1 turn")
+
+
+func test_granularity_10_minutes_is_one_turn() -> void:
+	_reset()
+	# 10 minutes × 6 rounds/minute = 60 rounds
+	Timekeeping._elapsed_rounds = 10 * Timekeeping.ROUNDS_PER_MINUTE
+	assert(Timekeeping.get_total_turns() == 1, "10 minutes = 1 turn")
+
+
+func test_granularity_6_turns_is_one_hour() -> void:
+	_reset()
+	# 6 turns × 60 rounds/turn = 360 rounds = 1 hour
+	Timekeeping._elapsed_rounds = 6 * Timekeeping.ROUNDS_PER_TURN
+	var date := Timekeeping.get_date()
+	assert(date["hour"] == 1, "6 turns = 1 hour")
+	assert(Timekeeping.get_time_of_day() == 1, "get_time_of_day() should be 1")
+
+
+func test_granularity_24_hours_is_one_day() -> void:
+	_reset()
+	# 24 hours × 360 rounds/hour = 8640 rounds = 1 day
+	Timekeeping._elapsed_rounds = 24 * Timekeeping.ROUNDS_PER_HOUR
+	assert(Timekeeping.get_total_days() == 1, "24 hours = 1 day")
+
+
+# ---------------------------------------------------------------------------
+# 3. Boundary signals
+# ---------------------------------------------------------------------------
+
+func test_signal_day_changed_fires_on_day_boundary() -> void:
+	_reset()
+	Timekeeping.advance_days(1)
+	assert(_day_count == 1, "day_changed should fire once for advance_days(1)")
+	assert(_last_day == [1, 1, 2] or _last_day == [2, 1, 1],
+		"day_changed payload should be day=1, month=1 or the correct next-day date")
+	# Advance 1 day from start lands on Day 2, Month 1, Year 1
+	assert(_last_day[0] == 2, "new day should be 2")
+	assert(_last_day[1] == 1, "still month 1")
+	assert(_last_day[2] == 1, "still year 1")
+
+
+func test_signal_month_changed_fires_on_month_boundary() -> void:
+	_reset()
+	# Advance exactly 28 days to cross month 1 → month 2 boundary
+	Timekeeping.advance_days(28)
+	assert(_month_count == 1, "month_changed should fire once for advance_days(28)")
+	assert(_last_month[0] == 2, "new month should be 2")
+	assert(_last_month[1] == 1, "still year 1")
+
+
+func test_signal_40_days_fires_correct_counts() -> void:
+	_reset()
+	# 40 days from start: crosses days 2–41, month boundary at day 29 (month 2).
+	Timekeeping.advance_days(40)
+	assert(_day_count == 40, "day_changed should fire 40 times for advance_days(40)")
+	assert(_month_count == 1, "one month boundary crossed (month 1→2) in 40 days from start")
+
+
+func test_signal_year_changed_fires_on_year_boundary() -> void:
+	_reset()
+	Timekeeping.advance_days(364)
+	assert(_year_count == 1, "year_changed should fire once for advance_days(364)")
+
+
+# ---------------------------------------------------------------------------
+# 4. advance_to_hour
+# ---------------------------------------------------------------------------
+
+func test_advance_to_hour_from_hour_14_to_6() -> void:
+	_reset()
+	# Set to hour 14 of day 1
+	Timekeeping._elapsed_rounds = 14 * Timekeeping.ROUNDS_PER_HOUR
+	var before := Timekeeping._elapsed_rounds
+	Timekeeping.advance_to_hour(6)
+	var added := Timekeeping._elapsed_rounds - before
+	# From hour 14 to next hour 6 = 16 hours
+	assert(added == 16 * Timekeeping.ROUNDS_PER_HOUR,
+		"advance_to_hour(6) from hour 14 should advance 16 hours (got %d)" % added)
+	assert(Timekeeping.get_time_of_day() == 6, "should land on hour 6")
+
+
+func test_advance_to_hour_no_advance_when_exact() -> void:
+	_reset()
+	# Start exactly at hour 6, minute 0, round 0
+	Timekeeping._elapsed_rounds = 6 * Timekeeping.ROUNDS_PER_HOUR
+	var before := Timekeeping._elapsed_rounds
+	Timekeeping.advance_to_hour(6)
+	assert(Timekeeping._elapsed_rounds == before,
+		"advance_to_hour(6) when already at hour 6 exactly should not advance")
+
+
+func test_advance_to_hour_mid_hour_wraps_to_next_day() -> void:
+	_reset()
+	# Start at hour 6 minute 5 (30 rounds into hour 6) — past the exact hour
+	Timekeeping._elapsed_rounds = 6 * Timekeeping.ROUNDS_PER_HOUR + 5 * Timekeeping.ROUNDS_PER_MINUTE
+	var before := Timekeeping._elapsed_rounds
+	Timekeeping.advance_to_hour(6)
+	var added := Timekeeping._elapsed_rounds - before
+	# Should advance 23h55m = 23*360 + 5*6 rounds ... no:
+	# = ROUNDS_PER_DAY - (6*360 + 5*6) + 6*360
+	# = 8640 - (2160+30) + 2160 = 8640 - 30 = 8610
+	var expected := Timekeeping.ROUNDS_PER_DAY - 5 * Timekeeping.ROUNDS_PER_MINUTE
+	assert(added == expected,
+		"advance_to_hour(6) mid-hour should wrap to next day (expected %d, got %d)" % [expected, added])
+	assert(Timekeeping.get_time_of_day() == 6, "should land on hour 6 of next day")
+
+
+# ---------------------------------------------------------------------------
+# 5. Dawn / dusk signals
+# ---------------------------------------------------------------------------
+
+func test_dawn_fires_crossing_hour_6() -> void:
+	_reset()
+	# Start at hour 5, advance 2 hours — crosses hour 6
+	Timekeeping._elapsed_rounds = 5 * Timekeeping.ROUNDS_PER_HOUR
+	Timekeeping.advance_hours(2)
+	assert(_dawn_count == 1, "dawn should fire once when crossing hour 6")
+	assert(_dusk_count == 0, "dusk should not fire")
+
+
+func test_dusk_fires_crossing_hour_20() -> void:
+	_reset()
+	# Start at hour 19, advance 2 hours — crosses hour 20
+	Timekeeping._elapsed_rounds = 19 * Timekeeping.ROUNDS_PER_HOUR
+	Timekeeping.advance_hours(2)
+	assert(_dusk_count == 1, "dusk should fire once when crossing hour 20")
+	assert(_dawn_count == 0, "dawn should not fire")
+
+
+# ---------------------------------------------------------------------------
+# 6. is_daylight
+# ---------------------------------------------------------------------------
+
+func test_is_daylight_true_at_hour_6() -> void:
+	_reset()
+	Timekeeping._elapsed_rounds = 6 * Timekeeping.ROUNDS_PER_HOUR
+	assert(Timekeeping.is_daylight() == true, "hour 6 should be daylight")
+
+
+func test_is_daylight_true_at_hour_19() -> void:
+	_reset()
+	Timekeeping._elapsed_rounds = 19 * Timekeeping.ROUNDS_PER_HOUR
+	assert(Timekeeping.is_daylight() == true, "hour 19 should be daylight")
+
+
+func test_is_daylight_false_at_hour_5() -> void:
+	_reset()
+	Timekeeping._elapsed_rounds = 5 * Timekeeping.ROUNDS_PER_HOUR
+	assert(Timekeeping.is_daylight() == false, "hour 5 should not be daylight")
+
+
+func test_is_daylight_false_at_hour_20() -> void:
+	_reset()
+	Timekeeping._elapsed_rounds = 20 * Timekeeping.ROUNDS_PER_HOUR
+	assert(Timekeeping.is_daylight() == false, "hour 20 should not be daylight")
+
+
+# ---------------------------------------------------------------------------
+# 7. Multi-party sync
+# ---------------------------------------------------------------------------
+
+func test_multi_party_global_tracks_leader() -> void:
+	_reset()
+	Timekeeping.register_party("alpha")
+	Timekeeping.register_party("beta")
+
+	# Advance alpha 3 hours — global should follow
+	Timekeeping.advance_party_hours("alpha", 3)
+	assert(Timekeeping._elapsed_rounds == 3 * Timekeeping.ROUNDS_PER_HOUR,
+		"global clock should match alpha (3 hours)")
+	assert(Timekeeping.get_leading_party() == "alpha",
+		"alpha should be leading party")
+
+	# Advance beta 5 hours — global should now follow beta
+	Timekeeping.advance_party_hours("beta", 5)
+	assert(Timekeeping._elapsed_rounds == 5 * Timekeeping.ROUNDS_PER_HOUR,
+		"global clock should match beta (5 hours)")
+	assert(Timekeeping.get_leading_party() == "beta",
+		"beta should now be leading party")
+
+	# Alpha is still at 3 hours
+	assert(Timekeeping.get_party_time("alpha") == 3 * Timekeeping.ROUNDS_PER_HOUR,
+		"alpha's clock should still be 3 hours")
+
+
+func test_multi_party_sync_equalizes_all_parties() -> void:
+	_reset()
+	Timekeeping.register_party("alpha")
+	Timekeeping.register_party("beta")
+
+	Timekeeping.advance_party_hours("alpha", 3)
+	Timekeeping.advance_party_hours("beta", 5)
+
+	# Beta leads at 5 hours; alpha is at 3 hours; global is 5 hours
+	Timekeeping.sync_parties()
+
+	# After sync, both parties should match the global clock
+	assert(Timekeeping.get_party_time("alpha") == 5 * Timekeeping.ROUNDS_PER_HOUR,
+		"alpha should match global after sync_parties()")
+	assert(Timekeeping.get_party_time("beta") == 5 * Timekeeping.ROUNDS_PER_HOUR,
+		"beta should match global after sync_parties()")
+
+
+func test_multi_party_get_time_gap() -> void:
+	_reset()
+	Timekeeping.register_party("alpha")
+	Timekeeping.register_party("beta")
+
+	Timekeeping.advance_party_hours("alpha", 3)
+	Timekeeping.advance_party_hours("beta", 5)
+
+	var gap := Timekeeping.get_time_gap("alpha", "beta")
+	assert(gap == 2 * Timekeeping.ROUNDS_PER_HOUR,
+		"gap between alpha(3h) and beta(5h) should be 2 hours in rounds")
+
+
+# ---------------------------------------------------------------------------
+# 8. Day-cycle configuration (set_day_cycle for seasons/weather system)
+# ---------------------------------------------------------------------------
+
+func test_set_day_cycle_changes_is_daylight() -> void:
+	_reset()
+	# Shorten the day: dawn=8, dusk=16 (8-hour winter day)
+	Timekeeping.set_day_cycle(8, 16)
+	assert(Timekeeping.get_dawn_hour() == 8, "dawn_hour should be 8")
+	assert(Timekeeping.get_dusk_hour() == 16, "dusk_hour should be 16")
+
+	# Hour 6 should now be night (was daylight with defaults)
+	Timekeeping._elapsed_rounds = 6 * Timekeeping.ROUNDS_PER_HOUR
+	assert(Timekeeping.is_daylight() == false, "hour 6 should be night with dawn=8")
+
+	# Hour 8 should now be dawn
+	Timekeeping._elapsed_rounds = 8 * Timekeeping.ROUNDS_PER_HOUR
+	assert(Timekeeping.is_daylight() == true, "hour 8 should be daylight with dawn=8")
+
+	# Hour 15 should be day
+	Timekeeping._elapsed_rounds = 15 * Timekeeping.ROUNDS_PER_HOUR
+	assert(Timekeeping.is_daylight() == true, "hour 15 should be daylight with dusk=16")
+
+	# Hour 16 should now be dusk (night starts)
+	Timekeeping._elapsed_rounds = 16 * Timekeeping.ROUNDS_PER_HOUR
+	assert(Timekeeping.is_daylight() == false, "hour 16 should be night with dusk=16")
+
+
+func test_set_day_cycle_changes_dawn_dusk_signals() -> void:
+	_reset()
+	# Set dawn=8, dusk=16; advance from hour 7 to hour 9 → dawn should fire at hour 8
+	Timekeeping.set_day_cycle(8, 16)
+	Timekeeping._elapsed_rounds = 7 * Timekeeping.ROUNDS_PER_HOUR
+	Timekeeping.advance_hours(2)
+	assert(_dawn_count == 1, "dawn should fire when crossing new dawn_hour (8)")
+	assert(_dusk_count == 0, "dusk should not fire")
+
+
+func test_set_day_cycle_defaults_are_6_and_20() -> void:
+	_reset()
+	# Defaults must be 6 and 20 so testing works before seasons system is built
+	assert(Timekeeping.get_dawn_hour() == 6, "default dawn_hour should be 6")
+	assert(Timekeeping.get_dusk_hour() == 20, "default dusk_hour should be 20")
+
+
+# ---------------------------------------------------------------------------
+# 9. Persistence round-trip
+# ---------------------------------------------------------------------------
+
+func test_persistence_round_trip() -> void:
+	_reset()
+	const TEST_CAMPAIGN := "test_timekeeping_suite"
+
+	# Set a distinctive time and save
+	var test_rounds := 7 * Timekeeping.ROUNDS_PER_DAY + 14 * Timekeeping.ROUNDS_PER_HOUR + 3 * Timekeeping.ROUNDS_PER_TURN
+	Timekeeping._elapsed_rounds = test_rounds
+	Timekeeping._dawn_hour = 7
+	Timekeeping._dusk_hour = 19
+
+	Timekeeping.save_state(TEST_CAMPAIGN)
+
+	# Reset to zero, then restore
+	Timekeeping._elapsed_rounds = 0
+	Timekeeping._dawn_hour      = 6
+	Timekeeping._dusk_hour      = 20
+	Timekeeping.load_state(TEST_CAMPAIGN)
+
+	assert(Timekeeping._elapsed_rounds == test_rounds,
+		"loaded elapsed_rounds should match saved value (%d vs %d)" % [Timekeeping._elapsed_rounds, test_rounds])
+	assert(Timekeeping._dawn_hour == 7, "loaded dawn_hour should be 7")
+	assert(Timekeeping._dusk_hour == 19, "loaded dusk_hour should be 19")
+
+	# Verify get_date() produces correct date from restored time
+	var date := Timekeeping.get_date()
+	# 7 days = Day 8, Month 1, Year 1. Hour 14. Turn 3 into the hour (30 min in).
+	assert(date["year"]   == 1, "year should be 1")
+	assert(date["month"]  == 1, "month should be 1")
+	assert(date["day"]    == 8, "day should be 8 (7 full days elapsed)")
+	assert(date["hour"]   == 14, "hour should be 14")
+
+	# Clean up — reset campaign_id so future tests don't auto-save
+	Timekeeping._campaign_id = ""

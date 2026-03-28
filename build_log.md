@@ -553,3 +553,61 @@ Coding conventions sweep (`docs/coding_conventions.md`):
 2. Verify DicePrompt visually: set `dice_mode = HYBRID`, call `await DiceSystem.player_roll(...)` from main_scene.gd, confirm modal appears and both Roll Dice + manual entry work.
 3. Build the session runner state machine (campaign select → session start → exploration loop → session end).
 4. Wire `encounter_check` into HexMapController: on `hex_entered`, call `DiceSystem.roll_digital(6, 1, 0, "encounter_check")` and compare to terrain-based threshold.
+
+---
+
+## Session 2026-03-27 — Timekeeping System
+
+**Task:** Build the global Timekeeping autoload: passive in-game clock at all granularities (round/minute/turn/hour/day), multi-party time synchronisation, boundary signals (dawn/dusk/day/month/year), and SQLite persistence.
+**Model used:** claude-sonnet-4-6
+
+**Completed:**
+- Created `db/migrations/004_timekeeping.sql` — two new tables: `campaign_clock` (global clock + dawn/dusk hours per campaign) and `party_clocks` (per-party time offsets for split-party play). Not foreign-keyed to `campaigns` so tests can seed them independently.
+- Updated `db/schema.sql` — reflects migration 004 (last applied: 004).
+- Created `engine/autoloads/timekeeping.gd` — 7th autoload. Passive clock with calendar constants (ROUNDS_PER_MINUTE=6, ROUNDS_PER_TURN=60, ROUNDS_PER_HOUR=360, ROUNDS_PER_DAY=8640, DAYS_PER_MONTH=28, MONTHS_PER_YEAR=13, DAYS_PER_YEAR=364), query API, global and per-party advance methods, boundary signal emission, and eager DB persistence.
+- Updated `project.godot` — registered `Timekeeping` as 7th autoload (after DiceSystem).
+- Created `tests/test_timekeeping.gd` — 24 tests across 8 categories: calendar math, granularity conversions, boundary signals, advance_to_hour edge cases, dawn/dusk, is_daylight(), multi-party sync, persistence round-trip.
+- Updated `tests/test_runner.gd` and `tests/test_runner.tscn` — added TimekeepingTests (5 suites total, ~101 tests).
+- Updated `docs/coding_conventions.md` — section 5.1 (7th autoload added to table), section 6.3 (migration 004 in list), section 6.8 new (Timekeeping passive-clock pattern with code examples), section 12 (time granularity constants and dawn/dusk defaults added to ACKS rules table).
+
+**Decisions made:**
+- `campaign_clock` not FK'd to `campaigns`. Allows timekeeping seeding before campaigns row exists (tests, pre-session setup).
+- `_elapsed_rounds: int` is the single canonical internal value. All date/time representations are derived on demand.
+- `advance_to_hour(target)` from exactly target with no sub-hour offset: no advance. From any other position: advance to next-day target.
+- `advance_to_next_day()` at hour 0 min 0: advances a full day (not no-op).
+- Timekeeping reads/writes `CampaignRepository.db` directly (same pattern as DiceSystem). No new CampaignRepository methods added.
+- `is_daylight()`: `hour >= _dawn_hour and hour < _dusk_hour`. Default: true for 6–19, false for 5 and 20.
+
+**Interfaces defined or changed:**
+
+Timekeeping public API (new autoload):
+- Constants: `ROUNDS_PER_MINUTE`, `ROUNDS_PER_TURN`, `ROUNDS_PER_HOUR`, `ROUNDS_PER_DAY`, `DAYS_PER_MONTH`, `MONTHS_PER_YEAR`, `DAYS_PER_YEAR`
+- Signals: `round_advanced(rounds_elapsed: int)`, `minute_advanced(minutes_elapsed: int)`, `turn_advanced(turns_elapsed: int)`, `hour_advanced(hours_elapsed: int)`, `day_changed(new_day, new_month, new_year: int)`, `month_changed(new_month, new_year: int)`, `year_changed(new_year: int)`, `dawn()`, `dusk()`
+- Query: `get_date() -> Dictionary`, `get_total_days() -> int`, `get_total_turns() -> int`, `get_total_minutes() -> int`, `get_time_of_day() -> int`, `is_daylight() -> bool`, `get_current_month() -> int`, `get_current_day_of_month() -> int`, `get_day_of_week() -> int`
+- Advance (global): `advance_rounds(n)`, `advance_minutes(n)`, `advance_turns(n)`, `advance_hours(n)`, `advance_days(n)`, `advance_to_hour(target_hour)`, `advance_to_next_day()`
+- Advance (party): `advance_party_rounds(party_id, n)`, `advance_party_minutes(party_id, n)`, `advance_party_turns(party_id, n)`, `advance_party_hours(party_id, n)`
+- Party registry: `register_party(party_id)`, `unregister_party(party_id)`, `get_party_time(party_id) -> int`, `sync_parties()`, `get_leading_party() -> String`, `get_time_gap(party_a, party_b) -> int`
+- Persistence: `save_state(campaign_id)`, `load_state(campaign_id)`
+
+**Database changes:**
+- Migration 004: `campaign_clock`, `party_clocks` tables added.
+
+**Tests added/updated:**
+- `tests/test_timekeeping.gd` — 24 tests (new suite).
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — TimekeepingTests added (5 suites total, ~101 tests).
+
+**Known issues:**
+- `game_day` in `dice_rolls` is still always 0. Wire: replace `0` in `dice_system.gd:_log_and_emit()` with `Timekeeping.get_total_days()` once the session runner wires the two systems together.
+- Signal counters in `test_timekeeping.gd` are cumulative (connect once in `_ready()`, reset per test via `_reset()`). If a test asserts mid-suite, subsequent tests see stale counts. Known GDScript limitation.
+
+**Next session should:**
+1. Open project in Godot 4.6; run `test_runner.tscn`; confirm all 5 suites pass including 24 Timekeeping tests.
+2. Wire `Timekeeping.get_total_days()` into `dice_system.gd:_log_and_emit()` to populate `game_day` correctly.
+3. Wire `Timekeeping.load_state(campaign_id)` into `main_scene.gd` `_ready()` after `GameState.start_session()`.
+4. Build the session runner state machine (campaign select → session start → exploration loop → session end). Timekeeping is ready to be driven by it.
+5. Create `docs/document_map.md` and `docs/rule_system_map.md` (highest-priority deferred reference docs).
+
+**Addendum (same session):** Added public day-cycle configuration API to Timekeeping so the future seasons/weather system can adjust sunrise/sunset hours. Defaults (dawn=6, dusk=20) remain as fallback so all existing tests and pre-seasons-system code continue working unchanged.
+- Added `func set_day_cycle(dawn_hour: int, dusk_hour: int) -> void` — persists via `_auto_save()`.
+- Added `func get_dawn_hour() -> int` and `func get_dusk_hour() -> int` read accessors.
+- Added 3 tests to `test_timekeeping.gd`: `test_set_day_cycle_changes_is_daylight()`, `test_set_day_cycle_changes_dawn_dusk_signals()`, `test_set_day_cycle_defaults_are_6_and_20()` (27 tests total in suite).

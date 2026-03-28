@@ -21,7 +21,8 @@
       "Bash(grep -h \"d[0-9]\" /c/Users/jttau/acks-arbiter/rules/*.xml)",
       "Bash(find c:/Users/jttau/acks-arbiter -name *.gd -newer c:/Users/jttau/acks-arbiter/.git/refs/heads/main)",
       "Bash(grep -n \"\\\\.emit\\(\" c:/Users/jttau/acks-arbiter/engine/autoloads/*.gd)",
-      "Bash(grep -n \"to_dict\\\\|from_dict\" c:/Users/jttau/acks-arbiter/engine/shared_types/*.gd)"
+      "Bash(grep -n \"to_dict\\\\|from_dict\" c:/Users/jttau/acks-arbiter/engine/shared_types/*.gd)",
+      "Bash(\"c:\\\\Users\\\\jttau\\\\acks-arbiter\\\\build_log.md\":*)"
     ]
   }
 }

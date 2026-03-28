@@ -523,9 +523,9 @@ Combat, Exploration, Character, Domain, Magic, LLM/Narration, Persistence, Overr
 
 ### 5.1 The Six Autoloads
 
-<!-- 2026-03-25: EventBus added. 2026-03-27: DiceSystem added (approved by Jedidiah — dice needed by every subsystem). -->
+<!-- 2026-03-25: EventBus added. 2026-03-27: DiceSystem added (approved by Jedidiah — dice needed by every subsystem). 2026-03-27: Timekeeping added (approved by Jedidiah — clock consumed by session runner, domain, encounter, and condition subsystems). -->
 
-Six autoload singletons exist. This list requires **explicit approval from Jedidiah** to extend. The bar is "needed by every subsystem" — if only one or two callers use it, make it a scene-local node instead.
+Seven autoload singletons exist. This list requires **explicit approval from Jedidiah** to extend. The bar is "needed by every subsystem" — if only one or two callers use it, make it a scene-local node instead.
 
 | Autoload | Responsibility | Lives in |
 |----------|---------------|----------|
@@ -535,8 +535,9 @@ Six autoload singletons exist. This list requires **explicit approval from Jedid
 | `LLMManager` | Provider routing, request/response, token tracking (stub) | `engine/autoloads/llm_manager.gd` |
 | `AudioRouter` | SFX/music playback, audio bus management (stub) | `engine/autoloads/audio_router.gd` |
 | `DiceSystem` | Dice rolling (digital/physical/hybrid), override consumption, roll log | `engine/autoloads/dice_system.gd` |
+| `Timekeeping` | Passive in-game clock, multi-party sync, dawn/dusk/day/month boundary signals | `engine/autoloads/timekeeping.gd` |
 
-**Load order matters.** DiceSystem depends on GameState, EventBus, and CampaignRepository — it must be registered after them in `project.godot`.
+**Load order matters.** DiceSystem depends on GameState, EventBus, and CampaignRepository. Timekeeping depends on GameState (session_ended signal) and CampaignRepository (DB access) — both must be registered before it in `project.godot`.
 
 ### 5.2 Autoload Constraints
 
@@ -629,6 +630,7 @@ db/migrations/
 ├── 001_initial_schema.sql       # Tier 1 tables: campaigns, characters, parties, hex_maps, etc.
 ├── 002_override_log.sql         # override_log, game_snapshots, dungeon_entrances
 ├── 003_dice_roll_log.sql        # dice_rolls (session-only, capped at 200 rows)
+├── 004_timekeeping.sql          # campaign_clock, party_clocks (Timekeeping autoload)
 ```
 
 **Rules:**
@@ -727,6 +729,59 @@ func load_settings() -> void:
 | Character HP, inventory, position | SQLite (CampaignRepository) | Game state — queryable, transactional |
 | Dice mode, UI preferences | ConfigFile (`user://settings.cfg`) | User preference — survives across campaigns |
 | Pending dice overrides | `GameState.dice_overrides` (in-memory Dictionary) | Ephemeral dev-mode state — not persisted |
+
+### 6.8 Timekeeping Patterns
+
+<!-- Added 2026-03-27 after Timekeeping autoload build -->
+
+**Passive clock:** `Timekeeping` never ticks on its own. Only the session runner advances it by calling `advance_*()` or `advance_to_*()` methods. No background timer, no `_process()`.
+
+**Advance methods emit boundary signals automatically:**
+
+```gdscript
+# GOOD — advance and let Timekeeping emit day_changed, month_changed, dawn, dusk as needed
+Timekeeping.advance_hours(8)    # crosses midnight → day_changed fires automatically
+
+# BAD — manually tracking time to decide whether to emit signals
+_elapsed_hours += 8
+if _elapsed_hours % 24 == 0:
+    emit_signal("day_changed")   # reinventing what Timekeeping already does
+```
+
+**Boundary signals fire once per crossing, even for large advances:**
+
+```gdscript
+# advance_days(40) from start:
+#   → 40 × day_changed (for each day 2–41)
+#   → 1 × month_changed (at day 29 = month 2)
+#   → 0 × year_changed (no full year crossed)
+#   → 2-3 × dawn / dusk per day depending on start position
+```
+
+**Multi-party split:** `_elapsed_rounds` always equals the furthest-ahead party. Global boundary signals fire against this global clock, not per-party clocks.
+
+```gdscript
+# Correct split-party pattern
+Timekeeping.register_party("alpha")
+Timekeeping.register_party("beta")
+Timekeeping.advance_party_hours("alpha", 3)   # global clock = 3h
+Timekeeping.advance_party_hours("beta", 5)    # global clock = 5h, boundary signals for hours 4–5
+Timekeeping.sync_parties()                    # alpha brought up to 5h (global); no new signals
+```
+
+**Eager DB save:** Every `advance_*()` call automatically writes to `campaign_clock` via `_auto_save()` if a campaign is loaded. The session runner does NOT need to call `save_state()` explicitly after each advance — only when explicitly restoring from a snapshot.
+
+**Day-cycle configuration (dawn/dusk hours):** Dawn and dusk hours default to 6 and 20 so `is_daylight()` and the `dawn()`/`dusk()` signals work correctly before any seasons system exists. The future seasons/weather system changes them by calling `set_day_cycle()`, which persists immediately:
+
+```gdscript
+# Seasons system shortens the day for winter
+Timekeeping.set_day_cycle(8, 16)   # dawn at 08:00, dusk at 16:00
+# is_daylight(), dawn signal, and dusk signal all update automatically.
+
+# Do NOT manipulate _dawn_hour / _dusk_hour directly from outside Timekeeping —
+# set_day_cycle() is the only public write path and it handles persistence.
+Timekeeping._dawn_hour = 8   # BAD — bypasses _auto_save()
+```
 
 ---
 
@@ -1052,7 +1107,9 @@ These are not coding style — they are mechanical rules that must be followed i
 | Three territory types | `civilized`, `borderlands`, `wilderness`. Never `outlands` or `unsettled`. | CLAUDE.md |
 | Turn undead | Always "turn undead," never "rebuke undead." | CLAUDE.md, ACKS 1e |
 | 0th-level threshold | 500 XP to advance from 0th to 1st level. | `acore_basics_and_characters.xml` |
-| Calendar | 13 months x 28 days. Weeks = 7 days. | Design brief |
+| Calendar | 13 months × 28 days = 364 days/year. Weeks = 7 days. Months stored as int 1–13. | Design brief |
+| Time granularities | Round=10s, Minute=6 rounds, Turn=60 rounds (10 min), Hour=360 rounds, Day=8640 rounds. | ACKS Adventures |
+| Dawn/dusk hours | Default dawn=6, dusk=20. `is_daylight()` = `hour >= dawn and hour < dusk`. Changed at runtime via `Timekeeping.set_day_cycle(dawn, dusk)` — the seasons/weather system calls this; defaults hold before that system is built. | Design brief |
 | Max party size | 8 PCs. | Design brief |
 | Henchmen per PC | Determined by CHA modifier + 4. | `acore_basics_and_characters.xml` |
 | Three character tiers | `full` (PCs), `named` (henchmen/recurring NPCs), `transient` (throwaway). | Design brief |
