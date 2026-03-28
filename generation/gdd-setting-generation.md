@@ -3,9 +3,9 @@
 **Authority:** PROJECT-DESIGNED — the generation algorithms are not derived from any ACKS sourcebook. ACKS demographic, economic, and realm-sizing constraints are defined in the XML rules reference library and applied as constraints on the generation output.
 **Status:** Draft
 **Depends on ACKS rules:** `acore-setting-construction-rules.xml` (realm sizing, population density, territory classification, settlement size/market class tables, domain economics that constrain viable realm configurations), `acore_axioms_strongholds_and_domains.xml` (stronghold and domain rules), `ax_domains_of_chaos.xml` (beastman clanhold demographics, geographic distribution by terrain, chaotic domain rules)
-**Depends on project GDDs:** `gdd-terrain-system.md` (terrain tag definitions, biome mapping, deforestation rules), `gdd-dungeon-layout.md` (dungeon seed requirements), gdd-calendar-seasons.md(season definitions consumed during narrative generation),gdd-weather-generation.md (downstream consumer of Layer 2 output)
+**Depends on project GDDs:** `gdd-terrain-system.md` (terrain tag definitions, biome mapping, deforestation rules), `gdd-dungeon-layout.md` (dungeon seed requirements), gdd-calendar-seasons.md(season definitions consumed during narrative generation),gdd-weather-generation.md (downstream consumer of Layer 2 output), , gdd-poi-generation.md (wilderness POI placement in Layer 6, rumor seed output), `gdd-quest-rumor-system.md` (quest generation in Layer 6, rumor seed aggregation)
 **Modifiable by Claude Code:** Yes — all algorithms, parameters, and generation logic are engineering decisions.
-**Last updated:** 2026-03-24
+**Last updated:** 2026-03-28
 
 ---
 
@@ -576,6 +576,46 @@ With settlements and roads placed, recalculate territory classification:
 
 This overwrites the preliminary classification from Layer 3.
 
+### 9.7 Wilderness POI Placement
+
+After territory classification is finalized, generate wilderness points of interest per `gdd-poi-generation.md`:
+
+Calculate POI budget: clamp(30 - actual_dungeon_count, 5, 10)
+Roll POI types on the d20 distribution table
+Select hexes using terrain affinity, distance constraints, and territory weighting
+Roll mechanical skeletons (type-specific random tables)
+Assign cultural/historical context from the setting's timeline and culture data
+Generate rumor seeds (1-2 per POI) as inputs to §9.8
+
+
+POIs fill the "special areas" slice of the ACKS 30 non-settlement static POI target — the locations that are neither full dungeons nor monster lairs.
+
+### 9.8 Quest and Rumor Seeding
+
+After all map features are placed (settlements, dungeons, lairs, forts, POIs), generate the initial quest and rumor pool per `gdd-quest-rumor-system.md`:
+
+Aggregate rumor seeds from all sources:
+
+POI rumor seeds (from §9.7)
+Dungeon hooks (from §9.3, one per dungeon seed)
+Lair threats (from dynamic lair data)
+Historical rumors (from Layer 5/7 timeline)
+
+
+Enrich each seed into a full Rumor record (assign accuracy, distribution range,
+knowledge category, freshness)
+Scan for quest-eligible threats:
+
+Monster lairs near settlements or roads
+Dungeons producing active threats
+Hostile factions occupying territory
+
+
+Match threats to nearby NPC authorities who meet quest conditions
+Generate 3-8 initial quests with reward calculations
+Generate quest-sourced rumors (accuracy = "true") for each quest
+All quest/rumor text is placeholder — LLM narration happens in Layer 7
+
 ---
 
 ## 10. Layer 7: LLM Narrative Synthesis
@@ -606,9 +646,25 @@ The LLM receives the complete mechanical data for the setting and generates:
 - One-paragraph hook (why this place exists, what draws adventurers, what danger lurks)
 - This is the "Judge's one paragraph per point of interest" from ACore p.235
 
+**Per wilderness POI** (from `gdd-poi-generation.md` §5):
+- Name (proper name drawn from the appropriate cultural name bank)
+- Description (1 paragraph: appearance, history, significance)
+- Rumor text (1-2 sentences per rumor seed, in NPC voice)
+- Linked POIs receive their descriptions together for narrative consistency
+
+**Per quest** (from `gdd-quest-rumor-system.md` §3.6 step 6):
+- Quest title (short, evocative)
+- Quest description (2-3 sentences: what the problem is, what the questgiver wants)
+- Questgiver dialogue (what the NPC says when offering the quest)
+- Completion dialogue (what the NPC says when the quest is turned in)
+
+**Per rumor** (from `gdd-quest-rumor-system.md` §2.2):
+- Narrated text (1-2 sentences in NPC voice, calibrated to the rumor's accuracy level — exaggerated rumors sound breathless, misleading rumors sound confident but wrong, false rumors sound like secondhand gossip)
+
 **Setting-wide historical timeline:**
 - Deep history (4,000–1,500 years ago): 8-12 bullet points, one sentence each. Rise and fall of ancient empires, great migrations, cataclysms, founding of religions. These explain why ancient ruins and lost civilizations exist.
 - Middle history (1,500–300 years ago): 15-20 bullet points, 1-2 sentences each. Formation of current realms, major wars, religious schisms, non-human realm interactions.
+- Near history, the last 300 years, 10-15 bullet points, 1-2 sentences each. Focus on development of current conflicts and civilizational threats.
 - All events tagged to specific realms, regions, and cultural groups for LLM context retrieval.
 
 **Setting overview:**
@@ -656,7 +712,7 @@ Before generation begins, present the full parameter set:
 - Number of cultures, number of religions, ethnic-political alignment, non-human ratio, religious exclusivism, minority floor
 
 **Content (Layer 6):**
-- Dungeon density multiplier, road density, fortification density
+- Dungeon density multiplier, road density, fortification density, POI density multiplier, POI danger level
 
 All parameters have sensible defaults. Players who just want to play skip the sliders.
 
@@ -727,6 +783,8 @@ data/name_banks/
 - **Calendar/seasons system** (`gdd-calendar-seasons.md`) — reads hemisphere parameter- **Domain simulation** — reads realm data, ruler profiles, economic parameters
 - **LLM context assembly** — reads setting narrative, cultural data, faction relationships
 - **NPC generation** — reads demographic weights for name/culture/religion selection
+- **Quest and rumor system** (`gdd-quest-rumor-system.md`) — reads dungeon seeds, lair data, POI data, NPC ruler profiles, domain economics for quest generation and rumor distribution
+- **POI generation** (`gdd-poi-generation.md`) — reads terrain tags, cultural data, dungeon placements, territory classification for POI placement
 
 ### 13.2 What This Generator Does NOT Produce
 

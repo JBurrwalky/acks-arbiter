@@ -3,7 +3,7 @@
 **Authority:** PROJECT-DESIGNED — the POI type taxonomy, generation tables, placement algorithm, and mechanical skeleton system are not derived from any ACKS sourcebook. ACKS regional map guidance (static/dynamic POI definitions, 45-POI target density) is defined in the XML rules reference library and applied as constraints on placement.
 **Status:** Draft
 **Depends on ACKS rules:** `acore-setting-construction-rules.xml` (regional map POI density, static vs. dynamic definitions), `le_wilderness_lair_rules.xml` (lair density per terrain, dynamic POI placement), `acore_adventures_and_encounters.xml` (wilderness encounter tables by terrain)
-**Depends on project GDDs:** `gdd-setting-generation.md` (Layer 6 content seeding pipeline, dungeon placement, fortification placement, LLM narrative synthesis), `gdd-terrain-system.md` (terrain tag system — elevation, biome, water, civilization), `gdd-cultural-religious-generation.md` (cultures, religions, historical timeline for contextual hooks), `gdd-npc-personality.md` (NPC knowledge categories, rumor system)
+**Depends on project GDDs:** `gdd-setting-generation.md` (Layer 6 content seeding pipeline, dungeon placement, fortification placement, LLM narrative synthesis), `gdd-terrain-system.md` (terrain tag system — elevation, biome, water, civilization), `gdd-cultural-religious-generation.md` (cultures, religions, historical timeline for contextual hooks), `gdd-npc-personality.md` (NPC knowledge categories, rumor system), `gdd-quest-rumor-system.md` (authoritative Rumor record structure, rumor distribution and lifecycle rules)
 **Modifiable by Claude Code:** Yes — all tables, weights, placement logic, and generation parameters are engineering decisions.
 **Last updated:** 2026-03-28
 
@@ -483,7 +483,7 @@ After the mechanical skeleton is rolled, tag each POI with contextual data drawn
 
 ### 4.6 Step 6: Generate Rumor Seeds
 
-Each POI produces 1–2 mechanical rumor seeds. These are tagged data entries that feed into the settlement rumor table system (future GDD). The rumor is a factual statement about the POI with an accuracy flag.
+Each POI produces 1–2 mechanical rumor seeds. These are tagged data entries that feed into the quest and rumor system (`gdd-quest-rumor-system.md`). The POI generator produces *seeds* with the subset of fields below; the quest-rumor system enriches them into full Rumor records (adding `narrated_text`, `freshness`, `min_npc_tier`, lifecycle state, and NPC pool assignments per `gdd-quest-rumor-system.md` §2.2).
 
 ```
 Rumor:
@@ -514,6 +514,8 @@ Generation rules:
      - battlefield → "military" or "historical"
      - creature_habitat → "local" or "dungeon"
 ```
+
+All seed fields map directly to fields in the canonical `gdd-quest-rumor-system.md` §2.2 Rumor record: `poi_id` → `source_id` (with `source_type` = "poi"), `text_hint` → `content_hint`, `accuracy` / `knowledge_category` / `settlement_range` are unchanged. The quest-rumor system sets `origin_hex` from the POI's `hex_id` during enrichment.
 
 ---
 
