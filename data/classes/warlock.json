@@ -1,0 +1,118 @@
+{
+  "class_id": "warlock",
+  "class_name": "Warlock",
+  "source": "Player's Companion",
+  "race": "human",
+  "prime_requisites": ["INT"],
+  "minimum_abilities": {},
+  "alignment_restriction": "",
+  "hit_die": "1d4",
+  "hp_after_max_hd": "+1",
+  "max_hd_count": 9,
+  "max_level": 14,
+  "combat_progression": "mage",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 10, "3": 10, "4": 9, "5": 9, "6": 9, "7": 8, "8": 8, "9": 8, "10": 7, "11": 7, "12": 7, "13": 6, "14": 6
+  },
+  "saving_throws": {
+    "1":  {"petrification": 13, "poison_death": 13, "blast_breath": 15, "staffs_wands": 11, "spells": 12},
+    "2":  {"petrification": 13, "poison_death": 13, "blast_breath": 15, "staffs_wands": 11, "spells": 12},
+    "3":  {"petrification": 13, "poison_death": 13, "blast_breath": 15, "staffs_wands": 11, "spells": 12},
+    "4":  {"petrification": 12, "poison_death": 12, "blast_breath": 14, "staffs_wands": 10, "spells": 11},
+    "5":  {"petrification": 12, "poison_death": 12, "blast_breath": 14, "staffs_wands": 10, "spells": 11},
+    "6":  {"petrification": 12, "poison_death": 12, "blast_breath": 14, "staffs_wands": 10, "spells": 11},
+    "7":  {"petrification": 11, "poison_death": 11, "blast_breath": 13, "staffs_wands":  9, "spells": 10},
+    "8":  {"petrification": 11, "poison_death": 11, "blast_breath": 13, "staffs_wands":  9, "spells": 10},
+    "9":  {"petrification": 11, "poison_death": 11, "blast_breath": 13, "staffs_wands":  9, "spells": 10},
+    "10": {"petrification": 10, "poison_death": 10, "blast_breath": 12, "staffs_wands":  8, "spells":  9},
+    "11": {"petrification": 10, "poison_death": 10, "blast_breath": 12, "staffs_wands":  8, "spells":  9},
+    "12": {"petrification": 10, "poison_death": 10, "blast_breath": 12, "staffs_wands":  8, "spells":  9},
+    "13": {"petrification":  9, "poison_death":  9, "blast_breath": 11, "staffs_wands":  7, "spells":  8},
+    "14": {"petrification":  9, "poison_death":  9, "blast_breath": 11, "staffs_wands":  7, "spells":  8}
+  },
+  "xp_table": [0, 2075, 4150, 8300, 16600, 33200, 65000, 130000, 280000, 430000, 580000, 730000, 880000, 1030000],
+  "hd_table": ["1d4", "2d4", "3d4", "4d4", "5d4", "6d4", "7d4", "8d4", "9d4", "9d4+1", "9d4+2", "9d4+3", "9d4+4", "9d4+5"],
+  "weapon_permissions": ["dagger", "dart", "staff", "whip"],
+  "weapon_restrictions": [],
+  "armor_permissions": [],
+  "shield_permitted": false,
+  "fighting_styles": [],
+  "class_proficiency_list": [],
+  "proficiency_progression": {
+    "class": [1, 6, 12],
+    "general": [1, 5, 9, 13]
+  },
+  "level_titles": [
+    "Medium", "Occultist", "Spiritualist", "Hexgiver", "Cursebringer",
+    "Necromancer", "Incantationist", "Warlock", "Dread Lord", "Dread Lord, 10th lvl",
+    "Dread Lord, 11th lvl", "Dread Lord, 12th lvl", "Dread Lord, 13th lvl", "Dread King"
+  ],
+  "class_powers": [
+    {
+      "power_id": "arcane_casting",
+      "unlock_level": 1,
+      "tradition": "arcane",
+      "description": "Casts arcane spells as a mage of two-thirds class level. Spell slots from warlock progression table. Source XML notes the spell progression table is malformed in the excerpt.",
+      "notes": "INCOMPLETE: The source XML explicitly states 'The spell progression table in the provided source excerpt is malformed, so individual slot values cannot be recovered from the excerpt with confidence.' Slot values need to be verified against the published Player's Companion book."
+    },
+    {
+      "power_id": "familiar",
+      "unlock_level": 1,
+      "description": "Begins play with a familiar. Familiar HD and max HP equal half the warlock's. Familiar Intelligence equals warlock's Intelligence. While familiar is within 30 feet, warlock gains +1 on saving throws. If familiar is killed, warlock saves vs Death or takes damage equal to familiar's max HP."
+    },
+    {
+      "power_id": "secrets_of_the_dark_arts",
+      "unlock_level": 2,
+      "description": "Control undead as Chaotic cleric of half class level. Targets of warlock's death spells suffer -2 on saves. Necromantic spell effects calculated as 2 levels higher."
+    },
+    {
+      "power_id": "hex",
+      "unlock_level": 4,
+      "description": "Place a curse on visible target within 30 feet. Target saves vs Spells. On failure, choose: -4 to one ability score (min 1), -4 on attack throws and saves, halve prime requisite (min 1), or 50% chance each round to take no action. Cannot be dispelled; remove curse removes it. Usable once per day."
+    },
+    {
+      "power_id": "contact_dark_powers",
+      "unlock_level": 6,
+      "description": "Spend 1 turn contacting demons and evil spirits as contact other plane. Usable once per week."
+    },
+    {
+      "power_id": "spell_research",
+      "unlock_level": 7,
+      "description": "May research spells, scribe scrolls, and brew potions as a 5th level mage."
+    },
+    {
+      "power_id": "scroll_scribing",
+      "unlock_level": 7
+    },
+    {
+      "power_id": "potion_brewing",
+      "unlock_level": 7
+    },
+    {
+      "power_id": "alter_shape",
+      "unlock_level": 8,
+      "description": "Assume shape of any humanoid creature, altering height, weight, gender, hair, skin. Lasts 6 turns plus 1 per level above 8th. May be used no more than once every 8 hours."
+    },
+    {
+      "power_id": "summon_infernal_creature",
+      "unlock_level": 10,
+      "description": "Spend 1 turn to summon an invisible stalker or similar Chaotic creature. Serves until dispel evil, slain, or task complete. Usable once per month."
+    },
+    {
+      "power_id": "magic_item_creation",
+      "unlock_level": 13,
+      "description": "May create weapons, rings, and staffs as a 9th level mage. May cast ritual necromantic spells and create necromantic servants as an 11th level mage."
+    },
+    {
+      "power_id": "forbidden_spells",
+      "unlock_level": 14,
+      "description": "Add to class spell list: 3rd level cause disease and speak with dead; 4th level cause serious wounds; 5th level finger of death. These are arcane for warlocks."
+    },
+    {
+      "power_id": "stronghold_coterie",
+      "unlock_level": 9
+    }
+  ],
+  "notes": "Class proficiency list not provided in source XML. Warlock spell progression table was explicitly noted as malformed in the source XML extract. Spell slot values need verification against the published Player's Companion."
+}

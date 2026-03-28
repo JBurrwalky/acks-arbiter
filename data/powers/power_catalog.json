@@ -1,0 +1,454 @@
+{
+  "version": 1,
+  "description": "ACKS 1e reusable power definitions. Metadata only - progression tables live on class JSONs.",
+  "powers": [
+    {
+      "power_id": "open_locks",
+      "power_name": "Open Locks",
+      "power_type": "skill_throw",
+      "description": "Pick mechanical locks using thieves' tools. Throw d20 vs target; success on meeting or exceeding target.",
+      "resolution": "d20_throw_high",
+      "notes": "Requires thieves' tools. One attempt per lock per level gained."
+    },
+    {
+      "power_id": "find_remove_traps",
+      "power_name": "Find and Remove Traps",
+      "power_type": "skill_throw",
+      "description": "Detect and disarm mechanical traps. Throw d20 vs target; success on meeting or exceeding target.",
+      "resolution": "d20_throw_high",
+      "notes": "Requires thieves' tools for removal. Detection is visual/tactile search."
+    },
+    {
+      "power_id": "pick_pockets",
+      "power_name": "Pick Pockets",
+      "power_type": "skill_throw",
+      "description": "Lift small objects from a target without detection. Throw d20 vs target.",
+      "resolution": "d20_throw_high",
+      "notes": "Failure by 4+ means target notices. Also covers sleight of hand."
+    },
+    {
+      "power_id": "move_silently",
+      "power_name": "Move Silently",
+      "power_type": "skill_throw",
+      "description": "Move without making audible noise. Throw d20 vs target.",
+      "resolution": "d20_throw_high",
+      "notes": "Checked once per movement through an area with potential listeners."
+    },
+    {
+      "power_id": "climb_walls",
+      "power_name": "Climb Walls",
+      "power_type": "skill_throw",
+      "description": "Scale sheer surfaces without climbing gear. Throw d20 vs target.",
+      "resolution": "d20_throw_high",
+      "notes": "Check per 100 feet climbed. Failure means fall from halfway point."
+    },
+    {
+      "power_id": "hide_in_shadows",
+      "power_name": "Hide in Shadows",
+      "power_type": "skill_throw",
+      "description": "Remain unseen while in dim lighting or shadows. Throw d20 vs target.",
+      "resolution": "d20_throw_high",
+      "notes": "Cannot hide while being directly observed. Must remain motionless."
+    },
+    {
+      "power_id": "hear_noise",
+      "power_name": "Hear Noise",
+      "power_type": "skill_throw",
+      "description": "Detect faint sounds through doors or around corners. Throw d20 vs target.",
+      "resolution": "d20_throw_high",
+      "notes": "Requires 1 round of quiet listening. Party must be silent."
+    },
+    {
+      "power_id": "backstab",
+      "power_name": "Backstab",
+      "power_type": "scaling_multiplier",
+      "description": "Attack an unaware opponent from behind for multiplied damage. +4 to attack throw; damage multiplied by progression value.",
+      "resolution": "special",
+      "notes": "Requires surprise or successful hide/move silently. Multiplier increases with level."
+    },
+    {
+      "power_id": "fighter_damage_bonus",
+      "power_name": "Fighter Damage Bonus",
+      "power_type": "damage_bonus",
+      "description": "Bonus to melee and missile damage from martial training. Added to all successful attack damage rolls.",
+      "resolution": "passive",
+      "notes": "Applies to both melee and missile attacks. Stacks with STR/DEX modifiers."
+    },
+    {
+      "power_id": "cleave",
+      "power_name": "Cleave",
+      "power_type": "passive",
+      "description": "When a fighter-type kills or incapacitates an enemy in melee, may immediately make another attack throw against another enemy within 5 feet.",
+      "resolution": "passive",
+      "notes": "Number of cleaves per round equals character level. All fighter-progression classes get this."
+    },
+    {
+      "power_id": "turn_undead",
+      "power_name": "Turn Undead",
+      "power_type": "turning_table",
+      "description": "Channel divine power to drive away or destroy undead creatures. Roll 2d6 and compare to target by undead HD category.",
+      "resolution": "2d6_throw_high",
+      "notes": "T = automatically turned. D = automatically destroyed. Number affected = 2d6 HD of undead."
+    },
+    {
+      "power_id": "command_undead",
+      "power_name": "Command Undead",
+      "power_type": "turning_table",
+      "description": "Channel dark power to command undead creatures rather than turning them. Uses same table as Turn Undead but controls rather than repels.",
+      "resolution": "2d6_throw_high",
+      "notes": "Anti-Paladin variant. Controlled undead serve the caster."
+    },
+    {
+      "power_id": "divine_casting",
+      "power_name": "Divine Spellcasting",
+      "power_type": "casting_divine",
+      "description": "Cast divine spells granted by deity or spiritual tradition. Spell slots per level determined by class progression.",
+      "resolution": "special",
+      "notes": "Spells must be selected from class spell list. Can cast in any armor."
+    },
+    {
+      "power_id": "arcane_casting",
+      "power_name": "Arcane Spellcasting",
+      "power_type": "casting_arcane",
+      "description": "Cast arcane spells from a learned repertoire. Spell slots per level determined by class progression.",
+      "resolution": "special",
+      "notes": "Spells must be in repertoire. Cannot cast in armor unless class specifically allows it."
+    },
+    {
+      "power_id": "arcane_casting_in_armor",
+      "power_name": "Arcane Casting in Armor",
+      "power_type": "casting_arcane",
+      "description": "Cast arcane spells while wearing armor. Elven classes and certain hybrid classes can cast arcane spells without armor restriction.",
+      "resolution": "special",
+      "notes": "Replaces standard arcane_casting for classes that permit armored casting."
+    },
+    {
+      "power_id": "read_languages",
+      "power_name": "Read Languages",
+      "power_type": "threshold",
+      "description": "Decipher unknown written languages and coded messages. Throw d20 vs target to comprehend a text.",
+      "resolution": "d20_throw_high",
+      "notes": "Does not grant ability to speak the language. One check per document."
+    },
+    {
+      "power_id": "arcane_scroll_use",
+      "power_name": "Use Arcane Scrolls",
+      "power_type": "threshold",
+      "description": "Cast spells from arcane scrolls despite not being a mage. Throw d20 vs target; failure causes mishap.",
+      "resolution": "d20_throw_high",
+      "notes": "Failure results may include reversed spell or explosion."
+    },
+    {
+      "power_id": "arcane_dabbling",
+      "power_name": "Arcane Dabbling",
+      "power_type": "skill_throw",
+      "description": "Use wands, staffs, and other magic items normally restricted to arcane casters. Throw d20 vs target.",
+      "resolution": "d20_throw_high",
+      "notes": "Failure may cause item backfire. Bard class ability."
+    },
+    {
+      "power_id": "loremastery",
+      "power_name": "Loremastery",
+      "power_type": "skill_throw",
+      "description": "Recall ancient history, identify artifacts, and decipher occult runes. Throw d20 vs target.",
+      "resolution": "d20_throw_high",
+      "notes": "Broader than sage knowledge. Covers legends, artifacts, and magical lore."
+    },
+    {
+      "power_id": "bardic_performance",
+      "power_name": "Bardic Performance",
+      "power_type": "passive",
+      "description": "Perform music, poetry, or oration to inspire allies or influence audiences. Choose one performance type at 1st level.",
+      "resolution": "special",
+      "notes": "Additional performance types via Perform proficiency."
+    },
+    {
+      "power_id": "battlefield_leadership",
+      "power_name": "Battlefield Leadership",
+      "power_type": "threshold",
+      "description": "+1 bonus to morale rolls for henchmen and mercenaries under the character's command.",
+      "resolution": "passive",
+      "notes": "Applies when the character is personally present and commanding."
+    },
+    {
+      "power_id": "stronghold_castle",
+      "power_name": "Stronghold (Castle)",
+      "power_type": "threshold",
+      "description": "Build a castle and attract followers. Becomes a landed lord with domain management abilities.",
+      "resolution": "special",
+      "notes": "Fighter class. Attracts peasants and militia."
+    },
+    {
+      "power_id": "stronghold_sanctum",
+      "power_name": "Stronghold (Sanctum)",
+      "power_type": "threshold",
+      "description": "Build a sanctum tower. Attracts 1d6 apprentices (1st-3rd level mages) and 2d6 normal-man seekers.",
+      "resolution": "special",
+      "notes": "Mage class. Apprentices serve without pay."
+    },
+    {
+      "power_id": "stronghold_church",
+      "power_name": "Stronghold (Fortified Church)",
+      "power_type": "threshold",
+      "description": "Build a fortified church. Attracts 5d6x10 0-level soldiers and 1d6 clerics (1st-3rd level). All serve for free.",
+      "resolution": "special",
+      "notes": "Cleric class. +4 morale bonus to followers."
+    },
+    {
+      "power_id": "stronghold_hideout",
+      "power_name": "Stronghold (Hideout)",
+      "power_type": "threshold",
+      "description": "Establish a hideout in a settlement. Attracts 2d6 1st-level thief apprentices, paid as ruffians.",
+      "resolution": "special",
+      "notes": "Thief class."
+    },
+    {
+      "power_id": "stronghold_vault",
+      "power_name": "Stronghold (Underground Vault)",
+      "power_type": "threshold",
+      "description": "Establish an underground vault. Attracts 3d6x10 1st-level dwarven NPCs.",
+      "resolution": "special",
+      "notes": "Dwarven Vaultguard class."
+    },
+    {
+      "power_id": "stronghold_fastness",
+      "power_name": "Stronghold (Elven Fastness)",
+      "power_type": "threshold",
+      "description": "Establish a fastness in a natural setting. Attracts 3d6x10 elven NPCs.",
+      "resolution": "special",
+      "notes": "Elven classes."
+    },
+    {
+      "power_id": "stronghold_guildhouse",
+      "power_name": "Stronghold (Guildhouse)",
+      "power_type": "threshold",
+      "description": "Establish a merchant guildhouse. Attracts 2d6 1st-level venturer apprentices.",
+      "resolution": "special",
+      "notes": "Venturer class."
+    },
+    {
+      "power_id": "spell_research",
+      "power_name": "Spell Research",
+      "power_type": "threshold",
+      "description": "Research new spells, create new spell formulas. Available at 5th level for arcane casters, 5th level for divine.",
+      "resolution": "special",
+      "notes": "Requires time, gold, and access to library/workshop."
+    },
+    {
+      "power_id": "scroll_scribing",
+      "power_name": "Scroll Scribing",
+      "power_type": "threshold",
+      "description": "Create spell scrolls from known spells. Available at 5th level.",
+      "resolution": "special",
+      "notes": "Requires appropriate materials and time."
+    },
+    {
+      "power_id": "potion_brewing",
+      "power_name": "Potion Brewing",
+      "power_type": "threshold",
+      "description": "Brew magical potions. Available at 5th level for casters.",
+      "resolution": "special",
+      "notes": "Requires ingredients, formula, and time."
+    },
+    {
+      "power_id": "magic_item_creation",
+      "power_name": "Major Magic Item Creation",
+      "power_type": "threshold",
+      "description": "Create major magic items (weapons, armor, rings, etc.). Available at 9th level.",
+      "resolution": "special",
+      "notes": "Requires rare materials, high gold cost, extended time."
+    },
+    {
+      "power_id": "infravision",
+      "power_name": "Infravision",
+      "power_type": "passive",
+      "description": "See heat signatures in darkness out to 60 feet. Cannot distinguish color or read text.",
+      "resolution": "passive",
+      "notes": "Dwarven and some elven racial ability."
+    },
+    {
+      "power_id": "detect_secret_doors",
+      "power_name": "Detect Secret Doors",
+      "power_type": "detection",
+      "description": "Heightened ability to notice hidden doors and passages. Active search: 8+ on d6. Passive (walking past): 14+ on d6.",
+      "resolution": "d6_throw_high",
+      "notes": "Elven racial ability. Active search takes 1 turn."
+    },
+    {
+      "power_id": "stonework_detection",
+      "power_name": "Stonework Detection",
+      "power_type": "detection",
+      "description": "Detect traps, sliding walls, sloping corridors, and new construction in stonework. 14+ proficiency throw when actively searching.",
+      "resolution": "d20_throw_high",
+      "notes": "Dwarven racial ability."
+    },
+    {
+      "power_id": "ghoul_paralysis_immunity",
+      "power_name": "Ghoul Paralysis Immunity",
+      "power_type": "passive",
+      "description": "Immune to the paralysis attack of ghouls.",
+      "resolution": "passive",
+      "notes": "Elven racial ability."
+    },
+    {
+      "power_id": "dwarven_hardiness",
+      "power_name": "Dwarven Hardiness",
+      "power_type": "passive",
+      "description": "Enhanced saving throws due to dwarven constitution. Saving throw bonuses: -3 vs Blast/Breath, -4 vs all other categories.",
+      "resolution": "passive",
+      "notes": "Already factored into dwarven class saving throw tables. Do not double-apply."
+    },
+    {
+      "power_id": "underground_surprise_bonus",
+      "power_name": "Underground Surprise Bonus",
+      "power_type": "passive",
+      "description": "+1 bonus on surprise rolls when underground.",
+      "resolution": "passive",
+      "notes": "Dwarven racial ability."
+    },
+    {
+      "power_id": "wilderness_surprise_bonus",
+      "power_name": "Wilderness Surprise Bonus",
+      "power_type": "passive",
+      "description": "+1 bonus on surprise rolls in wilderness settings.",
+      "resolution": "passive",
+      "notes": "Elven racial ability."
+    },
+    {
+      "power_id": "elven_save_bonus",
+      "power_name": "Elven Save Bonus",
+      "power_type": "passive",
+      "description": "-1 bonus (improvement) to saving throws vs Petrification/Paralysis and Spells.",
+      "resolution": "passive",
+      "notes": "Already factored into elven class saving throw tables. Do not double-apply."
+    },
+    {
+      "power_id": "acrobatics_tumble",
+      "power_name": "Acrobatics (Tumble)",
+      "power_type": "skill_throw",
+      "description": "Tumble behind an opponent to negate shield AC bonus and enable backstab. Base throw 20+, improves by 1 per level.",
+      "resolution": "d20_throw_high",
+      "notes": "Elven Nightblade class ability. Target loses shield bonus to AC."
+    },
+    {
+      "power_id": "lay_on_hands",
+      "power_name": "Lay on Hands",
+      "power_type": "threshold",
+      "description": "Heal 2 hit points per class level by touch, once per day.",
+      "resolution": "special",
+      "notes": "Paladin class ability."
+    },
+    {
+      "power_id": "detect_evil",
+      "power_name": "Detect Evil",
+      "power_type": "detection",
+      "description": "Sense evil creatures, enchantments, or intentions within range by concentrating for one round.",
+      "resolution": "passive",
+      "notes": "Paladin class ability. Range typically 60 feet."
+    },
+    {
+      "power_id": "detect_good",
+      "power_name": "Detect Good",
+      "power_type": "detection",
+      "description": "Sense good creatures, enchantments, or intentions within range by concentrating for one round.",
+      "resolution": "passive",
+      "notes": "Anti-Paladin class ability. Mirror of Detect Evil."
+    },
+    {
+      "power_id": "aura_of_protection",
+      "power_name": "Aura of Protection",
+      "power_type": "aura",
+      "description": "Radiate a protective aura that provides bonuses to nearby allies and penalties to opposing forces.",
+      "resolution": "passive",
+      "notes": "Paladin (vs evil) and Anti-Paladin (vs good) class ability."
+    },
+    {
+      "power_id": "sanctified_body",
+      "power_name": "Sanctified Body",
+      "power_type": "passive",
+      "description": "Immune to all forms of disease, including magical diseases.",
+      "resolution": "passive",
+      "notes": "Paladin class ability."
+    },
+    {
+      "power_id": "holy_fervor",
+      "power_name": "Holy Fervor",
+      "power_type": "threshold",
+      "description": "+1 morale to same-faith hirelings and henchmen at 5th level.",
+      "resolution": "passive",
+      "notes": "Paladin / Anti-Paladin (unholy fanaticism) class ability."
+    },
+    {
+      "power_id": "mercantile_network",
+      "power_name": "Mercantile Network",
+      "power_type": "passive",
+      "description": "Treat markets visited as one class larger. Grants mercantile advantages in trade.",
+      "resolution": "passive",
+      "notes": "Venturer class ability."
+    },
+    {
+      "power_id": "expert_bargainer",
+      "power_name": "Expert Bargainer",
+      "power_type": "passive",
+      "description": "10% discount when buying, +10% when selling goods. Can compete with other bargainers via reaction rolls.",
+      "resolution": "passive",
+      "notes": "Venturer class ability."
+    },
+    {
+      "power_id": "diplomacy_bonus",
+      "power_name": "Diplomacy",
+      "power_type": "passive",
+      "description": "+2 to reaction rolls when parlaying with intelligent creatures.",
+      "resolution": "passive",
+      "notes": "Venturer class ability. Separate from CHA modifier."
+    },
+    {
+      "power_id": "rumormongering",
+      "power_name": "Rumormongering",
+      "power_type": "threshold",
+      "description": "Gather 1d4 rumors from old contacts when revisiting a settlement. Takes 6 hours, once per month per settlement.",
+      "resolution": "special",
+      "notes": "Venturer class ability, available at 4th level."
+    },
+    {
+      "power_id": "access_to_capital",
+      "power_name": "Access to Capital",
+      "power_type": "threshold",
+      "description": "Borrow from merchant guilds at favorable rates. 3% monthly without collateral, 1% with collateral.",
+      "resolution": "special",
+      "notes": "Venturer class ability, available at 8th level."
+    },
+    {
+      "power_id": "craft_journeyman",
+      "power_name": "Craft Journeyman",
+      "power_type": "passive",
+      "description": "Craft goods worth 20gp/month, supervise 3 apprentices, identify masterwork items (8+ throw), +3 to craft proficiencies.",
+      "resolution": "special",
+      "notes": "Dwarven Craftpriest class ability."
+    },
+    {
+      "power_id": "inspire_courage",
+      "power_name": "Inspire Courage",
+      "power_type": "passive",
+      "description": "Through performance, grant allies +1 to attack throws, damage rolls, morale, and saving throws vs fear for the duration.",
+      "resolution": "special",
+      "notes": "Bard and Elven Courtier class ability."
+    },
+    {
+      "power_id": "classical_weapons_training",
+      "power_name": "Classical Weapons Training",
+      "power_type": "passive",
+      "description": "+1 bonus to either melee or missile attack throws (chosen at 1st level).",
+      "resolution": "passive",
+      "notes": "Elven Courtier class ability."
+    },
+    {
+      "power_id": "agility_save_bonus",
+      "power_name": "Agility Saving Throw Bonus",
+      "power_type": "passive",
+      "description": "+2 bonus to saving throws where physical agility would help (e.g., dodging, tumbling).",
+      "resolution": "passive",
+      "notes": "Elven Nightblade class ability."
+    }
+  ]
+}

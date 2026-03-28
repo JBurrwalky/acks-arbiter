@@ -1,0 +1,94 @@
+{
+  "class_id": "assassin",
+  "class_name": "Assassin",
+  "source": "ACKS Core",
+  "race": "human",
+  "prime_requisites": ["STR", "DEX"],
+  "minimum_abilities": {},
+  "alignment_restriction": "",
+  "hit_die": "1d6",
+  "hp_after_max_hd": "+2",
+  "max_hd_count": 9,
+  "max_level": 14,
+  "combat_progression": "fighter",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 9, "3": 9, "4": 8, "5": 7, "6": 7, "7": 6, "8": 5, "9": 5, "10": 4, "11": 3, "12": 3, "13": 2, "14": 1
+  },
+  "saving_throws": {
+    "1":  {"petrification": 15, "poison_death": 14, "blast_breath": 16, "staffs_wands": 16, "spells": 17},
+    "2":  {"petrification": 14, "poison_death": 13, "blast_breath": 15, "staffs_wands": 15, "spells": 16},
+    "3":  {"petrification": 14, "poison_death": 13, "blast_breath": 15, "staffs_wands": 15, "spells": 16},
+    "4":  {"petrification": 13, "poison_death": 12, "blast_breath": 14, "staffs_wands": 14, "spells": 15},
+    "5":  {"petrification": 12, "poison_death": 11, "blast_breath": 13, "staffs_wands": 13, "spells": 14},
+    "6":  {"petrification": 12, "poison_death": 11, "blast_breath": 13, "staffs_wands": 13, "spells": 14},
+    "7":  {"petrification": 11, "poison_death": 10, "blast_breath": 12, "staffs_wands": 12, "spells": 13},
+    "8":  {"petrification": 10, "poison_death":  9, "blast_breath": 11, "staffs_wands": 11, "spells": 12},
+    "9":  {"petrification": 10, "poison_death":  9, "blast_breath": 11, "staffs_wands": 11, "spells": 12},
+    "10": {"petrification":  9, "poison_death":  8, "blast_breath": 10, "staffs_wands": 10, "spells": 11},
+    "11": {"petrification":  8, "poison_death":  7, "blast_breath":  9, "staffs_wands":  9, "spells": 10},
+    "12": {"petrification":  8, "poison_death":  7, "blast_breath":  9, "staffs_wands":  9, "spells": 10},
+    "13": {"petrification":  7, "poison_death":  6, "blast_breath":  8, "staffs_wands":  8, "spells":  9},
+    "14": {"petrification":  6, "poison_death":  5, "blast_breath":  7, "staffs_wands":  7, "spells":  8}
+  },
+  "xp_table": [0, 1700, 3400, 6800, 14000, 28000, 55000, 110000, 230000, 350000, 470000, 590000, 710000, 830000],
+  "hd_table": ["1d6", "2d6", "3d6", "4d6", "5d6", "6d6", "7d6", "8d6", "9d6", "9d6+2", "9d6+4", "9d6+6", "9d6+8", "9d6+10"],
+  "weapon_permissions": ["all"],
+  "weapon_restrictions": [],
+  "armor_permissions": ["all"],
+  "shield_permitted": true,
+  "fighting_styles": ["weapon_and_shield", "two_handed", "dual_wield"],
+  "class_proficiency_list": [
+    "acrobatics", "alchemy", "alertness", "arcane_dabbling", "blind_fighting",
+    "bribery", "cat_burglary", "climbing", "combat_reflexes",
+    "combat_trickery_disarm", "combat_trickery_incapacitate",
+    "contortionism", "disguise", "eavesdropping", "fighting_style",
+    "gambling", "intimidation", "mimicry", "precise_shooting", "running",
+    "seduction", "skirmishing", "skulking", "sniping", "swashbuckling",
+    "trap_finding", "weapon_finesse", "weapon_focus"
+  ],
+  "proficiency_progression": {
+    "class": [1, 3, 6, 9, 12],
+    "general": [1, 5, 9, 13]
+  },
+  "level_titles": [
+    "Thug", "Enforcer", "Torturer", "Slayer", "Destroyer",
+    "Executioner", "Blackguard", "Assassin", "Master Assassin",
+    "Master Assassin, 10th level", "Master Assassin, 11th level",
+    "Master Assassin, 12th level", "Master Assassin, 13th level",
+    "Grandfather of Assassins"
+  ],
+  "class_powers": [
+    {
+      "power_id": "fighter_damage_bonus",
+      "unlock_level": 1,
+      "progression": {"1": 1, "2": 1, "3": 2, "4": 2, "5": 2, "6": 3, "7": 3, "8": 3, "9": 4, "10": 4, "11": 4, "12": 5, "13": 5, "14": 5}
+    },
+    {
+      "power_id": "cleave",
+      "unlock_level": 1
+    },
+    {
+      "power_id": "move_silently",
+      "unlock_level": 1,
+      "conditions": ["armor_leather_or_lighter"],
+      "progression": {"1": 17, "2": 16, "3": 15, "4": 14, "5": 13, "6": 12, "7": 10, "8": 8, "9": 6, "10": 4, "11": 2, "12": 2, "13": 1, "14": 1}
+    },
+    {
+      "power_id": "hide_in_shadows",
+      "unlock_level": 1,
+      "conditions": ["armor_leather_or_lighter"],
+      "progression": {"1": 19, "2": 18, "3": 17, "4": 16, "5": 15, "6": 14, "7": 12, "8": 10, "9": 8, "10": 6, "11": 4, "12": 3, "13": 2, "14": 1}
+    },
+    {
+      "power_id": "backstab",
+      "unlock_level": 1,
+      "conditions": ["armor_leather_or_lighter"],
+      "progression": {"1": 2, "2": 2, "3": 2, "4": 2, "5": 3, "6": 3, "7": 3, "8": 3, "9": 4, "10": 4, "11": 4, "12": 4, "13": 5, "14": 5}
+    },
+    {
+      "power_id": "stronghold_hideout",
+      "unlock_level": 9
+    }
+  ]
+}

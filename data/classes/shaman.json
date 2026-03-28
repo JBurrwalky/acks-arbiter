@@ -1,0 +1,126 @@
+{
+  "class_id": "shaman",
+  "class_name": "Shaman",
+  "source": "Player's Companion",
+  "race": "human",
+  "prime_requisites": ["WIS"],
+  "minimum_abilities": {},
+  "alignment_restriction": "",
+  "hit_die": "1d6",
+  "hp_after_max_hd": "+1",
+  "max_hd_count": 9,
+  "max_level": 14,
+  "combat_progression": "cleric",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 10, "3": 9, "4": 9, "5": 8, "6": 8, "7": 7, "8": 7, "9": 6, "10": 6, "11": 5, "12": 5, "13": 4, "14": 4
+  },
+  "saving_throws": {
+    "1":  {"petrification": 13, "poison_death": 10, "blast_breath": 16, "staffs_wands": 13, "spells": 15},
+    "2":  {"petrification": 13, "poison_death": 10, "blast_breath": 16, "staffs_wands": 13, "spells": 15},
+    "3":  {"petrification": 12, "poison_death":  9, "blast_breath": 15, "staffs_wands": 12, "spells": 14},
+    "4":  {"petrification": 12, "poison_death":  9, "blast_breath": 15, "staffs_wands": 12, "spells": 14},
+    "5":  {"petrification": 11, "poison_death":  8, "blast_breath": 14, "staffs_wands": 11, "spells": 13},
+    "6":  {"petrification": 11, "poison_death":  8, "blast_breath": 14, "staffs_wands": 11, "spells": 13},
+    "7":  {"petrification": 10, "poison_death":  7, "blast_breath": 13, "staffs_wands": 10, "spells": 12},
+    "8":  {"petrification": 10, "poison_death":  7, "blast_breath": 13, "staffs_wands": 10, "spells": 12},
+    "9":  {"petrification":  9, "poison_death":  6, "blast_breath": 12, "staffs_wands":  9, "spells": 11},
+    "10": {"petrification":  9, "poison_death":  6, "blast_breath": 12, "staffs_wands":  9, "spells": 11},
+    "11": {"petrification":  8, "poison_death":  5, "blast_breath": 11, "staffs_wands":  8, "spells": 10},
+    "12": {"petrification":  8, "poison_death":  5, "blast_breath": 11, "staffs_wands":  8, "spells": 10},
+    "13": {"petrification":  7, "poison_death":  4, "blast_breath": 10, "staffs_wands":  7, "spells":  9},
+    "14": {"petrification":  7, "poison_death":  4, "blast_breath": 10, "staffs_wands":  7, "spells":  9}
+  },
+  "xp_table": [0, 1500, 3000, 6000, 12000, 24000, 50000, 100000, 200000, 300000, 400000, 500000, 600000, 700000],
+  "hd_table": ["1d6", "2d6", "3d6", "4d6", "5d6", "6d6", "7d6", "8d6", "9d6", "9d6+1", "9d6+2", "9d6+3", "9d6+4", "9d6+5"],
+  "weapon_permissions": ["club", "dagger", "hand_axe", "short_sword", "staff", "spear"],
+  "weapon_restrictions": [],
+  "armor_permissions": ["leather"],
+  "shield_permitted": true,
+  "fighting_styles": ["weapon_and_shield", "two_handed"],
+  "class_proficiency_list": [],
+  "proficiency_progression": {
+    "class": [1, 4, 8, 12],
+    "general": [1, 5, 9, 13]
+  },
+  "level_titles": [
+    "Spirit Whisperer", "Village Healer", "Tribal Priest", "Medicine Man",
+    "Totem Bearer", "Witch Doctor", "Spirit Walker", "Tribal Elder",
+    "Shaman", "Shaman, 10th lvl", "Shaman, 11th lvl", "Shaman, 12th lvl",
+    "Shaman, 13th lvl", "Grandfather of Totem"
+  ],
+  "class_powers": [
+    {
+      "power_id": "divine_casting",
+      "unlock_level": 2,
+      "tradition": "divine",
+      "progression": {
+        "1":  [0, 0, 0, 0, 0],
+        "2":  [1, 0, 0, 0, 0],
+        "3":  [2, 0, 0, 0, 0],
+        "4":  [2, 1, 0, 0, 0],
+        "5":  [2, 2, 0, 0, 0],
+        "6":  [2, 2, 1, 1, 0],
+        "7":  [2, 2, 2, 1, 1],
+        "8":  [3, 3, 2, 2, 1],
+        "9":  [3, 3, 3, 2, 2],
+        "10": [4, 4, 3, 3, 2],
+        "11": [4, 4, 4, 3, 3],
+        "12": [5, 5, 4, 4, 3],
+        "13": [5, 5, 5, 4, 3],
+        "14": [6, 5, 5, 5, 4]
+      }
+    },
+    {
+      "power_id": "totem_animal",
+      "unlock_level": 1,
+      "description": "At 1st level, choose a totem animal. The totem animal has HD and max HP equal to half the shaman's, saves as cleric of half the shaman's level, and grants a totem benefit proficiency while alive. If killed, shaman saves vs Death or takes damage equal to the totem's max HP."
+    },
+    {
+      "power_id": "commune_with_ancestral_spirits",
+      "unlock_level": 1,
+      "description": "Perform 1 turn ritual (shaman is helpless). Ask 3 yes-or-no questions. Spirits answer to best of ability but are not omniscient. Usable once per week."
+    },
+    {
+      "power_id": "spiritual_ritual",
+      "unlock_level": 3,
+      "description": "Perform ecstatic ritual lasting 1 hour to recover one expended spell level. May be performed as often as desired but the same spell level cannot be regained more than once per day."
+    },
+    {
+      "power_id": "shapechange",
+      "unlock_level": 5,
+      "description": "Assume totem animal form. Once per day at 5th level, plus one additional use per level beyond 5th. Use totem form movement, AC, attacks, damage; retain own HD, HP, attack throws, saves."
+    },
+    {
+      "power_id": "spiritwalk",
+      "unlock_level": 7,
+      "description": "Chant 1 turn then enter trance, releasing spirit from body. Spirit is incorporeal, invisible, passes through solid objects. Duration: 1 hour per level. Usable once per week."
+    },
+    {
+      "power_id": "spell_research",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "scroll_scribing",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "potion_brewing",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "magic_item_creation",
+      "unlock_level": 9
+    },
+    {
+      "power_id": "ritual_divine_magic",
+      "unlock_level": 11,
+      "description": "May learn and cast 6th and 7th level ritual divine spells. May craft magical constructs."
+    },
+    {
+      "power_id": "stronghold_medicine_lodge",
+      "unlock_level": 9
+    }
+  ],
+  "notes": "Class proficiency list not provided in source XML. Attack and saving throws follow cleric progression."
+}

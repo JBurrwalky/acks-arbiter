@@ -14,6 +14,14 @@ extends Node
 @onready var _dice_tests = $DiceSystemTests
 @onready var _timekeeping_tests = $TimekeepingTests
 @onready var _calendar_seasons_tests = $CalendarSeasonsTests
+@onready var _ability_utils_tests = $AbilityUtilsTests
+@onready var _class_registry_tests = $ClassRegistryTests
+@onready var _power_registry_tests = $PowerRegistryTests
+@onready var _encumbrance_tests = $EncumbranceTests
+@onready var _character_generator_tests = $CharacterGeneratorTests
+@onready var _character_persistence_tests = $CharacterPersistenceTests
+@onready var _class_powers_tests = $ClassPowersTests
+@onready var _npc_generation_tests = $NPCGenerationTests
 
 
 func _ready() -> void:
@@ -24,7 +32,11 @@ func run() -> void:
 	var passed := 0
 	var failed := 0
 
-	for suite in [_terrain_tests, _controller_tests, _override_tests, _dice_tests, _timekeeping_tests, _calendar_seasons_tests]:
+	for suite in [_terrain_tests, _controller_tests, _override_tests, _dice_tests,
+			_timekeeping_tests, _calendar_seasons_tests,
+			_ability_utils_tests, _class_registry_tests, _power_registry_tests,
+			_encumbrance_tests, _character_generator_tests, _character_persistence_tests,
+			_class_powers_tests, _npc_generation_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

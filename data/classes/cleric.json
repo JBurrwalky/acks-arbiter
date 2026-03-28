@@ -1,0 +1,127 @@
+{
+  "class_id": "cleric",
+  "class_name": "Cleric",
+  "source": "ACKS Core",
+  "race": "human",
+  "prime_requisites": ["WIS"],
+  "minimum_abilities": {},
+  "alignment_restriction": "",
+  "hit_die": "1d6",
+  "hp_after_max_hd": "+1",
+  "max_hd_count": 9,
+  "max_level": 14,
+  "combat_progression": "cleric",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 10, "3": 9, "4": 9, "5": 8, "6": 8, "7": 7, "8": 7, "9": 6, "10": 6, "11": 5, "12": 5, "13": 4, "14": 4
+  },
+  "saving_throws": {
+    "1":  {"petrification": 13, "poison_death": 10, "blast_breath": 16, "staffs_wands": 13, "spells": 15},
+    "2":  {"petrification": 13, "poison_death": 10, "blast_breath": 16, "staffs_wands": 13, "spells": 15},
+    "3":  {"petrification": 12, "poison_death":  9, "blast_breath": 15, "staffs_wands": 12, "spells": 14},
+    "4":  {"petrification": 12, "poison_death":  9, "blast_breath": 15, "staffs_wands": 12, "spells": 14},
+    "5":  {"petrification": 11, "poison_death":  8, "blast_breath": 14, "staffs_wands": 11, "spells": 13},
+    "6":  {"petrification": 11, "poison_death":  8, "blast_breath": 14, "staffs_wands": 11, "spells": 13},
+    "7":  {"petrification": 10, "poison_death":  7, "blast_breath": 13, "staffs_wands": 10, "spells": 12},
+    "8":  {"petrification": 10, "poison_death":  7, "blast_breath": 13, "staffs_wands": 10, "spells": 12},
+    "9":  {"petrification":  9, "poison_death":  6, "blast_breath": 12, "staffs_wands":  9, "spells": 11},
+    "10": {"petrification":  9, "poison_death":  6, "blast_breath": 12, "staffs_wands":  9, "spells": 11},
+    "11": {"petrification":  8, "poison_death":  5, "blast_breath": 11, "staffs_wands":  8, "spells": 10},
+    "12": {"petrification":  8, "poison_death":  5, "blast_breath": 11, "staffs_wands":  8, "spells": 10},
+    "13": {"petrification":  7, "poison_death":  4, "blast_breath": 10, "staffs_wands":  7, "spells":  9},
+    "14": {"petrification":  7, "poison_death":  4, "blast_breath": 10, "staffs_wands":  7, "spells":  9}
+  },
+  "xp_table": [0, 1500, 3000, 6000, 12000, 24000, 50000, 100000, 200000, 300000, 400000, 500000, 600000, 700000],
+  "hd_table": ["1d6", "2d6", "3d6", "4d6", "5d6", "6d6", "7d6", "8d6", "9d6", "9d6+1", "9d6+2", "9d6+3", "9d6+4", "9d6+5"],
+  "weapon_permissions": ["warhammer", "mace", "club", "quarterstaff", "sling"],
+  "weapon_restrictions": ["bladed_weapons", "piercing_weapons"],
+  "armor_permissions": ["all"],
+  "shield_permitted": true,
+  "fighting_styles": ["weapon_and_shield", "two_handed"],
+  "class_proficiency_list": [
+    "apostasy", "battle_magic", "beast_friendship",
+    "combat_trickery_force_back", "combat_trickery_overrun", "combat_trickery_sunder",
+    "command", "contemplation", "diplomacy", "divine_blessing", "divine_health",
+    "fighting_style", "healing", "knowledge_history", "laying_on_hands",
+    "leadership", "loremastery", "magical_engineering", "martial_training",
+    "prestidigitation", "profession_judge", "prophecy", "quiet_magic",
+    "righteous_turning", "sensing_evil", "sensing_power", "theology",
+    "unflappable_casting", "weapon_focus"
+  ],
+  "proficiency_progression": {
+    "class": [1, 4, 8, 12],
+    "general": [1, 5, 9, 13]
+  },
+  "level_titles": [
+    "Catechist", "Acolyte", "Priest", "Curate", "Vicar",
+    "Rector", "Prelate", "Bishop", "Patriarch", "Patriarch, 10th lvl",
+    "Patriarch, 11th lvl", "Patriarch, 12th lvl", "Patriarch, 13th lvl", "Theocrat"
+  ],
+  "class_powers": [
+    {
+      "power_id": "turn_undead",
+      "unlock_level": 1,
+      "progression": {
+        "1":  {"skeleton": 10, "zombie": 13, "ghoul": 16, "wight": 19, "wraith": "-", "mummy": "-", "spectre": "-", "vampire": "-", "infernal": "-"},
+        "2":  {"skeleton":  7, "zombie": 10, "ghoul": 13, "wight": 16, "wraith": 19, "mummy": "-", "spectre": "-", "vampire": "-", "infernal": "-"},
+        "3":  {"skeleton":  4, "zombie":  7, "ghoul": 10, "wight": 13, "wraith": 16, "mummy": 19, "spectre": "-", "vampire": "-", "infernal": "-"},
+        "4":  {"skeleton": "T", "zombie":  4, "ghoul":  7, "wight": 10, "wraith": 13, "mummy": 16, "spectre": 19, "vampire": "-", "infernal": "-"},
+        "5":  {"skeleton": "T", "zombie": "T", "ghoul":  4, "wight":  7, "wraith": 10, "mummy": 13, "spectre": 16, "vampire": 19, "infernal": "-"},
+        "6":  {"skeleton": "D", "zombie": "T", "ghoul": "T", "wight":  4, "wraith":  7, "mummy": 10, "spectre": 13, "vampire": 16, "infernal": 19},
+        "7":  {"skeleton": "D", "zombie": "D", "ghoul": "T", "wight": "T", "wraith":  4, "mummy":  7, "spectre": 10, "vampire": 13, "infernal": 16},
+        "8":  {"skeleton": "D", "zombie": "D", "ghoul": "D", "wight": "T", "wraith": "T", "mummy":  4, "spectre":  7, "vampire": 10, "infernal": 13},
+        "9":  {"skeleton": "D", "zombie": "D", "ghoul": "D", "wight": "D", "wraith": "T", "mummy": "T", "spectre":  4, "vampire":  7, "infernal": 10},
+        "10": {"skeleton": "D", "zombie": "D", "ghoul": "D", "wight": "D", "wraith": "D", "mummy": "T", "spectre": "T", "vampire":  4, "infernal":  7},
+        "11": {"skeleton": "D", "zombie": "D", "ghoul": "D", "wight": "D", "wraith": "D", "mummy": "D", "spectre": "T", "vampire": "T", "infernal":  4},
+        "12": {"skeleton": "D", "zombie": "D", "ghoul": "D", "wight": "D", "wraith": "D", "mummy": "D", "spectre": "D", "vampire": "T", "infernal": "T"},
+        "13": {"skeleton": "D", "zombie": "D", "ghoul": "D", "wight": "D", "wraith": "D", "mummy": "D", "spectre": "D", "vampire": "D", "infernal": "T"},
+        "14": {"skeleton": "D", "zombie": "D", "ghoul": "D", "wight": "D", "wraith": "D", "mummy": "D", "spectre": "D", "vampire": "D", "infernal": "D"}
+      }
+    },
+    {
+      "power_id": "divine_casting",
+      "unlock_level": 2,
+      "tradition": "divine",
+      "progression": {
+        "1":  [0, 0, 0, 0, 0],
+        "2":  [1, 0, 0, 0, 0],
+        "3":  [2, 0, 0, 0, 0],
+        "4":  [2, 1, 0, 0, 0],
+        "5":  [2, 2, 0, 0, 0],
+        "6":  [2, 2, 1, 1, 0],
+        "7":  [2, 2, 2, 1, 1],
+        "8":  [3, 3, 2, 2, 1],
+        "9":  [3, 3, 3, 2, 2],
+        "10": [4, 4, 3, 3, 2],
+        "11": [4, 4, 4, 3, 3],
+        "12": [5, 5, 4, 4, 3],
+        "13": [5, 5, 5, 4, 3],
+        "14": [6, 5, 5, 5, 4]
+      }
+    },
+    {
+      "power_id": "spell_research",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "scroll_scribing",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "potion_brewing",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "magic_item_creation",
+      "unlock_level": 9
+    },
+    {
+      "power_id": "advanced_divine_creation",
+      "unlock_level": 11
+    },
+    {
+      "power_id": "stronghold_church",
+      "unlock_level": 9
+    }
+  ]
+}

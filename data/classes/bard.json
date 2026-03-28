@@ -1,0 +1,98 @@
+{
+  "class_id": "bard",
+  "class_name": "Bard",
+  "source": "ACKS Core",
+  "race": "human",
+  "prime_requisites": ["DEX", "CHA"],
+  "minimum_abilities": {},
+  "alignment_restriction": "",
+  "hit_die": "1d6",
+  "hp_after_max_hd": "+2",
+  "max_hd_count": 9,
+  "max_level": 14,
+  "combat_progression": "thief",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 10, "3": 9, "4": 9, "5": 8, "6": 8, "7": 7, "8": 7, "9": 6, "10": 6, "11": 5, "12": 5, "13": 4, "14": 4
+  },
+  "saving_throws": {
+    "1":  {"petrification": 13, "poison_death": 13, "blast_breath": 16, "staffs_wands": 14, "spells": 15},
+    "2":  {"petrification": 13, "poison_death": 13, "blast_breath": 16, "staffs_wands": 14, "spells": 15},
+    "3":  {"petrification": 12, "poison_death": 12, "blast_breath": 15, "staffs_wands": 13, "spells": 14},
+    "4":  {"petrification": 12, "poison_death": 12, "blast_breath": 15, "staffs_wands": 13, "spells": 14},
+    "5":  {"petrification": 11, "poison_death": 11, "blast_breath": 14, "staffs_wands": 12, "spells": 13},
+    "6":  {"petrification": 11, "poison_death": 11, "blast_breath": 14, "staffs_wands": 12, "spells": 13},
+    "7":  {"petrification": 10, "poison_death": 10, "blast_breath": 13, "staffs_wands": 11, "spells": 12},
+    "8":  {"petrification": 10, "poison_death": 10, "blast_breath": 13, "staffs_wands": 11, "spells": 12},
+    "9":  {"petrification":  9, "poison_death":  9, "blast_breath": 12, "staffs_wands": 10, "spells": 11},
+    "10": {"petrification":  9, "poison_death":  9, "blast_breath": 12, "staffs_wands": 10, "spells": 11},
+    "11": {"petrification":  8, "poison_death":  8, "blast_breath": 11, "staffs_wands":  9, "spells": 10},
+    "12": {"petrification":  8, "poison_death":  8, "blast_breath": 11, "staffs_wands":  9, "spells": 10},
+    "13": {"petrification":  7, "poison_death":  7, "blast_breath": 10, "staffs_wands":  8, "spells":  9},
+    "14": {"petrification":  7, "poison_death":  7, "blast_breath": 10, "staffs_wands":  8, "spells":  9}
+  },
+  "xp_table": [0, 1400, 2800, 5600, 11200, 22400, 45000, 90000, 190000, 290000, 390000, 490000, 590000, 690000],
+  "hd_table": ["1d6", "2d6", "3d6", "4d6", "5d6", "6d6", "7d6", "8d6", "9d6", "9d6+2", "9d6+4", "9d6+6", "9d6+8", "9d6+10"],
+  "weapon_permissions": ["any_missile", "any_one_handed_melee"],
+  "weapon_restrictions": ["no_two_handed_melee"],
+  "armor_permissions": ["leather_or_lighter"],
+  "shield_permitted": false,
+  "fighting_styles": ["dual_wield"],
+  "class_proficiency_list": [
+    "acrobatics", "art", "bargaining", "beast_friendship",
+    "combat_trickery_disarm", "command", "diplomacy", "eavesdropping",
+    "elven_bloodline", "fighting_style", "healing", "knowledge",
+    "language", "leadership", "lip_reading", "magical_engineering",
+    "magical_music", "mimicry", "mystic_aura", "performance",
+    "precise_shooting", "prestidigitation", "running", "seduction",
+    "skirmishing", "swashbuckling", "weapon_finesse", "weapon_focus"
+  ],
+  "proficiency_progression": {
+    "class": [1, 4, 8, 12],
+    "general": [1, 5, 9, 13]
+  },
+  "level_titles": [
+    "Reciter", "Versifier", "Archivist", "Annalist", "Chronicler",
+    "Panegyrist", "Skald", "Rhapsodist", "Bard", "Bard, 10th level",
+    "Bard, 11th level", "Bard, 12th level", "Bard, 13th level",
+    "Master Bard"
+  ],
+  "class_powers": [
+    {
+      "power_id": "arcane_dabbling",
+      "unlock_level": 1,
+      "progression": {"1": 18, "2": 16, "3": 14, "4": 12, "5": 10, "6": 8, "7": 6, "8": 4, "9": 3, "10": 3, "11": 3, "12": 3, "13": 3, "14": 3}
+    },
+    {
+      "power_id": "loremastery",
+      "unlock_level": 1,
+      "progression": {"1": 18, "2": 17, "3": 16, "4": 15, "5": 14, "6": 13, "7": 12, "8": 11, "9": 10, "10": 9, "11": 8, "12": 7, "13": 6, "14": 5}
+    },
+    {
+      "power_id": "bardic_performance",
+      "unlock_level": 1
+    },
+    {
+      "power_id": "inspire_courage",
+      "unlock_level": 1
+    },
+    {
+      "power_id": "read_languages",
+      "unlock_level": 4,
+      "threshold": 5
+    },
+    {
+      "power_id": "hireling_inspiration",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "arcane_scroll_use",
+      "unlock_level": 10,
+      "threshold": 3
+    },
+    {
+      "power_id": "stronghold_hall",
+      "unlock_level": 9
+    }
+  ]
+}

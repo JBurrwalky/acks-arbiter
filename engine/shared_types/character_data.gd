@@ -38,9 +38,40 @@ var hp_current: int = 1
 var armor_class: int = 0       # ascending AC (0 = unarmored baseline)
 var attack_throw: int = 10     # d20 roll needed to hit AC 0
 
+## Saving throws (target numbers — lower is better; set from class progression tables)
+var save_petrification: int = 15
+var save_poison_death: int = 14
+var save_blast_breath: int = 16
+var save_staffs_wands: int = 16
+var save_spells: int = 17
+
+## Movement (exploration rate in feet per turn, adjusted by encumbrance)
+var base_movement: int = 120
+
+## Class metadata (cached from class registry; updated on level-up)
+var hit_die_type: String = "1d8"
+var max_level: int = 14
+var xp_for_next_level: int = 2000
+var xp_adjustment_percent: int = 0   # -10, -5, 0, +5, +10
+var title: String = ""               # current level title from class table
+
+## Identity (expanded)
+var alignment: String = "neutral"    # "lawful" | "neutral" | "chaotic"
+
+## Aging (stub — aging system built in Phase C-3)
+var current_age: int = 0
+var age_category: String = "adult"
+
+## Languages — JSON-encoded Array[String] of language IDs
+var languages: String = "[]"
+
+## Personality — JSON-encoded Dictionary (populated by NPC personality system, Tier 2)
+var personality: String = "{}"
+
 ## Status
 var is_dead: bool = false
 var is_active: bool = true
+var is_incapacitated: bool = false
 
 ## Henchman fields (empty/"" for PCs and NPCs)
 var employer_id: String = ""
@@ -83,9 +114,26 @@ static func from_dict(data: Dictionary) -> CharacterData:
 	c.hp_current = data.get("hp_current", 1)
 	c.armor_class = data.get("armor_class", 0)
 	c.attack_throw = data.get("attack_throw", 10)
+	c.save_petrification = data.get("save_petrification", 15)
+	c.save_poison_death = data.get("save_poison_death", 14)
+	c.save_blast_breath = data.get("save_blast_breath", 16)
+	c.save_staffs_wands = data.get("save_staffs_wands", 16)
+	c.save_spells = data.get("save_spells", 17)
+	c.base_movement = data.get("base_movement", 120)
+	c.hit_die_type = data.get("hit_die_type", "1d8")
+	c.max_level = data.get("max_level", 14)
+	c.xp_for_next_level = data.get("xp_for_next_level", 2000)
+	c.xp_adjustment_percent = data.get("xp_adjustment_percent", 0)
+	c.title = data.get("title", "")
+	c.alignment = data.get("alignment", "neutral")
+	c.current_age = data.get("current_age", 0)
+	c.age_category = data.get("age_category", "adult")
+	c.languages = data.get("languages", "[]")
+	c.personality = data.get("personality", "{}")
 	# Boolean DB fields are stored as INTEGER (0/1) — convert on read
 	c.is_dead = data.get("is_dead", 0) == 1
 	c.is_active = data.get("is_active", 1) == 1
+	c.is_incapacitated = data.get("is_incapacitated", 0) == 1
 	c.employer_id = data.get("employer_id", "")
 	c.loyalty_score = data.get("loyalty_score", 0)
 	c.wage_gp_per_month = data.get("wage_gp_per_month", 0)
@@ -116,8 +164,25 @@ func to_dict() -> Dictionary:
 		"hp_current": hp_current,
 		"armor_class": armor_class,
 		"attack_throw": attack_throw,
+		"save_petrification": save_petrification,
+		"save_poison_death": save_poison_death,
+		"save_blast_breath": save_blast_breath,
+		"save_staffs_wands": save_staffs_wands,
+		"save_spells": save_spells,
+		"base_movement": base_movement,
+		"hit_die_type": hit_die_type,
+		"max_level": max_level,
+		"xp_for_next_level": xp_for_next_level,
+		"xp_adjustment_percent": xp_adjustment_percent,
+		"title": title,
+		"alignment": alignment,
+		"current_age": current_age,
+		"age_category": age_category,
+		"languages": languages,
+		"personality": personality,
 		"is_dead": 1 if is_dead else 0,
 		"is_active": 1 if is_active else 0,
+		"is_incapacitated": 1 if is_incapacitated else 0,
 		"employer_id": employer_id,
 		"loyalty_score": loyalty_score,
 		"wage_gp_per_month": wage_gp_per_month,

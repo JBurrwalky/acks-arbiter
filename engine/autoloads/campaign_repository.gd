@@ -143,8 +143,14 @@ func create_character(data: Dictionary) -> String:
 			 race, character_class, level, xp, combat_progression,
 			 strength, intelligence, wisdom, dexterity, constitution, charisma,
 			 hp_max, hp_current, armor_class, attack_throw,
-			 is_dead, is_active, employer_id, loyalty_score, wage_gp_per_month)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+			 save_petrification, save_poison_death, save_blast_breath,
+			 save_staffs_wands, save_spells,
+			 base_movement, hit_die_type, max_level,
+			 xp_for_next_level, xp_adjustment_percent, title, alignment,
+			 current_age, age_category, languages, personality,
+			 is_dead, is_active, is_incapacitated,
+			 employer_id, loyalty_score, wage_gp_per_month)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 	""", [
 		data["id"], data.get("campaign_id", ""), data.get("name", "Unknown"),
 		data.get("character_type", "pc"), data.get("persistence_tier", "full"),
@@ -156,8 +162,18 @@ func create_character(data: Dictionary) -> String:
 		data.get("constitution", 10), data.get("charisma", 10),
 		data.get("hp_max", 1), data.get("hp_current", 1),
 		data.get("armor_class", 0), data.get("attack_throw", 10),
+		data.get("save_petrification", 15), data.get("save_poison_death", 14),
+		data.get("save_blast_breath", 16), data.get("save_staffs_wands", 16),
+		data.get("save_spells", 17),
+		data.get("base_movement", 120), data.get("hit_die_type", "1d8"),
+		data.get("max_level", 14),
+		data.get("xp_for_next_level", 2000), data.get("xp_adjustment_percent", 0),
+		data.get("title", ""), data.get("alignment", "neutral"),
+		data.get("current_age", 0), data.get("age_category", "adult"),
+		data.get("languages", "[]"), data.get("personality", "{}"),
 		1 if data.get("is_dead", false) else 0,
 		1 if data.get("is_active", true) else 0,
+		1 if data.get("is_incapacitated", false) else 0,
 		data.get("employer_id", null),
 		data.get("loyalty_score", null),
 		data.get("wage_gp_per_month", null),
@@ -186,7 +202,14 @@ func save_character(data: Dictionary) -> bool:
 				name = ?, level = ?, xp = ?,
 				hp_max = ?, hp_current = ?,
 				armor_class = ?, attack_throw = ?,
-				is_dead = ?, is_active = ?,
+				save_petrification = ?, save_poison_death = ?,
+				save_blast_breath = ?, save_staffs_wands = ?, save_spells = ?,
+				base_movement = ?, hit_die_type = ?, max_level = ?,
+				xp_for_next_level = ?, xp_adjustment_percent = ?,
+				title = ?, alignment = ?,
+				current_age = ?, age_category = ?,
+				languages = ?, personality = ?,
+				is_dead = ?, is_active = ?, is_incapacitated = ?,
 				loyalty_score = ?, wage_gp_per_month = ?,
 				updated_at = datetime('now')
 			WHERE id = ?
@@ -194,8 +217,18 @@ func save_character(data: Dictionary) -> bool:
 			data.get("name", ""), data.get("level", 1), data.get("xp", 0),
 			data.get("hp_max", 1), data.get("hp_current", 1),
 			data.get("armor_class", 0), data.get("attack_throw", 10),
+			data.get("save_petrification", 15), data.get("save_poison_death", 14),
+			data.get("save_blast_breath", 16), data.get("save_staffs_wands", 16),
+			data.get("save_spells", 17),
+			data.get("base_movement", 120), data.get("hit_die_type", "1d8"),
+			data.get("max_level", 14),
+			data.get("xp_for_next_level", 2000), data.get("xp_adjustment_percent", 0),
+			data.get("title", ""), data.get("alignment", "neutral"),
+			data.get("current_age", 0), data.get("age_category", "adult"),
+			data.get("languages", "[]"), data.get("personality", "{}"),
 			1 if data.get("is_dead", false) else 0,
 			1 if data.get("is_active", true) else 0,
+			1 if data.get("is_incapacitated", false) else 0,
 			data.get("loyalty_score", null),
 			data.get("wage_gp_per_month", null),
 			id
@@ -402,8 +435,11 @@ func add_inventory_item(data: Dictionary) -> String:
 		id = generate_id()
 	if not db.query_with_bindings("""
 		INSERT INTO inventory_items
-			(id, character_id, item_key, name, quantity, encumbrance_sixths, slot, is_equipped, notes)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			(id, character_id, item_key, name, quantity, encumbrance_sixths,
+			 slot, is_equipped, notes,
+			 item_category, is_magical, magical_bonus,
+			 weapon_damage, armor_ac_bonus, is_heavy)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		data.get("character_id", ""),
@@ -414,6 +450,12 @@ func add_inventory_item(data: Dictionary) -> String:
 		data.get("slot", "pack"),
 		1 if data.get("is_equipped", false) else 0,
 		data.get("notes", ""),
+		data.get("item_category", "gear"),
+		1 if data.get("is_magical", false) else 0,
+		data.get("magical_bonus", 0),
+		data.get("weapon_damage", ""),
+		data.get("armor_ac_bonus", 0),
+		1 if data.get("is_heavy", false) else 0,
 	]):
 		push_error("CampaignRepository.add_inventory_item: failed. character=%s item=%s" % [
 			data.get("character_id", "?"), data.get("name", "?")
@@ -465,6 +507,181 @@ func remove_condition(condition_id: int) -> bool:
 		push_error("CampaignRepository.remove_condition: failed. id=%d" % condition_id)
 		return false
 	return true
+
+
+# ---------------------------------------------------------------------------
+# Character Powers CRUD (modular power system — migration 005)
+# ---------------------------------------------------------------------------
+
+func save_character_powers(character_id: String, powers: Array) -> bool:
+	## Replace all powers for a character. Runs in a transaction.
+	db.query("BEGIN TRANSACTION")
+	if not db.query_with_bindings(
+		"DELETE FROM character_powers WHERE character_id = ?", [character_id]
+	):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.save_character_powers: delete failed. id=%s" % character_id)
+		return false
+	for power in powers:
+		if not db.query_with_bindings("""
+			INSERT INTO character_powers
+				(character_id, power_id, unlock_level, conditions, progression_data, is_active)
+			VALUES (?, ?, ?, ?, ?, ?)
+		""", [
+			character_id,
+			power.get("power_id", ""),
+			power.get("unlock_level", 1),
+			power.get("conditions", "[]"),
+			power.get("progression_data", "{}"),
+			1 if power.get("is_active", true) else 0,
+		]):
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.save_character_powers: insert failed. power=%s" % power.get("power_id", "?"))
+			return false
+	db.query("COMMIT")
+	return true
+
+
+func get_character_powers(character_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM character_powers WHERE character_id = ? AND is_active = 1",
+		[character_id]
+	)
+	return db.query_result.duplicate()
+
+
+func clear_character_powers(character_id: String) -> bool:
+	return db.query_with_bindings(
+		"DELETE FROM character_powers WHERE character_id = ?", [character_id]
+	)
+
+
+# ---------------------------------------------------------------------------
+# Character Proficiencies — batch save (table already exists from migration 001)
+# ---------------------------------------------------------------------------
+
+func save_character_proficiencies(character_id: String, proficiencies: Array) -> bool:
+	## Replace all proficiencies for a character. Runs in a transaction.
+	db.query("BEGIN TRANSACTION")
+	if not db.query_with_bindings(
+		"DELETE FROM character_proficiencies WHERE character_id = ?", [character_id]
+	):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.save_character_proficiencies: delete failed. id=%s" % character_id)
+		return false
+	for prof in proficiencies:
+		if not db.query_with_bindings("""
+			INSERT INTO character_proficiencies
+				(character_id, proficiency_key, rank, slot_type)
+			VALUES (?, ?, ?, ?)
+		""", [
+			character_id,
+			prof.get("proficiency_key", ""),
+			prof.get("rank", 1),
+			prof.get("slot_type", "general"),
+		]):
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.save_character_proficiencies: insert failed. prof=%s" % prof.get("proficiency_key", "?"))
+			return false
+	db.query("COMMIT")
+	return true
+
+
+func get_character_proficiencies(character_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM character_proficiencies WHERE character_id = ?",
+		[character_id]
+	)
+	return db.query_result.duplicate()
+
+
+# ---------------------------------------------------------------------------
+# Batch inventory save (for character generation)
+# ---------------------------------------------------------------------------
+
+func save_character_inventory(character_id: String, items: Array) -> bool:
+	## Replace all inventory items for a character. Runs in a transaction.
+	db.query("BEGIN TRANSACTION")
+	if not db.query_with_bindings(
+		"DELETE FROM inventory_items WHERE character_id = ?", [character_id]
+	):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.save_character_inventory: delete failed. id=%s" % character_id)
+		return false
+	for item in items:
+		var item_id: String = item.get("id", "")
+		if item_id.is_empty():
+			item_id = generate_id()
+		if not db.query_with_bindings("""
+			INSERT INTO inventory_items
+				(id, character_id, item_key, name, quantity, encumbrance_sixths,
+				 slot, is_equipped, notes,
+				 item_category, is_magical, magical_bonus,
+				 weapon_damage, armor_ac_bonus, is_heavy)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		""", [
+			item_id, character_id,
+			item.get("item_key", ""), item.get("name", ""),
+			item.get("quantity", 1), item.get("encumbrance_sixths", 0),
+			item.get("slot", "pack"),
+			1 if item.get("is_equipped", false) else 0,
+			item.get("notes", ""),
+			item.get("item_category", "gear"),
+			1 if item.get("is_magical", false) else 0,
+			item.get("magical_bonus", 0),
+			item.get("weapon_damage", ""),
+			item.get("armor_ac_bonus", 0),
+			1 if item.get("is_heavy", false) else 0,
+		]):
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.save_character_inventory: insert failed. item=%s" % item.get("name", "?"))
+			return false
+	db.query("COMMIT")
+	return true
+
+
+# ---------------------------------------------------------------------------
+# Extended character queries
+# ---------------------------------------------------------------------------
+
+func list_characters_by_type(campaign_id: String, character_type: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM characters WHERE campaign_id = ? AND character_type = ? AND is_active = 1 ORDER BY name",
+		[campaign_id, character_type]
+	)
+	return db.query_result.duplicate()
+
+
+func delete_character(id: String) -> bool:
+	## Delete a character and all dependent rows. Runs in a transaction.
+	db.query("BEGIN TRANSACTION")
+	var steps := [
+		["DELETE FROM character_powers WHERE character_id = ?", [id]],
+		["DELETE FROM character_conditions WHERE character_id = ?", [id]],
+		["DELETE FROM character_proficiencies WHERE character_id = ?", [id]],
+		["DELETE FROM inventory_items WHERE character_id = ?", [id]],
+		["DELETE FROM character_spells WHERE character_id = ?", [id]],
+		["DELETE FROM party_members WHERE character_id = ?", [id]],
+		["DELETE FROM characters WHERE id = ?", [id]],
+	]
+	for step in steps:
+		if not db.query_with_bindings(step[0], step[1]):
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.delete_character: failed at step. id=%s" % id)
+			return false
+	db.query("COMMIT")
+	return true
+
+
+func promote_character(id: String, new_tier: String) -> bool:
+	## Update a character's persistence tier. Phase C-2 will add full promotion logic.
+	if new_tier not in ["full", "named", "transient"]:
+		push_error("CampaignRepository.promote_character: invalid tier '%s'" % new_tier)
+		return false
+	return db.query_with_bindings(
+		"UPDATE characters SET persistence_tier = ?, updated_at = datetime('now') WHERE id = ?",
+		[new_tier, id]
+	)
 
 
 # ---------------------------------------------------------------------------

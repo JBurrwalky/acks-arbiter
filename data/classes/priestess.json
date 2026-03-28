@@ -1,0 +1,105 @@
+{
+  "class_id": "priestess",
+  "class_name": "Priestess",
+  "source": "Player's Companion",
+  "race": "human",
+  "prime_requisites": ["WIS", "CHA"],
+  "minimum_abilities": {},
+  "alignment_restriction": "",
+  "hit_die": "1d4",
+  "hp_after_max_hd": "+1",
+  "max_hd_count": 9,
+  "max_level": 14,
+  "combat_progression": "mage",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 10, "3": 10, "4": 9, "5": 9, "6": 9, "7": 8, "8": 8, "9": 8, "10": 7, "11": 7, "12": 7, "13": 6, "14": 6
+  },
+  "saving_throws": {
+    "1":  {"petrification": 13, "poison_death": 10, "blast_breath": 16, "staffs_wands": 13, "spells": 15},
+    "2":  {"petrification": 13, "poison_death": 10, "blast_breath": 16, "staffs_wands": 13, "spells": 15},
+    "3":  {"petrification": 12, "poison_death":  9, "blast_breath": 15, "staffs_wands": 12, "spells": 14},
+    "4":  {"petrification": 12, "poison_death":  9, "blast_breath": 15, "staffs_wands": 12, "spells": 14},
+    "5":  {"petrification": 11, "poison_death":  8, "blast_breath": 14, "staffs_wands": 11, "spells": 13},
+    "6":  {"petrification": 11, "poison_death":  8, "blast_breath": 14, "staffs_wands": 11, "spells": 13},
+    "7":  {"petrification": 10, "poison_death":  7, "blast_breath": 13, "staffs_wands": 10, "spells": 12},
+    "8":  {"petrification": 10, "poison_death":  7, "blast_breath": 13, "staffs_wands": 10, "spells": 12},
+    "9":  {"petrification":  9, "poison_death":  6, "blast_breath": 12, "staffs_wands":  9, "spells": 11},
+    "10": {"petrification":  9, "poison_death":  6, "blast_breath": 12, "staffs_wands":  9, "spells": 11},
+    "11": {"petrification":  8, "poison_death":  5, "blast_breath": 11, "staffs_wands":  8, "spells": 10},
+    "12": {"petrification":  8, "poison_death":  5, "blast_breath": 11, "staffs_wands":  8, "spells": 10},
+    "13": {"petrification":  7, "poison_death":  4, "blast_breath": 10, "staffs_wands":  7, "spells":  9},
+    "14": {"petrification":  7, "poison_death":  4, "blast_breath": 10, "staffs_wands":  7, "spells":  9}
+  },
+  "xp_table": [0, 2000, 4000, 8000, 16000, 32000, 65000, 130000, 230000, 330000, 430000, 530000, 630000, 730000],
+  "hd_table": ["1d4", "2d4", "3d4", "4d4", "5d4", "6d4", "7d4", "8d4", "9d4", "9d4+1", "9d4+2", "9d4+3", "9d4+4", "9d4+5"],
+  "weapon_permissions": ["quarterstaff", "club", "dagger", "dart"],
+  "weapon_restrictions": [],
+  "armor_permissions": [],
+  "shield_permitted": false,
+  "fighting_styles": [],
+  "class_proficiency_list": [],
+  "proficiency_progression": {
+    "class": [1, 5, 9, 13],
+    "general": [1, 5, 9, 13]
+  },
+  "level_titles": [
+    "Novice", "Daughter", "Sister-Initiate", "Sister", "Sister-Disciple",
+    "Priestess", "Mother", "Revered Mother", "Matriarch", "Matriarch, 10th lvl",
+    "Matriarch, 11th lvl", "Matriarch, 12th lvl", "Matriarch, 13th lvl", "High Priestess"
+  ],
+  "class_powers": [
+    {
+      "power_id": "divine_casting",
+      "unlock_level": 1,
+      "tradition": "divine",
+      "progression": {
+        "1":  [1, 0, 0, 0, 0],
+        "2":  [2, 0, 0, 0, 0],
+        "3":  [3, 0, 0, 0, 0],
+        "4":  [3, 2, 0, 0, 0],
+        "5":  [3, 3, 0, 0, 0],
+        "6":  [3, 3, 2, 2, 0],
+        "7":  [3, 3, 3, 2, 2],
+        "8":  [5, 5, 3, 3, 2],
+        "9":  [5, 5, 5, 3, 3],
+        "10": [6, 6, 5, 5, 3],
+        "11": [6, 6, 6, 5, 5],
+        "12": [8, 8, 6, 6, 5],
+        "13": [8, 8, 8, 6, 5],
+        "14": [9, 8, 8, 8, 6]
+      }
+    },
+    {
+      "power_id": "turn_undead",
+      "unlock_level": 1,
+      "description": "Turn undead as a cleric of equal level. No daily limit. A failed attempt blocks further attempts for the remainder of that encounter."
+    },
+    {
+      "power_id": "spell_research",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "scroll_scribing",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "potion_brewing",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "magic_item_creation",
+      "unlock_level": 9
+    },
+    {
+      "power_id": "ritual_divine_magic",
+      "unlock_level": 11,
+      "description": "May learn and cast 6th and 7th level ritual divine spells. May craft magical constructs."
+    },
+    {
+      "power_id": "stronghold_cloister",
+      "unlock_level": 9
+    }
+  ],
+  "notes": "Class proficiency list not provided in source XML. Attack throws follow mage progression (improve by 2 every 6 levels). Saving throws follow cleric progression (improve by 2 every 4 levels). The XML save table for levels 3-4 shows attack throw as '10+ / 9+ at level 4', indicating mage attack throw advances at level 4; saves are expanded accordingly."
+}

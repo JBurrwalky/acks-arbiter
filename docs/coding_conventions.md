@@ -186,7 +186,7 @@ enum TERRITORY { Civilized, Borderlands, Wilderness }   # screaming type, mixed 
 
 ### 2.1 Engine Directory Structure
 
-<!-- Updated 2026-03-27 to reflect actual project state -->
+<!-- Updated 2026-03-28 to reflect actual project state -->
 
 ```
 acks-arbiter/               (Godot project root = repo root)
@@ -211,10 +211,10 @@ acks-arbiter/               (Godot project root = repo root)
 │   │   └── roll_result.gd
 │   └── subsystems/
 │       ├── calendar/       # CalendarConstants, CalendarSeasons (pure static computation)
+│       ├── characters/     # PowerRegistry, ClassRegistry, AbilityUtils, EncumbranceCalculator, CharacterGenerator
 │       ├── exploration/    # HexMapController
 │       ├── override/       # OverrideManager (dev-mode state manipulation)
 │       ├── combat/         # (planned)
-│       ├── character/      # (planned)
 │       ├── domain/         # (planned)
 │       └── magic/          # (planned)
 ├── scenes/
@@ -227,8 +227,12 @@ acks-arbiter/               (Godot project root = repo root)
 ├── tests/                  # All test scripts + test_runner.tscn
 ├── db/
 │   ├── schema.sql          # Canonical schema (update after every migration)
-│   └── migrations/         # 001_initial_schema, 002_override_log, 003_dice_roll_log
-├── data/                   # Runtime JSON (test_hex_map.json)
+│   └── migrations/         # 001_initial_schema .. 005_characters_expanded
+├── data/
+│   ├── classes/            # One JSON per ACKS class (25 files)
+│   ├── powers/             # power_catalog.json (reusable power definitions)
+│   ├── equipment/          # base_equipment.json (weapons, armor, gear)
+│   └── test_hex_map.json   # Test hex map data
 ├── rules/                  # SACRED XML rule summaries — never modify
 ├── generation/             # GDD markdown files — modifiable
 └── docs/                   # Architecture docs, this file, maps
@@ -1183,6 +1187,14 @@ These are not coding style — they are mechanical rules that must be followed i
 | Inventory slots | `hands_main`, `hands_off`, `body`, `head`, `belt`, `pack`, `mount`. | Design brief |
 | Fog of war states | `HIDDEN` → `EXPLORED` → `VISIBLE`. Never transition backwards. | `hex_map_data.gd` |
 | Three dice modes | `DIGITAL`, `PHYSICAL`, `HYBRID` (default). Persisted in `user://settings.cfg`. | Design brief §8.4 |
+| HD minimum | CON penalty cannot reduce any single hit die roll below 1. Apply `maxi(roll + con_mod, 1)` per die. | ACKS Core |
+| Prime req minimum | Must have >= 9 in each prime requisite to qualify for a class. | ACKS Core |
+| XP adjustment | Uses LOWEST prime requisite score: 16+ → +10%, 13-15 → +5%, 9-12 → 0%, 6-8 → -5%, 3-5 → -10%. | ACKS Core |
+| Ability trade | 2 points from source → 1 point to prime req. Cannot lower CON, CHA, or another prime req. No score below 9. | ACKS Core |
+| Saving throw order | petrification/paralysis, poison/death, blast/breath, staffs/wands, spells. | ACKS Core |
+| Modular powers | Class abilities stored as reusable power definitions (`data/powers/`) referenced by ID. Class JSONs hold progression tables. Characters get stamped copies in `character_powers` table. | Phase C-1 design |
+| Class data format | One JSON per class in `data/classes/`. ClassRegistry loads all on init. 25 classes total. | Phase C-1 |
+| Registries are RefCounted | `PowerRegistry` and `ClassRegistry` are instantiated by consumers, NOT autoloads. Only truly global state gets autoload status. | Phase C-1 |
 
 ---
 

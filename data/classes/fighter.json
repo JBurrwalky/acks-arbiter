@@ -1,0 +1,78 @@
+{
+  "class_id": "fighter",
+  "class_name": "Fighter",
+  "source": "ACKS Core",
+  "race": "human",
+  "prime_requisites": ["STR"],
+  "minimum_abilities": {},
+  "alignment_restriction": "",
+  "hit_die": "1d8",
+  "hp_after_max_hd": "+2",
+  "max_hd_count": 9,
+  "max_level": 14,
+  "combat_progression": "fighter",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 9, "3": 9, "4": 8, "5": 7, "6": 7, "7": 6, "8": 5, "9": 5, "10": 4, "11": 3, "12": 3, "13": 2, "14": 1
+  },
+  "saving_throws": {
+    "1":  {"petrification": 15, "poison_death": 14, "blast_breath": 16, "staffs_wands": 16, "spells": 17},
+    "2":  {"petrification": 14, "poison_death": 13, "blast_breath": 15, "staffs_wands": 15, "spells": 16},
+    "3":  {"petrification": 14, "poison_death": 13, "blast_breath": 15, "staffs_wands": 15, "spells": 16},
+    "4":  {"petrification": 13, "poison_death": 12, "blast_breath": 14, "staffs_wands": 14, "spells": 15},
+    "5":  {"petrification": 12, "poison_death": 11, "blast_breath": 13, "staffs_wands": 13, "spells": 14},
+    "6":  {"petrification": 12, "poison_death": 11, "blast_breath": 13, "staffs_wands": 13, "spells": 14},
+    "7":  {"petrification": 11, "poison_death": 10, "blast_breath": 12, "staffs_wands": 12, "spells": 13},
+    "8":  {"petrification": 10, "poison_death":  9, "blast_breath": 11, "staffs_wands": 11, "spells": 12},
+    "9":  {"petrification": 10, "poison_death":  9, "blast_breath": 11, "staffs_wands": 11, "spells": 12},
+    "10": {"petrification":  9, "poison_death":  8, "blast_breath": 10, "staffs_wands": 10, "spells": 11},
+    "11": {"petrification":  8, "poison_death":  7, "blast_breath":  9, "staffs_wands":  9, "spells": 10},
+    "12": {"petrification":  8, "poison_death":  7, "blast_breath":  9, "staffs_wands":  9, "spells": 10},
+    "13": {"petrification":  7, "poison_death":  6, "blast_breath":  8, "staffs_wands":  8, "spells":  9},
+    "14": {"petrification":  6, "poison_death":  5, "blast_breath":  7, "staffs_wands":  7, "spells":  8}
+  },
+  "xp_table": [0, 2000, 4000, 8000, 16000, 32000, 65000, 130000, 250000, 370000, 490000, 610000, 730000, 850000],
+  "hd_table": ["1d8", "2d8", "3d8", "4d8", "5d8", "6d8", "7d8", "8d8", "9d8", "9d8+2", "9d8+4", "9d8+6", "9d8+8", "9d8+10"],
+  "weapon_permissions": ["all"],
+  "weapon_restrictions": [],
+  "armor_permissions": ["all"],
+  "shield_permitted": true,
+  "fighting_styles": ["weapon_and_shield", "two_handed", "dual_wield"],
+  "class_proficiency_list": [
+    "acrobatics", "alertness", "berserkergang", "blind_fighting",
+    "combat_reflexes", "combat_trickery_disarm", "combat_trickery_force_back",
+    "combat_trickery_knock_down", "combat_trickery_overrun", "combat_trickery_sunder",
+    "command", "dungeon_bashing", "endurance", "fighting_style", "gambling",
+    "intimidation", "leadership", "manual_of_arms", "military_strategy",
+    "precise_shooting", "riding", "running", "siege_engineering",
+    "skirmishing", "survival", "swashbuckling", "weapon_finesse", "weapon_focus"
+  ],
+  "proficiency_progression": {
+    "class": [1, 3, 6, 9, 12],
+    "general": [1, 5, 9, 13]
+  },
+  "level_titles": [
+    "Man-at-Arms", "Warrior", "Swordmaster", "Hero", "Exemplar",
+    "Myrmidon", "Champion", "Epic Hero", "Warlord", "Warlord, 10th lvl",
+    "Warlord, 11th lvl", "Warlord, 12th lvl", "Warlord, 13th lvl", "Overlord"
+  ],
+  "class_powers": [
+    {
+      "power_id": "fighter_damage_bonus",
+      "unlock_level": 1,
+      "progression": {"1": 1, "2": 1, "3": 2, "4": 2, "5": 2, "6": 3, "7": 3, "8": 3, "9": 4, "10": 4, "11": 4, "12": 5, "13": 5, "14": 5}
+    },
+    {
+      "power_id": "cleave",
+      "unlock_level": 1
+    },
+    {
+      "power_id": "battlefield_leadership",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "stronghold_castle",
+      "unlock_level": 9
+    }
+  ]
+}

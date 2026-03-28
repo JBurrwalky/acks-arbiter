@@ -710,3 +710,130 @@ CalendarSeasons public API (new class, engine/subsystems/calendar/calendar_seaso
 2. Wire `Timekeeping.load_state(campaign_id)` into `main_scene.gd` after `GameState.start_session()`.
 3. Build the weather generation subsystem per `gdd-weather-generation.md`.
 4. Build the session runner state machine.
+
+---
+
+## Session 2026-03-28 — Phase C-1: Character Data Model, Class System, Generation Engine, Inventory
+
+**Task:** Build the character subsystem: unified data model (PC/henchman/NPC), modular class power system, class registry with all 25 ACKS 1e classes, character generation engine, encumbrance calculator, and positional inventory expansion.
+**Model used:** claude-opus-4-6 (1M context) for planning and implementation.
+
+**Completed:**
+
+- **Modular Power System** (`data/powers/power_catalog.json`):
+  - 55 reusable power definitions with metadata (id, name, type, description, resolution)
+  - Power types: skill_throw, scaling_multiplier, turning_table, damage_bonus, casting_arcane, casting_divine, passive, threshold, aura, detection
+  - Classes reference powers by ID with class-specific progression tables — supports future custom class builder
+
+- **Class Data Registry** (`data/classes/*.json` — 25 files):
+  - Core: Fighter, Mage, Cleric, Thief
+  - Demihuman: Dwarf Vaultguard, Dwarf Craftpriest, Elf Spellsword, Elf Nightblade
+  - Campaign: Assassin, Bard, Bladedancer, Explorer, Venturer
+  - Player's Companion: Anti-Paladin, Barbarian, Dwarven Delver, Dwarven Fury, Paladin, Priestess, Shaman, Warlock, Witch, Elven Courtier, Elven Enchanter, Elven Ranger
+  - Each JSON contains: identity, requirements, progression tables (attack, saves, XP, HD), weapon/armor permissions, proficiency lists, level titles, class_powers with progression data
+
+- **Equipment Catalog** (`data/equipment/base_equipment.json`):
+  - All ACKS Core weapons, armor, shields, ammunition, and common adventuring gear
+  - Encumbrance in 1/6 stone units, weapon damage, armor AC bonus, is_heavy flag
+
+- **CharacterData Expansion** (`engine/shared_types/character_data.gd`):
+  - Added 17 fields: 5 saving throws, base_movement, hit_die_type, max_level, xp_for_next_level, xp_adjustment_percent, title, alignment, current_age, age_category, languages (JSON), personality (JSON), is_incapacitated
+  - Updated from_dict() and to_dict() for all new fields
+
+- **InventoryItem Expansion** (`engine/shared_types/inventory_item.gd`):
+  - Added 6 fields: item_category, is_magical, magical_bonus, weapon_damage, armor_ac_bonus, is_heavy
+  - Updated from_dict() and to_dict()
+
+- **DB Migration 005** (`db/migrations/005_characters_expanded.sql`):
+  - ALTER TABLE characters: 17 new columns (saves, movement, class metadata, alignment, aging, languages, personality, incapacitated)
+  - ALTER TABLE inventory_items: 6 new columns (category, magical, damage, AC, heavy)
+  - CREATE TABLE character_powers: modular power storage (character_id, power_id, unlock_level, conditions, progression_data, is_active)
+
+- **CampaignRepository Extension** (`engine/autoloads/campaign_repository.gd`):
+  - Updated create_character() and save_character() for all new columns
+  - Updated add_inventory_item() for new columns
+  - Added: save_character_powers(), get_character_powers(), clear_character_powers()
+  - Added: save_character_proficiencies(), get_character_proficiencies()
+  - Added: save_character_inventory() (batch save)
+  - Added: list_characters_by_type(), delete_character() (cascading), promote_character()
+
+- **PowerRegistry** (`engine/subsystems/characters/power_registry.gd`):
+  - Loads power_catalog.json, provides get_power(), has_power(), get_powers_by_type(), get_all_power_ids()
+
+- **ClassRegistry** (`engine/subsystems/characters/class_registry.gd`):
+  - Loads all 25 class JSONs from data/classes/, provides:
+  - get_class(), get_eligible_classes() with ACKS eligibility rules (prime reqs >= 9, race matching, min abilities)
+  - get_attack_throw(), get_saving_throws(), get_xp_for_level(), get_hit_die(), get_level_title()
+  - get_class_powers(), get_spell_slots(), get_proficiency_list(), get_max_hd_count(), get_hp_after_max_hd()
+
+- **AbilityUtils** (`engine/subsystems/characters/ability_utils.gd`):
+  - get_xp_adjustment() — uses lowest prime req score
+  - get_max_henchmen() — 4 + CHA mod, clamped [1, 7]
+  - get_loyalty_modifier(), get_reaction_modifier(), get_languages_bonus()
+
+- **EncumbranceCalculator** (`engine/subsystems/characters/encumbrance_calculator.gd`):
+  - calculate_encumbrance() — sums inventory, returns total + movement rates
+  - get_movement_tier() — 4-tier ACKS movement table
+  - calculate_item_encumbrance() — handles magical armor/shield weight reduction
+
+- **CharacterGenerator** (`engine/subsystems/characters/character_generator.gd`):
+  - roll_ability_scores() — 3d6 in order via DiceSystem
+  - get_eligible_classes() — delegates to ClassRegistry
+  - apply_ability_trade() — validates all ACKS trade rules
+  - generate_pc() — full level-1 PC creation procedure
+  - generate_npc() — complete NPC at any level with auto-proficiencies
+  - generate_henchman() — NPC with employer tracking
+  - stamp_powers() — copies class powers to character records
+  - auto_select_proficiencies() — random from eligible lists
+
+- **Test Suites** (8 new files, 47 tests total):
+  - test_ability_utils.gd (5 tests), test_class_registry.gd (10 tests), test_power_registry.gd (4 tests)
+  - test_encumbrance.gd (8 tests), test_character_generator.gd (6 tests), test_character_persistence.gd (4 tests)
+  - test_class_powers.gd (5 tests), test_npc_generation.gd (5 tests)
+  - Updated test_runner.gd and test_runner.tscn for all 14 suites
+
+**Decisions made:**
+- **Two-Layer Power Architecture:** Power definitions store metadata only (catalog); class JSONs store progression data per power per class. At generation time, powers are stamped onto characters (character_powers table). This decouples runtime from class registry and supports custom class builder.
+- **Powers stored with class-specific progressions** rather than universal progressions, because ACKS allows different classes to have different progression rates for the same power (e.g., Thief vs Dwarven Delver thief skills).
+- **ClassRegistry and PowerRegistry are RefCounted**, not autoloads. They're instantiated by the CharacterGenerator. Only systems that need true global state are autoloads.
+- **Existing CharacterData.ability_modifier() left in place** — it's already used by other code. AbilityUtils adds complementary functions.
+- **All 25 ACKS 1e classes extracted** in one pass rather than deferring PC classes, since the XML structure is identical.
+
+**Interfaces defined or changed:**
+- `CharacterData` — 17 new fields, expanded from_dict()/to_dict()
+- `InventoryItem` — 6 new fields, expanded from_dict()/to_dict()
+- `CampaignRepository.create_character()` — now accepts 39 parameters
+- `CampaignRepository.save_character()` — updates all 29 mutable fields
+- `CampaignRepository.save_character_powers(character_id, powers: Array) -> bool`
+- `CampaignRepository.get_character_powers(character_id) -> Array`
+- `CampaignRepository.save_character_proficiencies(character_id, proficiencies: Array) -> bool`
+- `CampaignRepository.save_character_inventory(character_id, items: Array) -> bool`
+- `CampaignRepository.list_characters_by_type(campaign_id, character_type) -> Array`
+- `CampaignRepository.delete_character(id) -> bool` — cascading delete
+- `CampaignRepository.promote_character(id, new_tier) -> bool`
+- `PowerRegistry.get_power(id) -> Dictionary`
+- `ClassRegistry.get_class(id) -> Dictionary`
+- `ClassRegistry.get_eligible_classes(scores, race) -> Array[String]`
+- `CharacterGenerator.generate_pc(class_id, scores, campaign_id) -> CharacterData`
+- `CharacterGenerator.generate_npc(class_id, level, campaign_id, tier, type) -> CharacterData`
+- `CharacterGenerator.stamp_powers(character, class_id) -> Array`
+
+**Database changes:**
+- Migration 005: 17 new columns on characters, 6 on inventory_items, new character_powers table
+- schema.sql updated to reflect migration 005
+
+**Tests added/updated:**
+- 8 new test suites (47 tests) covering ability utils, class registry, power registry, encumbrance, character generation, persistence round-trip, class powers, NPC generation
+- test_runner.gd and test_runner.tscn updated (now 14 suites total)
+
+**Known issues:**
+- Class JSONs extracted by agents need spot-checking against published ACKS books — especially PC classes (Priestess, Shaman, Warlock, Witch) which may have incomplete proficiency lists in the XML source
+- Warlock spell progression may need verification (flagged as potentially malformed in source XML)
+- Tests cannot run until project is opened in Godot 4.6 (tscn uid references may need regeneration)
+- Existing tests (terrain, hex map, override, dice, timekeeping, calendar) need re-verification after migration 005
+
+**Next session should:**
+1. Open project in Godot 4.6 and run `test_runner.tscn` — debug any failures in all 14 suites.
+2. Spot-check 3-4 class JSONs against ACKS books (especially Thief progression tables, Cleric turning table, Spellsword spell slots).
+3. Phase C-2: Three-tier persistence with promotion logic.
+4. Phase C-3: XP tracking and level-up workflow.

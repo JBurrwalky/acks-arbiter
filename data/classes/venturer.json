@@ -1,0 +1,130 @@
+{
+  "class_id": "venturer",
+  "class_name": "Venturer",
+  "source": "Axioms",
+  "race": "human",
+  "prime_requisites": ["CHA"],
+  "minimum_abilities": {},
+  "alignment_restriction": "",
+  "hit_die": "1d4",
+  "hp_after_max_hd": "+2",
+  "max_hd_count": 9,
+  "max_level": 14,
+  "combat_progression": "thief",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 10, "3": 9, "4": 9, "5": 8, "6": 8, "7": 7, "8": 7, "9": 6, "10": 6, "11": 5, "12": 5, "13": 4, "14": 4
+  },
+  "saving_throws": {
+    "1":  {"petrification": 13, "poison_death": 13, "blast_breath": 16, "staffs_wands": 14, "spells": 15},
+    "2":  {"petrification": 13, "poison_death": 13, "blast_breath": 16, "staffs_wands": 14, "spells": 15},
+    "3":  {"petrification": 12, "poison_death": 12, "blast_breath": 15, "staffs_wands": 13, "spells": 14},
+    "4":  {"petrification": 12, "poison_death": 12, "blast_breath": 15, "staffs_wands": 13, "spells": 14},
+    "5":  {"petrification": 11, "poison_death": 11, "blast_breath": 14, "staffs_wands": 12, "spells": 13},
+    "6":  {"petrification": 11, "poison_death": 11, "blast_breath": 14, "staffs_wands": 12, "spells": 13},
+    "7":  {"petrification": 10, "poison_death": 10, "blast_breath": 13, "staffs_wands": 11, "spells": 12},
+    "8":  {"petrification": 10, "poison_death": 10, "blast_breath": 13, "staffs_wands": 11, "spells": 12},
+    "9":  {"petrification":  9, "poison_death":  9, "blast_breath": 12, "staffs_wands": 10, "spells": 11},
+    "10": {"petrification":  9, "poison_death":  9, "blast_breath": 12, "staffs_wands": 10, "spells": 11},
+    "11": {"petrification":  8, "poison_death":  8, "blast_breath": 11, "staffs_wands":  9, "spells": 10},
+    "12": {"petrification":  8, "poison_death":  8, "blast_breath": 11, "staffs_wands":  9, "spells": 10},
+    "13": {"petrification":  7, "poison_death":  7, "blast_breath": 10, "staffs_wands":  8, "spells":  9},
+    "14": {"petrification":  7, "poison_death":  7, "blast_breath": 10, "staffs_wands":  8, "spells":  9}
+  },
+  "xp_table": [0, 1250, 2500, 5000, 10000, 20000, 40000, 80000, 180000, 280000, 380000, 480000, 580000, 680000],
+  "hd_table": ["1d4", "2d4", "3d4", "4d4", "5d4", "6d4", "7d4", "8d4", "9d4", "9d4+2", "9d4+4", "9d4+6", "9d4+8", "9d4+10"],
+  "weapon_permissions": ["arbalest", "composite_bow", "crossbow", "dagger", "longbow", "shortbow", "short_sword"],
+  "weapon_restrictions": ["limited_weapon_list"],
+  "armor_permissions": ["chain_mail_or_lighter"],
+  "shield_permitted": true,
+  "fighting_styles": ["weapon_and_shield"],
+  "class_proficiency_list": [
+    "alertness", "ambushing", "arcane_dabbling", "bargaining",
+    "climbing", "combat_reflexes", "combat_trickery_disarm",
+    "combat_trickery_incapacitate", "command", "gambling",
+    "intimidation", "language", "leadership", "lip_reading",
+    "magical_engineering", "mapping", "mountaineering", "navigation",
+    "passing_without_trace", "precise_shooting", "profession",
+    "riding", "running", "seafaring", "signaling", "skirmishing",
+    "swashbuckling", "weapon_finesse"
+  ],
+  "proficiency_progression": {
+    "class": [1, 4, 8, 12],
+    "general": [1, 5, 9, 13]
+  },
+  "level_titles": [
+    "Tinker", "Trader", "Arbitrager", "Commissary", "Mercantilist",
+    "Enterpriser", "Venturer", "Merchant Venturer", "Merchant Prince",
+    "Merchant Prince, 10th level", "Merchant Prince, 11th level",
+    "Merchant Prince, 12th level", "Merchant Prince, 13th level",
+    "Mogul"
+  ],
+  "class_powers": [
+    {
+      "power_id": "mercantile_network",
+      "unlock_level": 1,
+      "notes": "Previously visited markets treated as one class larger; Class I remains Class I"
+    },
+    {
+      "power_id": "expert_bargainer",
+      "unlock_level": 1,
+      "notes": "Items purchased cost 10% less; items sold go for 10% more"
+    },
+    {
+      "power_id": "bonus_languages",
+      "unlock_level": 1,
+      "notes": "Gains four bonus languages"
+    },
+    {
+      "power_id": "expert_traveler",
+      "unlock_level": 1,
+      "notes": "Begins play with Riding or Seafaring proficiency"
+    },
+    {
+      "power_id": "avoid_getting_lost",
+      "unlock_level": 1,
+      "notes": "+4 bonus on proficiency throws to avoid getting lost in familiar terrain"
+    },
+    {
+      "power_id": "diplomacy",
+      "unlock_level": 1,
+      "notes": "+2 bonus on all reaction rolls when attempting to parley with intelligent creatures"
+    },
+    {
+      "power_id": "bribery",
+      "unlock_level": 1,
+      "notes": "Offering a bribe permits an additional reaction roll; +1 for one day's pay, +2 for one week's pay, +3 for one month's pay"
+    },
+    {
+      "power_id": "art_of_treachery",
+      "unlock_level": 1,
+      "notes": "After achieving Friendly result via diplomacy/bribery, party gains +3 to surprise if combat initiated immediately"
+    },
+    {
+      "power_id": "steady_trade_route",
+      "unlock_level": 2,
+      "progression": {"2": 1, "3": 1, "4": 1, "5": 1, "6": 2, "7": 2, "8": 2, "9": 2, "10": 3, "11": 3, "12": 3, "13": 3, "14": 3},
+      "notes": "Establish guaranteed merchant contacts between two visited markets for two types of merchandise"
+    },
+    {
+      "power_id": "rumormongering",
+      "unlock_level": 4,
+      "notes": "Learn 1d4 rumors from old contacts when revisiting an urban settlement; requires 6 hours; once per month per settlement"
+    },
+    {
+      "power_id": "access_to_capital",
+      "unlock_level": 8,
+      "notes": "May borrow money from merchant guild at 3% interest/month without collateral or 1% with collateral"
+    },
+    {
+      "power_id": "stronghold_guildhouse",
+      "unlock_level": 9,
+      "notes": "Establish a guildhouse; 2d6 1st-level venturer apprentices offer to work; follows hideout rules"
+    },
+    {
+      "power_id": "monopoly_power",
+      "unlock_level": 12,
+      "notes": "Earn 1gp per month per urban family in monopoly revenue from settlement with established guildhouse"
+    }
+  ]
+}

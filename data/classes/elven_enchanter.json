@@ -1,0 +1,138 @@
+{
+  "class_id": "elven_enchanter",
+  "class_name": "Elven Enchanter",
+  "source": "Player's Companion",
+  "race": "elf",
+  "prime_requisites": ["INT", "CHA"],
+  "minimum_abilities": {"INT": 9},
+  "alignment_restriction": "",
+  "hit_die": "1d4",
+  "hp_after_max_hd": "+1",
+  "max_hd_count": 9,
+  "max_level": 12,
+  "combat_progression": "mage",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 10, "3": 10, "4": 9, "5": 9, "6": 9, "7": 8, "8": 8, "9": 8, "10": 7, "11": 7, "12": 7
+  },
+  "saving_throws": {
+    "1":  {"petrification": 12, "poison_death": 13, "blast_breath": 15, "staffs_wands": 11, "spells": 11},
+    "2":  {"petrification": 12, "poison_death": 13, "blast_breath": 15, "staffs_wands": 11, "spells": 11},
+    "3":  {"petrification": 12, "poison_death": 13, "blast_breath": 15, "staffs_wands": 11, "spells": 11},
+    "4":  {"petrification": 11, "poison_death": 12, "blast_breath": 14, "staffs_wands": 10, "spells": 10},
+    "5":  {"petrification": 11, "poison_death": 12, "blast_breath": 14, "staffs_wands": 10, "spells": 10},
+    "6":  {"petrification": 11, "poison_death": 12, "blast_breath": 14, "staffs_wands": 10, "spells": 10},
+    "7":  {"petrification": 10, "poison_death": 11, "blast_breath": 13, "staffs_wands":  9, "spells":  9},
+    "8":  {"petrification": 10, "poison_death": 11, "blast_breath": 13, "staffs_wands":  9, "spells":  9},
+    "9":  {"petrification": 10, "poison_death": 11, "blast_breath": 13, "staffs_wands":  9, "spells":  9},
+    "10": {"petrification":  9, "poison_death": 10, "blast_breath": 12, "staffs_wands":  8, "spells":  8},
+    "11": {"petrification":  9, "poison_death": 10, "blast_breath": 12, "staffs_wands":  8, "spells":  8},
+    "12": {"petrification":  9, "poison_death": 10, "blast_breath": 12, "staffs_wands":  8, "spells":  8}
+  },
+  "xp_table": [0, 2700, 5400, 10800, 21600, 43200, 85000, 170000, 370000, 570000, 770000, 970000],
+  "hd_table": ["1d4", "2d4", "3d4", "4d4", "5d4", "6d4", "7d4", "8d4", "9d4", "9d4+1", "9d4+2", "9d4+3"],
+  "weapon_permissions": ["quarterstaff", "dagger", "dart", "sling"],
+  "weapon_restrictions": [],
+  "armor_permissions": [],
+  "shield_permitted": false,
+  "fighting_styles": [],
+  "class_proficiency_list": [
+    "alchemy", "alertness", "art", "beast_friendship", "collegiate_wizardry",
+    "contortionism", "craft", "diplomacy", "disguise", "familiar",
+    "healing", "illusion_resistance", "knowledge", "language",
+    "loremastery", "magical_engineering", "magical_music", "mimicry",
+    "naturalism", "passing_without_trace", "performance", "profession",
+    "quiet_magic", "running", "sensing_power", "soothsaying",
+    "swashbuckling", "transmogrification", "unflappable_casting", "wakefulness"
+  ],
+  "proficiency_progression": {
+    "class": [1, 6, 12],
+    "general": [1, 5, 9]
+  },
+  "level_titles": [
+    "Prestidigitator", "Glamourer", "Charmer", "Beguiler", "Spellbinder",
+    "Bewitcher", "Ensorceller", "Illusionist", "Enchanter", "Enchanter, 10th lvl",
+    "Enchanter, 11th lvl", "Enchanter, 12th lvl"
+  ],
+  "class_powers": [
+    {
+      "power_id": "arcane_casting",
+      "unlock_level": 1,
+      "tradition": "arcane",
+      "progression": {
+        "1":  [1, 0, 0, 0, 0, 0],
+        "2":  [2, 0, 0, 0, 0, 0],
+        "3":  [2, 1, 0, 0, 0, 0],
+        "4":  [2, 2, 0, 0, 0, 0],
+        "5":  [2, 2, 1, 0, 0, 0],
+        "6":  [2, 2, 2, 0, 0, 0],
+        "7":  [3, 2, 2, 1, 0, 0],
+        "8":  [3, 3, 2, 2, 0, 0],
+        "9":  [3, 3, 3, 2, 1, 0],
+        "10": [3, 3, 3, 3, 2, 0],
+        "11": [4, 3, 3, 3, 2, 1],
+        "12": [4, 4, 3, 3, 3, 2]
+      }
+    },
+    {
+      "power_id": "mastery_of_charms_and_illusions",
+      "unlock_level": 1,
+      "description": "Charm and illusion spells are calculated as 2 class levels higher. Targets of charm spells suffer -2 on saves. Targets disbelieving illusions suffer -2 penalty."
+    },
+    {
+      "power_id": "prestidigitations",
+      "unlock_level": 1,
+      "description": "Can perform simple magical illusions and sleight-of-hand at will. May use magical sleight-of-hand to pick pockets as a thief of one-half class level."
+    },
+    {
+      "power_id": "glamorous_aura",
+      "unlock_level": 1,
+      "description": "+2 bonus to reaction rolls to impress and intimidate. If total is 12+, affected subjects act as if charmed while in the enchanter's presence."
+    },
+    {
+      "power_id": "detect_secret_doors",
+      "unlock_level": 1,
+      "description": "Detect hidden and secret doors on proficiency throw of 8+ when actively searching, 14+ on casual inspection."
+    },
+    {
+      "power_id": "ghoul_paralysis_immunity",
+      "unlock_level": 1,
+      "description": "Completely unaffected by ghoul paralysis."
+    },
+    {
+      "power_id": "wilderness_surprise_bonus",
+      "unlock_level": 1,
+      "description": "+1 bonus to surprise rolls in the wilderness."
+    },
+    {
+      "power_id": "elven_save_bonus",
+      "unlock_level": 1,
+      "description": "Reduce saving throw target values vs Petrification/Paralysis by 1 and vs Spells by 1. Already factored into saving throw table."
+    },
+    {
+      "power_id": "spell_research",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "scroll_scribing",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "potion_brewing",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "magic_item_creation",
+      "unlock_level": 9
+    },
+    {
+      "power_id": "advanced_arcane_creation",
+      "unlock_level": 11,
+      "description": "May learn and cast ritual arcane spells of 7th, 8th, and 9th level. May craft constructs, cross-breeds; if chaotic, may create necromantic servants or become undead."
+    },
+    {
+      "power_id": "stronghold_sanctum",
+      "unlock_level": 9
+    }
+  ]
+}

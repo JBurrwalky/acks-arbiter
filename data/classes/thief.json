@@ -1,0 +1,116 @@
+{
+  "class_id": "thief",
+  "class_name": "Thief",
+  "source": "ACKS Core",
+  "race": "human",
+  "prime_requisites": ["DEX"],
+  "minimum_abilities": {},
+  "alignment_restriction": "",
+  "hit_die": "1d4",
+  "hp_after_max_hd": "+2",
+  "max_hd_count": 9,
+  "max_level": 14,
+  "combat_progression": "thief",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 10, "3": 9, "4": 9, "5": 8, "6": 8, "7": 7, "8": 7, "9": 6, "10": 6, "11": 5, "12": 5, "13": 4, "14": 4
+  },
+  "saving_throws": {
+    "1":  {"petrification": 13, "poison_death": 13, "blast_breath": 16, "staffs_wands": 14, "spells": 15},
+    "2":  {"petrification": 13, "poison_death": 13, "blast_breath": 16, "staffs_wands": 14, "spells": 15},
+    "3":  {"petrification": 12, "poison_death": 12, "blast_breath": 15, "staffs_wands": 13, "spells": 14},
+    "4":  {"petrification": 12, "poison_death": 12, "blast_breath": 15, "staffs_wands": 13, "spells": 14},
+    "5":  {"petrification": 11, "poison_death": 11, "blast_breath": 14, "staffs_wands": 12, "spells": 13},
+    "6":  {"petrification": 11, "poison_death": 11, "blast_breath": 14, "staffs_wands": 12, "spells": 13},
+    "7":  {"petrification": 10, "poison_death": 10, "blast_breath": 13, "staffs_wands": 11, "spells": 12},
+    "8":  {"petrification": 10, "poison_death": 10, "blast_breath": 13, "staffs_wands": 11, "spells": 12},
+    "9":  {"petrification":  9, "poison_death":  9, "blast_breath": 12, "staffs_wands": 10, "spells": 11},
+    "10": {"petrification":  9, "poison_death":  9, "blast_breath": 12, "staffs_wands": 10, "spells": 11},
+    "11": {"petrification":  8, "poison_death":  8, "blast_breath": 11, "staffs_wands":  9, "spells": 10},
+    "12": {"petrification":  8, "poison_death":  8, "blast_breath": 11, "staffs_wands":  9, "spells": 10},
+    "13": {"petrification":  7, "poison_death":  7, "blast_breath": 10, "staffs_wands":  8, "spells":  9},
+    "14": {"petrification":  7, "poison_death":  7, "blast_breath": 10, "staffs_wands":  8, "spells":  9}
+  },
+  "xp_table": [0, 1250, 2500, 5000, 10000, 20000, 40000, 80000, 180000, 280000, 380000, 480000, 580000, 680000],
+  "hd_table": ["1d4", "2d4", "3d4", "4d4", "5d4", "6d4", "7d4", "8d4", "9d4", "9d4+2", "9d4+4", "9d4+6", "9d4+8", "9d4+10"],
+  "weapon_permissions": ["any_missile", "any_one_handed_melee"],
+  "weapon_restrictions": ["two_handed_melee"],
+  "armor_permissions": ["leather"],
+  "shield_permitted": false,
+  "fighting_styles": ["dual_wield", "two_handed"],
+  "class_proficiency_list": [
+    "acrobatics", "alertness", "arcane_dabbling", "blind_fighting",
+    "bribery", "cat_burglary", "combat_reflexes",
+    "combat_trickery_disarm", "combat_trickery_incapacitate",
+    "contortionism", "diplomacy", "fighting_style", "gambling",
+    "intimidation", "lip_reading", "lockpicking", "mapping",
+    "precise_shooting", "riding", "running", "seafaring",
+    "skirmishing", "skulking", "sniping", "swashbuckling",
+    "trap_finding", "weapon_finesse", "weapon_focus"
+  ],
+  "proficiency_progression": {
+    "class": [1, 4, 8, 12],
+    "general": [1, 5, 9, 13]
+  },
+  "level_titles": [
+    "Footpad", "Hood", "Robber", "Burglar", "Rogue",
+    "Scoundrel", "Pilferer", "Thief", "Master Thief", "Master Thief, 10th level",
+    "Master Thief, 11th level", "Master Thief, 12th level", "Master Thief, 13th level", "Prince of Thieves"
+  ],
+  "class_powers": [
+    {
+      "power_id": "open_locks",
+      "unlock_level": 1,
+      "progression": {"1": 18, "2": 17, "3": 16, "4": 15, "5": 14, "6": 12, "7": 10, "8": 8, "9": 6, "10": 4, "11": 3, "12": 2, "13": 1, "14": 1}
+    },
+    {
+      "power_id": "find_remove_traps",
+      "unlock_level": 1,
+      "progression": {"1": 18, "2": 17, "3": 16, "4": 15, "5": 14, "6": 13, "7": 11, "8": 9, "9": 7, "10": 5, "11": 3, "12": 2, "13": 2, "14": 1}
+    },
+    {
+      "power_id": "pick_pockets",
+      "unlock_level": 1,
+      "progression": {"1": 17, "2": 16, "3": 15, "4": 14, "5": 13, "6": 12, "7": 10, "8": 8, "9": 6, "10": 4, "11": 2, "12": -1, "13": -3, "14": -5}
+    },
+    {
+      "power_id": "move_silently",
+      "unlock_level": 1,
+      "progression": {"1": 17, "2": 16, "3": 15, "4": 14, "5": 13, "6": 12, "7": 10, "8": 8, "9": 6, "10": 4, "11": 2, "12": 2, "13": 1, "14": 1}
+    },
+    {
+      "power_id": "climb_walls",
+      "unlock_level": 1,
+      "progression": {"1": 6, "2": 5, "3": 5, "4": 4, "5": 4, "6": 4, "7": 3, "8": 3, "9": 3, "10": 3, "11": 2, "12": 2, "13": 1, "14": 1}
+    },
+    {
+      "power_id": "hide_in_shadows",
+      "unlock_level": 1,
+      "progression": {"1": 19, "2": 18, "3": 17, "4": 16, "5": 15, "6": 14, "7": 12, "8": 10, "9": 8, "10": 6, "11": 4, "12": 3, "13": 2, "14": 1}
+    },
+    {
+      "power_id": "hear_noise",
+      "unlock_level": 1,
+      "progression": {"1": 14, "2": 13, "3": 12, "4": 11, "5": 10, "6": 9, "7": 8, "8": 7, "9": 6, "10": 5, "11": 4, "12": 3, "13": 2, "14": 1}
+    },
+    {
+      "power_id": "backstab",
+      "unlock_level": 1,
+      "progression": {"1": 2, "2": 2, "3": 2, "4": 2, "5": 3, "6": 3, "7": 3, "8": 3, "9": 4, "10": 4, "11": 4, "12": 4, "13": 5, "14": 5}
+    },
+    {
+      "power_id": "read_languages",
+      "unlock_level": 4,
+      "throw_target": 5
+    },
+    {
+      "power_id": "arcane_scroll_use",
+      "unlock_level": 10,
+      "throw_target": 3
+    },
+    {
+      "power_id": "stronghold_hideout",
+      "unlock_level": 9
+    }
+  ]
+}

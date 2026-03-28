@@ -1,0 +1,136 @@
+{
+  "class_id": "elven_courtier",
+  "class_name": "Elven Courtier",
+  "source": "Player's Companion",
+  "race": "elf",
+  "prime_requisites": ["INT", "CHA"],
+  "minimum_abilities": {"INT": 9},
+  "alignment_restriction": "",
+  "hit_die": "1d6",
+  "hp_after_max_hd": "+1",
+  "max_hd_count": 9,
+  "max_level": 12,
+  "combat_progression": "thief",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 10, "3": 9, "4": 9, "5": 8, "6": 8, "7": 7, "8": 7, "9": 6, "10": 6, "11": 5, "12": 5
+  },
+  "saving_throws": {
+    "1":  {"petrification": 12, "poison_death": 13, "blast_breath": 16, "staffs_wands": 14, "spells": 14},
+    "2":  {"petrification": 12, "poison_death": 13, "blast_breath": 16, "staffs_wands": 14, "spells": 14},
+    "3":  {"petrification": 11, "poison_death": 12, "blast_breath": 15, "staffs_wands": 13, "spells": 13},
+    "4":  {"petrification": 11, "poison_death": 12, "blast_breath": 15, "staffs_wands": 13, "spells": 13},
+    "5":  {"petrification": 10, "poison_death": 11, "blast_breath": 14, "staffs_wands": 12, "spells": 12},
+    "6":  {"petrification": 10, "poison_death": 11, "blast_breath": 14, "staffs_wands": 12, "spells": 12},
+    "7":  {"petrification":  9, "poison_death": 10, "blast_breath": 13, "staffs_wands": 11, "spells": 11},
+    "8":  {"petrification":  9, "poison_death": 10, "blast_breath": 13, "staffs_wands": 11, "spells": 11},
+    "9":  {"petrification":  8, "poison_death":  9, "blast_breath": 12, "staffs_wands": 10, "spells": 10},
+    "10": {"petrification":  8, "poison_death":  9, "blast_breath": 12, "staffs_wands": 10, "spells": 10},
+    "11": {"petrification":  7, "poison_death":  8, "blast_breath": 11, "staffs_wands":  9, "spells":  9},
+    "12": {"petrification":  7, "poison_death":  8, "blast_breath": 11, "staffs_wands":  9, "spells":  9}
+  },
+  "xp_table": [0, 2600, 5200, 10400, 20800, 41600, 85000, 170000, 370000, 520000, 670000, 820000],
+  "hd_table": ["1d6", "2d6", "3d6", "4d6", "5d6", "6d6", "7d6", "8d6", "9d6", "9d6+1", "9d6+2", "9d6+3"],
+  "weapon_permissions": ["sword", "short_sword", "dagger", "composite_bow", "spear", "lance"],
+  "weapon_restrictions": [],
+  "armor_permissions": ["chain_mail", "leather"],
+  "shield_permitted": true,
+  "fighting_styles": ["weapon_and_shield", "dual_wield"],
+  "class_proficiency_list": [
+    "beast_friendship", "bribery", "combat_trickery_disarm", "combat_trickery_sunder",
+    "command", "eavesdropping", "familiar", "fighting_style", "healing",
+    "knowledge_political_history", "laying_on_hands", "leadership",
+    "loremastery", "magical_engineering", "military_strategy", "mystic_aura",
+    "naturalism", "passing_without_trace", "performance", "precise_shooting",
+    "prestidigitation", "profession_seneschal", "quiet_magic", "riding",
+    "sensing_power", "skirmishing", "swashbuckling", "unflappable_casting",
+    "wakefulness", "weapon_finesse", "weapon_focus"
+  ],
+  "proficiency_progression": {
+    "class": [1, 4, 8],
+    "general": [1, 5, 9]
+  },
+  "level_titles": [
+    "Attendant", "Courtier", "Aristocrat", "Noble", "Exemplar",
+    "Patrician", "Dignitary", "Consul", "Lord", "Lord, 10th lvl",
+    "Lord, 11th lvl", "Lord, 12th lvl"
+  ],
+  "class_powers": [
+    {
+      "power_id": "arcane_casting_in_armor",
+      "unlock_level": 2,
+      "tradition": "arcane",
+      "description": "Casts arcane spells as a mage of one-half class level. Uses the mage spell list. May cast spells while wearing armor. May use magic items usable by mages or thieves.",
+      "progression": {
+        "1":  [0, 0, 0],
+        "2":  [1, 0, 0],
+        "3":  [2, 0, 0],
+        "4":  [2, 0, 0],
+        "5":  [2, 1, 0],
+        "6":  [2, 1, 0],
+        "7":  [2, 2, 0],
+        "8":  [2, 2, 0],
+        "9":  [2, 2, 1],
+        "10": [2, 2, 1],
+        "11": [2, 2, 2],
+        "12": [2, 2, 2]
+      }
+    },
+    {
+      "power_id": "classical_weapons_training",
+      "unlock_level": 1,
+      "description": "+1 bonus to attack throws with either melee or missile attacks (chosen at 1st level, cannot be changed)."
+    },
+    {
+      "power_id": "diplomacy_bonus",
+      "unlock_level": 1,
+      "description": "+2 bonus to reaction rolls when attempting to parley with intelligent creatures."
+    },
+    {
+      "power_id": "inspire_courage",
+      "unlock_level": 1,
+      "description": "Spend 1 round in oration before battle. Allies within 50 feet (not already engaged) gain +1 to attack, damage, morale, and saves vs magical fear for 1 turn. Usable on a given character once per day per class level."
+    },
+    {
+      "power_id": "performance_magic",
+      "unlock_level": 1,
+      "description": "Perform for 1 minute to produce magical effects: charm person (via serenade) or sleep (vs animals of 4 HD or less). Usable at will but not during combat."
+    },
+    {
+      "power_id": "detect_secret_doors",
+      "unlock_level": 1,
+      "description": "Detect hidden and secret doors on proficiency throw of 8+ when actively searching, 14+ on casual inspection."
+    },
+    {
+      "power_id": "ghoul_paralysis_immunity",
+      "unlock_level": 1,
+      "description": "Completely unaffected by ghoul paralysis."
+    },
+    {
+      "power_id": "wilderness_surprise_bonus",
+      "unlock_level": 1,
+      "description": "+1 bonus to surprise rolls in the wilderness."
+    },
+    {
+      "power_id": "elven_save_bonus",
+      "unlock_level": 1,
+      "description": "Reduce saving throw target values vs Petrification/Paralysis by 1 and vs Spells by 1. Already factored into saving throw table."
+    },
+    {
+      "power_id": "spell_research",
+      "unlock_level": 10
+    },
+    {
+      "power_id": "scroll_scribing",
+      "unlock_level": 10
+    },
+    {
+      "power_id": "potion_brewing",
+      "unlock_level": 10
+    },
+    {
+      "power_id": "stronghold_elven_fastness",
+      "unlock_level": 9
+    }
+  ]
+}

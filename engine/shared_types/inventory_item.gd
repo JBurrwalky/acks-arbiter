@@ -9,7 +9,7 @@ extends RefCounted
 
 var id: String = ""
 var character_id: String = ""
-var item_key: String = ""           # references data/items catalog
+var item_key: String = ""           # references data/equipment catalog
 var name: String = ""
 var quantity: int = 1
 var encumbrance_sixths: int = 0     # weight in 1/6-stone units
@@ -17,6 +17,14 @@ var slot: String = "pack"
 	# "hands_main"|"hands_off"|"body"|"head"|"belt"|"pack"|"mount"
 var is_equipped: bool = false
 var notes: String = ""
+
+## Combat-relevant fields (migration 005)
+var item_category: String = "gear"  # "weapon"|"armor"|"shield"|"gear"|"treasure"|"ammunition"
+var is_magical: bool = false
+var magical_bonus: int = 0          # +1, +2, +3 etc.
+var weapon_damage: String = ""      # e.g., "1d8" (empty for non-weapons)
+var armor_ac_bonus: int = 0         # AC granted by this armor/shield
+var is_heavy: bool = false          # true = 1 stone each (two-handed weapons, items >= 8 lbs)
 
 
 static func from_dict(data: Dictionary) -> InventoryItem:
@@ -28,9 +36,15 @@ static func from_dict(data: Dictionary) -> InventoryItem:
 	i.quantity = data.get("quantity", 1)
 	i.encumbrance_sixths = data.get("encumbrance_sixths", 0)
 	i.slot = data.get("slot", "pack")
+	i.notes = data.get("notes", "")
+	i.item_category = data.get("item_category", "gear")
+	i.magical_bonus = data.get("magical_bonus", 0)
+	i.weapon_damage = data.get("weapon_damage", "")
+	i.armor_ac_bonus = data.get("armor_ac_bonus", 0)
 	# Boolean DB fields are stored as INTEGER (0/1) — convert on read
 	i.is_equipped = data.get("is_equipped", 0) == 1
-	i.notes = data.get("notes", "")
+	i.is_magical = data.get("is_magical", 0) == 1
+	i.is_heavy = data.get("is_heavy", 0) == 1
 	return i
 
 
@@ -46,6 +60,12 @@ func to_dict() -> Dictionary:
 		"slot": slot,
 		"is_equipped": 1 if is_equipped else 0,
 		"notes": notes,
+		"item_category": item_category,
+		"is_magical": 1 if is_magical else 0,
+		"magical_bonus": magical_bonus,
+		"weapon_damage": weapon_damage,
+		"armor_ac_bonus": armor_ac_bonus,
+		"is_heavy": 1 if is_heavy else 0,
 	}
 
 

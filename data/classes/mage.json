@@ -1,0 +1,106 @@
+{
+  "class_id": "mage",
+  "class_name": "Mage",
+  "source": "ACKS Core",
+  "race": "human",
+  "prime_requisites": ["INT"],
+  "minimum_abilities": {},
+  "alignment_restriction": "",
+  "hit_die": "1d4",
+  "hp_after_max_hd": "+1",
+  "max_hd_count": 9,
+  "max_level": 14,
+  "combat_progression": "mage",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 10, "3": 10, "4": 9, "5": 9, "6": 9, "7": 8, "8": 8, "9": 8, "10": 7, "11": 7, "12": 7, "13": 6, "14": 6
+  },
+  "saving_throws": {
+    "1":  {"petrification": 13, "poison_death": 13, "blast_breath": 15, "staffs_wands": 11, "spells": 12},
+    "2":  {"petrification": 13, "poison_death": 13, "blast_breath": 15, "staffs_wands": 11, "spells": 12},
+    "3":  {"petrification": 13, "poison_death": 13, "blast_breath": 15, "staffs_wands": 11, "spells": 12},
+    "4":  {"petrification": 12, "poison_death": 12, "blast_breath": 14, "staffs_wands": 10, "spells": 11},
+    "5":  {"petrification": 12, "poison_death": 12, "blast_breath": 14, "staffs_wands": 10, "spells": 11},
+    "6":  {"petrification": 12, "poison_death": 12, "blast_breath": 14, "staffs_wands": 10, "spells": 11},
+    "7":  {"petrification": 11, "poison_death": 11, "blast_breath": 13, "staffs_wands":  9, "spells": 10},
+    "8":  {"petrification": 11, "poison_death": 11, "blast_breath": 13, "staffs_wands":  9, "spells": 10},
+    "9":  {"petrification": 11, "poison_death": 11, "blast_breath": 13, "staffs_wands":  9, "spells": 10},
+    "10": {"petrification": 10, "poison_death": 10, "blast_breath": 12, "staffs_wands":  8, "spells":  9},
+    "11": {"petrification": 10, "poison_death": 10, "blast_breath": 12, "staffs_wands":  8, "spells":  9},
+    "12": {"petrification": 10, "poison_death": 10, "blast_breath": 12, "staffs_wands":  8, "spells":  9},
+    "13": {"petrification":  9, "poison_death":  9, "blast_breath": 11, "staffs_wands":  7, "spells":  8},
+    "14": {"petrification":  9, "poison_death":  9, "blast_breath": 11, "staffs_wands":  7, "spells":  8}
+  },
+  "xp_table": [0, 2500, 5000, 10000, 20000, 40000, 80000, 160000, 310000, 460000, 610000, 760000, 910000, 1060000],
+  "hd_table": ["1d4", "2d4", "3d4", "4d4", "5d4", "6d4", "7d4", "8d4", "9d4", "9d4+1", "9d4+2", "9d4+3", "9d4+4", "9d4+5"],
+  "weapon_permissions": ["quarterstaff", "club", "dagger", "dart"],
+  "weapon_restrictions": ["all_except_quarterstaff_club_dagger_dart"],
+  "armor_permissions": [],
+  "shield_permitted": false,
+  "fighting_styles": [],
+  "class_proficiency_list": [
+    "alchemy", "battle_magic", "beast_friendship", "black_lore_of_zahar",
+    "collegiate_wizardry", "craft", "diplomacy", "elementalism",
+    "elven_bloodline", "engineering", "familiar", "healing",
+    "illusion_resistance", "knowledge", "language", "loremastery",
+    "magical_engineering", "mapping", "mystic_aura", "naturalism",
+    "quiet_magic", "performance", "prestidigitation", "profession",
+    "sensing_power", "transmogrification", "soothsaying", "unflappable_casting"
+  ],
+  "proficiency_progression": {
+    "class": [1, 6, 12],
+    "general": [1, 5, 9, 13]
+  },
+  "level_titles": [
+    "Arcanist", "Seer", "Theurgist", "Magician", "Thaumaturge",
+    "Enchanter", "Sorcerer", "Mage", "Wizard", "Wizard, 10th lvl",
+    "Wizard, 11th lvl", "Wizard, 12th lvl", "Wizard, 13th lvl", "Archmage"
+  ],
+  "class_powers": [
+    {
+      "power_id": "arcane_casting",
+      "unlock_level": 1,
+      "tradition": "arcane",
+      "progression": {
+        "1":  [1, 0, 0, 0, 0, 0],
+        "2":  [2, 0, 0, 0, 0, 0],
+        "3":  [2, 1, 0, 0, 0, 0],
+        "4":  [2, 2, 0, 0, 0, 0],
+        "5":  [2, 2, 1, 0, 0, 0],
+        "6":  [2, 2, 2, 0, 0, 0],
+        "7":  [3, 2, 2, 1, 0, 0],
+        "8":  [3, 3, 2, 2, 0, 0],
+        "9":  [3, 3, 3, 2, 1, 0],
+        "10": [3, 3, 3, 3, 2, 0],
+        "11": [4, 3, 3, 3, 2, 1],
+        "12": [4, 4, 3, 3, 3, 2],
+        "13": [4, 4, 4, 3, 3, 2],
+        "14": [4, 4, 4, 4, 3, 3]
+      }
+    },
+    {
+      "power_id": "spell_research",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "scroll_scribing",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "potion_brewing",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "magic_item_creation",
+      "unlock_level": 9
+    },
+    {
+      "power_id": "advanced_arcane_creation",
+      "unlock_level": 11
+    },
+    {
+      "power_id": "stronghold_sanctum",
+      "unlock_level": 9
+    }
+  ]
+}

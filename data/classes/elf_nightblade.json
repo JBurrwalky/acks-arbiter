@@ -1,0 +1,139 @@
+{
+  "class_id": "elf_nightblade",
+  "class_name": "Elven Nightblade",
+  "source": "ACKS Core",
+  "race": "elf",
+  "prime_requisites": ["DEX", "INT"],
+  "minimum_abilities": {},
+  "alignment_restriction": "",
+  "hit_die": "1d6",
+  "hp_after_max_hd": "+2",
+  "max_hd_count": 9,
+  "max_level": 11,
+  "combat_progression": "thief",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 10, "3": 9, "4": 9, "5": 8, "6": 8, "7": 7, "8": 7, "9": 6, "10": 6, "11": 5
+  },
+  "saving_throws": {
+    "1":  {"petrification": 12, "poison_death": 13, "blast_breath": 16, "staffs_wands": 14, "spells": 14},
+    "2":  {"petrification": 12, "poison_death": 13, "blast_breath": 16, "staffs_wands": 14, "spells": 14},
+    "3":  {"petrification": 11, "poison_death": 12, "blast_breath": 15, "staffs_wands": 13, "spells": 13},
+    "4":  {"petrification": 11, "poison_death": 12, "blast_breath": 15, "staffs_wands": 13, "spells": 13},
+    "5":  {"petrification": 10, "poison_death": 11, "blast_breath": 14, "staffs_wands": 12, "spells": 12},
+    "6":  {"petrification": 10, "poison_death": 11, "blast_breath": 14, "staffs_wands": 12, "spells": 12},
+    "7":  {"petrification":  9, "poison_death": 10, "blast_breath": 13, "staffs_wands": 11, "spells": 11},
+    "8":  {"petrification":  9, "poison_death": 10, "blast_breath": 13, "staffs_wands": 11, "spells": 11},
+    "9":  {"petrification":  8, "poison_death":  9, "blast_breath": 12, "staffs_wands": 10, "spells": 10},
+    "10": {"petrification":  8, "poison_death":  9, "blast_breath": 12, "staffs_wands": 10, "spells": 10},
+    "11": {"petrification":  7, "poison_death":  8, "blast_breath": 11, "staffs_wands":  9, "spells":  9}
+  },
+  "xp_table": [0, 2775, 5550, 11100, 22200, 45000, 90000, 180000, 330000, 480000, 630000],
+  "hd_table": ["1d6", "2d6", "3d6", "4d6", "5d6", "6d6", "7d6", "8d6", "9d6", "9d6+2", "9d6+4"],
+  "weapon_permissions": ["any_missile", "any_one_handed_melee"],
+  "weapon_restrictions": ["two_handed_melee_only", "shields"],
+  "armor_permissions": ["leather"],
+  "shield_permitted": false,
+  "fighting_styles": ["dual_wield", "two_handed"],
+  "class_proficiency_list": [
+    "alchemy", "alertness", "battle_magic", "beast_friendship",
+    "black_lore_of_zahar", "blind_fighting", "combat_reflexes",
+    "combat_trickery_disarm", "combat_trickery_incapacitate",
+    "contortionism", "elementalism", "familiar", "fighting_style",
+    "intimidation", "magical_engineering", "mystic_aura",
+    "passing_without_trace", "precise_shooting", "prestidigitation",
+    "quiet_magic", "running", "sensing_power", "skirmishing",
+    "skulking", "sniping", "swashbuckling", "unflappable_casting",
+    "trap_finding", "wakefulness", "weapon_focus", "weapon_finesse"
+  ],
+  "proficiency_progression": {
+    "class": [1, 4, 8],
+    "general": [1, 5, 9]
+  },
+  "level_titles": [
+    "Arcanist-Avenger", "Seer-Enforcer", "Theurgist-Torturer",
+    "Magician-Slayer", "Thaumaturge-Destroyer", "Enchanter-Executioner",
+    "Sorcerer-Blackguard", "Mage-Assassin", "Nightblade",
+    "Nightblade, 10th level", "Nightblade, 11th level"
+  ],
+  "class_powers": [
+    {
+      "power_id": "move_silently",
+      "unlock_level": 1,
+      "progression": {"1": 17, "2": 16, "3": 15, "4": 14, "5": 13, "6": 12, "7": 10, "8": 8, "9": 6, "10": 4, "11": 2}
+    },
+    {
+      "power_id": "hide_in_shadows",
+      "unlock_level": 1,
+      "progression": {"1": 19, "2": 18, "3": 17, "4": 16, "5": 15, "6": 14, "7": 12, "8": 10, "9": 8, "10": 6, "11": 4}
+    },
+    {
+      "power_id": "climb_walls",
+      "unlock_level": 1,
+      "progression": {"1": 6, "2": 5, "3": 5, "4": 4, "5": 4, "6": 4, "7": 3, "8": 3, "9": 3, "10": 3, "11": 2}
+    },
+    {
+      "power_id": "backstab",
+      "unlock_level": 1,
+      "progression": {"1": 2, "2": 2, "3": 2, "4": 2, "5": 3, "6": 3, "7": 3, "8": 3, "9": 4, "10": 4, "11": 4}
+    },
+    {
+      "power_id": "acrobatics_tumble",
+      "unlock_level": 1,
+      "description": "In lieu of moving, may attempt proficiency throw to tumble behind an opponent. Base target 20+, reduced by 1 per level. On success, opponent loses shield benefit and nightblade may backstab.",
+      "progression": {"1": 20, "2": 19, "3": 18, "4": 17, "5": 16, "6": 15, "7": 14, "8": 13, "9": 12, "10": 11, "11": 10}
+    },
+    {
+      "power_id": "arcane_casting_in_armor",
+      "unlock_level": 1,
+      "tradition": "arcane",
+      "description": "Casts spells as a mage of one-half character level. May cast while wearing armor.",
+      "progression": {
+        "1":  [0, 0, 0],
+        "2":  [1, 0, 0],
+        "3":  [2, 0, 0],
+        "4":  [2, 0, 0],
+        "5":  [2, 1, 0],
+        "6":  [2, 1, 0],
+        "7":  [2, 2, 0],
+        "8":  [2, 2, 0],
+        "9":  [2, 2, 1],
+        "10": [2, 2, 1],
+        "11": [2, 2, 2]
+      }
+    },
+    {
+      "power_id": "detect_secret_doors",
+      "unlock_level": 1,
+      "description": "Detect hidden and secret doors with proficiency throw of 8+ when actively searching, 14+ on casual inspection."
+    },
+    {
+      "power_id": "ghoul_paralysis_immunity",
+      "unlock_level": 1
+    },
+    {
+      "power_id": "wilderness_surprise_bonus",
+      "unlock_level": 1,
+      "description": "+1 bonus to surprise rolls when in the wilderness."
+    },
+    {
+      "power_id": "elven_save_bonus",
+      "unlock_level": 1,
+      "description": "Saving throws vs Petrification/Paralysis reduced by 1; saving throws vs Spells reduced by 1. Already factored into saving throw table."
+    },
+    {
+      "power_id": "agility_saving_bonus",
+      "unlock_level": 1,
+      "description": "+2 bonus to saving throws where agility would help avoid danger (e.g., tilting floors, pit traps)."
+    },
+    {
+      "power_id": "stronghold_hideout",
+      "unlock_level": 9
+    },
+    {
+      "power_id": "spell_research",
+      "unlock_level": 10,
+      "description": "May research spells, scribe scrolls, and brew potions as if a 5th level mage."
+    }
+  ]
+}

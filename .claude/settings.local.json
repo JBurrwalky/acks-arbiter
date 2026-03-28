@@ -22,7 +22,12 @@
       "Bash(find c:/Users/jttau/acks-arbiter -name *.gd -newer c:/Users/jttau/acks-arbiter/.git/refs/heads/main)",
       "Bash(grep -n \"\\\\.emit\\(\" c:/Users/jttau/acks-arbiter/engine/autoloads/*.gd)",
       "Bash(grep -n \"to_dict\\\\|from_dict\" c:/Users/jttau/acks-arbiter/engine/shared_types/*.gd)",
-      "Bash(\"c:\\\\Users\\\\jttau\\\\acks-arbiter\\\\build_log.md\":*)"
+      "Bash(\"c:\\\\Users\\\\jttau\\\\acks-arbiter\\\\build_log.md\":*)",
+      "Bash(wc -l /c/Users/jttau/acks-arbiter/rules/*.xml)",
+      "Bash(ls data/classes/*.json)",
+      "Bash(for f:*)",
+      "Bash(do python:*)",
+      "Bash(xargs -I {} basename {})"
     ]
   }
 }

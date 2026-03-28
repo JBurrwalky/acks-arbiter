@@ -1,0 +1,119 @@
+{
+  "class_id": "dwarven_delver",
+  "class_name": "Dwarven Delver",
+  "source": "Player's Companion",
+  "race": "dwarf",
+  "prime_requisites": ["DEX"],
+  "minimum_abilities": {"CON": 9},
+  "alignment_restriction": "",
+  "hit_die": "1d6",
+  "hp_after_max_hd": "+3",
+  "max_hd_count": 9,
+  "max_level": 11,
+  "combat_progression": "thief",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 10, "3": 9, "4": 9, "5": 8, "6": 8, "7": 7, "8": 7, "9": 6, "10": 6, "11": 5
+  },
+  "saving_throws": {
+    "1":  {"petrification":  9, "poison_death":  9, "blast_breath": 13, "staffs_wands": 10, "spells": 11},
+    "2":  {"petrification":  9, "poison_death":  9, "blast_breath": 13, "staffs_wands": 10, "spells": 11},
+    "3":  {"petrification":  8, "poison_death":  8, "blast_breath": 12, "staffs_wands":  9, "spells": 10},
+    "4":  {"petrification":  8, "poison_death":  8, "blast_breath": 12, "staffs_wands":  9, "spells": 10},
+    "5":  {"petrification":  7, "poison_death":  7, "blast_breath": 11, "staffs_wands":  8, "spells":  9},
+    "6":  {"petrification":  7, "poison_death":  7, "blast_breath": 11, "staffs_wands":  8, "spells":  9},
+    "7":  {"petrification":  6, "poison_death":  6, "blast_breath": 10, "staffs_wands":  7, "spells":  8},
+    "8":  {"petrification":  6, "poison_death":  6, "blast_breath": 10, "staffs_wands":  7, "spells":  8},
+    "9":  {"petrification":  5, "poison_death":  5, "blast_breath":  9, "staffs_wands":  6, "spells":  7},
+    "10": {"petrification":  5, "poison_death":  5, "blast_breath":  9, "staffs_wands":  6, "spells":  7},
+    "11": {"petrification":  4, "poison_death":  4, "blast_breath":  8, "staffs_wands":  5, "spells":  6}
+  },
+  "xp_table": [0, 2000, 4000, 8000, 16000, 32000, 65000, 130000, 260000, 390000, 520000],
+  "hd_table": ["1d6", "2d6", "3d6", "4d6", "5d6", "6d6", "7d6", "8d6", "9d6", "9d6+3", "9d6+6"],
+  "weapon_permissions": ["all_missile_weapons", "all_axes", "all_hammers", "all_flails", "all_maces"],
+  "weapon_restrictions": [],
+  "armor_permissions": ["leather"],
+  "shield_permitted": false,
+  "fighting_styles": ["two_handed", "dual_wield"],
+  "class_proficiency_list": [
+    "acrobatics", "alertness", "blind_fighting", "cat_burglary",
+    "combat_reflexes", "combat_trickery_disarm", "combat_trickery_knock_down",
+    "contortionism", "dungeon_bashing", "engineering", "fighting_style",
+    "goblin_slaying", "illusion_resistance", "mapping", "mountaineering",
+    "navigation", "precise_shooting", "running", "siege_engineering",
+    "signaling", "skirmishing", "skulking", "sniping", "survival",
+    "swashbuckling", "tracking", "trap_finding", "trapping",
+    "vermin_slaying", "weapon_finesse", "weapon_focus"
+  ],
+  "proficiency_progression": {
+    "class": [1, 4, 8],
+    "general": [1, 5, 9]
+  },
+  "level_titles": [
+    "Dwarven Caver", "Dwarven Tunneler", "Dwarven Excavator", "Dwarven Undertrekker",
+    "Dwarven Spelunker", "Dwarven Expeditionary", "Dwarven Pathfinder", "Dwarven Delver",
+    "Dwarven Pioneer", "Dwarven Pioneer, 10th lvl", "Dwarven Pioneer, 11th lvl"
+  ],
+  "class_powers": [
+    {
+      "power_id": "hide_in_shadows",
+      "unlock_level": 1,
+      "progression": {"1": 17, "2": 16, "3": 15, "4": 14, "5": 13, "6": 12, "7": 10, "8": 8, "9": 6, "10": 4, "11": 2}
+    },
+    {
+      "power_id": "move_silently",
+      "unlock_level": 1,
+      "progression": {"1": 15, "2": 14, "3": 13, "4": 12, "5": 11, "6": 10, "7": 8, "8": 6, "9": 4, "10": 2, "11": 1}
+    },
+    {
+      "power_id": "climb_walls",
+      "unlock_level": 1,
+      "progression": {"1": 4, "2": 3, "3": 3, "4": 2, "5": 2, "6": 2, "7": 1, "8": 1, "9": 1, "10": 1, "11": 1}
+    },
+    {
+      "power_id": "find_traps",
+      "unlock_level": 1,
+      "progression": {"1": 14, "2": 14, "3": 14, "4": 13, "5": 12, "6": 11, "7": 9, "8": 7, "9": 5, "10": 3, "11": 1}
+    },
+    {
+      "power_id": "hear_noise",
+      "unlock_level": 1,
+      "progression": {"1": 12, "2": 11, "3": 10, "4": 9, "5": 8, "6": 7, "7": 5, "8": 4, "9": 3, "10": 2, "11": 1}
+    },
+    {
+      "power_id": "backstab",
+      "unlock_level": 1,
+      "description": "+4 to attack throw when backstabbing. Damage multiplied by backstab multiplier.",
+      "progression": {"1": 2, "2": 2, "3": 2, "4": 2, "5": 3, "6": 3, "7": 3, "8": 3, "9": 4, "10": 4, "11": 4}
+    },
+    {
+      "power_id": "expert_caver",
+      "unlock_level": 1,
+      "description": "When exploring underground, automatically knows route taken on proficiency throw of 9+."
+    },
+    {
+      "power_id": "underground_surprise_bonus",
+      "unlock_level": 1,
+      "description": "+1 bonus to surprise rolls when underground."
+    },
+    {
+      "power_id": "stonework_detection",
+      "unlock_level": 1,
+      "description": "Detect false walls, hidden construction, or sloped passages underground on proficiency throw of 14+ on 1d20 when actively searching."
+    },
+    {
+      "power_id": "dwarven_hardiness",
+      "unlock_level": 1,
+      "description": "Saving throw values versus Blast/Breath reduced by 3, versus all other categories reduced by 4. Already factored into saving throw table."
+    },
+    {
+      "power_id": "infravision",
+      "unlock_level": 1,
+      "description": "Can see in the dark with infravision."
+    },
+    {
+      "power_id": "stronghold_underground_vault",
+      "unlock_level": 9
+    }
+  ]
+}

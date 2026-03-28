@@ -1,0 +1,94 @@
+{
+  "class_id": "dwarf_vaultguard",
+  "class_name": "Dwarven Vaultguard",
+  "source": "ACKS Core",
+  "race": "dwarf",
+  "prime_requisites": ["STR"],
+  "minimum_abilities": {"CON": 9},
+  "alignment_restriction": "",
+  "hit_die": "1d8",
+  "hp_after_max_hd": "+3",
+  "max_hd_count": 9,
+  "max_level": 13,
+  "combat_progression": "fighter",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 9, "3": 9, "4": 8, "5": 7, "6": 7, "7": 6, "8": 5, "9": 5, "10": 4, "11": 3, "12": 3, "13": 2
+  },
+  "saving_throws": {
+    "1":  {"petrification": 11, "poison_death": 10, "blast_breath": 13, "staffs_wands": 12, "spells": 13},
+    "2":  {"petrification": 10, "poison_death":  9, "blast_breath": 12, "staffs_wands": 11, "spells": 12},
+    "3":  {"petrification": 10, "poison_death":  9, "blast_breath": 12, "staffs_wands": 11, "spells": 12},
+    "4":  {"petrification":  9, "poison_death":  8, "blast_breath": 11, "staffs_wands": 10, "spells": 11},
+    "5":  {"petrification":  8, "poison_death":  7, "blast_breath": 10, "staffs_wands":  9, "spells": 10},
+    "6":  {"petrification":  8, "poison_death":  7, "blast_breath": 10, "staffs_wands":  9, "spells": 10},
+    "7":  {"petrification":  7, "poison_death":  6, "blast_breath":  9, "staffs_wands":  8, "spells":  9},
+    "8":  {"petrification":  6, "poison_death":  5, "blast_breath":  8, "staffs_wands":  7, "spells":  8},
+    "9":  {"petrification":  6, "poison_death":  5, "blast_breath":  8, "staffs_wands":  7, "spells":  8},
+    "10": {"petrification":  5, "poison_death":  4, "blast_breath":  7, "staffs_wands":  6, "spells":  7},
+    "11": {"petrification":  4, "poison_death":  3, "blast_breath":  6, "staffs_wands":  5, "spells":  6},
+    "12": {"petrification":  4, "poison_death":  3, "blast_breath":  6, "staffs_wands":  5, "spells":  6},
+    "13": {"petrification":  3, "poison_death":  2, "blast_breath":  5, "staffs_wands":  4, "spells":  5}
+  },
+  "xp_table": [0, 2200, 4400, 8800, 17500, 35000, 70000, 140000, 270000, 400000, 530000, 660000, 790000],
+  "hd_table": ["1d8", "2d8", "3d8", "4d8", "5d8", "6d8", "7d8", "8d8", "9d8", "9d8+3", "9d8+6", "9d8+9", "9d8+11"],
+  "weapon_permissions": ["all_except_oversized"],
+  "weapon_restrictions": ["two_handed_sword", "polearm", "longbow"],
+  "armor_permissions": ["all"],
+  "shield_permitted": true,
+  "fighting_styles": ["weapon_and_shield", "two_handed", "dual_wield"],
+  "class_proficiency_list": [
+    "alertness", "berserkergang", "blind_fighting", "caving",
+    "combat_reflexes", "combat_trickery_force_back", "combat_trickery_knock_down",
+    "combat_trickery_overrun", "combat_trickery_sunder", "combat_trickery_wrestle",
+    "command", "craft", "dungeon_bashing", "dwarven_brewing",
+    "endurance", "engineering", "fighting_style", "gambling",
+    "goblin_slaying", "illusion_resistance", "intimidation",
+    "land_surveying", "leadership", "mapping", "manual_of_arms",
+    "military_strategy", "mountaineering", "siege_engineering", "weapon_focus"
+  ],
+  "proficiency_progression": {
+    "class": [1, 3, 6, 9, 12],
+    "general": [1, 5, 9, 13]
+  },
+  "level_titles": [
+    "Sentry", "Warden", "Shieldbearer", "Defender", "Sentinel",
+    "Guardian", "Champion", "Vaultguard", "Vaultlord", "Vaultlord, 10th level",
+    "Vaultlord, 11th level", "Vaultlord, 12th level", "Vaultlord, 13th level"
+  ],
+  "class_powers": [
+    {
+      "power_id": "fighter_damage_bonus",
+      "unlock_level": 1,
+      "progression": {"1": 1, "2": 1, "3": 2, "4": 2, "5": 2, "6": 3, "7": 3, "8": 3, "9": 4, "10": 4, "11": 4, "12": 5, "13": 5}
+    },
+    {
+      "power_id": "cleave",
+      "unlock_level": 1
+    },
+    {
+      "power_id": "dwarven_hardiness",
+      "unlock_level": 1,
+      "description": "Saving throws vs Blast/Breath reduced by 3; all other saves reduced by 4. Already factored into saving throw table."
+    },
+    {
+      "power_id": "underground_surprise_bonus",
+      "unlock_level": 1,
+      "description": "+1 bonus to surprise rolls when underground."
+    },
+    {
+      "power_id": "stonework_detection",
+      "unlock_level": 1,
+      "throw_target": 14,
+      "description": "Detect traps, false walls, hidden construction, or sloped passages with proficiency throw of 14+ when actively searching."
+    },
+    {
+      "power_id": "infravision",
+      "unlock_level": 1
+    },
+    {
+      "power_id": "stronghold_vault",
+      "unlock_level": 9
+    }
+  ]
+}
