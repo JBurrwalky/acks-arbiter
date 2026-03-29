@@ -15,6 +15,8 @@
 [ext_resource type="Script" path="res://tests/test_character_persistence.gd" id="13_character_persistence_tests"]
 [ext_resource type="Script" path="res://tests/test_class_powers.gd" id="14_class_powers_tests"]
 [ext_resource type="Script" path="res://tests/test_npc_generation.gd" id="15_npc_generation_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_registry.gd" id="16_spell_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_repertoire_engine.gd" id="17_repertoire_engine_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -60,3 +62,9 @@ script = ExtResource("14_class_powers_tests")
 
 [node name="NPCGenerationTests" type="Node" parent="."]
 script = ExtResource("15_npc_generation_tests")
+
+[node name="SpellRegistryTests" type="Node" parent="."]
+script = ExtResource("16_spell_registry_tests")
+
+[node name="RepertoireEngineTests" type="Node" parent="."]
+script = ExtResource("17_repertoire_engine_tests")

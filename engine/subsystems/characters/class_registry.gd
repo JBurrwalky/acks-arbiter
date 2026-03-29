@@ -218,3 +218,16 @@ func get_hp_after_max_hd(class_id: String) -> int:
 	var cls := get_class_def(class_id)
 	var raw: String = cls.get("hp_after_max_hd", "+2")
 	return int(raw.replace("+", ""))
+
+
+func get_casting_power(class_id: String) -> Dictionary:
+	## Returns the casting power entry for a class, or {} for non-casters.
+	## Checks for arcane_casting, divine_casting, and arcane_casting_in_armor.
+	var cls := get_class_def(class_id)
+	if cls.is_empty():
+		return {}
+	const CASTING_POWER_IDS := ["arcane_casting", "divine_casting", "arcane_casting_in_armor"]
+	for power in cls.get("class_powers", []):
+		if power.get("power_id", "") in CASTING_POWER_IDS:
+			return power
+	return {}

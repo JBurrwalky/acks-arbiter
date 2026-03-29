@@ -69,6 +69,7 @@
       "power_id": "arcane_casting_in_armor",
       "unlock_level": 1,
       "tradition": "arcane",
+      "spell_list": "arcane",
       "description": "May cast arcane spells while wearing armor.",
       "progression": {
         "1":  [1, 0, 0, 0, 0],

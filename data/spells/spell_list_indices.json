@@ -1,0 +1,212 @@
+{
+  "arcane": {
+    "1": [
+      "charm_person",
+      "detect_magic",
+      "floating_disc",
+      "hold_portal",
+      "light",
+      "magic_missile",
+      "magic_mouth",
+      "protection_from_evil",
+      "read_languages",
+      "shield",
+      "sleep",
+      "ventriloquism"
+    ],
+    "2": [
+      "continual_light",
+      "detect_evil",
+      "detect_invisible",
+      "esp",
+      "invisibility",
+      "knock",
+      "levitate",
+      "locate_object",
+      "mirror_image",
+      "phantasmal_force",
+      "web",
+      "wizard_lock"
+    ],
+    "3": [
+      "clairvoyance",
+      "dispel_magic",
+      "fireball",
+      "fly",
+      "haste",
+      "hold_person",
+      "infravision",
+      "invisibility_10_radius",
+      "lightning_bolt",
+      "protection_from_evil_sustained",
+      "protection_from_normal_missiles",
+      "water_breathing"
+    ],
+    "4": [
+      "charm_monster",
+      "confusion",
+      "dimension_door",
+      "growth_of_plants",
+      "hallucinatory_terrain",
+      "massmorph",
+      "polymorph_other",
+      "polymorph_self",
+      "remove_curse",
+      "wall_of_fire",
+      "wall_of_ice",
+      "wizard_eye"
+    ],
+    "5": [
+      "animate_dead",
+      "cloudkill",
+      "conjure_elemental",
+      "contact_other_plane",
+      "feeblemind",
+      "hold_monster",
+      "magic_jar",
+      "passwall",
+      "telekinesis",
+      "teleport",
+      "transmute_rock_to_mud",
+      "wall_of_stone"
+    ],
+    "6": [
+      "anti_magic_shell",
+      "control_weather",
+      "death_spell",
+      "disintegrate",
+      "flesh_to_stone",
+      "geas",
+      "invisible_stalker",
+      "lower_water",
+      "move_earth",
+      "projected_image",
+      "reincarnate",
+      "wall_of_iron"
+    ]
+  },
+  "divine_cleric": {
+    "1": [
+      "command_word",
+      "cure_light_wounds",
+      "detect_evil",
+      "detect_magic",
+      "light",
+      "protection_from_evil",
+      "purify_food_and_water",
+      "remove_fear",
+      "resist_cold",
+      "sanctuary"
+    ],
+    "2": [
+      "augury",
+      "bless",
+      "delay_poison",
+      "find_traps",
+      "hold_person",
+      "resist_fire",
+      "silence_15_radius",
+      "snake_charm",
+      "speak_with_animals",
+      "spiritual_weapon"
+    ],
+    "3": [
+      "continual_light",
+      "cure_blindness",
+      "cure_disease",
+      "feign_death",
+      "glyph_of_warding",
+      "growth_of_animals",
+      "locate_object",
+      "remove_curse",
+      "speak_with_dead",
+      "striking"
+    ],
+    "4": [
+      "create_water",
+      "cure_serious_wounds",
+      "dispel_magic",
+      "divination",
+      "neutralize_poison",
+      "protection_from_evil_sustained",
+      "smite_undead",
+      "speak_with_plants",
+      "sticks_to_snakes",
+      "tongues"
+    ],
+    "5": [
+      "atonement",
+      "commune",
+      "create_food",
+      "dispel_evil",
+      "flame_strike",
+      "insect_plague",
+      "quest",
+      "restore_life_and_limb",
+      "strength_of_mind",
+      "true_seeing"
+    ]
+  },
+  "divine_bladedancer": {
+    "1": [
+      "command_word",
+      "cure_light_wounds",
+      "detect_evil",
+      "detect_magic",
+      "faerie_fire",
+      "fellowship",
+      "light",
+      "protection_from_evil",
+      "remove_fear",
+      "resist_cold"
+    ],
+    "2": [
+      "bless",
+      "charm_animal",
+      "find_traps",
+      "hold_person",
+      "holy_chant",
+      "resist_fire",
+      "shimmer",
+      "silence_15_radius",
+      "speak_with_animals",
+      "spiritual_weapon"
+    ],
+    "3": [
+      "continual_light",
+      "cure_blindness",
+      "cure_disease",
+      "glyph_of_warding",
+      "growth_of_animals",
+      "locate_object",
+      "prayer",
+      "remove_curse",
+      "speak_with_dead",
+      "striking"
+    ],
+    "4": [
+      "create_water",
+      "cure_serious_wounds",
+      "dispel_magic",
+      "divination",
+      "neutralize_poison",
+      "protection_from_evil_sustained",
+      "smite_undead",
+      "speak_with_plants",
+      "tongues",
+      "vigor"
+    ],
+    "5": [
+      "atonement",
+      "commune",
+      "create_food",
+      "dispel_evil",
+      "flame_strike",
+      "insect_plague",
+      "quest",
+      "restore_life_and_limb",
+      "sword_of_fire",
+      "true_seeing"
+    ]
+  }
+}

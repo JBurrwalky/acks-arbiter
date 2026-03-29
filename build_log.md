@@ -837,3 +837,94 @@ CalendarSeasons public API (new class, engine/subsystems/calendar/calendar_seaso
 2. Spot-check 3-4 class JSONs against ACKS books (especially Thief progression tables, Cleric turning table, Spellsword spell slots).
 3. Phase C-2: Three-tier persistence with promotion logic.
 4. Phase C-3: XP tracking and level-up workflow.
+
+---
+
+## Session 2026-03-28 — Phase C-2: Spell Catalog, Spell Registry, Repertoire Engine
+
+**Task:** Build the spell data layer and starting repertoire engine: spell_catalog.json, spell_list_indices.json, SpellRegistry, RepertoireEngine, CampaignRepository spell CRUD, EventBus signal, and two test suites.
+**Model used:** claude-sonnet-4-6
+
+**Completed:**
+
+- **Bug fixes (Step 0):**
+  - Fixed `data/classes/bladedancer.json` — renamed `"spell_slots"` key to `"progression"` in `divine_casting` power entry. Was breaking `ClassRegistry.get_spell_slots("bladedancer", N)` (always returned `[]`).
+  - Added `"spell_list"` field to casting power entries in all 12 caster class JSONs: mage, warlock, elven_enchanter, elf_spellsword, elf_nightblade, elven_courtier, cleric, dwarf_craftpriest, bladedancer, priestess, shaman, witch.
+
+- **`data/spells/spell_catalog.json`** (NEW — 231 entries):
+  - All arcane levels 1-6 and divine levels 1-5 spells. No ritual spells.
+  - Entry format: spell_key, spell_name, is_reversible, reverse_name, reverse_key, classifications (array of {tradition, level, restricted_to}), range, duration, summary.
+  - PC catalog spells merged into core: additional classifications added to core entries. `purify_food_and_water` marked reversible per PC catalog.
+  - Written in 4 alphabetical parts and Python-merged to avoid output token limits.
+
+- **`data/spells/spell_list_indices.json`** (NEW):
+  - Arcane L1-L6: 12 spells each (d12 indexed list).
+  - divine_cleric L1-L5: 10 spells each; divine_bladedancer L1-L5: 10 spells each.
+  - Missing arcane index 11 for levels 4/5/6 resolved by elimination: wall_of_ice (L4), transmute_rock_to_mud (L5), reincarnate (L6).
+
+- **`engine/subsystems/characters/class_registry.gd`** (MODIFIED):
+  - Added `get_casting_power(class_id: String) -> Dictionary`.
+
+- **`engine/autoloads/event_bus.gd`** (MODIFIED):
+  - Added `signal repertoire_updated(character_id: String)`.
+
+- **`engine/autoloads/campaign_repository.gd`** (MODIFIED):
+  - Added Character Spells CRUD: `save_character_spells()`, `get_character_spells()`, `get_character_repertoire()`, `add_character_spell()`, `clear_character_spells()`.
+
+- **`engine/subsystems/spells/spell_registry.gd`** (NEW — class SpellRegistry, RefCounted).
+
+- **`engine/subsystems/spells/repertoire_engine.gd`** (NEW — class RepertoireEngine, RefCounted).
+  - Arcane: 1 judge-selected + INT bonus d12 rolls; duplicates do NOT reroll (ACKS rule).
+  - Divine: ALL spells for each castable level; reversible spells add both forms.
+  - All randomness via `DiceSystem.roll_digital(12, 1, 0, "starting_spell")`.
+
+- **`tests/test_spell_registry.gd`** (NEW — 17 tests).
+- **`tests/test_repertoire_engine.gd`** (NEW — 11 tests).
+- **`tests/test_runner.gd`** and **`tests/test_runner.tscn`** (MODIFIED — 16 suites total, ~175 tests).
+
+**Decisions made:**
+- Spell catalog written in 4 split files then Python-merged to avoid LLM output token limits.
+- PC catalog duplicates merged into core entries (not separate entries).
+- Witch sub-tradition spell lists excluded per plan scope.
+- `starting_spell` added to DiceSystem roll type vocabulary.
+- `spell_list` field lives in class JSON casting power entry (consistent with existing architecture).
+
+**Interfaces defined or changed:**
+
+ClassRegistry addition:
+- `func get_casting_power(class_id: String) -> Dictionary`
+
+EventBus addition:
+- `signal repertoire_updated(character_id: String)`
+
+CampaignRepository additions:
+- `func save_character_spells(character_id: String, spells: Array) -> bool`
+- `func get_character_spells(character_id: String) -> Array`
+- `func get_character_repertoire(character_id: String) -> Array`
+- `func add_character_spell(character_id: String, spell_data: Dictionary) -> int`
+- `func clear_character_spells(character_id: String) -> bool`
+
+SpellRegistry public API (new): get_spell, has_spell, get_spell_count, get_all_spell_keys, is_reversible, get_reverse_key, get_spells_for_list, get_arcane_index_spell (1-based), get_class_tradition, get_class_spell_list_id, get_available_spells_for_class.
+
+RepertoireEngine public API (new): get_casting_tradition, get_arcane_repertoire_capacity, generate_arcane_starting_repertoire, generate_divine_starting_repertoire, generate_starting_repertoire.
+
+Spell row shape: `{ "spell_key": String, "spell_level": int, "is_memorized": bool, "is_in_repertoire": bool, "memorized_slots": int }`
+
+**Database changes:** None — `character_spells` table already existed from migration 001.
+
+**Tests added/updated:**
+- `tests/test_spell_registry.gd` — 17 tests (new suite).
+- `tests/test_repertoire_engine.gd` — 11 tests (new suite).
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — 16 suites total, ~175 tests.
+
+**Known issues:**
+- `starting_spell` roll type not yet in `docs/coding_conventions.md` §10.2 roll type vocabulary table.
+- SpellRegistry and RepertoireEngine not yet wired into CharacterGenerator (deferred to character creation UI session).
+- No generate→save→load round-trip integration test (deferred).
+- Warlock has `"spell_list": "arcane"` but no spell slot progression — `get_arcane_repertoire_capacity("warlock", ...)` returns `[]`. Correct/intended behavior.
+
+**Next session should:**
+1. Open project in Godot 4.6; run `test_runner.tscn`; confirm all 16 suites pass.
+2. Update `docs/coding_conventions.md` §10.2 — add `starting_spell` to roll type vocabulary.
+3. Build character creation UI (Phase C-3): class selection, ability score rolling, spell repertoire assignment for casters.
+4. Wire SpellRegistry and RepertoireEngine into CharacterGenerator for caster character generation.

@@ -1,0 +1,4251 @@
+[
+  {
+    "spell_key": "adaptation",
+    "spell_name": "Adaptation",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "1 week",
+    "summary": "Surrounds the target in a shell of fresh air, allowing survival in hostile environments."
+  },
+  {
+    "spell_key": "alter_self",
+    "spell_name": "Alter Self",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": [
+          "witch"
+        ]
+      }
+    ],
+    "range": "self",
+    "duration": "6 turns plus 1 turn per level",
+    "summary": "Allows the caster to assume the shape of another humanoid creature, altering appearance but not abilities."
+  },
+  {
+    "spell_key": "angelic_choir",
+    "spell_name": "Angelic Choir",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": [
+          "bladedancer",
+          "priestess"
+        ]
+      }
+    ],
+    "range": "30'",
+    "duration": "6 turns",
+    "summary": "Creates an auditory illusion of choir music that inspires allies and unnerves foes."
+  },
+  {
+    "spell_key": "animate_dead",
+    "spell_name": "Animate Dead",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "special",
+    "summary": "Animates dead remains as obedient skeletons or zombies. Animate up to 2 x caster level Hit Dice of undead per casting."
+  },
+  {
+    "spell_key": "anti_magic_shell",
+    "spell_name": "Anti-Magic Shell",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "10' radius",
+    "duration": "12 turns",
+    "summary": "Creates a personal barrier that blocks spells and spell-like effects from entering or leaving."
+  },
+  {
+    "spell_key": "atonement",
+    "spell_name": "Atonement",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "permanent",
+    "summary": "Removes the burden of unwilling evil acts from the subject and may reverse magical alignment change."
+  },
+  {
+    "spell_key": "augury",
+    "spell_name": "Augury",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "self",
+    "duration": "special",
+    "summary": "Reveals whether a contemplated action will bring good or bad results within the next 3 turns."
+  },
+  {
+    "spell_key": "bless",
+    "spell_name": "Bless",
+    "is_reversible": true,
+    "reverse_name": "Bane",
+    "reverse_key": "bane",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "6 turns",
+    "summary": "Grants the caster and allies +1 on attack throws, damage rolls, morale rolls, and saving throws against magical fear."
+  },
+  {
+    "spell_key": "burning_hands",
+    "spell_name": "Burning Hands",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "instantaneous",
+    "summary": "Produces a cone of searing flame from the caster's hands."
+  },
+  {
+    "spell_key": "call_dragon",
+    "spell_name": "Call Dragon",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": [
+          "shaman"
+        ]
+      }
+    ],
+    "range": "10'",
+    "duration": "1 turn per level",
+    "summary": "Calls a dragon into the caster's service for the duration."
+  },
+  {
+    "spell_key": "call_lightning",
+    "spell_name": "Call Lightning",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": [
+          "shaman"
+        ]
+      }
+    ],
+    "range": "360'",
+    "duration": "1 turn per level",
+    "summary": "Allows the caster to call lightning bolts from a nearby storm, dealing damage to targets."
+  },
+  {
+    "spell_key": "chameleon",
+    "spell_name": "Chameleon",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": [
+          "witch"
+        ]
+      }
+    ],
+    "range": "touch",
+    "duration": "1 turn per level",
+    "summary": "Allows the target to blend into surroundings, becoming nearly invisible while stationary."
+  },
+  {
+    "spell_key": "charm_animal",
+    "spell_name": "Charm Animal",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "special",
+    "summary": "Charms an animal in a manner similar to charm person; lasts until removed by dispel magic or a successful saving throw."
+  },
+  {
+    "spell_key": "charm_monster",
+    "spell_name": "Charm Monster",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": [
+          "witch"
+        ]
+      }
+    ],
+    "range": "60'",
+    "duration": "special",
+    "summary": "Functions like charm person without restriction by type or size; affects up to 3d6 HD of creatures of 4 or fewer HD, or one creature of more."
+  },
+  {
+    "spell_key": "charm_person",
+    "spell_name": "Charm Person",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": [
+          "witch"
+        ]
+      }
+    ],
+    "range": "60'",
+    "duration": "special",
+    "summary": "Makes the target regard the caster as a trusted friend and ally, interpreting words and actions favorably."
+  },
+  {
+    "spell_key": "chimerical_force",
+    "spell_name": "Chimerical Force",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": [
+          "witch"
+        ]
+      }
+    ],
+    "range": "240'",
+    "duration": "concentration plus 2 rounds",
+    "summary": "Creates a visual and auditory illusion of an object, creature, or force."
+  },
+  {
+    "spell_key": "choking_grip",
+    "spell_name": "Choking Grip",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": [
+          "witch"
+        ]
+      }
+    ],
+    "range": "30'",
+    "duration": "special",
+    "summary": "Creates an invisible grip around the target's throat, dealing damage each round unless the target saves."
+  },
+  {
+    "spell_key": "clairaudience",
+    "spell_name": "Clairaudience",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": [
+          "witch"
+        ]
+      }
+    ],
+    "range": "60'",
+    "duration": "12 turns",
+    "summary": "Allows the caster to hear sounds in another area through a living creature in that area."
+  },
+  {
+    "spell_key": "clairvoyance",
+    "spell_name": "Clairvoyance",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": [
+          "witch"
+        ]
+      }
+    ],
+    "range": "60'",
+    "duration": "12 turns",
+    "summary": "Lets the caster see into another area through the eyes of a living creature there."
+  },
+  {
+    "spell_key": "cloudkill",
+    "spell_name": "Cloudkill",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "special",
+    "duration": "6 turns",
+    "summary": "Creates a moving cloud of poisonous gas that spreads 20' per round away from the caster."
+  },
+  {
+    "spell_key": "command_animals",
+    "spell_name": "Command Animals",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": [
+          "shaman"
+        ]
+      }
+    ],
+    "range": "60'",
+    "duration": "concentration",
+    "summary": "Commands animals within range to perform actions the caster directs."
+  },
+  {
+    "spell_key": "command_person",
+    "spell_name": "Command Person",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": [
+          "priestess",
+          "witch"
+        ]
+      }
+    ],
+    "range": "60'",
+    "duration": "concentration",
+    "summary": "Commands persons within range to perform actions the caster directs while the caster concentrates."
+  },
+  {
+    "spell_key": "command_plants",
+    "spell_name": "Command Plants",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "concentration",
+    "summary": "Commands plants and plant-like creatures to perform actions the caster directs."
+  },
+  {
+    "spell_key": "command_word",
+    "spell_name": "Command Word",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "10'",
+    "duration": "1 round",
+    "summary": "Compels the target to obey a single-word command to the best of its ability."
+  },
+  {
+    "spell_key": "commune",
+    "spell_name": "Commune",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "self",
+    "duration": "3 turns",
+    "summary": "Puts the caster in contact with a divine power that answers 3 yes-or-no questions."
+  },
+  {
+    "spell_key": "confusion",
+    "spell_name": "Confusion",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "12 rounds",
+    "summary": "Causes affected creatures to roll on a confusion behavior table each round, losing independent action."
+  },
+  {
+    "spell_key": "cone_of_cold",
+    "spell_name": "Cone of Cold",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "instantaneous",
+    "summary": "Produces a chilling cone of cold energy dealing 1d4+1 damage per caster level."
+  },
+  {
+    "spell_key": "cone_of_paralysis",
+    "spell_name": "Cone of Paralysis",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "instantaneous",
+    "summary": "Produces a cone that paralyzes all creatures in the area unless they save vs. Paralysis."
+  },
+  {
+    "spell_key": "conjure_elemental",
+    "spell_name": "Conjure Elemental",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "special",
+    "summary": "Opens a portal to an Elemental Plane and summons an Air, Earth, Fire, or Water elemental that serves while the caster concentrates."
+  },
+  {
+    "spell_key": "conjure_oozes",
+    "spell_name": "Conjure Oozes",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "480'",
+    "duration": "1 turn per level",
+    "summary": "Conjures oozes from a primordial sphere of existence to serve the caster."
+  },
+  {
+    "spell_key": "contact_other_plane",
+    "spell_name": "Contact Other Plane",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "self",
+    "duration": "special",
+    "summary": "Sends the caster's mind to another plane to ask brief questions of extraplanar powers."
+  },
+  {
+    "spell_key": "continual_light",
+    "spell_name": "Continual Light",
+    "is_reversible": true,
+    "reverse_name": "Continual Darkness",
+    "reverse_key": "continual_darkness",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "360'",
+    "duration": "special",
+    "summary": "Creates a sustained sphere of light equivalent to full daylight; may be cast on an object, into the air, or at a creature."
+  },
+  {
+    "spell_key": "control_animals",
+    "spell_name": "Control Animals",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": [
+          "shaman"
+        ]
+      }
+    ],
+    "range": "60'",
+    "duration": "1 turn per level",
+    "summary": "Controls animals as if using charm monster for the duration."
+  },
+  {
+    "spell_key": "control_plants",
+    "spell_name": "Control Plants",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "1 turn per level",
+    "summary": "Controls plants or plant-like creatures within range, directing their movement and actions."
+  },
+  {
+    "spell_key": "control_undead",
+    "spell_name": "Control Undead",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": [
+          "priestess"
+        ]
+      }
+    ],
+    "range": "60'",
+    "duration": "1 turn per level",
+    "summary": "Controls undead despite their normal immunity to charm effects."
+  },
+  {
+    "spell_key": "control_weather",
+    "spell_name": "Control Weather",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "special",
+    "summary": "Creates a chosen weather condition around the caster; duration is indefinite while stationary and concentrating."
+  },
+  {
+    "spell_key": "control_wind",
+    "spell_name": "Control Wind",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": [
+          "shaman"
+        ]
+      }
+    ],
+    "range": "10' radius per level",
+    "duration": "1 turn per level",
+    "summary": "Manipulates airflow within range, increasing or decreasing wind speed."
+  },
+  {
+    "spell_key": "create_food",
+    "spell_name": "Create Food",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "10'",
+    "duration": "permanent",
+    "summary": "Creates simple nourishing food sufficient for 12 men and their mounts for 1 day."
+  },
+  {
+    "spell_key": "create_water",
+    "spell_name": "Create Water",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "10'",
+    "duration": "permanent",
+    "summary": "Creates an enchanted spring providing enough water for 12 men and their mounts for 1 day."
+  },
+  {
+    "spell_key": "cure_blindness",
+    "spell_name": "Cure Blindness",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "instantaneous",
+    "summary": "Cures blindness caused by injury or magic, including blindness from light or continual light."
+  },
+  {
+    "spell_key": "cure_critical_wounds",
+    "spell_name": "Cure Critical Wounds",
+    "is_reversible": true,
+    "reverse_name": "Cause Critical Wounds",
+    "reverse_key": "cause_critical_wounds",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": [
+          "priestess"
+        ]
+      }
+    ],
+    "range": "touch",
+    "duration": "instantaneous",
+    "summary": "Heals a large amount of damage by touch; restores 3d6+3 hit points."
+  },
+  {
+    "spell_key": "cure_disease",
+    "spell_name": "Cure Disease",
+    "is_reversible": true,
+    "reverse_name": "Cause Disease",
+    "reverse_key": "cause_disease",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "instantaneous",
+    "summary": "Cures all diseases including lycanthropy and mummy rot, and kills green slime and parasites."
+  },
+  {
+    "spell_key": "cure_light_wounds",
+    "spell_name": "Cure Light Wounds",
+    "is_reversible": true,
+    "reverse_name": "Cause Light Wounds",
+    "reverse_key": "cause_light_wounds",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "instantaneous",
+    "summary": "Restores 1d6+1 hit points by touch, or cures paralysis instead."
+  },
+  {
+    "spell_key": "cure_major_wounds",
+    "spell_name": "Cure Major Wounds",
+    "is_reversible": true,
+    "reverse_name": "Cause Major Wounds",
+    "reverse_key": "cause_major_wounds",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": [
+          "priestess",
+          "witch"
+        ]
+      }
+    ],
+    "range": "touch",
+    "duration": "instantaneous",
+    "summary": "Heals significant damage by touch; restores 2d6+2 hit points."
+  },
+  {
+    "spell_key": "cure_moderate_wounds",
+    "spell_name": "Cure Moderate Wounds",
+    "is_reversible": true,
+    "reverse_name": "Cause Moderate Wounds",
+    "reverse_key": "cause_moderate_wounds",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": [
+          "priestess"
+        ]
+      }
+    ],
+    "range": "touch",
+    "duration": "instantaneous",
+    "summary": "Heals moderate damage by touch; restores 1d6+1 hit points plus 1 per level."
+  },
+  {
+    "spell_key": "cure_serious_wounds",
+    "spell_name": "Cure Serious Wounds",
+    "is_reversible": true,
+    "reverse_name": "Cause Serious Wounds",
+    "reverse_key": "cause_serious_wounds",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "instantaneous",
+    "summary": "Restores 2d6 hit points plus 1 per caster level by touch."
+  },
+  {
+    "spell_key": "curse_of_swine",
+    "spell_name": "Curse of Swine",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "1 turn per level",
+    "summary": "Transforms targets into pigs for the duration unless they succeed on a saving throw."
+  },
+  {
+    "spell_key": "death_spell",
+    "spell_name": "Death Spell",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "instantaneous",
+    "summary": "Kills up to 4d8 Hit Dice of creatures in the area, weakest creatures dying first."
+  },
+  {
+    "spell_key": "death_ward",
+    "spell_name": "Death Ward",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": [
+          "priestess"
+        ]
+      }
+    ],
+    "range": "touch",
+    "duration": "3 turns",
+    "summary": "Protects the target from death-related magic such as death spells, energy drain, and death effects."
+  },
+  {
+    "spell_key": "deathless_minion",
+    "spell_name": "Deathless Minion",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "1 turn",
+    "summary": "Animates one dead creature as a temporary skeleton or zombie under spoken command."
+  },
+  {
+    "spell_key": "delay_disease",
+    "spell_name": "Delay Disease",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": [
+          "priestess",
+          "witch"
+        ]
+      }
+    ],
+    "range": "touch",
+    "duration": "24 hours",
+    "summary": "Temporarily halts the progress of a disease for 24 hours without curing it."
+  },
+  {
+    "spell_key": "delay_poison",
+    "spell_name": "Delay Poison",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "1 turn per level",
+    "summary": "Delays the effects of poison rather than curing it; the subject is temporarily immune to poison during the spell."
+  },
+  {
+    "spell_key": "detect_charm",
+    "spell_name": "Detect Charm",
+    "is_reversible": true,
+    "reverse_name": "Undetectable Charm",
+    "reverse_key": "undetectable_charm",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": [
+          "priestess",
+          "witch"
+        ]
+      }
+    ],
+    "range": "30'",
+    "duration": "3 turns",
+    "summary": "Reveals creatures affected by charm-like magic within range."
+  },
+  {
+    "spell_key": "detect_curse",
+    "spell_name": "Detect Curse",
+    "is_reversible": true,
+    "reverse_name": "Undetectable Curse",
+    "reverse_key": "undetectable_curse",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": [
+          "priestess",
+          "shaman",
+          "witch"
+        ]
+      }
+    ],
+    "range": "30'",
+    "duration": "3 turns",
+    "summary": "Reveals cursed items and areas within range."
+  },
+  {
+    "spell_key": "detect_danger",
+    "spell_name": "Detect Danger",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": [
+          "priestess"
+        ]
+      }
+    ],
+    "range": "30'",
+    "duration": "6 turns",
+    "summary": "Determines whether an examined target creature or object is dangerous."
+  },
+  {
+    "spell_key": "detect_evil",
+    "spell_name": "Detect Evil",
+    "is_reversible": true,
+    "reverse_name": "Detect Good",
+    "reverse_key": "detect_good",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      },
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "6 turns",
+    "summary": "Detects evil intentions, evil-enchanted items, undead, sinkholes of evil, and summoned chaotic creatures."
+  },
+  {
+    "spell_key": "detect_invisible",
+    "spell_name": "Detect Invisible",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": [
+          "witch"
+        ]
+      }
+    ],
+    "range": "60'",
+    "duration": "6 turns",
+    "summary": "Allows the caster to see invisible characters, creatures, and objects as translucent shapes."
+  },
+  {
+    "spell_key": "detect_magic",
+    "spell_name": "Detect Magic",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "2 turns",
+    "summary": "Lets the caster see enchanted or enspelled objects and creatures as pale glowing yellow light."
+  },
+  {
+    "spell_key": "detect_poison",
+    "spell_name": "Detect Poison",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "3 turns",
+    "summary": "Reveals whether a target creature, object, or area is poisoned or poisonous."
+  },
+  {
+    "spell_key": "detect_ritual_magic",
+    "spell_name": "Detect Ritual Magic",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "100 miles per level",
+    "duration": "1 day",
+    "summary": "Detects ritual spellcasting occurring within range for the duration."
+  },
+  {
+    "spell_key": "detect_secret_doors",
+    "spell_name": "Detect Secret Doors",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "3 turns",
+    "summary": "Detects secret doors within range."
+  },
+  {
+    "spell_key": "detect_undead",
+    "spell_name": "Detect Undead",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "3 turns",
+    "summary": "Detects undead creatures within range."
+  },
+  {
+    "spell_key": "dimension_door",
+    "spell_name": "Dimension Door",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "10'",
+    "duration": "instantaneous",
+    "summary": "Instantly transports the subject to any spot within 360' of the caster's or target's current location."
+  },
+  {
+    "spell_key": "disintegrate",
+    "spell_name": "Disintegrate",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "instantaneous",
+    "summary": "Projects a ray that disintegrates the target into fine dust; carried equipment is unaffected."
+  },
+  {
+    "spell_key": "dismember",
+    "spell_name": "Dismember",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "instantaneous",
+    "summary": "Maims and dismembers the target, dealing damage and potentially causing a mortal wound."
+  },
+  {
+    "spell_key": "dispel_evil",
+    "spell_name": "Dispel Evil",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "1 turn",
+    "summary": "Radiates destructive holy power; undead and enchanted creatures entering within 30' must save or be destroyed."
+  },
+  {
+    "spell_key": "dispel_magic",
+    "spell_name": "Dispel Magic",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "instantaneous",
+    "summary": "Ends ongoing spells and spell-like effects on a creature or within an area."
+  },
+  {
+    "spell_key": "divination",
+    "spell_name": "Divination",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "self",
+    "duration": "special",
+    "summary": "Provides useful advice regarding a specific goal, event, or activity expected within 1 week."
+  },
+  {
+    "spell_key": "divine_grace",
+    "spell_name": "Divine Grace",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": [
+          "priestess"
+        ]
+      }
+    ],
+    "range": "touch",
+    "duration": "6 turns",
+    "summary": "Grants a bonus to saving throws equal to the caster's Charisma modifier."
+  },
+  {
+    "spell_key": "earths_teeth",
+    "spell_name": "Earth's Teeth",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "instantaneous",
+    "summary": "Pillars of jagged rock erupt from the ground and impale selected targets in the area."
+  },
+  {
+    "spell_key": "enchanted_container",
+    "spell_name": "Enchanted Container",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "60 days",
+    "summary": "Creates a nondimensional storage space inside a small container that holds far more than its size suggests."
+  },
+  {
+    "spell_key": "enervate",
+    "spell_name": "Enervate",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "150'",
+    "duration": "1 round per level",
+    "summary": "Strikes the target with negative energy, temporarily reducing ability scores."
+  },
+  {
+    "spell_key": "enslave",
+    "spell_name": "Enslave",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "permanent",
+    "summary": "Totally enslaves the target to the caster's will until dispelled."
+  },
+  {
+    "spell_key": "enthrall",
+    "spell_name": "Enthrall",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": [
+          "bladedancer",
+          "priestess",
+          "witch"
+        ]
+      }
+    ],
+    "range": "60'",
+    "duration": "1 hour or less",
+    "summary": "Captures the attention of listeners and holds them spellbound while the caster performs."
+  },
+  {
+    "spell_key": "esp",
+    "spell_name": "ESP",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": [
+          "witch"
+        ]
+      }
+    ],
+    "range": "60'",
+    "duration": "12 turns",
+    "summary": "Lets the caster detect the surface thoughts of one or more targets, understood regardless of language."
+  },
+  {
+    "spell_key": "eyes_of_the_eagle",
+    "spell_name": "Eyes of the Eagle",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": [
+          "shaman"
+        ]
+      }
+    ],
+    "range": "touch",
+    "duration": "12 turns",
+    "summary": "Greatly increases the target's visual range, allowing sight at distances normally impossible."
+  },
+  {
+    "spell_key": "faerie_fire",
+    "spell_name": "Faerie Fire",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "1 round per level",
+    "summary": "Outlines creatures or objects in pale flickering fire, granting +2 to all attacks against an outlined target."
+  },
+  {
+    "spell_key": "fate",
+    "spell_name": "Fate",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "until it happens",
+    "summary": "Grants prophetic insight into a particular character's future, revealing a significant event that will occur."
+  },
+  {
+    "spell_key": "fear",
+    "spell_name": "Fear",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "instantaneous",
+    "summary": "Forces creatures in a cone to flee in fear unless they succeed on a saving throw."
+  },
+  {
+    "spell_key": "feeblemind",
+    "spell_name": "Feeblemind",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "180'",
+    "duration": "permanent",
+    "summary": "Reduces the subject to helpless idiocy; the target cannot cast spells, understand language, or communicate coherently."
+  },
+  {
+    "spell_key": "feign_death",
+    "spell_name": "Feign Death",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "6 rounds plus 1 round per level",
+    "summary": "Places the subject in a death-like paralytic arrest that mimics death to any observer."
+  },
+  {
+    "spell_key": "fellowship",
+    "spell_name": "Fellowship",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "self",
+    "duration": "1 turn per level",
+    "summary": "Alters others' social reactions; creatures failing their save treat the caster as though Charisma were 2d4 points higher."
+  },
+  {
+    "spell_key": "find_traps",
+    "spell_name": "Find Traps",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "3 turns",
+    "summary": "Detects magical and mechanical traps; when within 30' of a trap, it glows with a faint blue aura."
+  },
+  {
+    "spell_key": "find_treasure",
+    "spell_name": "Find Treasure",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "360'",
+    "duration": "3 turns",
+    "summary": "Senses the direction to the most valuable treasure within range."
+  },
+  {
+    "spell_key": "fireball",
+    "spell_name": "Fireball",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "instantaneous",
+    "summary": "Creates an explosion of flame dealing 1d6 fire damage per caster level to every creature in the area."
+  },
+  {
+    "spell_key": "flame_strike",
+    "spell_name": "Flame Strike",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "instantaneous",
+    "summary": "Calls down a column of divine fire dealing 6d8 damage in a 30' high by 10' diameter area."
+  },
+  {
+    "spell_key": "flesh_to_stone",
+    "spell_name": "Flesh to Stone",
+    "is_reversible": true,
+    "reverse_name": "Stone to Flesh",
+    "reverse_key": "stone_to_flesh",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "permanent",
+    "summary": "Turns the target and all carried gear into an inert stone statue permanently."
+  },
+  {
+    "spell_key": "floating_disc",
+    "spell_name": "Floating Disc",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "10'",
+    "duration": "6 turns",
+    "summary": "Creates an invisible 3' concave plane of force carrying up to 50 stone (500 lb) that follows the caster."
+  },
+  {
+    "spell_key": "fly",
+    "spell_name": "Fly",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "1 turn per level",
+    "summary": "Allows the subject to fly freely at up to 120' per round in any direction."
+  },
+  {
+    "spell_key": "forbiddance",
+    "spell_name": "Forbiddance",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "permanent",
+    "summary": "Seals an area against extradimensional beings and extradimensional travel."
+  },
+  {
+    "spell_key": "gaseous_form",
+    "spell_name": "Gaseous Form",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "6 turns",
+    "summary": "Transforms the subject into a translucent cloud of gas that can pass through small openings."
+  },
+  {
+    "spell_key": "geas",
+    "spell_name": "Geas",
+    "is_reversible": true,
+    "reverse_name": "Remove Geas",
+    "reverse_key": "remove_geas",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "special",
+    "summary": "Places a magical command on the target to perform or avoid a course of action."
+  },
+  {
+    "spell_key": "giant_strength",
+    "spell_name": "Giant Strength",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "3 turns",
+    "summary": "Temporarily grants the subject the strength of a hill giant, increasing damage and attack ability."
+  },
+  {
+    "spell_key": "glitterdust",
+    "spell_name": "Glitterdust",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "1 round per level",
+    "summary": "Covers the area in glowing dust that blinds creatures and outlines hidden or invisible creatures."
+  },
+  {
+    "spell_key": "globe_of_invulnerability",
+    "spell_name": "Globe of Invulnerability",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "1 round per level",
+    "summary": "Prevents spells and spell effects of up to 4th level from penetrating the globe."
+  },
+  {
+    "spell_key": "glyph_of_warding",
+    "spell_name": "Glyph of Warding",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "special",
+    "summary": "Creates an almost invisible magical ward on a surface that harms intruders who lack the password."
+  },
+  {
+    "spell_key": "growth",
+    "spell_name": "Growth",
+    "is_reversible": true,
+    "reverse_name": "Diminution",
+    "reverse_key": "diminution",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "12 turns",
+    "summary": "Doubles the recipient's size, increasing strength, reach, and weapon damage."
+  },
+  {
+    "spell_key": "growth_of_animals",
+    "spell_name": "Growth of Animals",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "12 turns",
+    "summary": "Enlarges an animal to twice normal size and eight times normal weight, dealing double damage with attacks."
+  },
+  {
+    "spell_key": "growth_of_plants",
+    "spell_name": "Growth of Plants",
+    "is_reversible": true,
+    "reverse_name": "Shrink Plants",
+    "reverse_key": "shrink_plants",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "permanent",
+    "summary": "Causes normal vegetation to become thick and overgrown into an impassable thicket."
+  },
+  {
+    "spell_key": "gust_of_wind",
+    "spell_name": "Gust of Wind",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "1 round",
+    "summary": "Creates a strong blast of air that can extinguish flames, scatter small objects, and knock down creatures."
+  },
+  {
+    "spell_key": "hallucinatory_terrain",
+    "spell_name": "Hallucinatory Terrain",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "special",
+    "summary": "Makes outdoor terrain appear to be a different natural terrain type, looking, sounding, and smelling authentic."
+  },
+  {
+    "spell_key": "haste",
+    "spell_name": "Haste",
+    "is_reversible": true,
+    "reverse_name": "Slow",
+    "reverse_key": "slow",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "3 turns",
+    "summary": "Speeds up affected creatures so they move and act twice as quickly, with doubled movement and attacks."
+  },
+  {
+    "spell_key": "hold_monster",
+    "spell_name": "Hold Monster",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "180'",
+    "duration": "2d8 turns",
+    "summary": "Paralyzes a living creature of any type, functioning like hold person but without the humanoid restriction."
+  },
+  {
+    "spell_key": "hold_person",
+    "spell_name": "Hold Person",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "180'",
+    "duration": "9 turns",
+    "summary": "Paralyzes the target while leaving awareness and breathing intact; paralyzed targets cannot act or speak."
+  },
+  {
+    "spell_key": "hold_portal",
+    "spell_name": "Hold Portal",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "10'",
+    "duration": "2d6 turns",
+    "summary": "Magically holds a portal shut, treating it as securely closed and normally locked."
+  },
+  {
+    "spell_key": "holy_chant",
+    "spell_name": "Holy Chant",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "special",
+    "summary": "Continuous chant grants allies +1 to attack throws, damage rolls, and saving throws while penalizing enemies by -1."
+  },
+  {
+    "spell_key": "hypnotic_pattern",
+    "spell_name": "Hypnotic Pattern",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "concentration",
+    "summary": "Mesmerizes creatures that see the pattern, rendering them unable to act while they watch it."
+  },
+  {
+    "spell_key": "inaudibility",
+    "spell_name": "Inaudibility",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "special",
+    "summary": "Makes the target move and fight noiselessly until they attack or cast a spell."
+  },
+  {
+    "spell_key": "infravision",
+    "spell_name": "Infravision",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "1 day",
+    "summary": "Grants the subject the ability to see in the dark to 60'."
+  },
+  {
+    "spell_key": "insect_plague",
+    "spell_name": "Insect Plague",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "480'",
+    "duration": "1 day",
+    "summary": "Summons a controllable plague of swarming insects consisting of 4 insect swarms with 4 HD each."
+  },
+  {
+    "spell_key": "invisibility",
+    "spell_name": "Invisibility",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "special",
+    "summary": "Makes the touched creature or object invisible including to infravision; ends when the target attacks."
+  },
+  {
+    "spell_key": "invisibility_10_radius",
+    "spell_name": "Invisibility 10' Radius",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "special",
+    "summary": "Functions like invisibility but affects all creatures within 10' of the recipient; affected creatures see each other."
+  },
+  {
+    "spell_key": "invisible_stalker",
+    "spell_name": "Invisible Stalker",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "10'",
+    "duration": "special",
+    "summary": "Summons an invisible stalker to perform the caster's bidding until the task is complete or it is slain."
+  },
+  {
+    "spell_key": "invulnerability_to_evil",
+    "spell_name": "Invulnerability to Evil",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "self",
+    "duration": "1 turn",
+    "summary": "Protects the caster from normal, non-magical attacks by evil creatures."
+  },
+  {
+    "spell_key": "jump",
+    "spell_name": "Jump",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "3 turns",
+    "summary": "Grants the recipient prodigious leaping ability, allowing jumps of 30' forward or 10' vertically."
+  },
+  {
+    "spell_key": "knock",
+    "spell_name": "Knock",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "special",
+    "summary": "Opens one means of preventing access \u00e2\u20ac\u201d a locked or held door, chest, or shackle."
+  },
+  {
+    "spell_key": "levitate",
+    "spell_name": "Levitate",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "6 turns plus 1 turn per level",
+    "summary": "Moves the subject vertically up or down by concentration at up to 20' per round."
+  },
+  {
+    "spell_key": "light",
+    "spell_name": "Light",
+    "is_reversible": true,
+    "reverse_name": "Darkness",
+    "reverse_key": "darkness",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "6 turns plus 1 turn per level",
+    "summary": "Creates torch-equivalent magical light on an object or point; may also blind a creature on a failed save."
+  },
+  {
+    "spell_key": "lightning_bolt",
+    "spell_name": "Lightning Bolt",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "180'",
+    "duration": "instantaneous",
+    "summary": "Releases a line of electrical energy dealing 1d6 damage per caster level to all in its path."
+  },
+  {
+    "spell_key": "locate_animal_or_plant",
+    "spell_name": "Locate Animal or Plant",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "6 turns",
+    "summary": "Reveals the direction to the closest specimen of a named animal or plant type within range."
+  },
+  {
+    "spell_key": "locate_object",
+    "spell_name": "Locate Object",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "6 turns",
+    "summary": "Senses the direction of a well-known or clearly visualized object within range."
+  },
+  {
+    "spell_key": "longevity",
+    "spell_name": "Longevity",
+    "is_reversible": true,
+    "reverse_name": "Decrepitude",
+    "reverse_key": "decrepitude",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "instantaneous",
+    "summary": "Makes the touched creature 10 years younger, potentially removing some effects of aging."
+  },
+  {
+    "spell_key": "lower_water",
+    "spell_name": "Lower Water",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "10 turns",
+    "summary": "Lowers water or similar liquid in a large area, potentially exposing the bottom."
+  },
+  {
+    "spell_key": "magic_carpet",
+    "spell_name": "Magic Carpet",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "1 turn per level",
+    "summary": "Transforms a suitable carpet into a flying vehicle under the caster's command."
+  },
+  {
+    "spell_key": "magic_jar",
+    "spell_name": "Magic Jar",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "special",
+    "summary": "Transfers the caster's soul into a receptacle, then allows possession of the body of a nearby creature."
+  },
+  {
+    "spell_key": "magic_missile",
+    "spell_name": "Magic Missile",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "150'",
+    "duration": "instantaneous",
+    "summary": "Creates unerring missiles of magical energy that automatically hit their target, dealing 1d6+1 damage each."
+  },
+  {
+    "spell_key": "magic_mouth",
+    "spell_name": "Magic Mouth",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "special",
+    "summary": "Places a conditional speaking mouth on a non-living object that delivers a message when triggered."
+  },
+  {
+    "spell_key": "magic_rope",
+    "spell_name": "Magic Rope",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "1 turn per level",
+    "summary": "Enchants rope to move on command and support up to 10,000 cn (1,000 lb) of weight."
+  },
+  {
+    "spell_key": "mass_infravision",
+    "spell_name": "Mass Infravision",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "1 day",
+    "summary": "Grants multiple subjects infravision to 60' for one day."
+  },
+  {
+    "spell_key": "massmorph",
+    "spell_name": "Massmorph",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "special",
+    "summary": "Conceals up to 100 man-sized creatures by making them appear to be natural terrain features."
+  },
+  {
+    "spell_key": "minor_globe_of_invulnerability",
+    "spell_name": "Minor Globe of Invulnerability",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "1 round per level",
+    "summary": "Prevents 1st, 2nd, and 3rd level spells or spell effects from penetrating the globe."
+  },
+  {
+    "spell_key": "mirror_image",
+    "spell_name": "Mirror Image",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "self",
+    "duration": "6 turns",
+    "summary": "Creates 1d4 illusory duplicates of the caster that confuse attackers; attacks against caster may hit an image instead."
+  },
+  {
+    "spell_key": "move_earth",
+    "spell_name": "Move Earth",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "6 turns",
+    "summary": "Moves large volumes of soil and can alter surface features such as hills, ditches, and earthworks."
+  },
+  {
+    "spell_key": "necromantic_potence",
+    "spell_name": "Necromantic Potence",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "caster",
+    "duration": "1 hour per level",
+    "summary": "Imbues the caster with necromantic power and temporary hit points drawn from negative energy."
+  },
+  {
+    "spell_key": "neutralize_poison",
+    "spell_name": "Neutralize Poison",
+    "is_reversible": true,
+    "reverse_name": "Poison",
+    "reverse_key": "poison",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "instantaneous",
+    "summary": "Detoxifies venom in a creature or object, neutralizing all poison effects."
+  },
+  {
+    "spell_key": "nondetection",
+    "spell_name": "Nondetection",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "1 hour per level",
+    "summary": "Protects the target from crystal balls and any type of ESP or divination magic."
+  },
+  {
+    "spell_key": "oblivion",
+    "spell_name": "Oblivion",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "instantaneous",
+    "summary": "Condemns the touched creature to oblivion if it fails its saving throw vs. Spells."
+  },
+  {
+    "spell_key": "obscuring_cloud",
+    "spell_name": "Obscuring Cloud",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "1 turn per level",
+    "summary": "Creates a harmless mist that blocks line of sight for most creatures within the area."
+  },
+  {
+    "spell_key": "ogre_power",
+    "spell_name": "Ogre Power",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "3 turns",
+    "summary": "Grants the subject the strength and prowess of an ogre for the duration."
+  },
+  {
+    "spell_key": "panic",
+    "spell_name": "Panic",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "instantaneous",
+    "summary": "Causes affected creatures to drop everything and flee in blind panic unless they save."
+  },
+  {
+    "spell_key": "pass_without_trace",
+    "spell_name": "Pass Without Trace",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "1 turn per level",
+    "summary": "Allows the recipient to move without leaving evidence of passage \u00e2\u20ac\u201d no tracks, scent, or trail."
+  },
+  {
+    "spell_key": "passwall",
+    "spell_name": "Passwall",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "3 turns",
+    "summary": "Creates a temporary passage through rock, earth, or similar solid material."
+  },
+  {
+    "spell_key": "permanent_illusion",
+    "spell_name": "Permanent Illusion",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "permanent",
+    "summary": "Creates a permanent multi-sensory illusion of an object, creature, or force."
+  },
+  {
+    "spell_key": "phantasmal_force",
+    "spell_name": "Phantasmal Force",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "concentration",
+    "summary": "Creates a visual illusion of an object, creature, or force; disbelieved on interaction."
+  },
+  {
+    "spell_key": "phantasmal_killer",
+    "spell_name": "Phantasmal Killer",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "1 round per level",
+    "summary": "Creates an illusion of the target's greatest fear that attacks; target must save or die from fright."
+  },
+  {
+    "spell_key": "polymorph_other",
+    "spell_name": "Polymorph Other",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "permanent",
+    "summary": "Permanently transforms a target into another living creature form of the caster's choice."
+  },
+  {
+    "spell_key": "polymorph_self",
+    "spell_name": "Polymorph Self",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "self",
+    "duration": "6 turns plus 1 turn per level",
+    "summary": "Transforms the caster into another living creature form, gaining physical traits but not special abilities."
+  },
+  {
+    "spell_key": "prayer",
+    "spell_name": "Prayer",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "1 round per level",
+    "summary": "Grants allies a +1 bonus to attack throws, damage rolls, and saving throws, and penalizes enemies by -1."
+  },
+  {
+    "spell_key": "predict_weather",
+    "spell_name": "Predict Weather",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "1 mile per level",
+    "duration": "12 hours",
+    "summary": "Accurately predicts the weather within range for the next 12 hours."
+  },
+  {
+    "spell_key": "produce_fire",
+    "spell_name": "Produce Fire",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "2 turns per level",
+    "summary": "Creates a small flame in the caster's palm that can be used to ignite combustibles."
+  },
+  {
+    "spell_key": "programmed_illusion",
+    "spell_name": "Programmed Illusion",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "special",
+    "summary": "Places a multi-sensory illusion that activates on a specified trigger condition."
+  },
+  {
+    "spell_key": "projected_image",
+    "spell_name": "Projected Image",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "6 turns",
+    "summary": "Creates a quasi-real illusory version of the caster that can cast spells as the caster."
+  },
+  {
+    "spell_key": "protection_from_evil",
+    "spell_name": "Protection from Evil",
+    "is_reversible": true,
+    "reverse_name": "Protection from Good",
+    "reverse_key": "protection_from_good",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "self",
+    "duration": "concentration",
+    "summary": "Creates a stationary protective barrier granting +1 to AC and saving throws against evil creatures."
+  },
+  {
+    "spell_key": "protection_from_evil_sustained",
+    "spell_name": "Protection from Evil, Sustained",
+    "is_reversible": true,
+    "reverse_name": "Protection from Good, Sustained",
+    "reverse_key": "protection_from_good_sustained",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "12 turns",
+    "summary": "Functions as protection from evil with a fixed sustained duration of 12 turns."
+  },
+  {
+    "spell_key": "protection_from_normal_missiles",
+    "spell_name": "Protection from Normal Missiles",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "12 turns",
+    "summary": "Completely protects the subject from small non-magical missile attacks."
+  },
+  {
+    "spell_key": "protection_from_normal_weapons",
+    "spell_name": "Protection from Normal Weapons",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "3 turns",
+    "summary": "Completely protects the subject from normal, non-magical weapon attacks."
+  },
+  {
+    "spell_key": "purify_food_and_water",
+    "spell_name": "Purify Food and Water",
+    "is_reversible": true,
+    "reverse_name": "Putrefy Food and Water",
+    "reverse_key": "putrefy_food_and_water",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "10'",
+    "duration": "instantaneous",
+    "summary": "Makes contaminated food and water safe for consumption; enough for up to 12 people."
+  },
+  {
+    "spell_key": "quest",
+    "spell_name": "Quest",
+    "is_reversible": true,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "special",
+    "summary": "Places a magical command requiring or forbidding a course of action; failure to comply causes ill effects."
+  },
+  {
+    "spell_key": "read_languages",
+    "spell_name": "Read Languages",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "self",
+    "duration": "2 turns",
+    "summary": "Allows reading of almost any written language or script for the duration."
+  },
+  {
+    "spell_key": "regeneration",
+    "spell_name": "Regeneration",
+    "is_reversible": true,
+    "reverse_name": "Withering",
+    "reverse_key": "withering",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "permanent",
+    "summary": "Heals permanent wounds and regenerates lost body parts; the subject regains 1 hit point per round."
+  },
+  {
+    "spell_key": "reincarnate",
+    "spell_name": "Reincarnate",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "instantaneous",
+    "summary": "Returns a dead character to life in a newly created young adult body of a random race and class."
+  },
+  {
+    "spell_key": "remove_curse",
+    "spell_name": "Remove Curse",
+    "is_reversible": true,
+    "reverse_name": "Bestow Curse",
+    "reverse_key": "bestow_curse",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "instantaneous",
+    "summary": "Removes curses from creatures and frees creatures from cursed items."
+  },
+  {
+    "spell_key": "remove_fear",
+    "spell_name": "Remove Fear",
+    "is_reversible": true,
+    "reverse_name": "Cause Fear",
+    "reverse_key": "cause_fear",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "instantaneous",
+    "summary": "Calms the touched creature and removes fear; reversed form causes a target to flee in fear."
+  },
+  {
+    "spell_key": "resist_cold",
+    "spell_name": "Resist Cold",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "6 turns",
+    "summary": "Grants temporary resistance and immunity to cold effects for the duration."
+  },
+  {
+    "spell_key": "resist_fire",
+    "spell_name": "Resist Fire",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "6 turns",
+    "summary": "Grants temporary resistance and immunity to fire and heat for the duration."
+  },
+  {
+    "spell_key": "restore_life_and_limb",
+    "spell_name": "Restore Life and Limb",
+    "is_reversible": true,
+    "reverse_name": "Finger of Death",
+    "reverse_key": "finger_of_death",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "instantaneous",
+    "summary": "Restores life to the recently dead and repairs permanent bodily damage including lost limbs."
+  },
+  {
+    "spell_key": "righteous_wrath",
+    "spell_name": "Righteous Wrath",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "1 turn",
+    "summary": "Imbues subjects with righteous wrath, granting a bonus to attack throws and damage against enemies of the faith."
+  },
+  {
+    "spell_key": "salving_rest",
+    "spell_name": "Salving Rest",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "special",
+    "summary": "Improves natural healing during complete rest, doubling hit points recovered."
+  },
+  {
+    "spell_key": "sanctuary",
+    "spell_name": "Sanctuary",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "2 rounds plus 1 round per level",
+    "summary": "Forces direct attackers to save vs. Spells or be unable to attack the warded creature."
+  },
+  {
+    "spell_key": "scouring_wind",
+    "spell_name": "Scouring Wind",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "1 round",
+    "summary": "Creates a damaging blast of wind and debris with additional effects based on creature size."
+  },
+  {
+    "spell_key": "scry",
+    "spell_name": "Scry",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "special",
+    "duration": "1 turn",
+    "summary": "Shows images of distant creatures, objects, or places through a scrying device."
+  },
+  {
+    "spell_key": "shield",
+    "spell_name": "Shield",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "self",
+    "duration": "3 turns",
+    "summary": "Creates a mobile invisible force shield providing AC 2 against missiles and AC 4 against melee attacks."
+  },
+  {
+    "spell_key": "shimmer",
+    "spell_name": "Shimmer",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "self",
+    "duration": "1 turn per level",
+    "summary": "Surrounds the caster with a protective shimmering aura that reduces damage taken."
+  },
+  {
+    "spell_key": "silence_15_radius",
+    "spell_name": "Silence 15' Radius",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "180'",
+    "duration": "12 turns",
+    "summary": "Creates complete silence in a 15' radius area, preventing sound and spellcasting that requires speech."
+  },
+  {
+    "spell_key": "silent_step",
+    "spell_name": "Silent Step",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "1 turn per level",
+    "summary": "Allows the touched character to move almost noiselessly."
+  },
+  {
+    "spell_key": "skinchange",
+    "spell_name": "Skinchange",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "self",
+    "duration": "1 turn per level",
+    "summary": "Allows the caster to assume the form of a normal or giant animal."
+  },
+  {
+    "spell_key": "sleep",
+    "spell_name": "Sleep",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "4d4 turns",
+    "summary": "Puts eligible creatures of low HD into magical slumber; affects a total Hit Dice based on the table."
+  },
+  {
+    "spell_key": "slipperiness",
+    "spell_name": "Slipperiness",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "3 turns",
+    "summary": "Makes a character, object, or floor nearly impossible to grasp, hold, or stand on."
+  },
+  {
+    "spell_key": "smite_undead",
+    "spell_name": "Smite Undead",
+    "is_reversible": true,
+    "reverse_name": "Animate Dead",
+    "reverse_key": "animate_dead",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "special",
+    "summary": "Instantly destroys undead up to a Hit Dice total equal to the caster's level; reversed form animates dead."
+  },
+  {
+    "spell_key": "snake_charm",
+    "spell_name": "Snake Charm",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "special",
+    "summary": "Makes snakes indifferent to the caster and those near the caster."
+  },
+  {
+    "spell_key": "speak_with_animals",
+    "spell_name": "Speak with Animals",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "special",
+    "duration": "6 turns",
+    "summary": "Lets the caster communicate with animals, asking questions and receiving answers."
+  },
+  {
+    "spell_key": "speak_with_dead",
+    "spell_name": "Speak with Dead",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "10'",
+    "duration": "1 turn",
+    "summary": "Animates a corpse enough to answer questions about its life, knowledge, or possessions."
+  },
+  {
+    "spell_key": "speak_with_plants",
+    "spell_name": "Speak with Plants",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "3 turns",
+    "summary": "Lets the caster communicate with plants, asking questions and receiving simple answers."
+  },
+  {
+    "spell_key": "spectral_force",
+    "spell_name": "Spectral Force",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "concentration plus 3 rounds",
+    "summary": "Creates a movable multi-sensory illusion of an object, creature, or force."
+  },
+  {
+    "spell_key": "spell_storing",
+    "spell_name": "Spell Storing",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "special",
+    "summary": "Prepares an item to hold up to six spells that can be triggered by a designated bearer."
+  },
+  {
+    "spell_key": "sphere_of_visibility",
+    "spell_name": "Sphere of Visibility",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "3 turns",
+    "summary": "Negates invisibility and similar concealment effects within a 20' radius sphere."
+  },
+  {
+    "spell_key": "spider_climb",
+    "spell_name": "Spider Climb",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "3 turns",
+    "summary": "Allows the recipient to climb vertical surfaces and hang from ceilings as a spider."
+  },
+  {
+    "spell_key": "spirit_of_healing",
+    "spell_name": "Spirit of Healing",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "1 round per level",
+    "summary": "Creates a healing force the caster directs each round, restoring hit points to a chosen target."
+  },
+  {
+    "spell_key": "spiritual_weapon",
+    "spell_name": "Spiritual Weapon",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "1 round per level",
+    "summary": "Creates a force weapon that attacks once per round using the caster's attack throw bonus."
+  },
+  {
+    "spell_key": "stinking_cloud",
+    "spell_name": "Stinking Cloud",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "1 round per level",
+    "summary": "Creates foul vapors that render creatures within the cloud helpless with nausea unless they save."
+  },
+  {
+    "spell_key": "sticks_to_snakes",
+    "spell_name": "Sticks to Snakes",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "6 turns",
+    "summary": "Transforms up to 2d8 sticks into normal snakes under the caster's command."
+  },
+  {
+    "spell_key": "strength_of_mind",
+    "spell_name": "Strength of Mind",
+    "is_reversible": true,
+    "reverse_name": "Weakness of Mind",
+    "reverse_key": "weakness_of_mind",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "12 turns",
+    "summary": "Improves the target's saving throws by +4 for the duration."
+  },
+  {
+    "spell_key": "striking",
+    "spell_name": "Striking",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "3 turns",
+    "summary": "Empowers a weapon with extra magical damage, dealing an additional 1d6 damage per hit."
+  },
+  {
+    "spell_key": "summon_animals",
+    "spell_name": "Summon Animals",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "360'",
+    "duration": "3 turns",
+    "summary": "Summons normal animals within range to aid the caster, answering the call if in the area."
+  },
+  {
+    "spell_key": "summon_berserkers",
+    "spell_name": "Summon Berserkers",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "10'",
+    "duration": "3 turns",
+    "summary": "Summons 4 berserkers from another sphere of existence to fight for the caster."
+  },
+  {
+    "spell_key": "summon_djinni",
+    "spell_name": "Summon Djinni",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "10'",
+    "duration": "1 day",
+    "summary": "Summons a djinni to serve and obey the summoner for one day."
+  },
+  {
+    "spell_key": "summon_fantastic_creature",
+    "spell_name": "Summon Fantastic Creature",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "10'",
+    "duration": "6 turns",
+    "summary": "Summons a specified fantastic creature to the caster's service for the duration."
+  },
+  {
+    "spell_key": "summon_hero",
+    "spell_name": "Summon Hero",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "10'",
+    "duration": "3 turns",
+    "summary": "Summons a 4th level fighter hero from another sphere of existence to serve the caster."
+  },
+  {
+    "spell_key": "summon_weather",
+    "spell_name": "Summon Weather",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "5 miles or more",
+    "duration": "6 turns per level",
+    "summary": "Pulls a nearby weather condition to the caster's location within 1 turn."
+  },
+  {
+    "spell_key": "summon_winged_steed",
+    "spell_name": "Summon Winged Steed",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "1 day",
+    "summary": "Calls a pegasus to serve as a winged steed for one day."
+  },
+  {
+    "spell_key": "swift_sword",
+    "spell_name": "Swift Sword",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "self",
+    "duration": "3 turns",
+    "summary": "Doubles the caster's normal number of attacks per round with a melee weapon."
+  },
+  {
+    "spell_key": "sword_of_fire",
+    "spell_name": "Sword of Fire",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "0'",
+    "duration": "12 turns",
+    "summary": "Creates a magical flaming sword in the caster's hand dealing extra fire damage."
+  },
+  {
+    "spell_key": "telekinesis",
+    "spell_name": "Telekinesis",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "6 rounds",
+    "summary": "Moves objects or creatures by concentration, up to 200 cn per caster level."
+  },
+  {
+    "spell_key": "telepathy",
+    "spell_name": "Telepathy",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "90'",
+    "duration": "concentration",
+    "summary": "Reads the thoughts of a creature within range and allows two-way telepathic communication."
+  },
+  {
+    "spell_key": "teleport",
+    "spell_name": "Teleport",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "instantaneous",
+    "summary": "Instantly transports the subject to a designated destination; accuracy depends on familiarity."
+  },
+  {
+    "spell_key": "tongues",
+    "spell_name": "Tongues",
+    "is_reversible": true,
+    "reverse_name": "Garble",
+    "reverse_key": "garble",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "1 turn",
+    "summary": "Allows understanding and speaking the language of any intelligent creature within range."
+  },
+  {
+    "spell_key": "torpor",
+    "spell_name": "Torpor",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "permanent",
+    "summary": "Puts an undead creature into indefinite pseudo-sleep until awakened."
+  },
+  {
+    "spell_key": "trance",
+    "spell_name": "Trance",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "1 round per level",
+    "summary": "Places the caster in a deep trance that detects specific supernatural presences within range."
+  },
+  {
+    "spell_key": "transmute_rock_to_mud",
+    "spell_name": "Transmute Rock to Mud",
+    "is_reversible": true,
+    "reverse_name": "Transmute Mud to Rock",
+    "reverse_key": "transmute_mud_to_rock",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "3d6 days",
+    "summary": "Changes natural rock into mud, creating difficult terrain and potentially trapping creatures."
+  },
+  {
+    "spell_key": "trollblood",
+    "spell_name": "Trollblood",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "self",
+    "duration": "1 turn",
+    "summary": "Grants troll-like regeneration, recovering 3 hit points per round."
+  },
+  {
+    "spell_key": "true_seeing",
+    "spell_name": "True Seeing",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "1 turn plus 1 round per level",
+    "summary": "Allows the subject to see things as they really are within 120', piercing illusions and concealment."
+  },
+  {
+    "spell_key": "uncanny_gyration",
+    "spell_name": "Uncanny Gyration",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "6 rounds",
+    "summary": "Violently whirls a target through the air, dealing damage and allowing the caster to fling it."
+  },
+  {
+    "spell_key": "unseen_servant",
+    "spell_name": "Unseen Servant",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "6 turns plus 1 turn per level",
+    "summary": "Creates an invisible mindless shapeless servant that performs simple tasks for the caster."
+  },
+  {
+    "spell_key": "ventriloquism",
+    "spell_name": "Ventriloquism",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "2 turns",
+    "summary": "Makes the caster's voice seem to originate from any location within range."
+  },
+  {
+    "spell_key": "vigor",
+    "spell_name": "Vigor",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "touch",
+    "duration": "1 turn per level",
+    "summary": "Temporarily enhances the subject's resilience, granting bonus hit points and increased strength."
+  },
+  {
+    "spell_key": "wall_of_corpses",
+    "spell_name": "Wall of Corpses",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "2 turns",
+    "summary": "Conjures a durable wall of writhing animated corpses that can attack adjacent creatures."
+  },
+  {
+    "spell_key": "wall_of_fire",
+    "spell_name": "Wall of Fire",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "2 turns",
+    "summary": "Creates an immobile opaque wall of violet flame that deals fire damage to those who pass through."
+  },
+  {
+    "spell_key": "wall_of_force",
+    "spell_name": "Wall of Force",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "2 turns",
+    "summary": "Creates an invisible impenetrable wall of force that cannot be dispelled or damaged."
+  },
+  {
+    "spell_key": "wall_of_ice",
+    "spell_name": "Wall of Ice",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "2 turns",
+    "summary": "Creates an immobile translucent wall of ice that deals cold damage to creatures breaking through."
+  },
+  {
+    "spell_key": "wall_of_iron",
+    "spell_name": "Wall of Iron",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 6,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "permanent",
+    "summary": "Creates a flat vertical wall of iron up to 3' thick and 500 sq ft in area."
+  },
+  {
+    "spell_key": "wall_of_smoke",
+    "spell_name": "Wall of Smoke",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 1,
+        "restricted_to": []
+      }
+    ],
+    "range": "120'",
+    "duration": "1 turn",
+    "summary": "Creates an immobile opaque wall of smoke that blocks line of sight."
+  },
+  {
+    "spell_key": "wall_of_stone",
+    "spell_name": "Wall of Stone",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "permanent",
+    "summary": "Creates a shaped stone wall up to 2' thick and 1,000 sq ft in area."
+  },
+  {
+    "spell_key": "wall_of_wood",
+    "spell_name": "Wall of Wood",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "permanent",
+    "summary": "Brings a wooden wall into existence, up to 6' thick and 500 sq ft in area."
+  },
+  {
+    "spell_key": "warp_wood",
+    "spell_name": "Warp Wood",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "permanent",
+    "summary": "Warps and bends wooden weapons, wands, and staffs, rendering them useless."
+  },
+  {
+    "spell_key": "water_breathing",
+    "spell_name": "Water Breathing",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 3,
+        "restricted_to": []
+      },
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "1 day",
+    "summary": "Allows the affected creature to breathe underwater at any depth for one day."
+  },
+  {
+    "spell_key": "water_walking",
+    "spell_name": "Water Walking",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "30'",
+    "duration": "6 turns plus 1 turn per level",
+    "summary": "Allows the subject to walk on water as though it were solid dry land."
+  },
+  {
+    "spell_key": "web",
+    "spell_name": "Web",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "10'",
+    "duration": "48 turns",
+    "summary": "Creates a mass of sticky strands that entangles creatures; creatures of 3+ HD may break free over time."
+  },
+  {
+    "spell_key": "winged_flight",
+    "spell_name": "Winged Flight",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "divine",
+        "level": 3,
+        "restricted_to": []
+      }
+    ],
+    "range": "self",
+    "duration": "1 turn per level",
+    "summary": "Grants the caster large wings and the ability to fly at 120' per round."
+  },
+  {
+    "spell_key": "wizard_eye",
+    "spell_name": "Wizard Eye",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 4,
+        "restricted_to": []
+      }
+    ],
+    "range": "240'",
+    "duration": "6 turns",
+    "summary": "Creates an invisible magical eye through which the caster can see while concentrating."
+  },
+  {
+    "spell_key": "wizard_lock",
+    "spell_name": "Wizard Lock",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 2,
+        "restricted_to": []
+      }
+    ],
+    "range": "10'",
+    "duration": "permanent",
+    "summary": "Magically locks a door, chest, or portal; can only be opened by the caster, knock, or dispel magic."
+  },
+  {
+    "spell_key": "x_ray_vision",
+    "spell_name": "X-Ray Vision",
+    "is_reversible": false,
+    "reverse_name": "",
+    "reverse_key": "",
+    "classifications": [
+      {
+        "tradition": "arcane",
+        "level": 5,
+        "restricted_to": []
+      }
+    ],
+    "range": "60'",
+    "duration": "concentration",
+    "summary": "Allows the caster to see through solid material up to 10' thick while concentrating."
+  }
+]

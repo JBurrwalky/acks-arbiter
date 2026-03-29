@@ -557,6 +557,95 @@ func clear_character_powers(character_id: String) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Character Spells CRUD (character_spells table — migration 001)
+# ---------------------------------------------------------------------------
+
+func save_character_spells(character_id: String, spells: Array) -> bool:
+	## Replace all spell rows for a character. Runs in a transaction.
+	## Each entry: { "spell_key": String, "spell_level": int,
+	##   "is_memorized": bool, "is_in_repertoire": bool, "memorized_slots": int }
+	db.query("BEGIN TRANSACTION")
+	if not db.query_with_bindings(
+		"DELETE FROM character_spells WHERE character_id = ?", [character_id]
+	):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.save_character_spells: delete failed. id=%s" % character_id)
+		return false
+	for spell in spells:
+		if not db.query_with_bindings("""
+			INSERT INTO character_spells
+				(character_id, spell_key, spell_level,
+				 is_memorized, is_in_repertoire, memorized_slots)
+			VALUES (?, ?, ?, ?, ?, ?)
+		""", [
+			character_id,
+			spell.get("spell_key", ""),
+			spell.get("spell_level", 1),
+			1 if spell.get("is_memorized", false) else 0,
+			1 if spell.get("is_in_repertoire", true) else 0,
+			spell.get("memorized_slots", 0),
+		]):
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.save_character_spells: insert failed. spell=%s" % spell.get("spell_key", "?"))
+			return false
+	db.query("COMMIT")
+	return true
+
+
+func get_character_spells(character_id: String) -> Array:
+	## Returns all spell rows for a character.
+	db.query_with_bindings(
+		"SELECT * FROM character_spells WHERE character_id = ?",
+		[character_id]
+	)
+	return db.query_result.duplicate()
+
+
+func get_character_repertoire(character_id: String) -> Array:
+	## Returns only spells where is_in_repertoire = 1.
+	db.query_with_bindings(
+		"SELECT * FROM character_spells WHERE character_id = ? AND is_in_repertoire = 1",
+		[character_id]
+	)
+	return db.query_result.duplicate()
+
+
+func add_character_spell(character_id: String, spell_data: Dictionary) -> int:
+	## Add a single spell row. Returns the AUTOINCREMENT row id, or -1 on failure.
+	if not db.query_with_bindings("""
+		INSERT INTO character_spells
+			(character_id, spell_key, spell_level,
+			 is_memorized, is_in_repertoire, memorized_slots)
+		VALUES (?, ?, ?, ?, ?, ?)
+	""", [
+		character_id,
+		spell_data.get("spell_key", ""),
+		spell_data.get("spell_level", 1),
+		1 if spell_data.get("is_memorized", false) else 0,
+		1 if spell_data.get("is_in_repertoire", true) else 0,
+		spell_data.get("memorized_slots", 0),
+	]):
+		push_error("CampaignRepository.add_character_spell: failed. character=%s spell=%s" % [
+			character_id, spell_data.get("spell_key", "?")
+		])
+		return -1
+	db.query("SELECT last_insert_rowid() AS id")
+	if db.query_result.is_empty():
+		return -1
+	return db.query_result[0]["id"] as int
+
+
+func clear_character_spells(character_id: String) -> bool:
+	## Delete all spells for a character.
+	if not db.query_with_bindings(
+		"DELETE FROM character_spells WHERE character_id = ?", [character_id]
+	):
+		push_error("CampaignRepository.clear_character_spells: failed. id=%s" % character_id)
+		return false
+	return true
+
+
+# ---------------------------------------------------------------------------
 # Character Proficiencies — batch save (table already exists from migration 001)
 # ---------------------------------------------------------------------------
 

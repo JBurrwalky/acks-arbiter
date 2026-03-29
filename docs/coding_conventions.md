@@ -214,6 +214,7 @@ acks-arbiter/               (Godot project root = repo root)
 │       ├── characters/     # PowerRegistry, ClassRegistry, AbilityUtils, EncumbranceCalculator, CharacterGenerator
 │       ├── exploration/    # HexMapController
 │       ├── override/       # OverrideManager (dev-mode state manipulation)
+│       ├── spells/         # SpellRegistry, RepertoireEngine (RefCounted, instantiated by consumer)
 │       ├── combat/         # (planned)
 │       ├── domain/         # (planned)
 │       └── magic/          # (planned)
@@ -232,6 +233,7 @@ acks-arbiter/               (Godot project root = repo root)
 │   ├── classes/            # One JSON per ACKS class (25 files)
 │   ├── powers/             # power_catalog.json (reusable power definitions)
 │   ├── equipment/          # base_equipment.json (weapons, armor, gear)
+│   ├── spells/             # spell_catalog.json (231 entries), spell_list_indices.json
 │   └── test_hex_map.json   # Test hex map data
 ├── rules/                  # SACRED XML rule summaries — never modify
 ├── generation/             # GDD markdown files — modifiable
@@ -389,7 +391,7 @@ var internal_state: int = 0  # is this part of the public API?
 |---|---|---|
 | Autoload scripts | **Never** | Godot error: "hides an autoload singleton" |
 | Shared types (`engine/shared_types/`) | **Always** | Enables typed references (`var r: RollResult`) |
-| Subsystem manager nodes | **Yes** | Lets parent scenes reference them by type |
+| Subsystem managers (Node or RefCounted) | **Yes** | Enables typed instantiation: `var reg := SpellRegistry.new()` |
 | Pure static/constants classes | **Yes** | Enables direct calls: `CalendarSeasons.get_season(day)` without instantiation |
 | UI scene scripts (CanvasLayer, Node2D) | **No** | Only referenced via scene instantiation, never by code |
 | Test scripts | **No** | Only instantiated by test_runner.tscn |
@@ -597,6 +599,7 @@ extends Node
 | Need | Solution |
 |------|----------|
 | Manager for one scene tree | Add a manager Node as child of that scene |
+| Subsystem with instance state, instantiated on demand | `class_name` RefCounted class, instantiated by the consumer (e.g., `SpellRegistry`, `ClassRegistry`, `RepertoireEngine`) |
 | Pure computation (lookup tables, formulas, no instance state) | `class_name` class with only `const` and `static func` — see §3.9 |
 | Shared utility functions | Static methods in a regular class (no autoload needed) |
 | Data shared between two subsystems | Define in `engine/shared_types/`, pass via signals or method args |
@@ -1091,7 +1094,7 @@ func test_npc_dialogue_falls_back_to_template() -> void:
 
 ### 10.2 Dice Roll Type Vocabulary
 
-<!-- Confirmed 2026-03-27 — 19 roll types defined in OverrideManager and used by DiceSystem -->
+<!-- Confirmed 2026-03-27 — 19 roll types defined in OverrideManager and used by DiceSystem. 2026-03-28: starting_spell added (RepertoireEngine d12 starting repertoire rolls). -->
 
 Roll types are snake_case strings identifying the mechanical purpose of a dice roll. Used by the override queue (GameState.dice_overrides) and the roll log (dice_rolls table). Canonical list defined in `override_manager.gd` header comment and mirrored in `override_panel.gd::ROLL_TYPES`.
 
@@ -1099,7 +1102,7 @@ Roll types are snake_case strings identifying the mechanical purpose of a dice r
 `player_surprise_check`, `initiative`, `attack_throw`, `damage_roll`, `saving_throw_petrification`, `saving_throw_poison`, `saving_throw_blast`, `saving_throw_wands`, `saving_throw_spells`, `thief_skill_throw`, `proficiency_throw`, `mortal_wound_roll`, `tampering_with_mortality`
 
 **GM/digital-only rolls** (never prompted — use `DiceSystem.roll_digital()`):
-`encounter_check`, `monster_surprise_check`, `morale_check`, `reaction_roll`, `domain_event_roll`, `hijink_roll`
+`encounter_check`, `monster_surprise_check`, `morale_check`, `reaction_roll`, `domain_event_roll`, `hijink_roll`, `starting_spell`
 
 **Adding a new roll type:** Add to both the `OverrideManager` header comment and the `ROLL_TYPES` array in `override_panel.gd`. The DiceSystem itself is type-agnostic — any string works as a roll_type.
 
@@ -1266,4 +1269,4 @@ Main (Node, script: main_scene.gd)
 
 ---
 
-*Last major update: 2026-03-28 — Calendar & seasons system. Added pure static computation class pattern (§3.9), updated `class_name` rules table (§3.7), alternatives to autoloads (§5.3), Timekeeping patterns for `get_day_of_year()` and `season_changed` (§6.8), seasons/climate/solstice ACKS rules (§12), calendar subsystem in directory tree (§2.1).*
+*Last major update: 2026-03-28 — Phase C-2 spell system. Added `spells/` subsystem and `data/spells/` to directory tree (§2.1), clarified `class_name` row for RefCounted subsystem managers (§3.7), added RefCounted-on-demand alternative to autoloads (§5.3), added `starting_spell` to roll type vocabulary (§10.2).*

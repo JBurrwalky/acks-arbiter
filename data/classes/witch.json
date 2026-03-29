@@ -53,6 +53,7 @@
       "power_id": "divine_casting",
       "unlock_level": 1,
       "tradition": "divine",
+      "spell_list": "divine_cleric",
       "progression": {
         "1":  [1, 0, 0, 0, 0],
         "2":  [2, 0, 0, 0, 0],

@@ -61,6 +61,7 @@
       "power_id": "arcane_casting",
       "unlock_level": 1,
       "tradition": "arcane",
+      "spell_list": "arcane",
       "progression": {
         "1":  [1, 0, 0, 0, 0, 0],
         "2":  [2, 0, 0, 0, 0, 0],

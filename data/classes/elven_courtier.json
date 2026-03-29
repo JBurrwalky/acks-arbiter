@@ -60,6 +60,7 @@
       "power_id": "arcane_casting_in_armor",
       "unlock_level": 2,
       "tradition": "arcane",
+      "spell_list": "arcane",
       "description": "Casts arcane spells as a mage of one-half class level. Uses the mage spell list. May cast spells while wearing armor. May use magic items usable by mages or thieves.",
       "progression": {
         "1":  [0, 0, 0],

@@ -27,7 +27,11 @@
       "Bash(ls data/classes/*.json)",
       "Bash(for f:*)",
       "Bash(do python:*)",
-      "Bash(xargs -I {} basename {})"
+      "Bash(xargs -I {} basename {})",
+      "Bash(python3:*)",
+      "Bash(cp \"c:/Users/jttau/acks-arbiter/rules/acore_spell_catalog_k-w_summary.xml\" \"$TEMP/spells.xml\")",
+      "Read(//c/Users/jttau/acks-arbiter/$TEMP/**)",
+      "Bash(echo $TEMP)"
     ]
   }
 }

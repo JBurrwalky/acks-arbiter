@@ -22,6 +22,8 @@ extends Node
 @onready var _character_persistence_tests = $CharacterPersistenceTests
 @onready var _class_powers_tests = $ClassPowersTests
 @onready var _npc_generation_tests = $NPCGenerationTests
+@onready var _spell_registry_tests = $SpellRegistryTests
+@onready var _repertoire_engine_tests = $RepertoireEngineTests
 
 
 func _ready() -> void:
@@ -36,7 +38,8 @@ func run() -> void:
 			_timekeeping_tests, _calendar_seasons_tests,
 			_ability_utils_tests, _class_registry_tests, _power_registry_tests,
 			_encumbrance_tests, _character_generator_tests, _character_persistence_tests,
-			_class_powers_tests, _npc_generation_tests]:
+			_class_powers_tests, _npc_generation_tests,
+			_spell_registry_tests, _repertoire_engine_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

@@ -148,6 +148,9 @@ signal spell_interrupted(caster_id: String, spell_id: String)
 ## A magic item was successfully created.
 signal magic_item_created(item_id: String, creator_id: String)
 
+## A character's spell repertoire was updated (generated, modified, or loaded).
+signal repertoire_updated(character_id: String)
+
 
 # ---------------------------------------------------------------------------
 # LLM / Narration signals

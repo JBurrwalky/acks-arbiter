@@ -53,6 +53,7 @@
       "power_id": "arcane_casting",
       "unlock_level": 1,
       "tradition": "arcane",
+      "spell_list": "arcane",
       "description": "Casts arcane spells as a mage of two-thirds class level. Spell slots from warlock progression table. Source XML notes the spell progression table is malformed in the excerpt.",
       "notes": "INCOMPLETE: The source XML explicitly states 'The spell progression table in the provided source excerpt is malformed, so individual slot values cannot be recovered from the excerpt with confidence.' Slot values need to be verified against the published Player's Companion book."
     },
