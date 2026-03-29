@@ -995,6 +995,85 @@ func _query_rows(sql: String, bindings: Array) -> Array:
 	return db.query_result.duplicate()
 
 
+# ---------------------------------------------------------------------------
+# Active Effects — Migration 006
+# ---------------------------------------------------------------------------
+
+func save_active_effect(effect: Dictionary) -> bool:
+	## Inserts or replaces an active effect record.
+	## Required keys: id, campaign_id, spell_key, caster_id.
+	## Array/Dict fields (target_ids, applied_modifiers, etc.) must be JSON strings.
+	return db.query_with_bindings("""
+		INSERT OR REPLACE INTO active_effects
+		(id, campaign_id, spell_key, caster_id, caster_level,
+		 target_ids, effect_type, applied_modifiers, applied_conditions, applied_flags,
+		 duration_type, duration_remaining, requires_concentration,
+		 is_active, metadata, created_at_round)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		effect.get("id", ""),
+		effect.get("campaign_id", ""),
+		effect.get("spell_key", ""),
+		effect.get("caster_id", ""),
+		effect.get("caster_level", 1),
+		JSON.stringify(effect.get("target_ids", [])),
+		effect.get("effect_type", "modifier"),
+		JSON.stringify(effect.get("applied_modifiers", [])),
+		JSON.stringify(effect.get("applied_conditions", [])),
+		JSON.stringify(effect.get("applied_flags", [])),
+		effect.get("duration_type", "rounds"),
+		effect.get("duration_remaining", -1),
+		1 if effect.get("requires_concentration", false) else 0,
+		1 if effect.get("is_active", true) else 0,
+		JSON.stringify(effect.get("metadata", {})),
+		effect.get("created_at_round", 0),
+	])
+
+
+func get_active_effects(campaign_id: String) -> Array:
+	## Returns all active effects for the campaign as deserialized Dictionaries.
+	var rows := _query_rows("SELECT * FROM active_effects WHERE campaign_id = ? AND is_active = 1",
+		[campaign_id])
+	return rows.map(_deserialize_active_effect)
+
+
+func get_active_effects_on_target(target_id: String, campaign_id: String) -> Array:
+	## Returns all active effects where target_id appears in target_ids.
+	## NOTE: Uses JSON LIKE search — suitable for IDs without special characters.
+	var rows := _query_rows(
+		"SELECT * FROM active_effects WHERE campaign_id = ? AND is_active = 1 AND target_ids LIKE ?",
+		[campaign_id, "%" + target_id + "%"])
+	# Filter precisely — LIKE match may include false positives on substring matches
+	var result: Array = []
+	for row in rows:
+		var effect: Dictionary = _deserialize_active_effect(row)
+		if target_id in effect.get("target_ids", []):
+			result.append(effect)
+	return result
+
+
+func remove_active_effect(effect_id: String) -> bool:
+	return db.query_with_bindings("DELETE FROM active_effects WHERE id = ?", [effect_id])
+
+
+func clear_active_effects(campaign_id: String) -> bool:
+	return db.query_with_bindings("DELETE FROM active_effects WHERE campaign_id = ?", [campaign_id])
+
+
+func _deserialize_active_effect(row: Dictionary) -> Dictionary:
+	var effect := row.duplicate()
+	for json_field in ["target_ids", "applied_modifiers", "applied_conditions", "applied_flags"]:
+		if effect.has(json_field):
+			var parsed = JSON.parse_string(effect[json_field])
+			effect[json_field] = parsed if parsed != null else []
+	if effect.has("metadata"):
+		var parsed = JSON.parse_string(effect["metadata"])
+		effect["metadata"] = parsed if parsed is Dictionary else {}
+	effect["requires_concentration"] = effect.get("requires_concentration", 0) == 1
+	effect["is_active"] = effect.get("is_active", 1) == 1
+	return effect
+
+
 func _insert_rows(table: String, rows: Array) -> bool:
 	## Inserts all rows into [param table] using INSERT OR REPLACE.
 	## Column names are derived from the first row's dictionary keys.

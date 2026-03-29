@@ -31,7 +31,8 @@
       "Bash(python3:*)",
       "Bash(cp \"c:/Users/jttau/acks-arbiter/rules/acore_spell_catalog_k-w_summary.xml\" \"$TEMP/spells.xml\")",
       "Read(//c/Users/jttau/acks-arbiter/$TEMP/**)",
-      "Bash(echo $TEMP)"
+      "Bash(echo $TEMP)",
+      "Bash(c:/Users/jttau/acks-arbiter/build_log.md:*)"
     ]
   }
 }

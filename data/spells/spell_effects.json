@@ -1,0 +1,170 @@
+{
+  "_comment": "Spell effect hook data. Separate from spell_catalog.json (metadata). Encodes mechanical bindings for spells. ~10 template entries covering all hook patterns. Full catalog populated in Phase E.",
+
+  "protection_from_evil": {
+    "effect_type": "modifier",
+    "duration_type": "turns",
+    "duration_formula": "6",
+    "requires_concentration": false,
+    "modifiers": [
+      { "stat": "armor_class",        "operation": "add", "value": 1, "stacking_group": "protection" },
+      { "stat": "save_petrification", "operation": "add", "value": 1, "stacking_group": "protection" },
+      { "stat": "save_poison_death",  "operation": "add", "value": 1, "stacking_group": "protection" },
+      { "stat": "save_blast_breath",  "operation": "add", "value": 1, "stacking_group": "protection" },
+      { "stat": "save_staffs_wands",  "operation": "add", "value": 1, "stacking_group": "protection" },
+      { "stat": "save_spells",        "operation": "add", "value": 1, "stacking_group": "protection" }
+    ],
+    "flags": ["protected_from_enchanted_melee"],
+    "conditions": []
+  },
+
+  "bless": {
+    "effect_type": "modifier",
+    "duration_type": "turns",
+    "duration_formula": "6",
+    "requires_concentration": false,
+    "modifiers": [
+      { "stat": "attack_throw", "operation": "add", "value": -1, "stacking_group": "morale" },
+      { "stat": "save_spells",  "operation": "add", "value": -1, "stacking_group": "morale" }
+    ],
+    "flags": [],
+    "conditions": []
+  },
+
+  "fly": {
+    "effect_type": "flag",
+    "duration_type": "turns",
+    "duration_formula": "6 + caster_level / 2",
+    "requires_concentration": false,
+    "modifiers": [
+      { "stat": "movement_rate", "operation": "set_floor", "value": 120, "stacking_group": "" }
+    ],
+    "flags": ["can_fly"],
+    "conditions": []
+  },
+
+  "haste": {
+    "effect_type": "modifier",
+    "duration_type": "turns",
+    "duration_formula": "3",
+    "requires_concentration": false,
+    "modifiers": [
+      { "stat": "movement_rate", "operation": "multiply", "value": 2.0, "stacking_group": "" }
+    ],
+    "flags": ["is_hasted"],
+    "conditions": []
+  },
+
+  "invisibility": {
+    "effect_type": "flag",
+    "duration_type": "permanent",
+    "duration_formula": "-1",
+    "requires_concentration": false,
+    "modifiers": [],
+    "flags": ["is_invisible"],
+    "conditions": [],
+    "notes": "Permanent until broken by attacking or casting."
+  },
+
+  "improved_invisibility": {
+    "effect_type": "flag",
+    "duration_type": "turns",
+    "duration_formula": "caster_level",
+    "requires_concentration": false,
+    "modifiers": [],
+    "flags": ["is_improved_invisible"],
+    "conditions": []
+  },
+
+  "cure_light_wounds": {
+    "effect_type": "instant",
+    "duration_type": "permanent",
+    "duration_formula": "-1",
+    "requires_concentration": false,
+    "healing": "1d6+1",
+    "modifiers": [],
+    "flags": [],
+    "conditions": []
+  },
+
+  "cure_serious_wounds": {
+    "effect_type": "instant",
+    "duration_type": "permanent",
+    "duration_formula": "-1",
+    "requires_concentration": false,
+    "healing": "2d6+2",
+    "modifiers": [],
+    "flags": [],
+    "conditions": []
+  },
+
+  "magic_missile": {
+    "effect_type": "instant",
+    "duration_type": "permanent",
+    "duration_formula": "-1",
+    "requires_concentration": false,
+    "damage": "1d6+1",
+    "damage_type": "force",
+    "auto_hit": true,
+    "modifiers": [],
+    "flags": [],
+    "conditions": []
+  },
+
+  "hold_person": {
+    "effect_type": "condition",
+    "duration_type": "turns",
+    "duration_formula": "caster_level",
+    "requires_concentration": false,
+    "save_type": "save_spells",
+    "modifiers": [],
+    "flags": [],
+    "conditions": ["paralyzed"]
+  },
+
+  "striking": {
+    "effect_type": "modifier",
+    "duration_type": "turns",
+    "duration_formula": "6",
+    "requires_concentration": false,
+    "weapon_damage_bonus": "1d6",
+    "modifiers": [],
+    "flags": [],
+    "conditions": [],
+    "notes": "Applies 1d6 bonus damage on weapon attacks. Tracked via spell_damage_bonus on InventoryItem."
+  },
+
+  "prayer": {
+    "effect_type": "modifier",
+    "duration_type": "turns",
+    "duration_formula": "caster_level",
+    "requires_concentration": false,
+    "modifiers": [
+      { "stat": "attack_throw",       "operation": "add", "value": -1, "stacking_group": "morale" },
+      { "stat": "save_petrification", "operation": "add", "value": -1, "stacking_group": "morale" },
+      { "stat": "save_poison_death",  "operation": "add", "value": -1, "stacking_group": "morale" },
+      { "stat": "save_blast_breath",  "operation": "add", "value": -1, "stacking_group": "morale" },
+      { "stat": "save_staffs_wands",  "operation": "add", "value": -1, "stacking_group": "morale" },
+      { "stat": "save_spells",        "operation": "add", "value": -1, "stacking_group": "morale" },
+      { "stat": "damage_bonus",       "operation": "add", "value": 1,  "stacking_group": "morale" }
+    ],
+    "flags": [],
+    "conditions": [],
+    "notes": "ACKS: Prayer gives +1 to all saving throws, attack throws, and damage rolls to allies. Enemies get -1. This entry covers the ally bonus; enemy penalty applied separately."
+  },
+
+  "resist_fire": {
+    "effect_type": "modifier",
+    "duration_type": "turns",
+    "duration_formula": "6",
+    "requires_concentration": false,
+    "modifiers": [
+      { "stat": "save_blast_breath", "operation": "add", "value": -2, "stacking_group": "resist_fire" }
+    ],
+    "flags": [],
+    "conditions": [],
+    "damage_resistances": [
+      { "damage_type": "fire", "resistance_type": "resistance", "factor": 0.5 }
+    ]
+  }
+}

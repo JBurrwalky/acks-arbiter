@@ -176,6 +176,7 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 | `document_map.md` | This file — index of all rule and design documents |
 | `rule_system_map.md` | System-to-file dependency map and cross-references |
 | `coding_conventions.md` | Living reference for GDScript, SQLite, and architecture patterns — naming, signals, autoloads, DB access, testing |
+| `spell_system_map.md` | Maps spells to game system hooks — modifier types, flag systems, and effect patterns each system must support |
 
 ---
 

@@ -29,6 +29,7 @@ When working on system X:
 
 ### Spells & Magic
 - **Rule files:** `acore_spellcaster_rules`, `acore_spell_catalog_a-i_summary`, `acore_spell_catalog_k-w_summary`, `pc_spell_catalog_a-e`, `pc_spell_catalog_f-u`, `pc_custom_spell_creation_rules`, `pc_magic_experimentation`, `ax_codex_and_scroll_magic`
+- **Architecture docs:** `docs/spell_system_map.md` (maps spells to system hooks — load when building any system that spells interact with)
 - **Depends on:** Characters (caster classes, spell repertoire)
 - **Depended on by:** Combat (combat spells), Magic Research (campaign play), Treasure (scrolls, magic items)
 

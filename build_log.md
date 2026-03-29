@@ -928,3 +928,114 @@ Spell row shape: `{ "spell_key": String, "spell_level": int, "is_memorized": boo
 2. Update `docs/coding_conventions.md` §10.2 — add `starting_spell` to roll type vocabulary.
 3. Build character creation UI (Phase C-3): class selection, ability score rolling, spell repertoire assignment for casters.
 4. Wire SpellRegistry and RepertoireEngine into CharacterGenerator for caster character generation.
+
+
+---
+
+## Session 2026-03-28 � Spell Hook Infrastructure (Phases 0-2)
+
+**Task:** Implement the foundational spell hook infrastructure per the approved plan: modifier system, entity flag system, damage types, condition catalog, damage resistance, CharacterData/InventoryItem extensions, active effect tracker, spell effect registry, EventBus signals, DB migration 006.
+
+**Model used:** claude-sonnet-4-6 throughout.
+
+**Completed:**
+
+Phase 0A (from prior context, already complete):
+- engine/shared_types/modifier_stack.gd (ModifierStack)
+- engine/shared_types/modifier_container.gd (ModifierContainer)
+- tests/test_modifier_stack.gd (19 tests)
+
+Phase 0B (from prior context, already complete):
+- engine/shared_types/entity_flags.gd (EntityFlags)
+- tests/test_entity_flags.gd (12 tests)
+
+Phase 0C (from prior context, already complete):
+- engine/shared_types/damage_types.gd (DamageTypes constants)
+
+Phase 0D (this session):
+- data/conditions/condition_catalog.json (27 conditions from ax_conditions_catalog.xml)
+- engine/shared_types/condition_catalog.gd (ConditionCatalog)
+- tests/test_condition_catalog.gd (28 tests)
+
+Phase 0E (this session):
+- engine/shared_types/damage_resistance.gd (DamageResistance - immunity/resistance/vulnerability, source-tracked)
+- tests/test_damage_resistance.gd (19 tests)
+
+Phase 1A (this session):
+- engine/shared_types/character_data.gd (MODIFIED):
+  - Runtime-only fields: modifiers: ModifierContainer, flags: EntityFlags, damage_resistances: DamageResistance, temp_hp: int, mirror_images: int
+  - Effective getters: get_effective_ac, get_effective_attack_throw, get_effective_save, get_effective_movement, get_effective_ability_score
+  - Flag helpers: is_flying(), is_invisible()
+  - Combat: apply_damage(amount, damage_type) -> Dict, apply_healing(amount) -> int, apply_age_change(years)
+  - from_dict/to_dict NOT modified (runtime state rebuilt from active_effects on load)
+
+Phase 1B (this session):
+- engine/shared_types/inventory_item.gd (MODIFIED):
+  - Persistent: damage_type: String, material: String
+  - Runtime: spell_bonus: int, spell_damage_bonus: String
+  - Method: get_effective_bonus() -> int
+  - from_dict/to_dict updated for persistent fields only
+
+Phase 2A (this session):
+- engine/subsystems/spells/active_effect_tracker.gd (ActiveEffectTracker)
+- db/migrations/006_spell_hook_infrastructure.sql (active_effects table + inventory_items ALTER)
+- db/schema.sql (MODIFIED - migration 006 reflected)
+- engine/autoloads/campaign_repository.gd (MODIFIED - active_effects CRUD added)
+
+Phase 2B (this session):
+- data/spells/spell_effects.json (13 template entries covering all hook patterns)
+- engine/subsystems/spells/spell_effect_registry.gd (SpellEffectRegistry)
+
+Phase 2C (this session):
+- engine/autoloads/event_bus.gd (MODIFIED):
+  - New Magic signals: active_effect_expired, concentration_broken, spell_effect_applied, spell_effect_removed
+  - New Damage section: damage_dealt, healing_applied
+
+Phase 2D (this session):
+- tests/test_active_effect_tracker.gd (23 tests)
+- tests/test_spell_effect_registry.gd (20 tests)
+- tests/test_runner.gd + tests/test_runner.tscn (22 suites, ~270+ tests total)
+
+**Decisions made:**
+- DamageResistance.apply_to_damage order: immunity -> resistance -> vulnerability. UNTYPED bypasses immunity+resistance but still takes vulnerability.
+- Multiple resistances stack multiplicatively (not additively).
+- Immunity beats vulnerability when both apply to same damage type.
+- CharacterData.is_invisible() returns true for either is_invisible or is_improved_invisible flag.
+- active_effects target_ids stored as JSON string; CampaignRepository does precise post-filter after LIKE search.
+- ActiveEffectTracker is a pure duration/registry tracker. Caller applies/removes modifiers+flags from CharacterData.
+- Age category thresholds in apply_age_change are approximate; exact ACKS tables added with aging system.
+
+**Interfaces defined or changed:**
+
+CharacterData additions: modifiers, flags, damage_resistances, temp_hp, mirror_images; get_effective_ac/attack_throw/save/movement/ability_score; is_flying/is_invisible; apply_damage/healing/age_change.
+
+InventoryItem additions: damage_type, material (persistent); spell_bonus, spell_damage_bonus (runtime); get_effective_bonus().
+
+EventBus additions: active_effect_expired, concentration_broken, spell_effect_applied, spell_effect_removed, damage_dealt, healing_applied.
+
+CampaignRepository additions: save_active_effect, get_active_effects, get_active_effects_on_target, remove_active_effect, clear_active_effects.
+
+ActiveEffectTracker API: add_effect, remove_effect, get_effect, has_effect, get_effects_on_target, get_effects_by_caster, get_concentration_effects, get_all_effects, tick_rounds/turns/hours/days, break_concentration, dispel_check, clear.
+
+SpellEffectRegistry API: get_effect_data, has_effect_data, get_all_spell_keys, get_modifiers/flags/conditions/damage_resistances_for_spell, get_effect_type, get_duration_type, is_instant, requires_concentration.
+
+**Database changes:**
+- Migration 006: CREATE active_effects table; ALTER inventory_items ADD damage_type, material.
+- db/schema.sql updated to last migration 006.
+
+**Tests added/updated:**
+- test_condition_catalog.gd (28 tests), test_damage_resistance.gd (19 tests)
+- test_active_effect_tracker.gd (23 tests), test_spell_effect_registry.gd (20 tests)
+- test_runner now runs 22 suites, ~270+ tests.
+
+**Known issues:**
+- ActiveEffectTracker not yet connected to Timekeeping signals (connection deferred to Phase E spell resolution engine).
+- SpellEffectRegistry has only 13 template entries; full 231-spell catalog deferred to Phase E.
+- apply_age_change uses approximate age category thresholds; exact ACKS tables deferred to Phase C-3.
+- ConditionCatalog instantiated on demand (not a singleton); promote to autoload if performance is an issue.
+
+**Next session should:**
+1. Open Godot 4 and run test_runner.tscn - confirm all 22 suites pass.
+2. Build Phase C-3: character creation UI (class selection, ability score rolling, spell repertoire for casters).
+3. Wire SpellRegistry and RepertoireEngine into CharacterGenerator for caster character generation.
+4. Consider connecting ActiveEffectTracker to Timekeeping signals (or defer to Phase E).

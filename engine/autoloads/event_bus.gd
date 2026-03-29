@@ -151,6 +151,32 @@ signal magic_item_created(item_id: String, creator_id: String)
 ## A character's spell repertoire was updated (generated, modified, or loaded).
 signal repertoire_updated(character_id: String)
 
+## An active spell effect's duration expired and it was removed.
+signal active_effect_expired(character_id: String, effect_id: String)
+
+## A caster's concentration was broken (damage, failed save, attack, or excessive movement).
+signal concentration_broken(caster_id: String, spell_key: String)
+
+## A spell effect was applied to one or more targets.
+## [param target_ids] is an Array[String] of affected character IDs.
+signal spell_effect_applied(effect_id: String, spell_key: String, target_ids: Array)
+
+## A spell effect was removed (dispelled, duration expired, or caster dismissed).
+signal spell_effect_removed(effect_id: String, spell_key: String)
+
+
+# ---------------------------------------------------------------------------
+# Damage signals
+# ---------------------------------------------------------------------------
+
+## Damage was dealt to a target after all resistance/immunity processing.
+## [param amount] is the final HP damage after resistances (not the raw incoming amount).
+signal damage_dealt(target_id: String, amount: int, damage_type: String, source_id: String)
+
+## Healing was applied to a target.
+## [param amount] is the actual HP restored (capped at hp_max).
+signal healing_applied(target_id: String, amount: int, source_id: String)
+
 
 # ---------------------------------------------------------------------------
 # LLM / Narration signals

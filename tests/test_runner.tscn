@@ -17,6 +17,12 @@
 [ext_resource type="Script" path="res://tests/test_npc_generation.gd" id="15_npc_generation_tests"]
 [ext_resource type="Script" path="res://tests/test_spell_registry.gd" id="16_spell_registry_tests"]
 [ext_resource type="Script" path="res://tests/test_repertoire_engine.gd" id="17_repertoire_engine_tests"]
+[ext_resource type="Script" path="res://tests/test_modifier_stack.gd" id="18_modifier_stack_tests"]
+[ext_resource type="Script" path="res://tests/test_entity_flags.gd" id="19_entity_flags_tests"]
+[ext_resource type="Script" path="res://tests/test_condition_catalog.gd" id="20_condition_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_damage_resistance.gd" id="21_damage_resistance_tests"]
+[ext_resource type="Script" path="res://tests/test_active_effect_tracker.gd" id="22_active_effect_tracker_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_effect_registry.gd" id="23_spell_effect_registry_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -68,3 +74,21 @@ script = ExtResource("16_spell_registry_tests")
 
 [node name="RepertoireEngineTests" type="Node" parent="."]
 script = ExtResource("17_repertoire_engine_tests")
+
+[node name="ModifierStackTests" type="Node" parent="."]
+script = ExtResource("18_modifier_stack_tests")
+
+[node name="EntityFlagsTests" type="Node" parent="."]
+script = ExtResource("19_entity_flags_tests")
+
+[node name="ConditionCatalogTests" type="Node" parent="."]
+script = ExtResource("20_condition_catalog_tests")
+
+[node name="DamageResistanceTests" type="Node" parent="."]
+script = ExtResource("21_damage_resistance_tests")
+
+[node name="ActiveEffectTrackerTests" type="Node" parent="."]
+script = ExtResource("22_active_effect_tracker_tests")
+
+[node name="SpellEffectRegistryTests" type="Node" parent="."]
+script = ExtResource("23_spell_effect_registry_tests")

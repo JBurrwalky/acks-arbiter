@@ -26,6 +26,19 @@ var weapon_damage: String = ""      # e.g., "1d8" (empty for non-weapons)
 var armor_ac_bonus: int = 0         # AC granted by this armor/shield
 var is_heavy: bool = false          # true = 1 stone each (two-handed weapons, items >= 8 lbs)
 
+## Spell hook fields — persistent (migration 006)
+var damage_type: String = "physical"  # DamageTypes constant; damage dealt by this weapon
+var material: String = ""             # "wood"|"metal"|"stone"|"leather"|"" (used by spell targeting)
+
+## Spell hook fields — runtime only (not persisted; set by active spell effects)
+var spell_bonus: int = 0              # temporary bonus from spells (e.g., Bless Weapon)
+var spell_damage_bonus: String = ""   # extra damage dice from spells (e.g., "1d6" from Striking)
+
+
+func get_effective_bonus() -> int:
+	## Returns the total attack/damage bonus for this item (permanent + active spell bonus).
+	return magical_bonus + spell_bonus
+
 
 static func from_dict(data: Dictionary) -> InventoryItem:
 	var i := InventoryItem.new()
@@ -45,6 +58,8 @@ static func from_dict(data: Dictionary) -> InventoryItem:
 	i.is_equipped = data.get("is_equipped", 0) == 1
 	i.is_magical = data.get("is_magical", 0) == 1
 	i.is_heavy = data.get("is_heavy", 0) == 1
+	i.damage_type = data.get("damage_type", "physical")
+	i.material = data.get("material", "")
 	return i
 
 
@@ -66,6 +81,8 @@ func to_dict() -> Dictionary:
 		"weapon_damage": weapon_damage,
 		"armor_ac_bonus": armor_ac_bonus,
 		"is_heavy": 1 if is_heavy else 0,
+		"damage_type": damage_type,
+		"material": material,
 	}
 
 

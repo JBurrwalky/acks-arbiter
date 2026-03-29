@@ -78,6 +78,113 @@ var employer_id: String = ""
 var loyalty_score: int = 0
 var wage_gp_per_month: int = 0
 
+## Runtime-only spell/effect state — NOT persisted; rebuilt from active_effects on load.
+var modifiers: ModifierContainer = ModifierContainer.new()
+var flags: EntityFlags = EntityFlags.new()
+var damage_resistances: DamageResistance = DamageResistance.new()
+var temp_hp: int = 0
+var mirror_images: int = 0
+
+
+## Effective value getters — all downstream systems use these, never raw fields.
+
+func get_effective_ac() -> int:
+	return modifiers.get_effective_value("armor_class", armor_class)
+
+
+func get_effective_attack_throw() -> int:
+	return modifiers.get_effective_value("attack_throw", attack_throw)
+
+
+func get_effective_save(save_key: String) -> int:
+	## save_key: "save_petrification" | "save_poison_death" | "save_blast_breath" |
+	##           "save_staffs_wands" | "save_spells"
+	var base_value: int
+	match save_key:
+		"save_petrification": base_value = save_petrification
+		"save_poison_death":  base_value = save_poison_death
+		"save_blast_breath":  base_value = save_blast_breath
+		"save_staffs_wands":  base_value = save_staffs_wands
+		"save_spells":        base_value = save_spells
+		_:
+			push_error("CharacterData.get_effective_save: unknown save_key '%s'" % save_key)
+			return 20
+	return modifiers.get_effective_value(save_key, base_value)
+
+
+func get_effective_movement() -> int:
+	return modifiers.get_effective_value("movement_rate", base_movement)
+
+
+func get_effective_ability_score(ability: String) -> int:
+	## ability: "strength" | "intelligence" | "wisdom" | "dexterity" | "constitution" | "charisma"
+	var base_value: int
+	match ability:
+		"strength":     base_value = strength
+		"intelligence": base_value = intelligence
+		"wisdom":       base_value = wisdom
+		"dexterity":    base_value = dexterity
+		"constitution": base_value = constitution
+		"charisma":     base_value = charisma
+		_:
+			push_error("CharacterData.get_effective_ability_score: unknown ability '%s'" % ability)
+			return 10
+	return modifiers.get_effective_value(ability, base_value)
+
+
+## Flag convenience methods
+
+func is_flying() -> bool:
+	return flags.has_flag("can_fly")
+
+
+func is_invisible() -> bool:
+	return flags.has_flag("is_invisible") or flags.has_flag("is_improved_invisible")
+
+
+## Combat methods
+
+func apply_damage(amount: int, damage_type: String = "physical") -> Dictionary:
+	## Applies damage through the full pipeline: resistance -> temp HP -> HP.
+	## Returns { "resisted": int, "temp_hp_absorbed": int, "hp_damage": int,
+	##           "new_hp": int, "is_downed": bool }
+	var after_resistance := damage_resistances.apply_to_damage(amount, damage_type)
+	var resisted := amount - after_resistance
+	var temp_absorbed := mini(temp_hp, after_resistance)
+	temp_hp -= temp_absorbed
+	var hp_damage := after_resistance - temp_absorbed
+	hp_current = maxi(0, hp_current - hp_damage)
+	return {
+		"resisted": resisted,
+		"temp_hp_absorbed": temp_absorbed,
+		"hp_damage": hp_damage,
+		"new_hp": hp_current,
+		"is_downed": hp_current <= 0,
+	}
+
+
+func apply_healing(amount: int) -> int:
+	## Heals up to hp_max. Returns the actual amount healed.
+	var old_hp := hp_current
+	hp_current = mini(hp_current + amount, hp_max)
+	return hp_current - old_hp
+
+
+func apply_age_change(years: int) -> void:
+	## Adjusts current_age and recalculates age_category.
+	## Age category thresholds are approximate ACKS values; exact tables added with the aging system.
+	current_age = maxi(0, current_age + years)
+	if current_age < 20:
+		age_category = "young"
+	elif current_age < 36:
+		age_category = "adult"
+	elif current_age < 56:
+		age_category = "middle_aged"
+	elif current_age < 71:
+		age_category = "old"
+	else:
+		age_category = "venerable"
+
 
 static func ability_modifier(score: int) -> int:
 	# ACKS ability modifier table (ACore). Not a linear formula — lookup only.

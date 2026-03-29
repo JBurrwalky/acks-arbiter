@@ -201,12 +201,18 @@ acks-arbiter/               (Godot project root = repo root)
 │   │   └── dice_system.gd
 │   ├── shared_types/       # Cross-subsystem data shapes (class_name, RefCounted)
 │   │   ├── action_payload.gd
-│   │   ├── character_data.gd
+│   │   ├── character_data.gd       # + runtime fields: modifiers, flags, damage_resistances
+│   │   ├── condition_catalog.gd    # loads data/conditions/condition_catalog.json
+│   │   ├── damage_resistance.gd    # per-entity immunity/resistance/vulnerability
+│   │   ├── damage_types.gd         # static constants (PHYSICAL, FIRE, COLD, …)
 │   │   ├── encounter_data.gd
+│   │   ├── entity_flags.gd         # multi-source boolean state flags
 │   │   ├── event_payload.gd
 │   │   ├── hex_map_data.gd
 │   │   ├── hex_terrain_data.gd
-│   │   ├── inventory_item.gd
+│   │   ├── inventory_item.gd       # + damage_type, material fields
+│   │   ├── modifier_container.gd   # per-entity facade over ModifierStacks
+│   │   ├── modifier_stack.gd       # ordered modifier list for a single stat
 │   │   ├── response_envelope.gd
 │   │   └── roll_result.gd
 │   └── subsystems/
@@ -214,7 +220,7 @@ acks-arbiter/               (Godot project root = repo root)
 │       ├── characters/     # PowerRegistry, ClassRegistry, AbilityUtils, EncumbranceCalculator, CharacterGenerator
 │       ├── exploration/    # HexMapController
 │       ├── override/       # OverrideManager (dev-mode state manipulation)
-│       ├── spells/         # SpellRegistry, RepertoireEngine (RefCounted, instantiated by consumer)
+│       ├── spells/         # SpellRegistry, RepertoireEngine, ActiveEffectTracker, SpellEffectRegistry
 │       ├── combat/         # (planned)
 │       ├── domain/         # (planned)
 │       └── magic/          # (planned)
@@ -233,7 +239,8 @@ acks-arbiter/               (Godot project root = repo root)
 │   ├── classes/            # One JSON per ACKS class (25 files)
 │   ├── powers/             # power_catalog.json (reusable power definitions)
 │   ├── equipment/          # base_equipment.json (weapons, armor, gear)
-│   ├── spells/             # spell_catalog.json (231 entries), spell_list_indices.json
+│   ├── conditions/         # condition_catalog.json (27 ACKS conditions)
+│   ├── spells/             # spell_catalog.json (231 entries), spell_list_indices.json, spell_effects.json
 │   └── test_hex_map.json   # Test hex map data
 ├── rules/                  # SACRED XML rule summaries — never modify
 ├── generation/             # GDD markdown files — modifiable
@@ -551,7 +558,7 @@ signal combat_ended(encounter: EncounterData, outcome: CombatOutcome)
 ```
 
 **EventBus signal groups** (keep signals organized under section headers):
-Combat, Exploration, Character, Domain, Magic, LLM/Narration, Persistence, Override system, Dice system.
+Combat, Exploration, Character, Domain, Magic, Damage, LLM/Narration, Persistence, Override system, Dice system.
 
 ---
 
@@ -665,10 +672,12 @@ Migrations live in `db/migrations/` with sequential zero-padded numbering. The m
 
 ```
 db/migrations/
-├── 001_initial_schema.sql       # Tier 1 tables: campaigns, characters, parties, hex_maps, etc.
-├── 002_override_log.sql         # override_log, game_snapshots, dungeon_entrances
-├── 003_dice_roll_log.sql        # dice_rolls (session-only, capped at 200 rows)
-├── 004_timekeeping.sql          # campaign_clock, party_clocks (Timekeeping autoload)
+├── 001_initial_schema.sql           # Tier 1 tables: campaigns, characters, parties, hex_maps, etc.
+├── 002_override_log.sql             # override_log, game_snapshots, dungeon_entrances
+├── 003_dice_roll_log.sql            # dice_rolls (session-only, capped at 200 rows)
+├── 004_timekeeping.sql              # campaign_clock, party_clocks (Timekeeping autoload)
+├── 005_characters_expanded.sql      # saves, movement, alignment, aging, languages, personality, powers
+├── 006_spell_hook_infrastructure.sql # active_effects table; inventory_items.damage_type + material
 ```
 
 **Rules:**
@@ -870,19 +879,25 @@ func _on_day_changed(_d, _m, _y) -> void:
 
 Canonical data shapes live in `engine/shared_types/`. These are the contracts between subsystems.
 
-<!-- Confirmed across all 9 types — 2026-03-27 -->
+<!-- Confirmed across all types — 2026-03-27, updated 2026-03-28 -->
 
 **All shared types:**
 
 | Type | Purpose | `from_dict` | `to_dict` |
 |---|---|---|---|
 | `ActionPayload` | Action vocabulary entry (actor, action, params) | Yes | No |
-| `CharacterData` | PC/henchman/NPC stat block | Yes | Yes |
+| `CharacterData` | PC/henchman/NPC stat block + runtime spell/effect state | Yes | Yes |
+| `ConditionCatalog` | Loads condition_catalog.json; provides mechanical effect queries | No | No |
+| `DamageResistance` | Per-entity immunity/resistance/vulnerability, source-tracked | No | No |
+| `DamageTypes` | Static damage type constants (PHYSICAL, FIRE, COLD, …) | No | No |
 | `EncounterData` | Encounter group descriptor | Yes | No |
+| `EntityFlags` | Multi-source boolean state flags (can_fly, is_invisible, …) | No | No |
 | `EventPayload` | Domain/exploration event | Yes | No |
 | `HexMapData` | Hex map container with fog states | Yes | No |
 | `HexTerrainData` | Terrain tags for a single hex | Yes | No |
-| `InventoryItem` | Item with quantity and encumbrance | Yes | Yes |
+| `InventoryItem` | Item with quantity, encumbrance, damage_type, material | Yes | Yes |
+| `ModifierContainer` | Per-entity facade managing ModifierStacks for all stats | No | No |
+| `ModifierStack` | Ordered modifier list for one stat; stacking/priority/floor/ceiling | No | No |
 | `ResponseEnvelope` | LLM response wrapper | Static factories | No |
 | `RollResult` | Resolved dice roll with all metadata | No | Yes |
 
@@ -891,6 +906,23 @@ Canonical data shapes live in `engine/shared_types/`. These are the contracts be
 - Types constructed from DB rows or JSON **must** have `static func from_dict(data: Dictionary) -> ClassName` using `.get(key, default)` for resilience.
 - Read-only runtime types (HexTerrainData, EncounterData) may omit `to_dict()`.
 - All shared types use `class_name ClassName` and `extends RefCounted`.
+
+**Runtime-only fields on persistent types:** Some shared types have both persistent fields (serialized via `to_dict`/`from_dict`) and runtime-only fields (never serialized). Runtime-only fields are rebuilt from active game state on load.
+
+```gdscript
+# CharacterData — persistent fields go through from_dict/to_dict
+# Runtime-only fields are declared separately; from_dict does NOT touch them
+var modifiers: ModifierContainer = ModifierContainer.new()   # runtime only
+var flags: EntityFlags = EntityFlags.new()                   # runtime only
+var damage_resistances: DamageResistance = DamageResistance.new()  # runtime only
+var temp_hp: int = 0                                         # runtime only
+
+# Comment in to_dict():
+# Runtime-only fields (modifiers, flags, damage_resistances, temp_hp, mirror_images)
+# are NOT included — they are rebuilt from active_effects on load.
+```
+
+The `active_effects` table is the source of truth for runtime state. On session load, the spell resolution system reads `active_effects`, reconstructs `modifiers`/`flags`/`damage_resistances`, and restores them to the correct `CharacterData` instances.
 
 ```gdscript
 # engine/shared_types/character_data.gd
@@ -1197,7 +1229,13 @@ These are not coding style — they are mechanical rules that must be followed i
 | Saving throw order | petrification/paralysis, poison/death, blast/breath, staffs/wands, spells. | ACKS Core |
 | Modular powers | Class abilities stored as reusable power definitions (`data/powers/`) referenced by ID. Class JSONs hold progression tables. Characters get stamped copies in `character_powers` table. | Phase C-1 design |
 | Class data format | One JSON per class in `data/classes/`. ClassRegistry loads all on init. 25 classes total. | Phase C-1 |
-| Registries are RefCounted | `PowerRegistry` and `ClassRegistry` are instantiated by consumers, NOT autoloads. Only truly global state gets autoload status. | Phase C-1 |
+| Registries are RefCounted | `PowerRegistry`, `ClassRegistry`, `SpellRegistry`, `RepertoireEngine`, `SpellEffectRegistry`, `ConditionCatalog` are instantiated by consumers, NOT autoloads. | Phase C-1/C-2 |
+| Damage type strings | Always use `DamageTypes` constants (`DamageTypes.FIRE`), never raw strings (`"fire"`). Exception: `DamageTypes.UNTYPED` bypasses all immunity and resistance — use for guaranteed-landing damage. | Phase 0C |
+| Modifier stacking | Modifiers in the same named `stacking_group` only apply the highest-value entry (ACKS: same bonus type does not stack). Empty `stacking_group` = stacks freely with all others. Always specify the group when the modifier has a bonus type (protection, morale, luck, etc.). | Phase 0A |
+| Effective getters are mandatory | All code that reads a character stat must call `get_effective_*()` on `CharacterData`, never raw fields. Raw fields (`armor_class`, `attack_throw`, etc.) are the base value before spells/items. `get_effective_ac()` returns base + all active modifier stacks. | Phase 1A |
+| CharacterData runtime state | `modifiers`, `flags`, `damage_resistances`, `temp_hp`, `mirror_images` are runtime-only. They are NOT in `to_dict()`/`from_dict()`. They are rebuilt from the `active_effects` table on session load. Do NOT serialize them. | Phase 1A |
+| Conditions use ConditionCatalog | Never hardcode condition mechanical effects (ac_modifier, prevents_casting, etc.). Always query `ConditionCatalog` by condition key. Source of truth: `data/conditions/condition_catalog.json` (extracted from ax_conditions_catalog.xml — sacred). | Phase 0D |
+| Active effects are source of truth | `active_effects` table is the persisted record of what spell effects are currently active. `ActiveEffectTracker` is the runtime view. On session load, the spell resolution engine reads `active_effects` and reconstructs runtime state. | Phase 2A |
 
 ---
 
@@ -1269,4 +1307,4 @@ Main (Node, script: main_scene.gd)
 
 ---
 
-*Last major update: 2026-03-28 — Phase C-2 spell system. Added `spells/` subsystem and `data/spells/` to directory tree (§2.1), clarified `class_name` row for RefCounted subsystem managers (§3.7), added RefCounted-on-demand alternative to autoloads (§5.3), added `starting_spell` to roll type vocabulary (§10.2).*
+*Last major update: 2026-03-28 — Phase 0–2 spell hook infrastructure. Updated directory tree with new shared_types and data/conditions (§2.1), added Damage to EventBus signal groups (§4.4), updated migration list to 006 (§6.3), expanded shared types table with 6 new types and runtime-only fields pattern (§7.2), added damage type/modifier stacking/effective getter/runtime state rules (§12).*
