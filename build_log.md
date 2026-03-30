@@ -932,7 +932,7 @@ Spell row shape: `{ "spell_key": String, "spell_level": int, "is_memorized": boo
 
 ---
 
-## Session 2026-03-28 � Spell Hook Infrastructure (Phases 0-2)
+## Session 2026-03-28 � Spell Hook Infrastructure (Phases 0-2)
 
 **Task:** Implement the foundational spell hook infrastructure per the approved plan: modifier system, entity flag system, damage types, condition catalog, damage resistance, CharacterData/InventoryItem extensions, active effect tracker, spell effect registry, EventBus signals, DB migration 006.
 
@@ -1039,3 +1039,47 @@ SpellEffectRegistry API: get_effect_data, has_effect_data, get_all_spell_keys, g
 2. Build Phase C-3: character creation UI (class selection, ability score rolling, spell repertoire for casters).
 3. Wire SpellRegistry and RepertoireEngine into CharacterGenerator for caster character generation.
 4. Consider connecting ActiveEffectTracker to Timekeeping signals (or defer to Phase E).
+
+---
+
+## Session 2026-03-29 — Complete Equipment Catalog Database
+
+**Task:** Build complete equipment database before character generator UI, sourcing all items from acore_equipment.xml, pc_equipment_catalog.xml, and acore_aging_poisons_high-level-start_optional_rules.xml.
+**Model used:** Sonnet 4.6
+
+**Completed:**
+- Rewrote `data/equipment/base_equipment.json` (v1 → v2): ~130 items covering weapons, ammunition, armor, shields, helmets, adventuring gear, and clothing.
+- Created `data/equipment/transport.json`: 35 items — mounts (camel through heavy warhorse), draft animals, vehicles (cart/wagon), tack (3 saddle types + saddlebags + caparison), 5 barding types, 8 livestock.
+- Created `data/equipment/provisions_services.json`: 14 foodstuffs, 9 lodging/dwelling entries, full hireling wage tables (henchman levels 0-14, 14 mercenary troop types × 5 races, 20 specialist types, spellcasting costs by type and level).
+- Created `data/equipment/poisons.json`: 15 monster venoms + 8 plant toxins with extraction/evaporation rules.
+- Created `data/equipment/siege_weapons.json`: 6 entries (ballista, light/heavy catapult, 3 ammo types).
+- Created `data/equipment/maritime.json`: 12 vessels (canoe through war galley) with crew and cargo data.
+- Updated `docs/coding_conventions.md` directory tree to reflect new file set.
+
+**Decisions made:**
+- `cost_cp` (integer, copper pieces) replaces `cost_gp` in all equipment files. 1gp=100cp, 1sp=10cp. Eliminates sub-GP rounding errors. UI formats display strings at render time.
+- `weapon_tags` array added to all weapon entries: `melee`, `ranged`, `thrown`, `two_handed`, `versatile`, `blunt`, `reach`, `slow`, `mounted_only`. Enables class-restriction filtering in the character generator UI without parsing free-text notes.
+- `range_short/medium/long` integer fields added to all weapon entries (0 for melee-only). Structured range data for combat and UI.
+- Versatile weapons use `"1d6/1d8"` format in `weapon_damage` (first = one-handed, second = two-handed).
+- `oil_flask` split into `oil_flask_common` (30cp, lantern fuel) and `oil_flask_military` (200cp, weapon).
+- Hirelings/mercenaries/specialists in `provisions_services.json`, not `base_equipment.json` — they are recurring service costs, not portable items.
+- Transport, siege, maritime in separate files due to distinct schemas and non-character-creation use cases.
+- No GDScript changes made — JSON catalog is design-time only; InventoryItem + CampaignRepository unchanged.
+
+**Interfaces defined or changed:**
+- `base_equipment.json` v2 schema: added `cost_cp`, `weapon_tags`, `range_short`, `range_medium`, `range_long`; removed `cost_gp`.
+- New item categories in use: `"clothing"` (37 items), `"barding"`, `"mount"`, `"draft_animal"`, `"pack_animal"`, `"vehicle"`, `"tack"`, `"livestock"`, `"siege_weapon"`, `"siege_ammunition"`. These extend the existing `"weapon"|"armor"|"shield"|"gear"|"treasure"|"ammunition"` set.
+
+**Database changes:**
+- None. Equipment catalog is JSON-only; no schema migration required.
+
+**Known issues:**
+- Warhorse movement and load stats not in acore_equipment.xml (referenced in monster stat blocks, not equipment tables). transport.json notes "see monster stats" for warhorses.
+- Mercenary/vessel crew counts in provisions_services.json and maritime.json are approximate where the XML was not explicit; flag for review against DaW source if maritime subsystem is implemented.
+- `spell_component_pouch` item in base_equipment.json is not an ACKS 1e standard item — retained from v1 for game-convenience.
+
+**Next session should:**
+1. Open Godot 4 and run test_runner.tscn — confirm all 22 suites pass (unchanged from prior session).
+2. Build Phase C-3: character creation UI — equipment purchasing screen using base_equipment.json and transport.json as catalog sources.
+3. Implement equipment catalog loader (GDScript) that reads the new JSON files and exposes items to the purchasing UI.
+4. Implement cost display formatter: converts cost_cp integer to "10gp", "8sp", "1cp" display strings.

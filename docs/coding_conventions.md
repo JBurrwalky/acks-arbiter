@@ -238,7 +238,13 @@ acks-arbiter/               (Godot project root = repo root)
 ├── data/
 │   ├── classes/            # One JSON per ACKS class (25 files)
 │   ├── powers/             # power_catalog.json (reusable power definitions)
-│   ├── equipment/          # base_equipment.json (weapons, armor, gear)
+│   ├── equipment/          # base_equipment.json (v2, weapons/armor/gear/clothing, ~130 items)
+│   │                       # transport.json (mounts, vehicles, barding, livestock)
+│   │                       # provisions_services.json (food, lodging, hireling/mercenary wages)
+│   │                       # poisons.json (15 monster venoms + 8 plant toxins)
+│   │                       # siege_weapons.json (ballista, catapults, shot)
+│   │                       # maritime.json (12 vessel types)
+│   │                       # All costs in copper pieces (cost_cp): 1gp=100cp, 1sp=10cp
 │   ├── conditions/         # condition_catalog.json (27 ACKS conditions)
 │   ├── spells/             # spell_catalog.json (231 entries), spell_list_indices.json, spell_effects.json
 │   └── test_hex_map.json   # Test hex map data

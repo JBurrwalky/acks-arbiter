@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "description": "Foodstuffs, lodging, stabling, and recurring service costs including hireling wages. Source: acore_equipment.xml (Layer 1, sacred). All costs in copper pieces: 1gp=100cp, 1sp=10cp, 1cp=1cp.",
+  "provisions": [
+    {"item_key": "ale_cheap", "name": "Ale/Beer (cheap, 3 pints)", "item_category": "foodstuff", "cost_cp": 1, "notes": "Common tavern ale, 3-pint jug."},
+    {"item_key": "ale_good", "name": "Ale/Beer (good, 1 pint)", "item_category": "foodstuff", "cost_cp": 2, "notes": "Quality ale, 1 pint."},
+    {"item_key": "bread_white", "name": "Bread (white, 4lb)", "item_category": "foodstuff", "cost_cp": 10, "notes": "Refined white bread loaf."},
+    {"item_key": "bread_wheat", "name": "Bread (wheat, 8lb)", "item_category": "foodstuff", "cost_cp": 10, "notes": "Common wheat bread loaf."},
+    {"item_key": "bread_coarse", "name": "Bread (coarse, 12lb)", "item_category": "foodstuff", "cost_cp": 10, "notes": "Dense peasant bread."},
+    {"item_key": "cheese", "name": "Cheese (1lb)", "item_category": "foodstuff", "cost_cp": 5, "notes": ""},
+    {"item_key": "spices_common", "name": "Spices (1lb, cinnamon/cloves/pepper/sugar)", "item_category": "foodstuff", "cost_cp": 300, "notes": "Common imported spices sold by the pound."},
+    {"item_key": "dried_fruit", "name": "Dried Fruit (1lb)", "item_category": "foodstuff", "cost_cp": 10, "notes": ""},
+    {"item_key": "eggs_dozen", "name": "Eggs (1 dozen)", "item_category": "foodstuff", "cost_cp": 5, "notes": ""},
+    {"item_key": "meat_1lb", "name": "Meat (1lb, beef/chicken/mutton/pork)", "item_category": "foodstuff", "cost_cp": 10, "notes": ""},
+    {"item_key": "saffron", "name": "Saffron (1lb)", "item_category": "foodstuff", "cost_cp": 1500, "notes": "Rare, highly valuable spice."},
+    {"item_key": "wine_cheap", "name": "Wine (cheap, 1 pint)", "item_category": "foodstuff", "cost_cp": 2, "notes": ""},
+    {"item_key": "wine_good", "name": "Wine (good, 1 pint)", "item_category": "foodstuff", "cost_cp": 10, "notes": ""},
+    {"item_key": "wine_rare", "name": "Wine (rare, 1 pint)", "item_category": "foodstuff", "cost_cp": 50, "notes": "Imported or aged vintage."}
+  ],
+  "lodging": [
+    {"service_key": "inn_slum", "name": "Inn (slum, 1 night)", "service_category": "lodging", "cost_cp": 10, "cost_period": "per_night", "notes": "Straw on a common floor."},
+    {"service_key": "inn_average", "name": "Inn (average, 1 night)", "service_category": "lodging", "cost_cp": 50, "cost_period": "per_night", "notes": "Private or semi-private room, modest meal included."},
+    {"service_key": "inn_superb", "name": "Inn (superb, 1 night)", "service_category": "lodging", "cost_cp": 200, "cost_period": "per_night", "notes": "Fine room, quality meals included."},
+    {"service_key": "stabling_draft", "name": "Stabling (draft/riding horse, 1 night)", "service_category": "stabling", "cost_cp": 30, "cost_period": "per_night", "notes": "Cost 20-50cp per night depending on quality."},
+    {"service_key": "stabling_warhorse", "name": "Stabling (warhorse, 1 night)", "service_category": "stabling", "cost_cp": 75, "cost_period": "per_night", "notes": "Cost 50-100cp per night depending on quality."},
+    {"service_key": "hut_wattle", "name": "Hut (wattle)", "service_category": "dwelling", "cost_cp": 2500, "cost_period": "one_time", "notes": "Simple wattle-and-daub structure."},
+    {"service_key": "hut_wooden", "name": "Hut (wooden)", "service_category": "dwelling", "cost_cp": 5000, "cost_period": "one_time", "notes": ""},
+    {"service_key": "cottage_wood", "name": "Cottage (wood)", "service_category": "dwelling", "cost_cp": 30000, "cost_period": "one_time", "notes": ""},
+    {"service_key": "townhouse_stone", "name": "Townhouse (stone)", "service_category": "dwelling", "cost_cp": 120000, "cost_period": "one_time", "notes": ""}
+  ],
+  "hireling_wages": {
+    "description": "Monthly wages for henchmen, mercenaries, and specialist hirelings. Henchman wages are for NPC sidekicks by level. Mercenary wages are by troop type and race. Specialist wages cover expert hirelings with specific skills.",
+    "henchman_monthly_gp": [
+      {"level": 0, "wage_gp": 12, "notes": "Normal Man"},
+      {"level": 1, "wage_gp": 25, "notes": ""},
+      {"level": 2, "wage_gp": 50, "notes": ""},
+      {"level": 3, "wage_gp": 100, "notes": ""},
+      {"level": 4, "wage_gp": 200, "notes": ""},
+      {"level": 5, "wage_gp": 400, "notes": ""},
+      {"level": 6, "wage_gp": 800, "notes": ""},
+      {"level": 7, "wage_gp": 1600, "notes": ""},
+      {"level": 8, "wage_gp": 3000, "notes": ""},
+      {"level": 9, "wage_gp": 7250, "notes": ""},
+      {"level": 10, "wage_gp": 12000, "notes": ""},
+      {"level": 11, "wage_gp": 32000, "notes": ""},
+      {"level": 12, "wage_gp": 50000, "notes": ""},
+      {"level": 13, "wage_gp": 135000, "notes": ""},
+      {"level": 14, "wage_gp": 350000, "notes": ""}
+    ],
+    "henchman_notes": "Max henchmen = 4 +/- CHA modifier. Henchmen also expect at least 15% share of employer's income. These wages exclude share.",
+    "mercenary_monthly_gp": [
+      {"type": "Peasants (spear)", "human": 3, "dwarf": null, "elf": null, "goblin": null, "orc": null, "notes": ""},
+      {"type": "Light Infantry (3 jav, short sword, shield, leather)", "human": 6, "dwarf": null, "elf": 10, "goblin": 3, "orc": 6, "notes": ""},
+      {"type": "Heavy Infantry (spear, sword, shield, banded plate)", "human": 12, "dwarf": 18, "elf": 24, "goblin": null, "orc": 9, "notes": ""},
+      {"type": "Slingers (sling, short sword, shield, leather)", "human": 6, "dwarf": null, "elf": null, "goblin": 3, "orc": null, "notes": ""},
+      {"type": "Bowmen (shortbow, short sword, leather)", "human": 9, "dwarf": null, "elf": 21, "goblin": 3, "orc": 6, "notes": ""},
+      {"type": "Crossbowmen (arbalest, short sword, chainmail)", "human": 18, "dwarf": 21, "elf": null, "goblin": null, "orc": 12, "notes": ""},
+      {"type": "Longbowmen (longbow, sword, chainmail)", "human": 18, "dwarf": null, "elf": 42, "goblin": null, "orc": null, "notes": ""},
+      {"type": "Light Cavalry (3 jav, sword, shield, leather, light warhorse)", "human": 30, "dwarf": null, "elf": 60, "goblin": null, "orc": null, "notes": ""},
+      {"type": "Mounted Crossbowmen (crossbow, short sword, chainmail, mule)", "human": null, "dwarf": 45, "elf": null, "goblin": null, "orc": null, "notes": ""},
+      {"type": "Horse Archers (composite bow, scimitar, leather, light warhorse)", "human": 45, "dwarf": null, "elf": 90, "goblin": null, "orc": null, "notes": ""},
+      {"type": "Medium Cavalry (lance, sword, shield, lamellar, medium warhorse)", "human": 45, "dwarf": null, "elf": null, "goblin": null, "orc": null, "notes": ""},
+      {"type": "Heavy Cavalry (lance, sword, shield, plate, chain barded medium warhorse)", "human": 60, "dwarf": null, "elf": null, "goblin": null, "orc": null, "notes": ""},
+      {"type": "Cataphract Cavalry (composite bow, lance, sword, shield, plate, chain barded medium warhorse)", "human": 75, "dwarf": null, "elf": 140, "goblin": null, "orc": null, "notes": ""},
+      {"type": "Beast Riders (spear, short sword, shield, leather/scale, dire wolf/giant boar)", "human": null, "dwarf": null, "elf": null, "goblin": 15, "orc": 35, "notes": ""}
+    ],
+    "mercenary_notes": "Mercenaries garrison strongholds or fight military campaigns; they do not accompany employers on dungeon adventures unless they become henchmen. On campaign, mercenaries expect a share of military plunder in addition to wages.",
+    "specialist_monthly": [
+      {"type": "Alchemist", "wage_gp": 250, "notes": "Assists potion creation; researches potions as 5th-level mage at 2x time/cost."},
+      {"type": "Animal Trainer (common)", "wage_gp": 25, "notes": "Handles one type of normal animal; up to 6 animals at a time."},
+      {"type": "Animal Trainer (exotic)", "wage_gp": 250, "notes": "Handles multiple types including monsters."},
+      {"type": "Armorer", "wage_gp": 75, "notes": "40gp/month production value; 1 armorer per 60 troops for maintenance."},
+      {"type": "Armorer (journeyman)", "wage_gp": 20, "notes": "Assistant to armorer."},
+      {"type": "Armorer (apprentice)", "wage_gp": 10, "notes": "Assistant to armorer."},
+      {"type": "Engineer", "wage_gp": 250, "notes": "Plans/oversees construction. Minimum 1 engineer + 1 per 100,000gp project value."},
+      {"type": "Healer", "wage_gp_per_day_per_patient": 1, "notes": "3 patients/day; +1d3 hp/day recovery. Listed as per-day cost."},
+      {"type": "Physicker", "wage_gp_per_day_per_patient": 2, "notes": "4 patients/day; neutralize poison/cure disease/cure light wounds on 18+."},
+      {"type": "Chirugeon", "wage_gp_per_day_per_patient": 4, "notes": "5 patients/day; neutralize poison/cure disease/cure serious wounds on 14+."},
+      {"type": "Rower", "wage_gp": 3, "notes": "Unskilled oarsman."},
+      {"type": "Sailor", "wage_gp": 6, "notes": "Skilled ship handler."},
+      {"type": "Navigator", "wage_gp": 25, "notes": "Required for voyages beyond sight of coast."},
+      {"type": "Captain", "wage_gp": 100, "notes": "Required for any large ship."},
+      {"type": "Ruffian (Carouser)", "wage_gp": 6, "notes": "Level 0 brawler/hoodlum."},
+      {"type": "Ruffian (Footpad)", "wage_gp": 25, "notes": "Level 1 thief."},
+      {"type": "Ruffian (Reciter)", "wage_gp": 25, "notes": "Level 1 bard."},
+      {"type": "Ruffian (Spy)", "wage_gp": 125, "notes": "Level 4 thief."},
+      {"type": "Ruffian (Thug)", "wage_gp": 25, "notes": "Level 1 assassin."},
+      {"type": "Sage", "wage_gp": 500, "notes": "May require additional research costs for obscure topics."}
+    ],
+    "spellcasting_costs_per_casting_gp": {
+      "divine": [
+        {"spell_level": 1, "cost_gp": 10},
+        {"spell_level": 2, "cost_gp": 40},
+        {"spell_level": 3, "cost_gp": 150},
+        {"spell_level": 4, "cost_gp": 325},
+        {"spell_level": 5, "cost_gp": 500}
+      ],
+      "arcane": [
+        {"spell_level": 1, "cost_gp": 5},
+        {"spell_level": 2, "cost_gp": 20},
+        {"spell_level": 3, "cost_gp": 75},
+        {"spell_level": 4, "cost_gp": 325},
+        {"spell_level": 5, "cost_gp": 1250},
+        {"spell_level": 6, "cost_gp": 4500}
+      ],
+      "notes": "Cost per individual casting. Availability depends on settlement market class."
+    }
+  }
+}

@@ -1,0 +1,257 @@
+{
+  "version": 1,
+  "description": "Monster venoms and plant toxins. Source: acore_aging_poisons_high-level-start_optional_rules.xml (Layer 1, sacred). All costs in copper pieces: 1gp=100cp. save_modifier: positive = bonus to saving throw (easier to resist); negative = penalty (harder to resist).",
+  "extraction_rules": {
+    "monster_venom": "Extraction requires 1 day + Animal Husbandry proficiency throw 11+. Unmodified roll of 1 = extractor is scratched and must save vs Poison as if struck by the monster. One dose = enough for 20 missiles or 1 melee weapon. Weapon-applied venom is less effective than natural delivery.",
+    "plant_toxin": "Gathering requires Naturalism proficiency at the listed throw. Extraction requires 1 week + Alchemy proficiency throw 14+ (fresh plant) or 17+ (dried plant). Unmodified roll of 1 on either throw = extractor is exposed and must save vs Poison. One dose = enough for 20 missiles or 1 melee weapon (injury delivery), or poisons one meal/drink (ingestion delivery)."
+  },
+  "evaporation_rules": {
+    "day_1": "Full damage and effect.",
+    "day_2": "Half damage. +2 bonus to saving throw for deadly poisons.",
+    "day_3": "Poison evaporated, no effect. +4 bonus to saving throw for deadly poisons still active on day 2.",
+    "melee_weapon": "Each hit counts as one day of evaporation (half damage on 2nd hit, gone after 2nd hit).",
+    "self_injury": "Unmodified attack roll of 1 = pricked by own poisoned weapon; must save vs Poison."
+  },
+  "monster_venoms": [
+    {
+      "poison_key": "venom_giant_centipede",
+      "name": "Giant Centipede Venom",
+      "source_creature": "Giant Centipede",
+      "cost_cp_per_dose": 5000,
+      "onset_time": "1 turn",
+      "save_modifier": 2,
+      "failed_save_effect": "Sickness 1d10 days",
+      "notes": ""
+    },
+    {
+      "poison_key": "venom_spitting_cobra",
+      "name": "Spitting Cobra Venom",
+      "source_creature": "Spitting Cobra",
+      "cost_cp_per_dose": 10000,
+      "onset_time": "1 turn",
+      "save_modifier": 2,
+      "failed_save_effect": "1d6 damage",
+      "notes": ""
+    },
+    {
+      "poison_key": "venom_giant_crab_spider",
+      "name": "Giant Crab Spider Venom",
+      "source_creature": "Giant Crab Spider",
+      "cost_cp_per_dose": 10000,
+      "onset_time": "1d10 turns",
+      "save_modifier": 4,
+      "failed_save_effect": "1d10 damage",
+      "notes": ""
+    },
+    {
+      "poison_key": "venom_pit_viper",
+      "name": "Pit Viper Venom",
+      "source_creature": "Pit Viper",
+      "cost_cp_per_dose": 20000,
+      "onset_time": "1d10 turns",
+      "save_modifier": 2,
+      "failed_save_effect": "1d10 damage",
+      "notes": ""
+    },
+    {
+      "poison_key": "venom_giant_killer_bee",
+      "name": "Giant Killer Bee Venom",
+      "source_creature": "Giant Killer Bee",
+      "cost_cp_per_dose": 25000,
+      "onset_time": "1 turn",
+      "save_modifier": 2,
+      "failed_save_effect": "1d10 damage",
+      "notes": ""
+    },
+    {
+      "poison_key": "venom_carcass_scavenger",
+      "name": "Carcass Scavenger Venom",
+      "source_creature": "Carcass Scavenger",
+      "cost_cp_per_dose": 25000,
+      "onset_time": "1 turn",
+      "save_modifier": 2,
+      "failed_save_effect": "Paralysis 2d4 turns",
+      "notes": ""
+    },
+    {
+      "poison_key": "venom_sea_snake",
+      "name": "Sea Snake Venom",
+      "source_creature": "Sea Snake",
+      "cost_cp_per_dose": 27500,
+      "onset_time": "1d10 turns",
+      "save_modifier": 2,
+      "failed_save_effect": "4d4 damage",
+      "notes": ""
+    },
+    {
+      "poison_key": "venom_giant_black_widow",
+      "name": "Giant Black Widow Venom",
+      "source_creature": "Giant Black Widow Spider",
+      "cost_cp_per_dose": 30000,
+      "onset_time": "1d6 turns",
+      "save_modifier": 2,
+      "failed_save_effect": "4d4 damage",
+      "notes": ""
+    },
+    {
+      "poison_key": "venom_giant_rattlesnake",
+      "name": "Giant Rattlesnake Venom",
+      "source_creature": "Giant Rattlesnake",
+      "cost_cp_per_dose": 30000,
+      "onset_time": "1d10 turns",
+      "save_modifier": 2,
+      "failed_save_effect": "2d10 damage",
+      "notes": ""
+    },
+    {
+      "poison_key": "venom_giant_tarantula",
+      "name": "Giant Tarantula Venom",
+      "source_creature": "Giant Tarantula",
+      "cost_cp_per_dose": 35000,
+      "onset_time": "1d6 turns",
+      "save_modifier": 2,
+      "failed_save_effect": "2d10 damage",
+      "notes": ""
+    },
+    {
+      "poison_key": "venom_giant_scorpion",
+      "name": "Giant Scorpion Venom",
+      "source_creature": "Giant Scorpion",
+      "cost_cp_per_dose": 40000,
+      "onset_time": "1 turn",
+      "save_modifier": 2,
+      "failed_save_effect": "2d10 damage",
+      "notes": ""
+    },
+    {
+      "poison_key": "venom_rockfish",
+      "name": "Rockfish Venom",
+      "source_creature": "Rockfish",
+      "cost_cp_per_dose": 50000,
+      "onset_time": "1 round",
+      "save_modifier": 1,
+      "failed_save_effect": "4d6 damage",
+      "notes": ""
+    },
+    {
+      "poison_key": "venom_wyvern",
+      "name": "Wyvern Venom",
+      "source_creature": "Wyvern",
+      "cost_cp_per_dose": 70000,
+      "onset_time": "1 round",
+      "save_modifier": 1,
+      "failed_save_effect": "6d6 damage",
+      "notes": ""
+    },
+    {
+      "poison_key": "venom_purple_worm",
+      "name": "Purple Worm Venom",
+      "source_creature": "Purple Worm",
+      "cost_cp_per_dose": 150000,
+      "onset_time": "Instant",
+      "save_modifier": 0,
+      "failed_save_effect": "Death",
+      "notes": "No save bonus. Instantly lethal on failed save."
+    },
+    {
+      "poison_key": "venom_dragon_blood",
+      "name": "Dragon Blood",
+      "source_creature": "Dragon",
+      "cost_cp_per_dose": 150000,
+      "onset_time": "Instant",
+      "save_modifier": 0,
+      "failed_save_effect": "Death",
+      "notes": "No save bonus. Instantly lethal on failed save."
+    }
+  ],
+  "plant_toxins": [
+    {
+      "poison_key": "toxin_belladonna",
+      "name": "Belladonna Toxin",
+      "common_name": "Deadly Nightshade",
+      "naturalism_throw": 11,
+      "cost_cp_per_dose": 35000,
+      "delivery_modes": {"injury": "1 turn", "ingestion": "1d3 turns"},
+      "save_modifier": 2,
+      "failed_save_effect": "2d8 damage and confusion for 1d4 turns",
+      "notes": "Belladonna herb (10gp) in base_equipment.json has separate rules for lycanthropy prevention."
+    },
+    {
+      "poison_key": "toxin_curare",
+      "name": "Curare",
+      "common_name": "Curare",
+      "naturalism_throw": 20,
+      "cost_cp_per_dose": 150000,
+      "delivery_modes": {"injury": "Instant"},
+      "save_modifier": 0,
+      "failed_save_effect": "2d12 damage and paralysis for 2d4 turns",
+      "notes": "Extremely rare. No save modifier — full save difficulty applies. Injury delivery only."
+    },
+    {
+      "poison_key": "toxin_foxglove",
+      "name": "Foxglove Toxin",
+      "common_name": "Foxglove",
+      "naturalism_throw": 14,
+      "cost_cp_per_dose": 27500,
+      "delivery_modes": {"ingestion": "1d6 turns"},
+      "save_modifier": -3,
+      "failed_save_effect": "2d8 damage and confusion for 1d4 turns",
+      "notes": "Ingestion only. save_modifier is -3 (penalty: harder to resist)."
+    },
+    {
+      "poison_key": "toxin_hellebore",
+      "name": "Hellebore Toxin",
+      "common_name": "Hellebore",
+      "naturalism_throw": 8,
+      "cost_cp_per_dose": 22500,
+      "delivery_modes": {"injury": "1 turn", "ingestion": "1d3 turns"},
+      "save_modifier": 2,
+      "failed_save_effect": "1d6 damage and sickness for 1d10 days",
+      "notes": ""
+    },
+    {
+      "poison_key": "toxin_hemlock",
+      "name": "Hemlock Toxin",
+      "common_name": "Hemlock",
+      "naturalism_throw": 8,
+      "cost_cp_per_dose": 22500,
+      "delivery_modes": {"ingestion": "2d4 turns"},
+      "save_modifier": 4,
+      "failed_save_effect": "2d12 damage and sickness for 1d10 days",
+      "notes": "Ingestion only. High save bonus makes it easier to resist."
+    },
+    {
+      "poison_key": "toxin_henbane",
+      "name": "Henbane Toxin",
+      "common_name": "Black Henbane",
+      "naturalism_throw": 8,
+      "cost_cp_per_dose": 35000,
+      "delivery_modes": {"injury": "1 turn", "ingestion": "1d6 turns"},
+      "save_modifier": 2,
+      "failed_save_effect": "1d6 damage and feeblemind for 1d4 hours",
+      "notes": ""
+    },
+    {
+      "poison_key": "toxin_wolfsbane",
+      "name": "Wolfsbane Toxin",
+      "common_name": "Wolfsbane / Monkshood",
+      "naturalism_throw": 11,
+      "cost_cp_per_dose": 35000,
+      "delivery_modes": {"injury": "1 turn", "ingestion": "2d4 turns"},
+      "save_modifier": 2,
+      "failed_save_effect": "2d8 damage and paralysis for 2d4 turns",
+      "notes": "Wolfsbane herb (10gp) in base_equipment.json has separate melee-use rules against lycanthropes."
+    },
+    {
+      "poison_key": "toxin_yew",
+      "name": "Yew Toxin",
+      "common_name": "Yew",
+      "naturalism_throw": 4,
+      "cost_cp_per_dose": 20000,
+      "delivery_modes": {"injury": "1 hour", "ingestion": "1d6 hours"},
+      "save_modifier": 4,
+      "failed_save_effect": "1d10 damage",
+      "notes": "Very long onset time. High save bonus."
+    }
+  ]
+}

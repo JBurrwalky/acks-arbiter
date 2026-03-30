@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "description": "Siege weapons and their ammunition. Source: acore_equipment.xml (Layer 1, sacred). Used by domain/warfare subsystem. All costs in copper pieces: 1gp=100cp.",
+  "siege_weapons": [
+    {
+      "item_key": "ballista",
+      "name": "Ballista",
+      "item_category": "siege_weapon",
+      "cost_cp": 8000,
+      "weight_lbs": 800,
+      "weapon_damage": "3d6",
+      "crew_min": 1,
+      "notes": "Large crossbow-like siege engine. Requires crew to operate and move."
+    },
+    {
+      "item_key": "ballista_shot",
+      "name": "Ballista Shot",
+      "item_category": "siege_ammunition",
+      "cost_cp": 200,
+      "weight_lbs": 0,
+      "weapon_damage": "",
+      "crew_min": 0,
+      "notes": "Heavy bolt for ballista."
+    },
+    {
+      "item_key": "light_catapult",
+      "name": "Light Catapult",
+      "item_category": "siege_weapon",
+      "cost_cp": 10000,
+      "weight_lbs": 1200,
+      "weapon_damage": "3d6",
+      "crew_min": 1,
+      "notes": "Requires crew to operate and move."
+    },
+    {
+      "item_key": "heavy_catapult",
+      "name": "Heavy Catapult",
+      "item_category": "siege_weapon",
+      "cost_cp": 20000,
+      "weight_lbs": 1800,
+      "weapon_damage": "4d6",
+      "crew_min": 1,
+      "notes": "Requires crew to operate and move."
+    },
+    {
+      "item_key": "catapult_shot",
+      "name": "Catapult Shot (25lb)",
+      "item_category": "siege_ammunition",
+      "cost_cp": 500,
+      "weight_lbs": 25,
+      "weapon_damage": "",
+      "crew_min": 0,
+      "notes": "Stone shot for catapults."
+    },
+    {
+      "item_key": "catapult_shot_pitch",
+      "name": "Catapult Shot, Pitch (25lb)",
+      "item_category": "siege_ammunition",
+      "cost_cp": 2500,
+      "weight_lbs": 25,
+      "weapon_damage": "",
+      "crew_min": 0,
+      "notes": "Incendiary pitch-filled shot for catapults. Sets fires on impact."
+    }
+  ]
+}
