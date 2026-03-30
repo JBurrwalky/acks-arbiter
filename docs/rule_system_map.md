@@ -39,9 +39,10 @@ When working on system X:
 - **Depended on by:** Characters (starting gear), Combat (weapons, armor), Exploration (encumbrance/movement), NPC Systems (wages, hiring)
 
 ### Proficiencies
-- **Rule files:** `acore_proficiencies_rules_and_catalog`, `pc_proficiencies_catalog`
+- **Rule files:** `acore_proficiencies_rules_and_catalog`, `pc_proficiencies_catalog`, `ax_thief_skill_update`
+- **Architecture docs:** `docs/proficiency_system_map.md` (maps proficiencies to system hooks — load when building any system that proficiencies interact with)
 - **Depends on:** Characters (class proficiency lists)
-- **Depended on by:** Characters (creation), Combat (combat proficiencies), Hijinks (skill throws), NPC Systems
+- **Depended on by:** Characters (creation), Combat (combat proficiencies), Hijinks (skill throws), NPC Systems, Dungeon Exploration (thief-equivalent skills), Wilderness (tracking, navigation, survival), Domain Play (morale, construction), Spells & Magic (codex authority prerequisites)
 
 ### Monsters & Encounters
 - **Rule files:**

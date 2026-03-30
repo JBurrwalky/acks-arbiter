@@ -113,6 +113,13 @@ signal condition_changed(character_id: String, change: Dictionary)
 ## A henchman's loyalty score changed.
 signal loyalty_changed(henchman_id: String, old_score: int, new_score: int)
 
+## A character's proficiencies changed (added, removed, or rank changed).
+## [param change] keys:
+##   proficiency_key: String — the proficiency affected
+##   action:          String — "added" | "removed" | "rank_changed"
+##   new_rank:        int    — new rank value (0 if removed)
+signal proficiency_changed(character_id: String, change: Dictionary)
+
 
 # ---------------------------------------------------------------------------
 # Domain signals

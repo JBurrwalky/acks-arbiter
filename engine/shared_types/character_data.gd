@@ -85,6 +85,49 @@ var damage_resistances: DamageResistance = DamageResistance.new()
 var temp_hp: int = 0
 var mirror_images: int = 0
 
+## Proficiency records — loaded from character_proficiencies table after from_dict().
+## Array of Dictionaries with keys: proficiency_key, rank, slot_type, selections_count, specialization.
+## NOT in from_dict/to_dict — loaded separately via CampaignRepository.get_character_proficiencies().
+var proficiencies: Array = []
+
+
+## Proficiency query methods
+
+func has_proficiency(proficiency_key: String) -> bool:
+	for p in proficiencies:
+		if p.get("proficiency_key", "") == proficiency_key:
+			return true
+	return false
+
+
+func get_proficiency_rank(proficiency_key: String) -> int:
+	for p in proficiencies:
+		if p.get("proficiency_key", "") == proficiency_key:
+			return p.get("rank", 1)
+	return 0
+
+
+func get_proficiency_selections(proficiency_key: String) -> int:
+	for p in proficiencies:
+		if p.get("proficiency_key", "") == proficiency_key:
+			return p.get("selections_count", 1)
+	return 0
+
+
+func get_proficiency_specialization(proficiency_key: String) -> String:
+	for p in proficiencies:
+		if p.get("proficiency_key", "") == proficiency_key:
+			return p.get("specialization", "")
+	return ""
+
+
+func get_proficiencies_by_slot(slot_type: String) -> Array:
+	var result: Array = []
+	for p in proficiencies:
+		if p.get("slot_type", "") == slot_type:
+			result.append(p)
+	return result
+
 
 ## Effective value getters — all downstream systems use these, never raw fields.
 

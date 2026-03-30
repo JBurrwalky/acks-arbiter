@@ -186,7 +186,7 @@ enum TERRITORY { Civilized, Borderlands, Wilderness }   # screaming type, mixed 
 
 ### 2.1 Engine Directory Structure
 
-<!-- Updated 2026-03-28 to reflect actual project state -->
+<!-- Updated 2026-03-29 to reflect proficiency infrastructure -->
 
 ```
 acks-arbiter/               (Godot project root = repo root)
@@ -217,7 +217,8 @@ acks-arbiter/               (Godot project root = repo root)
 │   │   └── roll_result.gd
 │   └── subsystems/
 │       ├── calendar/       # CalendarConstants, CalendarSeasons (pure static computation)
-│       ├── characters/     # PowerRegistry, ClassRegistry, AbilityUtils, EncumbranceCalculator, CharacterGenerator
+│       ├── characters/     # PowerRegistry, ClassRegistry, ProficiencyRegistry, ProficiencyEffectResolver,
+│       │                   #   AbilityUtils, EncumbranceCalculator, CharacterGenerator
 │       ├── exploration/    # HexMapController
 │       ├── override/       # OverrideManager (dev-mode state manipulation)
 │       ├── spells/         # SpellRegistry, RepertoireEngine, ActiveEffectTracker, SpellEffectRegistry
@@ -234,7 +235,7 @@ acks-arbiter/               (Godot project root = repo root)
 ├── tests/                  # All test scripts + test_runner.tscn
 ├── db/
 │   ├── schema.sql          # Canonical schema (update after every migration)
-│   └── migrations/         # 001_initial_schema .. 005_characters_expanded
+│   └── migrations/         # 001_initial_schema .. 007_proficiency_infrastructure
 ├── data/
 │   ├── classes/            # One JSON per ACKS class (25 files)
 │   ├── powers/             # power_catalog.json (reusable power definitions)
@@ -246,6 +247,7 @@ acks-arbiter/               (Godot project root = repo root)
 │   │                       # maritime.json (12 vessel types)
 │   │                       # All costs in copper pieces (cost_cp): 1gp=100cp, 1sp=10cp
 │   ├── conditions/         # condition_catalog.json (27 ACKS conditions)
+│   ├── proficiencies/      # proficiency_catalog.json (106 entries), general_proficiency_list.json (38 keys)
 │   ├── spells/             # spell_catalog.json (231 entries), spell_list_indices.json, spell_effects.json
 │   └── test_hex_map.json   # Test hex map data
 ├── rules/                  # SACRED XML rule summaries — never modify
@@ -930,6 +932,20 @@ var temp_hp: int = 0                                         # runtime only
 
 The `active_effects` table is the source of truth for runtime state. On session load, the spell resolution system reads `active_effects`, reconstructs `modifiers`/`flags`/`damage_resistances`, and restores them to the correct `CharacterData` instances.
 
+**Separately-loaded arrays on CharacterData:** Some arrays are not in `from_dict`/`to_dict` because they come from separate DB tables. After calling `from_dict()`, the caller makes a second query and assigns directly:
+
+```gdscript
+# proficiencies: loaded from character_proficiencies table, NOT via from_dict
+var proficiencies: Array = []   # assigned after load via get_character_proficiencies()
+
+# After loading a character, apply proficiency effects to rebuild modifier state:
+character.proficiencies = CampaignRepository.get_character_proficiencies(character.id)
+var resolver := ProficiencyEffectResolver.new(proficiency_registry)
+resolver.apply_proficiency_effects(character)
+```
+
+Proficiency modifiers live in the same `ModifierContainer` as spell modifiers. They use `source_id` prefix `"proficiency:<key>"` (or `"proficiency:<key>:<spec>"` for specializations). This prefix is what lets `ProficiencyEffectResolver` clear and rebuild only its own contributions without disturbing spell modifiers.
+
 ```gdscript
 # engine/shared_types/character_data.gd
 class_name CharacterData
@@ -1235,13 +1251,17 @@ These are not coding style — they are mechanical rules that must be followed i
 | Saving throw order | petrification/paralysis, poison/death, blast/breath, staffs/wands, spells. | ACKS Core |
 | Modular powers | Class abilities stored as reusable power definitions (`data/powers/`) referenced by ID. Class JSONs hold progression tables. Characters get stamped copies in `character_powers` table. | Phase C-1 design |
 | Class data format | One JSON per class in `data/classes/`. ClassRegistry loads all on init. 25 classes total. | Phase C-1 |
-| Registries are RefCounted | `PowerRegistry`, `ClassRegistry`, `SpellRegistry`, `RepertoireEngine`, `SpellEffectRegistry`, `ConditionCatalog` are instantiated by consumers, NOT autoloads. | Phase C-1/C-2 |
+| Registries are RefCounted | `PowerRegistry`, `ClassRegistry`, `ProficiencyRegistry`, `SpellRegistry`, `RepertoireEngine`, `SpellEffectRegistry`, `ConditionCatalog` are instantiated by consumers, NOT autoloads. | Phase C-1/C-2 |
 | Damage type strings | Always use `DamageTypes` constants (`DamageTypes.FIRE`), never raw strings (`"fire"`). Exception: `DamageTypes.UNTYPED` bypasses all immunity and resistance — use for guaranteed-landing damage. | Phase 0C |
 | Modifier stacking | Modifiers in the same named `stacking_group` only apply the highest-value entry (ACKS: same bonus type does not stack). Empty `stacking_group` = stacks freely with all others. Always specify the group when the modifier has a bonus type (protection, morale, luck, etc.). | Phase 0A |
 | Effective getters are mandatory | All code that reads a character stat must call `get_effective_*()` on `CharacterData`, never raw fields. Raw fields (`armor_class`, `attack_throw`, etc.) are the base value before spells/items. `get_effective_ac()` returns base + all active modifier stacks. | Phase 1A |
 | CharacterData runtime state | `modifiers`, `flags`, `damage_resistances`, `temp_hp`, `mirror_images` are runtime-only. They are NOT in `to_dict()`/`from_dict()`. They are rebuilt from the `active_effects` table on session load. Do NOT serialize them. | Phase 1A |
 | Conditions use ConditionCatalog | Never hardcode condition mechanical effects (ac_modifier, prevents_casting, etc.). Always query `ConditionCatalog` by condition key. Source of truth: `data/conditions/condition_catalog.json` (extracted from ax_conditions_catalog.xml — sacred). | Phase 0D |
 | Active effects are source of truth | `active_effects` table is the persisted record of what spell effects are currently active. `ActiveEffectTracker` is the runtime view. On session load, the spell resolution engine reads `active_effects` and reconstructs runtime state. | Phase 2A |
+| Proficiency effects are permanent | Proficiency modifiers/flags are permanent — they do NOT go through `ActiveEffectTracker`. Apply with `ProficiencyEffectResolver.apply_proficiency_effects(character)` after loading proficiencies. Call again after any proficiency change. The resolver is idempotent. | Phase proficiency |
+| Proficiency compound keys | Class JSONs use compound keys like `"combat_trickery_disarm"` or `"fighting_style_missile"`. `ProficiencyRegistry` resolves these to the base catalog key by progressive prefix stripping. Always call `has_proficiency(key)` or `get_proficiency(key)` — never hard-code the lookup. | Phase proficiency |
+| Proficiency source IDs | Proficiency modifiers use source IDs `"proficiency:<key>"` (unique/stacking proficiencies) or `"proficiency:<key>:<spec>"` (specialization proficiencies, e.g., `"proficiency:fighting_style:missile"`). Spell modifiers use `"spell:<key>"`. The prefixes prevent cross-system contamination in `ModifierContainer`. | Phase proficiency |
+| Conditional proficiency effects | Proficiency effects with a `"condition"` field in the catalog are NOT applied at load time. The consuming system (combat, exploration, etc.) reads the catalog and evaluates the condition at runtime. Only unconditional effects are applied by `ProficiencyEffectResolver`. | Phase proficiency |
 
 ---
 
@@ -1313,4 +1333,4 @@ Main (Node, script: main_scene.gd)
 
 ---
 
-*Last major update: 2026-03-28 — Phase 0–2 spell hook infrastructure. Updated directory tree with new shared_types and data/conditions (§2.1), added Damage to EventBus signal groups (§4.4), updated migration list to 006 (§6.3), expanded shared types table with 6 new types and runtime-only fields pattern (§7.2), added damage type/modifier stacking/effective getter/runtime state rules (§12).*
+*Last major update: 2026-03-29 — Proficiency infrastructure. Updated directory tree with data/proficiencies and characters/ subsystem (§2.1), updated migration list to 007, added separately-loaded arrays pattern and proficiency modifier source IDs to runtime-state section (§7.2), updated registries row and added 4 proficiency-specific rules (§12).*

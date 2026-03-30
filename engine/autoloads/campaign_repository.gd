@@ -661,13 +661,15 @@ func save_character_proficiencies(character_id: String, proficiencies: Array) ->
 	for prof in proficiencies:
 		if not db.query_with_bindings("""
 			INSERT INTO character_proficiencies
-				(character_id, proficiency_key, rank, slot_type)
-			VALUES (?, ?, ?, ?)
+				(character_id, proficiency_key, rank, slot_type, selections_count, specialization)
+			VALUES (?, ?, ?, ?, ?, ?)
 		""", [
 			character_id,
 			prof.get("proficiency_key", ""),
 			prof.get("rank", 1),
 			prof.get("slot_type", "general"),
+			prof.get("selections_count", 1),
+			prof.get("specialization", ""),
 		]):
 			db.query("ROLLBACK")
 			push_error("CampaignRepository.save_character_proficiencies: insert failed. prof=%s" % prof.get("proficiency_key", "?"))

@@ -7,11 +7,14 @@ extends RefCounted
 
 var class_registry: ClassRegistry
 var power_registry: PowerRegistry
+var proficiency_registry: ProficiencyRegistry
 
 
-func _init(p_class_registry: ClassRegistry, p_power_registry: PowerRegistry) -> void:
+func _init(p_class_registry: ClassRegistry, p_power_registry: PowerRegistry,
+		p_proficiency_registry: ProficiencyRegistry = null) -> void:
 	class_registry = p_class_registry
 	power_registry = p_power_registry
+	proficiency_registry = p_proficiency_registry
 
 
 # ---------------------------------------------------------------------------
@@ -306,6 +309,8 @@ func auto_select_proficiencies(class_id: String, level: int) -> Array:
 		"proficiency_key": "adventuring",
 		"rank": 1,
 		"slot_type": "general",
+		"selections_count": 1,
+		"specialization": "",
 	})
 	general_slots -= 1  # adventuring took one general slot
 
@@ -320,12 +325,21 @@ func auto_select_proficiencies(class_id: String, level: int) -> Array:
 			"proficiency_key": available_class[idx],
 			"rank": 1,
 			"slot_type": "class",
+			"selections_count": 1,
+			"specialization": "",
 		})
 		available_class.remove_at(idx)
 
-	# Fill remaining general slots with generic picks
-	var general_options := ["healing", "survival", "riding", "labor", "craft",
-		"knowledge", "language", "endurance", "navigation", "tracking"]
+	# Fill remaining general slots.
+	# Use the full general proficiency list from registry when available;
+	# fall back to a short hardcoded list for backwards compatibility.
+	var general_options: Array
+	if proficiency_registry != null:
+		general_options = proficiency_registry.get_general_proficiency_list().duplicate()
+		general_options.erase("adventuring")  # already added above
+	else:
+		general_options = ["healing", "survival", "riding", "labor", "craft",
+			"knowledge", "language", "endurance", "navigation", "tracking"]
 	for i in range(general_slots):
 		if general_options.is_empty():
 			break
@@ -335,6 +349,8 @@ func auto_select_proficiencies(class_id: String, level: int) -> Array:
 			"proficiency_key": general_options[idx],
 			"rank": 1,
 			"slot_type": "general",
+			"selections_count": 1,
+			"specialization": "",
 		})
 		general_options.remove_at(idx)
 

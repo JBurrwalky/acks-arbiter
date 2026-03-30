@@ -1083,3 +1083,92 @@ SpellEffectRegistry API: get_effect_data, has_effect_data, get_all_spell_keys, g
 2. Build Phase C-3: character creation UI — equipment purchasing screen using base_equipment.json and transport.json as catalog sources.
 3. Implement equipment catalog loader (GDScript) that reads the new JSON files and exposes items to the purchasing UI.
 4. Implement cost display formatter: converts cost_cp integer to "10gp", "8sp", "1cp" display strings.
+
+---
+
+## Session 2026-03-29 — Proficiency System Infrastructure
+
+**Task:** Implement the foundational proficiency infrastructure per the approved plan: proficiency catalog JSON, general proficiency list, ProficiencyRegistry, DB migration 007, CharacterData extensions, CampaignRepository update, ProficiencyEffectResolver, CharacterGenerator update, EventBus signal, and test suites.
+**Model used:** claude-sonnet-4-6 throughout.
+
+**Completed:**
+
+Task 1 — Document updates:
+- `docs/document_map.md` (MODIFIED): Added `proficiency_system_map.md` to Architecture Documents table; updated file counts (arch docs 5 to 6, grand total 84 to 85).
+- `docs/rule_system_map.md` (MODIFIED): Updated Proficiencies entry to add `ax_thief_skill_update` to rule files, add architecture docs reference, expand "Depended on by" list.
+
+Phase 0 — Data files:
+- `data/proficiencies/proficiency_catalog.json` (NEW — 106 entries): Full catalog of all ~100 ACKS proficiencies from acore_proficiencies_rules_and_catalog.xml, pc_proficiencies_catalog.xml, ax_thief_skill_update.xml. Schema: proficiency_key, proficiency_name, type, source, description, max_rank, max_selections, selection_rule, level_scaling, effects (or effects_by_rank / effects_by_specialization).
+- `data/proficiencies/general_proficiency_list.json` (NEW — 38 entries): Ordered array of general proficiency keys sourced from acore_proficiencies_rules_and_catalog.xml.
+- `data/classes/elf_spellsword.json` (MODIFIED): Fixed typo swashbuckler to swashbuckling in class_proficiency_list.
+
+Phase 1 — ProficiencyRegistry:
+- `engine/subsystems/characters/proficiency_registry.gd` (NEW — class ProficiencyRegistry, RefCounted): Loads catalog JSON, provides lookup by key, supports compound key resolution for multi-segment specialization keys (e.g., "combat_trickery_force_back" resolves to base "combat_trickery"), level scaling breakpoints, effects access by rank/specialization.
+- `tests/test_proficiency_registry.gd` (NEW — 22 tests).
+
+Phase 2A — DB migration:
+- `db/migrations/007_proficiency_infrastructure.sql` (NEW): ALTER TABLE character_proficiencies ADD COLUMN selections_count INTEGER NOT NULL DEFAULT 1; ADD COLUMN specialization TEXT NOT NULL DEFAULT ''.
+- `db/schema.sql` (MODIFIED): Reflected migration 007 (header updated, character_proficiencies table definition updated).
+
+Phase 2B — CharacterData:
+- `engine/shared_types/character_data.gd` (MODIFIED): Added var proficiencies: Array = [] field. Added 5 query methods: has_proficiency, get_proficiency_rank, get_proficiency_selections, get_proficiency_specialization, get_proficiencies_by_slot.
+
+Phase 2C — CampaignRepository:
+- `engine/autoloads/campaign_repository.gd` (MODIFIED): Updated save_character_proficiencies() INSERT to include selections_count and specialization columns.
+
+Phase 3 — ProficiencyEffectResolver:
+- `engine/subsystems/characters/proficiency_effect_resolver.gd` (NEW — class ProficiencyEffectResolver, RefCounted): Applies permanent unconditional proficiency effects (modifiers + flags) to CharacterData. Skips conditional modifiers (condition key present). Idempotent: clears proficiency-source modifiers/flags then rebuilds.
+- `tests/test_proficiency_effect_resolver.gd` (NEW — 13 tests).
+
+Phase 4 — CharacterGenerator + EventBus:
+- `engine/subsystems/characters/character_generator.gd` (MODIFIED): Added optional ProficiencyRegistry param (3rd arg, default null). Updated auto_select_proficiencies() to use registry.get_general_proficiency_list() when available; falls back to 10-item hardcoded list. All returned proficiency dicts now include selections_count and specialization fields.
+- `engine/autoloads/event_bus.gd` (MODIFIED): Added signal proficiency_changed(character_id: String, change: Dictionary).
+
+Phase 5 — Tests + runner:
+- `tests/test_proficiency_integration.gd` (NEW — 8 tests): End-to-end CharacterData + resolver + registry; spell+proficiency stacking; clear/reapply lifecycle; all class JSON key cross-validation.
+- `tests/test_runner.gd` (MODIFIED): Added 3 new @onready vars; added 3 new suites to run loop.
+- `tests/test_runner.tscn` (MODIFIED): Added 3 new ext_resource entries and Node entries.
+
+**Decisions made:**
+- Sign convention: save modifier negative value = bonus (lowers target number). Matches spell_effects.json convention (value: -1 = easier save).
+- Conditional modifiers stored in catalog with "condition": {"requires": "..."} key — resolver skips them; consuming system evaluates at runtime.
+- ProficiencyEffectResolver does NOT use ActiveEffectTracker (proficiencies are permanent, not duration-tracked).
+- Compound key resolution uses progressive prefix stripping (longest prefix first) to handle both single-segment ("fighting_style_missile") and multi-segment ("combat_trickery_force_back") specialization keys.
+- ProficiencyRegistry is optional in CharacterGenerator constructor (default null) to preserve backward compatibility with all existing test callers.
+- Source ID format: "proficiency:divine_blessing" or "proficiency:fighting_style:missile".
+
+**Interfaces defined or changed:**
+
+ProficiencyRegistry public API (new): get_proficiency(key), has_proficiency(key), get_all_proficiency_keys(), get_proficiency_count(), get_general_proficiency_list(), get_proficiencies_by_type(type), get_max_rank(key), get_max_selections(key), get_selection_rule(key), is_specialization(key), get_effects_for_rank(key, rank), get_effects_for_specialization(key, spec), has_level_scaling(key), get_scaled_bonus(key, level).
+
+ProficiencyEffectResolver public API (new): apply_proficiency_effects(character), get_unconditional_modifiers(key, rank, selections, level).
+
+CharacterData additions: proficiencies array; has_proficiency, get_proficiency_rank, get_proficiency_selections, get_proficiency_specialization, get_proficiencies_by_slot.
+
+CharacterGenerator constructor: func _init(class_registry, power_registry, proficiency_registry = null) — 3rd param optional.
+
+EventBus addition: signal proficiency_changed(character_id: String, change: Dictionary) — change keys: proficiency_key, action ("added"|"removed"|"rank_changed"), new_rank.
+
+CampaignRepository: save_character_proficiencies() INSERT now includes selections_count and specialization.
+
+**Database changes:**
+- Migration 007: ALTER TABLE character_proficiencies ADD COLUMN selections_count INTEGER NOT NULL DEFAULT 1; ADD COLUMN specialization TEXT NOT NULL DEFAULT ''.
+- db/schema.sql updated to last migration 007.
+
+**Tests added/updated:**
+- test_proficiency_registry.gd (22 tests) — new suite.
+- test_proficiency_effect_resolver.gd (13 tests) — new suite.
+- test_proficiency_integration.gd (8 tests) — new suite.
+- test_runner.gd and test_runner.tscn updated to 25 suites total.
+
+**Known issues:**
+- ProficiencyEffectResolver._clear_proficiency_effects() removes by iterating character.proficiencies — safe as long as the same array is used across calls. If proficiencies array is reassigned without re-applying, old source IDs may linger in ModifierContainer. Deferred — current usage is safe.
+- Level-scaled conditional proficiencies (Swashbuckling, Running, etc.) not yet consumed; combat/exploration system reads level at runtime.
+- Fighting Style conditional modifiers require combat context — deferred to combat system build.
+- Domain morale modifiers (Leadership, Command) deferred to domain play build.
+
+**Next session should:**
+1. Open Godot 4 and run test_runner.tscn — confirm all 25 suites pass.
+2. Build character creation UI (Phase C-3): class/race selection, ability score rolling, equipment purchasing, proficiency assignment, starting spell repertoire for casters.
+3. Wire ProficiencyRegistry and ProficiencyEffectResolver into CharacterGenerator and PC creation flow.
+4. Update docs/coding_conventions.md: add proficiency registry pattern; document selections_count/specialization fields in DB patterns section.

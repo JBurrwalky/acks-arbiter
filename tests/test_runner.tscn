@@ -23,6 +23,9 @@
 [ext_resource type="Script" path="res://tests/test_damage_resistance.gd" id="21_damage_resistance_tests"]
 [ext_resource type="Script" path="res://tests/test_active_effect_tracker.gd" id="22_active_effect_tracker_tests"]
 [ext_resource type="Script" path="res://tests/test_spell_effect_registry.gd" id="23_spell_effect_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_proficiency_registry.gd" id="24_proficiency_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_proficiency_effect_resolver.gd" id="25_proficiency_effect_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_proficiency_integration.gd" id="26_proficiency_integration_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -92,3 +95,12 @@ script = ExtResource("22_active_effect_tracker_tests")
 
 [node name="SpellEffectRegistryTests" type="Node" parent="."]
 script = ExtResource("23_spell_effect_registry_tests")
+
+[node name="ProficiencyRegistryTests" type="Node" parent="."]
+script = ExtResource("24_proficiency_registry_tests")
+
+[node name="ProficiencyEffectResolverTests" type="Node" parent="."]
+script = ExtResource("25_proficiency_effect_resolver_tests")
+
+[node name="ProficiencyIntegrationTests" type="Node" parent="."]
+script = ExtResource("26_proficiency_integration_tests")

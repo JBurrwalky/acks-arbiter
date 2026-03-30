@@ -1,0 +1,1855 @@
+{
+  "_comment": "ACKS Arbiter proficiency catalog. Sources: acore_proficiencies_rules_and_catalog.xml (SACRED), pc_proficiencies_catalog.xml (SACRED), ax_thief_skill_update.xml (SACRED). Sign convention for saves: negative value = bonus (lowers target number, easier to save). Attack throws: negative = bonus. AC: positive = bonus. Movement: positive = bonus.",
+  "proficiencies": [
+    {
+      "proficiency_key": "acrobatics",
+      "proficiency_name": "Acrobatics",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "+2 on saving throws where agility helps avoid danger. May attempt proficiency throw (20 minus level) to tumble behind a melee opponent, gaining +2 attack and denying target's shield; backstab-eligible characters use full backstab instead.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "save_petrification", "operation": "add", "value": -2, "stacking_group": "acrobatics_save" },
+          { "stat": "save_poison_death",  "operation": "add", "value": -2, "stacking_group": "acrobatics_save" },
+          { "stat": "save_blast_breath",  "operation": "add", "value": -2, "stacking_group": "acrobatics_save" },
+          { "stat": "save_staffs_wands",  "operation": "add", "value": -2, "stacking_group": "acrobatics_save" },
+          { "stat": "save_spells",        "operation": "add", "value": -2, "stacking_group": "acrobatics_save" }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "tumble_maneuver" }]
+      }
+    },
+    {
+      "proficiency_key": "adventuring",
+      "proficiency_name": "Adventuring",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Covers standard adventuring tasks: weapon maintenance, camping, searching for secret doors, and rough valuation of common coins, gems, and trade goods. All PCs have this automatically.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": ["has_adventuring"],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "alchemy",
+      "proficiency_name": "Alchemy",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Rank 1: Identify common alchemical substances, potions, and poisons on 11+. Rank 2: Work as an apothecary or alchemical assistant. Rank 3: Work as an alchemist.",
+      "max_rank": 3,
+      "max_selections": 3,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects_by_rank": {
+        "1": { "modifiers": [{ "stat": "identify_alchemy_bonus", "operation": "add", "value": 0, "stacking_group": "" }], "flags": [], "enablers": [{ "action": "identify_alchemy", "throw_target": 11 }] },
+        "2": { "modifiers": [], "flags": [], "enablers": [{ "action": "apothecary_work" }] },
+        "3": { "modifiers": [], "flags": [], "enablers": [{ "action": "alchemist_work" }] }
+      }
+    },
+    {
+      "proficiency_key": "alertness",
+      "proficiency_name": "Alertness",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "+4 on proficiency throws to hear noises and detect secret doors; notice secret doors on casual observation on 18+; +1 to avoid surprise.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "hear_noise_modifier",          "operation": "add", "value": 4,  "stacking_group": "" },
+          { "stat": "detect_secret_doors_modifier",  "operation": "add", "value": 4,  "stacking_group": "" },
+          { "stat": "avoid_surprise_modifier",       "operation": "add", "value": 1,  "stacking_group": "" }
+        ],
+        "flags": ["passive_secret_door_detection"],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "ambushing",
+      "proficiency_name": "Ambushing",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "When attacking with surprise, gain +4 to attack throws and deal double damage. Does not stack with thief-style backstab.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "attack_throw", "operation": "add", "value": -4, "stacking_group": "ambush_attack", "condition": { "requires": "has_surprise" } },
+          { "stat": "damage_multiplier", "operation": "set_floor", "value": 2, "stacking_group": "ambush_damage", "condition": { "requires": "has_surprise" } }
+        ],
+        "flags": [],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "animal_husbandry",
+      "proficiency_name": "Animal Husbandry",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Rank 1: Diagnose animal disease on 11+; treated animals heal extra 1d3 hp/day. Rank 2: Neutralize poison/cure disease/cure light wounds on 18+, once/day/animal. Rank 3: Same on 14+, cure mortal wounds on 18+. Treat 3+1/selection animals at once.",
+      "max_rank": 3,
+      "max_selections": 3,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects_by_rank": {
+        "1": { "modifiers": [], "flags": [], "enablers": [{ "action": "diagnose_animal_disease", "throw_target": 11 }, { "action": "animal_natural_healing_bonus", "bonus_dice": "1d3" }] },
+        "2": { "modifiers": [], "flags": [], "enablers": [{ "action": "animal_cure_throw", "throw_target": 18, "treatments": ["neutralize_poison", "cure_disease", "cure_light_wounds"] }] },
+        "3": { "modifiers": [], "flags": [], "enablers": [{ "action": "animal_cure_throw", "throw_target": 14, "treatments": ["neutralize_poison", "cure_disease", "cure_serious_wounds"] }, { "action": "animal_cure_throw", "throw_target": 18, "treatments": ["cure_mortal_wounds"] }] }
+      }
+    },
+    {
+      "proficiency_key": "animal_training",
+      "proficiency_name": "Animal Training",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Choose one animal type; each additional selection covers another type. Animals must be young. Taming takes 1 month minimum; teaching first trick 1 month; additional tricks half that. Maximum tricks is 2d4.",
+      "max_rank": 1,
+      "max_selections": 0,
+      "selection_rule": "specialization",
+      "specializations": null,
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "animal_training" }]
+      }
+    },
+    {
+      "proficiency_key": "apostasy",
+      "proficiency_name": "Apostasy",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Select 4 divine spells not normally available to worshippers of the character's deity and add them to the repertoire.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "apostasy_spells", "extra_spells": 4 }]
+      }
+    },
+    {
+      "proficiency_key": "arcane_dabbling",
+      "proficiency_name": "Arcane Dabbling",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "May attempt to use mage-only wands, staffs, and similar magic items. At level 1 requires 18+; throw improves by 2 per level to a minimum of 3+.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "use_arcane_items", "base_throw": 18, "improvement_per_level": 2, "minimum_throw": 3 }]
+      }
+    },
+    {
+      "proficiency_key": "armor_training",
+      "proficiency_name": "Armor Training",
+      "type": "class",
+      "source": "Player's Companion",
+      "description": "May fight wearing armor up to 2 points heavier than normally permitted by class. Does not grant spellcasting in armor or thief skills in heavy armor.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "armor_permission_shift", "shift": 2 }]
+      }
+    },
+    {
+      "proficiency_key": "art",
+      "proficiency_name": "Art",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Choose one art form. Identify masterwork items, rare materials, and famous artisans on 11+. Rank 1: 10gp/month (Apprentice). Rank 2: 20gp/month + 3 apprentices (Journeyman). Rank 3: 40gp/month, can employ journeymen (Master Artist / Specialist).",
+      "max_rank": 3,
+      "max_selections": 0,
+      "selection_rule": "specialization",
+      "specializations": null,
+      "level_scaling": null,
+      "effects_by_rank": {
+        "1": { "modifiers": [], "flags": [], "enablers": [{ "action": "income_monthly", "gp": 10 }] },
+        "2": { "modifiers": [], "flags": [], "enablers": [{ "action": "income_monthly", "gp": 20 }, { "action": "employ_apprentices", "count": 3 }] },
+        "3": { "modifiers": [], "flags": [], "enablers": [{ "action": "income_monthly", "gp": 40 }, { "action": "specialist_equivalence", "type": "artist" }] }
+      }
+    },
+    {
+      "proficiency_key": "bargaining",
+      "proficiency_name": "Bargaining",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Buy at 10% below list price and sell at 10% above list price. Each additional selection gives +2 reaction rolls when negotiating with other bargainers.",
+      "max_rank": 1,
+      "max_selections": 3,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "trade_discount_buy", "percent": 10 }, { "action": "trade_discount_sell", "percent": 10 }]
+      }
+    },
+    {
+      "proficiency_key": "battle_magic",
+      "proficiency_name": "Battle Magic",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "+1 initiative when casting spells; treated as 2 class levels higher for dispel magic and for penetrating magic resistance.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "initiative_modifier", "operation": "add", "value": 1, "stacking_group": "battle_magic", "condition": { "requires": "is_casting_spell" } }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "caster_level_bonus_for_dispel", "bonus": 2 }, { "action": "caster_level_bonus_for_magic_resistance", "bonus": 2 }]
+      }
+    },
+    {
+      "proficiency_key": "beast_friendship",
+      "proficiency_name": "Beast Friendship",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Identify plants and fauna on 11+; understand animal moods and body language; +2 reaction rolls with normal animals; may take animals as henchmen.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "reaction_modifier_animals", "operation": "add", "value": 2, "stacking_group": "beast_friendship" }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "animal_as_henchman" }]
+      }
+    },
+    {
+      "proficiency_key": "berserkergang",
+      "proficiency_name": "Berserkergang",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "May enter berserker rage: +2 attack throws, immune to fear, -2 AC, cannot retreat. Once begun, rage lasts until combat ends.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "berserk_rage" }]
+      }
+    },
+    {
+      "proficiency_key": "black_lore_of_zahar",
+      "proficiency_name": "Black Lore of Zahar",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Control undead as a Chaotic cleric of half class level. Targets suffer -2 on saves versus Death from the character's spells. Necromantic spell effects and research resolve as if 2 class levels higher.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "control_undead_half_level" }, { "action": "death_spell_save_penalty", "penalty": 2 }, { "action": "caster_level_bonus_for_necromancy", "bonus": 2 }]
+      }
+    },
+    {
+      "proficiency_key": "blind_fighting",
+      "proficiency_name": "Blind Fighting",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Penalty for fighting blind or against invisible enemies is reduced from -4 to -2.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": ["blind_fighting"],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "bribery",
+      "proficiency_name": "Bribery",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Offering a bribe grants one additional reaction roll in an encounter. Bribe modifiers: +1 for day's pay, +2 week's pay, +3 month's pay. Only one attempt per target per situation.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "bribery_reaction_reroll" }]
+      }
+    },
+    {
+      "proficiency_key": "cat_burglary",
+      "proficiency_name": "Cat Burglary",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Balance on thin ledges or tight ropes using climb walls throw. If a climb fails, may make a second throw at -4 to catch self and avoid damage.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "climb_walls_modifier", "operation": "add", "value": 2, "stacking_group": "" },
+          { "stat": "hear_noise_modifier",  "operation": "add", "value": 2, "stacking_group": "" }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "ledge_balance" }, { "action": "fall_recovery_reroll", "penalty": -4 }]
+      }
+    },
+    {
+      "proficiency_key": "caving",
+      "proficiency_name": "Caving",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "When exploring underground caves, caverns, and rivers, know the route taken on 11+ if conscious during travel.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "underground_navigation", "throw_target": 11 }]
+      }
+    },
+    {
+      "proficiency_key": "climbing",
+      "proficiency_name": "Climbing",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Climb cliffs, branchless trees, walls, and similar sheer surfaces without climbing aids as a thief of class level.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "climb_walls", "equivalent_class": "thief", "equivalent_level": "character_level" }]
+      }
+    },
+    {
+      "proficiency_key": "collegiate_wizardry",
+      "proficiency_name": "Collegiate Wizardry",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Automatically identify arcane symbols, spell signatures, and grimoires of own order. Recognize those of other orders on 11+. Multiple selections available.",
+      "max_rank": 1,
+      "max_selections": 3,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "repertoire_capacity_bonus", "operation": "add", "value": 1, "stacking_group": "" }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "arcane_order_recognition" }]
+      }
+    },
+    {
+      "proficiency_key": "combat_reflexes",
+      "proficiency_name": "Combat Reflexes",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "+1 on surprise rolls and initiative rolls. Does not apply when casting spells.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "initiative_modifier",    "operation": "add", "value": 1, "stacking_group": "combat_reflexes", "condition": { "requires": "not_casting_spell" } },
+          { "stat": "avoid_surprise_modifier", "operation": "add", "value": 1, "stacking_group": "combat_reflexes", "condition": { "requires": "not_casting_spell" } }
+        ],
+        "flags": [],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "combat_trickery",
+      "proficiency_name": "Combat Trickery",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Choose one maneuver: Disarm, Force Back, Incapacitate, Knock Down, Overrun, Sunder, or Wrestle. When using it, reduce the attack penalty by 2 and impose -2 on opponent's saving throw to resist. May be taken multiple times for additional maneuvers.",
+      "max_rank": 1,
+      "max_selections": 0,
+      "selection_rule": "specialization",
+      "specializations": ["disarm", "force_back", "incapacitate", "knock_down", "overrun", "sunder", "wrestle"],
+      "level_scaling": null,
+      "effects_by_specialization": {
+        "disarm":      { "modifiers": [{ "stat": "maneuver_attack_penalty_reduction", "operation": "add", "value": 2, "stacking_group": "combat_trickery_disarm", "condition": { "requires": "using_disarm" } }, { "stat": "maneuver_save_penalty", "operation": "add", "value": 2, "stacking_group": "combat_trickery_disarm", "condition": { "requires": "using_disarm" } }], "flags": [], "enablers": [] },
+        "force_back":  { "modifiers": [{ "stat": "maneuver_attack_penalty_reduction", "operation": "add", "value": 2, "stacking_group": "combat_trickery_force_back", "condition": { "requires": "using_force_back" } }, { "stat": "maneuver_save_penalty", "operation": "add", "value": 2, "stacking_group": "combat_trickery_force_back", "condition": { "requires": "using_force_back" } }], "flags": [], "enablers": [] },
+        "incapacitate": { "modifiers": [{ "stat": "maneuver_attack_penalty_reduction", "operation": "add", "value": 2, "stacking_group": "combat_trickery_incapacitate", "condition": { "requires": "using_incapacitate" } }, { "stat": "maneuver_save_penalty", "operation": "add", "value": 2, "stacking_group": "combat_trickery_incapacitate", "condition": { "requires": "using_incapacitate" } }], "flags": [], "enablers": [] },
+        "knock_down":  { "modifiers": [{ "stat": "maneuver_attack_penalty_reduction", "operation": "add", "value": 2, "stacking_group": "combat_trickery_knock_down", "condition": { "requires": "using_knock_down" } }, { "stat": "maneuver_save_penalty", "operation": "add", "value": 2, "stacking_group": "combat_trickery_knock_down", "condition": { "requires": "using_knock_down" } }], "flags": [], "enablers": [] },
+        "overrun":     { "modifiers": [{ "stat": "maneuver_attack_penalty_reduction", "operation": "add", "value": 2, "stacking_group": "combat_trickery_overrun", "condition": { "requires": "using_overrun" } }, { "stat": "maneuver_save_penalty", "operation": "add", "value": 2, "stacking_group": "combat_trickery_overrun", "condition": { "requires": "using_overrun" } }], "flags": [], "enablers": [] },
+        "sunder":      { "modifiers": [{ "stat": "maneuver_attack_penalty_reduction", "operation": "add", "value": 2, "stacking_group": "combat_trickery_sunder", "condition": { "requires": "using_sunder" } }, { "stat": "maneuver_save_penalty", "operation": "add", "value": 2, "stacking_group": "combat_trickery_sunder", "condition": { "requires": "using_sunder" } }], "flags": [], "enablers": [] },
+        "wrestle":     { "modifiers": [{ "stat": "maneuver_attack_penalty_reduction", "operation": "add", "value": 2, "stacking_group": "combat_trickery_wrestle", "condition": { "requires": "using_wrestle" } }, { "stat": "maneuver_save_penalty", "operation": "add", "value": 2, "stacking_group": "combat_trickery_wrestle", "condition": { "requires": "using_wrestle" } }], "flags": [], "enablers": [] }
+      }
+    },
+    {
+      "proficiency_key": "command",
+      "proficiency_name": "Command",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Henchmen and mercenaries receive +2 morale.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "henchman_morale_modifier", "operation": "add", "value": 2, "stacking_group": "command" }
+        ],
+        "flags": [],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "contemplation",
+      "proficiency_name": "Contemplation",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "After 1 hour (6 turns) of undisturbed meditation, regain the ability to cast one previously expended spell level. The same spell level cannot be regained more than once per day.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "spell_slot_recovery_1hour" }]
+      }
+    },
+    {
+      "proficiency_key": "contortionism",
+      "proficiency_name": "Contortionism",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "On 18+ each round, may escape bonds or slip between bars such as a portcullis.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "escape_bonds", "throw_target": 18 }]
+      }
+    },
+    {
+      "proficiency_key": "craft",
+      "proficiency_name": "Craft",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Choose one craft. Identify masterwork items on 11+. Rank 1: 10gp/month (Apprentice). Rank 2: 20gp/month + 3 apprentices (Journeyman). Rank 3: 40gp/month, employ journeymen (Master Craftsman / Specialist).",
+      "max_rank": 3,
+      "max_selections": 0,
+      "selection_rule": "specialization",
+      "specializations": null,
+      "level_scaling": null,
+      "effects_by_rank": {
+        "1": { "modifiers": [], "flags": [], "enablers": [{ "action": "income_monthly", "gp": 10 }] },
+        "2": { "modifiers": [], "flags": [], "enablers": [{ "action": "income_monthly", "gp": 20 }, { "action": "employ_apprentices", "count": 3 }] },
+        "3": { "modifiers": [], "flags": [], "enablers": [{ "action": "income_monthly", "gp": 40 }, { "action": "specialist_equivalence", "type": "craftsman" }] }
+      }
+    },
+    {
+      "proficiency_key": "diplomacy",
+      "proficiency_name": "Diplomacy",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "+2 on reaction rolls when attempting to parley.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "reaction_modifier_parley", "operation": "add", "value": 2, "stacking_group": "diplomacy" }
+        ],
+        "flags": [],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "disguise",
+      "proficiency_name": "Disguise",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Create a disguise on 11+. Someone intimately familiar with the impersonated subject may see through it on 14+ (adding Wisdom modifier).",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "create_disguise", "throw_target": 11 }]
+      }
+    },
+    {
+      "proficiency_key": "divine_blessing",
+      "proficiency_name": "Divine Blessing",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "+2 to all saving throws.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "save_petrification", "operation": "add", "value": -2, "stacking_group": "divine_blessing" },
+          { "stat": "save_poison_death",  "operation": "add", "value": -2, "stacking_group": "divine_blessing" },
+          { "stat": "save_blast_breath",  "operation": "add", "value": -2, "stacking_group": "divine_blessing" },
+          { "stat": "save_staffs_wands",  "operation": "add", "value": -2, "stacking_group": "divine_blessing" },
+          { "stat": "save_spells",        "operation": "add", "value": -2, "stacking_group": "divine_blessing" }
+        ],
+        "flags": [],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "divine_health",
+      "proficiency_name": "Divine Health",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Immune to all disease, including magical disease from spells, mummies, and lycanthropes.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": ["disease_immunity"],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "dungeon_bashing",
+      "proficiency_name": "Dungeon Bashing",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "+4 on throws to open doors and similar acts of brute strength.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "force_door_modifier", "operation": "add", "value": 4, "stacking_group": "dungeon_bashing" }
+        ],
+        "flags": [],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "dwarven_brewing",
+      "proficiency_name": "Dwarven Brewing",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Taste-identify the magical properties of a potion or oil on 11+. +4 on proficiency throws to craft alcoholic beverages.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "craft_alcohol_modifier", "operation": "add", "value": 4, "stacking_group": "dwarven_brewing" }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "identify_potion_taste", "throw_target": 11 }]
+      }
+    },
+    {
+      "proficiency_key": "eavesdropping",
+      "proficiency_name": "Eavesdropping",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Hear noises as a thief of class level.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "hear_noise", "equivalent_class": "thief", "equivalent_level": "character_level" }]
+      }
+    },
+    {
+      "proficiency_key": "elementalism",
+      "proficiency_name": "Elementalism",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Choose one element (air, earth, fire, water). Spells of that element deal +1 damage per die and impose -2 on the target's saving throw. Summoned elementals of that type gain +1 hp per Hit Die. Magic missiles may be treated as the chosen element.",
+      "max_rank": 1,
+      "max_selections": 0,
+      "selection_rule": "specialization",
+      "specializations": ["air", "earth", "fire", "water"],
+      "level_scaling": null,
+      "effects_by_specialization": {
+        "air":   { "modifiers": [], "flags": [], "enablers": [{ "action": "elemental_spell_bonus", "element": "air", "damage_per_die": 1, "target_save_penalty": 2, "summon_hp_per_hd": 1 }] },
+        "earth": { "modifiers": [], "flags": [], "enablers": [{ "action": "elemental_spell_bonus", "element": "earth", "damage_per_die": 1, "target_save_penalty": 2, "summon_hp_per_hd": 1 }] },
+        "fire":  { "modifiers": [], "flags": [], "enablers": [{ "action": "elemental_spell_bonus", "element": "fire", "damage_per_die": 1, "target_save_penalty": 2, "summon_hp_per_hd": 1 }] },
+        "water": { "modifiers": [], "flags": [], "enablers": [{ "action": "elemental_spell_bonus", "element": "water", "damage_per_die": 1, "target_save_penalty": 2, "summon_hp_per_hd": 1 }] }
+      }
+    },
+    {
+      "proficiency_key": "elven_bloodline",
+      "proficiency_name": "Elven Bloodline",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Lifespan is tripled for the character's race; no visible signs of aging; gain elven immunity to paralysis. Ancestry must visibly manifest in appearance.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": ["paralysis_immunity", "no_aging_signs"],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "endurance",
+      "proficiency_name": "Endurance",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "No need to rest every 6 turns. May force march for 1 day without penalty, plus 1 additional day per point of Constitution bonus.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": ["no_rest_required"],
+        "enablers": [{ "action": "force_march_extension", "base_days": 1, "per_con_bonus": 1 }]
+      }
+    },
+    {
+      "proficiency_key": "engineering",
+      "proficiency_name": "Engineering",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Evaluate structures on 11+ for condition, origin, and similar features. Each selection supervises 25,000gp of permanent construction. At 4 selections, equivalent to an engineer specialist.",
+      "max_rank": 1,
+      "max_selections": 4,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "construction_supervision", "gp_per_selection": 25000 }, { "action": "evaluate_structure", "throw_target": 11 }]
+      }
+    },
+    {
+      "proficiency_key": "familiar",
+      "proficiency_name": "Familiar",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Gain a magical animal companion. The familiar's HD and max HP equal half the master's; INT equals master's INT. While within 30 feet, master gains +1 on saving throws. If slain, master must save vs Death or take familiar's max HP as damage.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "save_petrification", "operation": "add", "value": -1, "stacking_group": "familiar_proximity", "condition": { "requires": "familiar_within_30ft" } },
+          { "stat": "save_poison_death",  "operation": "add", "value": -1, "stacking_group": "familiar_proximity", "condition": { "requires": "familiar_within_30ft" } },
+          { "stat": "save_blast_breath",  "operation": "add", "value": -1, "stacking_group": "familiar_proximity", "condition": { "requires": "familiar_within_30ft" } },
+          { "stat": "save_staffs_wands",  "operation": "add", "value": -1, "stacking_group": "familiar_proximity", "condition": { "requires": "familiar_within_30ft" } },
+          { "stat": "save_spells",        "operation": "add", "value": -1, "stacking_group": "familiar_proximity", "condition": { "requires": "familiar_within_30ft" } }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "create_familiar_entity" }]
+      }
+    },
+    {
+      "proficiency_key": "fighting_style",
+      "proficiency_name": "Fighting Style",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Choose one style. Draw weapons or ready shield without sacrificing move or attack, and gain the style bonus. May be taken multiple times for additional styles; only one style bonus applies per round.",
+      "max_rank": 1,
+      "max_selections": 0,
+      "selection_rule": "specialization",
+      "specializations": ["missile", "single_weapon", "two_weapons", "two_handed", "weapon_and_shield", "pole_weapon"],
+      "level_scaling": null,
+      "effects_by_specialization": {
+        "missile":         { "modifiers": [{ "stat": "attack_throw", "operation": "add", "value": -1, "stacking_group": "fighting_style", "condition": { "requires": "missile_style_active" } }], "flags": [], "enablers": [] },
+        "single_weapon":   { "modifiers": [{ "stat": "attack_throw", "operation": "add", "value": -1, "stacking_group": "fighting_style", "condition": { "requires": "single_weapon_style" } }], "flags": [], "enablers": [] },
+        "two_weapons":     { "modifiers": [{ "stat": "attack_throw", "operation": "add", "value": -1, "stacking_group": "fighting_style", "condition": { "requires": "two_weapon_style" } }], "flags": [], "enablers": [] },
+        "two_handed":      { "modifiers": [{ "stat": "damage_bonus", "operation": "add", "value": 1, "stacking_group": "fighting_style", "condition": { "requires": "two_handed_weapon" } }], "flags": [], "enablers": [] },
+        "weapon_and_shield": { "modifiers": [{ "stat": "armor_class", "operation": "add", "value": 1, "stacking_group": "fighting_style", "condition": { "requires": "shield_equipped" } }], "flags": [], "enablers": [] },
+        "pole_weapon":     { "modifiers": [{ "stat": "initiative_modifier", "operation": "add", "value": 1, "stacking_group": "fighting_style", "condition": { "requires": "pole_weapon_equipped" } }], "flags": [], "enablers": [] }
+      }
+    },
+    {
+      "proficiency_key": "gambling",
+      "proficiency_name": "Gambling",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Earn 1d6 gp/month as a professional gambler; each additional selection adds another 1d6 gp/month. Gambling is a contested d6 roll mechanic with raise or fold options.",
+      "max_rank": 1,
+      "max_selections": 3,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "income_monthly_variable", "dice": "1d6", "per_selection": true }]
+      }
+    },
+    {
+      "proficiency_key": "goblin_slaying",
+      "proficiency_name": "Goblin-Slaying",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "+1 attack throws against kobolds, goblins, orcs, gnolls, hobgoblins, bugbears, ogres, trolls, and giants. Bonus increases to +2 at level 7 and +3 at level 13.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": {
+        "breakpoints": [
+          { "min_level": 1,  "bonus": 1 },
+          { "min_level": 7,  "bonus": 2 },
+          { "min_level": 13, "bonus": 3 }
+        ]
+      },
+      "effects": {
+        "modifiers": [
+          { "stat": "attack_throw", "operation": "add", "value": -1, "stacking_group": "goblin_slaying", "condition": { "requires": "target_is_goblinoid" } }
+        ],
+        "flags": [],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "healing",
+      "proficiency_name": "Healing",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Rank 1: Diagnose disease on 11+; patients heal extra 1d3 hp/day. Rank 2: Neutralize poison/cure disease/cure light wounds on 18+, once/day/patient. Rank 3: Same on 14+. Supervise 3 patients/day, plus 1 per additional selection.",
+      "max_rank": 3,
+      "max_selections": 3,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects_by_rank": {
+        "1": { "modifiers": [], "flags": [], "enablers": [{ "action": "diagnose_disease", "throw_target": 11 }, { "action": "natural_healing_bonus", "bonus_dice": "1d3" }] },
+        "2": { "modifiers": [], "flags": [], "enablers": [{ "action": "cure_throw", "throw_target": 18, "treatments": ["neutralize_poison", "cure_disease", "cure_light_wounds"] }] },
+        "3": { "modifiers": [], "flags": [], "enablers": [{ "action": "cure_throw", "throw_target": 14, "treatments": ["neutralize_poison", "cure_disease", "cure_serious_wounds"] }] }
+      }
+    },
+    {
+      "proficiency_key": "illusion_resistance",
+      "proficiency_name": "Illusion Resistance",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "+4 on saving throws to disbelieve magical illusions.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "save_vs_illusion_bonus", "operation": "add", "value": 4, "stacking_group": "illusion_resistance" }
+        ],
+        "flags": [],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "intimidation",
+      "proficiency_name": "Intimidation",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "+2 on reaction rolls when threatening violence or dire consequences. Targets must be 5 HD or less, or the character and allies must outnumber or outrank them.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "reaction_modifier_intimidation", "operation": "add", "value": 2, "stacking_group": "intimidation", "condition": { "requires": "target_eligible_for_intimidation" } }
+        ],
+        "flags": [],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "inventing",
+      "proficiency_name": "Inventing",
+      "type": "class",
+      "source": "Player's Companion",
+      "description": "Design automatons as if 2 class levels higher. Time required to design automatons is reduced by 20%.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "automaton_design_level_bonus", "bonus": 2 }, { "action": "automaton_design_time_reduction", "percent": 20 }]
+      }
+    },
+    {
+      "proficiency_key": "jury_rigging",
+      "proficiency_name": "Jury-Rigging",
+      "type": "class",
+      "source": "Player's Companion",
+      "description": "Repair automatons as if 2 class levels higher. May perform hasty repairs in 1 turn instead of 1 hour; hasty repairs last 4d6 turns (secret duration determined by Judge).",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "automaton_repair_level_bonus", "bonus": 2 }, { "action": "hasty_repair" }]
+      }
+    },
+    {
+      "proficiency_key": "kin_slaying",
+      "proficiency_name": "Kin-Slaying",
+      "type": "class",
+      "source": "Player's Companion",
+      "description": "+1 attack throws against humans, elves, dwarves, halflings, gnomes, and Nobiran. Bonus increases to +2 at level 7 and +3 at level 13.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": {
+        "breakpoints": [
+          { "min_level": 1,  "bonus": 1 },
+          { "min_level": 7,  "bonus": 2 },
+          { "min_level": 13, "bonus": 3 }
+        ]
+      },
+      "effects": {
+        "modifiers": [
+          { "stat": "attack_throw", "operation": "add", "value": -1, "stacking_group": "kin_slaying", "condition": { "requires": "target_is_kin" } }
+        ],
+        "flags": [],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "knowledge",
+      "proficiency_name": "Knowledge",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Choose one field. Recall expert information in that field on 11+. Rank 2: Expert level (can train students). Rank 3: Sage equivalence. Each additional selection covers a new field or deepens an existing one.",
+      "max_rank": 3,
+      "max_selections": 0,
+      "selection_rule": "specialization",
+      "specializations": null,
+      "level_scaling": null,
+      "effects_by_rank": {
+        "1": { "modifiers": [], "flags": [], "enablers": [{ "action": "knowledge_recall", "throw_target": 11 }] },
+        "2": { "modifiers": [], "flags": [], "enablers": [{ "action": "knowledge_expert" }] },
+        "3": { "modifiers": [], "flags": [], "enablers": [{ "action": "specialist_equivalence", "type": "sage" }] }
+      }
+    },
+    {
+      "proficiency_key": "labor",
+      "proficiency_name": "Labor",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Choose one type of physical labor. Earn 3d4 gp/month. Interpret information relevant to the labor skill on 11+. Additional selections cover additional labor types (same type cannot improve by re-selection).",
+      "max_rank": 1,
+      "max_selections": 0,
+      "selection_rule": "specialization",
+      "specializations": null,
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "income_monthly_variable", "dice": "3d4" }, { "action": "labor_knowledge_recall", "throw_target": 11 }]
+      }
+    },
+    {
+      "proficiency_key": "land_surveying",
+      "proficiency_name": "Land Surveying",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "On 11+, predict sinkholes, deadfalls, collapses, or rock slides upon entering an area. +4 on throws to escape detection in dungeons by finding the best cover.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "dungeon_cover_modifier", "operation": "add", "value": 4, "stacking_group": "land_surveying" }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "hazard_prediction", "throw_target": 11 }]
+      }
+    },
+    {
+      "proficiency_key": "language",
+      "proficiency_name": "Language",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Learn to speak, read, and write one additional language. Literacy level depends on Intelligence. Characters with INT 8 or less may become literate in a language they already speak.",
+      "max_rank": 1,
+      "max_selections": 0,
+      "selection_rule": "specialization",
+      "specializations": null,
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "add_language" }]
+      }
+    },
+    {
+      "proficiency_key": "laying_on_hands",
+      "proficiency_name": "Laying on Hands",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Once per day, heal self or another for 2 hp per experience level. Each additional selection grants one additional use per day.",
+      "max_rank": 1,
+      "max_selections": 3,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "laying_on_hands", "base_uses_per_day": 1, "uses_per_extra_selection": 1, "healing_per_level": 2 }]
+      }
+    },
+    {
+      "proficiency_key": "leadership",
+      "proficiency_name": "Leadership",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "May hire 1 additional henchman beyond normal Charisma limits. Domain base morale increases by 1.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "henchman_cap_bonus", "operation": "add", "value": 1, "stacking_group": "leadership" },
+          { "stat": "domain_morale_modifier", "operation": "add", "value": 1, "stacking_group": "leadership" }
+        ],
+        "flags": [],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "lip_reading",
+      "proficiency_name": "Lip Reading",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Can understand visible speech in a known language. If speech is unclear or in dim light, a hear noise throw may be required. +1 on carousing and spying hijinks.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "carousing_hijink_modifier", "operation": "add", "value": 1, "stacking_group": "lip_reading" },
+          { "stat": "spying_hijink_modifier",    "operation": "add", "value": 1, "stacking_group": "lip_reading" }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "lip_reading" }]
+      }
+    },
+    {
+      "proficiency_key": "lockpicking",
+      "proficiency_name": "Lockpicking",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "+2 on proficiency throws to open locks. May open a lock in 1 round instead of 1 turn by making the roll at -4.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "open_lock_modifier", "operation": "add", "value": 2, "stacking_group": "lockpicking" }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "open_lock_quick", "time_round": 1, "penalty": -4 }]
+      }
+    },
+    {
+      "proficiency_key": "loremastery",
+      "proficiency_name": "Loremastery",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "At level 1, decipher occult runes, remember ancient history, or identify a historic artifact on 18+; the required throw improves by 1 per level.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": {
+        "breakpoints": [
+          { "min_level": 1,  "bonus": 0 }
+        ],
+        "_note": "The throw target of 18 reduces by 1 per level — handled by the consuming system using character level directly."
+      },
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "lore_identification", "base_throw": 18, "improvement_per_level": 1 }]
+      }
+    },
+    {
+      "proficiency_key": "magical_engineering",
+      "proficiency_name": "Magical Engineering",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "+1 to magical research throws. Recognize common magical items on 11+. Multiple selections add +1 each and reduce item ID throw by 4.",
+      "max_rank": 1,
+      "max_selections": 3,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "magic_research_modifier", "operation": "add", "value": 1, "stacking_group": "" },
+          { "stat": "identify_magic_item_modifier", "operation": "add", "value": 4, "stacking_group": "" }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "identify_magic_item", "throw_target": 11 }]
+      }
+    },
+    {
+      "proficiency_key": "magical_music",
+      "proficiency_name": "Magical Music",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "On a successful Performance throw, serenade targets as charm person or lull them as sleep. Effect begins immediately; after 1 full turn of performance, lasts spell duration. No effect on creatures already in combat.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "magical_music_charm" }, { "action": "magical_music_sleep" }]
+      }
+    },
+    {
+      "proficiency_key": "manual_of_arms",
+      "proficiency_name": "Manual of Arms",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Train troops: Rank 1: Light infantry (1 month), light cavalry with Riding (3 months), missile troops with weapon focus; 30gp/month. Rank 2: Heavy infantry (1 month), heavy cavalry with Riding (6 months); 60gp/month. Trains 60 soldiers per period.",
+      "max_rank": 2,
+      "max_selections": 2,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects_by_rank": {
+        "1": { "modifiers": [], "flags": [], "enablers": [{ "action": "train_troops", "types": ["light_infantry"], "months": 1 }, { "action": "income_monthly", "gp": 30 }] },
+        "2": { "modifiers": [], "flags": [], "enablers": [{ "action": "train_troops", "types": ["light_infantry", "heavy_infantry", "light_cavalry"], "months": 1 }, { "action": "income_monthly", "gp": 60 }] }
+      }
+    },
+    {
+      "proficiency_key": "mapping",
+      "proficiency_name": "Mapping",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Can understand and make maps even if illiterate. Interpret or draft complex layouts, or map an area from memory, on 11+. Multiple selections available.",
+      "max_rank": 1,
+      "max_selections": 3,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "mapping", "throw_target": 11 }]
+      }
+    },
+    {
+      "proficiency_key": "martial_training",
+      "proficiency_name": "Martial Training",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Select one additional weapon group and add it to the character's permitted weapons. Groups: Axes; Bows/Crossbows; Flails/Hammers/Maces; Swords/Daggers; Spears/Pole arms; Bolas/Nets/Slings/Saps/Staffs.",
+      "max_rank": 1,
+      "max_selections": 0,
+      "selection_rule": "specialization",
+      "specializations": ["axes", "bows_crossbows", "flails_hammers_maces", "swords_daggers", "spears_polearms", "bolas_nets_slings_saps_staffs"],
+      "level_scaling": null,
+      "effects_by_specialization": {
+        "axes":                         { "modifiers": [], "flags": [], "enablers": [{ "action": "weapon_group_permission", "group": "axes" }] },
+        "bows_crossbows":               { "modifiers": [], "flags": [], "enablers": [{ "action": "weapon_group_permission", "group": "bows_crossbows" }] },
+        "flails_hammers_maces":         { "modifiers": [], "flags": [], "enablers": [{ "action": "weapon_group_permission", "group": "flails_hammers_maces" }] },
+        "swords_daggers":               { "modifiers": [], "flags": [], "enablers": [{ "action": "weapon_group_permission", "group": "swords_daggers" }] },
+        "spears_polearms":              { "modifiers": [], "flags": [], "enablers": [{ "action": "weapon_group_permission", "group": "spears_polearms" }] },
+        "bolas_nets_slings_saps_staffs": { "modifiers": [], "flags": [], "enablers": [{ "action": "weapon_group_permission", "group": "bolas_nets_slings_saps_staffs" }] }
+      }
+    },
+    {
+      "proficiency_key": "mechanical_engineering",
+      "proficiency_name": "Mechanical Engineering",
+      "type": "class",
+      "source": "Player's Companion",
+      "description": "+1 to throws to design, repair, and build automatons. Recognize common automatons on 11+. Multiple selections each add +1 and lower the recognition throw by 4.",
+      "max_rank": 1,
+      "max_selections": 3,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "automaton_design_modifier", "operation": "add", "value": 1, "stacking_group": "" },
+          { "stat": "automaton_repair_modifier", "operation": "add", "value": 1, "stacking_group": "" },
+          { "stat": "automaton_build_modifier",  "operation": "add", "value": 1, "stacking_group": "" },
+          { "stat": "identify_automaton_modifier", "operation": "add", "value": 4, "stacking_group": "" }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "identify_automaton", "throw_target": 11 }]
+      }
+    },
+    {
+      "proficiency_key": "military_strategy",
+      "proficiency_name": "Military Strategy",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Recognize famous battles, generals, and weapons on 11+. Forces under command gain +1 to mass combat initiative per selection (maximum +3 total).",
+      "max_rank": 1,
+      "max_selections": 3,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "mass_combat_initiative", "operation": "add", "value": 1, "stacking_group": "" }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "military_history_recall", "throw_target": 11 }]
+      }
+    },
+    {
+      "proficiency_key": "mimicry",
+      "proficiency_name": "Mimicry",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "On 11+, imitate animal calls and foreign accents convincingly enough to fool listeners. Multiple selections available.",
+      "max_rank": 1,
+      "max_selections": 3,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "mimicry", "throw_target": 11 }]
+      }
+    },
+    {
+      "proficiency_key": "mountaineering",
+      "proficiency_name": "Mountaineering",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Use mountaineering gear to climb difficult mountains and cliff faces, and rig lines for others, as a thief of class level. Does not allow climbing sheer surfaces in combat without extensive gear.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "mountaineering_climb", "equivalent_class": "thief", "equivalent_level": "character_level" }]
+      }
+    },
+    {
+      "proficiency_key": "mystic_aura",
+      "proficiency_name": "Mystic Aura",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "+2 on reaction rolls to impress or intimidate others. If this bonus helps produce a total reaction result of 12 or more, subjects act as if charmed while in the character's presence.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "reaction_modifier_impression", "operation": "add", "value": 2, "stacking_group": "mystic_aura" }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "mystic_aura_charm_threshold", "threshold": 12 }]
+      }
+    },
+    {
+      "proficiency_key": "naturalism",
+      "proficiency_name": "Naturalism",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "In terrain typical to the character's background, know common plants and animals, edible and poisonous foods, healing herbs, and signs of unnatural danger on 11+. Multiple selections available.",
+      "max_rank": 1,
+      "max_selections": 3,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "wilderness_knowledge", "throw_target": 11, "terrain_locked": true }]
+      }
+    },
+    {
+      "proficiency_key": "navigation",
+      "proficiency_name": "Navigation",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Use sun and stars to determine rough position. +4 on throws to avoid getting lost in the wilderness. Can serve as a ship navigator.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "avoid_getting_lost_modifier", "operation": "add", "value": 4, "stacking_group": "navigation" }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "ship_navigator" }]
+      }
+    },
+    {
+      "proficiency_key": "passing_without_trace",
+      "proficiency_name": "Passing Without Trace",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Leaves no sign over wilderness terrain and cannot be tracked. May cover the tracks of 1 additional traveling companion per 3 experience levels.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": ["track_immune"],
+        "enablers": [{ "action": "cover_companions_tracks", "companions_per_3_levels": 1 }]
+      }
+    },
+    {
+      "proficiency_key": "performance",
+      "proficiency_name": "Performance",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Choose one performance type. Identify famous performers and masterpieces on 11+. Rank 1: 10gp/month (Apprentice). Rank 2: 20gp/month (Journeyman). Rank 3: 40gp/month (Master Performer).",
+      "max_rank": 3,
+      "max_selections": 0,
+      "selection_rule": "specialization",
+      "specializations": null,
+      "level_scaling": null,
+      "effects_by_rank": {
+        "1": { "modifiers": [], "flags": [], "enablers": [{ "action": "income_monthly", "gp": 10 }] },
+        "2": { "modifiers": [], "flags": [], "enablers": [{ "action": "income_monthly", "gp": 20 }] },
+        "3": { "modifiers": [], "flags": [], "enablers": [{ "action": "income_monthly", "gp": 40 }] }
+      }
+    },
+    {
+      "proficiency_key": "personal_automaton",
+      "proficiency_name": "Personal Automaton",
+      "type": "class",
+      "source": "Player's Companion",
+      "description": "Immediately gain one personal automaton worth up to 7,000gp of own design. Build/design costs reduced by 7,000gp. May never have more than one personal automaton. Requires 1 turn daily maintenance.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "personal_automaton_grant", "value_gp": 7000 }]
+      }
+    },
+    {
+      "proficiency_key": "precise_shooting",
+      "proficiency_name": "Precise Shooting",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "May fire missiles into melee at -4 to attack throws. Each additional selection reduces this penalty by 2. Characters without this proficiency cannot fire into melee.",
+      "max_rank": 1,
+      "max_selections": 3,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "fire_into_melee_penalty", "operation": "add", "value": -2, "stacking_group": "", "condition": { "requires": "firing_into_melee" } }
+        ],
+        "flags": ["can_fire_into_melee"],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "prestidigitation",
+      "proficiency_name": "Prestidigitation",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "At will, create simple magical tricks and sleight-of-hand effects for minor entertainment. Must be physically capable and free to speak and gesture. May pick pockets as a thief of half class level.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "prestidigitation_tricks" }, { "action": "pick_pockets", "equivalent_class": "thief", "equivalent_level": "half_character_level" }]
+      }
+    },
+    {
+      "proficiency_key": "profession",
+      "proficiency_name": "Profession",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Choose one civil profession. Expert commentary in the chosen profession on 11+. Rank 1: 25gp/month (Apprentice). Rank 2: 50gp/month (Licensed Practitioner). Rank 3: 100gp/month (Master of Profession / Specialist).",
+      "max_rank": 3,
+      "max_selections": 0,
+      "selection_rule": "specialization",
+      "specializations": null,
+      "level_scaling": null,
+      "effects_by_rank": {
+        "1": { "modifiers": [], "flags": [], "enablers": [{ "action": "income_monthly", "gp": 25 }, { "action": "profession_knowledge_recall", "throw_target": 11 }] },
+        "2": { "modifiers": [], "flags": [], "enablers": [{ "action": "income_monthly", "gp": 50 }] },
+        "3": { "modifiers": [], "flags": [], "enablers": [{ "action": "income_monthly", "gp": 100 }, { "action": "specialist_equivalence", "type": "professional" }] }
+      }
+    },
+    {
+      "proficiency_key": "prophecy",
+      "proficiency_name": "Prophecy",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Receives cryptic but useful visions; once per week may use commune (3 yes/no questions).",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "commune_once_per_week" }]
+      }
+    },
+    {
+      "proficiency_key": "quiet_magic",
+      "proficiency_name": "Quiet Magic",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Spellcasting can only be detected by a successful hear noise proficiency throw. Full gagging is required to prevent casting.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": ["quiet_spellcasting"],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "riding",
+      "proficiency_name": "Riding",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Care for and control a riding animal under difficult conditions, including fighting from its back. Must be selected separately for each animal type. Not required for simply riding a domesticated animal under non-combat conditions.",
+      "max_rank": 1,
+      "max_selections": 0,
+      "selection_rule": "specialization",
+      "specializations": null,
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "mounted_combat_control" }]
+      }
+    },
+    {
+      "proficiency_key": "righteous_turning",
+      "proficiency_name": "Righteous Turning",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "When turning undead, add Wisdom bonus both to the turning throw and to the number of HD turned on success.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "turn_undead_throw_modifier", "operation": "add", "value": 0, "stacking_group": "righteous_turning", "_note": "Value resolved at runtime as character.wisdom ability_modifier()" },
+          { "stat": "turn_undead_hd_bonus",       "operation": "add", "value": 0, "stacking_group": "righteous_turning", "_note": "Value resolved at runtime as character.wisdom ability_modifier()" }
+        ],
+        "flags": ["righteous_turning"],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "running",
+      "proficiency_name": "Running",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Base movement increases by 30 feet when wearing chainmail or lighter armor.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "movement_rate", "operation": "add", "value": 30, "stacking_group": "running", "condition": { "requires": "armor_chainmail_or_lighter" } }
+        ],
+        "flags": [],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "scavenging",
+      "proficiency_name": "Scavenging",
+      "type": "class",
+      "source": "Player's Companion",
+      "description": "Salvage parts from dwarven ruins and old automatons. Reduces cost to build or design automatons by 10% per selection.",
+      "max_rank": 1,
+      "max_selections": 5,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "automaton_cost_reduction_percent", "operation": "add", "value": 10, "stacking_group": "" }
+        ],
+        "flags": [],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "seafaring",
+      "proficiency_name": "Seafaring",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Rank 1: Crew large sailing ships or galleys. Rank 2: Serve as captain on a seagoing vessel. Rank 3: Master mariner — tacking reduces movement by only one category instead of two; ship's chance to evade increases by +5%.",
+      "max_rank": 3,
+      "max_selections": 3,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects_by_rank": {
+        "1": { "modifiers": [], "flags": [], "enablers": [{ "action": "ship_crew" }] },
+        "2": { "modifiers": [], "flags": [], "enablers": [{ "action": "ship_captain" }] },
+        "3": { "modifiers": [{ "stat": "ship_evasion_bonus", "operation": "add", "value": 5, "stacking_group": "seafaring" }], "flags": ["master_mariner"], "enablers": [] }
+      }
+    },
+    {
+      "proficiency_key": "seduction",
+      "proficiency_name": "Seduction",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "+2 on reaction rolls with creatures who are potentially attracted to the character.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "reaction_modifier_seduction", "operation": "add", "value": 2, "stacking_group": "seduction", "condition": { "requires": "target_attracted" } }
+        ],
+        "flags": [],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "sensing_evil",
+      "proficiency_name": "Sensing Evil",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "At will, detect evil as the spell within 60 feet by concentrating for 1 turn.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "detect_evil_at_will", "range_ft": 60, "concentration_turns": 1 }]
+      }
+    },
+    {
+      "proficiency_key": "sensing_power",
+      "proficiency_name": "Sensing Power",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Detect spellcasters within 60 feet and estimate their power relative to the character. Can tell whether arcane magic was used in the same vicinity within the last 24 hours. Each use takes 1 turn.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "detect_spellcasters", "range_ft": 60, "recent_magic_hours": 24 }]
+      }
+    },
+    {
+      "proficiency_key": "siege_engineering",
+      "proficiency_name": "Siege Engineering",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Rank 1: Construct and place temporary defensive works; operate heavy war machines and siege engines. Rank 2: Also construct heavy war machines, siege engines, and siege towers.",
+      "max_rank": 2,
+      "max_selections": 2,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects_by_rank": {
+        "1": { "modifiers": [], "flags": [], "enablers": [{ "action": "operate_siege_engines" }, { "action": "construct_fieldworks" }] },
+        "2": { "modifiers": [], "flags": [], "enablers": [{ "action": "construct_siege_engines" }, { "action": "construct_siege_towers" }] }
+      }
+    },
+    {
+      "proficiency_key": "signaling",
+      "proficiency_name": "Signaling",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Transmit messages to other signaling specialists of the same force, culture, guild, or organization. Specify signal style when selected (e.g., naval flags, cavalry trumpets, smoke signals).",
+      "max_rank": 1,
+      "max_selections": 0,
+      "selection_rule": "specialization",
+      "specializations": null,
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "signal_communication" }]
+      }
+    },
+    {
+      "proficiency_key": "skirmishing",
+      "proficiency_name": "Skirmishing",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "May withdraw or retreat from melee without declaring defensive movement before initiative is rolled.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": ["free_retreat"],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "skulking",
+      "proficiency_name": "Skulking",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "+2 on proficiency throws to hide in shadows and move silently.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "hide_in_shadows_modifier",  "operation": "add", "value": 2, "stacking_group": "skulking" },
+          { "stat": "move_silently_modifier",     "operation": "add", "value": 2, "stacking_group": "skulking" }
+        ],
+        "flags": [],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "sniping",
+      "proficiency_name": "Sniping",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "If otherwise eligible to ambush or backstab, may do so with ranged weapons out to short range.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": ["ranged_backstab"],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "soothsaying",
+      "proficiency_name": "Soothsaying",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Receives cryptic but useful visions; once per week may use contact other plane.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "contact_other_plane_once_per_week" }]
+      }
+    },
+    {
+      "proficiency_key": "survival",
+      "proficiency_name": "Survival",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Automatically forage enough food for self while moving in a fairly fertile area. If foraging for more than one person, make the normal proficiency throw with a +4 bonus.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "group_foraging_modifier", "operation": "add", "value": 4, "stacking_group": "survival" }
+        ],
+        "flags": ["self_foraging"],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "swashbuckling",
+      "proficiency_name": "Swashbuckling",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "+1 AC when wearing leather armor or less and able to move freely. Bonus increases to +2 AC at level 7 and +3 AC at level 13.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": {
+        "breakpoints": [
+          { "min_level": 1,  "bonus": 1 },
+          { "min_level": 7,  "bonus": 2 },
+          { "min_level": 13, "bonus": 3 }
+        ]
+      },
+      "effects": {
+        "modifiers": [
+          { "stat": "armor_class", "operation": "add", "value": 1, "stacking_group": "swashbuckling", "condition": { "requires": "armor_leather_or_lighter_and_unencumbered" } }
+        ],
+        "flags": [],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "theology",
+      "proficiency_name": "Theology",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Automatically identify symbols, spell signatures, trappings, and holy days of own faith. Recognize those of other faiths on 11+. Multiple selections available.",
+      "max_rank": 1,
+      "max_selections": 3,
+      "selection_rule": "stacking",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "own_faith_recognition" }, { "action": "other_faith_recognition", "throw_target": 11 }]
+      }
+    },
+    {
+      "proficiency_key": "tinkering",
+      "proficiency_name": "Tinkering",
+      "type": "class",
+      "source": "Player's Companion",
+      "description": "Build automatons as if 2 class levels higher. Time required to build an automaton is reduced by 20%.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "automaton_build_level_bonus", "bonus": 2 }, { "action": "automaton_build_time_reduction", "percent": 20 }]
+      }
+    },
+    {
+      "proficiency_key": "tracking",
+      "proficiency_name": "Tracking",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Track creatures on 11+ with circumstance modifiers (size, ground, weather, time elapsed). Move at half speed while tracking.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "wilderness_tracking", "throw_target": 11 }]
+      }
+    },
+    {
+      "proficiency_key": "transmogrification",
+      "proficiency_name": "Transmogrification",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Polymorph spells function as if cast by a character 2 class levels higher. May create magical crossbreeds as if 2 class levels higher. Targets of polymorph other suffer -2 on saving throws.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "caster_level_bonus_for_polymorph", "bonus": 2 }, { "action": "polymorph_other_save_penalty", "penalty": 2 }]
+      }
+    },
+    {
+      "proficiency_key": "trap_finding",
+      "proficiency_name": "Trap Finding",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "+2 on proficiency throws to find and remove traps. May find a trap in 1 round rather than 1 turn by making the roll at -4.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "find_trap_modifier",   "operation": "add", "value": 2, "stacking_group": "trap_finding" },
+          { "stat": "remove_trap_modifier", "operation": "add", "value": 2, "stacking_group": "trap_finding" }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "quick_trap_find", "time_rounds": 1, "penalty": -4 }]
+      }
+    },
+    {
+      "proficiency_key": "trapping",
+      "proficiency_name": "Trapping",
+      "type": "general",
+      "source": "ACKS Core",
+      "description": "Build pits, snares, and deadfalls able to capture creatures up to elephant size on 11+. Detect and disable wilderness traps as a thief of class level. No effect on dungeon mechanical or magical traps.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": [],
+        "enablers": [{ "action": "build_wilderness_trap", "throw_target": 11 }, { "action": "detect_wilderness_trap", "equivalent_class": "thief", "equivalent_level": "character_level" }]
+      }
+    },
+    {
+      "proficiency_key": "unarmed_fighting",
+      "proficiency_name": "Unarmed Fighting",
+      "type": "class",
+      "source": "Player's Companion",
+      "description": "When brawling, may deal lethal damage. Can punch or kick characters in metal armor without taking self-damage.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": ["unarmed_lethal_damage", "unarmed_vs_armor_safe"],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "unflappable_casting",
+      "proficiency_name": "Unflappable Casting",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "If interrupted or damaged while casting, the spell is lost but the character keeps the action and may move or attack normally. Without this proficiency, interruption causes loss of the entire action.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": ["unflappable_casting"],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "vermin_slaying",
+      "proficiency_name": "Vermin-Slaying",
+      "type": "class",
+      "source": "Player's Companion",
+      "description": "Identify abilities and vulnerabilities of various vermin on 11+. +1 on saving throws against special attacks by vermin.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [
+          { "stat": "save_petrification", "operation": "add", "value": -1, "stacking_group": "vermin_slaying", "condition": { "requires": "attack_source_is_vermin" } },
+          { "stat": "save_poison_death",  "operation": "add", "value": -1, "stacking_group": "vermin_slaying", "condition": { "requires": "attack_source_is_vermin" } },
+          { "stat": "save_blast_breath",  "operation": "add", "value": -1, "stacking_group": "vermin_slaying", "condition": { "requires": "attack_source_is_vermin" } },
+          { "stat": "save_staffs_wands",  "operation": "add", "value": -1, "stacking_group": "vermin_slaying", "condition": { "requires": "attack_source_is_vermin" } },
+          { "stat": "save_spells",        "operation": "add", "value": -1, "stacking_group": "vermin_slaying", "condition": { "requires": "attack_source_is_vermin" } }
+        ],
+        "flags": [],
+        "enablers": [{ "action": "identify_vermin", "throw_target": 11 }]
+      }
+    },
+    {
+      "proficiency_key": "wakefulness",
+      "proficiency_name": "Wakefulness",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "Only 4 hours of sleep are required each night to be rested.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": ["reduced_sleep"],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "weapon_finesse",
+      "proficiency_name": "Weapon Finesse",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "With one-handed melee weapons, may use Dexterity modifier instead of Strength modifier on attack throws.",
+      "max_rank": 1,
+      "max_selections": 1,
+      "selection_rule": "unique",
+      "level_scaling": null,
+      "effects": {
+        "modifiers": [],
+        "flags": ["dex_for_attack_throws"],
+        "enablers": []
+      }
+    },
+    {
+      "proficiency_key": "weapon_focus",
+      "proficiency_name": "Weapon Focus",
+      "type": "class",
+      "source": "ACKS Core",
+      "description": "With a chosen weapon category, an unmodified natural 20 deals double normal damage. May be taken multiple times for additional weapon categories. Does not grant permission to use otherwise forbidden weapons.",
+      "max_rank": 1,
+      "max_selections": 0,
+      "selection_rule": "specialization",
+      "specializations": ["axes", "maces_flails_hammers", "swords_daggers", "bows_crossbows", "slings_thrown", "spears_polearms"],
+      "level_scaling": null,
+      "effects_by_specialization": {
+        "axes":               { "modifiers": [], "flags": [], "enablers": [{ "action": "natural_20_double_damage", "weapon_category": "axes" }] },
+        "maces_flails_hammers": { "modifiers": [], "flags": [], "enablers": [{ "action": "natural_20_double_damage", "weapon_category": "maces_flails_hammers" }] },
+        "swords_daggers":     { "modifiers": [], "flags": [], "enablers": [{ "action": "natural_20_double_damage", "weapon_category": "swords_daggers" }] },
+        "bows_crossbows":     { "modifiers": [], "flags": [], "enablers": [{ "action": "natural_20_double_damage", "weapon_category": "bows_crossbows" }] },
+        "slings_thrown":      { "modifiers": [], "flags": [], "enablers": [{ "action": "natural_20_double_damage", "weapon_category": "slings_thrown" }] },
+        "spears_polearms":    { "modifiers": [], "flags": [], "enablers": [{ "action": "natural_20_double_damage", "weapon_category": "spears_polearms" }] }
+      }
+    }
+  ]
+}

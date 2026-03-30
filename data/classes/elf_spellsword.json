@@ -42,7 +42,7 @@
     "leadership", "loremastery", "magical_engineering", "magical_music",
     "mystic_aura", "naturalism", "passing_without_trace", "quiet_magic",
     "precise_shooting", "prestidigitation", "running", "sensing_power",
-    "skirmishing", "soothsaying", "swashbuckler", "unflappable_casting",
+    "skirmishing", "soothsaying", "swashbuckling", "unflappable_casting",
     "wakefulness", "weapon_focus", "weapon_finesse"
   ],
   "proficiency_progression": {

@@ -177,6 +177,7 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 | `rule_system_map.md` | System-to-file dependency map and cross-references |
 | `coding_conventions.md` | Living reference for GDScript, SQLite, and architecture patterns — naming, signals, autoloads, DB access, testing |
 | `spell_system_map.md` | Maps spells to game system hooks — modifier types, flag systems, and effect patterns each system must support |
+| `proficiency_system_map.md` | Maps proficiencies to game system hooks — modifier types, flag systems, enabler patterns, and effect shapes each system must support |
 
 ---
 
@@ -189,4 +190,5 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 - **Axioms XML:** 11 files
 - **Total XML:** 70 files
 - **GDDs:** 14 files
-- **Grand total indexed:** 84 files
+- **Architecture docs:** 6 files
+- **Grand total indexed:** 85 files

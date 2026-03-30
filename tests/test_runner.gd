@@ -30,6 +30,9 @@ extends Node
 @onready var _damage_resistance_tests = $DamageResistanceTests
 @onready var _active_effect_tracker_tests = $ActiveEffectTrackerTests
 @onready var _spell_effect_registry_tests = $SpellEffectRegistryTests
+@onready var _proficiency_registry_tests = $ProficiencyRegistryTests
+@onready var _proficiency_effect_resolver_tests = $ProficiencyEffectResolverTests
+@onready var _proficiency_integration_tests = $ProficiencyIntegrationTests
 
 
 func _ready() -> void:
@@ -48,7 +51,9 @@ func run() -> void:
 			_spell_registry_tests, _repertoire_engine_tests,
 			_modifier_stack_tests, _entity_flags_tests,
 			_condition_catalog_tests, _damage_resistance_tests,
-			_active_effect_tracker_tests, _spell_effect_registry_tests]:
+			_active_effect_tracker_tests, _spell_effect_registry_tests,
+			_proficiency_registry_tests, _proficiency_effect_resolver_tests,
+			_proficiency_integration_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1
