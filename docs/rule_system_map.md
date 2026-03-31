@@ -17,7 +17,7 @@ When working on system X:
 
 ### Character Creation & Classes
 - **Rule files:** `acore_basics_and_characters`, `acore_core_classes`, `acore_demihuman_classes`, `acore_campaign_classes`, `pc_classes_1`, `pc_classes_2`, `pc_classes_3`, `pc_classes_4`, `ax_venturer_class`, `ax_non_combatants`
-- **GDDs:** `gdd-henchman-class-selection` (0th-level to 1st-level transition)
+- **GDDs:** `gdd-proficiency-specializations`, `gdd-henchman-class-selection` (0th-level to 1st-level transition)
 - **Depends on:** Proficiencies, Equipment (starting gear/wealth)
 - **Depended on by:** Combat, Magic, Domain Play, NPC Systems, Campaign Play
 
@@ -169,6 +169,7 @@ gdd-terrain-system
      -> gdd-poi-generation
 
 gdd-npc-personality (cross-cuts: settlement, dungeon factions, henchman selection, POI generation)
+gdd-proficiency-specializations (peripheral — augments Proficiencies system; feeds from setting/cultural generation; does not gate other GDDs)
 gdd_combat_behavior_tags (standalone — used by combat subsystem only)
 ```
 
@@ -187,3 +188,4 @@ gdd_combat_behavior_tags (standalone — used by combat subsystem only)
 12. `gdd-trap-generation` (needs dungeon layout)
 13. `gdd-stronghold-construction` (needs settlement, dungeon layout)
 14. `gdd-henchman-class-selection` (needs NPC personality, culture/religion)
+15. `gdd-proficiency-specializations` (standalone; feeds from setting generation and monster training rules; can be implemented in parallel with any other GDD)

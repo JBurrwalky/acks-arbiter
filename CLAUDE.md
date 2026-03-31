@@ -73,6 +73,7 @@ C:\Users\jttau\acks-arbiter\
 │   └── ax_*.xml
 ├── generation/                   # GDDs — modify freely
 │   ├── gdd-*.md
+│   ├── gdd-proficiency-specializations.md
 │   └── combat_behavior_tags.md
 ├── engine/                       # Godot project (you build this)
 ├── data/                         # Runtime data files

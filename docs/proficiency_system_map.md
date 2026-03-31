@@ -614,6 +614,23 @@ The most proficiency-dense system. Most class proficiencies exist to modify comb
 
 ---
 
+## 14. Specialization Framework
+
+**Hook:** Provide closed, selectable lists for open-ended proficiencies at runtime.
+
+**GDD:** `gdd-proficiency-specializations.md` — canonical specialization enumerations (weapon categories, mount species, art forms, knowledge fields, craft trades), three-layer registry (base catalog / setting-generated / campaign-created), trained-creature entity model.
+
+**Affected proficiencies:** Weapon Focus (weapon category), Riding (mount species), Craft (trade), Art (form), Knowledge (field), Animal Training (species), Animal Husbandry (species), Prophecy/Soothsaying (domain — handled by codex authority system), Siege Engineering (ranked type), Specialized Fighting Style variants.
+
+**System requirements:**
+- Composite key on proficiency selections: `proficiency_id` + `specialization_id`
+- Registry composition: union of base catalog + setting-generated + campaign-created layers
+- Dynamic registry extension during play (crossbreeding, homebrew, LLM content)
+- Per-proficiency specialization picker in character creation UI
+- Trained-creature entity model: derived from mount/animal proficiency + specialization + trainer level
+
+---
+
 ## Cross-Reference: Proficiencies by System Priority
 
 For quick lookup when building a specific system, proficiencies sorted by which system they primarily affect:
@@ -630,6 +647,7 @@ For quick lookup when building a specific system, proficiencies sorted by which 
 | **Treasure & Economics** | Adventuring, Alchemy, Animal Husbandry, Bargaining, Gambling, Healing, Magical Engineering |
 | **Campaign Play** | Art, Craft, Gambling, Healing, Knowledge, Labor, Performance, Profession, Prophecy, Soothsaying |
 | **Sea Travel** | Navigation, Seafaring |
+| **Specialization Framework** | `gdd-proficiency-specializations.md` — composite `proficiency_id` + `specialization_id` key for all open-ended proficiencies; three-layer registry; trained-creature entity model |
 
 ---
 
