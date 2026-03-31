@@ -49,12 +49,13 @@ func apply_ability_trade(scores: Dictionary, class_id: String,
 	## Trade ability points: 2 from source raises 1 in target (a prime requisite).
 	## Validates all ACKS constraints. Returns updated scores or empty dict on failure.
 	##
-	## Rules:
+	## Rules (ACKS RAW — acore_basics_and_characters.xml ability_trade_rule):
 	## - Target must be a prime requisite of the chosen class
-	## - Source cannot be CON or CHA
 	## - Source cannot be a prime requisite of the chosen class
 	## - No score can drop below 9 after the trade
 	## - Points must be positive and even (2:1 ratio)
+	## CON and CHA are NOT specially restricted — any non-prime-requisite ability
+	## can be sacrificed (to minimum 9). E.g., a Fighter can lower CHA.
 	if points <= 0 or points % 2 != 0:
 		push_error("CharacterGenerator.apply_ability_trade: points must be positive even number")
 		return {}
@@ -66,9 +67,6 @@ func apply_ability_trade(scores: Dictionary, class_id: String,
 	var primes: Array = cls.get("prime_requisites", [])
 	if target_ability not in primes:
 		push_error("CharacterGenerator.apply_ability_trade: target '%s' is not a prime requisite" % target_ability)
-		return {}
-	if source_ability in ["CON", "CHA"]:
-		push_error("CharacterGenerator.apply_ability_trade: cannot lower CON or CHA")
 		return {}
 	if source_ability in primes:
 		push_error("CharacterGenerator.apply_ability_trade: cannot lower prime requisite '%s'" % source_ability)

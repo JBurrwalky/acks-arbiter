@@ -1172,3 +1172,91 @@ CampaignRepository: save_character_proficiencies() INSERT now includes selection
 2. Build character creation UI (Phase C-3): class/race selection, ability score rolling, equipment purchasing, proficiency assignment, starting spell repertoire for casters.
 3. Wire ProficiencyRegistry and ProficiencyEffectResolver into CharacterGenerator and PC creation flow.
 4. Update docs/coding_conventions.md: add proficiency registry pattern; document selections_count/specialization fields in DB patterns section.
+
+
+---
+
+## Session 2026-03-30 — Character Creation UI (Phase C-3)
+
+**Task:** Implement the 9-step interactive character creation wizard, EquipmentCatalog tests, and all supporting panels.
+**Model used:** Sonnet 4.6
+
+**Completed:**
+
+Phase A — Data Layer:
+- `db/migrations/008_portrait_id.sql` — ALTER TABLE characters ADD COLUMN portrait_id.
+- `db/schema.sql` — updated to migration 008; portrait_id column added to characters table.
+- `engine/shared_types/character_data.gd` — added portrait_id field; wired into from_dict() and to_dict().
+- `engine/autoloads/campaign_repository.gd` — added portrait_id to create_character() INSERT and save_character() UPDATE.
+- `engine/subsystems/characters/character_generator.gd` — removed CON/CHA source block from apply_ability_trade(); source restriction is now strictly "source cannot be a prime requisite" per ACKS RAW.
+- `tests/test_character_generator.gd` — replaced test_ability_trade_invalid_con() with test_ability_trade_con_allowed_for_non_prime() and test_ability_trade_invalid_prime_requisite_source().
+- `engine/subsystems/characters/equipment_catalog.gd` — NEW: loads base_equipment.json (130), transport.json (32), foodstuffs from provisions_services.json (14). Total: 176 items. format_cost() static method.
+- `data/portrait_manifest.json` — NEW: 64 shipped portrait entries for export-compatible resolution.
+- `tests/test_equipment_catalog.gd` — NEW: 15 tests.
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — registered EquipmentCatalogTests as suite 27.
+
+Phase B — Flow Controller:
+- `scenes/ui/character_creation/character_creation_screen.gd` — NEW: CanvasLayer layer 32, 9-step wizard, shared creation_state dict, back-nav invalidation, open()/close()/_finalize_character() with full DB persistence, coin InventoryItems for remaining gold, signals character_created and creation_cancelled.
+- `scenes/ui/character_creation/character_creation_screen.tscn` — NEW.
+
+Phase C — Step Panels 1-4:
+- ability_roll_panel.gd — 3d6 in order via player_roll(), re-roll, score/modifier grid.
+- class_selection_panel.gd — 25 classes grouped by race, eligibility check, full detail right panel.
+- ability_trade_panel.gd — source/target dropdowns filtered by prime reqs, undo stack, live XP adj.
+- hp_roll_panel.gd — player_roll() for hit die, CON mod, max HP toggle, minimum 1.
+
+Phase G — CharacterSheetPanel:
+- `scenes/ui/components/character_sheet_panel.gd` — NEW: reusable read-only summary (portrait, ability scores, combat, saves, proficiencies, spells, equipment).
+
+Phase D — Step Panels 5-6:
+- proficiency_selection_panel.gd — slot computation with INT bonus, tabbed lists, specialization popup, ranked advancement, remove buttons.
+- spell_selection_panel.gd — arcane (judge spell + d12 INT bonus rolls), divine auto-grant, no-L1-slots notice, warlock notice.
+
+Phase E — Step 7 Equipment Shop:
+- equipment_shop_panel.gd — gold roll (3d6x10gp), 7-tab catalog, buy/sell, gold tracking, live encumbrance, class restriction warnings (non-blocking), auto-equip.
+
+Phase F — Step Panels 8-9:
+- portrait_picker_panel.gd — manifest + user://portraits/ scan, thumbnail grid, class-matching first, 256px preview.
+- finalize_panel.gd — name (required), alignment (filtered by class restriction), description, live CharacterSheetPanel.
+
+Phase H — Integration:
+- `scenes/Main.tscn` — added CharacterCreationScreen instance.
+- `scenes/main_scene.gd` — added open_character_creation(), _on_character_created(), _on_creation_cancelled().
+- `docs/coding_conventions.md` — CanvasLayer 32 added to table; character_creation/ and components/ added to dir tree; Main.tscn tree updated; migration count updated to 008.
+
+**Decisions made:**
+- CON/CHA ability trade block removed — only prime requisite source restriction per ACKS RAW.
+- Gold stored as coin InventoryItems (coins_gp/sp/cp) in belt slot.
+- Portrait system: manifest (shipping) + user://portraits/ scan (runtime).
+- Equipment slot default: "pack". Auto-equip assigns best armor/shield/weapon.
+- Equipment class restrictions are warnings only per ACKS rule.
+- Warlock spell progression incomplete in source data — shows notice, auto-completes.
+
+**Interfaces defined or changed:**
+- CharacterData.portrait_id: String (new field).
+- CharacterCreationScreen signals: character_created(character_id: String), creation_cancelled.
+- CharacterCreationScreen.open(campaign_id: String).
+- Panel setup: setup(state, ...registries) + is_complete() -> bool.
+- CharacterSheetPanel.setup_registry(class_registry) + display(state: Dictionary).
+- Stub class names declared: AbilityRollPanel, ClassSelectionPanel, AbilityTradePanel, HpRollPanel, ProficiencySelectionPanel, SpellSelectionPanel, EquipmentShopPanel, PortraitPickerPanel, FinalizePanel.
+
+**Database changes:**
+- Migration 008: ALTER TABLE characters ADD COLUMN portrait_id TEXT NOT NULL DEFAULT ''.
+- db/schema.sql updated to migration 008.
+
+**Tests added/updated:**
+- test_equipment_catalog.gd (15 tests) — new suite.
+- test_runner updated to 27 suites total.
+- test_character_generator.gd: CON/CHA trade tests updated to match new ACKS RAW rules.
+
+**Known issues:**
+- EquipmentShopPanel quantity control is Buy-1/Sell-1 only (no +/- spinner). MVP sufficient.
+- PortraitPickerPanel loads all thumbnails eagerly; could lag with many user portraits.
+- SpellSelectionPanel: if player rolls INT bonus spells then navigates back without confirming, rolls are lost on return.
+- Godot 4 may show warnings for TextureButton.stretch_mode usage in portrait grid — cosmetic only.
+
+**Next session should:**
+1. Open Godot 4 and run test_runner.tscn — confirm all 27 suites pass.
+2. Manually test end-to-end character creation (Fighter: no spells; Mage: arcane spells; Cleric: no L1 slots message).
+3. Apply DB migration 008 if not auto-applied (CampaignRepository._ensure_migrations() should handle this).
+4. Begin next build phase per design brief priority order.

@@ -33,7 +33,16 @@
       "Read(//c/Users/jttau/acks-arbiter/$TEMP/**)",
       "Bash(echo $TEMP)",
       "Bash(c:/Users/jttau/acks-arbiter/build_log.md:*)",
-      "Bash(python3 -c \":*)"
+      "Bash(python3 -c \":*)",
+      "Bash(ls /c/Users/jttau/acks-arbiter/assets/portraits/*.png)",
+      "Bash(python -c \"import json; d=json.load\\(open\\(''data/equipment/base_equipment.json''\\)\\); items=d[''equipment'']; print\\(''Count:'', len\\(items\\)\\); print\\(''First 5 keys:'', [i[''item_key''] for i in items[:5]]\\); cats=list\\(set\\(i.get\\(''item_category'',''''\\) for i in items\\)\\); cats.sort\\(\\); print\\(''Categories:'', cats\\)\")",
+      "Bash(python -c \"import json; d=json.load\\(open\\(''data/equipment/transport.json''\\)\\); items=d[''transport'']; print\\(''Count:'', len\\(items\\)\\); print\\(''First 5 keys:'', [i[''item_key''] for i in items[:5]]\\); cats=list\\(set\\(i.get\\(''item_category'',''''\\) for i in items\\)\\); cats.sort\\(\\); print\\(''Categories:'', cats\\)\")",
+      "Bash(python -c \"import json; d=json.load\\(open\\(''data/equipment/provisions_services.json''\\)\\); provisions=d.get\\(''provisions'',[]\\); foodstuffs=[i for i in provisions if i.get\\(''item_category''\\)==''foodstuff'']; print\\(''Total provisions:'', len\\(provisions\\)\\); print\\(''Foodstuffs:'', len\\(foodstuffs\\)\\); print\\(''Sample foodstuff keys:'', [i[''item_key''] for i in foodstuffs[:3]]\\)\")",
+      "Bash(python -c \"import json; b=json.load\\(open\\(''data/equipment/base_equipment.json''\\)\\)[''equipment'']; t=json.load\\(open\\(''data/equipment/transport.json''\\)\\)[''transport'']; p=[i for i in json.load\\(open\\(''data/equipment/provisions_services.json''\\)\\)[''provisions''] if i.get\\(''item_category''\\)==''foodstuff'']; print\\(''Total:'', len\\(b\\)+len\\(t\\)+len\\(p\\)\\); print\\(''leather_armor'' in [i[''item_key''] for i in b], ''backpack'' in [i[''item_key''] for i in b]\\)\")",
+      "Bash(python -c \"import json, os; d=json.load\\(open\\(''data/classes/fighter.json''\\)\\); print\\(list\\(d.keys\\(\\)\\)\\)\")",
+      "Bash(python -c \"import json; d=json.load\\(open\\(''data/classes/fighter.json''\\)\\); print\\(''xp_table:'', d[''xp_table''][:5]\\); print\\(''primes:'', d[''prime_requisites'']\\); print\\(''weapons:'', d[''weapon_permissions''][:3]\\); print\\(''armor:'', d[''armor_permissions''][:3]\\)\")",
+      "Bash(python -c \"import json, os; races=set\\(\\); [races.add\\(json.load\\(open\\(f''data/classes/{f}''\\)\\)[''race'']\\) for f in os.listdir\\(''data/classes''\\) if f.endswith\\(''.json''\\)]; print\\(sorted\\(races\\)\\)\")",
+      "Bash(python -c \"import json, os; classes=[\\(json.load\\(open\\(f''data/classes/{f}''\\)\\)[''class_id''], json.load\\(open\\(f''data/classes/{f}''\\)\\)[''class_name''], json.load\\(open\\(f''data/classes/{f}''\\)\\)[''race'']\\) for f in sorted\\(os.listdir\\(''data/classes''\\)\\) if f.endswith\\(''.json''\\)]; [print\\(c\\) for c in classes]\")"
     ]
   }
 }

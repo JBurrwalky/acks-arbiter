@@ -1,23 +1,26 @@
-[gd_scene format=3 uid="uid://arbiter_main_scene"]
+[gd_scene format=3 uid="uid://cnsk8gmi465ql"]
 
-[ext_resource type="Script" path="res://scenes/main_scene.gd" id="1_main_script"]
-[ext_resource type="Script" path="res://engine/subsystems/exploration/hex_map_controller.gd" id="2_controller"]
+[ext_resource type="Script" uid="uid://dqnj8yj58ed8e" path="res://scenes/main_scene.gd" id="1_main_script"]
+[ext_resource type="Script" uid="uid://bpjfnpumvibw" path="res://engine/subsystems/exploration/hex_map_controller.gd" id="2_controller"]
 [ext_resource type="PackedScene" path="res://scenes/maps/hex_map.tscn" id="3_hex_map"]
-[ext_resource type="Script" path="res://engine/subsystems/override/override_manager.gd" id="4_override_mgr"]
+[ext_resource type="Script" uid="uid://bc6yky0lp40jl" path="res://engine/subsystems/override/override_manager.gd" id="4_override_mgr"]
 [ext_resource type="PackedScene" path="res://scenes/ui/override/override_panel.tscn" id="5_override_panel"]
 [ext_resource type="PackedScene" path="res://scenes/ui/dice/dice_prompt.tscn" id="6_dice_prompt"]
+[ext_resource type="PackedScene" path="res://scenes/ui/character_creation/character_creation_screen.tscn" id="7_char_creation"]
 
-[node name="Main" type="Node"]
+[node name="Main" type="Node" unique_id=389479426]
 script = ExtResource("1_main_script")
 
-[node name="HexMapController" type="Node" parent="."]
+[node name="HexMapController" type="Node" parent="." unique_id=1744656386]
 script = ExtResource("2_controller")
 
-[node name="HexMap" parent="." instance=ExtResource("3_hex_map")]
+[node name="HexMap" parent="." unique_id=189064747 instance=ExtResource("3_hex_map")]
 
-[node name="OverrideManager" type="Node" parent="."]
+[node name="OverrideManager" type="Node" parent="." unique_id=132181756]
 script = ExtResource("4_override_mgr")
 
-[node name="OverridePanel" parent="." instance=ExtResource("5_override_panel")]
+[node name="OverridePanel" parent="." unique_id=1121067053 instance=ExtResource("5_override_panel")]
 
-[node name="DicePrompt" parent="." instance=ExtResource("6_dice_prompt")]
+[node name="DicePrompt" parent="." unique_id=1524105419 instance=ExtResource("6_dice_prompt")]
+
+[node name="CharacterCreationScreen" parent="." unique_id=605577525 instance=ExtResource("7_char_creation")]

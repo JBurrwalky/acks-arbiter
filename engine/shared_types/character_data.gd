@@ -57,6 +57,8 @@ var title: String = ""               # current level title from class table
 
 ## Identity (expanded)
 var alignment: String = "neutral"    # "lawful" | "neutral" | "chaotic"
+var sex: String = "male"             # "male" | "female"
+var portrait_id: String = ""         # filename stem: "portrait_fighter_01" (no extension)
 
 ## Aging (stub — aging system built in Phase C-3)
 var current_age: int = 0
@@ -276,6 +278,8 @@ static func from_dict(data: Dictionary) -> CharacterData:
 	c.xp_adjustment_percent = data.get("xp_adjustment_percent", 0)
 	c.title = data.get("title", "")
 	c.alignment = data.get("alignment", "neutral")
+	c.sex = data.get("sex", "male")
+	c.portrait_id = data.get("portrait_id", "")
 	c.current_age = data.get("current_age", 0)
 	c.age_category = data.get("age_category", "adult")
 	c.languages = data.get("languages", "[]")
@@ -326,6 +330,8 @@ func to_dict() -> Dictionary:
 		"xp_adjustment_percent": xp_adjustment_percent,
 		"title": title,
 		"alignment": alignment,
+		"sex": sex,
+		"portrait_id": portrait_id,
 		"current_age": current_age,
 		"age_category": age_category,
 		"languages": languages,

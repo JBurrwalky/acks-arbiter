@@ -109,6 +109,11 @@ var _snap_confirm_dialog: ConfirmationDialog
 var _log_list: ItemList
 var _log_refresh_btn: Button
 
+# Per-tab node refs (Testing tab)
+var _test_char_create_btn: Button
+var _test_dice_btn: Button
+var _test_hint_label: Label
+
 # Dice roll types — must match OverrideManager vocabulary
 const ROLL_TYPES := [
 	"encounter_check",
@@ -222,6 +227,7 @@ func _refresh_active_tab() -> void:
 		4: _refresh_dice_tab()
 		5: _refresh_snapshots_tab()
 		6: _refresh_log_tab()
+		7: pass  # Testing tab is button-only, no refresh needed
 
 
 func _on_tab_changed(_idx: int) -> void:
@@ -611,6 +617,7 @@ func _build_ui() -> void:
 	_build_dice_tab()
 	_build_snapshots_tab()
 	_build_log_tab()
+	_build_testing_tab()
 
 	_tab_container.tab_changed.connect(_on_tab_changed)
 
@@ -973,6 +980,50 @@ func _build_log_tab() -> void:
 	_log_refresh_btn.text = "Refresh"
 	_log_refresh_btn.pressed.connect(_refresh_log_tab)
 	tab.add_child(_log_refresh_btn)
+
+
+func _build_testing_tab() -> void:
+	var tab := VBoxContainer.new()
+	tab.name = "Testing"
+	_tab_container.add_child(tab)
+
+	tab.add_child(_section_label("Screen Launchers"))
+
+	_test_char_create_btn = Button.new()
+	_test_char_create_btn.text = "Open Character Creation"
+	_test_char_create_btn.pressed.connect(_on_test_char_create_pressed)
+	tab.add_child(_test_char_create_btn)
+
+	_test_dice_btn = Button.new()
+	_test_dice_btn.text = "Test Dice Prompt  (1d20+2 attack throw)"
+	_test_dice_btn.pressed.connect(_on_test_dice_pressed)
+	tab.add_child(_test_dice_btn)
+
+	tab.add_child(HSeparator.new())
+
+	_test_hint_label = Label.new()
+	_test_hint_label.text = "Hotkeys: F5 = Character Creation    F6 = Dice Prompt"
+	_test_hint_label.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
+	_test_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tab.add_child(_test_hint_label)
+
+
+# ---------------------------------------------------------------------------
+# Testing tab handlers
+# ---------------------------------------------------------------------------
+
+func _on_test_char_create_pressed() -> void:
+	EventBus.dev_character_creation_requested.emit()
+
+
+func _on_test_dice_pressed() -> void:
+	EventBus.dev_dice_test_requested.emit({
+		"roll_type":   "attack_throw",
+		"sides":       20,
+		"count":       1,
+		"modifier":    2,
+		"description": "Test Attack Throw (dev)",
+	})
 
 
 func _connect_signals() -> void:

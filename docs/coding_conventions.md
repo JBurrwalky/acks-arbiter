@@ -231,11 +231,13 @@ acks-arbiter/               (Godot project root = repo root)
 │   ├── maps/               # hex_map.tscn, hex_map_renderer.gd
 │   └── ui/
 │       ├── override/       # override_panel.gd / .tscn
-│       └── dice/           # dice_prompt.gd / .tscn
+│       ├── dice/           # dice_prompt.gd / .tscn
+│       ├── character_creation/  # 9-step PC creation wizard panels
+│       └── components/     # Reusable UI: character_sheet_panel.gd
 ├── tests/                  # All test scripts + test_runner.tscn
 ├── db/
 │   ├── schema.sql          # Canonical schema (update after every migration)
-│   └── migrations/         # 001_initial_schema .. 007_proficiency_infrastructure
+│   └── migrations/         # 001_initial_schema .. 008_portrait_id
 ├── data/
 │   ├── classes/            # One JSON per ACKS class (25 files)
 │   ├── powers/             # power_catalog.json (reusable power definitions)
@@ -1277,6 +1279,7 @@ UI panels that overlay the game use CanvasLayer nodes with explicit layer assign
 |---|---|---|
 | 0 | Normal game content | Default |
 | 10 | Map HUD (tooltips, coordinates) | HexHUD in hex_map_renderer.gd |
+| 32 | Full-screen wizard flows | CharacterCreationScreen |
 | 64 | Modal prompts (dice rolls, dialogs) | DicePrompt |
 | 128 | Developer override panel | OverridePanel |
 
@@ -1312,7 +1315,8 @@ Main (Node, script: main_scene.gd)
 ├── HexMap (instance of hex_map.tscn)
 ├── OverrideManager (Node, script: override_manager.gd)
 ├── OverridePanel (instance of override_panel.tscn)
-└── DicePrompt (instance of dice_prompt.tscn)
+├── DicePrompt (instance of dice_prompt.tscn)
+└── CharacterCreationScreen (instance of character_creation_screen.tscn, CanvasLayer 32)
 ```
 
 `main_scene.gd` wires the controller to the renderer and the override panel to the manager in `_ready()`. Subsystem managers are plain Node children — not autoloads.

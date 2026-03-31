@@ -147,10 +147,11 @@ func create_character(data: Dictionary) -> String:
 			 save_staffs_wands, save_spells,
 			 base_movement, hit_die_type, max_level,
 			 xp_for_next_level, xp_adjustment_percent, title, alignment,
-			 current_age, age_category, languages, personality,
+			 portrait_id, current_age, age_category, languages, personality,
 			 is_dead, is_active, is_incapacitated,
-			 employer_id, loyalty_score, wage_gp_per_month)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+			 employer_id, loyalty_score, wage_gp_per_month,
+			 sex)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 	""", [
 		data["id"], data.get("campaign_id", ""), data.get("name", "Unknown"),
 		data.get("character_type", "pc"), data.get("persistence_tier", "full"),
@@ -169,6 +170,7 @@ func create_character(data: Dictionary) -> String:
 		data.get("max_level", 14),
 		data.get("xp_for_next_level", 2000), data.get("xp_adjustment_percent", 0),
 		data.get("title", ""), data.get("alignment", "neutral"),
+		data.get("portrait_id", ""),
 		data.get("current_age", 0), data.get("age_category", "adult"),
 		data.get("languages", "[]"), data.get("personality", "{}"),
 		1 if data.get("is_dead", false) else 0,
@@ -177,6 +179,7 @@ func create_character(data: Dictionary) -> String:
 		data.get("employer_id", null),
 		data.get("loyalty_score", null),
 		data.get("wage_gp_per_month", null),
+		data.get("sex", "male"),
 	]):
 		push_error("CampaignRepository.create_character: failed. name=%s" % data.get("name", "?"))
 		return ""
@@ -206,7 +209,7 @@ func save_character(data: Dictionary) -> bool:
 				save_blast_breath = ?, save_staffs_wands = ?, save_spells = ?,
 				base_movement = ?, hit_die_type = ?, max_level = ?,
 				xp_for_next_level = ?, xp_adjustment_percent = ?,
-				title = ?, alignment = ?,
+				title = ?, alignment = ?, portrait_id = ?,
 				current_age = ?, age_category = ?,
 				languages = ?, personality = ?,
 				is_dead = ?, is_active = ?, is_incapacitated = ?,
@@ -224,6 +227,7 @@ func save_character(data: Dictionary) -> bool:
 			data.get("max_level", 14),
 			data.get("xp_for_next_level", 2000), data.get("xp_adjustment_percent", 0),
 			data.get("title", ""), data.get("alignment", "neutral"),
+			data.get("portrait_id", ""),
 			data.get("current_age", 0), data.get("age_category", "adult"),
 			data.get("languages", "[]"), data.get("personality", "{}"),
 			1 if data.get("is_dead", false) else 0,

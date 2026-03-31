@@ -251,3 +251,14 @@ signal player_roll_requested(context: Dictionary)
 ## [param raw_total] is the raw dice total only — modifier has NOT been applied.
 ## [param was_player_entered] false if player clicked "Roll Dice"; true if typed manually.
 signal player_roll_resolved(roll_type: String, raw_total: int, was_player_entered: bool)
+
+# ---------------------------------------------------------------------------
+# Dev testing signals (temporary — remove when session runner exists)
+# ---------------------------------------------------------------------------
+
+## Emitted by OverridePanel "Testing" tab to open the character creation screen.
+signal dev_character_creation_requested
+
+## Emitted by OverridePanel "Testing" tab to fire a test dice prompt.
+## Uses same context shape as player_roll_requested.
+signal dev_dice_test_requested(context: Dictionary)

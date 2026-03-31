@@ -9,7 +9,8 @@ func run_all_tests() -> void:
 	test_pc_generation_fighter()
 	test_pc_generation_hp_minimum()
 	test_ability_trade_valid()
-	test_ability_trade_invalid_con()
+	test_ability_trade_con_allowed_for_non_prime()
+	test_ability_trade_invalid_prime_requisite_source()
 	test_ability_trade_invalid_below_9()
 	print("CharacterGenerator: all tests passed.")
 
@@ -128,17 +129,41 @@ func test_ability_trade_valid() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Ability score trading — cannot trade from CON
+# Ability score trading — CON/CHA allowed when not prime requisite (ACKS RAW)
 # ---------------------------------------------------------------------------
 
-func test_ability_trade_invalid_con() -> void:
+func test_ability_trade_con_allowed_for_non_prime() -> void:
 	var gen := _make_generator()
-	var scores := {"STR": 10, "INT": 10, "WIS": 10, "DEX": 10, "CON": 14, "CHA": 10}
-	# Attempt to trade from CON — should fail (ACKS rules prohibit lowering CON)
+	# Fighter prime req is STR only. CON and CHA are NOT prime reqs, so they CAN be traded.
+	var scores := {"STR": 10, "INT": 10, "WIS": 10, "DEX": 10, "CON": 14, "CHA": 11}
+	# Trade 2 from CON (14→12) to raise STR (10→11) — valid for Fighter
 	var result := gen.apply_ability_trade(scores, "fighter", "CON", "STR", 2)
+	assert(not result.is_empty(),
+		"trading from CON should succeed for Fighter (CON is not Fighter's prime req)")
+	assert(int(result["CON"]) == 12, "CON should drop from 14 to 12, got %d" % int(result["CON"]))
+	assert(int(result["STR"]) == 11, "STR should rise from 10 to 11, got %d" % int(result["STR"]))
+
+	# Trade 2 from CHA (11→9) to raise STR (11→12) — also valid
+	var result2 := gen.apply_ability_trade(result, "fighter", "CHA", "STR", 2)
+	assert(not result2.is_empty(),
+		"trading from CHA should succeed for Fighter (CHA is not Fighter's prime req)")
+	assert(int(result2["CHA"]) == 9, "CHA should drop from 11 to 9")
+	assert(int(result2["STR"]) == 12, "STR should rise from 11 to 12")
+	print("  ability_trade_con_allowed_for_non_prime: OK")
+
+
+# ---------------------------------------------------------------------------
+# Ability score trading — cannot trade from a prime requisite source
+# ---------------------------------------------------------------------------
+
+func test_ability_trade_invalid_prime_requisite_source() -> void:
+	var gen := _make_generator()
+	# Mage prime req is INT. Cannot trade from INT to raise INT.
+	var scores := {"STR": 10, "INT": 14, "WIS": 10, "DEX": 10, "CON": 10, "CHA": 10}
+	var result := gen.apply_ability_trade(scores, "mage", "INT", "INT", 2)
 	assert(result.is_empty(),
-		"trading from CON should return empty dict (invalid)")
-	print("  ability_trade_invalid_con: OK")
+		"trading from a prime requisite should return empty dict (invalid)")
+	print("  ability_trade_invalid_prime_requisite_source: OK")
 
 
 # ---------------------------------------------------------------------------
