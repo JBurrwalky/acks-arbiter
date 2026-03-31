@@ -27,6 +27,7 @@
 [ext_resource type="Script" path="res://tests/test_proficiency_effect_resolver.gd" id="25_proficiency_effect_resolver_tests"]
 [ext_resource type="Script" path="res://tests/test_proficiency_integration.gd" id="26_proficiency_integration_tests"]
 [ext_resource type="Script" path="res://tests/test_equipment_catalog.gd" id="27_equipment_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_specialization_registry.gd" id="28_specialization_registry_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -108,3 +109,6 @@ script = ExtResource("26_proficiency_integration_tests")
 
 [node name="EquipmentCatalogTests" type="Node" parent="."]
 script = ExtResource("27_equipment_catalog_tests")
+
+[node name="SpecializationRegistryTests" type="Node" parent="."]
+script = ExtResource("28_specialization_registry_tests")

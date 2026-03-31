@@ -1260,3 +1260,95 @@ Phase H — Integration:
 2. Manually test end-to-end character creation (Fighter: no spells; Mage: arcane spells; Cleric: no L1 slots message).
 3. Apply DB migration 008 if not auto-applied (CampaignRepository._ensure_migrations() should handle this).
 4. Begin next build phase per design brief priority order.
+
+---
+
+## Session 2026-03-31 — Proficiency Specialization Registry & UI Picker
+
+**Task:** Replace free-text specialization entry in character creation UI with a registry-backed closed picker. Implement the base catalog specialization registry per GDD §2–§9. Reclassify `naturalism` and `collegiate_wizardry` from `stacking` to `specialization`.
+**Model used:** claude-sonnet-4-6
+
+**Completed:**
+
+- `data/proficiencies/proficiency_specializations.json` (NEW): Base catalog specializations for all 14 specialization proficiencies — 173 total entries across weapon_focus(6), riding(15), animal_training(27), knowledge(14), craft(32), art(13), performance(8), profession(10), language(21), naturalism(11), collegiate_wizardry(1), signaling(2), labor(9), elementalism(4). Each entry: id, display_name, layer="base", prerequisite_ids, metadata. Fantastic mounts (griffons, hippogriffs, etc.) carry non-empty prerequisite_ids per GDD §3.2.
+
+- `engine/subsystems/characters/specialization_registry.gd` (NEW — class SpecializationRegistry, RefCounted): Loads proficiency_specializations.json. Public API: `has_specializations`, `get_specializations`, `get_specialization_ids`, `get_specialization`, `get_specialization_display_name`. Stub comment for future `compose_with_campaign_layer()`.
+
+- `data/proficiencies/proficiency_catalog.json` (MODIFIED):
+  - 10 proficiencies changed from `specializations: null` → `specializations: "registry"` (sentinel for SpecializationRegistry lookup): animal_training, art, craft, knowledge, labor, language, performance, profession, riding, signaling.
+  - `naturalism`: `selection_rule` changed from `"stacking"` → `"specialization"`, added `specializations: "registry"`.
+  - `collegiate_wizardry`: `selection_rule` changed from `"stacking"` → `"specialization"`, added `specializations: "registry"`.
+
+- `engine/subsystems/characters/proficiency_effect_resolver.gd` (MODIFIED): Added fallback when specialization proficiencies lack `effects_by_specialization` — falls back to `get_effects_for_rank()`. Ensures `collegiate_wizardry`'s `+1 repertoire_capacity_bonus` still applies after reclassification.
+
+- `engine/subsystems/characters/proficiency_registry.gd` (MODIFIED):
+  - Constructor now accepts optional `SpecializationRegistry` param (default null — backward compatible).
+  - `_resolve_key()` and `_get_specialization_from_key()` renamed to public `resolve_key()` and `get_specialization_from_compound_key()` (private aliases kept for internal callers).
+  - New `get_available_specializations(prof_key) -> Array` — returns inline array for closed-list profs, spec registry IDs for "registry" profs, empty for non-specialization profs.
+  - New `get_specialization_display_name(prof_key, spec_id) -> String` — delegates to SpecializationRegistry, titlecase fallback.
+
+- `scenes/ui/character_creation/character_creation_screen.gd` (MODIFIED): `_init_registries()` creates SpecializationRegistry, passes it to ProficiencyRegistry constructor.
+
+- `scenes/ui/character_creation/proficiency_selection_panel.gd` (MODIFIED):
+  - `_refresh_list()`: Compound keys (e.g., `knowledge_history`) show locked specialization in display name.
+  - `_on_add_proficiency()`: New compound key auto-lock path — detects embedded specialization, resolves to base key, stores directly without showing picker.
+  - `_show_specialization_selector()` rewritten with 3 branches: (A) closed-list Array → buttons, (B) `"registry"` → registry picker, (C) fallback label.
+  - New `_build_spec_buttons_from_ids()`: button-per-option for closed-list.
+  - New `_build_registry_spec_picker()`: scrollable list; adds search/filter LineEdit for lists > 10 items.
+  - New `_populate_spec_buttons()`: builds/rebuilds buttons from filtered spec list.
+  - New `_on_spec_filter_changed()`: finds the button list inside ScrollContainer, rebuilds with filter.
+  - `_make_selected_row()`: uses `get_specialization_display_name()` for proper display names.
+
+- `engine/subsystems/characters/character_generator.gd` (MODIFIED):
+  - `auto_select_proficiencies()`: class slot loop now detects compound keys (auto-lock specialization) and calls `_pick_random_specialization()` for registry-backed specializations.
+  - General slot loop similarly picks random specializations when `is_specialization()` is true.
+  - New private `_pick_random_specialization(prof_key) -> String` helper.
+
+- `tests/test_specialization_registry.gd` (NEW — 16 tests): Catalog loading, entry counts per proficiency, lookup by key and ID, display names, prerequisite IDs for fantastic mounts, reclassified proficiency entries.
+- `tests/test_proficiency_registry.gd` (MODIFIED): +7 tests for new methods: `get_available_specializations` (closed-list, registry-backed, non-spec, no-registry cases), public compound key and resolve_key APIs, display name via registry.
+- `tests/test_proficiency_integration.gd` (MODIFIED): +3 tests: effect resolver fallback for naturalism and collegiate_wizardry after reclassification, NPC generation picks non-empty specializations.
+- `tests/test_runner.gd` + `.tscn` (MODIFIED): SpecializationRegistryTests added as suite 28 (now 28 suites total).
+
+**Decisions made:**
+- `"registry"` sentinel in the catalog `specializations` field clearly distinguishes registry-backed from closed-list from null. This is explicit and checkable with `== "registry"`.
+- SpecializationRegistry is NOT an autoload. It is created by the character creation screen and passed to ProficiencyRegistry. Character creation is the only current consumer; future consumers (session runner, character advancement) will instantiate it similarly.
+- Private `_resolve_key` and `_get_specialization_from_key` aliases preserved to avoid breaking any future callers that may reference the private methods directly.
+- Search filter threshold: lists > 10 items get a filter. Covers craft(32), animal_training(27), knowledge(14), riding(15), language(21).
+- `naturalism` and `collegiate_wizardry` reclassified to `specialization` rule — multiple selections now pick DIFFERENT terrain/guild entries, matching GDD intent. The old `stacking` model allowed re-selecting the same proficiency, which was semantically wrong.
+
+**Interfaces defined or changed:**
+
+SpecializationRegistry public API (new class):
+- `has_specializations(key) -> bool`
+- `get_specializations(key) -> Array`
+- `get_specialization_ids(key) -> Array`
+- `get_specialization(key, spec_id) -> Dictionary`
+- `get_specialization_display_name(key, spec_id) -> String`
+
+ProficiencyRegistry changes:
+- `_init(spec_registry: SpecializationRegistry = null)` — new optional param
+- `resolve_key(key) -> String` — public (was `_resolve_key`)
+- `get_specialization_from_compound_key(key) -> String` — public (was `_get_specialization_from_key`)
+- `get_available_specializations(prof_key) -> Array` — new method
+- `get_specialization_display_name(prof_key, spec_id) -> String` — new method
+
+CharacterGenerator change:
+- `_pick_random_specialization(prof_key) -> String` — new private helper
+
+**Database changes:** None. The existing `specialization TEXT` column in `character_proficiencies` is sufficient.
+
+**Tests added/updated:**
+- test_specialization_registry.gd (16 tests) — new suite.
+- test_proficiency_registry.gd: +7 tests (29 total in suite).
+- test_proficiency_integration.gd: +3 tests (11 total in suite).
+- test_runner: 28 suites total.
+
+**Known issues:**
+- Prerequisite enforcement NOT implemented in the UI picker. The data is present (`prerequisite_ids` in the JSON), but the picker does not yet filter by prerequisites. Deferred — at character creation (level 1), no one has prerequisites to check. Prerequisite checking is needed for character advancement (level-up proficiency selection).
+- `test_get_selection_rule_stacking` test in test_proficiency_registry.gd will fail if it tests `naturalism` or `collegiate_wizardry` — those are now `"specialization"`, not `"stacking"`. Check existing test and update if needed before running.
+- Setting-generated and campaign-created specialization layers are not yet implemented. `SpecializationRegistry` has a stub comment for `compose_with_campaign_layer()`.
+
+**Next session should:**
+1. Open Godot 4 and run test_runner.tscn — confirm all 28 suites pass. Fix `test_get_selection_rule_stacking` if it tested naturalism/collegiate_wizardry.
+2. Manually test character creation Step 5: select Riding → see 15 scrollable species; select Knowledge → see 14 fields with search filter; select Cleric with `Knowledge (History)` on class list → auto-locked.
+3. Continue with next build phase per design brief priority order.

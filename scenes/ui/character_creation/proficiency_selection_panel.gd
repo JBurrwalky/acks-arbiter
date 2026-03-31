@@ -234,6 +234,12 @@ func _refresh_list() -> void:
 
 		var def := _proficiency_registry.get_proficiency(prof_key)
 		var display_name: String = def.get("proficiency_name", prof_key.replace("_", " ").capitalize())
+		# Compound keys (e.g., "knowledge_history") show the locked specialization in the name.
+		var embedded_spec := _proficiency_registry.get_specialization_from_compound_key(prof_key)
+		if not embedded_spec.is_empty():
+			var base_key := _proficiency_registry.resolve_key(prof_key)
+			var spec_display := _proficiency_registry.get_specialization_display_name(base_key, embedded_spec)
+			display_name += " (%s)" % spec_display
 		var desc: String = (def.get("description", "") as String).left(80)
 
 		var info_vbox := VBoxContainer.new()
@@ -307,7 +313,8 @@ func _make_selected_row(key: String, slot_type: String, rank: int, spec: String,
 	var def := _proficiency_registry.get_proficiency(key) if _proficiency_registry.has_proficiency(key) else {}
 	var display_name: String = def.get("proficiency_name", key.replace("_", " ").capitalize())
 	if not spec.is_empty():
-		display_name += " [%s]" % spec.replace("_", " ").capitalize()
+		var spec_display := _proficiency_registry.get_specialization_display_name(key, spec)
+		display_name += " (%s)" % spec_display
 	if rank > 1:
 		display_name += " (Rank %d)" % rank
 	var slot_tag := "[C]" if slot_type == "class" else "[G]"
@@ -347,6 +354,22 @@ func _on_tab_changed(_tab: int) -> void:
 func _on_add_proficiency(prof_key: String, slot_type: String) -> void:
 	_status_label.text = ""
 
+	# Compound key check: e.g., "knowledge_history" on Cleric class list.
+	# Auto-lock specialization — no picker shown.
+	var embedded_spec := _proficiency_registry.get_specialization_from_compound_key(prof_key)
+	if not embedded_spec.is_empty():
+		var base_key := _proficiency_registry.resolve_key(prof_key)
+		var current_rank := _get_current_rank(base_key, slot_type)
+		var max_rank := _proficiency_registry.get_max_rank(base_key)
+		if current_rank > 0 and current_rank < max_rank:
+			_advance_rank(base_key, slot_type)
+			return
+		if not _can_add_slot(slot_type):
+			_status_label.text = "No %s slots remaining." % slot_type
+			return
+		_add_proficiency_record(base_key, slot_type, 1, embedded_spec)
+		return
+
 	if _proficiency_registry.is_specialization(prof_key):
 		_show_specialization_selector(prof_key, slot_type)
 		return
@@ -376,50 +399,25 @@ func _show_specialization_selector(prof_key: String, slot_type: String) -> void:
 		child.queue_free()
 
 	var def := _proficiency_registry.get_proficiency(prof_key)
-	# catalog entries use null when specializations are open-ended (e.g. Riding: any animal type)
-	var spec_raw = def.get("specializations")
-	var specializations: Array = spec_raw if spec_raw is Array else []
-
 	var prof_name: String = def.get("proficiency_name", prof_key)
+	var spec_raw = def.get("specializations")
 
 	var lbl := Label.new()
+	lbl.text = "Choose %s specialization:" % prof_name
 	_spec_popup_container.add_child(lbl)
 
-	if specializations.is_empty():
-		# Open-ended specialization — let the player name it (e.g. Riding → "horse", "camel")
-		lbl.text = "Enter %s specialization:" % prof_name
-		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-
-		var desc: String = def.get("description", "")
-		if not desc.is_empty():
-			var desc_lbl := Label.new()
-			desc_lbl.text = desc
-			desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			desc_lbl.add_theme_font_size_override("font_size", 11)
-			desc_lbl.modulate = Color(0.75, 0.75, 0.75, 1.0)
-			_spec_popup_container.add_child(desc_lbl)
-
-		var text_edit := LineEdit.new()
-		text_edit.placeholder_text = "e.g. horse, camel, elephant…"
-		text_edit.custom_minimum_size = Vector2(200, 0)
-		_spec_popup_container.add_child(text_edit)
-
-		var confirm_btn := Button.new()
-		confirm_btn.text = "Confirm"
-		confirm_btn.pressed.connect(func():
-			var entered := text_edit.text.strip_edges().to_lower().replace(" ", "_")
-			if not entered.is_empty():
-				_on_specialization_selected(entered)
-		)
-		_spec_popup_container.add_child(confirm_btn)
+	if spec_raw is Array and not (spec_raw as Array).is_empty():
+		# Branch A: Closed-list (Combat Trickery, Fighting Style, Elementalism, etc.)
+		_build_spec_buttons_from_ids(spec_raw as Array, prof_key)
+	elif spec_raw == "registry":
+		# Branch B: Registry-backed picker (Riding, Animal Training, Knowledge, Craft, etc.)
+		var spec_ids := _proficiency_registry.get_available_specializations(prof_key)
+		if spec_ids.is_empty():
+			lbl.text = "No specializations available for %s." % prof_name
+		else:
+			_build_registry_spec_picker(spec_ids, prof_key)
 	else:
-		lbl.text = "Choose specialization:"
-		for spec in specializations:
-			var spec_str: String = (spec as String).replace("_", " ").capitalize()
-			var btn := Button.new()
-			btn.text = spec_str
-			btn.pressed.connect(_on_specialization_selected.bind(spec as String))
-			_spec_popup_container.add_child(btn)
+		lbl.text = "No specializations defined for %s." % prof_name
 
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
@@ -427,6 +425,64 @@ func _show_specialization_selector(prof_key: String, slot_type: String) -> void:
 	_spec_popup_container.add_child(cancel_btn)
 
 	_spec_popup_container.visible = true
+
+
+func _build_spec_buttons_from_ids(spec_ids: Array, prof_key: String) -> void:
+	## Builds one button per specialization for closed-list proficiencies.
+	for spec in spec_ids:
+		var display := _proficiency_registry.get_specialization_display_name(prof_key, spec as String)
+		var btn := Button.new()
+		btn.text = display
+		btn.pressed.connect(_on_specialization_selected.bind(spec as String))
+		_spec_popup_container.add_child(btn)
+
+
+func _build_registry_spec_picker(spec_ids: Array, prof_key: String) -> void:
+	## Builds a scrollable list with optional search filter for registry-backed proficiencies.
+	const FILTER_THRESHOLD := 10
+
+	if spec_ids.size() > FILTER_THRESHOLD:
+		var filter_edit := LineEdit.new()
+		filter_edit.placeholder_text = "Search..."
+		filter_edit.custom_minimum_size = Vector2(200, 0)
+		_spec_popup_container.add_child(filter_edit)
+		filter_edit.text_changed.connect(_on_spec_filter_changed.bind(spec_ids, prof_key))
+
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 180)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_spec_popup_container.add_child(scroll)
+
+	var button_list := VBoxContainer.new()
+	button_list.name = "SpecButtonList"
+	button_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(button_list)
+
+	_populate_spec_buttons(button_list, spec_ids, prof_key, "")
+
+
+func _populate_spec_buttons(container: VBoxContainer, spec_ids: Array,
+		prof_key: String, filter: String) -> void:
+	for child in container.get_children():
+		child.queue_free()
+	var filter_lower := filter.to_lower()
+	for spec_id in spec_ids:
+		var display := _proficiency_registry.get_specialization_display_name(prof_key, spec_id as String)
+		if not filter_lower.is_empty() and not display.to_lower().contains(filter_lower):
+			continue
+		var btn := Button.new()
+		btn.text = display
+		btn.pressed.connect(_on_specialization_selected.bind(spec_id as String))
+		container.add_child(btn)
+
+
+func _on_spec_filter_changed(new_text: String, spec_ids: Array, prof_key: String) -> void:
+	for child in _spec_popup_container.get_children():
+		if child is ScrollContainer:
+			var button_list := child.get_node_or_null("SpecButtonList")
+			if button_list:
+				_populate_spec_buttons(button_list as VBoxContainer, spec_ids, prof_key, new_text)
+			break
 
 
 func _on_specialization_selected(spec: String) -> void:

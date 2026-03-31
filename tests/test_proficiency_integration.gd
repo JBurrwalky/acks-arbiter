@@ -14,6 +14,9 @@ func run_all_tests() -> void:
 	test_npc_generator_uses_full_general_list()
 	test_all_class_json_keys_resolve_in_registry()
 	test_proficiency_dicts_have_required_fields()
+	test_effect_resolver_fallback_for_naturalism()
+	test_effect_resolver_fallback_for_collegiate_wizardry()
+	test_npc_generation_picks_specialization()
 	print("ProficiencyIntegration: all tests passed.")
 
 
@@ -223,3 +226,65 @@ func test_proficiency_dicts_have_required_fields() -> void:
 		assert(p.has("slot_type"), "proficiency dict must have slot_type")
 		assert(p.has("selections_count"), "proficiency dict must have selections_count")
 		assert(p.has("specialization"), "proficiency dict must have specialization")
+
+
+func test_effect_resolver_fallback_for_naturalism() -> void:
+	## After reclassification, naturalism (now specialization rule) still resolves effects.
+	## Naturalism has no effects_by_specialization; the fallback uses top-level effects.
+	var reg := ProficiencyRegistry.new()
+	assert(reg.is_specialization("naturalism"),
+		"ProficiencyIntegration: naturalism should now be a specialization proficiency")
+	var c := CharacterData.new()
+	c.level = 1
+	c.proficiencies = [{
+		"proficiency_key": "naturalism",
+		"rank": 1, "slot_type": "general", "selections_count": 1, "specialization": "forest"
+	}]
+	var resolver := ProficiencyEffectResolver.new(reg)
+	# Should not crash — naturalism has no permanent modifiers/flags, only enablers
+	# The resolver should complete without error even with no effects_by_specialization
+	resolver.apply_proficiency_effects(c)
+	# No assert on values — naturalism effects are enablers, not modifiers tracked in CharacterData
+	# The test passes if no error/crash occurs
+
+
+func test_effect_resolver_fallback_for_collegiate_wizardry() -> void:
+	## After reclassification, collegiate_wizardry effects still apply via the fallback.
+	## collegiate_wizardry has no effects_by_specialization; fallback uses top-level effects
+	## which include: modifiers [repertoire_capacity_bonus +1], enablers [arcane_order_recognition].
+	var reg := ProficiencyRegistry.new()
+	assert(reg.is_specialization("collegiate_wizardry"),
+		"ProficiencyIntegration: collegiate_wizardry should now be a specialization proficiency")
+	var effects_rank1 := reg.get_effects_for_rank("collegiate_wizardry", 1)
+	assert(not effects_rank1.is_empty(),
+		"ProficiencyIntegration: collegiate_wizardry rank 1 effects should not be empty")
+	var modifiers: Array = effects_rank1.get("modifiers", [])
+	assert(modifiers.size() > 0,
+		"ProficiencyIntegration: collegiate_wizardry should have at least 1 modifier")
+	# Verify the +1 repertoire_capacity_bonus modifier is accessible
+	var found_bonus := false
+	for mod in modifiers:
+		if mod.get("stat", "") == "repertoire_capacity_bonus":
+			found_bonus = true
+			break
+	assert(found_bonus,
+		"ProficiencyIntegration: collegiate_wizardry should have repertoire_capacity_bonus modifier")
+
+
+func test_npc_generation_picks_specialization() -> void:
+	## auto_select_proficiencies with a wired SpecializationRegistry picks non-empty specializations
+	## for specialization proficiencies.
+	var spec_reg := SpecializationRegistry.new()
+	var prof_reg := ProficiencyRegistry.new(spec_reg)
+	var gen := CharacterGenerator.new(ClassRegistry.new(), PowerRegistry.new(), prof_reg)
+	# Generate a Fighter at L5 — fighter class list includes riding, weapon_focus, fighting_style
+	var profs := gen.auto_select_proficiencies("fighter", 9)
+	var spec_profs_with_value: int = 0
+	for p in profs:
+		var key: String = p.get("proficiency_key", "")
+		if prof_reg.is_specialization(key) and key != "adventuring":
+			var spec: String = p.get("specialization", "")
+			if not spec.is_empty():
+				spec_profs_with_value += 1
+	assert(spec_profs_with_value > 0,
+		"ProficiencyIntegration: NPC generation should pick at least 1 non-empty specialization for a fighter at L9")

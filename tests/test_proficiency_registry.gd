@@ -27,6 +27,13 @@ func run_all_tests() -> void:
 	test_compound_key_single_segment()
 	test_compound_key_multi_segment()
 	test_all_class_json_keys_resolve()
+	test_get_available_specializations_closed_list()
+	test_get_available_specializations_registry()
+	test_get_available_specializations_non_spec()
+	test_get_available_specializations_no_registry()
+	test_public_compound_key_method()
+	test_public_resolve_key_method()
+	test_specialization_display_name_via_registry()
 	print("ProficiencyRegistry: all tests passed.")
 
 
@@ -253,3 +260,81 @@ func test_all_class_json_keys_resolve() -> void:
 	assert(failed_keys.is_empty(),
 		"ProficiencyRegistry: %d class JSON key(s) do not resolve in catalog: %s" % [
 			failed_keys.size(), ", ".join(failed_keys)])
+
+
+func test_get_available_specializations_closed_list() -> void:
+	## Closed-list proficiencies (inline array) return their own array.
+	var reg := ProficiencyRegistry.new()
+	var specs := reg.get_available_specializations("combat_trickery")
+	assert(specs.size() > 0,
+		"ProficiencyRegistry: combat_trickery should have available specializations (closed-list)")
+	assert("disarm" in specs,
+		"ProficiencyRegistry: combat_trickery closed-list should include 'disarm'")
+
+
+func test_get_available_specializations_registry() -> void:
+	## Registry-backed proficiencies return IDs from SpecializationRegistry.
+	var spec_reg := SpecializationRegistry.new()
+	var reg := ProficiencyRegistry.new(spec_reg)
+	var specs := reg.get_available_specializations("riding")
+	assert(specs.size() == 15,
+		"ProficiencyRegistry: riding should have 15 available specializations, got %d" % specs.size())
+	assert("horses" in specs,
+		"ProficiencyRegistry: riding should include 'horses'")
+	# Reclassified proficiencies also work
+	var naturalism_specs := reg.get_available_specializations("naturalism")
+	assert(naturalism_specs.size() == 11,
+		"ProficiencyRegistry: naturalism should have 11 specializations, got %d" % naturalism_specs.size())
+
+
+func test_get_available_specializations_non_spec() -> void:
+	## Non-specialization proficiencies return empty array.
+	var reg := ProficiencyRegistry.new()
+	var specs := reg.get_available_specializations("divine_blessing")
+	assert(specs.is_empty(),
+		"ProficiencyRegistry: divine_blessing should return empty specializations array")
+
+
+func test_get_available_specializations_no_registry() -> void:
+	## Registry-backed proficiencies without a wired SpecializationRegistry return empty.
+	var reg := ProficiencyRegistry.new()  # no spec_registry passed
+	var specs := reg.get_available_specializations("riding")
+	assert(specs.is_empty(),
+		"ProficiencyRegistry: riding without SpecializationRegistry should return empty array")
+
+
+func test_public_compound_key_method() -> void:
+	## get_specialization_from_compound_key() is the public API.
+	var reg := ProficiencyRegistry.new()
+	assert(reg.get_specialization_from_compound_key("knowledge_history") == "history",
+		"ProficiencyRegistry: compound key 'knowledge_history' should yield spec 'history'")
+	assert(reg.get_specialization_from_compound_key("combat_trickery_force_back") == "force_back",
+		"ProficiencyRegistry: compound key 'combat_trickery_force_back' should yield 'force_back'")
+	assert(reg.get_specialization_from_compound_key("divine_blessing") == "",
+		"ProficiencyRegistry: non-compound key should return empty string")
+
+
+func test_public_resolve_key_method() -> void:
+	## resolve_key() is the public API for base key resolution.
+	var reg := ProficiencyRegistry.new()
+	assert(reg.resolve_key("knowledge_history") == "knowledge",
+		"ProficiencyRegistry: resolve_key('knowledge_history') should return 'knowledge'")
+	assert(reg.resolve_key("combat_trickery_disarm") == "combat_trickery",
+		"ProficiencyRegistry: resolve_key('combat_trickery_disarm') should return 'combat_trickery'")
+	assert(reg.resolve_key("divine_blessing") == "divine_blessing",
+		"ProficiencyRegistry: resolve_key of a plain key should return itself")
+	assert(reg.resolve_key("not_real_key_xyz") == "",
+		"ProficiencyRegistry: resolve_key of unknown key should return empty string")
+
+
+func test_specialization_display_name_via_registry() -> void:
+	## get_specialization_display_name() uses SpecializationRegistry when available.
+	var spec_reg := SpecializationRegistry.new()
+	var reg := ProficiencyRegistry.new(spec_reg)
+	assert(reg.get_specialization_display_name("knowledge", "history") == "History",
+		"ProficiencyRegistry: knowledge/history display name should be 'History'")
+	# Closed-list fallback (no spec registry entry, just titlecase)
+	var reg_no_spec := ProficiencyRegistry.new()
+	var fallback := reg_no_spec.get_specialization_display_name("riding", "horses")
+	assert(not fallback.is_empty(),
+		"ProficiencyRegistry: fallback display name for riding/horses should not be empty")

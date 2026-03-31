@@ -1,0 +1,231 @@
+{
+  "weapon_focus": {
+    "specializations": [
+      { "id": "axes", "display_name": "Axes", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "maces_flails_hammers", "display_name": "Maces, flails, and hammers", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "swords_daggers", "display_name": "Swords and daggers", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "bows_crossbows", "display_name": "Bows and crossbows", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "slings_thrown", "display_name": "Slings and thrown weapons", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "spears_polearms", "display_name": "Spears and polearms", "layer": "base", "prerequisite_ids": [], "metadata": {} }
+    ]
+  },
+  "riding": {
+    "specializations": [
+      { "id": "horses", "display_name": "Horses", "layer": "base", "prerequisite_ids": [], "metadata": { "covers_species": ["horse_riding", "horse_war", "horse_draft"] } },
+      { "id": "camels", "display_name": "Camels", "layer": "base", "prerequisite_ids": [], "metadata": { "covers_species": ["camel"] } },
+      { "id": "mules", "display_name": "Mules", "layer": "base", "prerequisite_ids": [], "metadata": { "covers_species": ["mule"] } },
+      { "id": "giant_boars", "display_name": "Giant boars", "layer": "base", "prerequisite_ids": [], "metadata": { "covers_species": ["boar_giant"] } },
+      { "id": "elephants", "display_name": "Elephants", "layer": "base", "prerequisite_ids": [], "metadata": { "covers_species": ["elephant"] } },
+      { "id": "giant_lizards", "display_name": "Giant lizards", "layer": "base", "prerequisite_ids": [], "metadata": { "covers_species": ["lizard_giant_tuatara", "lizard_giant_draco", "lizard_giant_gecko", "lizard_giant_horned_chameleon"] } },
+      { "id": "saber_tooth_cats", "display_name": "Saber-tooth cats", "layer": "base", "prerequisite_ids": [], "metadata": { "covers_species": ["cat_saber_tooth"] } },
+      { "id": "griffons", "display_name": "Griffons", "layer": "base", "prerequisite_ids": ["hawks_falcons"], "metadata": { "covers_species": ["griffon"], "requires_base_type": true } },
+      { "id": "hippogriffs", "display_name": "Hippogriffs", "layer": "base", "prerequisite_ids": ["horses"], "metadata": { "covers_species": ["hippogriff"], "requires_base_type": true } },
+      { "id": "pegasi", "display_name": "Pegasi", "layer": "base", "prerequisite_ids": ["horses"], "metadata": { "covers_species": ["pegasus"], "requires_base_type": true } },
+      { "id": "rocs", "display_name": "Rocs", "layer": "base", "prerequisite_ids": ["giant_hawks"], "metadata": { "covers_species": ["roc_small", "roc_large", "roc_giant"], "requires_base_type": true } },
+      { "id": "wyverns", "display_name": "Wyverns", "layer": "base", "prerequisite_ids": [], "metadata": { "covers_species": ["wyvern"] } },
+      { "id": "chimeras", "display_name": "Chimeras", "layer": "base", "prerequisite_ids": [], "metadata": { "covers_species": ["chimera"] } },
+      { "id": "dragon_turtles", "display_name": "Dragon turtles", "layer": "base", "prerequisite_ids": [], "metadata": { "covers_species": ["dragon_turtle"] } },
+      { "id": "dragons", "display_name": "Dragons", "layer": "base", "prerequisite_ids": [], "metadata": { "covers_species": ["dragon_all_types"] } }
+    ]
+  },
+  "animal_training": {
+    "specializations": [
+      { "id": "dogs", "display_name": "Dogs", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["dog_hunting", "dog_war", "dog_guard"] } },
+      { "id": "horses", "display_name": "Horses", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["horse_riding", "horse_war", "horse_draft"] } },
+      { "id": "hawks_falcons", "display_name": "Hawks and falcons", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["hawk", "falcon"] } },
+      { "id": "cats_small", "display_name": "Small cats", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["cat", "mountain_lion"] } },
+      { "id": "cats_great", "display_name": "Great cats", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["lion", "tiger", "panther"] } },
+      { "id": "bears", "display_name": "Bears", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["bear_black", "bear_grizzly"] } },
+      { "id": "boars", "display_name": "Boars", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["boar"] } },
+      { "id": "wolves", "display_name": "Wolves", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["wolf"] } },
+      { "id": "camels", "display_name": "Camels", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["camel"] } },
+      { "id": "elephants", "display_name": "Elephants", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["elephant"] } },
+      { "id": "mules", "display_name": "Mules", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["mule"] } },
+      { "id": "giant_lizards", "display_name": "Giant lizards", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["lizard_giant_all"] } },
+      { "id": "giant_boars", "display_name": "Giant boars", "layer": "base", "prerequisite_ids": ["boars"], "metadata": { "example_creatures": ["boar_giant"] } },
+      { "id": "dire_wolves", "display_name": "Dire wolves", "layer": "base", "prerequisite_ids": ["wolves"], "metadata": { "example_creatures": ["dire_wolf"] } },
+      { "id": "cave_bears", "display_name": "Cave bears", "layer": "base", "prerequisite_ids": ["bears"], "metadata": { "example_creatures": ["cave_bear"] } },
+      { "id": "saber_tooth_cats", "display_name": "Saber-tooth cats", "layer": "base", "prerequisite_ids": ["cats_great"], "metadata": { "example_creatures": ["cat_saber_tooth"] } },
+      { "id": "giant_hawks", "display_name": "Giant hawks", "layer": "base", "prerequisite_ids": ["hawks_falcons"], "metadata": { "example_creatures": ["hawk_giant"] } },
+      { "id": "rocs", "display_name": "Rocs", "layer": "base", "prerequisite_ids": ["giant_hawks"], "metadata": { "example_creatures": ["roc"] } },
+      { "id": "griffons", "display_name": "Griffons", "layer": "base", "prerequisite_ids": ["hawks_falcons"], "metadata": { "example_creatures": ["griffon"] } },
+      { "id": "hippogriffs", "display_name": "Hippogriffs", "layer": "base", "prerequisite_ids": ["horses"], "metadata": { "example_creatures": ["hippogriff"] } },
+      { "id": "wyverns", "display_name": "Wyverns", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["wyvern"] } },
+      { "id": "basilisks", "display_name": "Basilisks", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["basilisk"] } },
+      { "id": "hell_hounds", "display_name": "Hell hounds", "layer": "base", "prerequisite_ids": ["dogs"], "metadata": { "example_creatures": ["hell_hound"] } },
+      { "id": "hydras", "display_name": "Hydras", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["hydra"] } },
+      { "id": "giant_bats", "display_name": "Giant bats", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["bat_giant"] } },
+      { "id": "crocodiles", "display_name": "Crocodiles", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["crocodile", "crocodile_giant"] } },
+      { "id": "giant_crabs", "display_name": "Giant crabs", "layer": "base", "prerequisite_ids": [], "metadata": { "example_creatures": ["crab_giant"] } }
+    ]
+  },
+  "knowledge": {
+    "specializations": [
+      { "id": "architecture", "display_name": "Architecture", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "astrology", "display_name": "Astrology", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "geography", "display_name": "Geography", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "history", "display_name": "History", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "mathematics", "display_name": "Mathematics", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "natural_history", "display_name": "Natural history", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "natural_philosophy", "display_name": "Natural philosophy", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "political_economy", "display_name": "Political economy", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "occult", "display_name": "Occult philosophy", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "trivia", "display_name": "Trivia", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "metaphysics", "display_name": "Metaphysics", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "theology_academic", "display_name": "Theology (academic)", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "law", "display_name": "Law", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "military_history", "display_name": "Military history", "layer": "base", "prerequisite_ids": [], "metadata": {} }
+    ]
+  },
+  "craft": {
+    "specializations": [
+      { "id": "armor_making", "display_name": "Armor-making", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "baking", "display_name": "Baking", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "basket_making", "display_name": "Basket-making", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "blacksmithing", "display_name": "Blacksmithing", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "book_binding", "display_name": "Book-binding", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "bow_making", "display_name": "Bow-making", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "brewing", "display_name": "Brewing", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "candle_making", "display_name": "Candle-making", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "carpentry", "display_name": "Carpentry", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "cobbling", "display_name": "Cobbling", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "cooking", "display_name": "Cooking", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "doll_making", "display_name": "Doll-making", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "dyeing", "display_name": "Dyeing", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "embroidery", "display_name": "Embroidery", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "fletching", "display_name": "Fletching", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "leatherworking", "display_name": "Leatherworking", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "locksmithing", "display_name": "Locksmithing", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "rune_carving", "display_name": "Rune-carving", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "saddlery", "display_name": "Saddlery", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "scribing", "display_name": "Scribing", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "scrivening", "display_name": "Scrivening", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "stonemason", "display_name": "Stonemasonry", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "tanning", "display_name": "Tanning", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "tinkering", "display_name": "Tinkering", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "weaving", "display_name": "Weaving", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "weaponsmithing", "display_name": "Weaponsmithing", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "wheelwright", "display_name": "Wheelwright", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "pottery", "display_name": "Pottery", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "glassblowing", "display_name": "Glassblowing", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "jeweling", "display_name": "Jeweling", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "tailoring", "display_name": "Tailoring", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "ropemaking", "display_name": "Ropemaking", "layer": "base", "prerequisite_ids": [], "metadata": {} }
+    ]
+  },
+  "art": {
+    "specializations": [
+      { "id": "calligraphy", "display_name": "Calligraphy", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "drawing", "display_name": "Drawing", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "illumination", "display_name": "Illumination", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "mosaic", "display_name": "Mosaic", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "painting", "display_name": "Painting", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "sculpture", "display_name": "Sculpture", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "stained_glass", "display_name": "Stained glass", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "pottery_art", "display_name": "Pottery (artistic)", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "woodcarving", "display_name": "Woodcarving", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "metalwork_art", "display_name": "Metalwork (artistic)", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "tapestry", "display_name": "Tapestry", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "engraving", "display_name": "Engraving", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "fresco", "display_name": "Fresco", "layer": "base", "prerequisite_ids": [], "metadata": {} }
+    ]
+  },
+  "performance": {
+    "specializations": [
+      { "id": "acting", "display_name": "Acting", "layer": "base", "prerequisite_ids": [], "metadata": { "category": "theatrical" } },
+      { "id": "chanting", "display_name": "Chanting", "layer": "base", "prerequisite_ids": [], "metadata": { "category": "vocal", "qualifies_for_magical_music": true } },
+      { "id": "dancing", "display_name": "Dancing", "layer": "base", "prerequisite_ids": [], "metadata": { "category": "physical", "qualifies_for_magical_music": false } },
+      { "id": "epic_poetry", "display_name": "Epic poetry", "layer": "base", "prerequisite_ids": [], "metadata": { "category": "vocal_recitation", "qualifies_for_magical_music": true } },
+      { "id": "playing_instruments", "display_name": "Playing instruments", "layer": "base", "prerequisite_ids": [], "metadata": { "category": "instrumental", "qualifies_for_magical_music": true } },
+      { "id": "singing", "display_name": "Singing", "layer": "base", "prerequisite_ids": [], "metadata": { "category": "vocal", "qualifies_for_magical_music": true } },
+      { "id": "storytelling", "display_name": "Storytelling", "layer": "base", "prerequisite_ids": [], "metadata": { "category": "vocal_recitation", "qualifies_for_magical_music": true } },
+      { "id": "comedy", "display_name": "Comedy", "layer": "base", "prerequisite_ids": [], "metadata": { "category": "theatrical" } }
+    ]
+  },
+  "profession": {
+    "specializations": [
+      { "id": "actuary", "display_name": "Actuary", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "banker", "display_name": "Banker", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "chamberlain", "display_name": "Chamberlain", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "judge", "display_name": "Judge", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "lawyer", "display_name": "Lawyer", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "librarian", "display_name": "Librarian", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "merchant", "display_name": "Merchant", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "restaurateur", "display_name": "Restaurateur", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "seneschal", "display_name": "Seneschal", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "torturer", "display_name": "Torturer", "layer": "base", "prerequisite_ids": [], "metadata": {} }
+    ]
+  },
+  "language": {
+    "specializations": [
+      { "id": "common", "display_name": "Common", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "elvish", "display_name": "Elvish", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "dwarvish", "display_name": "Dwarvish", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "gnomish", "display_name": "Gnomish", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "halfling", "display_name": "Halfling", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "goblin", "display_name": "Goblin", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "gnoll", "display_name": "Gnoll", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "kobold", "display_name": "Kobold", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "orc", "display_name": "Orc", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "hobgoblin", "display_name": "Hobgoblin", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "bugbear", "display_name": "Bugbear", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "beastman", "display_name": "Beastman", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "alignment_lawful", "display_name": "Lawful (alignment tongue)", "layer": "base", "prerequisite_ids": [], "metadata": { "is_alignment_tongue": true } },
+      { "id": "alignment_chaotic", "display_name": "Chaotic (alignment tongue)", "layer": "base", "prerequisite_ids": [], "metadata": { "is_alignment_tongue": true } },
+      { "id": "draconic", "display_name": "Draconic", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "giant", "display_name": "Giant", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "ogre", "display_name": "Ogre", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "troll", "display_name": "Troll", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "gargoyle", "display_name": "Gargoyle", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "medusa", "display_name": "Medusa", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "minotaur", "display_name": "Minotaur", "layer": "base", "prerequisite_ids": [], "metadata": {} }
+    ]
+  },
+  "naturalism": {
+    "specializations": [
+      { "id": "forest", "display_name": "Forest", "layer": "base", "prerequisite_ids": [], "metadata": { "terrain_tag": "forest" } },
+      { "id": "coniferous_forest", "display_name": "Coniferous forest", "layer": "base", "prerequisite_ids": [], "metadata": { "terrain_tag": "coniferous_forest" } },
+      { "id": "jungle", "display_name": "Jungle", "layer": "base", "prerequisite_ids": [], "metadata": { "terrain_tag": "jungle" } },
+      { "id": "grassland", "display_name": "Grassland", "layer": "base", "prerequisite_ids": [], "metadata": { "terrain_tag": "grassland" } },
+      { "id": "desert", "display_name": "Desert", "layer": "base", "prerequisite_ids": [], "metadata": { "terrain_tag": "desert" } },
+      { "id": "mountain", "display_name": "Mountains", "layer": "base", "prerequisite_ids": [], "metadata": { "terrain_tag": "mountain" } },
+      { "id": "swamp", "display_name": "Swamp and marsh", "layer": "base", "prerequisite_ids": [], "metadata": { "terrain_tag": "swamp" } },
+      { "id": "hills", "display_name": "Hills", "layer": "base", "prerequisite_ids": [], "metadata": { "terrain_tag": "hills" } },
+      { "id": "coast", "display_name": "Coastal", "layer": "base", "prerequisite_ids": [], "metadata": { "terrain_tag": "coast" } },
+      { "id": "arctic", "display_name": "Arctic and tundra", "layer": "base", "prerequisite_ids": [], "metadata": { "terrain_tag": "arctic" } },
+      { "id": "underground", "display_name": "Underground", "layer": "base", "prerequisite_ids": [], "metadata": { "terrain_tag": "underground" } }
+    ]
+  },
+  "collegiate_wizardry": {
+    "specializations": [
+      { "id": "generic_guild", "display_name": "Mages' Guild", "layer": "base", "prerequisite_ids": [], "metadata": { "is_placeholder": true } }
+    ]
+  },
+  "signaling": {
+    "specializations": [
+      { "id": "military_standard", "display_name": "Military standard signals", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "maritime", "display_name": "Maritime signals", "layer": "base", "prerequisite_ids": [], "metadata": {} }
+    ]
+  },
+  "labor": {
+    "specializations": [
+      { "id": "barber", "display_name": "Barber", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "bricklaying", "display_name": "Bricklaying", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "butchering", "display_name": "Butchering", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "construction", "display_name": "Construction", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "domestic", "display_name": "Domestic service", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "farming", "display_name": "Farming", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "mining", "display_name": "Mining", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "shepherding", "display_name": "Shepherding", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "stone_cutting", "display_name": "Stone-cutting", "layer": "base", "prerequisite_ids": [], "metadata": {} }
+    ]
+  },
+  "elementalism": {
+    "specializations": [
+      { "id": "air", "display_name": "Air", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "earth", "display_name": "Earth", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "fire", "display_name": "Fire", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "water", "display_name": "Water", "layer": "base", "prerequisite_ids": [], "metadata": {} }
+    ]
+  }
+}

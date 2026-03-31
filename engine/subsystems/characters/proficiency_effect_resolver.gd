@@ -86,6 +86,10 @@ func _apply_single_proficiency(character: CharacterData, prof: Dictionary) -> vo
 	var effects: Dictionary
 	if _registry.is_specialization(key):
 		effects = _registry.get_effects_for_specialization(key, specialization)
+		if effects.is_empty():
+			# Fallback: specialization proficiencies without per-specialization effects
+			# (e.g., Naturalism, Collegiate Wizardry) use rank-based or top-level effects.
+			effects = _registry.get_effects_for_rank(key, rank)
 	else:
 		effects = _registry.get_effects_for_rank(key, rank)
 

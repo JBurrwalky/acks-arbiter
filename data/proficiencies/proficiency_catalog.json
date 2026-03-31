@@ -119,7 +119,7 @@
       "max_rank": 1,
       "max_selections": 0,
       "selection_rule": "specialization",
-      "specializations": null,
+      "specializations": "registry",
       "level_scaling": null,
       "effects": {
         "modifiers": [],
@@ -184,7 +184,7 @@
       "max_rank": 3,
       "max_selections": 0,
       "selection_rule": "specialization",
-      "specializations": null,
+      "specializations": "registry",
       "level_scaling": null,
       "effects_by_rank": {
         "1": { "modifiers": [], "flags": [], "enablers": [{ "action": "income_monthly", "gp": 10 }] },
@@ -367,7 +367,8 @@
       "description": "Automatically identify arcane symbols, spell signatures, and grimoires of own order. Recognize those of other orders on 11+. Multiple selections available.",
       "max_rank": 1,
       "max_selections": 3,
-      "selection_rule": "stacking",
+      "selection_rule": "specialization",
+      "specializations": "registry",
       "level_scaling": null,
       "effects": {
         "modifiers": [
@@ -476,7 +477,7 @@
       "max_rank": 3,
       "max_selections": 0,
       "selection_rule": "specialization",
-      "specializations": null,
+      "specializations": "registry",
       "level_scaling": null,
       "effects_by_rank": {
         "1": { "modifiers": [], "flags": [], "enablers": [{ "action": "income_monthly", "gp": 10 }] },
@@ -873,7 +874,7 @@
       "max_rank": 3,
       "max_selections": 0,
       "selection_rule": "specialization",
-      "specializations": null,
+      "specializations": "registry",
       "level_scaling": null,
       "effects_by_rank": {
         "1": { "modifiers": [], "flags": [], "enablers": [{ "action": "knowledge_recall", "throw_target": 11 }] },
@@ -890,7 +891,7 @@
       "max_rank": 1,
       "max_selections": 0,
       "selection_rule": "specialization",
-      "specializations": null,
+      "specializations": "registry",
       "level_scaling": null,
       "effects": {
         "modifiers": [],
@@ -925,7 +926,7 @@
       "max_rank": 1,
       "max_selections": 0,
       "selection_rule": "specialization",
-      "specializations": null,
+      "specializations": "registry",
       "level_scaling": null,
       "effects": {
         "modifiers": [],
@@ -1209,7 +1210,8 @@
       "description": "In terrain typical to the character's background, know common plants and animals, edible and poisonous foods, healing herbs, and signs of unnatural danger on 11+. Multiple selections available.",
       "max_rank": 1,
       "max_selections": 3,
-      "selection_rule": "stacking",
+      "selection_rule": "specialization",
+      "specializations": "registry",
       "level_scaling": null,
       "effects": {
         "modifiers": [],
@@ -1260,7 +1262,7 @@
       "max_rank": 3,
       "max_selections": 0,
       "selection_rule": "specialization",
-      "specializations": null,
+      "specializations": "registry",
       "level_scaling": null,
       "effects_by_rank": {
         "1": { "modifiers": [], "flags": [], "enablers": [{ "action": "income_monthly", "gp": 10 }] },
@@ -1327,7 +1329,7 @@
       "max_rank": 3,
       "max_selections": 0,
       "selection_rule": "specialization",
-      "specializations": null,
+      "specializations": "registry",
       "level_scaling": null,
       "effects_by_rank": {
         "1": { "modifiers": [], "flags": [], "enablers": [{ "action": "income_monthly", "gp": 25 }, { "action": "profession_knowledge_recall", "throw_target": 11 }] },
@@ -1376,7 +1378,7 @@
       "max_rank": 1,
       "max_selections": 0,
       "selection_rule": "specialization",
-      "specializations": null,
+      "specializations": "registry",
       "level_scaling": null,
       "effects": {
         "modifiers": [],
@@ -1529,7 +1531,7 @@
       "max_rank": 1,
       "max_selections": 0,
       "selection_rule": "specialization",
-      "specializations": null,
+      "specializations": "registry",
       "level_scaling": null,
       "effects": {
         "modifiers": [],

@@ -319,14 +319,25 @@ func auto_select_proficiencies(class_id: String, level: int) -> Array:
 			break
 		var idx := DiceSystem.roll_digital(available_class.size(), 1, -1, "npc_class_prof").modified_total
 		idx = clampi(idx, 0, available_class.size() - 1)
+		var raw_key: String = available_class[idx]
+		available_class.remove_at(idx)
+		# Resolve compound keys (e.g., "combat_trickery_disarm") and pick specializations
+		var base_key := raw_key
+		var spec := ""
+		if proficiency_registry != null:
+			var embedded := proficiency_registry.get_specialization_from_compound_key(raw_key)
+			if not embedded.is_empty():
+				base_key = proficiency_registry.resolve_key(raw_key)
+				spec = embedded
+			elif proficiency_registry.is_specialization(raw_key):
+				spec = _pick_random_specialization(raw_key)
 		proficiencies.append({
-			"proficiency_key": available_class[idx],
+			"proficiency_key": base_key,
 			"rank": 1,
 			"slot_type": "class",
 			"selections_count": 1,
-			"specialization": "",
+			"specialization": spec,
 		})
-		available_class.remove_at(idx)
 
 	# Fill remaining general slots.
 	# Use the full general proficiency list from registry when available;
@@ -343,16 +354,33 @@ func auto_select_proficiencies(class_id: String, level: int) -> Array:
 			break
 		var idx := DiceSystem.roll_digital(general_options.size(), 1, -1, "npc_general_prof").modified_total
 		idx = clampi(idx, 0, general_options.size() - 1)
+		var gen_key: String = general_options[idx]
+		general_options.remove_at(idx)
+		var gen_spec := ""
+		if proficiency_registry != null and proficiency_registry.is_specialization(gen_key):
+			gen_spec = _pick_random_specialization(gen_key)
 		proficiencies.append({
-			"proficiency_key": general_options[idx],
+			"proficiency_key": gen_key,
 			"rank": 1,
 			"slot_type": "general",
 			"selections_count": 1,
-			"specialization": "",
+			"specialization": gen_spec,
 		})
-		general_options.remove_at(idx)
 
 	return proficiencies
+
+
+func _pick_random_specialization(prof_key: String) -> String:
+	## Picks a random specialization ID from the registry for the given proficiency key.
+	## Returns "" if no registry is available or no specializations are defined.
+	if proficiency_registry == null:
+		return ""
+	var available := proficiency_registry.get_available_specializations(prof_key)
+	if available.is_empty():
+		return ""
+	var idx := DiceSystem.roll_digital(available.size(), 1, -1, "npc_spec").modified_total
+	idx = clampi(idx, 0, available.size() - 1)
+	return available[idx] as String
 
 
 # ---------------------------------------------------------------------------

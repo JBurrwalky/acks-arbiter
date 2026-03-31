@@ -5,15 +5,19 @@ extends RefCounted
 ## and the general proficiency list from data/proficiencies/general_proficiency_list.json.
 ## Provides catalog lookup, rank/selection metadata, effect access, and level scaling.
 ## Does NOT contain game logic — only data access.
+##
+## Pass a SpecializationRegistry instance to enable registry-backed specialization lookups.
 
 const CATALOG_PATH := "res://data/proficiencies/proficiency_catalog.json"
 const GENERAL_LIST_PATH := "res://data/proficiencies/general_proficiency_list.json"
 
 var _proficiencies: Dictionary = {}        # proficiency_key -> Dictionary
 var _general_list: Array[String] = []      # ordered general proficiency keys
+var _spec_registry: SpecializationRegistry  # may be null — only set when registry is wired in
 
 
-func _init() -> void:
+func _init(spec_registry: SpecializationRegistry = null) -> void:
+	_spec_registry = spec_registry
 	_load_catalog()
 	_load_general_list()
 
@@ -63,7 +67,7 @@ func _load_general_list() -> void:
 # Resolve by stripping the last underscore segment and checking if the prefix is a
 # specialization proficiency (selection_rule == "specialization").
 
-func _resolve_key(key: String) -> String:
+func resolve_key(key: String) -> String:
 	## Returns the canonical catalog key for a potentially compound key.
 	## Handles multi-segment specializations like "combat_trickery_force_back"
 	## and "knowledge_political_history" by trying all prefix lengths.
@@ -81,7 +85,12 @@ func _resolve_key(key: String) -> String:
 	return ""
 
 
-func _get_specialization_from_key(compound_key: String) -> String:
+# Keep private alias for internal callers that haven't been migrated yet.
+func _resolve_key(key: String) -> String:
+	return resolve_key(key)
+
+
+func get_specialization_from_compound_key(compound_key: String) -> String:
 	## Returns the specialization portion of a compound key, or "" if not compound.
 	## Handles multi-segment specializations like "combat_trickery_force_back" -> "force_back".
 	if _proficiencies.has(compound_key):
@@ -92,6 +101,11 @@ func _get_specialization_from_key(compound_key: String) -> String:
 		if _proficiencies.has(base) and _proficiencies[base].get("selection_rule", "") == "specialization":
 			return "_".join(parts.slice(i))
 	return ""
+
+
+# Keep private alias used by get_effects_for_specialization().
+func _get_specialization_from_key(compound_key: String) -> String:
+	return get_specialization_from_compound_key(compound_key)
 
 
 # ---------------------------------------------------------------------------
@@ -155,6 +169,39 @@ func get_selection_rule(key: String) -> String:
 
 func is_specialization(key: String) -> bool:
 	return get_selection_rule(key) == "specialization"
+
+
+func get_available_specializations(prof_key: String) -> Array:
+	## Returns the list of available specialization IDs for a proficiency.
+	##
+	## - Closed-list proficiencies (inline Array in catalog): returns that array as-is.
+	## - Registry-backed proficiencies ("registry" sentinel): queries SpecializationRegistry.
+	## - Non-specialization proficiencies: returns empty array.
+	## - Registry-backed but no SpecializationRegistry wired in: returns empty array.
+	var resolved := resolve_key(prof_key)
+	if resolved.is_empty():
+		return []
+	var entry: Dictionary = _proficiencies[resolved]
+	if entry.get("selection_rule", "") != "specialization":
+		return []
+	var specs_raw = entry.get("specializations")
+	if specs_raw is Array:
+		# Closed-list (e.g., Combat Trickery, Fighting Style, Elementalism)
+		return specs_raw
+	if specs_raw == "registry" and _spec_registry != null:
+		return _spec_registry.get_specialization_ids(resolved)
+	return []
+
+
+func get_specialization_display_name(prof_key: String, spec_id: String) -> String:
+	## Returns a human-readable display name for a specialization.
+	## Delegates to SpecializationRegistry when available; falls back to titlecasing the ID.
+	var resolved := resolve_key(prof_key)
+	if not resolved.is_empty() and _spec_registry != null:
+		var name := _spec_registry.get_specialization_display_name(resolved, spec_id)
+		if not name.is_empty():
+			return name
+	return spec_id.replace("_", " ").capitalize()
 
 
 # ---------------------------------------------------------------------------

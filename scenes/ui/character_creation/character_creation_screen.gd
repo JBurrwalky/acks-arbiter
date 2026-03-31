@@ -112,7 +112,8 @@ func _ready() -> void:
 func _init_registries() -> void:
 	_class_registry     = ClassRegistry.new()
 	_power_registry     = PowerRegistry.new()
-	_proficiency_registry = ProficiencyRegistry.new()
+	var _spec_registry  = SpecializationRegistry.new()
+	_proficiency_registry = ProficiencyRegistry.new(_spec_registry)
 	_spell_registry     = SpellRegistry.new()
 	_repertoire_engine  = RepertoireEngine.new(_spell_registry, _class_registry)
 	_generator          = CharacterGenerator.new(_class_registry, _power_registry,
