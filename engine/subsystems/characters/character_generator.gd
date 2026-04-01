@@ -222,17 +222,21 @@ func generate_npc(class_id: String, level: int, campaign_id: String,
 	# Title
 	character.title = class_registry.get_level_title(class_id, level)
 
-	# Alignment: random for NPCs
-	var alignment_roll := DiceSystem.roll_digital(6, 1, 0, "npc_alignment")
-	if alignment_roll.modified_total <= 2:
-		character.alignment = "chaotic"
-	elif alignment_roll.modified_total <= 4:
-		character.alignment = "neutral"
-	else:
-		character.alignment = "lawful"
+	# Alignment: random for named/full NPCs; transients default to neutral (no roll needed)
+	if tier != "transient":
+		var alignment_roll := DiceSystem.roll_digital(6, 1, 0, "npc_alignment")
+		if alignment_roll.modified_total <= 2:
+			character.alignment = "chaotic"
+		elif alignment_roll.modified_total <= 4:
+			character.alignment = "neutral"
+		else:
+			character.alignment = "lawful"
 
-	# Name placeholder
-	character.name = "%s %s L%d" % [cls.get("class_name", "Unknown"), character.id.left(4), level]
+	# Name placeholder — transients get a minimal label; named/full get an ID-tagged name
+	if tier == "transient":
+		character.name = "%s L%d" % [cls.get("class_name", "Unknown"), level]
+	else:
+		character.name = "%s %s L%d" % [cls.get("class_name", "Unknown"), character.id.left(4), level]
 
 	return character
 

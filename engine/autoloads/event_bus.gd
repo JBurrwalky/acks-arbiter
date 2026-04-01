@@ -120,6 +120,12 @@ signal loyalty_changed(henchman_id: String, old_score: int, new_score: int)
 ##   new_rank:        int    — new rank value (0 if removed)
 signal proficiency_changed(character_id: String, change: Dictionary)
 
+## A character's persistence tier was raised (transient→named or named→full).
+signal character_promoted(character_id: String, old_tier: String, new_tier: String)
+
+## A character's persistence tier was lowered (full→named or named→transient/deleted).
+signal character_demoted(character_id: String, old_tier: String, new_tier: String)
+
 
 # ---------------------------------------------------------------------------
 # Domain signals

@@ -1842,3 +1842,101 @@ CampaignRepository additions:
 3. Verify `chest_ironbound` DOES appear as a container with 20-stone capacity.
 4. Run all tests via `tests/test_runner.tscn`.
 5. Consider adding a "uses remaining" indicator for consumables in hand slots (e.g. "Torch [6/6]").
+
+---
+
+## Session 2026-04-01 — C-4: Three-Tier Persistence with Promotion
+
+**Task:** Implement the three-tier character persistence architecture (Tier A/B/C), tier-aware queries, the TransientPool lifecycle container, and the PromotionEngine that orchestrates C→B and B→A promotions and A→B and B→C demotions.
+**Model used:** claude-sonnet-4-6 (planning + implementation)
+
+**Completed:**
+
+**CharacterData tier helpers (`engine/shared_types/character_data.gd`):**
+- Added `is_transient()`, `is_named()`, `is_full()` convenience methods
+- Added `can_promote_to(target_tier)` — validates legal one-step upward promotion (transient→named, named→full)
+- Added `can_demote_to(target_tier)` — validates legal one-step downward demotion (full→named, named→transient)
+- `from_dict()`/`to_dict()` unchanged — backward compatible
+
+**EventBus signals (`engine/autoloads/event_bus.gd`):**
+- Added `signal character_promoted(character_id, old_tier, new_tier)`
+- Added `signal character_demoted(character_id, old_tier, new_tier)`
+
+**TransientPool (`engine/subsystems/characters/transient_pool.gd`) — NEW:**
+- `class_name TransientPool extends RefCounted`
+- `add()`, `get_character()`, `remove()`, `has_character()`, `clear()`, `get_all()`, `size()`
+- In-memory only; held by whatever system manages encounters; not an autoload
+
+**CharacterGenerator tier-aware generation (`engine/subsystems/characters/character_generator.gd`):**
+- `generate_npc()` now checks tier before rolling alignment and generating name
+- `tier="transient"`: skips alignment roll (leaves "neutral"), uses shorter placeholder name, no personality
+- `tier="named"` / `tier="full"`: existing behavior unchanged
+
+**CampaignRepository tier-aware queries (`engine/autoloads/campaign_repository.gd`):**
+- Added `list_characters_by_tier(campaign_id, tier) -> Array`
+- Added `list_characters_excluding_tier(campaign_id, excluded_tier) -> Array`
+- Added `strip_character_sub_tables(character_id) -> bool` — deletes proficiencies, inventory, spells, powers in a transaction; used for A→B demotion
+- Updated `promote_character()` doc comment — clarified it is a raw DB tier column update, used internally by PromotionEngine
+
+**PromotionEngine (`engine/subsystems/characters/promotion_engine.gd`) — NEW:**
+- `class_name PromotionEngine extends RefCounted`
+- `_init(p_generator, p_repertoire_engine=null)`
+- `promote_c_to_b(character, new_name, personality_dict) -> bool` — sets name/personality, persists to DB, emits `character_promoted`
+- `promote_b_to_a(character) -> Dictionary` — generates proficiencies, powers, spell repertoire (if caster); persists all; emits `character_promoted`; returns `{ character, proficiencies, powers, spells }`
+- `demote_a_to_b(character_id) -> bool` — strips sub-tables, updates tier to "named", emits `character_demoted`
+- `demote_b_to_c(character_id) -> bool` — deletes character row entirely, emits `character_demoted`
+
+**Migration 015 (`db/migrations/015_persistence_tier_index.sql`) — NEW:**
+- `CREATE INDEX IF NOT EXISTS idx_characters_persistence_tier ON characters(campaign_id, persistence_tier, is_active)`
+- Speeds up tier-filtered queries; safe on empty datasets
+
+**Test suite (`tests/test_persistence_tiers.gd`) — NEW:**
+- 16 tests wired into `test_runner.gd` and `test_runner.tscn` as `PersistenceTierTests` node
+- Covers: tier helpers, TransientPool lifecycle, transient-not-persisted, transient generation behavior, C→B promotion, B→A promotion, preservation of existing data through promotion, full C→B→A chain, A→B demotion, B→C demotion, invalid promotion guards, list_by_tier query, list_excluding_tier query, backward compatibility round-trip
+
+**Decisions made:**
+- PromotionEngine is a separate class (not in CampaignRepository) — repository is 1300+ lines of pure CRUD; promotion is business logic orchestrating generation + persistence.
+- Transient characters never touch the DB. Only promoted characters are persisted.
+- Promotion goes one tier at a time (no skipping). PromotionEngine enforces this.
+- `to_dict()`/`from_dict()` unchanged — all CharacterData instances carry all fields; tier determines what is *populated*, not what is *serialized*.
+- Personality and name for C→B are caller-provided parameters — no name/personality generator exists yet.
+- Spell repertoire for B→A uses RepertoireEngine if available (optional dep in constructor); non-casters produce empty spells Array.
+
+**Interfaces defined or changed:**
+- `CharacterData.is_transient() -> bool`
+- `CharacterData.is_named() -> bool`
+- `CharacterData.is_full() -> bool`
+- `CharacterData.can_promote_to(target_tier: String) -> bool`
+- `CharacterData.can_demote_to(target_tier: String) -> bool`
+- `TransientPool.add(character: CharacterData) -> void`
+- `TransientPool.get_character(id: String) -> CharacterData`
+- `TransientPool.remove(id: String) -> CharacterData`
+- `TransientPool.clear() -> void`
+- `TransientPool.get_all() -> Array`
+- `TransientPool.size() -> int`
+- `PromotionEngine.promote_c_to_b(character, new_name, personality_dict) -> bool`
+- `PromotionEngine.promote_b_to_a(character) -> Dictionary`
+- `PromotionEngine.demote_a_to_b(character_id) -> bool`
+- `PromotionEngine.demote_b_to_c(character_id) -> bool`
+- `CampaignRepository.list_characters_by_tier(campaign_id, tier) -> Array`
+- `CampaignRepository.list_characters_excluding_tier(campaign_id, excluded_tier) -> Array`
+- `CampaignRepository.strip_character_sub_tables(character_id) -> bool`
+- `EventBus.character_promoted(character_id, old_tier, new_tier)` [signal]
+- `EventBus.character_demoted(character_id, old_tier, new_tier)` [signal]
+
+**Database changes:**
+- Migration 015: composite index on `characters(campaign_id, persistence_tier, is_active)`
+
+**Tests added/updated:**
+- `tests/test_persistence_tiers.gd` (NEW): 16 tests covering the full tier lifecycle
+- `tests/test_runner.gd` + `test_runner.tscn`: new `PersistenceTierTests` node registered
+
+**Known issues:**
+- No NPC name generator yet — `promote_c_to_b()` requires caller to provide the name. Future work for E-2 (session runner) or a dedicated NPC name system.
+- No NPC personality generator yet — `promote_c_to_b()` accepts a `personality_dict` parameter. Caller responsible for content.
+- B→A promotion for casters generates a 1st-level repertoire via RepertoireEngine, but if PromotionEngine is constructed without a RepertoireEngine, spells are left empty. This is intentional — non-casters need no spell handling.
+
+**Next session should:**
+1. Run `tests/test_runner.tscn` — verify all 16 new PersistenceTier tests pass with all existing tests still green.
+2. Smoke-test the inventory drag-and-drop UI (carry-forward from previous session).
+3. Consider E-2 (session runner generates transient encounters) which will be the first real consumer of TransientPool and PromotionEngine.

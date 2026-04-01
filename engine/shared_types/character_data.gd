@@ -93,6 +93,38 @@ var mirror_images: int = 0
 var proficiencies: Array = []
 
 
+## Persistence tier helpers
+
+func is_transient() -> bool:
+	return persistence_tier == "transient"
+
+
+func is_named() -> bool:
+	return persistence_tier == "named"
+
+
+func is_full() -> bool:
+	return persistence_tier == "full"
+
+
+func can_promote_to(target_tier: String) -> bool:
+	## Returns true only for legal one-step upward promotions.
+	## transient → named, named → full. No skipping tiers.
+	match persistence_tier:
+		"transient": return target_tier == "named"
+		"named":     return target_tier == "full"
+		_:           return false
+
+
+func can_demote_to(target_tier: String) -> bool:
+	## Returns true only for legal one-step downward demotions.
+	## full → named, named → transient. No skipping tiers.
+	match persistence_tier:
+		"full":   return target_tier == "named"
+		"named":  return target_tier == "transient"
+		_:        return false
+
+
 ## Proficiency query methods
 
 func has_proficiency(proficiency_key: String) -> bool:

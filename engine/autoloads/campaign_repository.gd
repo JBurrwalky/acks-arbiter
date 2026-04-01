@@ -913,6 +913,45 @@ func list_characters_by_type(campaign_id: String, character_type: String) -> Arr
 	return db.query_result.duplicate()
 
 
+func list_characters_by_tier(campaign_id: String, tier: String) -> Array:
+	## Returns all active characters in the campaign with the given persistence tier.
+	db.query_with_bindings(
+		"SELECT * FROM characters WHERE campaign_id = ? AND persistence_tier = ? AND is_active = 1 ORDER BY name",
+		[campaign_id, tier]
+	)
+	return db.query_result.duplicate()
+
+
+func list_characters_excluding_tier(campaign_id: String, excluded_tier: String) -> Array:
+	## Returns all active characters in the campaign except those at the given tier.
+	## Most common use: list_characters_excluding_tier(campaign_id, "transient") to skip
+	## encounter-only NPCs (which should not normally be in the DB anyway).
+	db.query_with_bindings(
+		"SELECT * FROM characters WHERE campaign_id = ? AND persistence_tier != ? AND is_active = 1 ORDER BY name",
+		[campaign_id, excluded_tier]
+	)
+	return db.query_result.duplicate()
+
+
+func strip_character_sub_tables(character_id: String) -> bool:
+	## Deletes all sub-table rows for a character (proficiencies, inventory, spells, powers)
+	## without deleting the character itself. Used when demoting a Tier A character to Tier B.
+	db.query("BEGIN TRANSACTION")
+	var steps := [
+		["DELETE FROM character_proficiencies WHERE character_id = ?", [character_id]],
+		["DELETE FROM inventory_items WHERE character_id = ?", [character_id]],
+		["DELETE FROM character_spells WHERE character_id = ?", [character_id]],
+		["DELETE FROM character_powers WHERE character_id = ?", [character_id]],
+	]
+	for step in steps:
+		if not db.query_with_bindings(step[0], step[1]):
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.strip_character_sub_tables: failed. character_id=%s" % character_id)
+			return false
+	db.query("COMMIT")
+	return true
+
+
 func delete_character(id: String) -> bool:
 	## Delete a character and all dependent rows. Runs in a transaction.
 	db.query("BEGIN TRANSACTION")
@@ -935,7 +974,9 @@ func delete_character(id: String) -> bool:
 
 
 func promote_character(id: String, new_tier: String) -> bool:
-	## Update a character's persistence tier. Phase C-2 will add full promotion logic.
+	## Raw DB tier column update. Called internally by PromotionEngine.
+	## Does NOT populate missing stat data — use PromotionEngine.promote_c_to_b() or
+	## PromotionEngine.promote_b_to_a() for the full orchestrated promotion.
 	if new_tier not in ["full", "named", "transient"]:
 		push_error("CampaignRepository.promote_character: invalid tier '%s'" % new_tier)
 		return false
