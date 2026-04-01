@@ -42,7 +42,9 @@
       "Bash(python -c \"import json, os; d=json.load\\(open\\(''data/classes/fighter.json''\\)\\); print\\(list\\(d.keys\\(\\)\\)\\)\")",
       "Bash(python -c \"import json; d=json.load\\(open\\(''data/classes/fighter.json''\\)\\); print\\(''xp_table:'', d[''xp_table''][:5]\\); print\\(''primes:'', d[''prime_requisites'']\\); print\\(''weapons:'', d[''weapon_permissions''][:3]\\); print\\(''armor:'', d[''armor_permissions''][:3]\\)\")",
       "Bash(python -c \"import json, os; races=set\\(\\); [races.add\\(json.load\\(open\\(f''data/classes/{f}''\\)\\)[''race'']\\) for f in os.listdir\\(''data/classes''\\) if f.endswith\\(''.json''\\)]; print\\(sorted\\(races\\)\\)\")",
-      "Bash(python -c \"import json, os; classes=[\\(json.load\\(open\\(f''data/classes/{f}''\\)\\)[''class_id''], json.load\\(open\\(f''data/classes/{f}''\\)\\)[''class_name''], json.load\\(open\\(f''data/classes/{f}''\\)\\)[''race'']\\) for f in sorted\\(os.listdir\\(''data/classes''\\)\\) if f.endswith\\(''.json''\\)]; [print\\(c\\) for c in classes]\")"
+      "Bash(python -c \"import json, os; classes=[\\(json.load\\(open\\(f''data/classes/{f}''\\)\\)[''class_id''], json.load\\(open\\(f''data/classes/{f}''\\)\\)[''class_name''], json.load\\(open\\(f''data/classes/{f}''\\)\\)[''race'']\\) for f in sorted\\(os.listdir\\(''data/classes''\\)\\) if f.endswith\\(''.json''\\)]; [print\\(c\\) for c in classes]\")",
+      "Bash(python -c \"import json; data=json.load\\(open\\(r''c:\\\\Users\\\\jttau\\\\acks-arbiter\\\\data\\\\proficiencies\\\\proficiency_specializations.json''\\)\\); langs=data.get\\(''language'',{}\\).get\\(''specializations'',[]\\); print\\(json.dumps\\([l[''id''] for l in langs], indent=2\\)\\)\")",
+      "Bash(python -c \":*)"
     ]
   }
 }

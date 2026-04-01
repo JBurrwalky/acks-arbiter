@@ -144,7 +144,9 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     is_heavy INTEGER NOT NULL DEFAULT 0,
     -- Migration 006 additions
     damage_type TEXT NOT NULL DEFAULT 'physical',
-    material TEXT NOT NULL DEFAULT ''
+    material TEXT NOT NULL DEFAULT '',
+    -- Migration 010 additions
+    container_id TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS character_spells (

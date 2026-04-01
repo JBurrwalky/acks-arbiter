@@ -19,27 +19,31 @@ extends CanvasLayer
 # ---------------------------------------------------------------------------
 
 enum Step {
-	ABILITY_ROLL      = 0,  ## Roll 3d6 in order for STR/INT/WIS/DEX/CON/CHA
-	CLASS_SELECTION   = 1,  ## Choose character class (25 options)
-	ABILITY_TRADE     = 2,  ## Optionally trade ability points into prime reqs
-	HP_ROLL           = 3,  ## Roll hit die + CON modifier
-	PROFICIENCIES     = 4,  ## Pick class + general proficiency slots
-	SPELLS            = 5,  ## Starting spell selection (casters only; skipped otherwise)
-	EQUIPMENT         = 6,  ## Starting gold roll + equipment shop
-	PORTRAIT          = 7,  ## Choose character portrait
-	FINALIZE          = 8,  ## Name, alignment, description, character sheet preview
+	ABILITY_ROLL         = 0,  ## Roll 3d6 in order for STR/INT/WIS/DEX/CON/CHA
+	CLASS_SELECTION      = 1,  ## Choose character class (25 options)
+	CLASS_CUSTOMIZATION  = 2,  ## Barbarian origin / Witch tradition (skipped for other classes)
+	ABILITY_TRADE        = 3,  ## Optionally trade ability points into prime reqs
+	HP_ROLL              = 4,  ## Roll hit die + CON modifier
+	PROFICIENCIES        = 5,  ## Pick class + general proficiency slots
+	SPELLS               = 6,  ## Starting spell selection (casters only; skipped otherwise)
+	EQUIPMENT            = 7,  ## Starting gold roll + equipment shop
+	PORTRAIT             = 8,  ## Choose character portrait
+	LANGUAGES            = 9,  ## Language selection (skipped if INT modifier <= 0)
+	FINALIZE             = 10, ## Name, alignment, description, character sheet preview
 }
 
 const STEP_LABELS: Array[String] = [
-	"Step 1 of 9 — Ability Scores",
-	"Step 2 of 9 — Class",
-	"Step 3 of 9 — Ability Trading",
-	"Step 4 of 9 — Hit Points",
-	"Step 5 of 9 — Proficiencies",
-	"Step 6 of 9 — Starting Spells",
-	"Step 7 of 9 — Equipment",
-	"Step 8 of 9 — Portrait",
-	"Step 9 of 9 — Finalize",
+	"Step 1 of 11 — Ability Scores",
+	"Step 2 of 11 — Class",
+	"Step 3 of 11 — Origin / Tradition",
+	"Step 4 of 11 — Ability Trading",
+	"Step 5 of 11 — Hit Points",
+	"Step 6 of 11 — Proficiencies",
+	"Step 7 of 11 — Starting Spells",
+	"Step 8 of 11 — Equipment",
+	"Step 9 of 11 — Portrait",
+	"Step 10 of 11 — Languages",
+	"Step 11 of 11 — Finalize",
 ]
 
 
@@ -79,6 +83,7 @@ var _busy: bool = false
 var _class_registry: ClassRegistry
 var _power_registry: PowerRegistry
 var _proficiency_registry: ProficiencyRegistry
+var _spec_registry: SpecializationRegistry
 var _spell_registry: SpellRegistry
 var _repertoire_engine: RepertoireEngine
 var _generator: CharacterGenerator
@@ -112,7 +117,7 @@ func _ready() -> void:
 func _init_registries() -> void:
 	_class_registry     = ClassRegistry.new()
 	_power_registry     = PowerRegistry.new()
-	var _spec_registry  = SpecializationRegistry.new()
+	_spec_registry      = SpecializationRegistry.new()
 	_proficiency_registry = ProficiencyRegistry.new(_spec_registry)
 	_spell_registry     = SpellRegistry.new()
 	_repertoire_engine  = RepertoireEngine.new(_spell_registry, _class_registry)
@@ -149,6 +154,9 @@ func _reset_state() -> void:
 		"scores": {},
 		"race": "human",
 		"class_id": "",
+		"barbarian_origin": "",
+		"witch_tradition": "",
+		"voudon_craft_choice": "",
 		"traded_scores": {},
 		"character": null,
 		"hp_rolled": 0,
@@ -159,6 +167,7 @@ func _reset_state() -> void:
 		"inventory": [],
 		"gold_remaining_cp": 0,
 		"portrait_id": "",
+		"language_bonus_picks": [],
 		"name": "",
 		"sex": "male",
 		"alignment": "neutral",
@@ -177,6 +186,9 @@ func _invalidate_from(step: int) -> void:
 		Step.CLASS_SELECTION:
 			creation_state["class_id"] = ""
 			creation_state["race"] = "human"
+			creation_state["barbarian_origin"] = ""
+			creation_state["witch_tradition"] = ""
+			creation_state["voudon_craft_choice"] = ""
 			creation_state["traded_scores"] = {}
 			creation_state["character"] = null
 			creation_state["proficiencies"] = []
@@ -185,6 +197,20 @@ func _invalidate_from(step: int) -> void:
 			creation_state["starting_gold_cp"] = 0
 			creation_state["gold_remaining_cp"] = 0
 			creation_state["portrait_id"] = ""
+			creation_state["language_bonus_picks"] = []
+		Step.CLASS_CUSTOMIZATION:
+			creation_state["barbarian_origin"] = ""
+			creation_state["witch_tradition"] = ""
+			creation_state["voudon_craft_choice"] = ""
+			creation_state["traded_scores"] = {}
+			creation_state["character"] = null
+			creation_state["proficiencies"] = []
+			creation_state["spells"] = []
+			creation_state["inventory"] = []
+			creation_state["starting_gold_cp"] = 0
+			creation_state["gold_remaining_cp"] = 0
+			creation_state["portrait_id"] = ""
+			creation_state["language_bonus_picks"] = []
 		Step.ABILITY_TRADE:
 			creation_state["traded_scores"] = {}
 			creation_state["character"] = null
@@ -193,6 +219,7 @@ func _invalidate_from(step: int) -> void:
 			creation_state["inventory"] = []
 			creation_state["starting_gold_cp"] = 0
 			creation_state["gold_remaining_cp"] = 0
+			creation_state["language_bonus_picks"] = []
 		Step.HP_ROLL:
 			creation_state["hp_rolled"] = 0
 			creation_state["max_hp_override"] = false
@@ -202,6 +229,7 @@ func _invalidate_from(step: int) -> void:
 			creation_state["inventory"] = []
 			creation_state["starting_gold_cp"] = 0
 			creation_state["gold_remaining_cp"] = 0
+			creation_state["language_bonus_picks"] = []
 		Step.SPELLS:
 			creation_state["spells"] = []
 			creation_state["inventory"] = []
@@ -213,6 +241,9 @@ func _invalidate_from(step: int) -> void:
 			creation_state["gold_remaining_cp"] = 0
 		Step.PORTRAIT:
 			creation_state["portrait_id"] = ""
+			creation_state["language_bonus_picks"] = []
+		Step.LANGUAGES:
+			creation_state["language_bonus_picks"] = []
 		Step.FINALIZE:
 			creation_state["name"] = ""
 			creation_state["alignment"] = "neutral"
@@ -281,22 +312,31 @@ func _on_back_pressed() -> void:
 
 
 func _next_valid_step(from_step: int) -> int:
-	## Advance to the next step, skipping SPELLS for non-casters.
+	## Advance to the next step, skipping CLASS_CUSTOMIZATION for classes that
+	## don't need it, SPELLS for non-casters, and LANGUAGES when no INT bonus.
 	var next := from_step + 1
+	if next == Step.CLASS_CUSTOMIZATION and _should_skip_customization():
+		next += 1
 	if next == Step.SPELLS:
 		var class_id: String = creation_state.get("class_id", "")
 		if not _is_caster(class_id):
 			next += 1
+	if next == Step.LANGUAGES and _should_skip_languages():
+		next += 1
 	return mini(next, Step.FINALIZE)
 
 
 func _prev_valid_step(from_step: int) -> int:
-	## Step back, skipping SPELLS for non-casters when navigating backwards.
+	## Step back, skipping CLASS_CUSTOMIZATION, SPELLS, and LANGUAGES as needed.
 	var prev := from_step - 1
+	if prev == Step.LANGUAGES and _should_skip_languages():
+		prev -= 1
 	if prev == Step.SPELLS:
 		var class_id: String = creation_state.get("class_id", "")
 		if not _is_caster(class_id):
 			prev -= 1
+	if prev == Step.CLASS_CUSTOMIZATION and _should_skip_customization():
+		prev -= 1
 	return maxi(prev, Step.ABILITY_ROLL)
 
 
@@ -305,6 +345,23 @@ func _is_caster(class_id: String) -> bool:
 	if class_id.is_empty():
 		return false
 	return not _class_registry.get_casting_power(class_id).is_empty()
+
+
+func _should_skip_customization() -> bool:
+	## Returns true if the CLASS_CUSTOMIZATION step should be skipped.
+	## Currently only Barbarian (regional origin) and Witch (tradition) use it.
+	var class_id: String = creation_state.get("class_id", "")
+	return class_id != "barbarian" and class_id != "witch"
+
+
+func _should_skip_languages() -> bool:
+	## Returns true if the LANGUAGES step should be skipped.
+	## Skipped when the character's INT modifier is 0 or less (no bonus picks needed).
+	## Common + racial languages are always auto-granted at finalization regardless.
+	var character: CharacterData = creation_state.get("character")
+	if character == null:
+		return true
+	return CharacterData.ability_modifier(character.intelligence) <= 0
 
 
 # ---------------------------------------------------------------------------
@@ -340,36 +397,106 @@ func _finalize_character() -> void:
 		push_error("CharacterCreationScreen._finalize_character: no character in state")
 		return
 
-	# Apply step 9 fields
+	# Apply step 10 fields (alignment must be set before building language list).
 	character.name = (creation_state.get("name", "") as String).strip_edges()
 	character.sex = creation_state.get("sex", "male")
 	character.alignment = creation_state.get("alignment", "neutral")
 	character.portrait_id = creation_state.get("portrait_id", "")
 
-	# Apply final HP from step 4 roll
+	# Apply final HP from step 4 roll.
 	var hp_max: int = creation_state.get("hp_rolled", character.hp_max)
 	character.hp_max = hp_max
 	character.hp_current = hp_max
 
-	# Persist character record
+	# --- Build language list ---
+	# Auto-grants: Common + racial language(s).
+	var all_langs: Array = ["common"]
+	match character.race:
+		"elf":      all_langs.append("elvish")
+		"dwarf":    all_langs.append("dwarvish")
+		"gnome":    all_langs.append("gnomish")
+		"halfling": all_langs.append("halfling")
+	# Alignment language (lawful/chaotic only; neutral has no secret tongue in ACKS 1e).
+	if character.alignment == "lawful":
+		all_langs.append("alignment_lawful")
+	elif character.alignment == "chaotic":
+		all_langs.append("alignment_chaotic")
+	# INT bonus picks (deduplicated against auto-grants).
+	var bonus_picks: Array = creation_state.get("language_bonus_picks", [])
+	for pick in bonus_picks:
+		var pick_str: String = pick as String
+		if not pick_str.is_empty() and pick_str not in all_langs:
+			all_langs.append(pick_str)
+	# Store on character (JSON array of spec IDs).
+	character.languages = JSON.stringify(all_langs)
+
+	# Persist character record (languages now included in to_dict()).
 	CampaignRepository.create_character(character.to_dict())
 
-	# Persist powers
+	# Add character to the active party so it appears in party queries.
+	CampaignRepository.add_party_member(GameState.party_id, character.id, "middle")
+
+	# Persist powers.
 	var power_records := _generator.stamp_powers(character, character.character_class)
 	if not power_records.is_empty():
 		CampaignRepository.save_character_powers(character.id, power_records)
 
-	# Persist proficiencies
-	var proficiencies: Array = creation_state.get("proficiencies", [])
+	# Persist proficiencies (includes language proficiency records for each language).
+	var proficiencies: Array = creation_state.get("proficiencies", []).duplicate()
+
+	# --- Barbarian regional origin bonus proficiency (free — uses no slot) ---
+	var finalize_class_id: String = creation_state.get("class_id", "")
+	if finalize_class_id == "barbarian":
+		var origin_key: String = creation_state.get("barbarian_origin", "")
+		if not origin_key.is_empty():
+			var barbarian_cls := _class_registry.get_class_def("barbarian")
+			var origins: Dictionary = barbarian_cls.get("regional_origins", {})
+			if origins.has(origin_key):
+				var bonus_prof: String = origins[origin_key].get("bonus_proficiency", "")
+				if not bonus_prof.is_empty():
+					proficiencies.append({
+						"proficiency_key": bonus_prof,
+						"rank": 1,
+						"slot_type": "origin",
+						"selections_count": 1,
+						"specialization": "",
+					})
+
+	# --- Witch tradition 1st-level proficiency grant (free — uses no slot) ---
+	elif finalize_class_id == "witch":
+		var tradition: String = creation_state.get("witch_tradition", "")
+		if not tradition.is_empty():
+			var tradition_info: Dictionary = ClassCustomizationPanel.TRADITION_INFO.get(tradition, {})
+			var tradition_prof: String = tradition_info.get("bonus_proficiency", "")
+			if not tradition_prof.is_empty():
+				var tradition_spec: String = ""
+				if tradition == "voudon":
+					tradition_spec = creation_state.get("voudon_craft_choice", "")
+				proficiencies.append({
+					"proficiency_key": tradition_prof,
+					"rank": 1,
+					"slot_type": "tradition",
+					"selections_count": 1,
+					"specialization": tradition_spec,
+				})
+
+	for lang_id in all_langs:
+		proficiencies.append({
+			"proficiency_key": "language",
+			"rank": 1,
+			"slot_type": "general",
+			"selections_count": 1,
+			"specialization": lang_id,
+		})
 	if not proficiencies.is_empty():
 		CampaignRepository.save_character_proficiencies(character.id, proficiencies)
 
-	# Persist spells (casters only)
+	# Persist spells (casters only).
 	var spells: Array = creation_state.get("spells", [])
 	if not spells.is_empty():
 		CampaignRepository.save_character_spells(character.id, spells)
 
-	# Persist inventory (equipment + coin items from remaining gold)
+	# Persist inventory (equipment + coin items from remaining gold).
 	var inventory: Array = creation_state.get("inventory", [])
 	var coin_items := _build_coin_items(creation_state.get("gold_remaining_cp", 0))
 	inventory.append_array(coin_items)
@@ -502,9 +629,9 @@ func _build_ui() -> void:
 
 
 func _build_panels() -> void:
-	## Instantiate all 9 step panels and add them to the content area.
+	## Instantiate all 11 step panels and add them to the content area.
 	## Each panel is hidden by default; _show_step() reveals the active one.
-	_panels.resize(9)
+	_panels.resize(11)
 
 	var ability_roll := AbilityRollPanel.new()
 	ability_roll.hide()
@@ -515,6 +642,11 @@ func _build_panels() -> void:
 	class_sel.hide()
 	_content_area.add_child(class_sel)
 	_panels[Step.CLASS_SELECTION] = class_sel
+
+	var class_custom := ClassCustomizationPanel.new()
+	class_custom.hide()
+	_content_area.add_child(class_custom)
+	_panels[Step.CLASS_CUSTOMIZATION] = class_custom
 
 	var ability_trade := AbilityTradePanel.new()
 	ability_trade.hide()
@@ -546,6 +678,11 @@ func _build_panels() -> void:
 	_content_area.add_child(portrait)
 	_panels[Step.PORTRAIT] = portrait
 
+	var languages := LanguageSelectionPanel.new()
+	languages.hide()
+	_content_area.add_child(languages)
+	_panels[Step.LANGUAGES] = languages
+
 	var finalize := FinalizePanel.new()
 	finalize.hide()
 	_content_area.add_child(finalize)
@@ -557,7 +694,7 @@ func _build_panels() -> void:
 func _setup_panel(step: int) -> void:
 	## Call setup() on the panel for the given step, passing current state and registries.
 	## Called from _show_step() just before the panel becomes visible.
-	if _panels.size() < 9 or _panels[step] == null:
+	if _panels.size() < 11 or _panels[step] == null:
 		return
 	match step:
 		Step.ABILITY_ROLL:
@@ -565,6 +702,9 @@ func _setup_panel(step: int) -> void:
 		Step.CLASS_SELECTION:
 			(_panels[Step.CLASS_SELECTION] as ClassSelectionPanel).setup(creation_state,
 				_class_registry)
+		Step.CLASS_CUSTOMIZATION:
+			(_panels[Step.CLASS_CUSTOMIZATION] as ClassCustomizationPanel).setup(
+				creation_state, _class_registry, _spec_registry)
 		Step.ABILITY_TRADE:
 			(_panels[Step.ABILITY_TRADE] as AbilityTradePanel).setup(creation_state,
 				_generator, _class_registry)
@@ -581,6 +721,9 @@ func _setup_panel(step: int) -> void:
 				_catalog, _class_registry)
 		Step.PORTRAIT:
 			(_panels[Step.PORTRAIT] as PortraitPickerPanel).setup(creation_state)
+		Step.LANGUAGES:
+			(_panels[Step.LANGUAGES] as LanguageSelectionPanel).setup(creation_state,
+				_spec_registry)
 		Step.FINALIZE:
 			(_panels[Step.FINALIZE] as FinalizePanel).setup(creation_state, _class_registry)
 

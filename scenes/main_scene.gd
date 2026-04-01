@@ -17,6 +17,7 @@ const TEST_MAP_JSON_PATH := "res://data/test_hex_map.json"
 @onready var _override_panel = $OverridePanel
 @onready var _char_creation = $CharacterCreationScreen
 @onready var _dice_prompt = $DicePrompt
+@onready var _char_sheet = $CharacterSheetOverlay
 
 
 func _ready() -> void:

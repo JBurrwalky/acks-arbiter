@@ -1352,3 +1352,310 @@ CharacterGenerator change:
 1. Open Godot 4 and run test_runner.tscn — confirm all 28 suites pass. Fix `test_get_selection_rule_stacking` if it tested naturalism/collegiate_wizardry.
 2. Manually test character creation Step 5: select Riding → see 15 scrollable species; select Knowledge → see 14 fields with search filter; select Cleric with `Knowledge (History)` on class list → auto-locked.
 3. Continue with next build phase per design brief priority order.
+
+---
+
+## Session 2026-03-31 — Pre-Milestone Fixes: Language Grants & Party Membership
+
+**Task:** Implement two pre-milestone fixes identified during the master roadmap planning session: (A) language grants missing from character creation, and (B) created characters not appearing in the Override panel Characters tab.
+
+**Model used:** Claude Sonnet 4.6.
+
+**Completed:**
+- Created `scenes/ui/character_creation/language_selection_panel.gd` — new Step 9 panel. Shows auto-granted languages (Common + racial) as read-only; provides OptionButton pickers for INT-modifier bonus language slots. Skipped automatically when INT modifier ≤ 0.
+- Modified `scenes/ui/character_creation/character_creation_screen.gd`:
+  - Added `Step.LANGUAGES = 8`, shifted `Step.FINALIZE = 9`. Now 10 steps total.
+  - Added `_spec_registry: SpecializationRegistry` as instance variable (was local in `_init_registries`).
+  - `STEP_LABELS` updated to 10 entries ("Step X of 10").
+  - `_panels.resize(10)` — added LanguageSelectionPanel instantiation in `_build_panels()`.
+  - `_setup_panel()` handles LANGUAGES case.
+  - `_next_valid_step()` and `_prev_valid_step()` skip LANGUAGES when `_should_skip_languages()` returns true (INT mod ≤ 0).
+  - `_should_skip_languages()` — new helper.
+  - `_reset_state()` initializes `"language_bonus_picks": []`.
+  - `_invalidate_from()` clears `language_bonus_picks` for all steps that invalidate character data (CLASS_SELECTION, ABILITY_TRADE, PROFICIENCIES, PORTRAIT, LANGUAGES).
+  - `_finalize_character()` now: (1) assembles full language list (Common + racial + alignment + INT bonus picks, deduplicated); (2) sets `character.languages` JSON before calling `create_character()`; (3) calls `CampaignRepository.add_party_member(GameState.party_id, character.id, "middle")` after `create_character()` (Fix B); (4) appends language proficiency records (one per language, `proficiency_key: "language"`, `specialization: lang_id`) to the proficiency save.
+- Modified `scenes/ui/components/character_sheet_panel.gd`:
+  - Added `_render_languages(character, state)` called from `display()` between proficiencies and spells.
+  - Reads `character.languages` JSON when finalized; falls back to assembling a preview from `creation_state` during live wizard use.
+
+**Decisions made:**
+- Alignment language grant (lawful/chaotic only — neutral has no secret tongue in ACKS 1e) is applied in `_finalize_character()` AFTER alignment is set, avoiding a chicken-and-egg dependency with the LANGUAGES step (step 9) which runs before FINALIZE (step 10).
+- Racial languages are hardcoded in code (elf→elvish, dwarf→dwarvish, gnome→gnomish, halfling→halfling) since class JSON has only a `race` field with no `languages` array.
+- LANGUAGES step is hidden from characters with INT modifier ≤ 0 (Common + racial + alignment are auto-granted without requiring user input).
+- Languages stored as: (a) `character.languages` JSON string for display, (b) `character_proficiencies` rows with `proficiency_key="language"` and `specialization=lang_id` for system queries.
+- `add_party_member` uses slot `"middle"` as default formation slot for newly created PCs.
+
+**Interfaces defined or changed:**
+- `LanguageSelectionPanel.setup(state: Dictionary, spec_registry: SpecializationRegistry) -> void`
+- `LanguageSelectionPanel.is_complete() -> bool`
+- `CharacterSheetPanel._render_languages(character: CharacterData, state: Dictionary) -> void` (internal)
+- `CharacterCreationScreen._should_skip_languages() -> bool` (internal)
+
+**Database changes:** None. Existing `character_proficiencies.specialization TEXT` column stores language IDs. Existing `characters.languages TEXT` column stores the JSON array.
+
+**Tests added/updated:** None this session — the affected code paths are UI-layer and integration-tested via manual play.
+
+**Known issues:**
+- `test_get_selection_rule_stacking` from prior session may still need review if it tests naturalism/collegiate_wizardry.
+- LANGUAGES step rebuilds UI from scratch on each `setup()` call but does NOT rebuild on live slot changes (by design). Duplicate bonus language selection is technically possible (e.g., picking elvish twice); deduplicated at finalization, so final character has correct unique language list.
+- No test coverage for the new LanguageSelectionPanel (UI-only class).
+
+**Next session should:**
+1. Run test_runner.tscn — confirm all 28 suites still pass.
+2. Manually test character creation end-to-end: create an elf mage (INT 16+ to trigger language step), verify language step appears with 2 bonus slots, verify languages show on character sheet, verify character appears in Override panel Characters tab after creation.
+3. Begin Milestone 0: Monster Data Schema Design (0.1) per the master roadmap at `C:\Users\jttau\.claude\plans\ticklish-sleeping-map.md`.
+
+---
+
+## Session 2026-03-31 — Barbarian Origin & Witch Tradition Selection
+
+**Task:** Fix two bugs: (1) No screen/option to pick Barbarian regional origin or Witch tradition during character creation. (2) Witch showed "No proficiencies available" on the class tab because `class_proficiency_list` was empty.
+**Model used:** Sonnet 4.6
+
+**Completed:**
+- Added `class_proficiency_list` to `data/classes/witch.json` (25 entries: alchemy, apostasy, beast_friendship, black_lore_of_zahar, contemplation, craft, divine_blessing, divine_health, elementalism, familiar, healing, knowledge, loremastery, magical_engineering, mystic_aura, naturalism, performance, prestidigitation, prophecy, quiet_magic, seduction, sensing_evil, soothsaying, theology, unflappable_casting). Marked `[NEEDS-REVIEW]` — reconstructed from ACKS PC context since source XML did not capture this list.
+- Added `regional_origins` dictionary to `data/classes/barbarian.json` with three entries (jutland, skysostan, ivory_kingdoms), each containing `display_name`, `weapons_permitted`, `fighting_styles_permitted`, and `bonus_proficiency`.
+- Created `scenes/ui/character_creation/class_customization_panel.gd` (class ClassCustomizationPanel) — new wizard panel for Barbarian origin / Witch tradition selection. Contains `TRADITION_INFO` const (used by finalization). Voudon tradition triggers a craft specialization sub-selector.
+- Updated `scenes/ui/character_creation/character_creation_screen.gd`:
+  - Added `CLASS_CUSTOMIZATION = 2` step (renumbered ABILITY_TRADE=3 through FINALIZE=10, 11 total steps).
+  - Updated STEP_LABELS (11 entries).
+  - Added `barbarian_origin`, `witch_tradition`, `voudon_craft_choice` to creation_state.
+  - Added `_should_skip_customization()` — skips step for all classes except barbarian and witch.
+  - Updated `_next_valid_step()` and `_prev_valid_step()` to skip CLASS_CUSTOMIZATION when not needed.
+  - Updated `_invalidate_from()` to clear origin/tradition fields when backing up.
+  - Added ClassCustomizationPanel to `_build_panels()` (array resized to 11).
+  - Added CLASS_CUSTOMIZATION case to `_setup_panel()`.
+  - Updated `_finalize_character()` to stamp free bonus proficiency: Barbarian gets `slot_type="origin"` proficiency from the selected origin; Witch gets `slot_type="tradition"` proficiency from the selected tradition (Voudon includes craft specialization).
+
+**Decisions made:**
+- Tradition-granted and origin-granted proficiencies use `slot_type="origin"` or `slot_type="tradition"` so they do NOT count against normal slot totals in `ProficiencySelectionPanel._restore_from_state()`.
+- Bonus proficiencies are stamped at finalization (not stored in creation_state["proficiencies"] earlier) so they don't interfere with the proficiency panel's slot counting logic.
+- Witch class proficiency list was reconstructed — flagged as [NEEDS-REVIEW]. If Jedidiah verifies against the printed Players Companion, update `data/classes/witch.json`.
+
+**Interfaces defined or changed:**
+- `ClassCustomizationPanel.setup(state, class_registry, spec_registry) -> void`
+- `ClassCustomizationPanel.is_complete() -> bool`
+- `ClassCustomizationPanel.TRADITION_INFO: Dictionary` (const, read by `_finalize_character`)
+- `CharacterCreationScreen._should_skip_customization() -> bool` (internal helper)
+- `creation_state` now includes: `"barbarian_origin": String`, `"witch_tradition": String`, `"voudon_craft_choice": String`
+
+**Database changes:** None. The new `slot_type` values ("origin", "tradition") go into the existing `character_proficiencies.slot_type TEXT` column.
+
+**Known issues:**
+- [NEEDS-REVIEW] Witch `class_proficiency_list` — reconstructed, needs verification against printed ACKS Players Companion.
+- If a Witch picks a tradition-granted proficiency (e.g., Antiquarian picks Healing from the class list), they will have two Healing entries at finalization: one from the class slot (rank 1, slot_type="class") and one from the tradition grant (rank 1, slot_type="tradition"). The proficiency system does not merge these. This edge case is a future refinement.
+- No test coverage for ClassCustomizationPanel (UI class; manual testing recommended).
+
+**Next session should:**
+1. Open in Godot and verify Barbarian and Witch creation flows work end-to-end.
+2. Verify Witch class proficiency list against printed ACKS Players Companion and correct if needed.
+3. Continue from prior session's "Next session should" list.
+
+---
+
+## Session 2026-03-31 — Persistent Character Sheet Overlay (O-02)
+
+**Task:** Build the in-game character sheet overlay (O-02 per GDD), accessible at any point in the game loop. Separate from the character creation wizard preview.
+
+**Model used:** claude-sonnet-4-6
+
+**Completed:**
+
+- `engine/shared_types/character_bundle.gd` (NEW — class CharacterBundle, RefCounted): Pure data container aggregating all DB-loaded character state (character, proficiencies, inventory, spells, powers, conditions, active_effects). Consumed by all character sheet tabs.
+
+- `scenes/ui/character_sheet/character_sheet_overlay.gd` (NEW — no class_name, CanvasLayer script, layer 48):
+  - Right-anchored panel (460px wide, full height), non-modal, game world stays interactive.
+  - Toggle: F7 (character_sheet_toggle input action) or EventBus.character_sheet_requested signal.
+  - Escape or X button to close.
+  - Party selector sidebar (ItemList showing all party members via CampaignRepository.list_party_characters); click to switch displayed character.
+  - TabContainer with 8 tabs (Biography, Attributes, Combat, Equipment, Proficiencies, Spells, Advancement, Effects).
+  - `_load_character(id)` runs 7 CampaignRepository queries into a CharacterBundle and populates character.proficiencies.
+  - EventBus signal connections for live refresh: hp_changed, inventory_updated, condition_changed, xp_awarded, character_leveled_up, proficiency_changed, active_effect_expired, spell_effect_applied, spell_effect_removed, override_applied.
+  - Targeted refresh (just affected tabs) for common signals; full reload on character_leveled_up and override_applied.
+  - Registries instantiated once in _ready(): ClassRegistry, ProficiencyRegistry, SpellRegistry, PowerRegistry, SpecializationRegistry.
+
+- `scenes/ui/character_sheet/character_sheet_overlay.tscn` (NEW): Minimal scene, single CanvasLayer node with script.
+
+- `scenes/ui/character_sheet/tabs/cs_tab_biography.gd` (NEW — class CSTabBiography, VBoxContainer):
+  - Portrait, name (18px), class/level, title, race, alignment, sex.
+  - HP current/max with color coding (green ≥50%, yellow 25-49%, red <25%, dimmed 0%).
+  - Dead/incapacitated status labels.
+  - Age and age category (when current_age > 0).
+  - XP adjustment (when non-zero).
+  - Languages (parsed from character.languages JSON).
+
+- `scenes/ui/character_sheet/tabs/cs_tab_attributes.gd` (NEW — class CSTabAttributes, VBoxContainer):
+  - 6 ability scores in 4-column table: name, base score, modifier, effective (highlighted blue when modified).
+  - 5 saving throws in 3-column table: name, base target, effective (highlighted when modified).
+  - "* Modified by active effects" footnote when relevant.
+
+- `scenes/ui/character_sheet/tabs/cs_tab_combat.gd` (NEW — class CSTabCombat, VBoxContainer):
+  - HP current/max (color-coded).
+  - Temp HP if present.
+  - AC: current effective AC, three configurations computed from equipped inventory items + DEX mod.
+  - AC component breakdown (armor name + bonus + magical, shield, DEX mod).
+  - Attack Throw: base + effective, shows modification if different.
+  - Attack-vs-AC table (AC 9 to -3, 13 columns, using descending AC convention: roll needed = attack_throw - AC, clamped 2-20).
+  - Initiative modifier (DEX mod).
+  - Cleave count: level for fighter-progression, 0 for others.
+  - Movement: encumbrance total, exploration/combat/running speeds from EncumbranceCalculator.
+  - Effective movement if modified by spell effects.
+  - Hit Die type.
+
+- `scenes/ui/character_sheet/tabs/cs_tab_equipment.gd` (NEW — class CSTabEquipment, VBoxContainer):
+  - Encumbrance summary with color-coded overloaded warning.
+  - Items grouped by slot (main hand, off hand, body, head, belt, pack, mount).
+  - Per-item: name, quantity, magical bonus, armor AC bonus, weapon damage, encumbrance in stone, equipped indicator.
+  - Currency/treasure section.
+
+- `scenes/ui/character_sheet/tabs/cs_tab_proficiencies.gd` (NEW — class CSTabProficiencies, VBoxContainer):
+  - Class and general proficiencies (separated by slot_type field).
+  - Per proficiency: display name from ProficiencyRegistry, rank, specialization, description, effects summary.
+  - Class Powers section from bundle.powers: name from PowerRegistry, description, unlock level, active/inactive.
+
+- `scenes/ui/character_sheet/tabs/cs_tab_spells.gd` (NEW — class CSTabSpells, VBoxContainer):
+  - Non-casters: "This character does not cast spells." (checked via ClassRegistry.get_casting_power()).
+  - Casters: casting tradition header, spell slots per day table, known spells by level with memorized/known status.
+  - Spell names from SpellRegistry.
+
+- `scenes/ui/character_sheet/tabs/cs_tab_advancement.gd` (NEW — class CSTabAdvancement, VBoxContainer):
+  - Class, level/max level, title, hit die.
+  - Current XP and XP for next level (comma-formatted).
+  - ProgressBar spanning current level range.
+  - XP remaining to next level.
+  - XP adjustment with color coding.
+  - Stubs: Reserve XP, Adventure Pool Share, Downtime & Carousing XP.
+
+- `scenes/ui/character_sheet/tabs/cs_tab_effects.gd` (NEW — class CSTabEffects, VBoxContainer):
+  - Status: alive/dead/incapacitated, party active flag, temp HP.
+  - Active conditions from bundle.conditions: name, source, duration.
+  - Active spell effects from bundle.active_effects: spell name, concentration flag, duration, modifier summary, flag summary.
+  - Reputation: stub "(Not yet implemented)".
+
+- `engine/autoloads/event_bus.gd` (MODIFIED): Added `signal character_sheet_requested(character_id: String)` in dev testing section. Future: emitted by session status bar character chips.
+
+- `project.godot` (MODIFIED): Added `character_sheet_toggle` input action mapped to F7 (physical_keycode 4194334).
+
+- `scenes/Main.tscn` (MODIFIED): Added CharacterSheetOverlay instance (ext_resource id 8_char_sheet).
+
+- `scenes/main_scene.gd` (MODIFIED): Added `@onready var _char_sheet = $CharacterSheetOverlay`.
+
+**Decisions made:**
+- The existing `CharacterSheetPanel` (creation wizard finalize step) is left untouched. The new overlay is architecturally distinct — different data source (DB vs. creation_state), different lifecycle, tabbed layout, live updates.
+- Layer 48: between CharacterCreation@32 and DicePrompt@64.
+- Right-anchored, non-modal panel — game world stays interactive behind it.
+- CharacterBundle lives in engine/shared_types/ per cross-subsystem data shape convention.
+- Tab scripts use class_name (they are subsystem classes instantiated by code, not autoloads).
+- Party selector shows HP via multi-line ItemList text for quick status scan without opening the full sheet.
+- Spell-effect removal signal (spell_effect_removed) carries no character_id — overlay unconditionally reloads active effects for the displayed character when this fires.
+- Attack throw table uses descending AC (ACKS convention): roll needed = attack_throw - AC, clamped to 2-20 (nat 1 always misses, nat 20 always hits).
+- AC three-configuration display computed from inventory items directly (not from CharacterData.armor_class alone) to show meaningful breakdown.
+- No notes field yet — characters table lacks a notes column. Biography tab shows all available identity data.
+
+**Interfaces defined or changed:**
+
+CharacterBundle (new class):
+- `character: CharacterData`, `proficiencies: Array`, `inventory: Array`, `spells: Array`, `powers: Array`, `conditions: Array`, `active_effects: Array`
+
+EventBus addition:
+- `signal character_sheet_requested(character_id: String)`
+
+New input action:
+- `character_sheet_toggle` → F7 (physical_keycode 4194334)
+
+CharacterSheetOverlay public API:
+- `open(character_id: String = "") -> void`
+- `toggle() -> void`
+
+Tab public API (all 8 tabs):
+- `display(bundle: CharacterBundle, registries: Dictionary) -> void`
+
+**Database changes:** None.
+
+**Tests added/updated:** None — UI-layer code; manual testing via F7 hotkey.
+
+**Known issues:**
+- character_sheet_overlay.tscn uses a hard-coded UID string ("uid://character_sheet_overlay") which Godot will replace on first import. If Godot complains, re-save the scene from the editor.
+- The three-AC-configuration display in cs_tab_combat assumes armor/shield come from equipped inventory items. If CharacterData.armor_class was set via a different path (e.g., from character generator without saving to inventory), the breakdown may show 0 for armor_bonus. Effective AC from get_effective_ac() is always correct.
+- Cleave count for thief/mage is displayed as 0. ACKS 1e allows fighters 1 cleave per level; others may have limited cleave from class powers — this is a future refinement.
+- Proficiency description/effects display requires ProficiencyRegistry to be consistent with proficiency_catalog.json. If effects dict is empty or sparse for a given proficiency, only the name and description render.
+
+**Next session should:**
+1. Open Godot 4 and run test_runner.tscn — confirm all 28 suites still pass (no changes to test infrastructure this session).
+2. Press F7 with a character in the party — verify overlay opens on right side, all 8 tabs render data.
+3. Manually test: HP change via Override panel → Biography and Combat tabs refresh automatically.
+4. Test non-caster (fighter): Spells tab shows "does not cast spells."
+5. Test caster (mage/cleric): Spells tab shows slot table and known spells.
+6. Continue from prior session "Next session should" list (Barbarian/Witch verification, then roadmap tasks).
+
+---
+
+## Session 2026-03-31 — Character Sheet Post-Build Fixes
+
+**Task:** Fix five issues discovered during manual testing of the character sheet overlay (O-02).
+**Model used:** claude-sonnet-4-6
+
+**Completed:**
+
+1. **Hotkeys rebound (Ctrl+Alt+Letter)** — All F-key shortcuts were non-functional on the user's keyboard. Rebound:
+   - `dev_char_creation`: F5 → Ctrl+Alt+C (physical_keycode 67)
+   - `dev_dice_test`: F6 → Ctrl+Alt+D (physical_keycode 68)
+   - `character_sheet_toggle`: F7 → Ctrl+Alt+S (physical_keycode 83)
+   - Modified: `project.godot`
+
+2. **Portrait size reduced to 64×64** — Portrait was rendering much larger than intended.
+   - `cs_tab_biography.gd`: `custom_minimum_size = Vector2(64, 64)` (was 128)
+
+3. **Panel width expanded to 66% of viewport** — Panel was too narrow for readable data display.
+   - `character_sheet_overlay.gd`: `_panel.anchor_left = 0.34` (was 0.56)
+
+4. **Saves "modified by active effects" bug fixed** — All 5 saving throws showed effective value 20+ with asterisk despite no active effects. Root cause: `CharacterData.get_effective_save()` requires keys prefixed with `"save_"` (e.g., `"save_petrification"`). The attributes tab was passing unprefixed keys (e.g., `"petrification"`), which triggered the error fallback (return 20). Also fixed the `_has_any_save_modifier()` helper which checked the same wrong keys.
+   - `cs_tab_attributes.gd`: corrected all 5 save key strings and helper array.
+
+5. **AC-to-hit table corrected** — Table was backwards. ACKS rule: roll_needed = attack_throw + AC (AC 0 = need AT value; AC 1 = need AT+1). Old formula subtracted AC (opposite direction). Fixed to `clampi(eff_at + ac, 2, 20)`. Table now shows AC 0–9 then -1 to -4 across columns.
+   - `cs_tab_combat.gd`: corrected formula in attack table render function.
+
+6. **Equipment tab fully rewritten with container mechanics** — Prior equipment tab was read-only. Replaced with interactive panel:
+   - Equip/unequip buttons for weapons, armor, shields.
+   - Container system: CONTAINER_KEYS identifies backpack/sack/pouch items. Contents shown with weight totals vs. capacity. "Move in" and "Remove" buttons. "Drop" button removes container + all contents.
+   - `container_id TEXT NOT NULL DEFAULT ''` column added to `inventory_items` via migration 010.
+   - New `CampaignRepository` methods: `update_inventory_item_equip_state()`, `get_items_in_container()`, `drop_container()`.
+   - `add_inventory_item()` and `save_character_inventory()` updated to include `container_id`.
+   - `cs_tab_equipment.gd` completely rewritten.
+
+7. **`%.2g` format specifier crash fixed** — GDScript does not support `%g` format specifier. Three lines in `cs_tab_equipment.gd` used `%.2g`; all replaced with `%.2f`.
+
+**Decisions made:**
+- Container capacity in stone is hardcoded in CONTAINER_CAPACITY_STONE dict (backpack 4.0, sack_large 6.0, etc.) — display-only, not enforced.
+- Container detection uses item_key substring matching against CONTAINER_KEYS list.
+- Equipping a weapon with both slots occupied returns empty string (caller shows push_warning, no crash).
+- `slot_type` values "origin" and "tradition" (from prior session) fall through to the "other" section in the equipment tab's slot grouping — these are proficiency slot types, not inventory slots.
+
+**Interfaces defined or changed:**
+
+DB migration 010 (new):
+- `ALTER TABLE inventory_items ADD COLUMN container_id TEXT NOT NULL DEFAULT ''`
+
+CampaignRepository additions:
+- `update_inventory_item_equip_state(item_id: String, is_equipped: bool, slot: String, container_id: String = "") -> bool`
+- `get_items_in_container(container_item_id: String) -> Array`
+- `drop_container(container_item_id: String) -> bool` — transactional: deletes contents then container
+
+**Database changes:**
+- Migration 010: `container_id TEXT NOT NULL DEFAULT ''` column added to `inventory_items`.
+- `db/schema.sql` updated to migration 010 (last migration applied: 010).
+
+**Tests added/updated:** None — UI and integration-tested manually.
+
+**Known issues:**
+- Duplicate bonus language selection (picking same language twice) is deduplicated at finalization only — no real-time feedback in the LANGUAGES step UI.
+- CONTAINER_KEYS substring match could produce false positives for item names that happen to contain "backpack" or "pouch" as substrings (unlikely in practice).
+- Equip slot assignment for dual-wielding (two weapons equipped) shows both in Equipped section but the second goes to hands_off; unequip button on both works correctly.
+
+**Next session should:**
+1. Open Godot 4 and run test_runner.tscn — confirm all 28 suites pass.
+2. Manually test the character sheet overlay: create a character, press Ctrl+Alt+S, verify all 8 tabs display correct data.
+3. Test equipment actions: equip/unequip armor, move an item into a container, drop a container.
+4. Test EventBus refresh: change HP via Override panel, verify Biography and Combat tabs update.
+5. Verify: Ctrl+Alt+C opens character creation, Ctrl+Alt+D opens dice test.
+6. Continue from prior session "Next session should" list (Barbarian/Witch verification, then roadmap tasks).

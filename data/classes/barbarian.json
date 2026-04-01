@@ -38,6 +38,26 @@
   "armor_permissions": ["chain_mail", "leather", "hide"],
   "shield_permitted": true,
   "fighting_styles": ["determined_by_regional_origin"],
+  "regional_origins": {
+    "jutland": {
+      "display_name": "Jutland",
+      "weapons_permitted": ["battle axe", "club", "dagger", "great axe", "hand axe", "shortbow", "spear", "sword", "two-handed sword", "war hammer"],
+      "fighting_styles_permitted": ["weapon & shield", "two-handed weapon"],
+      "bonus_proficiency": "climbing"
+    },
+    "skysostan": {
+      "display_name": "Skysostan",
+      "weapons_permitted": ["composite bow", "dagger", "hand axe", "javelin", "lance", "net", "sling", "short sword (scimitar)", "spear", "whip"],
+      "fighting_styles_permitted": ["weapon & shield", "two weapons"],
+      "bonus_proficiency": "precise_shooting"
+    },
+    "ivory_kingdoms": {
+      "display_name": "Ivory Kingdoms",
+      "weapons_permitted": ["bola", "club", "dart", "dagger", "hand axe", "javelin", "net", "shortbow", "short sword", "spear"],
+      "fighting_styles_permitted": ["weapon & shield", "two weapons"],
+      "bonus_proficiency": "running"
+    }
+  },
   "class_proficiency_list": [
     "alertness", "ambushing", "armor_training", "beast_friendship",
     "berserkergang", "blind_fighting", "climbing", "combat_reflexes",

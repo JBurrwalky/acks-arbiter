@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/override/override_panel.tscn" id="5_override_panel"]
 [ext_resource type="PackedScene" path="res://scenes/ui/dice/dice_prompt.tscn" id="6_dice_prompt"]
 [ext_resource type="PackedScene" path="res://scenes/ui/character_creation/character_creation_screen.tscn" id="7_char_creation"]
+[ext_resource type="PackedScene" path="res://scenes/ui/character_sheet/character_sheet_overlay.tscn" id="8_char_sheet"]
 
 [node name="Main" type="Node" unique_id=389479426]
 script = ExtResource("1_main_script")
@@ -24,3 +25,5 @@ script = ExtResource("4_override_mgr")
 [node name="DicePrompt" parent="." unique_id=1524105419 instance=ExtResource("6_dice_prompt")]
 
 [node name="CharacterCreationScreen" parent="." unique_id=605577525 instance=ExtResource("7_char_creation")]
+
+[node name="CharacterSheetOverlay" parent="." unique_id=812345001 instance=ExtResource("8_char_sheet")]

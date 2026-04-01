@@ -262,3 +262,7 @@ signal dev_character_creation_requested
 ## Emitted by OverridePanel "Testing" tab to fire a test dice prompt.
 ## Uses same context shape as player_roll_requested.
 signal dev_dice_test_requested(context: Dictionary)
+
+## Emitted to open the character sheet overlay, optionally targeting a specific character.
+## Listened to by character_sheet_overlay. Future: emitted by session status bar character chips.
+signal character_sheet_requested(character_id: String)

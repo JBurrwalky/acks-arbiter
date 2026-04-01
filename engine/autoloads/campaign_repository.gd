@@ -442,8 +442,8 @@ func add_inventory_item(data: Dictionary) -> String:
 			(id, character_id, item_key, name, quantity, encumbrance_sixths,
 			 slot, is_equipped, notes,
 			 item_category, is_magical, magical_bonus,
-			 weapon_damage, armor_ac_bonus, is_heavy)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 weapon_damage, armor_ac_bonus, is_heavy, container_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		data.get("character_id", ""),
@@ -460,6 +460,7 @@ func add_inventory_item(data: Dictionary) -> String:
 		data.get("weapon_damage", ""),
 		data.get("armor_ac_bonus", 0),
 		1 if data.get("is_heavy", false) else 0,
+		data.get("container_id", ""),
 	]):
 		push_error("CampaignRepository.add_inventory_item: failed. character=%s item=%s" % [
 			data.get("character_id", "?"), data.get("name", "?")
@@ -472,6 +473,46 @@ func remove_inventory_item(item_id: String) -> bool:
 	if not db.query_with_bindings("DELETE FROM inventory_items WHERE id = ?", [item_id]):
 		push_error("CampaignRepository.remove_inventory_item: failed. id=%s" % item_id)
 		return false
+	return true
+
+
+func update_inventory_item_equip_state(item_id: String, is_equipped: bool, slot: String, container_id: String = "") -> bool:
+	## Update the equip state, slot, and container assignment for a single inventory item.
+	if not db.query_with_bindings(
+		"UPDATE inventory_items SET is_equipped = ?, slot = ?, container_id = ? WHERE id = ?",
+		[1 if is_equipped else 0, slot, container_id, item_id]
+	):
+		push_error("CampaignRepository.update_inventory_item_equip_state: failed. id=%s" % item_id)
+		return false
+	return true
+
+
+func get_items_in_container(container_item_id: String) -> Array:
+	## Returns all inventory items whose container_id matches the given container item's id.
+	db.query_with_bindings(
+		"SELECT * FROM inventory_items WHERE container_id = ?",
+		[container_item_id]
+	)
+	return db.query_result.duplicate()
+
+
+func drop_container(container_item_id: String) -> bool:
+	## Remove a container and all items inside it from the character's inventory.
+	## Use when a character drops or loses a container (backpack, sack, etc.).
+	db.query("BEGIN TRANSACTION")
+	if not db.query_with_bindings(
+		"DELETE FROM inventory_items WHERE container_id = ?", [container_item_id]
+	):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.drop_container: failed deleting contents. container=%s" % container_item_id)
+		return false
+	if not db.query_with_bindings(
+		"DELETE FROM inventory_items WHERE id = ?", [container_item_id]
+	):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.drop_container: failed deleting container. id=%s" % container_item_id)
+		return false
+	db.query("COMMIT")
 	return true
 
 
@@ -712,8 +753,8 @@ func save_character_inventory(character_id: String, items: Array) -> bool:
 				(id, character_id, item_key, name, quantity, encumbrance_sixths,
 				 slot, is_equipped, notes,
 				 item_category, is_magical, magical_bonus,
-				 weapon_damage, armor_ac_bonus, is_heavy)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				 weapon_damage, armor_ac_bonus, is_heavy, container_id)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		""", [
 			item_id, character_id,
 			item.get("item_key", ""), item.get("name", ""),
@@ -727,6 +768,7 @@ func save_character_inventory(character_id: String, items: Array) -> bool:
 			item.get("weapon_damage", ""),
 			item.get("armor_ac_bonus", 0),
 			1 if item.get("is_heavy", false) else 0,
+			item.get("container_id", ""),
 		]):
 			db.query("ROLLBACK")
 			push_error("CampaignRepository.save_character_inventory: insert failed. item=%s" % item.get("name", "?"))

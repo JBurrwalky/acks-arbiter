@@ -43,6 +43,7 @@ func display(state: Dictionary) -> void:
 	_render_combat(character)
 	_render_saving_throws(character)
 	_render_proficiencies(state)
+	_render_languages(character, state)
 	_render_spells(state)
 	_render_equipment(state)
 
@@ -77,7 +78,9 @@ func _render_portrait(state: Dictionary) -> void:
 
 	var img_rect := TextureRect.new()
 	img_rect.texture = texture
-	img_rect.custom_minimum_size = Vector2(128, 128)
+	img_rect.custom_minimum_size = Vector2(256, 256)
+	img_rect.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	img_rect.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	img_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_content.add_child(img_rect)
 
@@ -161,6 +164,49 @@ func _render_proficiencies(state: Dictionary) -> void:
 		if not spec.is_empty():
 			display += " [%s]" % spec
 		_add_bullet(display)
+
+
+func _render_languages(character: CharacterData, state: Dictionary) -> void:
+	## Show granted languages from the character record (JSON array) or
+	## from creation_state["language_bonus_picks"] if still in the wizard.
+	##
+	## Priority: character.languages JSON field (authoritative after finalize).
+	## Fallback: assemble from creation_state for live preview in the wizard.
+	var lang_list: Array = []
+
+	var raw: String = character.languages if character != null else "[]"
+	if raw != "[]" and not raw.is_empty():
+		var parsed = JSON.parse_string(raw)
+		if parsed is Array:
+			lang_list = parsed
+
+	# During character creation, character.languages may not yet be populated.
+	# Assemble a preview from state instead.
+	if lang_list.is_empty():
+		lang_list = ["common"]
+		if character != null:
+			match character.race:
+				"elf":      lang_list.append("elvish")
+				"dwarf":    lang_list.append("dwarvish")
+				"gnome":    lang_list.append("gnomish")
+				"halfling": lang_list.append("halfling")
+			var align: String = state.get("alignment", character.alignment)
+			if align == "lawful":
+				lang_list.append("alignment_lawful")
+			elif align == "chaotic":
+				lang_list.append("alignment_chaotic")
+		var bonus: Array = state.get("language_bonus_picks", [])
+		for pick in bonus:
+			var pick_str: String = pick as String
+			if not pick_str.is_empty() and pick_str not in lang_list:
+				lang_list.append(pick_str)
+
+	if lang_list.is_empty():
+		return
+
+	_add_section_header("Languages")
+	for lang_id in lang_list:
+		_add_bullet(lang_id.replace("_", " ").capitalize())
 
 
 func _render_spells(state: Dictionary) -> void:
