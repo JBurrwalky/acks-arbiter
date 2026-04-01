@@ -19,6 +19,8 @@ func run_all_tests() -> void:
 	test_format_cost_zero()
 	test_search_items()
 	test_load_errors_empty()
+	test_container_identification()
+	test_container_capacity()
 	print("EquipmentCatalog: all tests passed.")
 
 
@@ -135,8 +137,8 @@ func test_foodstuffs_loaded() -> void:
 
 	# Verify defaults were applied
 	for item in food:
-		assert(item.has("encumbrance_sixths"),
-			"foodstuff '%s' should have encumbrance_sixths" % item.get("item_key", "?"))
+		assert(item.has("encumbrance_units"),
+			"foodstuff '%s' should have encumbrance_units" % item.get("item_key", "?"))
 		assert(item.has("is_heavy"),
 			"foodstuff '%s' should have is_heavy" % item.get("item_key", "?"))
 		assert(item.get("is_heavy") == false,
@@ -287,3 +289,63 @@ func test_load_errors_empty() -> void:
 	assert(errors.is_empty(),
 		"load_errors should be empty after clean load, got: %s" % str(errors))
 	print("  load_errors_empty: OK")
+
+
+# ---------------------------------------------------------------------------
+# Container identification
+# ---------------------------------------------------------------------------
+
+func test_container_identification() -> void:
+	var cat := EquipmentCatalog.new()
+
+	assert(cat.is_container("backpack"),
+		"backpack should be a container")
+	assert(cat.is_container("sack_large"),
+		"sack_large should be a container")
+	assert(cat.is_container("sack_small"),
+		"sack_small should be a container")
+	assert(cat.is_container("pouch"),
+		"pouch should be a container")
+	assert(cat.is_container("chest_ironbound"),
+		"chest_ironbound should be a container")
+	assert(cat.is_container("saddlebags"),
+		"saddlebags should be a container")
+
+	# Must NOT be containers
+	assert(not cat.is_container("spell_component_pouch"),
+		"spell_component_pouch should NOT be a container")
+	assert(not cat.is_container("sword"),
+		"sword should NOT be a container")
+	assert(not cat.is_container("leather_armor"),
+		"leather_armor should NOT be a container")
+
+	print("  container_identification: OK")
+
+
+# ---------------------------------------------------------------------------
+# Container capacity
+# ---------------------------------------------------------------------------
+
+func test_container_capacity() -> void:
+	var cat := EquipmentCatalog.new()
+
+	assert(cat.get_container_capacity_units("backpack") == 4000,
+		"backpack capacity should be 4000 units (4 stone), got %d" % cat.get_container_capacity_units("backpack"))
+	assert(cat.get_container_capacity_units("sack_large") == 6000,
+		"sack_large capacity should be 6000 units, got %d" % cat.get_container_capacity_units("sack_large"))
+	assert(cat.get_container_capacity_units("sack_small") == 2000,
+		"sack_small capacity should be 2000 units, got %d" % cat.get_container_capacity_units("sack_small"))
+	assert(cat.get_container_capacity_units("pouch") == 500,
+		"pouch capacity should be 500 units (0.5 stone), got %d" % cat.get_container_capacity_units("pouch"))
+	assert(cat.get_container_capacity_units("chest_ironbound") == 20000,
+		"chest_ironbound capacity should be 20000 units (20 stone), got %d" % cat.get_container_capacity_units("chest_ironbound"))
+	assert(cat.get_container_capacity_units("saddlebags") == 3000,
+		"saddlebags capacity should be 3000 units (3 stone), got %d" % cat.get_container_capacity_units("saddlebags"))
+
+	# Non-containers should return 0
+	assert(cat.get_container_capacity_units("sword") == 0,
+		"sword container capacity should be 0")
+	assert(cat.get_container_capacity_units("spell_component_pouch") == 0,
+		"spell_component_pouch container capacity should be 0")
+
+	print("  container_capacity: OK")

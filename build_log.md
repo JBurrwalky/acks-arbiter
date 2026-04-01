@@ -1768,3 +1768,77 @@ CampaignRepository additions:
 2. Test encumbrance display: 6 torches (6 sixths = 1 stone) should show correctly.
 3. Consider adding a "uses remaining" indicator in the equipment tab for consumables in hand slots (e.g. "Torch [6/6]").
 4. Consider implementing ammunition decrement when ranged attacks are made.
+
+---
+
+## Session 2026-04-01 — Encumbrance Units Refactor + Container Capacity Enforcement
+
+**Task:** (1) Refactor encumbrance from 1/6-stone units to 1/1000-stone units system-wide. (2) Enforce container capacity limits in the equipment tab and redesign the inventory UI with drag-and-drop.
+**Model used:** claude-sonnet-4-6
+
+**Completed:**
+
+**Encumbrance Refactor (Task 1):**
+- `engine/shared_types/inventory_item.gd` — renamed `encumbrance_sixths` → `encumbrance_units`; `encumbrance_stone()` now `/ 1000.0`; `from_dict` has fallback for old DB rows.
+- `engine/subsystems/characters/encumbrance_calculator.gd` — all vars renamed; return key `total_units`; overload at 20000 units; movement tiers at 5000/7000/10000 units; magical armor reduction is `units - bonus * 1000`.
+- `data/equipment/base_equipment.json` — all `encumbrance_sixths` → `encumbrance_units`; 1→167, 6→1000, 12→2000, etc. Coins set to 1 unit each.
+- `data/equipment/transport.json` — same rename/conversion.
+- `db/schema.sql` — column renamed to `encumbrance_units INTEGER NOT NULL DEFAULT 0`.
+- `db/migrations/014_encumbrance_units.sql` (NEW) — table rebuild migration; treasure items fixed to 1 unit/piece; others converted by `ROUND(enc_sixths * 1000.0 / 6.0)`.
+- `engine/autoloads/campaign_repository.gd` — three INSERT statements updated to use `encumbrance_units`.
+- `engine/subsystems/override/override_manager.gd` — `enc_sixths` → `enc_units`; gold coin override fixed to 1 unit.
+- `scenes/ui/character_creation/character_creation_screen.gd` — each coin now `"encumbrance_units": 1`; `_coin_enc_sixths()` removed (was double-counting bug).
+- `scenes/ui/character_creation/equipment_shop_panel.gd` — field reads and display formula updated.
+- `engine/subsystems/characters/equipment_catalog.gd` — foodstuff default updated (167 units).
+- `tests/test_encumbrance.gd` — fully rewritten with new unit values; new `test_coin_encumbrance()`.
+- `tests/test_equipment_catalog.gd` — field name updated.
+- `tests/test_character_persistence.gd` — item values updated (sword 1000, chain 4000).
+- `docs/coding_conventions.md` — encumbrance convention entry updated.
+
+**Container Capacity Enforcement + Equipment UI Redesign (Task 2):**
+- `data/equipment/base_equipment.json` — `container_capacity_units` added: backpack (4000), chest_ironbound (20000), pouch (500), sack_large (6000), sack_small (2000).
+- `data/equipment/transport.json` — `container_capacity_units: 3000` added to saddlebags.
+- `engine/subsystems/characters/equipment_catalog.gd` — added `is_container(item_key)` and `get_container_capacity_units(item_key)` methods.
+- `tests/test_equipment_catalog.gd` — added `test_container_identification()` and `test_container_capacity()`.
+- `scenes/ui/character_sheet/tabs/equipment_item_row.gd` (NEW) — `class_name EquipmentItemRow extends PanelContainer`; draggable row with `_get_drag_data()`.
+- `scenes/ui/character_sheet/tabs/equipment_container_row.gd` (NEW) — `class_name EquipmentContainerRow extends PanelContainer`; drop target with capacity enforcement in `_can_drop_data()`; visual feedback (green/red) during drag.
+- `scenes/ui/character_sheet/tabs/equipment_loose_zone.gd` (NEW) — `class_name EquipmentLooseZone extends PanelContainer`; drop target for removing items from containers.
+- `scenes/ui/character_sheet/tabs/cs_tab_equipment.gd` — major rewrite:
+  - Removed `CONTAINER_KEYS`, `CONTAINER_CAPACITY_STONE` constants.
+  - Removed `_is_container()`, `_container_capacity()`, `_render_containers()`, `_render_loose()`, `_get_loose_movable_items()`, `_on_move_into_container()`.
+  - Added `_is_container_item()`, `_calculate_container_used_units()`, `can_fit_in_container()`, `_render_inventory()`.
+  - Fixed "Available to equip" to exclude items with a non-empty `container_id`.
+  - New layout: flat inventory with EquipmentContainerRow + EquipmentLooseZone.
+
+**Decisions made:**
+- 1/1000 stone base unit (not 1/6). Standard item = 167 units (rounds 1/6 = 0.1667 stone up 0.2%). Approved by user.
+- Coins/gems = 1 unit each (1000 units = 1 stone). Old double-count bug fixed.
+- Container identification via `container_capacity_units > 0` in JSON — eliminates substring matching fragility.
+- Loose carry zone excludes equippable items (they stay in "Available to equip" only, matching prior behavior).
+
+**Interfaces defined or changed:**
+- `EquipmentCatalog.is_container(item_key: String) -> bool`
+- `EquipmentCatalog.get_container_capacity_units(item_key: String) -> int`
+- `EquipmentItemRow.setup(item, remove_callback, character_id)` — drag payload: `{ type, item_id, item }`
+- `EquipmentContainerRow.setup(container, contents, capacity_units, used_units, character_id, drop_callback, remove_callback)`
+- `EquipmentLooseZone.setup(loose_items, character_id, remove_callback)`
+- `CSTabEquipment.can_fit_in_container(item, container_id) -> bool` (public)
+
+**Database changes:**
+- Migration 014: encumbrance column rebuild (encumbrance_sixths → encumbrance_units).
+
+**Tests added/updated:**
+- `test_equipment_catalog.gd`: `test_container_identification()`, `test_container_capacity()`
+- `test_encumbrance.gd`: full rewrite with new unit values; `test_coin_encumbrance()`
+- `test_character_persistence.gd`: item field/value updates
+
+**Known issues:**
+- Drag-and-drop in Godot 4 requires the parent Control to have `mouse_filter` set correctly — if items don't respond to drag, check that parent containers aren't consuming mouse events.
+- Container rows are rebuilt from scratch on every `inventory_updated` signal — adequate for now, could be optimized later if many containers cause flicker.
+
+**Next session should:**
+1. Smoke-test the new inventory UI in-game: drag item into backpack, verify capacity enforced, drag back out to loose.
+2. Verify `spell_component_pouch` does NOT appear as a container.
+3. Verify `chest_ironbound` DOES appear as a container with 20-stone capacity.
+4. Run all tests via `tests/test_runner.tscn`.
+5. Consider adding a "uses remaining" indicator for consumables in hand slots (e.g. "Torch [6/6]").

@@ -2,17 +2,18 @@ class_name InventoryItem
 extends RefCounted
 
 ## One item in a character's positional inventory.
-## Encumbrance tracked in 1/6-stone units (ACKS base unit = "item weight"):
-##   1/6 stone = 1 unit (coin/dagger weight)
-##   1 stone = 6 units (sword, shield)
-##   5 stone = 30 units (plate armour)
+## Encumbrance tracked in 1/1000-stone units:
+##   1 unit   = 1/1000 stone (coin or gem weight)
+##   167 units = 1/6 stone   (standard "item weight" — dagger, potion, scroll)
+##   1000 units = 1 stone    (sword, shield)
+##   6000 units = 6 stone    (plate armour)
 
 var id: String = ""
 var character_id: String = ""
 var item_key: String = ""           # references data/equipment catalog
 var name: String = ""
 var quantity: int = 1
-var encumbrance_sixths: int = 0     # weight in 1/6-stone units
+var encumbrance_units: int = 0      # weight in 1/1000-stone units
 var slot: String = "pack"
 	# "hands_main"|"hands_off"|"body"|"head"|"belt"|"feet"|"hands_worn"|"cloak"
 	# |"accessory_1"–"accessory_5"|"pack"|"mount"
@@ -53,7 +54,7 @@ static func from_dict(data: Dictionary) -> InventoryItem:
 	i.item_key = data.get("item_key", "")
 	i.name = data.get("name", "")
 	i.quantity = data.get("quantity", 1)
-	i.encumbrance_sixths = data.get("encumbrance_sixths", 0)
+	i.encumbrance_units = data.get("encumbrance_units", data.get("encumbrance_sixths", 0))
 	i.slot = data.get("slot", "pack")
 	i.notes = data.get("notes", "")
 	i.item_category = data.get("item_category", "gear")
@@ -78,7 +79,7 @@ func to_dict() -> Dictionary:
 		"item_key": item_key,
 		"name": name,
 		"quantity": quantity,
-		"encumbrance_sixths": encumbrance_sixths,
+		"encumbrance_units": encumbrance_units,
 		"slot": slot,
 		"is_equipped": 1 if is_equipped else 0,
 		"notes": notes,
@@ -95,4 +96,4 @@ func to_dict() -> Dictionary:
 
 
 func encumbrance_stone() -> float:
-	return encumbrance_sixths / 6.0
+	return encumbrance_units / 1000.0

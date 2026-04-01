@@ -245,7 +245,7 @@ func _add_item_row(item: Dictionary, cls: Dictionary) -> void:
 
 	var item_key: String = item.get("item_key", "")
 	var cost_cp: int = int(item.get("cost_cp", 0))
-	var enc: int = int(item.get("encumbrance_sixths", 0))
+	var enc: int = int(item.get("encumbrance_units", 0))
 	var name_str: String = item.get("name", item_key)
 	var category: String = item.get("item_category", "gear")
 
@@ -280,7 +280,7 @@ func _add_item_row(item: Dictionary, cls: Dictionary) -> void:
 	info_vbox.add_child(name_lbl)
 
 	var detail_lbl := Label.new()
-	var enc_str := "%.1f stone" % (enc / 6.0) if enc > 0 else "negligible"
+	var enc_str := "%.1f stone" % (enc / 1000.0) if enc > 0 else "negligible"
 	detail_lbl.text = "%s  |  %s" % [EquipmentCatalog.format_cost(cost_cp), enc_str]
 	detail_lbl.add_theme_font_size_override("font_size", 11)
 	detail_lbl.modulate = Color(0.75, 0.75, 0.75, 1.0)
@@ -489,7 +489,7 @@ func _catalog_item_to_cart(catalog_item: Dictionary) -> Dictionary:
 		"item_key": catalog_item.get("item_key", ""),
 		"name": catalog_item.get("name", ""),
 		"quantity": int(catalog_item.get("bundle_quantity", 1)),
-		"encumbrance_sixths": int(catalog_item.get("encumbrance_sixths", 0)),
+		"encumbrance_units": int(catalog_item.get("encumbrance_units", 0)),
 		"slot": "pack",
 		"is_equipped": 0,
 		"item_category": catalog_item.get("item_category", "gear"),

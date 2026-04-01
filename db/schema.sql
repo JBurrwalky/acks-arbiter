@@ -122,15 +122,15 @@ CREATE TABLE IF NOT EXISTS character_proficiencies (
     specialization TEXT NOT NULL DEFAULT ''
 );
 
--- encumbrance_sixths: weight in 1/6-stone units (1 stone = 6 units = ~10 lbs)
--- Examples: dagger=1, sword=6, plate armour=30, heavy warhorse=120
+-- encumbrance_units: weight in 1/1000-stone units (1 stone = 1000 units = ~10 lbs)
+-- Examples: dagger=167, sword=1000, plate armour=6000, coin/gem=1
 CREATE TABLE IF NOT EXISTS inventory_items (
     id TEXT PRIMARY KEY,
     character_id TEXT NOT NULL REFERENCES characters(id),
     item_key TEXT NOT NULL,
     name TEXT NOT NULL,
     quantity INTEGER NOT NULL DEFAULT 1,
-    encumbrance_sixths INTEGER NOT NULL DEFAULT 0,
+    encumbrance_units INTEGER NOT NULL DEFAULT 0,
     slot TEXT NOT NULL DEFAULT 'pack'
         CHECK(slot IN (
             'hands_main', 'hands_off',

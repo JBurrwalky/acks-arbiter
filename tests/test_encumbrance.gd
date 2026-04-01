@@ -3,12 +3,12 @@ extends Node
 ## Unit tests for EncumbranceCalculator.
 ## Run via test_runner.tscn. Uses plain assert() — no external framework.
 ##
-## ACKS movement table:
-##   <= 5 stone (<=30 sixths): 120'/turn
-##   <= 7 stone (<=42 sixths): 90'/turn
-##   <= 10 stone (<=60 sixths): 60'/turn
-##   <= 20 stone (<=120 sixths): 30'/turn
-##   > 20 stone (>120 sixths): overloaded
+## ACKS movement table (encumbrance_units: 1 unit = 1/1000 stone):
+##   <= 5 stone (<=5000 units): 120'/turn
+##   <= 7 stone (<=7000 units): 90'/turn
+##   <= 10 stone (<=10000 units): 60'/turn
+##   <= 20 stone (<=20000 units): 30'/turn
+##   > 20 stone (>20000 units): overloaded
 
 
 func run_all_tests() -> void:
@@ -20,6 +20,7 @@ func run_all_tests() -> void:
 	test_overloaded()
 	test_magical_armor_reduction()
 	test_movement_tier_boundaries()
+	test_coin_encumbrance()
 	print("EncumbranceCalculator: all tests passed.")
 
 
@@ -27,11 +28,11 @@ func run_all_tests() -> void:
 # Helpers
 # ---------------------------------------------------------------------------
 
-func _make_item(item_name: String, sixths: int, category: String = "gear",
+func _make_item(item_name: String, units: int, category: String = "gear",
 		magical: bool = false, mag_bonus: int = 0) -> InventoryItem:
 	var item := InventoryItem.new()
 	item.name = item_name
-	item.encumbrance_sixths = sixths
+	item.encumbrance_units = units
 	item.item_category = category
 	item.is_magical = magical
 	item.magical_bonus = mag_bonus
@@ -44,8 +45,8 @@ func _make_item(item_name: String, sixths: int, category: String = "gear",
 
 func test_empty_inventory() -> void:
 	var result := EncumbranceCalculator.calculate_encumbrance([])
-	assert(int(result.total_sixths) == 0,
-		"empty inventory should have 0 sixths")
+	assert(int(result.total_units) == 0,
+		"empty inventory should have 0 units")
 	assert(int(result.exploration_speed) == 120,
 		"empty inventory exploration should be 120'/turn")
 	assert(result.is_overloaded == false,
@@ -54,82 +55,82 @@ func test_empty_inventory() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Light load (<=5 stone = <=30 sixths) -> 120'/turn
+# Light load (<=5 stone = <=5000 units) -> 120'/turn
 # ---------------------------------------------------------------------------
 
 func test_light_load() -> void:
-	# Sword (6 sixths) + dagger (1 sixth) = 7 sixths -> still light
+	# Sword (1000 units) + dagger (167 units) = 1167 units -> light load
 	var items := [
-		_make_item("Sword", 6, "weapon"),
-		_make_item("Dagger", 1, "weapon"),
+		_make_item("Sword", 1000, "weapon"),
+		_make_item("Dagger", 167, "weapon"),
 	]
 	var result := EncumbranceCalculator.calculate_encumbrance(items)
-	assert(int(result.total_sixths) == 7,
-		"sword + dagger should be 7 sixths, got %d" % int(result.total_sixths))
+	assert(int(result.total_units) == 1167,
+		"sword + dagger should be 1167 units, got %d" % int(result.total_units))
 	assert(int(result.exploration_speed) == 120,
-		"7 sixths should give 120'/turn exploration")
+		"1167 units should give 120'/turn exploration")
 	print("  light_load: OK")
 
 
 # ---------------------------------------------------------------------------
-# Medium load (>5 stone, <=7 stone = 31-42 sixths) -> 90'/turn
+# Medium load (>5 stone, <=7 stone = 5001-7000 units) -> 90'/turn
 # ---------------------------------------------------------------------------
 
 func test_medium_load() -> void:
-	# 35 sixths (~5.8 stone) -> 90'/turn
-	var items := [_make_item("Heavy gear", 35)]
+	# 5833 units (~5.83 stone) -> 90'/turn
+	var items := [_make_item("Heavy gear", 5833)]
 	var result := EncumbranceCalculator.calculate_encumbrance(items)
-	assert(int(result.total_sixths) == 35,
-		"should be 35 sixths")
+	assert(int(result.total_units) == 5833,
+		"should be 5833 units")
 	assert(int(result.exploration_speed) == 90,
-		"35 sixths should give 90'/turn exploration, got %d" % int(result.exploration_speed))
+		"5833 units should give 90'/turn exploration, got %d" % int(result.exploration_speed))
 	print("  medium_load: OK")
 
 
 # ---------------------------------------------------------------------------
-# Heavy load (>7 stone, <=10 stone = 43-60 sixths) -> 60'/turn
+# Heavy load (>7 stone, <=10 stone = 7001-10000 units) -> 60'/turn
 # ---------------------------------------------------------------------------
 
 func test_heavy_load() -> void:
-	# 50 sixths -> 60'/turn
-	var items := [_make_item("Heavy pack", 50)]
+	# 8333 units (~8.33 stone) -> 60'/turn
+	var items := [_make_item("Heavy pack", 8333)]
 	var result := EncumbranceCalculator.calculate_encumbrance(items)
-	assert(int(result.total_sixths) == 50,
-		"should be 50 sixths")
+	assert(int(result.total_units) == 8333,
+		"should be 8333 units")
 	assert(int(result.exploration_speed) == 60,
-		"50 sixths should give 60'/turn exploration, got %d" % int(result.exploration_speed))
+		"8333 units should give 60'/turn exploration, got %d" % int(result.exploration_speed))
 	print("  heavy_load: OK")
 
 
 # ---------------------------------------------------------------------------
-# Max load (>10 stone, <=20 stone = 61-120 sixths) -> 30'/turn
+# Max load (>10 stone, <=20 stone = 10001-20000 units) -> 30'/turn
 # ---------------------------------------------------------------------------
 
 func test_max_load() -> void:
-	# 100 sixths -> 30'/turn
-	var items := [_make_item("Very heavy pack", 100)]
+	# 16667 units (~16.67 stone) -> 30'/turn, not overloaded
+	var items := [_make_item("Very heavy pack", 16667)]
 	var result := EncumbranceCalculator.calculate_encumbrance(items)
-	assert(int(result.total_sixths) == 100,
-		"should be 100 sixths")
+	assert(int(result.total_units) == 16667,
+		"should be 16667 units")
 	assert(int(result.exploration_speed) == 30,
-		"100 sixths should give 30'/turn exploration, got %d" % int(result.exploration_speed))
+		"16667 units should give 30'/turn exploration, got %d" % int(result.exploration_speed))
 	assert(result.is_overloaded == false,
-		"100 sixths (16.7 stone) should NOT be overloaded")
+		"16667 units (16.7 stone) should NOT be overloaded")
 	print("  max_load: OK")
 
 
 # ---------------------------------------------------------------------------
-# Overloaded (>20 stone = >120 sixths)
+# Overloaded (>20 stone = >20000 units)
 # ---------------------------------------------------------------------------
 
 func test_overloaded() -> void:
-	# 130 sixths -> overloaded
-	var items := [_make_item("Absurd load", 130)]
+	# 21667 units (~21.67 stone) -> overloaded
+	var items := [_make_item("Absurd load", 21667)]
 	var result := EncumbranceCalculator.calculate_encumbrance(items)
-	assert(int(result.total_sixths) == 130,
-		"should be 130 sixths")
+	assert(int(result.total_units) == 21667,
+		"should be 21667 units")
 	assert(result.is_overloaded == true,
-		"130 sixths (21.7 stone) should be overloaded")
+		"21667 units (21.7 stone) should be overloaded")
 	print("  overloaded: OK")
 
 
@@ -138,25 +139,25 @@ func test_overloaded() -> void:
 # ---------------------------------------------------------------------------
 
 func test_magical_armor_reduction() -> void:
-	# Chain mail normally 24 sixths. Magical +2 reduces by 2 stones (12 sixths).
-	# Result: 24 - 12 = 12 sixths
-	var chain := _make_item("Chain Mail +2", 24, "armor", true, 2)
+	# Chain mail normally 4000 units. Magical +2 reduces by 2 stones (2000 units).
+	# Result: 4000 - 2000 = 2000 units
+	var chain := _make_item("Chain Mail +2", 4000, "armor", true, 2)
 	var result := EncumbranceCalculator.calculate_encumbrance([chain])
-	assert(int(result.total_sixths) == 12,
-		"chain +2 should be 24-12=12 sixths, got %d" % int(result.total_sixths))
+	assert(int(result.total_units) == 2000,
+		"chain +2 should be 4000-2000=2000 units, got %d" % int(result.total_units))
 
-	# Shield +1 normally 6 sixths. Magical +1 reduces by 1 stone (6 sixths).
-	# Result: 6 - 6 = 0 sixths (clamped to 0)
-	var shield := _make_item("Shield +1", 6, "shield", true, 1)
+	# Shield +1 normally 1000 units. Magical +1 reduces by 1 stone (1000 units).
+	# Result: 1000 - 1000 = 0 units (clamped to 0)
+	var shield := _make_item("Shield +1", 1000, "shield", true, 1)
 	var shield_result := EncumbranceCalculator.calculate_encumbrance([shield])
-	assert(int(shield_result.total_sixths) == 0,
-		"shield +1 should be 6-6=0 sixths, got %d" % int(shield_result.total_sixths))
+	assert(int(shield_result.total_units) == 0,
+		"shield +1 should be 1000-1000=0 units, got %d" % int(shield_result.total_units))
 
 	# Non-magical armor gets no reduction
-	var normal_chain := _make_item("Chain Mail", 24, "armor", false, 0)
+	var normal_chain := _make_item("Chain Mail", 4000, "armor", false, 0)
 	var normal_result := EncumbranceCalculator.calculate_encumbrance([normal_chain])
-	assert(int(normal_result.total_sixths) == 24,
-		"non-magical chain should be 24 sixths, got %d" % int(normal_result.total_sixths))
+	assert(int(normal_result.total_units) == 4000,
+		"non-magical chain should be 4000 units, got %d" % int(normal_result.total_units))
 	print("  magical_armor_reduction: OK")
 
 
@@ -166,33 +167,66 @@ func test_magical_armor_reduction() -> void:
 
 func test_movement_tier_boundaries() -> void:
 	# Test exact boundary values:
-	# 30 sixths = 120'/turn (at boundary)
-	var tier := EncumbranceCalculator.get_movement_tier(30)
+	# 5000 units = 120'/turn (at 5-stone boundary)
+	var tier := EncumbranceCalculator.get_movement_tier(5000)
 	assert(int(tier.exploration) == 120,
-		"30 sixths should give 120'/turn, got %d" % int(tier.exploration))
+		"5000 units should give 120'/turn, got %d" % int(tier.exploration))
 
-	# 31 sixths = 90'/turn (crosses into next tier)
-	tier = EncumbranceCalculator.get_movement_tier(31)
+	# 5001 units = 90'/turn (crosses into next tier)
+	tier = EncumbranceCalculator.get_movement_tier(5001)
 	assert(int(tier.exploration) == 90,
-		"31 sixths should give 90'/turn, got %d" % int(tier.exploration))
+		"5001 units should give 90'/turn, got %d" % int(tier.exploration))
 
-	# 42 sixths = 90'/turn (at boundary)
-	tier = EncumbranceCalculator.get_movement_tier(42)
+	# 7000 units = 90'/turn (at 7-stone boundary)
+	tier = EncumbranceCalculator.get_movement_tier(7000)
 	assert(int(tier.exploration) == 90,
-		"42 sixths should give 90'/turn, got %d" % int(tier.exploration))
+		"7000 units should give 90'/turn, got %d" % int(tier.exploration))
 
-	# 43 sixths = 60'/turn (crosses into next tier)
-	tier = EncumbranceCalculator.get_movement_tier(43)
+	# 7001 units = 60'/turn (crosses into next tier)
+	tier = EncumbranceCalculator.get_movement_tier(7001)
 	assert(int(tier.exploration) == 60,
-		"43 sixths should give 60'/turn, got %d" % int(tier.exploration))
+		"7001 units should give 60'/turn, got %d" % int(tier.exploration))
 
-	# 60 sixths = 60'/turn (at boundary)
-	tier = EncumbranceCalculator.get_movement_tier(60)
+	# 10000 units = 60'/turn (at 10-stone boundary)
+	tier = EncumbranceCalculator.get_movement_tier(10000)
 	assert(int(tier.exploration) == 60,
-		"60 sixths should give 60'/turn, got %d" % int(tier.exploration))
+		"10000 units should give 60'/turn, got %d" % int(tier.exploration))
 
-	# 61 sixths = 30'/turn (crosses into next tier)
-	tier = EncumbranceCalculator.get_movement_tier(61)
+	# 10001 units = 30'/turn (crosses into max-load tier)
+	tier = EncumbranceCalculator.get_movement_tier(10001)
 	assert(int(tier.exploration) == 30,
-		"61 sixths should give 30'/turn, got %d" % int(tier.exploration))
+		"10001 units should give 30'/turn, got %d" % int(tier.exploration))
 	print("  movement_tier_boundaries: OK")
+
+
+# ---------------------------------------------------------------------------
+# Coin encumbrance (1 unit per coin, quantity multiplied)
+# ---------------------------------------------------------------------------
+
+func test_coin_encumbrance() -> void:
+	# 1000 gold coins = 1000 units = 1.0 stone
+	var gold := InventoryItem.new()
+	gold.name = "Gold Pieces"
+	gold.item_key = "coins_gp"
+	gold.item_category = "treasure"
+	gold.encumbrance_units = 1
+	gold.quantity = 1000
+
+	var result := EncumbranceCalculator.calculate_encumbrance([gold])
+	assert(int(result.total_units) == 1000,
+		"1000 coins should be 1000 units, got %d" % int(result.total_units))
+	assert(abs(result.total_stone - 1.0) < 0.001,
+		"1000 coins should be 1.0 stone, got %.3f" % result.total_stone)
+
+	# 100 gold coins = 100 units = 0.1 stone
+	var small_purse := InventoryItem.new()
+	small_purse.name = "Gold Pieces"
+	small_purse.item_key = "coins_gp"
+	small_purse.item_category = "treasure"
+	small_purse.encumbrance_units = 1
+	small_purse.quantity = 100
+
+	var small_result := EncumbranceCalculator.calculate_encumbrance([small_purse])
+	assert(int(small_result.total_units) == 100,
+		"100 coins should be 100 units, got %d" % int(small_result.total_units))
+	print("  coin_encumbrance: OK")

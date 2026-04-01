@@ -39,6 +39,14 @@ func has_item(item_key: String) -> bool:
 	return _items.has(item_key)
 
 
+func is_container(item_key: String) -> bool:
+	return int(get_item(item_key).get("container_capacity_units", 0)) > 0
+
+
+func get_container_capacity_units(item_key: String) -> int:
+	return int(get_item(item_key).get("container_capacity_units", 0))
+
+
 func get_items_by_category(category: String) -> Array[Dictionary]:
 	var keys: Array = _by_category.get(category, [])
 	var result: Array[Dictionary] = []
@@ -179,8 +187,8 @@ func _load_provisions() -> void:
 		if item.get("item_category", "") == "foodstuff":
 			# Foodstuffs don't have encumbrance/is_heavy fields — add defaults
 			var normalized: Dictionary = item.duplicate()
-			if not normalized.has("encumbrance_sixths"):
-				normalized["encumbrance_sixths"] = 1  # nominal: foodstuffs weigh ~1/6 stone each
+			if not normalized.has("encumbrance_units"):
+				normalized["encumbrance_units"] = 167  # nominal: foodstuffs weigh ~1/6 stone each
 			if not normalized.has("is_heavy"):
 				normalized["is_heavy"] = false
 			_register_item(normalized)

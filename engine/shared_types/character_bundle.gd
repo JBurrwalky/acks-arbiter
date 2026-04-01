@@ -13,3 +13,4 @@ var spells: Array = []            ## Array[Dictionary] from character_spells tab
 var powers: Array = []            ## Array[Dictionary] from character_powers table
 var conditions: Array = []        ## Array[Dictionary] from character_conditions table
 var active_effects: Array = []    ## Array[Dictionary] from active_effects table
+var henchmen: Array = []          ## Array[Dictionary] from characters table (employer_id match)

@@ -259,6 +259,13 @@ func list_party_characters(party_id: String) -> Array:
 	return db.query_result.duplicate()
 
 
+func get_henchmen_for_employer(employer_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM characters WHERE employer_id = ? AND character_type = 'henchman' AND is_active = 1 ORDER BY name",
+		[employer_id])
+	return db.query_result.duplicate()
+
+
 # ---------------------------------------------------------------------------
 # Party CRUD
 # ---------------------------------------------------------------------------
@@ -439,7 +446,7 @@ func add_inventory_item(data: Dictionary) -> String:
 		id = generate_id()
 	if not db.query_with_bindings("""
 		INSERT INTO inventory_items
-			(id, character_id, item_key, name, quantity, encumbrance_sixths,
+			(id, character_id, item_key, name, quantity, encumbrance_units,
 			 slot, is_equipped, notes,
 			 item_category, is_magical, magical_bonus,
 			 weapon_damage, armor_ac_bonus, is_heavy, container_id)
@@ -450,7 +457,7 @@ func add_inventory_item(data: Dictionary) -> String:
 		data.get("item_key", ""),
 		data.get("name", ""),
 		data.get("quantity", 1),
-		data.get("encumbrance_sixths", 0),
+		data.get("encumbrance_units", 0),
 		data.get("slot", "pack"),
 		1 if data.get("is_equipped", false) else 0,
 		data.get("notes", ""),
@@ -519,7 +526,7 @@ func split_item_for_equip(item_id: String, slot: String, uses_per_unit: int) -> 
 	var new_id: String = generate_id()
 	if not db.query_with_bindings("""
 		INSERT INTO inventory_items
-			(id, character_id, item_key, name, quantity, encumbrance_sixths,
+			(id, character_id, item_key, name, quantity, encumbrance_units,
 			 slot, is_equipped, notes, item_category, is_magical, magical_bonus,
 			 weapon_damage, armor_ac_bonus, is_heavy, damage_type, material,
 			 container_id, uses_remaining)
@@ -529,7 +536,7 @@ func split_item_for_equip(item_id: String, slot: String, uses_per_unit: int) -> 
 		source.get("character_id", ""),
 		source.get("item_key", ""),
 		source.get("name", ""),
-		int(source.get("encumbrance_sixths", 0)),
+		int(source.get("encumbrance_units", 0)),
 		slot,
 		source.get("notes", ""),
 		source.get("item_category", "gear"),
@@ -867,7 +874,7 @@ func save_character_inventory(character_id: String, items: Array) -> bool:
 			item_id = generate_id()
 		if not db.query_with_bindings("""
 			INSERT INTO inventory_items
-				(id, character_id, item_key, name, quantity, encumbrance_sixths,
+				(id, character_id, item_key, name, quantity, encumbrance_units,
 				 slot, is_equipped, notes,
 				 item_category, is_magical, magical_bonus,
 				 weapon_damage, armor_ac_bonus, is_heavy, container_id)
@@ -875,7 +882,7 @@ func save_character_inventory(character_id: String, items: Array) -> bool:
 		""", [
 			item_id, character_id,
 			item.get("item_key", ""), item.get("name", ""),
-			item.get("quantity", 1), item.get("encumbrance_sixths", 0),
+			item.get("quantity", 1), item.get("encumbrance_units", 0),
 			item.get("slot", "pack"),
 			1 if item.get("is_equipped", false) else 0,
 			item.get("notes", ""),

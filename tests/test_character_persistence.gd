@@ -225,7 +225,7 @@ func test_inventory_round_trip() -> void:
 			"item_key": "longsword_plus_1",
 			"name": "Longsword +1",
 			"quantity": 1,
-			"encumbrance_sixths": 6,
+			"encumbrance_units": 1000,
 			"slot": "hands_main",
 			"is_equipped": true,
 			"item_category": "weapon",
@@ -240,7 +240,7 @@ func test_inventory_round_trip() -> void:
 			"item_key": "chain_mail",
 			"name": "Chain Mail",
 			"quantity": 1,
-			"encumbrance_sixths": 24,
+			"encumbrance_units": 4000,
 			"slot": "body",
 			"is_equipped": true,
 			"item_category": "armor",
@@ -267,8 +267,8 @@ func test_inventory_round_trip() -> void:
 			sword_found = true
 			assert(item.get("name", "") == "Longsword +1",
 				"sword name should match")
-			assert(int(item.get("encumbrance_sixths", 0)) == 6,
-				"sword encumbrance should be 6")
+			assert(int(item.get("encumbrance_units", 0)) == 1000,
+				"sword encumbrance should be 1000 units (1 stone)")
 			assert(item.get("item_category", "") == "weapon",
 				"sword category should be 'weapon'")
 			assert(int(item.get("is_magical", 0)) == 1,

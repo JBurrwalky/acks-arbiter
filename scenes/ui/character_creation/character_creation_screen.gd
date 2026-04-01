@@ -522,28 +522,26 @@ func _build_coin_items(remaining_cp: int) -> Array:
 			"item_key": "coins_gp", "name": "Gold Pieces", "quantity": gp,
 			"slot": "pack", "is_equipped": 0,
 			"item_category": "treasure",
-			"encumbrance_sixths": _coin_enc_sixths(gp),
+			"encumbrance_units": 1,
 		})
 	if sp > 0:
 		items.append({
 			"item_key": "coins_sp", "name": "Silver Pieces", "quantity": sp * 10,
 			"slot": "pack", "is_equipped": 0,
 			"item_category": "treasure",
-			"encumbrance_sixths": _coin_enc_sixths(sp * 10),
+			"encumbrance_units": 1,
 		})
 	if cp > 0:
 		items.append({
 			"item_key": "coins_cp", "name": "Copper Pieces", "quantity": cp * 100,
 			"slot": "pack", "is_equipped": 0,
 			"item_category": "treasure",
-			"encumbrance_sixths": _coin_enc_sixths(cp * 100),
+			"encumbrance_units": 1,
 		})
 	return items
 
 
-func _coin_enc_sixths(count: int) -> int:
-	## ACKS: 1000 coins = 1 stone = 6 sixths. Round down (floor).
-	return count * 6 / 1000
+## Removed: _coin_enc_sixths() — each coin is now 1 encumbrance_unit per piece.
 
 
 # ---------------------------------------------------------------------------

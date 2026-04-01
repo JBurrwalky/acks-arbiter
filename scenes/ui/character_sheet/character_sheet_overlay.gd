@@ -48,6 +48,7 @@ var _tab_proficiencies: CSTabProficiencies
 var _tab_spells: CSTabSpells
 var _tab_advancement: CSTabAdvancement
 var _tab_effects: CSTabEffects
+var _tab_retainers: CSTabRetainers
 
 
 # ---------------------------------------------------------------------------
@@ -146,6 +147,7 @@ func _build_tabs() -> void:
 	_tab_attributes = CSTabAttributes.new()
 	_tab_combat = CSTabCombat.new()
 	_tab_equipment = CSTabEquipment.new()
+	_tab_retainers = CSTabRetainers.new()
 	_tab_proficiencies = CSTabProficiencies.new()
 	_tab_spells = CSTabSpells.new()
 	_tab_advancement = CSTabAdvancement.new()
@@ -156,6 +158,7 @@ func _build_tabs() -> void:
 		["Attributes",    _tab_attributes],
 		["Combat",        _tab_combat],
 		["Equipment",     _tab_equipment],
+		["Retainers",     _tab_retainers],
 		["Proficiencies", _tab_proficiencies],
 		["Spells",        _tab_spells],
 		["Advancement",   _tab_advancement],
@@ -183,6 +186,7 @@ func _connect_signals() -> void:
 	EventBus.spell_effect_removed.connect(_on_spell_effect_removed)
 	EventBus.override_applied.connect(_on_override_applied)
 	EventBus.character_sheet_requested.connect(open)
+	EventBus.loyalty_changed.connect(_on_loyalty_changed)
 
 
 # ---------------------------------------------------------------------------
@@ -267,6 +271,7 @@ func _load_character(character_id: String) -> CharacterBundle:
 	bundle.powers = CampaignRepository.get_character_powers(character_id)
 	bundle.conditions = CampaignRepository.get_conditions(character_id)
 	bundle.active_effects = CampaignRepository.get_active_effects_on_target(character_id, GameState.campaign_id)
+	bundle.henchmen = CampaignRepository.get_henchmen_for_employer(character_id)
 	## Populate character.proficiencies so has_proficiency() etc. work.
 	bundle.character.proficiencies = bundle.proficiencies
 	return bundle
@@ -280,6 +285,7 @@ func _refresh_all_tabs() -> void:
 	_tab_attributes.display(_bundle, reg)
 	_tab_combat.display(_bundle, reg)
 	_tab_equipment.display(_bundle, reg)
+	_tab_retainers.display(_bundle, reg)
 	_tab_proficiencies.display(_bundle, reg)
 	_tab_spells.display(_bundle, reg)
 	_tab_advancement.display(_bundle, reg)
@@ -311,6 +317,7 @@ func _on_inventory_updated(character_id: String) -> void:
 	_bundle.inventory = CampaignRepository.get_inventory_items(character_id)
 	var reg := _make_registries_dict()
 	_tab_equipment.display(_bundle, reg)
+	_tab_retainers.display(_bundle, reg)
 	_tab_combat.display(_bundle, reg)
 
 
@@ -384,6 +391,13 @@ func _on_override_applied(_type: String, target_id: String, _field: String) -> v
 	_char_name_label.text = _bundle.character.name if not _bundle.character.name.is_empty() else "(unnamed)"
 	_refresh_all_tabs()
 	_refresh_party_list_item(target_id)
+
+
+func _on_loyalty_changed(_henchman_id: String, _old: int, _new: int) -> void:
+	if not visible or _displayed_character_id.is_empty():
+		return
+	_bundle.henchmen = CampaignRepository.get_henchmen_for_employer(_displayed_character_id)
+	_tab_retainers.display(_bundle, _make_registries_dict())
 
 
 # ---------------------------------------------------------------------------

@@ -181,7 +181,7 @@ func override_add_item(
 	item_key: String,
 	name: String,
 	qty: int,
-	enc_sixths: int,
+	enc_units: int,
 	slot: String
 ) -> bool:
 	var item_id := CampaignRepository.add_inventory_item({
@@ -189,7 +189,7 @@ func override_add_item(
 		"item_key":     item_key,
 		"name":         name,
 		"quantity":     qty,
-		"encumbrance_sixths": enc_sixths,
+		"encumbrance_units": enc_units,
 		"slot":         slot,
 	})
 	if item_id.is_empty():
@@ -244,9 +244,9 @@ func override_adjust_gold(character_id: String, delta_gp: int) -> bool:
 			"character_id":       character_id,
 			"item_key":           GOLD_ITEM_KEY,
 			"name":               GOLD_ITEM_NAME,
-			"quantity":           new_qty,
-			"encumbrance_sixths": 0,
-			"slot":               "pack",
+			"quantity":          new_qty,
+			"encumbrance_units": 1,
+			"slot":              "pack",
 		})
 		if item_id.is_empty():
 			return false

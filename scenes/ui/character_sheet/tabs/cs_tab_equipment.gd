@@ -3,22 +3,10 @@ extends VBoxContainer
 
 ## Equipment tab — equipped items, containers with contents, loose carry.
 ## Supports equip/unequip for weapons/armor/shields/clothing/gear, placing items
-## into containers, and dropping containers.
+## into containers via drag-and-drop, and dropping containers.
 
-## Item categories that show Equip buttons in the "Available to equip" list.
+## Item categories that receive an Equip button in the inventory loose carry zone.
 const EQUIPPABLE_CATEGORIES := ["weapon", "armor", "shield", "clothing"]
-
-## Keys that identify container items. Matched as substring of item_key.
-const CONTAINER_KEYS := ["backpack", "sack_large", "sack_small", "pouch", "belt_pouch"]
-
-## Carry capacity per container (in stone). Used for display only.
-const CONTAINER_CAPACITY_STONE := {
-	"backpack":   4.0,
-	"sack_large": 6.0,
-	"sack_small": 2.0,
-	"pouch":      0.5,
-	"belt_pouch": 0.5,
-}
 
 ## Gear item_keys that can be equipped to a hand slot.
 const HAND_HOLDABLE_KEYS := [
@@ -75,8 +63,7 @@ func display(bundle: CharacterBundle, _registries: Dictionary) -> void:
 	add_child(HSeparator.new())
 	_render_equipped(bundle)
 	add_child(HSeparator.new())
-	_render_containers(bundle)
-	_render_loose(bundle)
+	_render_inventory(bundle)
 
 
 # ---------------------------------------------------------------------------
@@ -124,43 +111,8 @@ func _render_equipped(bundle: CharacterBundle) -> void:
 	for slot in ACCESSORY_SLOTS:
 		_add_slot_row(slot, equipped_by_slot)
 
-	## Available to equip
-	var has_unequipped := false
-	for item in bundle.inventory:
-		if bool(int(item.get("is_equipped", 0))):
-			continue
-		if not _can_equip(item):
-			continue
-		if _is_container(item):
-			continue
-		if not has_unequipped:
-			var lbl := Label.new()
-			lbl.text = "Available to equip:"
-			lbl.add_theme_font_size_override("font_size", 11)
-			lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-			add_child(lbl)
-			has_unequipped = true
-
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 6)
-		add_child(row)
-
-		var name_lbl := Label.new()
-		name_lbl.text = "  " + _item_display_name(item)
-		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(name_lbl)
-
-		var target_slot := _determine_equip_slot(item)
-		var equip_btn := Button.new()
-		equip_btn.text = "Equip"
-		equip_btn.custom_minimum_size = Vector2(60, 0)
-		if target_slot.is_empty():
-			equip_btn.disabled = true
-			equip_btn.tooltip_text = "No free slot available."
-		else:
-			var item_id: String = item.get("id", "")
-			equip_btn.pressed.connect(_on_equip.bind(item_id))
-		row.add_child(equip_btn)
+	## Unequipped equippable items now appear in the Inventory section (loose carry)
+	## so they can be dragged into containers and equipped from one unified list.
 
 
 func _add_slot_row(slot: String, equipped_by_slot: Dictionary) -> void:
@@ -194,17 +146,12 @@ func _add_slot_row(slot: String, equipped_by_slot: Dictionary) -> void:
 		row.add_child(empty_lbl)
 
 
-func _render_containers(bundle: CharacterBundle) -> void:
-	var containers: Array = []
-	for item in bundle.inventory:
-		if _is_container(item):
-			containers.append(item)
+func _render_inventory(bundle: CharacterBundle) -> void:
+	## Flat inventory list: each container as a drop target (EquipmentContainerRow)
+	## followed by the loose carry zone (EquipmentLooseZone).
+	_add_section_header("Inventory")
 
-	if containers.is_empty():
-		return
-
-	_add_section_header("Containers")
-
+	# Build lookup: container_id -> [items inside it]
 	var by_container: Dictionary = {}
 	for item in bundle.inventory:
 		var cid: String = item.get("container_id", "")
@@ -214,132 +161,52 @@ func _render_containers(bundle: CharacterBundle) -> void:
 			by_container[cid] = []
 		by_container[cid].append(item)
 
-	for container in containers:
-		var cid: String = container.get("id", "")
+	# Render each container
+	for item in bundle.inventory:
+		if not _is_container_item(item):
+			continue
+		var cid: String = item.get("id", "")
 		var contents: Array = by_container.get(cid, [])
+		var capacity_units: int = _get_catalog().get_container_capacity_units(item.get("item_key", ""))
+		var used_units: int = _calculate_container_used_units(cid)
 
-		var contents_sixths: float = 0.0
-		for ci in contents:
-			var sixths: int = int(ci.get("encumbrance_sixths", 0))
-			var qty: int = int(ci.get("quantity", 1))
-			contents_sixths += sixths * qty
-		var contents_stone: float = contents_sixths / 6.0
-		var capacity: float = _container_capacity(container)
+		var container_row := EquipmentContainerRow.new()
+		container_row.setup(
+			item,
+			contents,
+			capacity_units,
+			used_units,
+			_character_id,
+			func(c: Dictionary): _on_drop_container(c.get("id", "")),
+			func(ci: Dictionary): _on_remove_from_container(ci.get("id", "")),
+		)
+		add_child(container_row)
 
-		var hdr := HBoxContainer.new()
-		hdr.add_theme_constant_override("separation", 6)
-		add_child(hdr)
-
-		var hdr_lbl := Label.new()
-		hdr_lbl.text = container.get("name", container.get("item_key", "?"))
-		hdr_lbl.add_theme_font_size_override("font_size", 12)
-		hdr_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		hdr.add_child(hdr_lbl)
-
-		if capacity > 0:
-			var cap_lbl := Label.new()
-			cap_lbl.text = "%.2f / %.2f stone" % [contents_stone, capacity]
-			cap_lbl.add_theme_font_size_override("font_size", 11)
-			cap_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-			hdr.add_child(cap_lbl)
-
-		var drop_btn := Button.new()
-		drop_btn.text = "Drop"
-		drop_btn.custom_minimum_size = Vector2(50, 0)
-		drop_btn.add_theme_color_override("font_color", Color(0.9, 0.4, 0.2))
-		drop_btn.pressed.connect(_on_drop_container.bind(cid))
-		hdr.add_child(drop_btn)
-
-		if contents.is_empty():
-			var empty_lbl := Label.new()
-			empty_lbl.text = "    (empty)"
-			empty_lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
-			add_child(empty_lbl)
-		else:
-			for ci in contents:
-				var ci_row := HBoxContainer.new()
-				ci_row.add_theme_constant_override("separation", 6)
-				add_child(ci_row)
-
-				var ci_name := Label.new()
-				var ci_sixths: int = int(ci.get("encumbrance_sixths", 0))
-				var ci_qty: int = int(ci.get("quantity", 1))
-				var ci_stone_str := " (%.2f st)" % (ci_sixths * ci_qty / 6.0) if ci_sixths > 0 else ""
-				ci_name.text = "    \u2022 " + _item_display_name(ci) + ci_stone_str
-				ci_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				ci_row.add_child(ci_name)
-
-				var rm_btn := Button.new()
-				rm_btn.text = "Remove"
-				rm_btn.custom_minimum_size = Vector2(65, 0)
-				rm_btn.flat = true
-				var ci_id: String = ci.get("id", "")
-				rm_btn.pressed.connect(_on_remove_from_container.bind(ci_id))
-				ci_row.add_child(rm_btn)
-
-		var movable: Array = _get_loose_movable_items(bundle, cid)
-		if not movable.is_empty():
-			var move_hdr := Label.new()
-			move_hdr.text = "    Move to %s:" % container.get("name", "container")
-			move_hdr.add_theme_font_size_override("font_size", 10)
-			move_hdr.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
-			add_child(move_hdr)
-
-			for mi in movable:
-				var mi_row := HBoxContainer.new()
-				mi_row.add_theme_constant_override("separation", 6)
-				add_child(mi_row)
-
-				var mi_name := Label.new()
-				mi_name.text = "      " + _item_display_name(mi)
-				mi_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				mi_row.add_child(mi_name)
-
-				var mv_btn := Button.new()
-				mv_btn.text = "Move in"
-				mv_btn.custom_minimum_size = Vector2(65, 0)
-				mv_btn.flat = true
-				var mi_id: String = mi.get("id", "")
-				mv_btn.pressed.connect(_on_move_into_container.bind(mi_id, cid))
-				mi_row.add_child(mv_btn)
-
-
-func _render_loose(bundle: CharacterBundle) -> void:
-	## Items carried but not equipped and not in a container.
-	## Excludes equippable items (those are shown in the Equipped section).
+	# Collect loose items: not equipped, not in a container, not a container itself,
+	# and not a living creature (those display on the Retainers tab).
 	var loose: Array = []
 	for item in bundle.inventory:
-		if _is_container(item):
+		if _is_container_item(item):
 			continue
-		if _can_equip(item):
-			continue  ## shown in Equipped / Available to equip
 		if bool(int(item.get("is_equipped", 0))):
 			continue
-		var cid: String = item.get("container_id", "")
-		if not cid.is_empty():
+		if not item.get("container_id", "").is_empty():
+			continue
+		if item.get("item_category", "") in CSTabRetainers.ANIMAL_CATEGORIES:
 			continue
 		loose.append(item)
 
-	if loose.is_empty():
-		return
-
-	add_child(HSeparator.new())
-	_add_section_header("Loose Carry (no container)")
-
-	for item in loose:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 6)
-		add_child(row)
-
-		var sixths: int = int(item.get("encumbrance_sixths", 0))
-		var qty: int = int(item.get("quantity", 1))
-		var stone_str := " (%.2f st)" % (sixths * qty / 6.0) if sixths > 0 else ""
-
-		var name_lbl := Label.new()
-		name_lbl.text = "  \u2022 " + _item_display_name(item) + stone_str
-		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		row.add_child(name_lbl)
+	var loose_zone := EquipmentLooseZone.new()
+	loose_zone.setup(
+		loose,
+		_character_id,
+		func(ci: Dictionary): _on_remove_from_container(ci.get("id", "")),
+		func(item: Dictionary) -> Callable:
+			if _can_equip(item):
+				return func(): _on_equip(item.get("id", ""))
+			return Callable(),
+	)
+	add_child(loose_zone)
 
 
 # ---------------------------------------------------------------------------
@@ -390,11 +257,6 @@ func _on_unequip(item_id: String) -> void:
 	else:
 		if CampaignRepository.update_inventory_item_equip_state(item_id, false, "pack", ""):
 			EventBus.inventory_updated.emit(_character_id)
-
-
-func _on_move_into_container(item_id: String, container_id: String) -> void:
-	if CampaignRepository.update_inventory_item_equip_state(item_id, false, "pack", container_id):
-		EventBus.inventory_updated.emit(_character_id)
 
 
 func _on_remove_from_container(item_id: String) -> void:
@@ -507,6 +369,37 @@ func _determine_equip_slot(item: Dictionary) -> String:
 # Helpers
 # ---------------------------------------------------------------------------
 
+func _is_container_item(item: Dictionary) -> bool:
+	return _get_catalog().is_container(item.get("item_key", ""))
+
+
+func _calculate_container_used_units(container_id: String) -> int:
+	var total: int = 0
+	if _bundle == null:
+		return total
+	for item in _bundle.inventory:
+		if item.get("container_id", "") == container_id:
+			total += int(item.get("encumbrance_units", 0)) * int(item.get("quantity", 1))
+	return total
+
+
+func can_fit_in_container(item: Dictionary, container_id: String) -> bool:
+	var container: Dictionary = {}
+	if _bundle != null:
+		for inv_item in _bundle.inventory:
+			if inv_item.get("id", "") == container_id:
+				container = inv_item
+				break
+	if container.is_empty():
+		return false
+	var capacity: int = _get_catalog().get_container_capacity_units(container.get("item_key", ""))
+	if capacity <= 0:
+		return false
+	var used: int = _calculate_container_used_units(container_id)
+	var item_units: int = int(item.get("encumbrance_units", 0)) * int(item.get("quantity", 1))
+	return (used + item_units) <= capacity
+
+
 func _is_slot_equipped(slot: String) -> bool:
 	if _bundle == null:
 		return false
@@ -534,39 +427,6 @@ func _get_catalog() -> EquipmentCatalog:
 	if _catalog == null:
 		_catalog = EquipmentCatalog.new()
 	return _catalog
-
-
-func _is_container(item: Dictionary) -> bool:
-	var key: String = item.get("item_key", "").to_lower()
-	for ck in CONTAINER_KEYS:
-		if ck in key:
-			return true
-	return false
-
-
-func _container_capacity(container: Dictionary) -> float:
-	var key: String = container.get("item_key", "").to_lower()
-	for ck in CONTAINER_CAPACITY_STONE:
-		if ck in key:
-			return CONTAINER_CAPACITY_STONE[ck]
-	return 0.0
-
-
-func _get_loose_movable_items(bundle: CharacterBundle, _exclude_container_id: String) -> Array:
-	## Returns non-equippable, non-container items not yet in any container.
-	var result: Array = []
-	for item in bundle.inventory:
-		if _is_container(item):
-			continue
-		if _can_equip(item):
-			continue
-		if bool(int(item.get("is_equipped", 0))):
-			continue
-		var cid: String = item.get("container_id", "")
-		if not cid.is_empty():
-			continue
-		result.append(item)
-	return result
 
 
 func _item_display_name(item: Dictionary) -> String:
