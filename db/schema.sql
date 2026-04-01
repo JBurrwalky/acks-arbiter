@@ -132,7 +132,12 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     quantity INTEGER NOT NULL DEFAULT 1,
     encumbrance_sixths INTEGER NOT NULL DEFAULT 0,
     slot TEXT NOT NULL DEFAULT 'pack'
-        CHECK(slot IN ('hands_main', 'hands_off', 'body', 'head', 'belt', 'pack', 'mount')),
+        CHECK(slot IN (
+            'hands_main', 'hands_off',
+            'body', 'head', 'belt', 'feet', 'hands_worn', 'cloak',
+            'accessory_1', 'accessory_2', 'accessory_3', 'accessory_4', 'accessory_5',
+            'pack', 'mount'
+        )),
     is_equipped INTEGER NOT NULL DEFAULT 0 CHECK(is_equipped IN (0, 1)),
     notes TEXT NOT NULL DEFAULT '',
     -- Migration 005 additions
@@ -146,7 +151,10 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     damage_type TEXT NOT NULL DEFAULT 'physical',
     material TEXT NOT NULL DEFAULT '',
     -- Migration 010 additions
-    container_id TEXT NOT NULL DEFAULT ''
+    container_id TEXT NOT NULL DEFAULT '',
+    -- Migration 011: slot expanded to include feet, hands_worn, accessory_1-5
+    -- Migration 012 additions
+    uses_remaining INTEGER NOT NULL DEFAULT -1
 );
 
 CREATE TABLE IF NOT EXISTS character_spells (

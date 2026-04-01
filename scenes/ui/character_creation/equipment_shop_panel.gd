@@ -260,6 +260,11 @@ func _add_item_row(item: Dictionary, cls: Dictionary) -> void:
 		var dmg: String = item.get("weapon_damage", "")
 		if not dmg.is_empty():
 			line1_parts.append("(%s)" % dmg)
+		var tags: Array = item.get("weapon_tags", [])
+		if "two_handed" in tags:
+			line1_parts.append("[two-handed]")
+		elif "versatile" in tags:
+			line1_parts.append("[versatile]")
 	elif category in ["armor", "shield"]:
 		var ac_bonus: int = int(item.get("armor_ac_bonus", 0))
 		if ac_bonus > 0:
@@ -300,6 +305,35 @@ func _add_item_row(item: Dictionary, cls: Dictionary) -> void:
 	row.add_child(buy_btn)
 
 
+## Semantic weapon permission tags that are NOT direct item_keys.
+const _SEMANTIC_WEAPON_PERMS := [
+	"piercing_melee", "slashing_melee", "blunt_melee",
+	"any_one_handed_melee", "all_one_handed_melee_weapons", "all_except_oversized",
+	"any_missile", "all_missile_weapons",
+	"all_axes", "all_hammers", "all_flails", "all_maces",
+	"all_melee", "all",
+]
+
+## Armor tier map: semantic permission string → maximum armor_ac_bonus allowed.
+const _ARMOR_TIER_MAP := {
+	"leather_or_lighter":    2,
+	"ring_or_lighter":       3,
+	"chain_mail_or_lighter": 4,
+	"chain_or_lighter":      4,
+	"banded_or_lighter":     5,
+}
+
+## Short armor name aliases → canonical item_keys (some class files abbreviate names).
+const _ARMOR_KEY_ALIASES := {
+	"leather":  "leather_armor",
+	"hide":     "hide_armor",
+	"ring":     "ring_mail",
+	"chain":    "chain_mail",
+	"banded":   "banded_armor",
+	"plate":    "plate_armor",
+}
+
+
 func _get_restriction_warning(item: Dictionary, cls: Dictionary) -> String:
 	if cls.is_empty():
 		return ""
@@ -308,13 +342,78 @@ func _get_restriction_warning(item: Dictionary, cls: Dictionary) -> String:
 
 	if category == "weapon":
 		var wpn_perms: Array = cls.get("weapon_permissions", [])
+		## Resolve sentinel for classes whose weapons depend on a sub-choice made earlier
+		if wpn_perms.size() == 1 and wpn_perms[0] == "determined_by_regional_origin":
+			var origin_key: String = _state.get("barbarian_origin", "")
+			var origins: Dictionary = cls.get("regional_origins", {})
+			if not origin_key.is_empty() and origins.has(origin_key):
+				wpn_perms = origins[origin_key].get("weapons_permitted", [])
+			else:
+				wpn_perms = []  ## no origin chosen yet — suppress warnings
 		if wpn_perms.size() > 0 and wpn_perms[0] != "all":
-			if item_key not in wpn_perms:
+			## Lazy-load weapon tags from catalog once.
+			var catalog_entry := _catalog.get_item(item_key)
+			var tags: Array = catalog_entry.get("weapon_tags", [])
+			var permitted := false
+			for perm in wpn_perms:
+				if permitted:
+					break
+				## Direct item_key match
+				if perm == item_key:
+					permitted = true
+					break
+				## Semantic category resolution
+				match perm:
+					"piercing_melee", "slashing_melee":
+						## Any non-blunt melee weapon
+						if "melee" in tags and "blunt" not in tags:
+							permitted = true
+					"blunt_melee":
+						if "melee" in tags and "blunt" in tags:
+							permitted = true
+					"any_one_handed_melee", "all_one_handed_melee_weapons", "all_except_oversized":
+						if "melee" in tags and "two_handed" not in tags:
+							permitted = true
+					"any_missile", "all_missile_weapons":
+						if "ranged" in tags or "thrown" in tags:
+							permitted = true
+					"all_axes":
+						if "axe" in item_key:
+							permitted = true
+					"all_hammers":
+						if "hammer" in item_key:
+							permitted = true
+					"all_flails":
+						if "flail" in item_key:
+							permitted = true
+					"all_maces":
+						if "mace" in item_key:
+							permitted = true
+					"all_melee":
+						if "melee" in tags:
+							permitted = true
+			if not permitted:
 				return "Your class cannot use this weapon proficiently."
 	elif category == "armor":
 		var arm_perms: Array = cls.get("armor_permissions", [])
 		if arm_perms.size() > 0 and arm_perms[0] != "all":
-			if item_key not in arm_perms:
+			var ac_bonus: int = int(item.get("armor_ac_bonus", 0))
+			var permitted := false
+			for perm in arm_perms:
+				if perm == item_key:
+					permitted = true
+					break
+				## Normalize short aliases to canonical item_keys
+				var resolved: String = _ARMOR_KEY_ALIASES.get(perm, perm)
+				if resolved == item_key:
+					permitted = true
+					break
+				## Semantic tier: check AC bonus against maximum allowed
+				if perm in _ARMOR_TIER_MAP:
+					if ac_bonus <= _ARMOR_TIER_MAP[perm]:
+						permitted = true
+					break
+			if not permitted:
 				return "Your class cannot wear this armor without penalty."
 		elif arm_perms.is_empty():
 			return "Your class cannot wear armor."
@@ -341,12 +440,13 @@ func _on_buy_item(item_key: String) -> void:
 	_gold_remaining_cp -= cost_cp
 	_commit_gold()
 
-	# Add to cart (stack if already present)
+	# Add to cart (stack if already present; bundles increment by bundle_quantity)
+	var bundle_qty: int = int(item.get("bundle_quantity", 1))
 	var inventory: Array = _state.get("inventory", [])
 	var found := false
 	for cart_item in inventory:
 		if cart_item.get("item_key", "") == item_key:
-			cart_item["quantity"] = int(cart_item.get("quantity", 1)) + 1
+			cart_item["quantity"] = int(cart_item.get("quantity", bundle_qty)) + bundle_qty
 			found = true
 			break
 	if not found:
@@ -362,13 +462,14 @@ func _on_buy_item(item_key: String) -> void:
 func _on_sell_item(item_key: String) -> void:
 	var item := _catalog.get_item(item_key)
 	var cost_cp: int = int(item.get("cost_cp", 0)) if not item.is_empty() else 0
+	var bundle_qty: int = int(item.get("bundle_quantity", 1)) if not item.is_empty() else 1
 
 	var inventory: Array = _state.get("inventory", [])
 	for i in range(inventory.size() - 1, -1, -1):
 		if inventory[i].get("item_key", "") == item_key:
 			var qty: int = int(inventory[i].get("quantity", 1))
-			if qty > 1:
-				inventory[i]["quantity"] = qty - 1
+			if qty > bundle_qty:
+				inventory[i]["quantity"] = qty - bundle_qty
 			else:
 				inventory.remove_at(i)
 			_gold_remaining_cp += cost_cp
@@ -383,10 +484,11 @@ func _on_sell_item(item_key: String) -> void:
 
 func _catalog_item_to_cart(catalog_item: Dictionary) -> Dictionary:
 	## Convert a catalog item dict to a cart item (InventoryItem.to_dict()-compatible shape).
+	## Bundle items start with quantity = bundle_quantity (e.g. torches start at 6).
 	return {
 		"item_key": catalog_item.get("item_key", ""),
 		"name": catalog_item.get("name", ""),
-		"quantity": 1,
+		"quantity": int(catalog_item.get("bundle_quantity", 1)),
 		"encumbrance_sixths": int(catalog_item.get("encumbrance_sixths", 0)),
 		"slot": "pack",
 		"is_equipped": 0,
@@ -429,13 +531,6 @@ func _on_auto_equip() -> void:
 		inventory[best_armor_idx]["slot"] = "body"
 		inventory[best_armor_idx]["is_equipped"] = 1
 
-	# Shield
-	for i in inventory.size():
-		if inventory[i].get("item_category", "") == "shield":
-			inventory[i]["slot"] = "hands_off"
-			inventory[i]["is_equipped"] = 1
-			break
-
 	# Best weapon (highest avg damage, naive: sort by weapon_damage string length as proxy)
 	var best_weapon_idx := -1
 	var best_dmg := -1
@@ -447,9 +542,21 @@ func _on_auto_equip() -> void:
 			if sides > best_dmg:
 				best_dmg = sides
 				best_weapon_idx = i
+	var best_weapon_is_two_handed := false
 	if best_weapon_idx >= 0:
 		inventory[best_weapon_idx]["slot"] = "hands_main"
 		inventory[best_weapon_idx]["is_equipped"] = 1
+		var tags: Array = _catalog.get_item(
+				inventory[best_weapon_idx].get("item_key", "")).get("weapon_tags", [])
+		best_weapon_is_two_handed = "two_handed" in tags
+
+	# Shield — only if the best weapon is not two-handed
+	if not best_weapon_is_two_handed:
+		for i in inventory.size():
+			if inventory[i].get("item_category", "") == "shield":
+				inventory[i]["slot"] = "hands_off"
+				inventory[i]["is_equipped"] = 1
+				break
 
 	_state["inventory"] = inventory
 	_commit_inventory()

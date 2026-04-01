@@ -44,7 +44,8 @@
       "Bash(python -c \"import json, os; races=set\\(\\); [races.add\\(json.load\\(open\\(f''data/classes/{f}''\\)\\)[''race'']\\) for f in os.listdir\\(''data/classes''\\) if f.endswith\\(''.json''\\)]; print\\(sorted\\(races\\)\\)\")",
       "Bash(python -c \"import json, os; classes=[\\(json.load\\(open\\(f''data/classes/{f}''\\)\\)[''class_id''], json.load\\(open\\(f''data/classes/{f}''\\)\\)[''class_name''], json.load\\(open\\(f''data/classes/{f}''\\)\\)[''race'']\\) for f in sorted\\(os.listdir\\(''data/classes''\\)\\) if f.endswith\\(''.json''\\)]; [print\\(c\\) for c in classes]\")",
       "Bash(python -c \"import json; data=json.load\\(open\\(r''c:\\\\Users\\\\jttau\\\\acks-arbiter\\\\data\\\\proficiencies\\\\proficiency_specializations.json''\\)\\); langs=data.get\\(''language'',{}\\).get\\(''specializations'',[]\\); print\\(json.dumps\\([l[''id''] for l in langs], indent=2\\)\\)\")",
-      "Bash(python -c \":*)"
+      "Bash(python -c \":*)",
+      "Bash(grep -h \"weapon_permissions\\\\|armor_permissions\" \"c:\\\\Users\\\\jttau\\\\acks-arbiter\\\\data\\\\classes\"/*.json)"
     ]
   }
 }

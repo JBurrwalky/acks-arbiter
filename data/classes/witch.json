@@ -33,7 +33,7 @@
   },
   "xp_table": [0, 2000, 4000, 8000, 16000, 32000, 65000, 130000, 230000, 330000, 430000, 530000, 630000, 730000],
   "hd_table": ["1d4", "2d4", "3d4", "4d4", "5d4", "6d4", "7d4", "8d4", "9d4", "9d4+1", "9d4+2", "9d4+3", "9d4+4", "9d4+5"],
-  "weapon_permissions": ["club", "dagger", "dart", "staff"],
+  "weapon_permissions": ["club", "dagger", "dart", "quarterstaff"],
   "weapon_restrictions": [],
   "armor_permissions": [],
   "shield_permitted": false,

@@ -41,19 +41,19 @@
   "regional_origins": {
     "jutland": {
       "display_name": "Jutland",
-      "weapons_permitted": ["battle axe", "club", "dagger", "great axe", "hand axe", "shortbow", "spear", "sword", "two-handed sword", "war hammer"],
+      "weapons_permitted": ["battle_axe", "club", "dagger", "great_axe", "hand_axe", "shortbow", "spear", "sword", "two_handed_sword", "warhammer"],
       "fighting_styles_permitted": ["weapon & shield", "two-handed weapon"],
       "bonus_proficiency": "climbing"
     },
     "skysostan": {
       "display_name": "Skysostan",
-      "weapons_permitted": ["composite bow", "dagger", "hand axe", "javelin", "lance", "net", "sling", "short sword (scimitar)", "spear", "whip"],
+      "weapons_permitted": ["composite_bow", "dagger", "hand_axe", "javelin", "lance", "net", "sling", "short_sword", "spear", "whip"],
       "fighting_styles_permitted": ["weapon & shield", "two weapons"],
       "bonus_proficiency": "precise_shooting"
     },
     "ivory_kingdoms": {
       "display_name": "Ivory Kingdoms",
-      "weapons_permitted": ["bola", "club", "dart", "dagger", "hand axe", "javelin", "net", "shortbow", "short sword", "spear"],
+      "weapons_permitted": ["bola", "club", "dart", "dagger", "hand_axe", "javelin", "net", "shortbow", "short_sword", "spear"],
       "fighting_styles_permitted": ["weapon & shield", "two weapons"],
       "bonus_proficiency": "running"
     }

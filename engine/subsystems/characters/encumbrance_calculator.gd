@@ -33,23 +33,39 @@ static func calculate_encumbrance(inventory: Array) -> Dictionary:
 
 
 static func calculate_item_encumbrance(item) -> int:
-	## Returns effective encumbrance in sixths for one inventory item.
+	## Returns effective encumbrance in sixths for one inventory item (quantity included).
+	## Equipped clothing and equipped accessories (accessory_N slots) weigh 0 — they are
+	## considered "worn" and do not encumber. Armor is always weighted even when worn.
 	## Accounts for magical armor/shield weight reduction.
 	var sixths: int
+	var qty: int
 	if item is InventoryItem:
+		# Worn clothing/accessories are weightless
+		if item.is_equipped and (
+			item.item_category == "clothing"
+			or item.slot.begins_with("accessory")
+		):
+			return 0
 		sixths = item.encumbrance_sixths
+		qty = item.quantity
 		# Magical armor/shields weigh less: reduce by magical_bonus stones (x6 sixths)
 		if item.is_magical and item.item_category in ["armor", "shield"]:
 			sixths = maxi(sixths - item.magical_bonus * 6, 0)
 	else:
 		# Dictionary path (from DB rows)
-		sixths = int(item.get("encumbrance_sixths", 0))
-		var is_magical: bool = item.get("is_magical", 0) == 1 if item.get("is_magical", 0) is int else bool(item.get("is_magical", false))
+		var is_equipped: bool = int(item.get("is_equipped", 0)) == 1
 		var category: String = item.get("item_category", "gear")
+		var slot: String = item.get("slot", "pack")
+		# Worn clothing/accessories are weightless
+		if is_equipped and (category == "clothing" or slot.begins_with("accessory")):
+			return 0
+		sixths = int(item.get("encumbrance_sixths", 0))
+		qty = int(item.get("quantity", 1))
+		var is_magical: bool = item.get("is_magical", 0) == 1 if item.get("is_magical", 0) is int else bool(item.get("is_magical", false))
 		if is_magical and category in ["armor", "shield"]:
 			var bonus: int = int(item.get("magical_bonus", 0))
 			sixths = maxi(sixths - bonus * 6, 0)
-	return sixths
+	return sixths * qty
 
 
 static func get_movement_tier(total_sixths: int) -> Dictionary:

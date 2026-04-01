@@ -113,18 +113,24 @@ func _on_dev_dice_test_requested(context: Dictionary) -> void:
 ## Opens the character creation wizard for the given campaign.
 ## Connect character_created / creation_cancelled signals before calling.
 func open_character_creation(campaign_id: String) -> void:
-	_char_creation.character_created.connect(_on_character_created, CONNECT_ONE_SHOT)
-	_char_creation.creation_cancelled.connect(_on_creation_cancelled, CONNECT_ONE_SHOT)
+	if not _char_creation.character_created.is_connected(_on_character_created):
+		_char_creation.character_created.connect(_on_character_created, CONNECT_ONE_SHOT)
+	if not _char_creation.creation_cancelled.is_connected(_on_creation_cancelled):
+		_char_creation.creation_cancelled.connect(_on_creation_cancelled, CONNECT_ONE_SHOT)
 	_char_creation.open(campaign_id)
 
 
 func _on_character_created(character_id: String) -> void:
+	if _char_creation.creation_cancelled.is_connected(_on_creation_cancelled):
+		_char_creation.creation_cancelled.disconnect(_on_creation_cancelled)
 	print("MainScene: character created — id=%s" % character_id)
 	# Resume normal session flow (future: show party roster, navigate to map)
 	GameState.transition_to(GameState.State.EXPLORATION)
 
 
 func _on_creation_cancelled() -> void:
+	if _char_creation.character_created.is_connected(_on_character_created):
+		_char_creation.character_created.disconnect(_on_character_created)
 	print("MainScene: character creation cancelled.")
 
 

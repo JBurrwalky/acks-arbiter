@@ -14,7 +14,8 @@ var name: String = ""
 var quantity: int = 1
 var encumbrance_sixths: int = 0     # weight in 1/6-stone units
 var slot: String = "pack"
-	# "hands_main"|"hands_off"|"body"|"head"|"belt"|"pack"|"mount"
+	# "hands_main"|"hands_off"|"body"|"head"|"belt"|"feet"|"hands_worn"|"cloak"
+	# |"accessory_1"–"accessory_5"|"pack"|"mount"
 var is_equipped: bool = false
 var notes: String = ""
 
@@ -29,6 +30,11 @@ var is_heavy: bool = false          # true = 1 stone each (two-handed weapons, i
 ## Spell hook fields — persistent (migration 006)
 var damage_type: String = "physical"  # DamageTypes constant; damage dealt by this weapon
 var material: String = ""             # "wood"|"metal"|"stone"|"leather"|"" (used by spell targeting)
+
+## Consumable state — migration 012
+## -1 = not a consumable. Positive = remaining uses/turns before depletion.
+## Examples: torch = 6 turns, lantern oil = 24 turns, scroll = 1 charge.
+var uses_remaining: int = -1
 
 ## Spell hook fields — runtime only (not persisted; set by active spell effects)
 var spell_bonus: int = 0              # temporary bonus from spells (e.g., Bless Weapon)
@@ -60,6 +66,7 @@ static func from_dict(data: Dictionary) -> InventoryItem:
 	i.is_heavy = data.get("is_heavy", 0) == 1
 	i.damage_type = data.get("damage_type", "physical")
 	i.material = data.get("material", "")
+	i.uses_remaining = data.get("uses_remaining", -1)
 	return i
 
 
@@ -83,6 +90,7 @@ func to_dict() -> Dictionary:
 		"is_heavy": 1 if is_heavy else 0,
 		"damage_type": damage_type,
 		"material": material,
+		"uses_remaining": uses_remaining,
 	}
 
 

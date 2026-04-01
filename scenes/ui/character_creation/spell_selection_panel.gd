@@ -280,14 +280,29 @@ func _setup_divine(class_id: String, has_l1_slots: bool) -> void:
 		var cls := _class_registry.get_class_def(class_id)
 		var cls_name: String = cls.get("class_name", class_id.capitalize())
 		_setup_notice("%s does not receive divine spells until 2nd level." % cls_name)
-		if not _state.has("spells"):
+		if _state.get("spells", []).is_empty():
 			_state["spells"] = []
 		return
 
 	# Auto-generate divine starting repertoire
 	var result := _repertoire_engine.generate_divine_starting_repertoire(class_id, 1)
 	var spells: Array = result.get("spells", [])
-	if not _state.has("spells"):
+
+	# Inject tradition bonus spells (e.g. witch traditions that grant a level-1 bonus spell)
+	var tradition_key: String = _state.get("witch_tradition", "")
+	if not tradition_key.is_empty():
+		var cls := _class_registry.get_class_def(class_id)
+		for power in cls.get("class_powers", []):
+			if power.get("power_id", "") == "tradition_choice":
+				var traditions: Dictionary = power.get("traditions", {})
+				if traditions.has(tradition_key):
+					var bonus: Variant = traditions[tradition_key].get("bonus_spells", {}).get("1", null)
+					if bonus != null:
+						var bonus_keys: Array = [bonus] if bonus is String else bonus
+						for bk in bonus_keys:
+							spells.append({"spell_key": bk, "is_tradition_bonus": true})
+
+	if _state.get("spells", []).is_empty():
 		_state["spells"] = spells
 
 	var header := Label.new()
@@ -306,7 +321,11 @@ func _setup_divine(class_id: String, has_l1_slots: bool) -> void:
 			var def := _spell_registry.get_spell(key)
 			var display: String = def.get("name", key.replace("_", " ").capitalize())
 			var lbl := Label.new()
-			lbl.text = "  • %s" % display
+			if s.get("is_tradition_bonus", false):
+				lbl.text = "  • %s  (tradition bonus)" % display
+				lbl.modulate = Color(0.8, 0.9, 1.0, 1.0)
+			else:
+				lbl.text = "  • %s" % display
 			_main_content.add_child(lbl)
 
 	var info := Label.new()

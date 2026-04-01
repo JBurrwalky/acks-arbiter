@@ -114,6 +114,8 @@ func _refresh_display() -> void:
 			_mod_labels[ability].text = "—"
 		if _reroll_button != null:
 			_reroll_button.visible = false
+		if _roll_button != null:
+			_roll_button.visible = true
 		return
 
 	for ability in ABILITY_ORDER:

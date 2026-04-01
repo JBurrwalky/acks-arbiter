@@ -1659,3 +1659,112 @@ CampaignRepository additions:
 4. Test EventBus refresh: change HP via Override panel, verify Biography and Combat tabs update.
 5. Verify: Ctrl+Alt+C opens character creation, Ctrl+Alt+D opens dice test.
 6. Continue from prior session "Next session should" list (Barbarian/Witch verification, then roadmap tasks).
+
+---
+
+## Session 2026-03-31 — Equipment Slot Expansion + Character Creator Bug Fixes
+
+**Task:** Fix multiple reported issues: weapon handedness enforcement, torches/lanterns/clothing equippable, barbarian/witch weapon permissions locked out, witch showing no spells, character creator reopen bug.
+
+**Model used:** claude-sonnet-4-6 (Sonnet) throughout.
+
+**Completed:**
+- `data/classes/barbarian.json` — Fixed `regional_origins` weapon names from display names (`"battle axe"`) to item_keys (`"battle_axe"`) across all 3 origins (Jutland, Skysostan, Ivory Kingdoms).
+- `data/classes/witch.json` — Fixed `"weapon_permissions"`: `"staff"` → `"quarterstaff"`.
+- `scenes/ui/character_creation/equipment_shop_panel.gd` — `_get_restriction_warning()`: detects `"determined_by_regional_origin"` sentinel in weapon_permissions and resolves actual permitted list from `regional_origins[barbarian_origin]`; also added `[two-handed]`/`[versatile]` display tags for weapons; auto-equip no longer assigns shield to hands_off when best weapon is two-handed.
+- `scenes/ui/character_creation/spell_selection_panel.gd` — Fixed guard from `if not _state.has("spells"):` → `if _state.get("spells", []).is_empty():` (was discarding generated spells because `_reset_state()` pre-initializes `"spells": []`). Also injects witch tradition level-1 bonus spells into the granted list.
+- `scenes/main_scene.gd` — `open_character_creation()` now guards against double signal connection with `is_connected()`. Each handler disconnects the sibling signal so no stale one-shots survive.
+- `scenes/ui/character_creation/ability_roll_panel.gd` — `_refresh_display()` now restores `_roll_button.visible = true` when scores are empty (fixes "locked blank" after reopen).
+- `db/migrations/011_equipment_slots.sql` — New migration; rebuilds `inventory_items` table to expand slot CHECK constraint from 7 → 14 values: added `feet`, `hands_worn`, `accessory_1` through `accessory_5`.
+- `db/schema.sql` — Updated to reflect migration 011 slot expansion.
+- `scenes/ui/character_sheet/tabs/cs_tab_equipment.gd` — Major rewrite:
+  - New constants: `HAND_HOLDABLE_KEYS`, `ACCESSORY_KEYS`, `ACCESSORY_SLOTS`, expanded `SLOT_LABELS`.
+  - `_render_equipped()` now shows all 7 main slots + occupied accessory slots + first empty accessory slot.
+  - `_can_equip(item)` helper determines whether an item shows an Equip button.
+  - `_determine_equip_slot(item)` now routes: two-handed weapons require both hands free; off-hand blocked if main hand has two-handed weapon; clothing → body; hand-holdable gear → first free hand; accessory gear → first free accessory_N; boots/sandals → feet; gloves/gauntlets → hands_worn.
+  - `_on_equip(item_id)` now looks up full item from bundle to pass to slot logic.
+  - `_is_two_handed_weapon(item)` checks `weapon_tags` from a lazily-instantiated `EquipmentCatalog`.
+  - `_render_loose()` and `_get_loose_movable_items()` use `_can_equip()` to exclude equippable items.
+
+**Decisions made:**
+- Clothing shares the `body` slot with armor (not a separate slot) — design decision by Jedidiah.
+- `holy_symbol` routes to accessory slot (worn), not hand slot.
+- `HAND_HOLDABLE_KEYS` is an explicit whitelist rather than a flag on catalog items — simpler, avoids schema changes.
+- `EquipmentCatalog` instantiated lazily on first `_is_two_handed_weapon()` call, stored as `_catalog` on the tab.
+- Accessory slot display: show all occupied slots + first empty slot (not all 5 always) — keeps UI compact.
+
+**Interfaces defined or changed:**
+- `CSTabEquipment._on_equip(item_id: String)` — signature changed (was `item_id, item_category`).
+- `CSTabEquipment._determine_equip_slot(item: Dictionary) -> String` — signature changed (was `category: String`).
+
+**Database changes:**
+- Migration 011: slot CHECK expanded; `db/schema.sql` updated (last migration applied: 011).
+
+**Tests added/updated:** None — manual integration testing recommended.
+
+**Known issues:**
+- Witch armor restriction: `armor_permissions: []` means "cannot wear armor" — the equipment shop shows a warning, which is correct. But the witch class description in the rules says no armor is allowed, so this is correct behavior.
+- Tradition bonus spell injection only handles level `"1"` bonus spells. Sylvan witch has no level-1 bonus (first bonus at level 2), so Sylvan will show only the base divine cleric list — correct per the rules.
+- Barbarian origin weapon names are now item_keys. The `weapons_permitted` list in `regional_origins` is also displayed in the `ClassCustomizationPanel` description text (line 190), which will now show raw item_keys like `"battle_axe"` instead of display names. The description rendering may need a future cosmetic fix to use display names.
+
+**Next session should:**
+1. Run game, create a Barbarian → choose Jutland origin → equipment shop should show no restriction warnings for permitted weapons.
+2. Create a Witch → choose Antiquarian tradition → spell step should show divine cleric level-1 spells + Detect Poison (tradition bonus).
+3. Cancel character creation → reopen → verify Roll button is visible.
+4. Test equipping a two-handed sword: off-hand should be blocked.
+5. Test equipping torches, lantern, clothing items from character sheet equipment tab.
+6. Verify migration 011 applies cleanly (check Godot output for "Applied migration 11").
+
+---
+
+## Session 2026-03-31 — Bundle/Consumable System + Encumbrance Fix
+
+**Task:** Implement the torch-bundle splitting system (equip one, stack decrements; unequip unused → merges back), fix encumbrance quantity bug, and update equipment shop for bundle purchases.
+**Model used:** claude-sonnet-4-6
+
+**Completed:**
+- `db/migrations/012_uses_remaining.sql` — ALTER TABLE adds `uses_remaining INTEGER NOT NULL DEFAULT -1` to inventory_items.
+- `db/schema.sql` — Updated to include `uses_remaining` column.
+- `engine/shared_types/inventory_item.gd` — Added `var uses_remaining: int = -1`; updated `from_dict` and `to_dict`.
+- `data/equipment/base_equipment.json`:
+  - Converted `torches_6` entry to `torch` with `bundle_quantity: 6, uses_per_unit: 6`, encumbrance_sixths=1 (per individual torch).
+  - Added `uses_per_unit: 24` to `oil_flask_common` and `oil_flask_military`.
+  - Added `bundle_quantity` annotations to ammunition: dart=5, arrows_20=20, bolts_20=20, sling_stones_20=20, sling_bullets_30=30, iron_spikes_12=12.
+- `engine/subsystems/characters/encumbrance_calculator.gd` — Fixed `calculate_item_encumbrance` to multiply `encumbrance_sixths` by `quantity` (was ignoring quantity entirely).
+- `scenes/ui/character_creation/equipment_shop_panel.gd`:
+  - `_on_buy_item`: reads `bundle_quantity` from catalog; increments stack by `bundle_qty` instead of 1.
+  - `_on_sell_item`: decrements stack by `bundle_qty` instead of 1.
+  - `_catalog_item_to_cart`: initializes `quantity` from `bundle_quantity` (defaults to 1 for non-bundles).
+- `engine/autoloads/campaign_repository.gd`:
+  - Added `split_item_for_equip(item_id, slot, uses_per_unit) -> String` — decrements source stack (or deletes if qty=1), inserts new single-unit equipped item with correct `uses_remaining`.
+  - Added `merge_item_on_unequip(item_id, uses_per_unit) -> bool` — if item is unused (uses_remaining == uses_per_unit) or non-consumable (-1), merges back into pack stack; otherwise just unequips to pack.
+- `scenes/ui/character_sheet/tabs/cs_tab_equipment.gd`:
+  - Fixed `HAND_HOLDABLE_KEYS`: `"torches_6"` → `"torch"`, `"wooden_pole_10ft"` → `"pole_wooden_10ft"`, `"mirror_hand"` → `"mirror_small"`.
+  - `_on_equip`: if item_key is in HAND_HOLDABLE_KEYS and qty > 1, calls `split_item_for_equip` instead of `update_inventory_item_equip_state`.
+  - `_on_unequip`: looks up item, if in HAND_HOLDABLE_KEYS calls `merge_item_on_unequip`; otherwise normal unequip.
+
+**Decisions made:**
+- Bundle encumbrance rule: the ACKS rules list encumbrance for the whole bundle; per-unit weight = bundle_weight / bundle_quantity. Torch = 1 sixths per unit (1/6 stone each). Confirmed by user.
+- Ammunition splitting deferred — bundle_quantity fields annotated in catalog for future use, but no split/merge logic wired for ammunition.
+- Partially-used consumables (uses_remaining < uses_per_unit and != -1) simply move to pack without merging — they stay as standalone items (e.g. a half-burned torch).
+- Military oil gets uses_per_unit=24 same as common oil (treated symmetrically).
+
+**Interfaces defined or changed:**
+- `CampaignRepository.split_item_for_equip(item_id: String, slot: String, uses_per_unit: int) -> String`
+- `CampaignRepository.merge_item_on_unequip(item_id: String, uses_per_unit: int) -> bool`
+- `InventoryItem.uses_remaining: int` (new field, default -1)
+- `EquipmentCatalog` item dict: new optional fields `bundle_quantity: int`, `uses_per_unit: int`
+
+**Database changes:**
+- Migration 012: `uses_remaining INTEGER NOT NULL DEFAULT -1` on `inventory_items`.
+
+**Known issues:**
+- `add_inventory_item` in CampaignRepository does not pass `damage_type`, `material`, or `uses_remaining` — relies on schema defaults. Not a bug currently (defaults are correct) but could cause issues if non-default values are needed on a newly-added item. Fix when needed.
+- Encumbrance display in character sheet may still show pre-fix values until DB refresh.
+- Ammunition tracking (actually decrementing arrows when shooting) not yet implemented. bundle_quantity annotation is ready.
+
+**Next session should:**
+1. Test bundle equip/unequip flow in-game: buy torches → equip one → stack goes to 5 → unequip unused → merges back to 6.
+2. Test encumbrance display: 6 torches (6 sixths = 1 stone) should show correctly.
+3. Consider adding a "uses remaining" indicator in the equipment tab for consumables in hand slots (e.g. "Torch [6/6]").
+4. Consider implementing ammunition decrement when ranged attacks are made.

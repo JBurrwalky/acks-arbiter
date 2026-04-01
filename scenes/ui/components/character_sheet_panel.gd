@@ -78,7 +78,7 @@ func _render_portrait(state: Dictionary) -> void:
 
 	var img_rect := TextureRect.new()
 	img_rect.texture = texture
-	img_rect.custom_minimum_size = Vector2(256, 256)
+	img_rect.custom_minimum_size = Vector2(128, 128)
 	img_rect.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	img_rect.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	img_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

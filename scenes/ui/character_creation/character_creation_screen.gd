@@ -457,7 +457,7 @@ func _finalize_character() -> void:
 					proficiencies.append({
 						"proficiency_key": bonus_prof,
 						"rank": 1,
-						"slot_type": "origin",
+						"slot_type": "class",
 						"selections_count": 1,
 						"specialization": "",
 					})
@@ -475,7 +475,7 @@ func _finalize_character() -> void:
 				proficiencies.append({
 					"proficiency_key": tradition_prof,
 					"rank": 1,
-					"slot_type": "tradition",
+					"slot_type": "class",
 					"selections_count": 1,
 					"specialization": tradition_spec,
 				})
@@ -520,21 +520,21 @@ func _build_coin_items(remaining_cp: int) -> Array:
 	if gp > 0:
 		items.append({
 			"item_key": "coins_gp", "name": "Gold Pieces", "quantity": gp,
-			"slot": "belt", "is_equipped": 1,
+			"slot": "pack", "is_equipped": 0,
 			"item_category": "treasure",
 			"encumbrance_sixths": _coin_enc_sixths(gp),
 		})
 	if sp > 0:
 		items.append({
 			"item_key": "coins_sp", "name": "Silver Pieces", "quantity": sp * 10,
-			"slot": "belt", "is_equipped": 1,
+			"slot": "pack", "is_equipped": 0,
 			"item_category": "treasure",
 			"encumbrance_sixths": _coin_enc_sixths(sp * 10),
 		})
 	if cp > 0:
 		items.append({
 			"item_key": "coins_cp", "name": "Copper Pieces", "quantity": cp * 100,
-			"slot": "belt", "is_equipped": 1,
+			"slot": "pack", "is_equipped": 0,
 			"item_category": "treasure",
 			"encumbrance_sixths": _coin_enc_sixths(cp * 100),
 		})

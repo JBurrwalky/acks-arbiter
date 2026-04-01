@@ -487,6 +487,123 @@ func update_inventory_item_equip_state(item_id: String, is_equipped: bool, slot:
 	return true
 
 
+func split_item_for_equip(item_id: String, slot: String, uses_per_unit: int) -> String:
+	## Split one unit from a stacked item into an equipped single-unit item.
+	## Returns the new item's id, or "" on failure.
+	## uses_per_unit: initial uses_remaining for consumables (-1 for non-consumables).
+	db.query_with_bindings("SELECT * FROM inventory_items WHERE id = ?", [item_id])
+	if db.query_result.is_empty():
+		push_error("CampaignRepository.split_item_for_equip: item not found. id=%s" % item_id)
+		return ""
+	var source: Dictionary = db.query_result[0].duplicate()
+	var qty: int = int(source.get("quantity", 1))
+
+	db.query("BEGIN TRANSACTION")
+
+	# Decrement source stack or delete it entirely if last unit
+	if qty > 1:
+		if not db.query_with_bindings(
+			"UPDATE inventory_items SET quantity = ? WHERE id = ?",
+			[qty - 1, item_id]
+		):
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.split_item_for_equip: failed decrementing source. id=%s" % item_id)
+			return ""
+	else:
+		if not db.query_with_bindings("DELETE FROM inventory_items WHERE id = ?", [item_id]):
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.split_item_for_equip: failed deleting source. id=%s" % item_id)
+			return ""
+
+	# Create the new single-unit equipped item
+	var new_id: String = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO inventory_items
+			(id, character_id, item_key, name, quantity, encumbrance_sixths,
+			 slot, is_equipped, notes, item_category, is_magical, magical_bonus,
+			 weapon_damage, armor_ac_bonus, is_heavy, damage_type, material,
+			 container_id, uses_remaining)
+		VALUES (?, ?, ?, ?, 1, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?)
+	""", [
+		new_id,
+		source.get("character_id", ""),
+		source.get("item_key", ""),
+		source.get("name", ""),
+		int(source.get("encumbrance_sixths", 0)),
+		slot,
+		source.get("notes", ""),
+		source.get("item_category", "gear"),
+		int(source.get("is_magical", 0)),
+		int(source.get("magical_bonus", 0)),
+		source.get("weapon_damage", ""),
+		int(source.get("armor_ac_bonus", 0)),
+		int(source.get("is_heavy", 0)),
+		source.get("damage_type", "physical"),
+		source.get("material", ""),
+		uses_per_unit,
+	]):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.split_item_for_equip: failed inserting new item. source=%s" % item_id)
+		return ""
+
+	db.query("COMMIT")
+	return new_id
+
+
+func merge_item_on_unequip(item_id: String, uses_per_unit: int) -> bool:
+	## Move an equipped item back to pack, merging into an existing stack when unused.
+	## If uses_remaining == uses_per_unit (unused) or -1 (non-consumable): merge into stack.
+	## If partially used: just move to pack as a standalone item.
+	db.query_with_bindings("SELECT * FROM inventory_items WHERE id = ?", [item_id])
+	if db.query_result.is_empty():
+		push_error("CampaignRepository.merge_item_on_unequip: item not found. id=%s" % item_id)
+		return false
+	var item: Dictionary = db.query_result[0].duplicate()
+	var uses: int = int(item.get("uses_remaining", -1))
+	var item_key: String = item.get("item_key", "")
+	var char_id: String = item.get("character_id", "")
+
+	var can_merge: bool = (uses == -1) or (uses == uses_per_unit)
+	if not can_merge:
+		# Partially used consumable — unequip to pack without merging
+		return update_inventory_item_equip_state(item_id, false, "pack")
+
+	# Look for an existing pack stack to merge into (query before transaction)
+	db.query_with_bindings(
+		"SELECT id, quantity FROM inventory_items WHERE character_id = ? AND item_key = ? AND slot = 'pack' AND is_equipped = 0 AND id != ?",
+		[char_id, item_key, item_id]
+	)
+	var pack_stacks: Array = db.query_result.duplicate()
+
+	db.query("BEGIN TRANSACTION")
+	if not pack_stacks.is_empty():
+		var stack_id: String = pack_stacks[0].get("id", "")
+		var stack_qty: int = int(pack_stacks[0].get("quantity", 1))
+		if not db.query_with_bindings(
+			"UPDATE inventory_items SET quantity = ? WHERE id = ?",
+			[stack_qty + 1, stack_id]
+		):
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.merge_item_on_unequip: failed incrementing stack. id=%s" % stack_id)
+			return false
+		if not db.query_with_bindings("DELETE FROM inventory_items WHERE id = ?", [item_id]):
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.merge_item_on_unequip: failed deleting equipped item. id=%s" % item_id)
+			return false
+	else:
+		# No existing stack — just unequip to pack
+		if not db.query_with_bindings(
+			"UPDATE inventory_items SET is_equipped = 0, slot = 'pack' WHERE id = ?",
+			[item_id]
+		):
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.merge_item_on_unequip: failed moving item to pack. id=%s" % item_id)
+			return false
+
+	db.query("COMMIT")
+	return true
+
+
 func get_items_in_container(container_item_id: String) -> Array:
 	## Returns all inventory items whose container_id matches the given container item's id.
 	db.query_with_bindings(
