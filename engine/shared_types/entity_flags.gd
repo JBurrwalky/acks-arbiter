@@ -60,6 +60,19 @@ func clear_all_from_source(source_id: String) -> void:
 		_flags.erase(k)
 
 
+func clear_all_from_source_prefix(prefix: String) -> void:
+	## Removes all entries whose source_id begins with prefix, across all flags.
+	var flags_to_erase: Array[String] = []
+	for flag_key in _flags.keys():
+		_flags[flag_key] = _flags[flag_key].filter(
+			func(e): return not (e["source_id"] as String).begins_with(prefix)
+		)
+		if _flags[flag_key].is_empty():
+			flags_to_erase.append(flag_key)
+	for k in flags_to_erase:
+		_flags.erase(k)
+
+
 func has_flag(flag_key: String) -> bool:
 	return _flags.has(flag_key) and not _flags[flag_key].is_empty()
 

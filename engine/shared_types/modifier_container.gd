@@ -26,6 +26,12 @@ func remove_all_from_source(source_id: String) -> void:
 		stack.remove_by_source(source_id)
 
 
+func remove_all_with_source_prefix(prefix: String) -> void:
+	## Removes all modifiers whose source_id begins with prefix, across ALL stat stacks.
+	for stack in _stacks.values():
+		stack.remove_by_source_prefix(prefix)
+
+
 func get_effective_value(stat_key: String, base_value: Variant) -> Variant:
 	## Returns base_value with all active modifiers for stat_key applied.
 	if not _stacks.has(stat_key):

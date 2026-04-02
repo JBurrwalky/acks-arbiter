@@ -25,6 +25,10 @@ func remove_by_source(source_id: String) -> void:
 	_modifiers = _modifiers.filter(func(m): return m.get("source_id", "") != source_id)
 
 
+func remove_by_source_prefix(prefix: String) -> void:
+	_modifiers = _modifiers.filter(func(m): return not (m.get("source_id", "") as String).begins_with(prefix))
+
+
 func has_source(source_id: String) -> bool:
 	for m in _modifiers:
 		if m.get("source_id", "") == source_id:

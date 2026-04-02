@@ -193,7 +193,7 @@ func get_spell_slots(class_id: String, level: int) -> Array:
 			var progression: Dictionary = power.get("progression", {})
 			var key := str(level)
 			if progression.has(key):
-				return progression[key]
+				return (progression[key] as Array).map(func(v) -> int: return int(v))
 	return []
 
 

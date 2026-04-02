@@ -1,7 +1,7 @@
-extends Node
+extends "res://tests/test_suite_base.gd"
 
 ## Unit tests for CharacterGenerator (PC generation, ability scores, ability trading).
-## Run via test_runner.tscn. Uses plain assert() — no external framework.
+## Run via test_runner.tscn. Uses plain check() — no external framework.
 
 
 func run_all_tests() -> void:
@@ -12,7 +12,8 @@ func run_all_tests() -> void:
 	test_ability_trade_con_allowed_for_non_prime()
 	test_ability_trade_invalid_prime_requisite_source()
 	test_ability_trade_invalid_below_9()
-	print("CharacterGenerator: all tests passed.")
+	if not has_failures():
+		print("CharacterGenerator: all tests passed.")
 
 
 # ---------------------------------------------------------------------------
@@ -33,13 +34,13 @@ func test_ability_score_generation() -> void:
 	for i in range(10):
 		var result := gen.roll_ability_scores()
 		var scores: Dictionary = result.scores
-		assert(scores.size() == 6,
+		check(scores.size() == 6,
 			"should generate 6 ability scores, got %d" % scores.size())
 		for ability in ["STR", "INT", "WIS", "DEX", "CON", "CHA"]:
-			assert(scores.has(ability),
+			check(scores.has(ability),
 				"scores should include %s" % ability)
 			var val: int = int(scores[ability])
-			assert(val >= 3 and val <= 18,
+			check(val >= 3 and val <= 18,
 				"%s score %d out of range [3, 18]" % [ability, val])
 	print("  ability_score_generation: OK (10 sets validated)")
 
@@ -54,39 +55,39 @@ func test_pc_generation_fighter() -> void:
 	var campaign_id := "test_campaign_001"
 	var character := gen.generate_pc("fighter", scores, campaign_id)
 
-	assert(character != null, "generate_pc should return a CharacterData")
-	assert(character.character_class == "fighter",
+	check(character != null, "generate_pc should return a CharacterData")
+	check(character.character_class == "fighter",
 		"class should be 'fighter'")
-	assert(character.combat_progression == "fighter",
+	check(character.combat_progression == "fighter",
 		"combat_progression should be 'fighter'")
-	assert(character.hit_die_type == "1d8",
+	check(character.hit_die_type == "1d8",
 		"hit_die_type should be '1d8'")
-	assert(character.max_level == 14,
+	check(character.max_level == 14,
 		"max_level should be 14")
-	assert(character.level == 1,
+	check(character.level == 1,
 		"level should be 1")
-	assert(character.xp == 0,
+	check(character.xp == 0,
 		"starting XP should be 0")
-	assert(character.character_type == "pc",
+	check(character.character_type == "pc",
 		"character_type should be 'pc'")
-	assert(character.race == "human",
+	check(character.race == "human",
 		"race should be 'human'")
-	assert(character.strength == 14,
+	check(character.strength == 14,
 		"STR should be 14")
-	assert(character.constitution == 13,
+	check(character.constitution == 13,
 		"CON should be 13")
 	# Attack throw at level 1 for fighter is 10
-	assert(character.attack_throw == 10,
+	check(character.attack_throw == 10,
 		"fighter L1 attack throw should be 10, got %d" % character.attack_throw)
 	# XP for next level (fighter L2 = 2000)
-	assert(character.xp_for_next_level == 2000,
+	check(character.xp_for_next_level == 2000,
 		"fighter xp_for_next_level should be 2000")
 	# Title at level 1
-	assert(character.title == "Man-at-Arms",
+	check(character.title == "Man-at-Arms",
 		"fighter L1 title should be 'Man-at-Arms', got '%s'" % character.title)
 	# ID and campaign_id should be set
-	assert(not character.id.is_empty(), "character ID should not be empty")
-	assert(character.campaign_id == campaign_id,
+	check(not character.id.is_empty(), "character ID should not be empty")
+	check(character.campaign_id == campaign_id,
 		"campaign_id should match")
 	print("  pc_generation_fighter: OK")
 
@@ -102,8 +103,8 @@ func test_pc_generation_hp_minimum() -> void:
 	# Generate multiple characters to test the minimum HP floor
 	for i in range(20):
 		var character := gen.generate_pc("mage", scores, "test_hp_min")
-		assert(character != null, "generate_pc should not return null")
-		assert(character.hp_max >= 1,
+		check(character != null, "generate_pc should not return null")
+		check(character.hp_max >= 1,
 			"hp_max should be >= 1 even with CON 3 (-3 mod), got %d" % character.hp_max)
 	print("  pc_generation_hp_minimum: OK (20 characters verified)")
 
@@ -117,14 +118,14 @@ func test_ability_trade_valid() -> void:
 	var scores := {"STR": 16, "INT": 12, "WIS": 10, "DEX": 10, "CON": 10, "CHA": 10}
 	# Fighter prime requisite is STR. Trade 2 from INT to STR.
 	var result := gen.apply_ability_trade(scores, "fighter", "INT", "STR", 2)
-	assert(not result.is_empty(), "valid trade should return non-empty dictionary")
-	assert(int(result["INT"]) == 10,
+	check(not result.is_empty(), "valid trade should return non-empty dictionary")
+	check(int(result["INT"]) == 10,
 		"INT should drop by 2: 12 -> 10, got %d" % int(result["INT"]))
-	assert(int(result["STR"]) == 17,
+	check(int(result["STR"]) == 17,
 		"STR should increase by 1: 16 -> 17, got %d" % int(result["STR"]))
 	# Other scores should be unchanged
-	assert(int(result["WIS"]) == 10, "WIS should be unchanged")
-	assert(int(result["CON"]) == 10, "CON should be unchanged")
+	check(int(result["WIS"]) == 10, "WIS should be unchanged")
+	check(int(result["CON"]) == 10, "CON should be unchanged")
 	print("  ability_trade_valid: OK")
 
 
@@ -138,17 +139,17 @@ func test_ability_trade_con_allowed_for_non_prime() -> void:
 	var scores := {"STR": 10, "INT": 10, "WIS": 10, "DEX": 10, "CON": 14, "CHA": 11}
 	# Trade 2 from CON (14→12) to raise STR (10→11) — valid for Fighter
 	var result := gen.apply_ability_trade(scores, "fighter", "CON", "STR", 2)
-	assert(not result.is_empty(),
+	check(not result.is_empty(),
 		"trading from CON should succeed for Fighter (CON is not Fighter's prime req)")
-	assert(int(result["CON"]) == 12, "CON should drop from 14 to 12, got %d" % int(result["CON"]))
-	assert(int(result["STR"]) == 11, "STR should rise from 10 to 11, got %d" % int(result["STR"]))
+	check(int(result["CON"]) == 12, "CON should drop from 14 to 12, got %d" % int(result["CON"]))
+	check(int(result["STR"]) == 11, "STR should rise from 10 to 11, got %d" % int(result["STR"]))
 
 	# Trade 2 from CHA (11→9) to raise STR (11→12) — also valid
 	var result2 := gen.apply_ability_trade(result, "fighter", "CHA", "STR", 2)
-	assert(not result2.is_empty(),
+	check(not result2.is_empty(),
 		"trading from CHA should succeed for Fighter (CHA is not Fighter's prime req)")
-	assert(int(result2["CHA"]) == 9, "CHA should drop from 11 to 9")
-	assert(int(result2["STR"]) == 12, "STR should rise from 11 to 12")
+	check(int(result2["CHA"]) == 9, "CHA should drop from 11 to 9")
+	check(int(result2["STR"]) == 12, "STR should rise from 11 to 12")
 	print("  ability_trade_con_allowed_for_non_prime: OK")
 
 
@@ -161,7 +162,7 @@ func test_ability_trade_invalid_prime_requisite_source() -> void:
 	# Mage prime req is INT. Cannot trade from INT to raise INT.
 	var scores := {"STR": 10, "INT": 14, "WIS": 10, "DEX": 10, "CON": 10, "CHA": 10}
 	var result := gen.apply_ability_trade(scores, "mage", "INT", "INT", 2)
-	assert(result.is_empty(),
+	check(result.is_empty(),
 		"trading from a prime requisite should return empty dict (invalid)")
 	print("  ability_trade_invalid_prime_requisite_source: OK")
 
@@ -175,12 +176,12 @@ func test_ability_trade_invalid_below_9() -> void:
 	var scores := {"STR": 10, "INT": 10, "WIS": 10, "DEX": 10, "CON": 10, "CHA": 10}
 	# Trading 2 from INT would drop it to 8 — below the 9 minimum
 	var result := gen.apply_ability_trade(scores, "fighter", "INT", "STR", 2)
-	assert(result.is_empty(),
+	check(result.is_empty(),
 		"trade that would reduce INT below 9 should return empty dict (invalid)")
 
 	# Trading 4 from INT 12 would drop to 8 — also invalid
 	var scores2 := {"STR": 10, "INT": 12, "WIS": 10, "DEX": 10, "CON": 10, "CHA": 10}
 	var result2 := gen.apply_ability_trade(scores2, "fighter", "INT", "STR", 4)
-	assert(result2.is_empty(),
+	check(result2.is_empty(),
 		"trade dropping INT from 12 to 8 should return empty dict (invalid)")
 	print("  ability_trade_invalid_below_9: OK")

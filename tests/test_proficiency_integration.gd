@@ -1,4 +1,4 @@
-extends Node
+extends "res://tests/test_suite_base.gd"
 
 ## Integration tests for the proficiency infrastructure.
 ## Exercises CharacterData + ProficiencyEffectResolver + ProficiencyRegistry together,
@@ -17,7 +17,8 @@ func run_all_tests() -> void:
 	test_effect_resolver_fallback_for_naturalism()
 	test_effect_resolver_fallback_for_collegiate_wizardry()
 	test_npc_generation_picks_specialization()
-	print("ProficiencyIntegration: all tests passed.")
+	if not has_failures():
+		print("ProficiencyIntegration: all tests passed.")
 
 
 # ---------------------------------------------------------------------------
@@ -37,9 +38,9 @@ func test_resolver_updates_effective_values() -> void:
 	var resolver := ProficiencyEffectResolver.new(reg)
 	resolver.apply_proficiency_effects(c)
 
-	assert(c.get_effective_save("save_petrification") == 12,
+	check(c.get_effective_save("save_petrification") == 12,
 		"ProficiencyIntegration: divine_blessing should reduce save_petrification to 12")
-	assert(c.has_proficiency("divine_blessing"),
+	check(c.has_proficiency("divine_blessing"),
 		"ProficiencyIntegration: has_proficiency('divine_blessing') should return true")
 
 
@@ -65,7 +66,7 @@ func test_spell_and_proficiency_stack_correctly() -> void:
 	})
 
 	# 14 - 2 (divine_blessing) - 1 (bless) = 11
-	assert(c.get_effective_save("save_petrification") == 11,
+	check(c.get_effective_save("save_petrification") == 11,
 		"ProficiencyIntegration: proficiency + spell should stack to 11, got %d" % c.get_effective_save("save_petrification"))
 
 
@@ -93,11 +94,11 @@ func test_clear_proficiency_preserves_spell() -> void:
 	resolver.apply_proficiency_effects(c)
 
 	# Only spell modifier remains: 14 - 1 = 13
-	assert(c.get_effective_save("save_petrification") == 13,
+	check(c.get_effective_save("save_petrification") == 13,
 		"ProficiencyIntegration: after prof clear, only spell modifier should remain (13), got %d" % c.get_effective_save("save_petrification"))
-	assert(not c.modifiers.has_modifier_from("proficiency:divine_blessing"),
+	check(not c.modifiers.has_modifier_from("proficiency:divine_blessing"),
 		"ProficiencyIntegration: divine_blessing source should be gone after clear")
-	assert(c.modifiers.has_modifier_from("spell:bless"),
+	check(c.modifiers.has_modifier_from("spell:bless"),
 		"ProficiencyIntegration: bless spell source should remain after prof clear")
 
 
@@ -129,7 +130,7 @@ func test_reapply_after_clear_restores_both() -> void:
 	resolver.apply_proficiency_effects(c)
 
 	# Both back: 14 - 2 - 1 = 11
-	assert(c.get_effective_save("save_petrification") == 11,
+	check(c.get_effective_save("save_petrification") == 11,
 		"ProficiencyIntegration: after re-apply, should be 11 again, got %d" % c.get_effective_save("save_petrification"))
 
 
@@ -142,19 +143,19 @@ func test_character_data_query_methods() -> void:
 		{"proficiency_key": "fighting_style", "rank": 1, "slot_type": "class", "selections_count": 1, "specialization": "missile"},
 	]
 
-	assert(c.has_proficiency("divine_blessing"), "has_proficiency: divine_blessing should be true")
-	assert(not c.has_proficiency("leadership"), "has_proficiency: leadership should be false")
-	assert(c.get_proficiency_rank("healing") == 2, "get_proficiency_rank: healing should be 2")
-	assert(c.get_proficiency_rank("nonexistent") == 0, "get_proficiency_rank: nonexistent should be 0")
-	assert(c.get_proficiency_selections("healing") == 2, "get_proficiency_selections: healing should be 2")
-	assert(c.get_proficiency_specialization("fighting_style") == "missile",
+	check(c.has_proficiency("divine_blessing"), "has_proficiency: divine_blessing should be true")
+	check(not c.has_proficiency("leadership"), "has_proficiency: leadership should be false")
+	check(c.get_proficiency_rank("healing") == 2, "get_proficiency_rank: healing should be 2")
+	check(c.get_proficiency_rank("nonexistent") == 0, "get_proficiency_rank: nonexistent should be 0")
+	check(c.get_proficiency_selections("healing") == 2, "get_proficiency_selections: healing should be 2")
+	check(c.get_proficiency_specialization("fighting_style") == "missile",
 		"get_proficiency_specialization: fighting_style should be 'missile'")
-	assert(c.get_proficiency_specialization("divine_blessing") == "",
+	check(c.get_proficiency_specialization("divine_blessing") == "",
 		"get_proficiency_specialization: divine_blessing has no spec, should be ''")
 	var class_profs := c.get_proficiencies_by_slot("class")
-	assert(class_profs.size() == 2, "get_proficiencies_by_slot('class') should return 2, got %d" % class_profs.size())
+	check(class_profs.size() == 2, "get_proficiencies_by_slot('class') should return 2, got %d" % class_profs.size())
 	var general_profs := c.get_proficiencies_by_slot("general")
-	assert(general_profs.size() == 1, "get_proficiencies_by_slot('general') should return 1, got %d" % general_profs.size())
+	check(general_profs.size() == 1, "get_proficiencies_by_slot('general') should return 1, got %d" % general_profs.size())
 
 
 func test_npc_generator_uses_full_general_list() -> void:
@@ -167,21 +168,21 @@ func test_npc_generator_uses_full_general_list() -> void:
 	# proficiency_progression.general = [1, 5, 9, 13] for fighter
 	# So at L5 we have 2 general slots (adventuring + 1)
 	var profs := gen.auto_select_proficiencies("fighter", 5)
-	assert(profs.size() >= 2, "L5 fighter should have ≥2 proficiencies, got %d" % profs.size())
+	check(profs.size() >= 2, "L5 fighter should have ≥2 proficiencies, got %d" % profs.size())
 
 	# All returned general proficiency keys should be in the full registry list
 	var general_list := reg.get_general_proficiency_list()
 	for p in profs:
 		if p.get("slot_type", "") == "general" and p.get("proficiency_key", "") != "adventuring":
 			var key: String = p.get("proficiency_key", "")
-			assert(key in general_list,
+			check(key in general_list,
 				"ProficiencyIntegration: general prof '%s' should be from full registry list" % key)
 
 	# All returned dicts should have the new fields
 	for p in profs:
-		assert(p.has("selections_count"),
+		check(p.has("selections_count"),
 			"ProficiencyIntegration: proficiency dict missing 'selections_count'")
-		assert(p.has("specialization"),
+		check(p.has("specialization"),
 			"ProficiencyIntegration: proficiency dict missing 'specialization'")
 
 
@@ -192,7 +193,7 @@ func test_all_class_json_keys_resolve_in_registry() -> void:
 	var class_dir := "res://data/classes/"
 	var dir := DirAccess.open(class_dir)
 	if dir == null:
-		assert(false, "ProficiencyIntegration: cannot open %s" % class_dir)
+		check(false, "ProficiencyIntegration: cannot open %s" % class_dir)
 		return
 
 	var failed: Array[String] = []
@@ -212,7 +213,7 @@ func test_all_class_json_keys_resolve_in_registry() -> void:
 		fname = dir.get_next()
 	dir.list_dir_end()
 
-	assert(failed.is_empty(),
+	check(failed.is_empty(),
 		"ProficiencyIntegration: %d key(s) unresolved: %s" % [failed.size(), ", ".join(failed)])
 
 
@@ -221,18 +222,18 @@ func test_proficiency_dicts_have_required_fields() -> void:
 	var gen := CharacterGenerator.new(ClassRegistry.new(), PowerRegistry.new(), ProficiencyRegistry.new())
 	var profs := gen.auto_select_proficiencies("cleric", 3)
 	for p in profs:
-		assert(p.has("proficiency_key"), "proficiency dict must have proficiency_key")
-		assert(p.has("rank"), "proficiency dict must have rank")
-		assert(p.has("slot_type"), "proficiency dict must have slot_type")
-		assert(p.has("selections_count"), "proficiency dict must have selections_count")
-		assert(p.has("specialization"), "proficiency dict must have specialization")
+		check(p.has("proficiency_key"), "proficiency dict must have proficiency_key")
+		check(p.has("rank"), "proficiency dict must have rank")
+		check(p.has("slot_type"), "proficiency dict must have slot_type")
+		check(p.has("selections_count"), "proficiency dict must have selections_count")
+		check(p.has("specialization"), "proficiency dict must have specialization")
 
 
 func test_effect_resolver_fallback_for_naturalism() -> void:
 	## After reclassification, naturalism (now specialization rule) still resolves effects.
 	## Naturalism has no effects_by_specialization; the fallback uses top-level effects.
 	var reg := ProficiencyRegistry.new()
-	assert(reg.is_specialization("naturalism"),
+	check(reg.is_specialization("naturalism"),
 		"ProficiencyIntegration: naturalism should now be a specialization proficiency")
 	var c := CharacterData.new()
 	c.level = 1
@@ -253,13 +254,13 @@ func test_effect_resolver_fallback_for_collegiate_wizardry() -> void:
 	## collegiate_wizardry has no effects_by_specialization; fallback uses top-level effects
 	## which include: modifiers [repertoire_capacity_bonus +1], enablers [arcane_order_recognition].
 	var reg := ProficiencyRegistry.new()
-	assert(reg.is_specialization("collegiate_wizardry"),
+	check(reg.is_specialization("collegiate_wizardry"),
 		"ProficiencyIntegration: collegiate_wizardry should now be a specialization proficiency")
 	var effects_rank1 := reg.get_effects_for_rank("collegiate_wizardry", 1)
-	assert(not effects_rank1.is_empty(),
+	check(not effects_rank1.is_empty(),
 		"ProficiencyIntegration: collegiate_wizardry rank 1 effects should not be empty")
 	var modifiers: Array = effects_rank1.get("modifiers", [])
-	assert(modifiers.size() > 0,
+	check(modifiers.size() > 0,
 		"ProficiencyIntegration: collegiate_wizardry should have at least 1 modifier")
 	# Verify the +1 repertoire_capacity_bonus modifier is accessible
 	var found_bonus := false
@@ -267,7 +268,7 @@ func test_effect_resolver_fallback_for_collegiate_wizardry() -> void:
 		if mod.get("stat", "") == "repertoire_capacity_bonus":
 			found_bonus = true
 			break
-	assert(found_bonus,
+	check(found_bonus,
 		"ProficiencyIntegration: collegiate_wizardry should have repertoire_capacity_bonus modifier")
 
 
@@ -286,5 +287,5 @@ func test_npc_generation_picks_specialization() -> void:
 			var spec: String = p.get("specialization", "")
 			if not spec.is_empty():
 				spec_profs_with_value += 1
-	assert(spec_profs_with_value > 0,
+	check(spec_profs_with_value > 0,
 		"ProficiencyIntegration: NPC generation should pick at least 1 non-empty specialization for a fighter at L9")

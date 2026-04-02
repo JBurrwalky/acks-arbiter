@@ -202,7 +202,10 @@ func save_character(data: Dictionary) -> bool:
 	if exists:
 		return db.query_with_bindings("""
 			UPDATE characters SET
-				name = ?, level = ?, xp = ?,
+				name = ?, character_type = ?, persistence_tier = ?,
+				race = ?, character_class = ?, level = ?, xp = ?, combat_progression = ?,
+				strength = ?, intelligence = ?, wisdom = ?,
+				dexterity = ?, constitution = ?, charisma = ?,
 				hp_max = ?, hp_current = ?,
 				armor_class = ?, attack_throw = ?,
 				save_petrification = ?, save_poison_death = ?,
@@ -213,11 +216,18 @@ func save_character(data: Dictionary) -> bool:
 				current_age = ?, age_category = ?,
 				languages = ?, personality = ?,
 				is_dead = ?, is_active = ?, is_incapacitated = ?,
-				loyalty_score = ?, wage_gp_per_month = ?,
+				employer_id = ?, loyalty_score = ?, wage_gp_per_month = ?, sex = ?,
 				updated_at = datetime('now')
 			WHERE id = ?
 		""", [
-			data.get("name", ""), data.get("level", 1), data.get("xp", 0),
+			data.get("name", ""), data.get("character_type", "pc"),
+			data.get("persistence_tier", "full"),
+			data.get("race", "human"), data.get("character_class", "fighter"),
+			data.get("level", 1), data.get("xp", 0),
+			data.get("combat_progression", "fighter"),
+			data.get("strength", 10), data.get("intelligence", 10),
+			data.get("wisdom", 10), data.get("dexterity", 10),
+			data.get("constitution", 10), data.get("charisma", 10),
 			data.get("hp_max", 1), data.get("hp_current", 1),
 			data.get("armor_class", 0), data.get("attack_throw", 10),
 			data.get("save_petrification", 15), data.get("save_poison_death", 14),
@@ -233,8 +243,10 @@ func save_character(data: Dictionary) -> bool:
 			1 if data.get("is_dead", false) else 0,
 			1 if data.get("is_active", true) else 0,
 			1 if data.get("is_incapacitated", false) else 0,
+			data.get("employer_id", null),
 			data.get("loyalty_score", null),
 			data.get("wage_gp_per_month", null),
+			data.get("sex", "male"),
 			id
 		])
 	else:

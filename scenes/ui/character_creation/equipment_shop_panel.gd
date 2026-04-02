@@ -227,8 +227,16 @@ func _refresh_item_list() -> void:
 		_item_list_container.add_child(lbl)
 		return
 
-	# Sort by cost ascending
-	items.sort_custom(func(a, b): return int(a.get("cost_cp", 0)) < int(b.get("cost_cp", 0)))
+	# Keep catalog data order untouched; sort the visible shop list alphabetically.
+	items.sort_custom(func(a, b):
+		var name_a := String(a.get("name", a.get("item_key", ""))).to_lower()
+		var name_b := String(b.get("name", b.get("item_key", ""))).to_lower()
+		if name_a == name_b:
+			var key_a := String(a.get("item_key", ""))
+			var key_b := String(b.get("item_key", ""))
+			return key_a < key_b
+		return name_a < name_b
+	)
 
 	var class_id: String = _state.get("class_id", "")
 	var cls := _class_registry.get_class_def(class_id)

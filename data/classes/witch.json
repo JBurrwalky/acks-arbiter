@@ -37,17 +37,16 @@
   "weapon_restrictions": [],
   "armor_permissions": [],
   "shield_permitted": false,
-  "fighting_styles": [],
+  "fighting_styles": ["two_handed"],
   "class_proficiency_list": [
-    "alchemy", "apostasy", "beast_friendship", "black_lore_of_zahar",
+    "alchemy", "apostasy", "beast_friendship", "arcane_dabbling", "black_lore_of_zahar",
     "contemplation", "craft", "divine_blessing", "divine_health",
-    "elementalism", "familiar", "healing", "knowledge",
-    "loremastery", "magical_engineering", "mystic_aura", "naturalism",
-    "performance", "prestidigitation", "prophecy", "quiet_magic",
-    "seduction", "sensing_evil", "soothsaying", "theology",
+    "elementalism", "elven_bloodline", "familiar", "healing", "illusion_resistance", "laying_on_hands",
+    "loremastery", "magical_engineering", "magical_music", "mystic_aura", "naturalism",
+    "prestidigitation", "prophecy", "quiet_magic",
+    "seduction", "sensing_power", "soothsaying", "theology", "transmogrification",
     "unflappable_casting"
   ],
-  "_class_proficiency_list_note": "Reconstructed from ACKS PC rules — source XML did not include this list. NEEDS-REVIEW by Jedidiah against the printed Players Companion.",
   "proficiency_progression": {
     "class": [1, 5, 9, 13],
     "general": [1, 5, 9, 13]

@@ -335,8 +335,8 @@ func _check_new_proficiency_slots(class_id: String, new_level: int) -> Dictionar
 	if cls.is_empty():
 		return {"class": 0, "general": 0}
 	var prof_prog: Dictionary = cls.get("proficiency_progression", {})
-	var class_levels: Array  = prof_prog.get("class", [])
-	var general_levels: Array = prof_prog.get("general", [])
+	var class_levels: Array  = (prof_prog.get("class", []) as Array).map(func(v) -> int: return int(v))
+	var general_levels: Array = (prof_prog.get("general", []) as Array).map(func(v) -> int: return int(v))
 	return {
 		"class":   1 if new_level in class_levels else 0,
 		"general": 1 if new_level in general_levels else 0,

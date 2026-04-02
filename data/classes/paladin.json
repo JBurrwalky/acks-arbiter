@@ -38,7 +38,15 @@
   "armor_permissions": ["all"],
   "shield_permitted": true,
   "fighting_styles": ["weapon_and_shield", "two_handed", "dual_wield"],
-  "class_proficiency_list": [],
+  "class_proficiency_list": [
+    "alertness", "blind_fighting",
+    "combat_reflexes", "combat_trickery_force_back", "combat_trickery_incapacitate",
+    "combat_trickery_overrun", "combat_trickery_sunder", "command", "diplomacy",
+    "divine_blessing", "dungeon_bashing", "endurance", "fighting_style",
+    "goblin_slaying", "knowledge_history", "laying_on_hands",
+    "leadership", "manual_of_arms", "martial_training", "military_strategy",
+    "mystic_aura", "profession", "riding", "running", "theology",
+    "weapon_focus"],
   "proficiency_progression": {
     "class": [1, 3, 6, 9, 12],
     "general": [1, 5, 9, 13]

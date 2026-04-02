@@ -1,7 +1,7 @@
-extends Node
+extends "res://tests/test_suite_base.gd"
 
 ## Unit tests for the class power system integration.
-## Run via test_runner.tscn. Uses plain assert() — no external framework.
+## Run via test_runner.tscn. Uses plain check() — no external framework.
 ##
 ## Tests verify that class JSONs define correct powers and that
 ## CharacterGenerator.stamp_powers() produces correct records.
@@ -13,7 +13,8 @@ func run_all_tests() -> void:
 	test_power_progression_lookup()
 	test_stamp_powers()
 	test_shared_power_ids()
-	print("ClassPowers: all tests passed.")
+	if not has_failures():
+		print("ClassPowers: all tests passed.")
 
 
 # ---------------------------------------------------------------------------
@@ -45,7 +46,7 @@ func test_thief_has_thief_skills() -> void:
 		"backstab",
 	]
 	for skill in expected_skills:
-		assert(skill in power_ids,
+		check(skill in power_ids,
 			"thief should have power '%s', powers are: %s" % [skill, str(power_ids)])
 	print("  thief_has_thief_skills: OK")
 
@@ -58,14 +59,14 @@ func test_assassin_shares_backstab() -> void:
 	var reg := ClassRegistry.new()
 	var class_powers := reg.get_class_powers("assassin")
 	var power_ids := _get_power_ids(class_powers)
-	assert("backstab" in power_ids,
+	check("backstab" in power_ids,
 		"assassin should have 'backstab' power")
 
 	# Assassin backstab has conditions
 	for cp in class_powers:
 		if cp.get("power_id", "") == "backstab":
 			var conditions: Array = cp.get("conditions", [])
-			assert(not conditions.is_empty(),
+			check(not conditions.is_empty(),
 				"assassin backstab should have conditions (armor restriction)")
 			break
 	print("  assassin_shares_backstab: OK")
@@ -86,13 +87,13 @@ func test_power_progression_lookup() -> void:
 			found = true
 			var progression: Dictionary = cp.get("progression", {})
 			# Thief open_locks L1 = 18 (throw target)
-			assert(int(progression.get("1", 0)) == 18,
+			check(int(progression.get("1", 0)) == 18,
 				"thief open_locks L1 should be 18, got %d" % int(progression.get("1", 0)))
 			# Thief open_locks L14 = 1
-			assert(int(progression.get("14", 0)) == 1,
+			check(int(progression.get("14", 0)) == 1,
 				"thief open_locks L14 should be 1, got %d" % int(progression.get("14", 0)))
 			break
-	assert(found, "open_locks should exist in thief class_powers")
+	check(found, "open_locks should exist in thief class_powers")
 	print("  power_progression_lookup: OK")
 
 
@@ -115,26 +116,26 @@ func test_stamp_powers() -> void:
 	# Thief has 11 class_powers entries (7 skills + backstab + read_languages
 	# + arcane_scroll_use + stronghold_hideout)
 	var thief_powers := class_reg.get_class_powers("thief")
-	assert(records.size() == thief_powers.size(),
+	check(records.size() == thief_powers.size(),
 		"stamp_powers should produce %d records for thief, got %d" % [thief_powers.size(), records.size()])
 
 	# Verify each record has required fields
 	for record in records:
-		assert(record.has("power_id"), "record should have power_id")
-		assert(record.has("unlock_level"), "record should have unlock_level")
-		assert(record.has("conditions"), "record should have conditions")
-		assert(record.has("progression_data"), "record should have progression_data")
-		assert(record.has("is_active"), "record should have is_active")
+		check(record.has("power_id"), "record should have power_id")
+		check(record.has("unlock_level"), "record should have unlock_level")
+		check(record.has("conditions"), "record should have conditions")
+		check(record.has("progression_data"), "record should have progression_data")
+		check(record.has("is_active"), "record should have is_active")
 
 	# Check that backstab is among them
 	var backstab_found := false
 	for record in records:
 		if record.get("power_id", "") == "backstab":
 			backstab_found = true
-			assert(int(record.get("unlock_level", 0)) == 1,
+			check(int(record.get("unlock_level", 0)) == 1,
 				"backstab unlock_level should be 1")
 			break
-	assert(backstab_found, "backstab should be in stamped powers")
+	check(backstab_found, "backstab should be in stamped powers")
 	print("  stamp_powers: OK")
 
 
@@ -150,9 +151,9 @@ func test_shared_power_ids() -> void:
 	var assassin_powers := _get_power_ids(reg.get_class_powers("assassin"))
 	var nightblade_powers := _get_power_ids(reg.get_class_powers("elf_nightblade"))
 
-	assert("backstab" in thief_powers, "thief should have backstab")
-	assert("backstab" in assassin_powers, "assassin should have backstab")
-	assert("backstab" in nightblade_powers, "nightblade should have backstab")
+	check("backstab" in thief_powers, "thief should have backstab")
+	check("backstab" in assassin_powers, "assassin should have backstab")
+	check("backstab" in nightblade_powers, "nightblade should have backstab")
 
 	# The string value itself should be identical (not just similar)
 	# This is verified by the 'in' checks above — same literal "backstab"

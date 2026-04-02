@@ -1,4 +1,4 @@
-extends Node
+extends "res://tests/test_suite_base.gd"
 
 ## Tests for OverrideManager.
 ##
@@ -31,7 +31,8 @@ func run_all_tests() -> void:
 	test_adjust_gold_floors_at_zero()
 	test_snapshot_save_restore()
 	_teardown()
-	print("OverrideManager: all tests passed.")
+	if not has_failures():
+		print("OverrideManager: all tests passed.")
 
 
 # ---------------------------------------------------------------------------
@@ -89,19 +90,19 @@ func _teardown() -> void:
 
 func test_dice_queue_and_consume() -> void:
 	_mgr.queue_dice_override("attack_throw", 20)
-	assert(GameState.dice_overrides.has("attack_throw"), "queued override not in GameState")
-	assert(GameState.dice_overrides["attack_throw"] == 20, "wrong forced value")
+	check(GameState.dice_overrides.has("attack_throw"), "queued override not in GameState")
+	check(GameState.dice_overrides["attack_throw"] == 20, "wrong forced value")
 	var consumed := _mgr.consume_dice_override("attack_throw")
-	assert(consumed == 20, "consume returned wrong value: %d" % consumed)
-	assert(not GameState.dice_overrides.has("attack_throw"), "override not removed after consume")
+	check(consumed == 20, "consume returned wrong value: %d" % consumed)
+	check(not GameState.dice_overrides.has("attack_throw"), "override not removed after consume")
 
 
 func test_dice_clear_single() -> void:
 	_mgr.queue_dice_override("morale_check", 2)
 	_mgr.queue_dice_override("initiative", 6)
 	_mgr.clear_dice_override("morale_check")
-	assert(not GameState.dice_overrides.has("morale_check"), "cleared override still present")
-	assert(GameState.dice_overrides.has("initiative"), "uncleared override was removed")
+	check(not GameState.dice_overrides.has("morale_check"), "cleared override still present")
+	check(GameState.dice_overrides.has("initiative"), "uncleared override was removed")
 	_mgr.clear_dice_override("initiative")
 
 
@@ -109,12 +110,12 @@ func test_dice_clear_all() -> void:
 	_mgr.queue_dice_override("encounter_check", 1)
 	_mgr.queue_dice_override("reaction_roll", 12)
 	_mgr.clear_all_dice_overrides()
-	assert(GameState.dice_overrides.is_empty(), "dice_overrides not empty after clear_all")
+	check(GameState.dice_overrides.is_empty(), "dice_overrides not empty after clear_all")
 
 
 func test_dice_no_override_returns_minus_one() -> void:
 	var result := _mgr.consume_dice_override("saving_throw_poison")
-	assert(result == -1, "expected -1 for missing override, got %d" % result)
+	check(result == -1, "expected -1 for missing override, got %d" % result)
 
 
 # ---------------------------------------------------------------------------
@@ -123,16 +124,16 @@ func test_dice_no_override_returns_minus_one() -> void:
 
 func test_character_stat_override() -> void:
 	var ok := _mgr.override_character_stat(TEST_CHARACTER_ID, "strength", 18)
-	assert(ok, "override_character_stat returned false")
+	check(ok, "override_character_stat returned false")
 	var char_data := CampaignRepository.get_character(TEST_CHARACTER_ID)
-	assert(char_data.get("strength", 0) == 18, "strength not updated in DB: %d" % char_data.get("strength", 0))
+	check(char_data.get("strength", 0) == 18, "strength not updated in DB: %d" % char_data.get("strength", 0))
 
 
 func test_character_stat_disallowed_field() -> void:
 	var ok := _mgr.override_character_stat(TEST_CHARACTER_ID, "campaign_id", "evil_injection")
-	assert(not ok, "disallowed field should return false")
+	check(not ok, "disallowed field should return false")
 	var char_data := CampaignRepository.get_character(TEST_CHARACTER_ID)
-	assert(char_data.get("campaign_id", "") == TEST_CHARACTER_ID or \
+	check(char_data.get("campaign_id", "") == TEST_CHARACTER_ID or \
 		   char_data.get("campaign_id", "") == TEST_CAMPAIGN_ID,
 		"campaign_id should not have changed")
 
@@ -144,7 +145,7 @@ func test_character_xp_add() -> void:
 	)
 	_mgr.override_character_xp(TEST_CHARACTER_ID, 500)
 	var char_data := CampaignRepository.get_character(TEST_CHARACTER_ID)
-	assert(char_data.get("xp", -1) == 500, "XP should be 500, got %d" % char_data.get("xp", -1))
+	check(char_data.get("xp", -1) == 500, "XP should be 500, got %d" % char_data.get("xp", -1))
 
 
 func test_character_xp_subtract_floors_at_zero() -> void:
@@ -153,7 +154,7 @@ func test_character_xp_subtract_floors_at_zero() -> void:
 	)
 	_mgr.override_character_xp(TEST_CHARACTER_ID, -500)
 	var char_data := CampaignRepository.get_character(TEST_CHARACTER_ID)
-	assert(char_data.get("xp", -1) == 0, "XP should floor at 0, got %d" % char_data.get("xp", -1))
+	check(char_data.get("xp", -1) == 0, "XP should floor at 0, got %d" % char_data.get("xp", -1))
 
 
 # ---------------------------------------------------------------------------
@@ -162,22 +163,22 @@ func test_character_xp_subtract_floors_at_zero() -> void:
 
 func test_character_condition_apply_remove() -> void:
 	var ok_apply := _mgr.override_character_condition(TEST_CHARACTER_ID, "paralysed", true)
-	assert(ok_apply, "apply condition returned false")
+	check(ok_apply, "apply condition returned false")
 	var conditions := CampaignRepository.get_conditions(TEST_CHARACTER_ID)
 	var found := false
 	for c in conditions:
 		if c.get("condition_name", "") == "paralysed":
 			found = true
-	assert(found, "condition 'paralysed' not found in DB after apply")
+	check(found, "condition 'paralysed' not found in DB after apply")
 
 	var ok_remove := _mgr.override_character_condition(TEST_CHARACTER_ID, "paralysed", false)
-	assert(ok_remove, "remove condition returned false")
+	check(ok_remove, "remove condition returned false")
 	conditions = CampaignRepository.get_conditions(TEST_CHARACTER_ID)
 	var still_found := false
 	for c in conditions:
 		if c.get("condition_name", "") == "paralysed":
 			still_found = true
-	assert(not still_found, "condition 'paralysed' still in DB after remove")
+	check(not still_found, "condition 'paralysed' still in DB after remove")
 
 
 # ---------------------------------------------------------------------------
@@ -186,15 +187,15 @@ func test_character_condition_apply_remove() -> void:
 
 func test_character_status_toggle() -> void:
 	var ok := _mgr.override_character_status(TEST_CHARACTER_ID, true)
-	assert(ok, "override_character_status returned false")
+	check(ok, "override_character_status returned false")
 	var char_data := CampaignRepository.get_character(TEST_CHARACTER_ID)
-	assert(char_data.get("is_dead", 0) == 1, "is_dead should be 1")
-	assert(char_data.get("is_active", 1) == 0, "is_active should be 0 when dead")
+	check(char_data.get("is_dead", 0) == 1, "is_dead should be 1")
+	check(char_data.get("is_active", 1) == 0, "is_active should be 0 when dead")
 
 	_mgr.override_character_status(TEST_CHARACTER_ID, false)
 	char_data = CampaignRepository.get_character(TEST_CHARACTER_ID)
-	assert(char_data.get("is_dead", 1) == 0, "is_dead should be 0 after revive")
-	assert(char_data.get("is_active", 0) == 1, "is_active should be 1 after revive")
+	check(char_data.get("is_dead", 1) == 0, "is_dead should be 0 after revive")
+	check(char_data.get("is_active", 0) == 1, "is_active should be 1 after revive")
 
 
 # ---------------------------------------------------------------------------
@@ -213,8 +214,8 @@ func test_adjust_gold_add() -> void:
 	for item in items:
 		if item.get("item_key", "") == "coin_gp":
 			found_gold = true
-			assert(item.get("quantity", 0) == 150, "gold qty should be 150, got %d" % item.get("quantity", 0))
-	assert(found_gold, "coin_gp item not created")
+			check(item.get("quantity", 0) == 150, "gold qty should be 150, got %d" % item.get("quantity", 0))
+	check(found_gold, "coin_gp item not created")
 
 
 func test_adjust_gold_subtract() -> void:
@@ -228,7 +229,7 @@ func test_adjust_gold_subtract() -> void:
 	var items := CampaignRepository.get_inventory_items(TEST_CHARACTER_ID)
 	for item in items:
 		if item.get("item_key", "") == "coin_gp":
-			assert(item.get("quantity", 0) == 150, "gold after subtract should be 150, got %d" % item.get("quantity", 0))
+			check(item.get("quantity", 0) == 150, "gold after subtract should be 150, got %d" % item.get("quantity", 0))
 
 
 func test_adjust_gold_floors_at_zero() -> void:
@@ -241,7 +242,7 @@ func test_adjust_gold_floors_at_zero() -> void:
 	var items := CampaignRepository.get_inventory_items(TEST_CHARACTER_ID)
 	for item in items:
 		if item.get("item_key", "") == "coin_gp":
-			assert(item.get("quantity", 0) == 0, "gold should floor at 0, got %d" % item.get("quantity", 0))
+			check(item.get("quantity", 0) == 0, "gold should floor at 0, got %d" % item.get("quantity", 0))
 
 
 # ---------------------------------------------------------------------------
@@ -255,7 +256,7 @@ func test_snapshot_save_restore() -> void:
 		[TEST_CHARACTER_ID]
 	)
 	var snap_id := _mgr.save_session_snapshot("pre-fight checkpoint")
-	assert(not snap_id.is_empty(), "snapshot id should not be empty")
+	check(not snap_id.is_empty(), "snapshot id should not be empty")
 
 	# Mutate state
 	CampaignRepository.db.query_with_bindings(
@@ -263,12 +264,12 @@ func test_snapshot_save_restore() -> void:
 		[TEST_CHARACTER_ID]
 	)
 	var mutated := CampaignRepository.get_character(TEST_CHARACTER_ID)
-	assert(mutated.get("strength", -1) == 3, "pre-restore: strength should be 3")
+	check(mutated.get("strength", -1) == 3, "pre-restore: strength should be 3")
 
 	# Restore
 	var ok := _mgr.restore_session_snapshot(snap_id)
-	assert(ok, "restore_session_snapshot returned false")
+	check(ok, "restore_session_snapshot returned false")
 
 	var restored := CampaignRepository.get_character(TEST_CHARACTER_ID)
-	assert(restored.get("strength", -1) == 15, "restored strength should be 15, got %d" % restored.get("strength", -1))
-	assert(restored.get("xp", -1) == 999, "restored xp should be 999, got %d" % restored.get("xp", -1))
+	check(restored.get("strength", -1) == 15, "restored strength should be 15, got %d" % restored.get("strength", -1))
+	check(restored.get("xp", -1) == 999, "restored xp should be 999, got %d" % restored.get("xp", -1))

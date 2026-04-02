@@ -18,6 +18,7 @@ extends Node
 @onready var _class_registry_tests = $ClassRegistryTests
 @onready var _power_registry_tests = $PowerRegistryTests
 @onready var _encumbrance_tests = $EncumbranceTests
+@onready var _ability_roll_panel_tests = $AbilityRollPanelTests
 @onready var _character_generator_tests = $CharacterGeneratorTests
 @onready var _character_persistence_tests = $CharacterPersistenceTests
 @onready var _class_powers_tests = $ClassPowersTests
@@ -52,7 +53,8 @@ func run() -> void:
 	for suite in [_terrain_tests, _controller_tests, _override_tests, _dice_tests,
 			_timekeeping_tests, _calendar_seasons_tests,
 			_ability_utils_tests, _class_registry_tests, _power_registry_tests,
-			_encumbrance_tests, _character_generator_tests, _character_persistence_tests,
+			_encumbrance_tests, _ability_roll_panel_tests,
+			_character_generator_tests, _character_persistence_tests,
 			_class_powers_tests, _npc_generation_tests,
 			_spell_registry_tests, _repertoire_engine_tests,
 			_modifier_stack_tests, _entity_flags_tests,
@@ -67,7 +69,6 @@ func run() -> void:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1
 			continue
-		# Wrap each suite run so one failure doesn't abort the rest
 		var ok := _run_suite(suite)
 		if ok:
 			passed += 1
@@ -81,9 +82,11 @@ func run() -> void:
 		get_tree().quit(1 if failed > 0 else 0)
 
 
-## Calls run_all_tests() on [param suite] and returns true if no assert fired.
+## Calls run_all_tests() on [param suite] and returns true if no checks failed.
+## Requires suite to extend test_suite_base.gd (which provides has_failures()).
 func _run_suite(suite: Node) -> bool:
-	# GDScript assert() aborts the running script on failure but does not throw.
-	# We rely on the absence of error output and the print at the end of each suite.
 	suite.run_all_tests()
-	return true  # If we get here, all asserts passed
+	var ok: bool = not suite.has_failures()
+	if not ok:
+		print("  FAILED (%d assertion(s))" % suite.fail_count())
+	return ok

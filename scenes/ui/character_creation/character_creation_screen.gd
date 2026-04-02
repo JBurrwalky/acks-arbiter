@@ -151,6 +151,8 @@ func close() -> void:
 
 func _reset_state() -> void:
 	creation_state = {
+		"score_options": [],
+		"selected_score_index": -1,
 		"scores": {},
 		"race": "human",
 		"class_id": "",

@@ -180,7 +180,7 @@ static func get_season_progress(day_of_year: int) -> String:
 	var day_in_season: int = day_of_year - start  # 0–90
 	if day_in_season < 30:
 		return "early"
-	elif day_in_season < 61:
+	elif day_in_season < 60:
 		return "mid"
 	else:
 		return "late"

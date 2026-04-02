@@ -1,11 +1,11 @@
 class_name AbilityRollPanel
 extends VBoxContainer
 
-## Step 1 — Ability Score Rolling.
+## Step 1 - Ability Score Rolling.
 ##
-## Rolls 3d6 in order for STR, INT, WIS, DEX, CON, CHA.
-## Displays each score and its modifier. Player may re-roll as many times
-## as desired before advancing. ACKS rule: 3d6 in order, no rearranging.
+## Rolls five 3d6-in-order arrays for STR, INT, WIS, DEX, CON, CHA.
+## Displays each array and lets the player choose one before advancing.
+## ACKS rule: 3d6 in order, no rearranging.
 
 
 const ABILITY_ORDER: Array[String] = ["STR", "INT", "WIS", "DEX", "CON", "CHA"]
@@ -23,6 +23,7 @@ var _generator: CharacterGenerator
 
 var _roll_button: Button
 var _reroll_button: Button
+var _array_list_container: VBoxContainer
 var _score_labels: Dictionary = {}   # ability -> Label showing score
 var _mod_labels: Dictionary = {}     # ability -> Label showing modifier
 var _status_label: Label
@@ -49,9 +50,23 @@ func _build_ui() -> void:
 	add_theme_constant_override("separation", 12)
 
 	var header := Label.new()
-	header.text = "Roll your ability scores (3d6 in order)."
+	header.text = "Roll five ability arrays (3d6 in order) and choose one to use for this character."
 	header.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(header)
+
+	var chooser_lbl := Label.new()
+	chooser_lbl.text = "Rolled arrays:"
+	add_child(chooser_lbl)
+
+	_array_list_container = VBoxContainer.new()
+	_array_list_container.add_theme_constant_override("separation", 6)
+	add_child(_array_list_container)
+
+	add_child(HSeparator.new())
+
+	var selected_lbl := Label.new()
+	selected_lbl.text = "Selected array:"
+	add_child(selected_lbl)
 
 	# Score grid: label | score | modifier
 	var grid := GridContainer.new()
@@ -73,14 +88,14 @@ func _build_ui() -> void:
 		grid.add_child(name_lbl)
 
 		var score_lbl := Label.new()
-		score_lbl.text = "—"
+		score_lbl.text = "-"
 		score_lbl.custom_minimum_size = Vector2(40, 0)
 		score_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		grid.add_child(score_lbl)
 		_score_labels[ability] = score_lbl
 
 		var mod_lbl := Label.new()
-		mod_lbl.text = "—"
+		mod_lbl.text = "-"
 		mod_lbl.custom_minimum_size = Vector2(40, 0)
 		mod_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		grid.add_child(mod_lbl)
@@ -95,28 +110,52 @@ func _build_ui() -> void:
 	add_child(btn_row)
 
 	_roll_button = Button.new()
-	_roll_button.text = "Roll 3d6 In Order"
+	_roll_button.text = "Roll Attributes"
 	_roll_button.pressed.connect(_on_roll_pressed)
 	btn_row.add_child(_roll_button)
 
 	_reroll_button = Button.new()
-	_reroll_button.text = "Re-Roll All"
+	_reroll_button.text = "Roll 5 New Arrays"
 	_reroll_button.visible = false
 	_reroll_button.pressed.connect(_on_roll_pressed)
 	btn_row.add_child(_reroll_button)
 
 
 func _refresh_display() -> void:
+	for child in _array_list_container.get_children():
+		child.queue_free()
+
+	var score_options: Array = _state.get("score_options", [])
+	var selected_idx: int = int(_state.get("selected_score_index", -1))
 	var scores: Dictionary = _state.get("scores", {})
-	if scores.is_empty():
+	if score_options.is_empty() or scores.is_empty():
 		for ability in ABILITY_ORDER:
-			_score_labels[ability].text = "—"
-			_mod_labels[ability].text = "—"
+			_score_labels[ability].text = "-"
+			_mod_labels[ability].text = "-"
 		if _reroll_button != null:
 			_reroll_button.visible = false
 		if _roll_button != null:
 			_roll_button.visible = true
 		return
+
+	for idx in range(score_options.size()):
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		_array_list_container.add_child(row)
+
+		var choose_btn := Button.new()
+		choose_btn.text = "Selected" if idx == selected_idx else "Choose"
+		choose_btn.disabled = (idx == selected_idx)
+		choose_btn.pressed.connect(select_score_option.bind(idx))
+		row.add_child(choose_btn)
+
+		var summary_lbl := Label.new()
+		summary_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		summary_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		summary_lbl.text = "Array %d: %s" % [idx + 1, _format_score_summary(score_options[idx])]
+		if idx == selected_idx:
+			summary_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3, 1.0))
+		row.add_child(summary_lbl)
 
 	for ability in ABILITY_ORDER:
 		var val: int = int(scores.get(ability, 0))
@@ -130,7 +169,7 @@ func _refresh_display() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Roll logic (async)
+# Roll logic
 # ---------------------------------------------------------------------------
 
 func _on_roll_pressed() -> void:
@@ -139,21 +178,42 @@ func _on_roll_pressed() -> void:
 	_rolling = true
 	_roll_button.disabled = true
 	_reroll_button.disabled = true
-	_status_label.text = "Rolling…"
+	_status_label.text = "Rolling 5 arrays..."
 
-	var new_scores: Dictionary = {}
-	for ability in ABILITY_ORDER:
-		_status_label.text = "Rolling %s…" % ABILITY_NAMES[ability]
-		var result: RollResult = await DiceSystem.player_roll(6, 3, 0,
-			"ability_score_%s" % ability.to_lower(),
-			"Roll %s (3d6)" % ABILITY_NAMES[ability])
-		new_scores[ability] = result.modified_total
+	var rolled_arrays: Array = []
+	for array_idx in range(5):
+		var new_scores: Dictionary = {}
+		for ability in ABILITY_ORDER:
+			var result: RollResult = DiceSystem.roll_digital(
+				6, 3, 0,
+				"ability_score_array_%d_%s" % [array_idx + 1, ability.to_lower()]
+			)
+			new_scores[ability] = result.modified_total
+		rolled_arrays.append(new_scores)
 
-	_state["scores"] = new_scores
-	_state["traded_scores"] = {}   # invalidate any prior trades
+	_state["score_options"] = rolled_arrays
+	select_score_option(0)
 
-	_status_label.text = ""
+	_status_label.text = "Five arrays rolled. Choose one."
 	_rolling = false
 	_roll_button.disabled = false
 	_reroll_button.disabled = false
 	_refresh_display()
+
+
+func select_score_option(index: int) -> void:
+	var score_options: Array = _state.get("score_options", [])
+	if index < 0 or index >= score_options.size():
+		return
+	_state["selected_score_index"] = index
+	_state["scores"] = (score_options[index] as Dictionary).duplicate()
+	_state["traded_scores"] = {}   # invalidate any prior trades
+	if get_child_count() > 0:
+		_refresh_display()
+
+
+func _format_score_summary(scores: Dictionary) -> String:
+	var parts: Array[String] = []
+	for ability in ABILITY_ORDER:
+		parts.append("%s %d" % [ability, int(scores.get(ability, 0))])
+	return "  ".join(parts)

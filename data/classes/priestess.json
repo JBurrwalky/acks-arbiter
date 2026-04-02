@@ -37,8 +37,14 @@
   "weapon_restrictions": [],
   "armor_permissions": [],
   "shield_permitted": false,
-  "fighting_styles": [],
-  "class_proficiency_list": [],
+  "fighting_styles": ["two_handed"],
+  "class_proficiency_list": ["alchemy", "animal_husbandry", "apostasy", "beast_friendship", "arcane_dabbling",
+    "contemplation", "diplomacy", "divine_blessing", "divine_health",
+    "healing", "illusion_resistance", "knowledge", "laying_on_hands",
+    "loremastery", "magical_engineering", "magical_music", "mystic_aura", "naturalism",
+    "performance", "prestidigitation", "profession", "prophecy", "quiet_magic",
+    "righteous_turning", "sensing_evil", "sensing_power", "theology", "transmogrification",
+    "unflappable_casting"],
   "proficiency_progression": {
     "class": [1, 5, 9, 13],
     "general": [1, 5, 9, 13]

@@ -38,7 +38,15 @@
   "armor_permissions": ["leather"],
   "shield_permitted": true,
   "fighting_styles": ["weapon_and_shield", "two_handed"],
-  "class_proficiency_list": [],
+  "class_proficiency_list": [ 
+    "animal_husbandry", "animal_training", "apostasy", "beast_friendship",
+    "berserkergang", "command", "diplomacy", "divine_blessing", "divine_health",
+    "elementalism", "fighting_style", "healing", "laying_on_hands", "leadership",
+    "loremastery", "magical_engineering", "magical_music", "naturalism",
+    "passing_without_trace", "prestidigitation", "quiet_magic",
+    "sensing_evil", "sensing_power", "theology", "tracking",
+    "unflappable_casting", "weapon_focus"
+  ],
   "proficiency_progression": {
     "class": [1, 4, 8, 12],
     "general": [1, 5, 9, 13]

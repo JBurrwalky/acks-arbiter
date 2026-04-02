@@ -53,17 +53,10 @@ func get_unconditional_modifiers(key: String, rank: int, selections: int, level:
 
 func _clear_proficiency_effects(character: CharacterData) -> void:
 	## Removes all modifiers and flags whose source_id starts with "proficiency:".
-	## Must iterate over all existing proficiency entries to know which source IDs to remove.
-	## Uses a prefix scan: collect all source IDs present, then remove matching ones.
-	var sources_to_remove: Array[String] = []
-	for source_id in character.modifiers.get_stats_with_modifiers():
-		pass  # ModifierContainer doesn't expose source IDs directly
-	# Instead, remove by source for each proficiency we know was applied.
-	# We re-derive source IDs from the proficiencies array (idempotent-safe).
-	for prof in character.proficiencies:
-		var source_id := _make_source_id(prof)
-		character.modifiers.remove_all_from_source(source_id)
-		character.flags.clear_all_from_source(source_id)
+	## Uses prefix-based removal so this works correctly even when character.proficiencies
+	## has already been cleared before this method is called.
+	character.modifiers.remove_all_with_source_prefix("proficiency:")
+	character.flags.clear_all_from_source_prefix("proficiency:")
 
 
 # ---------------------------------------------------------------------------
