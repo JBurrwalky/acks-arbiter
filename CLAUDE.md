@@ -57,7 +57,7 @@ This project has three kinds of reference documents with different modification 
 ## Project Directory Structure
 
 ```
-C:\Users\jttau\acks-arbiter\
+C:/Users/jttau/acks-arbiter/
 ├── CLAUDE.md                    # This file (read every session)
 ├── build_log.md                 # Cross-session memory (read and update every session)
 ├── docs/
@@ -90,13 +90,15 @@ Every session that modifies application code:
 2. Read `build_log.md` to understand current project state and what happened last session.
 3. Read `docs/acks_arbiter_design_brief_v11.md`.
 4. Read `docs/document_map.md` and `docs/rule_system_map.md` (when they exist).
-5. Identify which XML rule summaries and GDDs are relevant to the current task. **Load only those files.** Never load the entire rules corpus.
-6. If persistence is involved, inspect the current database schema.
-7. If touching shared subsystem boundaries, inspect the relevant interface definitions.
-8. Implement in Godot-native terms: scenes, nodes, resources, autoloads, signals, GDScript classes, SQLite-backed repositories.
-9. Register any new actions in the action vocabulary definition file.
-10. Run or update focused tests for the affected subsystem and any adjacent boundaries.
-11. **Before ending the session**, update `build_log.md` (see below).
+5. Read `docs/coding_conventions.md` before writing code, edit after creating new conventions or modifying existing conventions. (Modify only according to coding conventions section rules below).
+6. Read `docs/proficiency_system_map.md`, `docs/spell_system_map.md` as needed to understand how spells and proficiencies relate to game systems during planning. Read `docs/acks-arbiter-build-plan.md` for context surrounding the current build phase task.
+7. Identify which XML rule summaries and GDDs are relevant to the current task. **Load only those files.** Never load the entire rules corpus.
+8. If persistence is involved, inspect the current database schema.
+9. If touching shared subsystem boundaries, inspect the relevant interface definitions.
+10. Implement in Godot-native terms: scenes, nodes, resources, autoloads, signals, GDScript classes, SQLite-backed repositories.
+11. Register any new actions in the action vocabulary definition file.
+12. Run or update focused tests for the affected subsystem and any adjacent boundaries.
+13. **Before ending the session**, update `build_log.md` and `docs/coding_conventions.md` (see below).
 
 ---
 
