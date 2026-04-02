@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://campaign_select_screen"]
+
+[ext_resource type="Script" path="res://scenes/ui/campaign_select/campaign_select_screen.gd" id="1_cs_script"]
+
+[node name="CampaignSelectScreen" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_cs_script")

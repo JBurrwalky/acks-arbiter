@@ -152,33 +152,40 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 | File | Contents | Status | Key Dependencies |
 |------|----------|--------|------------------|
 | `gdd-setting-generation.md` | Campaign setting generation: 24-mile hex map, geography, climate, politics, demographics | Draft | `acore-setting-construction-rules`, `acore_axioms_strongholds_and_domains`, `ax_domains_of_chaos`, `gdd-terrain-system`, `gdd-dungeon-layout` |
-| `gdd-terrain-system.md` | Terrain tag layering (elevation + ground cover), encounter table mapping, movement costs | Draft | `acore_adventures_and_encounters`, `acore-monster-stocking-rules`, `acore-setting-construction-rules` |
+| `gdd-terrain-system.md` | Terrain tag layering (elevation + ground cover), wilderness hex generation/subdivision, encounter table mapping, and movement costs; supersedes the earlier `gdd-terrain-wilderness.md` label | Draft | `acore_adventures_and_encounters`, `acore-monster-stocking-rules`, `acore-setting-construction-rules` |
+| `gdd-calendar-seasons.md` | Calendar seasonal layer: 4×91-day seasons, solstice/equinox dates, hemisphere inversion model, 7-day transition blending | Draft | `gdd-setting-generation` (hemisphere parameter) |
+| `gdd-weather-generation.md` | Deterministic weather simulation: 6-channel per-hex daily state (temperature, precipitation, cloud, wind, visibility, humidity), dawn/dusk calculation, DaW weather mapping | Draft | `daw_vagaries`, `acore_adventures_and_encounters`, `gdd-calendar-seasons`, `gdd-setting-generation`, `gdd-terrain-system`, `gdd-combat-map-generation` |
+| `gdd-poi-generation.md` | Wilderness POI generation: type taxonomy (7 archetypes), terrain affinity, placement budget, mechanical skeleton, rumor/quest hook seeding | Draft | `acore-setting-construction-rules`, `le_wilderness_lair_rules`, `acore_adventures_and_encounters`, `gdd-setting-generation`, `gdd-terrain-system`, `gdd-cultural-religious-generation`, `gdd-npc-personality`, `gdd-quest-rumor-system` |
 | `gdd-settlement-layout.md` | Settlement spatial generation: streets, districts, POIs, walls by population/market class | Draft | `acore-setting-construction-rules`, `gdd-terrain-system`, `gdd-setting-generation` |
+| `gdd-settlement-stocking.md` | On-demand settlement content generation: buildings, occupants, encounters, commerce, and undercity hazards | Draft | `acore_axioms_strongholds_and_domains`, `acore_equipment`, `gdd-settlement-layout`, `gdd-npc-personality`, `gdd-cultural-religious-generation`, `gdd-name-generation`, `gdd-dungeon-factions` |
 | `gdd-dungeon-layout.md` | Dungeon map generation: rooms, corridors, doors, stairs — data structure for stocking | Draft | `acore-setting-construction-rules` |
 | `gdd-dungeon-factions.md` | Faction identification and territorial grouping in dungeons, shared alert state | Draft | `acore-setting-construction-rules`, `le_monster_characteristics_stats`, `acore_monster_catalog_*`, `gdd-dungeon-layout`, `gdd-npc-personality` |
 | `gdd-trap-generation.md` | Parametric trap generation: type, trigger, effect, detection/disarm difficulty | Draft | `acore-setting-construction-rules`, `acore_combat_and_wounds`, `acore_adventures_and_encounters`, `gdd-dungeon-layout` |
-| `gdd-stronghold-construction.md` | Stronghold design, commissioning, cost calculation, worker hiring, monthly progress | Draft | `daw_equipment_and_construction`, `acore_axioms_strongholds_and_domains`, `gdd-settlement-layout`, `gdd-dungeon-layout`, `gdd-ui-ux-design` (not yet created) |
+| `gdd-stronghold-construction.md` | Stronghold design, commissioning, cost calculation, worker hiring, monthly progress | Draft | `daw_equipment_and_construction`, `acore_axioms_strongholds_and_domains`, `gdd-settlement-layout`, `gdd-dungeon-layout`, `gdd-ui-ux-design` |
+| `gdd-combat-map-generation.md` | Procedural wilderness and urban combat maps on the unified 5' diamond tactical grid | Draft | `acore_combat_and_wounds`, `acore_adventures_and_encounters`, `ax_conditions_catalog`, `gdd-terrain-system`, `gdd-dungeon-layout`, `gdd-settlement-layout`, `gdd-stronghold-construction`, `gdd_combat_behavior_tags` |
 | `gdd-npc-personality.md` | NPC personality, motivation, and behavioral generation for narration and AI | Draft | `acore-setting-construction-rules`, `ax_henchmen_recruitment_expanded`, `acore_equipment`, `gdd-setting-generation`, `gdd-settlement-layout` |
+| `gdd-name-generation.md` | Cultural name-bank schema and prompt structure for NPCs, settlements, realms, and geography | Draft | `gdd-setting-generation`, `gdd-settlement-layout`, `gdd-npc-personality` |
 | `gdd-henchman-class-selection.md` | Deterministic class selection for 0th-level henchmen reaching 500 XP | Draft | `acore_basics_and_characters`, `acore_core_classes`, `acore_demihuman_classes`, `acore_campaign_classes`, `pc_classes_*`, `gdd-npc-personality`, `gdd-cultural-religious-generation` |
-| `gdd-cultural-religious-generation.md` | Culture and religion data structures/generation — feeds NPC, settlement, domain, cleric | Draft | `acore_core_classes`, `acore-setting-construction-rules`, `acore_axioms_strongholds_and_domains`, `gdd-setting-generation`, `gdd-npc-personality`, `gdd-settlement-layout`, `gdd-name-generation` (not yet created) |
+| `gdd-cultural-religious-generation.md` | Culture and religion data structures/generation — feeds NPC, settlement, domain, cleric | Draft | `acore_core_classes`, `acore-setting-construction-rules`, `acore_axioms_strongholds_and_domains`, `gdd-setting-generation`, `gdd-npc-personality`, `gdd-settlement-layout`, `gdd-name-generation` |
+| `gdd-quest-rumor-system.md` | Quest generation, rumor distribution, reward valuation, and completion tracking | Draft | `acore-campaign-hijinks`, `ax_reactions_and_influencing`, `acore_adventures_and_encounters`, `acore_treasure_and_magic_items_rules`, `acore_axioms_strongholds_and_domains`, `gdd-poi-generation`, `gdd-setting-generation`, `gdd-npc-personality`, `gdd-dungeon-layout`, `gdd-dungeon-factions`, `gdd-terrain-system`, `gdd-settlement-layout`, `gdd-cultural-religious-generation` |
+| `gdd-ui-ux-design.md` | Full UI/UX specification: visual style, screen inventory, interaction patterns, and Godot presentation guidance | Draft | All rules reference docs; `gdd-setting-generation`, `gdd-dungeon-layout`, `gdd-settlement-layout`, `gdd-npc-personality`, `gdd-terrain-system`, `gdd-name-generation`, `gdd-cultural-religious-generation` |
 | `gdd_combat_behavior_tags.md` | Combat AI tag system: deterministic action selection, scoring, tie-breaking per tag | Draft | Morale rules (implicit); no explicit XML dependencies listed |
-| `gdd-poi-generation.md` | Wilderness POI generation: type taxonomy (7 archetypes), terrain affinity, placement budget, mechanical skeleton, rumor/quest hook seeding | Draft | `acore-setting-construction-rules`, `le_wilderness_lair_rules`, `acore_adventures_and_encounters`, `gdd-setting-generation`, `gdd-terrain-system`, `gdd-cultural-religious-generation`, `gdd-npc-personality`, `gdd-quest-rumor-system` (not yet created) |
 | `gdd-proficiency-specializations.md` | Closed specialization lists for open-ended proficiencies (Weapon Focus, Riding, Craft, Art, Knowledge, etc.), trained-creature entity model | Draft | `acore_proficiencies_rules_and_catalog`, `pc_proficiencies_catalog`, `le_monster_training_rules`, `gdd-setting-generation`, `gdd-cultural-religious-generation`, `proficiency_system_map.md` |
-| `gdd-calendar-seasons.md` | Calendar seasonal layer: 4×91-day seasons, solstice/equinox dates, hemisphere inversion model, 7-day transition blending | Draft | `gdd-setting-generation` (hemisphere parameter) |
-| `gdd-weather-generation.md` | Deterministic weather simulation: 6-channel per-hex daily state (temperature, precipitation, cloud, wind, visibility, humidity), dawn/dusk calculation, DaW weather mapping | Draft | `daw_vagaries`, `acore_adventures_and_encounters`, `gdd-calendar-seasons`, `gdd-setting-generation`, `gdd-terrain-system`, `gdd-combat-map-generation` (not yet created) |
 
 ---
 
-## Architecture Documents (`docs/`)
+## Architecture And Planning Documents (`docs/`)
 
 | File | Contents |
 |------|----------|
 | `acks_arbiter_design_brief_v11.md` | Master architecture document — system design, subsystem interfaces, data flow |
+| `acks_arbiter_build_plan.md` | Dependency-ordered implementation roadmap with current status, blockers, and phase sequencing |
 | `document_map.md` | This file — index of all rule and design documents |
 | `rule_system_map.md` | System-to-file dependency map and cross-references |
 | `coding_conventions.md` | Living reference for GDScript, SQLite, and architecture patterns — naming, signals, autoloads, DB access, testing |
 | `spell_system_map.md` | Maps spells to game system hooks — modifier types, flag systems, and effect patterns each system must support |
 | `proficiency_system_map.md` | Maps proficiencies to game system hooks — modifier types, flag systems, enabler patterns, and effect shapes each system must support |
+| `monster_system_map.md` | Maps monster stat-block fields and special abilities to the systems that must expose mechanical hooks |
 
 ---
 
@@ -190,6 +197,6 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 - **Lairs & Encounters XML:** 14 files (5 monster systems + 9 monster catalogs)
 - **Axioms XML:** 11 files
 - **Total XML:** 70 files
-- **GDDs:** 15 files
-- **Architecture docs:** 6 files
-- **Grand total indexed:** 85 files
+- **GDDs:** 20 files
+- **Architecture and planning docs:** 8 files
+- **Grand total indexed:** 98 files

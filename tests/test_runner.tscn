@@ -12,29 +12,34 @@
 [ext_resource type="Script" path="res://tests/test_power_registry.gd" id="10_power_registry_tests"]
 [ext_resource type="Script" path="res://tests/test_encumbrance.gd" id="11_encumbrance_tests"]
 [ext_resource type="Script" path="res://tests/test_ability_roll_panel.gd" id="12_ability_roll_panel_tests"]
-[ext_resource type="Script" path="res://tests/test_character_generator.gd" id="13_character_generator_tests"]
-[ext_resource type="Script" path="res://tests/test_character_persistence.gd" id="14_character_persistence_tests"]
-[ext_resource type="Script" path="res://tests/test_class_powers.gd" id="15_class_powers_tests"]
-[ext_resource type="Script" path="res://tests/test_npc_generation.gd" id="16_npc_generation_tests"]
-[ext_resource type="Script" path="res://tests/test_spell_registry.gd" id="17_spell_registry_tests"]
-[ext_resource type="Script" path="res://tests/test_repertoire_engine.gd" id="18_repertoire_engine_tests"]
-[ext_resource type="Script" path="res://tests/test_modifier_stack.gd" id="19_modifier_stack_tests"]
-[ext_resource type="Script" path="res://tests/test_entity_flags.gd" id="20_entity_flags_tests"]
-[ext_resource type="Script" path="res://tests/test_condition_catalog.gd" id="21_condition_catalog_tests"]
-[ext_resource type="Script" path="res://tests/test_damage_resistance.gd" id="22_damage_resistance_tests"]
-[ext_resource type="Script" path="res://tests/test_active_effect_tracker.gd" id="23_active_effect_tracker_tests"]
-[ext_resource type="Script" path="res://tests/test_spell_effect_registry.gd" id="24_spell_effect_registry_tests"]
-[ext_resource type="Script" path="res://tests/test_proficiency_registry.gd" id="25_proficiency_registry_tests"]
-[ext_resource type="Script" path="res://tests/test_proficiency_effect_resolver.gd" id="26_proficiency_effect_resolver_tests"]
-[ext_resource type="Script" path="res://tests/test_proficiency_integration.gd" id="27_proficiency_integration_tests"]
-[ext_resource type="Script" path="res://tests/test_equipment_catalog.gd" id="28_equipment_catalog_tests"]
-[ext_resource type="Script" path="res://tests/test_specialization_registry.gd" id="29_specialization_registry_tests"]
-[ext_resource type="Script" path="res://tests/test_persistence_tiers.gd" id="30_persistence_tier_tests"]
-[ext_resource type="Script" path="res://tests/test_xp_award_calculator.gd" id="31_xp_award_calculator_tests"]
-[ext_resource type="Script" path="res://tests/test_level_up_engine.gd" id="32_level_up_engine_tests"]
-[ext_resource type="Script" path="res://tests/test_aging_system.gd" id="33_aging_system_tests"]
-[ext_resource type="Script" path="res://tests/test_level_up_proficiency_picker.gd" id="34_level_up_proficiency_picker_tests"]
-[ext_resource type="Script" path="res://tests/test_asset_registry.gd" id="35_asset_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_equipment_shop_panel.gd" id="13_equipment_shop_panel_tests"]
+[ext_resource type="Script" path="res://tests/test_character_generator.gd" id="14_character_generator_tests"]
+[ext_resource type="Script" path="res://tests/test_character_persistence.gd" id="15_character_persistence_tests"]
+[ext_resource type="Script" path="res://tests/test_class_powers.gd" id="16_class_powers_tests"]
+[ext_resource type="Script" path="res://tests/test_npc_generation.gd" id="17_npc_generation_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_registry.gd" id="18_spell_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_repertoire_engine.gd" id="19_repertoire_engine_tests"]
+[ext_resource type="Script" path="res://tests/test_modifier_stack.gd" id="20_modifier_stack_tests"]
+[ext_resource type="Script" path="res://tests/test_entity_flags.gd" id="21_entity_flags_tests"]
+[ext_resource type="Script" path="res://tests/test_condition_catalog.gd" id="22_condition_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_damage_resistance.gd" id="23_damage_resistance_tests"]
+[ext_resource type="Script" path="res://tests/test_active_effect_tracker.gd" id="24_active_effect_tracker_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_effect_registry.gd" id="25_spell_effect_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_proficiency_registry.gd" id="26_proficiency_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_proficiency_effect_resolver.gd" id="27_proficiency_effect_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_proficiency_integration.gd" id="28_proficiency_integration_tests"]
+[ext_resource type="Script" path="res://tests/test_equipment_catalog.gd" id="29_equipment_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_specialization_registry.gd" id="30_specialization_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_persistence_tiers.gd" id="31_persistence_tier_tests"]
+[ext_resource type="Script" path="res://tests/test_xp_award_calculator.gd" id="32_xp_award_calculator_tests"]
+[ext_resource type="Script" path="res://tests/test_level_up_engine.gd" id="33_level_up_engine_tests"]
+[ext_resource type="Script" path="res://tests/test_aging_system.gd" id="34_aging_system_tests"]
+[ext_resource type="Script" path="res://tests/test_level_up_proficiency_picker.gd" id="35_level_up_proficiency_picker_tests"]
+[ext_resource type="Script" path="res://tests/test_asset_registry.gd" id="36_asset_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_navigation_stack.gd" id="37_navigation_stack_tests"]
+[ext_resource type="Script" path="res://tests/test_isometric_grid.gd" id="38_isometric_grid_tests"]
+[ext_resource type="Script" path="res://tests/test_tactical_map_data.gd" id="39_tactical_map_data_tests"]
+[ext_resource type="Script" path="res://tests/test_dungeon_map_controller.gd" id="40_dungeon_map_controller_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -72,71 +77,86 @@ script = ExtResource("11_encumbrance_tests")
 [node name="AbilityRollPanelTests" type="Node" parent="."]
 script = ExtResource("12_ability_roll_panel_tests")
 
+[node name="EquipmentShopPanelTests" type="Node" parent="."]
+script = ExtResource("13_equipment_shop_panel_tests")
+
 [node name="CharacterGeneratorTests" type="Node" parent="."]
-script = ExtResource("13_character_generator_tests")
+script = ExtResource("14_character_generator_tests")
 
 [node name="CharacterPersistenceTests" type="Node" parent="."]
-script = ExtResource("14_character_persistence_tests")
+script = ExtResource("15_character_persistence_tests")
 
 [node name="ClassPowersTests" type="Node" parent="."]
-script = ExtResource("15_class_powers_tests")
+script = ExtResource("16_class_powers_tests")
 
 [node name="NPCGenerationTests" type="Node" parent="."]
-script = ExtResource("16_npc_generation_tests")
+script = ExtResource("17_npc_generation_tests")
 
 [node name="SpellRegistryTests" type="Node" parent="."]
-script = ExtResource("17_spell_registry_tests")
+script = ExtResource("18_spell_registry_tests")
 
 [node name="RepertoireEngineTests" type="Node" parent="."]
-script = ExtResource("18_repertoire_engine_tests")
+script = ExtResource("19_repertoire_engine_tests")
 
 [node name="ModifierStackTests" type="Node" parent="."]
-script = ExtResource("19_modifier_stack_tests")
+script = ExtResource("20_modifier_stack_tests")
 
 [node name="EntityFlagsTests" type="Node" parent="."]
-script = ExtResource("20_entity_flags_tests")
+script = ExtResource("21_entity_flags_tests")
 
 [node name="ConditionCatalogTests" type="Node" parent="."]
-script = ExtResource("21_condition_catalog_tests")
+script = ExtResource("22_condition_catalog_tests")
 
 [node name="DamageResistanceTests" type="Node" parent="."]
-script = ExtResource("22_damage_resistance_tests")
+script = ExtResource("23_damage_resistance_tests")
 
 [node name="ActiveEffectTrackerTests" type="Node" parent="."]
-script = ExtResource("23_active_effect_tracker_tests")
+script = ExtResource("24_active_effect_tracker_tests")
 
 [node name="SpellEffectRegistryTests" type="Node" parent="."]
-script = ExtResource("24_spell_effect_registry_tests")
+script = ExtResource("25_spell_effect_registry_tests")
 
 [node name="ProficiencyRegistryTests" type="Node" parent="."]
-script = ExtResource("25_proficiency_registry_tests")
+script = ExtResource("26_proficiency_registry_tests")
 
 [node name="ProficiencyEffectResolverTests" type="Node" parent="."]
-script = ExtResource("26_proficiency_effect_resolver_tests")
+script = ExtResource("27_proficiency_effect_resolver_tests")
 
 [node name="ProficiencyIntegrationTests" type="Node" parent="."]
-script = ExtResource("27_proficiency_integration_tests")
+script = ExtResource("28_proficiency_integration_tests")
 
 [node name="EquipmentCatalogTests" type="Node" parent="."]
-script = ExtResource("28_equipment_catalog_tests")
+script = ExtResource("29_equipment_catalog_tests")
 
 [node name="SpecializationRegistryTests" type="Node" parent="."]
-script = ExtResource("29_specialization_registry_tests")
+script = ExtResource("30_specialization_registry_tests")
 
 [node name="PersistenceTierTests" type="Node" parent="."]
-script = ExtResource("30_persistence_tier_tests")
+script = ExtResource("31_persistence_tier_tests")
 
 [node name="XPAwardCalculatorTests" type="Node" parent="."]
-script = ExtResource("31_xp_award_calculator_tests")
+script = ExtResource("32_xp_award_calculator_tests")
 
 [node name="LevelUpEngineTests" type="Node" parent="."]
-script = ExtResource("32_level_up_engine_tests")
+script = ExtResource("33_level_up_engine_tests")
 
 [node name="LevelUpProficiencyPickerTests" type="Node" parent="."]
-script = ExtResource("34_level_up_proficiency_picker_tests")
+script = ExtResource("35_level_up_proficiency_picker_tests")
 
 [node name="AgingSystemTests" type="Node" parent="."]
-script = ExtResource("33_aging_system_tests")
+script = ExtResource("34_aging_system_tests")
 
 [node name="AssetRegistryTests" type="Node" parent="."]
-script = ExtResource("35_asset_registry_tests")
+script = ExtResource("36_asset_registry_tests")
+
+[node name="NavigationStackTests" type="Node" parent="."]
+script = ExtResource("37_navigation_stack_tests")
+
+[node name="IsometricGridTests" type="Node" parent="."]
+script = ExtResource("38_isometric_grid_tests")
+
+[node name="TacticalMapDataTests" type="Node" parent="."]
+script = ExtResource("39_tactical_map_data_tests")
+
+[node name="DungeonMapControllerTests" type="Node" parent="."]
+script = ExtResource("40_dungeon_map_controller_tests")

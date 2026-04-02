@@ -186,7 +186,7 @@ enum TERRITORY { Civilized, Borderlands, Wilderness }   # screaming type, mixed 
 
 ### 2.1 Engine Directory Structure
 
-<!-- Updated 2026-03-29 to reflect proficiency infrastructure -->
+<!-- Updated 2026-04-02 to reflect D-4 dungeon/tactical grid system -->
 
 ```
 acks-arbiter/               (Godot project root = repo root)
@@ -211,15 +211,18 @@ acks-arbiter/               (Godot project root = repo root)
 │   │   ├── hex_map_data.gd
 │   │   ├── hex_terrain_data.gd
 │   │   ├── inventory_item.gd       # + damage_type, material fields
+│   │   ├── isometric_grid.gd       # static diamond-grid math (cell↔screen, neighbors, radius)
 │   │   ├── modifier_container.gd   # per-entity facade over ModifierStacks
 │   │   ├── modifier_stack.gd       # ordered modifier list for a single stat
 │   │   ├── response_envelope.gd
-│   │   └── roll_result.gd
+│   │   ├── roll_result.gd
+│   │   └── tactical_map_data.gd    # unified cell grid (dungeon + combat); TacticalMapData
 │   └── subsystems/
 │       ├── calendar/       # CalendarConstants, CalendarSeasons (pure static computation)
 │       ├── characters/     # PowerRegistry, ClassRegistry, ProficiencyRegistry, ProficiencyEffectResolver,
 │       │                   #   AbilityUtils, EncumbranceCalculator, CharacterGenerator
-│       ├── exploration/    # HexMapController
+│       ├── exploration/    # HexMapController, DungeonMapController
+│       ├── navigation/     # NavigationStack (not autoload; placed in Main.tscn)
 │       ├── override/       # OverrideManager (dev-mode state manipulation)
 │       ├── spells/         # SpellRegistry, RepertoireEngine, ActiveEffectTracker, SpellEffectRegistry
 │       ├── combat/         # (planned)
@@ -228,7 +231,8 @@ acks-arbiter/               (Godot project root = repo root)
 ├── scenes/
 │   ├── Main.tscn           # Root scene (instantiates all children)
 │   ├── main_scene.gd       # Test harness wiring
-│   ├── maps/               # hex_map.tscn, hex_map_renderer.gd
+│   ├── maps/               # hex_map.tscn, hex_map_renderer.gd,
+│   │                       # dungeon_map.tscn, dungeon_map_renderer.gd
 │   └── ui/
 │       ├── override/       # override_panel.gd / .tscn
 │       ├── dice/           # dice_prompt.gd / .tscn
@@ -237,7 +241,7 @@ acks-arbiter/               (Godot project root = repo root)
 ├── tests/                  # All test scripts + test_runner.tscn
 ├── db/
 │   ├── schema.sql          # Canonical schema (update after every migration)
-│   └── migrations/         # 001_initial_schema .. 008_portrait_id
+│   └── migrations/         # 001_initial_schema .. 017_dungeon_grid
 ├── data/
 │   ├── classes/            # One JSON per ACKS class (25 files)
 │   ├── powers/             # power_catalog.json (reusable power definitions)
@@ -251,7 +255,8 @@ acks-arbiter/               (Godot project root = repo root)
 │   ├── conditions/         # condition_catalog.json (27 ACKS conditions)
 │   ├── proficiencies/      # proficiency_catalog.json (106 entries), general_proficiency_list.json (38 keys)
 │   ├── spells/             # spell_catalog.json (231 entries), spell_list_indices.json, spell_effects.json
-│   └── test_hex_map.json   # Test hex map data
+│   ├── test_hex_map.json   # Test hex map data (31-hex Ashford Vale)
+│   └── test_dungeon.json   # Test dungeon data (Goblin Warrens, 2 levels)
 ├── rules/                  # SACRED XML rule summaries — never modify
 ├── generation/             # GDD markdown files — modifiable
 └── docs/                   # Architecture docs, this file, maps
@@ -1309,7 +1314,18 @@ func _build_ui() -> void:
 
 **No `class_name`** on these scripts — they are only referenced via scene instantiation in Main.tscn, never by code.
 
-### 13.3 Scene Tree — Main.tscn
+### 13.3 Reusable Panel Setup Must Fully Reset UI State
+
+<!-- Added 2026-04-02 after EquipmentShopPanel state-reset bug fix -->
+
+Panels reused across a multi-step flow (for example character-creation steps that persist in the scene tree and receive repeated `setup(state, ...)` calls) must treat `setup()` as a full UI rehydration pass, not a delta update.
+
+- Recompute button visibility and `disabled` state from backing data every time `setup()` runs.
+- Clear stale transient UI text (`status_label`, warnings, in-progress flags) when the backing state no longer supports it.
+- Refresh both the "complete" and "incomplete" content paths so placeholder text replaces stale rows when prerequisite state is cleared.
+- If a fresh state should look like a fresh screen, reset tab/selection widgets there rather than relying on node construction to do it once.
+
+### 13.4 Scene Tree — Main.tscn
 
 <!-- Updated 2026-03-27 -->
 
@@ -1341,4 +1357,72 @@ Main (Node, script: main_scene.gd)
 
 ---
 
-*Last major update: 2026-03-29 — Proficiency infrastructure. Updated directory tree with data/proficiencies and characters/ subsystem (§2.1), updated migration list to 007, added separately-loaded arrays pattern and proficiency modifier source IDs to runtime-state section (§7.2), updated registries row and added 4 proficiency-specific rules (§12).*
+---
+
+## 13. Tactical Grid Conventions (D-4+)
+
+<!-- Added 2026-04-02 for dungeon grid and future combat maps -->
+
+### 13.1 CellData Schema
+
+Cells are stored as `Dictionary` in `TacticalMapData._cells` keyed by `Vector2i(col, row)`. String-based fields allow the vocabulary to grow across dungeon/combat/stronghold contexts without schema migrations.
+
+| Field | Type | Notes |
+|---|---|---|
+| `terrain_feature` | String | `"open"`, `"rock"`, `"wall_stone"`, `"wall_wood"`, `"door"`, `"door_locked"`, `"door_secret"`, `"portcullis"`, `"stairs_up"`, `"stairs_down"` (combat extends with `"tree"`, `"boulder"`, etc.) |
+| `passable` | bool | Derived from terrain_feature + door_state; do not set manually — use `set_door_state()` |
+| `blocks_los` | bool | Derived; portcullis blocks movement but NOT LOS |
+| `elevation` | int | 0-30 (each unit = 2.5 ft); 0 for flat dungeon levels |
+| `surface_type` | String | `"stone"`, `"dirt"`, `"wood"` — drives tile variant |
+| `door_state` | String | `""` (not a door), `"open"`, `"closed"`, `"locked"`, `"stuck"` |
+| `door_type` | String | `""`, `"arch"`, `"unlocked"`, `"locked"`, `"trapped"`, `"secret"`, `"portcullis"` |
+| `door_detected` | bool | For secret doors: false until found by search check |
+| `room_id` | int | -1 for corridors, walls, void |
+| `is_corridor` | bool | True for corridor cells vs room cells |
+| `cover_value` | int | 0-4 (future combat ranged modifier) |
+
+**Never add a CHECK constraint on `door_state`** — vocabulary expands (spiked, barred, etc.). Validate in code.
+
+### 13.2 Isometric Grid Math
+
+`IsometricGrid` (static class, `engine/shared_types/isometric_grid.gd`) is the canonical source for diamond-grid math. `CELL_W=64, CELL_H=32, HALF_W=32, HALF_H=16`.
+
+```
+screen_x = (col - row) * 32
+screen_y = (col + row) * 16
+```
+
+All coordinate conversion, adjacency, and radius queries must go through `IsometricGrid`. Never inline diamond math in renderer or controller code.
+
+### 13.3 FogState Transitions
+
+```
+HIDDEN → VISIBLE   (room entered for the first time; all room cells + boundary revealed)
+VISIBLE → EXPLORED (party leaves room; room cells dim)
+EXPLORED → VISIBLE (party re-enters room)
+```
+
+Fog is stored per-`TacticalMapData` instance. Multi-level dungeons store each level separately in `DungeonMapController._all_levels: Dictionary` (int → TacticalMapData).
+
+### 13.4 Dungeon JSON Format
+
+Multi-level dungeons use a `levels` array + `stairs` array at the top level:
+```json
+{
+  "id": "...", "name": "...", "theme": "...", "tileset_group": "...",
+  "levels": [{"level": 1, "grid_width": N, "grid_height": N, "entry_col": C, "entry_row": R, "cells": [...]}],
+  "stairs": [{"from_level": 1, "from_col": C, "from_row": R, "to_level": 2, "to_col": C, "to_row": R}]
+}
+```
+
+`TacticalMapData.load_from_file()` handles both single-level and multi-level formats (reads `levels[0]`). `DungeonMapController.load_dungeon()` handles all levels.
+
+### 13.5 Secret Door Dev Visibility
+
+During D-4 development, undetected secret doors (`door_detected = false`) are rendered with a **dark grey fill + white "S" icon** instead of looking identical to walls. This is intentional dev-mode behavior to allow placement verification. A `DEV_SHOW_SECRET_DOORS` constant in the renderer (or a future build flag) will hide this in production.
+
+### 13.6 Multi-Level Controller Pattern
+
+`DungeonMapController` is NOT an autoload. Instantiate dynamically in `main_scene.gd._enter_dungeon()`, add as child, call `load_dungeon()`, then pass to the dungeon scene via `setup(controller)`. The controller is freed when the dungeon scene is popped from NavigationStack (via `queue_free` on the scene's `exit()`).
+
+*Last major update: 2026-04-02 — D-4 dungeon grid. Updated directory tree (§2.1), migration list to 017, maps/ entry, added §13 (tactical grid conventions).*

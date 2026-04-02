@@ -91,5 +91,8 @@
       "vellum_base": "res://assets/ui/bg_vellum_base.png",
       "vellum_subtle": "res://assets/ui/bg_vellum_subtle.png"
     }
+  },
+  "dungeon": {
+    "entrance_icon": "res://assets/dungeon/dungeon_entrance_icon.png"
   }
 }

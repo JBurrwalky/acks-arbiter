@@ -270,8 +270,8 @@
       "power_id": "detect_secret_doors",
       "power_name": "Detect Secret Doors",
       "power_type": "detection",
-      "description": "Heightened ability to notice hidden doors and passages. Active search: 8+ on d6. Passive (walking past): 14+ on d6.",
-      "resolution": "d6_throw_high",
+      "description": "Heightened ability to notice hidden doors and passages. Active search: 8+ on 1d20. Passive (walking past): 14+ on 1d20.",
+      "resolution": "d20_throw_high",
       "notes": "Elven racial ability. Active search takes 1 turn."
     },
     {

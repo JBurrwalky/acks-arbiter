@@ -30,8 +30,12 @@ These items are complete. Listed for dependency reference only.
 - C-1: Character data model (PC/henchman/NPC unified), 25 class JSONs, power catalog (55 powers), ClassRegistry, PowerRegistry, CharacterGenerator, EncumbranceCalculator, AbilityUtils, equipment catalog (6 JSON files, ~250 items). ✅
 - C-2: Spell catalog (231 entries), spell list indices, SpellRegistry, RepertoireEngine, CampaignRepository spell CRUD. ✅
 - Spell hook infrastructure: ModifierStack, ModifierContainer, EntityFlags, DamageTypes, ConditionCatalog (27 conditions), DamageResistance, ActiveEffectTracker, SpellEffectRegistry (13 template entries), CharacterData runtime extensions. ✅
+- C-3
+- C-4
+- C-5
 
 ### Phase D — Spatial Layers (partial) ✅
+- D-1
 - D-3: Hex map rendering (TileMap, flat-top), terrain taxonomy (4-layer tags), fog of war, hex math utilities. ✅
 
 ### Infrastructure ✅
@@ -192,6 +196,12 @@ Scene transition state machine: campaign select → world map → settlement →
 - Test dungeon JSON file.
 - Test suite: ~20 tests (grid math, room detection, door state, fog transitions).
 
+**Renderer notes:**
+- use beige/tan for floors, mid-grey for walls, brown for doors, black for fog.
+- door state closed should have an `X` icon overlayed on the tile
+- door state open should an `O` icon overlayed.
+- grid lines should be black and about 8px wide
+
 **Depends on:** D-1 (asset registry for tile lookups).
 **Blocks:** E-2 (dungeon exploration loop), F-1 (combat on dungeon grid), L-1 (dungeon stocking).
 
@@ -273,6 +283,15 @@ Complexity 4 because: it touches every autoload (GameState, CampaignRepository, 
 
 ---
 
+#### F-0: Monster Catalog and Registry 
+
+**(Complexity: 2)**
+Follows the exact pattern of C-2 (spells) and C-2b (proficiencies). The source XML files are extensive — eight acore_monster_catalog_*.xml files plus seven le_monster_catalog_*.xml files — but the extraction is mechanical. REFERENCE doc/monster_system_map.md during this phase.
+
+**Deliverables:** data/monsters/monster_catalog.json (stat blocks for all ACKS 1e monsters), MonsterRegistry class (RefCounted, same pattern as SpellRegistry/ProficiencyRegistry/ClassRegistry), and integration with EncounterData so encounter resolution can instantiate monsters by ID.
+
+---
+
 #### F-1: Combat Loop
 
 **Complexity: 4**
@@ -288,7 +307,7 @@ The single largest and most rule-dense build item in Tier 1. The proficiency_sys
 7. Morale check (2d6 vs. morale score + Command/Leadership modifiers).
 8. Condition tick (ActiveEffectTracker duration advancement).
 
-Sub-systems: targeting (melee engagement zone, ranged line-of-sight on diamond grid), damage application (CharacterData.apply_damage() exists), mortal wounds (ax_mortal_wounds_and_tampering.xml), retreat/pursuit, and the full condition lifecycle.
+Sub-systems: targeting (melee engagement zone, ranged line-of-sight on diamond grid), damage application (CharacterData.apply_damage() exists), mortal wounds (ax_mortal_wounds_and_tampering.xml), retreat/pursuit, the full condition lifecycle, basic monster behavior ai (see below).
 
 Complexity 4 because: every proficiency hook, every spell effect hook, every modifier stack, and every entity flag converges here. The combat sequence has strict ordering rules from the ACKS XML. Edge cases are dense (cleave chains, backstab multipliers, berserk state, casting interruption). This is where the architecture either validates or collapses.
 
@@ -303,7 +322,11 @@ Complexity 4 because: every proficiency hook, every spell effect hook, every mod
 - Retreat/pursuit rules.
 - Combat UI (turn order display, action selection, targeting).
 - EventBus signals: combat_started, combat_ended, attack_resolved, creature_killed, morale_broken.
+- Basic Monster behavior AI.
 - Test suite: ~40+ tests.
+
+**Monster Behavior AI**
+The combat manager needs to resolve monster turns, which means: select action (attack, special ability, flee), select target (nearest, most wounded, random — simple heuristics), execute via the same attack/damage pipeline PCs use, check morale at triggers (first death, half casualties, leader killed). The gdd_combat_behavior_tags.md already classifies monster behaviors — F-1 implements the basic tags, O-2 implements the advanced ones.
 
 **Depends on:** E-2 (session runner for combat entry/exit), D-4 (dungeon grid for tactical movement), spell hook infrastructure, proficiency registry.
 **Blocks:** G-2 (henchman morale in combat), H-1 (domain military), I-1 (integration test needs combat).

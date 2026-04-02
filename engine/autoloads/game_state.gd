@@ -20,7 +20,7 @@ enum DiceMode {
 	DIGITAL,  ## App rolls automatically. No player input required for any roll.
 	PHYSICAL, ## App always prompts the player to enter results from physical dice.
 	HYBRID,   ## Default. Player-facing rolls (PC attacks, saves, skills) prompt;
-	          ## NPC/GM rolls (encounter checks, morale, reaction) are always digital.
+			  ## NPC/GM rolls (encounter checks, morale, reaction) are always digital.
 }
 
 ## Every top-level phase the application can be in.

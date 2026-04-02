@@ -19,6 +19,7 @@ extends Node
 @onready var _power_registry_tests = $PowerRegistryTests
 @onready var _encumbrance_tests = $EncumbranceTests
 @onready var _ability_roll_panel_tests = $AbilityRollPanelTests
+@onready var _equipment_shop_panel_tests = $EquipmentShopPanelTests
 @onready var _character_generator_tests = $CharacterGeneratorTests
 @onready var _character_persistence_tests = $CharacterPersistenceTests
 @onready var _class_powers_tests = $ClassPowersTests
@@ -42,6 +43,10 @@ extends Node
 @onready var _level_up_proficiency_picker_tests = $LevelUpProficiencyPickerTests
 @onready var _aging_system_tests = $AgingSystemTests
 @onready var _asset_registry_tests = $AssetRegistryTests
+@onready var _navigation_stack_tests = $NavigationStackTests
+@onready var _isometric_grid_tests = $IsometricGridTests
+@onready var _tactical_map_data_tests = $TacticalMapDataTests
+@onready var _dungeon_map_controller_tests = $DungeonMapControllerTests
 
 
 func _ready() -> void:
@@ -56,6 +61,7 @@ func run() -> void:
 			_timekeeping_tests, _calendar_seasons_tests,
 			_ability_utils_tests, _class_registry_tests, _power_registry_tests,
 			_encumbrance_tests, _ability_roll_panel_tests,
+			_equipment_shop_panel_tests,
 			_character_generator_tests, _character_persistence_tests,
 			_class_powers_tests, _npc_generation_tests,
 			_spell_registry_tests, _repertoire_engine_tests,
@@ -68,7 +74,10 @@ func run() -> void:
 			_persistence_tier_tests,
 			_xp_award_calculator_tests, _level_up_engine_tests,
 			_level_up_proficiency_picker_tests, _aging_system_tests,
-			_asset_registry_tests]:
+			_asset_registry_tests,
+			_navigation_stack_tests,
+			_isometric_grid_tests, _tactical_map_data_tests,
+			_dungeon_map_controller_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

@@ -48,7 +48,14 @@
       "Bash(grep -h \"weapon_permissions\\\\|armor_permissions\" \"c:\\\\Users\\\\jttau\\\\acks-arbiter\\\\data\\\\classes\"/*.json)",
       "Bash(grep -h \"armor_permissions\" c:/Users/jttau/acks-arbiter/data/classes/*.json)",
       "Bash(grep -l \"armor_permissions\" c:/Users/jttau/acks-arbiter/data/classes/*.json)",
-      "Bash(xargs -I{} sh -c 'echo \"=== {} ===\" && grep -o \"\\\\\"armor_permissions\\\\\":[^]]*]\" \"{}\"')"
+      "Bash(xargs -I{} sh -c 'echo \"=== {} ===\" && grep -o \"\\\\\"armor_permissions\\\\\":[^]]*]\" \"{}\"')",
+      "Bash(mkdir -p \"C:/Users/jttau/acks-arbiter/engine/subsystems/navigation\")",
+      "Bash(mkdir -p \"C:/Users/jttau/acks-arbiter/scenes/ui/transitions\")",
+      "Bash(mkdir -p \"C:/Users/jttau/acks-arbiter/scenes/ui/campaign_select\")",
+      "Bash(grep dungeon:*)",
+      "Bash(sort find:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)"
     ]
   }
 }

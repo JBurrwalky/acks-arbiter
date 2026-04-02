@@ -2,7 +2,7 @@
 
 **Purpose:** Architectural guide for the build agent. Loaded at the start of every build session. References GDDs for procedural detail and XML rule summaries for ACKS mechanics — does not duplicate them.
 
-**Last updated:** 2026-03-23
+**Last updated:** 2026-04-02
 
 ---
 
@@ -81,31 +81,41 @@ Monster catalog (split alphabetically): `acore_monster_catalog_a-dop.xml`, `acor
 | GDD | System |
 |---|---|
 | `gdd-setting-generation.md` | 8-layer world generation pipeline (heightmap → climate → politics → demographics → names → infrastructure → LLM narrative → validation) |
-| `gdd-terrain-system.md` | Terrain tag system (elevation + biome + water + civilization layers), encounter table selection logic, deforestation/forestation |
-| `gdd-terrain-wilderness.md` | Wilderness hex generation and subdivision |
+| `gdd-terrain-system.md` | Terrain tag system (elevation + biome + water + civilization layers), wilderness hex generation/subdivision, encounter table selection logic, deforestation/forestation; supersedes the earlier `gdd-terrain-wilderness.md` label |
+| `gdd-calendar-seasons.md` | Seasonal calendar layer: 4×91-day seasons, solstice/equinox dates, hemisphere inversion, and transition blending |
+| `gdd-weather-generation.md` | Deterministic per-hex daily weather, dawn/dusk calculation, climate integration, and DaW weather mapping |
+| `gdd-poi-generation.md` | Wilderness point-of-interest taxonomy, placement budgets, mechanical skeletons, and rumor/quest seeding |
 | `gdd-dungeon-layout.md` | Procedural dungeon map generation (adapted from donjon, CC BY-NC 3.0), cellular automata caverns, cell-based walls, dual room purpose |
 | `gdd-dungeon-factions.md` | Dungeon faction generation, inter-group relationships, territory assignment |
 | `gdd-settlement-layout.md` | City/settlement spatial generation (Voronoi blocks, street graphs, districts, vertical layers) |
 | `gdd-settlement-stocking.md` | On-demand settlement content generation (buildings, occupants, encounters, commerce, undercity) |
 | `gdd-stronghold-construction.md` | Player stronghold planning, grid placement, ACKS construction costs/rules |
 | `gdd-trap-generation.md` | Parametric trap generator |
+| `gdd-combat-map-generation.md` | Procedural wilderness and urban combat maps on the unified 5' diamond tactical grid |
 | `gdd-npc-personality.md` | NPC personality trait system (temperament, motivation, social style, moral compass) |
 | `gdd-name-generation.md` | Cultural name tables and phonemic rules |
 | `gdd-cultural-religious-generation.md` | Culture and religion generation for settings |
 | `gdd-henchman-class-selection.md` | Henchman class selection at level-up |
+| `gdd-quest-rumor-system.md` | Rumor generation, quest offer pipelines, reward scaling, and completion tracking |
 | `gdd-ui-ux-design.md` | Full UI/UX specification (visual style, screen layouts, interaction patterns, Godot implementation) |
 | `gdd-proficiency-specializations.md` | Proficiency specialization enumeration system — closed lists for open-ended proficiencies, trained-creature entity model |
 | `gdd_combat_behavior_tags.md` | Eight-family combat AI behavior tag system |
 
-### 3.5 Documents Still Needed
+### 3.5 Supporting Architecture Documents — Current Files
 
-These must be created before the systems they cover can be built:
+| Document | Purpose |
+|---|---|
+| `document_map.md` | Index of rule summaries, GDDs, system maps, and planning documents |
+| `rule_system_map.md` | System-to-file dependency map with upstream/downstream blast-radius guidance |
+| `coding_conventions.md` | Naming, file organization, GDScript, SQLite, testing, and cross-subsystem implementation conventions |
+| `spell_system_map.md` | Spell-to-system hook map for modifiers, flags, enablers, and effect patterns |
+| `proficiency_system_map.md` | Proficiency-to-system hook map for modifiers, flags, enablers, and effect patterns |
+| `monster_system_map.md` | Monster stat-block and special-ability hook map across game systems |
+| `acks_arbiter_build_plan.md` | Dependency-ordered implementation roadmap and current phase status |
 
-- **Rule system map** — structural overview of how ACKS systems and subsystems relate, with cross-references and override notes
-- **Document map** — index of all files with system classification, one-line description, token estimate, and status
-- **Coding conventions document** — naming, file organization, signal patterns, error handling
-- **Battle map generation GDD** — procedural wilderness and urban combat maps
-- **Weather system GDD** — daily weather by season and Köppen code, with mechanical effects
+### 3.6 Documents Still Needed
+
+No baseline support documents are currently missing from the architecture manifest. Add new system maps or GDDs only when a new cross-cutting subsystem needs its own dedicated reference.
 
 ---
 
@@ -114,13 +124,14 @@ These must be created before the systems they cover can be built:
 Every build session that modifies application code:
 
 1. Load this design brief.
-2. Load the rule system map and document map (when they exist).
-3. Load only the XML rule summaries and GDDs relevant to the current task.
-4. Inspect the current database schema if persistence is involved.
-5. Inspect shared data definitions and subsystem boundaries touched by the task.
-6. Implement in Godot-native terms: scenes, nodes, resources, autoloads, signals, GDScript classes, SQLite-backed repositories.
-7. Register any new actions in the action vocabulary definition file.
-8. Run or update focused tests for the affected subsystem and adjacent boundaries.
+2. Load the rule system map, document map, and coding conventions.
+3. Load specialized system maps (`spell_system_map.md`, `proficiency_system_map.md`, `monster_system_map.md`) and the build plan when they are relevant to the task.
+4. Load only the XML rule summaries and GDDs relevant to the current task.
+5. Inspect the current database schema if persistence is involved.
+6. Inspect shared data definitions and subsystem boundaries touched by the task.
+7. Implement in Godot-native terms: scenes, nodes, resources, autoloads, signals, GDScript classes, SQLite-backed repositories.
+8. Register any new actions in the action vocabulary definition file.
+9. Run or update focused tests for the affected subsystem and adjacent boundaries.
 
 **Do not load the entire rules corpus.** Each session uses targeted documents identified through the maps.
 
@@ -226,7 +237,7 @@ Major states: Wilderness Exploration, Urban Exploration, Dungeon Exploration, En
 The game tracks time at multiple granularities: combat rounds (10 seconds), exploration turns (10 minutes), wilderness travel turns (hours), and campaign days/months.
 IMPORTANT: The game is to run on a in-game calendar of 13 months with 28 days each, exactly. Otherwise, weeks are 7 days, a dayis 24 hours, an hours is 60 minutes, etc. as normal.
 
-Dawn and dusk times are provided per-hex per-day by the weather system (gdd-weather-generation.md§6), which derives them from hex latitude and calendar day. Season definitions are ingdd-calendar-seasons.md.
+Dawn and dusk times are provided per-hex per-day by the weather system (`gdd-weather-generation.md` §6), which derives them from hex latitude and calendar day. Season definitions are in `gdd-calendar-seasons.md`.
 
 **Day-cycle scheduling (multi-party):** Each game day, all active parties declare intended activities simultaneously, then each party's day resolves in sequence. Split parties synchronize via this system. Cross-party interruptions insert at the appropriate time-of-day.
 

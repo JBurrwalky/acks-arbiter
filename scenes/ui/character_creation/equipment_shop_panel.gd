@@ -52,8 +52,7 @@ func setup(state: Dictionary, catalog: EquipmentCatalog,
 	_restore_from_state()
 	_refresh_gold_display()
 	_refresh_cart()
-	if _gold_rolled:
-		_refresh_item_list()
+	_refresh_item_list()
 
 
 func is_complete() -> bool:
@@ -65,14 +64,21 @@ func is_complete() -> bool:
 # ---------------------------------------------------------------------------
 
 func _restore_from_state() -> void:
-	if int(_state.get("starting_gold_cp", 0)) > 0:
-		_starting_gold_cp = int(_state["starting_gold_cp"])
-		_gold_remaining_cp = int(_state.get("gold_remaining_cp", 0))
-		_gold_rolled = true
-		if _roll_btn != null:
-			_roll_btn.visible = false
-	else:
-		_gold_rolled = false
+	_starting_gold_cp = int(_state.get("starting_gold_cp", 0))
+	_gold_remaining_cp = int(_state.get("gold_remaining_cp", 0))
+	_gold_rolled = _starting_gold_cp > 0
+	if not _gold_rolled:
+		_starting_gold_cp = 0
+		_gold_remaining_cp = 0
+
+	_rolling = false
+	if _roll_btn != null:
+		_roll_btn.visible = not _gold_rolled
+		_roll_btn.disabled = false
+	if _tab_bar != null and not _gold_rolled:
+		_tab_bar.current_tab = 0
+	if _status_label != null:
+		_status_label.text = ""
 
 
 func _commit_gold() -> void:

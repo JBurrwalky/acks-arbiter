@@ -2346,3 +2346,276 @@ Manifest contract (`data/asset_manifest.json`):
 1. Run `tools/generate_placeholders.gd` in the Godot editor and verify `res://assets/terrain/terrain_atlas.png` is created correctly.
 2. Run `tests/test_runner.tscn` — verify all 10 AssetRegistry tests pass, no existing suites regressed.
 3. Proceed to C-3 (character creation UI) — it depends on portrait IDs from AssetRegistry.
+
+---
+
+## Session 2026-04-02 — D-2: Navigation Stack and Scene Transitions
+
+**Task:** Build NavigationStack (scene-tree singleton), ManagedScene base class, SceneTransition overlay, CampaignSelectScreen, and wire into Main.tscn / main_scene.gd. Add delete_campaign() to CampaignRepository.
+**Model used:** claude-opus-4-6 (planning + implementation)
+
+**Completed:**
+
+- Created `engine/subsystems/navigation/managed_scene.gd` (class ManagedScene, extends Node) — virtual base for NavigationStack-managed screens. Four virtual methods: `enter(params)`, `exit()`, `save_state()`, `restore_state(data)`. Screens that extend CanvasLayer implement the same methods directly (duck typing; NavigationStack uses `has_method()` checks).
+
+- Created `engine/subsystems/navigation/navigation_stack.gd` (class NavigationStack, extends Node) — scene-tree singleton. `static var instance` set in `_ready()`. Manages Array of {path, node, state} dicts. Cap: 8. API: `push(path, params)`, `push_node(node, path, params)`, `pop()`, `replace(path, params)`, `peek()`, `stack_depth()`, `has(path)`, `clear()`. Wraps swaps in SceneTransition.play() when set; otherwise instant. `setup(container, transition)` injects dependencies.
+
+- Created `scenes/ui/transitions/scene_transition.gd` (extends CanvasLayer, layer=200) — black ColorRect (programmatic). `play(swap_callable, on_complete)` tweens self_modulate.a 0->1->0 over 0.5s total; calls swap at midpoint, on_complete after fade-in. `reset()` for emergency alpha=0.
+
+- Created `scenes/ui/transitions/scene_transition.tscn`
+
+- Created `scenes/ui/campaign_select/campaign_select_screen.gd` (extends CanvasLayer, layer=10) — programmatic UI. ManagedScene duck-typed interface (enter refreshes list, exit hides create dialog, save/restore_state preserve scroll). Lists campaigns from CampaignRepository.list_campaigns(). Each row: Load + Delete buttons. New Campaign: inline dialog, validates name, create_campaign(). Delete: ConfirmationDialog, _pending_delete_id, calls delete_campaign() on confirm. Emits `campaign_selected(campaign_id)`.
+
+- Created `scenes/ui/campaign_select/campaign_select_screen.tscn`
+
+- Added `delete_campaign(campaign_id: String) -> bool` to `engine/autoloads/campaign_repository.gd` — cascading hard delete. Collects char/party/map IDs with .duplicate() before iterating. Deletes: character_conditions, character_proficiencies, inventory_items, character_spells, party_members, party_clocks, hex_cells, characters, parties, hex_maps, domains, game_snapshots, campaign_clock, dungeon_entrances, override_log, then campaigns.
+
+- Updated `scenes/Main.tscn` — added NavigationStack (Node + navigation_stack.gd), SceneContainer (plain Node), SceneTransition (instance of scene_transition.tscn). Placed before HexMapController.
+
+- Updated `scenes/main_scene.gd` — added @onready vars for three new nodes. Added `DEV_SKIP_CAMPAIGN_SELECT := false` const. _ready() calls setup() then branches: false = push CampaignSelectScreen; true = dev bypass to test map. Extracted test-map loading into _dev_load_test_map_for_campaign() and _load_or_seed_map(). _ensure_test_party() split from _ensure_test_campaign() for reuse.
+
+- Created `tests/test_navigation_stack.gd` — 12 tests using push_node() + lightweight mock _MockScreen inner class. Tests: depth 0 on init, push/pop depth, pop empty no crash, peek returns path, peek empty returns "", push/pop/peek restores previous, replace (clear+push) resets to 1, has() true/false, enter/exit called on push/pop.
+
+- Updated `tests/test_runner.gd` and `tests/test_runner.tscn` — NavigationStackTests added as new suite.
+
+**Decisions made:**
+- NavigationStack is a scene-tree singleton (not autoload). Already at 7 autoloads; nav belongs in scene tree since it manages child nodes. class_name NavigationStack allowed (not an autoload).
+- push_node() API enables testing without .tscn loading and supports pre-built nodes.
+- SceneTransition uses self_modulate.a on the ColorRect.
+- ConfirmationDialog (Godot built-in) for delete confirm — style later when game has theme.
+- DEV_SKIP_CAMPAIGN_SELECT = false default: campaign select is the live entry point.
+- _on_campaign_selected() in main_scene.gd is a temporary shim; replaced by E-2 session runner.
+
+**Interfaces defined or changed:**
+
+NavigationStack (new class, engine/subsystems/navigation/navigation_stack.gd):
+- `static var instance: NavigationStack`
+- `func setup(container: Node, transition = null) -> void`
+- `func push(path: String, params: Dictionary = {}) -> void`
+- `func push_node(node: Node, path: String = "", params: Dictionary = {}) -> void`
+- `func pop() -> void`
+- `func replace(path: String, params: Dictionary = {}) -> void`
+- `func peek() -> String`
+- `func stack_depth() -> int`
+- `func has(path: String) -> bool`
+- `func clear() -> void`
+- Signals: scene_pushed(path), scene_popped(path), scene_replaced(new_path), stack_cleared
+
+ManagedScene (new class, engine/subsystems/navigation/managed_scene.gd):
+- Virtual: enter(_params), exit(), save_state() -> Dictionary, restore_state(_data)
+
+SceneTransition (new node, scenes/ui/transitions/scene_transition.gd):
+- play(swap_callable: Callable, on_complete: Callable = Callable()) -> void
+- reset() -> void
+
+CampaignSelectScreen signal: campaign_selected(campaign_id: String)
+
+CampaignRepository addition:
+- func delete_campaign(campaign_id: String) -> bool
+
+**Database changes:** None (delete_campaign operates on existing schema).
+
+**Tests added/updated:**
+- tests/test_navigation_stack.gd — 12 tests (new suite).
+- tests/test_runner.gd + tests/test_runner.tscn — NavigationStackTests added.
+
+**Known issues:**
+- test_replace_clears_to_depth_one uses clear()+push_node() to test replace semantics (replace() requires a disk path; no replace_node() variant exists). Covers the intent.
+- ConfirmationDialog delete confirm uses default Godot theme. Style when game has custom theme.
+- HexMap/HexMapController are still direct children of Main, not inside nav stack. They move to WorldMapScreen in E-2.
+
+**Next session should:**
+1. Open project in Godot 4.6; run test_runner.tscn — confirm NavigationStackTests (12 tests) pass alongside all existing suites.
+2. Run game via Main.tscn: campaign select screen should appear on boot; create a campaign; verify it loads the test hex map.
+3. Test delete: create a campaign, delete it, verify it disappears from the list.
+4. Proceed to C-2b (Proficiency Catalog and Registry) or next priority per the build plan.
+
+---
+
+## Session 2026-04-02 â€” Navigation Stack Variant Inference Hotfix
+
+**Task:** Fix the `navigation_stack.gd` parse error caused by strict warning-as-error type inference on `_stack.back()`.
+**Model used:** GPT-5 Codex
+
+**Completed:**
+- Updated `engine/subsystems/navigation/navigation_stack.gd` inside `_do_pop()` to replace `var prev := _stack.back()` with explicitly typed locals:
+  - `var prev: Dictionary`
+  - `var prev_node: Node`
+  - `var prev_state: Dictionary`
+- Verified the project loads past the parse stage by running the approved headless Godot test command successfully (exit code `0`).
+
+**Decisions made:**
+- Kept the fix narrowly scoped to the failing restoration path rather than refactoring the entire stack representation, since the immediate issue was a warning-promoted parse failure from inferred `Variant`.
+
+**Interfaces defined or changed:** None.
+
+**Database changes:** None.
+
+**Tests added/updated:** None added; existing headless test runner executed successfully after the fix.
+
+**Known issues:**
+- The Godot headless run in this environment still does not print the suite summary to shell stdout even when the process succeeds; verification remains based on process exit code and prior established logging behavior.
+
+**Next session should:**
+1. Smoke-test the campaign-select to world-map navigation flow in-editor now that `navigation_stack.gd` parses again.
+2. If more strict-typing parse warnings appear, consider tightening `_stack` entry handling further with helper accessors or a dedicated typed entry object.
+
+---
+
+## Session 2026-04-02 - Documentation Manifest Synchronization
+
+**Task:** Update `acks_arbiter_design_brief_v11.md`, `document_map.md`, and `rule_system_map.md` so they accurately reflect the current `/docs` and `/generation` file set and the finalized `gdd-terrain-system.md` naming.
+**Model used:** GPT-5 Codex
+
+**Completed:**
+- Updated `docs/acks_arbiter_design_brief_v11.md`:
+  - Refreshed the GDD manifest to include all current generation docs.
+  - Removed the obsolete `gdd-terrain-wilderness.md` entry and clarified that its scope was absorbed into `gdd-terrain-system.md`.
+  - Added the current supporting architecture/planning document list.
+  - Replaced the stale "Documents Still Needed" list with an up-to-date statement that the baseline manifest is complete.
+  - Updated the build-session protocol to reference the now-standard support docs.
+  - Fixed a stale/typoed calendar-weather reference (`gdd-weather-generation.md` / `gdd-calendar-seasons.md`).
+- Updated `docs/document_map.md`:
+  - Added the previously omitted GDDs: `gdd-calendar-seasons.md`, `gdd-weather-generation.md`, `gdd-poi-generation.md`, `gdd-settlement-stocking.md`, `gdd-combat-map-generation.md`, `gdd-name-generation.md`, `gdd-quest-rumor-system.md`, `gdd-ui-ux-design.md`.
+  - Added the previously omitted docs: `acks_arbiter_build_plan.md`, `monster_system_map.md`.
+  - Removed stale "not yet created" notes for files that now exist.
+  - Updated counts to 20 GDDs, 8 architecture/planning docs, 98 indexed files total.
+- Updated `docs/rule_system_map.md`:
+  - Added a companion-docs section covering the document map, coding conventions, build plan, and spell/proficiency/monster system maps.
+  - Added `monster_system_map.md` to the Monsters & Encounters section.
+  - Added or expanded system coverage for Settlement Stocking & Commerce, Combat Maps & Tactical Terrain, Quest & Rumor System, and UI & Presentation.
+  - Folded in the omitted GDDs where they constrain existing systems.
+  - Updated the GDD dependency graph and suggested implementation order to reflect the current generation-doc set.
+- Verified with a post-edit directory comparison script that:
+  - no current `/generation` files are missing from `document_map.md`
+  - no current `/generation` files are missing from the design brief manifest
+  - all current `/docs` files are represented in `document_map.md`
+
+**Decisions made:**
+- Treated `gdd-terrain-wilderness.md` as a retired name rather than a missing file and documented the rename/scope absorption explicitly in the updated manifests.
+- Kept `rule_system_map.md` focused on system relevance rather than trying to make it a literal self-index; companion docs cover the supporting references it should point readers to.
+
+**Interfaces defined or changed:** None.
+
+**Database changes:** None.
+
+**Tests added/updated:** No gameplay tests added; verification was done via manifest-vs-directory consistency checks and targeted stale-reference searches.
+
+**Known issues:**
+- `docs/gdd-ui-ux-design.md` still internally references `acks_arbiter_design_brief_v10.md`; that document was outside the scope of this manifest sync pass and may need a future cleanup if the project wants all cross-doc references normalized.
+
+**Next session should:**
+1. Decide whether to normalize stale cross-document references in the individual GDD files themselves (for example `gdd-ui-ux-design.md` still naming design brief v10).
+2. If new support docs are added later, update all three manifest documents in the same session to prevent drift from reappearing.
+
+---
+
+## Session 2026-04-02 - Equipment Shop Starting Gold Reset Fix
+
+**Task:** Fix the character-creation equipment shop so the starting-gold roll control stays available after reopening the screen, creating a second character in the same session, or returning to equipment after downstream state invalidation.
+**Model used:** GPT-5 Codex
+
+**Completed:**
+- Updated `scenes/ui/character_creation/equipment_shop_panel.gd`:
+  - `setup()` now always refreshes the item list, including the pre-roll placeholder path.
+  - `_restore_from_state()` now fully rehydrates the panel from `creation_state` on every setup call:
+    - restores/clears gold values from backing state
+    - resets `_rolling`
+    - re-shows and re-enables the roll button when `starting_gold_cp` is cleared
+    - clears stale status text
+    - resets the category tab to the first tab for fresh/no-gold states
+- Added `tests/test_equipment_shop_panel.gd` with regression coverage for:
+  - fresh state showing an enabled roll button
+  - reused panel state resetting correctly after a prior rolled-gold session
+  - placeholder content rebuilding when gold is cleared
+- Updated `tests/test_runner.gd` and `tests/test_runner.tscn` to register the new equipment-shop panel test suite.
+- Updated `docs/coding_conventions.md` with a reusable-panel setup rule: stateful multi-step panels must fully reset UI state from backing data on each `setup()` call.
+- Verified with headless Godot test run: approved test runner command exited with code `0`.
+
+**Decisions made:**
+- Fixed the root cause in the panel lifecycle rather than adding one-off resets in `CharacterCreationScreen`; the equipment panel is intentionally reused, so `setup()` is the right place to re-derive all transient UI state.
+- Treated "fresh equipment state" as a true fresh-screen experience by resetting the tab bar to the first category when no starting gold has been rolled.
+
+**Interfaces defined or changed:** None.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- Added `tests/test_equipment_shop_panel.gd`.
+- Updated `tests/test_runner.gd`.
+- Updated `tests/test_runner.tscn`.
+
+**Known issues:**
+- Headless Godot runs in this environment still do not print the suite summary to shell stdout; success is verified by exit code `0`.
+
+**Next session should:**
+1. Smoke-test the character-creation UI in-editor specifically around the equipment step:
+   - first character equipment entry
+   - cancel/reopen mid-flow
+   - create a second character in the same session
+   - go back to an earlier step that invalidates equipment, then return
+2. If similar reuse bugs appear in other character-creation panels, apply the same `setup()` full-reset pattern there.
+
+---
+
+## Session 2026-04-02 — D-4: Dungeon Square Grid (Isometric, Cell-Based Walls)
+
+**Task:** Build the dungeon exploration system — isometric diamond grid, `TacticalMapData` shared type, `DungeonMapController`, layered renderer, fog of war, door interaction, multi-level stair transition, and ~39 new tests. Architecture must minimize rework for future combat, multi-character movement, and environment interactions.
+
+**Model used:** claude-opus-4-6 (planning), claude-sonnet-4-6 (implementation)
+
+**Completed:**
+- `engine/shared_types/isometric_grid.gd` — `class IsometricGrid` static utility for diamond grid math (cell↔screen, neighbors, adjacency, radius)
+- `engine/shared_types/tactical_map_data.gd` — `class TacticalMapData` unified cell grid (dungeon + combat). BFS room detect, fog dict, per-entity positions, full CellData schema per GDD
+- `engine/subsystems/exploration/dungeon_map_controller.gd` — `class DungeonMapController`. Multi-level dungeon loading, party-as-group movement, door interaction (6 types, 4+ states), fog reveal/explore, stair transitions, signals
+- `scenes/maps/dungeon_map_renderer.gd` — Isometric renderer: `_draw()` draws ground fills, feature icons (X/O/L/bars/arrows), grid outlines, fog overlay. Entity tokens as Polygon2D children. Camera panning. ManagedScene interface
+- `scenes/maps/dungeon_map.tscn` — Scene tree: DungeonMap → EntityLayer, Camera2D, DungeonHUD (ExitButton + tooltip)
+- `data/test_dungeon.json` — "Goblin Warrens": 5 rooms on level 1 (Entry Hall, Guard Post, Storage, Great Hall, Boss Chamber) + 1 room on level 2 (Underground Cavern). 7 door types, stairs, multi-level JSON format
+- `db/migrations/017_dungeon_grid.sql` — `dungeon_map_cells` table (dungeon_id, level_num, col, row, door_state, fog_state). Adds `dungeon_id/level/col/row` columns to `parties`
+- `db/schema.sql` — Updated to migration 017
+- `engine/autoloads/campaign_repository.gd` — Added: `get_dungeon_entrances_for_map`, `get_dungeon_entrance`, `update_dungeon_entrance_data`, `save_dungeon_cell_states`, `load_dungeon_cell_states`, `update_dungeon_cell`, `update_party_dungeon_position`, `clear_party_dungeon_position`
+- `data/asset_manifest.json` — Added `dungeon.entrance_icon` entry
+- `scenes/maps/hex_map_renderer.gd` — Added `_refresh_dungeon_markers()`: places gold "D" labels on EXPLORED/VISIBLE hexes with dungeon entrances
+- `scenes/main_scene.gd` — Added `_ensure_test_dungeon_entrance()`, `_check_for_dungeon_entrance()`, `_enter_dungeon()`. Seeds Goblin Warrens entrance at hex (-1, 0). Auto-enters dungeon when party clicks an entrance hex.
+- `tests/test_isometric_grid.gd` — 16 tests
+- `tests/test_tactical_map_data.gd` — 21 tests
+- `tests/test_dungeon_map_controller.gd` — 16 tests (including stair/level transition tests)
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — Suites 36-38 registered
+
+**Decisions made:**
+- **TacticalMapData, not DungeonMapData** — the cell grid is shared with future combat maps (GDD: dungeon grid IS the combat grid). Naming reflects reuse.
+- **IsometricGrid as separate static class** — grid math used by renderer, controller, future pathfinding/LOS. One source of truth.
+- **String-based terrain_feature/door_type/door_state** — not enums. Vocabulary expands for combat without migration-requiring enum changes.
+- **Multi-level JSON with levels array + stairs array** — supports arbitrary depth; level fog stored per-TacticalMapData instance in controller._all_levels dict.
+- **Secret doors visible in dev mode** — undetected secrets rendered with dark grey + "S" icon for placement verification; will be hidden by production build flag.
+- **Single `_draw()` on root Node2D** — no separate layer scripts. Draw order: ground → features → grid lines → fog. Entity tokens are Polygon2D children of EntityLayer (no _draw).
+- **DungeonMapController created dynamically** — not in Main.tscn; instantiated in `main_scene.gd._enter_dungeon()` as a child node, freed when dungeon scene exits.
+- **No CHECK constraint on door_state** — vocabulary will grow (spiked, barred, etc.); validation in code.
+
+**Interfaces defined or changed:**
+- `TacticalMapData` (new): `from_dict(level_dict)`, `load_from_file(path)`, full cell/fog/room/entity API
+- `IsometricGrid` (new): `cell_to_screen(col, row)→Vector2`, `screen_to_cell(pos)→Vector2i`, `get_neighbors(pos)→Array[Vector2i]`, `is_adjacent(a,b)→bool`, `manhattan_distance(a,b)→int`, `get_cells_in_radius(center,radius)→Array[Vector2i]`
+- `DungeonMapController` (new): `load_dungeon(dict)`, `move_party(target)→bool`, `interact_door(pos)→bool`, `use_stairs(pos)→bool`, signals: `map_loaded`, `party_moved`, `entity_moved`, `room_revealed`, `fog_updated`, `door_state_changed`, `level_changed`
+- `CampaignRepository` additions: `get_dungeon_entrances_for_map(map_id)→Array`, `get_dungeon_entrance(id)→Dict`, `save_dungeon_cell_states(dungeon_id, level_num, cells)→bool`, `load_dungeon_cell_states(dungeon_id, level_num)→Array`, `update_party_dungeon_position(party_id, dungeon_id, level_num, col, row)`, `clear_party_dungeon_position(party_id)`
+- dungeon_map_renderer.gd signals: `cell_clicked(pos: Vector2i)`, `door_interact_requested(pos: Vector2i)`, `exit_requested()`
+
+**Database changes:**
+- Migration 017: `dungeon_map_cells` table (dungeon_id, level_num, col, row, door_state, fog_state). `parties` table gains `dungeon_id TEXT`, `dungeon_level INTEGER`, `dungeon_col INTEGER`, `dungeon_row INTEGER`.
+
+**Tests added/updated:**
+- `test_isometric_grid.gd` — 16 tests: origin, positive col/row, diagonal, roundtrip, neighbors count/directions, adjacency, Manhattan distance, radius queries
+- `test_tactical_map_data.gd` — 21 tests: from_dict, void cells, room detection (5 rooms), open-only rooms, door state load/set, fog defaults/set, passability (open/open-door/closed-door/wall), LOS (wall/portcullis), secret door blocking, entity CRUD, boundary cells, bounds check
+- `test_dungeon_map_controller.gd` — 16 tests: load/entry position, fog reveal on load, movement (valid/non-adjacent/wall/closed-door/open-door), door interaction (toggle/locked), room reveal, fog VISIBLE→EXPLORED, signals, stair transition (level change, position, signal, fog preservation)
+- Total test suites: 38
+
+**Known issues:**
+- dungeon_map_renderer.gd `_enter()` ManagedScene integration reads dungeon data from CampaignRepository — requires DB to be open before push. For the dev path, dungeon is loaded before pushing so this should work.
+- The `ALTER TABLE parties ADD COLUMN` statements in migration 017 will fail if run twice (SQLite doesn't support IF NOT EXISTS on ALTER). Migration tracking table prevents this from being a practical problem.
+- Fog-of-war across stair transitions: returning to level 1 and re-entering the same room will show it as EXPLORED (not re-reveal it as VISIBLE) because the old level's TacticalMapData fog dict is preserved. This is correct behavior but differs slightly from fresh entry.
+
+**Next session should:**
+1. Open the game and run the test suite to verify all 38 suites pass.
+2. Navigate to hex (-1, 0) on the Ashford Vale test map and verify the dungeon entrance transition: campaign select → hex map with "D" marker → click entrance hex → isometric dungeon renders.
+3. Test door interaction, fog reveal, and stair descent to level 2 (Underground Cavern).
+4. Test exit dungeon → hex map restoration.
+5. If D-4 passes, proceed to E-1 (Session Runner) or the next priority per the build plan.

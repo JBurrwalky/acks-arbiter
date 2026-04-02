@@ -8,9 +8,18 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/dice/dice_prompt.tscn" id="6_dice_prompt"]
 [ext_resource type="PackedScene" path="res://scenes/ui/character_creation/character_creation_screen.tscn" id="7_char_creation"]
 [ext_resource type="PackedScene" path="res://scenes/ui/character_sheet/character_sheet_overlay.tscn" id="8_char_sheet"]
+[ext_resource type="Script" path="res://engine/subsystems/navigation/navigation_stack.gd" id="9_nav_stack"]
+[ext_resource type="PackedScene" path="res://scenes/ui/transitions/scene_transition.tscn" id="10_scene_transition"]
 
 [node name="Main" type="Node" unique_id=389479426]
 script = ExtResource("1_main_script")
+
+[node name="NavigationStack" type="Node" parent="." unique_id=201900001]
+script = ExtResource("9_nav_stack")
+
+[node name="SceneContainer" type="Node" parent="." unique_id=201900002]
+
+[node name="SceneTransition" parent="." unique_id=201900003 instance=ExtResource("10_scene_transition")]
 
 [node name="HexMapController" type="Node" parent="." unique_id=1744656386]
 script = ExtResource("2_controller")

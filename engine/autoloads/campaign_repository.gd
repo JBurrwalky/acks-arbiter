@@ -122,6 +122,56 @@ func list_campaigns() -> Array:
 	return db.query_result.duplicate()
 
 
+## Delete a campaign and all data owned by it (characters, parties, maps, domains, etc.).
+## Returns true on success, false if the DELETE query failed.
+func delete_campaign(campaign_id: String) -> bool:
+	# Collect IDs for cascading deletes (each SELECT overwrites db.query_result,
+	# so duplicate() before iterating to avoid stomping results mid-loop).
+	db.query_with_bindings("SELECT id FROM characters WHERE campaign_id = ?", [campaign_id])
+	var char_ids: Array = db.query_result.duplicate()
+
+	db.query_with_bindings("SELECT id FROM parties WHERE campaign_id = ?", [campaign_id])
+	var party_ids: Array = db.query_result.duplicate()
+
+	db.query_with_bindings("SELECT id FROM hex_maps WHERE campaign_id = ?", [campaign_id])
+	var map_ids: Array = db.query_result.duplicate()
+
+	# Delete character-owned rows
+	for row in char_ids:
+		var cid: String = row["id"]
+		db.query_with_bindings("DELETE FROM character_conditions WHERE character_id = ?", [cid])
+		db.query_with_bindings("DELETE FROM character_proficiencies WHERE character_id = ?", [cid])
+		db.query_with_bindings("DELETE FROM inventory_items WHERE character_id = ?", [cid])
+		db.query_with_bindings("DELETE FROM character_spells WHERE character_id = ?", [cid])
+
+	# Delete party-owned rows
+	for row in party_ids:
+		var pid: String = row["id"]
+		db.query_with_bindings("DELETE FROM party_members WHERE party_id = ?", [pid])
+		db.query_with_bindings("DELETE FROM party_clocks WHERE party_id = ?", [pid])
+
+	# Delete hex cells under each map
+	for row in map_ids:
+		db.query_with_bindings("DELETE FROM hex_cells WHERE map_id = ?", [row["id"]])
+
+	# Delete campaign-level rows
+	db.query_with_bindings("DELETE FROM characters WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM parties WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM hex_maps WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM domains WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM game_snapshots WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM campaign_clock WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM dungeon_entrances WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM override_log WHERE campaign_id = ?", [campaign_id])
+
+	# Finally delete the campaign record itself
+	var ok := db.query_with_bindings("DELETE FROM campaigns WHERE id = ?", [campaign_id])
+	if not ok:
+		push_error("CampaignRepository.delete_campaign: DELETE failed. id=%s" % campaign_id)
+		return false
+	return true
+
+
 func update_campaign_calendar(id: String, day: int) -> void:
 	if not db.query_with_bindings(
 		"UPDATE campaigns SET calendar_day = ? WHERE id = ?",
@@ -1078,6 +1128,98 @@ func create_dungeon_entrance(data: Dictionary) -> String:
 		push_error("CampaignRepository.create_dungeon_entrance: failed. name=%s" % data.get("name", "?"))
 		return ""
 	return id
+
+
+## Returns all dungeon entrances for a given hex map.
+func get_dungeon_entrances_for_map(map_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM dungeon_entrances WHERE map_id = ?", [map_id]
+	)
+	return db.query_result.duplicate()
+
+
+## Returns a single dungeon entrance by its id, or {} if not found.
+func get_dungeon_entrance(entrance_id: String) -> Dictionary:
+	db.query_with_bindings(
+		"SELECT * FROM dungeon_entrances WHERE id = ?", [entrance_id]
+	)
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+## Updates the dungeon_data JSON blob for an entrance.
+func update_dungeon_entrance_data(entrance_id: String, dungeon_data_json: String) -> bool:
+	return db.query_with_bindings(
+		"UPDATE dungeon_entrances SET dungeon_data = ? WHERE id = ?",
+		[dungeon_data_json, entrance_id]
+	)
+
+
+# ---------------------------------------------------------------------------
+# Dungeon cell state persistence (migration 017)
+# ---------------------------------------------------------------------------
+
+## Batch-saves cell states (fog + door) for a dungeon level.
+## [param cells] is an Array of {col, row, door_state, fog_state} dictionaries.
+func save_dungeon_cell_states(dungeon_id: String, level_num: int, cells: Array) -> bool:
+	for cell in cells:
+		if not db.query_with_bindings("""
+			INSERT OR REPLACE INTO dungeon_map_cells
+			(dungeon_id, level_num, col, row, door_state, fog_state)
+			VALUES (?, ?, ?, ?, ?, ?)
+		""", [
+			dungeon_id,
+			level_num,
+			cell.get("col", 0),
+			cell.get("row", 0),
+			cell.get("door_state", "closed"),
+			cell.get("fog_state", "hidden"),
+		]):
+			push_error("CampaignRepository.save_dungeon_cell_states: failed at col=%d row=%d" % [
+				cell.get("col", 0), cell.get("row", 0)
+			])
+			return false
+	return true
+
+
+## Loads saved cell states for a dungeon level. Returns [{col, row, door_state, fog_state}].
+func load_dungeon_cell_states(dungeon_id: String, level_num: int) -> Array:
+	db.query_with_bindings(
+		"SELECT col, row, door_state, fog_state FROM dungeon_map_cells WHERE dungeon_id = ? AND level_num = ?",
+		[dungeon_id, level_num]
+	)
+	return db.query_result.duplicate()
+
+
+## Upserts a single cell's state.
+func update_dungeon_cell(dungeon_id: String, level_num: int, col: int, row: int,
+		door_state: String, fog_state: String) -> bool:
+	return db.query_with_bindings("""
+		INSERT OR REPLACE INTO dungeon_map_cells (dungeon_id, level_num, col, row, door_state, fog_state)
+		VALUES (?, ?, ?, ?, ?, ?)
+	""", [dungeon_id, level_num, col, row, door_state, fog_state])
+
+
+# ---------------------------------------------------------------------------
+# Party dungeon position (migration 017)
+# ---------------------------------------------------------------------------
+
+## Saves the party's current dungeon position to the parties table.
+func update_party_dungeon_position(party_id: String, dungeon_id: String,
+		level_num: int, col: int, row: int) -> void:
+	db.query_with_bindings("""
+		UPDATE parties SET dungeon_id = ?, dungeon_level = ?, dungeon_col = ?, dungeon_row = ?
+		WHERE id = ?
+	""", [dungeon_id, level_num, col, row, party_id])
+
+
+## Clears the party's dungeon position (party has exited the dungeon).
+func clear_party_dungeon_position(party_id: String) -> void:
+	db.query_with_bindings(
+		"UPDATE parties SET dungeon_id = '', dungeon_level = 1, dungeon_col = 0, dungeon_row = 0 WHERE id = ?",
+		[party_id]
+	)
 
 
 # ---------------------------------------------------------------------------

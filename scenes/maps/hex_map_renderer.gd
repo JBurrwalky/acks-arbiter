@@ -67,6 +67,9 @@ const EDGE_MARGIN := 40.0
 var _controller: HexMapController
 var _map_data: HexMapData
 
+## Tracks Label nodes placed for dungeon entrance markers (cleaned up on reload).
+var _dungeon_markers: Array = []
+
 
 # ---------------------------------------------------------------------------
 # Signals
@@ -159,6 +162,7 @@ func _on_map_loaded(_map_id: String) -> void:
 	_update_party_token_position()
 	_compute_camera_limits()
 	center_on_hex(_map_data.party_hex)
+	_refresh_dungeon_markers()
 
 
 func _on_visibility_updated() -> void:
@@ -216,6 +220,38 @@ func _update_party_token_position() -> void:
 		return
 	var godot_coord := HexMapController.axial_to_godot_map(_map_data.party_hex)
 	_party_token.position = _terrain_layer.map_to_local(godot_coord)
+
+
+## Places a "D" label marker on each revealed hex that has a dungeon entrance.
+## Clears old markers first. Called after map load and fog update.
+func _refresh_dungeon_markers() -> void:
+	for m in _dungeon_markers:
+		if is_instance_valid(m):
+			m.queue_free()
+	_dungeon_markers.clear()
+
+	if _map_data == null or _terrain_layer == null:
+		return
+
+	var entrances := CampaignRepository.get_dungeon_entrances_for_map(_map_data.id)
+	for entrance in entrances:
+		var q: int = entrance.get("hex_q", 0)
+		var r: int = entrance.get("hex_r", 0)
+		var coord := Vector2i(q, r)
+
+		var fog_state := _map_data.get_fog_state(coord)
+		if fog_state == HexMapData.FogState.HIDDEN:
+			continue
+
+		var godot_coord := HexMapController.axial_to_godot_map(coord)
+		var screen_pos := _terrain_layer.map_to_local(godot_coord)
+
+		var lbl := Label.new()
+		lbl.text = "D"
+		lbl.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2))
+		lbl.position = screen_pos - Vector2(8.0, 12.0)
+		add_child(lbl)
+		_dungeon_markers.append(lbl)
 
 
 ## Repaints a single terrain tile after an in-memory terrain update.

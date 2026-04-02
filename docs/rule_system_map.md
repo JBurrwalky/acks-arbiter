@@ -11,6 +11,15 @@ When working on system X:
 3. Check **Depended on by** for downstream systems you might break
 4. Load relevant GDDs if doing generation work
 
+## Companion Documents
+
+- `docs/document_map.md` — inventory of all XML summaries, GDDs, and support docs
+- `docs/coding_conventions.md` — implementation patterns for GDScript, SQLite, testing, and cross-subsystem contracts
+- `docs/acks_arbiter_build_plan.md` — dependency-ordered build roadmap and current implementation status
+- `docs/spell_system_map.md` — spell hook map for any subsystem touched by spell effects
+- `docs/proficiency_system_map.md` — proficiency hook map for any subsystem touched by proficiency effects
+- `docs/monster_system_map.md` — monster special-ability hook map for any subsystem touched by monster mechanics
+
 ---
 
 ## Systems
@@ -51,26 +60,39 @@ When working on system X:
   - L&E catalogs: `le_monster_catalog_1`, `le_monster_catalog_2_summary`, `le_monster_catalog_summary_3`, `le_monster_catalog_4`, `le_monster_catalog_5`, `le_monster_catalog_6`, `le_monster_catalog_7`, `le_monster_catalog_8_summary`, `le_monster_catalog_dragons`
   - Encounter procedures: `acore_adventures_and_encounters`, `acore-monster-stocking-rules`
 - **GDDs:** `gdd-terrain-system` (encounter table selection)
+- **Architecture docs:** `docs/monster_system_map.md` (monster ability hook map — load when building monster abilities or any system that consumes them)
 - **Depends on:** Combat (monster stat blocks reference combat rules)
 - **Depended on by:** All exploration contexts, Dungeon Stocking, Setting Generation, Domain Encounters
 
 ### Wilderness & Hex Exploration
 - **Rule files:** `acore_adventures_and_encounters`, `acore-monster-stocking-rules`, `le_wilderness_lair_rules`
-- **GDDs:** `gdd-terrain-system`, `gdd-setting-generation`, `gdd-poi-generation`, `gdd-weather-generation`
+- **GDDs:** `gdd-terrain-system` (includes the wilderness hex generation/subdivision scope once tracked as `gdd-terrain-wilderness`), `gdd-setting-generation`, `gdd-poi-generation`, `gdd-weather-generation`, `gdd-combat-map-generation`
 - **Depends on:** Monsters & Encounters, Equipment (encumbrance -> movement rates), Weather (travel modifiers, visibility, foraging), Calendar & Seasons (daylight hours)
 - **Depended on by:** Domain Play (territory classification), Setting Generation
 
 ### Urban & Settlement
 - **Rule files:** `acore-setting-construction-rules`, `acore-campaign-hijinks`
-- **GDDs:** `gdd-settlement-layout`, `gdd-npc-personality`, `gdd-cultural-religious-generation`
+- **GDDs:** `gdd-settlement-layout`, `gdd-settlement-stocking`, `gdd-name-generation`, `gdd-npc-personality`, `gdd-cultural-religious-generation`, `gdd-combat-map-generation`
 - **Depends on:** Equipment (market class, availability), Characters (hiring), Setting Generation (demographics)
 - **Depended on by:** Domain Play (urban population), NPC Systems (settlement context)
+
+### Settlement Stocking & Commerce
+- **Rule files:** `acore_axioms_strongholds_and_domains`, `acore_equipment`, `acore_core_classes`, `acore_demihuman_classes`, `acore_campaign_classes`
+- **GDDs:** `gdd-settlement-stocking`, `gdd-settlement-layout`, `gdd-npc-personality`, `gdd-cultural-religious-generation`, `gdd-name-generation`, `gdd-dungeon-factions`
+- **Depends on:** Urban & Settlement, NPC Systems, Setting & World Generation
+- **Depended on by:** Quest & Rumor System, Domain Play, UI & Presentation
 
 ### Dungeon Exploration
 - **Rule files:** `acore_adventures_and_encounters`, `acore-setting-construction-rules`
 - **GDDs:** `gdd-dungeon-layout`, `gdd-dungeon-factions`, `gdd-trap-generation`
 - **Depends on:** Monsters & Encounters, Combat, Equipment (light, tools), Spells (dungeon spells)
 - **Depended on by:** Treasure (dungeon stocking populates treasure)
+
+### Combat Maps & Tactical Terrain
+- **Rule files:** `acore_combat_and_wounds`, `acore_adventures_and_encounters`, `ax_conditions_catalog`
+- **GDDs:** `gdd-combat-map-generation`, `gdd-dungeon-layout`, `gdd-settlement-layout`, `gdd-stronghold-construction`, `gdd-terrain-system`, `gdd_combat_behavior_tags`
+- **Depends on:** Combat & Conditions, Wilderness & Hex Exploration, Urban & Settlement, Domain Play
+- **Depended on by:** Combat, Session Runner, UI & Presentation
 
 ### Domain Play (Strongholds, Realms, Population)
 - **Rule files:** `acore_axioms_strongholds_and_domains`, `daw_equipment_and_construction`, `ax_campaign_play`, `ax_domain_level_encounters`, `ax_domains_of_chaos`
@@ -90,7 +112,7 @@ When working on system X:
 
 ### NPC Systems (Personality, Henchmen, Reactions)
 - **Rule files:** `acore_equipment` (hirelings/henchmen costs), `pc_followers_tables_rules`, `ax_henchmen_recruitment_expanded`, `ax_reactions_and_influencing`, `ax_non_combatants`
-- **GDDs:** `gdd-npc-personality`, `gdd-henchman-class-selection`
+- **GDDs:** `gdd-npc-personality`, `gdd-name-generation`, `gdd-henchman-class-selection`
 - **Depends on:** Characters (CHA modifier, class), Equipment (wages), Proficiencies
 - **Depended on by:** Party management, Domain Play (NPC rulers), Dungeon Factions (intelligent monsters)
 
@@ -115,13 +137,25 @@ When working on system X:
 - **Rule files:** `acore-setting-construction-rules` (45-POI regional density target), `le_wilderness_lair_rules` (lair density — POI budget excludes lairs), `acore_adventures_and_encounters` (wilderness encounter tables by terrain)
 - **GDDs:** `gdd-poi-generation`
 - **Depends on:** Setting Generation (regional map, demographics), Terrain (terrain tags for affinity filtering), Culture & Religion (historical context for POI narrative), NPC Systems (rumor knowledge categories)
-- **Depended on by:** Wilderness Exploration (discoverable locations), NPC Systems (rumor table seeds), Quest/Rumor System (quest hooks)
+- **Depended on by:** Wilderness Exploration (discoverable locations), NPC Systems (rumor table seeds), Quest & Rumor System (quest hooks)
 
 ### Setting & World Generation
 - **Rule files:** `acore-setting-construction-rules`, `acore-monster-stocking-rules`, `acore_axioms_strongholds_and_domains` (demographics)
-- **GDDs:** `gdd-setting-generation`, `gdd-terrain-system`, `gdd-cultural-religious-generation`, `gdd-poi-generation`, `gdd-calendar-seasons`, `gdd-weather-generation`
+- **GDDs:** `gdd-setting-generation`, `gdd-terrain-system`, `gdd-cultural-religious-generation`, `gdd-name-generation`, `gdd-poi-generation`, `gdd-calendar-seasons`, `gdd-weather-generation`
 - **Depends on:** Monsters & Encounters, Domain Play (demographics)
 - **Depended on by:** All exploration contexts, Urban & Settlement, Dungeon Exploration, Calendar & Seasons (hemisphere), Weather (climate codes)
+
+### Quest & Rumor System
+- **Rule files:** `acore-campaign-hijinks`, `ax_reactions_and_influencing`, `acore_adventures_and_encounters`, `acore_treasure_and_magic_items_rules`, `acore_axioms_strongholds_and_domains`
+- **GDDs:** `gdd-quest-rumor-system`, `gdd-poi-generation`, `gdd-setting-generation`, `gdd-npc-personality`, `gdd-dungeon-layout`, `gdd-dungeon-factions`, `gdd-terrain-system`, `gdd-settlement-layout`, `gdd-cultural-religious-generation`
+- **Depends on:** Wilderness Points of Interest, NPC Systems, Settlement Stocking & Commerce, Setting & World Generation
+- **Depended on by:** Session Runner, Wilderness & Hex Exploration, Urban & Settlement
+
+### UI & Presentation
+- **Rule files:** (none directly — load the rule files for the subsystem a given screen presents)
+- **GDDs:** `gdd-ui-ux-design`
+- **Depends on:** All gameplay systems, Combat Maps & Tactical Terrain, Asset Architecture, Navigation Stack
+- **Depended on by:** (end-system)
 
 ### Thief Skills & Hijinks
 - **Rule files:** `acore-campaign-hijinks`, `ax_thief_skill_update`
@@ -157,35 +191,61 @@ Generation documents and their inter-dependencies (arrow = "feeds into"):
 ```
 gdd-terrain-system
   -> gdd-setting-generation
-     -> gdd-settlement-layout
-        -> gdd-stronghold-construction
-     -> gdd-cultural-religious-generation
-        -> gdd-henchman-class-selection
      -> gdd-dungeon-layout
         -> gdd-dungeon-factions
         -> gdd-trap-generation
+     -> gdd-settlement-layout
+        -> gdd-settlement-stocking
+        -> gdd-stronghold-construction
      -> gdd-calendar-seasons
         -> gdd-weather-generation
      -> gdd-poi-generation
+        -> gdd-quest-rumor-system
 
-gdd-npc-personality (cross-cuts: settlement, dungeon factions, henchman selection, POI generation)
+gdd-npc-personality
+  -> gdd-name-generation
+  -> gdd-settlement-stocking
+  -> gdd-dungeon-factions
+  -> gdd-henchman-class-selection
+  -> gdd-quest-rumor-system
+
+gdd-cultural-religious-generation
+  -> gdd-settlement-stocking
+  -> gdd-poi-generation
+  -> gdd-henchman-class-selection
+  -> gdd-quest-rumor-system
+
+gdd_combat_behavior_tags
+  -> gdd-combat-map-generation
+
+gdd-stronghold-construction
+  -> gdd-combat-map-generation
+
+gdd-name-generation
+  -> gdd-cultural-religious-generation
+
+gdd-ui-ux-design (cross-cuts presentation for all player-facing systems; consult continuously)
 gdd-proficiency-specializations (peripheral — augments Proficiencies system; feeds from setting/cultural generation; does not gate other GDDs)
-gdd_combat_behavior_tags (standalone — used by combat subsystem only)
 ```
 
 **Implementation order suggestion** (respects dependencies):
 1. `gdd-terrain-system` (foundational — no GDD dependencies)
-2. `gdd_combat_behavior_tags` (standalone)
-3. `gdd-setting-generation` (needs terrain)
-4. `gdd-calendar-seasons` (needs setting for hemisphere parameter)
-5. `gdd-weather-generation` (needs calendar/seasons, setting, terrain)
-6. `gdd-dungeon-layout` (needs setting for context)
-7. `gdd-npc-personality` (needs setting, settlement)
-8. `gdd-settlement-layout` (needs setting, terrain)
-9. `gdd-cultural-religious-generation` (needs setting, NPC personality)
-10. `gdd-poi-generation` (needs setting, terrain, culture/religion, NPC personality)
-11. `gdd-dungeon-factions` (needs dungeon layout, NPC personality)
-12. `gdd-trap-generation` (needs dungeon layout)
-13. `gdd-stronghold-construction` (needs settlement, dungeon layout)
-14. `gdd-henchman-class-selection` (needs NPC personality, culture/religion)
-15. `gdd-proficiency-specializations` (standalone; feeds from setting generation and monster training rules; can be implemented in parallel with any other GDD)
+2. `gdd-setting-generation` (needs terrain)
+3. `gdd-dungeon-layout` (needs setting for context)
+4. `gdd-settlement-layout` (needs setting, terrain)
+5. `gdd-npc-personality` (feeds names, factions, rumors, and social generation)
+6. `gdd-name-generation` (needs setting, settlement context, and NPC cultural identity)
+7. `gdd-cultural-religious-generation` (needs setting, settlement context, and naming support)
+8. `gdd-calendar-seasons` (needs setting for hemisphere parameter)
+9. `gdd-weather-generation` (needs calendar/seasons, setting, terrain)
+10. `gdd-poi-generation` (needs setting, terrain, and culture/religion context)
+11. `gdd-settlement-stocking` (needs settlement layout, names, personalities, and culture data)
+12. `gdd-dungeon-factions` (needs dungeon layout and NPC personality)
+13. `gdd-trap-generation` (needs dungeon layout)
+14. `gdd_combat_behavior_tags` (standalone combat AI support)
+15. `gdd-stronghold-construction` (needs settlement and dungeon references)
+16. `gdd-combat-map-generation` (needs terrain, tactical AI tags, and stronghold/dungeon/settlement context)
+17. `gdd-quest-rumor-system` (needs POIs, settlement context, dungeon/faction context, and NPC/cultural data)
+18. `gdd-henchman-class-selection` (needs NPC personality and culture/religion context)
+19. `gdd-proficiency-specializations` (standalone; feeds from setting generation and monster training rules; can be implemented in parallel with any other GDD)
+20. `gdd-ui-ux-design` (cross-cutting presentation reference; consult early, then refine alongside every player-facing subsystem)
