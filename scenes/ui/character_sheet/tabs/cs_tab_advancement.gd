@@ -10,6 +10,7 @@ var _registries: Dictionary
 
 # UI nodes for the inline level-up panel (created lazily).
 var _level_up_panel: VBoxContainer
+var _proficiency_picker: LevelUpProficiencyPicker
 var _level_up_choices: Dictionary = {}  # { "proficiencies": [], "spells": [] }
 
 
@@ -18,6 +19,7 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 		child.queue_free()
 	_pending_level_up_result = {}
 	_level_up_panel = null
+	_proficiency_picker = null
 	_level_up_choices = {"proficiencies": [], "spells": []}
 	_bundle = bundle
 	_registries = registries
@@ -158,6 +160,7 @@ func _on_level_up_pressed(character: CharacterData, engine: LevelUpEngine) -> vo
 		return
 	for child in _level_up_panel.get_children():
 		child.queue_free()
+	_proficiency_picker = null
 	_level_up_choices = {"proficiencies": [], "spells": []}
 
 	var result := engine.begin_interactive_level_up(character)
@@ -222,11 +225,22 @@ func _build_level_up_summary(result: Dictionary, character: CharacterData,
 			slot_text += "%d general" % general_slots
 		_add_row_to(_level_up_panel, "New Proficiency Slots:", slot_text)
 		var note := Label.new()
-		note.text = "  (Choose proficiencies via the Proficiencies tab after confirming.)"
+		note.text = "  Choose these proficiencies below before confirming the level-up."
 		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		note.add_theme_color_override("font_color", Color(0.7, 0.7, 0.5))
 		note.add_theme_font_size_override("font_size", 11)
 		_level_up_panel.add_child(note)
+
+		_proficiency_picker = LevelUpProficiencyPicker.new()
+		_proficiency_picker.setup(
+			character.character_class,
+			character.proficiencies,
+			class_slots,
+			general_slots,
+			_registries.get("class_registry"),
+			_registries.get("proficiency_registry")
+		)
+		_level_up_panel.add_child(_proficiency_picker)
 
 	# Confirm button.
 	var confirm_btn := Button.new()
@@ -243,6 +257,15 @@ func _build_level_up_summary(result: Dictionary, character: CharacterData,
 func _on_confirm_level_up(character: CharacterData, engine: LevelUpEngine) -> void:
 	if _pending_level_up_result.is_empty():
 		return
+	if _proficiency_picker != null:
+		if not _proficiency_picker.is_complete():
+			var err := Label.new()
+			err.text = "  Spend all new proficiency slots before confirming."
+			err.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+			if _level_up_panel != null:
+				_level_up_panel.add_child(err)
+			return
+		_level_up_choices["all_proficiencies"] = _proficiency_picker.get_final_proficiencies()
 	var ok := engine.finalize_interactive_level_up(character, _pending_level_up_result,
 		_level_up_choices)
 	if not ok:

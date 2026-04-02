@@ -33,6 +33,7 @@
 [ext_resource type="Script" path="res://tests/test_xp_award_calculator.gd" id="31_xp_award_calculator_tests"]
 [ext_resource type="Script" path="res://tests/test_level_up_engine.gd" id="32_level_up_engine_tests"]
 [ext_resource type="Script" path="res://tests/test_aging_system.gd" id="33_aging_system_tests"]
+[ext_resource type="Script" path="res://tests/test_level_up_proficiency_picker.gd" id="34_level_up_proficiency_picker_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -129,6 +130,9 @@ script = ExtResource("31_xp_award_calculator_tests")
 
 [node name="LevelUpEngineTests" type="Node" parent="."]
 script = ExtResource("32_level_up_engine_tests")
+
+[node name="LevelUpProficiencyPickerTests" type="Node" parent="."]
+script = ExtResource("34_level_up_proficiency_picker_tests")
 
 [node name="AgingSystemTests" type="Node" parent="."]
 script = ExtResource("33_aging_system_tests")

@@ -2183,3 +2183,45 @@ CampaignRepository additions:
 **Next session should:**
 1. Smoke-test the override panel's Timekeeping tab in-editor: advance 1 year, then multiple decades, and confirm party character sheets reflect age/category changes.
 2. Decide whether non-category age increments should get their own UI refresh signal so open character sheets update without being reopened.
+
+---
+
+## Session 2026-04-01 - Level-Up Proficiency Selection Fix
+
+**Task:** Fix the PC level-up flow so new proficiency slots can actually be selected and persisted.
+**Model used:** GPT-5 Codex
+
+**Completed:**
+- Updated `scenes/ui/character_sheet/tabs/cs_tab_advancement.gd` so the level-up panel now embeds an inline proficiency picker when a new class or general slot is earned, instead of directing the player to the read-only Proficiencies tab.
+- Added `scenes/ui/character_sheet/tabs/level_up_proficiency_picker.gd` (NEW): a dedicated level-up picker that works from the character's existing proficiencies plus pending slot counts, supports rank-ups and specialization choices, and returns the full post-level-up proficiency state.
+- Updated `engine/subsystems/characters/level_up_engine.gd` so interactive level-up can save either a full `all_proficiencies` state or merge delta records by `proficiency_key + slot_type + specialization`, which fixes rank-up and specialization persistence for the level-up path.
+- Added `tests/test_level_up_proficiency_picker.gd` (NEW) covering rank-up and specialization selection behavior.
+- Updated `tests/test_level_up_engine.gd` with a regression test for specialization-aware proficiency merging.
+- Updated `tests/test_runner.gd` and `tests/test_runner.tscn` to register the new picker test suite.
+- Verified in Godot headless via app-data log: `=== TEST RESULTS: 33 suites passed, 0 failed ===`.
+
+**Decisions made:**
+- The proficiency choice now happens before confirming the level-up. This avoids introducing a new persistent "pending proficiency slot" data model just to survive after confirmation.
+- The advancement tab owns the temporary choice UI; the Proficiencies tab remains a read-only summary tab for now.
+- Interactive level-up persistence now treats specialization variants as distinct records and preserves rank/selections_count on existing records.
+
+**Interfaces defined or changed:**
+- `LevelUpEngine.finalize_interactive_level_up(character, level_up_result, choices) -> bool`
+  - `choices` now optionally accepts `all_proficiencies: Array[Dictionary]` representing the full post-level-up proficiency state.
+- `LevelUpEngine._merge_proficiency_records(existing, updates) -> Array`
+  - New internal helper that merges by `proficiency_key`, `slot_type`, and `specialization`.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- Added `tests/test_level_up_proficiency_picker.gd`.
+- Updated `tests/test_level_up_engine.gd`.
+- Updated `tests/test_runner.gd` and `tests/test_runner.tscn`.
+
+**Known issues:**
+- The Proficiencies tab is still read-only; the editable selection UI currently lives only inside the Advancement tab's level-up panel.
+- `LevelUpEngine.apply_level_up_auto()` still uses the older NPC auto-selection flow and was not refactored in this session.
+
+**Next session should:**
+1. Smoke-test the full player flow in-editor: earn XP, open Advancement, level up, choose a ranked proficiency and a specialization-based proficiency, confirm, and reopen the sheet.
+2. Decide whether the Proficiencies tab should eventually reuse `LevelUpProficiencyPicker` for other future proficiency-granting effects.

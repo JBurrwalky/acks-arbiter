@@ -186,27 +186,27 @@ func finalize_interactive_level_up(character: CharacterData,
 	## Persist a PC level-up after the player has made proficiency/spell choices.
 	##
 	## choices: {
-	##   "proficiencies": Array[Dictionary],  # new prof records to add
+	##   "proficiencies": Array[Dictionary],   # optional delta records to merge
+	##   "all_proficiencies": Array[Dictionary],  # optional full post-level-up state
 	##   "spells": Array[Dictionary],          # new spell records to add
 	## }
 	##
 	## The character's stat fields (level, hp_max, attack, saves, title) should
 	## already be mutated by begin_interactive_level_up().
 
-	# Persist new proficiencies.
-	var new_profs: Array = choices.get("proficiencies", [])
-	if not new_profs.is_empty():
-		var existing_profs: Array = CampaignRepository.get_character_proficiencies(character.id)
-		var merged := existing_profs.duplicate()
-		var existing_keys: Dictionary = {}
-		for p in existing_profs:
-			existing_keys[p.get("proficiency_key", "")] = true
-		for p in new_profs:
-			if not existing_keys.has(p.get("proficiency_key", "")):
-				merged.append(p)
-		if not CampaignRepository.save_character_proficiencies(character.id, merged):
+	# Persist proficiency state.
+	if choices.has("all_proficiencies") or not (choices.get("proficiencies", []) as Array).is_empty():
+		var final_profs: Array = []
+		if choices.has("all_proficiencies"):
+			final_profs = (choices.get("all_proficiencies", []) as Array).duplicate(true)
+		else:
+			var existing_profs: Array = CampaignRepository.get_character_proficiencies(character.id)
+			var new_profs: Array = choices.get("proficiencies", [])
+			final_profs = _merge_proficiency_records(existing_profs, new_profs)
+		if not CampaignRepository.save_character_proficiencies(character.id, final_profs):
 			push_error("LevelUpEngine.finalize_interactive_level_up: failed to save proficiencies")
 			return false
+		character.proficiencies = final_profs
 
 	# Persist new spells.
 	var new_spells: Array = choices.get("spells", [])
@@ -357,3 +357,40 @@ func _get_new_powers(class_id: String, new_level: int) -> Array:
 			if not pid.is_empty():
 				result.append(pid)
 	return result
+
+
+func _merge_proficiency_records(existing: Array, updates: Array) -> Array:
+	## Merge proficiency updates by key + slot_type + specialization.
+	## Used by interactive level-up callers that still provide a delta array.
+	var merged: Array = existing.duplicate(true)
+	for update_var in updates:
+		var update: Dictionary = update_var
+		var idx := _find_proficiency_record_index(
+			merged,
+			update.get("proficiency_key", ""),
+			update.get("slot_type", "general"),
+			update.get("specialization", "")
+		)
+		if idx >= 0:
+			merged[idx]["rank"] = maxi(
+				int(merged[idx].get("rank", 1)),
+				int(update.get("rank", 1))
+			)
+			merged[idx]["selections_count"] = maxi(
+				int(merged[idx].get("selections_count", merged[idx].get("rank", 1))),
+				int(update.get("selections_count", update.get("rank", 1)))
+			)
+		else:
+			merged.append(update.duplicate(true))
+	return merged
+
+
+func _find_proficiency_record_index(records: Array, proficiency_key: String,
+		slot_type: String, specialization: String) -> int:
+	for i in range(records.size()):
+		var record: Dictionary = records[i]
+		if record.get("proficiency_key", "") == proficiency_key \
+				and record.get("slot_type", "") == slot_type \
+				and record.get("specialization", "") == specialization:
+			return i
+	return -1

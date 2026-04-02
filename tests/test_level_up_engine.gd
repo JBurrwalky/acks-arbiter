@@ -16,6 +16,7 @@ func run_all_tests() -> void:
 	test_spell_slot_expansion_mage()
 	test_auto_level_up_updates_level_and_title()
 	test_new_powers_detected()
+	test_merge_proficiency_records_keeps_rank_and_specialization()
 	if not has_failures():
 		print("LevelUpEngine: all tests passed.")
 
@@ -171,3 +172,56 @@ func test_new_powers_detected() -> void:
 	check("battlefield_leadership" in powers,
 		"Fighter should unlock battlefield_leadership at L5. Got: %s" % str(powers))
 	print("  new_powers_detected: OK")
+
+
+func test_merge_proficiency_records_keeps_rank_and_specialization() -> void:
+	var engine := _make_engine()
+	var existing := [
+		{
+			"proficiency_key": "healing",
+			"rank": 1,
+			"slot_type": "general",
+			"selections_count": 1,
+			"specialization": "",
+		},
+		{
+			"proficiency_key": "language",
+			"rank": 1,
+			"slot_type": "general",
+			"selections_count": 1,
+			"specialization": "common",
+		},
+	]
+	var updates := [
+		{
+			"proficiency_key": "healing",
+			"rank": 2,
+			"slot_type": "general",
+			"selections_count": 2,
+			"specialization": "",
+		},
+		{
+			"proficiency_key": "language",
+			"rank": 1,
+			"slot_type": "general",
+			"selections_count": 1,
+			"specialization": "elvish",
+		},
+	]
+
+	var merged := engine._merge_proficiency_records(existing, updates)
+	check(merged.size() == 3, "merge should keep old language and add elvish, got %d rows" % merged.size())
+
+	var healing_rank := 0
+	var language_specs: Array[String] = []
+	for prof_var in merged:
+		var prof: Dictionary = prof_var
+		if prof.get("proficiency_key", "") == "healing":
+			healing_rank = int(prof.get("rank", 0))
+		if prof.get("proficiency_key", "") == "language":
+			language_specs.append(prof.get("specialization", ""))
+
+	check(healing_rank == 2, "healing should advance to rank 2, got %d" % healing_rank)
+	check("common" in language_specs, "merge should preserve existing language specialization")
+	check("elvish" in language_specs, "merge should add the new language specialization")
+	print("  merge_proficiency_records_keeps_rank_and_specialization: OK")
