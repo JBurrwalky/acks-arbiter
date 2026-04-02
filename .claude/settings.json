@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l /c/Users/jttau/acks-arbiter/data/proficiencies/*.json)",
+      "Bash(find /c/Users/jttau/acks-arbiter/data/classes -name \"*.json\" -exec basename {} .json \\\\;)"
+    ]
+  }
+}

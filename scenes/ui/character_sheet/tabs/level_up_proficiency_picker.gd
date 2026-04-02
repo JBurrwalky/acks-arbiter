@@ -8,6 +8,8 @@ extends VBoxContainer
 ## The picker returns the full final proficiency list so level-up persistence
 ## can save an exact post-choice state.
 
+signal selection_state_changed
+
 var _class_registry: ClassRegistry
 var _proficiency_registry: ProficiencyRegistry
 
@@ -576,4 +578,4 @@ func _on_undo_pending(prof_key: String, slot_type: String, spec: String) -> void
 func _after_working_state_changed() -> void:
 	_recalculate_slot_usage()
 	_refresh_all()
-
+	selection_state_changed.emit()

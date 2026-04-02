@@ -11,6 +11,10 @@ var _registries: Dictionary
 # UI nodes for the inline level-up panel (created lazily).
 var _level_up_panel: VBoxContainer
 var _proficiency_picker: LevelUpProficiencyPicker
+var _proficiency_popup: PopupPanel
+var _proficiency_popup_picker_host: VBoxContainer
+var _proficiency_popup_status: Label
+var _proficiency_selection_status_label: Label
 var _level_up_choices: Dictionary = {}  # { "proficiencies": [], "spells": [] }
 
 
@@ -20,6 +24,10 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 	_pending_level_up_result = {}
 	_level_up_panel = null
 	_proficiency_picker = null
+	_proficiency_popup = null
+	_proficiency_popup_picker_host = null
+	_proficiency_popup_status = null
+	_proficiency_selection_status_label = null
 	_level_up_choices = {"proficiencies": [], "spells": []}
 	_bundle = bundle
 	_registries = registries
@@ -161,6 +169,7 @@ func _on_level_up_pressed(character: CharacterData, engine: LevelUpEngine) -> vo
 	for child in _level_up_panel.get_children():
 		child.queue_free()
 	_proficiency_picker = null
+	_clear_proficiency_popup_state()
 	_level_up_choices = {"proficiencies": [], "spells": []}
 
 	var result := engine.begin_interactive_level_up(character)
@@ -225,22 +234,24 @@ func _build_level_up_summary(result: Dictionary, character: CharacterData,
 			slot_text += "%d general" % general_slots
 		_add_row_to(_level_up_panel, "New Proficiency Slots:", slot_text)
 		var note := Label.new()
-		note.text = "  Choose these proficiencies below before confirming the level-up."
+		note.text = "  Choose these proficiencies in the modal selector before confirming."
 		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		note.add_theme_color_override("font_color", Color(0.7, 0.7, 0.5))
 		note.add_theme_font_size_override("font_size", 11)
 		_level_up_panel.add_child(note)
 
-		_proficiency_picker = LevelUpProficiencyPicker.new()
-		_proficiency_picker.setup(
-			character.character_class,
-			character.proficiencies,
-			class_slots,
-			general_slots,
-			_registries.get("class_registry"),
-			_registries.get("proficiency_registry")
-		)
-		_level_up_panel.add_child(_proficiency_picker)
+		_prepare_proficiency_picker(character, class_slots, general_slots)
+		var pick_btn := Button.new()
+		pick_btn.text = "Select New Proficiencies"
+		pick_btn.custom_minimum_size = Vector2(220, 0)
+		pick_btn.pressed.connect(_on_open_proficiency_popup)
+		_level_up_panel.add_child(pick_btn)
+
+		_proficiency_selection_status_label = Label.new()
+		_proficiency_selection_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_proficiency_selection_status_label.add_theme_font_size_override("font_size", 11)
+		_level_up_panel.add_child(_proficiency_selection_status_label)
+		_refresh_proficiency_selection_status()
 
 	# Confirm button.
 	var confirm_btn := Button.new()
@@ -284,11 +295,153 @@ func _on_cancel_level_up(character: CharacterData) -> void:
 	# Undo the in-memory stat changes by reloading from DB.
 	if _bundle == null:
 		return
+	_clear_proficiency_popup_state()
 	var fresh := CampaignRepository.get_character(character.id)
 	if fresh != null:
 		_bundle.character = CharacterData.from_dict(fresh)
 	_pending_level_up_result = {}
 	display(_bundle, _registries)
+
+
+func _prepare_proficiency_picker(character: CharacterData, class_slots: int,
+		general_slots: int) -> void:
+	_clear_proficiency_popup_state()
+	_ensure_proficiency_popup()
+	_proficiency_picker = LevelUpProficiencyPicker.new()
+	_proficiency_picker.setup(
+		character.character_class,
+		character.proficiencies,
+		class_slots,
+		general_slots,
+		_registries.get("class_registry"),
+		_registries.get("proficiency_registry")
+	)
+	_proficiency_picker.selection_state_changed.connect(_on_proficiency_picker_state_changed)
+	if _proficiency_popup_picker_host != null:
+		_proficiency_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_proficiency_picker.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		_proficiency_popup_picker_host.add_child(_proficiency_picker)
+	_refresh_proficiency_popup_status()
+	_refresh_proficiency_selection_status()
+
+
+func _ensure_proficiency_popup() -> void:
+	if _proficiency_popup != null:
+		return
+
+	_proficiency_popup = PopupPanel.new()
+	_proficiency_popup.name = "LevelUpProficiencyPopup"
+	_proficiency_popup.exclusive = true
+	_proficiency_popup.unresizable = true
+	_proficiency_popup.min_size = Vector2i(880, 640)
+	add_child(_proficiency_popup)
+
+	var root := MarginContainer.new()
+	root.add_theme_constant_override("margin_left", 16)
+	root.add_theme_constant_override("margin_top", 12)
+	root.add_theme_constant_override("margin_right", 16)
+	root.add_theme_constant_override("margin_bottom", 12)
+	root.custom_minimum_size = Vector2(880, 640)
+	_proficiency_popup.add_child(root)
+
+	var vbox := VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_theme_constant_override("separation", 8)
+	root.add_child(vbox)
+
+	var header := HBoxContainer.new()
+	vbox.add_child(header)
+
+	var title := Label.new()
+	title.text = "Select New Proficiencies"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", 14)
+	header.add_child(title)
+
+	var close_btn := Button.new()
+	close_btn.text = "X"
+	close_btn.custom_minimum_size = Vector2(28, 28)
+	close_btn.pressed.connect(_on_close_proficiency_popup)
+	header.add_child(close_btn)
+
+	_proficiency_popup_status = Label.new()
+	_proficiency_popup_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_proficiency_popup_status.add_theme_font_size_override("font_size", 11)
+	vbox.add_child(_proficiency_popup_status)
+
+	_proficiency_popup_picker_host = VBoxContainer.new()
+	_proficiency_popup_picker_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_proficiency_popup_picker_host.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(_proficiency_popup_picker_host)
+
+	var footer := HBoxContainer.new()
+	footer.alignment = BoxContainer.ALIGNMENT_END
+	vbox.add_child(footer)
+
+	var done_btn := Button.new()
+	done_btn.text = "Done"
+	done_btn.custom_minimum_size = Vector2(110, 0)
+	done_btn.pressed.connect(_on_close_proficiency_popup)
+	footer.add_child(done_btn)
+
+
+func _clear_proficiency_popup_state() -> void:
+	if _proficiency_popup != null:
+		_proficiency_popup.hide()
+	if _proficiency_popup_picker_host != null:
+		for child in _proficiency_popup_picker_host.get_children():
+			child.queue_free()
+	_proficiency_picker = null
+
+
+func _on_open_proficiency_popup() -> void:
+	if _proficiency_popup == null:
+		return
+	_refresh_proficiency_popup_status()
+	_proficiency_popup.reset_size()
+	_proficiency_popup.popup_centered_ratio(0.86)
+
+
+func _on_close_proficiency_popup() -> void:
+	if _proficiency_picker != null:
+		_level_up_choices["all_proficiencies"] = _proficiency_picker.get_final_proficiencies()
+	if _proficiency_popup != null:
+		_proficiency_popup.hide()
+	_refresh_proficiency_selection_status()
+
+
+func _refresh_proficiency_popup_status() -> void:
+	if _proficiency_popup_status == null:
+		return
+	if _proficiency_picker == null:
+		_proficiency_popup_status.text = "No proficiency choices are pending."
+		return
+	if _proficiency_picker.is_complete():
+		_proficiency_popup_status.text = "All proficiency slots spent. You can close this modal and confirm level-up."
+		_proficiency_popup_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+	else:
+		_proficiency_popup_status.text = "Spend all pending class/general proficiency slots before confirming level-up."
+		_proficiency_popup_status.add_theme_color_override("font_color", Color(1.0, 0.8, 0.35))
+
+
+func _refresh_proficiency_selection_status() -> void:
+	if _proficiency_selection_status_label == null:
+		return
+	if _proficiency_picker == null:
+		_proficiency_selection_status_label.text = ""
+		return
+	if _proficiency_picker.is_complete():
+		_proficiency_selection_status_label.text = "  Proficiency selections complete."
+		_proficiency_selection_status_label.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+	else:
+		_proficiency_selection_status_label.text = "  Proficiency selections incomplete. Open the selector to spend remaining slots."
+		_proficiency_selection_status_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.35))
+
+
+func _on_proficiency_picker_state_changed() -> void:
+	_refresh_proficiency_popup_status()
+	_refresh_proficiency_selection_status()
 
 
 # ---------------------------------------------------------------------------

@@ -321,6 +321,20 @@ func _create_terrain_tileset() -> TileSet:
 	tileset.tile_offset_axis = TileSet.TILE_OFFSET_AXIS_VERTICAL
 	tileset.tile_size = TERRAIN_TILE_SIZE
 
+	var source := TileSetAtlasSource.new()
+	var atlas_path := AssetRegistry.get_asset_path("terrain.atlas")
+	if not atlas_path.is_empty() and ResourceLoader.exists(atlas_path):
+		source.texture = load(atlas_path)
+	else:
+		source.texture = _build_terrain_atlas_texture()
+	source.texture_region_size = TERRAIN_TILE_SIZE
+	for col_idx in range(TERRAIN_ATLAS_COLS):
+		source.create_tile(Vector2i(col_idx, 0))
+	tileset.add_source(source)
+	return tileset
+
+
+func _build_terrain_atlas_texture() -> ImageTexture:
 	# RGBA8 — pixels outside the hex boundary are transparent (alpha = 0)
 	var img := Image.create(
 		TERRAIN_TILE_SIZE.x * TERRAIN_ATLAS_COLS, TERRAIN_TILE_SIZE.y,
@@ -355,14 +369,7 @@ func _create_terrain_tileset() -> TileSet:
 		var fill := colors[col_idx]
 		_draw_hex_tile(img, col_idx, TERRAIN_TILE_SIZE, fill, fill.darkened(0.35))
 
-	var texture := ImageTexture.create_from_image(img)
-	var source := TileSetAtlasSource.new()
-	source.texture = texture
-	source.texture_region_size = TERRAIN_TILE_SIZE
-	for col_idx in range(TERRAIN_ATLAS_COLS):
-		source.create_tile(Vector2i(col_idx, 0))
-	tileset.add_source(source)
-	return tileset
+	return ImageTexture.create_from_image(img)
 
 
 func _create_fog_tileset() -> TileSet:

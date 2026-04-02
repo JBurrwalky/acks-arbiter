@@ -2225,3 +2225,124 @@ CampaignRepository additions:
 **Next session should:**
 1. Smoke-test the full player flow in-editor: earn XP, open Advancement, level up, choose a ranked proficiency and a specialization-based proficiency, confirm, and reopen the sheet.
 2. Decide whether the Proficiencies tab should eventually reuse `LevelUpProficiencyPicker` for other future proficiency-granting effects.
+
+---
+
+## Session 2026-04-02 - Level-Up Proficiency Modal UI
+
+**Task:** Move the level-up proficiency selector out of the Advancement tab inline layout and into a dedicated popup/modal window.
+**Model used:** GPT-5 Codex
+
+**Completed:**
+- Updated `scenes/ui/character_sheet/tabs/cs_tab_advancement.gd`:
+  - Replaced the inline embedded proficiency picker with a `Select New Proficiencies` button.
+  - Added a modal `PopupPanel` flow (`_proficiency_popup`) containing the full `LevelUpProficiencyPicker`.
+  - Added modal open/close handlers and status labels for both modal and inline summary contexts.
+  - Kept confirm-level-up validation tied to the picker being complete before save.
+- Updated `scenes/ui/character_sheet/tabs/level_up_proficiency_picker.gd`:
+  - Added `selection_state_changed` signal.
+  - Emits the signal whenever picker state changes so the modal status updates live.
+- Verified via Godot headless run in app log: `=== TEST RESULTS: 34 suites passed, 0 failed ===`.
+
+**Decisions made:**
+- Used a modal `PopupPanel` instead of growing the Advancement tab content so the selector has stable width/height and avoids scroll clipping inside the tab container.
+- Kept the picker state in-memory for the active level-up flow; closing/reopening the modal preserves choices until level-up is confirmed or canceled.
+
+**Interfaces defined or changed:**
+- `LevelUpProficiencyPicker.selection_state_changed` (new signal)
+- `CSTabAdvancement` now owns modal helpers:
+  - `_prepare_proficiency_picker(...)`
+  - `_ensure_proficiency_popup()`
+  - `_on_open_proficiency_popup()`
+  - `_on_close_proficiency_popup()`
+  - `_on_proficiency_picker_state_changed()`
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- No new test files this session.
+- Existing suite re-run successfully (`34` suites, `0` failures).
+
+**Known issues:**
+- This session did not add viewport-size adaptive modal sizing beyond fixed minimum and centered ratio; if very small window layouts are expected, add a clamp strategy in a later pass.
+
+**Next session should:**
+1. Smoke-test in-editor with narrow and wide viewport sizes to confirm modal usability and centering behavior.
+2. Optionally add a keyboard shortcut (`Esc`) to close the proficiency modal explicitly if desired.
+
+---
+
+## Session 2026-04-02 - Advancement Parse Error Hotfix
+
+**Task:** Fix parser errors preventing `CSTabAdvancement` and `CharacterSheetOverlay` from loading.
+**Model used:** GPT-5 Codex
+
+**Completed:**
+- Fixed an indentation error in `scenes/ui/character_sheet/tabs/cs_tab_advancement.gd` inside `_on_confirm_level_up()` where `err.text` and `err.add_theme_color_override(...)` were over-indented under `var err := Label.new()`.
+- Verified no parse errors for `CSTabAdvancement` in latest Godot app log.
+- Re-ran headless tests successfully (`34 suites passed, 0 failed` in app log).
+
+**Decisions made:**
+- Kept the modal proficiency selector implementation unchanged; this was a syntax hotfix only.
+
+**Interfaces defined or changed:** None.
+
+**Database changes:** None.
+
+**Tests added/updated:** None added; existing suite re-run.
+
+**Known issues:**
+- Direct headless launch of `character_sheet_overlay.tscn` still crashes in this environment due the existing `user://logs/...` file-open issue; this appears environmental and unrelated to script parsing.
+
+**Next session should:**
+1. In-editor smoke-test the character sheet open path and the level-up modal flow now that parsing is restored.
+
+---
+
+## Session 2026-04-01 — D-1: Asset Registry
+
+**Task:** Build the central asset registry (D-1): semantic ID → path lookup, placeholder terrain atlas generator, manifest file, hex map renderer refactor.
+**Model used:** Sonnet 4.6 (1M context)
+
+**Completed:**
+- Created `engine/subsystems/assets/asset_registry.gd` — `class_name AssetRegistry extends RefCounted`. Static-method class (not autoload) with lazy manifest loading. API: `get_path(id)`, `has_asset(id)`, `register(id, path)`, `get_all_ids()`. Loads `data/asset_manifest.json` on first call, flattens nested JSON into dot-notation keys.
+- Created `data/asset_manifest.json` — complete asset vocabulary: 65 portrait PNGs (all 25 classes × N variants), 18 terrain IDs (atlas + 17 individual tile paths), 2 UI background textures. All 25 class portrait_XX_01 variants mapped.
+- Created `tools/generate_placeholders.gd` — `@tool extends EditorScript`. Run via Script → Run to generate `res://assets/terrain/terrain_atlas.png`. Creates a 17-column labeled hex atlas using the same colors/layout as the renderer. Skips existing files.
+- Modified `scenes/maps/hex_map_renderer.gd` — extracted `_build_terrain_atlas_texture() -> ImageTexture` from `_create_terrain_tileset()`. The refactored `_create_terrain_tileset()` checks `AssetRegistry.get_path("terrain.atlas")` first; falls back to `_build_terrain_atlas_texture()` if not found. Zero behavior change until the placeholder tool is run.
+- Created `tests/test_asset_registry.gd` — 10 tests covering: unknown ID returns empty, has_asset false for unknown, register/retrieve round-trip, has_asset after register, register overwrites, all 25 portrait classes have _01 variant, terrain.atlas registered, UI textures registered, portrait paths are res:// scheme, get_all_ids includes registered.
+- Updated `tests/test_runner.gd` and `tests/test_runner.tscn` — added AssetRegistryTests node (id 35).
+
+**Decisions made:**
+- AssetRegistry is a **class with static methods, not an autoload** — avoids an 8th autoload; read-only after init fits the static-variable pattern cleanly. `class_name` is safe here because it is not an autoload script.
+- Manifest uses nested JSON flattened to dot-notation keys at load time. Nesting is only one level deep in the current file (`ui.bg.vellum_base`) — `_flatten()` handles arbitrary depth for future extensibility.
+- Renderer refactor is strictly non-breaking: if `terrain.atlas` is not registered or the file doesn't exist, `_build_terrain_atlas_texture()` runs as before.
+- Portrait IDs in the manifest match the filename minus `portrait_` prefix and `.png` extension (e.g., `portrait.fighter_01`). This is consistent with what C-3 will query.
+
+**Interfaces defined or changed:**
+
+AssetRegistry (`engine/subsystems/assets/asset_registry.gd`):
+- `static func get_path(id: String) -> String`
+- `static func has_asset(id: String) -> bool`
+- `static func register(id: String, path: String) -> void`
+- `static func get_all_ids() -> Array[String]`
+
+Manifest contract (`data/asset_manifest.json`):
+- Top-level sections: `terrain`, `portrait`, `ui`
+- Terrain IDs: `terrain.atlas`, `terrain.flat_clear` … `terrain.mountains_desert`, `terrain.ocean`, `terrain.river`
+- Portrait IDs: `portrait.{class_name}_{NN}` for all 25 classes
+- UI IDs: `ui.bg.vellum_base`, `ui.bg.vellum_subtle`
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- Added `tests/test_asset_registry.gd` — 10 tests.
+- Updated `tests/test_runner.gd` and `tests/test_runner.tscn`.
+
+**Known issues:**
+- `tools/generate_placeholders.gd` has not been run yet — `res://assets/terrain/terrain_atlas.png` does not exist. The renderer falls back to programmatic generation until it is run. Run via Script → Run in the Godot editor to generate it.
+- The per-tile individual terrain paths (`terrain.flat_clear` etc.) are registered in the manifest but the PNG files don't exist yet (the placeholder tool only generates the atlas). These IDs are reserved for future use when per-tile art or individual tile generators are added.
+
+**Next session should:**
+1. Run `tools/generate_placeholders.gd` in the Godot editor and verify `res://assets/terrain/terrain_atlas.png` is created correctly.
+2. Run `tests/test_runner.tscn` — verify all 10 AssetRegistry tests pass, no existing suites regressed.
+3. Proceed to C-3 (character creation UI) — it depends on portrait IDs from AssetRegistry.
