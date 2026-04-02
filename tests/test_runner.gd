@@ -36,6 +36,9 @@ extends Node
 @onready var _equipment_catalog_tests = $EquipmentCatalogTests
 @onready var _specialization_registry_tests = $SpecializationRegistryTests
 @onready var _persistence_tier_tests = $PersistenceTierTests
+@onready var _xp_award_calculator_tests = $XPAwardCalculatorTests
+@onready var _level_up_engine_tests = $LevelUpEngineTests
+@onready var _aging_system_tests = $AgingSystemTests
 
 
 func _ready() -> void:
@@ -58,7 +61,8 @@ func run() -> void:
 			_proficiency_registry_tests, _proficiency_effect_resolver_tests,
 			_proficiency_integration_tests,
 			_equipment_catalog_tests, _specialization_registry_tests,
-			_persistence_tier_tests]:
+			_persistence_tier_tests,
+			_xp_award_calculator_tests, _level_up_engine_tests, _aging_system_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

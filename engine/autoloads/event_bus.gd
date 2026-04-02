@@ -126,6 +126,9 @@ signal character_promoted(character_id: String, old_tier: String, new_tier: Stri
 ## A character's persistence tier was lowered (full→named or named→transient/deleted).
 signal character_demoted(character_id: String, old_tier: String, new_tier: String)
 
+## A character's age category changed due to aging (e.g., adult → middle_aged).
+signal age_category_changed(character_id: String, old_category: String, new_category: String)
+
 
 # ---------------------------------------------------------------------------
 # Domain signals

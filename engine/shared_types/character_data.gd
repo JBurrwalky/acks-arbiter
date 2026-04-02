@@ -247,21 +247,6 @@ func apply_healing(amount: int) -> int:
 	return hp_current - old_hp
 
 
-func apply_age_change(years: int) -> void:
-	## Adjusts current_age and recalculates age_category.
-	## Age category thresholds are approximate ACKS values; exact tables added with the aging system.
-	current_age = maxi(0, current_age + years)
-	if current_age < 20:
-		age_category = "young"
-	elif current_age < 36:
-		age_category = "adult"
-	elif current_age < 56:
-		age_category = "middle_aged"
-	elif current_age < 71:
-		age_category = "old"
-	else:
-		age_category = "venerable"
-
 
 static func ability_modifier(score: int) -> int:
 	# ACKS ability modifier table (ACore). Not a linear formula — lookup only.

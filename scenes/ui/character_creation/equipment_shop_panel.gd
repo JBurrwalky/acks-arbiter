@@ -413,6 +413,13 @@ func _get_restriction_warning(item: Dictionary, cls: Dictionary) -> String:
 					if ac_bonus <= _ARMOR_TIER_MAP[perm]:
 						permitted = true
 					break
+				## Named specific armor: lighter armor (lower AC bonus) is also permitted.
+				## Rule: proficiency with armor AC X implies proficiency with all armor AC < X.
+				var resolved_item := _catalog.get_item(resolved)
+				if not resolved_item.is_empty():
+					if ac_bonus <= int(resolved_item.get("armor_ac_bonus", 0)):
+						permitted = true
+					break
 			if not permitted:
 				return "Your class cannot wear this armor without penalty."
 		elif arm_perms.is_empty():

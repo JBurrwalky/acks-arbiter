@@ -1940,3 +1940,84 @@ CampaignRepository additions:
 1. Run `tests/test_runner.tscn` — verify all 16 new PersistenceTier tests pass with all existing tests still green.
 2. Smoke-test the inventory drag-and-drop UI (carry-forward from previous session).
 3. Consider E-2 (session runner generates transient encounters) which will be the first real consumer of TransientPool and PromotionEngine.
+
+---
+
+## Session 2026-04-01 — Phase C-5: XP Tracking, Level-Up Workflow, Aging System
+
+**Task:** Implement the full XP, level-up, and aging systems including data files, engine classes, DB migration, UI updates, and tests.
+
+**Model used:** Claude Sonnet 4.6
+
+**Completed:**
+- `data/aging_tables.json` (NEW): Race age category thresholds, starting age formulas for all 25 classes, ability adjustments per transition, death-from-old-age data. Source: acore_aging_poisons_high-level-start_optional_rules.xml + pc_aging_tables.xml.
+- `engine/subsystems/characters/aging_system.gd` (NEW): `AgingSystem` class. Starting age rolls, race-aware age category lookup, progressive ability adjustments on category transitions, cumulative adjustments for NPC generation, death-from-old-age save trigger checking. Removed hardcoded `apply_age_change()` stub from CharacterData.
+- `engine/subsystems/characters/xp_award_calculator.gd` (NEW): `XPAwardCalculator` class. Monster XP table (HD less than 1 through 21+), party share division (PCs = 1 share, henchmen = 0.5), prime req adjustment with Bankers rounding, 1-level advancement cap enforcement, domain/mercantile XP with GP threshold table. `bankers_round()` static utility added here.
+- `engine/subsystems/characters/level_up_engine.gd` (NEW): `LevelUpEngine` class. Two paths: `apply_level_up_auto()` for NPCs/henchmen; `begin_interactive_level_up()` + `finalize_interactive_level_up()` for PCs. Handles HP rolling, attack/save/title updates, proficiency slot detection, spell slot expansion, class power unlocks. 0th-level returns `requires_class_selection: true` (deferred to henchman GDD).
+- `engine/autoloads/event_bus.gd`: Added `age_category_changed(character_id, old_category, new_category)` signal.
+- `engine/autoloads/campaign_repository.gd`: Added `update_character_fields(id, fields)` for surgical per-column updates with whitelist.
+- `db/migrations/016_xp_audit_log.sql` (NEW): `xp_awards` table for tracking XP source.
+- `engine/shared_types/character_data.gd`: Removed `apply_age_change()` hardcoded human stub. AgingSystem is now canonical.
+- `engine/subsystems/characters/character_generator.gd`: `generate_pc()` and `generate_npc()` now call `AgingSystem` to set `current_age` and `age_category`.
+- `scenes/ui/character_creation/character_creation_screen.gd`: Added `starting_age` to state dict; cached from generated character in `_prepare_step(HP_ROLL)`.
+- `scenes/ui/character_creation/finalize_panel.gd`: Added "Starting Age:" display row.
+- `scenes/ui/character_sheet/tabs/cs_tab_advancement.gd`: Rewritten with level-up eligibility indicator, Level Up button, inline interactive level-up panel, Aging section. Removed pending stubs for XP/leveling (kept Reserve XP stub).
+- `scenes/ui/character_sheet/character_sheet_overlay.gd`: Added `age_category_changed` connection; handler refreshes Biography + Advancement tabs.
+- `db/schema.sql`: Updated header comment to migration 016.
+- `tests/test_xp_award_calculator.gd` (NEW): 13 tests.
+- `tests/test_level_up_engine.gd` (NEW): 10 tests.
+- `tests/test_aging_system.gd` (NEW): 10 tests.
+- `tests/test_runner.gd` + `tests/test_runner.tscn`: Registered 3 new test suites (IDs 30-32).
+
+**Decisions made:**
+- Monster XP table hardcoded as const (fixed ACKS rule; same pattern as ability_modifier table).
+- Starting age: no new wizard step, rolled automatically during generate_pc() in _prepare_step(HP_ROLL).
+- AgingSystem is a separate class; CharacterData stub removed.
+- Interactive vs auto level-up split. 1-level cap in XPAwardCalculator, not LevelUpEngine.
+- Bankers rounding: new `bankers_round()` static on XPAwardCalculator. Note: roundi() is NOT Bankers rounding.
+- Level-up interactive UI is inline in Advancement tab (not a modal).
+
+**Interfaces defined or changed:**
+- `AgingSystem.roll_starting_age(class_id) -> int`
+- `AgingSystem.get_age_category(race, age) -> String`
+- `AgingSystem.apply_age_change(character, years) -> Dictionary`
+- `AgingSystem.apply_cumulative_adjustments(character, target_category) -> Dictionary`
+- `AgingSystem.check_death_from_age(character) -> Dictionary`
+- `AgingSystem.get_next_category_age(race, current_category) -> int`
+- `XPAwardCalculator.calculate_monster_xp(hd_key, special_abilities) -> int` [static]
+- `XPAwardCalculator.calculate_encounter_monster_xp(monsters) -> int` [static]
+- `XPAwardCalculator.calculate_party_shares(total_xp, members) -> Dictionary` [static]
+- `XPAwardCalculator.apply_prime_req_adjustment(raw_xp, adjustment_percent) -> int` [static]
+- `XPAwardCalculator.bankers_round(value: float) -> int` [static]
+- `XPAwardCalculator.clamp_to_one_level(character, raw_award) -> int`
+- `XPAwardCalculator.award_adventure_xp(monster_xp, treasure_xp, members) -> Array`
+- `XPAwardCalculator.calculate_domain_xp(income, level, is_henchman) -> int`
+- `LevelUpEngine.can_level_up(character) -> bool`
+- `LevelUpEngine.roll_level_up_hp(character) -> int`
+- `LevelUpEngine.apply_level_up_auto(character) -> Dictionary`
+- `LevelUpEngine.begin_interactive_level_up(character) -> Dictionary`
+- `LevelUpEngine.finalize_interactive_level_up(character, level_up_result, choices) -> bool`
+- `CampaignRepository.update_character_fields(id, fields) -> bool`
+- `EventBus.age_category_changed(character_id, old_category, new_category)` [signal NEW]
+
+**Database changes:**
+- Migration 016: `xp_awards` table (id, character_id, campaign_id, amount, source_type CHECK, description, adventure_id, awarded_at). Indexed on character_id and campaign_id.
+
+**Tests added/updated:**
+- `tests/test_xp_award_calculator.gd` (NEW): 13 tests covering monster XP, party shares, prime req adjustment (Bankers rounding), 1-level cap, domain XP.
+- `tests/test_level_up_engine.gd` (NEW): 10 tests covering eligibility, HP rolling, proficiency slot detection, spell slot expansion, stat updates, power unlock detection.
+- `tests/test_aging_system.gd` (NEW): 10 tests covering starting age range, age category boundaries, transitions with ability adjustments, ability floor clamping, death save triggers.
+- Total test suites: 32.
+
+**Known issues:**
+- Level-up confirmation does NOT show inline proficiency picker yet. Player is told to use Proficiencies tab. UI polish for a future session.
+- Migration 016 needs to be verified in main_scene.gd migration runner on first launch.
+- XP audit log table created but nothing writes to it yet. E-2 session runner is the consumer.
+- AgingSystem._get_ability_floor() uses a hardcoded prime req table (25 classes) to avoid ClassRegistry dependency. [NEEDS-OPUS-REVIEW: should ClassRegistry be injected into AgingSystem?]
+
+**Next session should:**
+1. Run `tests/test_runner.tscn` and verify all 32 suites pass including the 3 new ones.
+2. Verify migration 016 applies correctly on first game launch.
+3. Smoke-test: create PC, check starting age in Finalize, open Advancement tab, use dev override to set XP to level threshold, click Level Up, verify HP/stat changes, Confirm.
+4. Address E-2 (session runner) as primary consumer of XPAwardCalculator and LevelUpEngine.
+5. Address G-2 (henchman XP sharing) which can now use XPAwardCalculator with is_henchman=true.

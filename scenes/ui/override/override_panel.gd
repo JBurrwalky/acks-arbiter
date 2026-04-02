@@ -114,6 +114,16 @@ var _test_char_create_btn: Button
 var _test_dice_btn: Button
 var _test_hint_label: Label
 
+# Per-tab node refs (Timekeeping tab)
+var _time_clock_label: Label
+var _time_years_spin: SpinBox
+var _time_months_spin: SpinBox
+var _time_days_spin: SpinBox
+var _time_hours_spin: SpinBox
+var _time_minutes_spin: SpinBox
+var _time_turns_spin: SpinBox
+var _time_rounds_spin: SpinBox
+
 # Dice roll types — must match OverrideManager vocabulary
 const ROLL_TYPES := [
 	"encounter_check",
@@ -228,6 +238,7 @@ func _refresh_active_tab() -> void:
 		5: _refresh_snapshots_tab()
 		6: _refresh_log_tab()
 		7: pass  # Testing tab is button-only, no refresh needed
+		8: _refresh_timekeeping_tab()
 
 
 func _on_tab_changed(_idx: int) -> void:
@@ -618,6 +629,7 @@ func _build_ui() -> void:
 	_build_snapshots_tab()
 	_build_log_tab()
 	_build_testing_tab()
+	_build_timekeeping_tab()
 
 	_tab_container.tab_changed.connect(_on_tab_changed)
 
@@ -1033,6 +1045,92 @@ func _connect_signals() -> void:
 func _on_override_applied(_type: String, _target: String, _field: String) -> void:
 	# Auto-refresh the log count in the tab label (not a full refresh — too slow)
 	pass  # Full refresh happens on tab switch
+
+
+func _build_timekeeping_tab() -> void:
+	var tab := VBoxContainer.new()
+	tab.name = "Timekeeping"
+	_tab_container.add_child(tab)
+
+	tab.add_child(_section_label("Current Date & Time"))
+	_time_clock_label = Label.new()
+	_time_clock_label.text = "(no campaign loaded)"
+	_time_clock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tab.add_child(_time_clock_label)
+	var refresh_btn := Button.new()
+	refresh_btn.text = "Refresh"
+	refresh_btn.pressed.connect(_refresh_timekeeping_tab)
+	tab.add_child(refresh_btn)
+
+	tab.add_child(HSeparator.new())
+	tab.add_child(_section_label("Advance Clock"))
+
+	const UNITS := [
+		["Years",   "years",   1, 999],
+		["Months",  "months",  1, 999],
+		["Days",    "days",    1, 9999],
+		["Hours",   "hours",   1, 9999],
+		["Minutes", "minutes", 1, 9999],
+		["Turns",   "turns",   1, 9999],
+		["Rounds",  "rounds",  1, 99999],
+	]
+	var spins := [null, null, null, null, null, null, null]
+	for i in UNITS.size():
+		var u: Array = UNITS[i]
+		var row := HBoxContainer.new()
+		tab.add_child(row)
+		var lbl := Label.new()
+		lbl.text = u[0] + ":"
+		lbl.custom_minimum_size = Vector2(60, 0)
+		row.add_child(lbl)
+		var spin := SpinBox.new()
+		spin.min_value = u[2]
+		spin.max_value = u[3]
+		spin.value = 1
+		spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(spin)
+		spins[i] = spin
+		var btn := Button.new()
+		btn.text = "Advance"
+		btn.pressed.connect(_on_time_advance.bind(u[1], spin))
+		row.add_child(btn)
+
+	_time_years_spin   = spins[0]
+	_time_months_spin  = spins[1]
+	_time_days_spin    = spins[2]
+	_time_hours_spin   = spins[3]
+	_time_minutes_spin = spins[4]
+	_time_turns_spin   = spins[5]
+	_time_rounds_spin  = spins[6]
+
+	var hint := Label.new()
+	hint.text = "Turns = 10 min each.  Rounds = 6 sec each."
+	hint.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
+	hint.add_theme_font_size_override("font_size", 11)
+	tab.add_child(hint)
+
+
+func _refresh_timekeeping_tab() -> void:
+	if _time_clock_label == null:
+		return
+	var d: Dictionary = Timekeeping.get_date()
+	_time_clock_label.text = "Year %d, Month %d, Day %d  —  %02d:%02d  (round %d)" % [
+		d.get("year", 1), d.get("month", 1), d.get("day", 1),
+		d.get("hour", 0), d.get("minute", 0), d.get("round", 0)
+	]
+
+
+func _on_time_advance(unit: String, spin: SpinBox) -> void:
+	var n: int = int(spin.value)
+	match unit:
+		"years":   Timekeeping.advance_days(n * Timekeeping.DAYS_PER_YEAR)
+		"months":  Timekeeping.advance_days(n * Timekeeping.DAYS_PER_MONTH)
+		"days":    Timekeeping.advance_days(n)
+		"hours":   Timekeeping.advance_hours(n)
+		"minutes": Timekeeping.advance_minutes(n)
+		"turns":   Timekeeping.advance_turns(n)
+		"rounds":  Timekeeping.advance_rounds(n)
+	_refresh_timekeeping_tab()
 
 
 # ---------------------------------------------------------------------------

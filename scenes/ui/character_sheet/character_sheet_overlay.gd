@@ -187,6 +187,7 @@ func _connect_signals() -> void:
 	EventBus.override_applied.connect(_on_override_applied)
 	EventBus.character_sheet_requested.connect(open)
 	EventBus.loyalty_changed.connect(_on_loyalty_changed)
+	EventBus.age_category_changed.connect(_on_age_category_changed)
 
 
 # ---------------------------------------------------------------------------
@@ -398,6 +399,19 @@ func _on_loyalty_changed(_henchman_id: String, _old: int, _new: int) -> void:
 		return
 	_bundle.henchmen = CampaignRepository.get_henchmen_for_employer(_displayed_character_id)
 	_tab_retainers.display(_bundle, _make_registries_dict())
+
+
+func _on_age_category_changed(character_id: String, _old_cat: String, _new_cat: String) -> void:
+	if character_id != _displayed_character_id or not visible:
+		return
+	var row := CampaignRepository.get_character(character_id)
+	if row.is_empty():
+		return
+	_bundle.character = CharacterData.from_dict(row)
+	_bundle.character.proficiencies = _bundle.proficiencies
+	var reg := _make_registries_dict()
+	_tab_biography.display(_bundle, reg)
+	_tab_advancement.display(_bundle, reg)
 
 
 # ---------------------------------------------------------------------------

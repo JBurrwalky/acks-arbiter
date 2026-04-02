@@ -153,6 +153,11 @@ func generate_pc(class_id: String, scores: Dictionary,
 	# Alignment defaults to neutral; player selects in UI
 	character.alignment = "neutral"
 
+	# Starting age (rolled from class-specific formula; player can view in Finalize step)
+	var _aging_system := AgingSystem.new()
+	character.current_age = _aging_system.roll_starting_age(class_id)
+	character.age_category = _aging_system.get_age_category(character.race, character.current_age)
+
 	return character
 
 
@@ -237,6 +242,16 @@ func generate_npc(class_id: String, level: int, campaign_id: String,
 		character.name = "%s L%d" % [cls.get("class_name", "Unknown"), level]
 	else:
 		character.name = "%s %s L%d" % [cls.get("class_name", "Unknown"), character.id.left(4), level]
+
+	# Starting age: roll base, then add a rough estimate for levels gained (1 year/level after L1).
+	var _aging_system := AgingSystem.new()
+	var base_age := _aging_system.roll_starting_age(class_id)
+	var age_bonus := maxi(0, level - 1)
+	character.current_age = base_age + age_bonus
+	character.age_category = _aging_system.get_age_category(character.race, character.current_age)
+	# Apply cumulative ability adjustments if starting category is beyond adult.
+	if character.age_category != "adult" and character.age_category != "youth":
+		_aging_system.apply_cumulative_adjustments(character, character.age_category)
 
 	return character
 

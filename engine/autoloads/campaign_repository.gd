@@ -249,6 +249,39 @@ func update_character_hp(id: String, new_hp: int) -> void:
 		push_error("CampaignRepository.update_character_hp: failed. id=%s new_hp=%d" % [id, new_hp])
 
 
+func update_character_fields(id: String, fields: Dictionary) -> bool:
+	## Surgically update specific columns on a character row.
+	## Only columns in the whitelist are permitted; unknown keys cause an error and return false.
+	## Uses query_with_bindings — safe against SQL injection.
+	const ALLOWED_COLUMNS: Array[String] = [
+		"name", "level", "xp", "hp_max", "hp_current",
+		"attack_throw",
+		"save_petrification", "save_poison_death", "save_blast_breath",
+		"save_staffs_wands", "save_spells",
+		"xp_for_next_level", "xp_adjustment_percent", "title",
+		"current_age", "age_category",
+		"strength", "intelligence", "wisdom", "dexterity", "constitution", "charisma",
+		"alignment", "sex", "portrait_id",
+	]
+	if fields.is_empty():
+		return true
+	var sets: Array[String] = []
+	var values: Array = []
+	for key in fields.keys():
+		if key not in ALLOWED_COLUMNS:
+			push_error("CampaignRepository.update_character_fields: disallowed column '%s'" % key)
+			return false
+		sets.append("%s = ?" % key)
+		values.append(fields[key])
+	sets.append("updated_at = datetime('now')")
+	values.append(id)
+	var sql := "UPDATE characters SET %s WHERE id = ?" % ", ".join(sets)
+	if not db.query_with_bindings(sql, values):
+		push_error("CampaignRepository.update_character_fields: query failed. id=%s fields=%s" % [id, str(fields.keys())])
+		return false
+	return true
+
+
 func list_party_characters(party_id: String) -> Array:
 	db.query_with_bindings("""
 		SELECT c.* FROM characters c

@@ -159,6 +159,7 @@ func _reset_state() -> void:
 		"voudon_craft_choice": "",
 		"traded_scores": {},
 		"character": null,
+		"starting_age": 0,
 		"hp_rolled": 0,
 		"max_hp_override": false,
 		"proficiencies": [],
@@ -191,6 +192,7 @@ func _invalidate_from(step: int) -> void:
 			creation_state["voudon_craft_choice"] = ""
 			creation_state["traded_scores"] = {}
 			creation_state["character"] = null
+			creation_state["starting_age"] = 0
 			creation_state["proficiencies"] = []
 			creation_state["spells"] = []
 			creation_state["inventory"] = []
@@ -382,6 +384,8 @@ func _prepare_step(step: int) -> void:
 				var character := _generator.generate_pc(class_id, effective_scores,
 					_campaign_id)
 				creation_state["character"] = character
+				# Cache starting age (set by CharacterGenerator via AgingSystem)
+				creation_state["starting_age"] = character.current_age if character != null else 0
 		_:
 			pass  # Other steps handle their own initialization in setup()
 

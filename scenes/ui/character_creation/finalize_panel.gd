@@ -161,6 +161,31 @@ func _build_ui() -> void:
 	_description_edit.text_changed.connect(_on_description_changed)
 	add_child(_description_edit)
 
+	# --- Starting age (read-only, rolled from class formula) ---
+	var age_row := HBoxContainer.new()
+	age_row.add_theme_constant_override("separation", 8)
+	add_child(age_row)
+
+	var age_lbl := Label.new()
+	age_lbl.text = "Starting Age:"
+	age_lbl.custom_minimum_size = Vector2(100, 0)
+	age_row.add_child(age_lbl)
+
+	var age_val := Label.new()
+	var character_for_age: CharacterData = _state.get("character")
+	var starting_age: int = _state.get("starting_age", 0)
+	if character_for_age != null and character_for_age.current_age > 0:
+		starting_age = character_for_age.current_age
+	var age_cat: String = ""
+	if character_for_age != null:
+		age_cat = character_for_age.age_category
+	if starting_age > 0:
+		age_val.text = "%d years (%s)" % [starting_age, age_cat.capitalize().replace("_", " ")]
+	else:
+		age_val.text = "—"
+	age_val.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
+	age_row.add_child(age_val)
+
 	add_child(HSeparator.new())
 
 	# --- Character sheet summary ---

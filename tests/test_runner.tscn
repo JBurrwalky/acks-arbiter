@@ -29,6 +29,9 @@
 [ext_resource type="Script" path="res://tests/test_equipment_catalog.gd" id="27_equipment_catalog_tests"]
 [ext_resource type="Script" path="res://tests/test_specialization_registry.gd" id="28_specialization_registry_tests"]
 [ext_resource type="Script" path="res://tests/test_persistence_tiers.gd" id="29_persistence_tier_tests"]
+[ext_resource type="Script" path="res://tests/test_xp_award_calculator.gd" id="30_xp_award_calculator_tests"]
+[ext_resource type="Script" path="res://tests/test_level_up_engine.gd" id="31_level_up_engine_tests"]
+[ext_resource type="Script" path="res://tests/test_aging_system.gd" id="32_aging_system_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -116,3 +119,12 @@ script = ExtResource("28_specialization_registry_tests")
 
 [node name="PersistenceTierTests" type="Node" parent="."]
 script = ExtResource("29_persistence_tier_tests")
+
+[node name="XPAwardCalculatorTests" type="Node" parent="."]
+script = ExtResource("30_xp_award_calculator_tests")
+
+[node name="LevelUpEngineTests" type="Node" parent="."]
+script = ExtResource("31_level_up_engine_tests")
+
+[node name="AgingSystemTests" type="Node" parent="."]
+script = ExtResource("32_aging_system_tests")

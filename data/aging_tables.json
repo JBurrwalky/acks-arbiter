@@ -1,0 +1,84 @@
+{
+  "age_categories_by_race": {
+    "human": {
+      "youth":       [13, 17],
+      "adult":       [18, 35],
+      "middle_aged": [36, 55],
+      "old":         [56, 75],
+      "ancient":     [76, 95]
+    },
+    "dwarf": {
+      "youth":       [15, 25],
+      "adult":       [26, 50],
+      "middle_aged": [51, 75],
+      "old":         [76, 115],
+      "ancient":     [116, 150]
+    },
+    "elf": {
+      "youth": [15, 50],
+      "adult": [51, 200]
+    },
+    "gnome": {
+      "youth":       [15, 25],
+      "adult":       [26, 62],
+      "middle_aged": [63, 95],
+      "old":         [96, 135],
+      "ancient":     [136, 175]
+    },
+    "halfling": {
+      "youth":       [14, 21],
+      "adult":       [22, 42],
+      "middle_aged": [43, 65],
+      "old":         [66, 95],
+      "ancient":     [96, 125]
+    },
+    "beastman": {
+      "youth":       [12, 15],
+      "adult":       [16, 30],
+      "middle_aged": [31, 45],
+      "old":         [46, 60],
+      "ancient":     [61, 75]
+    }
+  },
+  "ability_adjustments": {
+    "youth_to_adult":       { "strength": 2,  "intelligence": 2,  "wisdom": 2 },
+    "adult_to_middle_aged": { "strength": -2, "dexterity": -2,    "constitution": -2 },
+    "middle_aged_to_old":   { "strength": -2, "dexterity": -2,    "constitution": -2, "charisma": -2 },
+    "old_to_ancient":       { "strength": -2, "dexterity": -2,    "constitution": -2, "charisma": -2 }
+  },
+  "starting_age_by_class": {
+    "fighter":         "15+1d8",
+    "mage":            "17+3d6",
+    "cleric":          "17+1d6",
+    "thief":           "15+1d8",
+    "assassin":        "17+1d6",
+    "bard":            "14+1d8",
+    "bladedancer":     "17+1d6",
+    "explorer":        "17+1d6",
+    "venturer":        "17+2d4",
+    "paladin":         "17+1d6",
+    "anti_paladin":    "17+1d6",
+    "barbarian":       "14+1d8",
+    "priestess":       "17+1d6",
+    "shaman":          "17+1d6",
+    "warlock":         "17+3d6",
+    "witch":           "17+1d6",
+    "dwarf_vaultguard":  "23+3d4",
+    "dwarf_craftpriest": "25+2d8",
+    "dwarven_delver":    "21+3d4",
+    "dwarven_fury":      "23+3d4",
+    "elf_spellsword":    "75+5d4",
+    "elf_nightblade":    "75+5d4",
+    "elven_courtier":    "75+5d4",
+    "elven_enchanter":   "80+5d4",
+    "elven_ranger":      "70+5d4"
+  },
+  "death_from_old_age": {
+    "human":    { "max_age": 95 },
+    "dwarf":    { "max_age": 150 },
+    "elf":      null,
+    "gnome":    { "max_age": 175 },
+    "halfling": { "max_age": 125 },
+    "beastman": { "max_age": 75 }
+  }
+}
