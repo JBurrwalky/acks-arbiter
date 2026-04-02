@@ -39,7 +39,7 @@
   "shield_permitted": false,
   "fighting_styles": [],
   "class_proficiency_list": [
-    "alchemy", "battle_magic", "beast_frienship",
+    "alchemy", "battle_magic", "beast_friendship",
     "collegiate_wizardry", "contemplation", "craft", "diplomacy", "divine_blessing",
     "elementalism", "elven_bloodline", "engineering", "healing", "illusion_resistance",
     "knowledge", "language", "loremastery", "magical_engineering", "mapping", "mystic_aura",

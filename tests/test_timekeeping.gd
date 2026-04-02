@@ -151,6 +151,8 @@ func run_all_tests() -> void:
 	test_season_changed_fires_on_summer_start()
 	test_season_changed_fires_on_year_wrap_to_spring()
 	test_season_changed_does_not_fire_mid_season()
+	test_session_started_loads_clock_state()
+	test_year_boundary_ages_campaign_characters()
 
 	if not has_failures():
 		print("Timekeeping: all tests passed.")
@@ -570,3 +572,92 @@ func test_season_changed_does_not_fire_mid_season() -> void:
 	Timekeeping.advance_days(10)
 	check(_season_count == 0,
 		"season_changed should not fire when advancing within the same season")
+
+
+# ---------------------------------------------------------------------------
+# 12. Session integration
+# ---------------------------------------------------------------------------
+
+func test_session_started_loads_clock_state() -> void:
+	_reset()
+	const TEST_CAMPAIGN := "test_timekeeping_session_start"
+	const TEST_PARTY := "test_timekeeping_party"
+
+	CampaignRepository.db.query_with_bindings(
+		"INSERT OR IGNORE INTO campaigns (id, name, world_name) VALUES (?, ?, ?)",
+		[TEST_CAMPAIGN, "Timekeeping Session Test", "Test World"]
+	)
+
+	Timekeeping._elapsed_rounds = 5 * Timekeeping.ROUNDS_PER_DAY + 3 * Timekeeping.ROUNDS_PER_HOUR
+	Timekeeping._dawn_hour = 7
+	Timekeeping._dusk_hour = 19
+	Timekeeping.save_state(TEST_CAMPAIGN)
+
+	Timekeeping._elapsed_rounds = 0
+	Timekeeping._dawn_hour = 6
+	Timekeeping._dusk_hour = 20
+	Timekeeping._campaign_id = ""
+
+	GameState.start_session(TEST_CAMPAIGN, TEST_PARTY)
+
+	check(Timekeeping._campaign_id == TEST_CAMPAIGN,
+		"session_started should load Timekeeping for the active campaign")
+	check(Timekeeping._elapsed_rounds == 5 * Timekeeping.ROUNDS_PER_DAY + 3 * Timekeeping.ROUNDS_PER_HOUR,
+		"session_started should restore persisted elapsed_rounds")
+	check(Timekeeping._dawn_hour == 7, "session_started should restore dawn_hour")
+	check(Timekeeping._dusk_hour == 19, "session_started should restore dusk_hour")
+
+	GameState.end_session()
+	_reset()
+
+
+func test_year_boundary_ages_campaign_characters() -> void:
+	_reset()
+	const TEST_CAMPAIGN := "test_timekeeping_aging_campaign"
+	const TEST_CHARACTER := "test_timekeeping_aging_character"
+
+	CampaignRepository.db.query_with_bindings(
+		"DELETE FROM characters WHERE id = ?", [TEST_CHARACTER]
+	)
+	CampaignRepository.db.query_with_bindings(
+		"INSERT OR IGNORE INTO campaigns (id, name, world_name) VALUES (?, ?, ?)",
+		[TEST_CAMPAIGN, "Timekeeping Aging Test", "Test World"]
+	)
+
+	var c := CharacterData.new()
+	c.id = TEST_CHARACTER
+	c.campaign_id = TEST_CAMPAIGN
+	c.name = "Aging Test"
+	c.race = "human"
+	c.character_class = "fighter"
+	c.current_age = 35
+	c.age_category = "adult"
+	c.strength = 12
+	c.dexterity = 12
+	c.constitution = 12
+	c.intelligence = 10
+	c.wisdom = 10
+	c.charisma = 10
+	check(CampaignRepository.save_character(c.to_dict()),
+		"test setup: save_character should succeed for aging integration test")
+
+	Timekeeping.load_state(TEST_CAMPAIGN)
+	Timekeeping.advance_days(Timekeeping.DAYS_PER_YEAR)
+
+	var row := CampaignRepository.get_character(TEST_CHARACTER)
+	check(not row.is_empty(), "aged character should still exist after year advance")
+	check(int(row.get("current_age", 0)) == 36,
+		"year boundary should increase current_age from 35 to 36")
+	check(row.get("age_category", "") == "middle_aged",
+		"year boundary should advance age_category to middle_aged")
+	check(int(row.get("strength", 0)) == 10,
+		"adult -> middle_aged should persist STR -2")
+	check(int(row.get("dexterity", 0)) == 10,
+		"adult -> middle_aged should persist DEX -2")
+	check(int(row.get("constitution", 0)) == 10,
+		"adult -> middle_aged should persist CON -2")
+
+	CampaignRepository.db.query_with_bindings(
+		"DELETE FROM characters WHERE id = ?", [TEST_CHARACTER]
+	)
+	Timekeeping._campaign_id = ""

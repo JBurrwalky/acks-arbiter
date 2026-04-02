@@ -181,10 +181,6 @@ func apply_age_change(character: CharacterData, years: int) -> Dictionary:
 					var current_delta: int = ability_changes.get(ability, 0)
 					ability_changes[ability] = current_delta + int(step_changes[ability])
 
-	# Emit signal if category changed.
-	if new_cat != old_cat and not character.id.is_empty():
-		EventBus.age_category_changed.emit(character.id, old_cat, new_cat)
-
 	# Check death-from-age.
 	var death_check := check_death_from_age(character)
 

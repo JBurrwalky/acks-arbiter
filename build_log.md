@@ -2144,3 +2144,42 @@ CampaignRepository additions:
 **Next session should:**
 1. Run the full test suite from the Godot editor test scene and confirm 32/33+ passed, 0 failed.
 2. Smoke-test the character creation screen in-editor (carry-over from previous session).
+
+---
+
+## Session 2026-04-01 - Timekeeping Aging Integration Fix
+
+**Task:** Fix the bug where advancing the campaign clock by years did not increase character ages or advance age categories.
+**Model used:** GPT-5 Codex
+
+**Completed:**
+- Updated `engine/autoloads/timekeeping.gd` to connect to `GameState.session_started`, load persisted clock state automatically at session start, and apply campaign-wide character aging on each `year_changed` boundary.
+- Added `Timekeeping._age_campaign_characters_one_year()` to age all active non-transient, living characters with valid ages, persist their updated age/category/ability fields through `CampaignRepository.update_character_fields()`, and emit `EventBus.age_category_changed(...)` only after the DB write succeeds.
+- Updated `engine/subsystems/characters/aging_system.gd` so `AgingSystem.apply_age_change()` now performs state mutation plus result reporting only and no longer emits `age_category_changed` before persistence.
+- Expanded `tests/test_timekeeping.gd` with regression coverage for:
+  - session start loading persisted timekeeping state
+  - year-boundary advancement aging a persisted character from adult to middle-aged and saving the stat penalties
+
+**Decisions made:**
+- Aging now runs from `Timekeeping.year_changed` rather than the override UI so every source of year advancement uses the same integration path.
+- Campaign-wide annual aging skips transient encounter-tier characters, dead characters, and records with `current_age <= 0` to avoid mutating incomplete or non-persistent entities.
+- `age_category_changed` emission moved out of `AgingSystem.apply_age_change()` because emitting before persistence caused UI listeners to reload stale DB data.
+
+**Interfaces defined or changed:**
+- `AgingSystem.apply_age_change(character, years) -> Dictionary`
+  - Signature unchanged.
+  - Behavior changed: no longer emits `EventBus.age_category_changed`; callers now own notification timing after persistence.
+- `Timekeeping` now listens to `GameState.session_started(campaign_id)` and `Timekeeping.year_changed(new_year)`.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- Updated `tests/test_timekeeping.gd` with 2 regression tests covering session-start clock loading and persisted year-boundary aging.
+
+**Known issues:**
+- Headless Godot test runs exit cleanly with code `0`, but this shell still does not receive the runner's printed suite summary on stdout/stderr. The Godot app-data log updated normally during the verification run.
+- The character sheet still refreshes age displays reactively only on category changes, not on every birthday within the same category.
+
+**Next session should:**
+1. Smoke-test the override panel's Timekeeping tab in-editor: advance 1 year, then multiple decades, and confirm party character sheets reflect age/category changes.
+2. Decide whether non-category age increments should get their own UI refresh signal so open character sheets update without being reopened.

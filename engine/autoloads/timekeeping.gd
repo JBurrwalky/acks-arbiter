@@ -136,8 +136,16 @@ var _campaign_id: String = ""
 # ---------------------------------------------------------------------------
 
 func _ready() -> void:
+	# Load persisted clock state when a campaign session begins.
+	GameState.session_started.connect(_on_session_started)
 	# Reset internal state when the session ends (player returns to main menu).
 	GameState.session_ended.connect(_on_session_ended)
+	# Campaign-wide aging advances on each calendar year boundary.
+	year_changed.connect(_on_year_changed)
+
+
+func _on_session_started(campaign_id: String) -> void:
+	load_state(campaign_id)
 
 
 func _on_session_ended() -> void:
@@ -146,6 +154,10 @@ func _on_session_ended() -> void:
 	_dusk_hour = 20
 	_party_clocks.clear()
 	_campaign_id = ""
+
+
+func _on_year_changed(_new_year: int) -> void:
+	_age_campaign_characters_one_year()
 
 
 # ---------------------------------------------------------------------------
@@ -528,6 +540,50 @@ func _date_from_total_days(total_days: int) -> Dictionary:
 	var month      := day_in_year / DAYS_PER_MONTH + 1
 	var day        := day_in_year % DAYS_PER_MONTH + 1
 	return {"year": year, "month": month, "day": day}
+
+
+## Apply one year of aging to all persistent, living characters in the active campaign.
+## Called once for each crossed year boundary, so multi-year advances age stepwise and
+## trigger age-category transitions in the correct order.
+func _age_campaign_characters_one_year() -> void:
+	var active_campaign_id := _campaign_id
+	if active_campaign_id.is_empty():
+		active_campaign_id = GameState.campaign_id
+	if active_campaign_id.is_empty() or CampaignRepository.db == null:
+		return
+
+	var aging_system := AgingSystem.new()
+	var character_rows := CampaignRepository.list_characters_excluding_tier(
+		active_campaign_id, "transient"
+	)
+	for row in character_rows:
+		var character := CharacterData.from_dict(row)
+		if character.id.is_empty() or character.is_dead or character.current_age <= 0:
+			continue
+
+		var result := aging_system.apply_age_change(character, 1)
+		var fields := {
+			"current_age": character.current_age,
+			"age_category": character.age_category,
+		}
+		for ability in [
+			"strength", "intelligence", "wisdom",
+			"dexterity", "constitution", "charisma",
+		]:
+			if row.get(ability, 0) != character.get(ability):
+				fields[ability] = character.get(ability)
+
+		if not CampaignRepository.update_character_fields(character.id, fields):
+			push_error("Timekeeping._age_campaign_characters_one_year: failed to persist '%s'" %
+				character.id)
+			continue
+
+		if result.get("category_changed", false):
+			EventBus.age_category_changed.emit(
+				character.id,
+				result.get("old_category", ""),
+				result.get("new_category", "")
+			)
 
 
 # ---------------------------------------------------------------------------
