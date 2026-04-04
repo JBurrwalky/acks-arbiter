@@ -1325,7 +1325,31 @@ Panels reused across a multi-step flow (for example character-creation steps tha
 - Refresh both the "complete" and "incomplete" content paths so placeholder text replaces stale rows when prerequisite state is cleared.
 - If a fresh state should look like a fresh screen, reset tab/selection widgets there rather than relying on node construction to do it once.
 
-### 13.4 Scene Tree — Main.tscn
+### 13.4 Runtime TextureRect Sizing
+
+<!-- Added 2026-04-02 after portrait native-size regressions in runtime-built UI -->
+
+When a runtime-built UI creates a `TextureRect` for portrait or illustration assets, do not rely on `custom_minimum_size` alone to constrain display size. `TextureRect` will still honor the texture's native dimensions unless the expand mode is configured explicitly.
+
+- For a fixed portrait box, set `expand_mode = TextureRect.EXPAND_IGNORE_SIZE`.
+- Set an explicit display box with `custom_minimum_size` (for example `Vector2(512, 512)` for full character portraits or `Vector2(96, 96)` for thumbnails).
+- Pair fixed-box portraits with `stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED` so oversized or non-square art scales to fit without distortion.
+- Use this pattern in code-built panels where editor-side resizing will be recreated on each `setup()` or `display()` refresh.
+
+### 13.5 Shared Vellum Window Chrome
+
+<!-- Added 2026-04-02 after overlay and modal readability pass -->
+
+Runtime-built windows, overlays, and modal popups should use the shared `UiSurfaceStyles` helper instead of ad-hoc semi-transparent defaults.
+
+- Use `UiSurfaceStyles.apply_textured_panel(panel)` for opaque parchment-backed `PanelContainer` surfaces that do not need a separate border frame.
+- Use `UiSurfaceStyles.apply_framed_window_chrome(surface)` for modal windows and overlay panels that need both the `ui.bg.vellum_subtle` background and a visible frame border; `surface` may be either a `Control` panel or a `Window`-based popup/dialog.
+- These helpers also install the shared vellum text theme on the styled surface: passive text on parchment-backed labels/list items should default to `UiSurfaceStyles.VELLUM_TEXT_COLOR` (dark near-black), while parchment-backed warning or highlight copy should use `UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR` (dark red) instead of pale yellow/gray callouts.
+- Vellum background `TextureRect` nodes added by the helper must draw with `show_behind_parent = true` so built-in dialog content is never covered by the parchment layer.
+- Prefer the registered asset ID `ui.bg.vellum_subtle` via `AssetRegistry` rather than hard-coded file paths when applying parchment textures.
+- Exceptions are explicit: the dice prompt modal and the hex-map tooltip keep their specialized styling unless design changes call them out separately.
+
+### 13.6 Scene Tree — Main.tscn
 
 <!-- Updated 2026-03-27 -->
 

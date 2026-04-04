@@ -584,22 +584,32 @@ func _build_ui() -> void:
 	_warning_dialog.ok_button_text = "I Understand"
 	_warning_dialog.confirmed.connect(_on_warning_confirmed)
 	add_child(_warning_dialog)
+	UiSurfaceStyles.apply_framed_window_chrome(_warning_dialog)
 
 	# Restore confirmation dialog
 	_snap_confirm_dialog = ConfirmationDialog.new()
 	_snap_confirm_dialog.title = "Confirm Restore"
 	_snap_confirm_dialog.confirmed.connect(_on_snap_restore_confirmed)
 	add_child(_snap_confirm_dialog)
+	UiSurfaceStyles.apply_framed_window_chrome(_snap_confirm_dialog)
 
 	# Root panel
 	_panel = PanelContainer.new()
 	_panel.custom_minimum_size = Vector2(500, 640)
 	_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	_panel.position = Vector2(-520, -660)
+	UiSurfaceStyles.apply_framed_window_chrome(_panel)
 	add_child(_panel)
 
+	var root_margin := MarginContainer.new()
+	root_margin.add_theme_constant_override("margin_left", 12)
+	root_margin.add_theme_constant_override("margin_right", 12)
+	root_margin.add_theme_constant_override("margin_top", 12)
+	root_margin.add_theme_constant_override("margin_bottom", 12)
+	_panel.add_child(root_margin)
+
 	var root_vbox := VBoxContainer.new()
-	_panel.add_child(root_vbox)
+	root_margin.add_child(root_vbox)
 
 	# Title bar
 	var title_bar := HBoxContainer.new()
@@ -940,7 +950,7 @@ func _build_dice_tab() -> void:
 	var export_hint := Label.new()
 	export_hint.text = "Export session rolls to user:// as JSON"
 	export_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	export_hint.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	export_hint.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	export_row.add_child(export_hint)
 	_dice_export_btn = Button.new()
 	_dice_export_btn.text = "Export Log"
@@ -1015,7 +1025,7 @@ func _build_testing_tab() -> void:
 
 	_test_hint_label = Label.new()
 	_test_hint_label.text = "Hotkeys: F5 = Character Creation    F6 = Dice Prompt"
-	_test_hint_label.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
+	_test_hint_label.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	_test_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	tab.add_child(_test_hint_label)
 
@@ -1105,7 +1115,7 @@ func _build_timekeeping_tab() -> void:
 
 	var hint := Label.new()
 	hint.text = "Turns = 10 min each.  Rounds = 6 sec each."
-	hint.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
+	hint.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	hint.add_theme_font_size_override("font_size", 11)
 	tab.add_child(hint)
 

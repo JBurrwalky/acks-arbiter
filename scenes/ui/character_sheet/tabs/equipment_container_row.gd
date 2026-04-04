@@ -80,7 +80,7 @@ func _build(contents: Array) -> void:
 	if contents.is_empty():
 		var empty_label := Label.new()
 		empty_label.text = "    (empty — drag items here)"
-		empty_label.modulate = Color(0.6, 0.6, 0.6, 1.0)
+		empty_label.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 		_contents_box.add_child(empty_label)
 	else:
 		for item in contents:

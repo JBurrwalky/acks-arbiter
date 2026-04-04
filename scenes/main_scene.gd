@@ -218,9 +218,13 @@ func _enter_dungeon(entrance: Dictionary) -> void:
 		push_error("MainScene._enter_dungeon: JSON parse failed for dungeon '%s'" % entrance.get("id", "?"))
 		return
 
-	# Hide the hex map — it's a direct child of Main, not managed by NavigationStack
+	# Hide the hex map — it's a direct child of Main, not managed by NavigationStack.
+	# CanvasLayer children (HexHUD) ignore parent visibility, so disable them explicitly.
 	_hex_map_renderer.visible = false
 	_hex_map_renderer.process_mode = Node.PROCESS_MODE_DISABLED
+	var hex_hud = _hex_map_renderer.get_node_or_null("HexHUD")
+	if hex_hud != null:
+		hex_hud.visible = false
 
 	var dungeon_controller := DungeonMapController.new()
 	dungeon_controller.name = "DungeonMapController"
@@ -261,9 +265,12 @@ func _exit_dungeon(dungeon_controller: DungeonMapController, _dungeon_scene: Nod
 	if is_instance_valid(dungeon_controller):
 		dungeon_controller.queue_free()
 
-	# Restore hex map visibility
+	# Restore hex map visibility (including CanvasLayer HUD)
 	_hex_map_renderer.visible = true
 	_hex_map_renderer.process_mode = Node.PROCESS_MODE_INHERIT
+	var hex_hud = _hex_map_renderer.get_node_or_null("HexHUD")
+	if hex_hud != null:
+		hex_hud.visible = true
 	GameState.set_exploration_context(GameState.ExplorationContext.WILDERNESS)
 
 

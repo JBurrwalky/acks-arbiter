@@ -78,11 +78,11 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 
 	# Prime requisite XP adjustment.
 	var xp_adj := character.xp_adjustment_percent
-	var adj_color := Color.WHITE
+	var adj_color := UiSurfaceStyles.VELLUM_TEXT_COLOR
 	if xp_adj > 0:
 		adj_color = Color(0.2, 0.75, 0.2)
 	elif xp_adj < 0:
-		adj_color = Color(0.85, 0.35, 0.15)
+		adj_color = UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR
 
 	var adj_row := HBoxContainer.new()
 	adj_row.add_theme_constant_override("separation", 8)
@@ -146,7 +146,7 @@ func _add_level_up_available_ui(character: CharacterData, engine: LevelUpEngine,
 		_class_registry: ClassRegistry) -> void:
 	var avail_lbl := Label.new()
 	avail_lbl.text = "  Level Up Available!"
-	avail_lbl.add_theme_color_override("font_color", Color(0.2, 0.9, 0.2))
+	avail_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR)
 	avail_lbl.add_theme_font_size_override("font_size", 13)
 	add_child(avail_lbl)
 
@@ -221,6 +221,31 @@ func _build_level_up_summary(result: Dictionary, character: CharacterData,
 		_add_row_to(_level_up_panel, "Spell Slots:",
 			"%s → %s" % [_format_slots(old_slots), _format_slots(new_slots)])
 
+	# Divine spell auto-grant: populate _level_up_choices["spells"] and show info message.
+	var new_spell_levels: Array = result.get("new_spell_levels_unlocked", [])
+	if not new_spell_levels.is_empty():
+		var class_registry: ClassRegistry = _registries.get("class_registry")
+		var casting_power := {}
+		if class_registry != null:
+			casting_power = class_registry.get_casting_power(character.character_class)
+		if casting_power.get("tradition", "") == "divine":
+			var spell_registry: SpellRegistry = _registries.get("spell_registry")
+			if spell_registry != null:
+				var rep_engine := RepertoireEngine.new(spell_registry, class_registry)
+				var new_spells := rep_engine.generate_divine_spells_for_new_levels(
+					character.character_class, new_spell_levels)
+				_level_up_choices["spells"] = new_spells
+				var level_strs: Array[String] = []
+				for lvl in new_spell_levels:
+					level_strs.append(str(lvl))
+				var spell_info := Label.new()
+				spell_info.text = "  Divine spells granted for spell level(s) %s: %d spell(s) added to your repertoire." % [
+					", ".join(level_strs), new_spells.size()]
+				spell_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				spell_info.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
+				spell_info.add_theme_font_size_override("font_size", 11)
+				_level_up_panel.add_child(spell_info)
+
 	# Proficiency slots pending.
 	var class_slots: int = result.get("new_class_proficiency_slots", 0)
 	var general_slots: int = result.get("new_general_proficiency_slots", 0)
@@ -236,7 +261,7 @@ func _build_level_up_summary(result: Dictionary, character: CharacterData,
 		var note := Label.new()
 		note.text = "  Choose these proficiencies in the modal selector before confirming."
 		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		note.add_theme_color_override("font_color", Color(0.7, 0.7, 0.5))
+		note.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 		note.add_theme_font_size_override("font_size", 11)
 		_level_up_panel.add_child(note)
 
@@ -272,17 +297,23 @@ func _on_confirm_level_up(character: CharacterData, engine: LevelUpEngine) -> vo
 		if not _proficiency_picker.is_complete():
 			var err := Label.new()
 			err.text = "  Spend all new proficiency slots before confirming."
-			err.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+			err.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR)
 			if _level_up_panel != null:
 				_level_up_panel.add_child(err)
 			return
 		_level_up_choices["all_proficiencies"] = _proficiency_picker.get_final_proficiencies()
+		# Merge apostasy spell choices into the spells list for finalization.
+		var apostasy_spells := _proficiency_picker.get_apostasy_spells()
+		if not apostasy_spells.is_empty():
+			var existing: Array = _level_up_choices.get("spells", [])
+			existing.append_array(apostasy_spells)
+			_level_up_choices["spells"] = existing
 	var ok := engine.finalize_interactive_level_up(character, _pending_level_up_result,
 		_level_up_choices)
 	if not ok:
 		var err := Label.new()
 		err.text = "  Error: failed to save level-up. Check logs."
-		err.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+		err.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR)
 		if _level_up_panel != null:
 			_level_up_panel.add_child(err)
 		return
@@ -334,6 +365,7 @@ func _ensure_proficiency_popup() -> void:
 	_proficiency_popup.exclusive = true
 	_proficiency_popup.unresizable = true
 	_proficiency_popup.min_size = Vector2i(880, 640)
+	UiSurfaceStyles.apply_framed_window_chrome(_proficiency_popup)
 	add_child(_proficiency_popup)
 
 	var root := MarginContainer.new()
@@ -416,13 +448,15 @@ func _refresh_proficiency_popup_status() -> void:
 		return
 	if _proficiency_picker == null:
 		_proficiency_popup_status.text = "No proficiency choices are pending."
+		_proficiency_popup_status.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 		return
 	if _proficiency_picker.is_complete():
 		_proficiency_popup_status.text = "All proficiency slots spent. You can close this modal and confirm level-up."
-		_proficiency_popup_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+		_proficiency_popup_status.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	else:
 		_proficiency_popup_status.text = "Spend all pending class/general proficiency slots before confirming level-up."
-		_proficiency_popup_status.add_theme_color_override("font_color", Color(1.0, 0.8, 0.35))
+		_proficiency_popup_status.add_theme_color_override("font_color",
+			UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR)
 
 
 func _refresh_proficiency_selection_status() -> void:
@@ -433,10 +467,12 @@ func _refresh_proficiency_selection_status() -> void:
 		return
 	if _proficiency_picker.is_complete():
 		_proficiency_selection_status_label.text = "  Proficiency selections complete."
-		_proficiency_selection_status_label.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+		_proficiency_selection_status_label.add_theme_color_override("font_color",
+			UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	else:
 		_proficiency_selection_status_label.text = "  Proficiency selections incomplete. Open the selector to spend remaining slots."
-		_proficiency_selection_status_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.35))
+		_proficiency_selection_status_label.add_theme_color_override("font_color",
+			UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR)
 
 
 func _on_proficiency_picker_state_changed() -> void:
@@ -452,7 +488,11 @@ func _make_level_up_engine() -> LevelUpEngine:
 	var class_registry: ClassRegistry = _registries.get("class_registry", ClassRegistry.new())
 	var power_registry: PowerRegistry  = _registries.get("power_registry",  PowerRegistry.new())
 	var prof_registry: ProficiencyRegistry = _registries.get("proficiency_registry")
-	return LevelUpEngine.new(class_registry, power_registry, prof_registry)
+	var spell_registry: SpellRegistry = _registries.get("spell_registry")
+	var rep_engine: RepertoireEngine = null
+	if spell_registry != null:
+		rep_engine = RepertoireEngine.new(spell_registry, class_registry)
+	return LevelUpEngine.new(class_registry, power_registry, prof_registry, rep_engine)
 
 
 # ---------------------------------------------------------------------------
@@ -483,7 +523,7 @@ func _format_slots(slots: Array) -> String:
 func _add_stub(label: String) -> void:
 	var lbl := Label.new()
 	lbl.text = "  \u2022 %s" % label
-	lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	lbl.add_theme_font_size_override("font_size", 11)
 	add_child(lbl)
 

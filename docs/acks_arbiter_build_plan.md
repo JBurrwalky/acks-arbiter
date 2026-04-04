@@ -36,7 +36,9 @@ These items are complete. Listed for dependency reference only.
 
 ### Phase D — Spatial Layers (partial) ✅
 - D-1
+- D-2
 - D-3: Hex map rendering (TileMap, flat-top), terrain taxonomy (4-layer tags), fog of war, hex math utilities. ✅
+- D-4
 
 ### Infrastructure ✅
 - Proficiency system map (docs/proficiency_system_map.md) — 667 lines, all proficiencies mapped to 16 system sections with hook patterns. ✅

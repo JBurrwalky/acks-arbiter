@@ -17,6 +17,9 @@ func run_all_tests() -> void:
 	test_auto_level_up_updates_level_and_title()
 	test_new_powers_detected()
 	test_merge_proficiency_records_keeps_rank_and_specialization()
+	test_detect_new_spell_levels_cleric_1_to_2()
+	test_detect_new_spell_levels_fighter()
+	test_compute_level_up_includes_new_spell_levels_unlocked()
 	if not has_failures():
 		print("LevelUpEngine: all tests passed.")
 
@@ -73,6 +76,31 @@ func _make_mage(level: int = 1, xp: int = 0) -> CharacterData:
 
 func _make_engine() -> LevelUpEngine:
 	return LevelUpEngine.new(ClassRegistry.new(), PowerRegistry.new(), ProficiencyRegistry.new())
+
+
+func _make_cleric(level: int = 1, xp: int = 0) -> CharacterData:
+	var reg := ClassRegistry.new()
+	var c := CharacterData.new()
+	c.id = "test_cleric_%d" % level
+	c.character_class = "cleric"
+	c.race = "human"
+	c.level = level
+	c.xp = xp
+	c.xp_for_next_level = reg.get_xp_for_level("cleric", level + 1) if level < 14 else 0
+	c.max_level = 14
+	c.hit_die_type = "1d6"
+	c.constitution = 10
+	c.hp_max = 6
+	c.hp_current = 6
+	c.attack_throw = reg.get_attack_throw("cleric", level)
+	var saves := reg.get_saving_throws("cleric", level)
+	c.save_petrification = int(saves.get("petrification", 15))
+	c.save_poison_death  = int(saves.get("poison_death", 14))
+	c.save_blast_breath  = int(saves.get("blast_breath", 16))
+	c.save_staffs_wands  = int(saves.get("staffs_wands", 14))
+	c.save_spells        = int(saves.get("spells", 15))
+	c.title = reg.get_level_title("cleric", level)
+	return c
 
 
 func test_can_level_up_eligible() -> void:
@@ -225,3 +253,42 @@ func test_merge_proficiency_records_keeps_rank_and_specialization() -> void:
 	check("common" in language_specs, "merge should preserve existing language specialization")
 	check("elvish" in language_specs, "merge should add the new language specialization")
 	print("  merge_proficiency_records_keeps_rank_and_specialization: OK")
+
+
+func test_detect_new_spell_levels_cleric_1_to_2() -> void:
+	var engine := _make_engine()
+	var reg := ClassRegistry.new()
+	var new_levels := engine._detect_new_spell_levels(
+		reg.get_spell_slots("cleric", 1),
+		reg.get_spell_slots("cleric", 2))
+	check(new_levels.size() == 1,
+		"Cleric L1->L2: expected 1 new spell level, got %d" % new_levels.size())
+	check(new_levels[0] == 1,
+		"Cleric L1->L2: expected new_levels=[1], got %s" % str(new_levels))
+	print("  detect_new_spell_levels_cleric_1_to_2: OK")
+
+
+func test_detect_new_spell_levels_fighter() -> void:
+	var engine := _make_engine()
+	var reg := ClassRegistry.new()
+	var new_levels := engine._detect_new_spell_levels(
+		reg.get_spell_slots("fighter", 1),
+		reg.get_spell_slots("fighter", 2))
+	check(new_levels.is_empty(),
+		"Fighter: detect_new_spell_levels should return empty, got %s" % str(new_levels))
+	print("  detect_new_spell_levels_fighter: OK")
+
+
+func test_compute_level_up_includes_new_spell_levels_unlocked() -> void:
+	GameState.dice_overrides["level_up_hp_L2"] = 4
+	var cleric := _make_cleric(1, 1500)
+	var engine := _make_engine()
+	var result := engine._compute_level_up(cleric)
+	check(result.has("new_spell_levels_unlocked"),
+		"_compute_level_up result should have new_spell_levels_unlocked key")
+	var unlocked: Array = result.get("new_spell_levels_unlocked", [])
+	check(unlocked.size() == 1,
+		"Cleric L1->L2: expected 1 unlocked spell level, got %d" % unlocked.size())
+	check(unlocked[0] == 1,
+		"Cleric L1->L2: expected unlocked=[1], got %s" % str(unlocked))
+	print("  compute_level_up_includes_new_spell_levels_unlocked: OK")

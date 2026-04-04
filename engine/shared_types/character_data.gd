@@ -135,17 +135,21 @@ func has_proficiency(proficiency_key: String) -> bool:
 
 
 func get_proficiency_rank(proficiency_key: String) -> int:
+	## Returns the aggregated rank across all slot types for this proficiency key.
+	var total := 0
 	for p in proficiencies:
 		if p.get("proficiency_key", "") == proficiency_key:
-			return p.get("rank", 1)
-	return 0
+			total += int(p.get("rank", 1))
+	return total
 
 
 func get_proficiency_selections(proficiency_key: String) -> int:
+	## Returns the aggregated selections_count across all slot types.
+	var total := 0
 	for p in proficiencies:
 		if p.get("proficiency_key", "") == proficiency_key:
-			return p.get("selections_count", 1)
-	return 0
+			total += int(p.get("selections_count", 1))
+	return total
 
 
 func get_proficiency_specialization(proficiency_key: String) -> String:
@@ -161,6 +165,50 @@ func get_proficiencies_by_slot(slot_type: String) -> Array:
 		if p.get("slot_type", "") == slot_type:
 			result.append(p)
 	return result
+
+
+func get_total_proficiency_rank(proficiency_key: String, specialization: String = "") -> int:
+	## Returns summed rank across all slot types for the given key + specialization.
+	var total := 0
+	for p in proficiencies:
+		if p.get("proficiency_key", "") == proficiency_key \
+				and p.get("specialization", "") == specialization:
+			total += int(p.get("rank", 1))
+	return total
+
+
+func get_aggregated_proficiencies() -> Array:
+	## Convenience instance method — aggregates this character's proficiencies.
+	return CharacterData.aggregate_proficiencies(proficiencies)
+
+
+static func aggregate_proficiencies(raw: Array) -> Array:
+	## Groups raw proficiency rows by (proficiency_key, specialization) and sums
+	## rank and selections_count. Returns an array of aggregated dicts with keys:
+	##   proficiency_key, specialization, rank, selections_count, slot_types, source_rows
+	## slot_type becomes provenance metadata, not part of identity.
+	var grouped := {}  # key: "prof_key:spec" -> aggregated dict
+	for row in raw:
+		var key: String = row.get("proficiency_key", "")
+		var spec: String = row.get("specialization", "")
+		var group_key := key + ":" + spec
+		if not grouped.has(group_key):
+			grouped[group_key] = {
+				"proficiency_key": key,
+				"specialization": spec,
+				"rank": 0,
+				"selections_count": 0,
+				"slot_types": [],
+				"source_rows": [],
+			}
+		var entry: Dictionary = grouped[group_key]
+		entry["rank"] += int(row.get("rank", 1))
+		entry["selections_count"] += int(row.get("selections_count", 1))
+		var slot: String = row.get("slot_type", "general")
+		if slot not in entry["slot_types"]:
+			entry["slot_types"].append(slot)
+		entry["source_rows"].append(row)
+	return grouped.values()
 
 
 ## Effective value getters — all downstream systems use these, never raw fields.

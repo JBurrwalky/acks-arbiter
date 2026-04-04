@@ -16,6 +16,8 @@ func run_all_tests() -> void:
 	test_starting_divine_bladedancer()
 	test_starting_non_caster()
 	test_bladedancer_slots_fixed()
+	test_divine_spells_for_new_levels_cleric()
+	test_divine_spells_for_new_levels_empty()
 	if not has_failures():
 		print("RepertoireEngine: all tests passed.")
 
@@ -169,3 +171,32 @@ func test_bladedancer_slots_fixed() -> void:
 	var slots := class_reg.get_spell_slots("bladedancer", 2)
 	check(not slots.is_empty(),
 		"RepertoireEngine: bladedancer L2 spell slots should not be empty after bug fix")
+
+
+func test_divine_spells_for_new_levels_cleric() -> void:
+	var engine := _make_engine()
+	var spells := engine.generate_divine_spells_for_new_levels("cleric", [1])
+	var spell_keys: Array = []
+	for s in spells:
+		spell_keys.append(s.get("spell_key", ""))
+	check("cure_light_wounds" in spell_keys,
+		"generate_divine_spells_for_new_levels: cleric should receive cure_light_wounds")
+	check("cause_light_wounds" in spell_keys,
+		"generate_divine_spells_for_new_levels: cleric should receive reverse cause_light_wounds")
+	check(spell_keys.size() >= 10,
+		"generate_divine_spells_for_new_levels: cleric should have >= 10 L1 spells, got %d" % spell_keys.size())
+	check(spells[0].get("is_in_repertoire", false) == true,
+		"generate_divine_spells_for_new_levels: is_in_repertoire should be true")
+	check(spells[0].get("is_memorized", true) == false,
+		"generate_divine_spells_for_new_levels: is_memorized should be false")
+	check(int(spells[0].get("spell_level", 0)) == 1,
+		"generate_divine_spells_for_new_levels: spell_level should be 1")
+	print("  divine_spells_for_new_levels_cleric: OK")
+
+
+func test_divine_spells_for_new_levels_empty() -> void:
+	var engine := _make_engine()
+	var spells := engine.generate_divine_spells_for_new_levels("cleric", [])
+	check(spells.is_empty(),
+		"generate_divine_spells_for_new_levels: empty new_levels should return empty array")
+	print("  divine_spells_for_new_levels_empty: OK")

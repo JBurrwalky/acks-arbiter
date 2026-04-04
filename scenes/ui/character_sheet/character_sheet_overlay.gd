@@ -82,11 +82,19 @@ func _build_ui() -> void:
 	_panel.offset_right = 0.0
 	_panel.offset_top = 0.0
 	_panel.offset_bottom = 0.0
+	UiSurfaceStyles.apply_framed_window_chrome(_panel)
 	add_child(_panel)
+
+	var root_margin := MarginContainer.new()
+	root_margin.add_theme_constant_override("margin_left", 12)
+	root_margin.add_theme_constant_override("margin_right", 12)
+	root_margin.add_theme_constant_override("margin_top", 12)
+	root_margin.add_theme_constant_override("margin_bottom", 12)
+	_panel.add_child(root_margin)
 
 	var root_vbox := VBoxContainer.new()
 	root_vbox.add_theme_constant_override("separation", 4)
-	_panel.add_child(root_vbox)
+	root_margin.add_child(root_vbox)
 
 	# -- Title bar --
 	var title_row := HBoxContainer.new()
@@ -269,6 +277,8 @@ func _load_character(character_id: String) -> CharacterBundle:
 	bundle.proficiencies = CampaignRepository.get_character_proficiencies(character_id)
 	bundle.inventory = CampaignRepository.get_inventory_items(character_id)
 	bundle.spells = CampaignRepository.get_character_spells(character_id)
+	bundle.formulas = CampaignRepository.get_character_formulas(character_id)
+	bundle.expended_slots = CampaignRepository.get_expended_slots(character_id)
 	bundle.powers = CampaignRepository.get_character_powers(character_id)
 	bundle.conditions = CampaignRepository.get_conditions(character_id)
 	bundle.active_effects = CampaignRepository.get_active_effects_on_target(character_id, GameState.campaign_id)

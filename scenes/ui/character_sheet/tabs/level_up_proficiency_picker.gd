@@ -30,10 +30,14 @@ var _tab_bar: TabBar
 var _list_container: VBoxContainer
 var _pending_panel: VBoxContainer
 var _status_label: Label
+var _spec_popup_frame: PanelContainer
 var _spec_popup_container: VBoxContainer
 
 var _pending_prof_key: String = ""
 var _pending_slot_type: String = ""
+
+var _apostasy_selected_keys: Dictionary = {}  # spell_key -> true, during picker session
+var _apostasy_spells: Array = []              # confirmed spell dicts for this level-up
 
 
 func setup(class_id: String, base_proficiencies: Array, class_slots: int,
@@ -111,9 +115,21 @@ func _build_ui() -> void:
 	_list_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_list_container)
 
+	_spec_popup_frame = PanelContainer.new()
+	UiSurfaceStyles.apply_framed_window_chrome(_spec_popup_frame)
+	_spec_popup_frame.visible = false
+	left_vbox.add_child(_spec_popup_frame)
+
+	var spec_margin := MarginContainer.new()
+	spec_margin.add_theme_constant_override("margin_left", 10)
+	spec_margin.add_theme_constant_override("margin_right", 10)
+	spec_margin.add_theme_constant_override("margin_top", 10)
+	spec_margin.add_theme_constant_override("margin_bottom", 10)
+	_spec_popup_frame.add_child(spec_margin)
+
 	_spec_popup_container = VBoxContainer.new()
-	_spec_popup_container.visible = false
-	left_vbox.add_child(_spec_popup_container)
+	_spec_popup_container.add_theme_constant_override("separation", 8)
+	spec_margin.add_child(_spec_popup_container)
 
 	var right_vbox := VBoxContainer.new()
 	right_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -152,9 +168,9 @@ func _refresh_slot_label() -> void:
 		_general_slots_total,
 	]
 	if is_complete():
-		_slot_label.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+		_slot_label.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	else:
-		_slot_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.3))
+		_slot_label.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR)
 
 
 func _refresh_list() -> void:
@@ -198,7 +214,7 @@ func _refresh_list() -> void:
 			var desc_lbl := Label.new()
 			desc_lbl.text = desc + ("..." if desc.length() >= 80 else "")
 			desc_lbl.add_theme_font_size_override("font_size", 11)
-			desc_lbl.modulate = Color(0.75, 0.75, 0.75, 1.0)
+			desc_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 			desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			info_vbox.add_child(desc_lbl)
 
@@ -322,7 +338,18 @@ func _remaining_slots(slot_type: String) -> int:
 	return maxi(0, _general_slots_total - _general_slots_used)
 
 
-func _get_current_rank(prof_key: String, slot_type: String, spec: String) -> int:
+func _get_current_rank(prof_key: String, _slot_type: String, spec: String) -> int:
+	## Returns aggregated rank across ALL slot types for this key + specialization.
+	var total := 0
+	for prof in _working_proficiencies:
+		if prof.get("proficiency_key", "") == prof_key \
+				and prof.get("specialization", "") == spec:
+			total += int(prof.get("rank", 1))
+	return total
+
+
+func _get_slot_specific_rank(prof_key: String, slot_type: String, spec: String) -> int:
+	## Returns rank for this key within a specific slot type only.
 	var idx := _find_working_index(prof_key, slot_type, spec)
 	if idx < 0:
 		return 0
@@ -376,7 +403,7 @@ func _recalculate_slot_usage() -> void:
 
 
 func _on_tab_changed(_tab: int) -> void:
-	_spec_popup_container.visible = false
+	_spec_popup_frame.visible = false
 	_pending_prof_key = ""
 	_pending_slot_type = ""
 	_refresh_list()
@@ -395,21 +422,21 @@ func _on_add_proficiency(prof_key: String, slot_type: String) -> void:
 		_show_specialization_selector(prof_key, slot_type)
 		return
 
+	if prof_key == "apostasy":
+		if _remaining_slots(slot_type) <= 0:
+			_status_label.text = "No %s slots remaining." % slot_type
+			return
+		_show_apostasy_selector(slot_type)
+		return
+
 	_select_or_advance(prof_key, slot_type, "")
 
 
 func _select_or_advance(prof_key: String, slot_type: String, spec: String) -> void:
-	var current_rank := _get_current_rank(prof_key, slot_type, spec)
+	var aggregated_rank := _get_current_rank(prof_key, slot_type, spec)
 	var max_rank := _proficiency_registry.get_max_rank(prof_key)
 
-	if current_rank > 0 and current_rank < max_rank:
-		if _remaining_slots(slot_type) <= 0:
-			_status_label.text = "No %s slots remaining to advance rank." % slot_type
-			return
-		_advance_rank(prof_key, slot_type, spec)
-		return
-
-	if current_rank >= max_rank and current_rank > 0:
+	if aggregated_rank >= max_rank and aggregated_rank > 0:
 		_status_label.text = "That proficiency is already at its maximum rank."
 		return
 
@@ -417,7 +444,12 @@ func _select_or_advance(prof_key: String, slot_type: String, spec: String) -> vo
 		_status_label.text = "No %s slots remaining." % slot_type
 		return
 
-	_add_working_record(prof_key, slot_type, spec)
+	# Check if there's an existing row for this specific slot type to advance
+	var slot_rank := _get_slot_specific_rank(prof_key, slot_type, spec)
+	if slot_rank > 0:
+		_advance_rank(prof_key, slot_type, spec)
+	else:
+		_add_working_record(prof_key, slot_type, spec)
 
 
 func _show_specialization_selector(prof_key: String, slot_type: String) -> void:
@@ -449,13 +481,13 @@ func _show_specialization_selector(prof_key: String, slot_type: String) -> void:
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
 	cancel_btn.pressed.connect(func() -> void:
-		_spec_popup_container.visible = false
+		_spec_popup_frame.visible = false
 		_pending_prof_key = ""
 		_pending_slot_type = ""
 	)
 	_spec_popup_container.add_child(cancel_btn)
 
-	_spec_popup_container.visible = true
+	_spec_popup_frame.visible = true
 
 
 func _build_spec_buttons_from_ids(spec_ids: Array, prof_key: String) -> void:
@@ -532,7 +564,7 @@ func _on_spec_filter_changed(new_text: String, spec_ids: Array, prof_key: String
 
 
 func _on_specialization_selected(spec: String) -> void:
-	_spec_popup_container.visible = false
+	_spec_popup_frame.visible = false
 	_select_or_advance(_pending_prof_key, _pending_slot_type, spec)
 	_pending_prof_key = ""
 	_pending_slot_type = ""
@@ -560,7 +592,14 @@ func _advance_rank(prof_key: String, slot_type: String, spec: String) -> void:
 	_after_working_state_changed()
 
 
+func get_apostasy_spells() -> Array:
+	return _apostasy_spells.duplicate()
+
+
 func _on_undo_pending(prof_key: String, slot_type: String, spec: String) -> void:
+	if prof_key == "apostasy":
+		_apostasy_spells = []
+		_apostasy_selected_keys.clear()
 	var idx := _find_working_index(prof_key, slot_type, spec)
 	if idx < 0:
 		return
@@ -579,3 +618,176 @@ func _after_working_state_changed() -> void:
 	_recalculate_slot_usage()
 	_refresh_all()
 	selection_state_changed.emit()
+
+
+# ---------------------------------------------------------------------------
+# Apostasy spell picker
+# ---------------------------------------------------------------------------
+
+func _show_apostasy_selector(slot_type: String) -> void:
+	_pending_prof_key = "apostasy"
+	_pending_slot_type = slot_type
+	_apostasy_selected_keys.clear()
+
+	for child in _spec_popup_container.get_children():
+		child.queue_free()
+
+	var title_lbl := Label.new()
+	title_lbl.name = "ApostasyCountLabel"
+	title_lbl.text = "Choose 4 Apostasy Spells (0 / 4 selected)"
+	title_lbl.add_theme_font_size_override("font_size", 13)
+	_spec_popup_container.add_child(title_lbl)
+
+	var note_lbl := Label.new()
+	note_lbl.text = "Reversible spells include both forms automatically."
+	note_lbl.add_theme_font_size_override("font_size", 11)
+	note_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
+	note_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_spec_popup_container.add_child(note_lbl)
+
+	var filter_edit := LineEdit.new()
+	filter_edit.placeholder_text = "Search spells..."
+	filter_edit.text_changed.connect(func(text: String) -> void: _on_apostasy_filter_changed(text))
+	_spec_popup_container.add_child(filter_edit)
+
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 240)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_spec_popup_container.add_child(scroll)
+
+	var spell_list := VBoxContainer.new()
+	spell_list.name = "ApostasySpellList"
+	spell_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(spell_list)
+
+	var spell_reg := SpellRegistry.new()
+	var spells_by_level := spell_reg.get_divine_spells_not_on_class_list(_class_id, _class_registry)
+	_populate_apostasy_spell_list(spell_list, spells_by_level, spell_reg, "")
+
+	var confirm_btn := Button.new()
+	confirm_btn.name = "ApostasyConfirmBtn"
+	confirm_btn.text = "Confirm (0 / 4)"
+	confirm_btn.disabled = true
+	confirm_btn.pressed.connect(_on_apostasy_confirmed)
+	_spec_popup_container.add_child(confirm_btn)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.pressed.connect(func() -> void: _spec_popup_frame.visible = false)
+	_spec_popup_container.add_child(cancel_btn)
+
+	_spec_popup_frame.visible = true
+
+
+func _populate_apostasy_spell_list(container: VBoxContainer, spells_by_level: Dictionary,
+		spell_reg: SpellRegistry, filter: String) -> void:
+	for child in container.get_children():
+		child.queue_free()
+
+	var filter_lower := filter.to_lower()
+	var levels: Array = spells_by_level.keys()
+	levels.sort()
+
+	for level in levels:
+		var level_spells: Array = spells_by_level[level]
+		var header := Label.new()
+		header.text = "— Level %d —" % level
+		header.add_theme_font_size_override("font_size", 12)
+		container.add_child(header)
+		var any_visible := false
+
+		for spell_key in level_spells:
+			var entry := spell_reg.get_spell(spell_key as String)
+			var spell_name: String = entry.get("spell_name",
+				(spell_key as String).replace("_", " ").capitalize())
+			if not filter_lower.is_empty() and not spell_name.to_lower().contains(filter_lower):
+				continue
+			any_visible = true
+
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 6)
+			container.add_child(row)
+
+			var check := CheckButton.new()
+			check.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			check.text = spell_name
+			if entry.get("is_reversible", false):
+				check.text += " (+ reversed form)"
+			check.set_pressed_no_signal(_apostasy_selected_keys.has(spell_key as String))
+			check.toggled.connect(func(on: bool) -> void:
+				_on_apostasy_spell_toggled(check, spell_key as String, on))
+			row.add_child(check)
+
+		header.visible = any_visible
+
+
+func _on_apostasy_spell_toggled(check: CheckButton, spell_key: String, is_on: bool) -> void:
+	if is_on:
+		if _apostasy_selected_keys.size() >= 4:
+			check.set_pressed_no_signal(false)
+			return
+		_apostasy_selected_keys[spell_key] = true
+	else:
+		_apostasy_selected_keys.erase(spell_key)
+	_update_apostasy_ui()
+
+
+func _on_apostasy_filter_changed(new_text: String) -> void:
+	var spell_list := _spec_popup_container.get_node_or_null("ApostasySpellList") as VBoxContainer
+	if spell_list == null:
+		return
+	var spell_reg := SpellRegistry.new()
+	var spells_by_level := spell_reg.get_divine_spells_not_on_class_list(_class_id, _class_registry)
+	_populate_apostasy_spell_list(spell_list, spells_by_level, spell_reg, new_text)
+
+
+func _update_apostasy_ui() -> void:
+	var count := _apostasy_selected_keys.size()
+	var title_lbl := _spec_popup_container.get_node_or_null("ApostasyCountLabel") as Label
+	if title_lbl != null:
+		title_lbl.text = "Choose 4 Apostasy Spells (%d / 4 selected)" % count
+	var confirm_btn := _spec_popup_container.get_node_or_null("ApostasyConfirmBtn") as Button
+	if confirm_btn != null:
+		confirm_btn.text = "Confirm (%d / 4)" % count
+		confirm_btn.disabled = count != 4
+
+
+func _on_apostasy_confirmed() -> void:
+	_spec_popup_frame.visible = false
+	var spell_reg := SpellRegistry.new()
+	var spell_dicts: Array = []
+	for spell_key in _apostasy_selected_keys.keys():
+		var key_str := spell_key as String
+		if not spell_reg.has_spell(key_str):
+			continue
+		var entry := spell_reg.get_spell(key_str)
+		var spell_level := _get_divine_spell_level(entry)
+		spell_dicts.append({
+			"spell_key": key_str,
+			"spell_level": spell_level,
+			"is_in_repertoire": true,
+			"is_memorized": false,
+			"memorized_slots": 0,
+		})
+		if spell_reg.is_reversible(key_str):
+			var rev_key := spell_reg.get_reverse_key(key_str)
+			if not rev_key.is_empty() and spell_reg.has_spell(rev_key):
+				spell_dicts.append({
+					"spell_key": rev_key,
+					"spell_level": spell_level,
+					"is_in_repertoire": true,
+					"is_memorized": false,
+					"memorized_slots": 0,
+				})
+	_apostasy_selected_keys.clear()
+	_apostasy_spells = spell_dicts
+	_add_working_record("apostasy", _pending_slot_type, "")
+	_pending_prof_key = ""
+	_pending_slot_type = ""
+
+
+func _get_divine_spell_level(entry: Dictionary) -> int:
+	for classification in entry.get("classifications", []):
+		if classification.get("tradition", "") == "divine":
+			return int(classification.get("level", 1))
+	return 1

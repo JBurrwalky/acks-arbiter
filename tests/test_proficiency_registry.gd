@@ -14,6 +14,7 @@ func run_all_tests() -> void:
 	test_general_list_loads()
 	test_general_list_has_all_entries()
 	test_get_max_rank_ranked()
+	test_get_max_rank_gambling_project_cap()
 	test_get_max_rank_unranked()
 	test_get_selection_rule_unique()
 	test_get_selection_rule_specialization()
@@ -109,6 +110,14 @@ func test_get_max_rank_ranked() -> void:
 		"ProficiencyRegistry: healing max_rank should be 3, got %d" % reg.get_max_rank("healing"))
 	check(reg.get_max_rank("alchemy") == 3,
 		"ProficiencyRegistry: alchemy max_rank should be 3, got %d" % reg.get_max_rank("alchemy"))
+
+
+func test_get_max_rank_gambling_project_cap() -> void:
+	var reg := ProficiencyRegistry.new()
+	check(reg.get_max_rank("gambling") == 5,
+		"ProficiencyRegistry: gambling max_rank should be 5, got %d" % reg.get_max_rank("gambling"))
+	check(reg.get_max_selections("gambling") == 5,
+		"ProficiencyRegistry: gambling max_selections should be 5, got %d" % reg.get_max_selections("gambling"))
 
 
 func test_get_max_rank_unranked() -> void:

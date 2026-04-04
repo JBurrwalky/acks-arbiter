@@ -224,7 +224,9 @@ func _draw_features() -> void:
 				var ds: String = cell.get("door_state", "closed")
 				var dt: String = cell.get("door_type", "")
 				if dt == "arch":
-					pass  # arch is always open — brown color is enough
+					# Arch: always open, draw "A" label for visual identification
+					draw_string(font, screen_pos + Vector2(-4.0, 4.0), "A",
+						HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color(1.0, 1.0, 0.8))
 				elif ds == "open":
 					draw_arc(screen_pos, hw * 0.4, 0.0, TAU, 16, Color.WHITE, 2.0)
 				else:
@@ -236,6 +238,9 @@ func _draw_features() -> void:
 					if ds == "locked":
 						draw_string(font, screen_pos + Vector2(-4.0, 4.0), "L",
 							HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.YELLOW)
+					elif ds == "stuck":
+						draw_string(font, screen_pos + Vector2(-4.0, 4.0), "K",
+							HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.ORANGE_RED)
 
 			"door_secret":
 				var detected: bool = cell.get("door_detected", true)
@@ -247,9 +252,9 @@ func _draw_features() -> void:
 						draw_string(font, screen_pos + Vector2(-4.0, 4.0), "?",
 							HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.WHITE)
 				else:
-					# Dev aid: undetected secret shows "S"
-					draw_string(font, screen_pos + Vector2(-4.0, 4.0), "S",
-						HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.WHITE)
+					# Dev aid: undetected secret shows bright "S" on dark grey
+					draw_string(font, screen_pos + Vector2(-5.0, 5.0), "S",
+						HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color(1.0, 0.9, 0.2))
 
 			"portcullis":
 				var ds: String = cell.get("door_state", "closed")
@@ -260,6 +265,9 @@ func _draw_features() -> void:
 						var bx := lerpf(-hw * 0.7, hw * 0.7, t)
 						draw_line(screen_pos + Vector2(bx, -hh * 0.6),
 							screen_pos + Vector2(bx, hh * 0.6), Color(0.8, 0.8, 0.8), 2.0)
+					# Label for clarity
+					draw_string(font, screen_pos + Vector2(-4.0, 4.0), "P",
+						HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.YELLOW)
 
 
 func _draw_grid_lines() -> void:

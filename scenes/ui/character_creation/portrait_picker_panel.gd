@@ -272,6 +272,7 @@ func _build_ui() -> void:
 	grid_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid_panel.size_flags_stretch_ratio = 0.7
 	grid_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	UiSurfaceStyles.apply_textured_panel(grid_panel)
 	hbox.add_child(grid_panel)
 
 	var scroll := ScrollContainer.new()
@@ -305,6 +306,6 @@ func _build_ui() -> void:
 	var note := Label.new()
 	note.text = "Add custom portraits to:\nuser://portraits/"
 	note.add_theme_font_size_override("font_size", 11)
-	note.modulate = Color(0.7, 0.7, 0.7, 1.0)
+	note.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	right_vbox.add_child(note)

@@ -314,7 +314,7 @@ func _make_choice_block(key: String, title: String, desc: String, selected: bool
 		var desc_lbl := Label.new()
 		desc_lbl.text = desc
 		desc_lbl.add_theme_font_size_override("font_size", 11)
-		desc_lbl.modulate = Color(0.75, 0.75, 0.75, 1.0)
+		desc_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 		desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		block.add_child(desc_lbl)
 

@@ -59,7 +59,7 @@ func _render_henchmen_section(bundle: CharacterBundle) -> void:
 		var detail_lbl := Label.new()
 		detail_lbl.text = "%s %d  |  Loyalty %d" % [cls, lvl, loyalty]
 		detail_lbl.add_theme_font_size_override("font_size", 11)
-		detail_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+		detail_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 		row.add_child(detail_lbl)
 
 
@@ -95,7 +95,7 @@ func _render_animals_section(bundle: CharacterBundle) -> void:
 		var type_lbl := Label.new()
 		type_lbl.text = _format_animal_category(cat)
 		type_lbl.add_theme_font_size_override("font_size", 11)
-		type_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+		type_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 		header.add_child(type_lbl)
 
 		# Stats from catalog
@@ -129,7 +129,7 @@ func _render_mercenaries_section() -> void:
 	_add_section_header("Mercenaries")
 	var lbl := Label.new()
 	lbl.text = "No mercenaries hired."
-	lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	lbl.add_theme_font_size_override("font_size", 11)
 	add_child(lbl)
 
@@ -176,6 +176,6 @@ func _add_detail(text: String) -> void:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.add_theme_font_size_override("font_size", 11)
-	lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(lbl)

@@ -42,27 +42,39 @@ static func screen_to_cell(screen_pos: Vector2) -> Vector2i:
 
 
 # ---------------------------------------------------------------------------
-# Adjacency (4-directional: N/E/S/W in grid space)
+# Adjacency (8-directional: N/NE/E/SE/S/SW/W/NW in grid space)
 # ---------------------------------------------------------------------------
 
-## Returns the 4 orthogonal neighbors of [param pos] in grid space.
-## Order: North (0,-1), East (1,0), South (0,1), West (-1,0).
+## Returns the 8 neighbors of [param pos] (4 orthogonal + 4 diagonal).
+## Order: N, NE, E, SE, S, SW, W, NW.
 static func get_neighbors(pos: Vector2i) -> Array[Vector2i]:
 	var result: Array[Vector2i] = [
-		Vector2i(pos.x,     pos.y - 1),  # North
-		Vector2i(pos.x + 1, pos.y),      # East
-		Vector2i(pos.x,     pos.y + 1),  # South
-		Vector2i(pos.x - 1, pos.y),      # West
+		Vector2i(pos.x,     pos.y - 1),  # N
+		Vector2i(pos.x + 1, pos.y - 1),  # NE
+		Vector2i(pos.x + 1, pos.y),      # E
+		Vector2i(pos.x + 1, pos.y + 1),  # SE
+		Vector2i(pos.x,     pos.y + 1),  # S
+		Vector2i(pos.x - 1, pos.y + 1),  # SW
+		Vector2i(pos.x - 1, pos.y),      # W
+		Vector2i(pos.x - 1, pos.y - 1),  # NW
 	]
 	return result
 
 
-## Returns true if [param a] and [param b] are orthogonally adjacent (distance == 1).
+## Returns true if [param a] and [param b] are adjacent (Chebyshev distance == 1).
+## Covers all 8 directions including diagonals.
 static func is_adjacent(a: Vector2i, b: Vector2i) -> bool:
-	return manhattan_distance(a, b) == 1
+	return chebyshev_distance(a, b) == 1
+
+
+## Returns the Chebyshev distance between two grid cells.
+## Chebyshev distance = max(|dx|, |dy|) — the number of king moves on a grid.
+static func chebyshev_distance(a: Vector2i, b: Vector2i) -> int:
+	return max(abs(a.x - b.x), abs(a.y - b.y))
 
 
 ## Returns the Manhattan distance between two grid cells.
+## Used for light/LOS radius (produces a diamond-shaped area).
 static func manhattan_distance(a: Vector2i, b: Vector2i) -> int:
 	return abs(a.x - b.x) + abs(a.y - b.y)
 

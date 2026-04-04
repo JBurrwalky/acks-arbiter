@@ -164,6 +164,49 @@ func generate_divine_starting_repertoire(class_id: String, character_level: int)
 
 
 # ---------------------------------------------------------------------------
+# Divine incremental grant (level-up)
+# ---------------------------------------------------------------------------
+
+func generate_divine_spells_for_new_levels(class_id: String,
+		new_levels: Array) -> Array[Dictionary]:
+	## Generates spell records for the given spell levels only.
+	## Used at level-up when a divine caster unlocks new spell level(s).
+	## new_levels: Array[int] — 1-based spell levels that just became accessible.
+	## Returns Array[Dictionary] in character_spells row shape (is_in_repertoire=true).
+	## Handles reversible spells: both forms added automatically.
+	var spells: Array[Dictionary] = []
+	if new_levels.is_empty():
+		return spells
+	var list_id := spell_registry.get_class_spell_list_id(class_id, class_registry)
+	if list_id.is_empty():
+		return spells
+	for spell_level in new_levels:
+		var available := spell_registry.get_available_spells_for_class(
+			class_id, spell_level, class_registry)
+		for spell_key in available:
+			if not spell_registry.has_spell(spell_key):
+				continue
+			spells.append({
+				"spell_key": spell_key,
+				"spell_level": spell_level,
+				"is_in_repertoire": true,
+				"is_memorized": false,
+				"memorized_slots": 0,
+			})
+			if spell_registry.is_reversible(spell_key):
+				var rev_key := spell_registry.get_reverse_key(spell_key)
+				if not rev_key.is_empty():
+					spells.append({
+						"spell_key": rev_key,
+						"spell_level": spell_level,
+						"is_in_repertoire": true,
+						"is_memorized": false,
+						"memorized_slots": 0,
+					})
+	return spells
+
+
+# ---------------------------------------------------------------------------
 # Unified entry point
 # ---------------------------------------------------------------------------
 

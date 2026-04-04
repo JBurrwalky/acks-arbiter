@@ -28,7 +28,7 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 	elif character.is_incapacitated:
 		var inc_lbl := Label.new()
 		inc_lbl.text = "Incapacitated"
-		inc_lbl.add_theme_color_override("font_color", Color(0.9, 0.55, 0.1))
+		inc_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR)
 		add_child(inc_lbl)
 	else:
 		_add_text("Active")
@@ -99,7 +99,7 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 			if requires_concentration:
 				var conc_lbl := Label.new()
 				conc_lbl.text = "[concentration]"
-				conc_lbl.add_theme_color_override("font_color", Color(0.9, 0.65, 0.1))
+				conc_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR)
 				conc_lbl.add_theme_font_size_override("font_size", 10)
 				header_row.add_child(conc_lbl)
 
@@ -107,7 +107,7 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 				var dur_lbl := Label.new()
 				dur_lbl.text = "%d rounds remaining" % duration_remaining
 				dur_lbl.add_theme_font_size_override("font_size", 10)
-				dur_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+				dur_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 				header_row.add_child(dur_lbl)
 
 			## Show modifier summary if present
@@ -121,7 +121,7 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 				var mod_lbl := Label.new()
 				mod_lbl.text = "    Modifiers: %s" % ", ".join(mod_parts)
 				mod_lbl.add_theme_font_size_override("font_size", 10)
-				mod_lbl.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
+				mod_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 				add_child(mod_lbl)
 
 			## Show flag summary if present
@@ -130,7 +130,7 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 				var flags_lbl := Label.new()
 				flags_lbl.text = "    Flags: %s" % ", ".join(flags)
 				flags_lbl.add_theme_font_size_override("font_size", 10)
-				flags_lbl.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
+				flags_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 				add_child(flags_lbl)
 
 	add_child(HSeparator.new())
@@ -139,7 +139,7 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 	_add_section_header("Reputation")
 	var rep_lbl := Label.new()
 	rep_lbl.text = "Reputation system not yet implemented."
-	rep_lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	rep_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	rep_lbl.add_theme_font_size_override("font_size", 11)
 	add_child(rep_lbl)
 

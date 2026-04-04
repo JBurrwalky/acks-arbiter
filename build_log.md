@@ -2619,3 +2619,276 @@ CampaignRepository addition:
 3. Test door interaction, fog reveal, and stair descent to level 2 (Underground Cavern).
 4. Test exit dungeon → hex map restoration.
 5. If D-4 passes, proceed to E-1 (Session Runner) or the next priority per the build plan.
+
+---
+
+## Session 2026-04-02 - Equipment Item Row Equip Callback Fix
+
+**Task:** Fix the character-sheet equipment tab error raised when pressing Equip on a loose item: `Invalid call to function '<anonymous lambda>'... Expected 0 argument(s).`
+**Model used:** GPT-5 Codex
+**Completed:**
+- Updated `scenes/ui/character_sheet/tabs/equipment_item_row.gd` so the Equip button invokes the supplied equip callback with zero arguments.
+- Added `tests/test_equipment_item_row.gd` to verify a loose-item Equip button calls its zero-argument callback exactly once.
+- Updated `tests/test_runner.gd` and `tests/test_runner.tscn` to register the new equipment-item-row regression suite.
+- Ran the approved headless Godot test runner command successfully (exit code `0`).
+**Decisions made:**
+- Treated `EquipmentLooseZone.setup()` as the owner of item binding for equip actions: it creates a per-item callable, and `EquipmentItemRow` simply executes that callable instead of passing the item dictionary again.
+**Interfaces defined or changed:**
+- `EquipmentItemRow.setup(item, remove_callback, character_id, equip_callback)` now expects `equip_callback` to be a pre-bound zero-argument `Callable` for the row's item.
+**Database changes:** None.
+**Tests added/updated:**
+- Added `tests/test_equipment_item_row.gd`.
+- Updated `tests/test_runner.gd`.
+- Updated `tests/test_runner.tscn`.
+**Known issues:**
+- Headless Godot runs in this environment still report success via exit code without printing the suite summary to shell stdout.
+**Next session should:**
+1. Smoke-test the character sheet equipment tab in-editor and confirm loose-item Equip buttons now work without runtime errors.
+2. If more reusable row widgets need button callbacks, keep the same pattern: pre-bind item context in the parent and execute zero-argument row callbacks.
+
+---
+
+## Session 2026-04-02 - Campaign Select Vellum Styling Pass
+
+**Task:** Restyle the campaign select UI so the campaign list and new-campaign modal use `assets/ui/bg_vellum_subtle.png` with stronger framing.
+**Model used:** GPT-5 Codex
+**Completed:**
+- Updated `scenes/ui/campaign_select/campaign_select_screen.gd` to wrap the main campaign-select panel in a bordered frame with an inner vellum panel.
+- Applied the same framed vellum treatment to the scrollable campaign list area itself.
+- Restyled each campaign row with a softer bordered card treatment to read cleanly against the parchment background.
+- Restyled the new-campaign modal with the same vellum texture, a warm border frame, and a dim backdrop so it reads as a true modal.
+- Normalized the world-name `LineEdit` width to match the campaign-name field.
+- Verified the project still parses and the headless Godot test runner exits successfully with code `0`.
+**Decisions made:**
+- Used a nested frame pattern for these UI elements: dark outer border panel for structure, `bg_vellum_subtle` inner panel for surface texture.
+- Added a modal backdrop while the create-campaign dialog is visible so the parchment dialog has better visual separation from the campaign list.
+**Interfaces defined or changed:** None.
+**Database changes:** None.
+**Tests added/updated:** No new tests; validation was a successful headless Godot test-runner execution after the UI script changes.
+**Known issues:**
+- This environment cannot visually inspect the result in-editor, so the final confirmation for spacing and texture balance still needs a quick manual UI smoke test.
+**Next session should:**
+1. Open the campaign select screen in-editor and verify the new vellum framing feels right at runtime.
+2. If desired, carry the same framed-vellum styling into the delete confirmation dialog so all campaign-management popups share one visual language.
+
+---
+
+## Session 2026-04-02 - Gambling Proficiency Rank Cap Fix
+
+**Task:** Allow the Gambling proficiency to rank up instead of being restricted to a single selection, with a project cap of Rank 5.
+**Model used:** GPT-5 Codex
+**Completed:**
+- Updated `data/proficiencies/proficiency_catalog.json` so Gambling uses a project cap of `max_rank = 5` and `max_selections = 5`.
+- Clarified the Gambling catalog description to reflect that additional selections stack monthly income up to rank 5.
+- Added a registry regression test confirming the project cap values for Gambling.
+- Added a level-up picker regression test confirming repeated Gambling selections stack into one proficiency entry up to rank 5.
+- Added a character-creation proficiency panel regression test confirming Gambling can rank up during initial selection without creating duplicate entries.
+- Wired the new character-creation regression test into `tests/test_runner.gd` and `tests/test_runner.tscn`.
+- Ran the approved headless Godot test runner command successfully (exit code `0`).
+**Decisions made:**
+- Treated Gambling as a ranked stacking proficiency for project purposes, matching the ACKS rules intent that additional selections continue to add value.
+- Applied an explicit project cap of rank 5 even though the source rules text does not specify a hard upper limit.
+- Preserved the existing `selection_rule = "stacking"` behavior so downstream effect resolution continues to scale from `selections_count`.
+**Interfaces defined or changed:**
+- Gambling catalog metadata now reports `max_rank = 5` and `max_selections = 5`.
+**Database changes:** None.
+**Tests added/updated:**
+- Updated `tests/test_proficiency_registry.gd`.
+- Updated `tests/test_level_up_proficiency_picker.gd`.
+- Added `tests/test_proficiency_selection_panel.gd`.
+- Updated `tests/test_runner.gd`.
+- Updated `tests/test_runner.tscn`.
+**Known issues:**
+- This environment can verify the logic headlessly, but not visually confirm the Gambling picker behavior in-editor.
+**Next session should:**
+1. Smoke-test Gambling selection in both character creation and level-up UI flows to confirm the rank-up affordance reads clearly to players.
+2. If any other ACKS proficiencies are meant to stack indefinitely or beyond the current defaults, audit their catalog metadata against the rules text using the same pattern.
+
+---
+
+## Session 2026-04-02 - Portrait UI Size Clamp Fix
+
+**Task:** Fix character portraits in the character creation finalize screen and the character sheet so they render inside the intended UI size instead of expanding close to their native 1024×1024 dimensions.
+**Model used:** GPT-5 Codex
+**Completed:**
+- Updated `scenes/ui/components/character_sheet_panel.gd` so finalize-screen portraits render in a fixed 512×512 display box.
+- Updated `scenes/ui/character_sheet/tabs/cs_tab_biography.gd` so biography-tab portraits use the same fixed 512×512 display box.
+- Set both runtime-built portrait `TextureRect` nodes to `expand_mode = TextureRect.EXPAND_IGNORE_SIZE` while keeping `STRETCH_KEEP_ASPECT_CENTERED`, so large source textures no longer dictate layout size.
+- Added `tests/test_portrait_display_sizing.gd` to verify both portrait renderers ignore native texture size and use the 512×512 box.
+- Updated `tests/test_runner.gd` and `tests/test_runner.tscn` to register the new portrait sizing suite.
+- Updated `docs/coding_conventions.md` with the runtime `TextureRect` sizing pattern for large art assets in code-built UI.
+- Ran the approved headless Godot test runner command successfully (exit code `0`).
+**Decisions made:**
+- Treated the script-built portrait widgets as the source of truth rather than editor-side Control sizing, because both affected views recreate their portrait nodes at runtime.
+- Standardized the full portrait presentation size at 512×512 for both finalize preview and biography view so the two character-facing screens stay visually consistent.
+**Interfaces defined or changed:** None.
+**Database changes:** None.
+**Tests added/updated:**
+- Added `tests/test_portrait_display_sizing.gd`.
+- Updated `tests/test_runner.gd`.
+- Updated `tests/test_runner.tscn`.
+**Known issues:**
+- This environment verifies the layout configuration headlessly, but not the exact visual feel in-editor at runtime.
+**Next session should:**
+1. Open character creation finalize and the character sheet in-editor to confirm the 512×512 portraits feel right in the live layout.
+2. If additional portrait surfaces are added later, reuse the documented `TextureRect.EXPAND_IGNORE_SIZE` + fixed display-box pattern for any runtime-built art widgets.
+
+---
+
+## Session 2026-04-02 - Shared Vellum Window Chrome Pass
+
+**Task:** Replace semi-transparent default UI backgrounds with `bg_vellum_subtle` across runtime-built windows and layers, while leaving the dice prompt modal and the hex-map tooltip unchanged.
+**Model used:** GPT-5 Codex
+**Completed:**
+- Added `engine/subsystems/assets/ui_surface_styles.gd` as a shared helper for vellum-backed panel surfaces and framed modal/window chrome using the registered `ui.bg.vellum_subtle` asset.
+- Updated `scenes/ui/character_creation/character_creation_screen.gd` to use the subtle vellum background for the full character-creation layer and a framed parchment treatment for the step content area.
+- Updated `scenes/ui/character_creation/class_selection_panel.gd` and `scenes/ui/character_creation/portrait_picker_panel.gd` so their large subpanels use opaque vellum textures instead of default panel styling.
+- Updated `scenes/ui/components/character_sheet_panel.gd` and `scenes/ui/character_sheet/character_sheet_overlay.gd` so the finalize summary and character-sheet overlay render on opaque vellum-backed surfaces, with the overlay panel getting a visible frame.
+- Updated `scenes/ui/character_sheet/tabs/cs_tab_advancement.gd`, `scenes/ui/character_creation/proficiency_selection_panel.gd`, and `scenes/ui/character_sheet/tabs/level_up_proficiency_picker.gd` so proficiency modals/popup selectors use framed vellum surfaces.
+- Updated `scenes/ui/campaign_select/campaign_select_screen.gd` so the full-screen campaign-select layer uses `bg_vellum_subtle`, and the delete confirmation dialog now receives the same framed parchment chrome as the rest of the UI.
+- Updated `scenes/ui/override/override_panel.gd` and `scenes/ui/character_sheet/tabs/equipment_item_row.gd` so override dialogs and the split-stack confirmation dialog use vellum-backed framed modal styling.
+- Left the dice prompt modal and the hex-map tooltip unchanged as requested.
+- Added `tests/test_ui_surface_styles.gd` and wired it into `tests/test_runner.gd` / `tests/test_runner.tscn`.
+- Updated `docs/coding_conventions.md` with the shared `UiSurfaceStyles` convention for runtime-built windows and modal surfaces.
+- Ran the approved headless Godot test runner command successfully (exit code `0`).
+**Decisions made:**
+- Standardized on the existing registered `ui.bg.vellum_subtle` asset rather than creating a new parchment texture, since the requested readability improvement could be achieved by consistently applying the existing asset.
+- Centralized the parchment styling in `UiSurfaceStyles` so future runtime-built windows can opt into the same texture/border treatment without duplicating stylebox code.
+- Kept the dice prompt and hex-map tooltip as exceptions because they are intentionally specialized overlays with different readability and urgency requirements.
+**Interfaces defined or changed:**
+- Added `UiSurfaceStyles.apply_textured_panel(panel, texture_id="ui.bg.vellum_subtle")`.
+- Added `UiSurfaceStyles.apply_framed_window_chrome(control, texture_id="ui.bg.vellum_subtle")`.
+- Added `UiSurfaceStyles.make_vellum_style()`, `make_filled_frame_style()`, `make_window_frame_style()`, and `make_background_rect()`.
+**Database changes:** None.
+**Tests added/updated:**
+- Added `tests/test_ui_surface_styles.gd`.
+- Updated `tests/test_runner.gd`.
+- Updated `tests/test_runner.tscn`.
+**Known issues:**
+- This environment can verify the runtime-built styling paths headlessly, but it cannot visually confirm spacing, border weight, or parchment tiling in-editor.
+**Next session should:**
+1. Smoke-test the campaign select screen, character creation flow, character sheet, and level-up proficiency modal in-editor to confirm the new vellum surfaces feel right at runtime.
+2. If any remaining runtime-built windows still look too transparent in play, move them onto `UiSurfaceStyles` rather than adding one-off styleboxes.
+
+---
+
+## Session 2026-04-03 - UiSurfaceStyles Window Compatibility Fix
+
+**Task:** Fix the vellum chrome helper so the campaign select screen, override dialogs, equipment split dialog, and advancement popup compile correctly when they pass `Window`-based popups instead of `Control` panels.
+**Model used:** GPT-5 Codex
+**Completed:**
+- Updated `engine/subsystems/assets/ui_surface_styles.gd` so `UiSurfaceStyles.apply_framed_window_chrome()` accepts a shared `Node` surface and explicitly supports both `Control` panels and `Window`-based dialogs/popups.
+- Kept the helper's vellum background insertion path shared across both surface families, so existing framed panels and modal windows still receive the same `bg_vellum_subtle` treatment.
+- Expanded `tests/test_ui_surface_styles.gd` to cover `ConfirmationDialog` and `PopupPanel` in addition to the existing `PanelContainer` case.
+- Updated `docs/coding_conventions.md` so the shared vellum chrome convention now documents support for both `Control` and `Window` surfaces.
+**Decisions made:**
+- Preserved a single shared helper instead of splitting modal/window styling into separate APIs, because the visual treatment is intentionally the same and the compile failure was only about the accepted node family.
+- Used explicit `Control` / `Window` branching inside the helper so the contract stays statically clear in GDScript and future call sites fail fast if they pass an unsupported node type.
+**Interfaces defined or changed:**
+- Updated `UiSurfaceStyles.apply_framed_window_chrome(surface, texture_id="ui.bg.vellum_subtle")` to accept `Control` panels and `Window`-based popup/dialog surfaces.
+**Database changes:** None.
+**Tests added/updated:**
+- Updated `tests/test_ui_surface_styles.gd`.
+**Known issues:**
+- This environment can verify compile/runtime behavior headlessly, but not visually confirm modal spacing or chrome weight in-editor.
+**Next session should:**
+1. Smoke-test the affected modal surfaces in-editor to confirm the framed vellum chrome still sits correctly after the `Window` compatibility fix.
+
+---
+
+## Session 2026-04-03 - Vellum Text Contrast and Dialog Layering Fix
+
+**Task:** Fix the override warning dialog text being covered by the vellum background, and make vellum-backed UI text readable by switching passive copy to dark text and warning/highlight copy to dark red.
+**Model used:** GPT-5 Codex
+**Completed:**
+- Updated `engine/subsystems/assets/ui_surface_styles.gd` so shared vellum backgrounds render with `show_behind_parent = true`, preventing popup/dialog content from being covered by the parchment layer.
+- Added shared vellum text colors (`VELLUM_TEXT_COLOR`, `VELLUM_WARNING_TEXT_COLOR`) and a shared text theme installer in `UiSurfaceStyles`, then applied it automatically from both `apply_textured_panel()` and `apply_framed_window_chrome()`.
+- Applied the shared vellum text theme directly to the campaign select screen root in `scenes/ui/campaign_select/campaign_select_screen.gd` so its custom-built list and new-campaign modal inherit readable dark label text.
+- Replaced hard-coded pale gray/yellow label styling across the vellum-backed character creation, character sheet, level-up picker, campaign select, and override UI surfaces with the new dark vellum text constants.
+- Expanded `tests/test_ui_surface_styles.gd` to verify the shared vellum text theme is attached and that framed backgrounds draw behind parent content.
+- Ran the approved headless Godot test runner command successfully (exit code `0`).
+**Decisions made:**
+- Kept button and field chrome untouched where their text sits on control backgrounds rather than directly on vellum, focusing the readability pass on label/list text actually rendered over parchment surfaces.
+- Standardized warning/highlight copy on vellum to a dark red accent instead of pale yellow so it remains readable on the `bg_vellum_subtle` texture.
+**Interfaces defined or changed:**
+- Added `UiSurfaceStyles.VELLUM_TEXT_COLOR` and `UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR`.
+- Added `UiSurfaceStyles.apply_vellum_text_theme(target: Node)`.
+- `UiSurfaceStyles.apply_textured_panel()` and `UiSurfaceStyles.apply_framed_window_chrome()` now also install the shared vellum text theme.
+**Database changes:** None.
+**Tests added/updated:**
+- Updated `tests/test_ui_surface_styles.gd`.
+**Known issues:**
+- This environment can verify the layering and theme path headlessly, but not visually confirm every parchment-backed screen in-editor.
+**Next session should:**
+1. Smoke-test the override warning dialog, campaign select flow, character sheet tabs, and character creation flow in-editor to confirm the darker vellum text feels correct everywhere.
+2. If any remaining vellum-backed tabs still carry pale one-off label colors, migrate them onto the shared vellum text constants instead of adding new ad-hoc colors.
+
+---
+
+## Session 2026-04-02 — Spell System Overhaul: Divine Level-Up Fix + Schema Cleanup
+
+**Task:** Fix divine casters (cleric, bladedancer, etc.) not receiving their class spell list when gaining access to new spell levels at level-up. Also align the entire spell system with ACKS 1e rules: no memorization, divine casters auto-know all class spells, arcane casters track formulae separately from active repertoire, expended slots tracked per level per day.
+**Model used:** Sonnet 4.6 (implementation), session context from Opus 4.6 (planning)
+
+**Completed:**
+- Created `db/migrations/018_spell_formula_and_slots.sql`: new `character_spell_formulas` table (arcane formula tracking, separate from active repertoire) and `character_spell_slots_expended` table (per-level daily expended tracking). Migration also seeds formula table from existing arcane `character_spells` rows.
+- Updated `db/schema.sql`: bumped header comment to "Last migration applied: 018", added both new table definitions after `character_spells` with deprecation note on `is_memorized`/`memorized_slots`.
+- Updated `engine/autoloads/campaign_repository.gd`: added two new CRUD blocks — formula methods (`get_character_formulas`, `add_character_formula`, `save_character_formulas`, `has_formula`) and expended-slot methods (`get_expended_slots`, `increment_expended_slot`, `reset_expended_slots`).
+- Updated `engine/shared_types/character_bundle.gd`: added `formulas: Array` and `expended_slots: Dictionary` fields after `spells`.
+- Updated `scenes/ui/character_sheet/character_sheet_overlay.gd` `_load_character()`: loads `bundle.formulas` and `bundle.expended_slots` from the two new repository methods.
+- Updated `scenes/ui/character_creation/character_creation_screen.gd`: after saving `character_spells`, also saves formula records via `save_character_formulas` for arcane casters at creation.
+- Updated `engine/subsystems/spells/repertoire_engine.gd`: added `generate_divine_spells_for_new_levels(class_id, new_levels)` method (new "Divine incremental grant" section). Handles reversible spells automatically.
+- Updated `engine/subsystems/characters/level_up_engine.gd`:
+  - Added `var _repertoire_engine: RepertoireEngine` member.
+  - Updated `_init` to accept 4th optional param `p_repertoire_engine: RepertoireEngine = null` (backward-compatible).
+  - Added `_detect_new_spell_levels(old_slots, new_slots) -> Array[int]` helper — detects 0→>0 slot transitions by spell level index.
+  - Updated `_compute_level_up` to compute `new_spell_levels_unlocked` and include it in the result dict.
+  - Updated `apply_level_up_auto` to auto-grant divine spells via `add_character_spell` for each newly unlocked level (when `_repertoire_engine` is set).
+- Updated `scenes/ui/character_sheet/tabs/cs_tab_advancement.gd`:
+  - `_make_level_up_engine()` now builds and passes a `RepertoireEngine` as 4th arg.
+  - `_build_level_up_summary()` now detects `new_spell_levels_unlocked`, populates `_level_up_choices["spells"]` for divine casters, and shows a blue info label listing granted spell levels + count.
+- Updated `scenes/ui/character_sheet/tabs/cs_tab_spells.gd`: full display rewrite — uses "Spell Repertoire" section header, per-level "Level N — M slots/day (K expended today)" using `bundle.expended_slots`, clean bullet list with no memorization labels. "Spells Known (Not in Active Repertoire)" section (arcane only, gray) driven by `bundle.formulas`.
+- Updated `tests/test_repertoire_engine.gd`: added `test_divine_spells_for_new_levels_cleric()` and `test_divine_spells_for_new_levels_empty()`.
+- Updated `tests/test_level_up_engine.gd`: added `_make_cleric()` helper and `test_detect_new_spell_levels_cleric_1_to_2()`, `test_detect_new_spell_levels_fighter()`, `test_compute_level_up_includes_new_spell_levels_unlocked()`.
+
+**Decisions made:**
+- **Separate formula table** (not a flag on `character_spells`) for arcane formula tracking: cleaner separation of "has formula" vs "in active repertoire", and easier to query independently.
+- **No WIS bonus to spellcasting**: WIS only grants saving throw bonuses in ACKS 1e. The WIS-repertoire-expansion rule is ACKS 2e only and not licensed for this project.
+- **Divine casters: ALL known spells = ALL in repertoire** automatically. No subset logic for divine.
+- **Arcane repertoire swapping** (swapping a formula in/out of active repertoire up to slot+INT cap) is OUT OF SCOPE for this session. Architecture supports it but UI/UX is deferred.
+- **`_detect_new_spell_levels` is public** (prefixed `_` by convention, but not restricted) so tests can call it directly.
+- **`apply_level_up_auto` is additive** — uses `add_character_spell` not `save_character_spells`, safe for characters who already have lower-level spells.
+- **`is_memorized` / `memorized_slots`** remain in `character_spells` schema (no destructive migration) but are not used by new code. Marked legacy; scheduled for removal in a future cleanup migration.
+
+**Interfaces defined or changed:**
+- `RepertoireEngine.generate_divine_spells_for_new_levels(class_id: String, new_levels: Array) -> Array[Dictionary]`
+- `LevelUpEngine._init(p_class_registry, p_power_registry, p_proficiency_registry=null, p_repertoire_engine=null)` — 4th param added, backward-compatible
+- `LevelUpEngine._detect_new_spell_levels(old_slots: Array, new_slots: Array) -> Array[int]`
+- `_compute_level_up` result dict now includes `"new_spell_levels_unlocked": Array[int]`
+- `CampaignRepository.get_character_formulas(id) -> Array`
+- `CampaignRepository.add_character_formula(id, key, level) -> bool`
+- `CampaignRepository.save_character_formulas(id, spells) -> bool`
+- `CampaignRepository.has_formula(id, key) -> bool`
+- `CampaignRepository.get_expended_slots(id) -> Dictionary`
+- `CampaignRepository.increment_expended_slot(id, level) -> bool`
+- `CampaignRepository.reset_expended_slots(id) -> bool`
+- `CharacterBundle.formulas: Array` — Array[Dictionary] from character_spell_formulas (arcane only)
+- `CharacterBundle.expended_slots: Dictionary` — spell_level(int) -> expended_count(int)
+
+**Database changes:**
+- Migration 018: `character_spell_formulas` and `character_spell_slots_expended` tables added.
+
+**Tests added/updated:**
+- `tests/test_repertoire_engine.gd`: 2 new tests for `generate_divine_spells_for_new_levels`.
+- `tests/test_level_up_engine.gd`: `_make_cleric()` helper + 3 new spell-level detection tests.
+
+**Known issues:**
+- `promotion_engine.gd` calls `save_character_spells` for promoted henchmen. If the henchman is arcane, formula records are NOT saved on promotion. [NEEDS-REVIEW next session touching promotion engine]
+- Arcane repertoire swapping (moving formulae in/out of active repertoire up to slot+INT capacity) is not yet implemented. Architecture supports it: `character_spell_formulas` is separate from `character_spells`. Deferred.
+- Visual smoke test of the spell tab in-editor not yet done — run `test_runner.tscn` and then manually level a cleric to verify the blue info label and spell list appear correctly.
+
+**Next session should:**
+1. Run `tests/test_runner.tscn` and confirm all RepertoireEngine and LevelUpEngine tests pass.
+2. Smoke-test: create a cleric, award XP for level 2, confirm spell list appears in Spells tab after level-up.
+3. Smoke-test: create a mage, confirm starting spells appear as Spell Repertoire and formula records exist in DB.
+4. Review `promotion_engine.gd` for the arcane henchman formula-save gap noted above.

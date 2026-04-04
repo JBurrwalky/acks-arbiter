@@ -14,8 +14,9 @@ func run_all_tests() -> void:
 	test_get_neighbors_count()
 	test_get_neighbors_directions()
 	test_is_adjacent_true()
-	test_is_adjacent_false_diagonal()
+	test_is_adjacent_diagonal_true()
 	test_is_adjacent_false_far()
+	test_chebyshev_distance()
 	test_manhattan_distance_zero()
 	test_manhattan_distance_adjacent()
 	test_manhattan_distance_far()
@@ -63,16 +64,20 @@ func test_screen_to_cell_roundtrip() -> void:
 
 func test_get_neighbors_count() -> void:
 	var n := IsometricGrid.get_neighbors(Vector2i(5, 5))
-	check(n.size() == 4, "get_neighbors should return 4 neighbors, got %d" % n.size())
+	check(n.size() == 8, "get_neighbors should return 8 neighbors, got %d" % n.size())
 
 
 func test_get_neighbors_directions() -> void:
 	var pos := Vector2i(5, 5)
 	var n := IsometricGrid.get_neighbors(pos)
-	check(Vector2i(5, 4) in n, "North neighbor (5,4) should be present")
-	check(Vector2i(6, 5) in n, "East neighbor (6,5) should be present")
-	check(Vector2i(5, 6) in n, "South neighbor (5,6) should be present")
-	check(Vector2i(4, 5) in n, "West neighbor (4,5) should be present")
+	check(Vector2i(5, 4) in n, "N neighbor (5,4) should be present")
+	check(Vector2i(6, 4) in n, "NE neighbor (6,4) should be present")
+	check(Vector2i(6, 5) in n, "E neighbor (6,5) should be present")
+	check(Vector2i(6, 6) in n, "SE neighbor (6,6) should be present")
+	check(Vector2i(5, 6) in n, "S neighbor (5,6) should be present")
+	check(Vector2i(4, 6) in n, "SW neighbor (4,6) should be present")
+	check(Vector2i(4, 5) in n, "W neighbor (4,5) should be present")
+	check(Vector2i(4, 4) in n, "NW neighbor (4,4) should be present")
 
 
 func test_is_adjacent_true() -> void:
@@ -86,9 +91,15 @@ func test_is_adjacent_true() -> void:
 		"(3,3) and (3,2) should be adjacent")
 
 
-func test_is_adjacent_false_diagonal() -> void:
-	check(not IsometricGrid.is_adjacent(Vector2i(3, 3), Vector2i(4, 4)),
-		"(3,3) and (4,4) are diagonal — should NOT be adjacent")
+func test_is_adjacent_diagonal_true() -> void:
+	check(IsometricGrid.is_adjacent(Vector2i(3, 3), Vector2i(4, 4)),
+		"(3,3) and (4,4) are diagonal — should be adjacent (8-directional)")
+	check(IsometricGrid.is_adjacent(Vector2i(3, 3), Vector2i(2, 2)),
+		"(3,3) and (2,2) NW diagonal — should be adjacent")
+	check(IsometricGrid.is_adjacent(Vector2i(3, 3), Vector2i(4, 2)),
+		"(3,3) and (4,2) NE diagonal — should be adjacent")
+	check(IsometricGrid.is_adjacent(Vector2i(3, 3), Vector2i(2, 4)),
+		"(3,3) and (2,4) SW diagonal — should be adjacent")
 
 
 func test_is_adjacent_false_far() -> void:
@@ -111,6 +122,19 @@ func test_manhattan_distance_adjacent() -> void:
 func test_manhattan_distance_far() -> void:
 	check(IsometricGrid.manhattan_distance(Vector2i(0, 0), Vector2i(3, 4)) == 7,
 		"manhattan_distance((0,0),(3,4)) should be 7")
+
+
+func test_chebyshev_distance() -> void:
+	check(IsometricGrid.chebyshev_distance(Vector2i(0, 0), Vector2i(0, 0)) == 0,
+		"chebyshev distance to self should be 0")
+	check(IsometricGrid.chebyshev_distance(Vector2i(0, 0), Vector2i(1, 0)) == 1,
+		"chebyshev distance orthogonal step should be 1")
+	check(IsometricGrid.chebyshev_distance(Vector2i(0, 0), Vector2i(1, 1)) == 1,
+		"chebyshev distance diagonal step should be 1")
+	check(IsometricGrid.chebyshev_distance(Vector2i(0, 0), Vector2i(2, 1)) == 2,
+		"chebyshev_distance((0,0),(2,1)) should be 2")
+	check(IsometricGrid.chebyshev_distance(Vector2i(0, 0), Vector2i(3, 5)) == 5,
+		"chebyshev_distance((0,0),(3,5)) should be 5")
 
 
 func test_cells_in_radius_zero() -> void:

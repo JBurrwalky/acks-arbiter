@@ -652,6 +652,66 @@ func split_item_for_equip(item_id: String, slot: String, uses_per_unit: int) -> 
 	return new_id
 
 
+func split_stack(source_id: String, count: int) -> String:
+	## Split 'count' units from a stack into a new stack at the same location.
+	## Returns new item id, or "" on failure.
+	## count must be > 0 and < source.quantity (cannot split entire stack).
+	db.query_with_bindings("SELECT * FROM inventory_items WHERE id = ?", [source_id])
+	if db.query_result.is_empty():
+		push_error("CampaignRepository.split_stack: item not found. id=%s" % source_id)
+		return ""
+	var source: Dictionary = db.query_result[0].duplicate()
+	var qty: int = int(source.get("quantity", 1))
+	if count <= 0 or count >= qty:
+		push_error("CampaignRepository.split_stack: invalid count %d for qty %d. id=%s" % [count, qty, source_id])
+		return ""
+
+	db.query("BEGIN TRANSACTION")
+
+	if not db.query_with_bindings(
+		"UPDATE inventory_items SET quantity = ? WHERE id = ?",
+		[qty - count, source_id]
+	):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.split_stack: failed decrementing source. id=%s" % source_id)
+		return ""
+
+	var new_id: String = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO inventory_items
+			(id, character_id, item_key, name, quantity, encumbrance_units,
+			 slot, is_equipped, notes, item_category, is_magical, magical_bonus,
+			 weapon_damage, armor_ac_bonus, is_heavy, damage_type, material,
+			 container_id, uses_remaining)
+		VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		new_id,
+		source.get("character_id", ""),
+		source.get("item_key", ""),
+		source.get("name", ""),
+		count,
+		int(source.get("encumbrance_units", 0)),
+		source.get("slot", "pack"),
+		source.get("notes", ""),
+		source.get("item_category", "gear"),
+		int(source.get("is_magical", 0)),
+		int(source.get("magical_bonus", 0)),
+		source.get("weapon_damage", ""),
+		int(source.get("armor_ac_bonus", 0)),
+		int(source.get("is_heavy", 0)),
+		source.get("damage_type", "physical"),
+		source.get("material", ""),
+		source.get("container_id", ""),
+		int(source.get("uses_remaining", -1)),
+	]):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.split_stack: failed inserting new item. source=%s" % source_id)
+		return ""
+
+	db.query("COMMIT")
+	return new_id
+
+
 func merge_item_on_unequip(item_id: String, uses_per_unit: int) -> bool:
 	## Move an equipped item back to pack, merging into an existing stack when unused.
 	## If uses_remaining == uses_per_unit (unused) or -1 (non-consumable): merge into stack.
@@ -907,6 +967,95 @@ func clear_character_spells(character_id: String) -> bool:
 		push_error("CampaignRepository.clear_character_spells: failed. id=%s" % character_id)
 		return false
 	return true
+
+
+# ---------------------------------------------------------------------------
+# Spell Formula CRUD (character_spell_formulas table — migration 018)
+# Arcane casters only. Tracks spell formulae the character possesses.
+# Separate from character_spells (active repertoire).
+# ---------------------------------------------------------------------------
+
+func get_character_formulas(character_id: String) -> Array:
+	## Returns all formula records for the character, ordered by level and key.
+	if not db.query_with_bindings(
+		"SELECT spell_key, spell_level FROM character_spell_formulas WHERE character_id = ? ORDER BY spell_level, spell_key",
+		[character_id]
+	):
+		return []
+	return db.query_result.duplicate()
+
+
+func add_character_formula(character_id: String, spell_key: String, spell_level: int) -> bool:
+	## Adds a single formula record. No-op if already present (UNIQUE constraint).
+	if not db.query_with_bindings(
+		"INSERT OR IGNORE INTO character_spell_formulas (character_id, spell_key, spell_level) VALUES (?, ?, ?)",
+		[character_id, spell_key, spell_level]
+	):
+		push_error("CampaignRepository.add_character_formula: failed. character=%s spell=%s" % [character_id, spell_key])
+		return false
+	return true
+
+
+func save_character_formulas(character_id: String, spells: Array) -> bool:
+	## Replaces all formula records for the character.
+	## Each spell dict must have spell_key and spell_level.
+	if not db.query_with_bindings(
+		"DELETE FROM character_spell_formulas WHERE character_id = ?", [character_id]
+	):
+		push_error("CampaignRepository.save_character_formulas: delete failed. id=%s" % character_id)
+		return false
+	for spell in spells:
+		if not db.query_with_bindings(
+			"INSERT OR IGNORE INTO character_spell_formulas (character_id, spell_key, spell_level) VALUES (?, ?, ?)",
+			[character_id, spell.get("spell_key", ""), int(spell.get("spell_level", 1))]
+		):
+			push_error("CampaignRepository.save_character_formulas: insert failed. spell=%s" % spell.get("spell_key", "?"))
+			return false
+	return true
+
+
+func has_formula(character_id: String, spell_key: String) -> bool:
+	## Returns true if the character has a formula record for the given spell.
+	if not db.query_with_bindings(
+		"SELECT 1 FROM character_spell_formulas WHERE character_id = ? AND spell_key = ?",
+		[character_id, spell_key]
+	):
+		return false
+	return not db.query_result.is_empty()
+
+
+# ---------------------------------------------------------------------------
+# Expended Spell Slot CRUD (character_spell_slots_expended table — migration 018)
+# Tracks how many slots of each level have been used today. Cleared on rest.
+# ---------------------------------------------------------------------------
+
+func get_expended_slots(character_id: String) -> Dictionary:
+	## Returns { spell_level(int): expended_count(int) } for the character.
+	if not db.query_with_bindings(
+		"SELECT spell_level, expended FROM character_spell_slots_expended WHERE character_id = ?",
+		[character_id]
+	):
+		return {}
+	var result: Dictionary = {}
+	for row in db.query_result:
+		result[int(row.get("spell_level", 1))] = int(row.get("expended", 0))
+	return result
+
+
+func increment_expended_slot(character_id: String, spell_level: int) -> bool:
+	## Increments expended count for the given spell level by 1. Upserts the row.
+	return db.query_with_bindings(
+		"INSERT INTO character_spell_slots_expended (character_id, spell_level, expended) VALUES (?, ?, 1) ON CONFLICT(character_id, spell_level) DO UPDATE SET expended = expended + 1",
+		[character_id, spell_level]
+	)
+
+
+func reset_expended_slots(character_id: String) -> bool:
+	## Clears all expended slot records for the character (called on rest).
+	return db.query_with_bindings(
+		"DELETE FROM character_spell_slots_expended WHERE character_id = ?",
+		[character_id]
+	)
 
 
 # ---------------------------------------------------------------------------

@@ -22,13 +22,16 @@ extends RefCounted
 var _class_registry: ClassRegistry
 var _power_registry: PowerRegistry
 var _proficiency_registry: ProficiencyRegistry
+var _repertoire_engine: RepertoireEngine  ## null if not provided; used for divine spell grants
 
 
 func _init(p_class_registry: ClassRegistry, p_power_registry: PowerRegistry,
-		p_proficiency_registry: ProficiencyRegistry = null) -> void:
+		p_proficiency_registry: ProficiencyRegistry = null,
+		p_repertoire_engine: RepertoireEngine = null) -> void:
 	_class_registry = p_class_registry
 	_power_registry = p_power_registry
 	_proficiency_registry = p_proficiency_registry
+	_repertoire_engine = p_repertoire_engine
 
 
 # ---------------------------------------------------------------------------
@@ -136,6 +139,16 @@ func apply_level_up_auto(character: CharacterData) -> Dictionary:
 					"is_active": true,
 				})
 		CampaignRepository.save_character_powers(character.id, existing_powers)
+
+	# Auto-grant divine spells for newly unlocked spell levels (NPC/henchman path).
+	var new_spell_levels: Array = result.get("new_spell_levels_unlocked", [])
+	if not new_spell_levels.is_empty() and _repertoire_engine != null:
+		var casting_power := _class_registry.get_casting_power(character.character_class)
+		if casting_power.get("tradition", "") == "divine":
+			var new_divine_spells := _repertoire_engine.generate_divine_spells_for_new_levels(
+				character.character_class, new_spell_levels)
+			for spell in new_divine_spells:
+				CampaignRepository.add_character_spell(character.id, spell)
 
 	# Persist stat changes.
 	CampaignRepository.update_character_fields(character.id, {
@@ -285,6 +298,7 @@ func _compute_level_up(character: CharacterData) -> Dictionary:
 	# Spell slots.
 	var old_spell_slots := _class_registry.get_spell_slots(class_id, old_level)
 	var new_spell_slots := _class_registry.get_spell_slots(class_id, new_level)
+	var new_spell_levels_unlocked := _detect_new_spell_levels(old_spell_slots, new_spell_slots)
 
 	# New powers.
 	var new_powers := _get_new_powers(class_id, new_level)
@@ -303,6 +317,7 @@ func _compute_level_up(character: CharacterData) -> Dictionary:
 		"new_general_proficiency_slots": int(prof_slots.get("general", 0)),
 		"old_spell_slots":             old_spell_slots,
 		"new_spell_slots":             new_spell_slots,
+		"new_spell_levels_unlocked":   new_spell_levels_unlocked,
 		"new_powers":                  new_powers,
 		"requires_class_selection":    false,
 	}
@@ -341,6 +356,21 @@ func _check_new_proficiency_slots(class_id: String, new_level: int) -> Dictionar
 		"class":   1 if new_level in class_levels else 0,
 		"general": 1 if new_level in general_levels else 0,
 	}
+
+
+# ---------------------------------------------------------------------------
+# Spell Level Unlock Detection
+# ---------------------------------------------------------------------------
+
+func _detect_new_spell_levels(old_slots: Array, new_slots: Array) -> Array[int]:
+	## Returns 1-based spell level indices where slot count transitions from 0 to >0.
+	## These are the spell levels a caster gains access to for the first time at this level-up.
+	var result: Array[int] = []
+	var count := mini(old_slots.size(), new_slots.size())
+	for i in range(count):
+		if int(old_slots[i]) == 0 and int(new_slots[i]) > 0:
+			result.append(i + 1)
+	return result
 
 
 # ---------------------------------------------------------------------------

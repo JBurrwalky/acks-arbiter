@@ -141,7 +141,7 @@ func _add_slot_row(slot: String, equipped_by_slot: Dictionary) -> void:
 	else:
 		var empty_lbl := Label.new()
 		empty_lbl.text = "—"
-		empty_lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		empty_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 		empty_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(empty_lbl)
 
@@ -205,6 +205,10 @@ func _render_inventory(bundle: CharacterBundle) -> void:
 			if _can_equip(item):
 				return func(): _on_equip(item.get("id", ""))
 			return Callable(),
+		func(item: Dictionary) -> Callable:
+			if int(item.get("quantity", 1)) > 1:
+				return func(count: int): _on_split_stack(item.get("id", ""), count)
+			return Callable(),
 	)
 	add_child(loose_zone)
 
@@ -229,8 +233,8 @@ func _on_equip(item_id: String) -> void:
 		return
 	var item_key: String = item.get("item_key", "")
 	var qty: int = int(item.get("quantity", 1))
-	# Bundle items in hand slots: split one unit off the stack
-	if item_key in HAND_HOLDABLE_KEYS and qty > 1:
+	# Any stacked item being equipped: split one unit off the stack
+	if qty > 1:
 		var catalog_entry: Dictionary = _get_catalog().get_item(item_key)
 		var uses_per_unit: int = int(catalog_entry.get("uses_per_unit", -1))
 		if not CampaignRepository.split_item_for_equip(item_id, slot, uses_per_unit).is_empty():
@@ -241,7 +245,6 @@ func _on_equip(item_id: String) -> void:
 
 
 func _on_unequip(item_id: String) -> void:
-	# Look up the item to check if it's a hand-held bundle item needing merge logic
 	var item: Dictionary = {}
 	if _bundle != null:
 		for i in _bundle.inventory:
@@ -249,14 +252,15 @@ func _on_unequip(item_id: String) -> void:
 				item = i
 				break
 	var item_key: String = item.get("item_key", "")
-	if item_key in HAND_HOLDABLE_KEYS:
-		var catalog_entry: Dictionary = _get_catalog().get_item(item_key)
-		var uses_per_unit: int = int(catalog_entry.get("uses_per_unit", -1))
-		if CampaignRepository.merge_item_on_unequip(item_id, uses_per_unit):
-			EventBus.inventory_updated.emit(_character_id)
-	else:
-		if CampaignRepository.update_inventory_item_equip_state(item_id, false, "pack", ""):
-			EventBus.inventory_updated.emit(_character_id)
+	var catalog_entry: Dictionary = _get_catalog().get_item(item_key)
+	var uses_per_unit: int = int(catalog_entry.get("uses_per_unit", -1))
+	if CampaignRepository.merge_item_on_unequip(item_id, uses_per_unit):
+		EventBus.inventory_updated.emit(_character_id)
+
+
+func _on_split_stack(item_id: String, count: int) -> void:
+	if not CampaignRepository.split_stack(item_id, count).is_empty():
+		EventBus.inventory_updated.emit(_character_id)
 
 
 func _on_remove_from_container(item_id: String) -> void:

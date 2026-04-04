@@ -16,7 +16,7 @@ const _COLOR_NORMAL   := Color(0.08, 0.08, 0.12, 1.0)
 const _COLOR_DROP_OK  := Color(0.10, 0.30, 0.10, 1.0)
 
 
-func setup(loose_items: Array, character_id: String, remove_callback: Callable, equip_fn: Callable = Callable()) -> void:
+func setup(loose_items: Array, character_id: String, remove_callback: Callable, equip_fn: Callable = Callable(), split_fn: Callable = Callable()) -> void:
 	_character_id = character_id
 
 	_bg_style = StyleBoxFlat.new()
@@ -41,13 +41,14 @@ func setup(loose_items: Array, character_id: String, remove_callback: Callable, 
 	if loose_items.is_empty():
 		var empty_label := Label.new()
 		empty_label.text = "    (drag containers here to unpack)"
-		empty_label.modulate = Color(0.6, 0.6, 0.6, 1.0)
+		empty_label.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 		_items_box.add_child(empty_label)
 	else:
 		for item in loose_items:
 			var row := EquipmentItemRow.new()
 			var equip_cb: Callable = equip_fn.call(item) if equip_fn.is_valid() else Callable()
-			row.setup(item, remove_callback, character_id, equip_cb)
+			var split_cb: Callable = split_fn.call(item) if split_fn.is_valid() else Callable()
+			row.setup(item, remove_callback, character_id, equip_cb, split_cb)
 			_items_box.add_child(row)
 
 

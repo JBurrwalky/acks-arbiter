@@ -16,30 +16,14 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 	var prof_registry: ProficiencyRegistry = registries.get("proficiency_registry")
 	var power_registry: PowerRegistry = registries.get("power_registry")
 
-	# -- Class Proficiencies --
-	var class_profs: Array = []
-	var general_profs: Array = []
-	for p in bundle.proficiencies:
-		var slot: String = p.get("slot_type", "general")
-		if slot == "class":
-			class_profs.append(p)
-		else:
-			general_profs.append(p)
-
-	if not class_profs.is_empty():
-		_add_section_header("Class Proficiencies")
-		for p in class_profs:
-			_render_proficiency(p, prof_registry)
-
-	if not general_profs.is_empty():
-		if not class_profs.is_empty():
-			add_child(HSeparator.new())
-		_add_section_header("General Proficiencies")
-		for p in general_profs:
-			_render_proficiency(p, prof_registry)
-
-	if class_profs.is_empty() and general_profs.is_empty():
+	# -- Proficiencies (aggregated across class/general sources) --
+	var aggregated := CharacterData.aggregate_proficiencies(bundle.proficiencies)
+	if aggregated.is_empty():
 		_add_text("No proficiencies recorded.")
+	else:
+		_add_section_header("Proficiencies")
+		for p in aggregated:
+			_render_proficiency(p, prof_registry)
 
 	# -- Class Powers --
 	if not bundle.powers.is_empty():
@@ -81,6 +65,15 @@ func _render_proficiency(p: Dictionary, prof_registry: ProficiencyRegistry) -> v
 		full_name += " (Rank %d)" % rank
 	if not spec.is_empty():
 		full_name += "  [%s]" % spec.replace("_", " ").capitalize()
+	# Provenance tag from aggregated slot_types
+	var slot_types: Array = p.get("slot_types", [])
+	if not slot_types.is_empty():
+		if "class" in slot_types and "general" in slot_types:
+			full_name += "  [C+G]"
+		elif "class" in slot_types:
+			full_name += "  [C]"
+		elif "general" in slot_types:
+			full_name += "  [G]"
 	name_lbl.text = full_name
 	name_lbl.add_theme_font_size_override("font_size", 12)
 	name_row.add_child(name_lbl)
@@ -91,7 +84,7 @@ func _render_proficiency(p: Dictionary, prof_registry: ProficiencyRegistry) -> v
 		desc_lbl.text = "    " + description
 		desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		desc_lbl.add_theme_font_size_override("font_size", 10)
-		desc_lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+		desc_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 		add_child(desc_lbl)
 
 	# Effects summary
@@ -100,7 +93,7 @@ func _render_proficiency(p: Dictionary, prof_registry: ProficiencyRegistry) -> v
 		eff_lbl.text = "    " + effects_text
 		eff_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		eff_lbl.add_theme_font_size_override("font_size", 10)
-		eff_lbl.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
+		eff_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 		add_child(eff_lbl)
 
 
@@ -125,21 +118,21 @@ func _render_power(power_row: Dictionary, character_level: int, power_registry: 
 	name_lbl.text = display_name
 	name_lbl.add_theme_font_size_override("font_size", 12)
 	if not is_active:
-		name_lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		name_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	name_row.add_child(name_lbl)
 
 	if unlock_level > 1:
 		var lvl_lbl := Label.new()
 		lvl_lbl.text = "(gained at level %d)" % unlock_level
 		lvl_lbl.add_theme_font_size_override("font_size", 10)
-		lvl_lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+		lvl_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 		name_row.add_child(lvl_lbl)
 
 	if not is_active and unlock_level > character_level:
 		var locked_lbl := Label.new()
 		locked_lbl.text = "  [not yet gained]"
 		locked_lbl.add_theme_font_size_override("font_size", 10)
-		locked_lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		locked_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 		name_row.add_child(locked_lbl)
 
 	if not description.is_empty():
@@ -147,7 +140,7 @@ func _render_power(power_row: Dictionary, character_level: int, power_registry: 
 		desc_lbl.text = "    " + description
 		desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		desc_lbl.add_theme_font_size_override("font_size", 10)
-		desc_lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+		desc_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 		add_child(desc_lbl)
 
 

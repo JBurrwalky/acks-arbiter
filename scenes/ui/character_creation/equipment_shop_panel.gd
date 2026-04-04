@@ -297,13 +297,13 @@ func _add_item_row(item: Dictionary, cls: Dictionary) -> void:
 	var enc_str := "%.1f stone" % (enc / 1000.0) if enc > 0 else "negligible"
 	detail_lbl.text = "%s  |  %s" % [EquipmentCatalog.format_cost(cost_cp), enc_str]
 	detail_lbl.add_theme_font_size_override("font_size", 11)
-	detail_lbl.modulate = Color(0.75, 0.75, 0.75, 1.0)
+	detail_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	info_vbox.add_child(detail_lbl)
 
 	if not restriction_warning.is_empty():
 		var warn_lbl := Label.new()
 		warn_lbl.text = restriction_warning
-		warn_lbl.add_theme_color_override("font_color", Color(1.0, 0.75, 0.2, 1.0))
+		warn_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR)
 		warn_lbl.add_theme_font_size_override("font_size", 11)
 		warn_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		info_vbox.add_child(warn_lbl)
@@ -625,7 +625,7 @@ func _refresh_cart() -> void:
 	if inventory.is_empty():
 		var lbl := Label.new()
 		lbl.text = "(nothing purchased yet)"
-		lbl.modulate = Color(0.6, 0.6, 0.6, 1.0)
+		lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 		_cart_container.add_child(lbl)
 		return
 

@@ -323,14 +323,14 @@ func _setup_divine(class_id: String, has_l1_slots: bool) -> void:
 			var lbl := Label.new()
 			if s.get("is_tradition_bonus", false):
 				lbl.text = "  • %s  (tradition bonus)" % display
-				lbl.modulate = Color(0.8, 0.9, 1.0, 1.0)
+				lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 			else:
 				lbl.text = "  • %s" % display
 			_main_content.add_child(lbl)
 
 	var info := Label.new()
 	info.text = "Divine casters know all spells for each level they can cast."
-	info.modulate = Color(0.7, 0.9, 0.7, 1.0)
+	info.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	_main_content.add_child(info)
 
 

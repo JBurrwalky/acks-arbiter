@@ -9,7 +9,9 @@ extends RefCounted
 var character: CharacterData = null
 var proficiencies: Array = []     ## Array[Dictionary] from character_proficiencies table
 var inventory: Array = []         ## Array[Dictionary] from inventory_items table
-var spells: Array = []            ## Array[Dictionary] from character_spells table
+var spells: Array = []            ## Array[Dictionary] from character_spells table (active repertoire)
+var formulas: Array = []          ## Array[Dictionary] from character_spell_formulas (arcane only)
+var expended_slots: Dictionary = {}  ## spell_level(int) -> expended_count(int) for today
 var powers: Array = []            ## Array[Dictionary] from character_powers table
 var conditions: Array = []        ## Array[Dictionary] from character_conditions table
 var active_effects: Array = []    ## Array[Dictionary] from active_effects table

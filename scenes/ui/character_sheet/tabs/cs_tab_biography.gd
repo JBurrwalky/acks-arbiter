@@ -3,6 +3,8 @@ extends VBoxContainer
 
 ## Biography tab — identity, portrait, HP, age, languages.
 
+const PORTRAIT_DISPLAY_SIZE := Vector2(512, 512)
+
 
 func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 	for child in get_children():
@@ -18,7 +20,10 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 	if texture != null:
 		var img_rect := TextureRect.new()
 		img_rect.texture = texture
-		img_rect.custom_minimum_size = Vector2(128, 128)
+		# Ignore the portrait's native imported size so large source images
+		# stay inside the intended biography portrait frame.
+		img_rect.custom_minimum_size = PORTRAIT_DISPLAY_SIZE
+		img_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		img_rect.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		img_rect.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		img_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

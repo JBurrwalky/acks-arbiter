@@ -9,13 +9,15 @@ extends PanelContainer
 var _item: Dictionary = {}
 var _remove_callback: Callable
 var _equip_callback: Callable
+var _split_callback: Callable
 var _character_id: String
 
 
-func setup(item: Dictionary, remove_callback: Callable, character_id: String, equip_callback: Callable = Callable()) -> void:
+func setup(item: Dictionary, remove_callback: Callable, character_id: String, equip_callback: Callable = Callable(), split_callback: Callable = Callable()) -> void:
 	_item = item
 	_remove_callback = remove_callback
 	_equip_callback = equip_callback
+	_split_callback = split_callback
 	_character_id = character_id
 
 	var style := StyleBoxFlat.new()
@@ -53,8 +55,15 @@ func _build() -> void:
 	if _equip_callback.is_valid() and _item.get("container_id", "").is_empty():
 		var equip_btn := Button.new()
 		equip_btn.text = "Equip"
-		equip_btn.pressed.connect(func(): _equip_callback.call(_item))
+		equip_btn.pressed.connect(func(): _equip_callback.call())
 		hbox.add_child(equip_btn)
+
+	# Show Split button for stacks with qty > 1
+	if qty > 1 and _split_callback.is_valid():
+		var split_btn := Button.new()
+		split_btn.text = "Split"
+		split_btn.pressed.connect(_on_split_pressed.bind(qty))
+		hbox.add_child(split_btn)
 
 	# Show Remove button only for items inside a container
 	if not _item.get("container_id", "").is_empty():
@@ -62,6 +71,33 @@ func _build() -> void:
 		remove_btn.text = "Remove"
 		remove_btn.pressed.connect(func(): _remove_callback.call(_item))
 		hbox.add_child(remove_btn)
+
+
+func _on_split_pressed(max_qty: int) -> void:
+	var dialog := ConfirmationDialog.new()
+	dialog.title = "Split Stack"
+	UiSurfaceStyles.apply_framed_window_chrome(dialog)
+
+	var vbox := VBoxContainer.new()
+	var lbl := Label.new()
+	lbl.text = "Split off how many?"
+	vbox.add_child(lbl)
+
+	var spin := SpinBox.new()
+	spin.min_value = 1
+	spin.max_value = max_qty - 1
+	spin.value = 1
+	vbox.add_child(spin)
+
+	dialog.add_child(vbox)
+	add_child(dialog)
+
+	dialog.confirmed.connect(func():
+		_split_callback.call(int(spin.value))
+		dialog.queue_free()
+	)
+	dialog.canceled.connect(func(): dialog.queue_free())
+	dialog.popup_centered()
 
 
 # ---------------------------------------------------------------------------

@@ -61,7 +61,7 @@ func display(bundle: CharacterBundle, _registries: Dictionary) -> void:
 		var note := Label.new()
 		note.text = "* Modified by active effects"
 		note.add_theme_font_size_override("font_size", 10)
-		note.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
+		note.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 		add_child(note)
 
 	add_child(HSeparator.new())
@@ -104,7 +104,7 @@ func display(bundle: CharacterBundle, _registries: Dictionary) -> void:
 		var note := Label.new()
 		note.text = "* Modified by active effects"
 		note.add_theme_font_size_override("font_size", 10)
-		note.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
+		note.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 		add_child(note)
 
 
@@ -147,7 +147,7 @@ func _make_col_label(parent: HBoxContainer, text: String, min_width: int, highli
 	lbl.text = text
 	lbl.custom_minimum_size = Vector2(min_width, 0)
 	if highlight:
-		lbl.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
+		lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	parent.add_child(lbl)
 
 

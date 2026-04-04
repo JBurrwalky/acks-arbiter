@@ -154,7 +154,8 @@ func _refresh_display() -> void:
 		summary_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		summary_lbl.text = "Array %d: %s" % [idx + 1, _format_score_summary(score_options[idx])]
 		if idx == selected_idx:
-			summary_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3, 1.0))
+			summary_lbl.add_theme_color_override("font_color",
+				UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR)
 		row.add_child(summary_lbl)
 
 	for ability in ABILITY_ORDER:

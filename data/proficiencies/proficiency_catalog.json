@@ -722,9 +722,9 @@
       "proficiency_name": "Gambling",
       "type": "general",
       "source": "ACKS Core",
-      "description": "Earn 1d6 gp/month as a professional gambler; each additional selection adds another 1d6 gp/month. Gambling is a contested d6 roll mechanic with raise or fold options.",
-      "max_rank": 1,
-      "max_selections": 3,
+      "description": "Earn 1d6 gp/month as a professional gambler; each additional selection adds another 1d6 gp/month, up to rank 5. Gambling is a contested d6 roll mechanic with raise or fold options.",
+      "max_rank": 5,
+      "max_selections": 5,
       "selection_rule": "stacking",
       "level_scaling": null,
       "effects": {

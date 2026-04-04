@@ -183,7 +183,7 @@ func _build_ui() -> void:
 		age_val.text = "%d years (%s)" % [starting_age, age_cat.capitalize().replace("_", " ")]
 	else:
 		age_val.text = "—"
-	age_val.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
+	age_val.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	age_row.add_child(age_val)
 
 	add_child(HSeparator.new())

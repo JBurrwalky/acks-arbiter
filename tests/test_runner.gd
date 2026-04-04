@@ -20,6 +20,9 @@ extends Node
 @onready var _encumbrance_tests = $EncumbranceTests
 @onready var _ability_roll_panel_tests = $AbilityRollPanelTests
 @onready var _equipment_shop_panel_tests = $EquipmentShopPanelTests
+@onready var _equipment_item_row_tests = $EquipmentItemRowTests
+@onready var _portrait_display_sizing_tests = $PortraitDisplaySizingTests
+@onready var _ui_surface_styles_tests = $UiSurfaceStylesTests
 @onready var _character_generator_tests = $CharacterGeneratorTests
 @onready var _character_persistence_tests = $CharacterPersistenceTests
 @onready var _class_powers_tests = $ClassPowersTests
@@ -33,6 +36,7 @@ extends Node
 @onready var _active_effect_tracker_tests = $ActiveEffectTrackerTests
 @onready var _spell_effect_registry_tests = $SpellEffectRegistryTests
 @onready var _proficiency_registry_tests = $ProficiencyRegistryTests
+@onready var _proficiency_selection_panel_tests = $ProficiencySelectionPanelTests
 @onready var _proficiency_effect_resolver_tests = $ProficiencyEffectResolverTests
 @onready var _proficiency_integration_tests = $ProficiencyIntegrationTests
 @onready var _equipment_catalog_tests = $EquipmentCatalogTests
@@ -47,6 +51,7 @@ extends Node
 @onready var _isometric_grid_tests = $IsometricGridTests
 @onready var _tactical_map_data_tests = $TacticalMapDataTests
 @onready var _dungeon_map_controller_tests = $DungeonMapControllerTests
+@onready var _proficiency_cross_slot_tests = $ProficiencyCrossSlotTests
 
 
 func _ready() -> void:
@@ -61,14 +66,16 @@ func run() -> void:
 			_timekeeping_tests, _calendar_seasons_tests,
 			_ability_utils_tests, _class_registry_tests, _power_registry_tests,
 			_encumbrance_tests, _ability_roll_panel_tests,
-			_equipment_shop_panel_tests,
+			_equipment_shop_panel_tests, _equipment_item_row_tests,
+			_portrait_display_sizing_tests, _ui_surface_styles_tests,
 			_character_generator_tests, _character_persistence_tests,
 			_class_powers_tests, _npc_generation_tests,
 			_spell_registry_tests, _repertoire_engine_tests,
 			_modifier_stack_tests, _entity_flags_tests,
 			_condition_catalog_tests, _damage_resistance_tests,
 			_active_effect_tracker_tests, _spell_effect_registry_tests,
-			_proficiency_registry_tests, _proficiency_effect_resolver_tests,
+			_proficiency_registry_tests, _proficiency_selection_panel_tests,
+			_proficiency_effect_resolver_tests,
 			_proficiency_integration_tests,
 			_equipment_catalog_tests, _specialization_registry_tests,
 			_persistence_tier_tests,
@@ -77,7 +84,8 @@ func run() -> void:
 			_asset_registry_tests,
 			_navigation_stack_tests,
 			_isometric_grid_tests, _tactical_map_data_tests,
-			_dungeon_map_controller_tests]:
+			_dungeon_map_controller_tests,
+			_proficiency_cross_slot_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

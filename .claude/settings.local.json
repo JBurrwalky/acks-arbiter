@@ -55,7 +55,8 @@
       "Bash(grep dungeon:*)",
       "Bash(sort find:*)",
       "Bash(find:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(grep -A 5 '\"tradition\"' /c/Users/jttau/acks-arbiter/data/classes/*.json)"
     ]
   }
 }

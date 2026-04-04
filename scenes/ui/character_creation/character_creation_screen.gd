@@ -501,6 +501,14 @@ func _finalize_character() -> void:
 	var spells: Array = creation_state.get("spells", [])
 	if not spells.is_empty():
 		CampaignRepository.save_character_spells(character.id, spells)
+		# Arcane casters: also save starting spells as formula records.
+		if _class_registry.get_casting_power(character.character_class).get("tradition", "") == "arcane":
+			CampaignRepository.save_character_formulas(character.id, spells)
+
+	# Apostasy proficiency: save the 4 chosen divine spells (additive, alongside class repertoire).
+	var apostasy_spells: Array = creation_state.get("apostasy_spells", [])
+	for spell in apostasy_spells:
+		CampaignRepository.add_character_spell(character.id, spell)
 
 	# Persist inventory (equipment + coin items from remaining gold).
 	var inventory: Array = creation_state.get("inventory", [])
@@ -558,17 +566,8 @@ func _build_ui() -> void:
 	# Root: full-screen PanelContainer with vellum background
 	var root := PanelContainer.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	UiSurfaceStyles.apply_textured_panel(root)
 	add_child(root)
-
-	var vellum := load("res://assets/ui/bg_vellum_base.png") as Texture2D
-	if vellum != null:
-		var vellum_style := StyleBoxTexture.new()
-		vellum_style.texture = vellum
-		vellum_style.content_margin_left = 0.0
-		vellum_style.content_margin_right = 0.0
-		vellum_style.content_margin_top = 0.0
-		vellum_style.content_margin_bottom = 0.0
-		root.add_theme_stylebox_override("panel", vellum_style)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 32)
@@ -605,6 +604,7 @@ func _build_ui() -> void:
 	# --- Content area (panels live here) ---
 	_content_area = PanelContainer.new()
 	_content_area.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	UiSurfaceStyles.apply_framed_window_chrome(_content_area)
 	vbox.add_child(_content_area)
 
 	# Build and add all 9 step panels

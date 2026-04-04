@@ -13,6 +13,9 @@
 [ext_resource type="Script" path="res://tests/test_encumbrance.gd" id="11_encumbrance_tests"]
 [ext_resource type="Script" path="res://tests/test_ability_roll_panel.gd" id="12_ability_roll_panel_tests"]
 [ext_resource type="Script" path="res://tests/test_equipment_shop_panel.gd" id="13_equipment_shop_panel_tests"]
+[ext_resource type="Script" path="res://tests/test_portrait_display_sizing.gd" id="44_portrait_display_sizing_tests"]
+[ext_resource type="Script" path="res://tests/test_ui_surface_styles.gd" id="45_ui_surface_styles_tests"]
+[ext_resource type="Script" path="res://tests/test_equipment_item_row.gd" id="42_equipment_item_row_tests"]
 [ext_resource type="Script" path="res://tests/test_character_generator.gd" id="14_character_generator_tests"]
 [ext_resource type="Script" path="res://tests/test_character_persistence.gd" id="15_character_persistence_tests"]
 [ext_resource type="Script" path="res://tests/test_class_powers.gd" id="16_class_powers_tests"]
@@ -26,6 +29,7 @@
 [ext_resource type="Script" path="res://tests/test_active_effect_tracker.gd" id="24_active_effect_tracker_tests"]
 [ext_resource type="Script" path="res://tests/test_spell_effect_registry.gd" id="25_spell_effect_registry_tests"]
 [ext_resource type="Script" path="res://tests/test_proficiency_registry.gd" id="26_proficiency_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_proficiency_selection_panel.gd" id="43_proficiency_selection_panel_tests"]
 [ext_resource type="Script" path="res://tests/test_proficiency_effect_resolver.gd" id="27_proficiency_effect_resolver_tests"]
 [ext_resource type="Script" path="res://tests/test_proficiency_integration.gd" id="28_proficiency_integration_tests"]
 [ext_resource type="Script" path="res://tests/test_equipment_catalog.gd" id="29_equipment_catalog_tests"]
@@ -40,6 +44,7 @@
 [ext_resource type="Script" path="res://tests/test_isometric_grid.gd" id="38_isometric_grid_tests"]
 [ext_resource type="Script" path="res://tests/test_tactical_map_data.gd" id="39_tactical_map_data_tests"]
 [ext_resource type="Script" path="res://tests/test_dungeon_map_controller.gd" id="40_dungeon_map_controller_tests"]
+[ext_resource type="Script" path="res://tests/test_proficiency_cross_slot.gd" id="41_proficiency_cross_slot_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -80,6 +85,15 @@ script = ExtResource("12_ability_roll_panel_tests")
 [node name="EquipmentShopPanelTests" type="Node" parent="."]
 script = ExtResource("13_equipment_shop_panel_tests")
 
+[node name="PortraitDisplaySizingTests" type="Node" parent="."]
+script = ExtResource("44_portrait_display_sizing_tests")
+
+[node name="UiSurfaceStylesTests" type="Node" parent="."]
+script = ExtResource("45_ui_surface_styles_tests")
+
+[node name="EquipmentItemRowTests" type="Node" parent="."]
+script = ExtResource("42_equipment_item_row_tests")
+
 [node name="CharacterGeneratorTests" type="Node" parent="."]
 script = ExtResource("14_character_generator_tests")
 
@@ -118,6 +132,9 @@ script = ExtResource("25_spell_effect_registry_tests")
 
 [node name="ProficiencyRegistryTests" type="Node" parent="."]
 script = ExtResource("26_proficiency_registry_tests")
+
+[node name="ProficiencySelectionPanelTests" type="Node" parent="."]
+script = ExtResource("43_proficiency_selection_panel_tests")
 
 [node name="ProficiencyEffectResolverTests" type="Node" parent="."]
 script = ExtResource("27_proficiency_effect_resolver_tests")
@@ -160,3 +177,6 @@ script = ExtResource("39_tactical_map_data_tests")
 
 [node name="DungeonMapControllerTests" type="Node" parent="."]
 script = ExtResource("40_dungeon_map_controller_tests")
+
+[node name="ProficiencyCrossSlotTests" type="Node" parent="."]
+script = ExtResource("41_proficiency_cross_slot_tests")

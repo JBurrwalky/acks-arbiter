@@ -58,66 +58,80 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 
 	add_child(HSeparator.new())
 
-	# Spells known, organized by level
+	# Spell repertoire and known formulae display
 	if bundle.spells.is_empty():
-		_add_text("No spells recorded.")
+		_add_text("Spells will be available once you reach casting level.")
 		return
 
-	## Group spells by level
-	var by_level: Dictionary = {}
+	# Build repertoire index for quick lookup.
+	var repertoire_keys: Dictionary = {}
+	var repertoire_by_level: Dictionary = {}  # int -> Array[Dictionary]
 	var max_spell_level := 0
 	for spell_dict in bundle.spells:
 		var lvl: int = int(spell_dict.get("spell_level", 1))
 		if lvl > max_spell_level:
 			max_spell_level = lvl
-		if not by_level.has(lvl):
-			by_level[lvl] = []
-		by_level[lvl].append(spell_dict)
+		repertoire_keys[spell_dict.get("spell_key", "")] = true
+		if not repertoire_by_level.has(lvl):
+			repertoire_by_level[lvl] = []
+		repertoire_by_level[lvl].append(spell_dict)
 
-	## Count memorized per level for summary
-	var memorized_count: Dictionary = {}
-	for spell_dict in bundle.spells:
-		var lvl: int = int(spell_dict.get("spell_level", 1))
-		if bool(int(spell_dict.get("is_memorized", 0))):
-			memorized_count[lvl] = memorized_count.get(lvl, 0) + 1
+	# Formulas not in active repertoire (arcane only).
+	var known_not_active: Array = []
+	for formula in bundle.formulas:
+		if not repertoire_keys.has(formula.get("spell_key", "")):
+			known_not_active.append(formula)
 
-	_add_section_header("Spells Known")
+	_add_section_header("Spell Repertoire")
 
 	for lvl in range(1, max_spell_level + 1):
-		if not by_level.has(lvl):
+		if not repertoire_by_level.has(lvl):
 			continue
-
 		var slots_avail: int = slots_by_level[lvl - 1] if lvl - 1 < slots_by_level.size() else 0
-		var memorized: int = memorized_count.get(lvl, 0)
+		var expended: int = bundle.expended_slots.get(lvl, 0)
 
 		var level_lbl := Label.new()
-		level_lbl.text = "Level %d  (%d/%d memorized)" % [lvl, memorized, slots_avail]
+		level_lbl.text = "Level %d — %d slots/day (%d expended today)" % [lvl, slots_avail, expended]
 		level_lbl.add_theme_font_size_override("font_size", 12)
 		add_child(level_lbl)
 
-		for spell_dict in by_level[lvl]:
+		for spell_dict in repertoire_by_level[lvl]:
 			var spell_key: String = spell_dict.get("spell_key", "")
-			var is_memorized: bool = bool(int(spell_dict.get("is_memorized", 0)))
-			var in_repertoire: bool = bool(int(spell_dict.get("is_in_repertoire", 0)))
-
 			var spell_name := spell_key.replace("_", " ").capitalize()
 			if spell_registry != null and spell_registry.has_spell(spell_key):
-				var sdef := spell_registry.get_spell(spell_key)
-				spell_name = sdef.get("spell_name", spell_name)
-
-			var bullet := "  \u2022 "
-			bullet += spell_name
-			if is_memorized:
-				bullet += "  [memorized]"
-			elif in_repertoire:
-				bullet += "  [known, not memorized]"
-
+				spell_name = spell_registry.get_spell(spell_key).get("spell_name", spell_name)
 			var slbl := Label.new()
-			slbl.text = bullet
+			slbl.text = "  \u2022 " + spell_name
 			slbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			if not is_memorized:
-				slbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
 			add_child(slbl)
+
+	# Arcane casters: show known-but-not-in-active-repertoire spells.
+	if not known_not_active.is_empty():
+		add_child(HSeparator.new())
+		_add_section_header("Spells Known (Not in Active Repertoire)")
+		var known_by_level: Dictionary = {}
+		for formula in known_not_active:
+			var lvl: int = int(formula.get("spell_level", 1))
+			if not known_by_level.has(lvl):
+				known_by_level[lvl] = []
+			known_by_level[lvl].append(formula)
+		var known_levels: Array = known_by_level.keys()
+		known_levels.sort()
+		for lvl in known_levels:
+			var level_lbl := Label.new()
+			level_lbl.text = "Level %d" % lvl
+			level_lbl.add_theme_font_size_override("font_size", 12)
+			add_child(level_lbl)
+			for formula in known_by_level[lvl]:
+				var spell_key: String = formula.get("spell_key", "")
+				var spell_name := spell_key.replace("_", " ").capitalize()
+				if spell_registry != null and spell_registry.has_spell(spell_key):
+					spell_name = spell_registry.get_spell(spell_key).get("spell_name", spell_name)
+				var slbl := Label.new()
+				slbl.text = "  \u2022 " + spell_name
+				slbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				slbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
+				add_child(slbl)
 
 
 # ---------------------------------------------------------------------------

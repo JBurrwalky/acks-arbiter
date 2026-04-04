@@ -51,6 +51,7 @@ func _build_ui() -> void:
 	var left_panel := PanelContainer.new()
 	left_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	left_panel.size_flags_stretch_ratio = 0.4
+	UiSurfaceStyles.apply_textured_panel(left_panel)
 	hbox.add_child(left_panel)
 
 	var scroll := ScrollContainer.new()
@@ -93,6 +94,7 @@ func _build_ui() -> void:
 	var right_panel := PanelContainer.new()
 	right_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right_panel.size_flags_stretch_ratio = 0.6
+	UiSurfaceStyles.apply_textured_panel(right_panel)
 	hbox.add_child(right_panel)
 
 	_detail_area = VBoxContainer.new()
@@ -268,7 +270,7 @@ func _show_class_detail(class_id: String) -> void:
 	if _ineligible_reasons.has(class_id):
 		var warn := Label.new()
 		warn.text = "⚠ " + _ineligible_reasons[class_id]
-		warn.add_theme_color_override("font_color", Color(1.0, 0.4, 0.2, 1.0))
+		warn.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR)
 		warn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_detail_area.add_child(warn)
 

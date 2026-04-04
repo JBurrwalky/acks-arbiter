@@ -138,6 +138,54 @@ func get_class_spell_list_id(class_id: String, class_registry: ClassRegistry) ->
 	return power.get("spell_list", "")
 
 
+func get_divine_spells_not_on_class_list(class_id: String, class_registry: ClassRegistry) -> Dictionary:
+	## Returns {spell_level(int): Array[String]} — all non-reversed-form divine spell keys
+	## NOT available to the given class, sorted by spell name within each level.
+	## If the class has no divine spell list, returns ALL divine spells (non-reversed).
+
+	# Collect reverse-form keys to exclude from picker (they're auto-added at save time).
+	var reverse_keys: Dictionary = {}
+	for spell_key in _spells.keys():
+		var entry: Dictionary = _spells[spell_key]
+		if entry.get("is_reversible", false):
+			var rv: String = entry.get("reverse_key", "")
+			if not rv.is_empty():
+				reverse_keys[rv] = true
+
+	# Build the set of spell keys available to this class across all levels.
+	var available_keys: Dictionary = {}
+	var list_id := get_class_spell_list_id(class_id, class_registry)
+	if not list_id.is_empty():
+		for level in range(1, 7):
+			for k in get_available_spells_for_class(class_id, level, class_registry):
+				available_keys[k as String] = true
+
+	# Collect divine spells not on the class list, grouped by level.
+	var result: Dictionary = {}
+	for spell_key in _spells.keys():
+		var key_str := spell_key as String
+		if reverse_keys.has(key_str) or available_keys.has(key_str):
+			continue
+		var entry: Dictionary = _spells[key_str]
+		for classification in entry.get("classifications", []):
+			if classification.get("tradition", "") == "divine":
+				var level := int(classification.get("level", 1))
+				if not result.has(level):
+					result[level] = []
+				(result[level] as Array).append(key_str)
+				break
+
+	# Sort each level's spells by display name.
+	for level in result.keys():
+		var arr: Array = result[level]
+		arr.sort_custom(func(a: String, b: String) -> bool:
+			var na: String = (_spells.get(a, {}) as Dictionary).get("spell_name", a)
+			var nb: String = (_spells.get(b, {}) as Dictionary).get("spell_name", b)
+			return na < nb)
+
+	return result
+
+
 func get_available_spells_for_class(class_id: String, spell_level: int, class_registry: ClassRegistry) -> Array[String]:
 	## All spell_keys available to a class at a given spell level.
 	## Base list spells + class-restricted bonus spells (for divine classes).

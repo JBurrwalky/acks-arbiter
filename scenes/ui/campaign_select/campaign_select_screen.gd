@@ -16,12 +16,18 @@ extends CanvasLayer
 signal campaign_selected(campaign_id: String)
 
 
+const ROW_BG_COLOR := Color(0.94, 0.89, 0.78, 0.42)
+const ROW_BORDER_COLOR := Color(0.44, 0.31, 0.18, 0.88)
+const MODAL_BACKDROP_COLOR := Color(0.09, 0.07, 0.05, 0.52)
+
+
 # ---------------------------------------------------------------------------
 # UI node references (built programmatically in _build_ui)
 # ---------------------------------------------------------------------------
 
 var _list_container: VBoxContainer   # populated by _refresh_list()
 var _scroll: ScrollContainer
+var _create_dialog_backdrop: ColorRect
 var _create_dialog: PanelContainer   # new-campaign dialog (hidden until needed)
 var _name_input: LineEdit
 var _world_input: LineEdit
@@ -47,7 +53,7 @@ func enter(_params: Dictionary = {}) -> void:
 
 
 func exit() -> void:
-	_create_dialog.visible = false
+	_set_create_dialog_visible(false)
 
 
 func save_state() -> Dictionary:
@@ -69,30 +75,47 @@ func _build_ui() -> void:
 	root.anchor_bottom = 1.0
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
+	UiSurfaceStyles.apply_vellum_text_theme(root)
 
-	# Dark background
-	var bg := ColorRect.new()
-	bg.color = Color(0.05, 0.05, 0.1, 0.97)
-	bg.anchor_right = 1.0
-	bg.anchor_bottom = 1.0
+	# Full-screen vellum background
+	var bg := UiSurfaceStyles.make_background_rect()
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(bg)
 
 	# Centered panel  (600 wide × 520 tall, anchored to viewport center)
-	var panel := PanelContainer.new()
-	panel.anchor_left = 0.5
-	panel.anchor_top = 0.5
-	panel.anchor_right = 0.5
-	panel.anchor_bottom = 0.5
-	panel.offset_left = -300.0
-	panel.offset_top = -260.0
-	panel.offset_right = 300.0
-	panel.offset_bottom = 260.0
-	root.add_child(panel)
+	var panel_frame := PanelContainer.new()
+	panel_frame.anchor_left = 0.5
+	panel_frame.anchor_top = 0.5
+	panel_frame.anchor_right = 0.5
+	panel_frame.anchor_bottom = 0.5
+	panel_frame.offset_left = -300.0
+	panel_frame.offset_top = -260.0
+	panel_frame.offset_right = 300.0
+	panel_frame.offset_bottom = 260.0
+	panel_frame.add_theme_stylebox_override("panel", _make_frame_style())
+	root.add_child(panel_frame)
+
+	var panel_frame_margin := MarginContainer.new()
+	panel_frame_margin.add_theme_constant_override("margin_left", 8)
+	panel_frame_margin.add_theme_constant_override("margin_right", 8)
+	panel_frame_margin.add_theme_constant_override("margin_top", 8)
+	panel_frame_margin.add_theme_constant_override("margin_bottom", 8)
+	panel_frame.add_child(panel_frame_margin)
+
+	var panel_inner := PanelContainer.new()
+	panel_inner.add_theme_stylebox_override("panel", _make_vellum_style())
+	panel_frame_margin.add_child(panel_inner)
+
+	var panel_margin := MarginContainer.new()
+	panel_margin.add_theme_constant_override("margin_left", 18)
+	panel_margin.add_theme_constant_override("margin_right", 18)
+	panel_margin.add_theme_constant_override("margin_top", 18)
+	panel_margin.add_theme_constant_override("margin_bottom", 18)
+	panel_inner.add_child(panel_margin)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 10)
-	panel.add_child(vbox)
+	panel_margin.add_child(vbox)
 
 	# --- Title ---
 	var title := Label.new()
@@ -110,10 +133,34 @@ func _build_ui() -> void:
 	vbox.add_child(sep)
 
 	# --- Campaign list ---
+	var list_frame := PanelContainer.new()
+	list_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	list_frame.add_theme_stylebox_override("panel", _make_list_inset_style())
+	vbox.add_child(list_frame)
+
+	var list_frame_margin := MarginContainer.new()
+	list_frame_margin.add_theme_constant_override("margin_left", 4)
+	list_frame_margin.add_theme_constant_override("margin_right", 4)
+	list_frame_margin.add_theme_constant_override("margin_top", 4)
+	list_frame_margin.add_theme_constant_override("margin_bottom", 4)
+	list_frame.add_child(list_frame_margin)
+
+	var list_panel := PanelContainer.new()
+	list_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	list_panel.add_theme_stylebox_override("panel", _make_vellum_style())
+	list_frame_margin.add_child(list_panel)
+
+	var list_margin := MarginContainer.new()
+	list_margin.add_theme_constant_override("margin_left", 10)
+	list_margin.add_theme_constant_override("margin_right", 10)
+	list_margin.add_theme_constant_override("margin_top", 10)
+	list_margin.add_theme_constant_override("margin_bottom", 10)
+	list_panel.add_child(list_margin)
+
 	_scroll = ScrollContainer.new()
 	_scroll.custom_minimum_size = Vector2(0, 320)
 	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(_scroll)
+	list_margin.add_child(_scroll)
 
 	_list_container = VBoxContainer.new()
 	_list_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -134,6 +181,14 @@ func _build_ui() -> void:
 	new_btn.pressed.connect(_on_new_campaign_pressed)
 	footer.add_child(new_btn)
 
+	_create_dialog_backdrop = ColorRect.new()
+	_create_dialog_backdrop.color = MODAL_BACKDROP_COLOR
+	_create_dialog_backdrop.anchor_right = 1.0
+	_create_dialog_backdrop.anchor_bottom = 1.0
+	_create_dialog_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_create_dialog_backdrop.visible = false
+	root.add_child(_create_dialog_backdrop)
+
 	# --- New campaign dialog (hidden initially) ---
 	_create_dialog = _build_create_dialog()
 	_create_dialog.visible = false
@@ -145,6 +200,7 @@ func _build_ui() -> void:
 	_confirm_dialog.dialog_text = "Delete this campaign permanently?\nAll progress will be lost."
 	_confirm_dialog.confirmed.connect(_on_delete_confirmed)
 	add_child(_confirm_dialog)
+	UiSurfaceStyles.apply_framed_window_chrome(_confirm_dialog)
 
 
 func _build_create_dialog() -> PanelContainer:
@@ -157,12 +213,31 @@ func _build_create_dialog() -> PanelContainer:
 	dialog.offset_top = -140.0
 	dialog.offset_right = 220.0
 	dialog.offset_bottom = 140.0
+	dialog.add_theme_stylebox_override("panel", _make_frame_style())
 	# Raise draw order so it sits above the campaign list panel
 	dialog.z_index = 10
 
+	var dialog_frame_margin := MarginContainer.new()
+	dialog_frame_margin.add_theme_constant_override("margin_left", 6)
+	dialog_frame_margin.add_theme_constant_override("margin_right", 6)
+	dialog_frame_margin.add_theme_constant_override("margin_top", 6)
+	dialog_frame_margin.add_theme_constant_override("margin_bottom", 6)
+	dialog.add_child(dialog_frame_margin)
+
+	var dialog_inner := PanelContainer.new()
+	dialog_inner.add_theme_stylebox_override("panel", _make_vellum_style())
+	dialog_frame_margin.add_child(dialog_inner)
+
+	var dialog_margin := MarginContainer.new()
+	dialog_margin.add_theme_constant_override("margin_left", 16)
+	dialog_margin.add_theme_constant_override("margin_right", 16)
+	dialog_margin.add_theme_constant_override("margin_top", 16)
+	dialog_margin.add_theme_constant_override("margin_bottom", 16)
+	dialog_inner.add_child(dialog_margin)
+
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 10)
-	dialog.add_child(vbox)
+	dialog_margin.add_child(vbox)
 
 	var dlg_title := Label.new()
 	dlg_title.text = "New Campaign"
@@ -185,6 +260,7 @@ func _build_create_dialog() -> PanelContainer:
 
 	_world_input = LineEdit.new()
 	_world_input.placeholder_text = "e.g. Mythworld"
+	_world_input.custom_minimum_size = Vector2(380, 0)
 	vbox.add_child(_world_input)
 
 	var btn_row := HBoxContainer.new()
@@ -201,10 +277,42 @@ func _build_create_dialog() -> PanelContainer:
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
 	cancel_btn.custom_minimum_size = Vector2(100, 34)
-	cancel_btn.pressed.connect(func(): _create_dialog.visible = false)
+	cancel_btn.pressed.connect(func(): _set_create_dialog_visible(false))
 	btn_row.add_child(cancel_btn)
 
 	return dialog
+
+
+func _make_frame_style() -> StyleBoxFlat:
+	return UiSurfaceStyles.make_filled_frame_style()
+
+
+func _make_vellum_style() -> StyleBox:
+	return UiSurfaceStyles.make_vellum_style()
+
+
+func _make_list_inset_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.96, 0.92, 0.82, 0.28)
+	style.border_color = UiSurfaceStyles.FRAME_BORDER_COLOR
+	style.set_border_width_all(1)
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_right = 8
+	style.corner_radius_bottom_left = 8
+	return style
+
+
+func _make_campaign_row_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = ROW_BG_COLOR
+	style.border_color = ROW_BORDER_COLOR
+	style.set_border_width_all(1)
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_right = 8
+	style.corner_radius_bottom_left = 8
+	return style
 
 
 # ---------------------------------------------------------------------------
@@ -222,7 +330,6 @@ func _refresh_list() -> void:
 		var empty_label := Label.new()
 		empty_label.text = "No campaigns yet. Create one below."
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		empty_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 		_list_container.add_child(empty_label)
 		return
 
@@ -230,10 +337,22 @@ func _refresh_list() -> void:
 		_list_container.add_child(_make_campaign_row(c))
 
 
-func _make_campaign_row(c: Dictionary) -> HBoxContainer:
+func _make_campaign_row(c: Dictionary) -> PanelContainer:
+	var row_panel := PanelContainer.new()
+	row_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row_panel.add_theme_stylebox_override("panel", _make_campaign_row_style())
+
+	var row_margin := MarginContainer.new()
+	row_margin.add_theme_constant_override("margin_left", 10)
+	row_margin.add_theme_constant_override("margin_right", 10)
+	row_margin.add_theme_constant_override("margin_top", 8)
+	row_margin.add_theme_constant_override("margin_bottom", 8)
+	row_panel.add_child(row_margin)
+
 	var row := HBoxContainer.new()
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_theme_constant_override("separation", 8)
+	row_margin.add_child(row)
 
 	# Campaign info label
 	var info := Label.new()
@@ -259,7 +378,7 @@ func _make_campaign_row(c: Dictionary) -> HBoxContainer:
 	del_btn.pressed.connect(_on_delete_pressed.bind(cid))
 	row.add_child(del_btn)
 
-	return row
+	return row_panel
 
 
 # ---------------------------------------------------------------------------
@@ -276,7 +395,7 @@ func _on_load_pressed(campaign_id: String) -> void:
 func _on_new_campaign_pressed() -> void:
 	_name_input.text = ""
 	_world_input.text = ""
-	_create_dialog.visible = true
+	_set_create_dialog_visible(true)
 	_name_input.grab_focus()
 
 
@@ -298,7 +417,7 @@ func _on_create_confirmed() -> void:
 		push_error("CampaignSelectScreen: create_campaign failed for name=%s" % name)
 		return
 
-	_create_dialog.visible = false
+	_set_create_dialog_visible(false)
 	campaign_selected.emit(campaign_id)
 
 
@@ -321,3 +440,9 @@ func _on_delete_confirmed() -> void:
 		push_error("CampaignSelectScreen: delete_campaign failed for id=%s" % _pending_delete_id)
 	_pending_delete_id = ""
 	_refresh_list()
+
+
+func _set_create_dialog_visible(is_visible: bool) -> void:
+	_create_dialog.visible = is_visible
+	if _create_dialog_backdrop != null:
+		_create_dialog_backdrop.visible = is_visible

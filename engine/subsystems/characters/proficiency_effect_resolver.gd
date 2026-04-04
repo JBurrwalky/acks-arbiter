@@ -34,7 +34,7 @@ func apply_proficiency_effects(character: CharacterData) -> void:
 	## Clears all proficiency-sourced modifiers and flags, then reapplies from
 	## the character's current proficiencies array.
 	_clear_proficiency_effects(character)
-	for prof in character.proficiencies:
+	for prof in character.get_aggregated_proficiencies():
 		_apply_single_proficiency(character, prof)
 
 
