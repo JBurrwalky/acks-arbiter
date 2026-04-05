@@ -2922,3 +2922,36 @@ CampaignRepository addition:
 **Next session should:**
 1. Open character creation in-editor and confirm blocked class buttons read clearly against the vellum background at the intended window scale.
 2. If any other parchment-backed screens need disabled-button contrast tweaks, follow the documented local `font_disabled_color` override pattern instead of modifying the shared vellum button theme globally.
+
+---
+
+## Session 2026-04-04 — Settlement Map Renderer Fixes
+
+**Task:** Fix the settlement map system which was visually broken: map too large, party token off-screen, no movement, floating district label, no visible street nodes.
+**Model used:** Opus 4.6 for planning and implementation.
+**Completed:**
+- **Scaling & centering** (`scenes/maps/settlement_map_renderer.gd`): Added auto-scale factor (`_map_scale`) that fits the map within the viewport with 100px padding. View centers on the party token (entry gate) instead of the map centroid. Added `_compute_scale()` function.
+- **Scroll-wheel zoom**: Added mouse-wheel zoom (1.15x per step, range 0.25x–3.0x) centered on cursor position via `_zoom_at()`. Zoom multiplier (`_zoom`) applied on top of the base `_map_scale`.
+- **Visible street nodes**: Added `_draw_street_nodes()` rendering intersection nodes as small brown dots and gate nodes as larger outlined circles. New constants: `INTERSECTION_NODE_RADIUS`, `GATE_NODE_RADIUS`, etc.
+- **Adjacent highlights**: Changed from nearly-invisible translucent yellow (10px, alpha 0.4) to bright green (14px, alpha 0.7) with a ring outline via `draw_arc()`.
+- **District labels**: Split `_draw_labels()` into `_draw_district_labels()` (faint watermark behind streets, alpha 0.25, font size 22) and `_draw_poi_labels()` (readable, font size 14). Updated draw order accordingly.
+- **Party token**: Increased radius from 12 to 18 for visibility.
+- **int/float key mismatch fix** (`engine/shared_types/settlement_map_data.gd`): Added explicit `int()` casts to ALL numeric dictionary keys (node IDs, edge IDs, block IDs, street_node_ids, block_ids) in `from_dict()`. This fixed the root cause of broken lookups: `_node_lookup`, `_adjacency`, `_block_lookup`, `_poi_at_node`, and `_block_to_district` all had potential int/float key mismatches causing `get_node_by_id()`, `get_block_by_id()`, and adjacency checks to silently fail.
+- **Click detection fix** (`scenes/maps/settlement_map_renderer.gd`): Changed `_screen_to_world()` from `get_canvas_transform().affine_inverse()` to `(get_canvas_transform() * get_global_transform()).affine_inverse()`. The old code converted to canvas space but `_draw()` works in local space; with non-trivial Node2D position and scale, clicks were offset from visual positions.
+- **Tooltip size**: Shrunk tooltip panel from 212x52 to 112x30 with font size 10 in `scenes/maps/settlement_map.tscn`.
+**Decisions made:**
+- Used `Node2D.scale` for map scaling rather than modifying `_to_draw()`, because Godot's canvas transform automatically accounts for it in coordinate conversions.
+- Defensive `int()` casts on all JSON-sourced numeric IDs regardless of Godot version, since the int/float key mismatch is a subtle Dictionary behavior that silently returns wrong results.
+**Interfaces defined or changed:**
+- `settlement_map_renderer.gd` new signals/API: none changed. New constants added for intersection nodes, gate nodes, zoom, and view padding.
+- `settlement_map_data.gd`: no API changes, only internal `int()` casts in `from_dict()`.
+**Database changes:** None.
+**Tests added/updated:** None (all changes were rendering/presentation; existing controller and data model tests still pass).
+**Known issues:**
+- No multi-hop pathfinding movement — clicking a non-adjacent node does nothing. The controller has `find_path_to()` but it's not wired to click handling. Single-step adjacent movement works.
+- Panning has no clamping — the user can pan the map entirely off-screen.
+- No animation for party movement (token teleports to new node).
+**Next session should:**
+1. Consider wiring multi-hop movement (click any reachable node → auto-walk the path via `find_path_to()`).
+2. Add pan clamping so the map stays visible.
+3. Test with a larger/multi-district settlement to verify scaling and district labels work with more complex data.

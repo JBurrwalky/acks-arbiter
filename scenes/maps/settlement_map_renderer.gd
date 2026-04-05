@@ -164,13 +164,6 @@ func _apply_zoom_and_center() -> void:
 	var party_draw_pos := Vector2.ZERO
 	if _controller != null:
 		party_draw_pos = _to_draw(_controller.get_party_position())
-		print("Settlement: party_node=%d, raw_pos=%s, draw_pos=%s, scale=%.3f, adj=%s" % [
-			_controller.get_party_node_id(),
-			_controller.get_party_position(),
-			party_draw_pos,
-			effective,
-			_controller.get_adjacent_nodes(),
-		])
 
 	self.position = vp_size * 0.5 - party_draw_pos * effective
 
@@ -558,8 +551,10 @@ func _zoom_at(screen_pos: Vector2, factor: float) -> void:
 
 
 func _screen_to_world(viewport_pos: Vector2) -> Vector2:
-	var canvas_transform := get_canvas_transform()
-	return canvas_transform.affine_inverse() * viewport_pos
+	# Full transform: local → global (Node2D pos+scale) → canvas → viewport.
+	# Invert the full chain to go from viewport coords back to local draw-space.
+	var full_transform := get_canvas_transform() * get_global_transform()
+	return full_transform.affine_inverse() * viewport_pos
 
 
 func _find_closest_node(world_pos: Vector2) -> int:
