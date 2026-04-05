@@ -14,13 +14,16 @@ extends Node
 ## Set true to bypass directly to the test hex map (dev harness).
 const DEV_SKIP_CAMPAIGN_SELECT := false
 
-const TEST_MAP_ID := "test_ashford_vale"
+const TEST_MAP_ID := "test_region_001"
 const TEST_CAMPAIGN_ID := "test_campaign_01"
 const TEST_PARTY_ID := "test_party_01"
 const TEST_MAP_JSON_PATH := "res://data/test_hex_map.json"
 const TEST_DUNGEON_JSON_PATH := "res://data/test_dungeon.json"
+const TEST_SETTLEMENT_JSON_PATH := "res://data/test_settlement.json"
 ## Hex coordinate where the test dungeon entrance is placed on the Ashford Vale map.
 const TEST_DUNGEON_ENTRANCE_HEX := Vector2i(-1, 0)
+## Hex coordinate where the test settlement entrance is placed (the hex with has_city=true).
+const TEST_SETTLEMENT_ENTRANCE_HEX := Vector2i(0, 0)
 
 @onready var _hex_map_renderer = $HexMap
 @onready var _controller: HexMapController = $HexMapController
@@ -47,6 +50,7 @@ func _ready() -> void:
 		# Direct path: bypass campaign select, load test map immediately.
 		_hex_map_renderer.setup(_controller)
 		_hex_map_renderer.hex_clicked.connect(_on_hex_clicked)
+		_hex_map_renderer.dungeon_entry_requested.connect(_on_dungeon_entry_requested)
 		_dev_load_test_map()
 	else:
 		# Normal path: show campaign select screen.
@@ -74,6 +78,7 @@ func _on_campaign_selected(campaign_id: String) -> void:
 	if not _hex_map_renderer.hex_clicked.is_connected(_on_hex_clicked):
 		_hex_map_renderer.setup(_controller)
 		_hex_map_renderer.hex_clicked.connect(_on_hex_clicked)
+		_hex_map_renderer.dungeon_entry_requested.connect(_on_dungeon_entry_requested)
 
 	# Each campaign gets its own party. Look up the existing one, or create fresh.
 	var party_id := _get_or_create_party(campaign_id)
@@ -115,6 +120,7 @@ func _dev_load_test_map_for_campaign(campaign_id: String, party_id: String) -> v
 	GameState.set_exploration_context(GameState.ExplorationContext.WILDERNESS)
 
 	_ensure_test_dungeon_entrance(campaign_id)
+	_ensure_test_settlement_entrance(campaign_id)
 
 
 ## Returns a HexMapData from DB if it exists, otherwise loads from JSON and seeds the DB.
@@ -160,11 +166,10 @@ func _on_hex_clicked(coord: Vector2i) -> void:
 	if map_data != null:
 		CampaignRepository.save_hex_map(map_data, GameState.campaign_id)
 
-	# After moving, check if party is now on a hex with a dungeon entrance.
-	# Guard: don't enter if already in a dungeon (prevents double-entry).
-	if GameState.exploration_context != GameState.ExplorationContext.DUNGEON:
+	# Settlement auto-check (dungeon entry is now via the hex map button + modal).
+	if GameState.exploration_context == GameState.ExplorationContext.WILDERNESS:
 		var party_hex := _controller.get_map().party_hex if _controller.get_map() != null else Vector2i(-999, -999)
-		_check_for_dungeon_entrance(party_hex)
+		_check_for_settlement_entrance(party_hex)
 
 
 # ---------------------------------------------------------------------------
@@ -196,18 +201,13 @@ func _ensure_test_dungeon_entrance(campaign_id: String) -> void:
 	})
 
 
-## Checks if [param coord] has a dungeon entrance; if so, asks the player to enter.
-## D-4: auto-enters on click when party is on the entrance hex.
-func _check_for_dungeon_entrance(coord: Vector2i) -> void:
-	var entrances := CampaignRepository.get_dungeon_entrances_for_map(TEST_MAP_ID)
-	for entrance in entrances:
-		if entrance.get("hex_q", 999) == coord.x and entrance.get("hex_r", 999) == coord.y:
-			_enter_dungeon(entrance)
-			return
+## Called when the player picks a transition cell from the hex map modal dialog.
+func _on_dungeon_entry_requested(entrance: Dictionary, spawn_cell: Vector2i) -> void:
+	_enter_dungeon(entrance, spawn_cell)
 
 
 ## Creates a DungeonMapController, loads the dungeon, and pushes the dungeon scene.
-func _enter_dungeon(entrance: Dictionary) -> void:
+func _enter_dungeon(entrance: Dictionary, spawn_pos: Vector2i = Vector2i(-1, -1)) -> void:
 	var dungeon_json: String = entrance.get("dungeon_data", "")
 	if dungeon_json.is_empty():
 		push_error("MainScene._enter_dungeon: entrance has empty dungeon_data")
@@ -230,7 +230,7 @@ func _enter_dungeon(entrance: Dictionary) -> void:
 	dungeon_controller.name = "DungeonMapController"
 	add_child(dungeon_controller)
 	dungeon_controller.add_party_member("party_leader")
-	dungeon_controller.load_dungeon(dungeon_dict)
+	dungeon_controller.load_dungeon(dungeon_dict, spawn_pos)
 
 	var dungeon_scene_packed: PackedScene = preload("res://scenes/maps/dungeon_map.tscn")
 	var dungeon_scene = dungeon_scene_packed.instantiate()
@@ -266,6 +266,109 @@ func _exit_dungeon(dungeon_controller: DungeonMapController, _dungeon_scene: Nod
 		dungeon_controller.queue_free()
 
 	# Restore hex map visibility (including CanvasLayer HUD)
+	_hex_map_renderer.visible = true
+	_hex_map_renderer.process_mode = Node.PROCESS_MODE_INHERIT
+	var hex_hud = _hex_map_renderer.get_node_or_null("HexHUD")
+	if hex_hud != null:
+		hex_hud.visible = true
+	GameState.set_exploration_context(GameState.ExplorationContext.WILDERNESS)
+
+
+# ---------------------------------------------------------------------------
+# Settlement entrance seeding and entry
+# ---------------------------------------------------------------------------
+
+## Seeds the test settlement entrance at TEST_SETTLEMENT_ENTRANCE_HEX if it doesn't exist.
+func _ensure_test_settlement_entrance(campaign_id: String) -> void:
+	var file := FileAccess.open(TEST_SETTLEMENT_JSON_PATH, FileAccess.READ)
+	if file == null:
+		push_error("MainScene: could not open test settlement JSON at '%s'" % TEST_SETTLEMENT_JSON_PATH)
+		return
+	var json_text := file.get_as_text()
+	file.close()
+
+	# Check if already exists — if so, update the JSON data (dev iteration).
+	var entrances := CampaignRepository.get_settlement_entrances_for_map(TEST_MAP_ID)
+	for e in entrances:
+		if e.get("hex_q", 999) == TEST_SETTLEMENT_ENTRANCE_HEX.x and \
+		   e.get("hex_r", 999) == TEST_SETTLEMENT_ENTRANCE_HEX.y:
+			CampaignRepository.update_settlement_entrance_data(e.get("id", ""), json_text)
+			return
+
+	CampaignRepository.create_settlement_entrance({
+		"campaign_id": campaign_id,
+		"map_id": TEST_MAP_ID,
+		"hex_q": TEST_SETTLEMENT_ENTRANCE_HEX.x,
+		"hex_r": TEST_SETTLEMENT_ENTRANCE_HEX.y,
+		"name": "Ashford Village",
+		"market_class": 6,
+		"settlement_data": json_text,
+	})
+
+
+## Checks if [param coord] has a settlement entrance; if so, enters the settlement.
+func _check_for_settlement_entrance(coord: Vector2i) -> void:
+	var entrances := CampaignRepository.get_settlement_entrances_for_map(TEST_MAP_ID)
+	for entrance in entrances:
+		if entrance.get("hex_q", 999) == coord.x and entrance.get("hex_r", 999) == coord.y:
+			_enter_settlement(entrance)
+			return
+
+
+## Creates a SettlementMapController, loads the settlement, and pushes the scene.
+func _enter_settlement(entrance: Dictionary) -> void:
+	var settlement_json: String = entrance.get("settlement_data", "")
+	if settlement_json.is_empty():
+		push_error("MainScene._enter_settlement: entrance has empty settlement_data")
+		return
+
+	var settlement_dict = JSON.parse_string(settlement_json)
+	if settlement_dict == null:
+		push_error("MainScene._enter_settlement: JSON parse failed for settlement '%s'" % entrance.get("id", "?"))
+		return
+
+	# Hide the hex map
+	_hex_map_renderer.visible = false
+	_hex_map_renderer.process_mode = Node.PROCESS_MODE_DISABLED
+	var hex_hud = _hex_map_renderer.get_node_or_null("HexHUD")
+	if hex_hud != null:
+		hex_hud.visible = false
+
+	var settlement_controller := SettlementMapController.new()
+	settlement_controller.name = "SettlementMapController"
+	add_child(settlement_controller)
+	settlement_controller.load_settlement(settlement_dict)
+
+	var settlement_scene_packed: PackedScene = preload("res://scenes/maps/settlement_map.tscn")
+	var settlement_scene = settlement_scene_packed.instantiate()
+	settlement_scene.setup(settlement_controller)
+	settlement_scene.exit_requested.connect(_exit_settlement.bind(settlement_controller, settlement_scene))
+
+	# Wire node_clicked: move party on click
+	settlement_scene.node_clicked.connect(
+		func(node_id: int):
+			if settlement_controller.can_move_to(node_id):
+				settlement_controller.move_party(node_id)
+	)
+
+	# Wire settlement_exited: return to hex map when party walks to a non-entry gate
+	settlement_controller.settlement_exited.connect(
+		func(_gate_id: int): _exit_settlement(settlement_controller, settlement_scene)
+	)
+
+	_nav_stack.push_node(settlement_scene, "settlement_%s" % entrance.get("id", "unknown"))
+	GameState.set_exploration_context(GameState.ExplorationContext.SETTLEMENT)
+
+
+## Pops the settlement scene and restores the hex map.
+func _exit_settlement(settlement_controller: SettlementMapController, _settlement_scene: Node) -> void:
+	_nav_stack.pop()
+
+	# Clean up the controller
+	if is_instance_valid(settlement_controller):
+		settlement_controller.queue_free()
+
+	# Restore hex map visibility
 	_hex_map_renderer.visible = true
 	_hex_map_renderer.process_mode = Node.PROCESS_MODE_INHERIT
 	var hex_hud = _hex_map_renderer.get_node_or_null("HexHUD")

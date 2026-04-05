@@ -65,6 +65,10 @@ func _dungeon_dict() -> Dictionary:
 				"grid_height": 3,
 				"entry_col": 0,
 				"entry_row": 0,
+				"transition_cells": [
+					{"col": 0, "row": 0, "label": "Main Gate"},
+					{"col": 7, "row": 0, "label": "Back Exit"},
+				],
 				"cells": cells_l1,
 			},
 			{
@@ -116,6 +120,10 @@ func run_all_tests() -> void:
 	test_use_stairs_positions_party_at_target()
 	test_level_changed_signal()
 	test_fog_preserved_across_levels()
+	test_transition_cells_parsed()
+	test_is_on_transition_cell_at_spawn()
+	test_is_on_transition_cell_false_after_move()
+	test_spawn_at_custom_position()
 	if not has_failures():
 		print("DungeonMapController: all tests passed.")
 
@@ -396,4 +404,52 @@ func test_fog_preserved_across_levels() -> void:
 	var fog_val := map_l1_again.get_fog(Vector2i(1, 0))
 	check(fog_val != TacticalMapData.FogState.HIDDEN,
 		"room A fog should be preserved after returning from level 2, got %d" % fog_val)
+	ctrl.queue_free()
+
+
+# ---------------------------------------------------------------------------
+# Transition cell tests
+# ---------------------------------------------------------------------------
+
+func test_transition_cells_parsed() -> void:
+	var ctrl := _make_controller()
+	var m := ctrl.get_map()
+	check(m.transition_cells.size() == 2,
+		"should have 2 transition cells, got %d" % m.transition_cells.size())
+	check(Vector2i(0, 0) in m.transition_cells,
+		"(0,0) should be a transition cell")
+	check(Vector2i(7, 0) in m.transition_cells,
+		"(7,0) should be a transition cell")
+	check(m.get_transition_cell_label(Vector2i(0, 0)) == "Main Gate",
+		"(0,0) label should be 'Main Gate'")
+	check(m.get_transition_cell_label(Vector2i(7, 0)) == "Back Exit",
+		"(7,0) label should be 'Back Exit'")
+	ctrl.queue_free()
+
+
+func test_is_on_transition_cell_at_spawn() -> void:
+	var ctrl := _make_controller()
+	check(ctrl.is_on_transition_cell(),
+		"party should be on transition cell at spawn (0,0)")
+	ctrl.queue_free()
+
+
+func test_is_on_transition_cell_false_after_move() -> void:
+	var ctrl := _make_controller()
+	ctrl.move_party(Vector2i(1, 0))
+	check(not ctrl.is_on_transition_cell(),
+		"party should NOT be on transition cell at (1,0)")
+	ctrl.queue_free()
+
+
+func test_spawn_at_custom_position() -> void:
+	var ctrl := DungeonMapController.new()
+	add_child(ctrl)
+	ctrl.add_party_member("hero")
+	ctrl.load_dungeon(_dungeon_dict(), Vector2i(7, 0))
+	var pos := ctrl.get_party_position()
+	check(pos == Vector2i(7, 0),
+		"party should be at custom spawn (7,0), got %s" % str(pos))
+	check(ctrl.is_on_transition_cell(),
+		"party should be on transition cell at custom spawn (7,0)")
 	ctrl.queue_free()

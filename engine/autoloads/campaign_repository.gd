@@ -162,6 +162,7 @@ func delete_campaign(campaign_id: String) -> bool:
 	db.query_with_bindings("DELETE FROM game_snapshots WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM campaign_clock WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM dungeon_entrances WHERE campaign_id = ?", [campaign_id])
+	db.query_with_bindings("DELETE FROM settlement_entrances WHERE campaign_id = ?", [campaign_id])
 	db.query_with_bindings("DELETE FROM override_log WHERE campaign_id = ?", [campaign_id])
 
 	# Finally delete the campaign record itself
@@ -1306,6 +1307,58 @@ func update_dungeon_entrance_data(entrance_id: String, dungeon_data_json: String
 
 
 # ---------------------------------------------------------------------------
+# Settlement entrances (migration 019)
+# ---------------------------------------------------------------------------
+
+func create_settlement_entrance(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO settlement_entrances (id, campaign_id, map_id, hex_q, hex_r, name, market_class, settlement_data)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		data.get("campaign_id", ""),
+		data.get("map_id", ""),
+		data.get("hex_q", 0),
+		data.get("hex_r", 0),
+		data.get("name", "Unknown Settlement"),
+		data.get("market_class", 6),
+		data.get("settlement_data", ""),
+	]):
+		push_error("CampaignRepository.create_settlement_entrance: failed. name=%s" % data.get("name", "?"))
+		return ""
+	return id
+
+
+## Returns all settlement entrances for a given hex map.
+func get_settlement_entrances_for_map(map_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM settlement_entrances WHERE map_id = ?", [map_id]
+	)
+	return db.query_result.duplicate()
+
+
+## Returns a single settlement entrance by its id, or {} if not found.
+func get_settlement_entrance(entrance_id: String) -> Dictionary:
+	db.query_with_bindings(
+		"SELECT * FROM settlement_entrances WHERE id = ?", [entrance_id]
+	)
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+## Updates the settlement_data JSON blob for an entrance.
+func update_settlement_entrance_data(entrance_id: String, settlement_data_json: String) -> bool:
+	return db.query_with_bindings(
+		"UPDATE settlement_entrances SET settlement_data = ? WHERE id = ?",
+		[settlement_data_json, entrance_id]
+	)
+
+
+# ---------------------------------------------------------------------------
 # Dungeon cell state persistence (migration 017)
 # ---------------------------------------------------------------------------
 
@@ -1417,6 +1470,7 @@ func save_snapshot(campaign_id: String, label: String) -> String:
 		""", [campaign_id]),
 		"domains":                  _query_rows("SELECT * FROM domains WHERE campaign_id = ?", [campaign_id]),
 		"dungeon_entrances":        _query_rows("SELECT * FROM dungeon_entrances WHERE campaign_id = ?", [campaign_id]),
+		"settlement_entrances":     _query_rows("SELECT * FROM settlement_entrances WHERE campaign_id = ?", [campaign_id]),
 	}
 
 	var id := generate_id()
@@ -1465,6 +1519,7 @@ func restore_snapshot(snapshot_id: String) -> bool:
 		["DELETE FROM hex_maps WHERE campaign_id = ?", [campaign_id]],
 		["DELETE FROM domains WHERE campaign_id = ?", [campaign_id]],
 		["DELETE FROM dungeon_entrances WHERE campaign_id = ?", [campaign_id]],
+		["DELETE FROM settlement_entrances WHERE campaign_id = ?", [campaign_id]],
 	]
 	for step in delete_steps:
 		if not db.query_with_bindings(step[0], step[1]):
@@ -1479,6 +1534,7 @@ func restore_snapshot(snapshot_id: String) -> bool:
 		["parties",                 snap.get("parties", [])],
 		["domains",                 snap.get("domains", [])],
 		["dungeon_entrances",       snap.get("dungeon_entrances", [])],
+		["settlement_entrances",    snap.get("settlement_entrances", [])],
 		["party_members",           snap.get("party_members", [])],
 		["character_conditions",    snap.get("character_conditions", [])],
 		["character_proficiencies", snap.get("character_proficiencies", [])],

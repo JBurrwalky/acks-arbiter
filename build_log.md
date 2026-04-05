@@ -2892,3 +2892,33 @@ CampaignRepository addition:
 2. Smoke-test: create a cleric, award XP for level 2, confirm spell list appears in Spells tab after level-up.
 3. Smoke-test: create a mage, confirm starting spells appear as Spell Repertoire and formula records exist in DB.
 4. Review `promotion_engine.gd` for the arcane henchman formula-save gap noted above.
+
+---
+
+## Session 2026-04-04 - Class Selection Disabled Button Contrast Fix
+
+**Task:** Fix the character-creation class selection screen so selectable classes keep their readable white button text while blocked classes use a darker disabled text color on the vellum-backed panel.
+**Model used:** GPT-5 Codex
+**Completed:**
+- Updated `scenes/ui/character_creation/class_selection_panel.gd` to centralize the selected-class gold text color and add an explicit dark `font_disabled_color` override for blocked class buttons.
+- Preserved the existing white/default styling for eligible unselected class buttons by leaving enabled button text on the engine/default button theme instead of changing the shared vellum theme.
+- Added `tests/test_class_selection_panel.gd` to verify eligible buttons keep default enabled styling, blocked buttons receive the dark disabled text override, and the selected class still uses the gold text override.
+- Updated `tests/test_runner.gd` and `tests/test_runner.tscn` to include the new class-selection regression suite.
+- Updated `docs/coding_conventions.md` to document the local `font_disabled_color` override pattern for parchment-backed flows that need blocked buttons to read differently without globally changing all button text.
+- Ran the approved headless Godot test runner command successfully (exit code `0`).
+**Decisions made:**
+- Solved the contrast issue locally in `ClassSelectionPanel` instead of changing `UiSurfaceStyles`, because the user-facing requirement is screen-specific: eligible class buttons should remain white while only blocked buttons need a darker disabled text treatment.
+- Kept the existing button `modulate` dimming for blocked classes and layered the darker disabled font color on top, so both the button chrome and the text communicate "unavailable" without reducing legibility.
+**Interfaces defined or changed:**
+- Added `ClassSelectionPanel.SELECTED_CLASS_TEXT_COLOR`.
+- Added `ClassSelectionPanel.INELIGIBLE_CLASS_TEXT_COLOR`.
+**Database changes:** None.
+**Tests added/updated:**
+- Added `tests/test_class_selection_panel.gd`.
+- Updated `tests/test_runner.gd`.
+- Updated `tests/test_runner.tscn`.
+**Known issues:**
+- Headless tests confirm the configured theme overrides, but the exact in-editor visual feel of the dark disabled text still needs a manual smoke test on the live class selection screen.
+**Next session should:**
+1. Open character creation in-editor and confirm blocked class buttons read clearly against the vellum background at the intended window scale.
+2. If any other parchment-backed screens need disabled-button contrast tweaks, follow the documented local `font_disabled_color` override pattern instead of modifying the shared vellum button theme globally.

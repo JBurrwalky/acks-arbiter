@@ -140,7 +140,8 @@ func restore_state(data: Dictionary) -> void:
 func _on_map_loaded(_id: String) -> void:
 	_map = _controller.get_map()
 	_refresh_all()
-	_center_camera_on_entry()
+	_center_camera_on_party()
+	_update_exit_button()
 
 
 func _on_fog_updated() -> void:
@@ -150,6 +151,7 @@ func _on_fog_updated() -> void:
 
 func _on_party_moved(_from: Vector2i, _to: Vector2i) -> void:
 	_update_entity_tokens()
+	_update_exit_button()
 	queue_redraw()
 
 
@@ -160,11 +162,21 @@ func _on_door_state_changed(_pos: Vector2i, _old: String, _new: String) -> void:
 func _on_level_changed(_from_level: int, _to_level: int) -> void:
 	_map = _controller.get_map()
 	_refresh_all()
-	_center_camera_on_entry()
+	_center_camera_on_party()
+	_update_exit_button()
 
 
 func _on_exit_button_pressed() -> void:
 	exit_requested.emit()
+
+
+## Enables or disables the exit button based on transition cell position.
+func _update_exit_button() -> void:
+	if _exit_button == null or _controller == null:
+		return
+	var on_exit: bool = _controller.is_on_transition_cell()
+	_exit_button.disabled = not on_exit
+	_exit_button.text = "Exit Dungeon" if on_exit else "Move to an exit to leave"
 
 
 # ---------------------------------------------------------------------------
@@ -269,6 +281,25 @@ func _draw_features() -> void:
 					draw_string(font, screen_pos + Vector2(-4.0, 4.0), "P",
 						HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.YELLOW)
 
+	# Transition cell markers (green "E" + diamond outline)
+	if _map != null:
+		for tc_pos in _map.transition_cells:
+			if _map.get_fog(tc_pos) == TacticalMapData.FogState.HIDDEN:
+				continue
+			var tc_screen := IsometricGrid.cell_to_screen(tc_pos.x, tc_pos.y)
+			var tc_hw := float(IsometricGrid.HALF_W) * 0.6
+			var tc_hh := float(IsometricGrid.HALF_H) * 0.6
+			var tc_pts := PackedVector2Array([
+				tc_screen + Vector2(0.0, -tc_hh),
+				tc_screen + Vector2(tc_hw, 0.0),
+				tc_screen + Vector2(0.0, tc_hh),
+				tc_screen + Vector2(-tc_hw, 0.0),
+				tc_screen + Vector2(0.0, -tc_hh),
+			])
+			draw_polyline(tc_pts, Color.GREEN, 2.0)
+			draw_string(font, tc_screen + Vector2(-4.0, 4.0), "E",
+				HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.GREEN)
+
 
 func _draw_grid_lines() -> void:
 	for pos in _map._cells.keys():
@@ -366,11 +397,11 @@ func _unhandled_input(event: InputEvent) -> void:
 # Camera helpers
 # ---------------------------------------------------------------------------
 
-func _center_camera_on_entry() -> void:
-	if _camera == null or _map == null:
+func _center_camera_on_party() -> void:
+	if _camera == null or _controller == null:
 		return
-	var entry := _map.entry_pos
-	_camera.position = IsometricGrid.cell_to_screen(entry.x, entry.y)
+	var pos := _controller.get_party_position()
+	_camera.position = IsometricGrid.cell_to_screen(pos.x, pos.y)
 	_compute_camera_limits()
 
 

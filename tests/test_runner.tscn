@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://tests/test_power_registry.gd" id="10_power_registry_tests"]
 [ext_resource type="Script" path="res://tests/test_encumbrance.gd" id="11_encumbrance_tests"]
 [ext_resource type="Script" path="res://tests/test_ability_roll_panel.gd" id="12_ability_roll_panel_tests"]
+[ext_resource type="Script" path="res://tests/test_class_selection_panel.gd" id="46_class_selection_panel_tests"]
 [ext_resource type="Script" path="res://tests/test_equipment_shop_panel.gd" id="13_equipment_shop_panel_tests"]
 [ext_resource type="Script" path="res://tests/test_portrait_display_sizing.gd" id="44_portrait_display_sizing_tests"]
 [ext_resource type="Script" path="res://tests/test_ui_surface_styles.gd" id="45_ui_surface_styles_tests"]
@@ -45,6 +46,8 @@
 [ext_resource type="Script" path="res://tests/test_tactical_map_data.gd" id="39_tactical_map_data_tests"]
 [ext_resource type="Script" path="res://tests/test_dungeon_map_controller.gd" id="40_dungeon_map_controller_tests"]
 [ext_resource type="Script" path="res://tests/test_proficiency_cross_slot.gd" id="41_proficiency_cross_slot_tests"]
+[ext_resource type="Script" path="res://tests/test_settlement_map_data.gd" id="42_settlement_map_data_tests"]
+[ext_resource type="Script" path="res://tests/test_settlement_map_controller.gd" id="43_settlement_map_controller_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -81,6 +84,9 @@ script = ExtResource("11_encumbrance_tests")
 
 [node name="AbilityRollPanelTests" type="Node" parent="."]
 script = ExtResource("12_ability_roll_panel_tests")
+
+[node name="ClassSelectionPanelTests" type="Node" parent="."]
+script = ExtResource("46_class_selection_panel_tests")
 
 [node name="EquipmentShopPanelTests" type="Node" parent="."]
 script = ExtResource("13_equipment_shop_panel_tests")
@@ -180,3 +186,9 @@ script = ExtResource("40_dungeon_map_controller_tests")
 
 [node name="ProficiencyCrossSlotTests" type="Node" parent="."]
 script = ExtResource("41_proficiency_cross_slot_tests")
+
+[node name="SettlementMapDataTests" type="Node" parent="."]
+script = ExtResource("42_settlement_map_data_tests")
+
+[node name="SettlementMapControllerTests" type="Node" parent="."]
+script = ExtResource("43_settlement_map_controller_tests")

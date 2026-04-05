@@ -1338,13 +1338,14 @@ When a runtime-built UI creates a `TextureRect` for portrait or illustration ass
 
 ### 13.5 Shared Vellum Window Chrome
 
-<!-- Added 2026-04-02 after overlay and modal readability pass -->
+<!-- Updated 2026-04-04 after class-selection button contrast fix -->
 
 Runtime-built windows, overlays, and modal popups should use the shared `UiSurfaceStyles` helper instead of ad-hoc semi-transparent defaults.
 
 - Use `UiSurfaceStyles.apply_textured_panel(panel)` for opaque parchment-backed `PanelContainer` surfaces that do not need a separate border frame.
 - Use `UiSurfaceStyles.apply_framed_window_chrome(surface)` for modal windows and overlay panels that need both the `ui.bg.vellum_subtle` background and a visible frame border; `surface` may be either a `Control` panel or a `Window`-based popup/dialog.
 - These helpers also install the shared vellum text theme on the styled surface: passive text on parchment-backed labels/list items should default to `UiSurfaceStyles.VELLUM_TEXT_COLOR` (dark near-black), while parchment-backed warning or highlight copy should use `UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR` (dark red) instead of pale yellow/gray callouts.
+- Do not globally darken `Button` text on vellum surfaces just to solve a single screen's contrast issue. If a specific parchment-backed flow needs blocked buttons to read differently, override that control's `font_disabled_color` locally and leave enabled button text on the engine/default chrome.
 - Vellum background `TextureRect` nodes added by the helper must draw with `show_behind_parent = true` so built-in dialog content is never covered by the parchment layer.
 - Prefer the registered asset ID `ui.bg.vellum_subtle` via `AssetRegistry` rather than hard-coded file paths when applying parchment textures.
 - Exceptions are explicit: the dice prompt modal and the hex-map tooltip keep their specialized styling unless design changes call them out separately.

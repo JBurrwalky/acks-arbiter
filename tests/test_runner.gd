@@ -19,6 +19,7 @@ extends Node
 @onready var _power_registry_tests = $PowerRegistryTests
 @onready var _encumbrance_tests = $EncumbranceTests
 @onready var _ability_roll_panel_tests = $AbilityRollPanelTests
+@onready var _class_selection_panel_tests = $ClassSelectionPanelTests
 @onready var _equipment_shop_panel_tests = $EquipmentShopPanelTests
 @onready var _equipment_item_row_tests = $EquipmentItemRowTests
 @onready var _portrait_display_sizing_tests = $PortraitDisplaySizingTests
@@ -52,6 +53,8 @@ extends Node
 @onready var _tactical_map_data_tests = $TacticalMapDataTests
 @onready var _dungeon_map_controller_tests = $DungeonMapControllerTests
 @onready var _proficiency_cross_slot_tests = $ProficiencyCrossSlotTests
+@onready var _settlement_map_data_tests = $SettlementMapDataTests
+@onready var _settlement_map_controller_tests = $SettlementMapControllerTests
 
 
 func _ready() -> void:
@@ -66,6 +69,7 @@ func run() -> void:
 			_timekeeping_tests, _calendar_seasons_tests,
 			_ability_utils_tests, _class_registry_tests, _power_registry_tests,
 			_encumbrance_tests, _ability_roll_panel_tests,
+			_class_selection_panel_tests,
 			_equipment_shop_panel_tests, _equipment_item_row_tests,
 			_portrait_display_sizing_tests, _ui_surface_styles_tests,
 			_character_generator_tests, _character_persistence_tests,
@@ -85,7 +89,9 @@ func run() -> void:
 			_navigation_stack_tests,
 			_isometric_grid_tests, _tactical_map_data_tests,
 			_dungeon_map_controller_tests,
-			_proficiency_cross_slot_tests]:
+			_proficiency_cross_slot_tests,
+			_settlement_map_data_tests,
+			_settlement_map_controller_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

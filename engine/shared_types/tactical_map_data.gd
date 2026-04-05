@@ -65,6 +65,12 @@ var rooms: Array = []
 ## Entity positions. Key: entity_id String → Vector2i cell pos.
 var entity_positions: Dictionary = {}
 
+## Entry/exit transition cells. Only these cells allow dungeon exit.
+var transition_cells: Array[Vector2i] = []
+
+## Optional display labels for transition cells. Vector2i → String.
+var transition_cell_labels: Dictionary = {}
+
 
 # ---------------------------------------------------------------------------
 # Factory methods
@@ -112,6 +118,15 @@ static func from_dict(data: Dictionary) -> TacticalMapData:
 		cell["blocks_los"] = _compute_blocks_los(tf, door_state)
 
 		m._cells[pos] = cell
+
+	# Parse transition cells
+	var tc_array: Array = data.get("transition_cells", [])
+	for tc in tc_array:
+		var tc_pos := Vector2i(tc.get("col", 0), tc.get("row", 0))
+		m.transition_cells.append(tc_pos)
+		var label: String = tc.get("label", "")
+		if not label.is_empty():
+			m.transition_cell_labels[tc_pos] = label
 
 	m.detect_rooms()
 	return m
@@ -386,6 +401,20 @@ func get_entities_at(pos: Vector2i) -> Array[String]:
 ## Removes [param entity_id] from entity_positions.
 func remove_entity(entity_id: String) -> void:
 	entity_positions.erase(entity_id)
+
+
+# ---------------------------------------------------------------------------
+# Transition cells
+# ---------------------------------------------------------------------------
+
+## Returns true if [param pos] is a designated entry/exit transition cell.
+func is_transition_cell(pos: Vector2i) -> bool:
+	return pos in transition_cells
+
+
+## Returns the display label for [param pos], or "Cell (col, row)" if none.
+func get_transition_cell_label(pos: Vector2i) -> String:
+	return transition_cell_labels.get(pos, "Cell (%d, %d)" % [pos.x, pos.y])
 
 
 # ---------------------------------------------------------------------------

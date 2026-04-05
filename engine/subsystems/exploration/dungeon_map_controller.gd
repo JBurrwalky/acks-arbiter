@@ -53,7 +53,9 @@ var _darkvision_bonus: int = 0
 ## The dictionary should match the test_dungeon.json format:
 ##   { id, name, levels: [{level, grid_width, grid_height, entry_col, entry_row, cells}],
 ##     stairs: [{from_level, from_col, from_row, to_level, to_col, to_row}] }
-func load_dungeon(dungeon_dict: Dictionary) -> void:
+## [param spawn_pos] overrides the default entry_pos when entering via a specific
+## transition cell. Pass Vector2i(-1, -1) (the default) to use entry_pos.
+func load_dungeon(dungeon_dict: Dictionary, spawn_pos: Vector2i = Vector2i(-1, -1)) -> void:
 	_dungeon_id = dungeon_dict.get("id", "")
 	_dungeon_name = dungeon_dict.get("name", "")
 	_all_levels.clear()
@@ -73,15 +75,18 @@ func load_dungeon(dungeon_dict: Dictionary) -> void:
 
 	_current_level = 1
 	if not _all_levels.has(1):
-		# Fall back to lowest available level
 		var keys: Array = _all_levels.keys()
 		keys.sort()
 		_current_level = keys[0]
 
 	_map = _all_levels[_current_level]
 
-	# Position party at entry
-	var entry := _map.entry_pos
+	# Position party at spawn_pos or entry_pos
+	var entry: Vector2i
+	if spawn_pos != Vector2i(-1, -1):
+		entry = spawn_pos
+	else:
+		entry = _map.entry_pos
 	for eid in _party_entity_ids:
 		_map.set_entity_pos(eid, entry)
 
@@ -301,6 +306,17 @@ func get_current_level() -> int:
 
 func get_dungeon_id() -> String:
 	return _dungeon_id
+
+
+func get_dungeon_name() -> String:
+	return _dungeon_name
+
+
+## Returns true if the party is standing on a designated transition cell.
+func is_on_transition_cell() -> bool:
+	if _map == null:
+		return false
+	return _map.is_transition_cell(get_party_position())
 
 
 # ---------------------------------------------------------------------------

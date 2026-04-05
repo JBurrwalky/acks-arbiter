@@ -10,6 +10,10 @@
       "grid_height": 16,
       "entry_col": 2,
       "entry_row": 2,
+      "transition_cells": [
+        {"col": 2, "row": 2, "label": "West Entrance"},
+        {"col": 18, "row": 5, "label": "East Passage"}
+      ],
       "cells": [
         {"col":1,"row":1,"terrain_feature":"wall_stone"},
         {"col":2,"row":1,"terrain_feature":"wall_stone"},

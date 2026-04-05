@@ -10,6 +10,8 @@ extends VBoxContainer
 
 const RACES_IN_ORDER: Array[String] = ["human", "dwarf", "elf"]
 const RACE_LABELS: Dictionary = {"human": "Human Classes", "dwarf": "Dwarven Classes", "elf": "Elven Classes"}
+const SELECTED_CLASS_TEXT_COLOR := Color(1.0, 0.85, 0.3, 1.0)
+const INELIGIBLE_CLASS_TEXT_COLOR := Color(0.35, 0.35, 0.35, 1.0)
 
 var _state: Dictionary = {}
 var _class_registry: ClassRegistry
@@ -122,10 +124,12 @@ func _refresh_eligibility() -> void:
 		if reason.is_empty():
 			btn.disabled = false
 			btn.modulate = Color.WHITE
+			btn.remove_theme_color_override("font_disabled_color")
 			btn.tooltip_text = ""
 		else:
 			btn.disabled = true
 			btn.modulate = Color(0.6, 0.6, 0.6, 1.0)
+			btn.add_theme_color_override("font_disabled_color", INELIGIBLE_CLASS_TEXT_COLOR)
 			btn.tooltip_text = reason
 			_ineligible_reasons[class_id] = reason
 
@@ -172,8 +176,7 @@ func _select_class(class_id: String, update_state: bool) -> void:
 	for cid in _class_buttons.keys():
 		var btn: Button = _class_buttons[cid]
 		if cid == class_id:
-			btn.add_theme_color_override("font_color",
-				Color(1.0, 0.85, 0.3, 1.0))  # gold highlight
+			btn.add_theme_color_override("font_color", SELECTED_CLASS_TEXT_COLOR)
 		else:
 			btn.remove_theme_color_override("font_color")
 
