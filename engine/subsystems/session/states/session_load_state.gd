@@ -44,7 +44,8 @@ func enter(runner, context: Dictionary) -> void:
 	# Wire hex map renderer to controller (first time only)
 	var renderer: Node = runner.get_hex_map_renderer()
 	var controller: HexMapController = runner.get_hex_map_controller()
-	if not renderer.has_method("setup") or renderer.get("_controller") == null:
+	# setup() connects controller signals to renderer — only call once.
+	if renderer._controller == null:
 		renderer.setup(controller)
 
 	# Load map into controller

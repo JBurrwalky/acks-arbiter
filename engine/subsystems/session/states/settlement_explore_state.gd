@@ -7,13 +7,13 @@ extends SessionState
 ## On node click: move → time advance → building interaction.
 ## On exit: pops scene, destroys controller.
 
+var _runner = null
 var _controller: SettlementMapController = null
 var _scene: Node = null
-var _node_clicked_cb: Callable
-var _exit_cb: Callable
 
 
 func enter(runner, context: Dictionary) -> void:
+	_runner = runner
 	var entrance: Dictionary = context.get("entrance", {})
 	var gate_node_id: int = context.get("gate_node_id", -1)
 
@@ -42,11 +42,8 @@ func enter(runner, context: Dictionary) -> void:
 	_scene = packed.instantiate()
 	_scene.setup(_controller)
 
-	_exit_cb = func(): _on_exit_requested(runner)
-	_scene.exit_requested.connect(_exit_cb)
-
-	_node_clicked_cb = func(node_id: int): _on_node_clicked(runner, node_id)
-	_scene.node_clicked.connect(_node_clicked_cb)
+	_scene.exit_requested.connect(_on_exit_requested)
+	_scene.node_clicked.connect(_on_node_clicked)
 
 	runner.get_nav_stack().push_node(
 		_scene, "settlement_%s" % entrance.get("id", "unknown")
@@ -60,6 +57,7 @@ func exit(runner) -> void:
 		_controller.queue_free()
 	_controller = null
 	_scene = null
+	_runner = null
 
 
 func handle_action(runner, action: String, payload: Dictionary) -> String:
@@ -71,15 +69,16 @@ func handle_action(runner, action: String, payload: Dictionary) -> String:
 	return ""
 
 
-func _on_node_clicked(runner, node_id: int) -> void:
-	if _controller == null or not _controller.can_move_to(node_id):
+func _on_node_clicked(node_id: int) -> void:
+	if _runner == null or _controller == null or not _controller.can_move_to(node_id):
 		return
 
 	_controller.move_party(node_id)
 
 	# Advance 1 exploration turn (10 minutes) per movement in settlement
-	runner.advance_exploration_time(1)
+	_runner.advance_exploration_time(1)
 
 
-func _on_exit_requested(runner) -> void:
-	runner.transition_to_state("wilderness")
+func _on_exit_requested() -> void:
+	if _runner != null:
+		_runner.transition_to_state("wilderness")

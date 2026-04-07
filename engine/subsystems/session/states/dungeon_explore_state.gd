@@ -7,14 +7,13 @@ extends SessionState
 ## On cell click: move → auto-stairs → encounter check → time advance.
 ## On exit: pops scene, destroys controller.
 
+var _runner = null
 var _controller: DungeonMapController = null
 var _scene: Node = null
-var _cell_clicked_cb: Callable
-var _door_interact_cb: Callable
-var _exit_cb: Callable
 
 
 func enter(runner, context: Dictionary) -> void:
+	_runner = runner
 	var entrance: Dictionary = context.get("entrance", {})
 	var spawn_cell: Vector2i = context.get("spawn_cell", Vector2i(-1, -1))
 
@@ -50,14 +49,9 @@ func enter(runner, context: Dictionary) -> void:
 	_scene = packed.instantiate()
 	_scene.setup(_controller)
 
-	_exit_cb = func(): _on_exit_requested(runner)
-	_scene.exit_requested.connect(_exit_cb)
-
-	_cell_clicked_cb = func(pos: Vector2i): _on_cell_clicked(runner, pos)
-	_scene.cell_clicked.connect(_cell_clicked_cb)
-
-	_door_interact_cb = func(pos: Vector2i): _controller.interact_door(pos)
-	_scene.door_interact_requested.connect(_door_interact_cb)
+	_scene.exit_requested.connect(_on_exit_requested)
+	_scene.cell_clicked.connect(_on_cell_clicked)
+	_scene.door_interact_requested.connect(_on_door_interact)
 
 	runner.get_nav_stack().push_node(
 		_scene, "dungeon_%s" % entrance.get("id", "unknown")
@@ -71,6 +65,7 @@ func exit(runner) -> void:
 		_controller.queue_free()
 	_controller = null
 	_scene = null
+	_runner = null
 
 	# Clear dungeon position
 	CampaignRepository.clear_party_dungeon_position(runner.get_party_id())
@@ -85,8 +80,8 @@ func handle_action(runner, action: String, payload: Dictionary) -> String:
 	return ""
 
 
-func _on_cell_clicked(runner, pos: Vector2i) -> void:
-	if _controller == null or not _controller.can_move_to(pos):
+func _on_cell_clicked(pos: Vector2i) -> void:
+	if _runner == null or _controller == null or not _controller.can_move_to(pos):
 		return
 
 	_controller.move_party(pos)
@@ -99,17 +94,20 @@ func _on_cell_clicked(runner, pos: Vector2i) -> void:
 			_controller.use_stairs(pos)
 
 	# Encounter check (1 in 6 per dungeon turn)
-	var encounter: Dictionary = runner.do_encounter_check(null)
+	var encounter: Dictionary = _runner.do_encounter_check(null)
 	if encounter.get("triggered", false):
-		runner.transition_to_state("combat", {
-			"encounter_data": encounter.get("encounter_data", {}),
-			"return_state": "dungeon",
-		})
-		return
+		# Log encounter — combat system (F-1) not yet built
+		print("SessionRunner: dungeon encounter triggered (combat not yet implemented)")
 
 	# Advance 1 dungeon turn (10 minutes)
-	runner.advance_exploration_time(1)
+	_runner.advance_exploration_time(1)
 
 
-func _on_exit_requested(runner) -> void:
-	runner.transition_to_state("wilderness")
+func _on_door_interact(pos: Vector2i) -> void:
+	if _controller != null:
+		_controller.interact_door(pos)
+
+
+func _on_exit_requested() -> void:
+	if _runner != null:
+		_runner.transition_to_state("wilderness")

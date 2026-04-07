@@ -23,9 +23,6 @@ script = ExtResource("9_nav_stack")
 
 [node name="SceneTransition" parent="." unique_id=201900003 instance=ExtResource("10_scene_transition")]
 
-[node name="SessionRunner" type="Node" parent="."]
-script = ExtResource("12_session_runner")
-
 [node name="HexMapController" type="Node" parent="." unique_id=1744656386]
 script = ExtResource("2_controller")
 
@@ -43,3 +40,6 @@ script = ExtResource("4_override_mgr")
 [node name="CharacterSheetOverlay" parent="." unique_id=812345001 instance=ExtResource("8_char_sheet")]
 
 [node name="PartyManagementOverlay" parent="." instance=ExtResource("11_party_mgmt")]
+
+[node name="SessionRunner" type="Node" parent="."]
+script = ExtResource("12_session_runner")
