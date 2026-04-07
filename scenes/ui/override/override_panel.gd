@@ -82,12 +82,14 @@ var _world_dungeon_name: LineEdit
 var _world_dungeon_place_btn: Button
 
 # Per-tab node refs (Spawning tab)
-var _spawn_monster_key: LineEdit
+var _spawn_monster_key: OptionButton
 var _spawn_count: SpinBox
 var _spawn_disposition: OptionButton
 var _spawn_hex_q: SpinBox
 var _spawn_hex_r: SpinBox
 var _spawn_btn: Button
+var _spawn_status: Label
+var _monster_registry: MonsterRegistry = null
 
 # Per-tab node refs (Dice tab)
 var _dice_roll_type: OptionButton
@@ -441,15 +443,19 @@ func _on_world_dungeon_place() -> void:
 # ---------------------------------------------------------------------------
 
 func _on_spawn() -> void:
-	if _selected_map_id.is_empty() or _spawn_monster_key.text.is_empty():
+	if _selected_map_id.is_empty() or _spawn_monster_key.item_count == 0:
+		return
+	var monster_id: String = _spawn_monster_key.get_item_text(_spawn_monster_key.selected)
+	if monster_id.is_empty():
 		return
 	var coord := Vector2i(int(_spawn_hex_q.value), int(_spawn_hex_r.value))
+	var count := int(_spawn_count.value)
+	var disposition: String = DISPOSITIONS[_spawn_disposition.selected]
 	_override_manager.override_spawn_encounter(
-		_selected_map_id, coord,
-		_spawn_monster_key.text,
-		int(_spawn_count.value),
-		DISPOSITIONS[_spawn_disposition.selected]
+		_selected_map_id, coord, monster_id, count, disposition
 	)
+	_spawn_status.text = "Spawned %d x %s (%s) at (%d, %d)" % [
+		count, monster_id, disposition, coord.x, coord.y]
 
 
 # ---------------------------------------------------------------------------
@@ -862,9 +868,9 @@ func _build_spawning_tab() -> void:
 
 	tab.add_child(_section_label("Spawn Encounter"))
 
-	tab.add_child(_label("Monster key (e.g. orc, giant_spider):"))
-	_spawn_monster_key = LineEdit.new()
-	_spawn_monster_key.placeholder_text = "monster_group key"
+	tab.add_child(_label("Monster:"))
+	_spawn_monster_key = OptionButton.new()
+	_populate_monster_dropdown()
 	tab.add_child(_spawn_monster_key)
 
 	var count_row := HBoxContainer.new()
@@ -903,6 +909,25 @@ func _build_spawning_tab() -> void:
 	_spawn_btn.text = "Spawn Encounter"
 	_spawn_btn.pressed.connect(_on_spawn)
 	tab.add_child(_spawn_btn)
+
+	_spawn_status = Label.new()
+	_spawn_status.text = ""
+	tab.add_child(_spawn_status)
+
+
+func _populate_monster_dropdown() -> void:
+	_spawn_monster_key.clear()
+	if _monster_registry == null:
+		_monster_registry = MonsterRegistry.new()
+	var ids := _monster_registry.get_all_monster_ids()
+	for mid in ids:
+		var monster := _monster_registry.get_monster(mid)
+		var display_name: String = monster.get("name", mid)
+		var variant: String = str(monster.get("variant", "")) if monster.get("variant", null) != null else ""
+		if not variant.is_empty():
+			display_name = "%s (%s)" % [display_name, variant]
+		_spawn_monster_key.add_item(mid)
+		_spawn_monster_key.set_item_tooltip(_spawn_monster_key.item_count - 1, display_name)
 
 
 func _build_dice_tab() -> void:

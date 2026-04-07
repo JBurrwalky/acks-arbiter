@@ -76,9 +76,15 @@ func _on_hex_clicked(coord: Vector2i) -> void:
 	if terrain != null:
 		var encounter: Dictionary = _runner.do_encounter_check(terrain)
 		if encounter.get("triggered", false):
-			# Log encounter but do NOT transition to combat — combat system (F-1)
-			# not yet built. Future: runner.transition_to_state("combat", {...})
-			print("SessionRunner: encounter triggered at %s (combat not yet implemented)" % str(coord))
+			var enc: Dictionary = encounter["encounter_data"]
+			var monster_name := enc.get("monster_group", "unknown")
+			var count: int = enc.get("number", 0)
+			var disposition: String = enc.get("behavioral_disposition", "neutral")
+			print("ENCOUNTER at %s: %d x %s (%s, reaction %d)" % [
+				str(coord), count, monster_name, disposition,
+				enc.get("reaction_roll", 0)])
+			# Combat transition deferred to F-1.
+			# Future: _runner.transition_to_state("combat", enc)
 
 	# Time advance (1 turn per hex for now — future: terrain-based turn cost)
 	_runner.advance_exploration_time(1)

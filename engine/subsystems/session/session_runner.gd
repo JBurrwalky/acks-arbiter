@@ -48,6 +48,7 @@ var _party_id: String = ""
 var _party_data: PartyData = null
 var _active_effects: ActiveEffectTracker = null
 var _effect_ticker: EffectTicker = null
+var _monster_registry: MonsterRegistry = null
 
 
 # ---------------------------------------------------------------------------
@@ -79,6 +80,9 @@ func _ready() -> void:
 	# Initialize effect tracking (empty until session loads)
 	_active_effects = ActiveEffectTracker.new()
 	_effect_ticker = EffectTicker.new(_active_effects)
+
+	# Monster data for encounter generation
+	_monster_registry = MonsterRegistry.new()
 
 	# Register all states
 	_register_states()
@@ -190,6 +194,9 @@ func get_party_data() -> PartyData:
 func get_active_effects() -> ActiveEffectTracker:
 	return _active_effects
 
+func get_monster_registry() -> MonsterRegistry:
+	return _monster_registry
+
 func get_current_state_key() -> String:
 	return _current_state_key
 
@@ -281,6 +288,8 @@ func end_session() -> void:
 ## Rolls an encounter check. For wilderness, pass the terrain at the party's hex.
 ## For dungeon, pass null (uses standard 1-in-6).
 ## Returns {triggered: bool, encounter_data: Dictionary}.
+## When triggered, encounter_data includes monster_group, number, and reaction_roll
+## populated from MonsterRegistry and the terrain encounter tables.
 func do_encounter_check(terrain: HexTerrainData) -> Dictionary:
 	var threshold: int = 1  # default: encounter on 1 in 6
 
@@ -294,17 +303,88 @@ func do_encounter_check(terrain: HexTerrainData) -> Dictionary:
 	var roll: RollResult = DiceSystem.roll_digital(6, 1, 0, "encounter_check")
 
 	if roll.modified_total <= threshold:
-		# Encounter triggered — build encounter data
+		# Pick a monster from the terrain's encounter table
+		var monster_id := _pick_encounter_monster(terrain)
+		if monster_id.is_empty():
+			# No monsters in catalog for this terrain — skip encounter
+			return {"triggered": false, "encounter_data": {}}
+
+		# Roll encounter number (1d6 for now; future: use per-monster encounter dice)
+		var count_roll: RollResult = DiceSystem.roll_digital(6, 1, 0, "encounter_number")
+		var count: int = maxi(1, count_roll.modified_total)
+
+		# Roll reaction (2d6)
+		var reaction: RollResult = DiceSystem.roll_digital(6, 2, 0, "reaction")
+		var disposition := _reaction_to_disposition(reaction.modified_total)
+
+		var hex_id := ""
+		if terrain != null and _party_data != null:
+			hex_id = "%d,%d" % [_party_data.current_hex_q, _party_data.current_hex_r]
+
 		var encounter_data := {
 			"encounter_id": CampaignRepository.generate_id(),
+			"monster_group": monster_id,
+			"number": count,
+			"reaction_roll": reaction.modified_total,
+			"behavioral_disposition": disposition,
 			"terrain_category": terrain.movement_cost_category() if terrain != null else "dungeon",
 			"territory": terrain.civilization if terrain != null else "wilderness",
+			"hex_id": hex_id,
 			"roll": roll.modified_total,
 		}
 		EventBus.encounter_triggered.emit(encounter_data)
 		return {"triggered": true, "encounter_data": encounter_data}
 
 	return {"triggered": false, "encounter_data": {}}
+
+
+## Picks a random monster for an encounter based on terrain weights.
+## Returns a monster_id from the catalog, or "" if none available.
+func _pick_encounter_monster(terrain: HexTerrainData) -> String:
+	if _monster_registry == null or _monster_registry.get_monster_count() == 0:
+		return ""
+
+	# Get weighted terrain table keys for this hex
+	var weights: Dictionary = terrain.encounter_table_weights() if terrain != null else {}
+	if weights.is_empty():
+		# Dungeon or unknown — pick from all monsters
+		var all_ids := _monster_registry.get_all_monster_ids()
+		if all_ids.is_empty():
+			return ""
+		return all_ids[randi() % all_ids.size()]
+
+	# Collect candidate monsters from all relevant terrain tables
+	var candidates: Array[String] = []
+	for table_key in weights:
+		if table_key == "_natural":
+			continue  # sentinel for borderlands — skip
+		var table_monsters := _monster_registry.get_monsters_for_terrain(table_key)
+		for mid in table_monsters:
+			if mid not in candidates:
+				candidates.append(mid)
+
+	if candidates.is_empty():
+		# Fallback: pick from all monsters
+		var all_ids := _monster_registry.get_all_monster_ids()
+		if all_ids.is_empty():
+			return ""
+		return all_ids[randi() % all_ids.size()]
+
+	return candidates[randi() % candidates.size()]
+
+
+## Maps a 2d6 reaction roll total to a behavioral disposition string.
+static func _reaction_to_disposition(total: int) -> String:
+	if total <= 3:
+		return "hostile"
+	elif total <= 5:
+		return "cautious"
+	elif total <= 8:
+		return "neutral"
+	elif total <= 11:
+		return "friendly"
+	else:
+		return "friendly"
 
 
 ## Advances game time by the given number of exploration turns.

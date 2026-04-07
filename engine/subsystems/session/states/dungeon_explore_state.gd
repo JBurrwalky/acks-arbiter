@@ -96,8 +96,12 @@ func _on_cell_clicked(pos: Vector2i) -> void:
 	# Encounter check (1 in 6 per dungeon turn)
 	var encounter: Dictionary = _runner.do_encounter_check(null)
 	if encounter.get("triggered", false):
-		# Log encounter — combat system (F-1) not yet built
-		print("SessionRunner: dungeon encounter triggered (combat not yet implemented)")
+		var enc: Dictionary = encounter["encounter_data"]
+		print("ENCOUNTER (dungeon): %d x %s (%s, reaction %d)" % [
+			enc.get("number", 0), enc.get("monster_group", "unknown"),
+			enc.get("behavioral_disposition", "neutral"),
+			enc.get("reaction_roll", 0)])
+		# Combat transition deferred to F-1.
 
 	# Advance 1 dungeon turn (10 minutes)
 	_runner.advance_exploration_time(1)
