@@ -35,7 +35,32 @@ func _load_catalog() -> void:
 			push_error("SpellRegistry: Entry missing spell_key: %s" % str(entry))
 			continue
 		_spells[key] = entry
-	print("SpellRegistry: Loaded %d spell definitions" % _spells.size())
+
+	# Generate synthetic entries for reversed spell forms so get_spell()
+	# works with keys like "detect_good" (reverse of "detect_evil").
+	var reverse_count := 0
+	for base_key in _spells.keys().duplicate():
+		var base: Dictionary = _spells[base_key]
+		if not base.get("is_reversible", false):
+			continue
+		var rev_key: String = base.get("reverse_key", "")
+		var rev_name: String = base.get("reverse_name", "")
+		if rev_key.is_empty() or rev_name.is_empty():
+			continue
+		if _spells.has(rev_key):
+			continue  # already a real entry
+		var rev_entry := base.duplicate(true)
+		rev_entry["spell_key"] = rev_key
+		rev_entry["spell_name"] = rev_name
+		rev_entry["is_reversed_form"] = true
+		rev_entry["base_spell_key"] = base_key
+		rev_entry["is_reversible"] = false
+		rev_entry["reverse_key"] = ""
+		rev_entry["reverse_name"] = ""
+		_spells[rev_key] = rev_entry
+		reverse_count += 1
+
+	print("SpellRegistry: Loaded %d spell definitions (%d reversed forms)" % [_spells.size(), reverse_count])
 
 
 func _load_indices() -> void:

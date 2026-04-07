@@ -159,6 +159,7 @@ func _reset_state() -> void:
 		"barbarian_origin": "",
 		"witch_tradition": "",
 		"voudon_craft_choice": "",
+		"bonus_proficiencies": [],
 		"traded_scores": {},
 		"character": null,
 		"starting_age": 0,
@@ -192,6 +193,7 @@ func _invalidate_from(step: int) -> void:
 			creation_state["barbarian_origin"] = ""
 			creation_state["witch_tradition"] = ""
 			creation_state["voudon_craft_choice"] = ""
+			creation_state["bonus_proficiencies"] = []
 			creation_state["traded_scores"] = {}
 			creation_state["character"] = null
 			creation_state["starting_age"] = 0
@@ -206,6 +208,7 @@ func _invalidate_from(step: int) -> void:
 			creation_state["barbarian_origin"] = ""
 			creation_state["witch_tradition"] = ""
 			creation_state["voudon_craft_choice"] = ""
+			creation_state["bonus_proficiencies"] = []
 			creation_state["traded_scores"] = {}
 			creation_state["character"] = null
 			creation_state["proficiencies"] = []
@@ -450,41 +453,34 @@ func _finalize_character() -> void:
 	# Persist proficiencies (includes language proficiency records for each language).
 	var proficiencies: Array = creation_state.get("proficiencies", []).duplicate()
 
-	# --- Barbarian regional origin bonus proficiency (free — uses no slot) ---
-	var finalize_class_id: String = creation_state.get("class_id", "")
-	if finalize_class_id == "barbarian":
-		var origin_key: String = creation_state.get("barbarian_origin", "")
-		if not origin_key.is_empty():
-			var barbarian_cls := _class_registry.get_class_def("barbarian")
-			var origins: Dictionary = barbarian_cls.get("regional_origins", {})
-			if origins.has(origin_key):
-				var bonus_prof: String = origins[origin_key].get("bonus_proficiency", "")
-				if not bonus_prof.is_empty():
-					proficiencies.append({
-						"proficiency_key": bonus_prof,
-						"rank": 1,
-						"slot_type": "class",
-						"selections_count": 1,
-						"specialization": "",
-					})
-
-	# --- Witch tradition 1st-level proficiency grant (free — uses no slot) ---
-	elif finalize_class_id == "witch":
-		var tradition: String = creation_state.get("witch_tradition", "")
-		if not tradition.is_empty():
-			var tradition_info: Dictionary = ClassCustomizationPanel.TRADITION_INFO.get(tradition, {})
-			var tradition_prof: String = tradition_info.get("bonus_proficiency", "")
-			if not tradition_prof.is_empty():
-				var tradition_spec: String = ""
-				if tradition == "voudon":
-					tradition_spec = creation_state.get("voudon_craft_choice", "")
-				proficiencies.append({
-					"proficiency_key": tradition_prof,
-					"rank": 1,
-					"slot_type": "class",
-					"selections_count": 1,
-					"specialization": tradition_spec,
-				})
+	# --- Merge bonus proficiencies (origin/tradition grants — free, uses no slot) ---
+	var bonus_profs: Array = creation_state.get("bonus_proficiencies", [])
+	for bp in bonus_profs:
+		var bp_key: String = bp.get("proficiency_key", "")
+		var bp_spec: String = bp.get("specialization", "")
+		if bp_key.is_empty():
+			continue
+		var sel_rule := _proficiency_registry.get_selection_rule(bp_key)
+		var found := false
+		for i in proficiencies.size():
+			var existing: Dictionary = proficiencies[i]
+			if existing.get("proficiency_key", "") != bp_key:
+				continue
+			if sel_rule == "specialization" and existing.get("specialization", "") != bp_spec:
+				continue
+			found = true
+			if sel_rule == "stacking" or sel_rule == "specialization":
+				proficiencies[i]["rank"] = int(proficiencies[i]["rank"]) + 1
+				proficiencies[i]["selections_count"] = int(proficiencies[i].get("selections_count", 1)) + 1
+			break  # unique: already present, skip duplicate
+		if not found:
+			proficiencies.append({
+				"proficiency_key": bp_key,
+				"rank": int(bp.get("rank", 1)),
+				"slot_type": "class",
+				"selections_count": int(bp.get("selections_count", 1)),
+				"specialization": bp_spec,
+			})
 
 	for lang_id in all_langs:
 		proficiencies.append({

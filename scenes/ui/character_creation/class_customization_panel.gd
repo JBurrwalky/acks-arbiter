@@ -4,14 +4,14 @@ extends VBoxContainer
 ## Step 3 — Class Customization.
 ##
 ## Displayed for classes that require a sub-choice at creation:
-##   Barbarian  → Regional Origin (Jutland / Skysostan / Ivory Kingdoms)
+##   Barbarian  → Regional Origin (Northern Mountains / Plains or Steppe / Jungle or Savanna)
 ##   Witch      → Tradition (Antiquarian / Chthonic / Sylvan / Voudon)
 ##
 ## All other classes skip this step entirely via _should_skip_customization()
 ## in CharacterCreationScreen.
 ##
 ## Writes to creation_state:
-##   barbarian: state["barbarian_origin"]  (String key, e.g. "jutland")
+##   barbarian: state["barbarian_origin"]  (String key, e.g. "jutland" = Northern Mountains)
 ##   witch:     state["witch_tradition"]   (String key, e.g. "sylvan")
 ##              state["voudon_craft_choice"] (String spec id; Voudon only)
 
@@ -158,6 +158,8 @@ func _rebuild() -> void:
 		_:
 			_header_label.text = ""
 
+	_update_bonus_proficiencies()
+
 
 # ---------------------------------------------------------------------------
 # Barbarian — regional origins
@@ -200,6 +202,7 @@ func _format_origin_desc(origin: Dictionary) -> String:
 func _on_origin_chosen(origin_key: String) -> void:
 	_state["barbarian_origin"] = origin_key
 	_update_choice_selection(_content, origin_key)
+	_update_bonus_proficiencies()
 
 
 # ---------------------------------------------------------------------------
@@ -231,6 +234,7 @@ func _on_tradition_chosen(tradition_key: String) -> void:
 	_voudon_craft_section.visible = show_craft
 	if not show_craft:
 		_state.erase("voudon_craft_choice")
+	_update_bonus_proficiencies()
 
 
 # ---------------------------------------------------------------------------
@@ -277,6 +281,7 @@ func _build_voudon_craft_selector() -> void:
 
 func _on_craft_chosen(spec_id: String) -> void:
 	_state["voudon_craft_choice"] = spec_id
+	_update_bonus_proficiencies()
 	# Unpress all other craft buttons
 	var craft_vbox: Node = null
 	for child in _voudon_craft_section.get_children():
@@ -288,6 +293,55 @@ func _on_craft_chosen(spec_id: String) -> void:
 	for btn in craft_vbox.get_children():
 		if btn is Button:
 			(btn as Button).button_pressed = (btn.name == spec_id)
+
+
+# ---------------------------------------------------------------------------
+# Bonus proficiency bookkeeping
+# ---------------------------------------------------------------------------
+
+func _update_bonus_proficiencies() -> void:
+	## Resolves the current origin/tradition selection into a bonus_proficiencies
+	## array on _state so the proficiency selection panel (Step 6) can see it.
+	_state["bonus_proficiencies"] = []
+	match _class_id:
+		"barbarian":
+			var origin_key: String = _state.get("barbarian_origin", "")
+			if origin_key.is_empty():
+				return
+			var cls := _class_registry.get_class_def("barbarian")
+			var origins: Dictionary = cls.get("regional_origins", {})
+			if not origins.has(origin_key):
+				return
+			var bonus_prof: String = origins[origin_key].get("bonus_proficiency", "")
+			if bonus_prof.is_empty():
+				return
+			_state["bonus_proficiencies"].append({
+				"proficiency_key": bonus_prof,
+				"rank": 1,
+				"slot_type": "class",
+				"selections_count": 1,
+				"specialization": "",
+				"source": "%s_origin" % origin_key,
+			})
+		"witch":
+			var tradition: String = _state.get("witch_tradition", "")
+			if tradition.is_empty():
+				return
+			var info: Dictionary = TRADITION_INFO.get(tradition, {})
+			var bonus_prof: String = info.get("bonus_proficiency", "")
+			if bonus_prof.is_empty():
+				return
+			var spec: String = ""
+			if tradition == "voudon":
+				spec = _state.get("voudon_craft_choice", "")
+			_state["bonus_proficiencies"].append({
+				"proficiency_key": bonus_prof,
+				"rank": 1,
+				"slot_type": "class",
+				"selections_count": 1,
+				"specialization": spec,
+				"source": "%s_tradition" % tradition,
+			})
 
 
 # ---------------------------------------------------------------------------

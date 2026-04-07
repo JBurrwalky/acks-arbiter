@@ -10,31 +10,31 @@
 
     { "q": -2, "r": -1, "elevation": "flat",      "biome": "woods",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q": -2, "r":  0, "elevation": "flat",      "biome": "woods",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
-    { "q": -2, "r":  1, "elevation": "flat",      "biome": "swamp",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q": -2, "r":  1, "elevation": "flat",      "biome": "swamp",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [], "overlay": { "river_edges": [0, 2], "river_flow_exit": 2, "road_edges": [] } },
     { "q": -2, "r":  2, "elevation": "flat",      "biome": "swamp",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
 
     { "q": -1, "r": -2, "elevation": "flat",      "biome": "woods",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q": -1, "r": -1, "elevation": "flat",      "biome": "woods",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q": -1, "r":  0, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [] },
-    { "q": -1, "r":  1, "elevation": "flat",      "biome": "clear",  "water": "river",  "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q": -1, "r":  1, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [], "overlay": { "river_edges": [5, 2], "river_flow_exit": 2, "road_edges": [] } },
     { "q": -1, "r":  2, "elevation": "flat",      "biome": "swamp",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
 
     { "q":  0, "r": -2, "elevation": "hills",     "biome": "woods",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q":  0, "r": -1, "elevation": "hills",     "biome": "woods",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
-    { "q":  0, "r":  0, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [] },
-    { "q":  0, "r":  1, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "civilized",   "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q":  0, "r":  0, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "borderlands", "has_city": true,  "original_biome": "", "settlement_ids": ["test_settlement_ashford"], "overlay": { "river_edges": [], "road_edges": [2, 5] } },
+    { "q":  0, "r":  1, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "civilized",   "has_city": false, "original_biome": "", "settlement_ids": [], "overlay": { "river_edges": [5, 2], "river_flow_exit": 2, "road_edges": [] } },
     { "q":  0, "r":  2, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "civilized",   "has_city": true,  "original_biome": "", "settlement_ids": ["settlement_ashford"] },
 
     { "q":  1, "r": -2, "elevation": "hills",     "biome": "woods",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q":  1, "r": -1, "elevation": "hills",     "biome": "woods",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
-    { "q":  1, "r":  0, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q":  1, "r":  0, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [], "overlay": { "river_edges": [], "road_edges": [2, 5] } },
     { "q":  1, "r":  1, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "civilized",   "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q":  1, "r":  2, "elevation": "flat",      "biome": "desert", "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
 
     { "q":  2, "r": -2, "elevation": "mountains", "biome": "clear",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q":  2, "r": -1, "elevation": "hills",     "biome": "clear",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
     { "q":  2, "r":  0, "elevation": "flat",      "biome": "clear",  "water": "",       "civilization": "borderlands", "has_city": false, "original_biome": "", "settlement_ids": [] },
-    { "q":  2, "r":  1, "elevation": "flat",      "biome": "desert", "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
+    { "q":  2, "r":  1, "elevation": "flat",      "biome": "desert", "water": "",       "civilization": "borderlands", "has_city": true,  "original_biome": "", "settlement_ids": ["test_settlement_thornwall"] },
     { "q":  2, "r":  2, "elevation": "flat",      "biome": "desert", "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },
 
     { "q":  3, "r": -2, "elevation": "mountains", "biome": "clear",  "water": "",       "civilization": "wilderness",  "has_city": false, "original_biome": "", "settlement_ids": [] },

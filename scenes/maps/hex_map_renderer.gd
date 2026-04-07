@@ -42,6 +42,11 @@ const FOG_SOURCE_ID := 0
 const FOG_HIDDEN_ATLAS := Vector2i(0, 0)
 const FOG_EXPLORED_ATLAS := Vector2i(1, 0)
 
+# Overlay rendering
+const OVERLAY_LINE_WIDTH := 8.0
+const RIVER_COLOR := Color(0.235, 0.471, 0.784)
+const ROAD_COLOR := Color(0.545, 0.353, 0.169)
+
 # Camera panning
 const PAN_SPEED := 200.0
 const EDGE_MARGIN := 40.0
@@ -67,6 +72,9 @@ const EDGE_MARGIN := 40.0
 var _controller: HexMapController
 var _map_data: HexMapData
 
+## Node2D child that draws river/road overlay lines via _draw().
+var _overlay_layer: Node2D
+
 ## Tracks Label nodes placed for dungeon entrance markers (cleaned up on reload).
 var _dungeon_markers: Array = []
 
@@ -75,6 +83,14 @@ var _enter_dungeon_btn: Button
 ## Active transition cell selection dialog (CanvasLayer), or null.
 var _tc_dialog: CanvasLayer
 
+## "Enter Settlement" button shown when party is on a settlement entrance hex.
+var _enter_settlement_btn: Button
+## Active gate selection dialog (CanvasLayer), or null.
+var _gate_dialog: CanvasLayer
+
+## Cached settlement entrances: Vector2i(hex_q, hex_r) → entrance dict.
+var _settlement_entrance_cache: Dictionary = {}
+
 
 # ---------------------------------------------------------------------------
 # Signals
@@ -82,6 +98,7 @@ var _tc_dialog: CanvasLayer
 
 signal hex_clicked(coord: Vector2i)
 signal dungeon_entry_requested(entrance: Dictionary, spawn_cell: Vector2i)
+signal settlement_entry_requested(entrance: Dictionary, gate_node_id: int)
 
 
 # ---------------------------------------------------------------------------
@@ -91,6 +108,12 @@ signal dungeon_entry_requested(entrance: Dictionary, spawn_cell: Vector2i)
 func _ready() -> void:
 	_terrain_layer.tile_set = _create_terrain_tileset()
 	_fog_layer.tile_set = _create_fog_tileset()
+
+	# Overlay layer draws river/road lines between terrain and fog.
+	_overlay_layer = Node2D.new()
+	_overlay_layer.name = "OverlayLayer"
+	add_child(_overlay_layer)
+	move_child(_overlay_layer, _fog_layer.get_index())
 
 	# Party token: small flat-top hexagon (start angle 0 = vertex at right).
 	var r := 14.0
@@ -107,6 +130,13 @@ func _ready() -> void:
 	_enter_dungeon_btn.visible = false
 	_enter_dungeon_btn.pressed.connect(_on_enter_dungeon_pressed)
 	$HexHUD.add_child(_enter_dungeon_btn)
+
+	# "Enter Settlement" button — child of HexHUD so it stays on screen.
+	_enter_settlement_btn = Button.new()
+	_enter_settlement_btn.text = "Enter Settlement"
+	_enter_settlement_btn.visible = false
+	_enter_settlement_btn.pressed.connect(_on_enter_settlement_pressed)
+	$HexHUD.add_child(_enter_settlement_btn)
 
 
 func _process(delta: float) -> void:
@@ -150,6 +180,17 @@ func _process(delta: float) -> void:
 			vp_size.y * 0.1
 		)
 
+	# Keep Enter Settlement button below the dungeon button.
+	if _enter_settlement_btn != null and _enter_settlement_btn.visible:
+		var sbtn_size := _enter_settlement_btn.size
+		var y_offset: float = vp_size.y * 0.1
+		if _enter_dungeon_btn != null and _enter_dungeon_btn.visible:
+			y_offset += _enter_dungeon_btn.size.y + 8.0
+		_enter_settlement_btn.position = Vector2(
+			vp_size.x * 0.9 - sbtn_size.x,
+			y_offset
+		)
+
 
 # ---------------------------------------------------------------------------
 # Public interface
@@ -162,6 +203,7 @@ func setup(controller: HexMapController) -> void:
 	controller.visibility_updated.connect(_on_visibility_updated)
 	controller.party_moved.connect(_on_party_moved)
 	controller.hex_terrain_updated.connect(_repaint_tile)
+	controller.hex_overlay_updated.connect(_on_overlay_updated)
 
 
 ## Center the camera on the given axial coord.
@@ -179,12 +221,15 @@ func center_on_hex(coord: Vector2i) -> void:
 func _on_map_loaded(_map_id: String) -> void:
 	_map_data = _controller.get_map()
 	_refresh_terrain_layer()
+	_refresh_overlay_layer()
 	_refresh_fog_layer()
 	_update_party_token_position()
 	_compute_camera_limits()
 	center_on_hex(_map_data.party_hex)
 	_refresh_dungeon_markers()
 	_update_enter_dungeon_button()
+	_cache_settlement_entrances()
+	_update_enter_settlement_button()
 
 
 func _on_visibility_updated() -> void:
@@ -195,6 +240,7 @@ func _on_visibility_updated() -> void:
 func _on_party_moved(_from_hex: Vector2i, _to_hex: Vector2i) -> void:
 	_update_party_token_position()
 	_update_enter_dungeon_button()
+	_update_enter_settlement_button()
 
 
 # ---------------------------------------------------------------------------
@@ -318,6 +364,142 @@ func _close_tc_dialog() -> void:
 
 
 # ---------------------------------------------------------------------------
+# Enter Settlement button + modal
+# ---------------------------------------------------------------------------
+
+## Caches settlement entrances for the current map. Called on map load.
+func _cache_settlement_entrances() -> void:
+	_settlement_entrance_cache.clear()
+	if _map_data == null:
+		return
+	var entrances := CampaignRepository.get_settlement_entrances_for_map(_map_data.id)
+	for entrance in entrances:
+		var coord := Vector2i(entrance.get("hex_q", 999), entrance.get("hex_r", 999))
+		_settlement_entrance_cache[coord] = entrance
+
+
+## Shows or hides the "Enter <name>" button depending on party hex.
+func _update_enter_settlement_button() -> void:
+	if _enter_settlement_btn == null or _map_data == null:
+		return
+	var party_hex := _map_data.party_hex
+	if _settlement_entrance_cache.has(party_hex):
+		var entrance: Dictionary = _settlement_entrance_cache[party_hex]
+		var sname: String = entrance.get("name", "Settlement")
+		_enter_settlement_btn.text = "Enter %s" % sname
+		_enter_settlement_btn.visible = true
+		_enter_settlement_btn.set_meta("entrance_data", entrance)
+		return
+	_enter_settlement_btn.visible = false
+
+
+func _on_enter_settlement_pressed() -> void:
+	var entrance: Dictionary = _enter_settlement_btn.get_meta("entrance_data")
+	var settlement_json: String = entrance.get("settlement_data", "")
+	var settlement_dict = JSON.parse_string(settlement_json)
+	if settlement_dict == null:
+		return
+
+	var nodes: Array = settlement_dict.get("street_graph", {}).get("nodes", [])
+	var gate_nodes: Array = []
+	for node in nodes:
+		if node.get("type", "") == "gate":
+			gate_nodes.append(node)
+
+	if gate_nodes.is_empty():
+		# Fallback: use entry_node_id
+		var entry_id: int = settlement_dict.get("entry_node_id", -1)
+		settlement_entry_requested.emit(entrance, entry_id)
+		return
+
+	if gate_nodes.size() == 1:
+		# Only one gate — enter directly
+		settlement_entry_requested.emit(entrance, int(gate_nodes[0].get("id", -1)))
+		return
+
+	_show_gate_dialog(entrance, gate_nodes)
+
+
+## Builds and shows a modal dialog listing gate nodes to choose from.
+func _show_gate_dialog(entrance: Dictionary, gate_nodes: Array) -> void:
+	if _gate_dialog != null and is_instance_valid(_gate_dialog):
+		_gate_dialog.queue_free()
+
+	_gate_dialog = CanvasLayer.new()
+	_gate_dialog.layer = 20  # above HexHUD (10)
+
+	# Full-screen dimmer
+	var dimmer := ColorRect.new()
+	dimmer.color = Color(0.0, 0.0, 0.0, 0.5)
+	dimmer.mouse_filter = Control.MOUSE_FILTER_STOP
+	dimmer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_gate_dialog.add_child(dimmer)
+
+	# Centered panel
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	panel.custom_minimum_size = Vector2(300, 0)
+	_gate_dialog.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 8)
+	panel.add_child(vbox)
+
+	# Title
+	var sname: String = entrance.get("name", "Settlement")
+	var title_label := Label.new()
+	title_label.text = "Enter %s" % sname
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title_label)
+
+	var subtitle := Label.new()
+	subtitle.text = "Select an entry gate:"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(subtitle)
+
+	# One button per gate node
+	for i in range(gate_nodes.size()):
+		var gate = gate_nodes[i]
+		var gate_id: int = int(gate.get("id", -1))
+		var pos = gate.get("position", [0, 0])
+		var px: float
+		var py: float
+		if pos is Array:
+			px = pos[0] if pos.size() > 0 else 0.0
+			py = pos[1] if pos.size() > 1 else 0.0
+		else:
+			px = pos.x
+			py = pos.y
+		var display := "Gate %d (%.0f, %.0f)" % [i + 1, px, py]
+
+		var btn := Button.new()
+		btn.text = display
+		btn.pressed.connect(_on_gate_selected.bind(entrance, gate_id))
+		vbox.add_child(btn)
+
+	# Cancel button
+	var cancel_btn := Button.new()
+	cancel_btn.text = "Do not enter"
+	cancel_btn.pressed.connect(_close_gate_dialog)
+	vbox.add_child(cancel_btn)
+
+	add_child(_gate_dialog)
+
+
+func _on_gate_selected(entrance: Dictionary, gate_node_id: int) -> void:
+	_close_gate_dialog()
+	settlement_entry_requested.emit(entrance, gate_node_id)
+
+
+func _close_gate_dialog() -> void:
+	if _gate_dialog != null and is_instance_valid(_gate_dialog):
+		_gate_dialog.queue_free()
+		_gate_dialog = null
+
+
+# ---------------------------------------------------------------------------
 # Rendering helpers
 # ---------------------------------------------------------------------------
 
@@ -333,7 +515,7 @@ func _refresh_terrain_layer() -> void:
 
 
 func _terrain_atlas_col(terrain: HexTerrainData) -> int:
-	if terrain.water == HexTerrainData.WATER_OCEAN or terrain.biome == "ocean":
+	if terrain.water in [HexTerrainData.WATER_OCEAN, HexTerrainData.WATER_LAKE] or terrain.biome == "ocean":
 		return OCEAN_COL
 	var elevation_offset: int
 	match terrain.elevation:
@@ -409,6 +591,75 @@ func _repaint_tile(coord: Vector2i) -> void:
 	_terrain_layer.set_cell(godot_coord, 0, Vector2i(atlas_col, 0))
 
 
+## Redraws all river/road overlay lines. Called on map load and overlay updates.
+func _refresh_overlay_layer() -> void:
+	# Clear existing overlay children
+	for child in _overlay_layer.get_children():
+		child.queue_free()
+	if _map_data == null:
+		return
+	for coord in _map_data.hexes.keys():
+		var terrain: HexTerrainData = _map_data.get_hex(coord)
+		if terrain == null or terrain.overlay == null:
+			continue
+		var godot_coord := HexMapController.axial_to_godot_map(coord)
+		var hex_center := _terrain_layer.map_to_local(godot_coord)
+		# Draw roads first (under rivers)
+		if terrain.overlay.has_road():
+			_draw_overlay_lines(hex_center, terrain.overlay.road_edges, ROAD_COLOR)
+		if terrain.overlay.has_river():
+			_draw_overlay_lines(hex_center, terrain.overlay.river_edges, RIVER_COLOR)
+
+
+## Draws overlay lines from each connected edge midpoint through the hex center.
+func _draw_overlay_lines(hex_center: Vector2, edges: Array[int], color: Color) -> void:
+	if edges.size() == 1:
+		# Terminating overlay: draw from edge midpoint to hex center
+		var edge_pos := hex_center + _edge_midpoint_offset(edges[0])
+		var line := Line2D.new()
+		line.points = [edge_pos, hex_center]
+		line.width = OVERLAY_LINE_WIDTH
+		line.default_color = color
+		line.antialiased = true
+		_overlay_layer.add_child(line)
+	else:
+		# Multiple edges: draw a line from each edge midpoint to the hex center.
+		# This creates a hub-and-spoke pattern through center.
+		for edge in edges:
+			var edge_pos := hex_center + _edge_midpoint_offset(edge)
+			var line := Line2D.new()
+			line.points = [edge_pos, hex_center]
+			line.width = OVERLAY_LINE_WIDTH
+			line.default_color = color
+			line.antialiased = true
+			_overlay_layer.add_child(line)
+
+
+## Returns the pixel offset from hex center to the midpoint of the given edge.
+## Edge numbering: 0=N, 1=NE, 2=SE, 3=S, 4=SW, 5=NW (clockwise from North).
+## For a flat-top hex with circumradius R = 32:
+##   N/S midpoints:  (0, ±R*√3/2)  = (0, ±27.7)
+##   NE/SW midpoints: (R*3/4, ∓R*√3/4) = (24, ∓13.9)
+##   SE/NW midpoints: (R*3/4, ±R*√3/4) = (24, ±13.9)
+func _edge_midpoint_offset(edge: int) -> Vector2:
+	var r := float(TERRAIN_TILE_SIZE.x) * 0.5  # circumradius = 32
+	var h := r * 0.866025  # R * √3/2
+	var qr := r * 0.75     # R * 3/4
+	var qh := r * 0.433013 # R * √3/4
+	match edge:
+		0: return Vector2(0.0, -h)       # N
+		1: return Vector2(qr, -qh)       # NE
+		2: return Vector2(qr, qh)        # SE
+		3: return Vector2(0.0, h)        # S
+		4: return Vector2(-qr, qh)       # SW
+		5: return Vector2(-qr, -qh)      # NW
+		_: return Vector2.ZERO
+
+
+func _on_overlay_updated(_coord: Vector2i) -> void:
+	_refresh_overlay_layer()
+
+
 ## Computes Camera2D limits from the map's pixel bounding box plus 1-tile padding.
 func _compute_camera_limits() -> void:
 	if _camera == null or _map_data == null:
@@ -467,11 +718,28 @@ func _update_tooltip(viewport_pos: Vector2) -> void:
 
 func _terrain_tooltip_text(coord: Vector2i, terrain: HexTerrainData) -> String:
 	var water_str := terrain.water if not terrain.water.is_empty() else "none"
-	return (
-		"Hex (%d, %d)\nElevation: %s\nBiome: %s\nWater: %s\nTerritory: %s\nCity: %s\nFamilies: —\nOwners: —\nCleared: —"
+	var has_settlement := terrain.has_city or _settlement_entrance_cache.has(coord)
+	var text := (
+		"Hex (%d, %d)\nElevation: %s\nBiome: %s\nWater: %s\nTerritory: %s\nCity: %s"
 		% [coord.x, coord.y, terrain.elevation, terrain.biome, water_str,
-		   terrain.civilization, "yes" if terrain.has_city else "no"]
+		   terrain.civilization, "yes" if has_settlement else "no"]
 	)
+	if terrain.overlay != null:
+		if terrain.overlay.has_river():
+			var entry_names: Array[String] = []
+			for e in terrain.overlay.river_entry_edges():
+				entry_names.append(HexOverlayData.edge_name(e))
+			var exit_str := HexOverlayData.edge_name(terrain.overlay.river_flow_exit) if terrain.overlay.river_flow_exit >= 0 else "terminus"
+			if entry_names.is_empty():
+				text += "\nRiver: source -> %s" % exit_str
+			else:
+				text += "\nRiver: %s -> %s" % [", ".join(entry_names), exit_str]
+		if terrain.overlay.has_road():
+			var road_names: Array[String] = []
+			for e in terrain.overlay.road_edges:
+				road_names.append(HexOverlayData.edge_name(e))
+			text += "\nRoad: %s" % " - ".join(road_names)
+	return text
 
 
 # ---------------------------------------------------------------------------

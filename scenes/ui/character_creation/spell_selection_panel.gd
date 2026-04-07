@@ -103,7 +103,7 @@ func _setup_arcane(class_id: String, has_l1_slots: bool) -> void:
 	opt.name = "SpellOptionButton"
 	for spell_key in _arcane_spell_list:
 		var def := _spell_registry.get_spell(spell_key)
-		var display: String = def.get("name", spell_key.replace("_", " ").capitalize())
+		var display: String = def.get("spell_name", spell_key.replace("_", " ").capitalize())
 		opt.add_item(display)
 		opt.set_item_metadata(opt.item_count - 1, spell_key)
 	if not _judge_selected_key.is_empty():
@@ -264,7 +264,7 @@ func _show_final_repertoire() -> void:
 	for s in spells:
 		var key: String = s.get("spell_key", "")
 		var def := _spell_registry.get_spell(key)
-		var display: String = def.get("name", key.replace("_", " ").capitalize())
+		var display: String = def.get("spell_name", key.replace("_", " ").capitalize())
 		var entry_lbl := Label.new()
 		entry_lbl.text = "  • %s" % display
 		vbox.add_child(entry_lbl)
@@ -319,7 +319,7 @@ func _setup_divine(class_id: String, has_l1_slots: bool) -> void:
 		for s in granted:
 			var key: String = s.get("spell_key", "")
 			var def := _spell_registry.get_spell(key)
-			var display: String = def.get("name", key.replace("_", " ").capitalize())
+			var display: String = def.get("spell_name", key.replace("_", " ").capitalize())
 			var lbl := Label.new()
 			if s.get("is_tradition_bonus", false):
 				lbl.text = "  • %s  (tradition bonus)" % display

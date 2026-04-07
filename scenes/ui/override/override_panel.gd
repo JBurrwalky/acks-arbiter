@@ -158,7 +158,7 @@ const TERRAIN_FIELDS := ["elevation", "biome", "water", "civilization", "has_cit
 const TERRAIN_VALUE_OPTIONS := {
 	"elevation":    ["flat", "hills", "mountains"],
 	"biome":        ["clear", "woods", "jungle", "swamp", "desert"],
-	"water":        ["none", "river", "ocean"],
+	"water":        ["none", "ocean", "lake"],
 	"civilization": ["civilized", "borderlands", "wilderness"],
 	"has_city":     ["0", "1"],
 }

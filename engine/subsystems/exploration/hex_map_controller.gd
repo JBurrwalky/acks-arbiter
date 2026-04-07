@@ -26,6 +26,7 @@ signal hex_first_revealed(coord: Vector2i)
 signal visibility_updated()
 signal party_moved(from_hex: Vector2i, to_hex: Vector2i)
 signal hex_terrain_updated(coord: Vector2i)
+signal hex_overlay_updated(coord: Vector2i)
 
 
 # ---------------------------------------------------------------------------
@@ -154,6 +155,11 @@ func update_hex_terrain(coord: Vector2i, field: String, new_value) -> void:
 		"civilization":   terrain.civilization = new_value
 		"has_city":       terrain.has_city = str(new_value) in ["1", "true", "True"]
 		"original_biome": terrain.original_biome = new_value
+		"overlay":
+			if new_value is HexOverlayData:
+				terrain.overlay = new_value
+			hex_overlay_updated.emit(coord)
+			return
 	hex_terrain_updated.emit(coord)
 
 

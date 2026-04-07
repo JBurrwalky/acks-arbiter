@@ -24,6 +24,8 @@ const TEST_SETTLEMENT_JSON_PATH := "res://data/test_settlement.json"
 const TEST_DUNGEON_ENTRANCE_HEX := Vector2i(-1, 0)
 ## Hex coordinate where the test settlement entrance is placed (the hex with has_city=true).
 const TEST_SETTLEMENT_ENTRANCE_HEX := Vector2i(0, 0)
+const TEST_SETTLEMENT_THORNWALL_JSON_PATH := "res://data/test_settlement_thornwall.json"
+const TEST_SETTLEMENT_THORNWALL_HEX := Vector2i(2, 1)
 
 @onready var _hex_map_renderer = $HexMap
 @onready var _controller: HexMapController = $HexMapController
@@ -51,6 +53,7 @@ func _ready() -> void:
 		_hex_map_renderer.setup(_controller)
 		_hex_map_renderer.hex_clicked.connect(_on_hex_clicked)
 		_hex_map_renderer.dungeon_entry_requested.connect(_on_dungeon_entry_requested)
+		_hex_map_renderer.settlement_entry_requested.connect(_on_settlement_entry_requested)
 		_dev_load_test_map()
 	else:
 		# Normal path: show campaign select screen.
@@ -79,6 +82,7 @@ func _on_campaign_selected(campaign_id: String) -> void:
 		_hex_map_renderer.setup(_controller)
 		_hex_map_renderer.hex_clicked.connect(_on_hex_clicked)
 		_hex_map_renderer.dungeon_entry_requested.connect(_on_dungeon_entry_requested)
+		_hex_map_renderer.settlement_entry_requested.connect(_on_settlement_entry_requested)
 
 	# Each campaign gets its own party. Look up the existing one, or create fresh.
 	var party_id := _get_or_create_party(campaign_id)
@@ -113,14 +117,18 @@ func _dev_load_test_map_for_campaign(campaign_id: String, party_id: String) -> v
 		push_error("MainScene: failed to load hex map — cannot start.")
 		return
 
-	_controller.load_map(map_data)
 	CampaignRepository.save_hex_map(map_data, campaign_id)
 
 	GameState.start_session(campaign_id, party_id)
 	GameState.set_exploration_context(GameState.ExplorationContext.WILDERNESS)
 
+	# Seed test fixtures BEFORE loading the controller map so the renderer
+	# settlement cache finds them during _on_map_loaded.
 	_ensure_test_dungeon_entrance(campaign_id)
 	_ensure_test_settlement_entrance(campaign_id)
+	_ensure_test_settlement_thornwall_entrance(campaign_id)
+
+	_controller.load_map(map_data)
 
 
 ## Returns a HexMapData from DB if it exists, otherwise loads from JSON and seeds the DB.
@@ -165,11 +173,6 @@ func _on_hex_clicked(coord: Vector2i) -> void:
 	var map_data := _controller.get_map()
 	if map_data != null:
 		CampaignRepository.save_hex_map(map_data, GameState.campaign_id)
-
-	# Settlement auto-check (dungeon entry is now via the hex map button + modal).
-	if GameState.exploration_context == GameState.ExplorationContext.WILDERNESS:
-		var party_hex := _controller.get_map().party_hex if _controller.get_map() != null else Vector2i(-999, -999)
-		_check_for_settlement_entrance(party_hex)
 
 
 # ---------------------------------------------------------------------------
@@ -306,17 +309,40 @@ func _ensure_test_settlement_entrance(campaign_id: String) -> void:
 	})
 
 
-## Checks if [param coord] has a settlement entrance; if so, enters the settlement.
-func _check_for_settlement_entrance(coord: Vector2i) -> void:
+## Seeds the Thornwall settlement entrance at TEST_SETTLEMENT_THORNWALL_HEX if it doesn't exist.
+func _ensure_test_settlement_thornwall_entrance(campaign_id: String) -> void:
+	var file := FileAccess.open(TEST_SETTLEMENT_THORNWALL_JSON_PATH, FileAccess.READ)
+	if file == null:
+		push_error("MainScene: could not open Thornwall JSON at '%s'" % TEST_SETTLEMENT_THORNWALL_JSON_PATH)
+		return
+	var json_text := file.get_as_text()
+	file.close()
+
 	var entrances := CampaignRepository.get_settlement_entrances_for_map(TEST_MAP_ID)
-	for entrance in entrances:
-		if entrance.get("hex_q", 999) == coord.x and entrance.get("hex_r", 999) == coord.y:
-			_enter_settlement(entrance)
+	for e in entrances:
+		if e.get("hex_q", 999) == TEST_SETTLEMENT_THORNWALL_HEX.x and \
+		   e.get("hex_r", 999) == TEST_SETTLEMENT_THORNWALL_HEX.y:
+			CampaignRepository.update_settlement_entrance_data(e.get("id", ""), json_text)
 			return
+
+	CampaignRepository.create_settlement_entrance({
+		"campaign_id": campaign_id,
+		"map_id": TEST_MAP_ID,
+		"hex_q": TEST_SETTLEMENT_THORNWALL_HEX.x,
+		"hex_r": TEST_SETTLEMENT_THORNWALL_HEX.y,
+		"name": "Thornwall",
+		"market_class": 4,
+		"settlement_data": json_text,
+	})
+
+
+## Called when the player picks a gate from the hex map modal dialog.
+func _on_settlement_entry_requested(entrance: Dictionary, gate_node_id: int) -> void:
+	_enter_settlement(entrance, gate_node_id)
 
 
 ## Creates a SettlementMapController, loads the settlement, and pushes the scene.
-func _enter_settlement(entrance: Dictionary) -> void:
+func _enter_settlement(entrance: Dictionary, gate_node_id: int = -1) -> void:
 	var settlement_json: String = entrance.get("settlement_data", "")
 	if settlement_json.is_empty():
 		push_error("MainScene._enter_settlement: entrance has empty settlement_data")
@@ -338,6 +364,8 @@ func _enter_settlement(entrance: Dictionary) -> void:
 	settlement_controller.name = "SettlementMapController"
 	add_child(settlement_controller)
 	settlement_controller.load_settlement(settlement_dict)
+	if gate_node_id >= 0:
+		settlement_controller.set_party_node(gate_node_id)
 
 	var settlement_scene_packed: PackedScene = preload("res://scenes/maps/settlement_map.tscn")
 	var settlement_scene = settlement_scene_packed.instantiate()
@@ -349,11 +377,6 @@ func _enter_settlement(entrance: Dictionary) -> void:
 		func(node_id: int):
 			if settlement_controller.can_move_to(node_id):
 				settlement_controller.move_party(node_id)
-	)
-
-	# Wire settlement_exited: return to hex map when party walks to a non-entry gate
-	settlement_controller.settlement_exited.connect(
-		func(_gate_id: int): _exit_settlement(settlement_controller, settlement_scene)
 	)
 
 	_nav_stack.push_node(settlement_scene, "settlement_%s" % entrance.get("id", "unknown"))

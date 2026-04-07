@@ -6,7 +6,7 @@ extends RefCounted
 ## Each hex carries independent tags from four layers:
 ##   Elevation: flat | hills | mountains
 ##   Biome:     clear | woods | jungle | swamp | desert
-##   Water:     "" (none) | river | ocean
+##   Water:     "" (none) | ocean | lake
 ##   Territory: civilized | borderlands | wilderness
 ##
 ## See gdd-terrain-system.md for full specification.
@@ -27,8 +27,8 @@ const BIOME_SWAMP := "swamp"
 const BIOME_DESERT := "desert"
 
 const WATER_NONE := ""
-const WATER_RIVER := "river"
 const WATER_OCEAN := "ocean"
+const WATER_LAKE := "lake"
 
 const TERRITORY_CIVILIZED := "civilized"
 const TERRITORY_BORDERLANDS := "borderlands"
@@ -47,6 +47,8 @@ var has_city: bool = false
 ## Preserved so deforestation/forestation can be reversed later.
 var original_biome: String = ""
 var settlement_ids: Array[String] = []
+## Overlay data for rivers/roads. null = no overlays on this hex.
+var overlay: HexOverlayData = null
 
 
 # ---------------------------------------------------------------------------
@@ -62,6 +64,10 @@ func encounter_table_weights() -> Dictionary:
 	# Ocean overrides biome entirely.
 	if water == WATER_OCEAN:
 		return {"ocean": 100}
+
+	# Lake uses its own encounter table (placeholder — populated in a later build).
+	if water == WATER_LAKE:
+		return {"lake": 100}
 
 	# City presence overrides all territory classifications.
 	if has_city:
@@ -80,9 +86,11 @@ func encounter_table_weights() -> Dictionary:
 ## Returns the costliest movement terrain category for this hex.
 ## Priority (highest cost first): mountains > swamp > jungle > woods > hills > desert > clear > ocean
 func movement_cost_category() -> String:
-	# Ocean overrides everything as a special/impassable category.
+	# Ocean and lake override everything as special/impassable categories.
 	if water == WATER_OCEAN:
 		return "ocean"
+	if water == WATER_LAKE:
+		return "lake"
 
 	if elevation == ELEVATION_MOUNTAINS:
 		return "mountains"
@@ -119,6 +127,8 @@ static func from_dict(data: Dictionary) -> HexTerrainData:
 	t.has_city = data.get("has_city", false)
 	t.original_biome = data.get("original_biome", "")
 	t.settlement_ids.assign(data.get("settlement_ids", []))
+	if data.has("overlay"):
+		t.overlay = HexOverlayData.from_dict(data["overlay"])
 	return t
 
 
@@ -126,12 +136,24 @@ static func from_dict(data: Dictionary) -> HexTerrainData:
 func is_valid() -> bool:
 	var valid_elevations := [ELEVATION_FLAT, ELEVATION_HILLS, ELEVATION_MOUNTAINS]
 	var valid_biomes := [BIOME_CLEAR, BIOME_WOODS, BIOME_JUNGLE, BIOME_SWAMP, BIOME_DESERT]
+	var valid_waters := [WATER_NONE, WATER_OCEAN, WATER_LAKE]
 	var valid_civilizations := [TERRITORY_CIVILIZED, TERRITORY_BORDERLANDS, TERRITORY_WILDERNESS]
-	return (
-		elevation in valid_elevations
-		and biome in valid_biomes
-		and civilization in valid_civilizations
-	)
+	if not (elevation in valid_elevations and biome in valid_biomes
+			and water in valid_waters and civilization in valid_civilizations):
+		return false
+	if overlay != null and not overlay.is_valid():
+		return false
+	return true
+
+
+## Returns true if this hex has a river overlay.
+func has_river() -> bool:
+	return overlay != null and overlay.has_river()
+
+
+## Returns true if this hex has a road overlay.
+func has_road() -> bool:
+	return overlay != null and overlay.has_road()
 
 
 # ---------------------------------------------------------------------------

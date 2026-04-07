@@ -53,8 +53,7 @@ func load_settlement(settlement_dict: Dictionary) -> void:
 
 ## Attempts to move the party to [param target_node_id].
 ## Returns true if the move succeeds. Emits party_moved on success.
-## Also emits building_entered if the target is a POI node, or
-## settlement_exited if the target is a gate node.
+## Also emits building_entered if the target is a POI node.
 func move_party(target_node_id: int) -> bool:
 	if _map == null:
 		return false
@@ -70,12 +69,6 @@ func move_party(target_node_id: int) -> bool:
 	var poi: Dictionary = _map.get_poi_at_node(target_node_id)
 	if not poi.is_empty():
 		building_entered.emit(poi)
-
-	# Check for gate (settlement exit)
-	var node: Dictionary = _map.get_node_by_id(target_node_id)
-	if node.get("type", "") == "gate" and target_node_id != _map.entry_node_id:
-		# Only auto-exit on non-entry gates (entry gate is where the party starts)
-		settlement_exited.emit(target_node_id)
 
 	return true
 
@@ -132,6 +125,25 @@ func get_map() -> SettlementMapData:
 ## Returns the current settlement ID.
 func get_settlement_id() -> String:
 	return _settlement_id
+
+
+## Returns true if the party is currently standing on a gate node.
+func is_on_gate() -> bool:
+	if _map == null or _party_node_id < 0:
+		return false
+	var node: Dictionary = _map.get_node_by_id(_party_node_id)
+	return node.get("type", "") == "gate"
+
+
+## Sets the party position to a specific node (e.g. a non-default gate on entry).
+func set_party_node(node_id: int) -> void:
+	if _map == null:
+		return
+	var node: Dictionary = _map.get_node_by_id(node_id)
+	if node.is_empty():
+		push_error("SettlementMapController.set_party_node: invalid node_id %d" % node_id)
+		return
+	_party_node_id = node_id
 
 
 # ---------------------------------------------------------------------------

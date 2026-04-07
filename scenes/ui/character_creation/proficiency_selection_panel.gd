@@ -278,11 +278,21 @@ func _refresh_list() -> void:
 		# Rank indicator (if already selected)
 		var current_rank := _get_current_rank(prof_key, slot_type)
 		var max_rank := _proficiency_registry.get_max_rank(prof_key)
+		var sel_rule := _proficiency_registry.get_selection_rule(prof_key)
 
 		var add_btn := Button.new()
 		add_btn.custom_minimum_size = Vector2(70, 0)
 
-		if current_rank > 0 and current_rank < max_rank:
+		if sel_rule == "stacking":
+			var max_sel := _proficiency_registry.get_max_selections(prof_key)
+			if current_rank >= max_sel:
+				add_btn.text = "Max Rank"
+				add_btn.disabled = true
+			elif current_rank > 0:
+				add_btn.text = "Rank %d→%d" % [current_rank, current_rank + 1]
+			else:
+				add_btn.text = "Select"
+		elif current_rank > 0 and current_rank < max_rank:
 			add_btn.text = "Rank %d→%d" % [current_rank, current_rank + 1]
 		elif current_rank >= max_rank and max_rank > 1:
 			add_btn.text = "Max Rank"
@@ -293,7 +303,12 @@ func _refresh_list() -> void:
 		else:
 			add_btn.text = "Select"
 
-		if slots_remaining <= 0 and (current_rank == 0 or current_rank >= max_rank):
+		var at_limit: bool
+		if sel_rule == "stacking":
+			at_limit = current_rank >= _proficiency_registry.get_max_selections(prof_key)
+		else:
+			at_limit = current_rank >= max_rank
+		if slots_remaining <= 0 and (current_rank == 0 or at_limit):
 			add_btn.disabled = true
 			add_btn.tooltip_text = "No slots remaining."
 
@@ -310,6 +325,14 @@ func _refresh_selected() -> void:
 	# Always show Adventuring as first entry
 	var adv_row := _make_selected_row("Adventuring", "general", 1, "", false)
 	_selected_panel.add_child(adv_row)
+
+	# Show bonus proficiencies (origin/tradition grants) — non-removable
+	for bp in _state.get("bonus_proficiencies", []):
+		var key: String = bp.get("proficiency_key", "")
+		var spec: String = bp.get("specialization", "")
+		var rank: int = int(bp.get("rank", 1))
+		var row := _make_selected_row(key, "bonus", rank, spec, false)
+		_selected_panel.add_child(row)
 
 	for p in _state.get("proficiencies", []):
 		var key: String = p.get("proficiency_key", "")
@@ -334,7 +357,12 @@ func _make_selected_row(key: String, slot_type: String, rank: int, spec: String,
 		display_name += " (%s)" % spec_display
 	if rank > 1:
 		display_name += " (Rank %d)" % rank
-	var slot_tag := "[C]" if slot_type == "class" else "[G]"
+	var slot_tag: String
+	match slot_type:
+		"class": slot_tag = "[C]"
+		"general": slot_tag = "[G]"
+		"bonus": slot_tag = "[FREE]"
+		_: slot_tag = "[?]"
 
 	var lbl := Label.new()
 	lbl.text = "%s %s" % [slot_tag, display_name]
@@ -356,11 +384,15 @@ func _make_selected_row(key: String, slot_type: String, rank: int, spec: String,
 # ---------------------------------------------------------------------------
 
 func _get_current_rank(prof_key: String, _slot_type: String) -> int:
-	## Returns aggregated rank across ALL slot types for this proficiency key.
+	## Returns aggregated rank across ALL slot types for this proficiency key,
+	## including any bonus proficiencies granted by origin/tradition.
 	var total := 0
 	for p in _state.get("proficiencies", []):
 		if p.get("proficiency_key", "") == prof_key:
 			total += int(p.get("rank", 1))
+	for bp in _state.get("bonus_proficiencies", []):
+		if bp.get("proficiency_key", "") == prof_key:
+			total += int(bp.get("rank", 1))
 	return total
 
 
@@ -413,10 +445,16 @@ func _on_add_proficiency(prof_key: String, slot_type: String) -> void:
 
 	# Check aggregated rank across all slot types
 	var aggregated_rank := _get_current_rank(prof_key, slot_type)
-	var max_rank := _proficiency_registry.get_max_rank(prof_key)
+	var sel_rule := _proficiency_registry.get_selection_rule(prof_key)
 
-	if aggregated_rank >= max_rank:
-		return  # Already at max across all slots
+	if sel_rule == "stacking":
+		var max_sel := _proficiency_registry.get_max_selections(prof_key)
+		if aggregated_rank >= max_sel:
+			return  # At max selections for stacking proficiency
+	else:
+		var max_rank := _proficiency_registry.get_max_rank(prof_key)
+		if aggregated_rank >= max_rank:
+			return  # Already at max rank
 
 	# Check if there's an existing row for this specific slot type to advance
 	var slot_rank := _get_slot_specific_rank(prof_key, slot_type)

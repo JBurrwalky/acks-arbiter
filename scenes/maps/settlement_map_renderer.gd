@@ -130,6 +130,8 @@ func setup(controller: SettlementMapController) -> void:
 func _ready() -> void:
 	if _exit_button != null:
 		_exit_button.pressed.connect(func(): exit_requested.emit())
+		_exit_button.disabled = true
+		_exit_button.text = "Move to a gate to leave"
 	if _tooltip_panel != null:
 		_tooltip_panel.visible = false
 
@@ -141,10 +143,21 @@ func _on_map_loaded(_sid: String) -> void:
 	_map = _controller.get_map()
 	_settlement_id = _sid
 	_init_view()
+	_update_exit_button()
 
 
 func _on_party_moved(_from: int, _to: int) -> void:
 	queue_redraw()
+	_update_exit_button()
+
+
+## Enables or disables the exit button based on gate position.
+func _update_exit_button() -> void:
+	if _exit_button == null or _controller == null:
+		return
+	var on_gate: bool = _controller.is_on_gate()
+	_exit_button.disabled = not on_gate
+	_exit_button.text = "Exit Settlement" if on_gate else "Move to a gate to leave"
 
 
 ## Compute offset, scale, and center the view on the party token.

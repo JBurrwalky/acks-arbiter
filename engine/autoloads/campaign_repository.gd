@@ -441,6 +441,26 @@ func save_hex_map(map_data: HexMapData, campaign_id: String) -> bool:
 			push_error("CampaignRepository.save_hex_map: cell insert failed at q=%d r=%d" % [coord.x, coord.y])
 			db.query("ROLLBACK")
 			return false
+		# Save overlay data (river/road) if present
+		if terrain.overlay != null:
+			if terrain.overlay.has_river():
+				db.query_with_bindings("""
+					INSERT OR REPLACE INTO hex_overlays (map_id, q, r, overlay_type, edges, flow_exit)
+					VALUES (?, ?, ?, 'river', ?, ?)
+				""", [
+					map_data.id, coord.x, coord.y,
+					JSON.stringify(terrain.overlay.river_edges),
+					terrain.overlay.river_flow_exit
+				])
+			if terrain.overlay.has_road():
+				db.query_with_bindings("""
+					INSERT OR REPLACE INTO hex_overlays (map_id, q, r, overlay_type, edges, flow_exit)
+					VALUES (?, ?, ?, 'road', ?, ?)
+				""", [
+					map_data.id, coord.x, coord.y,
+					JSON.stringify(terrain.overlay.road_edges),
+					-1
+				])
 	db.query("COMMIT")
 	return true
 
@@ -473,6 +493,28 @@ func load_hex_map(map_id: String) -> HexMapData:
 			"explored": map_data.fog[coord] = HexMapData.FogState.EXPLORED
 			"visible":  map_data.fog[coord] = HexMapData.FogState.VISIBLE
 			_:          map_data.fog[coord] = HexMapData.FogState.HIDDEN
+
+	# Load overlay data (rivers/roads) and attach to terrain
+	db.query_with_bindings("SELECT * FROM hex_overlays WHERE map_id = ?", [map_id])
+	for row in db.query_result:
+		var coord := Vector2i(row["q"], row["r"])
+		var terrain: HexTerrainData = map_data.hexes.get(coord)
+		if terrain == null:
+			continue
+		if terrain.overlay == null:
+			terrain.overlay = HexOverlayData.new()
+		var edges_json: String = row["edges"]
+		var parsed_edges = JSON.parse_string(edges_json)
+		if parsed_edges == null:
+			parsed_edges = []
+		match row["overlay_type"]:
+			"river":
+				for e in parsed_edges:
+					terrain.overlay.river_edges.append(int(e))
+				terrain.overlay.river_flow_exit = int(row["flow_exit"])
+			"road":
+				for e in parsed_edges:
+					terrain.overlay.road_edges.append(int(e))
 	return map_data
 
 

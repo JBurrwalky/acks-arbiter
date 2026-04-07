@@ -40,19 +40,19 @@
   "fighting_styles": ["determined_by_regional_origin"],
   "regional_origins": {
     "jutland": {
-      "display_name": "Jutland",
+      "display_name": "Northern Mountains",
       "weapons_permitted": ["battle_axe", "club", "dagger", "great_axe", "hand_axe", "shortbow", "spear", "sword", "two_handed_sword", "warhammer"],
       "fighting_styles_permitted": ["weapon & shield", "two-handed weapon"],
       "bonus_proficiency": "climbing"
     },
     "skysostan": {
-      "display_name": "Skysostan",
+      "display_name": "Plains or Steppe",
       "weapons_permitted": ["composite_bow", "dagger", "hand_axe", "javelin", "lance", "net", "sling", "short_sword", "spear", "whip"],
       "fighting_styles_permitted": ["weapon & shield", "two weapons"],
       "bonus_proficiency": "precise_shooting"
     },
     "ivory_kingdoms": {
-      "display_name": "Ivory Kingdoms",
+      "display_name": "Jungle or Savanna",
       "weapons_permitted": ["bola", "club", "dart", "dagger", "hand_axe", "javelin", "net", "shortbow", "short_sword", "spear"],
       "fighting_styles_permitted": ["weapon & shield", "two weapons"],
       "bonus_proficiency": "running"
@@ -113,5 +113,5 @@
       "unlock_level": 9
     }
   ],
-  "notes": "Weapon permissions and fighting styles are determined by regional origin (Jutland, Skysostan, or Ivory Kingdoms). Armor limited to chain mail or lighter."
+  "notes": "Weapon permissions and fighting styles are determined by regional origin (Northern Mountains, Plains or Steppe, or Jungle or Savanna). Armor limited to chain mail or lighter."
 }

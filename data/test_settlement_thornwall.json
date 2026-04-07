@@ -1,0 +1,375 @@
+{
+  "id": "test_settlement_thornwall",
+  "name": "Thornwall",
+  "market_class": 4,
+  "population_families": 625,
+  "terrain_context": "desert_trade_route",
+  "culture_id": "default",
+  "generation_seed": 99,
+  "entry_node_id": 25,
+
+  "blocks": [
+    {
+      "id": 0,
+      "polygon": [[350,120],[620,80],[680,320],[500,450],[280,380]],
+      "district_id": "temple_district",
+      "block_type": "residential",
+      "alley_traversable": true,
+      "poi_ids": [],
+      "waterfront": false
+    },
+    {
+      "id": 1,
+      "polygon": [[620,80],[950,60],[1050,250],[900,420],[680,320]],
+      "district_id": "temple_district",
+      "block_type": "temple",
+      "alley_traversable": true,
+      "poi_ids": ["poi_high_temple"],
+      "waterfront": false
+    },
+    {
+      "id": 2,
+      "polygon": [[950,60],[1350,100],[1400,350],[1050,250]],
+      "district_id": "temple_district",
+      "block_type": "residential",
+      "alley_traversable": true,
+      "poi_ids": [],
+      "waterfront": false
+    },
+    {
+      "id": 3,
+      "polygon": [[1350,100],[1650,200],[1580,500],[1400,350]],
+      "district_id": "temple_district",
+      "block_type": "residential",
+      "alley_traversable": true,
+      "poi_ids": ["poi_desert_shrine"],
+      "waterfront": false
+    },
+    {
+      "id": 4,
+      "polygon": [[280,380],[500,450],[550,700],[400,850],[180,780]],
+      "district_id": "market_quarter",
+      "block_type": "residential",
+      "alley_traversable": true,
+      "poi_ids": ["poi_oasis_inn"],
+      "waterfront": false
+    },
+    {
+      "id": 5,
+      "polygon": [[500,450],[680,320],[900,420],[950,650],[800,820],[550,700]],
+      "district_id": "market_quarter",
+      "block_type": "plaza",
+      "alley_traversable": true,
+      "poi_ids": ["poi_grand_bazaar"],
+      "waterfront": false
+    },
+    {
+      "id": 6,
+      "polygon": [[900,420],[1050,250],[1400,350],[1380,600],[1100,720],[950,650]],
+      "district_id": "market_quarter",
+      "block_type": "residential",
+      "alley_traversable": true,
+      "poi_ids": ["poi_dusty_camel"],
+      "waterfront": false
+    },
+    {
+      "id": 7,
+      "polygon": [[1400,350],[1580,500],[1650,750],[1380,600]],
+      "district_id": "market_quarter",
+      "block_type": "residential",
+      "alley_traversable": true,
+      "poi_ids": ["poi_silverscale"],
+      "waterfront": false
+    },
+    {
+      "id": 8,
+      "polygon": [[180,780],[400,850],[450,1100],[200,1200]],
+      "district_id": "craftsmen_quarter",
+      "block_type": "residential",
+      "alley_traversable": true,
+      "poi_ids": ["poi_ironhide"],
+      "waterfront": false
+    },
+    {
+      "id": 9,
+      "polygon": [[400,850],[550,700],[800,820],[850,1050],[650,1150],[450,1100]],
+      "district_id": "craftsmen_quarter",
+      "block_type": "residential",
+      "alley_traversable": true,
+      "poi_ids": [],
+      "waterfront": false
+    },
+    {
+      "id": 10,
+      "polygon": [[800,820],[950,650],[1100,720],[1200,950],[1050,1100],[850,1050]],
+      "district_id": "craftsmen_quarter",
+      "block_type": "residential",
+      "alley_traversable": true,
+      "poi_ids": ["poi_desert_tanner"],
+      "waterfront": false
+    },
+    {
+      "id": 11,
+      "polygon": [[1100,720],[1380,600],[1650,750],[1550,1000],[1200,950]],
+      "district_id": "craftsmen_quarter",
+      "block_type": "residential",
+      "alley_traversable": true,
+      "poi_ids": ["poi_town_watch"],
+      "waterfront": false
+    }
+  ],
+
+  "street_graph": {
+    "nodes": [
+      {"id": 0,  "position": [350, 120],   "type": "intersection", "poi_id": ""},
+      {"id": 1,  "position": [620, 80],    "type": "intersection", "poi_id": ""},
+      {"id": 2,  "position": [950, 60],    "type": "intersection", "poi_id": ""},
+      {"id": 3,  "position": [1350, 100],  "type": "intersection", "poi_id": ""},
+      {"id": 4,  "position": [1650, 200],  "type": "intersection", "poi_id": ""},
+      {"id": 5,  "position": [280, 380],   "type": "intersection", "poi_id": ""},
+      {"id": 6,  "position": [680, 320],   "type": "intersection", "poi_id": ""},
+      {"id": 7,  "position": [1050, 250],  "type": "intersection", "poi_id": ""},
+      {"id": 8,  "position": [1400, 350],  "type": "intersection", "poi_id": ""},
+      {"id": 9,  "position": [500, 450],   "type": "intersection", "poi_id": ""},
+      {"id": 10, "position": [900, 420],   "type": "intersection", "poi_id": ""},
+      {"id": 11, "position": [1580, 500],  "type": "intersection", "poi_id": ""},
+      {"id": 12, "position": [180, 780],   "type": "intersection", "poi_id": ""},
+      {"id": 13, "position": [550, 700],   "type": "intersection", "poi_id": ""},
+      {"id": 14, "position": [950, 650],   "type": "intersection", "poi_id": ""},
+      {"id": 15, "position": [1380, 600],  "type": "intersection", "poi_id": ""},
+      {"id": 16, "position": [400, 850],   "type": "intersection", "poi_id": ""},
+      {"id": 17, "position": [800, 820],   "type": "intersection", "poi_id": ""},
+      {"id": 18, "position": [1100, 720],  "type": "intersection", "poi_id": ""},
+      {"id": 19, "position": [1650, 750],  "type": "intersection", "poi_id": ""},
+      {"id": 20, "position": [200, 1200],  "type": "intersection", "poi_id": ""},
+      {"id": 21, "position": [450, 1100],  "type": "intersection", "poi_id": ""},
+      {"id": 22, "position": [650, 1150],  "type": "intersection", "poi_id": ""},
+      {"id": 23, "position": [850, 1050],  "type": "intersection", "poi_id": ""},
+      {"id": 24, "position": [1050, 1100], "type": "intersection", "poi_id": ""},
+      {"id": 25, "position": [750, 1350],  "type": "gate",         "poi_id": ""},
+      {"id": 26, "position": [1200, 950],  "type": "intersection", "poi_id": ""},
+      {"id": 27, "position": [1550, 1000], "type": "intersection", "poi_id": ""},
+      {"id": 28, "position": [800, 20],    "type": "gate",         "poi_id": ""},
+      {"id": 29, "position": [1800, 500],  "type": "gate",         "poi_id": ""},
+
+      {"id": 30, "position": [650, 200],   "type": "poi",          "poi_id": "poi_high_temple"},
+      {"id": 31, "position": [1490, 425],  "type": "poi",          "poi_id": "poi_desert_shrine"},
+      {"id": 32, "position": [230, 580],   "type": "poi",          "poi_id": "poi_oasis_inn"},
+      {"id": 33, "position": [590, 385],   "type": "poi",          "poi_id": "poi_grand_bazaar"},
+      {"id": 34, "position": [975, 335],   "type": "poi",          "poi_id": "poi_dusty_camel"},
+      {"id": 35, "position": [1615, 625],  "type": "poi",          "poi_id": "poi_silverscale"},
+      {"id": 36, "position": [290, 815],   "type": "poi",          "poi_id": "poi_ironhide"},
+      {"id": 37, "position": [975, 685],   "type": "poi",          "poi_id": "poi_desert_tanner"},
+      {"id": 38, "position": [1465, 675],  "type": "poi",          "poi_id": "poi_town_watch"}
+    ],
+    "edges": [
+      {"id": 0,  "node_a": 28, "node_b": 2,  "type": "main_road",  "length": 154.0, "left_block_id": -1, "right_block_id": -1},
+      {"id": 1,  "node_a": 29, "node_b": 11, "type": "main_road",  "length": 220.0, "left_block_id": -1, "right_block_id": -1},
+      {"id": 2,  "node_a": 25, "node_b": 22, "type": "main_road",  "length": 219.0, "left_block_id": -1, "right_block_id": -1},
+
+      {"id": 3,  "node_a": 0,  "node_b": 1,  "type": "minor",      "length": 274.0, "left_block_id": -1, "right_block_id": 0},
+      {"id": 4,  "node_a": 1,  "node_b": 2,  "type": "minor",      "length": 331.0, "left_block_id": -1, "right_block_id": 1},
+      {"id": 5,  "node_a": 2,  "node_b": 3,  "type": "minor",      "length": 402.0, "left_block_id": -1, "right_block_id": 2},
+      {"id": 6,  "node_a": 3,  "node_b": 4,  "type": "minor",      "length": 316.0, "left_block_id": -1, "right_block_id": 3},
+
+      {"id": 7,  "node_a": 0,  "node_b": 5,  "type": "minor",      "length": 267.0, "left_block_id": -1, "right_block_id": 0},
+      {"id": 8,  "node_a": 5,  "node_b": 32, "type": "minor",      "length": 207.0, "left_block_id": -1, "right_block_id": 4},
+      {"id": 9,  "node_a": 32, "node_b": 12, "type": "minor",      "length": 206.0, "left_block_id": -1, "right_block_id": 4},
+      {"id": 10, "node_a": 12, "node_b": 20, "type": "minor",      "length": 420.0, "left_block_id": -1, "right_block_id": 8},
+
+      {"id": 11, "node_a": 4,  "node_b": 11, "type": "minor",      "length": 308.0, "left_block_id": 3,  "right_block_id": -1},
+      {"id": 12, "node_a": 11, "node_b": 35, "type": "minor",      "length": 133.0, "left_block_id": 7,  "right_block_id": -1},
+      {"id": 13, "node_a": 35, "node_b": 19, "type": "minor",      "length": 130.0, "left_block_id": 7,  "right_block_id": -1},
+      {"id": 14, "node_a": 19, "node_b": 27, "type": "minor",      "length": 265.0, "left_block_id": 11, "right_block_id": -1},
+
+      {"id": 15, "node_a": 20, "node_b": 21, "type": "minor",      "length": 264.0, "left_block_id": 8,  "right_block_id": -1},
+      {"id": 16, "node_a": 21, "node_b": 22, "type": "minor",      "length": 206.0, "left_block_id": 9,  "right_block_id": -1},
+      {"id": 17, "node_a": 22, "node_b": 23, "type": "minor",      "length": 219.0, "left_block_id": 9,  "right_block_id": -1},
+      {"id": 18, "node_a": 23, "node_b": 24, "type": "minor",      "length": 206.0, "left_block_id": 10, "right_block_id": -1},
+      {"id": 19, "node_a": 24, "node_b": 26, "type": "minor",      "length": 208.0, "left_block_id": 10, "right_block_id": -1},
+      {"id": 20, "node_a": 26, "node_b": 27, "type": "minor",      "length": 353.0, "left_block_id": 11, "right_block_id": -1},
+
+      {"id": 21, "node_a": 1,  "node_b": 30, "type": "secondary",  "length": 124.0, "left_block_id": 0,  "right_block_id": 1},
+      {"id": 22, "node_a": 30, "node_b": 6,  "type": "secondary",  "length": 123.0, "left_block_id": 0,  "right_block_id": 1},
+      {"id": 23, "node_a": 5,  "node_b": 9,  "type": "secondary",  "length": 228.0, "left_block_id": 0,  "right_block_id": 4},
+      {"id": 24, "node_a": 6,  "node_b": 10, "type": "secondary",  "length": 236.0, "left_block_id": 1,  "right_block_id": 5},
+      {"id": 25, "node_a": 9,  "node_b": 33, "type": "secondary",  "length": 108.0, "left_block_id": 0,  "right_block_id": 5},
+      {"id": 26, "node_a": 33, "node_b": 6,  "type": "secondary",  "length": 109.0, "left_block_id": 0,  "right_block_id": 5},
+
+      {"id": 27, "node_a": 2,  "node_b": 7,  "type": "main_road",  "length": 211.0, "left_block_id": 1,  "right_block_id": 2},
+      {"id": 28, "node_a": 7,  "node_b": 34, "type": "main_road",  "length": 115.0, "left_block_id": 2,  "right_block_id": 6},
+      {"id": 29, "node_a": 34, "node_b": 10, "type": "main_road",  "length": 112.0, "left_block_id": 1,  "right_block_id": 6},
+      {"id": 30, "node_a": 10, "node_b": 14, "type": "main_road",  "length": 233.0, "left_block_id": 5,  "right_block_id": 6},
+      {"id": 31, "node_a": 14, "node_b": 37, "type": "main_road",  "length": 42.0,  "left_block_id": 5,  "right_block_id": 10},
+      {"id": 32, "node_a": 37, "node_b": 18, "type": "main_road",  "length": 131.0, "left_block_id": 10, "right_block_id": 6},
+      {"id": 33, "node_a": 14, "node_b": 17, "type": "main_road",  "length": 219.0, "left_block_id": 5,  "right_block_id": 10},
+      {"id": 34, "node_a": 17, "node_b": 23, "type": "main_road",  "length": 236.0, "left_block_id": 9,  "right_block_id": 10},
+
+      {"id": 35, "node_a": 3,  "node_b": 8,  "type": "secondary",  "length": 256.0, "left_block_id": 2,  "right_block_id": 3},
+      {"id": 36, "node_a": 7,  "node_b": 8,  "type": "secondary",  "length": 362.0, "left_block_id": 2,  "right_block_id": 6},
+      {"id": 37, "node_a": 8,  "node_b": 31, "type": "secondary",  "length": 117.0, "left_block_id": 3,  "right_block_id": 7},
+      {"id": 38, "node_a": 31, "node_b": 11, "type": "secondary",  "length": 116.0, "left_block_id": 3,  "right_block_id": 7},
+      {"id": 39, "node_a": 8,  "node_b": 15, "type": "secondary",  "length": 250.0, "left_block_id": 6,  "right_block_id": 7},
+      {"id": 40, "node_a": 15, "node_b": 38, "type": "secondary",  "length": 115.0, "left_block_id": 6,  "right_block_id": 11},
+      {"id": 41, "node_a": 38, "node_b": 19, "type": "secondary",  "length": 197.0, "left_block_id": 11, "right_block_id": -1},
+      {"id": 42, "node_a": 15, "node_b": 18, "type": "secondary",  "length": 302.0, "left_block_id": 6,  "right_block_id": 11},
+
+      {"id": 43, "node_a": 9,  "node_b": 13, "type": "secondary",  "length": 255.0, "left_block_id": 4,  "right_block_id": 5},
+      {"id": 44, "node_a": 13, "node_b": 16, "type": "secondary",  "length": 210.0, "left_block_id": 4,  "right_block_id": 9},
+      {"id": 45, "node_a": 12, "node_b": 36, "type": "secondary",  "length": 115.0, "left_block_id": 4,  "right_block_id": 8},
+      {"id": 46, "node_a": 36, "node_b": 16, "type": "secondary",  "length": 116.0, "left_block_id": 8,  "right_block_id": 9},
+      {"id": 47, "node_a": 16, "node_b": 21, "type": "secondary",  "length": 256.0, "left_block_id": 8,  "right_block_id": 9},
+      {"id": 48, "node_a": 16, "node_b": 17, "type": "secondary",  "length": 400.0, "left_block_id": 4,  "right_block_id": 9},
+
+      {"id": 49, "node_a": 13, "node_b": 17, "type": "main_road",  "length": 274.0, "left_block_id": 5,  "right_block_id": 9},
+      {"id": 50, "node_a": 17, "node_b": 14, "type": "main_road",  "length": 219.0, "left_block_id": 5,  "right_block_id": 10},
+
+      {"id": 51, "node_a": 18, "node_b": 26, "type": "secondary",  "length": 247.0, "left_block_id": 10, "right_block_id": 11},
+      {"id": 52, "node_a": 26, "node_b": 15, "type": "secondary",  "length": 385.0, "left_block_id": 6,  "right_block_id": 11},
+
+      {"id": 53, "node_a": 21, "node_b": 22, "type": "minor",      "length": 206.0, "left_block_id": 9,  "right_block_id": -1},
+      {"id": 54, "node_a": 22, "node_b": 23, "type": "minor",      "length": 219.0, "left_block_id": 9,  "right_block_id": -1}
+    ]
+  },
+
+  "districts": [
+    {
+      "id": "temple_district",
+      "name": "Temple District",
+      "type": "temple",
+      "block_ids": [0, 1, 2, 3],
+      "encounter_modifier": "normal"
+    },
+    {
+      "id": "market_quarter",
+      "name": "Market Quarter",
+      "type": "market",
+      "block_ids": [4, 5, 6, 7],
+      "encounter_modifier": "normal"
+    },
+    {
+      "id": "craftsmen_quarter",
+      "name": "Craftsmen Quarter",
+      "type": "craftsmen",
+      "block_ids": [8, 9, 10, 11],
+      "encounter_modifier": "elevated"
+    }
+  ],
+
+  "walls": {
+    "path": [[100,80],[400,42],[700,38],[1100,42],[1400,50],[1680,85],[1760,280],[1760,520],[1740,780],[1680,1020],[1400,1180],[1100,1230],[800,1250],[450,1260],[150,1260],[60,1050],[70,750],[80,450],[100,200]],
+    "towers": [
+      [100, 80], [1100, 42], [1680, 85], [1760, 520],
+      [1680, 1020], [1100, 1230], [150, 1260], [70, 750]
+    ],
+    "gates": [
+      {"position": [800, 40],    "street_node_id": 28, "name": "North Gate"},
+      {"position": [1760, 520],  "street_node_id": 29, "name": "East Gate"},
+      {"position": [800, 1250],  "street_node_id": 25, "name": "South Gate"}
+    ]
+  },
+
+  "water_features": null,
+
+  "pois": [
+    {
+      "id": "poi_high_temple",
+      "name": "High Temple of Amun",
+      "type": "temple",
+      "subtype": "",
+      "block_id": 1,
+      "street_node_ids": [30],
+      "district_id": "temple_district",
+      "importance": "major",
+      "label": "High Temple"
+    },
+    {
+      "id": "poi_desert_shrine",
+      "name": "Desert Shrine",
+      "type": "temple",
+      "subtype": "desert_spirits",
+      "block_id": 3,
+      "street_node_ids": [31],
+      "district_id": "temple_district",
+      "importance": "minor",
+      "label": "Shrine"
+    },
+    {
+      "id": "poi_oasis_inn",
+      "name": "The Oasis Inn",
+      "type": "tavern",
+      "subtype": "",
+      "block_id": 4,
+      "street_node_ids": [32],
+      "district_id": "market_quarter",
+      "importance": "major",
+      "label": "Oasis Inn"
+    },
+    {
+      "id": "poi_grand_bazaar",
+      "name": "Grand Bazaar",
+      "type": "shop",
+      "subtype": "market",
+      "block_id": 5,
+      "street_node_ids": [33],
+      "district_id": "market_quarter",
+      "importance": "major",
+      "label": "Grand Bazaar"
+    },
+    {
+      "id": "poi_dusty_camel",
+      "name": "The Dusty Camel",
+      "type": "tavern",
+      "subtype": "",
+      "block_id": 6,
+      "street_node_ids": [34],
+      "district_id": "market_quarter",
+      "importance": "minor",
+      "label": "Dusty Camel"
+    },
+    {
+      "id": "poi_silverscale",
+      "name": "Silverscale Exchange",
+      "type": "guild",
+      "subtype": "moneychanger",
+      "block_id": 7,
+      "street_node_ids": [35],
+      "district_id": "market_quarter",
+      "importance": "minor",
+      "label": "Exchange"
+    },
+    {
+      "id": "poi_ironhide",
+      "name": "Ironhide Armory",
+      "type": "shop",
+      "subtype": "armorer",
+      "block_id": 8,
+      "street_node_ids": [36],
+      "district_id": "craftsmen_quarter",
+      "importance": "major",
+      "label": "Armory"
+    },
+    {
+      "id": "poi_desert_tanner",
+      "name": "Desert Tanner",
+      "type": "shop",
+      "subtype": "leatherworker",
+      "block_id": 10,
+      "street_node_ids": [37],
+      "district_id": "craftsmen_quarter",
+      "importance": "minor",
+      "label": "Tanner"
+    },
+    {
+      "id": "poi_town_watch",
+      "name": "Town Watch Barracks",
+      "type": "barracks",
+      "subtype": "",
+      "block_id": 11,
+      "street_node_ids": [38],
+      "district_id": "craftsmen_quarter",
+      "importance": "major",
+      "label": "Barracks"
+    }
+  ]
+}

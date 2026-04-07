@@ -2955,3 +2955,31 @@ CampaignRepository addition:
 1. Consider wiring multi-hop movement (click any reachable node → auto-walk the path via `find_path_to()`).
 2. Add pan clamping so the map stays visible.
 3. Test with a larger/multi-district settlement to verify scaling and district labels work with more complex data.
+
+---
+
+## Session 2026-04-06 — Bonus Proficiency Bug Fix, Reversed Spell Errors, Origin IP Rename
+
+**Task:** Fix three issues in character creation: bonus proficiency duplication, reversed spell form errors, and protected IP in barbarian origin names.
+**Model used:** Opus for all phases.
+**Completed:**
+- **Bonus proficiency validation:** Barbarian origin / witch tradition free proficiencies are now declared at Step 3 (origin selection) via `creation_state["bonus_proficiencies"]`, visible in Step 6 (proficiency selection) as non-removable `[FREE]` entries, and merged intelligently at finalization. Unique profs are deduplicated; stacking profs (e.g. Precise Shooting) have ranks merged. Fixes `character_creation_screen.gd`, `class_customization_panel.gd`, `proficiency_selection_panel.gd`.
+- **Stacking proficiency button/validation fix:** `proficiency_selection_panel.gd` now checks `max_selections` (not just `max_rank`) for `selection_rule == "stacking"` proficiencies, so Precise Shooting correctly shows "Rank 1→2" instead of "Taken".
+- **Reversed spell form errors:** `spell_registry.gd` now generates synthetic entries for reversed spell forms (e.g. `detect_good` from `detect_evil`) during catalog load, eliminating `push_error` calls when `get_spell()` is called with reverse keys. Also fixed `spell_selection_panel.gd` using `def.get("name", ...)` instead of `def.get("spell_name", ...)` (3 occurrences).
+- **Origin IP rename:** Barbarian origin `display_name` values in `data/classes/barbarian.json` changed from protected IP names to generic terrain descriptors. Internal keys unchanged.
+  - Jutland → Northern Mountains
+  - Skysostan → Plains or Steppe
+  - Ivory Kingdoms → Jungle or Savanna
+  - NOTE: `rules/` XML files still reference the original names (sacred, never modify). Internal keys (`jutland`, `skysostan`, `ivory_kingdoms`) also unchanged — they are never player-facing. If future code references these keys for display, it must use `display_name` from the JSON, not the key itself.
+**Decisions made:**
+- Bonus proficiencies stored in a separate `creation_state["bonus_proficiencies"]` array rather than injected into `proficiencies`, to avoid slot-counting contamination.
+- Reversed spell forms stored with `is_reversed_form: true` and `base_spell_key` fields for downstream identification.
+**Interfaces defined or changed:**
+- `creation_state["bonus_proficiencies"]`: Array of dicts with keys `proficiency_key`, `rank`, `slot_type`, `selections_count`, `specialization`, `source`.
+- `_invalidate_from()` for `Step.CLASS_SELECTION` and `Step.CLASS_CUSTOMIZATION` now also clears `bonus_proficiencies`.
+- Synthetic reversed spell entries in SpellRegistry: same shape as base spells plus `is_reversed_form: bool` and `base_spell_key: String`.
+**Database changes:** None.
+**Tests added/updated:** None (manual verification).
+**Known issues:** None.
+**Next session should:**
+1. Continue with prior session's settlement map items (multi-hop movement, pan clamping, larger district testing).

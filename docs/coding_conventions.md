@@ -209,6 +209,7 @@ acks-arbiter/               (Godot project root = repo root)
 │   │   ├── entity_flags.gd         # multi-source boolean state flags
 │   │   ├── event_payload.gd
 │   │   ├── hex_map_data.gd
+│   │   ├── hex_overlay_data.gd
 │   │   ├── hex_terrain_data.gd
 │   │   ├── inventory_item.gd       # + damage_type, material fields
 │   │   ├── isometric_grid.gd       # static diamond-grid math (cell↔screen, neighbors, radius)
@@ -909,6 +910,7 @@ Canonical data shapes live in `engine/shared_types/`. These are the contracts be
 | `EntityFlags` | Multi-source boolean state flags (can_fly, is_invisible, …) | No | No |
 | `EventPayload` | Domain/exploration event | Yes | No |
 | `HexMapData` | Hex map container with fog states | Yes | No |
+| `HexOverlayData` | River/road edge overlay data for a single hex | Yes | Yes |
 | `HexTerrainData` | Terrain tags for a single hex | Yes | No |
 | `InventoryItem` | Item with quantity, encumbrance, damage_type, material | Yes | Yes |
 | `ModifierContainer` | Per-entity facade managing ModifierStacks for all stats | No | No |
@@ -1252,6 +1254,8 @@ These are not coding style — they are mechanical rules that must be followed i
 | Clothing encumbrance | Equipped clothing (`item_category = "clothing"`) and items in `accessory_N` slots weigh **0** — they are worn and do not encumber. Armor remains weighted even when worn. Items in `pack` always count. Logic in `EncumbranceCalculator.calculate_item_encumbrance()`. | 2026-04-01 |
 | Clothing slot routing | Clothing items route to slots by `item_key` pattern, not a shared "body" catch-all: `belt_*`→`belt`, `boots/sandals`→`feet`, `gloves/gauntlets`→`hands_worn`, `hat/skullcap/veil`→`head`, `cloak_*`→`cloak`, everything else→`body`. Armor always routes to `body`. Logic in `cs_tab_equipment.gd:_determine_equip_slot()`. | 2026-04-01 |
 | Fog of war states | `HIDDEN` → `EXPLORED` → `VISIBLE`. Never transition backwards. | `hex_map_data.gd` |
+| Hex edge numbering | 0–5 clockwise from North. 0=N, 1=NE, 2=SE, 3=S, 4=SW, 5=NW. Flat top = North. Opposite edge = `(n+3) % 6`. Display compass names in UI, use numeric internally. | `hex_overlay_data.gd` |
+| Hex water types | `water` field: `""` (none), `"ocean"`, `"lake"`. Rivers are **overlays** (edge-to-edge), not full-hex terrain. One river + one road per hex max. | `hex_terrain_data.gd`, migration 020 |
 | Three dice modes | `DIGITAL`, `PHYSICAL`, `HYBRID` (default). Persisted in `user://settings.cfg`. | Design brief §8.4 |
 | HD minimum | CON penalty cannot reduce any single hit die roll below 1. Apply `maxi(roll + con_mod, 1)` per die. | ACKS Core |
 | Prime req minimum | Must have >= 9 in each prime requisite to qualify for a class. | ACKS Core |
