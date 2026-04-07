@@ -17,9 +17,9 @@ var _capacity_label: Label
 var _contents_box: VBoxContainer
 var _header_style: StyleBoxFlat
 
-const _COLOR_NORMAL   := Color(0.15, 0.15, 0.15, 1.0)
-const _COLOR_DROP_OK  := Color(0.10, 0.35, 0.10, 1.0)
-const _COLOR_DROP_FULL := Color(0.35, 0.10, 0.10, 1.0)
+const _COLOR_NORMAL := Color(0.88, 0.88, 0.90, 1.0)
+const _COLOR_DROP_OK := Color(0.78, 0.90, 0.80, 1.0)
+const _COLOR_DROP_FULL := Color(0.93, 0.78, 0.78, 1.0)
 
 
 func setup(
@@ -41,7 +41,7 @@ func setup(
 	_header_style = StyleBoxFlat.new()
 	_header_style.bg_color = _COLOR_NORMAL
 	_header_style.set_border_width_all(1)
-	_header_style.border_color = Color(0.4, 0.4, 0.4, 1.0)
+	_header_style.border_color = Color(0.66, 0.66, 0.70, 1.0)
 	add_theme_stylebox_override("panel", _header_style)
 
 	_build(contents)

@@ -385,10 +385,11 @@ func get_party(id: String) -> Dictionary:
 	return db.query_result[0]
 
 
-func add_party_member(party_id: String, character_id: String, slot: String) -> bool:
+func add_party_member(party_id: String, character_id: String, slot: String = "middle",
+		col: int = -1, row: int = -1) -> bool:
 	return db.query_with_bindings(
-		"INSERT OR REPLACE INTO party_members (party_id, character_id, formation_slot) VALUES (?, ?, ?)",
-		[party_id, character_id, slot]
+		"INSERT OR REPLACE INTO party_members (party_id, character_id, formation_slot, formation_col, formation_row) VALUES (?, ?, ?, ?, ?)",
+		[party_id, character_id, slot, col, row]
 	)
 
 
@@ -1192,6 +1193,15 @@ func save_character_inventory(character_id: String, items: Array) -> bool:
 # Extended character queries
 # ---------------------------------------------------------------------------
 
+func list_characters(campaign_id: String) -> Array:
+	## Returns all active characters in the campaign, ordered by name.
+	db.query_with_bindings(
+		"SELECT * FROM characters WHERE campaign_id = ? AND is_active = 1 ORDER BY name",
+		[campaign_id]
+	)
+	return db.query_result.duplicate()
+
+
 func list_characters_by_type(campaign_id: String, character_type: String) -> Array:
 	db.query_with_bindings(
 		"SELECT * FROM characters WHERE campaign_id = ? AND character_type = ? AND is_active = 1 ORDER BY name",
@@ -1463,6 +1473,151 @@ func clear_party_dungeon_position(party_id: String) -> void:
 	db.query_with_bindings(
 		"UPDATE parties SET dungeon_id = '', dungeon_level = 1, dungeon_col = 0, dungeon_row = 0 WHERE id = ?",
 		[party_id]
+	)
+
+
+# ---------------------------------------------------------------------------
+# Party state (migration 021)
+# ---------------------------------------------------------------------------
+
+## Loads the party_state row, or returns an empty Dictionary if none exists.
+func get_party_state(party_id: String) -> Dictionary:
+	if not db.query_with_bindings("SELECT * FROM party_state WHERE party_id = ?", [party_id]) \
+			or db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+## Creates or updates the party_state row from a PartyData.to_state_dict().
+func save_party_state(state: Dictionary) -> bool:
+	var pid: String = state.get("party_id", "")
+	if pid.is_empty():
+		push_error("CampaignRepository.save_party_state: party_id is empty")
+		return false
+	return db.query_with_bindings("""
+		INSERT OR REPLACE INTO party_state
+			(party_id, marching_order, is_lost, is_force_marching,
+			 force_march_days_used, days_since_rest, rations_days_remaining,
+			 current_mount_type, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+	""", [
+		pid,
+		state.get("marching_order", "[]"),
+		state.get("is_lost", 0),
+		state.get("is_force_marching", 0),
+		state.get("force_march_days_used", 0),
+		state.get("days_since_rest", 0),
+		state.get("rations_days_remaining", 0),
+		state.get("current_mount_type", ""),
+	])
+
+
+## Removes a party member from the party_members table.
+func remove_party_member(party_id: String, character_id: String) -> bool:
+	return db.query_with_bindings(
+		"DELETE FROM party_members WHERE party_id = ? AND character_id = ?",
+		[party_id, character_id]
+	)
+
+
+## Returns all party_members rows for a party.
+func get_party_members(party_id: String) -> Array:
+	if not db.query_with_bindings(
+		"SELECT * FROM party_members WHERE party_id = ? ORDER BY formation_slot",
+		[party_id]
+	):
+		return []
+	return db.query_result.duplicate()
+
+
+## Updates the formation slot for a party member.
+func update_party_member_slot(party_id: String, character_id: String, slot: String) -> bool:
+	return db.query_with_bindings(
+		"UPDATE party_members SET formation_slot = ? WHERE party_id = ? AND character_id = ?",
+		[slot, party_id, character_id]
+	)
+
+
+## Updates a party member's formation grid position.
+func update_party_member_formation(party_id: String, character_id: String,
+		col: int, row: int) -> bool:
+	return db.query_with_bindings(
+		"UPDATE party_members SET formation_col = ?, formation_row = ? WHERE party_id = ? AND character_id = ?",
+		[col, row, party_id, character_id]
+	)
+
+
+## Loads a full PartyData with members and state from the database.
+## Does NOT populate character_data or shared_inventory (caller does that).
+func load_party_data(party_id: String) -> PartyData:
+	var party_row: Dictionary = get_party(party_id)
+	if party_row.is_empty():
+		return null
+	var member_rows: Array = get_party_members(party_id)
+	var state_row: Dictionary = get_party_state(party_id)
+	return PartyData.from_db(party_row, member_rows, state_row)
+
+
+# ---------------------------------------------------------------------------
+# Party inventory (migration 021)
+# ---------------------------------------------------------------------------
+
+## Returns all inventory items belonging to a party (not to any character).
+func get_party_inventory(party_id: String) -> Array:
+	if not db.query_with_bindings(
+		"SELECT * FROM inventory_items WHERE party_id = ?", [party_id]
+	):
+		return []
+	return db.query_result.duplicate()
+
+
+## Adds an inventory item to the party shared pool.
+func add_party_inventory_item(party_id: String, data: Dictionary) -> String:
+	var id := generate_id()
+	var ok := db.query_with_bindings("""
+		INSERT INTO inventory_items
+			(id, character_id, party_id, item_key, name, quantity, encumbrance_units,
+			 slot, is_equipped, notes, item_category, is_magical, magical_bonus,
+			 weapon_damage, armor_ac_bonus, is_heavy, damage_type, material,
+			 container_id, uses_remaining)
+		VALUES (?, '', ?, ?, ?, ?, ?, 'pack', 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?)
+	""", [
+		id,
+		party_id,
+		data.get("item_key", ""),
+		data.get("name", ""),
+		data.get("quantity", 1),
+		data.get("encumbrance_units", 0),
+		data.get("notes", ""),
+		data.get("item_category", "gear"),
+		int(data.get("is_magical", false)),
+		data.get("magical_bonus", 0),
+		data.get("weapon_damage", ""),
+		data.get("armor_ac_bonus", 0),
+		int(data.get("is_heavy", false)),
+		data.get("damage_type", "physical"),
+		data.get("material", ""),
+		data.get("uses_remaining", -1),
+	])
+	if not ok:
+		push_error("CampaignRepository.add_party_inventory_item: insert failed")
+		return ""
+	return id
+
+
+## Transfers an inventory item from a character to the party shared pool.
+func transfer_item_to_party(item_id: String, party_id: String) -> bool:
+	return db.query_with_bindings(
+		"UPDATE inventory_items SET party_id = ?, character_id = '', is_equipped = 0, slot = 'pack' WHERE id = ?",
+		[party_id, item_id]
+	)
+
+
+## Transfers an inventory item from the party shared pool to a character.
+func transfer_item_to_character(item_id: String, character_id: String) -> bool:
+	return db.query_with_bindings(
+		"UPDATE inventory_items SET character_id = ?, party_id = NULL WHERE id = ?",
+		[character_id, item_id]
 	)
 
 

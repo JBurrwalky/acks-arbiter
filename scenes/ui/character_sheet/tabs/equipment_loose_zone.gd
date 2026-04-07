@@ -12,8 +12,8 @@ var _items_box: VBoxContainer
 
 var _bg_style: StyleBoxFlat
 
-const _COLOR_NORMAL   := Color(0.08, 0.08, 0.12, 1.0)
-const _COLOR_DROP_OK  := Color(0.10, 0.30, 0.10, 1.0)
+const _COLOR_NORMAL := Color(0.84, 0.90, 0.97, 1.0)
+const _COLOR_DROP_OK := Color(0.78, 0.90, 0.80, 1.0)
 
 
 func setup(loose_items: Array, character_id: String, remove_callback: Callable, equip_fn: Callable = Callable(), split_fn: Callable = Callable()) -> void:
@@ -22,7 +22,7 @@ func setup(loose_items: Array, character_id: String, remove_callback: Callable, 
 	_bg_style = StyleBoxFlat.new()
 	_bg_style.bg_color = _COLOR_NORMAL
 	_bg_style.set_border_width_all(1)
-	_bg_style.border_color = Color(0.3, 0.3, 0.4, 1.0)
+	_bg_style.border_color = Color(0.58, 0.66, 0.76, 1.0)
 	add_theme_stylebox_override("panel", _bg_style)
 
 	var vbox := VBoxContainer.new()

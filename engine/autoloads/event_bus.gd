@@ -84,6 +84,43 @@ signal rest_taken(duration_hours: int)
 ## A door, chest, or other interactive object changed state.
 signal object_state_changed(object_id: String, new_state: String)
 
+## A party was formed from one or more characters.
+signal party_formed(party_id: String)
+
+## A party was split into two groups.
+signal party_split(original_party_id: String, new_party_id: String)
+
+## Two parties were merged into one.
+signal party_merged(surviving_party_id: String, dissolved_party_id: String)
+
+## A character joined a party.
+signal party_member_joined(party_id: String, character_id: String)
+
+## A character left a party.
+signal party_member_left(party_id: String, character_id: String)
+
+## The party's marching order was changed.
+signal marching_order_changed(party_id: String)
+
+## The party's formation was changed.
+signal formation_changed(party_id: String)
+
+## A getting-lost check was rolled at the start of a travel day.
+## [param result] keys:
+##   party_id:   String — the party checked
+##   target:     int    — the target number for the terrain
+##   roll:       int    — the d20 roll result
+##   modifier:   int    — Navigation proficiency bonus (0 or 4)
+##   succeeded:  bool   — true if party stayed on course
+signal getting_lost_checked(result: Dictionary)
+
+## A forced march CON check was rolled for a character.
+## [param result] keys:
+##   character_id: String — the character checked
+##   roll:         int    — the d20 roll result (proficiency throw)
+##   succeeded:    bool   — true if character endured
+signal forced_march_checked(result: Dictionary)
+
 
 # ---------------------------------------------------------------------------
 # Character signals

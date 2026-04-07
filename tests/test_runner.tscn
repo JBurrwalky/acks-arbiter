@@ -48,6 +48,9 @@
 [ext_resource type="Script" path="res://tests/test_proficiency_cross_slot.gd" id="41_proficiency_cross_slot_tests"]
 [ext_resource type="Script" path="res://tests/test_settlement_map_data.gd" id="42_settlement_map_data_tests"]
 [ext_resource type="Script" path="res://tests/test_settlement_map_controller.gd" id="43_settlement_map_controller_tests"]
+[ext_resource type="Script" path="res://tests/test_party_management.gd" id="44_party_management_tests"]
+[ext_resource type="Script" path="res://tests/test_thief_skill_resolver.gd" id="47_thief_skill_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_cs_tab_proficiencies.gd" id="48_cs_tab_proficiencies_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -192,3 +195,12 @@ script = ExtResource("42_settlement_map_data_tests")
 
 [node name="SettlementMapControllerTests" type="Node" parent="."]
 script = ExtResource("43_settlement_map_controller_tests")
+
+[node name="PartyManagementTests" type="Node" parent="."]
+script = ExtResource("44_party_management_tests")
+
+[node name="ThiefSkillResolverTests" type="Node" parent="."]
+script = ExtResource("47_thief_skill_resolver_tests")
+
+[node name="CSTabProficienciesTests" type="Node" parent="."]
+script = ExtResource("48_cs_tab_proficiencies_tests")

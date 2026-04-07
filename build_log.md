@@ -2983,3 +2983,165 @@ CampaignRepository addition:
 **Known issues:** None.
 **Next session should:**
 1. Continue with prior session's settlement map items (multi-hop movement, pan clamping, larger district testing).
+
+---
+
+## Session 2026-04-07 â€” Character Sheet Equipment Panel Contrast
+
+**Task:** Lighten the character sheet equipment panel backgrounds so the existing dark text remains readable.
+**Model used:** GPT-5 Codex
+**Completed:**
+- Updated [equipment_container_row.gd](/c:/Users/jttau/acks-arbiter/scenes/ui/character_sheet/tabs/equipment_container_row.gd) to replace the dark grey container panel with a light grey background, lighter border, and softer drag-state highlight colors.
+- Updated [equipment_loose_zone.gd](/c:/Users/jttau/acks-arbiter/scenes/ui/character_sheet/tabs/equipment_loose_zone.gd) to replace the dark navy loose-carry panel with a light blue background and matching lighter border/highlight colors.
+**Decisions made:**
+- Kept the change narrowly scoped to the equipment-tab surface colors so text/button styling elsewhere in the character sheet remains unchanged.
+- Preserved the green/red drag-feedback behavior, but shifted both states to lighter tints to match the new panel backgrounds.
+**Interfaces defined or changed:**
+- None.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- None. This was a visual-only styling change.
+**Known issues:**
+- Visual confirmation in the Godot UI is still recommended to fine-tune the exact tint balance against the rest of the character sheet.
+**Next session should:**
+1. Smoke-test the character sheet equipment tab in-editor to confirm the new light grey/light blue surfaces feel right with the surrounding vellum UI.
+
+---
+
+## Session 2026-04-07 — Phase E-1: Party Management
+
+**Task:** Implement Phase E-1 (Party Management) — party data model, travel speed calculator, getting-lost/forced march mechanics, party management UI, and supporting infrastructure.
+**Model used:** Opus 4.6 for all phases.
+**Completed:**
+- **Migration 021** (`db/migrations/021_party_state_and_party_inventory.sql`): Added `party_state` table (marching_order, is_lost, is_force_marching, force_march_days_used, days_since_rest, rations_days_remaining, current_mount_type). Added `party_id` nullable FK column to `inventory_items` for party-level shared inventory.
+- **PartyData shared type** (`engine/shared_types/party_data.gd`): Canonical in-memory party representation with members, formation slots, marching order, travel state, shared inventory. Includes `from_db()` static constructor and `to_state_dict()` serializer. Convenience queries: `get_slowest_movement()`, `any_member_has_proficiency()`, `needs_rest()`, `max_force_march_days()`, `can_force_march()`.
+- **TravelSpeedCalculator** (`engine/subsystems/exploration/travel_speed_calculator.gd`): Static class computing party travel speed with terrain multipliers (clear ×1, woods/hills/desert ×2/3, jungle/swamp/mountains ×1/2, road ×3/2), mount speed (horse 240'/turn, mule 120'/turn), forced march (×1.5). Also includes getting-lost check (d20 vs terrain target + Navigation +4) and forced march eligibility/rest requirement checks. Uses banker's rounding.
+- **EventBus signals** (`engine/autoloads/event_bus.gd`): Added 9 party signals: `party_formed`, `party_split`, `party_merged`, `party_member_joined`, `party_member_left`, `marching_order_changed`, `formation_changed`, `getting_lost_checked`, `forced_march_checked`.
+- **CampaignRepository methods** (`engine/autoloads/campaign_repository.gd`): Added `get_party_state()`, `save_party_state()`, `remove_party_member()`, `get_party_members()`, `update_party_member_slot()`, `load_party_data()`, `list_characters()`, `get_party_inventory()`, `add_party_inventory_item()`, `transfer_item_to_party()`, `transfer_item_to_character()`.
+- **Party Management UI** (`scenes/ui/party_management/party_management_overlay.gd` + `.tscn`): CanvasLayer overlay with 4 tabs (Members, Formation, March Order, Travel). Members tab: add/remove characters. Formation tab: assign slots (point/front/middle/rear) via dropdown. March Order tab: reorder with Move Up/Down. Travel tab: speed summary per terrain, mount selector, rest/forced march status, proficiency info. Toggle with Ctrl+Alt+P.
+- **Test suite** (`tests/test_party_management.gd`): 20 tests covering PartyData construction/serialization, formation queries, travel speed (clear/forest/mountain/road/mounted/forced), getting-lost checks (clear/swamp/road), forced march eligibility (with/without Endurance), rest requirements, rest penalties, banker's rounding.
+**Decisions made:**
+- Party shared inventory uses `party_id` FK column on `inventory_items` (not pseudo-character or container_id overloading). Clean semantics, explicit ownership.
+- Marching order is separate from formation slots. Formation = combat positioning (point/front/middle/rear). Marching order = travel column sequence (ordered array of character_ids).
+- Getting-lost is a d20 proficiency throw, NOT d6. ACKS rules use d20 with terrain-specific target numbers (4+/7+/11+). Navigation grants +4.
+- Forced march: without Endurance = 1 day then mandatory rest. With Endurance = 1 + CON bonus days.
+- Rest penalty: cumulative -1 attack/damage per day past 6 without rest.
+- Architectural review completed before implementation (7 issues identified, all resolved): GameState vs SessionRunner state machine collision (SessionRunner drives, GameState broadcasts), renderer-driven movement (SessionRunner replaces main_scene in E-2), no atomic save/load (add to CampaignRepository in E-2), ActiveEffectTracker wiring (E-2), DiceSystem game_day TODO (E-2).
+**Interfaces defined or changed:**
+- `PartyData` shared type: class_name PartyData, extends RefCounted. Fields: id, campaign_id, name, current_map_id, current_hex_q/r, current_location_type, members (Array[Dict]), marching_order (Array[String]), is_lost, is_force_marching, force_march_days_used, days_since_rest, rations_days_remaining, current_mount_type, character_data (runtime), shared_inventory (runtime).
+- `TravelSpeedCalculator.calculate_party_speed(party, terrain_category, on_road) -> Dictionary` with keys: base_exploration_speed, terrain_multiplier, miles_per_day, is_forced_march, on_road, slowest_member_id, details.
+- `TravelSpeedCalculator.check_getting_lost(party, terrain_category, roll_result, on_road) -> Dictionary` with keys: party_id, target, roll, modifier, succeeded.
+- `TravelSpeedCalculator.check_force_march_eligibility(party) -> Dictionary` with keys: can_continue, max_days, days_used, must_rest_after.
+- EventBus signals: party_formed(party_id), party_split(original_party_id, new_party_id), party_merged(surviving_party_id, dissolved_party_id), party_member_joined(party_id, character_id), party_member_left(party_id, character_id), marching_order_changed(party_id), formation_changed(party_id), getting_lost_checked(result: Dictionary), forced_march_checked(result: Dictionary).
+- CampaignRepository: load_party_data(party_id) -> PartyData, save_party_state(state: Dictionary), get_party_state(party_id) -> Dictionary, get_party_members(party_id) -> Array, remove_party_member(party_id, character_id), update_party_member_slot(party_id, character_id, slot), list_characters(campaign_id) -> Array, get_party_inventory(party_id) -> Array, add_party_inventory_item(party_id, data) -> String, transfer_item_to_party(item_id, party_id), transfer_item_to_character(item_id, character_id).
+**Database changes:**
+- Migration 021: `party_state` table created. `inventory_items.party_id` column added.
+- `db/schema.sql` updated to reflect migration 021.
+**Tests added/updated:**
+- `tests/test_party_management.gd`: 20 tests (PartyData: 6, TravelSpeedCalculator: 6, getting-lost: 3, forced march: 2, rest: 2, banker's rounding: 1). Registered in test_runner.gd and test_runner.tscn.
+**Known issues:**
+- Tests not yet run in Godot (no headless runner available in this session). Manual verification recommended.
+- Party Management UI toggle is Ctrl+Alt+P (may conflict on some systems; can be rebound).
+- `inventory_items.character_id` has `NOT NULL` constraint — party-only items use empty string `''` for character_id. This works but is semantically imperfect. Consider relaxing to nullable in a future migration if it causes issues.
+**Next session should:**
+1. Run test_runner.tscn to verify all 20 new party management tests pass (and existing tests still pass).
+2. Smoke-test Party Management overlay in-game (create party, assign formation, reorder march, check travel speeds).
+3. Begin Phase E-2: Session Runner State Machine (Complexity 4 — recommend Opus planning session first).
+
+## Session 2026-04-07 — Thief Skill Resolver + Proficiencies Tab Panel
+
+**Task:** Audit thief-skill availability on generated characters, expose live thief-skill targets in the character sheet Proficiencies tab, and centralize the rules math for future rolls.
+**Completed:**
+- **Shared resolver** (`engine/subsystems/characters/thief_skill_resolver.gd`): Added `ThiefSkillResolver` to normalize class-power rows from persisted `character_powers`, resolve thief-skill-equivalent proficiencies from `enablers`, split `find_remove_traps` into separate `Find Traps` and `Remove Traps` rows, apply DEX and encumbrance bonuses per `ax_thief_skill_update.xml`, honor structured power conditions such as `armor_leather_or_lighter`, and expose `get_skill_check()`, `get_all_skill_checks()`, `player_roll_skill()`, and `roll_skill_digital()` using `roll_type = "thief_skill_throw"`.
+- **Character-sheet UI** (`scenes/ui/character_sheet/tabs/cs_tab_proficiencies.gd`): Refactored the Proficiencies tab into a two-column layout. The left side still lists proficiencies and class powers; the right side now renders an always-visible `Thief Skills` panel with all eight rows (`Open Locks`, `Find Traps`, `Remove Traps`, `Pick Pockets`, `Move Silently`, `Climb Walls`, `Hide in Shadows`, `Hear Noise`). Unavailable skills show `NA`. Tooltips include source, base target, equivalent thief level when relevant, DEX modifier, encumbrance modifier, proficiency subtotal, and unavailability reason. Also updated class-power display-name lookup to prefer `power_name`.
+- **Tests** (`tests/test_thief_skill_resolver.gd`, `tests/test_cs_tab_proficiencies.gd`): Added resolver coverage for persisted thief progression parsing, split trap rows, Dwarven Delver `Find Traps`-only behavior, `Climbing`/`Eavesdropping` equivalents, `Prestidigitation` half-level pick pockets, DEX and encumbrance rules, hijink suppression, Assassin heavy-armor blocking, and modifier-only proficiencies not granting access. Added UI coverage for panel existence, all eight rows always rendering, `NA` display for unavailable skills, and tooltip breakdown content.
+- **Test runner registration** (`tests/test_runner.gd`, `tests/test_runner.tscn`): Registered the two new suites so they run with the existing headless test scene.
+**Decisions made:**
+- Base Thief characters already had persisted thief-skill progression tables via `CharacterGenerator.stamp_powers()` and `character_powers`; no schema or content migration was needed.
+- The Proficiencies tab shows the thief-skill panel for **all** classes, not just classes with native thief powers.
+- `Find Traps` and `Remove Traps` are rendered as separate rows even when the underlying class power is the combined `find_remove_traps` table.
+- Proficiency equivalents are sourced only from structured `enablers` with thief-equivalent metadata; modifier-only proficiencies (for example `Lockpicking` and `Trap Finding`) improve an existing baseline but do not create access on their own.
+- `half_character_level` equivalents use floor division, and values below 1 remain unavailable (`NA`).
+- This pass intentionally uses structured conditions/effects only; it does not parse free-text item notes like glove or helmet penalties.
+**Interfaces defined or changed:**
+- `ThiefSkillResolver.get_skill_check(bundle, skill_key, is_hijink := false) -> Dictionary`
+  Returns `skill_key`, `display_name`, `is_available`, `base_target`, `effective_target`, `display_target`, `total_roll_modifier`, `source_label`, `tooltip_text`, plus breakdown fields used by the UI/tests.
+- `ThiefSkillResolver.player_roll_skill(...) -> RollResult`
+- `ThiefSkillResolver.roll_skill_digital(...) -> RollResult`
+**Verification:**
+- Ran the Godot headless test runner with `& "C:\Godot\Godot_v4.6.1-stable_win64.exe" --headless --path . res://tests/test_runner.tscn`.
+- First attempt hit a sandbox/log-file issue before producing useful output.
+- Second run exited with code `0` after the new suites were registered, indicating the project parsed and the full test runner completed successfully in this session.
+**Known issues:**
+- The character sheet currently displays thief-skill targets only; no click-to-roll buttons were added in this pass.
+- Free-text equipment penalties from catalog notes remain unmodeled here by design.
+**Next session should:**
+1. Smoke-test the character sheet in Godot with a Thief, Assassin in chain, Fighter with `Climbing`/`Eavesdropping`, and Dwarven Delver to confirm the panel feels correct visually and contextually.
+2. Reuse `ThiefSkillResolver.player_roll_skill()` / `roll_skill_digital()` when hijink/exploration systems start actually prompting or resolving thief-skill throws.
+
+## Session 2026-04-07 â€” Adventuring Skills Panel Expansion
+
+**Task:** Extend the character-sheet skills display so the Proficiencies tab shows both thief-only skills and universal Adventuring Skills with live targets.
+**Model used:** GPT-5 Codex
+**Completed:**
+- Expanded `engine/subsystems/characters/thief_skill_resolver.gd` into a grouped resolver that now returns both `thief_skills` and `adventuring_skills`, while preserving the existing single-skill lookup and roll-helper entry points.
+- Added Adventuring Skills support for `Force Door`, `Detect Secrets`, `Hear Noise`, `Find Traps`, `Foraging`, `Hunting`, and `Fishing`.
+- Moved `Hear Noise` and `Find Traps` from the thief panel to the adventuring panel while still preferring stronger native thief / proficiency-equivalent targets when available.
+- Added adventuring/racial baseline logic plus modifiers for Strength-based door forcing, `Dungeon Bashing`, `Alertness`, `Trap Finding`, `Eavesdropping`, and `Survival`.
+- Updated `scenes/ui/character_sheet/tabs/cs_tab_proficiencies.gd` to render stacked `Thief Skills` and `Adventuring Skills` panels on the right side of the tab.
+- Rewrote focused coverage in `tests/test_thief_skill_resolver.gd` and `tests/test_cs_tab_proficiencies.gd` for the grouped behavior and the new adventuring-throw math.
+**Decisions made:**
+- Kept the public class name `ThiefSkillResolver` for compatibility even though it now resolves both thief and adventuring skills.
+- Treated `Detect Secrets`, `Hear Noise`, `Find Traps`, `Foraging`, `Hunting`, and `Fishing` as always-available adventuring rows, with stronger class/proficiency sources overriding the baseline when applicable.
+- Applied thief-style DEX/encumbrance bonuses only when the winning source is a thief-native or thief-equivalent source, not when a universal or racial baseline wins (for example `stonework_detection`).
+- Implemented `Survival` bonuses for `Foraging`, `Hunting`, and `Fishing` in resolver logic rather than modifying proficiency data files.
+**Interfaces defined or changed:**
+- `ThiefSkillResolver.get_grouped_skill_checks(bundle, is_hijink := false) -> Dictionary`
+  Returns `thief_skills` and `adventuring_skills` arrays of skill-check dictionaries.
+- Skill-check dictionaries now include `group_key` and `roll_type` alongside the prior target/source/breakdown fields.
+- Adventuring rows use `roll_type = "adventuring_skill_throw"`; thief rows continue using `roll_type = "thief_skill_throw"`.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- `tests/test_thief_skill_resolver.gd`: grouped output, adventuring baselines, force-door STR scaling, racial detection/hearing/trap baselines, survival bonuses, and retained thief-skill edge cases.
+- `tests/test_cs_tab_proficiencies.gd`: stacked panel layout, row membership, numeric adventuring targets, and tooltip breakdown coverage.
+**Known issues:**
+- No in-editor visual smoke test was run in this session, so the final spacing balance between the two right-side panels still needs a live UI check.
+**Next session should:**
+1. Open the character sheet in Godot and visually confirm the stacked panels feel right with a Thief, Fighter, Elf, and Dwarf.
+2. Reuse the new `adventuring_skill_throw` roll metadata when exploration systems start prompting for these universal skill throws.
+
+---
+
+## Session 2026-04-07 — Phase E-1 Revision: Formation Grid, Mount Refactor
+
+**Task:** Revise E-1 based on design feedback: replace formation slots + marching order with a 5×12 formation grid; remove party-level mount selector (mounts will be per-character equipment).
+**Model used:** Opus 4.6.
+**Completed:**
+- **Migration 022** (`db/migrations/022_formation_grid.sql`): Added `formation_col` and `formation_row` INTEGER columns to `party_members`. Old `formation_slot` TEXT column retained for backwards compat but no longer used by app.
+- **PartyData rewrite**: Removed `marching_order` array and `current_mount_type`. Members now store `{character_id, formation_col, formation_row}`. New grid methods: `get_formation_pos()`, `get_character_at()`, `get_placed_members()`, `get_unplaced_members()`, `set_formation_pos()`, `unplace_character()`, `swap_positions()`. `get_marching_order()` is now derived from grid (sorted by row then col, unplaced appended).
+- **TravelSpeedCalculator**: Removed `MOUNT_SPEEDS` constant and mounted travel logic. Party speed now purely uses `get_slowest_movement()` which reads each character's `get_effective_movement()` — when mount equipment integration is built, equipped mounts will modify movement via the modifier system.
+- **Party Management UI rewrite**: Replaced 4-tab layout (Members/Formation/March Order/Travel) with 3 tabs (Members/Formation/Travel). Formation tab is now a 5×12 button grid with FRONT/REAR labels. Select an unplaced character from the list below the grid, click a cell to place. Click an occupied cell to remove. Grid tooltips show character details.
+- **CampaignRepository**: Added `update_party_member_formation(party_id, character_id, col, row)`. Updated `add_party_member()` to accept optional `col`/`row` params (default -1 = unplaced).
+- **Tests**: Updated all 21 tests. Replaced old formation slot and marching order tests with grid-based tests: `test_formation_grid_placement`, `test_formation_grid_queries`, `test_formation_marching_order` (derived from grid), `test_formation_swap`. Removed mount test.
+**Decisions made:**
+- Formation and marching order are the same concept in ACKS 1e. Single 5×12 grid replaces both. Marching order derived from grid placement (front rows first, left to right).
+- Grid is 5 wide × 12 deep = 60 cells. Max PC+henchmen party is 42 (6 PCs × 7 henchmen each), leaving room for mercenaries and animals.
+- Mounts are per-character equipment, not party-level. The `mount` slot already exists in the inventory schema. Mount speed integration deferred to equipment system work — when a mount is equipped, it should add a `movement_rate` modifier via the modifier system.
+- Old `formation_slot` and `current_mount_type` columns retained in DB (SQLite can't drop columns) but ignored by app.
+**Interfaces defined or changed:**
+- PartyData.members: `{character_id: String, formation_col: int, formation_row: int}` (was `{character_id, formation_slot}`)
+- PartyData: removed `marching_order` var, `current_mount_type` var, `get_formation_slot()`, `get_members_in_slot()`. Added `get_formation_pos()`, `get_character_at()`, `get_placed_members()`, `get_unplaced_members()`, `set_formation_pos()`, `unplace_character()`, `swap_positions()`, `get_marching_order()`.
+- CampaignRepository: added `update_party_member_formation(party_id, character_id, col, row)`.
+**Database changes:**
+- Migration 022: `party_members.formation_col`, `party_members.formation_row` added.
+**Tests added/updated:**
+- 21 tests total (was 20). Added: formation_grid_placement, formation_grid_queries, formation_marching_order, formation_swap. Removed: old formation slot tests, marching order sync test, mounted horse test.
+**Known issues:**
+- Mount equipment integration not yet built. Characters with horses in mount slot don't yet get movement bonus. Needs modifier system wiring in future equipment work.
+- Grid cells are small (56×28px). May need scaling for high-DPI or very large parties. Visual smoke test recommended.
+**Next session should:**
+1. Run test_runner.tscn to verify all 21 party management tests pass.
+2. Smoke-test Formation Grid in-game (place/remove characters, verify grid persistence).
+3. Begin Phase E-2: Session Runner State Machine planning.

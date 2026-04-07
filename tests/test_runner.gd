@@ -55,6 +55,9 @@ extends Node
 @onready var _proficiency_cross_slot_tests = $ProficiencyCrossSlotTests
 @onready var _settlement_map_data_tests = $SettlementMapDataTests
 @onready var _settlement_map_controller_tests = $SettlementMapControllerTests
+@onready var _party_management_tests = $PartyManagementTests
+@onready var _thief_skill_resolver_tests = $ThiefSkillResolverTests
+@onready var _cs_tab_proficiencies_tests = $CSTabProficienciesTests
 
 
 func _ready() -> void:
@@ -91,7 +94,10 @@ func run() -> void:
 			_dungeon_map_controller_tests,
 			_proficiency_cross_slot_tests,
 			_settlement_map_data_tests,
-			_settlement_map_controller_tests]:
+			_settlement_map_controller_tests,
+			_party_management_tests,
+			_thief_skill_resolver_tests,
+			_cs_tab_proficiencies_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

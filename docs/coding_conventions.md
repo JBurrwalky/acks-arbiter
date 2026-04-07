@@ -1455,3 +1455,69 @@ During D-4 development, undetected secret doors (`door_detected = false`) are re
 `DungeonMapController` is NOT an autoload. Instantiate dynamically in `main_scene.gd._enter_dungeon()`, add as child, call `load_dungeon()`, then pass to the dungeon scene via `setup(controller)`. The controller is freed when the dungeon scene is popped from NavigationStack (via `queue_free` on the scene's `exit()`).
 
 *Last major update: 2026-04-02 — D-4 dungeon grid. Updated directory tree (§2.1), migration list to 017, maps/ entry, added §13 (tactical grid conventions).*
+
+---
+
+## 15. Party & Formation Conventions (E-1)
+
+<!-- Added 2026-04-07 for party management and formation grid -->
+
+### 15.1 Formation Grid
+
+Party formation uses a **5-column × 12-row** grid (`PartyData.GRID_COLS`, `PartyData.GRID_ROWS`). Row 0 is the **front** of the formation; row 11 is the **rear**. Column 0 is leftmost.
+
+- Members with `formation_col = -1, formation_row = -1` are **unplaced** (in the party but not on the grid).
+- **Marching order** is derived from the grid: sorted by row ascending (front first), then column ascending (left first). Unplaced members are appended at the end. There is no separate marching order data structure.
+- The grid doubles as the **battlemap spawn template** — when combat starts, characters spawn at their grid positions.
+- Max party size is 42 (6 PCs + 7 henchmen each), fitting comfortably in the 60-cell grid with room for mercenaries and animals.
+
+### 15.2 Mounts and Travel Speed
+
+Mounts are **per-character equipment** using the existing `mount` inventory slot, not a party-level setting. When mount equipment integration is built:
+
+- Equipping a mount adds a `movement_rate` modifier via the modifier system (source_type = `"item"`, stacking_group = `"mount"`).
+- `CharacterData.get_effective_movement()` then returns the mounted speed.
+- `PartyData.get_slowest_movement()` naturally returns the correct party speed — no special mount logic needed at the party level.
+
+### 15.3 Travel Speed Calculation
+
+`TravelSpeedCalculator` is a static class. Key rules:
+
+| Rule | Implementation |
+|---|---|
+| Party moves at slowest member | `PartyData.get_slowest_movement()` |
+| Terrain multipliers | Clear ×1, Woods/Hills/Desert ×2/3, Jungle/Swamp/Mountains ×1/2 |
+| Road travel | ×3/2 of base, overrides terrain penalty |
+| Forced march | ×1.5 distance, 12h day instead of 8h |
+| Rest requirement | 1 day rest per 6 travel days (skipped with Endurance proficiency) |
+| Rest penalty | Cumulative -1 attack/damage per day past 6 without rest |
+| Getting lost | d20 proficiency throw vs terrain target; Navigation proficiency +4 |
+| Banker's rounding | All mile calculations use banker's rounding per project convention |
+
+### 15.4 SQLite Null Coalescing
+
+SQLite returns `null` for NULL column values. `Dictionary.get("key", default)` returns `null` (not the default) when the key exists with a null value. Use `PartyData._str()` / `PartyData._int()` helpers, or guard explicitly:
+
+```gdscript
+# WRONG — returns null if column is SQL NULL
+var name: String = row.get("name", "fallback")
+
+# RIGHT — coalesces null to fallback
+var v = row.get("name", "fallback")
+var name: String = v if v != null else "fallback"
+```
+
+This pattern applies to any shared type's `from_db()` / `from_dict()` when reading nullable SQL columns.
+
+### 15.5 Party EventBus Signals
+
+| Signal | Parameters | When emitted |
+|---|---|---|
+| `party_formed` | `party_id` | New party created |
+| `party_split` | `original_party_id, new_party_id` | Party divided |
+| `party_merged` | `surviving_party_id, dissolved_party_id` | Parties reunited |
+| `party_member_joined` | `party_id, character_id` | Character added to party |
+| `party_member_left` | `party_id, character_id` | Character removed from party |
+| `formation_changed` | `party_id` | Grid positions changed |
+| `getting_lost_checked` | `result: Dictionary` | Daily navigation check rolled |
+| `forced_march_checked` | `result: Dictionary` | Forced march endurance check |

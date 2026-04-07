@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/dice/dice_prompt.tscn" id="6_dice_prompt"]
 [ext_resource type="PackedScene" path="res://scenes/ui/character_creation/character_creation_screen.tscn" id="7_char_creation"]
 [ext_resource type="PackedScene" path="res://scenes/ui/character_sheet/character_sheet_overlay.tscn" id="8_char_sheet"]
+[ext_resource type="PackedScene" path="res://scenes/ui/party_management/party_management_overlay.tscn" id="11_party_mgmt"]
 [ext_resource type="Script" uid="uid://duboi1ccg8c25" path="res://engine/subsystems/navigation/navigation_stack.gd" id="9_nav_stack"]
 [ext_resource type="PackedScene" path="res://scenes/ui/transitions/scene_transition.tscn" id="10_scene_transition"]
 
@@ -36,3 +37,5 @@ script = ExtResource("4_override_mgr")
 [node name="CharacterCreationScreen" parent="." unique_id=605577525 instance=ExtResource("7_char_creation")]
 
 [node name="CharacterSheetOverlay" parent="." unique_id=812345001 instance=ExtResource("8_char_sheet")]
+
+[node name="PartyManagementOverlay" parent="." instance=ExtResource("11_party_mgmt")]
