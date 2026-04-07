@@ -6,7 +6,7 @@ extends VBoxContainer
 # Held between begin and finalize for the interactive level-up flow.
 var _pending_level_up_result: Dictionary = {}
 var _bundle: CharacterBundle
-var _registries: Dictionary
+var _registries: Dictionary = {}
 
 # UI nodes for the inline level-up panel (created lazily).
 var _level_up_panel: VBoxContainer
@@ -16,6 +16,34 @@ var _proficiency_popup_picker_host: VBoxContainer
 var _proficiency_popup_status: Label
 var _proficiency_selection_status_label: Label
 var _level_up_choices: Dictionary = {}  # { "proficiencies": [], "spells": [] }
+
+
+func has_pending_level_up() -> bool:
+	return not _pending_level_up_result.is_empty()
+
+
+func abort_pending_level_up() -> void:
+	## Abandon an in-progress interactive level-up and restore the persisted character.
+	if not has_pending_level_up():
+		return
+	if _bundle == null or _bundle.character == null:
+		_pending_level_up_result = {}
+		_level_up_choices = {"proficiencies": [], "spells": []}
+		_clear_proficiency_popup_state()
+		return
+
+	_clear_proficiency_popup_state()
+	var fresh: Dictionary = CampaignRepository.get_character(_bundle.character.id)
+	if fresh.is_empty():
+		push_error("CSTabAdvancement.abort_pending_level_up: failed to reload character '%s'" % _bundle.character.id)
+		return
+
+	_bundle.character = CharacterData.from_dict(fresh)
+	_bundle.character.proficiencies = _bundle.proficiencies
+	_pending_level_up_result = {}
+	_level_up_choices = {"proficiencies": [], "spells": []}
+	if _bundle != null:
+		display(_bundle, _registries)
 
 
 func display(bundle: CharacterBundle, registries: Dictionary) -> void:
@@ -322,16 +350,8 @@ func _on_confirm_level_up(character: CharacterData, engine: LevelUpEngine) -> vo
 	display(_bundle, _registries)
 
 
-func _on_cancel_level_up(character: CharacterData) -> void:
-	# Undo the in-memory stat changes by reloading from DB.
-	if _bundle == null:
-		return
-	_clear_proficiency_popup_state()
-	var fresh := CampaignRepository.get_character(character.id)
-	if fresh != null:
-		_bundle.character = CharacterData.from_dict(fresh)
-	_pending_level_up_result = {}
-	display(_bundle, _registries)
+func _on_cancel_level_up(_character: CharacterData) -> void:
+	abort_pending_level_up()
 
 
 func _prepare_proficiency_picker(character: CharacterData, class_slots: int,

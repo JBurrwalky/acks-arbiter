@@ -147,6 +147,7 @@ func _build_ui() -> void:
 	body.add_child(_tab_container)
 
 	_build_tabs()
+	_tab_container.tab_changed.connect(_on_tab_changed)
 
 
 func _build_tabs() -> void:
@@ -255,6 +256,7 @@ func _party_item_label(character: CharacterData) -> String:
 
 func _select_character(character_id: String) -> void:
 	## Load and display the given character; sync sidebar highlight.
+	_abort_pending_advancement_if_needed()
 	_displayed_character_id = character_id
 	_bundle = _load_character(character_id)
 	if _bundle.character != null:
@@ -429,6 +431,7 @@ func _on_age_category_changed(character_id: String, _old_cat: String, _new_cat: 
 # ---------------------------------------------------------------------------
 
 func _close() -> void:
+	_abort_pending_advancement_if_needed()
 	visible = false
 
 
@@ -436,6 +439,11 @@ func _on_party_item_selected(index: int) -> void:
 	if index < 0 or index >= _party_ids.size():
 		return
 	_select_character(_party_ids[index])
+
+
+func _on_tab_changed(index: int) -> void:
+	if index != _get_advancement_tab_index():
+		_abort_pending_advancement_if_needed()
 
 
 func _make_registries_dict() -> Dictionary:
@@ -453,3 +461,19 @@ func _refresh_party_list_item(character_id: String) -> void:
 	if idx < 0 or _bundle == null or _bundle.character == null:
 		return
 	_party_list.set_item_text(idx, _party_item_label(_bundle.character))
+
+
+func _get_advancement_tab_index() -> int:
+	if _tab_container == null:
+		return -1
+	for i in range(_tab_container.get_tab_count()):
+		if _tab_container.get_tab_title(i) == "Advancement":
+			return i
+	return -1
+
+
+func _abort_pending_advancement_if_needed() -> void:
+	if _tab_advancement == null:
+		return
+	if _tab_advancement.has_pending_level_up():
+		_tab_advancement.abort_pending_level_up()

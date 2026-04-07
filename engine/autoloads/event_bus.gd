@@ -298,6 +298,13 @@ signal player_roll_requested(context: Dictionary)
 ## [param was_player_entered] false if player clicked "Roll Dice"; true if typed manually.
 signal player_roll_resolved(roll_type: String, raw_total: int, was_player_entered: bool)
 
+## Emitted by SessionRunner to cancel a pending player roll prompt.
+## DiceSystem listens for this alongside player_roll_resolved in the async path.
+signal player_roll_cancelled
+
+## Emitted after SessionRunner completes a state transition.
+signal session_state_transitioned(from_key: String, to_key: String)
+
 # ---------------------------------------------------------------------------
 # Dev testing signals (temporary — remove when session runner exists)
 # ---------------------------------------------------------------------------

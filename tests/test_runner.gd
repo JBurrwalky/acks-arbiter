@@ -58,6 +58,8 @@ extends Node
 @onready var _party_management_tests = $PartyManagementTests
 @onready var _thief_skill_resolver_tests = $ThiefSkillResolverTests
 @onready var _cs_tab_proficiencies_tests = $CSTabProficienciesTests
+@onready var _cs_tab_advancement_tests = $CSTabAdvancementTests
+@onready var _session_runner_tests = $SessionRunnerTests
 
 
 func _ready() -> void:
@@ -97,7 +99,9 @@ func run() -> void:
 			_settlement_map_controller_tests,
 			_party_management_tests,
 			_thief_skill_resolver_tests,
-			_cs_tab_proficiencies_tests]:
+			_cs_tab_proficiencies_tests,
+			_cs_tab_advancement_tests,
+			_session_runner_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

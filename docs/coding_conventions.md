@@ -1521,3 +1521,64 @@ This pattern applies to any shared type's `from_db()` / `from_dict()` when readi
 | `formation_changed` | `party_id` | Grid positions changed |
 | `getting_lost_checked` | `result: Dictionary` | Daily navigation check rolled |
 | `forced_march_checked` | `result: Dictionary` | Forced march endurance check |
+
+---
+
+## 16. Session Runner Conventions (E-2)
+
+<!-- Added 2026-04-07 for session runner state machine -->
+
+### 16.1 Object-per-State Pattern
+
+The session runner uses an **object-per-state pattern**: each gameplay state is a separate `RefCounted` script extending `SessionState`. SessionRunner holds a registry of state factories and delegates lifecycle to the active state object.
+
+**Adding a new state:**
+1. Create `engine/subsystems/session/states/new_state.gd` extending `SessionState`.
+2. Add one line to `SessionRunner._register_states()`: `"new_key": func(): return NewState.new()`.
+3. No existing state code is modified.
+
+**State interface:**
+```gdscript
+func enter(runner, context: Dictionary) -> void   # wire signals, show UI
+func exit(runner) -> void                          # disconnect signals, clean up
+func handle_action(runner, action: String, payload: Dictionary) -> String
+  # returns next state key ("" to stay)
+```
+
+### 16.2 SessionRunner as Sole GameState Driver
+
+**SessionRunner is the ONLY code that calls `GameState.transition_to()` and `GameState.set_exploration_context()`.** This is enforced by convention, not by code. Other systems that need to know the current state listen to `GameState.state_changed` or `EventBus.session_state_transitioned`.
+
+### 16.3 State ↔ GameState Mapping
+
+| SessionRunner state key | GameState.State | GameState.ExplorationContext |
+|---|---|---|
+| `campaign_select` | MAIN_MENU | NONE |
+| `session_load` | (transient) | (transient) |
+| `wilderness` | EXPLORATION | WILDERNESS |
+| `dungeon` | EXPLORATION | DUNGEON |
+| `settlement` | EXPLORATION | SETTLEMENT |
+| `combat` | COMBAT | (unchanged) |
+| `session_end` | (handled by end_session) | (cleared) |
+
+### 16.4 LLM Integration Points
+
+Both UI clicks and LLM-interpreted actions resolve through the same path:
+```
+SessionRunner.submit_action(action_key, payload)
+  → _current_state.handle_action(self, action_key, payload)
+```
+State objects don't know or care whether an action came from the UI or the LLM. The action vocabulary validation layer sits between LLMManager and `submit_action()`.
+
+### 16.5 EffectTicker Lifecycle
+
+`EffectTicker` bridges `ActiveEffectTracker.tick_*()` to `Timekeeping` boundary signals. It is:
+- Created in `SessionRunner._ready()` with an empty `ActiveEffectTracker`.
+- Connected via `connect_signals()` during `load_session()`.
+- Disconnected via `disconnect_signals()` during `end_session()`.
+
+Do NOT connect ActiveEffectTracker to Timekeeping signals from any other location.
+
+### 16.6 Player Roll Cancellation
+
+`DiceSystem.player_roll()` async path races `player_roll_resolved` against `player_roll_cancelled`. SessionRunner emits `player_roll_cancelled` at every state transition boundary (inside `transition_to_state()` before calling `exit()`). Cancelled rolls return a zeroed `RollResult` with `was_overridden = true` — callers should check this flag if they need to distinguish real rolls from cancellations.

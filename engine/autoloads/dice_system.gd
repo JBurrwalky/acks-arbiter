@@ -84,7 +84,9 @@ func player_roll(
 	if GameState.dice_mode == GameState.DiceMode.DIGITAL:
 		return _do_roll(sides, count, modifier, roll_type, false)
 
-	# PHYSICAL or HYBRID: prompt the player, then await their response
+	# PHYSICAL or HYBRID: prompt the player, then await their response.
+	# Race: wait for either resolution or cancellation (SessionRunner cancels
+	# pending rolls on state transitions to prevent hung coroutines).
 	EventBus.player_roll_requested.emit({
 		"roll_type":   roll_type,
 		"sides":       sides,
@@ -92,10 +94,39 @@ func player_roll(
 		"modifier":    modifier,
 		"description": description,
 	})
-	var args: Array = await EventBus.player_roll_resolved
-	# args = [roll_type: String, raw_total: int, was_player_entered: bool]
-	var raw_total: int         = args[1]
-	var was_player_entered: bool = args[2]
+
+	var resolved := false
+	var cancelled := false
+	var result_args: Array = []
+
+	var _on_resolved := func(rt: String, raw: int, entered: bool) -> void:
+		result_args = [rt, raw, entered]
+		resolved = true
+	var _on_cancelled := func() -> void:
+		cancelled = true
+
+	EventBus.player_roll_resolved.connect(_on_resolved, CONNECT_ONE_SHOT)
+	EventBus.player_roll_cancelled.connect(_on_cancelled, CONNECT_ONE_SHOT)
+
+	# Await whichever fires first
+	while not resolved and not cancelled:
+		await Engine.get_main_loop().process_frame
+
+	# Clean up whichever didn't fire
+	if resolved and EventBus.player_roll_cancelled.is_connected(_on_cancelled):
+		EventBus.player_roll_cancelled.disconnect(_on_cancelled)
+	if cancelled and EventBus.player_roll_resolved.is_connected(_on_resolved):
+		EventBus.player_roll_resolved.disconnect(_on_resolved)
+
+	if cancelled:
+		# Return a zeroed result so the caller's await completes gracefully
+		var zero := RollResult.new()
+		zero.roll_type = roll_type
+		zero.was_overridden = true  # signals this wasn't a real roll
+		return zero
+
+	var raw_total: int = result_args[1]
+	var was_player_entered: bool = result_args[2]
 	return _build_prompted_result(roll_type, sides, count, modifier, raw_total, was_player_entered)
 
 
@@ -260,7 +291,7 @@ func _log_and_emit(result: RollResult) -> void:
 			 was_overridden, was_player_entered)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
-		0,  # game_day: TODO wire to GameState calendar once timekeeping is built
+		Timekeeping.get_total_days(),
 		result.roll_type,
 		result.sides,
 		result.count,

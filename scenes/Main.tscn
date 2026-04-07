@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/party_management/party_management_overlay.tscn" id="11_party_mgmt"]
 [ext_resource type="Script" uid="uid://duboi1ccg8c25" path="res://engine/subsystems/navigation/navigation_stack.gd" id="9_nav_stack"]
 [ext_resource type="PackedScene" path="res://scenes/ui/transitions/scene_transition.tscn" id="10_scene_transition"]
+[ext_resource type="Script" path="res://engine/subsystems/session/session_runner.gd" id="12_session_runner"]
 
 [node name="Main" type="Node" unique_id=389479426]
 script = ExtResource("1_main_script")
@@ -21,6 +22,9 @@ script = ExtResource("9_nav_stack")
 [node name="SceneContainer" type="Node" parent="." unique_id=201900002]
 
 [node name="SceneTransition" parent="." unique_id=201900003 instance=ExtResource("10_scene_transition")]
+
+[node name="SessionRunner" type="Node" parent="."]
+script = ExtResource("12_session_runner")
 
 [node name="HexMapController" type="Node" parent="." unique_id=1744656386]
 script = ExtResource("2_controller")

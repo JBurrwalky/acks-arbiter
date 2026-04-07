@@ -3145,3 +3145,84 @@ CampaignRepository addition:
 1. Run test_runner.tscn to verify all 21 party management tests pass.
 2. Smoke-test Formation Grid in-game (place/remove characters, verify grid persistence).
 3. Begin Phase E-2: Session Runner State Machine planning.
+
+## Session 2026-04-07 â€” Advancement Tab Level-Up Abort Fix
+
+**Task:** Fix the character-sheet level-up flow so abandoning it by canceling, switching tabs, or closing the sheet does not leave the character stuck in an in-memory preview state.
+**Model used:** GPT-5 Codex
+**Completed:**
+- Added `has_pending_level_up()` and `abort_pending_level_up()` to `scenes/ui/character_sheet/tabs/cs_tab_advancement.gd`.
+- Refactored the Advancement tab Cancel path to reuse `abort_pending_level_up()` instead of duplicating DB reload/reset logic.
+- Wired `scenes/ui/character_sheet/character_sheet_overlay.gd` to abort pending level-up state when the user switches away from the Advancement tab, closes the overlay, or changes the selected character.
+- Added `tests/test_cs_tab_advancement.gd` covering interactive preview mutation, explicit cancel, direct abort, tab-switch abort, overlay-close abort, and successful confirm persistence.
+- Registered the new suite in `tests/test_runner.gd` and `tests/test_runner.tscn`.
+**Decisions made:**
+- Kept `LevelUpEngine.begin_interactive_level_up()` unchanged. The engine still mutates the in-memory `CharacterData` for preview-by-design; the UI now owns the required finalize-or-abort lifecycle.
+- Restoring abandoned level-up sessions reloads the character row from the database rather than trying to preserve an in-memory snapshot, so persisted state remains the source of truth.
+- Switching tabs, closing the sheet, and changing the selected party member all behave like silent Cancel for unconfirmed level-ups.
+**Interfaces defined or changed:**
+- `CSTabAdvancement.has_pending_level_up() -> bool`
+- `CSTabAdvancement.abort_pending_level_up() -> void`
+**Database changes:**
+- None.
+**Tests added/updated:**
+- Added `tests/test_cs_tab_advancement.gd`.
+- Updated `tests/test_runner.gd` and `tests/test_runner.tscn` to include the new Advancement-tab regression suite.
+- Ran `& "C:\Godot\Godot_v4.6.1-stable_win64.exe" --headless --path . res://tests/test_runner.tscn` successfully; exit code `0`.
+**Known issues:**
+- No in-editor manual smoke test was run for the level-up flow after this fix, so the best remaining verification is a quick UI pass through cancel, tab switch, close, and character switch during a pending level-up.
+**Next session should:**
+1. Smoke-test the Advancement tab in the Godot editor with a level-up-eligible character, including cancel, tab switch, close, and character switch during a pending level-up.
+2. If future UI flows preview persistent mutations before confirm, reuse the same explicit abort lifecycle pattern instead of relying on the overlay to refresh state indirectly.
+
+---
+
+## Session 2026-04-07 — Phase E-2: Session Runner State Machine
+
+**Task:** Implement Phase E-2 — the game's central orchestrator. Replaces main_scene.gd as the gameplay loop coordinator using an extensible object-per-state pattern.
+**Model used:** Opus 4.6 for all phases.
+**Completed:**
+- **SessionState base class** (`engine/subsystems/session/session_state.gd`): RefCounted base with `enter(runner, context)`, `exit(runner)`, `handle_action(runner, action, payload)`. All states extend this.
+- **SessionRunner** (`engine/subsystems/session/session_runner.gd`): Scene-tree node placed in Main.tscn. State registry with factory callables. `transition_to_state(key, context)` calls exit→enter→_sync_game_state→emit signal. Session load/save/end lifecycle. Encounter check logic (`do_encounter_check`). Time advance (`advance_exploration_time`). Roll cancellation (`cancel_pending_roll`). `submit_action()` public method for LLM integration entry point.
+- **7 State Scripts** in `engine/subsystems/session/states/`:
+  - `CampaignSelectState`: Instantiates CampaignSelectScreen, pushes to NavStack, handles campaign_selected.
+  - `SessionLoadState`: Transient bootstrap — loads campaign/party/map, seeds test fixtures, auto-transitions to wilderness. Ported from main_scene._dev_load_test_map_for_campaign().
+  - `WildernessExploreState`: Shows hex map, wires renderer signals. On hex click: move → encounter check → time advance → autosave. Dungeon/settlement entry transitions.
+  - `DungeonExploreState`: Creates DungeonMapController dynamically, pushes dungeon scene. Cell click → move → auto-stairs → encounter check → time advance. Exit → wilderness.
+  - `SettlementExploreState`: Creates SettlementMapController dynamically, pushes settlement scene. Node click → move → time advance. Exit → wilderness.
+  - `CombatState`: Stub for F-1. Records return_state. On "combat_ended": advance time by rounds fought, transition back.
+  - `SessionEndState`: Calls end_session(), transitions to campaign_select.
+- **EffectTicker** (`engine/subsystems/session/effect_ticker.gd`): Wires ActiveEffectTracker.tick_rounds/turns/hours/days to Timekeeping boundary signals. Expired effects emit EventBus.spell_effect_removed. Connect on session load, disconnect on session end.
+- **main_scene.gd gutted**: 430 lines → ~70 lines. SessionRunner handles all orchestration. main_scene only keeps override panel setup and dev shortcuts.
+- **DiceSystem game_day fix**: Replaced hardcoded `0` with `Timekeeping.get_total_days()` at line 263.
+- **Player roll cancellation**: Added `player_roll_cancelled` signal to EventBus. DiceSystem.player_roll() now races `player_roll_resolved` against `player_roll_cancelled` using one-shot connections and frame poll. Cancelled rolls return zeroed RollResult with `was_overridden = true`. SessionRunner calls `cancel_pending_roll()` at every state transition.
+- **EventBus signals**: Added `player_roll_cancelled`, `session_state_transitioned(from_key, to_key)`.
+- **Test suite** (`tests/test_session_runner.gd`): 23 tests covering state transitions (8), session lifecycle (2), encounter checks (4), time advance (1), EffectTicker (2), roll cancellation (2), submit_action (1), game_day fix (1), combat return state (1), state registry (1).
+**Decisions made:**
+- **Object-per-state pattern** over monolithic match block. Each state is a separate RefCounted script. Adding new states (camp, downtime, domain, sea voyage) = 1 new file + 1 registry line. Zero modification to existing states.
+- **SessionRunner is a scene-tree node** (NOT autoload). Placed in Main.tscn as sibling to HexMapController, NavigationStack, etc.
+- **SessionRunner is the SOLE caller** of GameState.transition_to() and set_exploration_context() per E-1 architectural decision.
+- **LLM integration ready**: `submit_action(action, payload)` method on SessionRunner delegates to current state's `handle_action()`. Whether action came from UI click or LLM interpretation is irrelevant to the state. Narration output hooks via LLMManager.request_narration() in state resolution paths.
+- **Encounter checks**: d6 roll, trigger on 1. Civilized terrain skips check. Dungeon mode (null terrain) uses same 1-in-6. Future: different thresholds by territory type, encounter table resolution.
+- **Time advance**: 1 exploration turn per hex move (wilderness), 1 turn per cell move (dungeon), 1 turn per node move (settlement). Future: terrain-based turn cost calculation.
+**Interfaces defined or changed:**
+- `SessionState` base class: `enter(runner, context)`, `exit(runner)`, `handle_action(runner, action, payload) -> String`.
+- `SessionRunner` public API: `transition_to_state(key, context)`, `submit_action(action, payload)`, `load_session(campaign_id, party_id)`, `save_session()`, `end_session()`, `do_encounter_check(terrain) -> Dict`, `advance_exploration_time(turns)`, `cancel_pending_roll()`. Accessors: `get_nav_stack()`, `get_hex_map_controller()`, `get_hex_map_renderer()`, `get_campaign_id()`, `get_party_id()`, `get_party_data()`, `get_active_effects()`, `get_current_state_key()`.
+- `SessionRunner` signals: `state_transitioned(from, to)`, `session_loaded(campaign_id)`, `session_saved(campaign_id)`.
+- `EffectTicker`: `connect_signals()`, `disconnect_signals()`, `is_connected_to_timekeeping()`.
+- EventBus: added `player_roll_cancelled`, `session_state_transitioned(from_key, to_key)`.
+- DiceSystem.player_roll(): now supports cancellation via `player_roll_cancelled` signal race.
+**Database changes:** None.
+**Tests added/updated:**
+- `tests/test_session_runner.gd`: 23 tests. Registered in test_runner.gd and test_runner.tscn.
+**Known issues:**
+- Tests not yet run in Godot — manual verification recommended.
+- Encounter checks are simplified (1-in-6 everywhere; no encounter table resolution, no monster group generation). Full encounter resolution is a future phase.
+- Time advance uses flat 1 turn per move; terrain-based turn cost calculation not yet implemented.
+- SessionLoadState still uses hardcoded test map/dungeon/settlement paths from dev harness. Production map loading is a future phase.
+- CombatState is a stub — F-1 will flesh it out.
+**Next session should:**
+1. Run test_runner.tscn to verify all 23 session runner tests pass (and existing tests still pass).
+2. Smoke-test full flow: campaign select → hex map → dungeon entry/exit → settlement entry/exit.
+3. Verify time advances (check Timekeeping via override panel after hex movement).
+4. Begin Phase F-1: Combat System planning.

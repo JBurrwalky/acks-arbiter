@@ -51,6 +51,8 @@
 [ext_resource type="Script" path="res://tests/test_party_management.gd" id="44_party_management_tests"]
 [ext_resource type="Script" path="res://tests/test_thief_skill_resolver.gd" id="47_thief_skill_resolver_tests"]
 [ext_resource type="Script" path="res://tests/test_cs_tab_proficiencies.gd" id="48_cs_tab_proficiencies_tests"]
+[ext_resource type="Script" path="res://tests/test_cs_tab_advancement.gd" id="49_cs_tab_advancement_tests"]
+[ext_resource type="Script" path="res://tests/test_session_runner.gd" id="50_session_runner_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -204,3 +206,9 @@ script = ExtResource("47_thief_skill_resolver_tests")
 
 [node name="CSTabProficienciesTests" type="Node" parent="."]
 script = ExtResource("48_cs_tab_proficiencies_tests")
+
+[node name="CSTabAdvancementTests" type="Node" parent="."]
+script = ExtResource("49_cs_tab_advancement_tests")
+
+[node name="SessionRunnerTests" type="Node" parent="."]
+script = ExtResource("50_session_runner_tests")
