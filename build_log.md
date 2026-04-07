@@ -3226,3 +3226,28 @@ CampaignRepository addition:
 2. Smoke-test full flow: campaign select → hex map → dungeon entry/exit → settlement entry/exit.
 3. Verify time advances (check Timekeeping via override panel after hex movement).
 4. Begin Phase F-1: Combat System planning.
+
+---
+
+## Session 2026-04-07 — Phase E-2 Hotfix: Grey Screen on Movement
+
+**Task:** Fix grey screen appearing on hex movement and dungeon entry after E-2 Session Runner integration.
+**Model used:** Opus 4.6.
+**Completed:**
+- **Root cause 1: Encounter-triggered combat transition with no combat scene.** `WildernessExploreState._on_hex_clicked()` called `runner.transition_to_state("combat")` on encounter roll of 1 (16.7% chance). CombatState is a stub that pushes no scene, but the transition called `WildernessExploreState.exit()` which hid the hex map. Result: grey screen with nothing visible. **Fix:** Encounter checks now log a message instead of transitioning to combat. Combat transitions deferred to F-1 when the combat system actually exists.
+- **Root cause 2: Lambda closure signal connections.** Explore states used anonymous lambdas (`func(coord): _on_hex_clicked(runner, coord)`) for signal connections. Each `enter()` created new Callable objects, making `is_connected()` checks fail — leading to duplicate connections or failed disconnections. **Fix:** All three explore states now store a `_runner` reference and connect using bound method references (`_on_hex_clicked` directly) instead of closures.
+- **Root cause 3: SessionRunner node order in Main.tscn.** SessionRunner was placed before HexMapController and HexMap in the scene tree. Since Godot calls `_ready()` in tree order (children first), SessionRunner's `_ready()` ran before its siblings were initialized. **Fix:** Moved SessionRunner to last child position in Main.tscn so all siblings have completed `_ready()` before it boots.
+- **Additional fix:** SessionLoadState renderer setup check simplified from fragile `get("_controller")` to direct `renderer._controller == null` check.
+**Decisions made:**
+- Encounter checks that trigger encounters log a print() message but do NOT transition to combat until F-1 is built. This prevents grey screens from the stub CombatState.
+- State objects store a `_runner` reference set in `enter()`, cleared in `exit()`. Signal handler methods are parameterless (or match the signal signature directly) to avoid closure issues.
+**Interfaces defined or changed:**
+- WildernessExploreState: `_on_hex_clicked(coord)`, `_on_dungeon_entry(entrance, spawn_cell)`, `_on_settlement_entry(entrance, gate_node_id)` — now match signal signatures directly instead of using closures with bound runner param.
+- DungeonExploreState: `_on_cell_clicked(pos)`, `_on_door_interact(pos)`, `_on_exit_requested()` — same pattern.
+- SettlementExploreState: `_on_node_clicked(node_id)`, `_on_exit_requested()` — same pattern.
+**Database changes:** None.
+**Tests added/updated:** None (existing tests cover the fixed code paths).
+**Known issues:** None new.
+**Next session should:**
+1. Run test_runner.tscn to verify all session runner tests pass.
+2. Begin Phase F-1: Combat System planning.

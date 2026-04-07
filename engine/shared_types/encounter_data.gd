@@ -5,7 +5,7 @@ extends RefCounted
 ## One schema regardless of content origin (generated, hand-authored, module).
 
 var encounter_id: String = ""
-var monster_group: String = ""      # key referencing monster catalog
+var monster_group: String = ""      # monster_catalog.json "id" (e.g. "goblin", "troll"); use MonsterRegistry.get_monster() for stat block
 var number: int = 0                 # number of creatures
 var reaction_roll: int = 7          # 2d6 initial reaction roll
 var behavioral_disposition: String = "neutral"

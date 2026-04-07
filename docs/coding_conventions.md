@@ -1582,3 +1582,27 @@ Do NOT connect ActiveEffectTracker to Timekeeping signals from any other locatio
 ### 16.6 Player Roll Cancellation
 
 `DiceSystem.player_roll()` async path races `player_roll_resolved` against `player_roll_cancelled`. SessionRunner emits `player_roll_cancelled` at every state transition boundary (inside `transition_to_state()` before calling `exit()`). Cancelled rolls return a zeroed `RollResult` with `was_overridden = true` — callers should check this flag if they need to distinguish real rolls from cancellations.
+
+### 16.7 Signal Connections in State Objects — No Closures
+
+**Never use anonymous lambdas/closures for signal connections in state objects.** Closures create a new `Callable` each time, which breaks `is_connected()` / `disconnect()` checks and causes duplicate connections or orphaned handlers.
+
+```gdscript
+# WRONG — closure creates new Callable each enter(), can't disconnect reliably
+func enter(runner, context):
+    renderer.hex_clicked.connect(func(c): _on_hex_clicked(runner, c))
+
+# RIGHT — store runner reference, connect bound method directly
+var _runner = null
+func enter(runner, context):
+    _runner = runner
+    renderer.hex_clicked.connect(_on_hex_clicked)
+func _on_hex_clicked(coord: Vector2i) -> void:
+    _runner.get_hex_map_controller().move_party(coord)
+```
+
+State objects store a `_runner` reference set in `enter()` and cleared in `exit()`.
+
+### 16.8 Scene Tree Node Order in Main.tscn
+
+**SessionRunner MUST be the last child of Main.** Godot calls `_ready()` in tree order (children before parent, siblings in declaration order). SessionRunner's `_ready()` resolves sibling references and boots the state machine — all siblings must have completed their own `_ready()` first.

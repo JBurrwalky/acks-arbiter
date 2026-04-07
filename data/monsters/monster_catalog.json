@@ -1,0 +1,1091 @@
+[
+  {
+    "id": "goblin",
+    "name": "Goblin",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["beastman"],
+    "sub_types": ["goblinoid"],
+    "alignment": "chaotic",
+    "intelligence": "low",
+    "size_category": "small",
+
+    "hit_dice": { "base": 1, "modifier": -1, "special_ability_stars": 0 },
+    "armor_class": 3,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "weapon", "count": 1, "damage": "1d6", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "NM", "level": 0 },
+    "morale": -1,
+    "xp": 5,
+
+    "movement": {
+      "land": { "exploration": 60, "combat": 20 }
+    },
+
+    "percent_in_lair": 40,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Gang", "number": "2d4" },
+      "in_lair": { "collective_noun": "Lair", "number": "1 warband" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Warband", "number": "2d6 gangs" },
+      "in_lair": { "collective_noun": "Village", "number": "1d10 warbands" }
+    },
+    "treasure_type": "E (per warband)",
+    "terrain_affinity": ["clear_grass_scrub", "woods", "mountains_hills", "swamp", "barren_desert", "jungle", "inhabited"],
+
+    "encounter_hierarchy": {
+      "gang": {
+        "composition": "2d4 warriors",
+        "leader": { "title": "Champion", "armor_class": 4, "hit_dice": { "base": 1, "modifier": 0 }, "hp": 7, "damage_bonus": 0 }
+      },
+      "warband": {
+        "composition": "2d6 gangs",
+        "leader": { "title": "Sub-chieftain", "armor_class": 5, "hit_dice": { "base": 1, "modifier": 1 }, "hp": 9, "damage_bonus": 1 }
+      },
+      "lair_or_village": {
+        "leader": { "title": "Chieftain", "armor_class": 6, "hit_dice": { "base": 3, "modifier": 0 }, "hp": 16, "damage_bonus": 2 },
+        "females": { "ratio": "60% of males", "fight_as": null },
+        "young": { "ratio": "100% of males", "fight": false },
+        "allies": [
+          { "type": "dire_wolf", "chance_pct": 60, "number": "5d6", "context": "village, mounted" },
+          { "type": "bugbear", "chance_pct": 20, "number": "2d6", "context": "village" }
+        ],
+        "mounted": {
+          "gang_chance_pct": 5,
+          "warband_quarter_chance_pct": 20,
+          "mount_type": "dire_wolf"
+        },
+        "shaman": { "chance_pct": 75, "stats_as": "sub-chieftain", "class": "cleric", "level_roll": "2d4" },
+        "witch_doctor": { "chance_pct": 50, "stats_as": "champion", "class": "mage", "level_roll": "1d6" }
+      }
+    },
+
+    "special_abilities": [
+      {
+        "ability_id": "sunlight_penalty",
+        "description": "Suffers a -1 penalty to all attack throws in full sunlight.",
+        "hook_type": "modifier",
+        "effect": { "stat": "attack_throw", "operation": "add", "value": 1, "condition": "full_sunlight" }
+      },
+      {
+        "ability_id": "infravision",
+        "description": "Infravision 90'.",
+        "hook_type": "flag",
+        "effect": { "flag": "infravision", "range": 90 }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [
+      { "condition": "chieftain_alive", "modifier": 2 }
+    ],
+
+    "combat_behavior": {
+      "formation_discipline": "loose",
+      "aggression_posture": "medium",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "weakest",
+      "target_tie_breaker": "nearest",
+      "morale_style": "fragile"
+    }
+  },
+
+  {
+    "id": "kobold",
+    "name": "Kobold",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["beastman"],
+    "sub_types": ["goblinoid"],
+    "alignment": "chaotic",
+    "intelligence": "low",
+    "size_category": "small",
+
+    "hit_dice": { "base": 0.5, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "weapon", "count": 1, "damage": "1d4", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "NM", "level": 0 },
+    "morale": -2,
+    "xp": 5,
+
+    "movement": {
+      "land": { "exploration": 60, "combat": 20 }
+    },
+
+    "percent_in_lair": 40,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Gang", "number": "4d4" },
+      "in_lair": { "collective_noun": "Lair", "number": "1 warband" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Warband", "number": "1d6 gangs" },
+      "in_lair": { "collective_noun": "Village", "number": "1d10 warbands" }
+    },
+    "treasure_type": "E (per warband)",
+    "terrain_affinity": ["clear_grass_scrub", "mountains_hills"],
+
+    "encounter_hierarchy": {
+      "gang": {
+        "composition": "4d4 warriors",
+        "leader": { "title": "Champion", "armor_class": 3, "hit_dice": { "base": 1, "modifier": -1 }, "hp": 4, "damage_bonus": 0 }
+      },
+      "warband": {
+        "composition": "1d6 gangs",
+        "leader": { "title": "Sub-chieftain", "armor_class": null, "hit_dice": { "base": 1, "modifier": 0 }, "hp": 8, "damage_bonus": 0 }
+      },
+      "lair_or_village": {
+        "leader": { "title": "Chieftain", "armor_class": 5, "hit_dice": { "base": 2, "modifier": 0 }, "hp": 12, "damage_bonus": 1 },
+        "females": { "ratio": "50% of males", "fight_as": null },
+        "young": { "ratio": "150% of males", "fight": false },
+        "guards": { "number": "5d4", "stats_as": "sub-chieftain", "context": "village, defend chieftain" },
+        "allies": [
+          { "type": "trained_boar", "chance_pct": 70, "number": "1d4+1", "context": "village kennel" },
+          { "type": "giant_weasel", "chance_pct": 30, "number": "1d4", "context": "village kennel" }
+        ],
+        "shaman": { "chance_pct": 75, "stats_as": "sub-chieftain", "class": "cleric", "level_roll": "1d6" },
+        "witch_doctor": { "chance_pct": 50, "stats_as": "champion", "class": "mage", "level_roll": "1d4" }
+      }
+    },
+
+    "special_abilities": [
+      {
+        "ability_id": "infravision",
+        "description": "Infravision 90'.",
+        "hook_type": "flag",
+        "effect": { "flag": "infravision", "range": 90 }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [
+      { "condition": "chieftain_alive", "modifier": 2 }
+    ],
+
+    "combat_behavior": {
+      "formation_discipline": "loose",
+      "aggression_posture": "low",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "weakest",
+      "target_tie_breaker": "nearest",
+      "morale_style": "craven"
+    }
+  },
+
+  {
+    "id": "orc",
+    "name": "Orc",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["beastman"],
+    "sub_types": ["goblinoid"],
+    "alignment": "chaotic",
+    "intelligence": "low",
+    "size_category": "man_sized",
+
+    "hit_dice": { "base": 1, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 3,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "weapon", "count": 1, "damage": "1d6", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 1 },
+    "morale": 0,
+    "xp": 10,
+
+    "movement": {
+      "land": { "exploration": 120, "combat": 40 }
+    },
+
+    "percent_in_lair": 35,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Gang", "number": "2d4" },
+      "in_lair": { "collective_noun": "Lair", "number": "1 warband" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Warband", "number": "2d6 gangs" },
+      "in_lair": { "collective_noun": "Village", "number": "1d10 warbands" }
+    },
+    "treasure_type": "G (per warband)",
+    "terrain_affinity": ["clear_grass_scrub", "woods", "mountains_hills", "swamp", "barren_desert", "inhabited", "jungle"],
+
+    "encounter_hierarchy": {
+      "gang": {
+        "composition": "2d4 warriors",
+        "leader": { "title": "Champion", "armor_class": 4, "hit_dice": { "base": 1, "modifier": 1 }, "hp": 8, "damage_bonus": 1 }
+      },
+      "warband": {
+        "composition": "2d6 gangs",
+        "leader": { "title": "Sub-chieftain", "armor_class": 5, "hit_dice": { "base": 2, "modifier": 0 }, "hp": 12, "damage_bonus": 1 }
+      },
+      "lair_or_village": {
+        "leader": { "title": "Chieftain", "armor_class": 6, "hit_dice": { "base": 4, "modifier": 0 }, "hp": 20, "damage_bonus": 2 },
+        "females": { "ratio": "100% of males", "fight_as": "goblin" },
+        "young": { "ratio": "200% of males", "fight": false },
+        "prisoners": "1d20 per 100 orcs",
+        "allies": [
+          { "type": "ogre", "chance_pct": 50, "number": "1d4+1", "context": "village guards" },
+          { "type": "troll", "chance_pct": 25, "number": "1d4", "context": "village guards" }
+        ],
+        "shaman": { "chance_pct": 75, "stats_as": "sub-chieftain", "class": "cleric", "level_roll": "1d6" },
+        "witch_doctor": { "chance_pct": 50, "stats_as": "champion", "class": "mage", "level_roll": "1d4" }
+      }
+    },
+
+    "special_abilities": [
+      {
+        "ability_id": "sunlight_penalty",
+        "description": "Suffers a -1 penalty to all attack throws in full sunlight.",
+        "hook_type": "modifier",
+        "effect": { "stat": "attack_throw", "operation": "add", "value": 1, "condition": "full_sunlight" }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [
+      { "condition": "chieftain_alive", "modifier": 1 }
+    ],
+
+    "combat_behavior": {
+      "formation_discipline": "loose",
+      "aggression_posture": "medium",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "weakest",
+      "target_tie_breaker": "nearest",
+      "morale_style": "standard"
+    }
+  },
+
+  {
+    "id": "lizardman",
+    "name": "Lizardman",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["beastman"],
+    "sub_types": [],
+    "alignment": "chaotic",
+    "intelligence": "low",
+    "size_category": "man_sized",
+
+    "hit_dice": { "base": 2, "modifier": 1, "special_ability_stars": 0 },
+    "armor_class": 4,
+    "attack_routines": [
+      {
+        "routine_name": "natural",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "claw", "count": 2, "damage": "1d3", "to_hit_modifier": 0, "special_effect": null },
+          { "attack_type": "bite", "count": 1, "damage": "1d8", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      },
+      {
+        "routine_name": "armed",
+        "usage": "alternate",
+        "attacks": [
+          { "attack_type": "weapon", "count": 1, "damage": "by_weapon", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 2 },
+    "morale": 2,
+    "xp": 35,
+
+    "movement": {
+      "land": { "exploration": 60, "combat": 20 },
+      "swim": { "exploration": 120, "combat": 40 }
+    },
+
+    "percent_in_lair": 30,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Gang", "number": "2d4" },
+      "in_lair": { "collective_noun": "Lair", "number": "1 warband" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Warband", "number": "1d8 gangs" },
+      "in_lair": { "collective_noun": "Village", "number": "1d10 warbands" }
+    },
+    "treasure_type": "L (per warband)",
+    "terrain_affinity": ["jungle", "swamp", "lake"],
+
+    "encounter_hierarchy": {
+      "gang": {
+        "composition": "2d4 warriors",
+        "leader": { "title": "Champion", "armor_class": 5, "hit_dice": { "base": 3, "modifier": 1 }, "hp": 17, "damage_bonus": 1 }
+      },
+      "warband": {
+        "composition": "1d8 gangs",
+        "leader": { "title": "Sub-chieftain", "armor_class": 6, "hit_dice": { "base": 4, "modifier": 1 }, "hp": 21, "damage_bonus": 2 }
+      },
+      "lair_or_village": {
+        "leader": { "title": "Chieftain", "armor_class": 7, "hit_dice": { "base": 6, "modifier": 2 }, "hp": 30, "damage_bonus": 2 },
+        "females": { "ratio": "1d4x10 per 20 lizardmen", "fight_as": "gnoll" },
+        "eggs": { "ratio": "1d4x20 per 20 lizardmen", "fight": false },
+        "shaman": { "chance_pct": 75, "stats_as": "sub-chieftain", "class": "cleric", "level_roll": "1d6" },
+        "witch_doctor": { "chance_pct": 50, "stats_as": "champion", "class": "mage", "level_roll": "1d4" }
+      }
+    },
+
+    "special_abilities": [
+      {
+        "ability_id": "amphibious",
+        "description": "Can breathe and move underwater. Swim speed 120'/40'.",
+        "hook_type": "flag",
+        "effect": { "flag": "amphibious" }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [
+      { "condition": "chieftain_alive", "modifier": 1 }
+    ],
+
+    "combat_behavior": {
+      "formation_discipline": "loose",
+      "aggression_posture": "high",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "weakest",
+      "morale_style": "bold"
+    }
+  },
+
+  {
+    "id": "troll",
+    "name": "Troll",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["giant_humanoid"],
+    "sub_types": ["goblinoid"],
+    "alignment": "chaotic",
+    "intelligence": "low",
+    "size_category": "large",
+
+    "hit_dice": { "base": 6, "modifier": 3, "special_ability_stars": 1 },
+    "armor_class": 5,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "claw", "count": 2, "damage": "1d6", "to_hit_modifier": 0, "special_effect": null },
+          { "attack_type": "bite", "count": 1, "damage": "1d10", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 6 },
+    "morale": 2,
+    "xp": 680,
+
+    "movement": {
+      "land": { "exploration": 120, "combat": 40 }
+    },
+
+    "percent_in_lair": 40,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Gang", "number": "1d8" },
+      "in_lair": { "collective_noun": "Lair", "number": "1 gang" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Gang", "number": "1d8" },
+      "in_lair": { "collective_noun": "Village", "number": "1d10 gangs" }
+    },
+    "treasure_type": "O (per gang)",
+    "terrain_affinity": ["swamp", "woods", "mountains_hills", "barren_desert"],
+
+    "encounter_hierarchy": {
+      "gang": {
+        "composition": "1d8 warriors",
+        "leader": { "title": "Champion", "armor_class": 6, "hit_dice": { "base": 7, "modifier": 3 }, "hp": 51, "damage_bonus": 0 }
+      },
+      "lair_or_village": {
+        "leader": { "title": "Chieftain", "armor_class": 8, "hit_dice": { "base": 10, "modifier": 6 }, "hp": 63, "damage_bonus": 2 },
+        "sub_chieftain": { "armor_class": 7, "hit_dice": { "base": 8, "modifier": 3 }, "hp": 45, "damage_bonus": 2 },
+        "bodyguards": { "number": "1d4", "stats_as": "sub_chieftain" },
+        "females": { "ratio": "100% of males", "fight_as": "ogre" },
+        "young": { "ratio": "100% of males", "fight_as": "orc" },
+        "shaman": { "chance_pct": 50, "stats_as": "sub_chieftain", "class": "cleric", "level_roll": "1d4" },
+        "witch_doctor": { "chance_pct": 25, "stats_as": "champion", "class": "mage", "level_roll": "1d2" }
+      }
+    },
+
+    "special_abilities": [
+      {
+        "ability_id": "regeneration",
+        "description": "Regenerates 3 hit points each round unless damage is from fire or acid. Cannot be permanently destroyed except by fire or acid. Returns from 0 hp.",
+        "hook_type": "special",
+        "effect": { "hp_per_round": 3, "bypass_types": ["fire", "acid"], "revive_from_zero": true }
+      },
+      {
+        "ability_id": "reattach_limbs",
+        "description": "Severed limbs crawl back to the main body and can be reattached instantly.",
+        "hook_type": "special",
+        "effect": {}
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": ["fire", "acid"],
+
+    "morale_modifiers": [
+      { "condition": "chieftain_alive", "modifier": 1 },
+      { "condition": "confronted_by_fire_or_acid", "override": 0 }
+    ],
+
+    "combat_behavior": {
+      "formation_discipline": "loose",
+      "aggression_posture": "high",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "bold"
+    }
+  },
+
+  {
+    "id": "centaur",
+    "name": "Centaur",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["humanoid"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "average",
+    "size_category": "large",
+
+    "hit_dice": { "base": 4, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 4,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "hoof", "count": 2, "damage": "1d6", "to_hit_modifier": 0, "special_effect": null },
+          { "attack_type": "weapon", "count": 1, "damage": "by_weapon", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 4 },
+    "morale": 0,
+    "xp": 80,
+
+    "movement": {
+      "land": { "exploration": 180, "combat": 60 }
+    },
+
+    "percent_in_lair": 5,
+    "dungeon_encounter": null,
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Troop", "number": "2d10" },
+      "in_lair": { "collective_noun": "Lair", "number": "1 troop" }
+    },
+    "treasure_type": "L",
+    "terrain_affinity": ["clear_grass_scrub"],
+
+    "encounter_hierarchy": {
+      "troop": {
+        "composition": "2d10 warriors",
+        "leader": { "title": "Chieftain", "armor_class": 6, "hit_dice": { "base": 5, "modifier": 0 }, "hp": 29, "damage_bonus": 2 },
+        "chieftain_spells": { "chance_pct": 50, "class": "cleric", "level_roll": "1d6" },
+        "females": { "ratio": "200% of males", "fight_as": "3 HD", "damage": "1d4/1d4" },
+        "young": { "number": "5d6 additional", "fight_as": "2 HD", "damage": "1d2/1d2" }
+      }
+    },
+
+    "special_abilities": [],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "disciplined",
+      "aggression_posture": "low",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest_threat",
+      "target_tie_breaker": "strongest",
+      "morale_style": "standard"
+    }
+  },
+
+  {
+    "id": "wolf",
+    "name": "Wolf",
+    "variant": "Ordinary",
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "man_sized",
+
+    "hit_dice": { "base": 2, "modifier": 2, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "bite", "count": 1, "damage": "1d6", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 1 },
+    "morale": 0,
+    "xp": 35,
+
+    "movement": {
+      "land": { "exploration": 180, "combat": 60 }
+    },
+
+    "percent_in_lair": 10,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Pack", "number": "2d6" },
+      "in_lair": { "collective_noun": "Den", "number": "3d6" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Route", "number": "3d6" },
+      "in_lair": { "collective_noun": "Den", "number": "3d6" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["clear_grass_scrub", "woods", "mountains_hills", "inhabited"],
+
+    "encounter_hierarchy": {
+      "den": {
+        "cubs": { "chance_pct": 50, "number": "1d4" }
+      }
+    },
+
+    "special_abilities": [],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [
+      { "condition": "group_of_3_or_fewer", "override": -1 },
+      { "condition": "50_percent_casualties", "override": -1 }
+    ],
+
+    "combat_behavior": {
+      "formation_discipline": "pack",
+      "aggression_posture": "medium",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "weakest",
+      "target_tie_breaker": "nearest",
+      "morale_style": "standard"
+    }
+  },
+
+  {
+    "id": "harpy",
+    "name": "Harpy",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["fantastic_creature"],
+    "sub_types": [],
+    "alignment": "chaotic",
+    "intelligence": "low",
+    "size_category": "man_sized",
+
+    "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "claw", "count": 2, "damage": "1d4", "to_hit_modifier": 0, "special_effect": null },
+          { "attack_type": "weapon", "count": 1, "damage": "1d6", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 6 },
+    "morale": -1,
+    "xp": 65,
+
+    "movement": {
+      "land": { "exploration": 60, "combat": 20 },
+      "fly": { "exploration": 150, "combat": 50 }
+    },
+
+    "percent_in_lair": 25,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Flight", "number": "1d6" },
+      "in_lair": { "collective_noun": "Nest", "number": "2d4" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Wing", "number": "2d4" },
+      "in_lair": { "collective_noun": "Nest", "number": "2d4" }
+    },
+    "treasure_type": "E",
+    "terrain_affinity": ["mountains_hills", "barren_desert"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "charming_song",
+        "description": "Character hearing the song must save vs. Spells or be charmed. Charmed victims move toward the harpy and make no attacks. Successful save grants immunity for the rest of the encounter.",
+        "hook_type": "special",
+        "effect": { "save_type": "spells", "condition_on_fail": "charmed", "immunity_on_success": true }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "loose",
+      "aggression_posture": "medium",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "fragile"
+    }
+  },
+
+  {
+    "id": "shark_bull",
+    "name": "Shark",
+    "variant": "Bull",
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "large",
+
+    "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 5,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "bite", "count": 1, "damage": "2d4", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 1 },
+    "morale": -1,
+    "xp": 29,
+
+    "movement": {
+      "swim": { "exploration": 180, "combat": 60 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": null,
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Shiver", "number": "3d6" },
+      "in_lair": null
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["ocean"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "blood_frenzy",
+        "description": "Senses blood in water to 300'. When blood is detected, fights to the death with no morale check.",
+        "hook_type": "special",
+        "effect": { "detection_range": 300, "trigger": "blood_in_water", "morale_override": "no_check" }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [
+      { "condition": "blood_frenzy", "override": "no_check" }
+    ],
+
+    "combat_behavior": {
+      "formation_discipline": "pack",
+      "aggression_posture": "high",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "weakest",
+      "target_tie_breaker": "nearest",
+      "morale_style": "standard"
+    }
+  },
+
+  {
+    "id": "crocodile",
+    "name": "Crocodile",
+    "variant": "Ordinary",
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "large",
+
+    "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 4,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "bite", "count": 1, "damage": "1d8", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 1 },
+    "morale": -1,
+    "xp": 20,
+
+    "movement": {
+      "land": { "exploration": 90, "combat": 30 },
+      "swim": { "exploration": 90, "combat": 30 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": null,
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Bask", "number": "1d8" },
+      "in_lair": null
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["lake", "swamp"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "aquatic_ambush",
+        "description": "Characters encountering submerged crocodiles suffer a -2 penalty to surprise rolls.",
+        "hook_type": "modifier",
+        "effect": { "stat": "surprise", "operation": "add", "value": -2, "condition": "submerged" }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "medium",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "standard"
+    }
+  },
+
+  {
+    "id": "lycanthrope_wererat",
+    "name": "Lycanthrope",
+    "variant": "Wererat",
+    "source": "ACKS Core",
+    "monster_types": ["humanoid", "enchanted_creature"],
+    "sub_types": ["lycanthrope"],
+    "alignment": "chaotic",
+    "intelligence": "average",
+    "size_category": "man_sized",
+
+    "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 2,
+    "armor_class_animal_form": 0,
+    "attack_routines": [
+      {
+        "routine_name": "bite",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "bite", "count": 1, "damage": "1d4", "to_hit_modifier": 0, "special_effect": "lycanthropy" }
+        ]
+      },
+      {
+        "routine_name": "armed",
+        "usage": "alternate",
+        "attacks": [
+          { "attack_type": "weapon", "count": 1, "damage": "by_weapon", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 3 },
+    "morale": 0,
+    "xp": 65,
+
+    "movement": {
+      "land": { "exploration": 120, "combat": 40 }
+    },
+
+    "percent_in_lair": 30,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Pack", "number": "1d8" },
+      "in_lair": { "collective_noun": "Lair", "number": "2d6" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Plague", "number": "2d6" },
+      "in_lair": { "collective_noun": "Lair", "number": "2d6" }
+    },
+    "treasure_type": "G",
+    "terrain_affinity": ["city", "inhabited"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "normal_weapon_immunity",
+        "description": "In animal or ratman form, immune to all attacks from normal (non-magical, non-silver) weapons.",
+        "hook_type": "special",
+        "effect": { "condition": "animal_or_ratman_form", "immunity": "normal_weapons" }
+      },
+      {
+        "ability_id": "lycanthropy_infection",
+        "description": "A creature that loses 50% or more of total hit points to lycanthrope natural attacks contracts lycanthropy. Transformation in 2d6 days. Humans become lycanthropes; demi-humans die after 2d6 days. Cure disease works only before full onset.",
+        "hook_type": "special",
+        "effect": { "threshold_pct": 50, "onset_roll": "2d6 days", "demi_human_result": "death" }
+      },
+      {
+        "ability_id": "stealth",
+        "description": "Characters encountering wererats suffer a -2 penalty to surprise rolls.",
+        "hook_type": "modifier",
+        "effect": { "stat": "surprise", "operation": "add", "value": -2 }
+      },
+      {
+        "ability_id": "ratman_form",
+        "description": "May assume intermediate ratman form. Can use weapons and humanoid speech while retaining animal-form AC and weapon immunity.",
+        "hook_type": "special",
+        "effect": { "can_use_weapons": true, "can_speak": true, "retains_immunity": true }
+      },
+      {
+        "ability_id": "summon_rats",
+        "description": "Can summon 1d2 giant rats; they arrive in 1d4 rounds.",
+        "hook_type": "special",
+        "effect": { "summon_type": "giant_rat", "number": "1d2", "arrival": "1d4 rounds" }
+      },
+      {
+        "ability_id": "death_reversion",
+        "description": "When killed, reverts to human form.",
+        "hook_type": "special",
+        "effect": {}
+      }
+    ],
+    "immunities": ["normal_weapons"],
+    "resistances": [],
+    "vulnerabilities": ["silver", "wolfsbane"],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "loose",
+      "aggression_posture": "medium",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "weakest",
+      "target_tie_breaker": "nearest",
+      "morale_style": "standard"
+    }
+  },
+
+  {
+    "id": "spider_giant_black_widow",
+    "name": "Spider, Giant",
+    "variant": "Black Widow",
+    "source": "ACKS Core / L&E",
+    "monster_types": ["vermin"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "large",
+
+    "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 2 },
+    "armor_class": 3,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "bite", "count": 1, "damage": "2d6", "to_hit_modifier": 0, "special_effect": "poison" }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 2 },
+    "morale": 0,
+    "xp": 80,
+
+    "movement": {
+      "land": { "exploration": 60, "combat": 20 },
+      "web": { "exploration": 120, "combat": 40 }
+    },
+
+    "percent_in_lair": 90,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Clutter", "number": "1d3" },
+      "in_lair": { "collective_noun": "Den", "number": "1d3" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Clutter", "number": "1d3" },
+      "in_lair": { "collective_noun": "Den", "number": "1d3" }
+    },
+    "treasure_type": "C",
+    "terrain_affinity": ["woods"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "poison",
+        "description": "Bite is venomous. Victim must save vs. Poison or die after 1 turn.",
+        "hook_type": "special",
+        "effect": { "save_type": "poison", "on_fail": "death", "onset": "1 turn", "delivery": "bite" }
+      },
+      {
+        "ability_id": "web",
+        "description": "Can spin webs with the same properties as the Web spell.",
+        "hook_type": "special",
+        "effect": { "equivalent_spell": "web" }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "high",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "standard"
+    }
+  },
+
+  {
+    "id": "scorpion_giant",
+    "name": "Scorpion, Giant",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["vermin"],
+    "sub_types": [],
+    "alignment": "chaotic",
+    "intelligence": "animal",
+    "size_category": "large",
+
+    "hit_dice": { "base": 4, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 7,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "claw", "count": 2, "damage": "1d10", "to_hit_modifier": 0, "special_effect": null },
+          { "attack_type": "sting", "count": 1, "damage": "1d4", "to_hit_modifier": 0, "special_effect": "poison" }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 2 },
+    "morale": 3,
+    "xp": 135,
+
+    "movement": {
+      "land": { "exploration": 150, "combat": 50 }
+    },
+
+    "percent_in_lair": 50,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Scourge", "number": "1d6" },
+      "in_lair": { "collective_noun": "Nest", "number": "1d6" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Scourge", "number": "1d6" },
+      "in_lair": { "collective_noun": "Nest", "number": "1d6" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["barren_desert"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "poison",
+        "description": "Sting is venomous. Victim must save vs. Poison or die.",
+        "hook_type": "special",
+        "effect": { "save_type": "poison", "on_fail": "death", "onset": "immediate", "delivery": "sting" }
+      },
+      {
+        "ability_id": "claw_sting_combo",
+        "description": "If either claw successfully strikes, the sting attack receives a +2 bonus to its attack throw.",
+        "hook_type": "special",
+        "effect": { "trigger": "claw_hit", "bonus_attack": "sting", "to_hit_bonus": 2 }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "high",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "fearless"
+    }
+  }
+]

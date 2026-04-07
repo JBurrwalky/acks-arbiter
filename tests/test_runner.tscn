@@ -53,6 +53,7 @@
 [ext_resource type="Script" path="res://tests/test_cs_tab_proficiencies.gd" id="48_cs_tab_proficiencies_tests"]
 [ext_resource type="Script" path="res://tests/test_cs_tab_advancement.gd" id="49_cs_tab_advancement_tests"]
 [ext_resource type="Script" path="res://tests/test_session_runner.gd" id="50_session_runner_tests"]
+[ext_resource type="Script" path="res://tests/test_monster_registry.gd" id="51_monster_registry_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -212,3 +213,6 @@ script = ExtResource("49_cs_tab_advancement_tests")
 
 [node name="SessionRunnerTests" type="Node" parent="."]
 script = ExtResource("50_session_runner_tests")
+
+[node name="MonsterRegistryTests" type="Node" parent="."]
+script = ExtResource("51_monster_registry_tests")
