@@ -180,6 +180,23 @@ enum territory { civilized, borderlands, wilderness }  # lowercase type
 enum TERRITORY { Civilized, Borderlands, Wilderness }   # screaming type, mixed values
 ```
 
+<!-- Updated 2026-04-07: Godot 4 enum typing constraint -->
+
+**Godot 4 enum typing constraint:** Do NOT use an enum type as a variable type annotation when the enum is defined in the same class or referenced across classes. Godot 4's parser rejects `var side: Side = Side.PARTY` and `param: Combatant.Side`. Use `int` instead and assign the enum constant as the default value. The enum constants themselves (`Side.PARTY`, `Combatant.Side.ENEMY`) work fine as values.
+
+```gdscript
+# GOOD — use int for the type, enum constant for the value
+enum Side { PARTY, ENEMY }
+var side: int = Side.PARTY
+
+func get_alive_on_side(target_side: int) -> Array:
+    ...
+
+# BAD — causes parse error in Godot 4
+var side: Side = Side.PARTY                       # parse error
+func get_alive_on_side(target_side: Combatant.Side):  # parse error
+```
+
 ---
 
 ## 2. File Organization
@@ -226,7 +243,8 @@ acks-arbiter/               (Godot project root = repo root)
 │       ├── navigation/     # NavigationStack (not autoload; placed in Main.tscn)
 │       ├── override/       # OverrideManager (dev-mode state manipulation)
 │       ├── spells/         # SpellRegistry, RepertoireEngine, ActiveEffectTracker, SpellEffectRegistry
-│       ├── combat/         # (planned)
+│       ├── monsters/       # MonsterRegistry (loads data/monsters/monster_catalog.json)
+│       ├── combat/         # Combatant, CombatRoster, InitiativeResolver, AttackResolver, CombatController
 │       ├── domain/         # (planned)
 │       └── magic/          # (planned)
 ├── scenes/
@@ -256,6 +274,7 @@ acks-arbiter/               (Godot project root = repo root)
 │   ├── conditions/         # condition_catalog.json (27 ACKS conditions)
 │   ├── proficiencies/      # proficiency_catalog.json (106 entries), general_proficiency_list.json (38 keys)
 │   ├── spells/             # spell_catalog.json (231 entries), spell_list_indices.json, spell_effects.json
+│   ├── monsters/           # monster_catalog.json (13 starter monsters; F-0)
 │   ├── test_hex_map.json   # Test hex map data (31-hex Ashford Vale)
 │   └── test_dungeon.json   # Test dungeon data (Goblin Warrens, 2 levels)
 ├── rules/                  # SACRED XML rule summaries — never modify
@@ -1157,7 +1176,7 @@ func test_npc_dialogue_falls_back_to_template() -> void:
 
 ### 10.2 Dice Roll Type Vocabulary
 
-<!-- Confirmed 2026-03-27 — 19 roll types defined in OverrideManager and used by DiceSystem. 2026-03-28: starting_spell added (RepertoireEngine d12 starting repertoire rolls). -->
+<!-- Confirmed 2026-03-27 — 19 roll types defined in OverrideManager and used by DiceSystem. 2026-03-28: starting_spell added (RepertoireEngine d12 starting repertoire rolls). 2026-04-07: encounter_number and reaction added (SessionRunner encounter generation). -->
 
 Roll types are snake_case strings identifying the mechanical purpose of a dice roll. Used by the override queue (GameState.dice_overrides) and the roll log (dice_rolls table). Canonical list defined in `override_manager.gd` header comment and mirrored in `override_panel.gd::ROLL_TYPES`.
 
@@ -1165,7 +1184,7 @@ Roll types are snake_case strings identifying the mechanical purpose of a dice r
 `player_surprise_check`, `initiative`, `attack_throw`, `damage_roll`, `saving_throw_petrification`, `saving_throw_poison`, `saving_throw_blast`, `saving_throw_wands`, `saving_throw_spells`, `thief_skill_throw`, `proficiency_throw`, `mortal_wound_roll`, `tampering_with_mortality`
 
 **GM/digital-only rolls** (never prompted — use `DiceSystem.roll_digital()`):
-`encounter_check`, `monster_surprise_check`, `morale_check`, `reaction_roll`, `domain_event_roll`, `hijink_roll`, `starting_spell`
+`encounter_check`, `encounter_number`, `monster_surprise_check`, `morale_check`, `reaction`, `reaction_roll`, `domain_event_roll`, `hijink_roll`, `starting_spell`
 
 **Adding a new roll type:** Add to both the `OverrideManager` header comment and the `ROLL_TYPES` array in `override_panel.gd`. The DiceSystem itself is type-agnostic — any string works as a roll_type.
 
@@ -1606,3 +1625,84 @@ State objects store a `_runner` reference set in `enter()` and cleared in `exit(
 ### 16.8 Scene Tree Node Order in Main.tscn
 
 **SessionRunner MUST be the last child of Main.** Godot calls `_ready()` in tree order (children before parent, siblings in declaration order). SessionRunner's `_ready()` resolves sibling references and boots the state machine — all siblings must have completed their own `_ready()` first.
+
+### 16.9 Encounter Generation Flow
+
+<!-- Added 2026-04-07 for F-0 monster catalog integration -->
+
+`SessionRunner.do_encounter_check(terrain)` is the single entry point for random encounter generation:
+
+1. Roll 1d6 (`encounter_check`). Trigger on 1. Civilized terrain always skips.
+2. Use `HexTerrainData.encounter_table_weights()` to get weighted terrain table keys.
+3. Collect candidate monsters from `MonsterRegistry.get_monsters_for_terrain()` across all relevant tables.
+4. Pick one at random.
+5. Roll 1d6 for encounter count (`encounter_number`).
+6. Roll 2d6 for reaction (`reaction`), mapped to disposition via `_reaction_to_disposition()`.
+7. Emit `EventBus.encounter_triggered(encounter_data)` with the full payload.
+
+The override panel's Spawning tab bypasses steps 1–6 and emits `encounter_triggered` directly with user-chosen monster, count, and disposition.
+
+Both paths produce the same payload shape: `{encounter_id, monster_group, number, reaction_roll, behavioral_disposition, hex_id, terrain_category, territory}`.
+
+---
+
+## 17. Combat Subsystem Conventions (F-1)
+
+<!-- Added 2026-04-07 for F-1 combat loop session 1 -->
+
+### 17.1 Pull-Based Combat Controller
+
+CombatController is a RefCounted class (not a Node) that uses a **pull-based state machine**. The caller advances combat by calling `advance() -> Dictionary` repeatedly. The controller never blocks or runs an internal loop.
+
+**Advance loop pattern (from UI or test harness):**
+```gdscript
+var result := controller.advance()
+match result["status"]:
+    "waiting_for_pc_action":
+        # Show UI, collect player choice, then:
+        controller.submit_pc_action(id, action_id, params)
+        result = controller.advance()  # resolve the action
+    "combat_over":
+        # Handle victory/defeat
+    _:
+        # Continue advancing
+```
+
+This design avoids async complexity and makes tests trivial — no coroutines, no signal waits.
+
+### 17.2 Combatant Wrapper Pattern
+
+`Combatant` wraps either a `CharacterData` (for PCs/henchmen) or a monster catalog `Dictionary` (from MonsterRegistry). It does NOT subclass CharacterData. Monster combatants build transient `ModifierContainer`, `EntityFlags`, and `DamageResistance` objects for combat-only effects.
+
+**Why wrapping, not subclassing:** Monsters are not persisted to the `characters` table. Creating a full CharacterData for each goblin would pollute the persistence model and waste fields. The wrapper provides the same combat-relevant interface without the identity/persistence baggage.
+
+### 17.3 Combat Action Vocabulary
+
+Combat actions reuse the `ActionPayload` pattern. CombatState routes these action keys:
+
+| Action Key | Payload | Notes |
+|-----------|---------|-------|
+| `combat_advance` | `{}` | Advance controller one step |
+| `combat_pc_action` | `{combatant_id, action_id, parameters}` | Submit PC's chosen action |
+| `combat_ended` | `{result, rounds}` | Direct end (from override system) |
+
+Inner action_ids used by CombatController:
+`"attack_melee"`, `"attack_ranged"`, `"cast_spell"`, `"move"`, `"fighting_withdrawal"`, `"full_retreat"`, `"use_item"`, `"combat_maneuver"`, `"pass"`
+
+### 17.4 MockDice Pattern for Combat Tests
+
+Combat tests inject a `_MockDice` inner class that mimics DiceSystem's `roll_digital()` and `roll_expression()` APIs with forced values. This provides deterministic outcomes without touching GameState or autoloads.
+
+```gdscript
+class _MockDice:
+    extends RefCounted
+    var _forced_value: int
+    func _init(forced: int) -> void:
+        _forced_value = forced
+    func roll_digital(sides, count, modifier, _roll_type) -> RollResult:
+        # Returns a RollResult with forced value
+    func roll_expression(_expression, _roll_type) -> RollResult:
+        # Returns a RollResult with forced value
+```
+
+All combat subsystem classes accept the dice system via constructor injection, making them fully testable in isolation.

@@ -54,6 +54,13 @@
 [ext_resource type="Script" path="res://tests/test_cs_tab_advancement.gd" id="49_cs_tab_advancement_tests"]
 [ext_resource type="Script" path="res://tests/test_session_runner.gd" id="50_session_runner_tests"]
 [ext_resource type="Script" path="res://tests/test_monster_registry.gd" id="51_monster_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_combat_initiative.gd" id="52_combat_initiative_tests"]
+[ext_resource type="Script" path="res://tests/test_combat_attack_resolver.gd" id="53_combat_attack_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_combat_controller.gd" id="54_combat_controller_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_combat_hooks.gd" id="55_spell_combat_hooks_tests"]
+[ext_resource type="Script" path="res://tests/test_ranged_attack_resolver.gd" id="56_ranged_attack_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_combat_condition_manager.gd" id="57_combat_condition_manager_tests"]
+[ext_resource type="Script" path="res://tests/test_combat_controller_session2.gd" id="58_combat_controller_session2_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -216,3 +223,24 @@ script = ExtResource("50_session_runner_tests")
 
 [node name="MonsterRegistryTests" type="Node" parent="."]
 script = ExtResource("51_monster_registry_tests")
+
+[node name="CombatInitiativeTests" type="Node" parent="."]
+script = ExtResource("52_combat_initiative_tests")
+
+[node name="CombatAttackResolverTests" type="Node" parent="."]
+script = ExtResource("53_combat_attack_resolver_tests")
+
+[node name="CombatControllerTests" type="Node" parent="."]
+script = ExtResource("54_combat_controller_tests")
+
+[node name="SpellCombatHooksTests" type="Node" parent="."]
+script = ExtResource("55_spell_combat_hooks_tests")
+
+[node name="RangedAttackResolverTests" type="Node" parent="."]
+script = ExtResource("56_ranged_attack_resolver_tests")
+
+[node name="CombatConditionManagerTests" type="Node" parent="."]
+script = ExtResource("57_combat_condition_manager_tests")
+
+[node name="CombatControllerSession2Tests" type="Node" parent="."]
+script = ExtResource("58_combat_controller_session2_tests")

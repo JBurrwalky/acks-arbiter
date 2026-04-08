@@ -61,6 +61,13 @@ extends Node
 @onready var _cs_tab_advancement_tests = $CSTabAdvancementTests
 @onready var _session_runner_tests = $SessionRunnerTests
 @onready var _monster_registry_tests = $MonsterRegistryTests
+@onready var _combat_initiative_tests = $CombatInitiativeTests
+@onready var _combat_attack_resolver_tests = $CombatAttackResolverTests
+@onready var _combat_controller_tests = $CombatControllerTests
+@onready var _spell_combat_hooks_tests = $SpellCombatHooksTests
+@onready var _ranged_attack_resolver_tests = $RangedAttackResolverTests
+@onready var _combat_condition_manager_tests = $CombatConditionManagerTests
+@onready var _combat_controller_session2_tests = $CombatControllerSession2Tests
 
 
 func _ready() -> void:
@@ -103,7 +110,14 @@ func run() -> void:
 			_cs_tab_proficiencies_tests,
 			_cs_tab_advancement_tests,
 			_session_runner_tests,
-			_monster_registry_tests]:
+			_monster_registry_tests,
+			_combat_initiative_tests,
+			_combat_attack_resolver_tests,
+			_combat_controller_tests,
+			_spell_combat_hooks_tests,
+			_ranged_attack_resolver_tests,
+			_combat_condition_manager_tests,
+			_combat_controller_session2_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

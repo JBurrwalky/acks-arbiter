@@ -334,6 +334,16 @@ The combat manager needs to resolve monster turns, which means: select action (a
 **Depends on:** E-2 (session runner for combat entry/exit), D-4 (dungeon grid for tactical movement), spell hook infrastructure, proficiency registry.
 **Blocks:** G-2 (henchman morale in combat), H-1 (domain military), I-1 (integration test needs combat).
 
+**Session breakdowns**
+F-1 Combat Loop — 5 sessions, 18 source files + 14 test files
+
+Session 1: Core round loop, initiative, basic melee attack resolution. Party vs monsters can fight to completion.
+Session 2: Wire all 14 spell trigger hooks (no-op implementations), ranged attacks with range bands, condition system integration. This is the session that builds the universal spell interface points you requested.
+Session 3: Monster AI using behavior tags, morale checks at correct triggers, cleave chains for fighters.
+Session 4: Grid-based movement on TacticalMapData, engagement/withdrawal/retreat rules, 7 combat maneuvers, charging.
+Session 5: Mortal wounds tables, XP awards, combat end lifecycle, full SessionRunner integration, combat log.
+Each session ends with a testing checkpoint. Specific spell implementations are explicitly deferred to future sessions that can work through the spell catalog in small batches using the hook interface built in Session 2.
+
 ---
 
 ### Phase G — NPCs, Social & Economy

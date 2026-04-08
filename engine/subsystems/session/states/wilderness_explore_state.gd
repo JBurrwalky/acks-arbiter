@@ -77,7 +77,7 @@ func _on_hex_clicked(coord: Vector2i) -> void:
 		var encounter: Dictionary = _runner.do_encounter_check(terrain)
 		if encounter.get("triggered", false):
 			var enc: Dictionary = encounter["encounter_data"]
-			var monster_name := enc.get("monster_group", "unknown")
+			var monster_name: String = enc.get("monster_group", "unknown")
 			var count: int = enc.get("number", 0)
 			var disposition: String = enc.get("behavioral_disposition", "neutral")
 			print("ENCOUNTER at %s: %d x %s (%s, reaction %d)" % [

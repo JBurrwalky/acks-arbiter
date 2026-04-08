@@ -3251,3 +3251,191 @@ CampaignRepository addition:
 **Next session should:**
 1. Run test_runner.tscn to verify all session runner tests pass.
 2. Begin Phase F-1: Combat System planning.
+
+---
+
+## Session 2026-04-07 — Phase F-0: Monster Catalog, Registry, and Encounter Wiring
+
+**Task:** Build the starter monster catalog (13 monsters), MonsterRegistry class, and wire encounter generation so random and override-spawned encounters pick real monsters from the catalog.
+**Model used:** Opus 4.6 for planning and implementation.
+
+**Completed:**
+
+**Monster Catalog** (`data/monsters/monster_catalog.json` — NEW):
+- 13 monster stat blocks extracted from ACKS XML source files.
+- One per encounter table terrain key: Shark/Bull (ocean), Crocodile (lake), Wererat (city), Wolf (inhabited), Centaur (clear/grass), Black Widow Spider (woods), Lizardman (jungle), Troll (swamp), Giant Scorpion (desert), Harpy (mountains/hills).
+- Three required beastmen: Goblin, Kobold, Orc.
+- Schema follows `monster_system_map.md` §1.1–1.7 and §5: identity, hit_dice, armor_class, attack_routines, save_as, morale, xp, movement, encounter composition, terrain_affinity, encounter_hierarchy, special_abilities, immunities/resistances/vulnerabilities, morale_modifiers, combat_behavior tags.
+- Kobold half-HD represented as `base: 0.5` — rolls 1d4 for HP when base < 1.0, costs 0.5 HD against spell targeting budgets.
+- Wererat dual AC via `armor_class_animal_form: 0` extra field.
+- Encounter hierarchies structured for goblin/kobold/orc/lizardman/troll/centaur with leader stats, population ratios, ally chances, shaman/witch doctor probabilities.
+
+**MonsterRegistry** (`engine/subsystems/monsters/monster_registry.gd` — NEW):
+- `class_name MonsterRegistry extends RefCounted`. Follows SpellRegistry pattern.
+- Loads `res://data/monsters/monster_catalog.json` in `_init()`.
+- Core API: `get_monster()`, `has_monster()`, `get_monster_count()`, `get_all_monster_ids()`.
+- Terrain query: `get_monsters_for_terrain(terrain_key)` — scans `terrain_affinity` arrays.
+- Type queries: `get_monsters_by_type(type)`, `get_monsters_by_sub_type(sub_type)`.
+- Convenience: `get_hit_dice()`, `get_xp_value()`, `get_armor_class()`, `get_morale()`.
+
+**Encounter Generation Wiring** (`engine/subsystems/session/session_runner.gd` — MODIFIED):
+- Added `_monster_registry: MonsterRegistry` instantiated in `_ready()`.
+- Added `get_monster_registry()` accessor.
+- Rewrote `do_encounter_check()`: on trigger (1-in-6), calls `_pick_encounter_monster(terrain)` to select a terrain-appropriate monster, rolls 1d6 for count (`encounter_number`), rolls 2d6 for reaction (`reaction`), maps to disposition via `_reaction_to_disposition()`. Emits `encounter_triggered` with full payload matching EncounterData schema.
+- Added `_pick_encounter_monster()`: uses `HexTerrainData.encounter_table_weights()` to get weighted table keys, collects candidates from `MonsterRegistry.get_monsters_for_terrain()`, picks one at random.
+- Added `_reaction_to_disposition()`: maps 2d6 total to hostile/cautious/neutral/friendly.
+
+**Wilderness/Dungeon State Logging** (MODIFIED):
+- `wilderness_explore_state.gd`: encounter log now prints monster name, count, disposition, and reaction roll.
+- `dungeon_explore_state.gd`: same.
+
+**Override Panel** (`scenes/ui/override/override_panel.gd` — MODIFIED):
+- Spawning tab: replaced free-text LineEdit with OptionButton dropdown populated from MonsterRegistry.
+- Added `_populate_monster_dropdown()` to fill dropdown with all cataloged monster IDs.
+- Added `_spawn_status` label showing spawn confirmation.
+
+**EncounterData** (`engine/shared_types/encounter_data.gd` — MODIFIED):
+- Clarified `monster_group` comment: references `monster_catalog.json` "id" field.
+
+**Test Suite** (`tests/test_monster_registry.gd` — NEW, 30 tests):
+- Loading: catalog loads, count is 13.
+- Core lookup: has_monster true/false, get_monster not empty, get_all sorted.
+- Schema validation: goblin HD (1,-1,0), kobold half-HD (0.5), troll stars (6,3,1), goblin AC 3, save_as NM vs Fighter.
+- Movement: shark swim-only, harpy fly, crocodile dual.
+- Attacks: troll 3-attack count, scorpion poison on sting, spider poison on bite.
+- Abilities: goblin sunlight_penalty, troll regeneration, harpy charming_song, wererat weapon_immunity.
+- Terrain: ocean returns shark_bull, swamp includes troll+lizardman, all 10 terrains have ≥1 monster.
+- Type: beastman returns 4 IDs, animal returns 3+ IDs, goblinoid sub-type correct.
+- Hierarchy: goblin has gang/warband/lair_or_village, orc chieftain stats correct.
+- Wired into `test_runner.gd` and `test_runner.tscn` (MonsterRegistryTests).
+
+**Coding Conventions** (`docs/coding_conventions.md` — MODIFIED):
+- §2.1 directory tree: added `monsters/` under `engine/subsystems/` and `data/`.
+- §10.2 roll type vocabulary: added `encounter_number` and `reaction`.
+- §16.9 new section: Encounter Generation Flow documenting the 7-step pipeline.
+
+**Decisions made:**
+- **Kobold half-HD as `base: 0.5`** — preserves fractional value for HP rolls (1d4), XP table ("less than 1" row), attack throws, and spell targeting budgets. All other monsters use integer base values.
+- **MonsterRegistry is RefCounted, not autoload** — follows SpellRegistry/ClassRegistry/ProficiencyRegistry pattern. Instantiated by SessionRunner and OverridePanel.
+- **Terrain affinity inline** — each monster carries a `terrain_affinity` array of encounter table keys. MonsterRegistry scans these at query time. No separate encounter table JSON file needed.
+- **Encounter count is 1d6 for all monsters** — simplified for the starter set. Future: use per-monster encounter dice expressions from the catalog's dungeon/wilderness encounter fields.
+- **Reaction roll 2d6 mapped to 4 dispositions**: ≤3 hostile, 4–5 cautious, 6–8 neutral, 9+ friendly.
+- **`sub_types`** separate from `monster_types` — needed for proficiency hooks (e.g. Goblin-Slaying targets `goblinoid` sub-type per monster_system_map.md §5.4).
+
+**Interfaces defined or changed:**
+
+MonsterRegistry (new class):
+- `get_monster(monster_id) -> Dictionary`
+- `has_monster(monster_id) -> bool`
+- `get_monster_count() -> int`
+- `get_all_monster_ids() -> Array[String]`
+- `get_monsters_for_terrain(terrain_key) -> Array[String]`
+- `get_monsters_by_type(monster_type) -> Array[String]`
+- `get_monsters_by_sub_type(sub_type) -> Array[String]`
+- `get_hit_dice(monster_id) -> Dictionary`
+- `get_xp_value(monster_id) -> int`
+- `get_armor_class(monster_id) -> int`
+- `get_morale(monster_id) -> int`
+
+SessionRunner additions:
+- `_monster_registry: MonsterRegistry` (instantiated in _ready)
+- `get_monster_registry() -> MonsterRegistry`
+- `_pick_encounter_monster(terrain: HexTerrainData) -> String`
+- `_reaction_to_disposition(total: int) -> String` (static)
+- `do_encounter_check()` now returns full encounter_data with monster_group, number, reaction_roll, behavioral_disposition
+
+EventBus.encounter_triggered payload now always includes:
+- `encounter_id`, `monster_group`, `number`, `reaction_roll`, `behavioral_disposition`, `hex_id`, `terrain_category`, `territory`, `roll`
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_monster_registry.gd` (NEW): 30 tests.
+- `tests/test_runner.gd` + `tests/test_runner.tscn`: MonsterRegistryTests added.
+
+**Known issues:**
+- Encounter count uses flat 1d6 for all monsters. The catalog stores per-monster encounter dice expressions (e.g. "2d4" for goblin gangs) but these are not yet parsed by the encounter generator. Future refinement when encounter tables are fully implemented.
+- No combat transition on encounter — encounters log to console but do not enter combat state. Deferred to F-1.
+- The override panel's monster dropdown shows raw IDs as item text with display names in tooltips. A future UI pass could show "Goblin" instead of "goblin" as the visible text.
+- `_pick_encounter_monster()` uses uniform random across candidates. ACKS encounter tables use weighted d8/d12 rolls for category then specific monster — full table resolution deferred to encounter table system build.
+
+**Next session should:**
+1. Run test_runner.tscn to verify all 30 MonsterRegistry tests pass alongside existing suites.
+2. Smoke-test: move around the hex map, verify encounter logs show monster names (e.g. "ENCOUNTER at (1, 0): 3 x goblin (neutral, reaction 7)").
+3. Smoke-test override panel Spawning tab: dropdown should list all 13 monsters, spawning should show status message.
+4. Begin Phase F-1: Combat System planning.
+
+---
+
+## Session 2026-04-07 — F-1 Session 1: Core Combat Loop, Initiative, Basic Melee Attack
+
+**Task:** Build the foundational combat loop — round sequence, initiative, attack resolution, and combat end detection. First of 5 planned sessions for F-1.
+**Model used:** Opus 4.6 for planning and implementation.
+
+**Completed:**
+- Created `engine/subsystems/combat/` directory with 5 new files.
+- **Combatant** (`engine/subsystems/combat/combatant.gd`): Unified wrapper over CharacterData (PCs/henchmen) and monster catalog dicts. Provides consistent interface: `get_effective_ac()`, `get_effective_attack_throw()`, `apply_damage()`, `get_initiative_modifier()`, `get_combat_progression()`, `get_level_or_hd()`, `get_attack_routines()`, `get_attack_count()`, `get_damage_expression()`, conditions array, spell declaration tracking. Monsters get transient ModifierContainer/EntityFlags/DamageResistance for combat-only effects. Includes ACKS monster attack throw table (HD-based) and simplified fighter save table by level bracket.
+- **CombatRoster** (`engine/subsystems/combat/combat_roster.gd`): Two-sided combatant container. Factory method `build_from_encounter(party_data, encounter_data, monster_registry, dice_system)` rolls monster HP and builds Combatant wrappers. Queries: `get_alive()`, `get_alive_on_side()`, `get_by_id()`, `get_combatants_in_group()`. Casualty tracking per monster group for morale triggers (`record_casualty()`, `is_first_casualty()`, `is_half_casualties()`). Combat end detection (`is_party_eliminated()`, `is_enemies_eliminated()`).
+- **InitiativeResolver** (`engine/subsystems/combat/initiative_resolver.gd`): ACKS initiative — 1d6 + DEX mod + initiative modifiers per combatant, sorted highest-first. `group_simultaneous()` groups ties for simultaneous resolution. Stable tiebreak by combatant ID for determinism.
+- **AttackResolver** (`engine/subsystems/combat/attack_resolver.gd`): ACKS attack throw — `1d20 + mods >= attacker.attack_throw + target.effective_ac`. Natural 20 always hits, natural 1 always misses. `resolve_melee_attack()` for PC/character attacks (STR mod on damage). `resolve_monster_attack()` for monster routine attacks (reads damage/to_hit from attack_routines). Minimum 1 damage. Emits `EventBus.damage_dealt`, `combatant_downed`, `hp_changed`.
+- **CombatController** (`engine/subsystems/combat/combat_controller.gd`): Pull-based round loop orchestrator. Phase enum: NOT_STARTED → DECLARATION → INITIATIVE → ACTION → END_ROUND → COMBAT_OVER. `advance() -> Dictionary` returns status dict; `submit_pc_action()` for player input. Declaration phase is a no-op stub for Session 1 (wired in Session 2). Monster auto-action: melee attack first alive enemy (replaced by MonsterAI in Session 3). Multi-attack support for monsters. Combat end on all-enemies-dead or all-party-dead. Emits `combat_ended` with XP total from downed monsters.
+- **Updated CombatState** (`engine/subsystems/session/states/combat_state.gd`): Fleshed out from stub. Builds CombatRoster from encounter_data, creates InitiativeResolver and AttackResolver, instantiates CombatController. Routes `combat_advance` and `combat_pc_action` actions. `_finish_combat()` advances Timekeeping rounds and returns to exploration state. Exposes `get_controller()` for UI queries.
+- Fixed pre-existing Variant inference warning in `wilderness_explore_state.gd` line 80.
+
+**Decisions made:**
+- **Pull-based `advance()` design** rather than internal loop — controller never blocks, returns "waiting_for_input" status when a PC needs to act. Caller (UI or test) calls `submit_pc_action()` then `advance()` again. This avoids async complexity and makes testing trivial.
+- **Combatant wraps, doesn't subclass CharacterData** — monsters build transient combat state from catalog dict rather than creating a full CharacterData. This avoids pollution of the persistence model.
+- **Godot enum typing: use `int` for enum-typed fields** — `var side: Side` causes parse errors in Godot 4 when the enum is defined in the same class. Convention: declare as `var side: int = Side.PARTY` and use `int` for parameter types referencing enums from other classes (e.g. `Combatant.Side`). The enum constants themselves work fine as values.
+- **ActionPayload reuse** for combat: action_ids = `"attack_melee"`, `"attack_ranged"`, `"cast_spell"`, `"move"`, `"fighting_withdrawal"`, `"full_retreat"`, `"use_item"`, `"combat_maneuver"`, `"pass"`.
+- **Monster HP** rolled at combat start from `hit_dice.base * d8 + hit_dice.modifier`. Override system can force values via `starting_hp` roll type.
+- **Simplified monster saves** — uses a lookup table covering fighter saves by level bracket (0, 1-3, 4-6, 7-9, 10-12, 13+). Future sessions may wire through ClassRegistry for precise class/level lookup when non-fighter save_as values appear.
+
+**Interfaces defined or changed:**
+
+Combatant (core interface):
+- `from_character(character, combatant_id) -> Combatant` (static factory)
+- `from_monster(monster_data, rolled_hp, combatant_id, group_id) -> Combatant` (static factory)
+- `get_effective_ac() -> int`, `get_effective_attack_throw() -> int`, `get_effective_save(save_key) -> int`
+- `get_initiative_modifier() -> int`, `get_combat_progression() -> String`, `get_level_or_hd() -> int`
+- `get_attack_routines() -> Array`, `get_attack_count() -> int`, `get_damage_expression(idx) -> String`
+- `get_to_hit_modifier(idx) -> int`, `get_morale() -> int`, `get_combat_movement() -> int`
+- `apply_damage(amount, damage_type) -> Dictionary`, `apply_healing(amount) -> int`
+- `is_alive() -> bool`, `is_pc_side() -> bool`, `has_condition(key) -> bool`
+- `has_proficiency(key) -> bool`, `get_proficiency_rank(key) -> int`
+
+CombatRoster:
+- `build_from_encounter(party_data, encounter_data, monster_registry, dice_system) -> CombatRoster`
+- `get_alive() -> Array[Combatant]`, `get_alive_on_side(side_int) -> Array[Combatant]`
+- `record_casualty(combatant, round)`, `is_first_casualty(group_id) -> bool`, `is_half_casualties(group_id) -> bool`
+
+CombatController:
+- `advance() -> Dictionary` — status keys: `combat_started`, `round_started`, `initiative_rolled`, `waiting_for_pc_action`, `action_resolved`, `round_ended`, `combat_over`
+- `submit_pc_action(combatant_id, action_id, parameters)`
+- `get_waiting_combatant_id() -> String`
+
+CombatState actions:
+- `"combat_advance"` — advance controller one step
+- `"combat_pc_action"` — payload: `{combatant_id, action_id, parameters}`
+- `"combat_ended"` — direct end from override system
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_combat_initiative.gd` (NEW): 7 tests — single/multi combatant, DEX modifier, simultaneous ties, dead combatant skipping, stable tiebreak, empty list.
+- `tests/test_combat_attack_resolver.gd` (NEW): 11 tests — hit/miss at threshold, natural 20/1, damage application, minimum 1 damage, STR modifier, target downed, miss no damage, monster routine attack, high AC difficulty.
+- `tests/test_combat_controller.gd` (NEW): 8 tests — start/advance flow, full fighter-vs-goblin combat to victory, party defeat, multi-combatant initiative, pass action, combat end detection, multi-round, monster multi-attack.
+- All tests use MockDice pattern for deterministic results.
+- `tests/test_runner.gd` + `tests/test_runner.tscn`: 3 new suites registered (CombatInitiativeTests, CombatAttackResolverTests, CombatControllerTests).
+
+**Known issues:**
+- Monster target selection is trivial (first alive enemy). MonsterAI with behavior tags deferred to Session 3.
+- Spell declaration phase is a no-op pass-through. Spell hooks wired in Session 2.
+- Cleave not implemented. Deferred to Session 3.
+- Morale not implemented. Deferred to Session 3.
+- Character melee damage hardcoded to `"1d6"` — equipped weapon integration deferred until equipment system is wired to combat.
+- Monster save table is simplified (fighter saves by bracket only). Non-fighter save_as values (cleric, thief, mage) will use the same fighter table until ClassRegistry lookup is wired.
+- No grid-based positioning or movement — all combatants can attack any enemy. Movement/engagement deferred to Session 4.
+
+**Next session should:**
+1. Run test_runner.tscn in Godot to verify all 26 new combat tests pass alongside existing suites.
+2. Build F-1 Session 2: SpellCombatHooks (14 trigger points), RangedAttackResolver, CombatConditionManager. Wire hooks into CombatController at all phase boundaries.
