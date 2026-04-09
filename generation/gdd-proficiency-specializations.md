@@ -330,7 +330,7 @@ For class proficiency lists that constrain specialization (e.g., Cleric gets `Kn
 
 **Specialization type:** Specific language
 
-**Source:** Partially setting-generated. Base catalog from ACKS core racial languages + common/alignment tongues. Extended by setting generation pipeline.
+**Source:** Partially setting-generated. Base catalog from ACKS core racial and creature languages plus Common. Extended by setting generation pipeline.
 
 **Base catalog (always present):**
 
@@ -347,16 +347,14 @@ For class proficiency lists that constrain specialization (e.g., Cleric gets `Kn
 | `orc` | Orc | |
 | `hobgoblin` | Hobgoblin | |
 | `bugbear` | Bugbear | |
+| `beastman` | Beastman | |
 | `ogre` | Ogre | |
 | `giant` | Giant | Covers Hill, Stone, Frost, Fire, Cloud, Storm |
 | `troll` | Troll | |
-| `dragon` | Draconic | |
+| `draconic` | Draconic | |
 | `gargoyle` | Gargoyle | |
 | `medusa` | Medusa | |
 | `minotaur` | Minotaur | |
-| `pixie` | Pixie | |
-| `troglodyte` | Troglodyte | |
-| `lizardman` | Lizard Man | |
 
 **Setting-generated additions:** The setting generation pipeline creates regional/cultural languages (e.g., "Old Imperial," "Nomad Tongue," "Deep Cant") with deterministic IDs: `lang_setting_{snake_case_name}`. These are associated with specific cultures from `gdd-cultural-religious-generation.md`. The number and nature of setting languages are determined by the setting generation rules.
 

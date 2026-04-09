@@ -42,6 +42,10 @@ signal round_resolved(round_number: int, events: Array)
 ## A combatant reached 0 HP or below.
 signal combatant_downed(combatant_id: String, attacker_id: String)
 
+## A mortal wound was rolled for a downed PC.
+## [param result] keys: combatant_id, condition, wound_description, is_dead, recovery_time
+signal mortal_wound_rolled(character_id: String, result: Dictionary)
+
 ## A combatant successfully fled the combat.
 signal combatant_fled(combatant_id: String)
 

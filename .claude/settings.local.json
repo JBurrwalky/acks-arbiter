@@ -56,7 +56,8 @@
       "Bash(sort find:*)",
       "Bash(find:*)",
       "Bash(ls:*)",
-      "Bash(grep -A 5 '\"tradition\"' /c/Users/jttau/acks-arbiter/data/classes/*.json)"
+      "Bash(grep -A 5 '\"tradition\"' /c/Users/jttau/acks-arbiter/data/classes/*.json)",
+      "Bash(timeout 20 C:/Godot/Godot_v4.6.1-stable_win64.exe --headless --path . --script res://__TRACKED_VAR__)"
     ]
   }
 }

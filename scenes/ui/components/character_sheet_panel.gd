@@ -182,30 +182,19 @@ func _render_languages(character: CharacterData, state: Dictionary) -> void:
 
 	var raw: String = character.languages if character != null else "[]"
 	if raw != "[]" and not raw.is_empty():
-		var parsed = JSON.parse_string(raw)
-		if parsed is Array:
-			lang_list = parsed
+		lang_list = CharacterData.parse_languages_json(raw)
 
 	# During character creation, character.languages may not yet be populated.
 	# Assemble a preview from state instead.
 	if lang_list.is_empty():
-		lang_list = ["common"]
-		if character != null:
-			match character.race:
-				"elf":      lang_list.append("elvish")
-				"dwarf":    lang_list.append("dwarvish")
-				"gnome":    lang_list.append("gnomish")
-				"halfling": lang_list.append("halfling")
-			var align: String = state.get("alignment", character.alignment)
-			if align == "lawful":
-				lang_list.append("alignment_lawful")
-			elif align == "chaotic":
-				lang_list.append("alignment_chaotic")
+		lang_list = CharacterData.get_default_languages_for_race(character.race) \
+			if character != null else ["common"]
 		var bonus: Array = state.get("language_bonus_picks", [])
 		for pick in bonus:
 			var pick_str: String = pick as String
 			if not pick_str.is_empty() and pick_str not in lang_list:
 				lang_list.append(pick_str)
+		lang_list = CharacterData.sanitize_language_ids(lang_list)
 
 	if lang_list.is_empty():
 		return

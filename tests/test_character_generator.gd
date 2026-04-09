@@ -8,6 +8,7 @@ func run_all_tests() -> void:
 	test_ability_score_generation()
 	test_pc_generation_fighter()
 	test_pc_generation_hp_minimum()
+	test_generate_pc_does_not_consume_starting_gold_override()
 	test_ability_trade_valid()
 	test_ability_trade_con_allowed_for_non_prime()
 	test_ability_trade_invalid_prime_requisite_source()
@@ -107,6 +108,20 @@ func test_pc_generation_hp_minimum() -> void:
 		check(character.hp_max >= 1,
 			"hp_max should be >= 1 even with CON 3 (-3 mod), got %d" % character.hp_max)
 	print("  pc_generation_hp_minimum: OK (20 characters verified)")
+
+
+func test_generate_pc_does_not_consume_starting_gold_override() -> void:
+	var gen := _make_generator()
+	var scores := {"STR": 14, "INT": 10, "WIS": 10, "DEX": 12, "CON": 13, "CHA": 11}
+	GameState.dice_overrides["starting_gold"] = 17
+
+	var character := gen.generate_pc("fighter", scores, "test_starting_gold_override")
+
+	check(character != null, "generate_pc should still return a character")
+	check(GameState.dice_overrides.get("starting_gold", -1) == 17,
+		"generate_pc should not consume the starting_gold override before the equipment step")
+	GameState.dice_overrides.erase("starting_gold")
+	print("  generate_pc_does_not_consume_starting_gold_override: OK")
 
 
 # ---------------------------------------------------------------------------

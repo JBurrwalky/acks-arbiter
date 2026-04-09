@@ -189,3 +189,13 @@ func all_enemies_fled() -> bool:
 		if c.is_enemy_side() and c.is_alive() and c.is_fleeing:
 			return true
 	return false
+
+
+func get_downed_pcs() -> Array:
+	## Returns all party combatants backed by CharacterData that are currently downed (HP <= 0).
+	## Used by MortalWoundsResolver to process post-combat casualties.
+	var result: Array = []
+	for c: Combatant in _combatants.values():
+		if c.is_pc_side() and c.is_character and not c.is_alive():
+			result.append(c)
+	return result

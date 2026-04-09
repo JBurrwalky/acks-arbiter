@@ -122,10 +122,11 @@ func test_combat_ends_when_all_enemies_dead() -> void:
 
 func test_multi_round_combat() -> void:
 	# Both have enough HP that it takes multiple rounds
+	# dice=10 ensures hits (10 >= 10+0) but deals moderate damage
 	var controller := _make_controller_custom(
-		[{"id": "tank", "hp": 20, "ac": 0, "atk": 10, "str": 10}],
-		[{"hd": 2, "ac": 0, "damage": "1d4", "hp": 15}],
-		15)
+		[{"id": "tank", "hp": 50, "ac": 0, "atk": 10, "str": 10}],
+		[{"hd": 2, "ac": 0, "damage": "1d4", "hp": 30}],
+		10)
 	var result := _run_to_completion(controller)
 	check(controller.total_rounds >= 2,
 		"combat should last at least 2 rounds, lasted %d" % controller.total_rounds)
@@ -161,7 +162,8 @@ func _make_controller(
 		num_pcs: int, num_monsters: int, dice_value: int = 10) -> CombatController:
 	var pcs: Array = []
 	for i in range(num_pcs):
-		pcs.append({"id": "pc_%d" % i, "hp": 10, "ac": 0, "atk": 10, "str": 10})
+		# HP 30 ensures PCs survive monster attacks in simultaneous initiative
+		pcs.append({"id": "pc_%d" % i, "hp": 30, "ac": 0, "atk": 10, "str": 10})
 	var monsters: Array = []
 	for i in range(num_monsters):
 		monsters.append({"hd": 1, "ac": 0, "damage": "1d6", "hp": 4})

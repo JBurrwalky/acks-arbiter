@@ -114,6 +114,9 @@ func resolve_melee_attack(
 		# Apply damage through target's resistance pipeline
 		damage_result = target.apply_damage(damage_total, "physical")
 
+		# Track last attacker for retaliatory targeting
+		target.last_attacker_id = attacker.id
+
 		# Emit damage signal
 		EventBus.damage_dealt.emit(
 			target.id, damage_result.get("hp_damage", 0), "physical", attacker.id)
@@ -125,6 +128,10 @@ func resolve_melee_attack(
 
 		# Check if target was downed
 		if damage_result.get("is_downed", false):
+			# Record damage type on the target for mortal wounds processing.
+			# TODO: replace "slashing" with actual weapon damage type when equipment is wired.
+			if target.is_character:
+				target.killing_blow_damage_type = "slashing"
 			EventBus.combatant_downed.emit(target.id, attacker.id)
 			# --- Spell hooks: on_combatant_downed ---
 			if _spell_hooks != null:
@@ -208,6 +215,9 @@ func resolve_monster_attack(
 		damage_total = maxi(1, damage_roll.modified_total)
 		damage_result = target.apply_damage(damage_total, "physical")
 
+		# Track last attacker for retaliatory targeting
+		target.last_attacker_id = attacker.id
+
 		EventBus.damage_dealt.emit(
 			target.id, damage_result.get("hp_damage", 0), "physical", attacker.id)
 
@@ -216,6 +226,8 @@ func resolve_monster_attack(
 				target, damage_result.get("hp_damage", 0), attacker.id)
 
 		if damage_result.get("is_downed", false):
+			if target.is_character:
+				target.killing_blow_damage_type = "slashing"
 			EventBus.combatant_downed.emit(target.id, attacker.id)
 			if _spell_hooks != null:
 				_spell_hooks.on_combatant_downed(target)
@@ -264,6 +276,8 @@ func _resolve_auto_hit_melee(
 		_spell_hooks.on_damage_dealt(
 			target, damage_result.get("hp_damage", 0), attacker.id)
 	if damage_result.get("is_downed", false):
+		if target.is_character:
+			target.killing_blow_damage_type = "slashing"
 		EventBus.combatant_downed.emit(target.id, attacker.id)
 		if _spell_hooks != null:
 			_spell_hooks.on_combatant_downed(target)

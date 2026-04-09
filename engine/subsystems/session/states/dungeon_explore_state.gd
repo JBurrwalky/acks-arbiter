@@ -101,7 +101,16 @@ func _on_cell_clicked(pos: Vector2i) -> void:
 			enc.get("number", 0), enc.get("monster_group", "unknown"),
 			enc.get("behavioral_disposition", "neutral"),
 			enc.get("reaction_roll", 0)])
-		# Combat transition deferred to F-1.
+		var tactical_map: TacticalMapData = null
+		if _controller != null:
+			tactical_map = _controller.get_map()
+		var combat_context := {
+			"encounter_data": enc,
+			"return_state":   "dungeon",
+			"tactical_map":   tactical_map,
+		}
+		_runner.transition_to_state("combat", combat_context)
+		return  # CombatState handles time advance on exit
 
 	# Advance 1 dungeon turn (10 minutes)
 	_runner.advance_exploration_time(1)

@@ -49,6 +49,7 @@ var _party_data: PartyData = null
 var _active_effects: ActiveEffectTracker = null
 var _effect_ticker: EffectTicker = null
 var _monster_registry: MonsterRegistry = null
+var _class_registry: ClassRegistry = null
 
 
 # ---------------------------------------------------------------------------
@@ -196,6 +197,11 @@ func get_active_effects() -> ActiveEffectTracker:
 
 func get_monster_registry() -> MonsterRegistry:
 	return _monster_registry
+
+func get_class_registry() -> ClassRegistry:
+	if _class_registry == null:
+		_class_registry = ClassRegistry.new()
+	return _class_registry
 
 func get_current_state_key() -> String:
 	return _current_state_key

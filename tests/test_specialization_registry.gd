@@ -19,6 +19,7 @@ func run_all_tests() -> void:
 	test_weapon_focus_six_entries()
 	test_elementalism_four_entries()
 	test_knowledge_fourteen_entries()
+	test_language_nineteen_entries()
 	test_prerequisite_ids_fantastic_mounts()
 	test_naturalism_eleven_entries()
 	if not has_failures():
@@ -154,6 +155,17 @@ func test_knowledge_fourteen_entries() -> void:
 	var ids := reg.get_specialization_ids("knowledge")
 	check(ids.size() == 14,
 		"SpecializationRegistry: knowledge should have 14 entries, got %d" % ids.size())
+
+
+func test_language_nineteen_entries() -> void:
+	var reg := SpecializationRegistry.new()
+	var ids := reg.get_specialization_ids("language")
+	check(ids.size() == 19,
+		"SpecializationRegistry: language should have 19 entries, got %d" % ids.size())
+	check(not ("alignment_lawful" in ids),
+		"SpecializationRegistry: language should not include alignment_lawful")
+	check(not ("alignment_chaotic" in ids),
+		"SpecializationRegistry: language should not include alignment_chaotic")
 
 
 func test_prerequisite_ids_fantastic_mounts() -> void:

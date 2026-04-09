@@ -191,7 +191,7 @@
       "consumable_timing": "none",
       "primary_target_rule": "weakest",
       "target_tie_breaker": "nearest",
-      "morale_style": "craven"
+      "morale_style": "fragile"
     }
   },
 
@@ -284,7 +284,7 @@
       "consumable_timing": "none",
       "primary_target_rule": "weakest",
       "target_tie_breaker": "nearest",
-      "morale_style": "standard"
+      "morale_style": "normal"
     }
   },
 
@@ -380,8 +380,8 @@
       "spellcasting_timing": "none",
       "consumable_timing": "none",
       "primary_target_rule": "nearest",
-      "target_tie_breaker": "weakest",
-      "morale_style": "bold"
+      "target_tie_breaker": "lowest_hp",
+      "morale_style": "steadfast"
     }
   },
 
@@ -475,7 +475,7 @@
       "consumable_timing": "none",
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
-      "morale_style": "bold"
+      "morale_style": "steadfast"
     }
   },
 
@@ -542,9 +542,9 @@
       "engagement_profile": "melee",
       "spellcasting_timing": "none",
       "consumable_timing": "none",
-      "primary_target_rule": "nearest_threat",
-      "target_tie_breaker": "strongest",
-      "morale_style": "standard"
+      "primary_target_rule": "most_dangerous",
+      "target_tie_breaker": "lowest_ac",
+      "morale_style": "normal"
     }
   },
 
@@ -614,7 +614,7 @@
       "consumable_timing": "none",
       "primary_target_rule": "weakest",
       "target_tie_breaker": "nearest",
-      "morale_style": "standard"
+      "morale_style": "normal"
     }
   },
 
@@ -755,7 +755,7 @@
       "consumable_timing": "none",
       "primary_target_rule": "weakest",
       "target_tie_breaker": "nearest",
-      "morale_style": "standard"
+      "morale_style": "normal"
     }
   },
 
@@ -823,7 +823,7 @@
       "consumable_timing": "none",
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
-      "morale_style": "standard"
+      "morale_style": "normal"
     }
   },
 
@@ -931,7 +931,7 @@
       "consumable_timing": "none",
       "primary_target_rule": "weakest",
       "target_tie_breaker": "nearest",
-      "morale_style": "standard"
+      "morale_style": "normal"
     }
   },
 
@@ -1008,7 +1008,7 @@
       "consumable_timing": "none",
       "primary_target_rule": "nearest",
       "target_tie_breaker": "random",
-      "morale_style": "standard"
+      "morale_style": "normal"
     }
   },
 

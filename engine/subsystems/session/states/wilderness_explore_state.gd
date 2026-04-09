@@ -83,8 +83,12 @@ func _on_hex_clicked(coord: Vector2i) -> void:
 			print("ENCOUNTER at %s: %d x %s (%s, reaction %d)" % [
 				str(coord), count, monster_name, disposition,
 				enc.get("reaction_roll", 0)])
-			# Combat transition deferred to F-1.
-			# Future: _runner.transition_to_state("combat", enc)
+			var combat_context := {
+				"encounter_data": enc,
+				"return_state":   "wilderness",
+			}
+			_runner.transition_to_state("combat", combat_context)
+			return  # CombatState handles time advance on exit; stop further processing
 
 	# Time advance (1 turn per hex for now — future: terrain-based turn cost)
 	_runner.advance_exploration_time(1)

@@ -244,7 +244,9 @@ acks-arbiter/               (Godot project root = repo root)
 │       ├── override/       # OverrideManager (dev-mode state manipulation)
 │       ├── spells/         # SpellRegistry, RepertoireEngine, ActiveEffectTracker, SpellEffectRegistry
 │       ├── monsters/       # MonsterRegistry (loads data/monsters/monster_catalog.json)
-│       ├── combat/         # Combatant, CombatRoster, InitiativeResolver, AttackResolver, CombatController
+│       ├── combat/         # Combatant, CombatRoster, InitiativeResolver, AttackResolver, CombatController,
+│       │                   # SpellCombatHooks, RangedAttackResolver, CombatConditionManager,
+│       │                   # MonsterAI, MoraleResolver, CleaveResolver
 │       ├── domain/         # (planned)
 │       └── magic/          # (planned)
 ├── scenes/
@@ -440,7 +442,7 @@ var internal_state: int = 0  # is this part of the public API?
 
 ### 3.8 Coroutine (`await`) Patterns
 
-<!-- Added 2026-03-27 after DiceSystem.player_roll() -->
+<!-- Updated 2026-04-08 after character-creation starting-gold regression fix -->
 
 GDScript marks a function as a **coroutine** if it contains `await` anywhere in its body — even branches that never execute the `await`. This has cascading consequences:
 
@@ -460,6 +462,10 @@ var was_player_entered: bool = args[2]
 ```
 
 **Design rule:** Keep coroutines at system boundaries (DiceSystem, future SessionRunner). Internal subsystem logic should be synchronous — pass results via signals or return values, not by `await`-ing deep inside game logic.
+
+**UI roll-handler rule:** When a Control method awaits `DiceSystem.player_roll()`, keep the awaited method thin and move post-roll state mutation into a synchronous helper. This lets plain `run_all_tests()` suites cover the resolved state path without adding async-only test harness code.
+
+**Signal-race rule:** When a coroutine needs to wait on multiple terminal signals, use a dedicated helper object with bound-method listeners instead of anonymous closures so the waiting state, disconnect cleanup, and first-signal-wins behavior stay testable and deterministic.
 
 ### 3.9 Static Methods
 

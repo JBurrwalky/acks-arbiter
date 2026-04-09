@@ -163,7 +163,6 @@ func _reset_state() -> void:
 		"traded_scores": {},
 		"character": null,
 		"starting_age": 0,
-		"hp_rolled": 0,
 		"max_hp_override": false,
 		"proficiencies": [],
 		"spells": [],
@@ -228,7 +227,8 @@ func _invalidate_from(step: int) -> void:
 			creation_state["gold_remaining_cp"] = 0
 			creation_state["language_bonus_picks"] = []
 		Step.HP_ROLL:
-			creation_state["hp_rolled"] = 0
+			creation_state.erase("hp_rolled")
+			creation_state.erase("hp_raw_roll")
 			creation_state["max_hp_override"] = false
 		Step.PROFICIENCIES:
 			creation_state["proficiencies"] = []
@@ -406,7 +406,7 @@ func _finalize_character() -> void:
 		push_error("CharacterCreationScreen._finalize_character: no character in state")
 		return
 
-	# Apply step 10 fields (alignment must be set before building language list).
+	# Apply step 10 fields.
 	character.name = (creation_state.get("name", "") as String).strip_edges()
 	character.sex = creation_state.get("sex", "male")
 	character.alignment = creation_state.get("alignment", "neutral")
@@ -418,18 +418,8 @@ func _finalize_character() -> void:
 	character.hp_current = hp_max
 
 	# --- Build language list ---
-	# Auto-grants: Common + racial language(s).
-	var all_langs: Array = ["common"]
-	match character.race:
-		"elf":      all_langs.append("elvish")
-		"dwarf":    all_langs.append("dwarvish")
-		"gnome":    all_langs.append("gnomish")
-		"halfling": all_langs.append("halfling")
-	# Alignment language (lawful/chaotic only; neutral has no secret tongue in ACKS 1e).
-	if character.alignment == "lawful":
-		all_langs.append("alignment_lawful")
-	elif character.alignment == "chaotic":
-		all_langs.append("alignment_chaotic")
+	# Auto-grants: standard racial starting languages.
+	var all_langs: Array = CharacterData.get_default_languages_for_race(character.race)
 	# INT bonus picks (deduplicated against auto-grants).
 	var bonus_picks: Array = creation_state.get("language_bonus_picks", [])
 	for pick in bonus_picks:
@@ -437,7 +427,7 @@ func _finalize_character() -> void:
 		if not pick_str.is_empty() and pick_str not in all_langs:
 			all_langs.append(pick_str)
 	# Store on character (JSON array of spec IDs).
-	character.languages = JSON.stringify(all_langs)
+	character.languages = CharacterData.sanitize_languages_json(all_langs)
 
 	# Persist character record (languages now included in to_dict()).
 	CampaignRepository.create_character(character.to_dict())

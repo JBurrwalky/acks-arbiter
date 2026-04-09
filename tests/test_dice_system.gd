@@ -41,7 +41,9 @@ func run_all_tests() -> void:
 	test_is_valid_manual_result_at_max()
 	test_is_valid_manual_result_below_min()
 	test_is_valid_manual_result_above_max()
-	# player_roll() async path tested manually — see note at bottom of file
+	test_pending_player_roll_resolve_path()
+	test_pending_player_roll_cancel_path()
+	test_pending_player_roll_disconnect_cleanup()
 	if not has_failures():
 		print("DiceSystemTests: all tests passed")
 
@@ -278,17 +280,48 @@ func test_is_valid_manual_result_above_max() -> void:
 
 
 # ---------------------------------------------------------------------------
-# NOTE: player_roll() async path
+# pending player_roll() state helper
 # ---------------------------------------------------------------------------
-# player_roll() contains `await` in its body, making it a GDScript coroutine.
-# GDScript requires `await` at every call site — even the DIGITAL branch that
-# never actually suspends. A synchronous test runner cannot call coroutines.
-#
-# The player_roll() / DicePrompt integration is verified manually:
-#   1. Set GameState.dice_mode = DiceMode.HYBRID in main_scene.gd _ready()
-#   2. Call: var r := await DiceSystem.player_roll(20, 1, 2, "attack_throw", "Test")
-#   3. Confirm DicePrompt appears, "Roll Dice" and manual entry both resolve correctly.
-#
-# All underlying logic (override consumption, modifier application, RollResult fields)
-# is already covered by the roll_digital() tests above, which share the same private
-# _do_roll(), _build_overridden_result(), and _build_prompted_result() helpers.
+
+func test_pending_player_roll_resolve_path() -> void:
+	var pending = DiceSystem._create_pending_player_roll()
+	pending.connect_signals()
+
+	EventBus.player_roll_resolved.emit("starting_gold", 12, true)
+
+	check(not pending.is_waiting(), "resolved pending roll should stop waiting")
+	check(pending.resolved, "resolved pending roll should mark resolved")
+	check(not pending.cancelled, "resolved pending roll should not mark cancelled")
+	check(int(pending.raw_total) == 12, "resolved pending roll should capture the raw total")
+	check(bool(pending.was_player_entered), "resolved pending roll should preserve manual-entry flag")
+	pending.disconnect_signals()
+	print("  pending_player_roll_resolve_path: OK")
+
+
+func test_pending_player_roll_cancel_path() -> void:
+	var pending = DiceSystem._create_pending_player_roll()
+	pending.connect_signals()
+
+	EventBus.player_roll_cancelled.emit()
+
+	check(not pending.is_waiting(), "cancelled pending roll should stop waiting")
+	check(not pending.resolved, "cancelled pending roll should not mark resolved")
+	check(pending.cancelled, "cancelled pending roll should mark cancelled")
+	check(int(pending.raw_total) == 0, "cancelled pending roll should leave raw total at 0")
+	pending.disconnect_signals()
+	print("  pending_player_roll_cancel_path: OK")
+
+
+func test_pending_player_roll_disconnect_cleanup() -> void:
+	var pending = DiceSystem._create_pending_player_roll()
+	pending.connect_signals()
+	pending.disconnect_signals()
+
+	var resolved_callable := Callable(pending, "_on_player_roll_resolved")
+	check(not EventBus.player_roll_resolved.is_connected(resolved_callable),
+		"disconnect cleanup should remove the resolved handler")
+
+	var cancelled_callable := Callable(pending, "_on_player_roll_cancelled")
+	check(not EventBus.player_roll_cancelled.is_connected(cancelled_callable),
+		"disconnect cleanup should remove the cancelled handler")
+	print("  pending_player_roll_disconnect_cleanup: OK")

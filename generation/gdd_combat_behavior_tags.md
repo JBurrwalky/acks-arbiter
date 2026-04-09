@@ -51,14 +51,14 @@ Each hostile combatant or hostile combat-capable group record should store the f
 
 ```yaml
 combat_behavior:
-  formation_discipline: disciplined | loose | independent
+  formation_discipline: disciplined | loose | pack | independent | none
   aggression_posture: high | medium | low
   engagement_profile: melee | missile | balanced
   spellcasting_timing: immediate | balanced | last_resort | none
   consumable_timing: immediate | balanced | last_resort | none
   primary_target_rule: nearest | weakest | most_dangerous | most_exposed | role_mage | role_missile | retaliatory
-  target_tie_breaker: nearest | lowest_ac | lowest_hp | last_attacker | leader_marked
-  morale_style: steadfast | normal | fragile
+  target_tie_breaker: nearest | lowest_ac | lowest_hp | last_attacker | leader_marked | random
+  morale_style: fearless | steadfast | normal | fragile
 ```
 
 These fields are behavior metadata. They do not replace explicit monster abilities, morale rules, movement rates, spell lists, or item inventories. They only control how the combat AI chooses among legal options already available to that combatant.
@@ -75,13 +75,17 @@ Defines how tightly a combatant coordinates movement and target choice with near
 
 - `disciplined`
 - `loose`
+- `pack`
 - `independent`
+- `none`
 
 ### Definitions
 
 - `disciplined` — stays close to allied formation, leader, assigned line, or current group objective; prefers coordinated target selection and resists splitting off unless forced.
 - `loose` — stays generally with allies, but spreads naturally, accepts local opportunities, and may attack nearby targets without waiting for perfect group alignment.
+- `pack` — coordinated targeting within the group (focus-fire on the same enemy) without formal ranks or discipline. Wolf packs, shark groups, etc.
 - `independent` — acts as a self-directed combatant; allied spacing and coordinated target selection are low priority.
+- `none` — truly solitary creature with no formation logic at all. Ambush predators, mindless vermin.
 
 ### Extractor guidance
 
@@ -104,6 +108,8 @@ This tag should influence:
 ### Default
 
 `loose`
+
+> *Updated 2026-04-08: added `pack` and `none` as distinct tags based on catalog usage.*
 
 ---
 
@@ -324,6 +330,7 @@ Defines how the AI resolves ties between multiple valid targets after applying t
 - `lowest_hp`
 - `last_attacker`
 - `leader_marked`
+- `random`
 
 ### Definitions
 
@@ -332,6 +339,7 @@ Defines how the AI resolves ties between multiple valid targets after applying t
 - `lowest_hp` — among equally preferred targets, choose the one easiest to finish.
 - `last_attacker` — among equally preferred targets, choose the last one to damage this combatant.
 - `leader_marked` — among equally preferred targets, choose the target currently prioritized by leader logic, squad focus, or scenario script.
+- `random` — among equally preferred targets, choose randomly. For animals, mindless creatures, and other combatants with no tactical preference.
 
 ### Extractor guidance
 
@@ -357,12 +365,14 @@ Defines how strongly a combatant tries to continue fighting after setbacks, assu
 
 ### Tags
 
+- `fearless`
 - `steadfast`
 - `normal`
 - `fragile`
 
 ### Definitions
 
+- `fearless` — never rolls morale. Fights to the death regardless of casualties or conditions. Functionally equivalent to morale +4 but expressed as a behavioral tag rather than a stat. Undead, constructs, fanatical guardians.
 - `steadfast` — continues fighting through losses and prefers holding position unless morale rules or severe battlefield conditions force withdrawal.
 - `normal` — uses standard retreat and morale responses without unusual persistence or panic.
 - `fragile` — begins favoring flight, surrender, disengagement, or defensive play quickly once casualties mount or leaders fall.

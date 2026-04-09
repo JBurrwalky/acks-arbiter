@@ -145,10 +145,9 @@ func generate_pc(class_id: String, scores: Dictionary,
 	# Title
 	character.title = class_registry.get_level_title(class_id, 1)
 
-	# Starting gold: 3d6 x 10 gp (rolled but not spent — equipment UI handles purchasing)
-	var _gold_result := DiceSystem.roll_digital(6, 3, 0, "starting_gold")
-	# Gold is tracked via inventory/equipment system, not a character field.
-	# The UI flow will use this result to set starting funds.
+	# Starting gold is rolled in the equipment step of the character creation UI.
+	# Do not roll it here — the generator should not consume the starting_gold
+	# override or log a duplicate roll before the player reaches the shop.
 
 	# Alignment defaults to neutral; player selects in UI
 	character.alignment = "neutral"

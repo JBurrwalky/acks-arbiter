@@ -60,6 +60,41 @@ var damaged_since_declaration: bool = false
 ## Is this combatant currently fleeing (morale broken)?
 var is_fleeing: bool = false
 
+## Is this combatant performing a fighting withdrawal?
+var is_withdrawing: bool = false
+
+## Rounds remaining in fighting withdrawal before full retreat.
+var withdrawal_rounds_remaining: int = 0
+
+## Victory or Death: no further morale rolls.
+var morale_locked: bool = false
+
+## ID of the last combatant that dealt damage to this one (for retaliatory targeting).
+var last_attacker_id: String = ""
+
+## Grid position on TacticalMapData (Vector2i(-1,-1) = not placed on grid).
+var grid_position: Vector2i = Vector2i(-1, -1)
+
+## Declared defensive movement for this round ("", "fighting_withdrawal", "full_retreat").
+var declared_defensive_movement: String = ""
+
+## Whether this combatant has declared set-against-charge (spear/polearm brace).
+var set_against_charge: bool = false
+
+## Whether this combatant has used their movement this round.
+var has_moved_this_round: bool = false
+
+## ID of the combatant holding this one in a wrestling hold (empty = not held).
+var held_by_id: String = ""
+
+## HP value at the moment this combatant was downed (0 or negative).
+## Used by MortalWoundsResolver to calculate HP-deficit modifiers.
+var hp_when_downed: int = 0
+
+## Damage type of the killing blow (e.g. "slashing", "bludgeoning").
+## Defaults to "slashing" until weapon/ability data is wired per-attack.
+var killing_blow_damage_type: String = "slashing"
+
 
 # ---------------------------------------------------------------------------
 # Factory methods
@@ -166,6 +201,11 @@ func get_combat_movement() -> int:
 	return get_effective_movement() / 3
 
 
+func get_combat_movement_cells() -> int:
+	## Returns combat movement in grid cells (5 ft per cell).
+	return get_combat_movement() / 5
+
+
 func get_initiative_modifier() -> int:
 	## DEX modifier + any modifiers from spells/proficiencies.
 	var dex_mod := _get_ability_modifier("dexterity")
@@ -178,11 +218,19 @@ func get_initiative_modifier() -> int:
 
 
 func get_combat_progression() -> String:
-	## Returns "fighter", "cleric", "thief", or "mage".
+	## Returns "fighter", "cleric", "thief", "mage", or "normal_man".
+	## For monsters, derived from save_as.class.
 	if is_character:
 		return _character.combat_progression
-	# Monsters default to fighter progression
-	return _monster_data.get("combat_progression", "fighter")
+	var save_as: Dictionary = _monster_data.get("save_as", {})
+	var save_class: String = save_as.get("class", "F")
+	match save_class:
+		"F": return "fighter"
+		"C": return "cleric"
+		"T": return "thief"
+		"M": return "mage"
+		"NM": return "normal_man"
+		_: return "fighter"
 
 
 func get_level_or_hd() -> int:
@@ -249,6 +297,72 @@ func get_morale() -> int:
 	return int(_monster_data.get("morale", 0))
 
 
+func get_combat_behavior() -> Dictionary:
+	## Returns the combat_behavior tag dict from monster data.
+	## Empty dict for characters.
+	if is_character:
+		return {}
+	return _monster_data.get("combat_behavior", {})
+
+
+func get_expanded_attack_sequence() -> Array[Dictionary]:
+	## Expands the default attack routine into individual attack entries,
+	## respecting the count field. E.g. claw(count:2) + bite(count:1) becomes
+	## three entries: [claw, claw, bite].
+	## Each entry: {attack_type, damage, to_hit_modifier, special_effect, source_index}
+	var result: Array[Dictionary] = []
+	if is_character:
+		# Characters use weapon-based attacks, not routines.
+		result.append({
+			"attack_type": "weapon",
+			"damage": "1d6",
+			"to_hit_modifier": 0,
+			"special_effect": null,
+			"source_index": 0,
+		})
+		return result
+
+	var routines: Array = _monster_data.get("attack_routines", [])
+	if routines.is_empty():
+		result.append({
+			"attack_type": "natural",
+			"damage": "1d4",
+			"to_hit_modifier": 0,
+			"special_effect": null,
+			"source_index": 0,
+		})
+		return result
+
+	var routine: Dictionary = routines[0]
+	var attacks: Array = routine.get("attacks", [])
+	for i in range(attacks.size()):
+		var atk: Dictionary = attacks[i]
+		var count: int = int(atk.get("count", 1))
+		for _j in range(count):
+			result.append({
+				"attack_type": atk.get("attack_type", "natural"),
+				"damage": atk.get("damage", "1d4"),
+				"to_hit_modifier": int(atk.get("to_hit_modifier", 0)),
+				"special_effect": atk.get("special_effect"),
+				"source_index": i,
+			})
+	return result
+
+
+func get_morale_modifiers() -> Array:
+	## Returns the morale_modifiers array from monster data.
+	if is_character:
+		return []
+	return _monster_data.get("morale_modifiers", [])
+
+
+func get_special_abilities() -> Array:
+	## Returns the special_abilities array from monster data.
+	if is_character:
+		return []
+	return _monster_data.get("special_abilities", [])
+
+
 # ---------------------------------------------------------------------------
 # Modifier / flag / resistance accessors
 # ---------------------------------------------------------------------------
@@ -308,7 +422,13 @@ func apply_damage(amount: int, damage_type: String = "physical") -> Dictionary:
 	## Applies damage through the full pipeline: resistance -> temp HP -> HP.
 	## Returns { resisted, temp_hp_absorbed, hp_damage, new_hp, is_downed }.
 	if is_character:
-		return _character.apply_damage(amount, damage_type)
+		var hp_before: int = _character.hp_current
+		var result := _character.apply_damage(amount, damage_type)
+		if result.get("is_downed", false):
+			# Compute actual negative HP for mortal wounds deficit modifier.
+			# CharacterData clamps hp_current to 0, so we reconstruct the true value.
+			hp_when_downed = hp_before - result.get("hp_damage", 0)
+		return result
 
 	# Monster damage pipeline
 	var dr := _monster_damage_resistances

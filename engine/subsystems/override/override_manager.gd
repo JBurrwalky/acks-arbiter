@@ -17,12 +17,12 @@ extends Node
 ##   saving_throw_petrification, saving_throw_poison, saving_throw_blast,
 ##   saving_throw_wands, saving_throw_spells, morale_check, reaction_roll,
 ##   thief_skill_throw, proficiency_throw, domain_event_roll, hijink_roll,
-##   mortal_wound_roll, tampering_with_mortality
+##   mortal_wound_d20, mortal_wound_d6, tampering_with_mortality
 ##
 ## Player-facing rolls (prompted in PHYSICAL/HYBRID mode — called via DiceSystem.player_roll()):
 ##   player_surprise_check, initiative, attack_throw, damage_roll,
 ##   saving_throw_*, thief_skill_throw, proficiency_throw,
-##   mortal_wound_roll, tampering_with_mortality
+##   mortal_wound_d20, mortal_wound_d6, tampering_with_mortality
 ##
 ## GM/digital-only rolls (always called via DiceSystem.roll_digital()):
 ##   encounter_check, monster_surprise_check, morale_check, reaction_roll,

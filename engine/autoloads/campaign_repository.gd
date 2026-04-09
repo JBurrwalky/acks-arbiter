@@ -94,6 +94,41 @@ static func generate_id() -> String:
 	]
 
 
+func _sanitize_character_record(record: Dictionary) -> Dictionary:
+	var sanitized := record.duplicate(true)
+	sanitized["languages"] = CharacterData.sanitize_languages_json(record.get("languages", "[]"))
+	return sanitized
+
+
+func _sanitize_character_records(rows: Array) -> Array:
+	var sanitized_rows: Array = []
+	for row in rows:
+		if row is Dictionary:
+			sanitized_rows.append(_sanitize_character_record(row))
+	return sanitized_rows
+
+
+func _sanitize_language_proficiency_rows(proficiencies: Array) -> Array:
+	var sanitized_rows: Array = []
+	var seen_language_specs: Dictionary = {}
+	for prof_var in proficiencies:
+		if not (prof_var is Dictionary):
+			continue
+		var prof: Dictionary = (prof_var as Dictionary).duplicate(true)
+		var proficiency_key: String = prof.get("proficiency_key", "")
+		if proficiency_key == "language":
+			var spec_ids := CharacterData.sanitize_language_ids([prof.get("specialization", "")])
+			if spec_ids.is_empty():
+				continue
+			var spec_id: String = spec_ids[0]
+			if seen_language_specs.has(spec_id):
+				continue
+			seen_language_specs[spec_id] = true
+			prof["specialization"] = spec_id
+		sanitized_rows.append(prof)
+	return sanitized_rows
+
+
 # ---------------------------------------------------------------------------
 # Campaign CRUD
 # ---------------------------------------------------------------------------
@@ -186,6 +221,7 @@ func update_campaign_calendar(id: String, day: int) -> void:
 # ---------------------------------------------------------------------------
 
 func create_character(data: Dictionary) -> String:
+	data = _sanitize_character_record(data)
 	if not data.has("id") or (data["id"] as String).is_empty():
 		data["id"] = generate_id()
 	if not db.query_with_bindings("""
@@ -242,11 +278,12 @@ func get_character(id: String) -> Dictionary:
 			or db.query_result.is_empty():
 		push_error("CampaignRepository.get_character: not found. id=%s" % id)
 		return {}
-	return db.query_result[0]
+	return _sanitize_character_record(db.query_result[0])
 
 
 func save_character(data: Dictionary) -> bool:
 	# Upsert: update if exists, insert if not
+	data = _sanitize_character_record(data)
 	var id: String = data.get("id", "")
 	var exists := db.query_with_bindings("SELECT id FROM characters WHERE id = ?", [id]) \
 		and not db.query_result.is_empty()
@@ -352,14 +389,14 @@ func list_party_characters(party_id: String) -> Array:
 		WHERE pm.party_id = ? AND c.is_active = 1
 		ORDER BY pm.formation_slot
 	""", [party_id])
-	return db.query_result.duplicate()
+	return _sanitize_character_records(db.query_result.duplicate())
 
 
 func get_henchmen_for_employer(employer_id: String) -> Array:
 	db.query_with_bindings(
 		"SELECT * FROM characters WHERE employer_id = ? AND character_type = 'henchman' AND is_active = 1 ORDER BY name",
 		[employer_id])
-	return db.query_result.duplicate()
+	return _sanitize_character_records(db.query_result.duplicate())
 
 
 # ---------------------------------------------------------------------------
@@ -1108,6 +1145,7 @@ func reset_expended_slots(character_id: String) -> bool:
 
 func save_character_proficiencies(character_id: String, proficiencies: Array) -> bool:
 	## Replace all proficiencies for a character. Runs in a transaction.
+	proficiencies = _sanitize_language_proficiency_rows(proficiencies)
 	db.query("BEGIN TRANSACTION")
 	if not db.query_with_bindings(
 		"DELETE FROM character_proficiencies WHERE character_id = ?", [character_id]
@@ -1140,7 +1178,7 @@ func get_character_proficiencies(character_id: String) -> Array:
 		"SELECT * FROM character_proficiencies WHERE character_id = ?",
 		[character_id]
 	)
-	return db.query_result.duplicate()
+	return _sanitize_language_proficiency_rows(db.query_result.duplicate())
 
 
 # ---------------------------------------------------------------------------
@@ -1199,7 +1237,7 @@ func list_characters(campaign_id: String) -> Array:
 		"SELECT * FROM characters WHERE campaign_id = ? AND is_active = 1 ORDER BY name",
 		[campaign_id]
 	)
-	return db.query_result.duplicate()
+	return _sanitize_character_records(db.query_result.duplicate())
 
 
 func list_characters_by_type(campaign_id: String, character_type: String) -> Array:
@@ -1207,7 +1245,7 @@ func list_characters_by_type(campaign_id: String, character_type: String) -> Arr
 		"SELECT * FROM characters WHERE campaign_id = ? AND character_type = ? AND is_active = 1 ORDER BY name",
 		[campaign_id, character_type]
 	)
-	return db.query_result.duplicate()
+	return _sanitize_character_records(db.query_result.duplicate())
 
 
 func list_characters_by_tier(campaign_id: String, tier: String) -> Array:
@@ -1216,7 +1254,7 @@ func list_characters_by_tier(campaign_id: String, tier: String) -> Array:
 		"SELECT * FROM characters WHERE campaign_id = ? AND persistence_tier = ? AND is_active = 1 ORDER BY name",
 		[campaign_id, tier]
 	)
-	return db.query_result.duplicate()
+	return _sanitize_character_records(db.query_result.duplicate())
 
 
 func list_characters_excluding_tier(campaign_id: String, excluded_tier: String) -> Array:
@@ -1227,7 +1265,7 @@ func list_characters_excluding_tier(campaign_id: String, excluded_tier: String) 
 		"SELECT * FROM characters WHERE campaign_id = ? AND persistence_tier != ? AND is_active = 1 ORDER BY name",
 		[campaign_id, excluded_tier]
 	)
-	return db.query_result.duplicate()
+	return _sanitize_character_records(db.query_result.duplicate())
 
 
 func strip_character_sub_tables(character_id: String) -> bool:

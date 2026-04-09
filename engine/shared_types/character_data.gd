@@ -92,6 +92,11 @@ var mirror_images: int = 0
 ## NOT in from_dict/to_dict — loaded separately via CampaignRepository.get_character_proficiencies().
 var proficiencies: Array = []
 
+const REMOVED_LANGUAGE_IDS := {
+	"alignment_lawful": true,
+	"alignment_chaotic": true,
+}
+
 
 ## Persistence tier helpers
 
@@ -309,6 +314,54 @@ static func ability_modifier(score: int) -> int:
 	return 0
 
 
+static func sanitize_language_ids(raw_ids: Array) -> Array:
+	## Removes deprecated alignment-language IDs and duplicate/empty entries.
+	var sanitized: Array = []
+	var seen: Dictionary = {}
+	for raw_id in raw_ids:
+		if not (raw_id is String):
+			continue
+		var language_id := (raw_id as String).strip_edges()
+		if language_id.is_empty() or REMOVED_LANGUAGE_IDS.has(language_id) or seen.has(language_id):
+			continue
+		seen[language_id] = true
+		sanitized.append(language_id)
+	return sanitized
+
+
+static func parse_languages_json(raw_languages: Variant) -> Array:
+	## Returns a sanitized Array[String] from a stored JSON string or an Array input.
+	if raw_languages is Array:
+		return sanitize_language_ids(raw_languages)
+	if raw_languages is String:
+		var raw_str := raw_languages as String
+		if raw_str.is_empty():
+			return []
+		var parsed = JSON.parse_string(raw_str)
+		if parsed is Array:
+			return sanitize_language_ids(parsed)
+	return []
+
+
+static func sanitize_languages_json(raw_languages: Variant) -> String:
+	return JSON.stringify(parse_languages_json(raw_languages))
+
+
+static func get_default_languages_for_race(race: String) -> Array:
+	## Returns the standard starting spoken languages for the given race.
+	var default_languages: Array = ["common"]
+	match race:
+		"elf":
+			default_languages.append_array(["elvish", "gnoll", "hobgoblin", "orc"])
+		"dwarf":
+			default_languages.append_array(["dwarvish", "goblin", "gnome", "kobold"])
+		"gnome":
+			default_languages.append("gnomish")
+		"halfling":
+			default_languages.append("halfling")
+	return sanitize_language_ids(default_languages)
+
+
 static func from_dict(data: Dictionary) -> CharacterData:
 	var c := CharacterData.new()
 	c.id = data.get("id", "")
@@ -347,7 +400,7 @@ static func from_dict(data: Dictionary) -> CharacterData:
 	c.portrait_id = data.get("portrait_id", "")
 	c.current_age = data.get("current_age", 0)
 	c.age_category = data.get("age_category", "adult")
-	c.languages = data.get("languages", "[]")
+	c.languages = sanitize_languages_json(data.get("languages", "[]"))
 	c.personality = data.get("personality", "{}")
 	# Boolean DB fields are stored as INTEGER (0/1) — convert on read
 	c.is_dead = data.get("is_dead", 0) == 1
@@ -399,7 +452,7 @@ func to_dict() -> Dictionary:
 		"portrait_id": portrait_id,
 		"current_age": current_age,
 		"age_category": age_category,
-		"languages": languages,
+		"languages": sanitize_languages_json(languages),
 		"personality": personality,
 		"is_dead": 1 if is_dead else 0,
 		"is_active": 1 if is_active else 0,

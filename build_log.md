@@ -3439,3 +3439,365 @@ CombatState actions:
 **Next session should:**
 1. Run test_runner.tscn in Godot to verify all 26 new combat tests pass alongside existing suites.
 2. Build F-1 Session 2: SpellCombatHooks (14 trigger points), RangedAttackResolver, CombatConditionManager. Wire hooks into CombatController at all phase boundaries.
+
+---
+
+## Session 2026-04-08 — Character Creation Starting Gold Rolled-State Fix
+
+**Task:** Fix the character-creation starting gold / shopping step so a completed gold roll properly registers and the shop does not get desynced by earlier generator work.
+**Model used:** GPT-5 Codex
+**Completed:**
+- Updated `scenes/ui/character_creation/equipment_shop_panel.gd` so `is_complete()` reads the panel's restored local gold state instead of re-querying the backing dictionary on every check.
+- Added `_apply_starting_gold_roll_total()` in `scenes/ui/character_creation/equipment_shop_panel.gd` to centralize the resolved-roll path: successful rolls now commit local + shared gold state in one place, while zero/cancelled results leave the panel unrolled and re-enable the button instead of trapping the player in a bad state.
+- Removed the stray `starting_gold` roll from `engine/subsystems/characters/character_generator.gd`; PC generation no longer consumes the real equipment-step roll type or any queued override before the player reaches the shop.
+- Added `tests/test_equipment_shop_panel.gd` coverage for successful rolled-state application and for zero/cancelled results staying in the pre-roll state.
+- Added `tests/test_character_generator.gd` coverage verifying `generate_pc()` does not consume a queued `starting_gold` override.
+- Updated `docs/coding_conventions.md` §3.8 with the async UI roll-handler rule: await at the boundary, then hand off resolved state mutation to a synchronous helper so plain test suites can exercise the post-roll path.
+**Decisions made:**
+- Treated starting-gold registration as both a UI-state problem and a roll-ownership problem. The equipment step is now the sole owner of `starting_gold`; the generator no longer touches that roll type.
+- Chose a synchronous post-roll helper in the shop panel rather than adding async test plumbing, so future roll-driven UI regressions can be covered with the existing plain `run_all_tests()` harness.
+**Interfaces defined or changed:**
+- `EquipmentShopPanel._apply_starting_gold_roll_total(roll_total: int) -> void` — applies a resolved 3d6 total to shop state, or restores the pre-roll state when the resolved total is zero/cancelled.
+**Database changes:** None.
+**Tests added/updated:**
+- `tests/test_equipment_shop_panel.gd` — added rolled-state and zero/cancelled-result regressions.
+- `tests/test_character_generator.gd` — added override-consumption regression.
+- Verified with headless Godot test run: `C:\Godot\Godot_v4.6.1-stable_win64.exe --headless --path . res://tests/test_runner.tscn` exited with code `0`.
+**Known issues:**
+- `HpRollPanel.is_complete()` still keys off `_state.has("hp_rolled")` while `_reset_state()` seeds `"hp_rolled": 0`; this predates the starting-gold fix and was not changed here.
+- The worktree contains unrelated in-progress combat/monster changes outside this fix; they were left untouched.
+**Next session should:**
+1. Smoke-test the character-creation flow in-editor with digital and hybrid dice modes to confirm the equipment step advances immediately after a gold roll and still reopens cleanly on back-navigation.
+2. Fix the pre-existing `HpRollPanel.is_complete()` / seeded `hp_rolled` mismatch so the HP step cannot be skipped accidentally.
+
+---
+
+## Session 2026-04-08 — Monster AI Combat System (F-1 Session 3)
+
+**Task:** Implement monster AI using behavior tags, morale checks at ACKS-correct triggers, and cleave chains for fighters/monsters.
+**Model used:** Opus for planning and implementation.
+**Completed:**
+
+### New files
+- `engine/subsystems/combat/monster_ai.gd` — Deterministic action selection using behavior tags. Scores targets by primary_target_rule (nearest, weakest, most_dangerous, most_exposed, role_mage, role_missile, retaliatory), resolves ties with target_tie_breaker (nearest, lowest_ac, lowest_hp, last_attacker, leader_marked, random), supports pack focus-fire bonus. Pre-grid: spatial rules approximate (all equidistant).
+- `engine/subsystems/combat/morale_resolver.gd` — ACKS morale roll system. Triggers: first_casualty, half_casualties, solo_half_hp. Combined same-round triggers at -2. Outcomes: retreat (is_fleeing), fighting_withdrawal (is_withdrawing + 1d10 rounds), fight_on, advance_pursue, victory_or_death (morale_locked). Evaluates conditional modifiers (chieftain_alive) and special ability overrides (blood_frenzy → no_check). Fearless morale_style and morale +4 skip rolls.
+- `engine/subsystems/combat/cleave_resolver.gd` — Cleave budget tracking per round. Fighter: up to HD cleaves. Cleric/Thief: HD/2 floor. Mage/NM: 0 cleaves. Budget shared across all attacks in the routine.
+- `tests/test_monster_ai.gd` — 15 tests covering all target rules, tie-breakers, pack focus, fleeing/withdrawing behavior.
+- `tests/test_morale_resolver.gd` — 12 tests covering all triggers, outcomes, conditional modifiers, overrides.
+- `tests/test_cleave_chains.gd` — 10 tests covering all combat progressions, budget tracking, expanded attack sequences.
+
+### Modified files
+- `engine/subsystems/combat/combatant.gd` — Added: `is_withdrawing`, `withdrawal_rounds_remaining`, `morale_locked`, `last_attacker_id` fields. Added: `get_combat_behavior()`, `get_expanded_attack_sequence()` (fixes count field bug), `get_morale_modifiers()`, `get_special_abilities()`. Fixed: `get_combat_progression()` now derives from save_as.class (F→fighter, C→cleric, T→thief, M→mage, NM→normal_man) instead of reading a non-existent combat_progression field.
+- `engine/subsystems/combat/combat_controller.gd` — Constructor extended with monster_ai, morale_resolver, cleave_resolver (all optional, null-safe). `_resolve_monster_action()` rewritten: uses MonsterAI for target selection, expanded attack sequences for mid-routine cleave, morale trigger checks after casualties, fighting withdrawal tick. Added `_resolve_cleave_chain()`, `_check_morale_after_casualty()`, `_check_solo_monster_morale()`. Renamed `_auto_select_melee_target()` → `_auto_select_target()` with AI fallback.
+- `engine/subsystems/combat/attack_resolver.gd` — Sets `target.last_attacker_id = attacker.id` on damage dealt in both `resolve_melee_attack()` and `resolve_monster_attack()`.
+- `engine/subsystems/session/states/combat_state.gd` — Instantiates MonsterAI, MoraleResolver, CleaveResolver and passes to CombatController.
+- `data/monsters/monster_catalog.json` — Normalized tag vocabulary: craven→fragile, bold→steadfast, standard→normal, nearest_threat→most_dangerous, strongest→lowest_ac, weakest(tiebreaker)→lowest_hp. Kept: fearless, pack, none, random as distinct values.
+- `generation/gdd_combat_behavior_tags.md` — Added fearless (morale_style), pack/none (formation_discipline), random (target_tie_breaker) to documented vocabulary and data model.
+- `tests/test_runner.gd` / `tests/test_runner.tscn` — Added 3 new test suite nodes.
+- `tests/test_combat_controller.gd` — Fixed pre-existing initiative tiebreak fragility (PCs need enough HP to survive monster-first initiative).
+- `tests/test_combat_controller_session2.gd` — Same initiative fragility fix.
+
+**Decisions made:**
+- Cleave happens mid-routine: claw/claw(kill)/cleave-claw/bite. Cleave uses same attack type/stats as killing blow.
+- Cleave cap is HD total per round across all attacks (not per killing blow).
+- NM-saving monsters (goblins, kobolds) get 0 cleaves (strict reading: NM doesn't use fighter attack throws).
+- Leader death is NOT a separate morale trigger; chieftain_alive modifier just disappears.
+- Pre-grid morale: flag + fighting withdrawal. Retreat = is_fleeing (skip turns). Fighting withdrawal = is_withdrawing (still attacks, 1d10 rounds then flee).
+- Tag vocabulary hybrid approach: keep fearless/pack/none/random as distinct values with unique runtime behaviors.
+- Morale resolver checks BOTH morale_modifiers and special_abilities for no_check overrides.
+
+**Interfaces defined or changed:**
+- `CombatController._init()` — 3 new optional params: `p_monster_ai: MonsterAI`, `p_morale_resolver: MoraleResolver`, `p_cleave_resolver: CleaveResolver`
+- `Combatant` new fields: `is_withdrawing: bool`, `withdrawal_rounds_remaining: int`, `morale_locked: bool`, `last_attacker_id: String`
+- `Combatant.get_combat_progression()` — now returns "normal_man" for NM save class
+- `Combatant.get_expanded_attack_sequence()` → `Array[Dictionary]` with keys: attack_type, damage, to_hit_modifier, special_effect, source_index
+- `Combatant.get_combat_behavior()` → Dictionary (raw behavior tags from monster data)
+- `Combatant.get_morale_modifiers()` → Array
+- `Combatant.get_special_abilities()` → Array
+- `MonsterAI.select_action(combatant)` → `{action_id, parameters}`
+- `MonsterAI.select_target(combatant, behavior)` → Combatant
+- `MoraleResolver.check_trigger(combatant, trigger, roster)` → `{should_roll, extra_modifier, reason}`
+- `MoraleResolver.roll_morale(combatant, roster, extra_modifier)` → `{roll, base_morale, conditional_modifier, extra_modifier, modified_total, outcome}`
+- `MoraleResolver.apply_outcome(combatant, outcome)` — sets is_fleeing/is_withdrawing/morale_locked
+- `CleaveResolver.get_max_cleaves(combatant)` → int
+- `CleaveResolver.can_cleave(combatant)` → bool
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_monster_ai.gd` — 15 tests (all passing)
+- `tests/test_morale_resolver.gd` — 12 tests (all passing)
+- `tests/test_cleave_chains.gd` — 10 tests (all passing)
+- All 10 combat test suites pass (including 26 pre-existing + 37 new = 63 total combat tests).
+
+**Known issues:**
+- Full test runner (test_runner.tscn) hangs after ~7 suites, before reaching combat tests. This is a pre-existing issue unrelated to this session's changes. Combat tests verified via focused runner.
+- Pre-grid limitations: nearest/most_exposed target rules use AC-based approximation or stable ID ordering. Formation discipline spatial effects deferred to Session 4.
+- engagement_profile: missile/balanced profiles are implemented but pre-grid all monsters default to melee (no distance tracking yet).
+- spellcasting_timing / consumable_timing: no spellcasting or consumable monsters in current catalog. Logic is stubbed; concrete implementations deferred to spell/item sessions.
+- leader_marked tie-breaker: placeholder, returns stable ID tiebreak. Needs leader tracking system.
+
+**Next session should:**
+1. Session F-1.4: Grid-based movement on TacticalMapData, engagement/withdrawal/retreat rules, 7 combat maneuvers, charging.
+2. Fix the full test runner hang (likely a ClassRegistry or downstream test causing infinite loop).
+
+---
+
+## Session 2026-04-08 — Grid Movement, Engagement, Maneuvers, Charging (F-1 Session 4)
+
+**Task:** Implement grid-based movement on TacticalMapData, engagement/withdrawal/retreat rules, 7 ACKS combat maneuvers, and charging mechanics.
+**Model used:** Opus 4.6 for planning and implementation.
+**Completed:**
+
+### New files
+- `engine/subsystems/combat/movement_resolver.gd` — BFS pathfinding, Chebyshev distance, adjacency/engagement tracking, charge validation (min 4 cells, clear straight-line path, LOS), LOS via Bresenham line walk, fighting withdrawal (half movement away), full retreat (full movement away). All methods return graceful defaults when `_map` is null (pre-grid fallback).
+- `engine/subsystems/combat/maneuver_resolver.gd` — All 7 ACKS combat maneuvers: brawl (nonlethal punch/kick), disarm (weapon 5' away), force back (push distance = damage roll, wall collision), knock down (prone), overrun (move through, doesn't consume attack), sunder (weapon/shield, magic item resistance), wrestle (grappled hold, free follow-up maneuvers). Shared pattern: -4 attack throw, target saves vs Paralysis, maneuver-specific effect. Size modifier (-4 save if attacker 2x HD).
+- `tests/test_movement_resolver.gd` — 18 tests: no-grid fallback, distance, adjacency, engagement, BFS pathfinding (open/wall/unreachable), can_reach, move_along_path, LOS (clear/blocked), charge validation (valid/too close/blocked).
+- `tests/test_combat_maneuvers.gd` — 14 tests: all 7 maneuvers with hit/save outcomes, wrestling hold follow-up attacks, monster brawl prohibition, sunder magic item resistance.
+- `tests/test_combat_controller_session4.gd` — 12 tests: no-grid backward compatibility, grid melee adjacency/out-of-range/auto-move, ranged grid distance, charge succeed/fail, move action, fighting withdrawal, full retreat with vulnerable, declarations, engagement condition tracking.
+- `tests/test_monster_ai_spatial.gd` — 8 tests: nearest rule with grid distance, nearest tiebreaker, most_exposed distance bonus, melee when adjacent, charge when far, move-toward, no-grid fallback, missile profile.
+
+### Modified files
+- `engine/subsystems/combat/combatant.gd` — Added: `grid_position`, `declared_defensive_movement`, `set_against_charge`, `has_moved_this_round`, `held_by_id` fields. Added `get_combat_movement_cells()` helper.
+- `engine/subsystems/combat/combat_controller.gd` — Added `movement_resolver`, `maneuver_resolver`, `tactical_map` fields. Extended constructor with optional `p_tactical_map`. New action routing: `move`, `charge`, `fighting_withdrawal`, `full_retreat`, `maneuver_*`. Melee gated by adjacency with auto-move. Ranged distance from grid. Declaration phase resets per-round grid fields. `submit_declaration()` for defensive movement/set-against-charge. `_resolve_charge_action()` with set-against-charge counter. `_resolve_defensive_movement()`. `_update_engagement()` after position changes. ManeuverResolver created in constructor (works with or without grid).
+- `engine/subsystems/combat/monster_ai.gd` — Added `_movement_resolver` field (optional, injected via constructor). "nearest" scoring uses actual grid distance when available. "most_exposed" includes distance bonus. `_choose_engagement_action()` spatial: melee if adjacent, move+melee if within movement, charge if 4+ cells clear path, ranged if has missile attacks. `_nearest_tiebreak()` uses grid distance.
+- `engine/subsystems/combat/attack_resolver.gd` — No changes needed (charge double damage handled via condition system).
+- `engine/subsystems/session/states/combat_state.gd` — Creates MovementResolver and passes to MonsterAI before CombatController. Passes tactical_map to CombatController constructor. `_place_combatants_on_grid()` places party near entry, monsters offset.
+- `data/conditions/condition_catalog.json` — Added `"disarmed"` condition.
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — 4 new test suite nodes registered.
+
+**Decisions made:**
+- Grid is optional: all spatial checks guarded by null. Pre-grid tests pass unmodified.
+- Move + Attack: `_resolve_melee_action()` auto-moves to adjacent cell within movement budget. Explicit "move" action only for move-without-attacking.
+- Engagement is procedural: `_update_engagement()` applies/removes "engaged" condition after any position change, not declared by player.
+- Full retreat: applies "vulnerable" condition (no shield AC, +2/+4 attacker bonus) — matches ACKS exactly.
+- Overrun doesn't consume attack: tracked separately via `does_not_consume_attack` flag.
+- Wrestling hold: `held_by_id` on target lets ManeuverResolver skip attack throw for follow-up maneuvers.
+- Charge double damage: handled by "charging" condition in catalog (`double_damage_on_hit: true`). Set-against-charge: defender counter-attacks first with double damage if initiative >= charger.
+- ManeuverResolver works without grid (maneuvers don't require spatial positioning).
+- Size modifier: HD 2x ratio triggers -4 save penalty (rough proxy for size).
+- Force back direction: away from attacker position on grid; wall collision = prone + 1d6/10'.
+
+**Interfaces defined or changed:**
+- `CombatController._init()` — new optional param: `p_tactical_map: TacticalMapData`
+- `CombatController.submit_declaration(combatant_id, declaration_type, parameters)` — pre-initiative declarations
+- `Combatant` new fields: `grid_position: Vector2i`, `declared_defensive_movement: String`, `set_against_charge: bool`, `has_moved_this_round: bool`, `held_by_id: String`
+- `Combatant.get_combat_movement_cells() -> int` — movement in grid cells
+- `MovementResolver._init(map, roster)` — all public methods listed in plan
+- `MovementResolver.validate_charge(attacker, target) -> {valid, path, reason}`
+- `ManeuverResolver._init(dice, attack_resolver, movement_resolver, condition_manager)`
+- `ManeuverResolver.resolve_maneuver(attacker, target, maneuver_type, parameters) -> Dictionary`
+- `MonsterAI._init(roster, dice_system, movement_resolver)` — 3rd param is new (optional)
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_movement_resolver.gd` — 18 tests (all passing)
+- `tests/test_combat_maneuvers.gd` — 14 tests (all passing)
+- `tests/test_combat_controller_session4.gd` — 12 tests (all passing)
+- `tests/test_monster_ai_spatial.gd` — 8 tests (all passing)
+- All 14 pre-existing combat test suites pass (62 total suites pass, 5 pre-existing failures unchanged).
+
+**Known issues:**
+- Full test runner hangs after ~60 suites (pre-existing, unrelated to this session).
+- Missile profile AI: doesn't yet prefer ranged over melee when within movement range. Needs refinement to check engagement_profile before defaulting to melee.
+- leader_marked tie-breaker: still placeholder (stable ID tiebreak).
+- Set-against-charge counter-attack currently uses normal melee damage; ACKS specifies double damage for spear/polearm specifically — needs weapon tag integration.
+- Charge double damage for spear/lance/polearm: relies on "charging" condition's `double_damage_on_hit` flag, but AttackResolver doesn't yet check weapon type to restrict double damage to charge weapons.
+- Force back wall collision: distance-based (1d6 per 10'), but doesn't check for entity collisions (knock down smaller creatures).
+- Overrun: block/strike option always assumed; needs player/AI choice mechanism.
+- Running exhaustion (2×CON rounds, then exhausted): tracked fields exist but no mechanic yet.
+- Grid combat map generation: TacticalMapData from context is placeholder; procedural battle map generation (gdd-combat-map-generation.md) is Phase D-4 dependency.
+
+**Next session should:**
+1. Session F-1.5: Mortal wounds tables, XP awards, combat end lifecycle, full SessionRunner integration, combat log.
+2. Fix the full test runner hang.
+3. Consider refining missile profile AI to prefer ranged when not adjacent.
+3. Wire formation_discipline spatial effects once grid movement exists.
+
+---
+
+## Session 2026-04-08 — Character Creation Hanging Player Roll Fix
+
+**Task:** Fix character-creation player rolls that resolved in the DicePrompt but left HP or starting-gold steps stuck in an in-flight state, especially from the Main dev-overlay path after the SessionRunner cancellation refactor.
+**Model used:** GPT-5 Codex
+**Completed:**
+- Reworked `engine/autoloads/dice_system.gd` so `player_roll()` now uses a dedicated `_PendingPlayerRoll` helper object with bound-method signal listeners instead of inline closures. The helper owns waiting state, disconnect cleanup, and first-terminal-signal-wins behavior for `player_roll_resolved` vs `player_roll_cancelled`.
+- Added `_build_cancelled_result()` in `engine/autoloads/dice_system.gd` so cancelled player rolls still complete the awaiting coroutine with a consistent zeroed `RollResult` that preserves roll metadata.
+- Updated `scenes/ui/character_creation/hp_roll_panel.gd` to route post-await state changes through `_apply_hp_roll_total()`, clear `_rolling` and button disable state on both resolve and cancel paths, and treat zero/cancelled results as "not rolled yet."
+- Updated `scenes/ui/character_creation/equipment_shop_panel.gd` so `_apply_starting_gold_roll_total()` fully owns post-roll cleanup, including clearing `_rolling` and restoring the roll button on cancelled/zero results.
+- Updated `scenes/ui/character_creation/character_creation_screen.gd` to stop seeding `hp_rolled` in fresh state and to erase `hp_rolled` / `hp_raw_roll` when invalidating from the HP step.
+- Added focused `DiceSystem` pending-roll tests in `tests/test_dice_system.gd`.
+- Added a new `tests/test_hp_roll_panel.gd` suite and registered it in `tests/test_runner.gd` / `tests/test_runner.tscn`.
+- Extended `tests/test_equipment_shop_panel.gd` to assert cancelled starting-gold rolls re-enable the button and clear in-flight roll state.
+- Updated `docs/coding_conventions.md` §3.8 with the new coroutine signal-race rule: prefer helper objects with bound listeners over anonymous closures for multi-signal waits.
+**Decisions made:**
+- Kept this fix scoped to the async roll path and character-creation panel state handling; character creation remains launched from the existing Main dev-overlay path for now.
+- Preserved the existing cancellation contract: cancelled player rolls still return a zeroed `RollResult` with `was_overridden = true` so awaiting callers resume cleanly.
+- Treated HP and equipment as the same class of bug so both early character-creation player-roll steps now share the same thin-await/synchronous-helper pattern.
+**Interfaces defined or changed:**
+- `DiceSystem._create_pending_player_roll() -> RefCounted` — internal helper factory used by `player_roll()`.
+- `DiceSystem._build_cancelled_result(roll_type: String, sides: int, count: int, modifier: int, description: String = "") -> RollResult` — internal helper that returns the zeroed cancelled result.
+- `HpRollPanel._apply_hp_roll_total(raw_total: int) -> void` — synchronous post-roll helper for HP panel state changes.
+**Database changes:** None.
+**Tests added/updated:**
+- `tests/test_dice_system.gd` — added resolved/cancel/disconnect coverage for pending player-roll state.
+- `tests/test_hp_roll_panel.gd` — added fresh-state, resolved-roll, and zero/cancelled-roll regressions.
+- `tests/test_equipment_shop_panel.gd` — expanded cancelled-roll regression to cover button + `_rolling` reset.
+- Full headless suite passed via `C:\Godot\Godot_v4.6.1-stable_win64.exe --headless --path . res://tests/test_runner.tscn`.
+**Known issues:**
+- Interactive HYBRID-mode smoke testing through `Ctrl+Alt+C` was not run in this environment, so the manual prompt-flow verification remains unperformed here.
+
+---
+
+## Session 2026-04-08 — F-1 Session 5: Mortal Wounds, XP Awards, Combat End Lifecycle
+
+**Task:** Implement F-1 Session 5 — mortal wounds tables (ACKS d20+d6 system), XP awards via XPAwardCalculator, combat end lifecycle (process downed PCs, mark deaths, distribute XP), full SessionRunner integration (wire commented-out combat transitions), and a structured CombatLog replacing raw event arrays.
+**Model used:** Sonnet 4.6 (implementation)
+
+**Completed:**
+
+### New files
+- `engine/subsystems/combat/combat_log.gd` — `CombatLog` class with `EntryType` enum (12 types), typed entry structure `{type, round, actor_id, target_id, data, timestamp}`. Methods: `add_entry()`, `get_all_entries()`, `get_round_entries()`, `get_entries_by_type()`, `get_entries_for_combatant()`, `get_summary()`, `to_array()`.
+- `engine/subsystems/combat/mortal_wounds_resolver.gd` — `MortalWoundsResolver` class. Implements full ACKS mortal wounds system: d20+d6 roll, 5 damage type wound tables (bludgeoning/fire/penetrating/savage/slashing), 6 rows × 8 columns each. Modifiers: CON mod, HD die bonus (+2/+4/+6/+8 for d6/d8/d10/d12), HP deficit (0hp=+5, tiered down to -20 at 2×max), treatment timing, healing magic BHR, healing proficiency rank. Returns `{d20_raw, d6_raw, d20_modifiers, d20_total, d6_total, condition, wound_description, recovery_time, is_dead, recovers_to_1hp}`. Uses roll types `"mortal_wound_d20"` and `"mortal_wound_d6"` for override support.
+- `tests/test_combat_log.gd` — 5 tests: add/retrieve, filter by round, filter by type, filter by combatant, summary counts.
+- `tests/test_mortal_wounds_resolver.gd` — 20 tests: all 7 condition ranges, CON modifier shift, HD die bonus, HP deficit tiers, treatment timing, wound table lookups (all 5 types), is_dead flag, recovers_to_1hp, recovery times, default-to-slashing fallback.
+- `tests/test_combat_controller_session5.gd` — 10 integration tests: victory xp, defeat zero xp, downed_pcs populated, condition is valid, is_dead on instantly_killed, alive pc gets xp, no xp on defeat, combat log has ROUND_START entries, combat log has ATTACK entries, combat_ended signal payload shape.
+
+### Modified files
+- `engine/subsystems/combat/combatant.gd` — Added `hp_when_downed: int = 0` and `killing_blow_damage_type: String = "slashing"`. `apply_damage()` sets `hp_when_downed` (pre-clamp deficit) when character is downed.
+- `engine/subsystems/combat/attack_resolver.gd` — All 3 downing paths set `target.killing_blow_damage_type = "slashing"` when `target.is_character`.
+- `engine/subsystems/combat/combat_roster.gd` — Added `get_downed_pcs() -> Array` (PC-side characters not alive).
+- `engine/subsystems/combat/combat_controller.gd` — Replaced `_round_events`/`all_events` arrays with `combat_log: CombatLog`. Added `mortal_wounds_resolver` field (11th constructor param). `_emit_combat_ended()` now returns `Dictionary` with `downed_pcs` and `monster_xp_total`. Added `process_mortal_wounds() -> Array`. Round log integration throughout.
+- `engine/autoloads/event_bus.gd` — Added `signal mortal_wound_rolled(character_id: String, result: Dictionary)`.
+- `engine/subsystems/override/override_manager.gd` — Updated roll type vocabulary: `mortal_wound_d20` and `mortal_wound_d6` (replaced `mortal_wound_roll`).
+- `engine/subsystems/session/states/combat_state.gd` — Creates `MortalWoundsResolver` in `enter()`. `_finish_combat()` expanded: processes mortal wounds, marks dead PCs, awards XP via `XPAwardCalculator`. Added `_mark_pc_dead()` and `_award_combat_xp()`.
+- `engine/subsystems/session/states/wilderness_explore_state.gd` — Wired combat transition (was commented out). Passes `encounter_data` + `return_state: "wilderness"` context; early `return` prevents time advance after combat entry.
+- `engine/subsystems/session/states/dungeon_explore_state.gd` — Same pattern as wilderness; passes `tactical_map` from `_controller.get_map()`.
+- `engine/subsystems/session/session_runner.gd` — Added `_class_registry: ClassRegistry` lazy field with `get_class_registry()` getter.
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — Registered 3 new test suite nodes: CombatLogTests, MortalWoundsResolverTests, CombatControllerSession5Tests.
+
+**Decisions made:**
+- `hp_when_downed` must be computed before CharacterData clamps hp_current to 0: computed as `hp_before - hp_damage` in Combatant.apply_damage() wrapper.
+- Treatment timing simplified binary: `"within_1_round"` on victory, `"after_1_day"` on defeat.
+- All killing blows default to `"slashing"` damage type until equipment system tracks weapon damage types.
+- Treasure XP passed as 0 to XPAwardCalculator; treasure collection is a future system.
+- `XPAwardCalculator` is stateless; instantiated fresh in `_award_combat_xp()` each call.
+- ClassRegistry lazy-initialized in SessionRunner (Node, no _init args) rather than in _ready() to avoid premature loading.
+- `_emit_combat_ended()` changed from `void` to `-> Dictionary` to propagate `downed_pcs` and `monster_xp_total` through the combat_over return path.
+
+**Interfaces defined or changed:**
+- `CombatController._init()` — 11th param: `p_mortal_wounds_resolver: MortalWoundsResolver = null`
+- `CombatController.combat_log: CombatLog` — public field (replaces all_events/round_events)
+- `CombatController.process_mortal_wounds() -> Array` — returns `[{combatant_id, mortal_wound_result}]`
+- `CombatController._emit_combat_ended() -> Dictionary` — now returns outcome dict
+- `MortalWoundsResolver.resolve(combatant, hp_when_downed, damage_type, treatment_timing, healing_magic_bhr, healing_proficiency_rank) -> Dictionary`
+- `CombatLog.EntryType` enum — 12 entry types
+- `CombatRoster.get_downed_pcs() -> Array`
+- `Combatant.hp_when_downed: int`, `Combatant.killing_blow_damage_type: String`
+- `EventBus.mortal_wound_rolled(character_id, result)` — new signal
+- `SessionRunner.get_class_registry() -> ClassRegistry` — new lazy getter
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `tests/test_combat_log.gd` — 5 new tests
+- `tests/test_mortal_wounds_resolver.gd` — 20 new tests
+- `tests/test_combat_controller_session5.gd` — 10 new integration tests
+
+**Known issues:**
+- Healing magic BHR and healing proficiency rank passed as 0; healing-after-combat workflow not yet built.
+- Permanent wound effects recorded as strings only; mechanical stat modifications (lost limb, reduced DEX) deferred.
+- Tampering with Mortality (resurrection/restoration) fully deferred.
+- Level-up execution: `character_leveled_up` signal emitted but actual stat changes handled by LevelUpEngine separately.
+- Damage type tracking: all killing blows default to "slashing" until equipment system provides weapon damage types.
+- Treatment timing is binary; full model (presence of healer, spell cast this round, etc.) is a future system.
+
+**Next session should:**
+1. F-1 Session 6 (or F-2): Settlement exploration state + town services (inn, hirelings, equipment resupply).
+2. Fix full test runner hang (pre-existing issue, ~60 suites in).
+3. Wire `mortal_wound_rolled` signal emission (currently process_mortal_wounds() does not emit it).
+4. Weapon damage type system — so killing blows report correct damage type to mortal wounds resolver.
+
+---
+
+## Session 2026-04-08 - Remove Hallucinated Alignment Languages
+
+**Task:** Remove the non-ACKS notion that alignment is a language, clean the language catalog/UI/runtime behavior, and auto-sanitize legacy saves without a schema migration.
+**Model used:** GPT-5 Codex
+
+**Completed:**
+- Removed `alignment_lawful` and `alignment_chaotic` from `data/proficiencies/proficiency_specializations.json`.
+- Added shared language sanitizers to `engine/shared_types/character_data.gd`: `sanitize_language_ids()`, `parse_languages_json()`, and `sanitize_languages_json()`.
+- Updated `engine/autoloads/campaign_repository.gd` to sanitize character language JSON on create/read/save/list operations and to sanitize language proficiency rows on load/save.
+- Updated `scenes/ui/character_creation/character_creation_screen.gd` so finalization grants only Common + racial + INT bonus languages, with no alignment-based auto-grant.
+- Rewrote `scenes/ui/character_creation/language_selection_panel.gd` to remove alignment-language copy and filtering logic.
+- Updated `scenes/ui/components/character_sheet_panel.gd` and `scenes/ui/character_sheet/tabs/cs_tab_biography.gd` so language preview/display paths read sanitized language lists and never synthesize alignment tongues from alignment state.
+- Corrected `generation/gdd-proficiency-specializations.md` so it no longer claims ACKS has alignment tongues and so the listed base IDs match the current catalog.
+- Added `tests/test_language_cleanup.gd` and registered it in `tests/test_runner.gd` / `tests/test_runner.tscn`.
+- Expanded `tests/test_specialization_registry.gd` with a language-count regression for the cleaned catalog.
+
+**Decisions made:**
+- Legacy save cleanup is handled by repository/shared-type sanitization rather than a DB migration. Old rows remain readable immediately and are healed the next time they are re-saved.
+- Unknown non-empty language IDs are preserved by the sanitizer so future setting-generated language IDs are not accidentally stripped. Only the deprecated alignment IDs, empties, non-strings, and duplicate language entries are removed.
+- Duplicate language proficiency rows are collapsed by specialization during sanitization because Language is modeled as one row per known language, not a stacking proficiency.
+
+**Interfaces defined or changed:**
+- `CharacterData.sanitize_language_ids(raw_ids: Array) -> Array`
+- `CharacterData.parse_languages_json(raw_languages: Variant) -> Array`
+- `CharacterData.sanitize_languages_json(raw_languages: Variant) -> String`
+- `CampaignRepository` now sanitizes `languages` in character dictionaries returned by `get_character()`, `list_party_characters()`, `list_characters()`, `list_characters_by_type()`, `list_characters_by_tier()`, and `list_characters_excluding_tier()`.
+- `CampaignRepository.save_character_proficiencies()` and `CampaignRepository.get_character_proficiencies()` now sanitize `language` rows to strip deprecated alignment IDs and collapse duplicates.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- Added `tests/test_language_cleanup.gd` covering shared language-array sanitization, legacy character language JSON cleanup/healing, legacy proficiency-row cleanup/healing, character creation finalization, and character sheet preview behavior.
+- Updated `tests/test_specialization_registry.gd` to assert the language catalog now has 19 entries and excludes both deprecated alignment IDs.
+- Ran the full headless test runner: `C:\Godot\Godot_v4.6.1-stable_win64.exe --headless --path . res://tests/test_runner.tscn` (pass).
+
+**Known issues:**
+- No explicit repository-wide migration was added, so already-persisted bad rows are cleaned on read/save boundaries rather than rewritten in place immediately.
+- Historical `build_log.md` entries from the earlier mistaken implementation remain unchanged because the log is append-only.
+
+**Next session should:**
+1. Watch for any external tooling or content-generation step that still assumes the old 21-language base catalog and update it if encountered.
+2. If campaign-layer/generated languages are implemented later, route them through the same `CharacterData` sanitization helpers rather than adding new ad hoc filters.
+
+---
+
+## Session 2026-04-08 - Elven And Dwarven Starting Language Defaults
+
+**Task:** Fix racial starting language grants so elves and dwarves receive the full ACKS demihuman language sets instead of only Common plus their racial tongue.
+**Model used:** GPT-5 Codex
+
+**Completed:**
+- Added `CharacterData.get_default_languages_for_race(race: String) -> Array` in `engine/shared_types/character_data.gd`.
+- Implemented ACKS elf defaults as `common`, `elvish`, `gnoll`, `hobgoblin`, `orc`.
+- Implemented ACKS dwarf defaults as `common`, `dwarvish`, `goblin`, `gnome`, `kobold`.
+- Updated `scenes/ui/character_creation/character_creation_screen.gd` to use the shared helper when finalizing character languages.
+- Updated `scenes/ui/character_creation/language_selection_panel.gd` to show the full racial auto-grant list in the Languages step.
+- Updated `scenes/ui/components/character_sheet_panel.gd` to use the same helper for live wizard preview fallback.
+- Expanded `tests/test_language_cleanup.gd` with regressions for elf/dwarf defaults, elf finalization, and dwarf preview behavior.
+
+**Decisions made:**
+- Centralized racial starting languages in `CharacterData` so create/finalize/preview paths cannot drift.
+- Left the current gnome and halfling behavior unchanged; this session only corrected the explicit ACKS elf/dwarf defaults requested.
+
+**Interfaces defined or changed:**
+- `CharacterData.get_default_languages_for_race(race: String) -> Array`
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- Updated `tests/test_language_cleanup.gd` to assert exact elf and dwarf default language arrays.
+- Added elf finalization regression to confirm stored languages include the full elf defaults plus bonus picks.
+- Added dwarf preview regression to confirm the in-wizard sheet fallback shows the full dwarf defaults.
+- Ran the full headless test runner: `C:\Godot\Godot_v4.6.1-stable_win64.exe --headless --path . res://tests/test_runner.tscn` (pass).
+
+**Known issues:**
+- This session did not re-audit other demihuman racial language defaults beyond the explicitly requested elf and dwarf corrections.
+
+**Next session should:**
+1. Audit the remaining demihuman/default-language assumptions against the local ACKS summaries if more racial-language corrections are needed.
+2. Reuse `CharacterData.get_default_languages_for_race()` for any future NPC generation or importer code that seeds starting languages.

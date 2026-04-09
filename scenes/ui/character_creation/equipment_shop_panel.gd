@@ -56,7 +56,7 @@ func setup(state: Dictionary, catalog: EquipmentCatalog,
 
 
 func is_complete() -> bool:
-	return int(_state.get("starting_gold_cp", 0)) > 0
+	return _starting_gold_cp > 0
 
 
 # ---------------------------------------------------------------------------
@@ -189,14 +189,38 @@ func _on_roll_gold() -> void:
 
 	var result: RollResult = await DiceSystem.player_roll(6, 3, 0,
 		"starting_gold", "Roll Starting Gold (3d6 × 10gp)")
+	_apply_starting_gold_roll_total(result.modified_total)
+
+
+func _apply_starting_gold_roll_total(roll_total: int) -> void:
+	_rolling = false
+
+	if roll_total <= 0:
+		# A cancelled player_roll() returns a zeroed RollResult. Treat that like
+		# "not rolled yet" so the player can try again instead of getting stuck.
+		_starting_gold_cp = 0
+		_gold_remaining_cp = 0
+		_gold_rolled = false
+		_commit_gold()
+		if _roll_btn != null:
+			_roll_btn.visible = true
+			_roll_btn.disabled = false
+		if _status_label != null:
+			_status_label.text = "Starting gold roll cancelled. Roll again to begin shopping."
+		_refresh_gold_display()
+		_refresh_item_list()
+		return
+
 	# 3d6 × 10gp × 100cp/gp
-	_starting_gold_cp = result.modified_total * 10 * 100
+	_starting_gold_cp = roll_total * 10 * 100
 	_gold_remaining_cp = _starting_gold_cp
 	_gold_rolled = true
 	_commit_gold()
-
-	_rolling = false
-	_roll_btn.visible = false
+	if _roll_btn != null:
+		_roll_btn.visible = false
+		_roll_btn.disabled = false
+	if _status_label != null:
+		_status_label.text = ""
 	_refresh_gold_display()
 	_refresh_item_list()
 

@@ -87,6 +87,9 @@ func player_roll(
 	# PHYSICAL or HYBRID: prompt the player, then await their response.
 	# Race: wait for either resolution or cancellation (SessionRunner cancels
 	# pending rolls on state transitions to prevent hung coroutines).
+	var pending := _create_pending_player_roll()
+	pending.connect_signals()
+
 	EventBus.player_roll_requested.emit({
 		"roll_type":   roll_type,
 		"sides":       sides,
@@ -95,39 +98,22 @@ func player_roll(
 		"description": description,
 	})
 
-	var resolved := false
-	var cancelled := false
-	var result_args: Array = []
-
-	var _on_resolved := func(rt: String, raw: int, entered: bool) -> void:
-		result_args = [rt, raw, entered]
-		resolved = true
-	var _on_cancelled := func() -> void:
-		cancelled = true
-
-	EventBus.player_roll_resolved.connect(_on_resolved, CONNECT_ONE_SHOT)
-	EventBus.player_roll_cancelled.connect(_on_cancelled, CONNECT_ONE_SHOT)
-
-	# Await whichever fires first
-	while not resolved and not cancelled:
+	while pending.is_waiting():
 		await Engine.get_main_loop().process_frame
 
-	# Clean up whichever didn't fire
-	if resolved and EventBus.player_roll_cancelled.is_connected(_on_cancelled):
-		EventBus.player_roll_cancelled.disconnect(_on_cancelled)
-	if cancelled and EventBus.player_roll_resolved.is_connected(_on_resolved):
-		EventBus.player_roll_resolved.disconnect(_on_resolved)
+	pending.disconnect_signals()
 
-	if cancelled:
-		# Return a zeroed result so the caller's await completes gracefully
-		var zero := RollResult.new()
-		zero.roll_type = roll_type
-		zero.was_overridden = true  # signals this wasn't a real roll
-		return zero
+	if pending.cancelled:
+		return _build_cancelled_result(roll_type, sides, count, modifier, description)
 
-	var raw_total: int = result_args[1]
-	var was_player_entered: bool = result_args[2]
-	return _build_prompted_result(roll_type, sides, count, modifier, raw_total, was_player_entered)
+	return _build_prompted_result(
+		roll_type,
+		sides,
+		count,
+		modifier,
+		pending.raw_total,
+		pending.was_player_entered
+	)
 
 
 ## Parse a dice expression string and roll it digitally.
@@ -172,6 +158,26 @@ func export_roll_log() -> String:
 # ---------------------------------------------------------------------------
 # Private — roll construction
 # ---------------------------------------------------------------------------
+
+func _create_pending_player_roll() -> RefCounted:
+	return _PendingPlayerRoll.new()
+
+
+func _build_cancelled_result(
+		roll_type: String,
+		sides: int,
+		count: int,
+		modifier: int,
+		description: String = "") -> RollResult:
+	var result := RollResult.new()
+	result.roll_type = roll_type
+	result.sides = sides
+	result.count = count
+	result.modifier = modifier
+	result.description = description
+	result.was_overridden = true
+	return result
+
 
 ## Consume a queued override from GameState.dice_overrides.
 ## Returns the forced modified_total, or -1 if no override is queued.
@@ -344,3 +350,40 @@ func _on_session_ended() -> void:
 	if CampaignRepository.db == null:
 		return
 	CampaignRepository.db.query("DELETE FROM dice_rolls")
+
+
+class _PendingPlayerRoll:
+	extends RefCounted
+
+	var resolved: bool = false
+	var cancelled: bool = false
+	var raw_total: int = 0
+	var was_player_entered: bool = false
+
+	func connect_signals() -> void:
+		EventBus.player_roll_resolved.connect(_on_player_roll_resolved, CONNECT_ONE_SHOT)
+		EventBus.player_roll_cancelled.connect(_on_player_roll_cancelled, CONNECT_ONE_SHOT)
+
+	func disconnect_signals() -> void:
+		var resolved_callable := Callable(self, "_on_player_roll_resolved")
+		if EventBus.player_roll_resolved.is_connected(resolved_callable):
+			EventBus.player_roll_resolved.disconnect(resolved_callable)
+
+		var cancelled_callable := Callable(self, "_on_player_roll_cancelled")
+		if EventBus.player_roll_cancelled.is_connected(cancelled_callable):
+			EventBus.player_roll_cancelled.disconnect(cancelled_callable)
+
+	func is_waiting() -> bool:
+		return not resolved and not cancelled
+
+	func _on_player_roll_resolved(_roll_type: String, raw: int, entered: bool) -> void:
+		if not is_waiting():
+			return
+		raw_total = raw
+		was_player_entered = entered
+		resolved = true
+
+	func _on_player_roll_cancelled() -> void:
+		if not is_waiting():
+			return
+		cancelled = true

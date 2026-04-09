@@ -1,24 +1,19 @@
 class_name LanguageSelectionPanel
 extends VBoxContainer
 
-## Step 9 of 10 — Language Selection.
+## Step 9 of 10 - Language Selection.
 ##
-## Displays auto-granted languages (Common + racial) as read-only and
+## Displays auto-granted starting languages as read-only and
 ## provides OptionButton pickers for INT-modifier bonus language slots.
 ##
-## Auto-grants are computed from CharacterData.race. Alignment language
-## is NOT shown here — it is added silently in _finalize_character() after
-## the player chooses alignment in Step 10. This avoids a chicken-and-egg
-## dependency between language and alignment steps.
-##
-## creation_state["language_bonus_picks"] — Array[String] of player-chosen
+## creation_state["language_bonus_picks"] - Array[String] of player-chosen
 ## language spec IDs. One entry per filled bonus slot. Updated live.
 
 
 var _creation_state: Dictionary = {}
 var _spec_registry: SpecializationRegistry
 
-## Languages auto-granted from race (Common + racial). Read-only in UI.
+## Languages auto-granted from race. Read-only in UI.
 var _auto_grants: Array = []
 
 ## Options available to pick from (full language list minus auto-grants).
@@ -39,7 +34,7 @@ func setup(state: Dictionary, spec_registry: SpecializationRegistry) -> void:
 	if character == null:
 		return
 
-	# Compute auto-grants from race (alignment language added at finalize).
+	# Compute auto-grants from race.
 	_auto_grants = _compute_auto_grants(character)
 
 	# Number of bonus language slots = INT modifier, minimum 0.
@@ -54,9 +49,6 @@ func setup(state: Dictionary, spec_registry: SpecializationRegistry) -> void:
 	_available_for_pick = _spec_registry.get_specialization_ids("language").duplicate()
 	for lang_id in _auto_grants:
 		_available_for_pick.erase(lang_id)
-	# Also remove alignment languages from the pick list (auto-granted at finalize).
-	_available_for_pick.erase("alignment_lawful")
-	_available_for_pick.erase("alignment_chaotic")
 
 	_rebuild_ui()
 
@@ -78,13 +70,7 @@ func is_complete() -> bool:
 # ---------------------------------------------------------------------------
 
 func _compute_auto_grants(character: CharacterData) -> Array:
-	var grants: Array = ["common"]
-	match character.race:
-		"elf":      grants.append("elvish")
-		"dwarf":    grants.append("dwarvish")
-		"gnome":    grants.append("gnomish")
-		"halfling": grants.append("halfling")
-	return grants
+	return CharacterData.get_default_languages_for_race(character.race)
 
 
 func _get_language_display(lang_id: String) -> String:
@@ -115,13 +101,8 @@ func _rebuild_ui() -> void:
 
 	for lang_id in _auto_grants:
 		var lbl := Label.new()
-		lbl.text = "  •  " + _get_language_display(lang_id)
+		lbl.text = "  - " + _get_language_display(lang_id)
 		add_child(lbl)
-
-	var lbl_note := Label.new()
-	lbl_note.text = "  (Alignment language will also be granted based on your alignment selection.)"
-	lbl_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	add_child(lbl_note)
 
 	add_child(HSeparator.new())
 
@@ -149,7 +130,7 @@ func _rebuild_ui() -> void:
 
 			var dd := OptionButton.new()
 			dd.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			dd.add_item("— choose —")
+			dd.add_item("-- choose --")
 			for lang_id in _available_for_pick:
 				dd.add_item(_get_language_display(lang_id))
 
@@ -158,14 +139,14 @@ func _rebuild_ui() -> void:
 				var target: String = current_picks[i]
 				var opt_idx := _available_for_pick.find(target)
 				if opt_idx >= 0:
-					dd.select(opt_idx + 1)  # +1 for the "— choose —" placeholder
+					dd.select(opt_idx + 1)  # +1 for the "-- choose --" placeholder
 
 			dd.item_selected.connect(_on_slot_changed.bind(i))
 			row.add_child(dd)
 			_slot_dropdowns.append(dd)
 	else:
 		var lbl_none := Label.new()
-		lbl_none.text = "(No bonus languages — INT modifier is 0 or lower)"
+		lbl_none.text = "(No bonus languages - INT modifier is 0 or lower)"
 		add_child(lbl_none)
 
 
@@ -178,7 +159,7 @@ func _on_slot_changed(item_idx: int, slot_idx: int) -> void:
 		picks.append("")
 
 	if item_idx == 0:
-		# "— choose —" placeholder.
+		# "-- choose --" placeholder.
 		picks[slot_idx] = ""
 	elif item_idx - 1 < _available_for_pick.size():
 		picks[slot_idx] = _available_for_pick[item_idx - 1]

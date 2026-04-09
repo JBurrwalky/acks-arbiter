@@ -31,7 +31,7 @@ func setup(state: Dictionary, class_registry: ClassRegistry) -> void:
 
 
 func is_complete() -> bool:
-	return _state.has("hp_rolled")
+	return int(_state.get("hp_rolled", 0)) > 0
 
 
 # ---------------------------------------------------------------------------
@@ -144,13 +144,30 @@ func _on_roll_pressed() -> void:
 	var hit_die := _get_hit_die_str()
 	var result: RollResult = await DiceSystem.player_roll(sides, 1, 0,
 		"hit_points", "Roll Hit Points (%s)" % hit_die)
+	_apply_hp_roll_total(result.modified_total)
+
+func _apply_hp_roll_total(raw_total: int) -> void:
+	_rolling = false
+	_roll_button.disabled = false
+	_reroll_button.disabled = false
+
+	if raw_total <= 0:
+		_state.erase("hp_rolled")
+		_state.erase("hp_raw_roll")
+		_state["max_hp_override"] = false
+		_max_hp_check.button_pressed = false
+		var cancelled_character: CharacterData = _state.get("character")
+		if cancelled_character != null:
+			cancelled_character.hp_max = 0
+			cancelled_character.hp_current = 0
+		_refresh_display()
+		return
 
 	var con_mod := _get_con_modifier()
-	var raw := result.modified_total
-	var hp := maxi(raw + con_mod, 1)
+	var hp := maxi(raw_total + con_mod, 1)
 
 	_state["hp_rolled"] = hp
-	_state["hp_raw_roll"] = raw
+	_state["hp_raw_roll"] = raw_total
 	_state["max_hp_override"] = false
 	_max_hp_check.button_pressed = false
 
@@ -160,9 +177,6 @@ func _on_roll_pressed() -> void:
 		character.hp_max = hp
 		character.hp_current = hp
 
-	_rolling = false
-	_roll_button.disabled = false
-	_reroll_button.disabled = false
 	_refresh_display()
 
 

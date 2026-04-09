@@ -170,8 +170,6 @@
       { "id": "hobgoblin", "display_name": "Hobgoblin", "layer": "base", "prerequisite_ids": [], "metadata": {} },
       { "id": "bugbear", "display_name": "Bugbear", "layer": "base", "prerequisite_ids": [], "metadata": {} },
       { "id": "beastman", "display_name": "Beastman", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "alignment_lawful", "display_name": "Lawful (alignment tongue)", "layer": "base", "prerequisite_ids": [], "metadata": { "is_alignment_tongue": true } },
-      { "id": "alignment_chaotic", "display_name": "Chaotic (alignment tongue)", "layer": "base", "prerequisite_ids": [], "metadata": { "is_alignment_tongue": true } },
       { "id": "draconic", "display_name": "Draconic", "layer": "base", "prerequisite_ids": [], "metadata": {} },
       { "id": "giant", "display_name": "Giant", "layer": "base", "prerequisite_ids": [], "metadata": {} },
       { "id": "ogre", "display_name": "Ogre", "layer": "base", "prerequisite_ids": [], "metadata": {} },

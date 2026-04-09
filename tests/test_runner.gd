@@ -19,10 +19,12 @@ extends Node
 @onready var _power_registry_tests = $PowerRegistryTests
 @onready var _encumbrance_tests = $EncumbranceTests
 @onready var _ability_roll_panel_tests = $AbilityRollPanelTests
+@onready var _hp_roll_panel_tests = $HpRollPanelTests
 @onready var _class_selection_panel_tests = $ClassSelectionPanelTests
 @onready var _equipment_shop_panel_tests = $EquipmentShopPanelTests
 @onready var _equipment_item_row_tests = $EquipmentItemRowTests
 @onready var _portrait_display_sizing_tests = $PortraitDisplaySizingTests
+@onready var _language_cleanup_tests = $LanguageCleanupTests
 @onready var _ui_surface_styles_tests = $UiSurfaceStylesTests
 @onready var _character_generator_tests = $CharacterGeneratorTests
 @onready var _character_persistence_tests = $CharacterPersistenceTests
@@ -68,6 +70,16 @@ extends Node
 @onready var _ranged_attack_resolver_tests = $RangedAttackResolverTests
 @onready var _combat_condition_manager_tests = $CombatConditionManagerTests
 @onready var _combat_controller_session2_tests = $CombatControllerSession2Tests
+@onready var _cleave_chains_tests = $CleaveChainTests
+@onready var _morale_resolver_tests = $MoraleResolverTests
+@onready var _monster_ai_tests = $MonsterAITests
+@onready var _movement_resolver_tests = $MovementResolverTests
+@onready var _combat_maneuvers_tests = $CombatManeuversTests
+@onready var _combat_controller_session4_tests = $CombatControllerSession4Tests
+@onready var _monster_ai_spatial_tests = $MonsterAISpatialTests
+@onready var _combat_log_tests = $CombatLogTests
+@onready var _mortal_wounds_resolver_tests = $MortalWoundsResolverTests
+@onready var _combat_controller_session5_tests = $CombatControllerSession5Tests
 
 
 func _ready() -> void:
@@ -81,10 +93,11 @@ func run() -> void:
 	for suite in [_terrain_tests, _controller_tests, _override_tests, _dice_tests,
 			_timekeeping_tests, _calendar_seasons_tests,
 			_ability_utils_tests, _class_registry_tests, _power_registry_tests,
-			_encumbrance_tests, _ability_roll_panel_tests,
+			_encumbrance_tests, _ability_roll_panel_tests, _hp_roll_panel_tests,
 			_class_selection_panel_tests,
 			_equipment_shop_panel_tests, _equipment_item_row_tests,
-			_portrait_display_sizing_tests, _ui_surface_styles_tests,
+			_portrait_display_sizing_tests, _language_cleanup_tests,
+			_ui_surface_styles_tests,
 			_character_generator_tests, _character_persistence_tests,
 			_class_powers_tests, _npc_generation_tests,
 			_spell_registry_tests, _repertoire_engine_tests,
@@ -117,7 +130,17 @@ func run() -> void:
 			_spell_combat_hooks_tests,
 			_ranged_attack_resolver_tests,
 			_combat_condition_manager_tests,
-			_combat_controller_session2_tests]:
+			_combat_controller_session2_tests,
+			_cleave_chains_tests,
+			_morale_resolver_tests,
+			_monster_ai_tests,
+			_movement_resolver_tests,
+			_combat_maneuvers_tests,
+			_combat_controller_session4_tests,
+			_monster_ai_spatial_tests,
+			_combat_log_tests,
+			_mortal_wounds_resolver_tests,
+			_combat_controller_session5_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

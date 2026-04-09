@@ -17,8 +17,9 @@ func run_all_tests() -> void:
 
 func test_existing_melee_combat_still_works_with_hooks() -> void:
 	# Full combat with all Session 2 deps wired — melee only
+	# PC HP 30 to survive simultaneous initiative with monster going first
 	var controller := _make_controller_with_hooks(
-		[{"id": "pc_0", "hp": 10, "ac": 0, "atk": 10, "str": 10}],
+		[{"id": "pc_0", "hp": 30, "ac": 0, "atk": 10, "str": 10}],
 		[{"hd": 1, "ac": 0, "damage": "1d6", "hp": 4}],
 		15)
 	var result := _run_to_completion(controller)
@@ -28,8 +29,9 @@ func test_existing_melee_combat_still_works_with_hooks() -> void:
 
 func test_backward_compat_null_hooks() -> void:
 	# Session 1 style — null hooks, condition_manager, ranged_resolver
+	# PC HP 30 to survive simultaneous initiative with monster going first
 	var controller := _make_controller_no_hooks(
-		[{"id": "pc_0", "hp": 10, "ac": 0, "atk": 10, "str": 10}],
+		[{"id": "pc_0", "hp": 30, "ac": 0, "atk": 10, "str": 10}],
 		[{"hd": 1, "ac": 0, "damage": "1d6", "hp": 4}],
 		15)
 	var result := _run_to_completion(controller)

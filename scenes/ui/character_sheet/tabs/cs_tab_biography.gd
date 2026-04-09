@@ -101,9 +101,7 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 	var lang_list: Array = []
 	var raw: String = character.languages
 	if not raw.is_empty() and raw != "[]":
-		var parsed = JSON.parse_string(raw)
-		if parsed is Array:
-			lang_list = parsed
+		lang_list = CharacterData.parse_languages_json(raw)
 	if not lang_list.is_empty():
 		_add_section_header("Languages")
 		for lang_id in lang_list:

@@ -12,9 +12,11 @@
 [ext_resource type="Script" path="res://tests/test_power_registry.gd" id="10_power_registry_tests"]
 [ext_resource type="Script" path="res://tests/test_encumbrance.gd" id="11_encumbrance_tests"]
 [ext_resource type="Script" path="res://tests/test_ability_roll_panel.gd" id="12_ability_roll_panel_tests"]
+[ext_resource type="Script" path="res://tests/test_hp_roll_panel.gd" id="66_hp_roll_panel_tests"]
 [ext_resource type="Script" path="res://tests/test_class_selection_panel.gd" id="46_class_selection_panel_tests"]
 [ext_resource type="Script" path="res://tests/test_equipment_shop_panel.gd" id="13_equipment_shop_panel_tests"]
 [ext_resource type="Script" path="res://tests/test_portrait_display_sizing.gd" id="44_portrait_display_sizing_tests"]
+[ext_resource type="Script" path="res://tests/test_language_cleanup.gd" id="67_language_cleanup_tests"]
 [ext_resource type="Script" path="res://tests/test_ui_surface_styles.gd" id="45_ui_surface_styles_tests"]
 [ext_resource type="Script" path="res://tests/test_equipment_item_row.gd" id="42_equipment_item_row_tests"]
 [ext_resource type="Script" path="res://tests/test_character_generator.gd" id="14_character_generator_tests"]
@@ -61,6 +63,16 @@
 [ext_resource type="Script" path="res://tests/test_ranged_attack_resolver.gd" id="56_ranged_attack_resolver_tests"]
 [ext_resource type="Script" path="res://tests/test_combat_condition_manager.gd" id="57_combat_condition_manager_tests"]
 [ext_resource type="Script" path="res://tests/test_combat_controller_session2.gd" id="58_combat_controller_session2_tests"]
+[ext_resource type="Script" path="res://tests/test_cleave_chains.gd" id="59_cleave_chains_tests"]
+[ext_resource type="Script" path="res://tests/test_morale_resolver.gd" id="60_morale_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_monster_ai.gd" id="61_monster_ai_tests"]
+[ext_resource type="Script" path="res://tests/test_movement_resolver.gd" id="62_movement_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_combat_maneuvers.gd" id="63_combat_maneuvers_tests"]
+[ext_resource type="Script" path="res://tests/test_combat_controller_session4.gd" id="64_combat_controller_session4_tests"]
+[ext_resource type="Script" path="res://tests/test_monster_ai_spatial.gd" id="65_monster_ai_spatial_tests"]
+[ext_resource type="Script" path="res://tests/test_combat_log.gd" id="67_combat_log_tests"]
+[ext_resource type="Script" path="res://tests/test_mortal_wounds_resolver.gd" id="68_mortal_wounds_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_combat_controller_session5.gd" id="69_combat_controller_session5_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -98,6 +110,9 @@ script = ExtResource("11_encumbrance_tests")
 [node name="AbilityRollPanelTests" type="Node" parent="."]
 script = ExtResource("12_ability_roll_panel_tests")
 
+[node name="HpRollPanelTests" type="Node" parent="."]
+script = ExtResource("66_hp_roll_panel_tests")
+
 [node name="ClassSelectionPanelTests" type="Node" parent="."]
 script = ExtResource("46_class_selection_panel_tests")
 
@@ -106,6 +121,9 @@ script = ExtResource("13_equipment_shop_panel_tests")
 
 [node name="PortraitDisplaySizingTests" type="Node" parent="."]
 script = ExtResource("44_portrait_display_sizing_tests")
+
+[node name="LanguageCleanupTests" type="Node" parent="."]
+script = ExtResource("67_language_cleanup_tests")
 
 [node name="UiSurfaceStylesTests" type="Node" parent="."]
 script = ExtResource("45_ui_surface_styles_tests")
@@ -244,3 +262,33 @@ script = ExtResource("57_combat_condition_manager_tests")
 
 [node name="CombatControllerSession2Tests" type="Node" parent="."]
 script = ExtResource("58_combat_controller_session2_tests")
+
+[node name="CleaveChainTests" type="Node" parent="."]
+script = ExtResource("59_cleave_chains_tests")
+
+[node name="MoraleResolverTests" type="Node" parent="."]
+script = ExtResource("60_morale_resolver_tests")
+
+[node name="MonsterAITests" type="Node" parent="."]
+script = ExtResource("61_monster_ai_tests")
+
+[node name="MovementResolverTests" type="Node" parent="."]
+script = ExtResource("62_movement_resolver_tests")
+
+[node name="CombatManeuversTests" type="Node" parent="."]
+script = ExtResource("63_combat_maneuvers_tests")
+
+[node name="CombatControllerSession4Tests" type="Node" parent="."]
+script = ExtResource("64_combat_controller_session4_tests")
+
+[node name="MonsterAISpatialTests" type="Node" parent="."]
+script = ExtResource("65_monster_ai_spatial_tests")
+
+[node name="CombatLogTests" type="Node" parent="."]
+script = ExtResource("67_combat_log_tests")
+
+[node name="MortalWoundsResolverTests" type="Node" parent="."]
+script = ExtResource("68_mortal_wounds_resolver_tests")
+
+[node name="CombatControllerSession5Tests" type="Node" parent="."]
+script = ExtResource("69_combat_controller_session5_tests")
