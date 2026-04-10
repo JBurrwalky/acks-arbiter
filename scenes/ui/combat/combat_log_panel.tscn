@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://c5combat_log"]
+
+[ext_resource type="Script" path="res://scenes/ui/combat/combat_log_panel.gd" id="1_script"]
+
+[node name="CombatLogPanel" type="PanelContainer"]
+anchors_preset = 0
+script = ExtResource("1_script")

@@ -20,8 +20,35 @@ var _class_buttons: Dictionary = {}   # class_id -> Button
 var _detail_area: VBoxContainer
 var _selected_class_id: String = ""
 
-# Ineligibility reasons — computed on setup, class_id -> String
 var _ineligible_reasons: Dictionary = {}
+
+
+func _format_alignment_restriction(restriction: String) -> String:
+	var normalized := restriction.to_lower()
+	match normalized:
+		"lawful":
+			return "Lawful"
+		"neutral":
+			return "Neutral"
+		"chaotic":
+			return "Chaotic"
+		"non-lawful":
+			return "Neutral or Chaotic"
+		"non-chaotic":
+			return "Lawful or Neutral"
+		_:
+			return restriction.replace("_", " ").capitalize()
+
+
+func _format_sex_restriction(restriction: String) -> String:
+	var normalized := restriction.to_lower()
+	match normalized:
+		"male":
+			return "Male"
+		"female":
+			return "Female"
+		_:
+			return restriction.replace("_", " ").capitalize()
 
 
 func setup(state: Dictionary, class_registry: ClassRegistry) -> void:
@@ -79,7 +106,7 @@ func _build_ui() -> void:
 			if cls.get("race", "human") != race:
 				continue
 			var btn := Button.new()
-			btn.text = cls.get("class_name", class_id)
+			btn.text = _class_registry.get_class_display_name(class_id, "", true)
 			btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			btn.toggle_mode = false
 			btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -137,13 +164,15 @@ func _refresh_eligibility() -> void:
 func _get_ineligible_reason(cls: Dictionary, scores: Dictionary) -> String:
 	if scores.is_empty():
 		return "Roll ability scores first."
+	var class_id: String = cls.get("class_id", "")
+	var class_name := _class_registry.get_class_display_name(class_id, "", true)
 
 	# Prime requisite minimum 9
 	var primes: Array = cls.get("prime_requisites", [])
 	for pr in primes:
 		var score: int = int(scores.get(pr, 0))
 		if score < 9:
-			return "%s requires %s 9+ (you have %d)." % [cls.get("class_name", ""), pr, score]
+			return "%s requires %s 9+ (you have %d)." % [class_name, pr, score]
 
 	# Minimum abilities
 	var mins: Dictionary = cls.get("minimum_abilities", {})
@@ -151,8 +180,7 @@ func _get_ineligible_reason(cls: Dictionary, scores: Dictionary) -> String:
 		var required: int = int(mins[ability])
 		var score: int = int(scores.get(ability, 0))
 		if score < required:
-			return "%s requires %s %d+ (you have %d)." % [
-				cls.get("class_name", ""), ability, required, score]
+			return "%s requires %s %d+ (you have %d)." % [class_name, ability, required, score]
 
 	return ""
 
@@ -196,7 +224,7 @@ func _show_class_detail(class_id: String) -> void:
 
 	# Class name + race
 	var name_lbl := Label.new()
-	name_lbl.text = "%s  (%s)" % [cls.get("class_name", class_id),
+	name_lbl.text = "%s  (%s)" % [_class_registry.get_class_display_name(class_id, "", true),
 		(cls.get("race", "human") as String).capitalize()]
 	name_lbl.add_theme_font_size_override("font_size", 16)
 	_detail_area.add_child(name_lbl)
@@ -262,7 +290,11 @@ func _show_class_detail(class_id: String) -> void:
 	# Alignment restriction
 	var align_restrict: String = cls.get("alignment_restriction", "")
 	if not align_restrict.is_empty():
-		_add_detail_row("Alignment:", align_restrict.capitalize())
+		_add_detail_row("Alignment:", _format_alignment_restriction(align_restrict))
+
+	var sex_restrict := _class_registry.get_sex_restriction(class_id)
+	if not sex_restrict.is_empty():
+		_add_detail_row("Sex:", _format_sex_restriction(sex_restrict))
 
 	# Level 1 title
 	var title := _class_registry.get_level_title(class_id, 1)

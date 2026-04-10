@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://c5action_btns"]
+
+[ext_resource type="Script" path="res://scenes/ui/combat/action_button_panel.gd" id="1_script"]
+
+[node name="ActionButtonPanel" type="PanelContainer"]
+anchors_preset = 0
+script = ExtResource("1_script")

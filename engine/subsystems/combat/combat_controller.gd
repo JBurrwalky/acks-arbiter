@@ -193,6 +193,110 @@ func get_waiting_combatant_id() -> String:
 	return ""
 
 
+## Returns the Combatant for [param combatant_id], or null if not found.
+func get_combatant(combatant_id: String):  # -> Combatant
+	return roster.get_by_id(combatant_id)
+
+
+## Returns action IDs the combatant can legally perform this turn.
+## The UI uses this to enable/disable action buttons.
+func get_available_actions(combatant_id: String) -> Array[String]:
+	var c := roster.get_by_id(combatant_id)
+	if c == null or not c.is_alive():
+		return []
+
+	var actions: Array[String] = ["pass"]
+
+	var can_attack := true
+	var can_move := not c.has_moved_this_round
+
+	# Condition overrides
+	if condition_manager != null:
+		var incap_conditions := ["paralyzed", "unconscious", "petrified",
+			"held", "grappled", "stunned"]
+		for cond in incap_conditions:
+			if c.has_condition(cond):
+				can_attack = false
+				can_move = false
+				break
+		if c.has_condition("prone"):
+			can_move = false
+
+	if can_move:
+		actions.append("move")
+		# Defensive movement only when not yet committed to a standard move
+		if not c.declared_defensive_movement.is_empty():
+			pass  # Already declared; options already locked in
+		else:
+			actions.append("fighting_withdrawal")
+			actions.append("full_retreat")
+
+	if can_attack:
+		actions.append("attack_melee")
+		if ranged_resolver != null:
+			actions.append("attack_ranged")
+		# Spell casting shown but disabled until F-3; include for button visibility
+		actions.append("cast_spell")
+
+	return actions
+
+
+## Returns entity IDs of enemies adjacent to [param combatant_id].
+## Empty if no movement resolver (non-grid combat).
+func get_melee_targets(combatant_id: String) -> Array[String]:
+	if movement_resolver == null:
+		return _all_enemy_ids(combatant_id)
+	var c := roster.get_by_id(combatant_id)
+	if c == null:
+		return []
+	var adj := movement_resolver.get_adjacent_enemies(c)
+	var ids: Array[String] = []
+	for enemy in adj:
+		ids.append(enemy.id)
+	return ids
+
+
+## Returns entity IDs of enemies in line-of-sight for ranged attacks.
+## Falls back to all enemies if no movement resolver.
+func get_ranged_targets(combatant_id: String) -> Array[String]:
+	if movement_resolver == null:
+		return _all_enemy_ids(combatant_id)
+	var c := roster.get_by_id(combatant_id)
+	if c == null:
+		return []
+	var c_pos := movement_resolver.get_grid_position(c)
+	var enemy_side: int = Combatant.Side.ENEMY if c.is_pc_side() else Combatant.Side.PARTY
+	var result: Array[String] = []
+	for enemy in roster.get_alive_on_side(enemy_side):
+		var e_pos := movement_resolver.get_grid_position(enemy)
+		if movement_resolver.has_line_of_sight(c_pos, e_pos):
+			result.append(enemy.id)
+	return result
+
+
+## Returns cells the combatant can move to this turn.
+## Empty array if no movement resolver.
+func get_reachable_cells(combatant_id: String) -> Array[Vector2i]:
+	if movement_resolver == null:
+		return []
+	var c := roster.get_by_id(combatant_id)
+	if c == null:
+		return []
+	return movement_resolver.get_cells_reachable(c, c.get_combat_movement_cells())
+
+
+## Helper: returns IDs of all alive enemies for [param combatant_id].
+func _all_enemy_ids(combatant_id: String) -> Array[String]:
+	var c := roster.get_by_id(combatant_id)
+	if c == null:
+		return []
+	var enemy_side: int = Combatant.Side.ENEMY if c.is_pc_side() else Combatant.Side.PARTY
+	var result: Array[String] = []
+	for enemy in roster.get_alive_on_side(enemy_side):
+		result.append(enemy.id)
+	return result
+
+
 # ---------------------------------------------------------------------------
 # Phase implementations
 # ---------------------------------------------------------------------------
@@ -497,33 +601,17 @@ func _resolve_melee_action(
 			"result": {"note": "no valid target"},
 		}
 
-	# --- Grid-based adjacency check and auto-move ---
+	# Adjacency check — PC must have moved adjacent before attacking.
+	# (Monsters auto-move in _resolve_monster_action instead.)
 	if movement_resolver != null and movement_resolver.has_grid():
 		if not movement_resolver.is_adjacent(combatant, target):
-			# Try to auto-move to an adjacent cell within combat movement
-			var adj_cell: Vector2i = movement_resolver.find_adjacent_cell_to(combatant, target)
-			if adj_cell == Vector2i(-1, -1):
-				return {
-					"phase": "action",
-					"status": "action_resolved",
-					"combatant_id": combatant.id,
-					"action": "attack_melee",
-					"result": {"note": "no adjacent cell available near target"},
-				}
-			var start_pos: Vector2i = movement_resolver.get_grid_position(combatant)
-			var path: Array[Vector2i] = movement_resolver.find_path(start_pos, adj_cell)
-			var move_budget := combatant.get_combat_movement_cells()
-			if path.is_empty() or (path.size() - 1) > move_budget:
-				return {
-					"phase": "action",
-					"status": "action_resolved",
-					"combatant_id": combatant.id,
-					"action": "attack_melee",
-					"result": {"note": "target out of movement range"},
-				}
-			movement_resolver.move_along_path(combatant, path, move_budget)
-			combatant.has_moved_this_round = true
-			_update_engagement()
+			return {
+				"phase": "action",
+				"status": "action_resolved",
+				"combatant_id": combatant.id,
+				"action": "attack_melee",
+				"result": {"note": "target not adjacent"},
+			}
 
 	var attack_result := attack_resolver.resolve_melee_attack(
 		combatant, target, "", extra_attack_mod)
@@ -677,6 +765,23 @@ func _resolve_monster_action(combatant: Combatant) -> Dictionary:
 				ai_decision.get("parameters", {}))
 		ai_target = roster.get_by_id(ai_decision["parameters"].get("target_id", ""))
 
+	# Auto-move monster toward target if not adjacent (grid combat)
+	if ai_target != null and movement_resolver != null and movement_resolver.has_grid():
+		if not movement_resolver.is_adjacent(combatant, ai_target):
+			var adj_cell: Vector2i = movement_resolver.find_adjacent_cell_to(combatant, ai_target)
+			if adj_cell == Vector2i(-1, -1):
+				return _resolve_combatant_action(combatant, "pass",
+					{"note": "target out of reach"})
+			var start_pos: Vector2i = movement_resolver.get_grid_position(combatant)
+			var path: Array[Vector2i] = movement_resolver.find_path(start_pos, adj_cell)
+			var move_budget := combatant.get_combat_movement_cells()
+			if path.is_empty() or (path.size() - 1) > move_budget:
+				return _resolve_combatant_action(combatant, "pass",
+					{"note": "target out of movement range"})
+			movement_resolver.move_along_path(combatant, path, move_budget)
+			combatant.has_moved_this_round = true
+			_update_engagement()
+
 	# Resolve expanded attack sequence with mid-routine cleave
 	var expanded := combatant.get_expanded_attack_sequence()
 	var results: Array = []
@@ -688,6 +793,11 @@ func _resolve_monster_action(combatant: Combatant) -> Dictionary:
 			target = _auto_select_target(combatant)
 		if target == null:
 			break
+
+		# Verify adjacency for melee attacks (target may have changed mid-routine)
+		if movement_resolver != null and movement_resolver.has_grid():
+			if not movement_resolver.is_adjacent(combatant, target):
+				break  # Can't reach new target mid-routine; end attack sequence
 
 		# Resolve the attack
 		var attack_result: Dictionary
@@ -1135,9 +1245,13 @@ func _resolve_movement_action(
 			"action": "move",
 			"result": {"note": "no grid for movement"},
 		}
-	var target_pos: Vector2i = Vector2i(
-		int(parameters.get("target_x", -1)),
-		int(parameters.get("target_y", -1)))
+	var target_pos: Vector2i
+	if parameters.has("target_cell"):
+		target_pos = parameters["target_cell"]
+	else:
+		target_pos = Vector2i(
+			int(parameters.get("target_x", -1)),
+			int(parameters.get("target_y", -1)))
 	if target_pos == Vector2i(-1, -1):
 		return {
 			"phase": "action",
@@ -1200,8 +1314,10 @@ func _emit_combat_ended() -> Dictionary:
 		if c.is_enemy_side() and not c.is_alive():
 			monster_xp_total += c._monster_data.get("xp", 0)
 
-	# Process mortal wounds for downed PCs.
-	var downed_pcs: Array = process_mortal_wounds()
+	# Collect downed PCs without auto-rolling mortal wounds.
+	# Per ACKS rules, mortal wound checks are deferred until another character
+	# inspects the downed unit, with time-since-downing factored in.
+	var downed_pcs: Array = _collect_downed_pcs()
 
 	# Log COMBAT_END entry.
 	combat_log.add_entry(
@@ -1220,9 +1336,33 @@ func _emit_combat_ended() -> Dictionary:
 	return outcome
 
 
+func _collect_downed_pcs() -> Array:
+	## Returns raw downed PC data without resolving mortal wounds.
+	## Mortal wounds should be resolved later through a UI interaction
+	## (another character inspects the downed unit, with time-since-downing factored in).
+	var results: Array = []
+	var downed := roster.get_downed_pcs()
+	for c: Combatant in downed:
+		results.append({
+			"combatant_id": c.id,
+			"hp_when_downed": c.hp_when_downed,
+			"killing_blow_damage_type": c.killing_blow_damage_type,
+			"round_downed": round_number,
+			"needs_mortal_wound_check": true,
+		})
+		combat_log.add_entry(
+			CombatLog.EntryType.MORTAL_WOUND,
+			round_number, "", c.id,
+			{"combatant_id": c.id, "condition": "pending",
+			 "wound_description": "awaiting mortal wound check",
+			 "is_dead": false})
+	return results
+
+
 func process_mortal_wounds() -> Array:
 	## Roll mortal wounds for all downed PCs and return the results.
-	## Called from _emit_combat_ended(). Safe to call when resolver is null
+	## Retained for future UI-driven resolution and direct test calls.
+	## Safe to call when resolver is null
 	## (falls back to treating all downed PCs as dead, matching pre-Session-5 behaviour).
 	var results: Array = []
 	var downed := roster.get_downed_pcs()

@@ -74,8 +74,10 @@ func test_grid_melee_out_of_range_fails() -> void:
 
 
 func test_grid_melee_auto_move_to_engage() -> void:
+	# PC melee attack at distance should fail with "target not adjacent" —
+	# PCs must move first (move+attack split turn), no auto-move.
 	var env := _make_controller_with_grid(15, 20, 20)
-	# Place PC 3 cells from monster (within 8-cell movement budget)
+	# Place PC 3 cells from monster (not adjacent)
 	env.map.set_entity_pos("pc_1", Vector2i(2, 2))
 	env.pc.grid_position = Vector2i(2, 2)
 	env.map.set_entity_pos("m_1", Vector2i(5, 2))
@@ -84,9 +86,9 @@ func test_grid_melee_auto_move_to_engage() -> void:
 	env.ctrl.submit_pc_action("pc_1", "attack_melee", {"target_id": "m_1"})
 	var result: Dictionary = _advance_until_pc_resolved(env.ctrl)
 	check(result["status"] == "action_resolved", "should resolve action")
-	# PC should have moved to be adjacent
-	check(env.pc.has_moved_this_round == true,
-		"PC should have auto-moved to engage")
+	var note: String = result.get("result", {}).get("note", "")
+	check(note == "target not adjacent",
+		"non-adjacent melee attack should fail with 'target not adjacent', got '%s'" % note)
 
 
 # ---------------------------------------------------------------------------

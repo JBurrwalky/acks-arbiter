@@ -63,6 +63,10 @@ func _get_con_modifier() -> int:
 	return CharacterData.ability_modifier(character.constitution)
 
 
+func _format_signed(value: int) -> String:
+	return ("+%d" % value) if value >= 0 else str(value)
+
+
 # ---------------------------------------------------------------------------
 # UI Construction
 # ---------------------------------------------------------------------------
@@ -104,7 +108,7 @@ func _build_ui() -> void:
 	btn_row.add_child(_reroll_button)
 
 	_max_hp_check = CheckBox.new()
-	_max_hp_check.text = "Max HP at Level 1 (house rule)"
+	_max_hp_check.text = "Max Hit Die at Level 1 (house rule; CON still applies)"
 	_max_hp_check.toggled.connect(_on_max_hp_toggled)
 	add_child(_max_hp_check)
 
@@ -112,15 +116,18 @@ func _build_ui() -> void:
 func _refresh_display() -> void:
 	var hit_die := _get_hit_die_str()
 	var con_mod := _get_con_modifier()
-	var mod_str := ("+%d" % con_mod) if con_mod >= 0 else str(con_mod)
+	var mod_str := _format_signed(con_mod)
 	_die_info_label.text = "Hit Die: %s  |  CON Modifier: %s" % [hit_die, mod_str]
 
 	if _state.has("hp_rolled"):
 		var hp: int = _state.get("hp_rolled", 0)
 		var raw: int = _state.get("hp_raw_roll", hp)
-		var con_mod_val := _get_con_modifier()
-		_result_label.text = "HP: %d  (rolled %d %s %s = %d, minimum 1)" % [
-			hp, raw, "+" if con_mod_val >= 0 else "", con_mod_val, maxi(raw + con_mod_val, 1)]
+		if bool(_state.get("max_hp_override", false)):
+			_result_label.text = "HP: %d  (max %d + CON %s = %d)" % [
+				hp, raw, mod_str, hp]
+		else:
+			_result_label.text = "HP: %d  (rolled %d + CON %s = %d, minimum 1)" % [
+				hp, raw, mod_str, hp]
 		_reroll_button.visible = true
 		_roll_button.visible = false
 	else:
@@ -187,7 +194,7 @@ func _on_max_hp_toggled(pressed: bool) -> void:
 		var hp := maxi(sides + con_mod, 1)
 		_state["hp_rolled"] = hp
 		_state["max_hp_override"] = true
-		_state.erase("hp_raw_roll")
+		_state["hp_raw_roll"] = sides
 
 		# Log as override
 		GameState.dice_overrides["hit_points"] = sides

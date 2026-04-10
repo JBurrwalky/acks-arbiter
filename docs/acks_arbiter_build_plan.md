@@ -343,6 +343,43 @@ Session 3: Monster AI using behavior tags, morale checks at correct triggers, cl
 Session 4: Grid-based movement on TacticalMapData, engagement/withdrawal/retreat rules, 7 combat maneuvers, charging.
 Session 5: Mortal wounds tables, XP awards, combat end lifecycle, full SessionRunner integration, combat log.
 Each session ends with a testing checkpoint. Specific spell implementations are explicitly deferred to future sessions that can work through the spell catalog in small batches using the hook interface built in Session 2.
+---
+
+**F-2: Tactical Combat UI — Session Overview**
+
+**Goal:** Replace the auto-advance placeholder with a playable turn-based tactical combat screen where the player moves and attacks on a grid while the monster AI does the same.
+
+**What exists (reuse entirely):**
+
+CombatController — full state machine, waiting_for_pc_action status, submit_pc_action()
+TacticalMapData + IsometricGrid — grid, passability, entity positions, LOS
+MovementResolver — BFS pathfinding, reachability, adjacency, engagement
+ManeuverResolver — all 7 ACKS maneuvers
+MonsterAI — spatial target selection, move+attack decisions
+DungeonMapRenderer — already draws a tile grid with entities; adapt or inherit for combat
+
+**What needs to be built:**
+
+Component	Description
+scenes/ui/combat/combat_map.tscn + combat_map_renderer.gd	Renders TacticalMapData with combatant tokens; highlights reachable cells and valid attack targets on hover/select
+scenes/ui/combat/combat_hud.tscn + combat_hud.gd	Initiative strip (turn order), HP bars, action buttons (Move / Attack / Maneuver / Pass / Flee)
+scenes/ui/combat/combat_screen.gd (replace placeholder)	Owns the input loop: on waiting_for_pc_action, highlights the active PC, waits for player clicks, calls submit_pc_action(); on monster turns, runs AI and animates
+Input modes	SELECT → MOVE_TARGET → ATTACK_TARGET click state machine; right-click to cancel
+Combatant tokens	Simple colored circles/sprites with HP label; selected token highlighted
+Post-combat overlay	Victory/defeat card showing XP earned, mortal wound results, downed PCs
+
+**Key integration points:**
+
+CombatController.advance() returns {status: "waiting_for_pc_action", combatant_id, available_actions} — screen polls this and routes to player input vs. AI
+CombatState.enter() already pushes the combat screen and calls start_auto_advance(); F-2 replaces start_auto_advance() with the interactive loop
+No new combat mechanics needed — UI only
+
+**Deferrals for F-2:**
+
+Spell casting UI (F-3 or later)
+Fog of war
+Animated movement along path
+Sound/VFX
 
 ---
 

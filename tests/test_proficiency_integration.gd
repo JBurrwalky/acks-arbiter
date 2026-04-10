@@ -274,11 +274,14 @@ func test_effect_resolver_fallback_for_collegiate_wizardry() -> void:
 
 func test_npc_generation_picks_specialization() -> void:
 	## auto_select_proficiencies with a wired SpecializationRegistry picks non-empty specializations
-	## for specialization proficiencies.
+	## for specialization proficiencies. Seed the RNG for determinism — the fighter class list
+	## includes specialization profs (riding, weapon_focus, fighting_style) but random selection
+	## could theoretically pick none of them without a fixed seed.
+	seed(42)
 	var spec_reg := SpecializationRegistry.new()
 	var prof_reg := ProficiencyRegistry.new(spec_reg)
 	var gen := CharacterGenerator.new(ClassRegistry.new(), PowerRegistry.new(), prof_reg)
-	# Generate a Fighter at L5 — fighter class list includes riding, weapon_focus, fighting_style
+	# Generate a Fighter at L9 — fighter class list includes riding, weapon_focus, fighting_style
 	var profs := gen.auto_select_proficiencies("fighter", 9)
 	var spec_profs_with_value: int = 0
 	for p in profs:

@@ -108,6 +108,11 @@ func _render_identity(character: CharacterData, cls: Dictionary, state: Dictiona
 	_add_section_header("Identity")
 
 	var class_name_str: String = cls.get("class_name", character.character_class)
+	if _class_registry != null:
+		class_name_str = _class_registry.get_class_display_name(
+			state.get("class_id", character.character_class),
+			character.sex
+		)
 	_add_row("Name:", character.name if not character.name.is_empty() else "(unnamed)")
 	_add_row("Class:", "%s (Level %d)" % [class_name_str, character.level])
 	_add_row("Race:", character.race.capitalize())

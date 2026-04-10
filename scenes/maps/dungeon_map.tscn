@@ -1,11 +1,16 @@
-[gd_scene format=3 uid="uid://dungeon_map_scene_001"]
+[gd_scene load_steps=4 format=3 uid="uid://dungeon_map_scene_001"]
 
 [ext_resource type="Script" path="res://scenes/maps/dungeon_map_renderer.gd" id="1_dungeon_renderer"]
+[ext_resource type="Script" path="res://scenes/maps/dungeon_order_overlay.gd" id="2_order_overlay"]
+[ext_resource type="Script" path="res://scenes/maps/dungeon_selection_panel.gd" id="3_selection_panel"]
 
 [node name="DungeonMap" type="Node2D"]
 script = ExtResource("1_dungeon_renderer")
 
 [node name="EntityLayer" type="Node2D" parent="."]
+
+[node name="OrderOverlayLayer" type="Node2D" parent="."]
+script = ExtResource("2_order_overlay")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 enabled = true
@@ -24,6 +29,44 @@ offset_bottom = 80.0
 layout_mode = 2
 text = ""
 autowrap_mode = 3
+
+[node name="SelectionPanel" type="PanelContainer" parent="DungeonHUD"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -220.0
+offset_top = 48.0
+offset_bottom = -10.0
+offset_right = -8.0
+grow_horizontal = 0
+grow_vertical = 2
+script = ExtResource("3_selection_panel")
+
+[node name="BottomBar" type="HBoxContainer" parent="DungeonHUD"]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -36.0
+offset_right = -230.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="LevelLabel" type="Label" parent="DungeonHUD/BottomBar"]
+layout_mode = 2
+text = "Level 1"
+
+[node name="Spacer" type="Control" parent="DungeonHUD/BottomBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TurnLabel" type="Label" parent="DungeonHUD/BottomBar"]
+layout_mode = 2
+text = "Turn 0"
 
 [node name="ExitButton" type="Button" parent="DungeonHUD"]
 anchor_left = 1.0

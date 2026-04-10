@@ -1,0 +1,415 @@
+class_name CombatUIController
+extends RefCounted
+
+## Shared state machine bridging combat HUD widgets and CombatController.
+##
+## Used by both DungeonCombatOverlay (dungeon in-place combat) and the
+## standalone CombatScreen (wilderness encounters). The controller never
+## owns UI nodes directly — it communicates via signals and a duck-typed
+## map_callbacks dictionary so the same logic works with either renderer.
+##
+## Pull-based loop:
+##   call advance() → routes CombatController.advance() result →
+##   emits signals for the HUD to react → waits for UI input →
+##   calls advance() again.
+
+
+# ---------------------------------------------------------------------------
+# UI state enum
+# ---------------------------------------------------------------------------
+
+enum State {
+	IDLE,                          ## Waiting for first advance() call
+	ADVANCING,                     ## Processing a CombatController step
+	DECLARATION_PHASE,             ## Waiting for player declarations
+	PC_SELECTING_ACTION,           ## PC turn — action button panel visible
+	PC_SELECTING_MOVE_TARGET,      ## PC chose Move — waiting for cell click
+	PC_SELECTING_ATTACK_TARGET,    ## PC chose Attack — waiting for entity click
+	ENEMY_ACTING,                  ## Enemy AI turn (auto-advance)
+	COMBAT_OVER,                   ## Combat ended
+}
+
+
+# ---------------------------------------------------------------------------
+# Signals (HUD widgets connect to these)
+# ---------------------------------------------------------------------------
+
+## Declaration overlay should appear.
+signal show_declaration_requested(alive_pcs: Array)
+
+## Initiative order was rolled — InitiativeStrip should update.
+signal initiative_updated(order: Array)
+
+## A PC's turn has started — show action buttons, update stat summary.
+signal pc_turn_started(combatant_id: String)
+
+## An action was resolved — log it, update HP bars, etc.
+signal action_resolved(result: Dictionary)
+
+## Combat has ended — show CombatEndOverlay.
+signal combat_ended(result: Dictionary)
+
+## Combat log entry generated.
+signal log_entry(entry: Dictionary)
+
+## The UI host (overlay or screen) should call advance() on the next frame.
+signal auto_advance_requested()
+
+## Map should highlight reachable cells for movement.
+signal highlight_reachable(cells: Array, color: Color)
+
+## Map should highlight attack targets.
+signal highlight_targets(entity_ids: Array)
+
+## Map should clear all highlights.
+signal clear_highlights_requested()
+
+## Map should mark active combatant token.
+signal active_token_changed(entity_id: String)
+
+## Map should move a token to a new cell.
+signal token_moved(entity_id: String, to_cell: Vector2i)
+
+## After a move sub-action, disable the Move button but keep turn active.
+signal move_completed()
+
+
+# ---------------------------------------------------------------------------
+# Fields
+# ---------------------------------------------------------------------------
+
+var _controller: CombatController = null
+var _state: int = State.IDLE
+var _current_pc_id: String = ""
+var _selected_action: String = ""
+var _has_moved_this_turn: bool = false
+
+## Cached initiative order for the HUD.
+var _initiative_display: Array = []
+
+
+# ---------------------------------------------------------------------------
+# Constructor
+# ---------------------------------------------------------------------------
+
+func setup(controller: CombatController) -> void:
+	_controller = controller
+	_state = State.IDLE
+
+
+# ---------------------------------------------------------------------------
+# Core loop
+# ---------------------------------------------------------------------------
+
+## Advance the combat one step. Call this to kick off combat and after
+## each player input. Returns the raw CombatController result dict.
+func advance() -> Dictionary:
+	if _controller == null:
+		return {"status": "error", "message": "no controller"}
+	if _state == State.COMBAT_OVER:
+		return {"status": "combat_over"}
+
+	_state = State.ADVANCING
+	var result := _controller.advance()
+	var status: String = result.get("status", "")
+
+	match status:
+		"combat_started":
+			# Auto-advance past the start marker
+			return advance()
+
+		"round_started":
+			_state = State.DECLARATION_PHASE
+			var alive_pcs: Array = _get_alive_pcs()
+			# Log round start
+			log_entry.emit({
+				"type": 0, "round": result.get("round_number", 0),
+				"actor_id": "", "target_id": "", "data": {}, "timestamp": 0,
+			})
+			show_declaration_requested.emit(alive_pcs)
+			return result
+
+		"initiative_rolled":
+			_state = State.ADVANCING
+			_cache_initiative_display(result.get("initiative_order", []))
+			initiative_updated.emit(_initiative_display)
+			# Log initiative with full roll breakdown and display names
+			var init_with_names: Array = []
+			for ie in result.get("initiative_order", []):
+				var named_entry: Dictionary = ie.duplicate()
+				named_entry["display_name"] = _resolve_name(ie.get("combatant_id", ""))
+				init_with_names.append(named_entry)
+			log_entry.emit({
+				"type": 12, "round": result.get("round_number", 0),
+				"actor_id": "", "target_id": "",
+				"data": {"initiative_order": init_with_names},
+				"timestamp": 0,
+			})
+			auto_advance_requested.emit()
+			return result
+
+		"waiting_for_pc_action":
+			var cid: String = result.get("combatant_id", "")
+			_current_pc_id = cid
+			_selected_action = ""
+			_has_moved_this_turn = false
+			_state = State.PC_SELECTING_ACTION
+			clear_highlights_requested.emit()
+			active_token_changed.emit(cid)
+			pc_turn_started.emit(cid)
+			return result
+
+		"action_resolved":
+			_emit_action_log(result)
+			action_resolved.emit(result)
+			_update_initiative_hp()
+			# Request deferred advance so UI can render the action result
+			auto_advance_requested.emit()
+			return result
+
+		"round_ended":
+			# Request deferred advance so UI can render round-end state
+			auto_advance_requested.emit()
+			return result
+
+		"combat_over":
+			_state = State.COMBAT_OVER
+			clear_highlights_requested.emit()
+			active_token_changed.emit("")
+			# Log combat end
+			log_entry.emit({
+				"type": 11, "round": result.get("rounds", 0),
+				"actor_id": "", "target_id": "",
+				"data": {"result": result.get("result", "unknown")},
+				"timestamp": 0,
+			})
+			combat_ended.emit(result)
+			return result
+
+	# Unknown status — keep advancing
+	return result
+
+
+# ---------------------------------------------------------------------------
+# Player input handlers (called by the overlay/screen)
+# ---------------------------------------------------------------------------
+
+## Called when the declaration overlay confirms. Submits each declaration
+## to the controller, then advances past declaration phase.
+func on_declarations_confirmed(declarations: Array) -> void:
+	if _state != State.DECLARATION_PHASE:
+		return
+	for decl in declarations:
+		var cid: String = decl.get("combatant_id", "")
+		var dtype: String = decl.get("declaration_type", "")
+		if not cid.is_empty() and not dtype.is_empty():
+			_controller.submit_declaration(cid, dtype)
+			log_entry.emit({
+				"type": 13, "round": _controller.round_number,
+				"actor_id": cid, "actor_name": _resolve_name(cid),
+				"target_id": "", "target_name": "",
+				"data": {"declaration_type": dtype}, "timestamp": 0,
+			})
+	# Advance past declaration into initiative
+	advance()
+
+
+## Called when an action button is pressed in the ActionButtonPanel.
+func on_action_button(action_id: String) -> void:
+	if _state != State.PC_SELECTING_ACTION:
+		return
+
+	_selected_action = action_id
+
+	match action_id:
+		"move":
+			_state = State.PC_SELECTING_MOVE_TARGET
+			var cells := _controller.get_reachable_cells(_current_pc_id)
+			var typed_cells: Array[Vector2i] = []
+			for c in cells:
+				typed_cells.append(c)
+			highlight_reachable.emit(typed_cells, Color(0.2, 0.6, 1.0, 0.25))
+
+		"attack_melee":
+			_state = State.PC_SELECTING_ATTACK_TARGET
+			# Highlight adjacent cells as range overlay + enemy tokens as targets
+			var combatant = _controller.get_combatant(_current_pc_id)
+			if combatant != null and _controller.movement_resolver != null:
+				var pos: Vector2i = _controller.movement_resolver.get_grid_position(combatant)
+				var adj_cells := IsometricGrid.get_neighbors(pos)
+				var typed_cells: Array[Vector2i] = []
+				for c in adj_cells:
+					typed_cells.append(c)
+				highlight_reachable.emit(typed_cells, Color(0.9, 0.3, 0.3, 0.15))
+			var targets := _controller.get_melee_targets(_current_pc_id)
+			var typed_targets: Array[String] = []
+			for t in targets:
+				typed_targets.append(t)
+			highlight_targets.emit(typed_targets)
+
+		"attack_ranged":
+			_state = State.PC_SELECTING_ATTACK_TARGET
+			# Highlight ranged targets
+			var targets := _controller.get_ranged_targets(_current_pc_id)
+			var typed_targets: Array[String] = []
+			for t in targets:
+				typed_targets.append(t)
+			highlight_targets.emit(typed_targets)
+
+		"delay":
+			# Placeholder: treat delay as pass for now
+			# Future: show initiative count dropdown dialog
+			clear_highlights_requested.emit()
+			_controller.submit_pc_action(_current_pc_id, "pass",
+				{"note": "delayed action"})
+			advance()
+
+		"pass":
+			clear_highlights_requested.emit()
+			_controller.submit_pc_action(_current_pc_id, "pass")
+			advance()
+
+
+## Called when a cell is clicked on the map during move-target selection.
+func on_cell_targeted(pos: Vector2i) -> void:
+	if _state != State.PC_SELECTING_MOVE_TARGET:
+		return
+	clear_highlights_requested.emit()
+
+	# Submit the move action
+	_controller.submit_pc_action(_current_pc_id, "move", {"target_cell": pos})
+	var move_result := _controller.advance()
+
+	# Log the move
+	_emit_action_log(move_result)
+	action_resolved.emit(move_result)
+
+	# Stay on this combatant's turn — move does NOT end the turn
+	_has_moved_this_turn = true
+	_state = State.PC_SELECTING_ACTION
+	# Re-show action panel with Move disabled
+	pc_turn_started.emit(_current_pc_id)
+	move_completed.emit()
+
+
+## Called when an entity token is clicked during attack-target selection.
+func on_entity_targeted(entity_id: String) -> void:
+	if _state != State.PC_SELECTING_ATTACK_TARGET:
+		return
+	clear_highlights_requested.emit()
+	var action_id := _selected_action  # "attack_melee" or "attack_ranged"
+	_controller.submit_pc_action(_current_pc_id, action_id, {"target_id": entity_id})
+	advance()
+
+
+## Cancel current target selection — return to action selection.
+func on_cancel() -> void:
+	if _state == State.PC_SELECTING_MOVE_TARGET or \
+	   _state == State.PC_SELECTING_ATTACK_TARGET:
+		clear_highlights_requested.emit()
+		_state = State.PC_SELECTING_ACTION
+		_selected_action = ""
+		pc_turn_started.emit(_current_pc_id)
+
+
+## Returns the current UI state.
+func get_state() -> int:
+	return _state
+
+
+## Returns the CombatController (for direct queries).
+func get_controller() -> CombatController:
+	return _controller
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+func _get_alive_pcs() -> Array:
+	var result: Array = []
+	if _controller == null:
+		return result
+	for c in _controller.roster.get_alive_on_side(Combatant.Side.PARTY):
+		result.append({
+			"combatant_id": c.id,
+			"display_name": c.display_name,
+		})
+	return result
+
+
+func _cache_initiative_display(init_order: Array) -> void:
+	_initiative_display.clear()
+	for entry in init_order:
+		var cid: String = entry.get("combatant_id", "")
+		var c = _controller.roster.get_by_id(cid)
+		if c == null:
+			continue
+		_initiative_display.append({
+			"combatant_id": cid,
+			"display_name": c.display_name,
+			"side": c.side,
+			"initiative_total": entry.get("total", 0),
+			"hp_current": c.get_hp_current(),
+			"hp_max": c.get_hp_max(),
+			"is_alive": c.is_alive(),
+		})
+
+
+func _update_initiative_hp() -> void:
+	## Refresh HP values in the cached initiative display.
+	for entry in _initiative_display:
+		var cid: String = entry.get("combatant_id", "")
+		var c = _controller.roster.get_by_id(cid)
+		if c == null:
+			continue
+		entry["hp_current"] = c.get_hp_current()
+		entry["is_alive"] = c.is_alive()
+	initiative_updated.emit(_initiative_display)
+
+
+func _emit_action_log(result: Dictionary) -> void:
+	## Emit log entries for the resolved action so the CombatLogPanel can display them.
+	var action_str: String = result.get("action", "")
+	var actor_id: String = result.get("combatant_id", "")
+	var action_result: Dictionary = result.get("result", {})
+
+	if action_str.is_empty():
+		return
+
+	var target_id: String = action_result.get("target_id", "")
+	var entry := {
+		"type": _action_to_log_type(action_str),
+		"round": _controller.round_number,
+		"actor_id": actor_id,
+		"actor_name": _resolve_name(actor_id),
+		"target_id": target_id,
+		"target_name": _resolve_name(target_id),
+		"data": action_result,
+		"timestamp": 0,
+	}
+	log_entry.emit(entry)
+
+
+func _resolve_name(combatant_id: String) -> String:
+	## Returns the display_name for a combatant ID, or the ID itself as fallback.
+	if combatant_id.is_empty() or _controller == null:
+		return combatant_id
+	var c = _controller.roster.get_by_id(combatant_id)
+	if c != null:
+		return c.display_name
+	return combatant_id
+
+
+func _action_to_log_type(action_id: String) -> int:
+	match action_id:
+		"attack_melee", "attack_ranged":
+			return 1  # CombatLog.EntryType.ATTACK
+		"cast_spell":
+			return 3  # SPELL
+		"move":
+			return 4  # MOVEMENT
+		"fighting_withdrawal", "full_retreat":
+			return 4  # MOVEMENT
+		_:
+			return 4  # Default to movement

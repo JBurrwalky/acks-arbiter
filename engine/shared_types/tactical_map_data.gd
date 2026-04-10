@@ -132,6 +132,38 @@ static func from_dict(data: Dictionary) -> TacticalMapData:
 	return m
 
 
+## Generate a simple open-field battle map for wilderness encounters.
+## [param width]: grid columns (default 20 = 100 ft).
+## [param height]: grid rows (default 16 = 80 ft).
+## All cells are passable open terrain with VISIBLE fog.
+static func generate_open_field(width: int = 20, height: int = 16) -> TacticalMapData:
+	var m := TacticalMapData.new()
+	m.id = "battlefield"
+	m.name = "Open Field"
+	m.grid_width = width
+	m.grid_height = height
+	m.entry_pos = Vector2i(2, height / 2)
+
+	for col in range(width):
+		for row in range(height):
+			var pos := Vector2i(col, row)
+			m._cells[pos] = {
+				"elevation": 0,
+				"terrain_feature": "open",
+				"cover_value": 0,
+				"surface_type": "grass",
+				"door_state": "",
+				"door_type": "",
+				"door_detected": true,
+				"room_id": -1,
+				"is_corridor": false,
+				"passable": true,
+				"blocks_los": false,
+			}
+			m.fog[pos] = FogState.VISIBLE
+	return m
+
+
 ## Opens a JSON file, parses it, and returns a TacticalMapData from the first level.
 ## For multi-level dungeons use load_all_levels() pattern in DungeonMapController.
 static func load_from_file(path: String) -> TacticalMapData:

@@ -41,7 +41,7 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 	var class_registry: ClassRegistry = registries.get("class_registry")
 	var class_name_str: String = character.character_class
 	if class_registry != null and class_registry.has_class(character.character_class):
-		class_name_str = class_registry.get_class_def(character.character_class).get("class_name", character.character_class)
+		class_name_str = class_registry.get_class_display_name(character.character_class, character.sex)
 	_add_row("Class:", "%s (Level %d)" % [class_name_str, character.level])
 	_add_row("Title:", character.title)
 	_add_row("Race:", character.race.capitalize())

@@ -1289,6 +1289,7 @@ These are not coding style — they are mechanical rules that must be followed i
 | Saving throw order | petrification/paralysis, poison/death, blast/breath, staffs/wands, spells. | ACKS Core |
 | Modular powers | Class abilities stored as reusable power definitions (`data/powers/`) referenced by ID. Class JSONs hold progression tables. Characters get stamped copies in `character_powers` table. | Phase C-1 design |
 | Class data format | One JSON per class in `data/classes/`. ClassRegistry loads all on init. 25 classes total. | Phase C-1 |
+| Optional class display/restriction metadata | Class JSONs may include runtime-only UI metadata such as `sex_restriction`, `display_name_generic`, `display_name_male`, and `display_name_female`. Keep `class_id` as the canonical stored key and resolve display copy through `ClassRegistry` helpers instead of rewriting saved class IDs. | 2026-04-10 |
 | Class weapon/armor permission tags | `weapon_permissions` and `armor_permissions` in class JSONs may be **direct item_keys** (e.g. `"dagger"`, `"chain_mail"`) OR **semantic category tags**. Resolver lives in `equipment_shop_panel.gd:_get_restriction_warning()`. Semantic weapon tags: `"piercing_melee"/"slashing_melee"` = non-blunt melee; `"any_one_handed_melee"/"all_one_handed_melee_weapons"/"all_except_oversized"` = melee without `two_handed` tag; `"any_missile"/"all_missile_weapons"` = ranged or thrown; `"all_axes"/"all_hammers"/"all_flails"/"all_maces"` = item_key substring match. Armor tier tags: `"leather_or_lighter"` ≤ AC 2, `"chain_mail_or_lighter"` ≤ AC 4, `"banded_or_lighter"` ≤ AC 5. Short armor aliases (`"leather"`, `"hide"`, `"chain"`) are normalized to canonical item_keys. Mixed lists (semantic + item_keys) are supported — any matching entry permits the item. | 2026-04-01 |
 | Class slot_type values | Proficiencies saved to DB must use `slot_type` of `"class"` or `"general"` (CHECK constraint). Bonus proficiencies from barbarian regional origins and witch traditions are class-granted and use `"class"`. Language proficiencies use `"general"`. | 2026-04-01 |
 | Registries are RefCounted | `PowerRegistry`, `ClassRegistry`, `ProficiencyRegistry`, `SpellRegistry`, `RepertoireEngine`, `SpellEffectRegistry`, `ConditionCatalog` are instantiated by consumers, NOT autoloads. | Phase C-1/C-2 |
@@ -1316,8 +1317,12 @@ UI panels that overlay the game use CanvasLayer nodes with explicit layer assign
 | Layer | Purpose | Example |
 |---|---|---|
 | 0 | Normal game content | Default |
-| 10 | Map HUD (tooltips, coordinates) | HexHUD in hex_map_renderer.gd |
+| 5 | Gameplay overlays (combat) | CombatScreen |
+| 10 | Campaign select / map HUD | CampaignSelectScreen, HexHUD |
+| 20 | Pre-game flow screens | PartyWelcomeScreen, PartyRosterScreen |
 | 32 | Full-screen wizard flows | CharacterCreationScreen |
+| 46 | Persistent party sidebar | PartyManagementOverlay |
+| 48 | Character sheet sidebar | CharacterSheetOverlay |
 | 64 | Modal prompts (dice rolls, dialogs) | DicePrompt |
 | 128 | Developer override panel | OverridePanel |
 
@@ -1381,19 +1386,30 @@ Runtime-built windows, overlays, and modal popups should use the shared `UiSurfa
 
 ### 13.6 Scene Tree — Main.tscn
 
-<!-- Updated 2026-03-27 -->
+<!-- Updated 2026-04-09 -->
 
 ```
 Main (Node, script: main_scene.gd)
+├── NavigationStack (Node, script: navigation_stack.gd)
+├── SceneContainer (Node)
+├── SceneTransition (instance of scene_transition.tscn)
 ├── HexMapController (Node, script: hex_map_controller.gd)
 ├── HexMap (instance of hex_map.tscn)
 ├── OverrideManager (Node, script: override_manager.gd)
-├── OverridePanel (instance of override_panel.tscn)
-├── DicePrompt (instance of dice_prompt.tscn)
-└── CharacterCreationScreen (instance of character_creation_screen.tscn, CanvasLayer 32)
+├── OverridePanel (instance of override_panel.tscn, CanvasLayer 128)
+├── DicePrompt (instance of dice_prompt.tscn, CanvasLayer 64)
+├── CharacterCreationScreen (instance of character_creation_screen.tscn, CanvasLayer 32)
+├── CharacterSheetOverlay (instance of character_sheet_overlay.tscn, CanvasLayer 48)
+├── PartyManagementOverlay (instance of party_management_overlay.tscn, CanvasLayer 46)
+└── SessionRunner (Node, script: session_runner.gd)  ← MUST be last child
 ```
 
 `main_scene.gd` wires the controller to the renderer and the override panel to the manager in `_ready()`. Subsystem managers are plain Node children — not autoloads.
+
+**Dynamically managed screens** (not in Main.tscn — created by SessionState objects, pushed onto NavigationStack):
+- CampaignSelectScreen (CanvasLayer 10) — by CampaignSelectState
+- PartyWelcomeScreen (CanvasLayer 20) — by PartyCreationState
+- PartyRosterScreen (CanvasLayer 20) — by PartyCreationState
 
 ---
 
@@ -1579,6 +1595,7 @@ func handle_action(runner, action: String, payload: Dictionary) -> String
 | SessionRunner state key | GameState.State | GameState.ExplorationContext |
 |---|---|---|
 | `campaign_select` | MAIN_MENU | NONE |
+| `party_creation` | MAIN_MENU | NONE |
 | `session_load` | (transient) | (transient) |
 | `wilderness` | EXPLORATION | WILDERNESS |
 | `dungeon` | EXPLORATION | DUNGEON |

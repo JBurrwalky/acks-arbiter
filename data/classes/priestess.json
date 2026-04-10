@@ -6,6 +6,8 @@
   "prime_requisites": ["WIS", "CHA"],
   "minimum_abilities": {},
   "alignment_restriction": "",
+  "display_name_generic": "Priest/Priestess",
+  "display_name_male": "Priest",
   "hit_die": "1d4",
   "hp_after_max_hd": "+1",
   "max_hd_count": 9,

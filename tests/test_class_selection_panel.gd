@@ -5,6 +5,9 @@ extends "res://tests/test_suite_base.gd"
 
 func run_all_tests() -> void:
 	test_ineligible_classes_use_dark_disabled_text()
+	test_priestess_button_uses_generic_display_name()
+	test_class_details_show_alignment_and_sex_restrictions()
+	test_sex_and_alignment_restrictions_do_not_disable_eligible_classes()
 	if not has_failures():
 		print("ClassSelectionPanel: all tests passed.")
 
@@ -51,3 +54,91 @@ func test_ineligible_classes_use_dark_disabled_text() -> void:
 		== ClassSelectionPanel.SELECTED_CLASS_TEXT_COLOR,
 		"selected class buttons should keep the gold selected-state text color")
 	print("  ineligible_classes_use_dark_disabled_text: OK")
+
+
+func test_priestess_button_uses_generic_display_name() -> void:
+	var panel := ClassSelectionPanel.new()
+	panel.setup(_make_state(_elite_scores()), ClassRegistry.new())
+
+	var priestess_btn := panel._class_buttons.get("priestess") as Button
+	check(priestess_btn != null, "priestess button should exist in the class list")
+	if priestess_btn != null:
+		check(priestess_btn.text == "Priest/Priestess",
+			"priestess button should use the generic display label in the class list")
+	print("  priestess_button_uses_generic_display_name: OK")
+
+
+func test_class_details_show_alignment_and_sex_restrictions() -> void:
+	var panel := ClassSelectionPanel.new()
+	panel.setup(_make_state(_elite_scores()), ClassRegistry.new())
+
+	panel._select_class("warlock", true)
+	check(_find_detail_value(panel, "Alignment:") == "Neutral or Chaotic",
+		"warlock detail panel should explain the non-lawful alignment restriction")
+	check(_find_detail_value(panel, "Sex:") == "Male",
+		"warlock detail panel should show the male-only restriction")
+
+	panel._select_class("bladedancer", true)
+	check(_find_detail_value(panel, "Sex:") == "Female",
+		"bladedancer detail panel should show the female-only restriction")
+
+	panel._select_class("paladin", true)
+	check(_find_detail_value(panel, "Alignment:") == "Lawful",
+		"paladin detail panel should show the lawful-only restriction")
+
+	panel._select_class("anti_paladin", true)
+	check(_find_detail_value(panel, "Alignment:") == "Chaotic",
+		"anti-paladin detail panel should show the chaotic-only restriction")
+	print("  class_details_show_alignment_and_sex_restrictions: OK")
+
+
+func test_sex_and_alignment_restrictions_do_not_disable_eligible_classes() -> void:
+	var panel := ClassSelectionPanel.new()
+	panel.setup(_make_state(_elite_scores()), ClassRegistry.new())
+
+	var warlock_btn := panel._class_buttons.get("warlock") as Button
+	var witch_btn := panel._class_buttons.get("witch") as Button
+	var bladedancer_btn := panel._class_buttons.get("bladedancer") as Button
+
+	check(warlock_btn != null, "warlock button should exist in the class list")
+	check(witch_btn != null, "witch button should exist in the class list")
+	check(bladedancer_btn != null, "bladedancer button should exist in the class list")
+	if warlock_btn == null or witch_btn == null or bladedancer_btn == null:
+		return
+
+	check(not warlock_btn.disabled,
+		"warlock should stay selectable in step 2 when ability scores qualify")
+	check(not witch_btn.disabled,
+		"witch should stay selectable in step 2 when ability scores qualify")
+	check(not bladedancer_btn.disabled,
+		"bladedancer should stay selectable in step 2 when ability scores qualify")
+	print("  sex_and_alignment_restrictions_do_not_disable_eligible_classes: OK")
+
+
+func _make_state(scores: Dictionary) -> Dictionary:
+	return {
+		"scores": scores,
+		"class_id": "",
+		"race": "human",
+	}
+
+
+func _elite_scores() -> Dictionary:
+	return {
+		"STR": 18,
+		"INT": 18,
+		"WIS": 18,
+		"DEX": 18,
+		"CON": 18,
+		"CHA": 18,
+	}
+
+
+func _find_detail_value(panel: ClassSelectionPanel, label_text: String) -> String:
+	for child in panel._detail_area.get_children():
+		if child is HBoxContainer and child.get_child_count() >= 2:
+			var key := child.get_child(0) as Label
+			var value := child.get_child(1) as Label
+			if key != null and value != null and key.text == label_text:
+				return value.text
+	return ""

@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://tests/test_ability_roll_panel.gd" id="12_ability_roll_panel_tests"]
 [ext_resource type="Script" path="res://tests/test_hp_roll_panel.gd" id="66_hp_roll_panel_tests"]
 [ext_resource type="Script" path="res://tests/test_class_selection_panel.gd" id="46_class_selection_panel_tests"]
+[ext_resource type="Script" path="res://tests/test_finalize_panel.gd" id="70_finalize_panel_tests"]
 [ext_resource type="Script" path="res://tests/test_equipment_shop_panel.gd" id="13_equipment_shop_panel_tests"]
 [ext_resource type="Script" path="res://tests/test_portrait_display_sizing.gd" id="44_portrait_display_sizing_tests"]
 [ext_resource type="Script" path="res://tests/test_language_cleanup.gd" id="67_language_cleanup_tests"]
@@ -115,6 +116,9 @@ script = ExtResource("66_hp_roll_panel_tests")
 
 [node name="ClassSelectionPanelTests" type="Node" parent="."]
 script = ExtResource("46_class_selection_panel_tests")
+
+[node name="FinalizePanelTests" type="Node" parent="."]
+script = ExtResource("70_finalize_panel_tests")
 
 [node name="EquipmentShopPanelTests" type="Node" parent="."]
 script = ExtResource("13_equipment_shop_panel_tests")

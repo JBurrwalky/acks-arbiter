@@ -95,6 +95,7 @@ func _ready() -> void:
 func _register_states() -> void:
 	_state_registry = {
 		"campaign_select": func() -> SessionState: return CampaignSelectState.new(),
+		"party_creation": func() -> SessionState: return PartyCreationState.new(),
 		"session_load": func() -> SessionState: return SessionLoadState.new(),
 		"wilderness": func() -> SessionState: return WildernessExploreState.new(),
 		"dungeon": func() -> SessionState: return DungeonExploreState.new(),
@@ -147,6 +148,9 @@ func submit_action(action: String, payload: Dictionary = {}) -> bool:
 func _sync_game_state(state_key: String) -> void:
 	match state_key:
 		"campaign_select":
+			if GameState.current_state != GameState.State.MAIN_MENU:
+				GameState.transition_to(GameState.State.MAIN_MENU)
+		"party_creation":
 			if GameState.current_state != GameState.State.MAIN_MENU:
 				GameState.transition_to(GameState.State.MAIN_MENU)
 		"session_load":

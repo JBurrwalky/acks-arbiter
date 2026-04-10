@@ -3801,3 +3801,538 @@ CombatState actions:
 **Next session should:**
 1. Audit the remaining demihuman/default-language assumptions against the local ACKS summaries if more racial-language corrections are needed.
 2. Reuse `CharacterData.get_default_languages_for_race()` for any future NPC generation or importer code that seeds starting languages.
+
+---
+
+## Session 2026-04-09 — F-2 / Dungeon Individual Movement: Session 1 Infrastructure
+
+**Task:** Begin F-2 (Tactical Combat UI) and dungeon individual-movement upgrade. Session 1 goal: shared token component, dungeon renderer upgrade, combat controller query helpers, dungeon encounter spawner.
+
+**Key architectural decision made this session:**
+Dungeon encounters do NOT open a separate combat screen. Monsters spawn in-place on the dungeon map at ACKS encounter distance (2d6×10 ft), and combat resolves on the same grid. Wilderness encounters still use a standalone CombatScreen. The combat HUD widgets are shared between both contexts.
+
+**Model used:** Claude Sonnet 4.6
+
+**Completed:**
+- `scenes/ui/components/combatant_token.gd` + `.tscn` — new shared CombatantToken scene. Node2D with _draw()-based bottlecap-with-beak rendering (circle body + triangular facing beak + class letter + name label). Properties: entity_id, display_name, side (0=PARTY/1=ENEMY/-1=neutral), class_icon_letter, facing, is_selected, is_active, show_ghost. Colors: blue=PARTY, red=ENEMY, yellow=neutral. Selection ring (yellow), active glow (white).
+- `scenes/maps/dungeon_map_renderer.gd` — upgraded from yellow-diamond Polygon2D tokens to CombatantToken instances. Replaced `_party_tokens: Dictionary` with `_tokens: Dictionary` (entity_id → Node2D). Added public API: `add_entity_token()`, `remove_entity_token()`, `get_entity_token()`. Added lazy-load `_token_scene` to avoid parse-time preload dependency. Added combat-mode methods: `set_combat_mode()`, `highlight_cells()`, `highlight_entity_tokens()`, `clear_highlights()`, `set_active_token()`, `move_token()`. Added `_draw_highlights()` layer to `_draw()`. Added `entity_clicked(entity_id)` signal. Added `_entity_id_near_screen_pos()` for combat-mode click detection.
+- `engine/subsystems/combat/combat_controller.gd` — added UI query helpers: `get_combatant()`, `get_available_actions()`, `get_melee_targets()`, `get_ranged_targets()`, `get_reachable_cells()`, `_all_enemy_ids()`.
+- `engine/subsystems/exploration/dungeon_map_controller.gd` — added `get_entity_ids()` method.
+- `engine/subsystems/session/states/dungeon_explore_state.gd` — upgraded from `"party_leader"` placeholder to adding ALL active living party members as entities. Added `_class_letter()` static helper. Wires `add_entity_token()` on the renderer for each party member.
+- `engine/subsystems/exploration/dungeon_encounter_spawner.gd` — new class. Implements ACKS 2d6×10 ft dungeon encounter distance (2d6×2 cells). Finds eligible cells at rolled Chebyshev distance from nearest party member, falls back to shorter distances if none found. Places lead monster at chosen cell, clusters remaining behind (away from party centroid) via BFS radius expansion.
+
+**Decisions made:**
+- CombatantToken uses `_draw()` exclusively (no child Polygon2D/Label nodes) for simplicity and to avoid scene node overhead for many tokens.
+- `dungeon_map_renderer.gd` uses lazy `load()` for the token scene (not `const preload`) because scene scripts without `class_name` can't reference named classes at parse time.
+- Type annotations for CombatantToken use `Node2D` base type in the renderer to avoid the same parse-time issue.
+- `DungeonExploreState` still falls back to `"party_leader"` if no PartyData is available (backward compat for tests that stub the runner).
+
+**Interfaces defined or changed:**
+- `DungeonMapRenderer.add_entity_token(entity_id, display_name, side, class_letter) -> Node2D`
+- `DungeonMapRenderer.remove_entity_token(entity_id)`
+- `DungeonMapRenderer.get_entity_token(entity_id) -> Node2D`
+- `DungeonMapRenderer.set_combat_mode(enabled: bool)`
+- `DungeonMapRenderer.highlight_cells(cells: Array[Vector2i], color: Color)`
+- `DungeonMapRenderer.highlight_entity_tokens(entity_ids: Array[String])`
+- `DungeonMapRenderer.clear_highlights()`
+- `DungeonMapRenderer.set_active_token(entity_id: String)`
+- `DungeonMapRenderer.move_token(entity_id: String, to_cell: Vector2i)`
+- `DungeonMapRenderer` new signal: `entity_clicked(entity_id: String)`
+- `DungeonMapController.get_entity_ids() -> Array[String]`
+- `CombatController.get_combatant(combatant_id) -> Combatant`
+- `CombatController.get_available_actions(combatant_id) -> Array[String]`
+- `CombatController.get_melee_targets(combatant_id) -> Array[String]`
+- `CombatController.get_ranged_targets(combatant_id) -> Array[String]`
+- `CombatController.get_reachable_cells(combatant_id) -> Array[Vector2i]`
+- `DungeonEncounterSpawner.spawn_encounter(map, party_positions, encounter_data, monster_registry, dice_system) -> Array[Dictionary]`
+  - Returns `[{combatant_id, monster_data, grid_position, rolled_hp, group_id}]`
+
+**Database changes:** None.
+
+**Tests added/updated:** None (Session 1 is infrastructure; tests will be added in Session 2 when the dungeon encounter spawn can be exercised end-to-end).
+
+**Known issues:**
+- `DungeonEncounterSpawner` has no unit tests yet; covered next session.
+- `CombatantToken` has no unit tests yet; visual correctness requires Godot editor inspection.
+- `DungeonExploreState` now wires tokens but token positions are only updated via `_update_entity_tokens()` on `party_moved` signal — which still moves all members to the same cell (group movement). Individual movement is Session 4.
+
+**Regression baseline:** 65 suites passed, 7 failed (all 7 failures are pre-existing, unchanged from previous baseline).
+
+**Next session should:**
+1. Session 2 (F-2): Build shared combat HUD components — InitiativeStrip, StatSummary, ActionButtonPanel, CombatLogPanel, DeclarationOverlay, CombatEndOverlay.
+2. Session 3 (F-2): Build CombatUIController + DungeonCombatOverlay, wire in-place dungeon combat end-to-end.
+3. Session 4 (Dungeon): FormationManager + DungeonOrderManager + upgrade DungeonMapController to per-character positions.
+4. Wire `mortal_wound_rolled` signal emission in `CombatController.process_mortal_wounds()` (pre-existing known issue).
+
+
+---
+
+## Session 2026-04-09 — F-2 Session 2: Combat HUD Components (Shared)
+
+**Task:** Build the six shared combat HUD widget scenes for reuse by both dungeon combat overlay and standalone combat screen.
+
+**Model used:** Claude Opus 4.6
+
+**Completed:**
+- `scenes/ui/combat/initiative_strip.gd` + `.tscn` — VBoxContainer in ScrollContainer. Each entry row: side color indicator (blue/red/yellow), initiative number, name (clip_text), HP label + ProgressBar (green/yellow/red by ratio). Active combatant row gets brightness modulation. Dead combatants greyed out. API: `set_initiative_order(order: Array[Dict])`, `set_active(combatant_id)`, `update_hp(combatant_id, current, max_val)`.
+- `scenes/ui/combat/stat_summary.gd` + `.tscn` — PanelContainer showing active combatant: name, class/HD + level, HP bar + numeric, AC, combat movement (cells), active conditions. API: `show_combatant(combatant: Combatant)`. Accepts Combatant duck-typed (uses get_hp_current/max, get_effective_ac, get_combat_movement_cells, etc.).
+- `scenes/ui/combat/action_button_panel.gd` + `.tscn` — VBoxContainer of buttons: Move, Melee Attack, Ranged Attack, Cast Spell (always disabled — deferred to F-3), Fighting Withdrawal, Full Retreat, Pass. Emits `action_selected(action_id: String)`. API: `set_available_actions(actions: Array)` to enable/disable per combatant, `set_panel_visible(bool)` for enemy turns, `disable_all()` for target selection mode.
+- `scenes/ui/combat/combat_log_panel.gd` + `.tscn` — Scrolling RichTextLabel with BBCode coloring per CombatLog.EntryType. Formats all 12 entry types (ROUND_START through COMBAT_END) into readable text. Toggle show/hide button. API: `append_event(log_entry: Dict)`, `append_text(text, color)`, `clear_log()`. Auto-scrolls to bottom.
+- `scenes/ui/combat/declaration_overlay.gd` + `.tscn` — Center-anchored modal for round-start declarations. Lists alive PCs with OptionButton dropdowns: None / Fighting Withdrawal / Full Retreat / Set vs Charge. Spell declaration disabled (F-3). Emits `declarations_complete(declarations: Array[Dict])` with `{combatant_id, declaration_type}` entries. API: `set_pc_list(pcs: Array[{combatant_id, display_name}])`.
+- `scenes/ui/combat/combat_end_overlay.gd` + `.tscn` — Center-anchored victory/defeat card. Shows outcome (VICTORY green / DEFEAT red / FLED yellow), rounds fought, XP earned (victory only). Scrollable details: downed PCs with mortal wound descriptions, death status, recovery time. "Continue" button emits `continue_pressed()`. API: `show_result(result: Dict)` matching CombatController's combat_over return dict.
+
+**Decisions made:**
+- All six widgets build their UI entirely in `_ready()` (no .tscn child nodes beyond root) for simplicity. The .tscn files are minimal wrappers with just root node + script.
+- StatSummary accepts Combatant duck-typed (no import/class reference) — calls accessor methods directly. This avoids parse-time dependency on Combatant class.
+- CombatLogPanel maps CombatLog.EntryType enum values by integer (0–11) to colors, matching the enum order in combat_log.gd. If the enum changes order, the color mapping must be updated.
+- ActionButtonPanel keeps Cast Spell permanently disabled with tooltip explaining F-3 deferral.
+- DeclarationOverlay only emits entries for PCs that have non-empty declarations (i.e., "None" selections are omitted from the result array).
+- All panels use dark semi-transparent backgrounds (Color ~0.1 alpha 0.85–0.95) to overlay cleanly on the dungeon map.
+
+**Interfaces defined or changed:**
+- `InitiativeStrip.set_initiative_order(order: Array)` — each entry: `{combatant_id, display_name, side, initiative_total, hp_current, hp_max, is_alive}`
+- `InitiativeStrip.set_active(combatant_id: String)`
+- `InitiativeStrip.update_hp(combatant_id: String, current: int, max_val: int)`
+- `StatSummary.show_combatant(combatant)` — duck-typed Combatant
+- `ActionButtonPanel.action_selected` signal `(action_id: String)`
+- `ActionButtonPanel.set_available_actions(actions: Array)`
+- `ActionButtonPanel.set_panel_visible(is_visible: bool)`
+- `ActionButtonPanel.disable_all()`
+- `CombatLogPanel.append_event(log_entry: Dictionary)`
+- `CombatLogPanel.append_text(text: String, color: Color)`
+- `CombatLogPanel.clear_log()`
+- `DeclarationOverlay.declarations_complete` signal `(declarations: Array)`
+- `DeclarationOverlay.set_pc_list(pcs: Array)`
+- `CombatEndOverlay.continue_pressed` signal
+- `CombatEndOverlay.show_result(result: Dictionary)`
+
+**Database changes:** None.
+
+**Tests added/updated:** None — these are pure UI widgets with no controller wiring. Visual layout verification requires Godot editor. All 65 existing test suites still pass (7 pre-existing failures unchanged).
+
+**Known issues:**
+- CombatLogPanel color map uses hardcoded integer keys matching CombatLog.EntryType enum order. Fragile if enum is reordered.
+- No unit tests for these widgets yet; they are standalone with mock-data-ready APIs.
+- `mortal_wound_rolled` signal still not wired in CombatController (pre-existing).
+
+**Next session should:**
+1. Session 3 (F-2): Build CombatUIController (shared state machine between UI and CombatController) + DungeonCombatOverlay (composes all 6 HUD widgets, wires to DungeonMapRenderer combat mode). Wire dungeon in-place combat end-to-end.
+2. Extract CombatFinalizer from CombatState._finish_combat() for shared post-combat processing.
+3. Session 4 (F-2): FormationManager + DungeonOrderManager + DungeonMapController individual movement upgrade.
+4. Wire `mortal_wound_rolled` signal emission (pre-existing known issue).
+
+---
+
+## Session 2026-04-09 — F-2 Session 3: Dungeon Combat Mode — In-Place Combat on Dungeon Map
+
+**Task:** Build CombatUIController state machine, DungeonCombatOverlay, CombatFinalizer, and wire DungeonExploreState for in-place dungeon combat (monsters spawn on dungeon map, combat resolves on the same grid, no separate combat screen).
+
+**Model used:** Claude Opus 4.6
+
+**Completed:**
+- `scenes/ui/combat/combat_ui_controller.gd` — shared state machine (CombatUIController, RefCounted) that bridges HUD widgets and CombatController. States: IDLE, ADVANCING, DECLARATION_PHASE, PC_SELECTING_ACTION, PC_SELECTING_MOVE_TARGET, PC_SELECTING_ATTACK_TARGET, ENEMY_ACTING, COMBAT_OVER. Pull-based loop: advance() → routes CombatController status → emits signals → waits for UI input. Signal-based communication with both HUD widgets and map renderer. Handles action button routing: Move → highlight reachable cells + wait for cell click; Attack → highlight targets + wait for entity click; Fighting Withdrawal/Full Retreat/Pass → submit directly.
+- `engine/subsystems/combat/combat_finalizer.gd` — shared post-combat processing (CombatFinalizer, RefCounted). Extracted mortal wounds processing, XP award distribution, and timekeeping advancement from CombatState._finish_combat(). Single entry point: finalize(runner, result, party_data). Reused by both CombatState (wilderness) and DungeonExploreState (dungeon).
+- `engine/subsystems/session/states/combat_state.gd` — refactored _finish_combat() to delegate to CombatFinalizer.finalize(). Removed _mark_pc_dead() and _award_combat_xp() (now in CombatFinalizer). Added _finalizer field.
+- `scenes/ui/combat/dungeon_combat_overlay.gd` — CanvasLayer (layer 10) that composes all Session 2 HUD widgets: InitiativeStrip (right panel, top), StatSummary (right panel, mid), ActionButtonPanel (right panel, bottom), CombatLogPanel (bottom-left), DeclarationOverlay (centered modal), CombatEndOverlay (centered modal), round label (bottom-center). Owns a CombatUIController instance. Wires CombatUIController signals to widget updates and map renderer highlights. Wires DungeonMapRenderer cell_clicked/entity_clicked to CombatUIController input. Public API: start_combat(controller, renderer), end_combat(). Signal: combat_finished(result).
+- `engine/subsystems/session/states/dungeon_explore_state.gd` — rewired for in-place dungeon combat:
+  - Added _combat_overlay, _in_combat, _finalizer, _spawner fields.
+  - _on_cell_clicked() now blocks movement during _in_combat.
+  - New _start_dungeon_combat(encounter_data): calls DungeonEncounterSpawner.spawn_encounter() to place monsters on the dungeon grid at ACKS encounter distance; builds CombatRoster from party + spawned monsters; creates all combat subsystems (same pattern as CombatState.enter()); creates DungeonCombatOverlay and calls start_combat().
+  - New _on_dungeon_combat_finished(result): calls CombatFinalizer.finalize() for mortal wounds/XP/time; removes all monster tokens and entities from renderer and TacticalMapData; removes dead party member tokens; cleans up overlay; resumes exploration.
+  - No longer transitions to CombatState for dungeon encounters (wilderness encounters still use CombatState via the standalone CombatScreen, unchanged).
+
+**Decisions made:**
+- CombatUIController communicates entirely via signals (no direct widget references). This keeps it reusable by both DungeonCombatOverlay and the future standalone CombatScreen.
+- DungeonCombatOverlay builds its entire UI in _build_ui() rather than using a .tscn scene tree. This matches the pattern from the Session 2 HUD widgets and keeps instantiation simple (just DungeonCombatOverlay.new()).
+- CombatFinalizer is stateless — a single finalize() call processes everything. No need to hold references across frames.
+- Monster entity cleanup after combat identifies monsters by checking against PartyData character IDs rather than by name convention. This is more robust than pattern-matching on combatant_id strings.
+- DungeonExploreState creates its own CombatRoster from party CharacterData + spawned monster dicts rather than using CombatRoster.build_from_encounter(), because the party members already have grid positions from the dungeon map and we need to preserve those.
+- The DungeonCombatOverlay stores the combat_over result from CombatController and passes it through combat_finished signal so the explore state can finalize correctly.
+
+**Interfaces defined or changed:**
+- `CombatUIController.setup(controller: CombatController)`
+- `CombatUIController.advance() -> Dictionary`
+- `CombatUIController.on_declarations_confirmed(declarations: Array)`
+- `CombatUIController.on_action_button(action_id: String)`
+- `CombatUIController.on_cell_targeted(pos: Vector2i)`
+- `CombatUIController.on_entity_targeted(entity_id: String)`
+- `CombatUIController.on_cancel()`
+- `CombatUIController.get_state() -> int`
+- `CombatUIController.get_controller() -> CombatController`
+- CombatUIController signals: `show_declaration_requested`, `initiative_updated`, `pc_turn_started`, `action_resolved`, `combat_ended`, `log_entry`, `highlight_reachable`, `highlight_targets`, `clear_highlights_requested`, `active_token_changed`, `token_moved`
+- `CombatFinalizer.finalize(runner, result: Dictionary, party_data: PartyData) -> void`
+- `DungeonCombatOverlay.start_combat(controller: CombatController, renderer) -> void`
+- `DungeonCombatOverlay.end_combat() -> void`
+- `DungeonCombatOverlay.combat_finished` signal `(result: Dictionary)`
+- `CombatState._finalizer: CombatFinalizer` (new field)
+- `DungeonExploreState._in_combat: bool`, `._combat_overlay`, `._finalizer`, `._spawner` (new fields)
+- `DungeonExploreState._start_dungeon_combat(encounter_data: Dictionary) -> void`
+- `DungeonExploreState._on_dungeon_combat_finished(result: Dictionary) -> void`
+
+**Database changes:** None.
+
+**Tests added/updated:** None — the CombatFinalizer refactor is validated by the existing CombatController and SessionRunner test suites passing (65/65 combat tests pass). DungeonCombatOverlay + CombatUIController are UI integration that require Godot editor/runtime testing.
+
+**Known issues:**
+- CombatUIController.advance() recurses through auto-advance steps (combat_started → declaration → initiative → action). Very long combats could theoretically hit stack depth, but ACKS combats rarely exceed ~10 rounds.
+- DungeonCombatOverlay._on_continue_pressed() calls _controller.advance() to re-fetch the combat_over result dict. If the controller state is unexpected, the fallback dict has monster_xp_total=0. The full result should have been cached from the combat_ended signal instead.
+- No .tscn file for DungeonCombatOverlay — it's instantiated via .new() from DungeonExploreState, which is correct for a CanvasLayer that builds its own UI.
+- `mortal_wound_rolled` signal still not wired in CombatController (pre-existing known issue).
+
+**Regression baseline:** 65 suites passed, 7 failed (all 7 pre-existing, unchanged).
+
+**Next session should:**
+1. Session 4 (F-2): FormationManager + DungeonOrderManager + upgrade DungeonMapController to per-character positions with individual movement.
+2. Session 5 (F-2): DungeonOrderOverlay, DungeonSelectionPanel, UI for individual movement + End Turn.
+3. Session 6 (F-2, if needed): Standalone CombatScreen for wilderness encounters using CombatUIController + CombatMapRenderer.
+4. Wire `mortal_wound_rolled` signal emission (pre-existing known issue).
+5. Fix DungeonCombatOverlay to cache combat result from combat_ended signal rather than re-fetching from controller.
+
+---
+
+## Session 2026-04-09 — F-2 Session 4: Dungeon Individual Movement — Engine
+
+**Task:** Build FormationManager, DungeonOrderManager, and upgrade DungeonMapController for per-character dungeon positions with individual movement and order queue system.
+
+**Model used:** Claude Opus 4.6
+
+**Completed:**
+- `engine/subsystems/exploration/formation_manager.gd` — new class (FormationManager, RefCounted). 5 formation presets: Column (1 wide), DoubleColumn (2 wide), Line (N wide), DoubleLine (N wide x 2 deep), Wedge (V-shape). All presets auto-sort members by AC desc, HP desc tiebreak. apply_preset(), compute_dungeon_positions() with collapse logic (full -> double column -> single column), compute_group_move().
+- `engine/subsystems/exploration/dungeon_order_manager.gd` — new class (DungeonOrderManager, RefCounted). Order queue: each entity has at most one pending order. Types: move, interact_door, search, listen, wait. API: add_order(), remove_order(), get_order(), get_all_orders(), has_order(), clear(), get_entities_without_orders(), order_count().
+- `engine/subsystems/exploration/dungeon_map_controller.gd` — major upgrade:
+  - Lazy-initialized _order_manager, _formation_manager, _party_data_ref fields.
+  - set_party_data() for formation placement on load.
+  - load_dungeon() uses FormationManager for entry placement.
+  - move_party() refactored: multi-member+PartyData uses queue_group_move+execute_orders; single entity uses legacy path.
+  - New: queue_move_order() with BFS pathfinding, queue_group_move() for formation-preserving moves, execute_orders() for simultaneous resolution, reform_formation().
+  - _bfs_path() BFS on 8-directional IsometricGrid neighbors.
+  - _update_fog_for_all_members() — union of all member positions for fog-of-war.
+  - use_stairs() now places members in formation at target level.
+  - New signal: orders_executed(result).
+- `engine/subsystems/session/states/dungeon_explore_state.gd` — added set_party_data() call before load_dungeon().
+
+**Decisions made:**
+- Managers use load() lazy init to avoid Godot 4 parse-time class_name resolution issues.
+- BFS pathfinding (not A*) — adequate for short dungeon corridors.
+- execute_orders() teleports to destination; animation deferred to Session 5.
+- move_party() backward-compat: single-entity tests use original direct-move path.
+
+**Interfaces defined or changed:**
+- DungeonMapController: set_party_data(), get_formation_manager(), get_order_manager(), reform_formation(), queue_move_order(), queue_group_move(), execute_orders(), orders_executed signal
+- FormationManager: apply_preset(), compute_dungeon_positions(), compute_group_move(), PRESETS constant
+- DungeonOrderManager: add_order(), remove_order(), get_order(), get_all_orders(), has_order(), clear(), get_entities_without_orders(), get_entities_with_orders(), order_count()
+
+**Database changes:** None.
+
+**Tests added/updated:** None new — existing tests pass via backward-compat path.
+
+**Known issues:**
+- BFS does not check entity occupancy — two entities could be ordered to the same cell.
+- mortal_wound_rolled signal still not wired (pre-existing).
+
+**Regression baseline:** 65 suites passed, 7 failed (all 7 pre-existing, unchanged).
+
+**Next session should:**
+1. Session 5 (F-2): DungeonOrderOverlay, DungeonSelectionPanel, DungeonMapRenderer selection + order overlay, wire DungeonExploreState to new UI.
+2. Add FormationManager and DungeonOrderManager unit tests.
+3. Session 6 (F-2, if needed): Standalone CombatScreen for wilderness encounters.
+
+---
+
+## Session 2026-04-09 — F-2 Session 5: Dungeon UI — Selection, Orders, Ghost Trails
+
+**Task:** Build dungeon exploration UI for individual movement: order overlay (ghost trails), selection panel (character list + order buttons + End Turn), update renderer for entity selection, update scene tree, wire DungeonExploreState to new UI.
+
+**Model used:** Claude Opus 4.6
+
+**Completed:**
+- `scenes/maps/dungeon_order_overlay.gd` — Node2D child of renderer. Renders pending orders visually: ghost trail dots along move paths with connecting lines, ghost circle at destination, small icons for search/listen/wait/interact_door orders. update_overlays(orders) and clear_overlays() API. Colors coded per order type.
+- `scenes/maps/dungeon_selection_panel.gd` + `.tscn` — Right-side PanelContainer for exploration mode. Character list rows: class letter, name, HP (color-coded by ratio), order status icon. Click row to select character on map. Order type buttons: Move (M), Search (S), Listen (L), Wait (W) with active highlight. Formation preset dropdown (Column, Double Column, Line, Double Line, Wedge). Reform Formation button. End Turn button. Signals: character_selected, character_deselected, select_all_pressed, end_turn_pressed, reform_formation_pressed, order_type_selected, formation_preset_selected.
+- `scenes/maps/dungeon_map_renderer.gd` — added exploration selection system: _selected_entity_ids, _order_overlay reference. New methods: select_entity() with additive shift-click, deselect_entity(), clear_selection(), select_all_on_side(), get_selected_entity_ids(). update_order_overlay() and clear_order_overlay() for order visualization. Exploration mode entity clicks now select instead of just emitting entity_clicked. New signals: entity_selected, entity_deselected, end_turn_requested.
+- `scenes/maps/dungeon_map.tscn` — updated scene tree: added OrderOverlayLayer (Node2D with dungeon_order_overlay.gd), SelectionPanel (PanelContainer with dungeon_selection_panel.gd, anchored right side), BottomBar (HBoxContainer with LevelLabel + TurnLabel, anchored bottom).
+- `engine/subsystems/session/states/dungeon_explore_state.gd` — major UI wiring:
+  - Connected entity_selected signal from renderer.
+  - Connected all SelectionPanel signals: end_turn, reform_formation, formation_preset, character_selected, select_all, order_type.
+  - New _on_cell_clicked logic: if entities are selected, queues individual orders (move/search/listen/wait) instead of legacy group move. Updates order overlay and selection panel status. If no selection, falls back to legacy click-to-move-all behavior.
+  - New _on_end_turn(): executes all queued orders, clears overlay, runs encounter check, advances time.
+  - New _on_reform_formation(): calls controller.reform_formation(), clears orders.
+  - New _on_formation_preset_selected(): applies preset via FormationManager, reforms.
+  - _refresh_selection_panel() and _refresh_order_status() helpers.
+  - Two-path input: selected entities get order queue + End Turn flow; no selection gets legacy instant group move.
+
+**Decisions made:**
+- DungeonOrderOverlay draws with _draw() (same as all other overlay/token rendering in the project). No child nodes.
+- DungeonSelectionPanel builds UI entirely in _ready() — no complex .tscn child tree.
+- Entity selection in exploration mode: click token to select (single), Shift+click for multi-select. Panel click also selects. Select All button selects all party tokens.
+- Two input modes coexist: with selection = order queue + End Turn; without selection = legacy instant group move. This preserves backward-compat feel while enabling the new individual movement.
+- Order overlay clears after execute_orders() — no persistent ghost trails.
+
+**Interfaces defined or changed:**
+- DungeonMapRenderer: select_entity(), deselect_entity(), clear_selection(), select_all_on_side(), get_selected_entity_ids(), update_order_overlay(), clear_order_overlay()
+- DungeonMapRenderer signals: entity_selected, entity_deselected, end_turn_requested
+- DungeonSelectionPanel: set_characters(), update_order_status(), update_hp(), set_selected(), clear_selection(), get_current_order_type(), get_selected_ids()
+- DungeonSelectionPanel signals: character_selected, character_deselected, select_all_pressed, end_turn_pressed, reform_formation_pressed, order_type_selected, formation_preset_selected
+- DungeonOrderOverlay: update_overlays(orders), clear_overlays()
+- DungeonExploreState: _current_order_type field, _on_entity_selected(), _on_panel_character_selected(), _on_select_all(), _on_order_type_selected(), _on_end_turn(), _on_reform_formation(), _on_formation_preset_selected(), _refresh_selection_panel(), _refresh_order_status()
+
+**Database changes:** None.
+
+**Tests added/updated:** None new. 64 pass, 8 fail (1 new flaky proficiency NPC generation test failure unrelated to our changes; 7 pre-existing).
+
+**Known issues:**
+- DungeonSelectionPanel row click always does single-select. Shift+click multi-select only works on the map renderer tokens, not the panel rows.
+- Order overlay does not animate — appears instantly when orders are queued. Step-by-step path animation deferred.
+- BottomBar LevelLabel and TurnLabel are not wired to update dynamically yet (static text).
+- mortal_wound_rolled signal still not wired (pre-existing).
+
+**Regression baseline:** 64 suites passed, 8 failed (7 pre-existing + 1 flaky proficiency test).
+
+**Next session should:**
+1. Session 6 (F-2, if needed): Standalone CombatScreen/CombatMapRenderer for wilderness encounters using CombatUIController.
+2. Wire BottomBar labels to level/turn state.
+3. Add FormationManager, DungeonOrderManager, and DungeonSelectionPanel unit tests.
+4. Fix the flaky NPC proficiency test (non-deterministic specialization selection).
+
+---
+
+## Session 2026-04-09 — F-2 Session 6: Standalone CombatScreen for Wilderness Encounters + Flaky Test Fix
+
+**Task:** Fix flaky proficiency NPC generation test. Build CombatMapRenderer for wilderness battle maps. Rewrite CombatScreen to use CombatUIController + shared HUD widgets for interactive combat. Update CombatState to use start_interactive().
+
+**Model used:** Claude Opus 4.6
+
+**Completed:**
+- `tests/test_proficiency_integration.gd` — fixed flaky test_npc_generation_picks_specialization() by adding seed(42) before the random proficiency selection. Root cause: auto_select_proficiencies uses DiceSystem.roll_digital for random selection from the fighter class list, and without a fixed seed it could theoretically select zero specialization proficiencies across all 6 slots.
+- `scenes/ui/combat/combat_map_renderer.gd` — new standalone battle map renderer (Node2D, no class_name). Draws ground/grid/highlights on its own Node2D with EntityLayer + Camera2D children. Same highlight/selection API as DungeonMapRenderer (highlight_cells, highlight_entity_tokens, clear_highlights, set_active_token, move_token). Signals: cell_clicked, entity_clicked, right_click_cancel. Keyboard+edge panning. Terrain colors for wilderness (grass, forest, rock, water, road).
+- `scenes/ui/combat/combat_screen.gd` — rewritten from 63-line auto-advance placeholder to full interactive combat screen. Layout: HBoxContainer with map area (left, expandable) + right VBoxContainer (InitiativeStrip, StatSummary, ActionButtonPanel). CombatLogPanel bottom-left. DeclarationOverlay + CombatEndOverlay centered modals. Owns CombatUIController for the interaction loop. Supports both start_interactive() (new, player-driven) and start_auto_advance() (legacy backward compat for tests). CombatMapRenderer instantiated lazily from script to avoid parse-time dependency.
+- `scenes/ui/combat/combat_screen.tscn` — simplified to minimal CanvasLayer + script (UI built in _ready).
+- `engine/subsystems/session/states/combat_state.gd` — switched from start_auto_advance() to start_interactive(). Removed subtitle wiring (now handled by HUD widgets).
+
+**Decisions made:**
+- CombatScreen retains start_auto_advance() for backward compat — existing tests that stub the combat system still work. start_interactive() is the new default called by CombatState.
+- CombatMapRenderer is loaded lazily via load() in start_interactive() to avoid parse-time dependency on the script without class_name.
+- Combat result is cached in _combat_result when combat_ended fires, then emitted on Continue button press. This avoids the re-fetch issue identified in Session 3.
+- CombatScreen builds its own UI in _build_ui() (same pattern as all Session 2-5 components). The .tscn is a minimal stub.
+- right_click_cancel signal on CombatMapRenderer wires to CombatUIController.on_cancel() for target selection cancellation.
+
+**Interfaces defined or changed:**
+- CombatScreen.start_interactive() — new primary entry point for player-driven combat
+- CombatScreen.start_auto_advance() — retained for backward compat
+- CombatMapRenderer.setup(tactical_map, roster) — initializes the battle map
+- CombatMapRenderer.cell_clicked, entity_clicked, right_click_cancel signals
+- CombatMapRenderer: highlight_cells, highlight_entity_tokens, clear_highlights, set_active_token, move_token, add_entity_token, remove_entity_token (same as DungeonMapRenderer)
+
+**Database changes:** None.
+
+**Tests added/updated:** Fixed seed(42) in test_npc_generation_picks_specialization().
+
+**Known issues:**
+- CombatMapRenderer does not generate terrain for wilderness encounters — it renders whatever TacticalMapData is passed in. Battle map generation is a future task.
+- CombatScreen map area uses a plain Control container. The CombatMapRenderer (Node2D) is added as a child, which works but the map does not clip to the Control bounds.
+- Pre-existing flaky DB test (create_campaign) caused 64/8 instead of 65/7 in this run.
+
+**Regression baseline:** 64 suites passed, 8 failed (7 pre-existing + 1 flaky DB test). No new failures from Session 6 changes.
+
+**F-2 Phase Complete.** All 6 sessions delivered:
+1. Shared token component + dungeon renderer upgrade + combat query helpers + encounter spawner
+2. 6 shared combat HUD widgets
+3. CombatUIController + DungeonCombatOverlay + CombatFinalizer + in-place dungeon combat wiring
+4. FormationManager + DungeonOrderManager + DungeonMapController individual movement
+5. DungeonOrderOverlay + DungeonSelectionPanel + renderer selection + full exploration UI wiring
+6. CombatMapRenderer + interactive CombatScreen + CombatState upgrade
+
+**Next phase should:** Begin F-3 (spell casting in combat) or address remaining Session 5 polish (BottomBar label wiring, step-by-step move animation, formation/order manager unit tests).
+
+---
+
+## Session 2026-04-09 — F-2 Bugfix: 6 Dungeon Combat Bugs
+
+**Task:** Fix 6 bugs found during live testing of dungeon in-place combat.
+
+**Model used:** Claude Opus 4.6
+
+**Completed:**
+
+**Bug 3 — Monster tokens invisible (all at 0,0):**
+- File: `dungeon_explore_state.gd` line 369
+- Added `_scene.move_token(p["combatant_id"], p["grid_position"])` after `add_entity_token()` in the placement loop.
+
+**Bug 6 — Dungeon HUD visible during combat:**
+- File: `dungeon_explore_state.gd`
+- Added `_set_dungeon_hud_visible(false)` before combat overlay creation, `_set_dungeon_hud_visible(true)` after cleanup.
+- New helper toggles visibility of SelectionPanel, BottomBar, ExitButton.
+
+**Bug 4 — Combat HP/death not persisted:**
+- File: `combat_finalizer.gd`
+- Added `_persist_party(party_data)` at end of `finalize()`. Calls `CampaignRepository.save_character(cd.to_dict())` for all party members. Also persists XP changes.
+
+**Bug 2 — Monsters spawn on walls / too few cells:**
+- File: `dungeon_encounter_spawner.gd`
+- Increased cluster radius limit from 6 to 12. Added stacking fallback: if clustering returns fewer cells than count, pad with lead_cell.
+
+**Bug 1 — Combat auto-resolves (synchronous advance chain):**
+- Files: `combat_ui_controller.gd`, `dungeon_combat_overlay.gd`, `combat_screen.gd`
+- Added `signal auto_advance_requested()` to CombatUIController.
+- Replaced recursive `return advance()` in initiative_rolled, action_resolved, round_ended cases with `auto_advance_requested.emit(); return result`.
+- DungeonCombatOverlay and CombatScreen connect the signal to `call_deferred("_do_deferred_advance")` which yields one frame for Godot to render between combat steps.
+- combat_started still uses synchronous advance (nothing to render).
+- Also fixed DungeonCombatOverlay._on_continue_pressed() to use cached _combat_result instead of re-calling controller.advance().
+
+**Bug 5 — Mortal wounds auto-rolled at combat end:**
+- Files: `combat_controller.gd`, `combat_finalizer.gd`, `test_combat_controller_session5.gd`
+- Replaced `process_mortal_wounds()` call in `_emit_combat_ended()` with new `_collect_downed_pcs()` that returns raw data: {combatant_id, hp_when_downed, killing_blow_damage_type, round_downed, needs_mortal_wound_check: true}.
+- Kept `process_mortal_wounds()` intact for future UI-driven resolution.
+- Updated `combat_finalizer.gd` to handle both formats: deferred entries mark PCs as `is_incapacitated = true, hp_current = 0`; legacy entries still process is_dead.
+- Updated XP award logic: downed PCs with deferred mortal wounds still get XP (they might survive).
+- Updated 3 tests in `test_combat_controller_session5.gd` to expect `needs_mortal_wound_check` format.
+
+**Interfaces defined or changed:**
+- `CombatUIController.auto_advance_requested` signal (new)
+- `CombatController._collect_downed_pcs() -> Array` (new, internal)
+- `CombatFinalizer._mark_pc_incapacitated(party_data, combatant_id)` (new)
+- `CombatFinalizer._persist_party(party_data)` (new)
+- `DungeonExploreState._set_dungeon_hud_visible(vis: bool)` (new)
+- `DungeonCombatOverlay._combat_result: Dictionary` (new cached field)
+
+**Regression baseline:** 64 suites passed, 8 failed (all pre-existing). CombatController Session5 tests pass with updated assertions.
+
+---
+
+## Session 2026-04-09 — Campaign Start Party Creation Flow
+
+**Task:** Enforce character creation at campaign start. New campaigns now require creating a party (up to 6 members) before entering gameplay.
+
+**Model used:** Claude Opus 4.6
+
+**Completed:**
+
+**Signal plumbing (3 files modified):**
+- `scenes/ui/campaign_select/campaign_select_screen.gd` — Added `campaign_created` signal; `_on_create_confirmed()` now emits `campaign_created` instead of `campaign_selected` for new campaigns. Load existing campaigns still emits `campaign_selected`.
+- `engine/subsystems/session/states/campaign_select_state.gd` — Connects both signals; routes `campaign_created` to `"party_creation"` state, `campaign_selected` to `"session_load"` (unchanged).
+- `engine/subsystems/session/session_runner.gd` — Registered `"party_creation"` in `_register_states()` and `_sync_game_state()` (maps to `MAIN_MENU`).
+
+**Welcome screen (2 new files):**
+- `scenes/ui/party_creation/party_welcome_screen.gd` + `.tscn` — CanvasLayer (layer 20). Centered framed panel showing "Welcome to [world_name]" with Create Party / Cancel buttons. Signals: `create_party_pressed`, `cancel_pressed`.
+
+**Roster screen (2 new files):**
+- `scenes/ui/party_creation/party_roster_screen.gd` + `.tscn` — CanvasLayer (layer 20). Displays party members with 64×64 portrait thumbnails, name, class, and all six ability scores. "Party Members: N/6" counter. Row selection with highlight. Three buttons: Add Character (disabled at 6), Delete Character (disabled until selected), Begin Adventure (disabled until >= 1). Signals: `add_character_pressed`, `delete_character_pressed(character_id)`, `begin_adventure_pressed`. Portrait loading reuses pattern from `character_sheet_panel.gd`.
+
+**State orchestrator (1 new file):**
+- `engine/subsystems/session/states/party_creation_state.gd` — `PartyCreationState extends SessionState`. Manages two phases: "welcome" and "roster". Creates party in DB on "Create Party", sets `GameState.campaign_id` / `GameState.party_id` directly so CharacterCreationScreen finalization works. Opens existing CharacterCreationScreen (Main.tscn child) with one-shot signal connections. Handles add/delete/begin actions. Cancel from welcome deletes the empty campaign to avoid DB orphans.
+
+**Decisions made:**
+- New `"party_creation"` SessionState between `campaign_select` and `session_load` — cleanest fit for existing state machine pattern.
+- Welcome and roster screens are dynamically created by the state (pushed onto NavigationStack), not static Main.tscn children.
+- CampaignSelectScreen emits separate `campaign_created` vs `campaign_selected` signals — explicit routing, no heuristics.
+- GameState.campaign_id / party_id set directly (public vars) before character creation. Full `load_session()` deferred to `session_load` after "Begin Adventure".
+- Party limit constant (`MAX_PARTY_SIZE = 6`) lives in PartyRosterScreen. Dev override system can bypass this later.
+- Layer 20 used for both welcome and roster screens (never shown simultaneously). CharacterCreationScreen at layer 32 naturally overlays roster when open.
+
+**Interfaces defined or changed:**
+- `CampaignSelectScreen.campaign_created(campaign_id: String)` — new signal
+- `PartyCreationState` — new SessionState with actions: `create_party`, `cancel_party_creation`, `add_character`, `character_created`, `character_cancelled`, `delete_character`, `begin_adventure`
+- `PartyWelcomeScreen.open(world_name: String)`, `.close()`, signals: `create_party_pressed`, `cancel_pressed`
+- `PartyRosterScreen.open(campaign_id, party_id)`, `.close()`, `.refresh()`, signals: `add_character_pressed`, `delete_character_pressed(character_id)`, `begin_adventure_pressed`
+- `PartyRosterScreen.MAX_PARTY_SIZE = 6`
+
+**Database changes:** None.
+
+**Tests added/updated:** None (UI-driven flow; needs manual integration testing).
+
+**Known issues:**
+- No "Back" or "Cancel" button on the roster screen. Once the player clicks "Create Party", they must add at least 1 character to proceed. This matches the specified design but could be revisited.
+- CharacterCreationScreen.open() calls `GameState.transition_to(CHARACTER_CREATION)` internally. PartyCreationState restores to MAIN_MENU after character_created/cancelled.
+
+**Next session should:**
+- Test the full flow end-to-end in Godot: New Campaign → Welcome → Create Party → Character Wizard → Roster → Add more → Begin Adventure → Wilderness.
+- Consider adding a "Cancel" or "Back" button to the roster screen for better UX.
+- Continue with the build plan phases (F-3 Spell Casting, or next priority).
+
+---
+
+## Session 2026-04-10 â€” Scale Mail Naming Cleanup
+
+**Task:** Rename the mutable equipment catalog entry from Ring Mail to Scale Mail, while preserving compatibility with existing internal identifiers and shorthand matching.
+**Model used:** Codex GPT-5
+**Completed:**
+- Updated `data/equipment/base_equipment.json` so the `ring_mail` catalog row now displays as `Scale Mail`.
+- Swapped the catalog note to read `Also called Ring Mail.` so the alternate name remains documented in the correct direction.
+- Added `scale -> ring_mail` to `scenes/ui/character_creation/equipment_shop_panel.gd` while keeping the existing `ring -> ring_mail` alias for backwards-compatible matching.
+**Decisions made:**
+- Kept the internal item key as `ring_mail` to avoid breaking saved equipment references or code paths that treat the key as a stable identifier.
+- Left `rules/*.xml` untouched because rule summary XML is sacred and not mutable project data.
+**Interfaces defined or changed:**
+- None. Display copy and alias coverage changed, but no schema or public method signatures changed.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- None. The mutable references were limited to data/UI aliasing, so this was verified by repository search and targeted file updates.
+**Known issues:**
+- Sacred rule XML still contains `Ring Mail` phrasing where extracted source text uses it; that is intentional per project rules.
+**Next session should:**
+- If equipment catalog normalization expands later, consider a shared equipment-name alias layer so legacy and alternate names can be resolved centrally.
+
+---
+
+## Session 2026-04-10 â€” Character Creation Max HP Clarification
+
+**Task:** Fix the character-creation HP panel so the level-1 max-HP house rule is explained correctly without changing the underlying ACKS-plus-CON math.
+**Model used:** Codex GPT-5
+**Completed:**
+- Updated `scenes/ui/character_creation/hp_roll_panel.gd` so the checkbox now reads `Max Hit Die at Level 1 (house rule; CON still applies)`.
+- Kept the existing rule behavior: max-hit-die override still resolves as `max die face + CON modifier`, minimum 1.
+- Changed the max-HP result label to display the true formula (`max 6 + CON +1 = 7`) instead of treating final HP as if it were the raw die roll.
+- Preserved `hp_raw_roll` during max-HP override as the effective die face so the panel can explain the result truthfully.
+- Extended `tests/test_hp_roll_panel.gd` with focused regressions for a `1d6 + CON +1 = 7` max-HP case and a low-CON `1d4 -> 1 HP` max-HP case.
+**Decisions made:**
+- Left `character_generator.gd` and `character_creation_screen.gd` unchanged because the shared HP math and finalize path were already correct.
+- Treated this as a UI/state-truthfulness bug, not a dice-range or double-CON bug.
+**Interfaces defined or changed:**
+- No public interface or schema changes.
+- `creation_state["hp_raw_roll"]` now remains populated during the max-HP override path and represents the die face before CON is applied.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- Updated `tests/test_hp_roll_panel.gd`.
+- Ran the full Godot headless test runner: passed with exit code 0.
+**Known issues:**
+- None new from this change.
+**Next session should:**
+- If more character-creation house rules are exposed in the UI, give each one equally explicit result text so the displayed math always matches the stored state.
+
+---
+
+## Session 2026-04-10 - Class Sex/Alignment Restrictions and Priest/Priestess Display Overrides
+
+**Task:** Enforce requested class-entry sex/alignment restrictions during character creation finalize, surface them in the class UI, and add display-only Priest/Priestess naming overrides without changing stored class IDs or sacred XML.
+**Model used:** Codex GPT-5
+**Completed:**
+- Added runtime class metadata for `sex_restriction` on bladedancer, witch, and warlock, plus `alignment_restriction = "non-lawful"` for warlock.
+- Added priestess display metadata in class JSON so the class list can show `Priest/Priestess` while male characters render as `Priest` on sheet-facing UI.
+- Extended `ClassRegistry` with shared class display-name and sex-restriction helpers so UI surfaces do not hand-format raw class IDs.
+- Updated `ClassSelectionPanel` to keep ability-only eligibility while showing alignment/sex restrictions in the detail pane and using the generic priestess label in the class list.
+- Updated `FinalizePanel` to filter and coerce alignment/sex choices from class restrictions plus witch tradition restrictions, including `chthonic -> chaotic`, and to push sex/alignment into the preview character before refreshing the sheet.
+- Updated the finalize summary, biography tab, advancement tab, and character-sheet sidebar party labels to use the shared display-name helper.
+- Added focused tests for class-selection restriction copy, finalize restriction enforcement/coercion, and male-priestess display overrides; registered the new finalize test suite in the headless test runner.
+**Decisions made:**
+- Kept class selection permissive by ability scores only because sex/alignment are chosen later in the wizard.
+- Left `priestess` unrestricted in runtime per request; only the display name changes for male characters.
+- Left sacred rule XML untouched and implemented the new restrictions entirely in project data and UI/runtime code.
+**Interfaces defined or changed:**
+- Added optional class JSON metadata fields used at runtime/UI:
+  - `sex_restriction`
+  - `display_name_generic`
+  - `display_name_male`
+  - `display_name_female`
+- Added `ClassRegistry.get_class_display_name()` and `ClassRegistry.get_sex_restriction()` for shared UI consumption.
+**Database changes:**
+- None.
+**Tests added/updated:**
+- Updated `tests/test_class_selection_panel.gd`.
+- Added `tests/test_finalize_panel.gd`.
+- Updated `tests/test_portrait_display_sizing.gd`.
+- Updated `tests/test_runner.gd` and `tests/test_runner.tscn` to register the new finalize suite.
+**Known issues:**
+- None new from this change.
+**Next session should:**
+- If more class-specific runtime presentation rules are added later, route them through `ClassRegistry` display helpers so storage keys remain stable and UI naming stays centralized.

@@ -40,8 +40,30 @@ var _controller: DungeonMapController
 var _map: TacticalMapData
 var _dungeon_id: String = ""
 
-## Party token Polygon2D nodes. entity_id → Polygon2D
-var _party_tokens: Dictionary = {}
+## CombatantToken nodes indexed by entity_id.
+var _tokens: Dictionary = {}
+
+## Highlighted cells for combat move/range overlays.
+## Array of {cells: Array[Vector2i], color: Color}
+var _highlight_layers: Array = []
+
+## Entity IDs currently showing a combat target ring.
+var _target_rings: Array[String] = []
+
+## Entity ID of the currently active combatant (bright glow).
+var _active_entity_id: String = ""
+
+## When true, left-clicks check for token proximity before emitting cell_clicked.
+var _combat_mode: bool = false
+
+## Loaded lazily on first token creation to avoid parse-time dependency.
+var _token_scene: PackedScene = null
+
+## Currently selected entity IDs (exploration mode selection).
+var _selected_entity_ids: Array[String] = []
+
+## Reference to the order overlay child (set in _ready if present).
+var _order_overlay: Node2D = null
 
 
 # ---------------------------------------------------------------------------
@@ -51,6 +73,10 @@ var _party_tokens: Dictionary = {}
 signal cell_clicked(pos: Vector2i)
 signal door_interact_requested(pos: Vector2i)
 signal exit_requested()
+signal entity_clicked(entity_id: String)
+signal entity_selected(entity_id: String)
+signal entity_deselected(entity_id: String)
+signal end_turn_requested()
 
 
 # ---------------------------------------------------------------------------
@@ -77,6 +103,8 @@ func _ready() -> void:
 		_exit_button.pressed.connect(_on_exit_button_pressed)
 	if _tooltip_panel != null:
 		_tooltip_panel.visible = false
+	# Find order overlay child if present in scene tree
+	_order_overlay = get_node_or_null("OrderOverlayLayer")
 
 
 func _process(delta: float) -> void:
@@ -190,6 +218,7 @@ func _draw() -> void:
 	_draw_features()
 	_draw_grid_lines()
 	_draw_fog()
+	_draw_highlights()
 
 
 func _draw_ground() -> void:
@@ -325,50 +354,130 @@ func _draw_fog() -> void:
 		draw_colored_polygon(pts, color)
 
 
+func _draw_highlights() -> void:
+	## Draw combat overlay layers (reachable cells, attack ranges, etc.)
+	for layer in _highlight_layers:
+		var color: Color = layer.get("color", Color(1.0, 1.0, 0.0, 0.25))
+		for pos: Vector2i in layer.get("cells", []):
+			var screen_pos := IsometricGrid.cell_to_screen(pos.x, pos.y)
+			var pts := _diamond_points(screen_pos)
+			draw_colored_polygon(pts, color)
+			draw_polyline(
+				PackedVector2Array([pts[0], pts[1], pts[2], pts[3], pts[0]]),
+				Color(color.r, color.g, color.b, minf(color.a * 2.0, 1.0)),
+				1.5, true)
+
+
 # ---------------------------------------------------------------------------
 # Entity tokens
 # ---------------------------------------------------------------------------
 
-## Creates or updates Polygon2D party tokens in the EntityLayer.
+## Add a CombatantToken for the given entity.
+## [param side]: 0 = PARTY (blue), 1 = ENEMY (red), -1 = neutral (yellow).
+## [param class_letter]: single letter class code shown in token centre.
+## Safe to call multiple times — returns existing token if already present.
+func add_entity_token(
+		entity_id: String,
+		entity_display_name: String,
+		side: int,
+		class_letter: String) -> Node2D:
+	if _tokens.has(entity_id):
+		return _tokens[entity_id]
+	if _token_scene == null:
+		_token_scene = load("res://scenes/ui/components/combatant_token.tscn")
+	if _entity_layer == null:
+		push_error("DungeonMapRenderer.add_entity_token: EntityLayer is null — call after scene enters tree")
+		return null
+	var token: Node2D = _token_scene.instantiate()
+	token.setup(entity_id, entity_display_name, side, class_letter)
+	_entity_layer.add_child(token)
+	_tokens[entity_id] = token
+	return token
+
+
+## Remove the token for [param entity_id] from the scene.
+func remove_entity_token(entity_id: String) -> void:
+	if _tokens.has(entity_id):
+		if is_instance_valid(_tokens[entity_id]):
+			_tokens[entity_id].queue_free()
+		_tokens.erase(entity_id)
+
+
+## Return the token for [param entity_id], or null if not present.
+func get_entity_token(entity_id: String) -> Node2D:
+	return _tokens.get(entity_id, null)
+
+
+# ---------------------------------------------------------------------------
+# Combat-mode highlight API
+# ---------------------------------------------------------------------------
+
+## Enable or disable combat input mode (entity-click detection).
+func set_combat_mode(enabled: bool) -> void:
+	_combat_mode = enabled
+
+
+## Highlight a set of cells with [param color] (filled diamond overlay).
+## Multiple layers can be stacked; call clear_highlights() to remove all.
+func highlight_cells(cells: Array[Vector2i], color: Color) -> void:
+	_highlight_layers.append({"cells": cells, "color": color})
+	queue_redraw()
+
+
+## Mark [param entity_ids] with a red target ring.
+func highlight_entity_tokens(entity_ids: Array[String]) -> void:
+	_target_rings = entity_ids.duplicate()
+	for eid in entity_ids:
+		if _tokens.has(eid):
+			_tokens[eid].is_selected = true
+	queue_redraw()
+
+
+## Clear all cell highlight layers and target rings.
+func clear_highlights() -> void:
+	_highlight_layers.clear()
+	_target_rings.clear()
+	for eid in _tokens.keys():
+		_tokens[eid].is_selected = false
+	queue_redraw()
+
+
+## Mark [param entity_id] as the active combatant (bright glow).
+func set_active_token(entity_id: String) -> void:
+	# Clear previous
+	if not _active_entity_id.is_empty() and _tokens.has(_active_entity_id):
+		_tokens[_active_entity_id].is_active = false
+	_active_entity_id = entity_id
+	if not entity_id.is_empty() and _tokens.has(entity_id):
+		_tokens[entity_id].is_active = true
+
+
+## Move a token instantly to a new grid cell.
+func move_token(entity_id: String, to_cell: Vector2i) -> void:
+	if _tokens.has(entity_id):
+		var screen_pos := IsometricGrid.cell_to_screen(to_cell.x, to_cell.y)
+		_tokens[entity_id].update_position(screen_pos)
+
+
+## Sync all token positions to the current entity_positions in the map.
 func _update_entity_tokens() -> void:
-	if _map == null or _controller == null or _entity_layer == null:
+	if _map == null or _entity_layer == null:
 		return
 
 	# Remove tokens for entities no longer in the map
 	var to_remove: Array = []
-	for eid in _party_tokens.keys():
+	for eid in _tokens.keys():
 		if not _map.entity_positions.has(eid):
 			to_remove.append(eid)
 	for eid in to_remove:
-		if is_instance_valid(_party_tokens[eid]):
-			_party_tokens[eid].queue_free()
-		_party_tokens.erase(eid)
+		remove_entity_token(eid)
 
-	# Create or update tokens for current entities
+	# Update positions for all current entities
 	for eid in _map.entity_positions.keys():
 		var pos: Vector2i = _map.entity_positions[eid]
 		var screen_pos := IsometricGrid.cell_to_screen(pos.x, pos.y)
-
-		if not _party_tokens.has(eid):
-			var token := Polygon2D.new()
-			token.color = Color(1.0, 0.9, 0.1)  # yellow
-			token.polygon = _small_diamond_polygon()
-			_entity_layer.add_child(token)
-			_party_tokens[eid] = token
-
-		_party_tokens[eid].position = screen_pos
-
-
-## Returns a small diamond polygon (centred at origin) for party tokens.
-func _small_diamond_polygon() -> PackedVector2Array:
-	var hw := 8.0
-	var hh := 5.0
-	return PackedVector2Array([
-		Vector2(0.0, -hh),
-		Vector2(hw, 0.0),
-		Vector2(0.0, hh),
-		Vector2(-hw, 0.0),
-	])
+		if _tokens.has(eid):
+			_tokens[eid].update_position(screen_pos)
 
 
 # ---------------------------------------------------------------------------
@@ -383,6 +492,21 @@ func _unhandled_input(event: InputEvent) -> void:
 	var cell_pos := IsometricGrid.screen_to_cell(local_pos)
 
 	if event.button_index == MOUSE_BUTTON_LEFT:
+		# In combat mode, check if click is near a token first.
+		if _combat_mode:
+			var hit_eid := _entity_id_near_screen_pos(local_pos)
+			if not hit_eid.is_empty():
+				entity_clicked.emit(hit_eid)
+				get_viewport().set_input_as_handled()
+				return
+		else:
+			# Exploration mode: check for entity selection
+			var hit_eid := _entity_id_near_screen_pos(local_pos)
+			if not hit_eid.is_empty():
+				var additive := Input.is_key_pressed(KEY_SHIFT)
+				select_entity(hit_eid, additive)
+				get_viewport().set_input_as_handled()
+				return
 		if _map != null and _map.has_cell(cell_pos):
 			cell_clicked.emit(cell_pos)
 			get_viewport().set_input_as_handled()
@@ -391,6 +515,84 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _map != null and _map.is_door(cell_pos):
 			door_interact_requested.emit(cell_pos)
 			get_viewport().set_input_as_handled()
+
+
+## Returns the entity_id of the token closest to [param screen_pos] within
+## ~15 pixels (CombatantToken.RADIUS * 1.5), or "" if none is near enough.
+func _entity_id_near_screen_pos(screen_pos: Vector2) -> String:
+	const HIT_RADIUS := 15.0  ## CombatantToken.RADIUS (10) * 1.5
+	var best_eid := ""
+	var best_dist := HIT_RADIUS
+	for eid in _tokens.keys():
+		var token: Node2D = _tokens[eid]
+		var dist := screen_pos.distance_to(token.position)
+		if dist < best_dist:
+			best_dist = dist
+			best_eid = eid
+	return best_eid
+
+
+# ---------------------------------------------------------------------------
+# Exploration selection
+# ---------------------------------------------------------------------------
+
+## Select an entity (exploration mode). Clears previous selection unless
+## [param additive] is true (Shift+click).
+func select_entity(entity_id: String, additive: bool = false) -> void:
+	if not additive:
+		for old_id in _selected_entity_ids:
+			if _tokens.has(old_id):
+				_tokens[old_id].is_selected = false
+		_selected_entity_ids.clear()
+
+	if entity_id not in _selected_entity_ids:
+		_selected_entity_ids.append(entity_id)
+	if _tokens.has(entity_id):
+		_tokens[entity_id].is_selected = true
+	entity_selected.emit(entity_id)
+
+
+## Deselect an entity.
+func deselect_entity(entity_id: String) -> void:
+	_selected_entity_ids.erase(entity_id)
+	if _tokens.has(entity_id):
+		_tokens[entity_id].is_selected = false
+	entity_deselected.emit(entity_id)
+
+
+## Clear all exploration selections.
+func clear_selection() -> void:
+	for eid in _selected_entity_ids:
+		if _tokens.has(eid):
+			_tokens[eid].is_selected = false
+	_selected_entity_ids.clear()
+
+
+## Select all entities on the given side (0=PARTY).
+func select_all_on_side(side: int) -> void:
+	clear_selection()
+	for eid in _tokens.keys():
+		var token: Node2D = _tokens[eid]
+		if token.side == side:
+			_selected_entity_ids.append(eid)
+			token.is_selected = true
+
+
+## Returns currently selected entity IDs.
+func get_selected_entity_ids() -> Array[String]:
+	return _selected_entity_ids.duplicate()
+
+
+## Update the order overlay with current orders.
+func update_order_overlay(orders: Dictionary) -> void:
+	if _order_overlay != null and _order_overlay.has_method("update_overlays"):
+		_order_overlay.update_overlays(orders)
+
+
+## Clear the order overlay.
+func clear_order_overlay() -> void:
+	if _order_overlay != null and _order_overlay.has_method("clear_overlays"):
+		_order_overlay.clear_overlays()
 
 
 # ---------------------------------------------------------------------------

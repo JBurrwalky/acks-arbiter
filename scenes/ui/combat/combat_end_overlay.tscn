@@ -1,0 +1,17 @@
+[gd_scene load_steps=2 format=3 uid="uid://c5combat_end"]
+
+[ext_resource type="Script" path="res://scenes/ui/combat/combat_end_overlay.gd" id="1_script"]
+
+[node name="CombatEndOverlay" type="PanelContainer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -230.0
+offset_top = -170.0
+offset_right = 230.0
+offset_bottom = 170.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")

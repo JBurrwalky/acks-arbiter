@@ -74,6 +74,31 @@ func get_class_count() -> int:
 	return _classes.size()
 
 
+func get_class_display_name(class_id: String, sex: String = "", use_generic: bool = false) -> String:
+	var cls := get_class_def(class_id)
+	if cls.is_empty():
+		return class_id.replace("_", " ").capitalize()
+	if use_generic:
+		var generic_name: String = cls.get("display_name_generic", "")
+		if not generic_name.is_empty():
+			return generic_name
+	var normalized_sex := sex.to_lower()
+	if normalized_sex == "male":
+		var male_name: String = cls.get("display_name_male", "")
+		if not male_name.is_empty():
+			return male_name
+	elif normalized_sex == "female":
+		var female_name: String = cls.get("display_name_female", "")
+		if not female_name.is_empty():
+			return female_name
+	return cls.get("class_name", class_id.replace("_", " ").capitalize())
+
+
+func get_sex_restriction(class_id: String) -> String:
+	var cls := get_class_def(class_id)
+	return String(cls.get("sex_restriction", "")).to_lower()
+
+
 # ---------------------------------------------------------------------------
 # Eligibility
 # ---------------------------------------------------------------------------

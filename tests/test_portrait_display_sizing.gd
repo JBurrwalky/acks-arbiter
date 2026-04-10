@@ -7,6 +7,8 @@ extends "res://tests/test_suite_base.gd"
 func run_all_tests() -> void:
 	test_finalize_summary_portrait_uses_fixed_512_box()
 	test_biography_tab_portrait_uses_fixed_512_box()
+	test_male_priestess_uses_priest_display_in_finalize_summary()
+	test_male_priestess_uses_priest_display_in_biography_tab()
 	if not has_failures():
 		print("PortraitDisplaySizing: all tests passed.")
 
@@ -55,15 +57,53 @@ func test_biography_tab_portrait_uses_fixed_512_box() -> void:
 	print("  biography_tab_portrait_uses_fixed_512_box: OK")
 
 
-func _make_character() -> CharacterData:
+func test_male_priestess_uses_priest_display_in_finalize_summary() -> void:
+	var panel := CharacterSheetPanel.new()
+	panel._ready()
+	panel.setup_registry(ClassRegistry.new())
+
+	var character := _make_character("priestess", "male")
+	panel.display({
+		"character": character,
+		"class_id": "priestess",
+		"portrait_id": character.portrait_id,
+		"inventory": [],
+		"proficiencies": [],
+		"spells": [],
+	})
+
+	check(_find_row_value(panel, "Class:") == "Priest (Level 1)",
+		"finalize summary should show 'Priest' for a male priestess character")
+	check(character.character_class == "priestess",
+		"finalize summary display override should not change the stored class key")
+	print("  male_priestess_uses_priest_display_in_finalize_summary: OK")
+
+
+func test_male_priestess_uses_priest_display_in_biography_tab() -> void:
+	var tab := CSTabBiography.new()
+	var bundle := CharacterBundle.new()
+	bundle.character = _make_character("priestess", "male")
+
+	tab.display(bundle, {
+		"class_registry": ClassRegistry.new(),
+	})
+
+	check(_find_row_value(tab, "Class:") == "Priest (Level 1)",
+		"biography tab should show 'Priest' for a male priestess character")
+	check(bundle.character.character_class == "priestess",
+		"biography tab display override should not change the stored class key")
+	print("  male_priestess_uses_priest_display_in_biography_tab: OK")
+
+
+func _make_character(class_id: String = "fighter", sex: String = "male") -> CharacterData:
 	var character := CharacterData.new()
 	character.name = "Portrait Test"
-	character.character_class = "fighter"
+	character.character_class = class_id
 	character.race = "human"
 	character.level = 1
 	character.title = "Venturer"
 	character.alignment = "neutral"
-	character.sex = "male"
+	character.sex = sex
 	character.hp_current = 4
 	character.hp_max = 4
 	character.portrait_id = "portrait_fighter_01"
@@ -78,3 +118,16 @@ func _find_texture_rect(root: Node) -> TextureRect:
 		if nested != null:
 			return nested
 	return null
+
+
+func _find_row_value(root: Node, label_text: String) -> String:
+	for child in root.get_children():
+		if child is HBoxContainer and child.get_child_count() >= 2:
+			var key := child.get_child(0) as Label
+			var value := child.get_child(1) as Label
+			if key != null and value != null and key.text == label_text:
+				return value.text
+		var nested := _find_row_value(child, label_text)
+		if not nested.is_empty():
+			return nested
+	return ""

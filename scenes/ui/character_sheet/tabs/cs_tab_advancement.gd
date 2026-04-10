@@ -72,7 +72,10 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 	# -----------------------------------------------------------------------
 	_add_section_header("Level & XP")
 
-	_add_row("Class:", character.character_class.replace("_", " ").capitalize())
+	var class_name := character.character_class.replace("_", " ").capitalize()
+	if class_registry != null and class_registry.has_class(character.character_class):
+		class_name = class_registry.get_class_display_name(character.character_class, character.sex)
+	_add_row("Class:", class_name)
 	_add_row("Level:", "%d / %d" % [character.level, character.max_level])
 	_add_row("Title:", character.title)
 	_add_row("Hit Die:", character.hit_die_type)

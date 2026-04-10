@@ -6,6 +6,8 @@ extends "res://tests/test_suite_base.gd"
 func run_all_tests() -> void:
 	test_fresh_state_is_incomplete()
 	test_apply_hp_roll_marks_panel_complete()
+	test_max_hp_override_uses_max_die_plus_con()
+	test_max_hp_override_respects_minimum_one()
 	test_zero_hp_roll_keeps_panel_incomplete()
 	if not has_failures():
 		print("HpRollPanel: all tests passed.")
@@ -36,6 +38,48 @@ func test_apply_hp_roll_marks_panel_complete() -> void:
 		"fighter CON +1 should turn a raw 5 into 6 HP")
 	check(not panel._roll_button.visible, "resolved HP roll should hide the initial roll button")
 	print("  apply_hp_roll_marks_panel_complete: OK")
+
+
+func test_max_hp_override_uses_max_die_plus_con() -> void:
+	var panel := _make_panel()
+	var state := _make_state({
+		"class_id": "cleric",
+		"scores": {"CON": 13},
+	})
+
+	panel.setup(state, ClassRegistry.new())
+	panel._on_max_hp_toggled(true)
+
+	check(panel.is_complete(), "max HP override should mark the panel complete")
+	check(int(state.get("hp_raw_roll", 0)) == 6,
+		"1d6 max HP override should store raw die face 6")
+	check(int(state.get("hp_rolled", 0)) == 7,
+		"1d6 max HP override with CON +1 should resolve to 7 HP")
+	check(panel._result_label.text.contains("max 6 + CON +1 = 7"),
+		"max HP explanation should show max die plus CON, got: %s" % panel._result_label.text)
+	check(panel._max_hp_check.text == "Max Hit Die at Level 1 (house rule; CON still applies)",
+		"checkbox text should clarify that CON still applies")
+	print("  max_hp_override_uses_max_die_plus_con: OK")
+
+
+func test_max_hp_override_respects_minimum_one() -> void:
+	var panel := _make_panel()
+	var state := _make_state({
+		"class_id": "mage",
+		"scores": {"CON": 3},
+	})
+
+	panel.setup(state, ClassRegistry.new())
+	panel._on_max_hp_toggled(true)
+
+	check(panel.is_complete(), "max HP override should still complete for low-CON characters")
+	check(int(state.get("hp_raw_roll", 0)) == 4,
+		"1d4 max HP override should store raw die face 4")
+	check(int(state.get("hp_rolled", 0)) == 1,
+		"1d4 max HP override with CON -3 should clamp to 1 HP")
+	check(panel._result_label.text.contains("max 4 + CON -3 = 1"),
+		"low-CON max HP explanation should show the clamped result, got: %s" % panel._result_label.text)
+	print("  max_hp_override_respects_minimum_one: OK")
 
 
 func test_zero_hp_roll_keeps_panel_incomplete() -> void:

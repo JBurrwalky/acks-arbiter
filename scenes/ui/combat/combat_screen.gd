@@ -1,21 +1,139 @@
 class_name CombatScreen
 extends CanvasLayer
 
-## Minimal placeholder combat screen.
+## Standalone combat screen for wilderness encounters.
 ##
-## Auto-advances combat: PCs always attack melee, no player input required.
-## Displays encounter summary and round-by-round log.
-## Emits combat_finished when the fight ends so CombatState can clean up.
+## Layout: CombatMapRenderer (left ~70%) + right panel with shared HUD widgets
+## (InitiativeStrip, StatSummary, ActionButtonPanel) + bottom CombatLogPanel.
+## DeclarationOverlay and CombatEndOverlay appear centered as modals.
+##
+## Owns a CombatUIController that bridges the HUD to the CombatController.
+## Supports both interactive (player-driven) and auto-advance (legacy) modes.
+##
+## Emits combat_finished when combat ends and the player clicks Continue.
 
 signal combat_finished(result: Dictionary)
 
 var _controller: CombatController = null
+var _ui_controller: CombatUIController = null
 var _auto_advance: bool = false
 
+## Map renderer (loaded lazily to avoid parse-time dependency)
+var _map_renderer: Node2D = null
+
+## HUD widgets
+var _init_strip: InitiativeStrip = null
+var _stat_summary: StatSummary = null
+var _action_panel: ActionButtonPanel = null
+var _log_panel: CombatLogPanel = null
+var _decl_overlay: DeclarationOverlay = null
+var _end_overlay: CombatEndOverlay = null
+
+## Cached combat result for the Continue button
+var _combat_result: Dictionary = {}
+
+
+# ---------------------------------------------------------------------------
+# Setup
+# ---------------------------------------------------------------------------
 
 func setup(controller: CombatController) -> void:
 	_controller = controller
 
+
+# ---------------------------------------------------------------------------
+# Lifecycle
+# ---------------------------------------------------------------------------
+
+func _ready() -> void:
+	layer = 5
+	_build_ui()
+
+
+# ---------------------------------------------------------------------------
+# Interactive mode (new)
+# ---------------------------------------------------------------------------
+
+## Start interactive combat with full HUD. Player controls PC actions.
+func start_interactive() -> void:
+	if _controller == null:
+		return
+
+	_auto_advance = false
+
+	# Set up the map renderer with the tactical map and roster.
+	# Node2D must be embedded via SubViewport to render inside the Control layout.
+	if _controller.tactical_map != null:
+		var MapRendererScript = load("res://scenes/ui/combat/combat_map_renderer.gd")
+		_map_renderer = MapRendererScript.new()
+		_map_renderer.setup(_controller.tactical_map, _controller.roster)
+
+		var map_area: Control = get_node_or_null("HSplit/MapArea")
+		if map_area != null:
+			var svc := SubViewportContainer.new()
+			svc.name = "MapViewportContainer"
+			svc.set_anchors_preset(Control.PRESET_FULL_RECT)
+			svc.stretch = true
+			map_area.add_child(svc)
+
+			var sv := SubViewport.new()
+			sv.name = "MapViewport"
+			sv.transparent_bg = true
+			sv.handle_input_locally = true
+			svc.add_child(sv)
+
+			sv.add_child(_map_renderer)
+
+	# Create the UI controller
+	_ui_controller = CombatUIController.new()
+	_ui_controller.setup(_controller)
+
+	# Wire UI controller signals -> HUD widgets
+	_ui_controller.show_declaration_requested.connect(_on_show_declarations)
+	_ui_controller.initiative_updated.connect(_on_initiative_updated)
+	_ui_controller.pc_turn_started.connect(_on_pc_turn_started)
+	_ui_controller.action_resolved.connect(_on_action_resolved)
+	_ui_controller.combat_ended.connect(_on_combat_ended)
+	_ui_controller.log_entry.connect(_on_log_entry)
+
+	# Wire move_completed to disable Move button after move sub-action
+	_ui_controller.move_completed.connect(_on_move_completed)
+
+	# Wire deferred auto-advance
+	_ui_controller.auto_advance_requested.connect(_on_auto_advance)
+
+	# Wire UI controller signals -> map renderer
+	if _map_renderer != null:
+		_ui_controller.highlight_reachable.connect(_on_highlight_reachable)
+		_ui_controller.highlight_targets.connect(_on_highlight_targets)
+		_ui_controller.clear_highlights_requested.connect(_on_clear_highlights)
+		_ui_controller.active_token_changed.connect(_on_active_token_changed)
+		# Wire renderer input -> UI controller
+		_map_renderer.cell_clicked.connect(_on_map_cell_clicked)
+		_map_renderer.entity_clicked.connect(_on_map_entity_clicked)
+		_map_renderer.right_click_cancel.connect(_on_map_cancel)
+
+	# Build name lookup for the combat log
+	var name_lookup: Dictionary = {}
+	for c in _controller.roster.get_all():
+		name_lookup[c.id] = c.display_name
+	_log_panel.set_name_lookup(name_lookup)
+
+	# Wire action panel
+	_action_panel.action_selected.connect(_on_action_selected)
+
+	# Hide panels until combat starts
+	_action_panel.set_panel_visible(false)
+	_decl_overlay.visible = false
+	_end_overlay.visible = false
+
+	# Start the combat loop
+	_ui_controller.advance()
+
+
+# ---------------------------------------------------------------------------
+# Auto-advance mode (legacy backward compat)
+# ---------------------------------------------------------------------------
 
 func start_auto_advance() -> void:
 	_auto_advance = true
@@ -57,6 +175,216 @@ func _advance_loop() -> void:
 
 func _log_line(text: String) -> void:
 	print(text)
-	var label: RichTextLabel = get_node_or_null("Panel/VBox/Log")
-	if label != null:
-		label.append_text(text + "\n")
+	if _log_panel != null:
+		_log_panel.append_text(text)
+
+
+# ---------------------------------------------------------------------------
+# UI construction
+# ---------------------------------------------------------------------------
+
+func _build_ui() -> void:
+	# Main horizontal split: map area (left) + right panel
+	var hsplit := HBoxContainer.new()
+	hsplit.name = "HSplit"
+	hsplit.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(hsplit)
+
+	# Map area (takes up remaining space)
+	var map_area := Control.new()
+	map_area.name = "MapArea"
+	map_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map_area.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# Dark background for map area
+	var map_bg := ColorRect.new()
+	map_bg.color = Color(0.08, 0.08, 0.1)
+	map_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	map_area.add_child(map_bg)
+	hsplit.add_child(map_area)
+
+	# Right panel: initiative + stats + actions
+	var right_panel := VBoxContainer.new()
+	right_panel.name = "RightPanel"
+	right_panel.custom_minimum_size.x = 220.0
+	right_panel.add_theme_constant_override("separation", 6)
+	hsplit.add_child(right_panel)
+
+	_init_strip = InitiativeStrip.new()
+	_init_strip.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right_panel.add_child(_init_strip)
+
+	_stat_summary = StatSummary.new()
+	right_panel.add_child(_stat_summary)
+
+	_action_panel = ActionButtonPanel.new()
+	right_panel.add_child(_action_panel)
+
+	# Bottom: combat log
+	_log_panel = CombatLogPanel.new()
+	_log_panel.name = "CombatLog"
+	_log_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	_log_panel.offset_left = 10.0
+	_log_panel.offset_bottom = -10.0
+	_log_panel.offset_top = -180.0
+	_log_panel.offset_right = 350.0
+	add_child(_log_panel)
+
+	# Centered overlays
+	_decl_overlay = DeclarationOverlay.new()
+	_decl_overlay.set_anchors_preset(Control.PRESET_CENTER)
+	_decl_overlay.offset_left = -220.0
+	_decl_overlay.offset_top = -150.0
+	_decl_overlay.offset_right = 220.0
+	_decl_overlay.offset_bottom = 150.0
+	_decl_overlay.visible = false
+	_decl_overlay.declarations_complete.connect(_on_declarations_confirmed)
+	add_child(_decl_overlay)
+
+	_end_overlay = CombatEndOverlay.new()
+	_end_overlay.set_anchors_preset(Control.PRESET_CENTER)
+	_end_overlay.offset_left = -230.0
+	_end_overlay.offset_top = -170.0
+	_end_overlay.offset_right = 230.0
+	_end_overlay.offset_bottom = 170.0
+	_end_overlay.visible = false
+	_end_overlay.continue_pressed.connect(_on_continue_pressed)
+	add_child(_end_overlay)
+
+
+# ---------------------------------------------------------------------------
+# CombatUIController signal handlers
+# ---------------------------------------------------------------------------
+
+func _on_show_declarations(alive_pcs: Array) -> void:
+	_action_panel.set_panel_visible(false)
+	_decl_overlay.set_pc_list(alive_pcs)
+	_decl_overlay.visible = true
+
+
+func _on_initiative_updated(order: Array) -> void:
+	_init_strip.set_initiative_order(order)
+
+
+func _on_pc_turn_started(combatant_id: String) -> void:
+	_decl_overlay.visible = false
+	var combatant = _controller.get_combatant(combatant_id)
+	_stat_summary.show_combatant(combatant)
+	_init_strip.set_active(combatant_id)
+	_action_panel.set_panel_visible(true)
+	var actions := _controller.get_available_actions(combatant_id)
+	_action_panel.set_available_actions(actions)
+
+
+func _on_action_resolved(result: Dictionary) -> void:
+	_action_panel.set_panel_visible(false)
+
+	# Sync all token positions from grid state
+	_sync_token_positions()
+
+	var target_id: String = result.get("result", {}).get("target_id", "")
+	if not target_id.is_empty():
+		var target = _controller.get_combatant(target_id)
+		if target != null:
+			_init_strip.update_hp(target_id, target.get_hp_current(), target.get_hp_max())
+
+
+func _on_combat_ended(result: Dictionary) -> void:
+	_combat_result = result
+	_action_panel.set_panel_visible(false)
+	_decl_overlay.visible = false
+	_end_overlay.show_result(result)
+
+
+func _on_log_entry(entry: Dictionary) -> void:
+	_log_panel.append_event(entry)
+
+
+# ---------------------------------------------------------------------------
+# Map renderer signal handlers
+# ---------------------------------------------------------------------------
+
+func _on_highlight_reachable(cells: Array, color: Color) -> void:
+	if _map_renderer != null:
+		var typed: Array[Vector2i] = []
+		for c in cells:
+			typed.append(c)
+		_map_renderer.highlight_cells(typed, color)
+
+
+func _on_highlight_targets(entity_ids: Array) -> void:
+	if _map_renderer != null:
+		var typed: Array[String] = []
+		for eid in entity_ids:
+			typed.append(eid)
+		_map_renderer.highlight_entity_tokens(typed)
+
+
+func _on_clear_highlights() -> void:
+	if _map_renderer != null:
+		_map_renderer.clear_highlights()
+
+
+func _on_active_token_changed(entity_id: String) -> void:
+	if _map_renderer != null:
+		_map_renderer.set_active_token(entity_id)
+
+
+# ---------------------------------------------------------------------------
+# User input handlers
+# ---------------------------------------------------------------------------
+
+func _on_map_cell_clicked(pos: Vector2i) -> void:
+	if _ui_controller != null:
+		_ui_controller.on_cell_targeted(pos)
+
+
+func _on_map_entity_clicked(entity_id: String) -> void:
+	if _ui_controller != null:
+		_ui_controller.on_entity_targeted(entity_id)
+
+
+func _on_map_cancel() -> void:
+	if _ui_controller != null:
+		_ui_controller.on_cancel()
+
+
+func _on_action_selected(action_id: String) -> void:
+	if _ui_controller != null:
+		_ui_controller.on_action_button(action_id)
+
+
+func _on_declarations_confirmed(declarations: Array) -> void:
+	_decl_overlay.visible = false
+	if _ui_controller != null:
+		_ui_controller.on_declarations_confirmed(declarations)
+
+
+func _on_continue_pressed() -> void:
+	_end_overlay.visible = false
+	combat_finished.emit(_combat_result)
+
+
+# ---------------------------------------------------------------------------
+# Deferred auto-advance (yields one frame for UI rendering)
+# ---------------------------------------------------------------------------
+
+func _on_move_completed() -> void:
+	_action_panel.disable_action("move")
+	_sync_token_positions()
+
+
+func _sync_token_positions() -> void:
+	if _map_renderer == null or _controller == null or _controller.tactical_map == null:
+		return
+	for eid in _controller.tactical_map.entity_positions:
+		var pos: Vector2i = _controller.tactical_map.entity_positions[eid]
+		_map_renderer.move_token(eid, pos)
+
+
+func _on_auto_advance() -> void:
+	call_deferred("_do_deferred_advance")
+
+
+func _do_deferred_advance() -> void:
+	if _ui_controller != null and _ui_controller.get_state() != CombatUIController.State.COMBAT_OVER:
+		_ui_controller.advance()

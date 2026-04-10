@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://c5stat_summary"]
+
+[ext_resource type="Script" path="res://scenes/ui/combat/stat_summary.gd" id="1_script"]
+
+[node name="StatSummary" type="PanelContainer"]
+anchors_preset = 0
+script = ExtResource("1_script")

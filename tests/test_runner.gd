@@ -21,6 +21,7 @@ extends Node
 @onready var _ability_roll_panel_tests = $AbilityRollPanelTests
 @onready var _hp_roll_panel_tests = $HpRollPanelTests
 @onready var _class_selection_panel_tests = $ClassSelectionPanelTests
+@onready var _finalize_panel_tests = $FinalizePanelTests
 @onready var _equipment_shop_panel_tests = $EquipmentShopPanelTests
 @onready var _equipment_item_row_tests = $EquipmentItemRowTests
 @onready var _portrait_display_sizing_tests = $PortraitDisplaySizingTests
@@ -94,7 +95,7 @@ func run() -> void:
 			_timekeeping_tests, _calendar_seasons_tests,
 			_ability_utils_tests, _class_registry_tests, _power_registry_tests,
 			_encumbrance_tests, _ability_roll_panel_tests, _hp_roll_panel_tests,
-			_class_selection_panel_tests,
+			_class_selection_panel_tests, _finalize_panel_tests,
 			_equipment_shop_panel_tests, _equipment_item_row_tests,
 			_portrait_display_sizing_tests, _language_cleanup_tests,
 			_ui_surface_styles_tests,

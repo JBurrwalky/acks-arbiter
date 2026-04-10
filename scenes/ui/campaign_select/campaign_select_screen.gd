@@ -15,6 +15,10 @@ extends CanvasLayer
 ## The receiver is responsible for calling GameState.start_session().
 signal campaign_selected(campaign_id: String)
 
+## Emitted when the player creates a new campaign via the dialog.
+## Routes to party creation flow instead of direct session load.
+signal campaign_created(campaign_id: String)
+
 
 const ROW_BG_COLOR := Color(0.94, 0.89, 0.78, 0.42)
 const ROW_BORDER_COLOR := Color(0.44, 0.31, 0.18, 0.88)
@@ -418,7 +422,7 @@ func _on_create_confirmed() -> void:
 		return
 
 	_set_create_dialog_visible(false)
-	campaign_selected.emit(campaign_id)
+	campaign_created.emit(campaign_id)
 
 
 func _on_delete_pressed(campaign_id: String) -> void:

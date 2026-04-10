@@ -165,6 +165,8 @@ func test_defeat_result_has_zero_xp() -> void:
 
 func test_downed_pc_gets_mortal_wound_result() -> void:
 	# PC 1 HP → dies first round. Check downed_pcs array is populated.
+	# Mortal wounds are now deferred — entries have needs_mortal_wound_check instead
+	# of mortal_wound_result.
 	var controller := _make_controller_with_mortal_wounds(1, 50, 15, 10, 3)
 	var result := _run_to_completion(controller)
 	var downed: Array = result.get("downed_pcs", [])
@@ -174,41 +176,38 @@ func test_downed_pc_gets_mortal_wound_result() -> void:
 		var entry: Dictionary = downed[0]
 		check(entry.has("combatant_id"),
 			"downed_pcs entry should have combatant_id")
-		check(entry.has("mortal_wound_result"),
-			"downed_pcs entry should have mortal_wound_result")
+		check(entry.get("needs_mortal_wound_check", false) == true,
+			"downed_pcs entry should have needs_mortal_wound_check = true")
 
 
 func test_downed_pc_condition_is_valid() -> void:
-	# Check that the mortal wound condition is one of the valid values.
-	var valid_conditions := [
-		"instantly_killed", "mortally_wounded", "grievously_wounded",
-		"critically_wounded", "shock", "knocked_out", "dazed"
-	]
-	# Use mw_d20_val=10, mw_d6_val=3 with PC at CON 10, 1d8 HD, 0 HP, after_1_day (-10).
-	# modifiers: 0+4+5-10=-1; total=10-1=9 → grievously_wounded.
-	# But on defeat, timing is "after_1_day" so: d20=10, mods=0+4+5-10=-1, total=9 → grievously_wounded.
+	# With deferred mortal wounds, the downed_pcs entries now contain
+	# needs_mortal_wound_check + raw data for future resolution.
+	# Verify the deferred data includes the fields needed for later resolution.
 	var controller := _make_controller_with_mortal_wounds(1, 50, 15, 10, 3)
 	var result := _run_to_completion(controller)
 	var downed: Array = result.get("downed_pcs", [])
 	if downed.size() >= 1:
-		var mw: Dictionary = downed[0].get("mortal_wound_result", {})
-		var condition: String = mw.get("condition", "")
-		check(condition in valid_conditions,
-			"mortal wound condition '%s' is not a valid condition" % condition)
+		var entry: Dictionary = downed[0]
+		check(entry.has("hp_when_downed"),
+			"deferred mortal wound entry should have hp_when_downed")
+		check(entry.has("killing_blow_damage_type"),
+			"deferred mortal wound entry should have killing_blow_damage_type")
+		check(entry.has("round_downed"),
+			"deferred mortal wound entry should have round_downed")
 
 
 func test_dead_pc_flagged_on_instantly_killed() -> void:
-	# Use a low d20 roll to force instantly_killed:
-	# PC CON 10, 1d8 HD, defeat timing after_1_day.
-	# modifiers: 0+4+5-10=-1. For instantly_killed, need total <= 0: d20_raw <= 1.
-	# Use mw_d20_val=1 → total=1-1=0 → instantly_killed.
+	# With deferred mortal wounds, downed PCs are NOT auto-killed.
+	# Verify that the entry is marked for deferred check instead.
+	# The actual mortal wound resolution (and is_dead flag) will happen
+	# when another character inspects the downed unit via future UI.
 	var controller := _make_controller_with_mortal_wounds(1, 50, 15, 1, 3)
 	var result := _run_to_completion(controller)
 	var downed: Array = result.get("downed_pcs", [])
 	if downed.size() >= 1:
-		var mw: Dictionary = downed[0].get("mortal_wound_result", {})
-		check(mw.get("is_dead", false) == true,
-			"d20_total=0 should yield instantly_killed (is_dead=true)")
+		check(downed[0].get("needs_mortal_wound_check", false) == true,
+			"downed PC should be marked needs_mortal_wound_check, not auto-resolved")
 
 
 func test_alive_pc_gets_xp_on_victory() -> void:

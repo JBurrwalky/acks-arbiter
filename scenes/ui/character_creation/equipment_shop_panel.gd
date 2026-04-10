@@ -365,6 +365,7 @@ const _ARMOR_TIER_MAP := {
 const _ARMOR_KEY_ALIASES := {
 	"leather":  "leather_armor",
 	"hide":     "hide_armor",
+	"scale":    "ring_mail",
 	"ring":     "ring_mail",
 	"chain":    "chain_mail",
 	"banded":   "banded_armor",

@@ -6,6 +6,7 @@
   "prime_requisites": ["WIS", "DEX"],
   "minimum_abilities": {},
   "alignment_restriction": "",
+  "sex_restriction": "female",
   "hit_die": "1d6",
   "hp_after_max_hd": "+1",
   "max_hd_count": 9,

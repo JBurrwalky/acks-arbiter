@@ -22,6 +22,7 @@ signal room_revealed(room_id: int)
 signal fog_updated()
 signal door_state_changed(pos: Vector2i, old_state: String, new_state: String)
 signal level_changed(from_level: int, to_level: int)
+signal orders_executed(result: Dictionary)
 
 
 # ---------------------------------------------------------------------------
@@ -44,6 +45,35 @@ var _light_radius: int = 6
 ## Additional visibility from darkvision (60 ft darkvision = +6).
 var _darkvision_bonus: int = 0
 
+## Order manager for individual movement queue (DungeonOrderManager).
+var _order_manager: RefCounted = null
+
+## Formation manager for party layout (FormationManager).
+var _formation_manager: RefCounted = null
+
+## Class references loaded at runtime to avoid parse-time dependency.
+var _OrderManagerClass = null
+var _FormationManagerClass = null
+
+## Reference to the active PartyData for formation and individual movement.
+## Set via set_party_data() before load_dungeon().
+var _party_data_ref: PartyData = null
+
+
+# ---------------------------------------------------------------------------
+# Lazy init helpers
+# ---------------------------------------------------------------------------
+
+func _ensure_managers() -> void:
+	if _order_manager == null:
+		if _OrderManagerClass == null:
+			_OrderManagerClass = load("res://engine/subsystems/exploration/dungeon_order_manager.gd")
+		_order_manager = _OrderManagerClass.new()
+	if _formation_manager == null:
+		if _FormationManagerClass == null:
+			_FormationManagerClass = load("res://engine/subsystems/exploration/formation_manager.gd")
+		_formation_manager = _FormationManagerClass.new()
+
 
 # ---------------------------------------------------------------------------
 # Core API
@@ -56,6 +86,7 @@ var _darkvision_bonus: int = 0
 ## [param spawn_pos] overrides the default entry_pos when entering via a specific
 ## transition cell. Pass Vector2i(-1, -1) (the default) to use entry_pos.
 func load_dungeon(dungeon_dict: Dictionary, spawn_pos: Vector2i = Vector2i(-1, -1)) -> void:
+	_ensure_managers()
 	_dungeon_id = dungeon_dict.get("id", "")
 	_dungeon_name = dungeon_dict.get("name", "")
 	_all_levels.clear()
@@ -87,8 +118,16 @@ func load_dungeon(dungeon_dict: Dictionary, spawn_pos: Vector2i = Vector2i(-1, -
 		entry = spawn_pos
 	else:
 		entry = _map.entry_pos
+
+	# Try formation placement; fall back to stacking at entry
+	var formation_positions: Dictionary = _formation_manager.compute_dungeon_positions(
+		entry, _party_data_ref, _map) if _party_data_ref != null else {}
+
 	for eid in _party_entity_ids:
-		_map.set_entity_pos(eid, entry)
+		if formation_positions.has(eid):
+			_map.set_entity_pos(eid, formation_positions[eid])
+		else:
+			_map.set_entity_pos(eid, entry)
 
 	_reveal_entry_room()
 	map_loaded.emit(_dungeon_id)
@@ -96,7 +135,9 @@ func load_dungeon(dungeon_dict: Dictionary, spawn_pos: Vector2i = Vector2i(-1, -
 
 ## Attempts to move all party members to [param target].
 ## Returns true on success, false if the move is invalid.
+## Backward-compat wrapper: queues a group move and executes immediately.
 func move_party(target: Vector2i) -> bool:
+	_ensure_managers()
 	if _map == null:
 		push_error("DungeonMapController.move_party: no map loaded")
 		return false
@@ -111,7 +152,13 @@ func move_party(target: Vector2i) -> bool:
 
 	var old_pos := party_pos
 
-	# Move all party entities to target
+	# Use formation-aware group move if party data is available
+	if _party_data_ref != null and _party_entity_ids.size() > 1:
+		queue_group_move(target)
+		execute_orders()
+		return true
+
+	# Fallback: move all entities to same cell (legacy behavior)
 	for eid in _party_entity_ids:
 		var from := _map.get_entity_pos(eid)
 		_map.set_entity_pos(eid, target)
@@ -147,11 +194,14 @@ func interact_door(pos: Vector2i) -> bool:
 	if _map == null:
 		return false
 
-	var party_pos := get_party_position()
-	if not IsometricGrid.is_adjacent(party_pos, pos):
-		push_error("DungeonMapController.interact_door: pos %s not adjacent to party at %s" % [
-			str(pos), str(party_pos)
-		])
+	# Any party member adjacent to the door can interact with it
+	var any_adjacent := false
+	for eid in _party_entity_ids:
+		var member_pos := _map.get_entity_pos(eid)
+		if member_pos != Vector2i(-1, -1) and IsometricGrid.is_adjacent(member_pos, pos):
+			any_adjacent = true
+			break
+	if not any_adjacent:
 		return false
 
 	if not _map.is_door(pos):
@@ -234,9 +284,15 @@ func use_stairs(pos: Vector2i) -> bool:
 		target_stair.get("to_row", 0)
 	)
 
-	# Move party to target cell
+	# Move party to target cell — use formation if available
+	var formation_positions: Dictionary = _formation_manager.compute_dungeon_positions(
+		target_pos, _party_data_ref, _map) if _party_data_ref != null else {}
+
 	for eid in _party_entity_ids:
-		_map.set_entity_pos(eid, target_pos)
+		if formation_positions.has(eid):
+			_map.set_entity_pos(eid, formation_positions[eid])
+		else:
+			_map.set_entity_pos(eid, target_pos)
 
 	_reveal_entry_room()
 	level_changed.emit(old_level, target_level)
@@ -263,6 +319,11 @@ func remove_party_member(entity_id: String) -> void:
 		_map.remove_entity(entity_id)
 
 
+## Returns a copy of the party entity IDs array.
+func get_entity_ids() -> Array[String]:
+	return _party_entity_ids.duplicate()
+
+
 ## Returns the grid position of the first party member, or entry_pos if no members.
 func get_party_position() -> Vector2i:
 	if _map == null:
@@ -274,6 +335,253 @@ func get_party_position() -> Vector2i:
 	if pos == Vector2i(-1, -1):
 		return _map.entry_pos
 	return pos
+
+
+# ---------------------------------------------------------------------------
+# Party data + formation
+# ---------------------------------------------------------------------------
+
+## Set the PartyData reference. Call before load_dungeon() for formation placement.
+func set_party_data(party_data: PartyData) -> void:
+	_party_data_ref = party_data
+
+
+## Returns the FormationManager for preset application.
+func get_formation_manager() -> RefCounted:
+	_ensure_managers()
+	return _formation_manager
+
+
+## Returns the DungeonOrderManager for order inspection.
+func get_order_manager() -> RefCounted:
+	_ensure_managers()
+	return _order_manager
+
+
+## Snap all members to formation around [param center_pos].
+## Uses the current formation preset stored in PartyData.
+func reform_formation(center_pos: Vector2i = Vector2i(-1, -1)) -> void:
+	_ensure_managers()
+	if _map == null or _party_data_ref == null:
+		return
+	var center := center_pos if center_pos != Vector2i(-1, -1) else get_party_position()
+	var positions: Dictionary = _formation_manager.compute_dungeon_positions(center, _party_data_ref, _map)
+	for eid in positions:
+		var old_pos := _map.get_entity_pos(eid)
+		var new_pos: Vector2i = positions[eid]
+		if old_pos != new_pos:
+			_map.set_entity_pos(eid, new_pos)
+			entity_moved.emit(eid, old_pos, new_pos)
+	_update_fog_for_all_members()
+	party_moved.emit(center, center)
+
+
+# ---------------------------------------------------------------------------
+# Individual movement + order queue
+# ---------------------------------------------------------------------------
+
+## Queue a move order for a single entity via BFS pathfinding.
+## Returns true if a valid path was found and queued.
+func queue_move_order(entity_id: String, target_pos: Vector2i) -> bool:
+	_ensure_managers()
+	if _map == null:
+		return false
+	if not _map.has_cell(target_pos) or not _map.is_passable(target_pos):
+		return false
+
+	var start := _map.get_entity_pos(entity_id)
+	if start == Vector2i(-1, -1):
+		return false
+
+	var path := _bfs_path(start, target_pos)
+	if path.is_empty():
+		return false
+
+	_order_manager.add_order(entity_id, "move", target_pos, path)
+	return true
+
+
+## Queue a group move for all party members, maintaining formation.
+## Returns true if the leader can reach the target.
+func queue_group_move(target_pos: Vector2i) -> bool:
+	_ensure_managers()
+	if _map == null or _party_data_ref == null:
+		return false
+
+	# Leader = first entity in the party list
+	if _party_entity_ids.is_empty():
+		return false
+
+	var leader_id := _party_entity_ids[0]
+	var leader_pos := _map.get_entity_pos(leader_id)
+	if leader_pos == Vector2i(-1, -1):
+		return false
+
+	# BFS path for the leader
+	var leader_path := _bfs_path(leader_pos, target_pos)
+	if leader_path.is_empty():
+		return false
+
+	# Queue leader move
+	_order_manager.add_order(leader_id, "move", target_pos, leader_path)
+
+	# Compute formation positions at the target for other members
+	var formation: Dictionary = _formation_manager.compute_dungeon_positions(
+		target_pos, _party_data_ref, _map)
+
+	for eid in _party_entity_ids:
+		if eid == leader_id:
+			continue
+		var member_target: Vector2i = formation.get(eid, target_pos)
+		var member_pos := _map.get_entity_pos(eid)
+		if member_pos == Vector2i(-1, -1):
+			continue
+		var member_path := _bfs_path(member_pos, member_target)
+		if member_path.is_empty():
+			# Fallback: path to leader target
+			member_path = _bfs_path(member_pos, target_pos)
+		if not member_path.is_empty():
+			_order_manager.add_order(eid, "move", member_target, member_path)
+		else:
+			# Can't reach — queue wait
+			_order_manager.add_order(eid, "wait")
+
+	return true
+
+
+## Execute all queued orders simultaneously.
+## Updates positions, fog, and returns result dict.
+## Returns {moved_entities: Array[String], events: Array[Dictionary]}.
+func execute_orders() -> Dictionary:
+	_ensure_managers()
+	var moved_entities: Array[String] = []
+	var events: Array = []
+
+	var orders: Dictionary = _order_manager.get_all_orders()
+	_order_manager.clear()
+
+	for eid in orders:
+		var order: Dictionary = orders[eid]
+		var order_type: String = order.get("order_type", "")
+
+		match order_type:
+			"move":
+				var target: Vector2i = order.get("target_pos", Vector2i(-1, -1))
+				var path: Array = order.get("path", [])
+				if target == Vector2i(-1, -1) or path.is_empty():
+					continue
+				# Move entity step by step (for now, teleport to destination)
+				var old_pos := _map.get_entity_pos(eid)
+				# Walk the path: move one step at a time (adjacent steps)
+				# For simplicity in exploration, move to final target directly
+				if _map.is_passable(target):
+					_map.set_entity_pos(eid, target)
+					entity_moved.emit(eid, old_pos, target)
+					moved_entities.append(eid)
+
+			"interact_door":
+				var door_pos: Vector2i = order.get("target_pos", Vector2i(-1, -1))
+				if door_pos != Vector2i(-1, -1):
+					interact_door(door_pos)
+					events.append({"type": "door_interaction", "entity_id": eid, "pos": door_pos})
+
+			"search":
+				events.append({"type": "search", "entity_id": eid})
+
+			"listen":
+				events.append({"type": "listen", "entity_id": eid})
+
+			"wait":
+				pass  # Explicit no-op
+
+	# Update fog based on all member positions
+	if not moved_entities.is_empty():
+		_update_fog_for_all_members()
+		var leader_pos := get_party_position()
+		party_moved.emit(leader_pos, leader_pos)
+
+	var result := {"moved_entities": moved_entities, "events": events}
+	orders_executed.emit(result)
+	return result
+
+
+# ---------------------------------------------------------------------------
+# BFS pathfinding
+# ---------------------------------------------------------------------------
+
+## Simple BFS pathfinding from [param start] to [param goal] on the current map.
+## Returns array of cells from start (exclusive) to goal (inclusive), or empty if no path.
+func _bfs_path(start: Vector2i, goal: Vector2i) -> Array[Vector2i]:
+	if start == goal:
+		return [goal]
+	if _map == null:
+		return []
+
+	var frontier: Array[Vector2i] = [start]
+	var came_from: Dictionary = {start: null}
+	var found := false
+
+	while not frontier.is_empty():
+		var current: Vector2i = frontier.pop_front()
+		if current == goal:
+			found = true
+			break
+		for neighbor in IsometricGrid.get_neighbors(current):
+			if came_from.has(neighbor):
+				continue
+			if not _map.has_cell(neighbor):
+				continue
+			if not _map.is_passable(neighbor) and neighbor != goal:
+				continue
+			came_from[neighbor] = current
+			frontier.append(neighbor)
+
+	if not found:
+		return []
+
+	# Reconstruct path (excluding start)
+	var path: Array[Vector2i] = []
+	var current: Vector2i = goal
+	while current != start:
+		path.push_front(current)
+		current = came_from[current]
+
+	return path
+
+
+# ---------------------------------------------------------------------------
+# Fog update for individual positions
+# ---------------------------------------------------------------------------
+
+## Update fog-of-war based on the union of all party members' positions.
+func _update_fog_for_all_members() -> void:
+	if _map == null:
+		return
+
+	# Mark all currently VISIBLE cells as EXPLORED first
+	for pos in _map._cells.keys():
+		if _map.get_fog(pos) == TacticalMapData.FogState.VISIBLE:
+			_map.set_fog(pos, TacticalMapData.FogState.EXPLORED)
+
+	# Then reveal around each member's position
+	var radius := get_visible_radius()
+	for eid in _party_entity_ids:
+		var member_pos := _map.get_entity_pos(eid)
+		if member_pos == Vector2i(-1, -1):
+			continue
+
+		# Reveal room if in one
+		var room_id := _map.get_room_at(member_pos)
+		if room_id >= 0:
+			_reveal_room(room_id)
+		else:
+			# Corridor: reveal cells within light radius
+			var visible_cells := IsometricGrid.get_cells_in_radius(member_pos, radius)
+			for vc in visible_cells:
+				if _map.has_cell(vc):
+					_map.set_fog(vc, TacticalMapData.FogState.VISIBLE)
+
+	fog_updated.emit()
 
 
 # ---------------------------------------------------------------------------

@@ -57,7 +57,16 @@
       "Bash(find:*)",
       "Bash(ls:*)",
       "Bash(grep -A 5 '\"tradition\"' /c/Users/jttau/acks-arbiter/data/classes/*.json)",
-      "Bash(timeout 20 C:/Godot/Godot_v4.6.1-stable_win64.exe --headless --path . --script res://__TRACKED_VAR__)"
+      "Bash(timeout 20 C:/Godot/Godot_v4.6.1-stable_win64.exe --headless --path . --script res://__TRACKED_VAR__)",
+      "Bash(\"C:\\\\Godot\\\\Godot_v4.6.1-stable_win64.exe\" --headless --path . res://tests/test_runner.tscn)",
+      "Read(//c/Users/jttau/AppData/Local/Temp/claude/c--Users-jttau-acks-arbiter/7a668466-5f82-4fbd-a5e8-539b9f212b15/tasks//**)",
+      "Bash(/c/Godot/Godot_v4.6.1-stable_win64.exe --headless --path . res://tests/test_runner.tscn)",
+      "Bash(echo \"EXIT:$?\")",
+      "Read(//c/Users/jttau/AppData/Local/Temp/claude/c--Users-jttau-acks-arbiter/7a668466-5f82-4fbd-a5e8-=====================================================647-5f82-4fbd-a5e8-539b9f212b15/tasks/**)",
+      "Bash(grep -n \"signal\" /c/Users/jttau/acks-arbiter/engine/subsystems/combat/*.gd)",
+      "Bash(C:/Godot/Godot_v4.6.1-stable_win64.exe --headless --script-check res://scenes/ui/combat/initiative_strip.gd)",
+      "Bash(timeout 15 C:/Godot/Godot_v4.6.1-stable_win64.exe --headless --check-only)",
+      "Bash(C:/Godot/Godot_v4.6.1-stable_win64.exe --headless --check-only)"
     ]
   }
 }
