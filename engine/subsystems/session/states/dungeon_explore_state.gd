@@ -345,7 +345,9 @@ func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 	var party_data: PartyData = _runner.get_party_data()
 	var roster := CombatRoster.new()
 
-	# Add party combatants
+	# Add party combatants with equipped weapon data
+	var equip_catalog = load("res://engine/subsystems/characters/equipment_catalog.gd")
+	var catalog = equip_catalog.new() if equip_catalog != null else null
 	if party_data != null:
 		for cd: CharacterData in party_data.character_data:
 			if not cd.is_dead and cd.is_active:
@@ -353,6 +355,9 @@ func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 				# Set grid position from the tactical map
 				if tactical_map.entity_positions.has(cd.id):
 					combatant.grid_position = tactical_map.entity_positions[cd.id]
+				# Wire equipped weapon + ammo
+				var inv_rows: Array = CampaignRepository.get_inventory_items(cd.id)
+				combatant.wire_equipment(inv_rows, catalog)
 				roster.add_combatant(combatant)
 
 	# Add monster combatants and place tokens on the renderer

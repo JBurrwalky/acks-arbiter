@@ -180,6 +180,20 @@ enum territory { civilized, borderlands, wilderness }  # lowercase type
 enum TERRITORY { Civilized, Borderlands, Wilderness }   # screaming type, mixed values
 ```
 
+### 1.10 Avoid Reserved Keyword Identifiers
+
+Do not use GDScript keywords or parser-significant identifiers as local variable names, parameter names, or fields when there is a clear alternative. In particular, avoid names like `class`, `class_name`, and other script-header keywords even in inner scope, because they can trigger misleading parse failures that make unrelated classes appear unresolved.
+
+```gdscript
+# GOOD
+var class_display_name := class_registry.get_class_display_name(class_id, sex)
+var stored_class_key := character.character_class
+
+# BAD
+var class_name := class_registry.get_class_display_name(class_id, sex)
+var class := character.character_class
+```
+
 <!-- Updated 2026-04-07: Godot 4 enum typing constraint -->
 
 **Godot 4 enum typing constraint:** Do NOT use an enum type as a variable type annotation when the enum is defined in the same class or referenced across classes. Godot 4's parser rejects `var side: Side = Side.PARTY` and `param: Combatant.Side`. Use `int` instead and assign the enum constant as the default value. The enum constants themselves (`Side.PARTY`, `Combatant.Side.ENEMY`) work fine as values.
@@ -239,26 +253,33 @@ acks-arbiter/               (Godot project root = repo root)
 │       ├── calendar/       # CalendarConstants, CalendarSeasons (pure static computation)
 │       ├── characters/     # PowerRegistry, ClassRegistry, ProficiencyRegistry, ProficiencyEffectResolver,
 │       │                   #   AbilityUtils, EncumbranceCalculator, CharacterGenerator
-│       ├── exploration/    # HexMapController, DungeonMapController
 │       ├── navigation/     # NavigationStack (not autoload; placed in Main.tscn)
 │       ├── override/       # OverrideManager (dev-mode state manipulation)
 │       ├── spells/         # SpellRegistry, RepertoireEngine, ActiveEffectTracker, SpellEffectRegistry
 │       ├── monsters/       # MonsterRegistry (loads data/monsters/monster_catalog.json)
 │       ├── combat/         # Combatant, CombatRoster, InitiativeResolver, AttackResolver, CombatController,
 │       │                   # SpellCombatHooks, RangedAttackResolver, CombatConditionManager,
-│       │                   # MonsterAI, MoraleResolver, CleaveResolver
+│       │                   # MonsterAI, MoraleResolver, CleaveResolver, CombatFinalizer,
+│       │                   # MovementResolver, ManeuverResolver, MortalWoundsResolver, CombatLog
+│       ├── exploration/    # HexMapController, DungeonMapController, DungeonEncounterSpawner,
+│       │                   # FormationManager, DungeonOrderManager
 │       ├── domain/         # (planned)
 │       └── magic/          # (planned)
 ├── scenes/
 │   ├── Main.tscn           # Root scene (instantiates all children)
 │   ├── main_scene.gd       # Test harness wiring
 │   ├── maps/               # hex_map.tscn, hex_map_renderer.gd,
-│   │                       # dungeon_map.tscn, dungeon_map_renderer.gd
+│   │                       # dungeon_map.tscn, dungeon_map_renderer.gd,
+│   │                       # dungeon_order_overlay.gd, dungeon_selection_panel.gd
 │   └── ui/
 │       ├── override/       # override_panel.gd / .tscn
 │       ├── dice/           # dice_prompt.gd / .tscn
+│       ├── combat/         # CombatScreen, CombatMapRenderer, CombatUIController,
+│       │                   # DungeonCombatOverlay, InitiativeStrip, StatSummary,
+│       │                   # ActionButtonPanel, CombatLogPanel, DeclarationOverlay,
+│       │                   # CombatEndOverlay
 │       ├── character_creation/  # 9-step PC creation wizard panels
-│       └── components/     # Reusable UI: character_sheet_panel.gd
+│       └── components/     # Reusable UI: character_sheet_panel.gd, combatant_token.gd
 ├── tests/                  # All test scripts + test_runner.tscn
 ├── db/
 │   ├── schema.sql          # Canonical schema (update after every migration)
@@ -1729,3 +1750,56 @@ class _MockDice:
 ```
 
 All combat subsystem classes accept the dice system via constructor injection, making them fully testable in isolation.
+
+### 17.5 Combat UI Architecture (F-2)
+
+<!-- Added 2026-04-10 for F-2 tactical combat UI -->
+
+**Two combat contexts, shared HUD widgets:**
+
+| Context | Renderer | Overlay/Screen | When |
+|---------|----------|----------------|------|
+| Dungeon | DungeonMapRenderer (combat mode) | DungeonCombatOverlay (CanvasLayer 10) | Dungeon encounter — monsters spawn in-place |
+| Wilderness | CombatMapRenderer (standalone Node2D) | CombatScreen (CanvasLayer 5) | Wilderness encounter — generated open-field map |
+
+Both contexts compose the same HUD widgets: InitiativeStrip, StatSummary, ActionButtonPanel, CombatLogPanel, DeclarationOverlay, CombatEndOverlay. Both own a `CombatUIController` (RefCounted) that bridges HUD widgets to CombatController.
+
+**CombatUIController is signal-based, not node-based.** It extends RefCounted, not Node, so it cannot call `call_deferred()` directly. The overlay/screen (which ARE Nodes) connect the `auto_advance_requested` signal and handle deferral.
+
+**Deferred auto-advance pattern:** Enemy turns and phase transitions emit `auto_advance_requested` instead of recursively calling `advance()`. The host node connects this to `call_deferred("_do_deferred_advance")`, yielding one frame for Godot to render between steps.
+
+### 17.6 Combat Turn Structure (ACKS)
+
+<!-- Added 2026-04-10 -->
+
+A PC turn has two sub-actions: **optional move first, then optional attack/action**.
+
+- Move does NOT end the turn. After move resolves, the action panel re-appears with Move disabled.
+- Attack (melee or ranged) ends the turn (unless cleave triggers).
+- Pass or Delay ends the turn.
+- PCs must move adjacent before melee attacking — no auto-move on attack. The controller returns "target not adjacent" if the PC hasn't moved first.
+- Monsters DO auto-move in `_resolve_monster_action()` — they don't have a separate move/attack UI.
+
+Fighting Withdrawal and Full Retreat are declaration-phase actions (pre-initiative), not mid-turn buttons.
+
+### 17.7 Token Position Sync
+
+After any action that changes grid positions (movement, force-back, etc.), the overlay/screen must call `_sync_token_positions()` to update all CombatantToken screen positions from `tactical_map.entity_positions`. This is NOT automatic — the combat engine updates the data model but the renderer must be explicitly told.
+
+### 17.8 Mortal Wounds (Deferred)
+
+<!-- Added 2026-04-10 -->
+
+Mortal wounds are NOT auto-rolled at combat end. `_emit_combat_ended()` calls `_collect_downed_pcs()` which returns `{needs_mortal_wound_check: true, hp_when_downed, killing_blow_damage_type, round_downed}`. CombatFinalizer marks these PCs as `is_incapacitated = true, hp_current = 0`. The actual mortal wound roll happens later when another character inspects the downed unit (future UI). `process_mortal_wounds()` is retained for direct test calls and future UI-driven resolution.
+
+### 17.9 Combat Log Display Names
+
+The CombatLogPanel displays combatant display names (not raw IDs) by:
+1. CombatUIController adds `actor_name`/`target_name` fields to every log entry via `_resolve_name()`.
+2. CombatLogPanel has a `_name_lookup: Dictionary` (set via `set_name_lookup()`) for resolving IDs in sub-attack results (multi-attack monsters).
+3. `_format_entry()` prefers `actor_name`/`target_name` over `actor_id`/`target_id`.
+4. JSON export retains both ID and name fields for programmatic debugging.
+
+### 17.10 Combat Persistence
+
+`CombatFinalizer.finalize()` calls `_persist_party()` which saves all party CharacterData to the database via `CampaignRepository.save_character(cd.to_dict())`. This persists HP changes, XP awards, is_dead, is_incapacitated, etc. after every combat.

@@ -4332,7 +4332,65 @@ Dungeon encounters do NOT open a separate combat screen. Monsters spawn in-place
 - Added `tests/test_finalize_panel.gd`.
 - Updated `tests/test_portrait_display_sizing.gd`.
 - Updated `tests/test_runner.gd` and `tests/test_runner.tscn` to register the new finalize suite.
+- Corrected a follow-up GDScript parser issue caused by using `class_name` as a local variable name in UI scripts; renamed those locals to non-keyword identifiers and reran the full headless suite successfully.
 **Known issues:**
 - None new from this change.
 **Next session should:**
 - If more class-specific runtime presentation rules are added later, route them through `ClassRegistry` display helpers so storage keys remain stable and UI naming stays centralized.
+
+---
+
+## Session 2026-04-10 — F-2 Combat Bugfixes: Movement, Melee Range, Turn Structure, Log Names
+
+**Task:** Fix PC movement failure, monster ranged-melee bug, implement move+attack split turn, add display names to combat log, token position sync, wilderness battle map generation, log export.
+
+**Model used:** Claude Opus 4.6
+
+**Completed:**
+
+**Wilderness combat blank screen fix:**
+- `TacticalMapData.generate_open_field(width, height)` — new factory creates a 20x16 passable grass field with all fog VISIBLE.
+- `CombatState.enter()` — auto-generates open-field map when no tactical_map in context (all wilderness encounters).
+- `CombatScreen.start_interactive()` — embeds CombatMapRenderer in SubViewportContainer for correct Node2D-in-Control rendering.
+
+**PC movement parameter mismatch (Bug A):**
+- `_resolve_movement_action()` now checks for `target_cell` (Vector2i) first, falls back to `target_x`/`target_y`.
+
+**Monster ranged-melee attack (Bug B):**
+- `_resolve_monster_action()` now auto-moves monster adjacent to target before attacking. Per-attack adjacency check inside multi-attack loop.
+
+**Move+attack split turn structure:**
+- `CombatUIController` — `_has_moved_this_turn` field. Move sub-action resolves but does NOT call advance(). Re-emits `pc_turn_started` with Move disabled. Attack/Pass/Delay ends the turn.
+- `_resolve_melee_action()` — removed PC auto-move. Returns "target not adjacent" if not adjacent. Monsters keep auto-move in `_resolve_monster_action()`.
+- `ActionButtonPanel` — removed Fighting Withdrawal / Full Retreat (declaration-phase only). Added Delay button (placeholder as pass). Added `disable_action(action_id)`.
+- `move_completed` signal wired to overlay + screen to disable Move button after movement.
+
+**Token position sync:**
+- `_sync_token_positions()` in DungeonCombatOverlay and CombatScreen — syncs ALL token screen positions from `tactical_map.entity_positions` after every action_resolved and move_completed.
+
+**Combat log display names:**
+- `CombatUIController._resolve_name()` looks up display_name from roster. All log entries include `actor_name`/`target_name` fields.
+- `CombatLogPanel` — `_format_entry()` prefers `actor_name`/`target_name` over raw IDs. `_name_lookup` dict for sub-attack target resolution. `set_name_lookup()` API populated from roster at combat start.
+- Initiative log entries include `display_name` per combatant.
+
+**Combat log multi-attack formatting:**
+- `_format_attack()` detects `{"attacks": [...]}` wrapper from monster multi-attack routines and formats each sub-attack individually.
+
+**Combat log export:**
+- CombatLogPanel stores raw entries in `_entries` array. Export button writes `combat_log_TIMESTAMP.json` + `combat_log_TIMESTAMP.txt` to `user://`, copies formatted text to clipboard.
+
+**Interfaces defined or changed:**
+- `TacticalMapData.generate_open_field(width, height) -> TacticalMapData` (new static factory)
+- `CombatUIController.move_completed` signal (new)
+- `CombatUIController._resolve_name(combatant_id) -> String` (new)
+- `ActionButtonPanel.disable_action(action_id: String)` (new)
+- `CombatLogPanel.set_name_lookup(lookup: Dictionary)` (new)
+- `CombatLogPanel.export_log() -> String` (new)
+- `CombatLogPanel._entries: Array` (new field)
+
+**Tests updated:**
+- `test_combat_controller_session4.gd` — `test_grid_melee_auto_move_to_engage` updated to expect "target not adjacent" (auto-move removed for PCs).
+
+**Coding conventions updated:** Section 17.5-17.10 added covering combat UI architecture, turn structure, token sync, mortal wound deferral, log display names, combat persistence. Directory structure updated with new files.
+
+**Regression baseline:** 64 suites passed, 8 failed (all pre-existing).

@@ -165,14 +165,14 @@ func _get_ineligible_reason(cls: Dictionary, scores: Dictionary) -> String:
 	if scores.is_empty():
 		return "Roll ability scores first."
 	var class_id: String = cls.get("class_id", "")
-	var class_name := _class_registry.get_class_display_name(class_id, "", true)
+	var display_name := _class_registry.get_class_display_name(class_id, "", true)
 
 	# Prime requisite minimum 9
 	var primes: Array = cls.get("prime_requisites", [])
 	for pr in primes:
 		var score: int = int(scores.get(pr, 0))
 		if score < 9:
-			return "%s requires %s 9+ (you have %d)." % [class_name, pr, score]
+			return "%s requires %s 9+ (you have %d)." % [display_name, pr, score]
 
 	# Minimum abilities
 	var mins: Dictionary = cls.get("minimum_abilities", {})
@@ -180,7 +180,7 @@ func _get_ineligible_reason(cls: Dictionary, scores: Dictionary) -> String:
 		var required: int = int(mins[ability])
 		var score: int = int(scores.get(ability, 0))
 		if score < required:
-			return "%s requires %s %d+ (you have %d)." % [class_name, ability, required, score]
+			return "%s requires %s %d+ (you have %d)." % [display_name, ability, required, score]
 
 	return ""
 

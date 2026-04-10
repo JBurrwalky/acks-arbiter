@@ -95,6 +95,135 @@ var hp_when_downed: int = 0
 ## Defaults to "slashing" until weapon/ability data is wired per-attack.
 var killing_blow_damage_type: String = "slashing"
 
+## Equipped weapon data (merged inventory + catalog fields). Set at combat start.
+## Keys: name, item_key, item_id, weapon_damage, magical_bonus, weapon_tags,
+##        range_short, range_medium, range_long, damage_type
+var _equipped_weapon: Dictionary = {}
+
+## Equipped ammunition inventory item reference (for quantity tracking).
+## Keys: item_id, name, quantity (mutable), item_key
+var _equipped_ammo: Dictionary = {}
+
+
+# ---------------------------------------------------------------------------
+# Equipped weapon API
+# ---------------------------------------------------------------------------
+
+func set_equipped_weapon(weapon_data: Dictionary) -> void:
+	_equipped_weapon = weapon_data
+
+func set_equipped_ammo(ammo_data: Dictionary) -> void:
+	_equipped_ammo = ammo_data
+
+func get_equipped_weapon() -> Dictionary:
+	return _equipped_weapon
+
+func get_weapon_damage() -> String:
+	## Returns base weapon damage expression (e.g. "1d8").
+	## For versatile weapons "1d6/1d8", returns the one-handed value.
+	if _equipped_weapon.is_empty():
+		return "1d6"  # unarmed fallback
+	var dmg: String = _equipped_weapon.get("weapon_damage", "1d6")
+	if "/" in dmg:
+		dmg = dmg.split("/")[0]
+	return dmg
+
+func get_weapon_tags() -> Array:
+	return _equipped_weapon.get("weapon_tags", [])
+
+func get_weapon_ranges() -> Dictionary:
+	return {
+		"short": _equipped_weapon.get("range_short", 0),
+		"medium": _equipped_weapon.get("range_medium", 0),
+		"long": _equipped_weapon.get("range_long", 0),
+	}
+
+func has_melee_capability() -> bool:
+	if _equipped_weapon.is_empty():
+		return true  # unarmed = melee
+	var tags: Array = get_weapon_tags()
+	return "melee" in tags or "thrown" in tags
+
+func has_ranged_capability() -> bool:
+	if _equipped_weapon.is_empty():
+		return false
+	var tags: Array = get_weapon_tags()
+	return "ranged" in tags or "thrown" in tags
+
+func get_weapon_magical_bonus() -> int:
+	return int(_equipped_weapon.get("magical_bonus", 0))
+
+func get_ammo_count() -> int:
+	## Returns current ammo quantity, or -1 if weapon needs no ammo.
+	if _equipped_ammo.is_empty():
+		return -1
+	return int(_equipped_ammo.get("quantity", 0))
+
+func consume_ammo() -> void:
+	## Decrement ammo quantity by 1. Persists immediately to DB.
+	if _equipped_ammo.is_empty():
+		return
+	var qty: int = int(_equipped_ammo.get("quantity", 0))
+	if qty <= 0:
+		return
+	_equipped_ammo["quantity"] = qty - 1
+	var item_id: String = _equipped_ammo.get("item_id", "")
+	if not item_id.is_empty():
+		CampaignRepository.update_inventory_item_quantity(item_id, qty - 1)
+
+
+## Wire equipped weapon + ammo from inventory DB rows and equipment catalog.
+## Call after Combatant.from_character() at combat start.
+## [param inventory_rows]: raw rows from CampaignRepository.get_inventory_items()
+## [param catalog]: EquipmentCatalog instance (or null to skip catalog enrichment)
+func wire_equipment(inventory_rows: Array, catalog) -> void:
+	# Find equipped main-hand weapon
+	for row in inventory_rows:
+		if int(row.get("is_equipped", 0)) != 1:
+			continue
+		if row.get("slot", "") != "hands_main":
+			continue
+		if row.get("item_category", "") != "weapon":
+			continue
+		var item_key: String = row.get("item_key", "")
+		var wpn := {
+			"name": row.get("name", "Weapon"),
+			"item_key": item_key,
+			"item_id": row.get("id", ""),
+			"weapon_damage": row.get("weapon_damage", "1d6"),
+			"magical_bonus": int(row.get("magical_bonus", 0)),
+			"damage_type": row.get("damage_type", "physical"),
+			"weapon_tags": [],
+			"range_short": 0,
+			"range_medium": 0,
+			"range_long": 0,
+		}
+		# Enrich from catalog
+		if catalog != null and catalog.has_method("get_item"):
+			var cat_entry: Dictionary = catalog.get_item(item_key)
+			if not cat_entry.is_empty():
+				wpn["weapon_tags"] = cat_entry.get("weapon_tags", [])
+				wpn["range_short"] = int(cat_entry.get("range_short", 0))
+				wpn["range_medium"] = int(cat_entry.get("range_medium", 0))
+				wpn["range_long"] = int(cat_entry.get("range_long", 0))
+		set_equipped_weapon(wpn)
+		break  # Only one main-hand weapon
+
+	# Find equipped/available ammunition
+	for row in inventory_rows:
+		if row.get("item_category", "") != "ammunition":
+			continue
+		var qty: int = int(row.get("quantity", 0))
+		if qty <= 0:
+			continue
+		set_equipped_ammo({
+			"item_id": row.get("id", ""),
+			"item_key": row.get("item_key", ""),
+			"name": row.get("name", "Ammo"),
+			"quantity": qty,
+		})
+		break  # Use first available ammo stack
+
 
 # ---------------------------------------------------------------------------
 # Factory methods

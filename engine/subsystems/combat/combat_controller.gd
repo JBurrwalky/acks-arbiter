@@ -232,9 +232,18 @@ func get_available_actions(combatant_id: String) -> Array[String]:
 			actions.append("full_retreat")
 
 	if can_attack:
-		actions.append("attack_melee")
-		if ranged_resolver != null:
-			actions.append("attack_ranged")
+		if c.is_character:
+			# Check weapon type for PCs
+			if c.has_melee_capability():
+				actions.append("attack_melee")
+			if c.has_ranged_capability() and ranged_resolver != null:
+				if c.get_ammo_count() != 0:  # -1 = no ammo needed, >0 = has ammo
+					actions.append("attack_ranged")
+		else:
+			# Monsters: keep existing behavior
+			actions.append("attack_melee")
+			if ranged_resolver != null:
+				actions.append("attack_ranged")
 		# Spell casting shown but disabled until F-3; include for button visibility
 		actions.append("cast_spell")
 
@@ -668,7 +677,12 @@ func _resolve_ranged_action(
 		}
 
 	# --- Grid-based distance and engagement for ranged attacks ---
+	# Build weapon_data from combatant's equipped weapon if available
 	var weapon_data: Dictionary = parameters.get("weapon_data", {})
+	if weapon_data.is_empty() and combatant.is_character:
+		var wpn := combatant.get_equipped_weapon()
+		if not wpn.is_empty():
+			weapon_data = wpn
 	var distance_ft: int = int(parameters.get("distance_ft", 30))
 	var target_in_melee: bool = parameters.get("target_in_melee", false)
 
@@ -681,6 +695,10 @@ func _resolve_ranged_action(
 
 	var attack_result := ranged_resolver.resolve_ranged_attack(
 		combatant, target, weapon_data, distance_ft, target_in_melee, extra_attack_mod)
+
+	# Consume ammo (hit or miss — arrow/bolt is spent either way)
+	if combatant.is_character:
+		combatant.consume_ammo()
 
 	if attack_result.get("hit", false):
 		target.last_attacker_id = combatant.id

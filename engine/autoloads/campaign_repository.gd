@@ -670,6 +670,25 @@ func update_inventory_item_equip_state(item_id: String, is_equipped: bool, slot:
 	return true
 
 
+func update_inventory_item_quantity(item_id: String, new_quantity: int) -> bool:
+	## Update the quantity of an inventory item (e.g. ammo consumption).
+	## Removes the item if quantity reaches 0.
+	if new_quantity <= 0:
+		if not db.query_with_bindings(
+			"DELETE FROM inventory_items WHERE id = ?", [item_id]
+		):
+			push_error("CampaignRepository.update_inventory_item_quantity: delete failed. id=%s" % item_id)
+			return false
+		return true
+	if not db.query_with_bindings(
+		"UPDATE inventory_items SET quantity = ? WHERE id = ?",
+		[new_quantity, item_id]
+	):
+		push_error("CampaignRepository.update_inventory_item_quantity: update failed. id=%s" % item_id)
+		return false
+	return true
+
+
 func split_item_for_equip(item_id: String, slot: String, uses_per_unit: int) -> String:
 	## Split one unit from a stacked item into an equipped single-unit item.
 	## Returns the new item's id, or "" on failure.

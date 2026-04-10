@@ -249,7 +249,16 @@ func on_action_button(action_id: String) -> void:
 
 		"attack_ranged":
 			_state = State.PC_SELECTING_ATTACK_TARGET
-			# Highlight ranged targets
+			# Show range-band overlay (short=green, medium=orange, long=yellow)
+			var combatant_r = _controller.get_combatant(_current_pc_id)
+			if combatant_r != null and _controller.movement_resolver != null:
+				var pos_r: Vector2i = _controller.movement_resolver.get_grid_position(combatant_r)
+				var ranges: Dictionary = combatant_r.get_weapon_ranges()
+				var short_cells: int = int(ranges.get("short", 0)) / 5
+				var medium_cells: int = int(ranges.get("medium", 0)) / 5
+				var long_cells: int = int(ranges.get("long", 0)) / 5
+				_highlight_range_bands(pos_r, short_cells, medium_cells, long_cells)
+			# Highlight enemy tokens in range as targets
 			var targets := _controller.get_ranged_targets(_current_pc_id)
 			var typed_targets: Array[String] = []
 			for t in targets:
@@ -389,6 +398,35 @@ func _emit_action_log(result: Dictionary) -> void:
 		"timestamp": 0,
 	}
 	log_entry.emit(entry)
+
+
+func _highlight_range_bands(origin: Vector2i, short_r: int, medium_r: int, long_r: int) -> void:
+	## Emit highlight layers for ranged weapon range bands.
+	## Short = green, Medium = orange, Long = yellow.
+	if _controller == null or _controller.tactical_map == null:
+		return
+	var map: TacticalMapData = _controller.tactical_map
+	var short_cells: Array[Vector2i] = []
+	var medium_cells: Array[Vector2i] = []
+	var long_cells: Array[Vector2i] = []
+
+	for cell_pos in map._cells.keys():
+		var dist: int = IsometricGrid.chebyshev_distance(origin, cell_pos)
+		if dist == 0:
+			continue
+		if dist <= short_r:
+			short_cells.append(cell_pos)
+		elif dist <= medium_r:
+			medium_cells.append(cell_pos)
+		elif dist <= long_r:
+			long_cells.append(cell_pos)
+
+	if not short_cells.is_empty():
+		highlight_reachable.emit(short_cells, Color(0.2, 0.8, 0.3, 0.12))
+	if not medium_cells.is_empty():
+		highlight_reachable.emit(medium_cells, Color(0.9, 0.6, 0.1, 0.12))
+	if not long_cells.is_empty():
+		highlight_reachable.emit(long_cells, Color(0.9, 0.9, 0.2, 0.12))
 
 
 func _resolve_name(combatant_id: String) -> String:

@@ -30,6 +30,13 @@ func enter(runner, context: Dictionary) -> void:
 	var roster := CombatRoster.build_from_encounter(
 		party_data, _encounter_data, monster_registry, DiceSystem)
 
+	# Wire equipped weapons for PC combatants
+	var equip_catalog = load("res://engine/subsystems/characters/equipment_catalog.gd")
+	var catalog = equip_catalog.new() if equip_catalog != null else null
+	for c in roster.get_party_combatants():
+		var inv_rows: Array = CampaignRepository.get_inventory_items(c.id)
+		c.wire_equipment(inv_rows, catalog)
+
 	# Create combat subsystems
 	var active_effects: ActiveEffectTracker = runner.get_active_effects()
 	var condition_catalog := ConditionCatalog.new()

@@ -41,9 +41,11 @@ func resolve_melee_attack(
 
 	# Calculate attack modifiers
 	var str_mod := attacker._get_ability_modifier("strength")
-	# STR mod + monster to-hit bonuses + condition/external modifiers
+	# STR mod + weapon magical bonus + monster to-hit bonuses + condition/external modifiers
 	var to_hit_bonus := str_mod + extra_attack_mod
-	if not attacker.is_character:
+	if attacker.is_character:
+		to_hit_bonus += attacker.get_weapon_magical_bonus()
+	else:
 		to_hit_bonus += attacker.get_to_hit_modifier(0)
 
 	# --- Spell hooks: on_pre_attack ---
@@ -109,7 +111,8 @@ func resolve_melee_attack(
 			damage_roll.raw_total = 4
 			damage_roll.modified_total = 4
 
-		damage_total = maxi(1, damage_roll.modified_total + str_damage_mod + mod_bonus)
+		var magic_dmg_bonus: int = attacker.get_weapon_magical_bonus() if attacker.is_character else 0
+		damage_total = maxi(1, damage_roll.modified_total + str_damage_mod + mod_bonus + magic_dmg_bonus)
 
 		# Apply damage through target's resistance pipeline
 		damage_result = target.apply_damage(damage_total, "physical")
@@ -247,11 +250,10 @@ func resolve_monster_attack(
 
 func _get_melee_damage_expression(attacker: Combatant) -> String:
 	## Returns the damage expression for the attacker's melee weapon.
-	## For characters: defaults to 1d6 (standard weapon).
+	## For characters: reads from equipped weapon, falls back to 1d6 (unarmed).
 	## For monsters: reads from attack_routines.
 	if attacker.is_character:
-		# TODO: Read from equipped weapon data when equipment system is wired.
-		return "1d6"
+		return attacker.get_weapon_damage()
 	return attacker.get_damage_expression(0)
 
 

@@ -27,6 +27,10 @@ var _hp_bar: ProgressBar = null
 var _ac_label: Label = null
 var _movement_label: Label = null
 var _conditions_label: Label = null
+var _weapon_label: Label = null
+var _attack_label: Label = null
+var _damage_label: Label = null
+var _ammo_label: Label = null
 
 
 # ---------------------------------------------------------------------------
@@ -102,6 +106,30 @@ func _ready() -> void:
 	_movement_label.add_theme_font_size_override("font_size", 11)
 	stat_row.add_child(_movement_label)
 
+	# Weapon row
+	_weapon_label = Label.new()
+	_weapon_label.add_theme_font_size_override("font_size", 11)
+	_weapon_label.add_theme_color_override("font_color", Color(0.8, 0.75, 0.6))
+	vbox.add_child(_weapon_label)
+
+	# Attack + Damage row
+	var combat_row := HBoxContainer.new()
+	combat_row.add_theme_constant_override("separation", 12)
+	vbox.add_child(combat_row)
+
+	_attack_label = Label.new()
+	_attack_label.add_theme_font_size_override("font_size", 11)
+	combat_row.add_child(_attack_label)
+
+	_damage_label = Label.new()
+	_damage_label.add_theme_font_size_override("font_size", 11)
+	combat_row.add_child(_damage_label)
+
+	_ammo_label = Label.new()
+	_ammo_label.add_theme_font_size_override("font_size", 11)
+	_ammo_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.5))
+	combat_row.add_child(_ammo_label)
+
 	# Conditions row
 	_conditions_label = Label.new()
 	_conditions_label.add_theme_font_size_override("font_size", 10)
@@ -153,6 +181,51 @@ func show_combatant(combatant) -> void:
 	else:
 		_movement_label.text = "Mv: %d" % move_cells
 
+	# Weapon info (PC only)
+	if combatant.is_character:
+		var wpn: Dictionary = combatant.get_equipped_weapon()
+		if not wpn.is_empty():
+			var wpn_name: String = wpn.get("name", "Weapon")
+			var magic: int = int(wpn.get("magical_bonus", 0))
+			_weapon_label.text = "%s%s" % [wpn_name, " +%d" % magic if magic > 0 else ""]
+
+			# Attack throw vs AC 0
+			var atk_throw: int = combatant.get_effective_attack_throw()
+			var str_mod: int = CharacterData.ability_modifier(
+				combatant._character.get_effective_ability_score("strength"))
+			var total_bonus: int = str_mod + magic
+			var target_ac0: int = atk_throw  # attack_throw is the d20 value needed to hit AC 0
+			var bonus_str := "+%d" % total_bonus if total_bonus >= 0 else str(total_bonus)
+			_attack_label.text = "Atk: %d+ (%s)" % [target_ac0, bonus_str]
+
+			# Damage
+			var dmg_expr: String = combatant.get_weapon_damage()
+			var dmg_bonus: int = str_mod + magic
+			if dmg_bonus > 0:
+				_damage_label.text = "Dmg: %s+%d" % [dmg_expr, dmg_bonus]
+			elif dmg_bonus < 0:
+				_damage_label.text = "Dmg: %s%d" % [dmg_expr, dmg_bonus]
+			else:
+				_damage_label.text = "Dmg: %s" % dmg_expr
+
+			# Ammo
+			var ammo_count: int = combatant.get_ammo_count()
+			if ammo_count >= 0:
+				_ammo_label.text = "Ammo: %d" % ammo_count
+			else:
+				_ammo_label.text = ""
+		else:
+			_weapon_label.text = "Unarmed"
+			_attack_label.text = ""
+			_damage_label.text = "Dmg: 1d3"
+			_ammo_label.text = ""
+	else:
+		# Monster — show HD-based attack info
+		_weapon_label.text = ""
+		_attack_label.text = ""
+		_damage_label.text = ""
+		_ammo_label.text = ""
+
 	# Conditions
 	if combatant.conditions.is_empty():
 		_conditions_label.text = ""
@@ -172,6 +245,10 @@ func _clear() -> void:
 	_hp_bar.value = 0
 	_ac_label.text = "AC -"
 	_movement_label.text = "Mv: -"
+	_weapon_label.text = ""
+	_attack_label.text = ""
+	_damage_label.text = ""
+	_ammo_label.text = ""
 	_conditions_label.text = ""
 
 

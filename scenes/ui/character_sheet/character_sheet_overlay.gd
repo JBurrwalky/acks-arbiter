@@ -251,10 +251,10 @@ func _load_party_list() -> void:
 
 func _party_item_label(character: CharacterData) -> String:
 	var n := character.name if not character.name.is_empty() else "(unnamed)"
-	var class_name := character.character_class.capitalize()
+	var class_display_name := character.character_class.capitalize()
 	if _class_registry != null and _class_registry.has_class(character.character_class):
-		class_name = _class_registry.get_class_display_name(character.character_class, character.sex)
-	return "%s\n%s %d\nHP %d/%d" % [n, class_name, character.level, character.hp_current, character.hp_max]
+		class_display_name = _class_registry.get_class_display_name(character.character_class, character.sex)
+	return "%s\n%s %d\nHP %d/%d" % [n, class_display_name, character.level, character.hp_current, character.hp_max]
 
 
 func _select_character(character_id: String) -> void:
