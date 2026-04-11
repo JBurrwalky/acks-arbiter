@@ -1246,6 +1246,117 @@ func save_character_inventory(character_id: String, items: Array) -> bool:
 	return true
 
 
+## Role mapping from equipment item_category + item_key to trained creature role.
+const _CREATURE_ROLE_MAP := {
+	# Warhorses → War Mount
+	"light_warhorse": "WM",
+	"medium_warhorse": "WM",
+	"heavy_warhorse": "WM",
+	# Riding mounts → Mount
+	"camel": "M",
+	"medium_riding_horse": "M",
+	"light_riding_horse": "M",
+	# Pack/draft → Workbeast
+	"donkey": "WB",
+	"mule": "WB",
+	"ox": "WB",
+	"heavy_draft_horse": "WB",
+	"medium_draft_horse": "WB",
+	# Companion animals
+	"war_dog": "G",
+	"hunting_dog": "H",
+	"hawk_trained": "H",
+}
+
+## Default tricks by role for purchased (pre-trained) creatures.
+const _DEFAULT_TRICKS := {
+	"M":  ["come", "heel", "stay"],
+	"WM": ["attack", "come", "defend", "heel", "stay"],
+	"G":  ["attack", "come", "defend", "guard", "heel"],
+	"H":  ["attack", "come", "fetch", "heel", "seek"],
+	"WB": ["come", "heel", "stay", "work"],
+	"L":  [],
+	"D":  ["come", "heel"],
+}
+
+
+func create_creature_from_purchase(
+		campaign_id: String,
+		party_id: String,
+		handler_id: String,
+		item_key: String,
+		monster_id: String,
+		monster_registry: MonsterRegistry) -> String:
+	## Creates a trained_creature from an equipment purchase.
+	## Rolls HP from the species hit dice. Returns creature_id or "".
+	var monster_data: Dictionary = monster_registry.get_monster(monster_id)
+	if monster_data.is_empty():
+		push_error("CampaignRepository.create_creature_from_purchase: unknown monster '%s'" % monster_id)
+		return ""
+
+	# Roll HP: hd_base * d8 + hd_modifier (minimum 1)
+	var hd: Dictionary = monster_data.get("hit_dice", {})
+	var hd_base: int = maxi(1, int(hd.get("base", 1)))
+	var hd_mod: int = int(hd.get("modifier", 0))
+	var rolled_hp := 0
+	for _i in range(hd_base):
+		rolled_hp += randi_range(1, 8)
+	rolled_hp += hd_mod
+	rolled_hp = maxi(1, rolled_hp)
+
+	var role: String = _CREATURE_ROLE_MAP.get(item_key, "L")
+	var tricks: Array = _DEFAULT_TRICKS.get(role, []).duplicate()
+	var morale: int = int(monster_data.get("morale", 0))
+
+	var creature_data := {
+		"campaign_id": campaign_id,
+		"party_id": party_id,
+		"species_id": monster_id,
+		"purchase_item_key": item_key,
+		"name": "",
+		"role": role,
+		"tricks_known": JSON.stringify(tricks),
+		"trick_limit": 5 + tricks.size(),
+		"morale": morale,
+		"handler_id": handler_id,
+		"introduced_handlers": "[]",
+		"hp_current": rolled_hp,
+		"hp_max": rolled_hp,
+		"training_complete": true,
+		"is_alive": true,
+	}
+	return create_trained_creature(creature_data)
+
+
+func save_character_inventory_with_creatures(
+		character_id: String,
+		items: Array,
+		campaign_id: String,
+		party_id: String,
+		equipment_catalog: EquipmentCatalog,
+		monster_registry: MonsterRegistry) -> bool:
+	## Like save_character_inventory but extracts animal purchases and creates
+	## trained_creature rows for them. Livestock stays as inventory items.
+	var regular_items: Array = []
+	for item in items:
+		var item_key: String = str(item.get("item_key", ""))
+		var catalog_entry: Dictionary = equipment_catalog.get_item(item_key)
+		var monster_id: String = str(catalog_entry.get("monster_id", ""))
+		var cat: String = str(catalog_entry.get("item_category", ""))
+
+		# Items with a monster_id and non-livestock category become creatures.
+		if not monster_id.is_empty() and cat != "livestock":
+			var qty: int = int(item.get("quantity", 1))
+			for _i in range(qty):
+				create_creature_from_purchase(
+					campaign_id, party_id, character_id,
+					item_key, monster_id, monster_registry)
+		else:
+			regular_items.append(item)
+
+	return save_character_inventory(character_id, regular_items)
+
+
 # ---------------------------------------------------------------------------
 # Extended character queries
 # ---------------------------------------------------------------------------
@@ -2243,6 +2354,15 @@ func update_draft_vehicle_hitch(vehicle_id: String, hitched_json: String) -> boo
 		"UPDATE draft_vehicles SET hitched_creatures = ?, updated_at = datetime('now') WHERE id = ?",
 		[hitched_json, vehicle_id]):
 		push_error("CampaignRepository.update_draft_vehicle_hitch: failed. id=%s" % vehicle_id)
+		return false
+	return true
+
+
+func update_draft_vehicle_name(vehicle_id: String, new_name: String) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE draft_vehicles SET name = ?, updated_at = datetime('now') WHERE id = ?",
+		[new_name, vehicle_id]):
+		push_error("CampaignRepository.update_draft_vehicle_name: failed. id=%s" % vehicle_id)
 		return false
 	return true
 

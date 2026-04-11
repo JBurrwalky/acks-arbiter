@@ -85,6 +85,19 @@ static func calculate_party_speed(party: PartyData, terrain_category: String, on
 		slowest_speed = 120
 		slowest_id = ""
 
+	# Consider trained creature speeds.
+	for creature: TrainedCreatureData in party.creature_data:
+		var spd: int = creature.get_effective_movement()
+		if spd < slowest_speed:
+			slowest_speed = spd
+			slowest_id = creature.id
+
+	# Vehicles cap party speed at 60'/turn (ACKS: carts/wagons all move 60'/30').
+	if not party.vehicle_data.is_empty():
+		if PartyData.VEHICLE_SPEED < slowest_speed:
+			slowest_speed = PartyData.VEHICLE_SPEED
+			slowest_id = "vehicle"
+
 	# Party moves at slowest member's speed. If a character has a mount
 	# equipped, their get_effective_movement() already reflects the mount's
 	# speed via the modifier system.

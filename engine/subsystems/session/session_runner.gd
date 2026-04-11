@@ -237,6 +237,19 @@ func load_session(campaign_id: String, party_id: String) -> void:
 		_party_data.shared_inventory = []
 		for row: Dictionary in inv_rows:
 			_party_data.shared_inventory.append(InventoryItem.from_dict(row))
+		# Populate trained creatures
+		_party_data.creature_data = []
+		var creature_rows: Array = CampaignRepository.get_trained_creatures_for_party(party_id)
+		for row: Dictionary in creature_rows:
+			var creature := TrainedCreatureData.from_db(row)
+			creature.monster_data = _monster_registry.get_monster(creature.species_id)
+			var creature_inv := CampaignRepository.get_creature_inventory(creature.id)
+			creature.inventory = []
+			for inv_row: Dictionary in creature_inv:
+				creature.inventory.append(InventoryItem.from_dict(inv_row))
+			_party_data.creature_data.append(creature)
+		# Populate draft vehicles
+		_party_data.vehicle_data = CampaignRepository.get_draft_vehicles_for_party(party_id)
 
 	# 3. Register party with Timekeeping (if not already)
 	Timekeeping.register_party(party_id)

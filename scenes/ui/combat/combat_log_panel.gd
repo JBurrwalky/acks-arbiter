@@ -243,7 +243,9 @@ func _format_entry(entry: Dictionary) -> String:
 		9:  # FLEE
 			return "%s flees!" % actor
 		10: # CLEAVE
-			return "%s cleaves into %s!" % [actor, target]
+			if target.is_empty():
+				return "%s may cleave!" % actor
+			return "%s may cleave into %s!" % [actor, target]
 		11: # COMBAT_END
 			var result: String = data.get("result", "unknown")
 			return "=== Combat Over: %s ===" % result.to_upper()

@@ -17,6 +17,9 @@ const GRID_ROWS := 12
 ## Unassigned grid position sentinel.
 const UNASSIGNED := -1
 
+## Vehicle exploration speed in feet/turn (ACKS: all carts/wagons = 60').
+const VEHICLE_SPEED := 60
+
 # ---------------------------------------------------------------------------
 # Identity
 # ---------------------------------------------------------------------------
@@ -69,6 +72,10 @@ var shared_inventory: Array = []
 ## Array[TrainedCreatureData] — trained creatures belonging to this party.
 ## Populated by the caller after loading; not serialized.
 var creature_data: Array = []
+
+## Array[Dictionary] — draft vehicles belonging to this party (from draft_vehicles table).
+## Populated by the caller after loading; not serialized.
+var vehicle_data: Array = []
 
 
 # ---------------------------------------------------------------------------
@@ -177,11 +184,12 @@ func swap_positions(char_a: String, char_b: String) -> void:
 	set_formation_pos(char_b, pos_a.x, pos_a.y)
 
 
-## Returns the slowest effective movement rate among all party members and
-## trained creatures (feet/turn).
+## Returns the slowest effective movement rate among all party members,
+## trained creatures, and vehicles (feet/turn).
 ## This is the base rate before terrain or forced-march modifiers.
+## Vehicles always move at 60'/turn (30' loaded) per ACKS rules.
 func get_slowest_movement() -> int:
-	if character_data.is_empty() and creature_data.is_empty():
+	if character_data.is_empty() and creature_data.is_empty() and vehicle_data.is_empty():
 		return 120  # default
 	var slowest: int = 999
 	for cd: CharacterData in character_data:
@@ -192,6 +200,10 @@ func get_slowest_movement() -> int:
 		var spd: int = creature.get_effective_movement()
 		if spd < slowest:
 			slowest = spd
+	# Vehicles cap party speed at 60'/turn (ACKS: carts/wagons all move 60'/30').
+	if not vehicle_data.is_empty():
+		if VEHICLE_SPEED < slowest:
+			slowest = VEHICLE_SPEED
 	return slowest
 
 

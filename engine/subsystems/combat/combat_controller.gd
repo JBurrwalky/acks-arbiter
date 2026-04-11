@@ -79,6 +79,25 @@ var _current_combatant_id: String = ""
 ## Track total rounds for time advancement.
 var total_rounds: int = 0
 
+## Previous adjacent-enemy IDs per combatant (for new-engagement facing detection).
+## combatant_id -> Array[String]
+var _prev_adjacent_enemies: Dictionary = {}
+
+## Pending PC cleave state: combatant_id awaiting cleave decision (or "" if none).
+var _pending_cleave_for: String = ""
+
+## Killing-attack metadata for the pending cleave (damage expr, source_index, mods).
+var _pending_cleave_attack: Dictionary = {}
+
+## Whether the optional 5ft cleave step has been used in the current cleave window.
+## Reset to false at the start of each cleave eligibility window.
+var _pending_cleave_move_used: bool = false
+
+## Signal emitted when a combatant becomes eligible for a cleave attempt.
+## target_id may be empty if the player has not yet chosen a target.
+## Connected by CombatUIController for on-screen CLEAVE! flash.
+signal cleave_triggered(combatant_id: String, target_id: String)
+
 
 # ---------------------------------------------------------------------------
 # Constructor
@@ -547,6 +566,19 @@ func _resolve_combatant_action(
 			result = _resolve_melee_action(combatant, parameters, condition_atk_mod)
 		"attack_ranged":
 			result = _resolve_ranged_action(combatant, parameters, condition_atk_mod)
+		"cleave":
+			result = _resolve_pc_cleave(combatant, parameters)
+		"cleave_move":
+			result = _resolve_pc_cleave_move(combatant, parameters)
+		"skip_cleave":
+			_pending_cleave_for = ""
+			_pending_cleave_attack = {}
+			_pending_cleave_move_used = false
+			result = {
+				"phase": "action", "status": "action_resolved",
+				"combatant_id": combatant.id, "action": "skip_cleave",
+				"result": {"note": "cleave declined"},
+			}
 		"cast_spell":
 			result = _resolve_cast_spell(combatant, parameters)
 		"move":
@@ -622,6 +654,9 @@ func _resolve_melee_action(
 				"result": {"note": "target not adjacent"},
 			}
 
+	# Attacker turns to face the target
+	combatant.facing = _direction_vector(combatant.grid_position, target.grid_position)
+
 	var attack_result := attack_resolver.resolve_melee_attack(
 		combatant, target, "", extra_attack_mod)
 
@@ -639,12 +674,145 @@ func _resolve_melee_action(
 	# Update engagement after melee (combatants in melee range are engaged)
 	_update_engagement()
 
+	# PC cleave eligibility — pause for player input instead of auto-chaining
+	if attack_result.get("target_downed", false) and cleave_resolver != null \
+			and combatant.is_character and cleave_resolver.can_cleave(combatant):
+		var cleave_targets: Array = _get_cleave_targets(combatant)
+		var move_cells: Array = _get_valid_cleave_move_cells(combatant)
+		# Eligible if there are targets to attack OR cells to step into
+		if not cleave_targets.is_empty() or not move_cells.is_empty():
+			_pending_cleave_for = combatant.id
+			_pending_cleave_attack = {
+				"damage": "",
+				"source_index": 0,
+				"extra_attack_mod": extra_attack_mod,
+			}
+			_pending_cleave_move_used = false
+			attack_result["cleave_eligible"] = true
+			attack_result["cleave_targets"] = cleave_targets
+			attack_result["cleave_move_available"] = true
+			attack_result["cleave_move_cells"] = move_cells
+			# Log entry: "X may cleave!" (target unknown until player picks)
+			combat_log.add_entry(
+				CombatLog.EntryType.CLEAVE, round_number,
+				combatant.id, "",
+				{"note": "may_cleave", "actor_name": combatant.display_name})
+			cleave_triggered.emit(combatant.id, "")
+
 	return {
 		"phase": "action",
 		"status": "action_resolved",
 		"combatant_id": combatant.id,
 		"action": "attack_melee",
 		"result": attack_result,
+	}
+
+
+func _get_cleave_targets(combatant: Combatant) -> Array:
+	## Returns IDs of alive enemies adjacent to the combatant (valid cleave targets).
+	var result: Array = []
+	if movement_resolver == null or not movement_resolver.has_grid():
+		return result
+	var enemies = movement_resolver.get_adjacent_enemies(combatant)
+	for e in enemies:
+		if e.is_alive():
+			result.append(e.id)
+	return result
+
+
+func _get_valid_cleave_move_cells(combatant: Combatant) -> Array:
+	## Returns adjacent cells the combatant may step into during a cleave (5ft step).
+	## Per ACKS + project rule: ignores engagement (free disengage), but can't
+	## move through enemies. Dead bodies do not block.
+	var result: Array = []
+	if tactical_map == null:
+		return result
+	var origin: Vector2i = combatant.grid_position
+	if origin == Vector2i(-1, -1):
+		return result
+	for neighbor in IsometricGrid.get_neighbors(origin):
+		if not tactical_map.has_cell(neighbor):
+			continue
+		if not tactical_map.is_passable(neighbor):
+			continue
+		# Check for living blockers in the destination cell
+		var blocked := false
+		for eid in tactical_map.get_entities_at(neighbor):
+			var occupant = roster.get_by_id(eid)
+			if occupant != null and occupant.is_alive():
+				blocked = true
+				break
+		if not blocked:
+			result.append(neighbor)
+	return result
+
+
+func _resolve_pc_cleave_move(combatant: Combatant, parameters: Dictionary) -> Dictionary:
+	## Resolve the optional 5ft cleave step. Updates position + facing,
+	## marks the move as used for this cleave window, and returns updated
+	## cleave eligibility (new targets from the new position).
+	if _pending_cleave_for != combatant.id:
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "cleave_move",
+			"result": {"note": "no pending cleave"},
+		}
+	if _pending_cleave_move_used:
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "cleave_move",
+			"result": {"note": "cleave move already used this window"},
+		}
+
+	var target_cell: Vector2i
+	if parameters.has("target_cell"):
+		target_cell = parameters["target_cell"]
+	else:
+		target_cell = Vector2i(
+			int(parameters.get("target_x", -1)),
+			int(parameters.get("target_y", -1)))
+
+	# Validate the cell is a legal cleave step destination
+	var valid_cells: Array = _get_valid_cleave_move_cells(combatant)
+	if target_cell not in valid_cells:
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "cleave_move",
+			"result": {"note": "invalid cleave move cell"},
+		}
+
+	# Perform the move (bypass movement_resolver to avoid engagement checks)
+	var old_pos: Vector2i = combatant.grid_position
+	tactical_map.set_entity_pos(combatant.id, target_cell)
+	combatant.grid_position = target_cell
+	combatant.facing = _direction_vector(old_pos, target_cell)
+	_pending_cleave_move_used = true
+
+	_update_engagement()
+
+	# Recompute cleave targets from the new position
+	var new_targets: Array = _get_cleave_targets(combatant)
+	var still_eligible: bool = not new_targets.is_empty()
+
+	if not still_eligible:
+		# No targets reachable from the new position — cleave window closes
+		_pending_cleave_for = ""
+		_pending_cleave_attack = {}
+		_pending_cleave_move_used = false
+
+	var result_data: Dictionary = {
+		"new_position": target_cell,
+		"cleave_move_used": true,
+		"cleave_eligible": still_eligible,
+		"cleave_targets": new_targets,
+		"cleave_move_available": false,
+		"cleave_move_cells": [],
+	}
+
+	return {
+		"phase": "action", "status": "action_resolved",
+		"combatant_id": combatant.id, "action": "cleave_move",
+		"result": result_data,
 	}
 
 
@@ -692,6 +860,9 @@ func _resolve_ranged_action(
 		if grid_dist >= 0:
 			distance_ft = grid_dist
 		target_in_melee = movement_resolver.is_engaged(target)
+
+	# Attacker turns to face the ranged target
+	combatant.facing = _direction_vector(combatant.grid_position, target.grid_position)
 
 	var attack_result := ranged_resolver.resolve_ranged_attack(
 		combatant, target, weapon_data, distance_ft, target_in_melee, extra_attack_mod)
@@ -817,6 +988,9 @@ func _resolve_monster_action(combatant: Combatant) -> Dictionary:
 			if not movement_resolver.is_adjacent(combatant, target):
 				break  # Can't reach new target mid-routine; end attack sequence
 
+		# Monster turns to face current target
+		combatant.facing = _direction_vector(combatant.grid_position, target.grid_position)
+
 		# Resolve the attack
 		var attack_result: Dictionary
 		if combatant.is_character:
@@ -904,6 +1078,94 @@ func _auto_select_target(combatant: Combatant) -> Combatant:
 
 
 # ---------------------------------------------------------------------------
+# PC interactive cleave resolution
+# ---------------------------------------------------------------------------
+
+func _resolve_pc_cleave(combatant: Combatant, parameters: Dictionary) -> Dictionary:
+	## Resolve a single PC cleave attack against a player-chosen target.
+	## After the attack, if the target was downed AND another cleave is allowed
+	## AND there are still adjacent enemies, sets cleave_eligible=true so the UI
+	## prompts the player again. Otherwise clears the pending state.
+	if cleave_resolver == null or _pending_cleave_for != combatant.id:
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "cleave",
+			"result": {"note": "no pending cleave"},
+		}
+
+	var target_id: String = parameters.get("target_id", "")
+	var target: Combatant = roster.get_by_id(target_id)
+	if target == null or not target.is_alive():
+		_pending_cleave_for = ""
+		_pending_cleave_attack = {}
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "cleave",
+			"result": {"note": "no valid cleave target"},
+		}
+
+	if movement_resolver != null and movement_resolver.has_grid():
+		if not movement_resolver.is_adjacent(combatant, target):
+			_pending_cleave_for = ""
+			_pending_cleave_attack = {}
+			return {
+				"phase": "action", "status": "action_resolved",
+				"combatant_id": combatant.id, "action": "cleave",
+				"result": {"note": "cleave target not adjacent"},
+			}
+
+	# Cleaver turns to face the chosen target
+	combatant.facing = _direction_vector(combatant.grid_position, target.grid_position)
+
+	var extra_atk_mod: int = int(_pending_cleave_attack.get("extra_attack_mod", 0))
+	var dmg_expr: String = _pending_cleave_attack.get("damage", "")
+
+	var cleave_result := attack_resolver.resolve_melee_attack(
+		combatant, target, dmg_expr, extra_atk_mod)
+	cleave_result["is_cleave"] = true
+	cleave_resolver.record_cleave(combatant.id)
+
+	if cleave_result.get("hit", false):
+		target.last_attacker_id = combatant.id
+
+	if cleave_result.get("target_downed", false):
+		roster.record_casualty(target, round_number)
+		_check_morale_after_casualty(target)
+
+	_update_engagement()
+
+	# Check if another cleave is possible after this one
+	var still_eligible := false
+	if cleave_result.get("target_downed", false) and cleave_resolver.can_cleave(combatant):
+		var more_targets: Array = _get_cleave_targets(combatant)
+		var more_move_cells: Array = _get_valid_cleave_move_cells(combatant)
+		if not more_targets.is_empty() or not more_move_cells.is_empty():
+			cleave_result["cleave_eligible"] = true
+			cleave_result["cleave_targets"] = more_targets
+			cleave_result["cleave_move_available"] = true
+			cleave_result["cleave_move_cells"] = more_move_cells
+			combat_log.add_entry(
+				CombatLog.EntryType.CLEAVE, round_number,
+				combatant.id, "",
+				{"note": "may_cleave", "actor_name": combatant.display_name})
+			cleave_triggered.emit(combatant.id, "")
+			# New cleave window — move opportunity refreshes
+			_pending_cleave_move_used = false
+			still_eligible = true
+
+	if not still_eligible:
+		_pending_cleave_for = ""
+		_pending_cleave_attack = {}
+		_pending_cleave_move_used = false
+
+	return {
+		"phase": "action", "status": "action_resolved",
+		"combatant_id": combatant.id, "action": "cleave",
+		"result": cleave_result,
+	}
+
+
+# ---------------------------------------------------------------------------
 # Cleave chain resolution
 # ---------------------------------------------------------------------------
 
@@ -922,15 +1184,30 @@ func _resolve_cleave_chain(
 		var cleave_target := _auto_select_target(combatant)
 		if cleave_target == null:
 			break
+		# Require adjacency for melee cleaves (grid mode)
+		if movement_resolver != null and movement_resolver.has_grid():
+			if not movement_resolver.is_adjacent(combatant, cleave_target):
+				break
+
+		# Announce cleave eligibility (log entry + signal for UI flash)
+		combat_log.add_entry(
+			CombatLog.EntryType.CLEAVE, round_number,
+			combatant.id, cleave_target.id,
+			{"note": "may_cleave", "actor_name": combatant.display_name,
+			 "target_name": cleave_target.display_name})
+		cleave_triggered.emit(combatant.id, cleave_target.id)
+
+		# Cleaver turns to face the new target
+		combatant.facing = _direction_vector(combatant.grid_position, cleave_target.grid_position)
 
 		# Resolve cleave with same attack stats as the killing blow
 		var cleave_result: Dictionary
 		if combatant.is_character:
 			cleave_result = attack_resolver.resolve_melee_attack(
-				combatant, cleave_target, killing_attack["damage"], condition_atk_mod)
+				combatant, cleave_target, killing_attack.get("damage", ""), condition_atk_mod)
 		else:
 			cleave_result = attack_resolver.resolve_monster_attack(
-				combatant, cleave_target, killing_attack["source_index"], condition_atk_mod)
+				combatant, cleave_target, killing_attack.get("source_index", 0), condition_atk_mod)
 
 		cleave_result["is_cleave"] = true
 		results.append(cleave_result)
@@ -1308,14 +1585,43 @@ func _resolve_movement_action(
 # Engagement tracking
 # ---------------------------------------------------------------------------
 
+func _direction_vector(from_pos: Vector2i, to_pos: Vector2i) -> Vector2i:
+	## Returns a unit direction vector from from_pos to to_pos.
+	## Components are clamped to -1/0/+1.
+	return Vector2i(signi(to_pos.x - from_pos.x), signi(to_pos.y - from_pos.y))
+
+
 func _update_engagement() -> void:
 	## After any position change, apply/remove "engaged" condition on all combatants.
+	## Also auto-faces newly-engaged combatants toward their engager — UNLESS they were
+	## already engaged, in which case facing is preserved.
 	if movement_resolver == null or not movement_resolver.has_grid():
 		return
-	if condition_manager == null:
-		return
 	for c: Combatant in roster.get_alive():
-		var is_eng: bool = movement_resolver.is_engaged(c)
+		var prev_ids: Array = _prev_adjacent_enemies.get(c.id, [])
+		var curr: Array = movement_resolver.get_adjacent_enemies(c)
+		var curr_ids: Array = []
+		for enemy in curr:
+			curr_ids.append(enemy.id)
+
+		# Detect newly-adjacent enemies (not present last update)
+		var newly_engaged_ids: Array = []
+		for eid in curr_ids:
+			if eid not in prev_ids:
+				newly_engaged_ids.append(eid)
+
+		# If NOT previously engaged AND newly engaged, turn to face the engager.
+		if prev_ids.is_empty() and not newly_engaged_ids.is_empty():
+			var engager = roster.get_by_id(newly_engaged_ids[0])
+			if engager != null and engager.grid_position != Vector2i(-1, -1):
+				c.facing = _direction_vector(c.grid_position, engager.grid_position)
+
+		_prev_adjacent_enemies[c.id] = curr_ids
+
+		# Apply/remove "engaged" condition (existing behavior)
+		if condition_manager == null:
+			continue
+		var is_eng: bool = not curr.is_empty()
 		if is_eng and not c.has_condition("engaged"):
 			condition_manager.apply_condition(c, "engaged", "grid", -1)
 		elif not is_eng and c.has_condition("engaged"):

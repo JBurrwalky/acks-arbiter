@@ -84,6 +84,7 @@ extends Node
 @onready var _trained_creature_data_tests = $TrainedCreatureDataTests
 @onready var _creature_equipment_service_tests = $CreatureEquipmentServiceTests
 @onready var _draft_vehicle_service_tests = $DraftVehicleServiceTests
+@onready var _handler_eligibility_tests = $HandlerEligibilityTests
 
 
 func _ready() -> void:
@@ -147,7 +148,8 @@ func run() -> void:
 			_combat_controller_session5_tests,
 			_trained_creature_data_tests,
 			_creature_equipment_service_tests,
-			_draft_vehicle_service_tests]:
+			_draft_vehicle_service_tests,
+			_handler_eligibility_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

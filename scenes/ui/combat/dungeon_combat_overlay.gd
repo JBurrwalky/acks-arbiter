@@ -102,6 +102,18 @@ func start_combat(controller: CombatController, renderer) -> void:
 	# Wire move_completed to disable Move button after move sub-action
 	_ui_controller.move_completed.connect(_on_move_completed)
 
+	# Wire facing-selection flow
+	_ui_controller.facing_selection_started.connect(_on_facing_selection_started)
+	_ui_controller.token_facing_preview.connect(_on_token_facing_preview)
+	_action_panel.confirm_move_pressed.connect(_on_confirm_move_pressed)
+
+	# Wire cleave selection flow
+	_ui_controller.cleave_selection_started.connect(_on_cleave_selection_started)
+	_action_panel.skip_cleave_pressed.connect(_on_skip_cleave_pressed)
+
+	# Wire cleave flash signal
+	_ui_controller.may_cleave.connect(_on_may_cleave)
+
 	# Wire renderer input -> UI controller
 	_cell_conn = _on_renderer_cell_clicked
 	_entity_conn = _on_renderer_entity_clicked
@@ -244,8 +256,10 @@ func _on_pc_turn_started(combatant_id: String) -> void:
 	# Update initiative strip active marker
 	_init_strip.set_active(combatant_id)
 
-	# Show action buttons with available actions
+	# Show action buttons with available actions; hide Confirm Move and Skip Cleave
 	_action_panel.set_panel_visible(true)
+	_action_panel.show_confirm_move(false)
+	_action_panel.show_skip_cleave(false)
 	var actions := _controller.get_available_actions(combatant_id)
 	_action_panel.set_available_actions(actions)
 
@@ -365,6 +379,60 @@ func _sync_token_positions() -> void:
 	for eid in _controller.tactical_map.entity_positions:
 		var pos: Vector2i = _controller.tactical_map.entity_positions[eid]
 		_renderer.move_token(eid, pos)
+		var combatant = _controller.get_combatant(eid)
+		if combatant != null:
+			_renderer.set_token_facing(eid, combatant.facing)
+
+
+func _on_facing_selection_started(_combatant_id: String) -> void:
+	_action_panel.set_panel_visible(true)
+	_action_panel.disable_all()
+	_action_panel.show_confirm_move(true)
+
+
+func _on_token_facing_preview(combatant_id: String, facing: Vector2i) -> void:
+	if _renderer != null:
+		_renderer.set_token_facing(combatant_id, facing)
+
+
+func _on_confirm_move_pressed() -> void:
+	_action_panel.show_confirm_move(false)
+	if _ui_controller != null:
+		_ui_controller.on_confirm_move()
+
+
+func _on_cleave_selection_started(_combatant_id: String) -> void:
+	_action_panel.set_panel_visible(true)
+	_action_panel.disable_all()
+	_action_panel.show_skip_cleave(true)
+
+
+func _on_skip_cleave_pressed() -> void:
+	_action_panel.show_skip_cleave(false)
+	if _ui_controller != null:
+		_ui_controller.on_skip_cleave()
+
+
+func _on_may_cleave(combatant_id: String, combatant_name: String, target_name: String) -> void:
+	if _renderer == null:
+		return
+	var token = _renderer.get_entity_token(combatant_id)
+	if token == null:
+		return
+	var flash := Label.new()
+	flash.text = "CLEAVE!"
+	flash.add_theme_font_size_override("font_size", 24)
+	flash.add_theme_color_override("font_color", Color(1.0, 0.6, 0.1))
+	flash.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	flash.add_theme_constant_override("shadow_offset_x", 2)
+	flash.add_theme_constant_override("shadow_offset_y", 2)
+	# Position above the token in the canvas layer's space
+	var token_screen_pos: Vector2 = token.get_global_transform_with_canvas().origin
+	flash.position = token_screen_pos + Vector2(-40, -50)
+	add_child(flash)
+	var tween := create_tween()
+	tween.tween_property(flash, "modulate:a", 0.0, 1.0)
+	tween.tween_callback(flash.queue_free)
 
 
 func _on_auto_advance() -> void:

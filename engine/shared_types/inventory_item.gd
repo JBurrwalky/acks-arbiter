@@ -52,11 +52,11 @@ func get_effective_bonus() -> int:
 
 static func from_dict(data: Dictionary) -> InventoryItem:
 	var i := InventoryItem.new()
-	i.id = data.get("id", "")
-	i.character_id = data.get("character_id", "")
-	i.creature_id = data.get("creature_id", "")
-	i.container_id = data.get("container_id", "")
-	i.vehicle_id = data.get("vehicle_id", "")
+	i.id = _str_or_empty(data.get("id"))
+	i.character_id = _str_or_empty(data.get("character_id"))
+	i.creature_id = _str_or_empty(data.get("creature_id"))
+	i.container_id = _str_or_empty(data.get("container_id"))
+	i.vehicle_id = _str_or_empty(data.get("vehicle_id"))
 	i.item_key = data.get("item_key", "")
 	i.name = data.get("name", "")
 	i.quantity = data.get("quantity", 1)
@@ -106,3 +106,10 @@ func to_dict() -> Dictionary:
 
 func encumbrance_stone() -> float:
 	return encumbrance_units / 1000.0
+
+
+static func _str_or_empty(value) -> String:
+	## SQLite returns null for nullable columns; coerce to "".
+	if value == null:
+		return ""
+	return str(value)

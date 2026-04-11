@@ -77,6 +77,7 @@
 [ext_resource type="Script" path="res://tests/test_trained_creature_data.gd" id="70_trained_creature_data_tests"]
 [ext_resource type="Script" path="res://tests/test_creature_equipment_service.gd" id="71_creature_equipment_service_tests"]
 [ext_resource type="Script" path="res://tests/test_draft_vehicle_service.gd" id="72_draft_vehicle_service_tests"]
+[ext_resource type="Script" path="res://tests/test_handler_eligibility.gd" id="73_handler_eligibility_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -308,3 +309,6 @@ script = ExtResource("71_creature_equipment_service_tests")
 
 [node name="DraftVehicleServiceTests" type="Node" parent="."]
 script = ExtResource("72_draft_vehicle_service_tests")
+
+[node name="HandlerEligibilityTests" type="Node" parent="."]
+script = ExtResource("73_handler_eligibility_tests")

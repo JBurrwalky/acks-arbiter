@@ -459,6 +459,12 @@ func move_token(entity_id: String, to_cell: Vector2i) -> void:
 		_tokens[entity_id].update_position(screen_pos)
 
 
+## Update a token's facing direction (rotates the beak).
+func set_token_facing(entity_id: String, facing: Vector2i) -> void:
+	if _tokens.has(entity_id):
+		_tokens[entity_id].set_facing(facing)
+
+
 ## Sync all token positions to the current entity_positions in the map.
 func _update_entity_tokens() -> void:
 	if _map == null or _entity_layer == null:

@@ -37,6 +37,12 @@ const ACTIONS := [
 # ---------------------------------------------------------------------------
 
 var _buttons: Dictionary = {}  # action_id -> Button
+var _confirm_move_btn: Button = null
+var _skip_cleave_btn: Button = null
+
+
+signal confirm_move_pressed()
+signal skip_cleave_pressed()
 
 
 # ---------------------------------------------------------------------------
@@ -89,6 +95,26 @@ func _ready() -> void:
 		vbox.add_child(btn)
 		_buttons[action_id] = btn
 
+	# Confirm Move button (hidden unless in facing-selection state)
+	var confirm_sep := HSeparator.new()
+	vbox.add_child(confirm_sep)
+
+	_confirm_move_btn = Button.new()
+	_confirm_move_btn.text = "Confirm Move"
+	_confirm_move_btn.custom_minimum_size.y = 36.0
+	_confirm_move_btn.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3))
+	_confirm_move_btn.visible = false
+	_confirm_move_btn.pressed.connect(func(): confirm_move_pressed.emit())
+	vbox.add_child(_confirm_move_btn)
+
+	_skip_cleave_btn = Button.new()
+	_skip_cleave_btn.text = "Skip Cleave"
+	_skip_cleave_btn.custom_minimum_size.y = 36.0
+	_skip_cleave_btn.add_theme_color_override("font_color", Color(1.0, 0.6, 0.2))
+	_skip_cleave_btn.visible = false
+	_skip_cleave_btn.pressed.connect(func(): skip_cleave_pressed.emit())
+	vbox.add_child(_skip_cleave_btn)
+
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -110,6 +136,18 @@ func set_available_actions(actions: Array) -> void:
 func disable_action(action_id: String) -> void:
 	if _buttons.has(action_id):
 		_buttons[action_id].disabled = true
+
+
+## Show or hide the Confirm Move button (used during facing-selection phase).
+func show_confirm_move(is_visible: bool) -> void:
+	if _confirm_move_btn != null:
+		_confirm_move_btn.visible = is_visible
+
+
+## Show or hide the Skip Cleave button (used during cleave-selection phase).
+func show_skip_cleave(is_visible: bool) -> void:
+	if _skip_cleave_btn != null:
+		_skip_cleave_btn.visible = is_visible
 
 
 ## Show or hide the entire panel (hide during enemy turns).

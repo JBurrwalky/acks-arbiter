@@ -497,11 +497,16 @@ func _finalize_character() -> void:
 		CampaignRepository.add_character_spell(character.id, spell)
 
 	# Persist inventory (equipment + coin items from remaining gold).
+	# Animal purchases are extracted and created as trained_creature rows.
 	var inventory: Array = creation_state.get("inventory", [])
 	var coin_items := _build_coin_items(creation_state.get("gold_remaining_cp", 0))
 	inventory.append_array(coin_items)
 	if not inventory.is_empty():
-		CampaignRepository.save_character_inventory(character.id, inventory)
+		var eq_catalog := EquipmentCatalog.new()
+		var m_registry := MonsterRegistry.new()
+		CampaignRepository.save_character_inventory_with_creatures(
+			character.id, inventory, _campaign_id, GameState.party_id,
+			eq_catalog, m_registry)
 
 	hide()
 	character_created.emit(character.id)

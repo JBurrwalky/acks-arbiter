@@ -78,6 +78,10 @@ var last_attacker_id: String = ""
 ## Grid position on TacticalMapData (Vector2i(-1,-1) = not placed on grid).
 var grid_position: Vector2i = Vector2i(-1, -1)
 
+## Facing direction (unit vector in grid coordinates). Default east.
+## Drives the CombatantToken beak rotation.
+var facing: Vector2i = Vector2i(1, 0)
+
 ## Declared defensive movement for this round ("", "fighting_withdrawal", "full_retreat").
 var declared_defensive_movement: String = ""
 

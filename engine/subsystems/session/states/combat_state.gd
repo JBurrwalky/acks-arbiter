@@ -30,6 +30,9 @@ func enter(runner, context: Dictionary) -> void:
 	var roster := CombatRoster.build_from_encounter(
 		party_data, _encounter_data, monster_registry, DiceSystem)
 
+	# Add trained creatures with combat roles (war mounts, guards, hunters)
+	roster.add_party_creatures(party_data, monster_registry)
+
 	# Wire equipped weapons for PC combatants
 	var equip_catalog = load("res://engine/subsystems/characters/equipment_catalog.gd")
 	var catalog = equip_catalog.new() if equip_catalog != null else null

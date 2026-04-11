@@ -24,7 +24,9 @@ enum State {
 	DECLARATION_PHASE,             ## Waiting for player declarations
 	PC_SELECTING_ACTION,           ## PC turn — action button panel visible
 	PC_SELECTING_MOVE_TARGET,      ## PC chose Move — waiting for cell click
+	PC_SELECTING_FACING,           ## After move, waiting for facing click + Confirm Move
 	PC_SELECTING_ATTACK_TARGET,    ## PC chose Attack — waiting for entity click
+	PC_SELECTING_CLEAVE_TARGET,    ## After kill, waiting for cleave target click or Skip Cleave
 	ENEMY_ACTING,                  ## Enemy AI turn (auto-advance)
 	COMBAT_OVER,                   ## Combat ended
 }
@@ -55,6 +57,21 @@ signal log_entry(entry: Dictionary)
 ## The UI host (overlay or screen) should call advance() on the next frame.
 signal auto_advance_requested()
 
+## After a move, the player enters facing-selection mode. Host should show the
+## "Confirm Move" button and listen for token_facing_preview updates.
+signal facing_selection_started(combatant_id: String)
+
+## Live facing preview update while player clicks different adjacent cells
+## during the facing-selection phase.
+signal token_facing_preview(combatant_id: String, facing: Vector2i)
+
+## Emitted when a combatant becomes eligible for a cleave — host plays CLEAVE! flash.
+signal may_cleave(combatant_id: String, combatant_name: String, target_name: String)
+
+## Emitted when entering interactive cleave target selection. Host should show
+## the Skip Cleave button and listen for entity clicks on the highlighted targets.
+signal cleave_selection_started(combatant_id: String)
+
 ## Map should highlight reachable cells for movement.
 signal highlight_reachable(cells: Array, color: Color)
 
@@ -83,6 +100,9 @@ var _state: int = State.IDLE
 var _current_pc_id: String = ""
 var _selected_action: String = ""
 var _has_moved_this_turn: bool = false
+var _cleave_targets: Array = []
+var _cleave_move_cells: Array = []
+var _cleave_move_available: bool = false
 
 ## Cached initiative order for the HUD.
 var _initiative_display: Array = []
@@ -95,6 +115,24 @@ var _initiative_display: Array = []
 func setup(controller: CombatController) -> void:
 	_controller = controller
 	_state = State.IDLE
+	# Forward cleave events from the controller to the UI
+	if not controller.cleave_triggered.is_connected(_on_controller_cleave_triggered):
+		controller.cleave_triggered.connect(_on_controller_cleave_triggered)
+
+
+func _on_controller_cleave_triggered(combatant_id: String, target_id: String) -> void:
+	# Emit a CLEAVE log entry so the panel shows "X may cleave into Y!"
+	log_entry.emit({
+		"type": 10,  # CombatLog.EntryType.CLEAVE
+		"round": _controller.round_number,
+		"actor_id": combatant_id,
+		"actor_name": _resolve_name(combatant_id),
+		"target_id": target_id,
+		"target_name": _resolve_name(target_id),
+		"data": {"note": "may_cleave"},
+		"timestamp": 0,
+	})
+	may_cleave.emit(combatant_id, _resolve_name(combatant_id), _resolve_name(target_id))
 
 
 # ---------------------------------------------------------------------------
@@ -163,6 +201,17 @@ func advance() -> Dictionary:
 			_emit_action_log(result)
 			action_resolved.emit(result)
 			_update_initiative_hp()
+
+			# Check for cleave eligibility — pause for player input instead of advancing
+			var inner_res: Dictionary = result.get("result", {})
+			if inner_res.get("cleave_eligible", false) \
+					and result.get("combatant_id", "") == _current_pc_id:
+				_enter_cleave_selection(
+					inner_res.get("cleave_targets", []),
+					inner_res.get("cleave_move_available", false),
+					inner_res.get("cleave_move_cells", []))
+				return result
+
 			# Request deferred advance so UI can render the action result
 			auto_advance_requested.emit()
 			return result
@@ -279,36 +328,129 @@ func on_action_button(action_id: String) -> void:
 			advance()
 
 
-## Called when a cell is clicked on the map during move-target selection.
+## Called when a cell is clicked on the map during move-target or facing selection.
 func on_cell_targeted(pos: Vector2i) -> void:
-	if _state != State.PC_SELECTING_MOVE_TARGET:
+	if _state == State.PC_SELECTING_MOVE_TARGET:
+		clear_highlights_requested.emit()
+
+		# Submit the move action
+		_controller.submit_pc_action(_current_pc_id, "move", {"target_cell": pos})
+		var move_result := _controller.advance()
+
+		# Log the move
+		_emit_action_log(move_result)
+		action_resolved.emit(move_result)
+
+		# Enter facing-selection state (do NOT end the turn yet)
+		_state = State.PC_SELECTING_FACING
+		_enter_facing_selection()
+		return
+
+	if _state == State.PC_SELECTING_FACING:
+		# Player clicked an adjacent cell to choose facing
+		var combatant = _controller.get_combatant(_current_pc_id)
+		if combatant == null:
+			return
+		var origin: Vector2i = combatant.grid_position
+		if IsometricGrid.chebyshev_distance(origin, pos) != 1:
+			return  # Only accept adjacent cells
+		combatant.facing = _direction_vector(origin, pos)
+		token_facing_preview.emit(_current_pc_id, combatant.facing)
+		return
+
+	if _state == State.PC_SELECTING_CLEAVE_TARGET:
+		# Cell click during cleave: only valid if move is available and cell is highlighted
+		if not _cleave_move_available:
+			return
+		if pos not in _cleave_move_cells:
+			return
+		clear_highlights_requested.emit()
+		_cleave_targets.clear()
+		_cleave_move_cells.clear()
+		_cleave_move_available = false
+		_controller.submit_pc_action(_current_pc_id, "cleave_move", {"target_cell": pos})
+		advance()
+		return
+
+
+func _enter_facing_selection() -> void:
+	var combatant = _controller.get_combatant(_current_pc_id)
+	if combatant == null:
+		return
+	var origin: Vector2i = combatant.grid_position
+	var adj := IsometricGrid.get_neighbors(origin)
+	var typed_cells: Array[Vector2i] = []
+	for c in adj:
+		typed_cells.append(c)
+	highlight_reachable.emit(typed_cells, Color(0.9, 0.9, 0.2, 0.20))
+	facing_selection_started.emit(_current_pc_id)
+
+
+## Called when the player clicks the "Confirm Move" button after choosing facing.
+func on_confirm_move() -> void:
+	if _state != State.PC_SELECTING_FACING:
 		return
 	clear_highlights_requested.emit()
-
-	# Submit the move action
-	_controller.submit_pc_action(_current_pc_id, "move", {"target_cell": pos})
-	var move_result := _controller.advance()
-
-	# Log the move
-	_emit_action_log(move_result)
-	action_resolved.emit(move_result)
-
-	# Stay on this combatant's turn — move does NOT end the turn
 	_has_moved_this_turn = true
 	_state = State.PC_SELECTING_ACTION
-	# Re-show action panel with Move disabled
 	pc_turn_started.emit(_current_pc_id)
 	move_completed.emit()
 
 
-## Called when an entity token is clicked during attack-target selection.
+func _direction_vector(from_pos: Vector2i, to_pos: Vector2i) -> Vector2i:
+	return Vector2i(signi(to_pos.x - from_pos.x), signi(to_pos.y - from_pos.y))
+
+
+## Called when an entity token is clicked during attack-target or cleave selection.
 func on_entity_targeted(entity_id: String) -> void:
+	if _state == State.PC_SELECTING_CLEAVE_TARGET:
+		# Only accept clicks on valid cleave targets
+		if entity_id not in _cleave_targets:
+			return
+		clear_highlights_requested.emit()
+		_cleave_targets.clear()
+		_controller.submit_pc_action(_current_pc_id, "cleave", {"target_id": entity_id})
+		advance()
+		return
+
 	if _state != State.PC_SELECTING_ATTACK_TARGET:
 		return
 	clear_highlights_requested.emit()
 	var action_id := _selected_action  # "attack_melee" or "attack_ranged"
 	_controller.submit_pc_action(_current_pc_id, action_id, {"target_id": entity_id})
 	advance()
+
+
+## Called when the player clicks "Skip Cleave" to decline the cleave attempt.
+func on_skip_cleave() -> void:
+	if _state != State.PC_SELECTING_CLEAVE_TARGET:
+		return
+	clear_highlights_requested.emit()
+	_cleave_targets.clear()
+	_controller.submit_pc_action(_current_pc_id, "skip_cleave")
+	advance()
+
+
+func _enter_cleave_selection(targets: Array, move_available: bool = false, move_cells: Array = []) -> void:
+	_state = State.PC_SELECTING_CLEAVE_TARGET
+	_cleave_targets = targets.duplicate()
+	_cleave_move_available = move_available
+	_cleave_move_cells = move_cells.duplicate()
+
+	# Highlight enemy targets (red rings)
+	var typed_targets: Array[String] = []
+	for t in targets:
+		typed_targets.append(t)
+	highlight_targets.emit(typed_targets)
+
+	# Highlight valid 5ft step cells (yellow) if the move is still available
+	if move_available and not move_cells.is_empty():
+		var typed_cells: Array[Vector2i] = []
+		for c in move_cells:
+			typed_cells.append(c)
+		highlight_reachable.emit(typed_cells, Color(0.9, 0.9, 0.2, 0.30))
+
+	cleave_selection_started.emit(_current_pc_id)
 
 
 ## Cancel current target selection — return to action selection.

@@ -46,16 +46,16 @@ const COMBAT_ROLES := ["WM", "G", "H"]
 
 static func from_db(row: Dictionary) -> TrainedCreatureData:
 	var c := TrainedCreatureData.new()
-	c.id = row.get("id", "")
-	c.campaign_id = row.get("campaign_id", "")
-	c.party_id = row.get("party_id", "")
-	c.species_id = row.get("species_id", "")
-	c.purchase_item_key = row.get("purchase_item_key", "")
-	c.name = row.get("name", "")
-	c.role = row.get("role", "L")
+	c.id = _str_or_empty(row.get("id"))
+	c.campaign_id = _str_or_empty(row.get("campaign_id"))
+	c.party_id = _str_or_empty(row.get("party_id"))
+	c.species_id = _str_or_empty(row.get("species_id"))
+	c.purchase_item_key = _str_or_empty(row.get("purchase_item_key"))
+	c.name = _str_or_empty(row.get("name"))
+	c.role = _str_or_empty(row.get("role")) if row.get("role") != null else "L"
 	c.trick_limit = row.get("trick_limit", 5)
 	c.morale = row.get("morale", 0)
-	c.handler_id = row.get("handler_id", "")
+	c.handler_id = _str_or_empty(row.get("handler_id"))
 	c.hp_current = row.get("hp_current", 1)
 	c.hp_max = row.get("hp_max", 1)
 	c.training_complete = row.get("training_complete", 1) == 1
@@ -305,6 +305,13 @@ func _has_rope_in_inventory() -> bool:
 		if key == "rope_50ft":
 			return true
 	return false
+
+
+static func _str_or_empty(value) -> String:
+	## SQLite returns null for nullable columns; coerce to "".
+	if value == null:
+		return ""
+	return str(value)
 
 
 static func _bankers_round(value: float) -> int:

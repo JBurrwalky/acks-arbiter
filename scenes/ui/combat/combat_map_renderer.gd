@@ -141,6 +141,15 @@ func move_token(entity_id: String, to_cell: Vector2i) -> void:
 		_tokens[entity_id].update_position(screen_pos)
 
 
+func set_token_facing(entity_id: String, facing: Vector2i) -> void:
+	if _tokens.has(entity_id):
+		_tokens[entity_id].set_facing(facing)
+
+
+func get_entity_token(entity_id: String) -> Node2D:
+	return _tokens.get(entity_id, null)
+
+
 func add_entity_token(entity_id: String, display_name: String, side: int, class_letter: String) -> Node2D:
 	if _tokens.has(entity_id):
 		return _tokens[entity_id]
