@@ -78,6 +78,19 @@ static func build_from_encounter(
 	return roster
 
 
+## Add trained creatures from party data to the roster as PARTY combatants.
+## Only creatures with combat roles (WM, G, H) and alive are added.
+func add_party_creatures(party_data: PartyData, monster_registry: MonsterRegistry) -> void:
+	for creature: TrainedCreatureData in party_data.creature_data:
+		if not creature.is_alive or not creature.has_combat_role():
+			continue
+		if creature.monster_data.is_empty():
+			creature.monster_data = monster_registry.get_monster(creature.species_id)
+		var combatant := Combatant.from_trained_creature(
+			creature, "creature_" + creature.id)
+		add_combatant(combatant)
+
+
 # ---------------------------------------------------------------------------
 # Combatant management
 # ---------------------------------------------------------------------------

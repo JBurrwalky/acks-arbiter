@@ -1087,5 +1087,1314 @@
       "target_tie_breaker": "random",
       "morale_style": "fearless"
     }
+  },
+
+  {
+    "id": "horse_light",
+    "name": "Horse",
+    "variant": "Light",
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "large",
+
+    "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "hoof", "count": 1, "damage": "1d4", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 1 },
+    "morale": -2,
+    "xp": 20,
+
+    "movement": {
+      "land": { "exploration": 240, "combat": 80 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": null,
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Herd", "number": "1d10x10" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["clear_grass_scrub", "inhabited"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "carrying_capacity",
+        "description": "Can carry up to 20 stone at full movement, or up to 40 stone at half movement.",
+        "hook_type": "special",
+        "effect": { "load_stone_normal": 20, "load_stone_max": 40 }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "low",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "fragile"
+    }
+  },
+
+  {
+    "id": "horse_medium",
+    "name": "Horse",
+    "variant": "Medium",
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "large",
+
+    "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "hoof", "count": 1, "damage": "1d6", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 2 },
+    "morale": -1,
+    "xp": 50,
+
+    "movement": {
+      "land": { "exploration": 180, "combat": 60 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": null,
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Herd", "number": "1d10x10" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["clear_grass_scrub", "inhabited"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "carrying_capacity",
+        "description": "Can carry up to 30 stone at full movement, or up to 60 stone at half movement.",
+        "hook_type": "special",
+        "effect": { "load_stone_normal": 30, "load_stone_max": 60 }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "low",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "fragile"
+    }
+  },
+
+  {
+    "id": "horse_heavy",
+    "name": "Horse",
+    "variant": "Heavy",
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "large",
+
+    "hit_dice": { "base": 3, "modifier": 3, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "hoof", "count": 1, "damage": "1d8", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 2 },
+    "morale": -2,
+    "xp": 65,
+
+    "movement": {
+      "land": { "exploration": 120, "combat": 40 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": null,
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Herd", "number": "1d10x10" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["clear_grass_scrub", "inhabited"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "carrying_capacity",
+        "description": "Can carry up to 40 stone at full movement, or up to 80 stone at half movement.",
+        "hook_type": "special",
+        "effect": { "load_stone_normal": 40, "load_stone_max": 80 }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "low",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "fragile"
+    }
+  },
+
+  {
+    "id": "horse_light_war",
+    "name": "Horse",
+    "variant": "Light, War-trained",
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "large",
+
+    "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "hoof", "count": 2, "damage": "1d4", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 1 },
+    "morale": 0,
+    "xp": 20,
+
+    "movement": {
+      "land": { "exploration": 240, "combat": 80 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": null,
+    "wilderness_encounter": null,
+    "treasure_type": "None",
+    "terrain_affinity": ["clear_grass_scrub", "inhabited"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "carrying_capacity",
+        "description": "Can carry up to 20 stone at full movement, or up to 40 stone at half movement.",
+        "hook_type": "special",
+        "effect": { "load_stone_normal": 20, "load_stone_max": 40 }
+      },
+      {
+        "ability_id": "mounted_charge",
+        "description": "Rider may attack with a charge, dealing double damage with a lance. War horse may attack with hooves during the charge.",
+        "hook_type": "flag",
+        "effect": { "flag": "mounted_charge_eligible" }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "medium",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "normal"
+    }
+  },
+
+  {
+    "id": "horse_medium_war",
+    "name": "Horse",
+    "variant": "Medium, War-trained",
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "large",
+
+    "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "hoof", "count": 2, "damage": "1d6", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 2 },
+    "morale": 1,
+    "xp": 50,
+
+    "movement": {
+      "land": { "exploration": 180, "combat": 60 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": null,
+    "wilderness_encounter": null,
+    "treasure_type": "None",
+    "terrain_affinity": ["clear_grass_scrub", "inhabited"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "carrying_capacity",
+        "description": "Can carry up to 30 stone at full movement, or up to 60 stone at half movement.",
+        "hook_type": "special",
+        "effect": { "load_stone_normal": 30, "load_stone_max": 60 }
+      },
+      {
+        "ability_id": "mounted_charge",
+        "description": "Rider may attack with a charge, dealing double damage with a lance. War horse may attack with hooves during the charge.",
+        "hook_type": "flag",
+        "effect": { "flag": "mounted_charge_eligible" }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "medium",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "normal"
+    }
+  },
+
+  {
+    "id": "horse_heavy_war",
+    "name": "Horse",
+    "variant": "Heavy, War-trained",
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "large",
+
+    "hit_dice": { "base": 3, "modifier": 3, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "hoof", "count": 2, "damage": "1d8", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 2 },
+    "morale": 0,
+    "xp": 65,
+
+    "movement": {
+      "land": { "exploration": 120, "combat": 40 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": null,
+    "wilderness_encounter": null,
+    "treasure_type": "None",
+    "terrain_affinity": ["clear_grass_scrub", "inhabited"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "carrying_capacity",
+        "description": "Can carry up to 40 stone at full movement, or up to 80 stone at half movement.",
+        "hook_type": "special",
+        "effect": { "load_stone_normal": 40, "load_stone_max": 80 }
+      },
+      {
+        "ability_id": "mounted_charge",
+        "description": "Rider may attack with a charge, dealing double damage with a lance. War horse may attack with hooves during the charge.",
+        "hook_type": "flag",
+        "effect": { "flag": "mounted_charge_eligible" }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "medium",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "normal"
+    }
+  },
+
+  {
+    "id": "camel",
+    "name": "Camel",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "large",
+
+    "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "bite", "count": 1, "damage": "1", "to_hit_modifier": 0, "special_effect": null },
+          { "attack_type": "hoof", "count": 1, "damage": "1d4", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 1 },
+    "morale": -1,
+    "xp": 20,
+
+    "movement": {
+      "land": { "exploration": 150, "combat": 50 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": null,
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Caravan", "number": "2d4" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["barren_desert", "clear_grass_scrub"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "desert_no_penalty",
+        "description": "Does not suffer movement penalties in desert terrain.",
+        "hook_type": "flag",
+        "effect": { "flag": "desert_no_penalty" }
+      },
+      {
+        "ability_id": "water_conservation",
+        "description": "Can travel for 2 weeks without water if well hydrated at the start.",
+        "hook_type": "special",
+        "effect": { "water_duration_days": 14 }
+      },
+      {
+        "ability_id": "carrying_capacity",
+        "description": "Can carry up to 30 stone at full movement, or up to 60 stone at half movement.",
+        "hook_type": "special",
+        "effect": { "load_stone_normal": 30, "load_stone_max": 60 }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "low",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "fragile"
+    }
+  },
+
+  {
+    "id": "mule",
+    "name": "Mule",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "large",
+
+    "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "hoof", "count": 1, "damage": "1d4", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "NM", "level": 0 },
+    "morale": 0,
+    "xp": 20,
+
+    "movement": {
+      "land": { "exploration": 120, "combat": 40 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Rake", "number": "1d8" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Herd", "number": "2d6" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["clear_grass_scrub", "mountains_hills", "inhabited"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "dungeon_use",
+        "description": "May be taken into a dungeon to transport equipment or treasure.",
+        "hook_type": "flag",
+        "effect": { "flag": "dungeon_transport" }
+      },
+      {
+        "ability_id": "carrying_capacity",
+        "description": "Can carry up to 20 stone at full movement, or up to 40 stone at half movement.",
+        "hook_type": "special",
+        "effect": { "load_stone_normal": 20, "load_stone_max": 40 }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "low",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "fragile"
+    }
+  },
+
+  {
+    "id": "donkey",
+    "name": "Donkey",
+    "variant": null,
+    "source": "ACKS Core (derived)",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "man_sized",
+
+    "hit_dice": { "base": 1, "modifier": 2, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "hoof", "count": 1, "damage": "1d3", "to_hit_modifier": 0, "special_effect": null },
+          { "attack_type": "bite", "count": 1, "damage": "1d3", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "NM", "level": 0 },
+    "morale": 1,
+    "xp": 15,
+
+    "movement": {
+      "land": { "exploration": 120, "combat": 40 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Rake", "number": "1d8" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Herd", "number": "2d6" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["clear_grass_scrub", "mountains_hills", "inhabited"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "dungeon_use",
+        "description": "May be taken into a dungeon to transport equipment or treasure.",
+        "hook_type": "flag",
+        "effect": { "flag": "dungeon_transport" }
+      },
+      {
+        "ability_id": "carrying_capacity",
+        "description": "Can carry up to 10 stone at full movement, or up to 20 stone at half movement.",
+        "hook_type": "special",
+        "effect": { "load_stone_normal": 10, "load_stone_max": 20 }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "low",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "normal"
+    }
+  },
+
+  {
+    "id": "dog_hunting",
+    "name": "Dog",
+    "variant": "Hunting",
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "man_sized",
+
+    "hit_dice": { "base": 1, "modifier": 1, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "bite", "count": 1, "damage": "1d4", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 1 },
+    "morale": 0,
+    "xp": 15,
+
+    "movement": {
+      "land": { "exploration": 180, "combat": 60 }
+    },
+
+    "percent_in_lair": 10,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Pack", "number": "2d6" },
+      "in_lair": { "collective_noun": "Den", "number": "3d6" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Route", "number": "3d6" },
+      "in_lair": { "collective_noun": "Den", "number": "3d6" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["clear_grass_scrub", "woods", "inhabited"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "tracking_proficiency",
+        "description": "Most hunting dogs can scent prey and have the equivalent of Tracking proficiency.",
+        "hook_type": "flag",
+        "effect": { "flag": "tracking", "proficiency": "tracking" }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "pack",
+      "aggression_posture": "medium",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "weakest",
+      "target_tie_breaker": "nearest",
+      "morale_style": "normal"
+    }
+  },
+
+  {
+    "id": "dog_war",
+    "name": "Dog",
+    "variant": "War",
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "man_sized",
+
+    "hit_dice": { "base": 2, "modifier": 2, "special_ability_stars": 0 },
+    "armor_class": 3,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "bite", "count": 1, "damage": "1d6", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 1 },
+    "morale": 2,
+    "xp": 35,
+
+    "movement": {
+      "land": { "exploration": 150, "combat": 50 }
+    },
+
+    "percent_in_lair": 10,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Pack", "number": "1d4" },
+      "in_lair": { "collective_noun": "Den", "number": "2d4" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Route", "number": "2d4" },
+      "in_lair": { "collective_noun": "Den", "number": "2d4" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["clear_grass_scrub", "inhabited"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [
+      {
+        "ability_id": "battle_gear",
+        "description": "With leather armor and spiked collar: AC becomes 5, movement becomes 90'/30', damage becomes 1d6+1.",
+        "hook_type": "special",
+        "effect": { "equipped_ac": 5, "equipped_movement_exploration": 90, "equipped_movement_combat": 30, "equipped_damage": "1d6+1" }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "pack",
+      "aggression_posture": "high",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "weakest",
+      "target_tie_breaker": "nearest",
+      "morale_style": "normal"
+    }
+  },
+
+  {
+    "id": "ox",
+    "name": "Ox",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": ["herd_animal"],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "large",
+
+    "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "horn", "count": 1, "damage": "1d6", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 2 },
+    "morale": -3,
+    "xp": 50,
+
+    "movement": {
+      "land": { "exploration": 120, "combat": 40 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": null,
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Herd", "number": "3d10" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["clear_grass_scrub", "inhabited"],
+
+    "encounter_hierarchy": {
+      "herd": {
+        "composition": "4 females or young per 1 male",
+        "male_bonus_hp": "1d4"
+      }
+    },
+
+    "special_abilities": [
+      {
+        "ability_id": "carrying_capacity",
+        "description": "Can carry up to 45 stone at full movement, or up to 90 stone at half movement.",
+        "hook_type": "special",
+        "effect": { "load_stone_normal": 45, "load_stone_max": 90 }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "low",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "fragile"
+    }
+  },
+
+  {
+    "id": "cow",
+    "name": "Cow",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": ["herd_animal"],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "large",
+
+    "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "horn", "count": 1, "damage": "1d6", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 2 },
+    "morale": -3,
+    "xp": 50,
+
+    "movement": {
+      "land": { "exploration": 240, "combat": 80 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": null,
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Herd", "number": "3d10" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["clear_grass_scrub", "inhabited"],
+
+    "encounter_hierarchy": {
+      "herd": {
+        "composition": "4 females or young per 1 male",
+        "male_bonus_hp": "1d4"
+      }
+    },
+
+    "special_abilities": [],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "low",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "fragile"
+    }
+  },
+
+  {
+    "id": "goat",
+    "name": "Goat",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": ["herd_animal"],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "man_sized",
+
+    "hit_dice": { "base": 1, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "horn", "count": 1, "damage": "1d4", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "NM", "level": 0 },
+    "morale": -3,
+    "xp": 10,
+
+    "movement": {
+      "land": { "exploration": 240, "combat": 80 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": null,
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Herd", "number": "3d10" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["mountains_hills", "clear_grass_scrub", "inhabited"],
+
+    "encounter_hierarchy": {
+      "herd": {
+        "composition": "4 females or young per 1 male",
+        "male_bonus_hp": "1d4"
+      }
+    },
+
+    "special_abilities": [],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "low",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "fragile"
+    }
+  },
+
+  {
+    "id": "sheep",
+    "name": "Sheep",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": ["herd_animal"],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "man_sized",
+
+    "hit_dice": { "base": 1, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "horn", "count": 1, "damage": "1d4", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "NM", "level": 0 },
+    "morale": -3,
+    "xp": 10,
+
+    "movement": {
+      "land": { "exploration": 240, "combat": 80 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": null,
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Herd", "number": "3d10" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["mountains_hills", "clear_grass_scrub", "inhabited"],
+
+    "encounter_hierarchy": {
+      "herd": {
+        "composition": "4 females or young per 1 male",
+        "male_bonus_hp": "1d4"
+      }
+    },
+
+    "special_abilities": [],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "low",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "fragile"
+    }
+  },
+
+  {
+    "id": "hawk_ordinary",
+    "name": "Hawk",
+    "variant": "Ordinary",
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "small",
+
+    "hit_dice": { "base": 0.5, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 1,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "talon", "count": 2, "damage": "1d2", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "NM", "level": 0 },
+    "morale": -1,
+    "xp": 5,
+
+    "movement": {
+      "fly": { "exploration": 480, "combat": 160 }
+    },
+
+    "percent_in_lair": 20,
+    "dungeon_encounter": null,
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Flock", "number": "1d6" },
+      "in_lair": { "collective_noun": "Aerie", "number": "1d6" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["clear_grass_scrub", "woods", "mountains_hills", "barren_desert"],
+
+    "encounter_hierarchy": {
+      "aerie": {
+        "eggs": { "chance_pct": 50, "number": "1d6" },
+        "young": { "chance_pct": 50, "number": "1d4" }
+      }
+    },
+
+    "special_abilities": [
+      {
+        "ability_id": "dive_attack",
+        "description": "Flying dive attack deals double talon damage.",
+        "hook_type": "modifier",
+        "effect": { "condition": "dive_attack", "damage_multiplier": 2 }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "low",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "weakest",
+      "target_tie_breaker": "nearest",
+      "morale_style": "fragile"
+    }
+  },
+
+  {
+    "id": "boar",
+    "name": "Boar",
+    "variant": "Ordinary",
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "man_sized",
+
+    "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "tusk", "count": 1, "damage": "2d4", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 2 },
+    "morale": 2,
+    "xp": 50,
+
+    "movement": {
+      "land": { "exploration": 150, "combat": 50 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Sounder", "number": "1d4" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Sounder", "number": "1d6" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["woods", "clear_grass_scrub"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "medium",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "normal"
+    }
+  },
+
+  {
+    "id": "boar_giant",
+    "name": "Boar",
+    "variant": "Giant",
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "large",
+
+    "hit_dice": { "base": 5, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 3,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "tusk", "count": 1, "damage": "3d4", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 5 },
+    "morale": 2,
+    "xp": 200,
+
+    "movement": {
+      "land": { "exploration": 120, "combat": 40 }
+    },
+
+    "percent_in_lair": null,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Sounder", "number": "1d4" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Sounder", "number": "1d4+1" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["woods"],
+
+    "encounter_hierarchy": null,
+
+    "special_abilities": [],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "high",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "normal"
+    }
+  },
+
+  {
+    "id": "dire_wolf",
+    "name": "Wolf",
+    "variant": "Dire",
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": [],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "large",
+
+    "hit_dice": { "base": 4, "modifier": 1, "special_ability_stars": 0 },
+    "armor_class": 3,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "bite", "count": 1, "damage": "2d4", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "F", "level": 2 },
+    "morale": 0,
+    "xp": 140,
+
+    "movement": {
+      "land": { "exploration": 150, "combat": 50 }
+    },
+
+    "percent_in_lair": 10,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Pack", "number": "1d4" },
+      "in_lair": { "collective_noun": "Den", "number": "2d4" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Route", "number": "2d4" },
+      "in_lair": { "collective_noun": "Den", "number": "2d4" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["woods", "mountains_hills", "barren_desert"],
+
+    "encounter_hierarchy": {
+      "den": {
+        "cubs": { "chance_pct": 50, "number": "1d4" }
+      }
+    },
+
+    "special_abilities": [
+      {
+        "ability_id": "goblin_mount",
+        "description": "Cubs can be trained like dogs but are more difficult. Goblins train dire wolves as mounts.",
+        "hook_type": "flag",
+        "effect": { "flag": "trainable_mount", "rider_types": ["goblin"] }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [
+      { "condition": "group_of_3_or_fewer", "override": -1 }
+    ],
+
+    "combat_behavior": {
+      "formation_discipline": "pack",
+      "aggression_posture": "medium",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "weakest",
+      "target_tie_breaker": "nearest",
+      "morale_style": "normal"
+    }
   }
 ]

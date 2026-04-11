@@ -63,6 +63,14 @@ func run_all_tests() -> void:
 	test_goblin_encounter_hierarchy()
 	test_orc_chieftain_stats()
 
+	# Animal entries
+	test_animal_count()
+	test_horse_variants()
+	test_hawk_fly_only()
+	test_dire_wolf_stats()
+	test_herd_animal_morale()
+	test_warhorse_morale_higher()
+
 	_reg = null
 	if not has_failures():
 		print("MonsterRegistry: all tests passed.")
@@ -75,8 +83,8 @@ func test_catalog_loads() -> void:
 
 
 func test_monster_count() -> void:
-	check(_reg.get_monster_count() == 13,
-		"starter set should have exactly 13 monsters, got %d" % _reg.get_monster_count())
+	check(_reg.get_monster_count() == 32,
+		"catalog should have exactly 31 monsters, got %d" % _reg.get_monster_count())
 
 
 # --- Core lookup ---
@@ -96,7 +104,7 @@ func test_get_monster_not_empty() -> void:
 
 func test_get_all_monster_ids() -> void:
 	var ids := _reg.get_all_monster_ids()
-	check(ids.size() == 13, "get_all_monster_ids should return 13, got %d" % ids.size())
+	check(ids.size() == 32, "get_all_monster_ids should return 31, got %d" % ids.size())
 	# Verify sorted
 	if ids.size() >= 2:
 		check(ids[0] <= ids[1], "ids should be sorted, first two: '%s', '%s'" % [ids[0], ids[1]])
@@ -290,6 +298,9 @@ func test_type_animal() -> void:
 	check(ids.has("wolf"), "animal type should include wolf")
 	check(ids.has("shark_bull"), "animal type should include shark_bull")
 	check(ids.has("crocodile"), "animal type should include crocodile")
+	check(ids.has("horse_medium"), "animal type should include horse_medium")
+	check(ids.has("dog_war"), "animal type should include dog_war")
+	check(ids.has("dire_wolf"), "animal type should include dire_wolf")
 
 
 func test_sub_type_goblinoid() -> void:
@@ -322,3 +333,64 @@ func test_orc_chieftain_stats() -> void:
 	check(int(hd.get("base", 0)) == 4, "orc chieftain HD base should be 4")
 	check(int(chief.get("hp", 0)) == 20, "orc chieftain hp should be 20")
 	check(int(chief.get("damage_bonus", 0)) == 2, "orc chieftain damage_bonus should be 2")
+
+
+# --- Animal entries ---
+
+func test_animal_count() -> void:
+	var ids := _reg.get_monsters_by_type("animal")
+	check(ids.size() == 22, "should have 22 animal entries, got %d" % ids.size())
+
+
+func test_horse_variants() -> void:
+	var horse_ids := ["horse_light", "horse_medium", "horse_heavy",
+		"horse_light_war", "horse_medium_war", "horse_heavy_war"]
+	for hid in horse_ids:
+		check(_reg.has_monster(hid), "should have horse variant '%s'" % hid)
+	# Verify HD progression
+	var light_hd := _reg.get_hit_dice("horse_light")
+	var medium_hd := _reg.get_hit_dice("horse_medium")
+	var heavy_hd := _reg.get_hit_dice("horse_heavy")
+	check(int(light_hd.get("base", 0)) == 2, "light horse HD should be 2")
+	check(int(medium_hd.get("base", 0)) == 3, "medium horse HD should be 3")
+	check(int(heavy_hd.get("base", 0)) == 3 and int(heavy_hd.get("modifier", 0)) == 3,
+		"heavy horse HD should be 3+3")
+
+
+func test_hawk_fly_only() -> void:
+	var m := _reg.get_monster("hawk_ordinary")
+	var mv: Dictionary = m.get("movement", {})
+	check(mv.has("fly"), "hawk should have fly movement")
+	check(not mv.has("land"), "hawk should NOT have land movement")
+	var fly: Dictionary = mv.get("fly", {})
+	check(int(fly.get("exploration", 0)) == 480, "hawk fly exploration should be 480")
+
+
+func test_dire_wolf_stats() -> void:
+	check(_reg.has_monster("dire_wolf"), "should have dire_wolf")
+	var m := _reg.get_monster("dire_wolf")
+	check(_reg.get_armor_class("dire_wolf") == 3, "dire wolf AC should be 3")
+	var hd := _reg.get_hit_dice("dire_wolf")
+	check(int(hd.get("base", 0)) == 4, "dire wolf HD base should be 4")
+	check(int(hd.get("modifier", 0)) == 1, "dire wolf HD modifier should be 1")
+	check(_reg.get_xp_value("dire_wolf") == 140, "dire wolf XP should be 140")
+
+
+func test_herd_animal_morale() -> void:
+	for herd_id in ["goat", "sheep", "cow", "ox"]:
+		check(_reg.has_monster(herd_id), "should have herd animal '%s'" % herd_id)
+		check(_reg.get_morale(herd_id) == -3,
+			"%s morale should be -3, got %d" % [herd_id, _reg.get_morale(herd_id)])
+
+
+func test_warhorse_morale_higher() -> void:
+	var pairs := [
+		["horse_light", "horse_light_war"],
+		["horse_medium", "horse_medium_war"],
+		["horse_heavy", "horse_heavy_war"],
+	]
+	for pair in pairs:
+		var base_morale := _reg.get_morale(pair[0])
+		var war_morale := _reg.get_morale(pair[1])
+		check(war_morale > base_morale,
+			"%s morale (%d) should be higher than %s (%d)" % [pair[1], war_morale, pair[0], base_morale])

@@ -74,6 +74,9 @@
 [ext_resource type="Script" path="res://tests/test_combat_log.gd" id="67_combat_log_tests"]
 [ext_resource type="Script" path="res://tests/test_mortal_wounds_resolver.gd" id="68_mortal_wounds_resolver_tests"]
 [ext_resource type="Script" path="res://tests/test_combat_controller_session5.gd" id="69_combat_controller_session5_tests"]
+[ext_resource type="Script" path="res://tests/test_trained_creature_data.gd" id="70_trained_creature_data_tests"]
+[ext_resource type="Script" path="res://tests/test_creature_equipment_service.gd" id="71_creature_equipment_service_tests"]
+[ext_resource type="Script" path="res://tests/test_draft_vehicle_service.gd" id="72_draft_vehicle_service_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -296,3 +299,12 @@ script = ExtResource("68_mortal_wounds_resolver_tests")
 
 [node name="CombatControllerSession5Tests" type="Node" parent="."]
 script = ExtResource("69_combat_controller_session5_tests")
+
+[node name="TrainedCreatureDataTests" type="Node" parent="."]
+script = ExtResource("70_trained_creature_data_tests")
+
+[node name="CreatureEquipmentServiceTests" type="Node" parent="."]
+script = ExtResource("71_creature_equipment_service_tests")
+
+[node name="DraftVehicleServiceTests" type="Node" parent="."]
+script = ExtResource("72_draft_vehicle_service_tests")

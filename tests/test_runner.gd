@@ -81,6 +81,9 @@ extends Node
 @onready var _combat_log_tests = $CombatLogTests
 @onready var _mortal_wounds_resolver_tests = $MortalWoundsResolverTests
 @onready var _combat_controller_session5_tests = $CombatControllerSession5Tests
+@onready var _trained_creature_data_tests = $TrainedCreatureDataTests
+@onready var _creature_equipment_service_tests = $CreatureEquipmentServiceTests
+@onready var _draft_vehicle_service_tests = $DraftVehicleServiceTests
 
 
 func _ready() -> void:
@@ -141,7 +144,10 @@ func run() -> void:
 			_monster_ai_spatial_tests,
 			_combat_log_tests,
 			_mortal_wounds_resolver_tests,
-			_combat_controller_session5_tests]:
+			_combat_controller_session5_tests,
+			_trained_creature_data_tests,
+			_creature_equipment_service_tests,
+			_draft_vehicle_service_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

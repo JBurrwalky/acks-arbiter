@@ -10,6 +10,9 @@ extends RefCounted
 
 var id: String = ""
 var character_id: String = ""
+var creature_id: String = ""
+var container_id: String = ""       # id of container item this is inside (empty = not in container)
+var vehicle_id: String = ""         # id of draft_vehicle this is stored in (empty = not in vehicle)
 var item_key: String = ""           # references data/equipment catalog
 var name: String = ""
 var quantity: int = 1
@@ -51,6 +54,9 @@ static func from_dict(data: Dictionary) -> InventoryItem:
 	var i := InventoryItem.new()
 	i.id = data.get("id", "")
 	i.character_id = data.get("character_id", "")
+	i.creature_id = data.get("creature_id", "")
+	i.container_id = data.get("container_id", "")
+	i.vehicle_id = data.get("vehicle_id", "")
 	i.item_key = data.get("item_key", "")
 	i.name = data.get("name", "")
 	i.quantity = data.get("quantity", 1)
@@ -76,6 +82,9 @@ func to_dict() -> Dictionary:
 	return {
 		"id": id,
 		"character_id": character_id,
+		"creature_id": creature_id,
+		"container_id": container_id,
+		"vehicle_id": vehicle_id,
 		"item_key": item_key,
 		"name": name,
 		"quantity": quantity,

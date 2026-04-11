@@ -18,7 +18,7 @@ const TAB_CATEGORY_MAP: Array = [
 	["Ammunition",           ["ammunition"]],
 	["Gear",                 ["gear"]],
 	["Clothing",             ["clothing"]],
-	["Transport",            ["mount", "pack_animal", "draft_animal", "vehicle", "tack", "barding", "livestock"]],
+	["Transport",            ["mount", "pack_animal", "draft_animal", "vehicle", "tack", "barding", "livestock", "companion_animal"]],
 	["Food & Drink",         ["foodstuff"]],
 ]
 

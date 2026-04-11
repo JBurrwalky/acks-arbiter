@@ -1956,3 +1956,323 @@ func _insert_rows(table: String, rows: Array) -> bool:
 		if not db.query_with_bindings(sql, values):
 			return false
 	return true
+
+
+# ---------------------------------------------------------------------------
+# Trained Creatures
+# ---------------------------------------------------------------------------
+
+func get_trained_creatures_for_party(party_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM trained_creatures WHERE party_id = ? AND is_alive = 1 ORDER BY name",
+		[party_id])
+	return db.query_result.duplicate()
+
+
+func get_trained_creature(creature_id: String) -> Dictionary:
+	db.query_with_bindings(
+		"SELECT * FROM trained_creatures WHERE id = ?",
+		[creature_id])
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+func create_trained_creature(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO trained_creatures
+			(id, campaign_id, party_id, species_id, purchase_item_key, name,
+			 role, tricks_known, trick_limit, morale,
+			 handler_id, introduced_handlers,
+			 hp_current, hp_max, training_complete, is_alive,
+			 formation_col, formation_row)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		data.get("campaign_id", ""),
+		data.get("party_id", ""),
+		data.get("species_id", ""),
+		data.get("purchase_item_key", ""),
+		data.get("name", ""),
+		data.get("role", "L"),
+		data.get("tricks_known", "[]"),
+		data.get("trick_limit", 5),
+		data.get("morale", 0),
+		data.get("handler_id", ""),
+		data.get("introduced_handlers", "[]"),
+		data.get("hp_current", 1),
+		data.get("hp_max", 1),
+		1 if data.get("training_complete", true) else 0,
+		1 if data.get("is_alive", true) else 0,
+		data.get("formation_col", -1),
+		data.get("formation_row", -1),
+	]):
+		push_error("CampaignRepository.create_trained_creature: failed. species=%s" % data.get("species_id", "?"))
+		return ""
+	return id
+
+
+func update_trained_creature(creature_id: String, data: Dictionary) -> bool:
+	var allowed := [
+		"name", "role", "tricks_known", "trick_limit", "morale",
+		"handler_id", "introduced_handlers",
+		"hp_current", "hp_max", "training_complete", "is_alive",
+		"formation_col", "formation_row", "party_id",
+	]
+	var sets: Array = []
+	var values: Array = []
+	for key in data:
+		if key in allowed:
+			sets.append("%s = ?" % key)
+			values.append(data[key])
+	if sets.is_empty():
+		return true
+	sets.append("updated_at = datetime('now')")
+	values.append(creature_id)
+	var sql := "UPDATE trained_creatures SET %s WHERE id = ?" % ", ".join(sets)
+	if not db.query_with_bindings(sql, values):
+		push_error("CampaignRepository.update_trained_creature: failed. id=%s" % creature_id)
+		return false
+	return true
+
+
+func update_creature_hp(creature_id: String, new_hp: int) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE trained_creatures SET hp_current = ?, updated_at = datetime('now') WHERE id = ?",
+		[new_hp, creature_id]):
+		push_error("CampaignRepository.update_creature_hp: failed. id=%s" % creature_id)
+		return false
+	return true
+
+
+func update_creature_formation(creature_id: String, col: int, row: int) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE trained_creatures SET formation_col = ?, formation_row = ?, updated_at = datetime('now') WHERE id = ?",
+		[col, row, creature_id]):
+		push_error("CampaignRepository.update_creature_formation: failed. id=%s" % creature_id)
+		return false
+	return true
+
+
+func kill_creature(creature_id: String) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE trained_creatures SET is_alive = 0, hp_current = 0, updated_at = datetime('now') WHERE id = ?",
+		[creature_id]):
+		push_error("CampaignRepository.kill_creature: failed. id=%s" % creature_id)
+		return false
+	return true
+
+
+func get_creature_inventory(creature_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM inventory_items WHERE creature_id = ?",
+		[creature_id])
+	return db.query_result.duplicate()
+
+
+func add_creature_inventory_item(creature_id: String, data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO inventory_items
+			(id, character_id, item_key, name, quantity, encumbrance_units,
+			 slot, is_equipped, notes,
+			 item_category, is_magical, magical_bonus,
+			 weapon_damage, armor_ac_bonus, is_heavy, container_id,
+			 creature_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		"",
+		data.get("item_key", ""),
+		data.get("name", ""),
+		data.get("quantity", 1),
+		data.get("encumbrance_units", 0),
+		data.get("slot", "pack"),
+		1 if data.get("is_equipped", false) else 0,
+		data.get("notes", ""),
+		data.get("item_category", "gear"),
+		1 if data.get("is_magical", false) else 0,
+		data.get("magical_bonus", 0),
+		data.get("weapon_damage", ""),
+		data.get("armor_ac_bonus", 0),
+		1 if data.get("is_heavy", false) else 0,
+		data.get("container_id", ""),
+		creature_id,
+	]):
+		push_error("CampaignRepository.add_creature_inventory_item: failed. creature=%s item=%s" % [
+			creature_id, data.get("name", "?")])
+		return ""
+	return id
+
+
+func remove_creature(creature_id: String) -> bool:
+	# Delete creature inventory first, then the creature itself.
+	if not db.query_with_bindings("DELETE FROM inventory_items WHERE creature_id = ?", [creature_id]):
+		push_error("CampaignRepository.remove_creature: failed to delete inventory. id=%s" % creature_id)
+		return false
+	if not db.query_with_bindings("DELETE FROM trained_creatures WHERE id = ?", [creature_id]):
+		push_error("CampaignRepository.remove_creature: failed to delete creature. id=%s" % creature_id)
+		return false
+	return true
+
+
+# ---------------------------------------------------------------------------
+# Inventory Transfers
+# ---------------------------------------------------------------------------
+
+func transfer_item_to_creature(item_id: String, creature_id: String) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE inventory_items SET creature_id = ?, character_id = '', party_id = NULL, vehicle_id = NULL, is_equipped = 0, slot = 'pack', container_id = '' WHERE id = ?",
+		[creature_id, item_id]):
+		push_error("CampaignRepository.transfer_item_to_creature: failed. item=%s" % item_id)
+		return false
+	return true
+
+
+func transfer_item_from_creature_to_character(item_id: String, character_id: String) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE inventory_items SET character_id = ?, creature_id = '', party_id = NULL, vehicle_id = NULL, is_equipped = 0, slot = 'pack', container_id = '' WHERE id = ?",
+		[character_id, item_id]):
+		push_error("CampaignRepository.transfer_item_from_creature_to_character: failed. item=%s" % item_id)
+		return false
+	return true
+
+
+func transfer_item_from_creature_to_party(item_id: String, party_id: String) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE inventory_items SET party_id = ?, creature_id = '', character_id = '', vehicle_id = NULL, is_equipped = 0, slot = 'pack', container_id = '' WHERE id = ?",
+		[party_id, item_id]):
+		push_error("CampaignRepository.transfer_item_from_creature_to_party: failed. item=%s" % item_id)
+		return false
+	return true
+
+
+func transfer_item_to_vehicle(item_id: String, vehicle_id: String) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE inventory_items SET vehicle_id = ?, character_id = '', creature_id = '', party_id = NULL, is_equipped = 0, slot = 'pack' WHERE id = ?",
+		[vehicle_id, item_id]):
+		push_error("CampaignRepository.transfer_item_to_vehicle: failed. item=%s" % item_id)
+		return false
+	return true
+
+
+func transfer_item_from_vehicle_to_character(item_id: String, character_id: String) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE inventory_items SET character_id = ?, vehicle_id = NULL, creature_id = '', party_id = NULL, is_equipped = 0, slot = 'pack', container_id = '' WHERE id = ?",
+		[character_id, item_id]):
+		push_error("CampaignRepository.transfer_item_from_vehicle_to_character: failed. item=%s" % item_id)
+		return false
+	return true
+
+
+func transfer_item_from_vehicle_to_party(item_id: String, party_id: String) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE inventory_items SET party_id = ?, vehicle_id = NULL, character_id = '', creature_id = '', is_equipped = 0, slot = 'pack', container_id = '' WHERE id = ?",
+		[party_id, item_id]):
+		push_error("CampaignRepository.transfer_item_from_vehicle_to_party: failed. item=%s" % item_id)
+		return false
+	return true
+
+
+func equip_creature_item(item_id: String, creature_id: String, slot: String) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE inventory_items SET creature_id = ?, character_id = '', party_id = NULL, vehicle_id = NULL, is_equipped = 1, slot = ?, container_id = '' WHERE id = ?",
+		[creature_id, slot, item_id]):
+		push_error("CampaignRepository.equip_creature_item: failed. item=%s slot=%s" % [item_id, slot])
+		return false
+	return true
+
+
+func unequip_creature_item(item_id: String) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE inventory_items SET is_equipped = 0, slot = 'pack' WHERE id = ?",
+		[item_id]):
+		push_error("CampaignRepository.unequip_creature_item: failed. item=%s" % item_id)
+		return false
+	return true
+
+
+# ---------------------------------------------------------------------------
+# Draft Vehicles
+# ---------------------------------------------------------------------------
+
+func create_draft_vehicle(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO draft_vehicles
+			(id, campaign_id, party_id, item_key, name, hitched_creatures)
+		VALUES (?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		data.get("campaign_id", ""),
+		data.get("party_id", ""),
+		data.get("item_key", ""),
+		data.get("name", ""),
+		data.get("hitched_creatures", "[]"),
+	]):
+		push_error("CampaignRepository.create_draft_vehicle: failed. item_key=%s" % data.get("item_key", "?"))
+		return ""
+	return id
+
+
+func get_draft_vehicles_for_party(party_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM draft_vehicles WHERE party_id = ? AND is_destroyed = 0 ORDER BY name",
+		[party_id])
+	return db.query_result.duplicate()
+
+
+func get_draft_vehicle(vehicle_id: String) -> Dictionary:
+	db.query_with_bindings(
+		"SELECT * FROM draft_vehicles WHERE id = ?",
+		[vehicle_id])
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+func update_draft_vehicle_hitch(vehicle_id: String, hitched_json: String) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE draft_vehicles SET hitched_creatures = ?, updated_at = datetime('now') WHERE id = ?",
+		[hitched_json, vehicle_id]):
+		push_error("CampaignRepository.update_draft_vehicle_hitch: failed. id=%s" % vehicle_id)
+		return false
+	return true
+
+
+func destroy_draft_vehicle(vehicle_id: String) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE draft_vehicles SET is_destroyed = 1, updated_at = datetime('now') WHERE id = ?",
+		[vehicle_id]):
+		push_error("CampaignRepository.destroy_draft_vehicle: failed. id=%s" % vehicle_id)
+		return false
+	return true
+
+
+func remove_draft_vehicle(vehicle_id: String) -> bool:
+	# Clear vehicle_id from items first, then delete the vehicle.
+	if not db.query_with_bindings(
+		"UPDATE inventory_items SET vehicle_id = NULL WHERE vehicle_id = ?",
+		[vehicle_id]):
+		push_error("CampaignRepository.remove_draft_vehicle: failed to clear items. id=%s" % vehicle_id)
+		return false
+	if not db.query_with_bindings(
+		"DELETE FROM draft_vehicles WHERE id = ?",
+		[vehicle_id]):
+		push_error("CampaignRepository.remove_draft_vehicle: failed to delete vehicle. id=%s" % vehicle_id)
+		return false
+	return true
+
+
+func get_items_in_vehicle(vehicle_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM inventory_items WHERE vehicle_id = ?",
+		[vehicle_id])
+	return db.query_result.duplicate()

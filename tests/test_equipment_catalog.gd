@@ -31,10 +31,10 @@ func run_all_tests() -> void:
 
 func test_load_count() -> void:
 	var cat := EquipmentCatalog.new()
-	# base (130) + transport (32) + foodstuffs (14) = 176
+	# base (130) + transport (30) + foodstuffs (14) = 174
 	var count := cat.get_item_count()
-	check(count == 176,
-		"expected 176 items total, got %d" % count)
+	check(count == 174,
+		"expected 174 items total, got %d" % count)
 	print("  load_count: OK (%d items)" % count)
 
 

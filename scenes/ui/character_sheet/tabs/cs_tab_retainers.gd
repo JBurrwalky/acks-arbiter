@@ -9,7 +9,7 @@ extends VBoxContainer
 
 ## Item categories that represent living creatures.
 ## Used here to display them, and referenced by CSTabEquipment to filter them out.
-const ANIMAL_CATEGORIES := ["mount", "pack_animal", "draft_animal", "livestock"]
+const ANIMAL_CATEGORIES := ["mount", "pack_animal", "draft_animal", "livestock", "companion_animal"]
 
 var _catalog: EquipmentCatalog = null
 
@@ -146,11 +146,12 @@ func _get_catalog() -> EquipmentCatalog:
 
 func _format_animal_category(cat: String) -> String:
 	match cat:
-		"mount":        return "Mount"
-		"pack_animal":  return "Pack Animal"
-		"draft_animal": return "Draft Animal"
-		"livestock":    return "Livestock"
-		_:              return cat.capitalize()
+		"mount":            return "Mount"
+		"pack_animal":      return "Pack Animal"
+		"draft_animal":     return "Draft Animal"
+		"livestock":        return "Livestock"
+		"companion_animal": return "Companion Animal"
+		_:                  return cat.capitalize()
 
 
 # ---------------------------------------------------------------------------

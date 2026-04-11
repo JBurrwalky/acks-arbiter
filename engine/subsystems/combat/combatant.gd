@@ -38,6 +38,9 @@ var _character: CharacterData = null
 ## The backing monster catalog dict (empty for characters).
 var _monster_data: Dictionary = {}
 
+## The backing TrainedCreatureData (null for enemies and PCs).
+var _trained_creature: TrainedCreatureData = null
+
 ## Monster group ID for morale tracking (empty for characters).
 var monster_group_id: String = ""
 
@@ -259,6 +262,36 @@ static func from_monster(
 	c._monster_modifiers = ModifierContainer.new()
 	c._monster_flags = EntityFlags.new()
 	c._monster_damage_resistances = DamageResistance.new()
+	return c
+
+
+## Create a Combatant from a TrainedCreatureData on the party's side.
+## Uses the monster_data pathway but sets Side.PARTY and stores the backing creature.
+static func from_trained_creature(
+		creature: TrainedCreatureData,
+		combatant_id: String = "") -> Combatant:
+	var c := Combatant.new()
+	c.id = combatant_id if not combatant_id.is_empty() else creature.id
+	c.display_name = creature.name if not creature.name.is_empty() else creature.monster_data.get("name", "Unknown")
+	c.side = Side.PARTY
+	c.is_character = false
+	c._monster_data = creature.monster_data
+	c._trained_creature = creature
+	c._monster_hp_max = creature.hp_max
+	c._monster_hp_current = creature.hp_current
+	c._monster_modifiers = ModifierContainer.new()
+	c._monster_flags = EntityFlags.new()
+	c._monster_damage_resistances = DamageResistance.new()
+	# Apply barding AC bonus if equipped.
+	var barding_ac: int = creature.get_equipped_barding_ac()
+	if barding_ac > 0:
+		c._monster_modifiers.add_modifier("armor_class", {
+			"source_id": "barding",
+			"source_type": "equipment",
+			"operation": "add",
+			"value": barding_ac,
+			"stacking_group": "",
+		})
 	return c
 
 

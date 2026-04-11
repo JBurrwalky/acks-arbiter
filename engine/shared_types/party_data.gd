@@ -66,6 +66,10 @@ var character_data: Array = []
 ## Populated by the caller after loading; not serialized.
 var shared_inventory: Array = []
 
+## Array[TrainedCreatureData] — trained creatures belonging to this party.
+## Populated by the caller after loading; not serialized.
+var creature_data: Array = []
+
 
 # ---------------------------------------------------------------------------
 # Convenience queries
@@ -173,14 +177,19 @@ func swap_positions(char_a: String, char_b: String) -> void:
 	set_formation_pos(char_b, pos_a.x, pos_a.y)
 
 
-## Returns the slowest effective movement rate among all party members (feet/turn).
+## Returns the slowest effective movement rate among all party members and
+## trained creatures (feet/turn).
 ## This is the base rate before terrain or forced-march modifiers.
 func get_slowest_movement() -> int:
-	if character_data.is_empty():
+	if character_data.is_empty() and creature_data.is_empty():
 		return 120  # default
 	var slowest: int = 999
 	for cd: CharacterData in character_data:
 		var spd: int = cd.get_effective_movement()
+		if spd < slowest:
+			slowest = spd
+	for creature: TrainedCreatureData in creature_data:
+		var spd: int = creature.get_effective_movement()
 		if spd < slowest:
 			slowest = spd
 	return slowest

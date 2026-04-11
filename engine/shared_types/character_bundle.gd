@@ -16,3 +16,4 @@ var powers: Array = []            ## Array[Dictionary] from character_powers tab
 var conditions: Array = []        ## Array[Dictionary] from character_conditions table
 var active_effects: Array = []    ## Array[Dictionary] from active_effects table
 var henchmen: Array = []          ## Array[Dictionary] from characters table (employer_id match)
+var handled_creatures: Array = [] ## Array[TrainedCreatureData] where handler_id = this character

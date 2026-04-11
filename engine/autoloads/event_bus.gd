@@ -323,3 +323,29 @@ signal dev_dice_test_requested(context: Dictionary)
 ## Emitted to open the character sheet overlay, optionally targeting a specific character.
 ## Listened to by character_sheet_overlay. Future: emitted by session status bar character chips.
 signal character_sheet_requested(character_id: String)
+
+
+# ---------------------------------------------------------------------------
+# Trained creature signals
+# ---------------------------------------------------------------------------
+
+## A trained creature was added to a party.
+signal creature_added(party_id: String, creature_id: String)
+
+## A trained creature was removed from a party (sold, died, released).
+signal creature_removed(party_id: String, creature_id: String)
+
+## A trained creature's HP changed (combat damage, healing).
+signal creature_hp_changed(creature_id: String, old_hp: int, new_hp: int)
+
+## A trained creature died.
+signal creature_died(creature_id: String)
+
+## A trained creature's inventory changed (item equipped, unequipped, added, removed).
+signal creature_inventory_updated(creature_id: String)
+
+## A draft vehicle was added to or removed from the party.
+signal vehicle_changed(party_id: String, vehicle_id: String)
+
+## A draft vehicle's hitched team was changed.
+signal vehicle_hitch_changed(vehicle_id: String)
