@@ -368,7 +368,8 @@ func override_place_settlement(map_id: String, coord: Vector2i, settlement_name:
 
 ## Spawn an encounter at a hex with a chosen disposition.
 ## Creates an EncounterData dict and emits encounter_triggered.
-## [param disposition] must be "hostile", "cautious", "neutral", or "friendly".
+## [param disposition] must be one of the ACKS five-state attitudes:
+## "hostile", "unfriendly", "neutral", "indifferent", or "friendly".
 func override_spawn_encounter(
 	map_id: String,
 	coord: Vector2i,
@@ -376,17 +377,18 @@ func override_spawn_encounter(
 	count: int,
 	disposition: String
 ) -> bool:
-	const VALID_DISPOSITIONS := ["hostile", "cautious", "neutral", "friendly"]
+	const VALID_DISPOSITIONS := ["hostile", "unfriendly", "neutral", "indifferent", "friendly"]
 	if disposition not in VALID_DISPOSITIONS:
 		push_error("OverrideManager.override_spawn_encounter: invalid disposition '%s'" % disposition)
 		return false
 
 	var reaction_roll := 7  # Neutral baseline; override ignores the actual roll
 	match disposition:
-		"hostile":  reaction_roll = 2
-		"cautious": reaction_roll = 5
-		"neutral":  reaction_roll = 7
-		"friendly": reaction_roll = 11
+		"hostile":     reaction_roll = 2
+		"unfriendly":  reaction_roll = 5
+		"neutral":     reaction_roll = 7
+		"indifferent": reaction_roll = 10
+		"friendly":    reaction_roll = 12
 
 	var encounter_id := CampaignRepository.generate_id()
 	var hex_id := "%d,%d" % [coord.x, coord.y]

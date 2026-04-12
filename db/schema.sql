@@ -77,7 +77,9 @@ CREATE TABLE IF NOT EXISTS characters (
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     -- Migration 009 additions
-    sex TEXT NOT NULL DEFAULT 'male' CHECK(sex IN ('male', 'female'))
+    sex TEXT NOT NULL DEFAULT 'male' CHECK(sex IN ('male', 'female')),
+    -- Migration 026 additions
+    token_variant TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS parties (
@@ -314,6 +316,8 @@ CREATE TABLE IF NOT EXISTS domains (
     expenses_gp INTEGER NOT NULL DEFAULT 0,
     net_income_gp INTEGER NOT NULL DEFAULT 0,
     domain_xp_this_month INTEGER NOT NULL DEFAULT 0,
+    -- Migration 025: ruler used in reputation cascade (ruler -> domain -> settlement)
+    ruler_npc_id TEXT REFERENCES characters(id),
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -453,5 +457,56 @@ CREATE TABLE IF NOT EXISTS settlement_entrances (
     hex_r INTEGER NOT NULL,
     name TEXT NOT NULL DEFAULT 'Unknown Settlement',
     market_class INTEGER NOT NULL DEFAULT 6,
-    settlement_data TEXT NOT NULL DEFAULT ''
+    settlement_data TEXT NOT NULL DEFAULT '',
+    -- Migration 025: reputation cascade + hostile gate enforcement
+    parent_domain_id TEXT REFERENCES domains(id),
+    barred_party_ids TEXT NOT NULL DEFAULT '[]'
 );
+
+-- Migration 025: Reputation system (Phase G-1)
+
+CREATE TABLE IF NOT EXISTS factions (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    name TEXT NOT NULL,
+    alignment TEXT NOT NULL DEFAULT 'neutral'
+        CHECK(alignment IN ('lawful', 'neutral', 'chaotic')),
+    faction_type TEXT NOT NULL DEFAULT 'tribal',
+    home_domain_id TEXT REFERENCES domains(id),
+    leader_npc_id TEXT REFERENCES characters(id),
+    parent_faction_id TEXT REFERENCES factions(id),
+    description TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS faction_memberships (
+    faction_id TEXT NOT NULL REFERENCES factions(id),
+    npc_id TEXT NOT NULL REFERENCES characters(id),
+    role TEXT NOT NULL DEFAULT 'member',
+    PRIMARY KEY (faction_id, npc_id)
+);
+
+CREATE TABLE IF NOT EXISTS reputation_entries (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    party_id TEXT NOT NULL REFERENCES parties(id),
+    scope_type TEXT NOT NULL
+        CHECK(scope_type IN ('faction','settlement','domain','tier_a_npc','tier_b_npc','social_group')),
+    scope_id TEXT NOT NULL,
+    score INTEGER NOT NULL DEFAULT 0,
+    tier TEXT NOT NULL DEFAULT 'neutral'
+        CHECK(tier IN ('hostile','unfriendly','neutral','indifferent','friendly')),
+    last_reason TEXT NOT NULL DEFAULT '',
+    last_updated TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(campaign_id, party_id, scope_type, scope_id)
+);
+
+CREATE TABLE IF NOT EXISTS social_groups (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+    name TEXT NOT NULL,
+    group_type TEXT NOT NULL DEFAULT 'guild',
+    description TEXT NOT NULL DEFAULT ''
+);
+
+-- domains.ruler_npc_id added by migration 025.

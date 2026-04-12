@@ -80,14 +80,18 @@ func _populate_tokens(roster) -> void:
 
 	for c in roster.get_all():
 		var side_val: int = c.side
-		var letter: String = ""
-		if c.is_character:
-			letter = c.display_name.substr(0, 1).to_upper()
-		else:
-			letter = c.display_name.substr(0, 1).to_upper()
+		var letter: String = c.display_name.substr(0, 1).to_upper()
+		var class_id: String = ""
+		var token_variant: String = ""
+		if c.is_character and c._character != null:
+			class_id = c._character.character_class
+			token_variant = c._character.token_variant
 
 		var token: Node2D = _token_scene.instantiate()
 		token.setup(c.id, c.display_name, side_val, letter)
+		var atlas: Texture2D = _lookup_atlas_for_class(class_id, token_variant)
+		if atlas != null:
+			token.set_sprite_atlas(atlas)
 		_entity_layer.add_child(token)
 		_tokens[c.id] = token
 
@@ -150,16 +154,30 @@ func get_entity_token(entity_id: String) -> Node2D:
 	return _tokens.get(entity_id, null)
 
 
-func add_entity_token(entity_id: String, display_name: String, side: int, class_letter: String) -> Node2D:
+func add_entity_token(entity_id: String, display_name: String, side: int, class_letter: String, class_id: String = "", token_variant: String = "") -> Node2D:
 	if _tokens.has(entity_id):
 		return _tokens[entity_id]
 	if _token_scene == null:
 		_token_scene = load("res://scenes/ui/components/combatant_token.tscn")
 	var token: Node2D = _token_scene.instantiate()
 	token.setup(entity_id, display_name, side, class_letter)
+	var atlas: Texture2D = _lookup_atlas_for_class(class_id, token_variant)
+	if atlas != null:
+		token.set_sprite_atlas(atlas)
 	_entity_layer.add_child(token)
 	_tokens[entity_id] = token
 	return token
+
+
+static var _atlas_registry_script = null
+static func _lookup_atlas_for_class(class_id: String, variant: String = "") -> Texture2D:
+	if class_id.is_empty():
+		return null
+	if _atlas_registry_script == null:
+		_atlas_registry_script = load("res://scenes/ui/components/token_atlas_registry.gd")
+	if _atlas_registry_script == null:
+		return null
+	return _atlas_registry_script.get_atlas_for_class(class_id, variant)
 
 
 func remove_entity_token(entity_id: String) -> void:

@@ -172,6 +172,28 @@ signal age_category_changed(character_id: String, old_category: String, new_cate
 
 
 # ---------------------------------------------------------------------------
+# Reputation signals (Phase G-1)
+# ---------------------------------------------------------------------------
+
+## A reputation entry's score changed.
+## [param payload] keys:
+##   old_tier: String  — attitude tier before the change
+##   new_tier: String  — attitude tier after the change
+##   delta:    int     — signed score change
+##   score:    int     — new canonical score
+##   reason:   String  — free-text reason supplied by the caller
+signal reputation_changed(scope_type: String, scope_id: String, payload: Dictionary)
+
+## A scope crossed the hostile threshold (was not hostile, now is).
+## HostileEnforcement listens for this to bar settlements / register patrols.
+signal attitude_became_hostile(scope_type: String, scope_id: String)
+
+## InteractionResolver completed a resolution.
+## [param result] is InteractionResult.to_dict() output.
+signal interaction_resolved(target_id: String, result: Dictionary)
+
+
+# ---------------------------------------------------------------------------
 # Domain signals
 # ---------------------------------------------------------------------------
 

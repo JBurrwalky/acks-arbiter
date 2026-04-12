@@ -170,6 +170,7 @@ func _reset_state() -> void:
 		"inventory": [],
 		"gold_remaining_cp": 0,
 		"portrait_id": "",
+		"token_variant": "",
 		"language_bonus_picks": [],
 		"name": "",
 		"sex": "male",
@@ -202,6 +203,7 @@ func _invalidate_from(step: int) -> void:
 			creation_state["starting_gold_cp"] = 0
 			creation_state["gold_remaining_cp"] = 0
 			creation_state["portrait_id"] = ""
+			creation_state["token_variant"] = ""
 			creation_state["language_bonus_picks"] = []
 		Step.CLASS_CUSTOMIZATION:
 			creation_state["barbarian_origin"] = ""
@@ -216,6 +218,7 @@ func _invalidate_from(step: int) -> void:
 			creation_state["starting_gold_cp"] = 0
 			creation_state["gold_remaining_cp"] = 0
 			creation_state["portrait_id"] = ""
+			creation_state["token_variant"] = ""
 			creation_state["language_bonus_picks"] = []
 		Step.ABILITY_TRADE:
 			creation_state["traded_scores"] = {}
@@ -248,6 +251,7 @@ func _invalidate_from(step: int) -> void:
 			creation_state["gold_remaining_cp"] = 0
 		Step.PORTRAIT:
 			creation_state["portrait_id"] = ""
+			creation_state["token_variant"] = ""
 			creation_state["language_bonus_picks"] = []
 		Step.LANGUAGES:
 			creation_state["language_bonus_picks"] = []
@@ -411,6 +415,7 @@ func _finalize_character() -> void:
 	character.sex = creation_state.get("sex", "male")
 	character.alignment = creation_state.get("alignment", "neutral")
 	character.portrait_id = creation_state.get("portrait_id", "")
+	character.token_variant = creation_state.get("token_variant", "")
 
 	# Apply final HP from step 4 roll.
 	var hp_max: int = creation_state.get("hp_rolled", character.hp_max)

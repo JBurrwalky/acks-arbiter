@@ -27,6 +27,14 @@ var _preview_rect: TextureRect
 var _preview_name_label: Label
 var _selected_id: String = ""
 
+# Token variant picker (combat sprite atlas selection)
+var _variant_section: VBoxContainer
+var _variant_button_row: HBoxContainer
+var _variant_buttons: Dictionary = {}  # variant key -> Button
+var _selected_variant: String = ""
+
+const TokenAtlasRegistryScript = preload("res://scenes/ui/components/token_atlas_registry.gd")
+
 
 func setup(state: Dictionary) -> void:
 	_state = state
@@ -40,6 +48,8 @@ func setup(state: Dictionary) -> void:
 		_select_portrait(prior_id)
 	else:
 		_auto_select_class_default()
+	# Populate token variant picker for the chosen class
+	_populate_variant_section()
 
 
 func is_complete() -> bool:
@@ -309,3 +319,70 @@ func _build_ui() -> void:
 	note.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	right_vbox.add_child(note)
+
+	# Token variant picker (combat sprite atlas) — populated lazily in setup()
+	_variant_section = VBoxContainer.new()
+	_variant_section.add_theme_constant_override("separation", 4)
+	_variant_section.visible = false
+	right_vbox.add_child(_variant_section)
+
+	var variant_header := Label.new()
+	variant_header.text = "Combat Token Sprite"
+	variant_header.add_theme_font_size_override("font_size", 12)
+	_variant_section.add_child(variant_header)
+
+	_variant_button_row = HBoxContainer.new()
+	_variant_button_row.add_theme_constant_override("separation", 4)
+	_variant_section.add_child(_variant_button_row)
+
+
+# ---------------------------------------------------------------------------
+# Token variant picker
+# ---------------------------------------------------------------------------
+
+func _populate_variant_section() -> void:
+	if _variant_section == null or _variant_button_row == null:
+		return
+	# Clear existing buttons
+	for child in _variant_button_row.get_children():
+		child.queue_free()
+	_variant_buttons.clear()
+
+	var class_id: String = _state.get("class_id", "")
+	var variants: Array[String] = TokenAtlasRegistryScript.get_available_variants(class_id)
+
+	if variants.is_empty():
+		# No sprite atlases registered for this class — hide the section entirely
+		_variant_section.visible = false
+		_state["token_variant"] = ""
+		return
+
+	_variant_section.visible = true
+
+	# Auto-select prior or default
+	var prior_variant: String = _state.get("token_variant", "")
+	if prior_variant.is_empty() or prior_variant not in variants:
+		prior_variant = "default" if "default" in variants else variants[0]
+
+	for v in variants:
+		var btn := Button.new()
+		btn.text = v.capitalize()
+		btn.toggle_mode = true
+		btn.pressed.connect(_on_variant_selected.bind(v))
+		_variant_button_row.add_child(btn)
+		_variant_buttons[v] = btn
+
+	_select_variant(prior_variant)
+
+
+func _on_variant_selected(variant: String) -> void:
+	_select_variant(variant)
+
+
+func _select_variant(variant: String) -> void:
+	_selected_variant = variant
+	_state["token_variant"] = variant
+	for v in _variant_buttons:
+		var btn: Button = _variant_buttons[v]
+		btn.button_pressed = (v == variant)
+		btn.modulate = Color(0.6, 1.0, 0.6, 1.0) if v == variant else Color.WHITE

@@ -4394,3 +4394,177 @@ Dungeon encounters do NOT open a separate combat screen. Monsters spawn in-place
 **Coding conventions updated:** Section 17.5-17.10 added covering combat UI architecture, turn structure, token sync, mortal wound deferral, log display names, combat persistence. Directory structure updated with new files.
 
 **Regression baseline:** 64 suites passed, 8 failed (all pre-existing).
+
+---
+
+## Session 2026-04-11 — G-1 Scoped Reputation System
+
+**Task:** Build Phase G-1 from `docs/acks_arbiter_build_plan.md` — scoped party
+reputation tracking with the sacred ACKS five-state attitude model, faction
+membership propagation, the domain-ruler → domain → settlement cascade, and
+hostile-territory enforcement.
+
+**Model used:** Claude Opus 4.6.
+
+**Completed:**
+
+**New shared types (`engine/shared_types/`):**
+- `attitude.gd` — five-state attitude enum (hostile/unfriendly/neutral/indifferent/friendly)
+  plus intimidation variants fearful/cowed. Score thresholds: ≤−60 hostile,
+  −59..−20 unfriendly, −19..+19 neutral, +20..+59 indifferent, ≥+60 friendly.
+  `score_to_tier()`, `tier_to_modifier()` (−2..+2), `shift_tier()`, `clamp_score()`.
+- `faction_data.gd` (`FactionData`) — id, campaign_id, name, alignment,
+  faction_type, home_domain_id, leader_npc_id, parent_faction_id, description.
+- `reputation_entry.gd` (`ReputationEntry`) — scoped party-rep record. Scopes:
+  `faction`, `settlement`, `domain`, `tier_a_npc`, `tier_b_npc`, `social_group`.
+  Score canonical (-100..+100); `tier` cached on the row.
+- `interaction_result.gd` (`InteractionResult`) — output of InteractionResolver.
+  Tones: `diplomatic`, `intimidation`, `seduction`. Carries raw_roll,
+  modifier_breakdown, total_modifier, final_total, resulting_attitude,
+  attitude_shift, charm_like_flag, time_until_next_attempt_seconds.
+
+**New subsystem (`engine/subsystems/reputation/`):**
+- `reputation_system.gd` (`ReputationSystem`) — facade. Constructed by callers
+  with a CampaignRepository reference (not an autoload). Public API:
+  `get_reputation`, `get_score`, `get_tier`, `get_effective_attitude` /
+  `get_effective_score` (apply cascade), `apply_reputation_change` (persists,
+  emits `reputation_changed`, fires `attitude_became_hostile` on threshold
+  cross), `set_reputation_score`, `build_reaction_modifiers(target)` →
+  populated ModifierStack.
+- `interaction_resolver.gd` (`InteractionResolver`) — sacred 7-step procedure
+  from `rules/ax_reactions_and_influencing.xml`. Static API:
+  `resolve_initial`, `resolve_attempt_to_influence`. All sacred modifier
+  categories per tone (alignment, location, authority, ability scores &
+  proficiencies, threat, relationship, target, outnumbering, history). Mystic
+  Aura ≥12 sets `charm_like_flag`. Cooldown ladder: 10s → 60s → 600s → 3600s
+  → 28800s → 5×28800s.
+- `hostile_enforcement.gd` (`HostileEnforcement`) — settlement → adds party_id
+  to `settlement_entrances.barred_party_ids`; domain → registers in-memory
+  patrol override (consult via `is_domain_hostile_to_party()`). Patrol-override
+  persistence deferred to H-1.
+
+**Cascade math (project-defined, not from ACKS rules):**
+- effective_domain_score = local_domain_score + ruler_score / 2
+- effective_settlement_score = local_settlement_score
+                                + effective_domain_score / 2
+                                + ruler_score / 4
+- Recomputed on demand. Weights are constants in ReputationSystem.
+
+**EventBus signals added:**
+- `reputation_changed(scope_type, scope_id, payload)` — payload keys
+  old_tier, new_tier, delta, score, reason
+- `attitude_became_hostile(scope_type, scope_id)` — fires only on the
+  transition into hostile (not while remaining hostile)
+- `interaction_resolved(target_id, result)` — declared for downstream consumers
+
+**CampaignRepository additions:** SQL CRUD for the new tables and accessors
+for the cascade plumbing — `create_faction`, `get_faction`, `list_factions`,
+`add_faction_member`, `get_faction_ids_for_npc`, `fetch_reputation_entry`,
+`upsert_reputation_entry` (uses `INSERT ... ON CONFLICT(...) DO UPDATE`
+against the UNIQUE composite), `list_reputation_entries`,
+`get_domain_ruler_id`, `set_domain_ruler`,
+`get_settlement_parent_domain_id`, `set_settlement_parent_domain`,
+`get_settlement_barred_parties`, `add_settlement_barred_party`,
+`clear_settlement_barred_party`.
+
+**Five-state attitude correction in encounter pipeline:**
+- `engine/shared_types/encounter_data.gd` — `behavioral_disposition` now uses
+  the sacred five-state vocabulary; legacy `"cautious"` rows are coerced to
+  `"unfriendly"` on load. Added `tone` field (default `"diplomatic"`).
+- `engine/subsystems/session/session_runner.gd:_reaction_to_disposition()` —
+  rewrote to use the sacred 2d6 → attitude table from
+  `ax_reactions_and_influencing.xml` (2 hostile, 3-5 unfriendly, 6-8 neutral,
+  9-11 indifferent, 12 friendly).
+- `engine/subsystems/override/override_manager.gd:override_spawn_encounter()` —
+  validates against the five-state vocabulary; reaction-roll mapping updated.
+- `scenes/ui/override/override_panel.gd:DISPOSITIONS` — five-state list.
+
+**Database changes:**
+- New migration `db/migrations/025_reputation_system.sql`:
+  - Tables: `factions`, `faction_memberships`, `reputation_entries`, `social_groups`
+  - Indexes: `idx_factions_campaign`, `idx_faction_memberships_npc`,
+    `idx_reputation_party_scope`
+  - `ALTER TABLE settlement_entrances ADD COLUMN parent_domain_id`
+  - `ALTER TABLE settlement_entrances ADD COLUMN barred_party_ids` (JSON array)
+  - `ALTER TABLE domains ADD COLUMN ruler_npc_id`
+- `db/schema.sql` updated with the new tables and inline-documented ALTER columns.
+- A parallel session added migration `026_token_variant.sql` (unrelated). No
+  conflict — 025 runs first.
+
+**Decisions made:**
+- **Subject = party-wide.** No per-PC reputation in G-1 (deferred). Confirmed
+  via plan-mode questions.
+- **Storage = numeric score canonical, tier cached.** Score is the source of
+  truth; tier denormalized for fast reaction-roll lookup.
+- **Faction → member propagation = tier-derived modifier.** A faction's
+  current tier maps directly to a -2..+2 reaction modifier on its members,
+  mirroring the ACKS "already-X" relationship modifier scale.
+- **Cascade = weighted real-time blend, not lagged tick.** Recomputed on
+  query.
+- **Influence procedure = full resolver, no UI.** All 7 steps + 3 tones land
+  in G-1; player-facing UI is deferred to G-2 (henchman hiring).
+- **No new autoloads.** ReputationSystem and HostileEnforcement are
+  RefCounted; callers construct with a CampaignRepository reference. Follows
+  the project rule of keeping autoloads minimal.
+- **CampaignRepository owns all SQL.** ReputationSystem calls accessors on
+  the repo; no direct DB access from the subsystem.
+
+**Interfaces defined or changed:**
+- New EventBus signals: `reputation_changed`, `attitude_became_hostile`,
+  `interaction_resolved`.
+- New CampaignRepository public methods (see above).
+- New shared types: `Attitude` (constants + statics), `FactionData`,
+  `ReputationEntry`, `InteractionResult`.
+- New subsystems: `ReputationSystem`, `InteractionResolver` (static API),
+  `HostileEnforcement`.
+- `EncounterData.behavioral_disposition` vocabulary changed from
+  `[hostile, cautious, neutral, friendly]` → sacred five-state
+  `[hostile, unfriendly, neutral, indifferent, friendly]`. Legacy rows coerced
+  on load. New `tone` field.
+
+**Tests added:**
+- `tests/test_attitude_thresholds.gd` — 5 tests, 25+ assertions covering
+  all score-band boundaries, tier-to-modifier mapping, shift_tier clamping,
+  clamp_score.
+- `tests/test_reputation_system.gd` — 13 tests with a `FakeRepo` stub.
+  Covers persistence, clamping, cascade math (domain w/ ruler, settlement
+  w/ domain+ruler, no-double-count when only the local entry exists),
+  build_reaction_modifiers (personal, faction membership, settlement
+  cascade), and HostileEnforcement settlement barring.
+- `tests/test_interaction_resolver.gd` — 12 tests with `FakeDice`. Covers
+  all three tone tables, modifier stacks, already-attitude rules per tone,
+  proficiency modifiers, Mystic Aura charm flag, attempt-to-influence shifts
+  and clamping, cooldown ladder, modifier breakdown contents.
+- All three suites registered in `tests/test_runner.gd` and
+  `tests/test_runner.tscn`.
+
+**Known issues:**
+- 9 pre-existing test suite failures (CharacterPersistence, CSTabAdvancement,
+  SettlementMapData/Controller, DungeonMapController, SessionRunner,
+  ClassSelectionPanel, LanguageCleanup) are unchanged from the prior baseline.
+  Reviewed each failure trace; none touch reputation, attitude, encounter_data,
+  or override_manager. Not regressions caused by G-1.
+- HostileEnforcement domain-patrol overrides are in-memory only (not
+  persisted). Acceptable for G-1; promote to a table when H-1 wires the
+  wilderness encounter generator to consult them.
+- No event-listener glue layer wires `attitude_became_hostile` to
+  `HostileEnforcement.handle_attitude_became_hostile()` automatically yet.
+  The session runner / domain manager will wire this when a live party is
+  on the map; for now the connection is the caller's responsibility (and
+  is exercised directly in tests).
+
+**Next session should:**
+- G-2: Henchman lifecycle. Reaction-roll modifiers from G-1 plug into the
+  hiring interview step. Reputation tier with the candidate's home faction
+  shifts the offer's reaction roll via `build_reaction_modifiers`.
+- Wire `EventBus.attitude_became_hostile` to a singleton `HostileEnforcement`
+  instance during session start (probably in `SessionRunner._ready()` or a
+  small autoload glue script). Phase G-1 leaves this as a follow-up because
+  no consumer needs it before G-2.
+- Optional: when H-1 lands, persist HostileEnforcement._hostile_domain_overrides
+  to a `domain_party_hostility` table so wilderness encounters can override
+  spawn tables across save/load.
+
+**Regression baseline:** 71 suites passed, 9 failed (all 9 failures are
+pre-existing and unrelated to G-1). All 3 new G-1 test suites pass on the
+first run.

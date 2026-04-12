@@ -9,7 +9,11 @@ var monster_group: String = ""      # monster_catalog.json "id" (e.g. "goblin", 
 var number: int = 0                 # number of creatures
 var reaction_roll: int = 7          # 2d6 initial reaction roll
 var behavioral_disposition: String = "neutral"
-	# "hostile" | "cautious" | "neutral" | "friendly"
+	# Phase G-1: sacred ACKS five-state attitude per ax_reactions_and_influencing.xml.
+	# "hostile" | "unfriendly" | "neutral" | "indifferent" | "friendly"
+	# (legacy "cautious" rows are coerced to "unfriendly" on load.)
+var tone: String = "diplomatic"
+	# "diplomatic" | "intimidation" | "seduction"
 var reaction_modifier: int = 0
 var faction_id: String = ""         # "" if no faction
 var behavioral_notes: String = ""
@@ -18,13 +22,27 @@ var knowledge: Dictionary = {}      # what this group knows
 var hex_id: String = ""             # "q,r" format of where encounter occurred
 
 
+const _LEGACY_DISPOSITION_MAP := {
+	"cautious": "unfriendly",
+}
+
+
+static func _coerce_disposition(raw: String) -> String:
+	if _LEGACY_DISPOSITION_MAP.has(raw):
+		return _LEGACY_DISPOSITION_MAP[raw]
+	if raw in ["hostile", "unfriendly", "neutral", "indifferent", "friendly"]:
+		return raw
+	return "neutral"
+
+
 static func from_dict(data: Dictionary) -> EncounterData:
 	var e := EncounterData.new()
 	e.encounter_id = data.get("encounter_id", "")
 	e.monster_group = data.get("monster_group", "")
 	e.number = data.get("number", 0)
 	e.reaction_roll = data.get("reaction_roll", 7)
-	e.behavioral_disposition = data.get("behavioral_disposition", "neutral")
+	e.behavioral_disposition = _coerce_disposition(data.get("behavioral_disposition", "neutral"))
+	e.tone = data.get("tone", "diplomatic")
 	e.reaction_modifier = data.get("reaction_modifier", 0)
 	e.faction_id = data.get("faction_id", "")
 	e.behavioral_notes = data.get("behavioral_notes", "")

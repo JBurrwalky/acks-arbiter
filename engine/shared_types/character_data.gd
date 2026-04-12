@@ -59,6 +59,7 @@ var title: String = ""               # current level title from class table
 var alignment: String = "neutral"    # "lawful" | "neutral" | "chaotic"
 var sex: String = "male"             # "male" | "female"
 var portrait_id: String = ""         # filename stem: "portrait_fighter_01" (no extension)
+var token_variant: String = ""       # variant key for combat token sprite atlas (e.g., "default", "scarred")
 
 ## Aging (stub — aging system built in Phase C-3)
 var current_age: int = 0
@@ -398,6 +399,7 @@ static func from_dict(data: Dictionary) -> CharacterData:
 	c.alignment = data.get("alignment", "neutral")
 	c.sex = data.get("sex", "male")
 	c.portrait_id = data.get("portrait_id", "")
+	c.token_variant = data.get("token_variant", "")
 	c.current_age = data.get("current_age", 0)
 	c.age_category = data.get("age_category", "adult")
 	c.languages = sanitize_languages_json(data.get("languages", "[]"))
@@ -450,6 +452,7 @@ func to_dict() -> Dictionary:
 		"alignment": alignment,
 		"sex": sex,
 		"portrait_id": portrait_id,
+		"token_variant": token_variant,
 		"current_age": current_age,
 		"age_category": age_category,
 		"languages": sanitize_languages_json(languages),

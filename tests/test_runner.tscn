@@ -78,6 +78,9 @@
 [ext_resource type="Script" path="res://tests/test_creature_equipment_service.gd" id="71_creature_equipment_service_tests"]
 [ext_resource type="Script" path="res://tests/test_draft_vehicle_service.gd" id="72_draft_vehicle_service_tests"]
 [ext_resource type="Script" path="res://tests/test_handler_eligibility.gd" id="73_handler_eligibility_tests"]
+[ext_resource type="Script" path="res://tests/test_attitude_thresholds.gd" id="74_attitude_thresholds_tests"]
+[ext_resource type="Script" path="res://tests/test_reputation_system.gd" id="75_reputation_system_tests"]
+[ext_resource type="Script" path="res://tests/test_interaction_resolver.gd" id="76_interaction_resolver_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -312,3 +315,12 @@ script = ExtResource("72_draft_vehicle_service_tests")
 
 [node name="HandlerEligibilityTests" type="Node" parent="."]
 script = ExtResource("73_handler_eligibility_tests")
+
+[node name="AttitudeThresholdsTests" type="Node" parent="."]
+script = ExtResource("74_attitude_thresholds_tests")
+
+[node name="ReputationSystemTests" type="Node" parent="."]
+script = ExtResource("75_reputation_system_tests")
+
+[node name="InteractionResolverTests" type="Node" parent="."]
+script = ExtResource("76_interaction_resolver_tests")

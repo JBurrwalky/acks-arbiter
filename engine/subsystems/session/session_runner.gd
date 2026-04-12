@@ -396,16 +396,17 @@ func _pick_encounter_monster(terrain: HexTerrainData) -> String:
 	return candidates[randi() % candidates.size()]
 
 
-## Maps a 2d6 reaction roll total to a behavioral disposition string.
+## Maps a 2d6 reaction roll total to the ACKS five-state disposition.
+## Sacred table from rules/ax_reactions_and_influencing.xml.
 static func _reaction_to_disposition(total: int) -> String:
-	if total <= 3:
+	if total <= 2:
 		return "hostile"
 	elif total <= 5:
-		return "cautious"
+		return "unfriendly"
 	elif total <= 8:
 		return "neutral"
 	elif total <= 11:
-		return "friendly"
+		return "indifferent"
 	else:
 		return "friendly"
 

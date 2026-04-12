@@ -1803,3 +1803,61 @@ The CombatLogPanel displays combatant display names (not raw IDs) by:
 ### 17.10 Combat Persistence
 
 `CombatFinalizer.finalize()` calls `_persist_party()` which saves all party CharacterData to the database via `CampaignRepository.save_character(cd.to_dict())`. This persists HP changes, XP awards, is_dead, is_incapacitated, etc. after every combat.
+
+## 18. Reputation and Reaction System
+
+<!-- Added 2026-04-11 (Phase G-1) -->
+
+### 18.1 Five-State Attitude is Sacred
+
+Per `rules/ax_reactions_and_influencing.xml`, NPC dispositions use **five states**: `hostile`, `unfriendly`, `neutral`, `indifferent`, `friendly`. Intimidation tone substitutes `fearful` (9-11) and `cowed` (12) at the upper end of its result table.
+
+The four-state simplification (`hostile`/`cautious`/`neutral`/`friendly`) used in pre-G-1 code is **gone**. `EncounterData._coerce_disposition()` translates legacy `"cautious"` rows on load. New code must validate against the five-state vocabulary.
+
+The 2d6 → attitude table is sacred:
+
+| Total | Diplomatic / Seduction | Intimidation |
+|---|---|---|
+| 2 | hostile | hostile |
+| 3-5 | unfriendly | unfriendly |
+| 6-8 | neutral | neutral |
+| 9-11 | indifferent | fearful |
+| 12 | friendly | cowed |
+
+### 18.2 Reputation Score is Canonical, Tier is Cached
+
+Reputation rows store an `int score` in the band `[-100, +100]` and a `String tier` denormalized for fast lookup. When mutating, always go through `ReputationEntry.apply_delta()` (or `ReputationSystem.apply_reputation_change()`), which clamps the score and recomputes the tier in one place.
+
+Score → tier thresholds (defined as constants in `Attitude`):
+
+| Score | Tier |
+|---|---|
+| ≤ -60 | hostile |
+| -59..-20 | unfriendly |
+| -19..+19 | neutral |
+| +20..+59 | indifferent |
+| ≥ +60 | friendly |
+
+Tier → reaction modifier: -2 / -1 / 0 / +1 / +2.
+
+### 18.3 Cascade Lives in ReputationSystem, Not in the Schema
+
+The domain-ruler → domain → settlement cascade is **computed at query time**, never stored. Cascade weights are constants in `ReputationSystem` (`RULER_DOMAIN_WEIGHT_*`, `DOMAIN_SETTLEMENT_WEIGHT_*`, `RULER_SETTLEMENT_WEIGHT_*`) so they can be tuned in one place.
+
+Effective settlement score formula:
+
+```
+effective_settlement = local_settlement
+                       + effective_domain / 2
+                       + ruler_score / 4
+```
+
+The `build_reaction_modifiers(target)` helper avoids double-counting: if the target dictionary supplies a `settlement_id`, the domain branch is skipped (the settlement cascade already includes the domain contribution).
+
+### 18.4 Reputation Subsystems Don't Get Their Own DB Connections
+
+Per existing convention, only `CampaignRepository` opens SQLite. `ReputationSystem` and `HostileEnforcement` are `RefCounted` classes that take a CampaignRepository reference in their constructor and call accessor methods on it (`fetch_reputation_entry`, `upsert_reputation_entry`, `get_domain_ruler_id`, etc.). **Do not add new autoloads for reputation features** — wire them into the session runner / domain manager during construction.
+
+### 18.5 Reaction Modifiers Use the Existing ModifierStack
+
+Reputation modifiers, proficiency bonuses, and the sacred ACKS modifier categories (alignment, location, authority, threat, etc.) all stack via the existing `ModifierStack`. Each contribution is added with a labeled `source_id` and a `stacking_group` so the breakdown is auditable in test logs and (later) in LLM context assembly. Never roll up a final integer and add it as one anonymous modifier — preserve the per-source breakdown.

@@ -237,8 +237,8 @@ func create_character(data: Dictionary) -> String:
 			 portrait_id, current_age, age_category, languages, personality,
 			 is_dead, is_active, is_incapacitated,
 			 employer_id, loyalty_score, wage_gp_per_month,
-			 sex)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+			 sex, token_variant)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 	""", [
 		data["id"], data.get("campaign_id", ""), data.get("name", "Unknown"),
 		data.get("character_type", "pc"), data.get("persistence_tier", "full"),
@@ -267,6 +267,7 @@ func create_character(data: Dictionary) -> String:
 		data.get("loyalty_score", null),
 		data.get("wage_gp_per_month", null),
 		data.get("sex", "male"),
+		data.get("token_variant", ""),
 	]):
 		push_error("CampaignRepository.create_character: failed. name=%s" % data.get("name", "?"))
 		return ""
@@ -305,6 +306,7 @@ func save_character(data: Dictionary) -> bool:
 				languages = ?, personality = ?,
 				is_dead = ?, is_active = ?, is_incapacitated = ?,
 				employer_id = ?, loyalty_score = ?, wage_gp_per_month = ?, sex = ?,
+				token_variant = ?,
 				updated_at = datetime('now')
 			WHERE id = ?
 		""", [
@@ -335,6 +337,7 @@ func save_character(data: Dictionary) -> bool:
 			data.get("loyalty_score", null),
 			data.get("wage_gp_per_month", null),
 			data.get("sex", "male"),
+			data.get("token_variant", ""),
 			id
 		])
 	else:
@@ -361,7 +364,7 @@ func update_character_fields(id: String, fields: Dictionary) -> bool:
 		"xp_for_next_level", "xp_adjustment_percent", "title",
 		"current_age", "age_category",
 		"strength", "intelligence", "wisdom", "dexterity", "constitution", "charisma",
-		"alignment", "sex", "portrait_id",
+		"alignment", "sex", "portrait_id", "token_variant",
 	]
 	if fields.is_empty():
 		return true
@@ -2396,3 +2399,154 @@ func get_items_in_vehicle(vehicle_id: String) -> Array:
 		"SELECT * FROM inventory_items WHERE vehicle_id = ?",
 		[vehicle_id])
 	return db.query_result.duplicate()
+
+
+# ---------------------------------------------------------------------------
+# Reputation system (Phase G-1) — factions, memberships, scoped reputation
+# ---------------------------------------------------------------------------
+
+func create_faction(faction: FactionData) -> String:
+	if faction.id == "":
+		faction.id = generate_id()
+	var ok := db.query_with_bindings(
+		"""INSERT INTO factions
+			(id, campaign_id, name, alignment, faction_type, home_domain_id,
+			 leader_npc_id, parent_faction_id, description)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+		[faction.id, faction.campaign_id, faction.name, faction.alignment,
+		 faction.faction_type,
+		 null if faction.home_domain_id == "" else faction.home_domain_id,
+		 null if faction.leader_npc_id == "" else faction.leader_npc_id,
+		 null if faction.parent_faction_id == "" else faction.parent_faction_id,
+		 faction.description])
+	if not ok:
+		push_error("CampaignRepository.create_faction: failed. name=%s" % faction.name)
+		return ""
+	return faction.id
+
+
+func get_faction(faction_id: String) -> Dictionary:
+	if not db.query_with_bindings("SELECT * FROM factions WHERE id = ?", [faction_id]) \
+			or db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+func list_factions(campaign_id: String) -> Array:
+	db.query_with_bindings("SELECT * FROM factions WHERE campaign_id = ?", [campaign_id])
+	return db.query_result.duplicate()
+
+
+func add_faction_member(faction_id: String, npc_id: String, role: String = "member") -> bool:
+	return db.query_with_bindings(
+		"""INSERT OR REPLACE INTO faction_memberships (faction_id, npc_id, role)
+		   VALUES (?, ?, ?)""",
+		[faction_id, npc_id, role])
+
+
+func get_faction_ids_for_npc(npc_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT faction_id FROM faction_memberships WHERE npc_id = ?", [npc_id])
+	var ids: Array = []
+	for row in db.query_result:
+		ids.append(row["faction_id"])
+	return ids
+
+
+func fetch_reputation_entry(party_id: String, scope_type: String, scope_id: String) -> Dictionary:
+	if not db.query_with_bindings(
+			"""SELECT * FROM reputation_entries
+			   WHERE party_id = ? AND scope_type = ? AND scope_id = ?""",
+			[party_id, scope_type, scope_id]) \
+			or db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+func upsert_reputation_entry(entry: ReputationEntry) -> String:
+	# UNIQUE(campaign_id, party_id, scope_type, scope_id) on the table.
+	# Use ON CONFLICT to update score / tier / last_reason.
+	if entry.id == "":
+		entry.id = generate_id()
+	var ok := db.query_with_bindings(
+		"""INSERT INTO reputation_entries
+			(id, campaign_id, party_id, scope_type, scope_id, score, tier, last_reason, last_updated)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+		   ON CONFLICT(campaign_id, party_id, scope_type, scope_id) DO UPDATE SET
+			score = excluded.score,
+			tier = excluded.tier,
+			last_reason = excluded.last_reason,
+			last_updated = datetime('now')""",
+		[entry.id, entry.campaign_id, entry.party_id, entry.scope_type,
+		 entry.scope_id, entry.score, entry.tier, entry.last_reason])
+	if not ok:
+		push_error("CampaignRepository.upsert_reputation_entry: failed. scope=%s/%s"
+			% [entry.scope_type, entry.scope_id])
+	return entry.id
+
+
+func list_reputation_entries(party_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM reputation_entries WHERE party_id = ? ORDER BY scope_type, scope_id",
+		[party_id])
+	return db.query_result.duplicate()
+
+
+func get_domain_ruler_id(domain_id: String) -> String:
+	if not db.query_with_bindings(
+			"SELECT ruler_npc_id FROM domains WHERE id = ?", [domain_id]) \
+			or db.query_result.is_empty():
+		return ""
+	var v = db.query_result[0].get("ruler_npc_id", null)
+	return "" if v == null else String(v)
+
+
+func set_domain_ruler(domain_id: String, npc_id: String) -> bool:
+	return db.query_with_bindings(
+		"UPDATE domains SET ruler_npc_id = ? WHERE id = ?",
+		[null if npc_id == "" else npc_id, domain_id])
+
+
+func get_settlement_parent_domain_id(settlement_id: String) -> String:
+	if not db.query_with_bindings(
+			"SELECT parent_domain_id FROM settlement_entrances WHERE id = ?",
+			[settlement_id]) or db.query_result.is_empty():
+		return ""
+	var v = db.query_result[0].get("parent_domain_id", null)
+	return "" if v == null else String(v)
+
+
+func set_settlement_parent_domain(settlement_id: String, domain_id: String) -> bool:
+	return db.query_with_bindings(
+		"UPDATE settlement_entrances SET parent_domain_id = ? WHERE id = ?",
+		[null if domain_id == "" else domain_id, settlement_id])
+
+
+func get_settlement_barred_parties(settlement_id: String) -> Array:
+	if not db.query_with_bindings(
+			"SELECT barred_party_ids FROM settlement_entrances WHERE id = ?",
+			[settlement_id]) or db.query_result.is_empty():
+		return []
+	var raw = db.query_result[0].get("barred_party_ids", "[]")
+	var parsed = JSON.parse_string(raw if raw != null else "[]")
+	return parsed if parsed is Array else []
+
+
+func add_settlement_barred_party(settlement_id: String, party_id: String) -> bool:
+	var current: Array = get_settlement_barred_parties(settlement_id)
+	if current.has(party_id):
+		return true
+	current.append(party_id)
+	return db.query_with_bindings(
+		"UPDATE settlement_entrances SET barred_party_ids = ? WHERE id = ?",
+		[JSON.stringify(current), settlement_id])
+
+
+func clear_settlement_barred_party(settlement_id: String, party_id: String) -> bool:
+	var current: Array = get_settlement_barred_parties(settlement_id)
+	if not current.has(party_id):
+		return true
+	current.erase(party_id)
+	return db.query_with_bindings(
+		"UPDATE settlement_entrances SET barred_party_ids = ? WHERE id = ?",
+		[JSON.stringify(current), settlement_id])

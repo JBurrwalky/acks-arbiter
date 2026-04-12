@@ -375,12 +375,18 @@ func _draw_highlights() -> void:
 ## Add a CombatantToken for the given entity.
 ## [param side]: 0 = PARTY (blue), 1 = ENEMY (red), -1 = neutral (yellow).
 ## [param class_letter]: single letter class code shown in token centre.
+## [param class_id]: optional ACKS class_id (e.g. "barbarian"). If a sprite
+##   atlas is registered for this class, the token switches to sprite mode.
+## [param token_variant]: optional variant key (e.g. "default", "scarred").
+##   Falls back to "default" if the specific variant is not registered.
 ## Safe to call multiple times — returns existing token if already present.
 func add_entity_token(
 		entity_id: String,
 		entity_display_name: String,
 		side: int,
-		class_letter: String) -> Node2D:
+		class_letter: String,
+		class_id: String = "",
+		token_variant: String = "") -> Node2D:
 	if _tokens.has(entity_id):
 		return _tokens[entity_id]
 	if _token_scene == null:
@@ -390,9 +396,25 @@ func add_entity_token(
 		return null
 	var token: Node2D = _token_scene.instantiate()
 	token.setup(entity_id, entity_display_name, side, class_letter)
+	# Apply class-specific sprite atlas if one is registered
+	var atlas: Texture2D = _lookup_atlas_for_class(class_id, token_variant)
+	if atlas != null:
+		token.set_sprite_atlas(atlas)
 	_entity_layer.add_child(token)
 	_tokens[entity_id] = token
 	return token
+
+
+## Lazy-load TokenAtlasRegistry and query it. Avoids parse-time class_name lookup.
+static var _atlas_registry_script = null
+static func _lookup_atlas_for_class(class_id: String, variant: String = "") -> Texture2D:
+	if class_id.is_empty():
+		return null
+	if _atlas_registry_script == null:
+		_atlas_registry_script = load("res://scenes/ui/components/token_atlas_registry.gd")
+	if _atlas_registry_script == null:
+		return null
+	return _atlas_registry_script.get_atlas_for_class(class_id, variant)
 
 
 ## Remove the token for [param entity_id] from the scene.

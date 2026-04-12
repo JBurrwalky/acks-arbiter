@@ -167,7 +167,7 @@ const TERRAIN_VALUE_OPTIONS := {
 
 const INVENTORY_SLOTS := ["pack", "hands_main", "hands_off", "body", "head", "belt", "mount"]
 
-const DISPOSITIONS := ["hostile", "cautious", "neutral", "friendly"]
+const DISPOSITIONS := ["hostile", "unfriendly", "neutral", "indifferent", "friendly"]
 
 const FOG_STATES := ["hidden", "explored", "visible"]
 
