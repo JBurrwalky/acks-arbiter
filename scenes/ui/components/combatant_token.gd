@@ -151,7 +151,7 @@ func _draw() -> void:
 
 	# Name label below the token (both modes)
 	var font := ThemeDB.fallback_font
-	var name_y := RADIUS + LABEL_OFFSET if _sprite_atlas == null else SPRITE_DRAW_HEIGHT * 0.5 + SPRITE_Y_OFFSET 4.0
+	var name_y := RADIUS + LABEL_OFFSET if _sprite_atlas == null else SPRITE_DRAW_HEIGHT * 0.5 + SPRITE_Y_OFFSET + 4.0
 	draw_string(font, Vector2(-30.0, name_y), display_name,
 		HORIZONTAL_ALIGNMENT_CENTER, 60, 9, Color.WHITE)
 
