@@ -27,6 +27,7 @@ const ACTIONS := [
 	{"id": "attack_melee", "label": "Melee Attack", "icon": "/"},
 	{"id": "attack_ranged", "label": "Ranged Attack", "icon": ")"},
 	{"id": "cast_spell", "label": "Cast Spell", "icon": "*"},
+	{"id": "switch_weapon", "label": "Sheathe & Draw", "icon": "~"},
 	{"id": "delay", "label": "Delay", "icon": ".."},
 	{"id": "pass", "label": "Pass", "icon": "-"},
 ]

@@ -154,6 +154,22 @@ signal condition_changed(character_id: String, change: Dictionary)
 ## A henchman's loyalty score changed.
 signal loyalty_changed(henchman_id: String, old_score: int, new_score: int)
 
+## A henchman was successfully hired.
+## [param hire_data] keys: employer_id, morale_score, wage_gp_per_month, settlement_id
+signal henchman_hired(henchman_id: String, hire_data: Dictionary)
+
+## A henchman departed the party.
+## [param departure] keys: reason (hostility/resignation/fired), settlement_id
+signal henchman_departed(henchman_id: String, departure: Dictionary)
+
+## A henchman loyalty check was resolved.
+## [param result] keys from HenchmanLoyaltyResolver.resolve_loyalty_check()
+signal henchman_loyalty_checked(henchman_id: String, trigger: String, result: Dictionary)
+
+## Monthly wages were processed for a party.
+## [param summary] keys: total_deducted, unpaid_henchmen (Array of ids)
+signal wages_processed(party_id: String, summary: Dictionary)
+
 ## A character's proficiencies changed (added, removed, or rank changed).
 ## [param change] keys:
 ##   proficiency_key: String — the proficiency affected

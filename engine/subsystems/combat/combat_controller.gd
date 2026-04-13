@@ -266,6 +266,11 @@ func get_available_actions(combatant_id: String) -> Array[String]:
 		# Spell casting shown but disabled until F-3; include for button visibility
 		actions.append("cast_spell")
 
+	# Sheathe & Draw: available when either move or attack is available (PC only).
+	# Costs whichever resource is next: movement if not yet moved, attack otherwise.
+	if c.is_character and (can_move or can_attack):
+		actions.append("switch_weapon")
+
 	return actions
 
 
@@ -472,7 +477,10 @@ func _resolve_next_action() -> Dictionary:
 		_pending_pc_action = {}
 		if spell_hooks != null:
 			spell_hooks.on_after_action(combatant, result)
-		_current_combatant_in_group += 1
+		# Sub-actions (move, sheathe & draw) set continues_turn=true to keep
+		# the PC's turn alive so they can still attack afterward.
+		if not result.get("result", {}).get("continues_turn", false):
+			_current_combatant_in_group += 1
 		return result
 
 	# --- Monster turn: auto-select action ---
@@ -583,6 +591,8 @@ func _resolve_combatant_action(
 			result = _resolve_cast_spell(combatant, parameters)
 		"move":
 			result = _resolve_movement_action(combatant, parameters)
+		"switch_weapon":
+			result = _resolve_switch_weapon(combatant, parameters)
 		"charge":
 			result = _resolve_charge_action(combatant, parameters, condition_atk_mod)
 		"fighting_withdrawal":
@@ -1577,6 +1587,91 @@ func _resolve_movement_action(
 		"result": {
 			"cells_moved": cells_moved,
 			"new_position": movement_resolver.get_grid_position(combatant),
+			"continues_turn": true,
+		},
+	}
+
+
+# ---------------------------------------------------------------------------
+# Weapon switching (Sheathe & Draw)
+# ---------------------------------------------------------------------------
+
+func _resolve_switch_weapon(
+		combatant: Combatant,
+		parameters: Dictionary) -> Dictionary:
+	## Resolve a Sheathe & Draw action.
+	## ACKS: "Instead of moving/attacking, a combatant may sheathe one weapon
+	## and draw another."
+	## Cost: if not yet moved this round → forfeits movement (continues_turn).
+	##        if already moved → forfeits attack (ends turn).
+	var new_weapon_item: Dictionary = parameters.get("new_weapon_item", {})
+	var is_stow_only: bool = parameters.get("stow_only", false)
+
+	# Determine cost
+	var costs_move := not combatant.has_moved_this_round
+	var continues_turn := costs_move  # Movement cost keeps turn alive for attack
+
+	# Unequip current main-hand weapon (if any)
+	var old_weapon: Dictionary = combatant.get_equipped_weapon()
+	var old_item_id: String = old_weapon.get("item_id", "")
+	var old_weapon_name: String = old_weapon.get("name", "")
+	if not old_item_id.is_empty():
+		CampaignRepository.update_inventory_item_equip_state(old_item_id, false, "pack", "")
+
+	var new_weapon_name: String = ""
+
+	if not is_stow_only and not new_weapon_item.is_empty():
+		var new_item_id: String = new_weapon_item.get("id", "")
+
+		# Check if new weapon is two-handed — must also stow off-hand shield
+		var new_item_key: String = new_weapon_item.get("item_key", "")
+		var is_two_handed := false
+		var equip_catalog_script = load("res://engine/subsystems/characters/equipment_catalog.gd")
+		var catalog = equip_catalog_script.new() if equip_catalog_script != null else null
+		if catalog != null and catalog.has_method("get_item"):
+			var cat_entry: Dictionary = catalog.get_item(new_item_key)
+			var tags: Array = cat_entry.get("weapon_tags", [])
+			is_two_handed = "two_handed" in tags
+
+		if is_two_handed:
+			# Stow any equipped off-hand item (shield)
+			var char_id: String = combatant._character.id if combatant._character != null else combatant.id
+			var inv_rows: Array = CampaignRepository.get_inventory_items(char_id)
+			for row in inv_rows:
+				if int(row.get("is_equipped", 0)) == 1 and row.get("slot", "") == "hands_off":
+					CampaignRepository.update_inventory_item_equip_state(
+						row.get("id", ""), false, "pack", "")
+					break
+
+		# Equip new weapon
+		if not new_item_id.is_empty():
+			CampaignRepository.update_inventory_item_equip_state(new_item_id, true, "hands_main", "")
+		new_weapon_name = new_weapon_item.get("name", "Weapon")
+	else:
+		new_weapon_name = ""  # Going unarmed
+
+	# Mark movement as used if this costs the move
+	if costs_move:
+		combatant.has_moved_this_round = true
+
+	# Re-wire combatant equipment from fresh inventory
+	var char_id: String = combatant._character.id if combatant._character != null else combatant.id
+	var fresh_rows: Array = CampaignRepository.get_inventory_items(char_id)
+	var equip_script = load("res://engine/subsystems/characters/equipment_catalog.gd")
+	var fresh_catalog = equip_script.new() if equip_script != null else null
+	combatant.wire_equipment(fresh_rows, fresh_catalog)
+
+	return {
+		"phase": "action",
+		"status": "action_resolved",
+		"combatant_id": combatant.id,
+		"action": "switch_weapon",
+		"result": {
+			"old_weapon_name": old_weapon_name if not old_weapon_name.is_empty() else "Unarmed",
+			"new_weapon_name": new_weapon_name if not new_weapon_name.is_empty() else "Unarmed",
+			"note": "switched weapon",
+			"costs_move": costs_move,
+			"continues_turn": continues_turn,
 		},
 	}
 

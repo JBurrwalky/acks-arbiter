@@ -79,6 +79,9 @@
 [ext_resource type="Script" path="res://tests/test_draft_vehicle_service.gd" id="72_draft_vehicle_service_tests"]
 [ext_resource type="Script" path="res://tests/test_handler_eligibility.gd" id="73_handler_eligibility_tests"]
 [ext_resource type="Script" path="res://tests/test_attitude_thresholds.gd" id="74_attitude_thresholds_tests"]
+[ext_resource type="Script" path="res://tests/test_henchman_tables.gd" id="77_henchman_tables_tests"]
+[ext_resource type="Script" path="res://tests/test_henchman_loyalty.gd" id="78_henchman_loyalty_tests"]
+[ext_resource type="Script" path="res://tests/test_henchman_lifecycle.gd" id="79_henchman_lifecycle_tests"]
 [ext_resource type="Script" path="res://tests/test_reputation_system.gd" id="75_reputation_system_tests"]
 [ext_resource type="Script" path="res://tests/test_interaction_resolver.gd" id="76_interaction_resolver_tests"]
 
@@ -324,3 +327,12 @@ script = ExtResource("75_reputation_system_tests")
 
 [node name="InteractionResolverTests" type="Node" parent="."]
 script = ExtResource("76_interaction_resolver_tests")
+
+[node name="HenchmanTablesTests" type="Node" parent="."]
+script = ExtResource("77_henchman_tables_tests")
+
+[node name="HenchmanLoyaltyTests" type="Node" parent="."]
+script = ExtResource("78_henchman_loyalty_tests")
+
+[node name="HenchmanLifecycleTests" type="Node" parent="."]
+script = ExtResource("79_henchman_lifecycle_tests")

@@ -250,7 +250,7 @@ func resolve_monster_attack(
 
 func _get_melee_damage_expression(attacker: Combatant) -> String:
 	## Returns the damage expression for the attacker's melee weapon.
-	## For characters: reads from equipped weapon, falls back to 1d6 (unarmed).
+	## For characters: reads from equipped weapon, falls back to 1d3 (unarmed brawling).
 	## For monsters: reads from attack_routines.
 	if attacker.is_character:
 		return attacker.get_weapon_damage()

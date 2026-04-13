@@ -27,6 +27,7 @@ var _stat_summary: StatSummary = null
 var _action_panel: ActionButtonPanel = null
 var _log_panel: CombatLogPanel = null
 var _decl_overlay: DeclarationOverlay = null
+var _weapon_popup: WeaponSwitchPopup = null
 var _end_overlay: CombatEndOverlay = null
 
 ## Cached combat result for the Continue button
@@ -98,6 +99,10 @@ func start_interactive() -> void:
 
 	# Wire move_completed to disable Move button after move sub-action
 	_ui_controller.move_completed.connect(_on_move_completed)
+
+	# Wire weapon switch signals
+	_ui_controller.weapon_switch_requested.connect(_on_weapon_switch_requested)
+	_ui_controller.weapon_switched.connect(_on_weapon_switched)
 
 	# Wire facing-selection flow
 	_ui_controller.facing_selection_started.connect(_on_facing_selection_started)
@@ -252,6 +257,18 @@ func _build_ui() -> void:
 	_decl_overlay.declarations_complete.connect(_on_declarations_confirmed)
 	add_child(_decl_overlay)
 
+	_weapon_popup = WeaponSwitchPopup.new()
+	_weapon_popup.name = "WeaponSwitchPopup"
+	_weapon_popup.set_anchors_preset(Control.PRESET_CENTER)
+	_weapon_popup.offset_left = -180.0
+	_weapon_popup.offset_top = -140.0
+	_weapon_popup.offset_right = 180.0
+	_weapon_popup.offset_bottom = 140.0
+	_weapon_popup.visible = false
+	_weapon_popup.weapon_selected.connect(_on_weapon_popup_selected)
+	_weapon_popup.cancelled.connect(_on_weapon_popup_cancelled)
+	add_child(_weapon_popup)
+
 	_end_overlay = CombatEndOverlay.new()
 	_end_overlay.set_anchors_preset(Control.PRESET_CENTER)
 	_end_overlay.offset_left = -230.0
@@ -279,6 +296,8 @@ func _on_initiative_updated(order: Array) -> void:
 
 func _on_pc_turn_started(combatant_id: String) -> void:
 	_decl_overlay.visible = false
+	if _weapon_popup != null:
+		_weapon_popup.visible = false
 	var combatant = _controller.get_combatant(combatant_id)
 	_stat_summary.show_combatant(combatant)
 	_init_strip.set_active(combatant_id)
@@ -371,6 +390,44 @@ func _on_declarations_confirmed(declarations: Array) -> void:
 	_decl_overlay.visible = false
 	if _ui_controller != null:
 		_ui_controller.on_declarations_confirmed(declarations)
+
+
+func _on_weapon_switch_requested(combatant_id: String, weapons: Array, has_moved: bool) -> void:
+	if _weapon_popup == null:
+		return
+	var combatant = _controller.get_combatant(combatant_id)
+	var is_armed := combatant != null and not combatant.get_equipped_weapon().is_empty()
+	var has_shield := false
+	if combatant != null and combatant.is_character and combatant._character != null:
+		var inv_rows: Array = CampaignRepository.get_inventory_items(combatant._character.id)
+		for row in inv_rows:
+			if int(row.get("is_equipped", 0)) == 1 and row.get("slot", "") == "hands_off" \
+					and row.get("item_category", "") == "shield":
+				has_shield = true
+				break
+	_action_panel.set_panel_visible(false)
+	_weapon_popup.set_weapons(weapons, has_moved, is_armed, has_shield)
+	_weapon_popup.visible = true
+
+
+func _on_weapon_popup_selected(weapon_item: Dictionary) -> void:
+	_weapon_popup.visible = false
+	_action_panel.set_panel_visible(true)
+	if _ui_controller != null:
+		_ui_controller.on_weapon_selected(weapon_item)
+
+
+func _on_weapon_popup_cancelled() -> void:
+	_weapon_popup.visible = false
+	_action_panel.set_panel_visible(true)
+	if _ui_controller != null:
+		_ui_controller.on_cancel()
+
+
+func _on_weapon_switched(combatant_id: String) -> void:
+	var combatant = _controller.get_combatant(combatant_id)
+	if combatant != null:
+		_stat_summary.show_combatant(combatant)
 
 
 func _on_continue_pressed() -> void:

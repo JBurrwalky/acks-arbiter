@@ -347,6 +347,16 @@ func _format_movement(data: Dictionary, actor: String) -> String:
 		"full_retreat":
 			return "%s performs a full retreat!" % actor
 		_:
+			# Weapon switch (Sheathe & Draw)
+			if data.has("old_weapon_name") or data.has("new_weapon_name"):
+				var old_name: String = data.get("old_weapon_name", "Unarmed")
+				var new_name: String = data.get("new_weapon_name", "")
+				if new_name.is_empty() or new_name == "Unarmed":
+					return "%s stows %s" % [actor, old_name]
+				if old_name.is_empty() or old_name == "Unarmed":
+					return "%s draws %s" % [actor, new_name]
+				return "%s sheathes %s and draws %s" % [actor, old_name, new_name]
+
 			var to_pos = data.get("to_position", data.get("target_cell", null))
 			if to_pos != null and to_pos is Vector2i:
 				return "%s moves to (%d, %d)" % [actor, to_pos.x, to_pos.y]

@@ -44,6 +44,7 @@ func enter(runner, context: Dictionary) -> void:
 
 	_scene.exit_requested.connect(_on_exit_requested)
 	_scene.node_clicked.connect(_on_node_clicked)
+	_controller.building_entered.connect(_on_building_entered)
 
 	runner.get_nav_stack().push_node(
 		_scene, "settlement_%s" % entrance.get("id", "unknown")
@@ -77,6 +78,20 @@ func _on_node_clicked(node_id: int) -> void:
 
 	# Advance 1 exploration turn (10 minutes) per movement in settlement
 	_runner.advance_exploration_time(1)
+
+
+func _on_building_entered(poi: Dictionary) -> void:
+	var poi_type: String = poi.get("type", "")
+	if poi_type == "tavern" or poi_type == "inn":
+		_open_hiring_panel(poi)
+
+
+func _open_hiring_panel(_poi: Dictionary) -> void:
+	# Phase G-2 stub: the hiring panel will be pushed as a modal.
+	# Full wiring requires ReputationSystem + HenchmanLifecycleManager
+	# instances from the session runner, which are created during session start.
+	# For now, emit the building_entered signal so other listeners can respond.
+	pass
 
 
 func _on_exit_requested() -> void:

@@ -122,8 +122,8 @@ func test_henchman_generation() -> void:
 		"employer_id should be '%s', got '%s'" % [employer_id, henchman.employer_id])
 	check(henchman.level == 2,
 		"henchman level should be 2, got %d" % henchman.level)
-	check(henchman.loyalty_score == 7,
-		"henchman base loyalty should be 7, got %d" % henchman.loyalty_score)
+	check(henchman.loyalty_score == 0,
+		"henchman base loyalty should default to 0 (caller sets morale_base), got %d" % henchman.loyalty_score)
 	print("  henchman_generation: OK")
 
 

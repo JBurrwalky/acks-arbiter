@@ -129,8 +129,8 @@ func get_weapon_damage() -> String:
 	## Returns base weapon damage expression (e.g. "1d8").
 	## For versatile weapons "1d6/1d8", returns the one-handed value.
 	if _equipped_weapon.is_empty():
-		return "1d6"  # unarmed fallback
-	var dmg: String = _equipped_weapon.get("weapon_damage", "1d6")
+		return "1d3"  # unarmed brawling (ACKS Core p.109)
+	var dmg: String = _equipped_weapon.get("weapon_damage", "1d3")
 	if "/" in dmg:
 		dmg = dmg.split("/")[0]
 	return dmg
@@ -197,7 +197,7 @@ func wire_equipment(inventory_rows: Array, catalog) -> void:
 			"name": row.get("name", "Weapon"),
 			"item_key": item_key,
 			"item_id": row.get("id", ""),
-			"weapon_damage": row.get("weapon_damage", "1d6"),
+			"weapon_damage": row.get("weapon_damage", "1d3"),
 			"magical_bonus": int(row.get("magical_bonus", 0)),
 			"damage_type": row.get("damage_type", "physical"),
 			"weapon_tags": [],
@@ -458,8 +458,11 @@ func get_to_hit_modifier(attack_index: int = 0) -> int:
 
 func get_morale() -> int:
 	## Base morale score for this combatant.
+	## Henchmen use their loyalty_score; PCs don't check morale.
 	if is_character:
-		return 0  # PCs don't check morale
+		if _character != null and _character.character_type == "henchman":
+			return _character.loyalty_score
+		return 0
 	return int(_monster_data.get("morale", 0))
 
 
@@ -481,7 +484,7 @@ func get_expanded_attack_sequence() -> Array[Dictionary]:
 		# Characters use weapon-based attacks, not routines.
 		result.append({
 			"attack_type": "weapon",
-			"damage": "1d6",
+			"damage": "1d3",
 			"to_hit_modifier": 0,
 			"special_effect": null,
 			"source_index": 0,

@@ -27,6 +27,7 @@ enum State {
 	PC_SELECTING_FACING,           ## After move, waiting for facing click + Confirm Move
 	PC_SELECTING_ATTACK_TARGET,    ## PC chose Attack — waiting for entity click
 	PC_SELECTING_CLEAVE_TARGET,    ## After kill, waiting for cleave target click or Skip Cleave
+	PC_SELECTING_WEAPON,           ## PC chose Sheathe & Draw — weapon popup visible
 	ENEMY_ACTING,                  ## Enemy AI turn (auto-advance)
 	COMBAT_OVER,                   ## Combat ended
 }
@@ -89,6 +90,12 @@ signal token_moved(entity_id: String, to_cell: Vector2i)
 
 ## After a move sub-action, disable the Move button but keep turn active.
 signal move_completed()
+
+## PC chose Sheathe & Draw — host should show weapon selection popup.
+signal weapon_switch_requested(combatant_id: String, weapons: Array, has_moved: bool)
+
+## Weapon switch completed — host should refresh stat summary.
+signal weapon_switched(combatant_id: String)
 
 
 # ---------------------------------------------------------------------------
@@ -280,6 +287,18 @@ func on_action_button(action_id: String) -> void:
 			highlight_reachable.emit(typed_cells, Color(0.2, 0.6, 1.0, 0.25))
 
 		"attack_melee":
+			# Check for valid melee targets before entering target selection
+			var melee_targets := _controller.get_melee_targets(_current_pc_id)
+			if melee_targets.is_empty():
+				log_entry.emit({
+					"type": 4, "round": _controller.round_number,
+					"actor_id": _current_pc_id,
+					"actor_name": _resolve_name(_current_pc_id),
+					"target_id": "", "target_name": "",
+					"data": {"note": "No adjacent enemies for melee attack"},
+					"timestamp": 0,
+				})
+				return
 			_state = State.PC_SELECTING_ATTACK_TARGET
 			# Highlight adjacent cells as range overlay + enemy tokens as targets
 			var combatant = _controller.get_combatant(_current_pc_id)
@@ -290,13 +309,24 @@ func on_action_button(action_id: String) -> void:
 				for c in adj_cells:
 					typed_cells.append(c)
 				highlight_reachable.emit(typed_cells, Color(0.9, 0.3, 0.3, 0.15))
-			var targets := _controller.get_melee_targets(_current_pc_id)
-			var typed_targets: Array[String] = []
-			for t in targets:
-				typed_targets.append(t)
-			highlight_targets.emit(typed_targets)
+			var typed_melee_targets: Array[String] = []
+			for t in melee_targets:
+				typed_melee_targets.append(t)
+			highlight_targets.emit(typed_melee_targets)
 
 		"attack_ranged":
+			# Check for valid ranged targets before entering target selection
+			var ranged_targets := _controller.get_ranged_targets(_current_pc_id)
+			if ranged_targets.is_empty():
+				log_entry.emit({
+					"type": 4, "round": _controller.round_number,
+					"actor_id": _current_pc_id,
+					"actor_name": _resolve_name(_current_pc_id),
+					"target_id": "", "target_name": "",
+					"data": {"note": "No enemies in range for ranged attack"},
+					"timestamp": 0,
+				})
+				return
 			_state = State.PC_SELECTING_ATTACK_TARGET
 			# Show range-band overlay (short=green, medium=orange, long=yellow)
 			var combatant_r = _controller.get_combatant(_current_pc_id)
@@ -308,11 +338,32 @@ func on_action_button(action_id: String) -> void:
 				var long_cells: int = int(ranges.get("long", 0)) / 5
 				_highlight_range_bands(pos_r, short_cells, medium_cells, long_cells)
 			# Highlight enemy tokens in range as targets
-			var targets := _controller.get_ranged_targets(_current_pc_id)
-			var typed_targets: Array[String] = []
-			for t in targets:
-				typed_targets.append(t)
-			highlight_targets.emit(typed_targets)
+			var typed_ranged_targets: Array[String] = []
+			for t in ranged_targets:
+				typed_ranged_targets.append(t)
+			highlight_targets.emit(typed_ranged_targets)
+
+		"switch_weapon":
+			# Sheathe & Draw — query inventory for switchable weapons
+			var sw_combatant = _controller.get_combatant(_current_pc_id)
+			if sw_combatant == null or not sw_combatant.is_character:
+				return
+			var sw_weapons := _get_switchable_weapons(sw_combatant)
+			# Also allow "go unarmed" if currently armed
+			var current_wpn: Dictionary = sw_combatant.get_equipped_weapon()
+			var has_weapon := not current_wpn.is_empty()
+			if sw_weapons.is_empty() and not has_weapon:
+				log_entry.emit({
+					"type": 4, "round": _controller.round_number,
+					"actor_id": _current_pc_id,
+					"actor_name": _resolve_name(_current_pc_id),
+					"target_id": "", "target_name": "",
+					"data": {"note": "No other weapons available"},
+					"timestamp": 0,
+				})
+				return
+			_state = State.PC_SELECTING_WEAPON
+			weapon_switch_requested.emit(_current_pc_id, sw_weapons, _has_moved_this_turn)
 
 		"delay":
 			# Placeholder: treat delay as pass for now
@@ -453,14 +504,42 @@ func _enter_cleave_selection(targets: Array, move_available: bool = false, move_
 	cleave_selection_started.emit(_current_pc_id)
 
 
-## Cancel current target selection — return to action selection.
+## Cancel current target/weapon selection — return to action selection.
 func on_cancel() -> void:
 	if _state == State.PC_SELECTING_MOVE_TARGET or \
-	   _state == State.PC_SELECTING_ATTACK_TARGET:
+	   _state == State.PC_SELECTING_ATTACK_TARGET or \
+	   _state == State.PC_SELECTING_WEAPON:
 		clear_highlights_requested.emit()
 		_state = State.PC_SELECTING_ACTION
 		_selected_action = ""
 		pc_turn_started.emit(_current_pc_id)
+
+
+## Called by the overlay/screen when the player picks a weapon from the popup.
+func on_weapon_selected(weapon_item: Dictionary) -> void:
+	if _state != State.PC_SELECTING_WEAPON:
+		return
+
+	var is_stow_only: bool = weapon_item.get("stow_only", false)
+	var params: Dictionary = {"new_weapon_item": weapon_item, "stow_only": is_stow_only}
+
+	_controller.submit_pc_action(_current_pc_id, "switch_weapon", params)
+	var result := _controller.advance()
+
+	_emit_action_log(result)
+	action_resolved.emit(result)
+	weapon_switched.emit(_current_pc_id)
+
+	var inner_result: Dictionary = result.get("result", {})
+	if inner_result.get("continues_turn", false):
+		# Cost was movement — player can still attack this turn
+		_has_moved_this_turn = true
+		_state = State.PC_SELECTING_ACTION
+		pc_turn_started.emit(_current_pc_id)
+		move_completed.emit()
+	else:
+		# Cost was attack — turn is over
+		auto_advance_requested.emit()
 
 
 ## Returns the current UI state.
@@ -591,5 +670,29 @@ func _action_to_log_type(action_id: String) -> int:
 			return 4  # MOVEMENT
 		"fighting_withdrawal", "full_retreat":
 			return 4  # MOVEMENT
+		"switch_weapon":
+			return 4  # MOVEMENT (sheathe & draw is a movement-type action)
 		_:
 			return 4  # Default to movement
+
+
+func _get_switchable_weapons(combatant: Combatant) -> Array:
+	## Returns inventory weapon rows that the combatant could switch to.
+	## Excludes the currently equipped main-hand weapon.
+	if not combatant.is_character or combatant._character == null:
+		return []
+	var char_id: String = combatant._character.id
+	var all_items: Array = CampaignRepository.get_inventory_items(char_id)
+	var current_item_id: String = combatant.get_equipped_weapon().get("item_id", "")
+	var result: Array = []
+	for item in all_items:
+		if item.get("item_category", "") != "weapon":
+			continue
+		# Skip the currently equipped main-hand weapon
+		if item.get("id", "") == current_item_id and not current_item_id.is_empty():
+			continue
+		# Skip items equipped in other slots (e.g. off-hand)
+		if int(item.get("is_equipped", 0)) == 1 and item.get("slot", "") != "pack":
+			continue
+		result.append(item)
+	return result

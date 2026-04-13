@@ -4568,3 +4568,146 @@ against the UNIQUE composite), `list_reputation_entries`,
 **Regression baseline:** 71 suites passed, 9 failed (all 9 failures are
 pre-existing and unrelated to G-1). All 3 new G-1 test suites pass on the
 first run.
+
+---
+
+## Session 2026-04-12 — G-2 Henchman Lifecycle
+
+**Task:** Build Phase G-2 from `docs/acks_arbiter_build_plan.md` — henchman
+lifecycle: search → interview → hire → employment → departure. Sacred table
+implementation, loyalty/morale mechanics, hiring reaction rolls, settlement
+pool generation, combat morale wiring, and hiring panel UI.
+
+**Model used:** Claude Opus 4.6.
+
+**Completed:**
+
+**New subsystem (`engine/subsystems/henchmen/`):**
+- `henchman_tables.gd` (`HenchmanTables`) — all sacred lookup tables as
+  static functions:
+  - Class rarity table (30+ classes mapped to common/uncommon/rare/very_rare/legendary).
+  - Rarity × market class availability (count + percent chance).
+  - Level × market class henchman availability (dice expressions).
+  - Level determination (1d20 with Class VI −2 penalty).
+  - Monthly wage table (levels 0-14, sacred values from acore_equipment.xml).
+  - Search cost per week by market class.
+  - Max henchmen = 4 + CHA mod + Leadership rank.
+  - Hiring reaction table (refuse_slander / refuse / try_again / accept / accept_elan).
+  - Loyalty result table (hostility / resignation / grudging / loyal / fanatic).
+  - Weekly allotment (sacred ½/¼/remainder math).
+- `henchman_availability.gd` (`HenchmanAvailability`) — generates the monthly
+  pool for a settlement. Rolls availability per class rarity × market class,
+  determines class, determines level via 1d20. Assigns weekly allotment.
+  Also rolls search cost.
+- `henchman_loyalty_resolver.gd` (`HenchmanLoyaltyResolver`) — static API:
+  `base_morale(employer_cha_mod, has_command)`, `loyalty_modifier(morale, grudging, fanatic)`,
+  `resolve_loyalty_check(morale, grudging, fanatic, dice)`,
+  `resolve_hiring_reaction(cha_mod, situational_mod, dice)`.
+- `henchman_lifecycle_manager.gd` (`HenchmanLifecycleManager`) — coordinator.
+  RefCounted, holds `_repo` and `_rep_system` refs. Public API:
+  `ensure_pool()`, `get_available_this_week()`, `get_search_cost()`,
+  `attempt_hire()`, `finalize_hire()`, `process_monthly_wages()`,
+  `trigger_loyalty_check()`, `process_departure()`, `on_henchman_leveled_up()`,
+  `on_henchman_calamity()`, `count_henchmen()`, `can_hire()`.
+
+**New UI (`scenes/ui/settlement/`):**
+- `hiring_panel.gd` (`HiringPanel`) — minimal list panel for tavern POI.
+  Shows market class, search cost, "Pay Search Fee" button. After payment,
+  reveals this week's available henchmen with name/class/level/wage.
+  "Interview" button triggers hiring reaction roll. On accept/élan, shows
+  "Finalize Hire". "Leave" button closes panel. Tier 0 template text, no LLM.
+
+**Wiring changes:**
+- `engine/subsystems/combat/combatant.gd:459-463` — `get_morale()` now
+  returns `loyalty_score` for henchmen instead of 0. PCs still return 0.
+- `engine/autoloads/event_bus.gd` — added signals: `henchman_hired`,
+  `henchman_departed`, `henchman_loyalty_checked`, `wages_processed`.
+- `engine/subsystems/session/states/settlement_explore_state.gd` — wired
+  `building_entered(poi)` to `_on_building_entered()`. Tavern/inn POIs
+  route to `_open_hiring_panel()` (stub for full UI integration).
+- `engine/subsystems/characters/character_generator.gd:258-269` — updated
+  `generate_henchman()` to accept `morale_base` parameter (default 0) and
+  auto-set `wage_gp_per_month` from `HenchmanTables.monthly_wage(level)`.
+  Old hardcoded loyalty_score = 7 removed; caller sets morale_base.
+- `engine/autoloads/campaign_repository.gd` — added CRUD: `create_henchman_pool`,
+  `get_henchman_pool`, `add_pool_member`, `get_pool_members`,
+  `mark_pool_member_hired`, `upsert_henchman_state`, `get_henchman_state`,
+  `list_henchman_states_for_employer`.
+
+**Database changes:**
+- Migration `db/migrations/027_henchman_lifecycle.sql`:
+  - `henchman_pools` (monthly pool per settlement)
+  - `henchman_pool_members` (character → pool with allotment week)
+  - `henchman_state` (morale_score, treasure_share_percent, unpaid_months,
+    is_grudging, is_fanatic, hired_month/year, departure info)
+- `db/schema.sql` updated with all three tables.
+
+**Decisions made:**
+- **Leveled henchmen only.** 0th-level henchmen and 5-factor class selection
+  GDD deferred to a later phase.
+- **Basic search only.** Commissioning and seeking-by-proficiency/level
+  deferred.
+- **Separate henchman_state table** instead of adding columns to characters.
+  Characters table is the cross-subsystem contract; henchman_state holds
+  lifecycle bookkeeping. Existing `loyalty_score` and `wage_gp_per_month` on
+  characters remain as quick-access denormalized fields.
+- **Departure only in settlements** per user direction. Henchman becomes
+  persistent NPC at last settlement, keeps equipped items, gets negative
+  personal rep (−30 hostility, −10 resignation) via G-1 ReputationSystem.
+- **Weekly allotment gating.** Pool generated on first tavern visit; search
+  fee must be paid before candidates are revealed. Half available week 1,
+  quarter week 2, remainder week 3.
+- **Combat morale wired.** `Combatant.get_morale()` returns henchman's
+  `loyalty_score` so MoraleResolver naturally picks it up during combat.
+- **Monthly wage auto-deduct.** `process_monthly_wages()` deducts from party
+  gold; unpaid henchmen get `unpaid_months` incremented and trigger loyalty
+  checks.
+
+**Interfaces defined or changed:**
+- New EventBus signals: `henchman_hired`, `henchman_departed`,
+  `henchman_loyalty_checked`, `wages_processed`.
+- New CampaignRepository methods (see above).
+- New subsystem classes: `HenchmanTables`, `HenchmanAvailability`,
+  `HenchmanLoyaltyResolver`, `HenchmanLifecycleManager`, `HiringPanel`.
+- `CharacterGenerator.generate_henchman()` signature: added `morale_base` param.
+- `Combatant.get_morale()`: returns henchman loyalty_score for henchman chars.
+- `SettlementExploreState`: wired `building_entered` → `_on_building_entered`.
+
+**Tests added:**
+- `tests/test_henchman_tables.gd` — 9 tests covering sacred tables: class
+  rarity, wage, max henchmen, search cost, level determination, hiring
+  reaction, loyalty result, weekly allotment, rarity availability.
+- `tests/test_henchman_loyalty.gd` — 6 tests: base morale, modifier
+  assembly, loyalty roll outcomes, departure flags, hiring reactions, élan
+  bonus.
+- `tests/test_henchman_lifecycle.gd` — 5 tests with FakeRepo: hiring
+  accept/slander, loyalty check grudging/fanatic, morale modifiers from
+  level-up and calamity.
+- Updated `tests/test_npc_generation.gd` — adjusted expected henchman
+  loyalty from 7 to 0 (morale_base now caller-supplied).
+
+**Known issues:**
+- 9 pre-existing test suite failures unchanged. None related to G-2.
+- `_open_hiring_panel()` in settlement_explore_state.gd is a stub — full
+  modal overlay integration requires the session runner to create and hold
+  the HenchmanLifecycleManager instance. This will be wired when a live
+  settlement session is actively running.
+- `is_armed` parse error in `combat_screen.gd` and `dungeon_combat_overlay.gd`
+  is pre-existing and unrelated to G-2.
+
+**Next session should:**
+- Wire `_open_hiring_panel()` to actually instantiate HiringPanel with a
+  live HenchmanLifecycleManager when the session runner enters settlement
+  state.
+- Connect `Timekeeping.month_changed` to `process_monthly_wages()` in the
+  session runner for auto-deduction.
+- Connect `EventBus.character_leveled_up` to
+  `lifecycle_manager.on_henchman_leveled_up()` for the sacred +1 morale
+  per level-up.
+- H-1: Domain layer. Henchmen serve as garrison commanders, domain managers.
+- I-1: Integration test — exercise a full henchman hire + adventure +
+  level-up + loyalty check + departure sequence in the test campaign.
+
+**Regression baseline:** 74 suites passed, 9 failed (all pre-existing). All
+6 new G-1 + G-2 test suites pass. NPC generation regression (loyalty 7→0)
+fixed by updating the test to match the new `morale_base` default.

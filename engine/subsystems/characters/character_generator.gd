@@ -256,16 +256,17 @@ func generate_npc(class_id: String, level: int, campaign_id: String,
 
 
 func generate_henchman(class_id: String, level: int, campaign_id: String,
-		employer_id: String) -> CharacterData:
+		employer_id: String = "", morale_base: int = 0) -> CharacterData:
 	## Generate a henchman — like an NPC but tier=full, type=henchman,
 	## with employer tracking and loyalty score.
+	## [param morale_base] is 0 + employer's CHA modifier + Command bonus.
+	## Pass 0 for unhired pool candidates (employer_id = "").
 	var character := generate_npc(class_id, level, campaign_id, "full", "henchman")
 	if character == null:
 		return null
 	character.employer_id = employer_id
-	# Base loyalty: 7 + CHA modifier of employer (looked up by caller)
-	# For now, set a default base of 7
-	character.loyalty_score = 7
+	character.loyalty_score = morale_base
+	character.wage_gp_per_month = HenchmanTables.monthly_wage(level)
 	return character
 
 

@@ -216,8 +216,17 @@ func show_combatant(combatant) -> void:
 				_ammo_label.text = ""
 		else:
 			_weapon_label.text = "Unarmed"
-			_attack_label.text = ""
-			_damage_label.text = "Dmg: 1d3"
+			var unarmed_str_mod: int = CharacterData.ability_modifier(
+				combatant._character.get_effective_ability_score("strength"))
+			var unarmed_atk: int = combatant.get_effective_attack_throw()
+			var unarmed_bonus_str := "+%d" % unarmed_str_mod if unarmed_str_mod >= 0 else str(unarmed_str_mod)
+			_attack_label.text = "Atk: %d+ (%s)" % [unarmed_atk, unarmed_bonus_str]
+			if unarmed_str_mod > 0:
+				_damage_label.text = "Dmg: 1d3+%d" % unarmed_str_mod
+			elif unarmed_str_mod < 0:
+				_damage_label.text = "Dmg: 1d3%d" % unarmed_str_mod
+			else:
+				_damage_label.text = "Dmg: 1d3"
 			_ammo_label.text = ""
 	else:
 		# Monster — show HD-based attack info

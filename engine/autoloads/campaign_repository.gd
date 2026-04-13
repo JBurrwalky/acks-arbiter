@@ -2550,3 +2550,99 @@ func clear_settlement_barred_party(settlement_id: String, party_id: String) -> b
 	return db.query_with_bindings(
 		"UPDATE settlement_entrances SET barred_party_ids = ? WHERE id = ?",
 		[JSON.stringify(current), settlement_id])
+
+
+# ---------------------------------------------------------------------------
+# Henchman lifecycle (Phase G-2) — pools, pool members, henchman state
+# ---------------------------------------------------------------------------
+
+func create_henchman_pool(campaign_id: String, settlement_id: String,
+		month: int, year: int, total: int, cost: int) -> String:
+	var id := generate_id()
+	var ok := db.query_with_bindings(
+		"""INSERT INTO henchman_pools
+			(id, campaign_id, settlement_id, generated_month, generated_year,
+			 total_available, search_cost_gp)
+		   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+		[id, campaign_id, settlement_id, month, year, total, cost])
+	if not ok:
+		push_error("CampaignRepository.create_henchman_pool: failed. settlement=%s" % settlement_id)
+		return ""
+	return id
+
+
+func get_henchman_pool(settlement_id: String, month: int, year: int) -> Dictionary:
+	if not db.query_with_bindings(
+			"""SELECT * FROM henchman_pools
+			   WHERE settlement_id = ? AND generated_month = ? AND generated_year = ?""",
+			[settlement_id, month, year]) or db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+func add_pool_member(pool_id: String, character_id: String, week: int) -> bool:
+	return db.query_with_bindings(
+		"INSERT INTO henchman_pool_members (pool_id, character_id, allotment_week) VALUES (?, ?, ?)",
+		[pool_id, character_id, week])
+
+
+func get_pool_members(pool_id: String, max_week: int = 3) -> Array:
+	db.query_with_bindings(
+		"""SELECT pm.*, c.name, c.class_id, c.level, c.character_type
+		   FROM henchman_pool_members pm
+		   JOIN characters c ON c.id = pm.character_id
+		   WHERE pm.pool_id = ? AND pm.allotment_week <= ? AND pm.is_hired = 0
+		   ORDER BY pm.allotment_week ASC""",
+		[pool_id, max_week])
+	return db.query_result.duplicate()
+
+
+func mark_pool_member_hired(pool_id: String, character_id: String) -> bool:
+	return db.query_with_bindings(
+		"UPDATE henchman_pool_members SET is_hired = 1 WHERE pool_id = ? AND character_id = ?",
+		[pool_id, character_id])
+
+
+func upsert_henchman_state(character_id: String, state: Dictionary) -> bool:
+	return db.query_with_bindings(
+		"""INSERT INTO henchman_state
+			(character_id, morale_score, treasure_share_percent, unpaid_months,
+			 is_grudging, is_fanatic, hired_month, hired_year,
+			 departure_reason, departure_settlement_id, updated_at)
+		   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+		   ON CONFLICT(character_id) DO UPDATE SET
+			morale_score = excluded.morale_score,
+			treasure_share_percent = excluded.treasure_share_percent,
+			unpaid_months = excluded.unpaid_months,
+			is_grudging = excluded.is_grudging,
+			is_fanatic = excluded.is_fanatic,
+			departure_reason = excluded.departure_reason,
+			departure_settlement_id = excluded.departure_settlement_id,
+			updated_at = datetime('now')""",
+		[character_id,
+		 int(state.get("morale_score", 0)),
+		 int(state.get("treasure_share_percent", 15)),
+		 int(state.get("unpaid_months", 0)),
+		 1 if state.get("is_grudging", false) else 0,
+		 1 if state.get("is_fanatic", false) else 0,
+		 int(state.get("hired_month", 0)),
+		 int(state.get("hired_year", 0)),
+		 state.get("departure_reason", ""),
+		 null if state.get("departure_settlement_id", "") == "" else state.get("departure_settlement_id")])
+
+
+func get_henchman_state(character_id: String) -> Dictionary:
+	if not db.query_with_bindings(
+			"SELECT * FROM henchman_state WHERE character_id = ?",
+			[character_id]) or db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+func list_henchman_states_for_employer(employer_id: String) -> Array:
+	db.query_with_bindings(
+		"""SELECT hs.* FROM henchman_state hs
+		   JOIN characters c ON c.id = hs.character_id
+		   WHERE c.employer_id = ? AND c.character_type = 'henchman'""",
+		[employer_id])
+	return db.query_result.duplicate()

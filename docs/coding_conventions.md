@@ -1858,6 +1858,16 @@ The `build_reaction_modifiers(target)` helper avoids double-counting: if the tar
 
 Per existing convention, only `CampaignRepository` opens SQLite. `ReputationSystem` and `HostileEnforcement` are `RefCounted` classes that take a CampaignRepository reference in their constructor and call accessor methods on it (`fetch_reputation_entry`, `upsert_reputation_entry`, `get_domain_ruler_id`, etc.). **Do not add new autoloads for reputation features** — wire them into the session runner / domain manager during construction.
 
-### 18.5 Reaction Modifiers Use the Existing ModifierStack
+### 18.5 Henchman Lifecycle Subsystem
+
+<!-- Added 2026-04-12 (Phase G-2) -->
+
+Henchman lifecycle classes live in `engine/subsystems/henchmen/`. All are `RefCounted` (no autoloads). `HenchmanTables` is pure static data (sacred tables, no DB/dice). `HenchmanAvailability` and `HenchmanLoyaltyResolver` are pure-math classes that accept a `dice` parameter for testability. `HenchmanLifecycleManager` is the coordinator; callers construct it with `CampaignRepository` and (optionally) `ReputationSystem` references.
+
+**Morale vs loyalty:** `loyalty_score` on `CharacterData` is the quick-access combat morale field (consumed by `Combatant.get_morale()`). `henchman_state.morale_score` is the canonical lifecycle score (tracks grudging/fanatic flags, unpaid months). These should stay in sync — `on_henchman_leveled_up()` and `on_henchman_calamity()` update both.
+
+**Pool generation:** Henchman pools are generated on first tavern visit per settlement per month, cached in `henchman_pools` + `henchman_pool_members`. Pool characters are real `characters` rows with `character_type = 'henchman'` and `employer_id = ''` until hired.
+
+### 18.6 Reaction Modifiers Use the Existing ModifierStack
 
 Reputation modifiers, proficiency bonuses, and the sacred ACKS modifier categories (alignment, location, authority, threat, etc.) all stack via the existing `ModifierStack`. Each contribution is added with a labeled `source_id` and a `stacking_group` so the breakdown is auditable in test logs and (later) in LLM context assembly. Never roll up a final integer and add it as one anonymous modifier — preserve the per-source breakdown.
