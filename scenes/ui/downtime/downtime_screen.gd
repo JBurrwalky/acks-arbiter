@@ -1,5 +1,5 @@
 class_name DowntimeScreen
-extends Control
+extends CanvasLayer
 
 ## Downtime activity hub — grid of activity cards.
 ##
@@ -28,7 +28,7 @@ var _activity_panel: VBoxContainer = null  # For sub-activity display
 
 
 func _ready() -> void:
-	set_anchors_preset(PRESET_FULL_RECT)
+	layer = 50
 
 
 func setup() -> void:

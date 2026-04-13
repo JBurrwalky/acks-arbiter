@@ -24,6 +24,12 @@ func enter(runner, context: Dictionary) -> void:
 	_connect(renderer, "dungeon_entry_requested", _on_dungeon_entry)
 	_connect(renderer, "settlement_entry_requested", _on_settlement_entry)
 
+	# Connect status bar action buttons
+	if not EventBus.camp_requested.is_connected(_on_camp_requested):
+		EventBus.camp_requested.connect(_on_camp_requested)
+	if not EventBus.day_declaration_requested.is_connected(_on_day_declaration_requested):
+		EventBus.day_declaration_requested.connect(_on_day_declaration_requested)
+
 
 func exit(runner) -> void:
 	var renderer: Node = runner.get_hex_map_renderer()
@@ -32,6 +38,12 @@ func exit(runner) -> void:
 	_disconnect(renderer, "hex_clicked", _on_hex_clicked)
 	_disconnect(renderer, "dungeon_entry_requested", _on_dungeon_entry)
 	_disconnect(renderer, "settlement_entry_requested", _on_settlement_entry)
+
+	# Disconnect status bar action buttons
+	if EventBus.camp_requested.is_connected(_on_camp_requested):
+		EventBus.camp_requested.disconnect(_on_camp_requested)
+	if EventBus.day_declaration_requested.is_connected(_on_day_declaration_requested):
+		EventBus.day_declaration_requested.disconnect(_on_day_declaration_requested)
 
 	# Hide hex map (only needed when transitioning to dungeon/settlement,
 	# but safe to always do — re-shown on enter)
@@ -95,6 +107,23 @@ func _on_hex_clicked(coord: Vector2i) -> void:
 
 	# Autosave
 	_runner.save_session()
+
+
+func _on_camp_requested() -> void:
+	if _runner == null:
+		return
+	_runner.transition_to_state("camp", {
+		"return_state": "wilderness",
+		"is_town": false,
+	})
+
+
+func _on_day_declaration_requested() -> void:
+	if _runner == null:
+		return
+	_runner.transition_to_state("day_declaration", {
+		"return_state": "wilderness",
+	})
 
 
 func _on_dungeon_entry(entrance: Dictionary, spawn_cell: Vector2i) -> void:

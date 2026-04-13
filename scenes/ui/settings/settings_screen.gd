@@ -1,5 +1,5 @@
 class_name SettingsScreen
-extends Control
+extends CanvasLayer
 
 ## Settings screen — pushed onto NavigationStack from Main Menu or Pause Menu.
 ##
@@ -18,6 +18,7 @@ var _dice_mode_group: ButtonGroup = null
 
 
 func _ready() -> void:
+	layer = 50
 	_build_ui()
 
 
@@ -38,10 +39,8 @@ func exit() -> void:
 # ---------------------------------------------------------------------------
 
 func _build_ui() -> void:
-	set_anchors_preset(PRESET_FULL_RECT)
-
 	var bg := PanelContainer.new()
-	bg.set_anchors_preset(PRESET_FULL_RECT)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	UiSurfaceStyles.apply_framed_window_chrome(bg)
 	add_child(bg)
 

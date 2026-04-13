@@ -205,6 +205,7 @@ func _build_ui() -> void:
 	var hsplit := HBoxContainer.new()
 	hsplit.name = "HSplit"
 	hsplit.set_anchors_preset(Control.PRESET_FULL_RECT)
+	hsplit.offset_bottom = -56.0  # Leave room for SessionStatusBar (48px + 8px gap)
 	add_child(hsplit)
 
 	# Map area (takes up remaining space)
@@ -241,7 +242,7 @@ func _build_ui() -> void:
 	_log_panel.name = "CombatLog"
 	_log_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	_log_panel.offset_left = 10.0
-	_log_panel.offset_bottom = -10.0
+	_log_panel.offset_bottom = -66.0  # 10px gap + 48px status bar + 8px extra
 	_log_panel.offset_top = -180.0
 	_log_panel.offset_right = 350.0
 	add_child(_log_panel)

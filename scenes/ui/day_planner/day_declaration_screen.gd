@@ -1,11 +1,11 @@
 class_name DayDeclarationScreen
-extends Control
+extends CanvasLayer
 
 ## Day declaration UI — 8-slot activity assignment for wilderness exploration.
 ##
-## Players assign activities (March, Explore, Rest, Forage, Hunt, Guard,
-## Craft, Free) to each of the 8 time slots. Shows estimated travel distance,
-## encounter check count, and resource consumption.
+## Players assign activities via dropdown selectors for each of the 8 time
+## slots. Shows estimated travel distance, encounter check count, and
+## resource consumption.
 
 signal day_confirmed(budget: DayBudgetManager)
 signal day_cancelled
@@ -13,18 +13,17 @@ signal day_cancelled
 const HEADING_COLOR := Color(0.95, 0.90, 0.78, 1.0)
 const BODY_COLOR := Color(0.85, 0.80, 0.70, 1.0)
 const DIM_COLOR := Color(0.55, 0.50, 0.42, 1.0)
-const SLOT_SIZE := Vector2(80, 80)
 
 var _budget: DayBudgetManager = null
-var _slot_buttons: Array[Button] = []
+var _slot_dropdowns: Array[OptionButton] = []
+var _slot_swatches: Array[ColorRect] = []
 var _summary_label: Label = null
 var _error_label: Label = null
 var _confirm_btn: Button = null
-var _content: VBoxContainer = null
 
 
 func _ready() -> void:
-	set_anchors_preset(PRESET_FULL_RECT)
+	layer = 50
 
 
 func setup(budget: DayBudgetManager) -> void:
@@ -38,63 +37,82 @@ func setup(budget: DayBudgetManager) -> void:
 # ---------------------------------------------------------------------------
 
 func _build_ui() -> void:
-	_clear()
-
 	var bg := PanelContainer.new()
-	bg.set_anchors_preset(PRESET_FULL_RECT)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	UiSurfaceStyles.apply_framed_window_chrome(bg)
 	add_child(bg)
 
 	var margin := MarginContainer.new()
-	margin.set_anchors_preset(PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 40)
-	margin.add_theme_constant_override("margin_right", 40)
-	margin.add_theme_constant_override("margin_top", 30)
-	margin.add_theme_constant_override("margin_bottom", 30)
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", 60)
+	margin.add_theme_constant_override("margin_right", 60)
+	margin.add_theme_constant_override("margin_top", 40)
+	margin.add_theme_constant_override("margin_bottom", 60)
 	bg.add_child(margin)
 
-	_content = VBoxContainer.new()
-	_content.add_theme_constant_override("separation", 14)
-	_content.size_flags_horizontal = SIZE_EXPAND_FILL
-	margin.add_child(_content)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 14)
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	margin.add_child(content)
 
-	_content.add_child(_heading("Plan the Day"))
-	_content.add_child(_body(
-		"Assign activities to each hour of daylight. "
-		+ "Click a slot to cycle through activity types."))
+	content.add_child(_heading("Plan the Day"))
+	content.add_child(_body(
+		"Assign an activity to each hour of daylight using the dropdowns below."))
 
-	# Slot grid.
-	var slot_bar := HBoxContainer.new()
-	slot_bar.add_theme_constant_override("separation", 8)
-	slot_bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	_content.add_child(slot_bar)
+	# Slot grid — each slot is a row with hour label, color swatch, dropdown.
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 6)
+	content.add_child(grid)
 
-	_slot_buttons.clear()
+	_slot_dropdowns.clear()
+	_slot_swatches.clear()
 	for i in range(DayBudgetManager.SLOT_COUNT):
-		var slot_btn := _create_slot_button(i)
-		slot_bar.add_child(slot_btn)
-		_slot_buttons.append(slot_btn)
+		# Hour label.
+		var hour_label := Label.new()
+		hour_label.text = "Hour %d:" % (i + 1)
+		hour_label.add_theme_font_size_override("font_size", 13)
+		hour_label.add_theme_color_override("font_color", BODY_COLOR)
+		hour_label.custom_minimum_size = Vector2(60, 0)
+		grid.add_child(hour_label)
 
-	# Legend.
-	var legend := _build_legend()
-	_content.add_child(legend)
+		# Color swatch.
+		var swatch := ColorRect.new()
+		swatch.custom_minimum_size = Vector2(20, 20)
+		swatch.color = _budget.get_slot_color(_budget.get_slot(i))
+		grid.add_child(swatch)
+		_slot_swatches.append(swatch)
+
+		# Dropdown.
+		var dropdown := OptionButton.new()
+		dropdown.custom_minimum_size = Vector2(140, 28)
+		dropdown.add_theme_font_size_override("font_size", 12)
+		for slot_type in DayBudgetManager.SlotType.values():
+			dropdown.add_item(_budget.get_slot_name(slot_type), slot_type)
+		dropdown.selected = _budget.get_slot(i)
+		var slot_index: int = i
+		dropdown.item_selected.connect(func(idx: int):
+			_on_slot_changed(slot_index, idx))
+		grid.add_child(dropdown)
+		_slot_dropdowns.append(dropdown)
 
 	# Summary.
 	_summary_label = _body("")
-	_content.add_child(_summary_label)
+	content.add_child(_summary_label)
 
 	# Error label.
 	_error_label = Label.new()
 	_error_label.add_theme_font_size_override("font_size", 13)
 	_error_label.add_theme_color_override("font_color", Color(0.75, 0.22, 0.18, 1.0))
 	_error_label.visible = false
-	_content.add_child(_error_label)
+	content.add_child(_error_label)
 
 	# Buttons.
 	var btn_bar := HBoxContainer.new()
 	btn_bar.add_theme_constant_override("separation", 16)
 	btn_bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	_content.add_child(btn_bar)
+	content.add_child(btn_bar)
 
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
@@ -118,72 +136,16 @@ func _build_ui() -> void:
 	btn_bar.add_child(_confirm_btn)
 
 
-func _create_slot_button(index: int) -> Button:
-	var btn := Button.new()
-	btn.custom_minimum_size = SLOT_SIZE
-	_update_slot_button(btn, index)
+# ---------------------------------------------------------------------------
+# Slot changes
+# ---------------------------------------------------------------------------
 
-	btn.pressed.connect(func():
-		# Cycle to next slot type.
-		var current: int = _budget.get_slot(index)
-		var next: int = (current + 1) % DayBudgetManager.SlotType.size()
-		_budget.set_slot(index, next)
-		_update_slot_button(btn, index)
-		_update_summary()
-	)
-
-	return btn
-
-
-func _update_slot_button(btn: Button, index: int) -> void:
-	var slot_type: int = _budget.get_slot(index)
-	var color: Color = _budget.get_slot_color(slot_type)
-	var name_str: String = _budget.get_slot_name(slot_type)
-
-	btn.text = "%s\n%d" % [name_str, index + 1]
-	btn.tooltip_text = "Hour %d: %s (click to change)" % [index + 1, name_str]
-
-	var style := StyleBoxFlat.new()
-	style.bg_color = color
-	style.border_color = Color(0.35, 0.30, 0.22, 0.8)
-	style.set_border_width_all(1)
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
-	btn.add_theme_stylebox_override("normal", style)
-
-	var hover := style.duplicate()
-	hover.border_color = Color(0.75, 0.65, 0.45, 1.0)
-	btn.add_theme_stylebox_override("hover", hover)
-
-	btn.add_theme_color_override("font_color", Color(0.95, 0.92, 0.85, 1.0))
-	btn.add_theme_font_size_override("font_size", 11)
-
-
-func _build_legend() -> HBoxContainer:
-	var legend := HBoxContainer.new()
-	legend.add_theme_constant_override("separation", 12)
-	legend.alignment = BoxContainer.ALIGNMENT_CENTER
-
-	for slot_type in DayBudgetManager.SlotType.values():
-		var item := HBoxContainer.new()
-		item.add_theme_constant_override("separation", 4)
-
-		var swatch := ColorRect.new()
-		swatch.custom_minimum_size = Vector2(12, 12)
-		swatch.color = _budget.get_slot_color(slot_type)
-		item.add_child(swatch)
-
-		var label := Label.new()
-		label.text = _budget.get_slot_name(slot_type)
-		label.add_theme_font_size_override("font_size", 10)
-		label.add_theme_color_override("font_color", DIM_COLOR)
-		item.add_child(label)
-
-		legend.add_child(item)
-
-	return legend
+func _on_slot_changed(slot_index: int, dropdown_index: int) -> void:
+	_budget.set_slot(slot_index, dropdown_index)
+	# Update swatch color.
+	if slot_index < _slot_swatches.size():
+		_slot_swatches[slot_index].color = _budget.get_slot_color(dropdown_index)
+	_update_summary()
 
 
 # ---------------------------------------------------------------------------
@@ -203,7 +165,6 @@ func _update_summary() -> void:
 		"March: %d slots | Explore: %d | Rest: %d | Encounter checks: ~%d"
 		% [march, explore, rest, checks])
 
-	# Validate and show error.
 	var error := _budget.validate()
 	if not error.is_empty():
 		_error_label.text = error
@@ -215,13 +176,6 @@ func _update_summary() -> void:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-func _clear() -> void:
-	for child in get_children():
-		child.queue_free()
-	_content = null
-	_slot_buttons.clear()
-
 
 func _heading(text: String) -> Label:
 	var label := Label.new()

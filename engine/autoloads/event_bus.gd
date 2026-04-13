@@ -378,6 +378,12 @@ signal character_sheet_requested(character_id: String)
 ##   action:   Callable — optional click handler (default Callable())
 signal notification_requested(data: Dictionary)
 
+## Player requested to make camp from the status bar.
+signal camp_requested
+
+## Player requested to open the day declaration screen from the status bar.
+signal day_declaration_requested
+
 
 # ---------------------------------------------------------------------------
 # Trained creature signals

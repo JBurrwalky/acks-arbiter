@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="ACKS Arbiter"
-run/main_scene="res://tests/test_runner.tscn"
+run/main_scene="uid://cnsk8gmi465ql"
 config/features=PackedStringArray("4.6")
 config/icon="res://icon.svg"
 

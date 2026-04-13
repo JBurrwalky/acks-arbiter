@@ -51,7 +51,7 @@ func enter(runner, context: Dictionary) -> void:
 				func(assignments: Array, armed: Array):
 					_on_watches_confirmed(runner, assignments, armed))
 			_camp_screen.rest_completed.connect(
-				func(): _finalize_rest(runner))
+				func(): runner.transition_to_state(_return_state))
 
 
 func exit(runner) -> void:
@@ -77,7 +77,12 @@ func _on_watches_confirmed(runner, assignments: Array, armed_sleepers: Array) ->
 	_watch_assignments = assignments
 	_armed_sleepers = armed_sleepers
 	_watch_results.clear()
-	_resolve_watches(runner, _resume_watch if _resume_watch >= 0 else 0)
+	if _is_town:
+		# Town rest: no watches, no encounters — skip straight to rest recovery.
+		Timekeeping.advance_hours(CampManager.TOTAL_REST_HOURS)
+		_finalize_rest(runner)
+	else:
+		_resolve_watches(runner, _resume_watch if _resume_watch >= 0 else 0)
 
 
 func _resolve_watches(runner, start_watch: int) -> void:

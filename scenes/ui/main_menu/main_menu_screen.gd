@@ -1,5 +1,5 @@
 class_name MainMenuScreen
-extends Control
+extends CanvasLayer
 
 ## Main menu screen — first screen the player sees.
 ##
@@ -20,6 +20,7 @@ const BUTTON_SPACING := 14
 
 
 func _ready() -> void:
+	layer = 50
 	_build_ui()
 
 
@@ -39,11 +40,9 @@ func exit() -> void:
 # ---------------------------------------------------------------------------
 
 func _build_ui() -> void:
-	set_anchors_preset(PRESET_FULL_RECT)
-
 	# Background.
 	var bg := ColorRect.new()
-	bg.set_anchors_preset(PRESET_FULL_RECT)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.color = Color(0.08, 0.06, 0.04, 1.0)
 	add_child(bg)
 

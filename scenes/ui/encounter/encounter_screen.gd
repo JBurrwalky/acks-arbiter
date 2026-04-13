@@ -1,5 +1,5 @@
 class_name EncounterScreen
-extends Control
+extends CanvasLayer
 
 ## NPC encounter/social interaction screen.
 ##
@@ -26,7 +26,7 @@ var _narrative_area: RichTextLabel = null
 
 
 func _ready() -> void:
-	set_anchors_preset(PRESET_FULL_RECT)
+	layer = 50
 
 
 func setup(encounter_data: Dictionary) -> void:

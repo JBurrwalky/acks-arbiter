@@ -19,6 +19,7 @@ const DIM_COLOR := Color(0.55, 0.50, 0.42, 1.0)
 const ACCENT_COLOR := Color(0.30, 0.65, 0.30, 1.0)
 const DANGER_COLOR := Color(0.75, 0.22, 0.18, 1.0)
 
+var _backdrop: ColorRect = null
 var _panel: PanelContainer = null
 var _step_container: VBoxContainer = null
 var _nav_bar: HBoxContainer = null
@@ -36,6 +37,7 @@ var _level_up_engine: LevelUpEngine = null
 func _ready() -> void:
 	layer = 100
 	_build_chrome()
+	_backdrop.visible = false
 	_panel.visible = false
 
 
@@ -56,10 +58,12 @@ func open(character: CharacterData, engine: LevelUpEngine) -> void:
 	_build_steps()
 	_current_step = 0
 	_show_step(0)
+	_backdrop.visible = true
 	_panel.visible = true
 
 
 func close() -> void:
+	_backdrop.visible = false
 	_panel.visible = false
 	_character = null
 	_level_up_result = {}
@@ -71,11 +75,11 @@ func close() -> void:
 
 func _build_chrome() -> void:
 	# Dimming backdrop.
-	var backdrop := ColorRect.new()
-	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
-	backdrop.color = Color(0.0, 0.0, 0.0, 0.55)
-	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(backdrop)
+	_backdrop = ColorRect.new()
+	_backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_backdrop.color = Color(0.0, 0.0, 0.0, 0.55)
+	_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_backdrop)
 
 	_panel = PanelContainer.new()
 	_panel.set_anchors_preset(Control.PRESET_CENTER)

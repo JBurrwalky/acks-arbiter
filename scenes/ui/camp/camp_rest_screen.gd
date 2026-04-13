@@ -1,5 +1,5 @@
 class_name CampRestScreen
-extends Control
+extends CanvasLayer
 
 ## Camp/rest UI screen.
 ##
@@ -23,7 +23,7 @@ var _phase: String = "assignment"  # "assignment" | "summary"
 
 
 func _ready() -> void:
-	set_anchors_preset(PRESET_FULL_RECT)
+	layer = 50
 
 
 func setup(is_town: bool) -> void:

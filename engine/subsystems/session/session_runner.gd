@@ -185,6 +185,9 @@ func _sync_game_state(state_key: String) -> void:
 func get_nav_stack() -> NavigationStack:
 	return _nav_stack
 
+func get_scene_container() -> Node:
+	return _scene_container
+
 func get_hex_map_controller() -> HexMapController:
 	return _hex_controller
 
