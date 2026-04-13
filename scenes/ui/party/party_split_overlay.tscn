@@ -1,0 +1,7 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/party/party_split_overlay.gd" id="1_script"]
+
+[node name="PartySplitOverlay" type="CanvasLayer"]
+layer = 110
+script = ExtResource("1_script")

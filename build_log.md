@@ -4711,3 +4711,103 @@ pool generation, combat morale wiring, and hiring panel UI.
 **Regression baseline:** 74 suites passed, 9 failed (all pre-existing). All
 6 new G-1 + G-2 test suites pass. NPC generation regression (loyalty 7→0)
 fixed by updating the test to match the new `morale_base` default.
+
+---
+
+## Session 2026-04-13 — UI/UX GDD Gap Closure (Phases A-G)
+
+**Task:** Audit all UI/UX GDD requirements against built systems for build plan phases A-G. Implement all missing UI screens, overlays, cross-cutting chrome, and session states.
+**Model used:** Opus 4.6 for planning and implementation.
+**Completed:**
+
+### Phase 1: Notification System (P0)
+- `engine/subsystems/ui/notification_manager.gd` — Global notification manager with EventBus integration. Auto-wires to `character_leveled_up`, `henchman_departed`, `loyalty_changed`.
+- `scenes/ui/hud/notification_display.gd` + `.tscn` — CanvasLayer (layer=150) toast display with slide-in animation, auto-dismiss, stacking (max 5), click-to-dismiss.
+- Added `notification_requested(data: Dictionary)` signal to EventBus.
+- Wired into Main.tscn as persistent children.
+- `tests/test_notification_manager.gd` — 5 tests (normalization, forwarding, queue flush, category dismiss, signal wiring).
+
+### Phase 2: Core UI Chrome
+- `scenes/ui/roll_log/roll_log_overlay.gd` + `.tscn` — CanvasLayer (layer=90) right-side panel. Toggle with F6. Color-coded by roll type, filterable (All/Attack/Save/Skill/Other), click-to-expand detail, live updates via `dice_rolled` signal.
+- `scenes/ui/settings/settings_screen.gd` + `.tscn` — Dice mode radio buttons, display info, audio stubs, key bindings reference, LLM placeholder.
+- `scenes/ui/level_up/level_up_overlay.gd` + `.tscn` — Multi-step wizard: Congrats → HP Roll → Attack/Save → Proficiencies → Spells → Powers → Summary. Wraps `LevelUpEngine.begin_interactive_level_up()`.
+
+### Phase 3: Session Chrome
+- `scenes/ui/hud/session_status_bar.gd` + `.tscn` — CanvasLayer (layer=80) bottom bar. Widgets: party name, location, time, day budget (8 slots), adventure pool, party member chips with HP bars, movement mode, light source. Auto-hides during MAIN_MENU/CHARACTER_CREATION.
+- `scenes/ui/dialogs/confirmation_dialog.gd` + `.tscn` — Reusable modal (layer=180) with danger mode (2s delay on confirm). Title, body, confirm/cancel buttons.
+- `scenes/ui/pause/pause_menu_overlay.gd` + `.tscn` — CanvasLayer (layer=160) pause menu. Resume/Save/Settings/Quit. Toggles with Escape. Uses GameState.pause()/resume().
+
+### Phase 4: Camp/Rest System
+- `engine/subsystems/exploration/camp_manager.gd` — Static utility class for camp logic. Watch validation, encounter checks, armed sleeper rolls (d20 vs encumbrance +/- CON + 1), rest recovery (1 HP/day, full spell recovery), ration consumption, town rest.
+- `engine/subsystems/session/states/camp_state.gd` — New session state. 12-hour rest with 3 watches of 4 hours. Sleeping chars are prone/unequipped/Surprised if encounter during their sleep watch. Armed sleepers skip surprise but risk no-recovery.
+- `scenes/ui/camp/camp_rest_screen.gd` + `.tscn` — Watch assignment UI (wilderness) and simplified town rest. Rest summary shows encounters, recovery, rations, failed sleepers.
+- `tests/test_camp_manager.gd` — 8 tests (validation, recovery, failed sleepers, rations, town rest).
+
+### Phase 5: Dungeon Light Source System
+- `engine/subsystems/exploration/light_source_tracker.gd` — Tracks active light source (torch 6 turns, lantern 24, continual_light permanent, infravision 60ft permanent). Tick per dungeon turn, warning notifications at 5/2/0 turns. Serializable.
+- `tests/test_light_source_tracker.gd` — 9 tests (activation, countdown, warnings, expiry, deactivation, radius cells, serialization).
+
+### Phase 6: Party Selector & Split Party
+- `scenes/ui/hud/party_selector_tabs.gd` — Tab bar for multi-party switching. One tab per party with name/count/activity icon. Auto-hides when single party. Split button.
+- `scenes/ui/party/party_split_overlay.gd` + `.tscn` — Two-column click-to-toggle party splitter. Henchmen auto-follow employers. Validation (min 1 per group).
+
+### Phase 7: Day Declaration System
+- `engine/subsystems/exploration/day_budget_manager.gd` — 8-slot day budget with 8 slot types (March/Explore/Rest/Forage/Hunt/Guard/Craft/Free). Validation (min 2 rest). Travel distance estimation. Encounter check counting.
+- `engine/subsystems/session/states/day_declaration_state.gd` — Session state wrapping day planning and sequential slot resolution (time advance, encounters, foraging/hunting checks). Transitions to camp after all 8 slots.
+- `scenes/ui/day_planner/day_declaration_screen.gd` + `.tscn` — 8-slot click-to-cycle UI with color-coded legend, summary panel, validation errors, Confirm/Cancel.
+- `tests/test_day_budget_manager.gd` — 8 tests (defaults, slot management, validation, counts, travel estimation, encounter checks, serialization).
+
+### Phase 8: Map Polish
+- `scenes/ui/xp/xp_banking_overlay.gd` + `.tscn` — XP banking on settlement entry. Shows adventure pool, per-character division with prime requisite modifiers, banker's rounding.
+- Hex tooltip and territory overlay modifications deferred to visual testing.
+
+### Phase 9: Encounter/Social Screen
+- `engine/subsystems/session/states/encounter_state.gd` — Session state for NPC encounters. Routes to combat or peaceful resolution.
+- `scenes/ui/encounter/encounter_screen.gd` + `.tscn` — NPC info panel + narrative area + context-dependent action buttons based on attitude. Attitude ladder visualization. Influence attempts.
+
+### Phase 10: Downtime Screen + Main Menu
+- `engine/subsystems/session/states/downtime_state.gd` — Session state for between-adventure activities.
+- `scenes/ui/downtime/downtime_screen.gd` + `.tscn` — Activity card grid hub. Active: Carousing, Reserve XP, Hijinks, Rest, Hiring. Placeholder: Spell Research, Mercantile Ventures. Activity sub-panels with descriptions.
+- `scenes/ui/main_menu/main_menu_screen.gd` + `.tscn` — Title screen with New Campaign/Load/Settings/Quit.
+
+**Decisions made:**
+- Notification system is a Main scene child (not autoload) to avoid autoload proliferation. Uses EventBus signal for decoupled access.
+- Camp/rest uses 12-hour period (3 watches x 4 hours) per Jedidiah's rules. No dungeon resting in V1.
+- Armed sleeper mechanic: d20 throw vs (encumbrance +/- CON mod + 1). Failure = no recovery.
+- Sleeping characters in camp combat: prone, unequipped, auto-Surprised round 1. No other sleep conditions.
+- Day Declaration uses 8 activity slots, each ~1 hour. Minimum 2 REST slots for valid plan.
+- Roll Log uses F6 toggle (standalone key, not Ctrl+Alt combo).
+
+**Interfaces defined or changed:**
+- `EventBus.notification_requested(data: Dictionary)` — new signal
+- SessionRunner `_state_registry` expanded: added "camp", "day_declaration", "encounter", "downtime"
+- `project.godot` input actions: added `roll_log_toggle` (F6)
+- Main.tscn: added NotificationManager, NotificationDisplay, RollLogOverlay, LevelUpOverlay, SessionStatusBar, PauseMenuOverlay
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `test_notification_manager.gd` — 5 tests
+- `test_camp_manager.gd` — 8 tests
+- `test_light_source_tracker.gd` — 9 tests
+- `test_day_budget_manager.gd` — 8 tests
+- All registered in test_runner.gd/.tscn.
+
+**Known issues:**
+- Hex tooltip delay, territory tint overlays, and political border rendering are deferred — they modify existing renderers and need visual testing in Godot.
+- Downtime activity sub-panels are placeholder descriptions (Carousing XP/mishap calculation, Reserve XP conversion, Hijinks proficiency checks not yet wired to backend).
+- Encounter screen uses simplified influence mechanic (2d6 re-roll). Full InteractionResolver integration (with tone tables, CHA modifier, proficiency bonuses) needs wiring.
+- CampState.enter() calls `preload()` for camp_rest_screen.tscn — will fail if scene path changes.
+- DayDeclarationState slot resolution is sequential (no async). Combat transitions mid-day may not resume correctly without additional return-context plumbing.
+- MainMenuScreen is created but not yet wired as the boot screen (SessionRunner still boots to campaign_select).
+- Light source tracker built as standalone — needs integration with dungeon_map_controller fog update loop.
+
+**Next session should:**
+- Run test_runner.tscn in Godot to verify new tests pass alongside the 74 existing passing suites.
+- Visual-test the UI screens: open Main.tscn, trigger notifications, toggle roll log, open pause menu, test settings dice mode toggle.
+- Wire MainMenuScreen as boot target in SessionRunner (replace campaign_select as initial state).
+- Integrate LightSourceTracker with dungeon_map_controller fog updates.
+- Add hex tooltip hover delay (~1s) and territory classification tint overlay.
+- Wire the day declaration "Begin Day" flow end-to-end with wilderness exploration.
+- Implement carousing XP/mishap backend and wire to downtime sub-panel.
+- Begin Phase H-1 (Domain Data Model) or Phase I-1 (Integration Test Campaign).

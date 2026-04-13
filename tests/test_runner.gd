@@ -91,6 +91,10 @@ extends Node
 @onready var _henchman_tables_tests = $HenchmanTablesTests
 @onready var _henchman_loyalty_tests = $HenchmanLoyaltyTests
 @onready var _henchman_lifecycle_tests = $HenchmanLifecycleTests
+@onready var _notification_manager_tests = $NotificationManagerTests
+@onready var _camp_manager_tests = $CampManagerTests
+@onready var _light_source_tracker_tests = $LightSourceTrackerTests
+@onready var _day_budget_manager_tests = $DayBudgetManagerTests
 
 
 func _ready() -> void:
@@ -161,7 +165,11 @@ func run() -> void:
 			_interaction_resolver_tests,
 			_henchman_tables_tests,
 			_henchman_loyalty_tests,
-			_henchman_lifecycle_tests]:
+			_henchman_lifecycle_tests,
+			_notification_manager_tests,
+			_camp_manager_tests,
+			_light_source_tracker_tests,
+			_day_budget_manager_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

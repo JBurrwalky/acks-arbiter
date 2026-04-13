@@ -1,0 +1,7 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/pause/pause_menu_overlay.gd" id="1_script"]
+
+[node name="PauseMenuOverlay" type="CanvasLayer"]
+layer = 160
+script = ExtResource("1_script")

@@ -25,14 +25,14 @@ func _init(repo, rep_system = null, char_gen = null) -> void:
 ## Returns the pool_id. Characters are generated via CharacterGenerator.
 func ensure_pool(settlement_id: String, market_class: int,
 		campaign_id: String, month: int, year: int, dice = null) -> String:
-	var existing := _repo.get_henchman_pool(settlement_id, month, year)
+	var existing: Dictionary = _repo.get_henchman_pool(settlement_id, month, year)
 	if not existing.is_empty():
 		return existing["id"]
 
 	var specs: Array = HenchmanAvailability.generate_pool(market_class, dice)
-	var search_cost := HenchmanAvailability.roll_search_cost(market_class, dice)
+	var search_cost: int = HenchmanAvailability.roll_search_cost(market_class, dice)
 
-	var pool_id := _repo.create_henchman_pool(
+	var pool_id: String = _repo.create_henchman_pool(
 		campaign_id, settlement_id, month, year, specs.size(), search_cost)
 	if pool_id == "":
 		return ""
@@ -166,7 +166,7 @@ func process_monthly_wages(party_id: String) -> Dictionary:
 			total_deducted += wage
 		else:
 			unpaid.append(h["id"])
-			var state := _repo.get_henchman_state(h["id"])
+			var state: Dictionary = _repo.get_henchman_state(h["id"])
 			var months: int = int(state.get("unpaid_months", 0)) + 1
 			_repo.upsert_henchman_state(h["id"], {
 				"morale_score": int(state.get("morale_score", 0)),
@@ -198,7 +198,7 @@ func process_monthly_wages(party_id: String) -> Dictionary:
 ## Trigger a loyalty check and apply its outcome.
 func trigger_loyalty_check(character_id: String, trigger: String,
 		dice = null) -> Dictionary:
-	var state := _repo.get_henchman_state(character_id)
+	var state: Dictionary = _repo.get_henchman_state(character_id)
 	var morale: int = int(state.get("morale_score", 0))
 	var grudging: bool = int(state.get("is_grudging", 0)) == 1
 	var fanatic: bool = int(state.get("is_fanatic", 0)) == 1
@@ -256,7 +256,7 @@ func process_departure(character_id: String, reason: String,
 			[party_id, character_id])
 
 	# Update henchman_state with departure info.
-	var state := _repo.get_henchman_state(character_id)
+	var state: Dictionary = _repo.get_henchman_state(character_id)
 	state["departure_reason"] = reason
 	state["departure_settlement_id"] = settlement_id
 	_repo.upsert_henchman_state(character_id, state)
@@ -283,7 +283,7 @@ func process_departure(character_id: String, reason: String,
 
 ## +1 morale per level-up while in service (sacred).
 func on_henchman_leveled_up(character_id: String) -> void:
-	var state := _repo.get_henchman_state(character_id)
+	var state: Dictionary = _repo.get_henchman_state(character_id)
 	if state.is_empty():
 		return
 	state["morale_score"] = int(state.get("morale_score", 0)) + 1
@@ -295,7 +295,7 @@ func on_henchman_leveled_up(character_id: String) -> void:
 
 ## -1 morale per calamity (sacred).
 func on_henchman_calamity(character_id: String) -> void:
-	var state := _repo.get_henchman_state(character_id)
+	var state: Dictionary = _repo.get_henchman_state(character_id)
 	if state.is_empty():
 		return
 	state["morale_score"] = int(state.get("morale_score", 0)) - 1

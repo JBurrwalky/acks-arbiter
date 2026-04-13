@@ -364,6 +364,22 @@ signal character_sheet_requested(character_id: String)
 
 
 # ---------------------------------------------------------------------------
+# Notification signals
+# ---------------------------------------------------------------------------
+
+## Request a toast notification be displayed to the player.
+## [param data] keys:
+##   type:     String   — "info", "warning", "danger", "success"
+##   category: String   — "level_up", "light", "encumbrance", "supply",
+##                         "henchman", "quest", "combat", "system"
+##   title:    String   — short heading
+##   body:     String   — detail text (optional, default "")
+##   duration: float    — seconds to display (0 = persist until dismissed, default 4.0)
+##   action:   Callable — optional click handler (default Callable())
+signal notification_requested(data: Dictionary)
+
+
+# ---------------------------------------------------------------------------
 # Trained creature signals
 # ---------------------------------------------------------------------------
 

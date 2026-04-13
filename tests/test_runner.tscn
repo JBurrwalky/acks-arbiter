@@ -84,6 +84,10 @@
 [ext_resource type="Script" path="res://tests/test_henchman_lifecycle.gd" id="79_henchman_lifecycle_tests"]
 [ext_resource type="Script" path="res://tests/test_reputation_system.gd" id="75_reputation_system_tests"]
 [ext_resource type="Script" path="res://tests/test_interaction_resolver.gd" id="76_interaction_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_notification_manager.gd" id="80_notification_manager_tests"]
+[ext_resource type="Script" path="res://tests/test_camp_manager.gd" id="81_camp_manager_tests"]
+[ext_resource type="Script" path="res://tests/test_light_source_tracker.gd" id="82_light_source_tracker_tests"]
+[ext_resource type="Script" path="res://tests/test_day_budget_manager.gd" id="83_day_budget_manager_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -336,3 +340,15 @@ script = ExtResource("78_henchman_loyalty_tests")
 
 [node name="HenchmanLifecycleTests" type="Node" parent="."]
 script = ExtResource("79_henchman_lifecycle_tests")
+
+[node name="NotificationManagerTests" type="Node" parent="."]
+script = ExtResource("80_notification_manager_tests")
+
+[node name="CampManagerTests" type="Node" parent="."]
+script = ExtResource("81_camp_manager_tests")
+
+[node name="LightSourceTrackerTests" type="Node" parent="."]
+script = ExtResource("82_light_source_tracker_tests")
+
+[node name="DayBudgetManagerTests" type="Node" parent="."]
+script = ExtResource("83_day_budget_manager_tests")

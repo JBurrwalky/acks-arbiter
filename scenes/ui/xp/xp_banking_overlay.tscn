@@ -1,0 +1,7 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/xp/xp_banking_overlay.gd" id="1_script"]
+
+[node name="XPBankingOverlay" type="CanvasLayer"]
+layer = 105
+script = ExtResource("1_script")

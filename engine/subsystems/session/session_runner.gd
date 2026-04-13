@@ -101,6 +101,10 @@ func _register_states() -> void:
 		"dungeon": func() -> SessionState: return DungeonExploreState.new(),
 		"settlement": func() -> SessionState: return SettlementExploreState.new(),
 		"combat": func() -> SessionState: return CombatState.new(),
+		"camp": func() -> SessionState: return CampState.new(),
+		"day_declaration": func() -> SessionState: return DayDeclarationState.new(),
+		"encounter": func() -> SessionState: return EncounterState.new(),
+		"downtime": func() -> SessionState: return DowntimeState.new(),
 		"session_end": func() -> SessionState: return SessionEndState.new(),
 	}
 

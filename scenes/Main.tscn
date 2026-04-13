@@ -12,6 +12,12 @@
 [ext_resource type="Script" uid="uid://duboi1ccg8c25" path="res://engine/subsystems/navigation/navigation_stack.gd" id="9_nav_stack"]
 [ext_resource type="PackedScene" path="res://scenes/ui/transitions/scene_transition.tscn" id="10_scene_transition"]
 [ext_resource type="Script" path="res://engine/subsystems/session/session_runner.gd" id="12_session_runner"]
+[ext_resource type="Script" path="res://engine/subsystems/ui/notification_manager.gd" id="13_notification_mgr"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/notification_display.tscn" id="14_notification_display"]
+[ext_resource type="PackedScene" path="res://scenes/ui/roll_log/roll_log_overlay.tscn" id="15_roll_log"]
+[ext_resource type="PackedScene" path="res://scenes/ui/level_up/level_up_overlay.tscn" id="16_level_up"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/session_status_bar.tscn" id="17_status_bar"]
+[ext_resource type="PackedScene" path="res://scenes/ui/pause/pause_menu_overlay.tscn" id="18_pause_menu"]
 
 [node name="Main" type="Node" unique_id=389479426]
 script = ExtResource("1_main_script")
@@ -40,6 +46,19 @@ script = ExtResource("4_override_mgr")
 [node name="CharacterSheetOverlay" parent="." unique_id=812345001 instance=ExtResource("8_char_sheet")]
 
 [node name="PartyManagementOverlay" parent="." instance=ExtResource("11_party_mgmt")]
+
+[node name="NotificationManager" type="Node" parent="."]
+script = ExtResource("13_notification_mgr")
+
+[node name="NotificationDisplay" parent="." instance=ExtResource("14_notification_display")]
+
+[node name="RollLogOverlay" parent="." instance=ExtResource("15_roll_log")]
+
+[node name="LevelUpOverlay" parent="." instance=ExtResource("16_level_up")]
+
+[node name="SessionStatusBar" parent="." instance=ExtResource("17_status_bar")]
+
+[node name="PauseMenuOverlay" parent="." instance=ExtResource("18_pause_menu")]
 
 [node name="SessionRunner" type="Node" parent="."]
 script = ExtResource("12_session_runner")

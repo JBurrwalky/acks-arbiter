@@ -380,7 +380,7 @@ func _on_weapon_switch_requested(combatant_id: String, weapons: Array, has_moved
 	if _weapon_popup == null:
 		return
 	var combatant = _controller.get_combatant(combatant_id)
-	var is_armed := combatant != null and not combatant.get_equipped_weapon().is_empty()
+	var is_armed: bool = combatant != null and not combatant.get_equipped_weapon().is_empty()
 	# Check for equipped off-hand shield
 	var has_shield := false
 	if combatant != null and combatant.is_character and combatant._character != null:
