@@ -27,8 +27,20 @@ const SPEED_FAST := 2
 const SPEED_VERY_FAST := 5
 const SPEED_MAX := -1
 
-## Real seconds per game round at SPEED_NORMAL. Tunable.
+## Real seconds per game round at SPEED_NORMAL in dungeon context. Tunable.
+## Dungeon: 1 round = 10 game-seconds, so 1x shows rounds ticking by.
 const SECONDS_PER_ROUND := 2.0
+
+## Context-dependent time scale. Multiplies the base tick rate so that
+## wilderness 1x feels like watching the day advance, not individual rounds.
+## Set by the exploration state on enter.
+##   Dungeon:    1.0 (round-level granularity — 1 round per 2s at 1x)
+##   Settlement: 6.0 (turn-level — 1 turn per ~10s at 1x)
+##   Wilderness: 60.0 (hour-level — 1 hour per ~12s at 1x)
+##   Camp:       use MAX speed (resolved instantly)
+const TIMESCALE_DUNGEON := 1.0
+const TIMESCALE_SETTLEMENT := 6.0
+const TIMESCALE_WILDERNESS := 60.0
 
 
 # ---------------------------------------------------------------------------
@@ -46,6 +58,9 @@ var _party_id: String = ""
 
 var _speed: int = SPEED_PAUSED
 var _paused: bool = true
+
+## Context-dependent time scale (see TIMESCALE_* constants).
+var _timescale: float = TIMESCALE_WILDERNESS
 
 ## Fractional rounds accumulated between frames (avoids drift at low speeds).
 var _accumulated_rounds: float = 0.0
@@ -82,6 +97,17 @@ func setup(scheduler: EventScheduler, registry: EventHandlerRegistry, party_id: 
 
 func set_party_id(party_id: String) -> void:
 	_party_id = party_id
+
+
+## Set the time scale for the current exploration context.
+## Higher values make the clock tick faster at the same speed setting.
+func set_timescale(scale: float) -> void:
+	_timescale = maxf(1.0, scale)
+	_accumulated_rounds = 0.0
+
+
+func get_timescale() -> float:
+	return _timescale
 
 
 # ---------------------------------------------------------------------------
@@ -168,7 +194,7 @@ func tick(real_delta: float) -> int:
 
 ## Normal/fast tick: convert real delta to game rounds, advance toward events.
 func _tick_normal(real_delta: float) -> int:
-	var rounds_per_second := float(_speed) / SECONDS_PER_ROUND
+	var rounds_per_second := float(_speed) * _timescale / SECONDS_PER_ROUND
 	_accumulated_rounds += real_delta * rounds_per_second
 
 	var events_resolved := 0

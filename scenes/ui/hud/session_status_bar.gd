@@ -22,7 +22,6 @@ var _time_label: Label = null
 var _speed_controls: ClockSpeedControls = null
 var _pause_reason_label: Label = null
 var _camp_btn: Button = null
-var _plan_day_btn: Button = null
 
 
 func _ready() -> void:
@@ -100,16 +99,6 @@ func _build_ui() -> void:
 	_camp_btn.visible = false
 	hbox.add_child(_camp_btn)
 
-	_plan_day_btn = Button.new()
-	_plan_day_btn.text = "Plan Day"
-	_plan_day_btn.flat = true
-	_plan_day_btn.add_theme_font_size_override("font_size", FONT_SIZE)
-	_plan_day_btn.add_theme_color_override("font_color", LABEL_COLOR)
-	_plan_day_btn.custom_minimum_size = Vector2(65, 0)
-	_plan_day_btn.pressed.connect(func(): EventBus.day_declaration_requested.emit())
-	_plan_day_btn.visible = false
-	hbox.add_child(_plan_day_btn)
-
 
 func _make_label(text: String, color: Color, size: int) -> Label:
 	var label := Label.new()
@@ -168,7 +157,6 @@ func _update_wilderness_buttons() -> void:
 		and GameState.exploration_context == GameState.ExplorationContext.WILDERNESS
 	)
 	_camp_btn.visible = show_buttons
-	_plan_day_btn.visible = show_buttons
 
 
 func _on_hex_entered(hex_id: String) -> void:

@@ -1,7 +1,0 @@
-[gd_scene format=3]
-
-[ext_resource type="Script" path="res://scenes/ui/day_planner/day_declaration_screen.gd" id="1_script"]
-
-[node name="DayDeclarationScreen" type="CanvasLayer"]
-layer = 50
-script = ExtResource("1_script")

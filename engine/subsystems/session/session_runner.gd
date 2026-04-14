@@ -56,7 +56,7 @@ var _domain_handlers: DomainHandlers = null
 var _entity_outliner: EntityOutliner = null
 
 ## State keys where the scheduler loop should tick.
-const _SCHEDULER_STATES := ["wilderness", "dungeon", "settlement", "camp", "day_declaration", "encounter", "downtime"]
+const _SCHEDULER_STATES := ["wilderness", "dungeon", "settlement", "camp", "encounter", "downtime"]
 
 ## Parties whose time is ahead of the global clock (post-combat rounding,
 ## post-dungeon exit). A locked party cannot receive new movement or activity
@@ -157,7 +157,6 @@ func _register_states() -> void:
 		"settlement": func() -> SessionState: return SettlementExploreState.new(),
 		"combat": func() -> SessionState: return CombatState.new(),
 		"camp": func() -> SessionState: return CampState.new(),
-		"day_declaration": func() -> SessionState: return DayDeclarationState.new(),
 		"encounter": func() -> SessionState: return EncounterState.new(),
 		"downtime": func() -> SessionState: return DowntimeState.new(),
 		"session_end": func() -> SessionState: return SessionEndState.new(),

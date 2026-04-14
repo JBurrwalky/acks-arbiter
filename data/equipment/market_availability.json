@@ -1,0 +1,18 @@
+{
+  "description": "ACKS 1e equipment availability by market class. Source: acore_equipment.xml lines 77-84.",
+  "notes": [
+    "Array index 0 = Market Class I, index 5 = Market Class VI.",
+    "Integer values = quantity of each specific item available per month.",
+    "String percentages = chance that one unit is available that month.",
+    "NA = unavailable at that market class.",
+    "Bundles of small items sold together count as one item for availability."
+  ],
+  "price_tiers": [
+    { "max_cp": 100,       "label": "1gp or less",        "availability": [1700, 585, 260, 65, 30, 10] },
+    { "max_cp": 1000,      "label": "2gp-10gp",           "availability": [100, 30, 15, 5, 1, 1] },
+    { "max_cp": 10000,     "label": "11gp-100gp",         "availability": [15, 5, 2, 1, "25%", "10%"] },
+    { "max_cp": 100000,    "label": "101gp-1000gp",       "availability": [7, 2, 1, "25%", "10%", "5%"] },
+    { "max_cp": 1000000,   "label": "1001gp-10000gp",     "availability": [2, 1, "25%", "10%", "5%", "1%"] },
+    { "max_cp": 999999999, "label": "10001gp or more",    "availability": ["10%", "5%", "2%", "NA", "NA", "NA"] }
+  ]
+}

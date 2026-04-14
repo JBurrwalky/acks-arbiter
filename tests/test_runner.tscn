@@ -87,9 +87,11 @@
 [ext_resource type="Script" path="res://tests/test_notification_manager.gd" id="80_notification_manager_tests"]
 [ext_resource type="Script" path="res://tests/test_camp_manager.gd" id="81_camp_manager_tests"]
 [ext_resource type="Script" path="res://tests/test_light_source_tracker.gd" id="82_light_source_tracker_tests"]
-[ext_resource type="Script" path="res://tests/test_day_budget_manager.gd" id="83_day_budget_manager_tests"]
 [ext_resource type="Script" path="res://tests/test_event_scheduler.gd" id="84_event_scheduler_tests"]
 [ext_resource type="Script" path="res://tests/test_scheduler_loop.gd" id="85_scheduler_loop_tests"]
+[ext_resource type="Script" path="res://tests/test_currency.gd" id="86_currency_tests"]
+[ext_resource type="Script" path="res://tests/test_shop_inventory_generator.gd" id="87_shop_inventory_generator_tests"]
+[ext_resource type="Script" path="res://tests/test_shop_service.gd" id="88_shop_service_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -352,11 +354,17 @@ script = ExtResource("81_camp_manager_tests")
 [node name="LightSourceTrackerTests" type="Node" parent="."]
 script = ExtResource("82_light_source_tracker_tests")
 
-[node name="DayBudgetManagerTests" type="Node" parent="."]
-script = ExtResource("83_day_budget_manager_tests")
-
 [node name="EventSchedulerTests" type="Node" parent="."]
 script = ExtResource("84_event_scheduler_tests")
 
 [node name="SchedulerLoopTests" type="Node" parent="."]
 script = ExtResource("85_scheduler_loop_tests")
+
+[node name="CurrencyTests" type="Node" parent="."]
+script = ExtResource("86_currency_tests")
+
+[node name="ShopInventoryGeneratorTests" type="Node" parent="."]
+script = ExtResource("87_shop_inventory_generator_tests")
+
+[node name="ShopServiceTests" type="Node" parent="."]
+script = ExtResource("88_shop_service_tests")

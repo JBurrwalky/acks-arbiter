@@ -50,6 +50,9 @@ const ROAD_COLOR := Color(0.545, 0.353, 0.169)
 # Camera panning
 const PAN_SPEED := 200.0
 const EDGE_MARGIN := 40.0
+const ZOOM_MIN := 1.0      # 100% — no zoom out beyond default
+const ZOOM_MAX := 2.5      # 250%
+const ZOOM_STEP := 0.1     # 10% additive per tick
 
 
 # ---------------------------------------------------------------------------
@@ -71,6 +74,7 @@ const EDGE_MARGIN := 40.0
 
 var _controller: HexMapController
 var _map_data: HexMapData
+var _zoom_level: float = 1.0
 
 ## Node2D child that draws river/road overlay lines via _draw().
 var _overlay_layer: Node2D
@@ -170,7 +174,7 @@ func _process(delta: float) -> void:
 			pan_dir.y += 1.0
 
 	if pan_dir != Vector2.ZERO:
-		_camera.position += pan_dir.normalized() * PAN_SPEED * delta
+		_camera.position += pan_dir.normalized() * PAN_SPEED * delta / _zoom_level
 
 	# Keep Enter Dungeon button at 10% from top-right edges.
 	if _enter_dungeon_btn != null and _enter_dungeon_btn.visible:
@@ -220,6 +224,9 @@ func center_on_hex(coord: Vector2i) -> void:
 
 func _on_map_loaded(_map_id: String) -> void:
 	_map_data = _controller.get_map()
+	_zoom_level = 1.0
+	if _camera != null:
+		_camera.zoom = Vector2(1.0, 1.0)
 	_refresh_terrain_layer()
 	_refresh_overlay_layer()
 	_refresh_fog_layer()
@@ -681,6 +688,27 @@ func _compute_camera_limits() -> void:
 	_camera.limit_bottom = int(max_pos.y + pad_y)
 
 
+## Zoom in/out. If [param center_on_screen] is provided (mouse wheel), the
+## world point under the cursor stays fixed on screen; otherwise zoom is
+## centered on the current camera view.
+func _apply_zoom(new_zoom: float, center_on_screen: Vector2 = Vector2(-1, -1)) -> void:
+	if _camera == null:
+		return
+	var old_zoom := _zoom_level
+	_zoom_level = clampf(new_zoom, ZOOM_MIN, ZOOM_MAX)
+	if _zoom_level == old_zoom:
+		return
+
+	if center_on_screen != Vector2(-1, -1):
+		var vp_size := get_viewport().get_visible_rect().size
+		var screen_center := vp_size * 0.5
+		var screen_offset := center_on_screen - screen_center
+		var world_point := _camera.position + screen_offset / old_zoom
+		_camera.position = world_point - screen_offset / _zoom_level
+
+	_camera.zoom = Vector2(_zoom_level, _zoom_level)
+
+
 # ---------------------------------------------------------------------------
 # Tooltip
 # ---------------------------------------------------------------------------
@@ -747,15 +775,39 @@ func _terrain_tooltip_text(coord: Vector2i, terrain: HexTerrainData) -> String:
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var local_pos := _terrain_layer.get_local_mouse_position()
-		var godot_coord := _terrain_layer.local_to_map(local_pos)
-		var axial_coord := HexMapController.godot_map_to_axial(godot_coord)
-		if _map_data != null and _map_data.is_valid_coord(axial_coord):
-			hex_clicked.emit(axial_coord)
-			get_viewport().set_input_as_handled()
+	if event is InputEventMouseButton and event.pressed:
+		match event.button_index:
+			MOUSE_BUTTON_LEFT:
+				var local_pos := _terrain_layer.get_local_mouse_position()
+				var godot_coord := _terrain_layer.local_to_map(local_pos)
+				var axial_coord := HexMapController.godot_map_to_axial(godot_coord)
+				if _map_data != null and _map_data.is_valid_coord(axial_coord):
+					hex_clicked.emit(axial_coord)
+					get_viewport().set_input_as_handled()
+			MOUSE_BUTTON_WHEEL_UP:
+				_apply_zoom(_zoom_level + ZOOM_STEP, event.position)
+				get_viewport().set_input_as_handled()
+			MOUSE_BUTTON_WHEEL_DOWN:
+				_apply_zoom(_zoom_level - ZOOM_STEP, event.position)
+				get_viewport().set_input_as_handled()
+
 	elif event is InputEventMouseMotion:
 		_update_tooltip(event.position)
+
+	elif event is InputEventKey and event.pressed:
+		if event.ctrl_pressed:
+			match event.keycode:
+				KEY_EQUAL, KEY_KP_ADD:
+					_apply_zoom(_zoom_level + ZOOM_STEP)
+					get_viewport().set_input_as_handled()
+				KEY_MINUS, KEY_KP_SUBTRACT:
+					_apply_zoom(_zoom_level - ZOOM_STEP)
+					get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_HOME:
+			_apply_zoom(1.0)
+			if _map_data != null:
+				center_on_hex(_map_data.party_hex)
+			get_viewport().set_input_as_handled()
 
 
 # ---------------------------------------------------------------------------

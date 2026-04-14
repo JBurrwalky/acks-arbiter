@@ -139,6 +139,13 @@ signal character_died(character_id: String)
 ## A character's inventory changed (item added, removed, or equipped).
 signal inventory_updated(character_id: String)
 
+## An item was bought or sold at a settlement shop.
+## [param transaction] keys: type ("buy"|"sell"), character_id, item_key, quantity, cost_cp, poi_id
+signal shop_transaction_completed(transaction: Dictionary)
+
+## A commissioned item is ready for pickup at a settlement shop.
+signal commission_ready(commission_id: String, character_id: String, item_key: String)
+
 ## XP was awarded to a character.
 signal xp_awarded(character_id: String, amount: int)
 
@@ -380,9 +387,6 @@ signal notification_requested(data: Dictionary)
 
 ## Player requested to make camp from the status bar.
 signal camp_requested
-
-## Player requested to open the day declaration screen from the status bar.
-signal day_declaration_requested
 
 
 # ---------------------------------------------------------------------------

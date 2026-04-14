@@ -692,6 +692,18 @@ func update_inventory_item_quantity(item_id: String, new_quantity: int) -> bool:
 	return true
 
 
+func update_inventory_item_uses(item_id: String, new_uses: int) -> bool:
+	## Update uses_remaining for a consumable inventory item (torch, lantern fuel, etc.).
+	## If uses reach 0 and the item should be destroyed, caller must call remove_inventory_item.
+	if not db.query_with_bindings(
+		"UPDATE inventory_items SET uses_remaining = ? WHERE id = ?",
+		[new_uses, item_id]
+	):
+		push_error("CampaignRepository.update_inventory_item_uses: failed. id=%s" % item_id)
+		return false
+	return true
+
+
 func split_item_for_equip(item_id: String, slot: String, uses_per_unit: int) -> String:
 	## Split one unit from a stacked item into an equipped single-unit item.
 	## Returns the new item's id, or "" on failure.
@@ -2692,3 +2704,241 @@ func get_scheduled_events(campaign_id: String) -> Array:
 func clear_scheduled_events(campaign_id: String) -> bool:
 	return db.query_with_bindings(
 		"DELETE FROM scheduled_events WHERE campaign_id = ?", [campaign_id])
+
+
+# ---------------------------------------------------------------------------
+# Currency (multi-denomination coin system)
+# ---------------------------------------------------------------------------
+
+## Returns a dictionary of coin quantities for a character.
+## Keys: "coin_pp", "coin_ep", "coin_gp", "coin_sp", "coin_cp". Missing types → 0.
+func get_character_coins(character_id: String) -> Dictionary:
+	var coins := {}
+	for key in Currency.COIN_KEYS:
+		coins[key] = 0
+	if not db.query_with_bindings(
+		"SELECT item_key, quantity FROM inventory_items WHERE character_id = ? AND item_key IN ('coin_pp','coin_ep','coin_gp','coin_sp','coin_cp')",
+		[character_id]
+	):
+		return coins
+	for row in db.query_result:
+		coins[row["item_key"]] = int(row["quantity"])
+	return coins
+
+
+## Returns total character wealth in copper pieces.
+func get_character_wealth_cp(character_id: String) -> int:
+	return Currency.coins_to_cp(get_character_coins(character_id))
+
+
+## Deducts a cost (in cp) from a character's coins.
+## Spends smallest denominations first, makes change from larger coins.
+## Returns { "success": bool, "message": String }.
+func deduct_cost_cp(character_id: String, cost_cp: int) -> Dictionary:
+	var coins := get_character_coins(character_id)
+	var result := Currency.compute_deduction(coins, cost_cp)
+	if not result["success"]:
+		return {"success": false, "message": result["message"]}
+
+	# Apply the new coin quantities to DB.
+	var new_coins: Dictionary = result["new_coins"]
+	for key in Currency.COIN_KEYS:
+		var new_qty: int = new_coins.get(key, 0)
+		var old_qty: int = coins.get(key, 0)
+		if new_qty == old_qty:
+			continue
+		if new_qty == 0 and old_qty > 0:
+			# Remove the coin row entirely.
+			db.query_with_bindings(
+				"DELETE FROM inventory_items WHERE character_id = ? AND item_key = ?",
+				[character_id, key])
+		elif old_qty == 0 and new_qty > 0:
+			# Create a new coin row.
+			_create_coin_item(character_id, key, new_qty)
+		else:
+			# Update existing row.
+			db.query_with_bindings(
+				"UPDATE inventory_items SET quantity = ? WHERE character_id = ? AND item_key = ?",
+				[new_qty, character_id, key])
+
+	EventBus.inventory_updated.emit(character_id)
+	return {"success": true, "message": ""}
+
+
+## Adds coins to a character, distributing a copper amount into denominations
+## highest-first (pp → ep → gp → sp → cp).
+func add_coins_cp(character_id: String, amount_cp: int) -> void:
+	if amount_cp <= 0:
+		return
+	var distribution := Currency.cp_to_coins(amount_cp)
+	for key in distribution:
+		add_specific_coins(character_id, key, distribution[key])
+	EventBus.inventory_updated.emit(character_id)
+
+
+## Adds a specific number of coins of one denomination to a character.
+func add_specific_coins(character_id: String, coin_key: String, quantity: int) -> void:
+	if quantity <= 0:
+		return
+	# Check if the character already has this coin type.
+	if not db.query_with_bindings(
+		"SELECT id, quantity FROM inventory_items WHERE character_id = ? AND item_key = ?",
+		[character_id, coin_key]
+	):
+		_create_coin_item(character_id, coin_key, quantity)
+		return
+	if db.query_result.is_empty():
+		_create_coin_item(character_id, coin_key, quantity)
+		return
+	# Increment existing.
+	var row: Dictionary = db.query_result[0]
+	var new_qty: int = int(row["quantity"]) + quantity
+	db.query_with_bindings(
+		"UPDATE inventory_items SET quantity = ? WHERE id = ?",
+		[new_qty, row["id"]])
+
+
+## Internal: creates a new coin inventory item row.
+func _create_coin_item(character_id: String, coin_key: String, quantity: int) -> String:
+	var denom := Currency.get_denomination(coin_key)
+	if denom.is_empty():
+		push_error("CampaignRepository._create_coin_item: unknown coin key '%s'" % coin_key)
+		return ""
+	var id := generate_id()
+	db.query_with_bindings("""
+		INSERT INTO inventory_items
+			(id, character_id, item_key, name, quantity, encumbrance_units,
+			 slot, is_equipped, item_category)
+		VALUES (?, ?, ?, ?, ?, ?, 'pack', 0, ?)
+	""", [
+		id, character_id, coin_key, denom["name"], quantity,
+		Currency.ENC_PER_COIN, Currency.COIN_ITEM_CATEGORY,
+	])
+	return id
+
+
+# ---------------------------------------------------------------------------
+# Shop inventory (Migration 029)
+# ---------------------------------------------------------------------------
+
+## Returns all shop inventory rows for a POI.
+func get_shop_inventory(campaign_id: String, poi_id: String) -> Array:
+	if not db.query_with_bindings(
+		"SELECT * FROM shop_inventory WHERE campaign_id = ? AND poi_id = ?",
+		[campaign_id, poi_id]
+	):
+		return []
+	return db.query_result.duplicate()
+
+
+## Inserts or updates a shop inventory row for a specific item at a POI.
+func upsert_shop_inventory(
+	campaign_id: String, settlement_id: String, poi_id: String,
+	item_key: String, qty: int, generated_at_round: int
+) -> void:
+	# Try update first.
+	db.query_with_bindings(
+		"UPDATE shop_inventory SET quantity_available = ?, generated_at_round = ? WHERE campaign_id = ? AND poi_id = ? AND item_key = ?",
+		[qty, generated_at_round, campaign_id, poi_id, item_key])
+	# If no row was updated, insert.
+	if not db.query_with_bindings(
+		"SELECT changes()", []
+	):
+		return
+	var changes: int = 0
+	if not db.query_result.is_empty():
+		changes = int(db.query_result[0].get("changes()", 0))
+	if changes == 0:
+		var id := generate_id()
+		db.query_with_bindings("""
+			INSERT INTO shop_inventory
+				(id, campaign_id, settlement_id, poi_id, item_key, quantity_available, generated_at_round)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+		""", [id, campaign_id, settlement_id, poi_id, item_key, qty, generated_at_round])
+
+
+## Decrements shop stock for an item. Returns false if insufficient stock.
+func decrement_shop_stock(campaign_id: String, poi_id: String, item_key: String, amount: int) -> bool:
+	if not db.query_with_bindings(
+		"SELECT quantity_available FROM shop_inventory WHERE campaign_id = ? AND poi_id = ? AND item_key = ?",
+		[campaign_id, poi_id, item_key]
+	):
+		return false
+	if db.query_result.is_empty():
+		return false
+	var current: int = int(db.query_result[0]["quantity_available"])
+	if current < amount:
+		return false
+	return db.query_with_bindings(
+		"UPDATE shop_inventory SET quantity_available = quantity_available - ? WHERE campaign_id = ? AND poi_id = ? AND item_key = ?",
+		[amount, campaign_id, poi_id, item_key])
+
+
+## Increments shop stock for an item (e.g., when player sells an item back).
+func increment_shop_stock(campaign_id: String, poi_id: String, item_key: String, amount: int) -> void:
+	db.query_with_bindings(
+		"UPDATE shop_inventory SET quantity_available = quantity_available + ? WHERE campaign_id = ? AND poi_id = ? AND item_key = ?",
+		[amount, campaign_id, poi_id, item_key])
+
+
+## Clears all shop inventory for a POI (used before regeneration).
+func clear_shop_inventory(campaign_id: String, poi_id: String) -> void:
+	db.query_with_bindings(
+		"DELETE FROM shop_inventory WHERE campaign_id = ? AND poi_id = ?",
+		[campaign_id, poi_id])
+
+
+# ---------------------------------------------------------------------------
+# Commissions (Migration 029)
+# ---------------------------------------------------------------------------
+
+## Creates a new commission record. Returns the commission id, or "" on failure.
+func add_commission(data: Dictionary) -> String:
+	var id := generate_id()
+	var ok := db.query_with_bindings("""
+		INSERT INTO commissions
+			(id, campaign_id, settlement_id, poi_id, character_id, item_key,
+			 quantity, cost_cp, ordered_at_round, ready_at_round, picked_up)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+	""", [
+		id,
+		data.get("campaign_id", ""),
+		data.get("settlement_id", ""),
+		data.get("poi_id", ""),
+		data.get("character_id", ""),
+		data.get("item_key", ""),
+		data.get("quantity", 1),
+		data.get("cost_cp", 0),
+		data.get("ordered_at_round", 0),
+		data.get("ready_at_round", 0),
+	])
+	if not ok:
+		push_error("CampaignRepository.add_commission: insert failed")
+		return ""
+	return id
+
+
+## Returns all commissions for a character at a specific POI.
+func get_commissions(campaign_id: String, poi_id: String, character_id: String) -> Array:
+	if not db.query_with_bindings(
+		"SELECT * FROM commissions WHERE campaign_id = ? AND poi_id = ? AND character_id = ?",
+		[campaign_id, poi_id, character_id]
+	):
+		return []
+	return db.query_result.duplicate()
+
+
+## Returns all commissions for a character across all POIs.
+func get_all_commissions_for_character(campaign_id: String, character_id: String) -> Array:
+	if not db.query_with_bindings(
+		"SELECT * FROM commissions WHERE campaign_id = ? AND character_id = ? AND picked_up = 0",
+		[campaign_id, character_id]
+	):
+		return []
+	return db.query_result.duplicate()
+
+
+## Marks a commission as picked up.
+func mark_commission_picked_up(commission_id: String) -> bool:
+	return db.query_with_bindings(
+		"UPDATE commissions SET picked_up = 1 WHERE id = ?", [commission_id])

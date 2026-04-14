@@ -29,12 +29,13 @@ func enter(runner, context: Dictionary) -> void:
 	# Connect status bar action buttons
 	if not EventBus.camp_requested.is_connected(_on_camp_requested):
 		EventBus.camp_requested.connect(_on_camp_requested)
-	if not EventBus.day_declaration_requested.is_connected(_on_day_declaration_requested):
-		EventBus.day_declaration_requested.connect(_on_day_declaration_requested)
 
 	# Register wilderness event handlers with the scheduler
 	_handlers = WildernessHandlers.new(runner)
 	_handlers.register(runner.get_handler_registry())
+
+	# Set wilderness time scale — 1x feels like watching the day advance.
+	runner.get_scheduler_loop().set_timescale(SchedulerLoop.TIMESCALE_WILDERNESS)
 
 	# Check if the party is time-locked (returning from combat/dungeon
 	# with time ahead of the global clock).
@@ -56,8 +57,6 @@ func exit(runner) -> void:
 	# Disconnect status bar action buttons
 	if EventBus.camp_requested.is_connected(_on_camp_requested):
 		EventBus.camp_requested.disconnect(_on_camp_requested)
-	if EventBus.day_declaration_requested.is_connected(_on_day_declaration_requested):
-		EventBus.day_declaration_requested.disconnect(_on_day_declaration_requested)
 
 	# Unregister wilderness event handlers
 	if _handlers != null:
@@ -154,16 +153,6 @@ func _on_camp_requested() -> void:
 		"is_town": false,
 	})
 
-
-func _on_day_declaration_requested() -> void:
-	if _runner == null:
-		return
-	var loop: SchedulerLoop = _runner.get_scheduler_loop()
-	if loop != null:
-		loop.pause()
-	_runner.transition_to_state("day_declaration", {
-		"return_state": "wilderness",
-	})
 
 
 func _on_dungeon_entry(entrance: Dictionary, spawn_cell: Vector2i) -> void:

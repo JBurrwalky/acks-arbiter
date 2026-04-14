@@ -32,12 +32,14 @@ func register(registry: EventHandlerRegistry) -> void:
 	registry.register("settlement_move", _handle_settlement_move)
 	registry.register("settlement_activity", _handle_settlement_activity)
 	registry.register("settlement_encounter", _handle_settlement_encounter)
+	registry.register("commission_ready", _handle_commission_ready)
 
 
 func unregister(registry: EventHandlerRegistry) -> void:
 	registry.unregister("settlement_move")
 	registry.unregister("settlement_activity")
 	registry.unregister("settlement_encounter")
+	registry.unregister("commission_ready")
 
 
 # ---------------------------------------------------------------------------
@@ -152,6 +154,28 @@ func _handle_settlement_encounter(event: ScheduledEvent) -> Dictionary:
 			},
 		}
 	return {}
+
+
+## A commissioned item is ready for pickup at a shop.
+func _handle_commission_ready(event: ScheduledEvent) -> Dictionary:
+	var item_name: String = event.data.get("item_name", "item")
+	var character_id: String = event.data.get("character_id", "")
+	EventBus.commission_ready.emit(
+		event.data.get("commission_id", ""),
+		character_id,
+		event.data.get("item_key", ""))
+	return {
+		"auto_pause": true,
+		"pause_reason": "Commission ready: %s" % item_name,
+		"presentation": {
+			"type": "commission_ready",
+			"poi_id": event.data.get("poi_id", ""),
+			"item_key": event.data.get("item_key", ""),
+			"item_name": item_name,
+			"character_id": character_id,
+			"settlement_id": event.data.get("settlement_id", ""),
+		},
+	}
 
 
 # ---------------------------------------------------------------------------

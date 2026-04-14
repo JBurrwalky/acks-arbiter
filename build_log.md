@@ -4811,3 +4811,150 @@ fixed by updating the test to match the new `morale_base` default.
 - Wire the day declaration "Begin Day" flow end-to-end with wilderness exploration.
 - Implement carousing XP/mishap backend and wire to downtime sub-panel.
 - Begin Phase H-1 (Domain Data Model) or Phase I-1 (Integration Test Campaign).
+
+---
+
+## Session 2026-04-13/14 -- Real-Time-With-Pause Event Scheduler
+
+**Task:** Implement the real-time-with-pause event scheduler system per gdd-realtime-scheduler.md. Replace the discrete state machine game loop with a unified clock-and-scheduler model. Remove the day planner system.
+**Model used:** Opus 4.6 for planning and full implementation.
+**Completed:**
+
+Phase 1 - EventScheduler Core:
+- scheduled_event.gd, event_scheduler.gd (priority queue), event_handler_registry.gd, scheduler_loop.gd (tick driver with 5 speed modes)
+- Migration 028: scheduled_events + auto_pause_config tables
+- 7 new EventBus signals (scheduler_event_resolved, scheduler_paused, scheduler_resumed, scheduler_speed_changed, clock_speed_requested, order_cancelled, order_queued)
+- test_event_scheduler.gd (21 tests), test_scheduler_loop.gd (11 tests)
+
+Phase 2 - Session Runner Integration:
+- session_runner.gd: scheduler members, _process tick loop, persistence in load/save/end_session
+- campaign_repository.gd: save_scheduled_event/get_scheduled_events/clear_scheduled_events
+
+Combat Time Rounding + Party Locking:
+- combat_finalizer.gd: uses advance_party_rounds(), rounds up to next turn boundary per ACKS RAW
+- combat_state.gd: pauses scheduler on enter
+- session_runner.gd: _locked_parties, check_party_time_lock(), is_party_locked(), unlock_party()
+
+Phase 3 - Wilderness: wilderness_handlers.gd (travel_leg, encounter, getting_lost, forced_march). Hex clicks schedule travel_leg events. travel_speed_calculator.gd: hex_crossing_rounds().
+
+Phase 4 - Camp + Settlement: camp_handlers.gd (camp_watch, camp_rest_complete). settlement_handlers.gd (settlement_move, settlement_activity, settlement_encounter).
+
+Phase 5 - Dungeon (Real-Time-With-Pause): dungeon_handlers.gd (dungeon_movement_tick, encounter_check, light_tick, action_complete). Movement: order_move() tracks paths, movement_tick advances entities by cells_per_round each round. Three modes: exploration/combat/running. LightSourceTracker wired in.
+
+Phase 6 - Combat Bridge: done during Phase 2/3 (see above).
+
+Phase 7 - Domain: domain_handlers.gd (domain_monthly_tick). Resolves revenue/expenses/morale/growth/events. Self-reschedules monthly. Global registration in load_session().
+
+Phase 8 - UI: clock_speed_controls.gd (Pause/1x/2x/5x/Max buttons, Space/1-4 keys). entity_outliner.gd (right-side panel, orders + ETAs). session_status_bar.gd: integrated speed controls + pause reason flash. pause_menu_overlay.gd: Escape pauses scheduler.
+
+Phase 9 - Order Cancellation: cancel_travel, cancel_movement, cancel_action, set_movement_mode actions added to wilderness/dungeon/settlement states.
+
+Day Planner Removal:
+- Deleted: day_budget_manager.gd, day_declaration_state.gd, day_declaration_screen.gd/.tscn, test_day_budget_manager.gd
+- Removed from: session_runner state registry, EventBus signal, session_status_bar Plan Day button, wilderness_explore_state signal wiring, test_runner
+
+**Decisions made:**
+- EventScheduler is RefCounted owned by SessionRunner, NOT an autoload
+- Speed: NORMAL = 1 round per 2 real seconds. MAX = instant advance to next event
+- Combat uses party clock + rounds up to next turn per ACKS RAW
+- Dungeon is real-time-with-pause at round granularity (not turn-based)
+- Day planner fully removed -- replaced by direct scheduler event issuance
+
+**Interfaces defined or changed:**
+- EventScheduler: schedule/cancel/peek/pop/cancel_all_for_owner/get_events_for_owner/to_dicts/load_from_dicts
+- EventHandlerRegistry: register/unregister/resolve
+- SchedulerLoop: setup/tick/set_speed/pause/resume/toggle_pause. SPEED_PAUSED=0, SPEED_NORMAL=1, SPEED_FAST=2, SPEED_VERY_FAST=5, SPEED_MAX=-1
+- ScheduledEvent: event_id, fire_time, event_type, owner_id, data, priority, cancelled
+- Handler result keys: next_events, auto_pause, pause_reason, enter_combat, encounter_data, presentation, transition_to
+- SessionRunner accessors: get_scheduler(), get_handler_registry(), get_scheduler_loop(), check_party_time_lock(), is_party_locked(), unlock_party()
+- CampaignRepository: save_scheduled_event(), get_scheduled_events(), clear_scheduled_events()
+- EventBus removed: day_declaration_requested
+
+**Database changes:**
+- Migration 028: scheduled_events (event_id, campaign_id, fire_time, event_type, owner_id, data_json, priority, cancelled) + auto_pause_config (campaign_id, event_category, pause_tier)
+
+**Tests added/updated:**
+- test_event_scheduler.gd (21 tests), test_scheduler_loop.gd (11 tests)
+- Removed: test_day_budget_manager.gd (8 tests)
+
+**Known issues:**
+- Entity outliner uses GameState.party_id for ETA -- may need adjustment for multi-party
+- Dungeon movement tick calls controller._update_fog_for_all_members() (private method)
+- LightSourceTracker hardcoded to "torch" on dungeon entry -- needs inventory check
+- Settlement activity durations are placeholder (1 turn)
+- Domain monthly resolution uses simplified formulas -- needs full ACKS DaW tables
+- Auto-pause config UI not built yet (hardcoded defaults)
+- Passive detection checks (dwarf/elf) noted as TODO in dungeon movement tick
+
+**Next session should:**
+- Run test_runner.tscn to verify all tests pass
+- Visual-test clock speed controls and entity outliner
+- Wire LightSourceTracker to party inventory
+- Implement passive detection in dungeon movement tick
+- Build auto-pause configuration UI
+- Add hex pathfinding for multi-hex travel
+
+---
+
+## Session 2026-04-14 — Settlement Shop Mechanics & Multi-Denomination Currency
+
+**Task:** Implement in-game shop system for buying/selling equipment at settlement POIs, gated by ACKS market class availability. Also implement full multi-denomination currency system (PP/EP/GP/SP/CP).
+**Model used:** Opus 4.6 for planning and full implementation.
+
+**Completed:**
+- **Currency system** (`engine/subsystems/commerce/currency.gd`): All 5 ACKS denominations (PP=1000cp, EP=500cp, GP=100cp, SP=10cp, CP=1cp). Static helpers: `coins_to_cp()`, `cp_to_coins()`, `compute_deduction()` (smallest-first spending with change-making), `format_cost()`, `format_wealth()`.
+- **CampaignRepository currency methods** (`engine/autoloads/campaign_repository.gd`): `get_character_coins()`, `get_character_wealth_cp()`, `deduct_cost_cp()`, `add_coins_cp()`, `add_specific_coins()`, `_create_coin_item()`. All coin types stored as `inventory_items` rows with `item_key` in `["coin_pp","coin_ep","coin_gp","coin_sp","coin_cp"]`.
+- **Migration 029** (`db/migrations/029_shop_inventory.sql`): `shop_inventory` table (per-POI item stock with monthly refresh) and `commissions` table (pending orders with ready_at_round). Schema.sql updated.
+- **Market availability data** (`data/equipment/market_availability.json`): ACKS price tier × market class availability table encoded from `acore_equipment.xml`.
+- **ShopInventoryGenerator** (`engine/subsystems/commerce/shop_inventory_generator.gd`): Generates per-POI stock from market class, POI subtype → category mapping, and shop size fraction (10%/25%/50%). Uses banker's rounding. 30-day refresh cycle.
+- **ShopService** (`engine/subsystems/commerce/shop_service.gd`): `open_shop()`, `buy_item()`, `sell_item()`, `commission_item()`, `pickup_commission()`, `get_sellable_items()`. Buy/sell at same price (no resale discount). Magic items excluded. Commissions schedule `commission_ready` events.
+- **EventBus signals**: `shop_transaction_completed`, `commission_ready` added.
+- **SettlementHandlers**: `commission_ready` event handler registered.
+- **SettlementExploreState**: `_on_building_entered()` extended for `"shop"`, `"shophouse"`, `"emporium"` POI types. `_open_shop_panel()` instantiates ShopService, opens shop, pushes ShopPanel.
+- **ShopPanel UI** (`scenes/ui/settlement/shop_panel.gd` + `.tscn`): 4-tab panel (Buy/Sell/Commission/Pending Orders). Character selector dropdown, wealth display using `Currency.format_wealth()`, category-grouped buy list, sell list, commission ordering, and pending order pickup.
+- **Tests**: `test_currency.gd` (20 tests: denomination constants, wealth math, change-making, formatting), `test_shop_inventory_generator.gd` (9 tests: banker's rounding, refresh cycle, market class generation, shop sizes, category filtering, DB persistence), `test_shop_service.gd` (10 tests: open, buy, sell, commission, pickup flows). All registered in test_runner.
+
+**Decisions made:**
+- Buy and sell at the same listed catalog price — no resale discount. Design decision from Jedidiah.
+- Magic items excluded from shop system entirely (deferred to future phase).
+- Gold is per-character only (no shared party gold pool). Shop uses character selector.
+- Five denominations: PP, EP, GP, SP, CP. All 1 enc unit per coin. Created as inventory_items on demand.
+- `deduct_cost_cp()` spends smallest denominations first (cp→sp→gp→ep→pp) and makes change from next-larger when needed.
+- `add_coins_cp()` distributes into highest denominations first (pp→ep→gp→sp→cp).
+- `OverrideManager.override_adjust_gold()` kept as-is for GP-only overrides; shop uses new `deduct_cost_cp`/`add_coins_cp`.
+
+**Interfaces defined or changed:**
+- `Currency.DENOMINATIONS` array (ordered highest→lowest): `[{key, name, cp_value, abbr}, ...]`
+- `Currency.COIN_KEYS`: `["coin_pp", "coin_ep", "coin_gp", "coin_sp", "coin_cp"]`
+- `Currency.compute_deduction(coins: Dict, cost_cp: int) -> {success, new_coins, message}`
+- `CampaignRepository.get_character_coins(character_id) -> {coin_pp: int, ...}`
+- `CampaignRepository.deduct_cost_cp(character_id, cost_cp) -> {success, message}`
+- `CampaignRepository.add_coins_cp(character_id, amount_cp) -> void`
+- `ShopService.buy_item() -> {success, message, wealth_remaining_cp}`
+- `ShopService.sell_item() -> {success, message, wealth_remaining_cp}`
+- `EventBus.shop_transaction_completed(transaction: Dictionary)`
+- `EventBus.commission_ready(commission_id, character_id, item_key)`
+
+**Database changes:**
+- Migration 029: `shop_inventory` and `commissions` tables.
+- No changes to `inventory_items` schema — coin types use existing columns.
+
+**Tests added/updated:**
+- `tests/test_currency.gd` — 20 tests for Currency class
+- `tests/test_shop_inventory_generator.gd` — 9 tests for stock generation
+- `tests/test_shop_service.gd` — 10 tests for buy/sell/commission/pickup
+- All three registered in test_runner.gd and test_runner.tscn
+
+**Known issues:**
+- `henchman_lifecycle_manager` references `party_state.gold_current` column that doesn't exist in schema — pre-existing bug unrelated to this session.
+- Shop subtype mapping (POI subtype strings) not yet verified against what `gdd-settlement-stocking.md` §3.2 actually generates — will need adjustment when settlement stocking is implemented.
+- Commission tab only shows items that were generated with 0 quantity (percentage-chance failures). Items entirely outside the shop's categories are not shown for commissioning — may need a "browse catalog" option.
+- `EquipmentCatalog.format_cost()` still only shows gp/sp/cp (no ep/pp). `Currency.format_cost()` handles all 5 denominations and should be used instead going forward.
+- ShopPanel not yet visual-tested in the running game (no settlement with shop POIs exists in test data yet).
+
+**Next session should:**
+- Run test_runner.tscn to verify all new tests pass alongside existing tests
+- Visual-test shop panel in a settlement (may need to seed test shop POI data)
+- Consider updating `EquipmentCatalog.format_cost()` to delegate to `Currency.format_cost()` or deprecate it
+- Verify character creation equipment shop panel still works (it uses its own gold tracking)
+- Investigate and fix `party_state.gold_current` missing column bug in henchman wages

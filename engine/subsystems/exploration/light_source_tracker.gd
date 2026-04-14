@@ -14,9 +14,9 @@ extends RefCounted
 ##   None:            0' radius (darkness)
 
 const LIGHT_SOURCES := {
-	"torch": {"radius_feet": 30, "duration_turns": 6, "name": "Torch"},
-	"lantern": {"radius_feet": 30, "duration_turns": 24, "name": "Lantern"},
-	"continual_light": {"radius_feet": 30, "duration_turns": -1, "name": "Continual Light"},
+	"torch": {"radius_feet": 50, "duration_turns": 6, "name": "Torch"},
+	"lantern": {"radius_feet": 50, "duration_turns": 24, "name": "Lantern"},
+	"continual_light": {"radius_feet": 50, "duration_turns": -1, "name": "Continual Light"},
 	"infravision": {"radius_feet": 60, "duration_turns": -1, "name": "Infravision"},
 }
 

@@ -111,13 +111,19 @@ func enter(runner, context: Dictionary) -> void:
 	_handlers = DungeonHandlers.new(runner)
 	_handlers.register(runner.get_handler_registry())
 
+	# Set dungeon time scale — round-level granularity.
+	runner.get_scheduler_loop().set_timescale(SchedulerLoop.TIMESCALE_DUNGEON)
+
+	# Set dungeon light manager on the controller for per-entity fog.
+	_controller.set_light_manager(_handlers.get_light_manager())
+
 	# Listen for scheduler events to detect dungeon encounters.
 	if not EventBus.scheduler_event_resolved.is_connected(_on_scheduler_event_resolved):
 		EventBus.scheduler_event_resolved.connect(_on_scheduler_event_resolved)
 
-	# Activate a default light source (torch).
-	# Future: check party inventory for actual light sources.
-	_handlers.activate_light("torch")
+	# Auto-activate light sources from inventory.
+	# Scan party for characters with torches/lanterns equipped in hand slots.
+	_auto_activate_lights(runner)
 
 	# Seed recurring dungeon events (wandering monster checks, light ticks).
 	_handlers.seed_dungeon_events(runner.get_scheduler(), runner.get_party_id())
@@ -170,6 +176,10 @@ func handle_action(runner, action: String, payload: Dictionary) -> String:
 			_cancel_pending_actions(runner)
 		"set_movement_mode":
 			_change_movement_mode(runner, payload)
+		"light_source":
+			_light_source(runner, payload)
+		"douse_source":
+			_douse_source(runner, payload)
 		"end_session":
 			return "session_end"
 	return ""
@@ -214,6 +224,104 @@ func _change_movement_mode(runner, payload: Dictionary) -> void:
 	# Movement speed change takes effect on the next movement tick —
 	# no need to cancel and reschedule, since cells_per_round is read
 	# dynamically each tick.
+
+
+## Light a torch or lantern for a character. Scheduled as a 1-round action
+## (lighting with tinderbox takes a full round per ACKS).
+## payload keys: "character_id", "source_type" ("torch" or "lantern")
+func _light_source(runner, payload: Dictionary) -> void:
+	if _handlers == null:
+		return
+	var character_id: String = payload.get("character_id", "")
+	var source_type: String = payload.get("source_type", "torch")
+	var scheduler: EventScheduler = runner.get_scheduler()
+	var party_id: String = runner.get_party_id()
+	# Schedule as a 1-round action (tinderbox takes 1 round to use).
+	scheduler.schedule_at(
+		Timekeeping.get_party_time(party_id) + 1,
+		"dungeon_light_action",
+		party_id,
+		{
+			"action": "light_%s" % source_type,
+			"character_id": character_id,
+		},
+		ScheduledEvent.PRIORITY_ARRIVAL,
+	)
+	_start_clock_if_paused()
+
+
+## Douse a character's light source (instant — no round cost).
+func _douse_source(runner, payload: Dictionary) -> void:
+	if _handlers == null:
+		return
+	var character_id: String = payload.get("character_id", "")
+	_handlers.douse_light(character_id)
+	# Update fog immediately.
+	if _controller != null:
+		_controller._update_fog_for_all_members()
+
+
+## Scan party inventory on dungeon entry and auto-activate any light sources
+## that are already equipped in hand slots with uses_remaining > 0.
+func _auto_activate_lights(runner) -> void:
+	if _handlers == null:
+		return
+	var party_data: PartyData = runner.get_party_data()
+	if party_data == null:
+		return
+
+	var any_lit := false
+	for cd: CharacterData in party_data.character_data:
+		if cd.is_dead or not cd.is_active:
+			continue
+		var inventory: Array = CampaignRepository.get_inventory_items(cd.id)
+		for item in inventory:
+			if int(item.get("is_equipped", 0)) != 1:
+				continue
+			var slot: String = item.get("slot", "")
+			if slot != "hands_main" and slot != "hands_off":
+				continue
+			var item_key: String = item.get("item_key", "")
+			var uses: int = int(item.get("uses_remaining", -1))
+			if item_key == DungeonLightManager.TORCH_KEY and uses > 0:
+				_handlers.get_light_manager()._activate(cd.id, "torch", item.get("id", ""), uses)
+				any_lit = true
+			elif item_key == DungeonLightManager.LANTERN_KEY and uses > 0:
+				_handlers.get_light_manager()._activate(cd.id, "lantern", item.get("id", ""), uses)
+				any_lit = true
+
+	# If nobody has an active light source, try to auto-light for the first character
+	# that has a torch/lantern + tinderbox.
+	if not any_lit:
+		for cd: CharacterData in party_data.character_data:
+			if cd.is_dead or not cd.is_active:
+				continue
+			var result: Dictionary = _handlers.light_torch(cd.id)
+			if result.get("success", false):
+				any_lit = true
+				break
+			result = _handlers.light_lantern(cd.id)
+			if result.get("success", false):
+				any_lit = true
+				break
+
+	if not any_lit:
+		EventBus.notification_requested.emit({
+			"type": "danger",
+			"category": "light",
+			"title": "No light source!",
+			"body": "The party has no torch, lantern, or tinderbox. Equip a light source.",
+			"duration": 0.0,
+		})
+
+
+## Returns darkvision cells for a character. ACKS 1e does NOT give dwarves,
+## elves, or halflings darkvision by default (unlike D&D). Darkvision is
+## reserved for monsters and certain spells. Returns 0 for all PCs unless
+## a spell or magic item grants it (future: check active effects).
+static func _get_darkvision_cells(_cd: CharacterData) -> int:
+	# TODO: check active spell effects for darkvision/infravision grants.
+	return 0
 
 
 # ---------------------------------------------------------------------------

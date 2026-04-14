@@ -1613,16 +1613,21 @@ func handle_action(runner, action: String, payload: Dictionary) -> String
 
 ### 16.3 State ↔ GameState Mapping
 
-| SessionRunner state key | GameState.State | GameState.ExplorationContext |
-|---|---|---|
-| `campaign_select` | MAIN_MENU | NONE |
-| `party_creation` | MAIN_MENU | NONE |
-| `session_load` | (transient) | (transient) |
-| `wilderness` | EXPLORATION | WILDERNESS |
-| `dungeon` | EXPLORATION | DUNGEON |
-| `settlement` | EXPLORATION | SETTLEMENT |
-| `combat` | COMBAT | (unchanged) |
-| `session_end` | (handled by end_session) | (cleared) |
+| SessionRunner state key | GameState.State | GameState.ExplorationContext | Scheduler active? |
+|---|---|---|---|
+| `campaign_select` | MAIN_MENU | NONE | No |
+| `party_creation` | MAIN_MENU | NONE | No |
+| `session_load` | (transient) | (transient) | No |
+| `wilderness` | EXPLORATION | WILDERNESS | Yes — travel_leg events |
+| `dungeon` | EXPLORATION | DUNGEON | Yes — movement_tick, encounter_check, light_tick |
+| `settlement` | EXPLORATION | SETTLEMENT | Yes — settlement_move, settlement_activity |
+| `combat` | COMBAT | (unchanged) | Paused — combat runs its own time loop |
+| `camp` | EXPLORATION | (unchanged) | Yes (MAX speed) — camp_watch events |
+| `encounter` | EXPLORATION | (unchanged) | Paused |
+| `downtime` | DOWNTIME | NONE | Yes |
+| `session_end` | (handled by end_session) | (cleared) | Cleared |
+
+The `day_declaration` state was removed (2026-04-14). Activities are now issued directly as scheduler events in real-time.
 
 ### 16.4 LLM Integration Points
 
@@ -1871,3 +1876,86 @@ Henchman lifecycle classes live in `engine/subsystems/henchmen/`. All are `RefCo
 ### 18.6 Reaction Modifiers Use the Existing ModifierStack
 
 Reputation modifiers, proficiency bonuses, and the sacred ACKS modifier categories (alignment, location, authority, threat, etc.) all stack via the existing `ModifierStack`. Each contribution is added with a labeled `source_id` and a `stacking_group` so the breakdown is auditable in test logs and (later) in LLM context assembly. Never roll up a final integer and add it as one anonymous modifier — preserve the per-source breakdown.
+
+---
+
+## 19. Event Scheduler Conventions
+
+<!-- Added 2026-04-14 for real-time-with-pause scheduler system -->
+
+### 19.1 Architecture Overview
+
+The game operates on a **real-time-with-pause** model. An `EventScheduler` priority queue holds future events keyed to absolute game-time timestamps (elapsed rounds). A `SchedulerLoop` ticks every frame during active gameplay, advances the party clock to the next event, resolves it via an `EventHandlerRegistry`, and repeats. The player controls clock speed (Pause/1x/2x/5x/Max).
+
+**Core classes (all `RefCounted`, owned by SessionRunner — NOT autoloads):**
+
+| Class | File | Role |
+|---|---|---|
+| `ScheduledEvent` | `engine/subsystems/session/scheduled_event.gd` | Data class for a single queued event |
+| `EventScheduler` | `engine/subsystems/session/event_scheduler.gd` | Sorted priority queue |
+| `EventHandlerRegistry` | `engine/subsystems/session/event_handler_registry.gd` | Maps event_type → handler Callable |
+| `SchedulerLoop` | `engine/subsystems/session/scheduler_loop.gd` | Frame-tick driver, speed control, auto-pause |
+
+### 19.2 Event Handler Contract
+
+Every handler is a `Callable` with signature `func(event: ScheduledEvent) -> Dictionary`. The return dict may contain:
+
+| Key | Type | Effect |
+|---|---|---|
+| `next_events` | `Array[Dictionary]` | Follow-up events to schedule (each has fire_time, event_type, owner_id, data, priority) |
+| `auto_pause` | `bool` | Pause the scheduler after this event |
+| `pause_reason` | `String` | Human-readable reason shown in the status bar |
+| `enter_combat` | `bool` | Suspend scheduler, transition to CombatState |
+| `encounter_data` | `Dictionary` | Passed to CombatState if enter_combat is true |
+| `presentation` | `Dictionary` | Data for UI notification/display |
+| `transition_to` | `String` | Session state key to transition to |
+
+**The scheduler does not know about event semantics.** Handlers are registered by exploration states in `enter()` and unregistered in `exit()`. Domain handlers are registered globally in `load_session()`.
+
+### 19.3 Handler File Pattern
+
+Each exploration context has a handler class in `engine/subsystems/session/handlers/`:
+
+| File | Events handled |
+|---|---|
+| `wilderness_handlers.gd` | `travel_leg`, `wilderness_encounter_check`, `getting_lost_check`, `forced_march_check` |
+| `dungeon_handlers.gd` | `dungeon_movement_tick`, `dungeon_encounter_check`, `dungeon_light_tick`, `dungeon_action_complete` |
+| `settlement_handlers.gd` | `settlement_move`, `settlement_activity`, `settlement_encounter` |
+| `camp_handlers.gd` | `camp_watch`, `camp_rest_complete` |
+| `domain_handlers.gd` | `domain_monthly_tick` |
+
+Handler classes are `RefCounted`, take a `runner` (SessionRunner) in `_init()`, and expose `register(registry)` / `unregister(registry)` methods. State objects create and own their handler instance.
+
+### 19.4 Priority Tiebreaker Rules
+
+When multiple events share the same timestamp, resolve in this order (lower number = first):
+
+| Priority | Constant | Category |
+|---|---|---|
+| 0 | `PRIORITY_ENVIRONMENTAL` | Weather, dawn/dusk, season, light ticks |
+| 10 | `PRIORITY_SCHEDULED_CHECK` | Wandering monster rolls, encounter checks |
+| 20 | `PRIORITY_ARRIVAL` | Travel arrival, search complete, construction done |
+| 30 | `PRIORITY_CONSEQUENCE` | Combat start, trap trigger, domain event |
+
+Within the same priority tier, alphabetical `owner_id` breaks ties.
+
+### 19.5 Time Advancement Rules
+
+- **Always use the party clock:** `Timekeeping.advance_party_rounds(party_id, n)`, not global `advance_rounds()`.
+- **Combat rounds up to the next turn:** After combat, `CombatFinalizer` advances the party clock by rounds fought, then rounds up to the next turn boundary (ACKS RAW: combat < 1 turn consumes a full turn).
+- **Party locking:** If a party's clock is ahead of the global clock (e.g., after combat rounding or dungeon exit), the party is locked from new orders until the world catches up. `SessionRunner.is_party_locked(party_id)` checks this.
+- **Dungeon time is independent:** The dungeon party's clock runs asynchronously from the overworld. On dungeon exit, the party may be time-locked.
+
+### 19.6 Dungeon Real-Time-With-Pause Model
+
+Dungeon exploration is real-time at round granularity (not turn-based with an "End Turn" button). Units move continuously as the clock ticks:
+
+- Cell clicks issue movement orders via `DungeonHandlers.order_move()`.
+- A `dungeon_movement_tick` event fires every round, advancing all moving entities by their `cells_per_round` rate.
+- Movement modes: exploration (1/3 combat speed), combat (full), running (2x). Mode change takes effect on the next tick.
+- The scheduler auto-pauses when all movement completes, on encounters, light expiry, and action completion.
+- Combat transitions to turn-based on the same diamond grid, then returns to real-time on combat end.
+
+### 19.7 Day Planner System (Removed)
+
+The `DayDeclarationState`, `DayBudgetManager`, and day declaration screen were removed on 2026-04-14. Activities are now issued directly as scheduler events. Do not reference day_declaration or day_budget in new code. The `day_declaration_requested` EventBus signal no longer exists.

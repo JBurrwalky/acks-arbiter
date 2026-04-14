@@ -39,11 +39,15 @@ var _map: TacticalMapData          # Alias for _all_levels[_current_level]
 ## Entity IDs of all party members (moved as a group in D-4).
 var _party_entity_ids: Array[String] = []
 
-## Torch/light radius in cells (30 ft = 6 cells in ACKS).
-var _light_radius: int = 6
+## Per-entity light radius provider. If set, fog update queries this for
+## each entity's radius. If null, falls back to _fallback_light_radius.
+var _light_manager: DungeonLightManager = null
 
-## Additional visibility from darkvision (60 ft darkvision = +6).
-var _darkvision_bonus: int = 0
+## Fallback light radius (used when no DungeonLightManager is set).
+var _fallback_light_radius: int = 10  # 50 feet / 5 feet per cell
+
+## Per-entity darkvision bonuses: { entity_id: int (cells) }.
+var _darkvision_bonuses: Dictionary = {}
 
 ## Order manager for individual movement queue (DungeonOrderManager).
 var _order_manager: RefCounted = null
@@ -563,19 +567,25 @@ func _update_fog_for_all_members() -> void:
 		if _map.get_fog(pos) == TacticalMapData.FogState.VISIBLE:
 			_map.set_fog(pos, TacticalMapData.FogState.EXPLORED)
 
-	# Then reveal around each member's position
-	var radius := get_visible_radius()
+	# Then reveal around each member's position using per-entity light radius.
+	# Cells illuminated by ANY party member are visible to ALL (shared vision).
+	var any_light := false
 	for eid in _party_entity_ids:
 		var member_pos := _map.get_entity_pos(eid)
 		if member_pos == Vector2i(-1, -1):
 			continue
+
+		var radius := _get_entity_visible_radius(eid)
+		if radius <= 0:
+			continue  # This entity has no light — skip (they see via allies)
+		any_light = true
 
 		# Reveal room if in one
 		var room_id := _map.get_room_at(member_pos)
 		if room_id >= 0:
 			_reveal_room(room_id)
 		else:
-			# Corridor: reveal cells within light radius
+			# Corridor: reveal cells within this entity's light radius
 			var visible_cells := IsometricGrid.get_cells_in_radius(member_pos, radius)
 			for vc in visible_cells:
 				if _map.has_cell(vc):
@@ -588,16 +598,41 @@ func _update_fog_for_all_members() -> void:
 # Lighting
 # ---------------------------------------------------------------------------
 
-func set_light_radius(cells: int) -> void:
-	_light_radius = cells
+## Set the DungeonLightManager for inventory-driven per-entity lighting.
+func set_light_manager(manager: DungeonLightManager) -> void:
+	_light_manager = manager
 
 
-func set_darkvision_bonus(cells: int) -> void:
-	_darkvision_bonus = cells
+## Set the fallback radius used when no DungeonLightManager is available.
+func set_fallback_light_radius(cells: int) -> void:
+	_fallback_light_radius = cells
 
 
+## Set darkvision bonus for a specific entity (e.g., dwarves, elves).
+func set_entity_darkvision(entity_id: String, cells: int) -> void:
+	_darkvision_bonuses[entity_id] = cells
+
+
+## Returns the visible radius for a specific entity, accounting for their
+## light source and darkvision. Used by _update_fog_for_all_members.
+func _get_entity_visible_radius(entity_id: String) -> int:
+	var light: int = 0
+	if _light_manager != null:
+		light = _light_manager.get_light_radius(entity_id)
+	else:
+		light = _fallback_light_radius
+	var darkvision: int = _darkvision_bonuses.get(entity_id, 0)
+	return light + darkvision
+
+
+## Returns the maximum visible radius across all party members (legacy compat).
 func get_visible_radius() -> int:
-	return _light_radius + _darkvision_bonus
+	var max_radius := 0
+	for eid in _party_entity_ids:
+		var r := _get_entity_visible_radius(eid)
+		if r > max_radius:
+			max_radius = r
+	return max_radius
 
 
 # ---------------------------------------------------------------------------

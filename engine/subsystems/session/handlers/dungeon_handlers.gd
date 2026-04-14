@@ -43,7 +43,7 @@ const MODE_RUNNING := 2.0
 # ---------------------------------------------------------------------------
 
 var _runner = null  # SessionRunner
-var _light_tracker: LightSourceTracker = null
+var _light_manager: DungeonLightManager = null
 
 ## Active movement orders: { entity_id: { path: Array[Vector2i], progress: float, mode: float } }
 var _movement_orders: Dictionary = {}
@@ -54,7 +54,7 @@ var _tick_scheduled: bool = false
 
 func _init(runner) -> void:
 	_runner = runner
-	_light_tracker = LightSourceTracker.new()
+	_light_manager = DungeonLightManager.new()
 
 
 # ---------------------------------------------------------------------------
@@ -66,6 +66,7 @@ func register(registry: EventHandlerRegistry) -> void:
 	registry.register("dungeon_encounter_check", _handle_encounter_check)
 	registry.register("dungeon_light_tick", _handle_light_tick)
 	registry.register("dungeon_action_complete", _handle_action_complete)
+	registry.register("dungeon_light_action", _handle_light_action)
 
 
 func unregister(registry: EventHandlerRegistry) -> void:
@@ -73,6 +74,7 @@ func unregister(registry: EventHandlerRegistry) -> void:
 	registry.unregister("dungeon_encounter_check")
 	registry.unregister("dungeon_light_tick")
 	registry.unregister("dungeon_action_complete")
+	registry.unregister("dungeon_light_action")
 	_movement_orders.clear()
 	_tick_scheduled = false
 
@@ -81,12 +83,23 @@ func unregister(registry: EventHandlerRegistry) -> void:
 # Light source management
 # ---------------------------------------------------------------------------
 
-func get_light_tracker() -> LightSourceTracker:
-	return _light_tracker
+func get_light_manager() -> DungeonLightManager:
+	return _light_manager
 
 
-func activate_light(light_type: String, carrier_id: String = "") -> void:
-	_light_tracker.activate(light_type, carrier_id)
+## Attempt to light a torch for a character. Returns result dict.
+func light_torch(character_id: String) -> Dictionary:
+	return _light_manager.light_torch(character_id)
+
+
+## Attempt to light a lantern for a character. Returns result dict.
+func light_lantern(character_id: String) -> Dictionary:
+	return _light_manager.light_lantern(character_id)
+
+
+## Douse (extinguish) a character's light source.
+func douse_light(character_id: String) -> void:
+	_light_manager.douse(character_id)
 
 
 # ---------------------------------------------------------------------------
@@ -133,8 +146,8 @@ func seed_dungeon_events(scheduler: EventScheduler, party_id: String) -> void:
 		ScheduledEvent.PRIORITY_SCHEDULED_CHECK,
 	)
 
-	# Light source tick every turn (if light active and not permanent)
-	if _light_tracker.is_active() and not _light_tracker.is_permanent():
+	# Light source tick every turn (if any entity has active light)
+	if _light_manager.has_any_light():
 		scheduler.schedule_at(
 			current_time + TURN_ROUNDS,
 			"dungeon_light_tick",
@@ -347,26 +360,67 @@ func _handle_encounter_check(event: ScheduledEvent) -> Dictionary:
 	return {"next_events": next_events}
 
 
-## Tick the light source tracker. Auto-pauses on expiry.
+## Tick all active light sources via the DungeonLightManager.
+## Handles warnings, expiry, auto-refuel, auto-relight, and darkness.
 func _handle_light_tick(event: ScheduledEvent) -> Dictionary:
-	if not _light_tracker.is_active() or _light_tracker.is_permanent():
-		return {}
-
-	_light_tracker.tick()
+	var tick_events: Array[Dictionary] = _light_manager.tick_all()
 
 	var result := {}
+	var should_pause := false
+	var pause_reason := ""
+	var has_darkness := false
 
-	if not _light_tracker.is_active():
-		# Light expired — cancel movement, auto-pause.
+	# Process tick events into notifications and pause triggers.
+	for te in tick_events:
+		var te_type: String = te.get("type", "")
+		var message: String = te.get("message", "")
+		match te_type:
+			"warning":
+				EventBus.notification_requested.emit({
+					"type": "warning",
+					"category": "light",
+					"title": message,
+					"duration": 5.0,
+				})
+			"expired":
+				should_pause = true
+				pause_reason = message
+				EventBus.notification_requested.emit({
+					"type": "danger",
+					"category": "light",
+					"title": message,
+					"duration": 0.0,
+				})
+			"refueled":
+				EventBus.notification_requested.emit({
+					"type": "info",
+					"category": "light",
+					"title": message,
+					"duration": 4.0,
+				})
+			"auto_lit":
+				EventBus.notification_requested.emit({
+					"type": "info",
+					"category": "light",
+					"title": message,
+					"duration": 4.0,
+				})
+			"darkness":
+				has_darkness = true
+
+	# If total darkness (no light sources remaining), cancel movement and pause.
+	if has_darkness and not _light_manager.has_any_light():
 		_movement_orders.clear()
+		should_pause = true
+		if pause_reason.is_empty():
+			pause_reason = "Total darkness — no light sources!"
+
+	if should_pause:
 		result["auto_pause"] = true
-		result["pause_reason"] = "Light source expired!"
-		result["presentation"] = {
-			"type": "light_expired",
-			"carrier_id": _light_tracker.carrier_id,
-		}
-	else:
-		# Reschedule next light tick.
+		result["pause_reason"] = pause_reason
+
+	# Reschedule next tick if any light sources are still active.
+	if _light_manager.has_any_light():
 		result["next_events"] = [{
 			"fire_time": event.fire_time + TURN_ROUNDS,
 			"event_type": "dungeon_light_tick",
@@ -375,12 +429,10 @@ func _handle_light_tick(event: ScheduledEvent) -> Dictionary:
 			"priority": ScheduledEvent.PRIORITY_ENVIRONMENTAL,
 		}]
 
-		if _light_tracker.remaining_turns in [5, 2]:
-			result["presentation"] = {
-				"type": "light_warning",
-				"remaining_turns": _light_tracker.remaining_turns,
-				"source_name": _light_tracker.get_display_name(),
-			}
+	# Update fog (light radius may have changed).
+	var controller: DungeonMapController = _find_dungeon_controller()
+	if controller != null:
+		controller._update_fog_for_all_members()
 
 	return result
 
@@ -457,6 +509,64 @@ func _resolve_force_door(entity_id: String, cell: Vector2i) -> Dictionary:
 			"roll": roll.modified_total,
 			"forced": forced,
 		},
+	}
+
+
+## Player-initiated light/douse action (takes 1 round to light with tinderbox).
+func _handle_light_action(event: ScheduledEvent) -> Dictionary:
+	var action: String = event.data.get("action", "")  # "light_torch", "light_lantern", "douse"
+	var character_id: String = event.data.get("character_id", "")
+
+	var result_dict: Dictionary
+	match action:
+		"light_torch":
+			result_dict = _light_manager.light_torch(character_id)
+		"light_lantern":
+			result_dict = _light_manager.light_lantern(character_id)
+		"douse":
+			_light_manager.douse(character_id)
+			result_dict = {"success": true, "message": "Light source doused."}
+		_:
+			result_dict = {"success": false, "message": "Unknown light action."}
+
+	var succeeded: bool = result_dict.get("success", false)
+
+	# If we just lit something and no light tick is scheduled, start one.
+	if succeeded and action != "douse":
+		var scheduler: EventScheduler = _runner.get_scheduler()
+		var party_id: String = _runner.get_party_id()
+		# Check if a light tick is already scheduled.
+		var has_tick := false
+		for ev in scheduler.get_events_for_owner(party_id):
+			if ev.event_type == "dungeon_light_tick":
+				has_tick = true
+				break
+		if not has_tick:
+			var current_time: int = Timekeeping.get_party_time(party_id)
+			scheduler.schedule_at(
+				current_time + TURN_ROUNDS,
+				"dungeon_light_tick",
+				party_id,
+				{},
+				ScheduledEvent.PRIORITY_ENVIRONMENTAL,
+			)
+
+	# Update fog after light change.
+	var controller: DungeonMapController = _find_dungeon_controller()
+	if controller != null:
+		controller._update_fog_for_all_members()
+
+	if not succeeded:
+		EventBus.notification_requested.emit({
+			"type": "warning",
+			"category": "light",
+			"title": result_dict.get("message", "Cannot light."),
+			"duration": 4.0,
+		})
+
+	return {
+		"auto_pause": true,
+		"pause_reason": result_dict.get("message", ""),
 	}
 
 

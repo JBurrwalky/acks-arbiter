@@ -56,6 +56,9 @@ func enter(runner, context: Dictionary) -> void:
 	_handlers = SettlementHandlers.new(runner)
 	_handlers.register(runner.get_handler_registry())
 
+	# Set settlement time scale — turn-level granularity.
+	runner.get_scheduler_loop().set_timescale(SchedulerLoop.TIMESCALE_SETTLEMENT)
+
 	# Check party time lock (returning from combat in settlement).
 	runner.check_party_time_lock()
 
@@ -144,13 +147,36 @@ func _on_node_clicked(node_id: int) -> void:
 
 func _on_building_entered(poi: Dictionary) -> void:
 	var poi_type: String = poi.get("type", "")
-	if poi_type == "tavern" or poi_type == "inn":
-		_open_hiring_panel(poi)
+	match poi_type:
+		"tavern", "inn":
+			_open_hiring_panel(poi)
+		"shop", "shophouse", "emporium":
+			_open_shop_panel(poi)
 
 
 func _open_hiring_panel(_poi: Dictionary) -> void:
 	# Phase G-2 stub: the hiring panel will be pushed as a modal.
 	pass
+
+
+func _open_shop_panel(poi: Dictionary) -> void:
+	if _runner == null or _controller == null:
+		return
+	var settlement_data: SettlementMapData = _controller.get_settlement_data()
+	var market_class: int = settlement_data.market_class if settlement_data != null else 6
+	var settlement_id: String = settlement_data.settlement_id if settlement_data != null else ""
+	var campaign_id: String = GameState.current_campaign_id
+
+	var service := ShopService.new()
+	var current_round: int = Timekeeping.get_party_time(_runner.get_party_id())
+	var shop_data := service.open_shop(poi, market_class, settlement_id, campaign_id, current_round)
+
+	var panel := preload("res://scenes/ui/settlement/shop_panel.tscn").instantiate()
+	panel.setup(shop_data, _runner, service)
+	_runner.get_nav_stack().push_node(panel)
+	panel.closed.connect(func():
+		_runner.get_nav_stack().pop_node()
+	)
 
 
 func _on_exit_requested() -> void:
