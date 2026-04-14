@@ -32,7 +32,7 @@ const ZOOM_STEP := 0.1     # 10% additive per tick
 @onready var _camera: Camera2D = $Camera2D
 @onready var _tooltip_panel = $DungeonHUD/TooltipPanel
 @onready var _tooltip_label = $DungeonHUD/TooltipPanel/TooltipLabel
-@onready var _exit_button = $DungeonHUD/ExitButton
+@onready var _context_menu_layer = $DungeonHUD/ContextMenuLayer
 
 
 # ---------------------------------------------------------------------------
@@ -70,18 +70,31 @@ var _order_overlay: Node2D = null
 
 var _zoom_level: float = 1.0
 
+## Middle-mouse drag state for camera panning.
+var _middle_dragging: bool = false
+var _middle_drag_start: Vector2 = Vector2.ZERO
+
+## Double-click detection for control group recall.
+var _last_number_key: int = -1
+var _last_number_key_time: float = 0.0
+const DOUBLE_TAP_THRESHOLD := 0.3
+
 
 # ---------------------------------------------------------------------------
 # Signals
 # ---------------------------------------------------------------------------
 
 signal cell_clicked(pos: Vector2i)
-signal door_interact_requested(pos: Vector2i)
 signal exit_requested()
 signal entity_clicked(entity_id: String)
 signal entity_selected(entity_id: String)
 signal entity_deselected(entity_id: String)
-signal end_turn_requested()
+signal selection_cleared()
+signal context_menu_requested(cell_pos: Vector2i, screen_pos: Vector2)
+signal control_group_select_requested(entity_id: String)
+signal control_group_assign_requested(group_number: int, entity_ids: Array)
+signal control_group_recall_requested(group_number: int)
+signal minimap_toggle_requested()
 
 
 # ---------------------------------------------------------------------------
@@ -104,8 +117,6 @@ func setup(controller: DungeonMapController) -> void:
 # ---------------------------------------------------------------------------
 
 func _ready() -> void:
-	if _exit_button != null:
-		_exit_button.pressed.connect(_on_exit_button_pressed)
 	if _tooltip_panel != null:
 		_tooltip_panel.visible = false
 	# Find order overlay child if present in scene tree
@@ -118,13 +129,13 @@ func _process(delta: float) -> void:
 
 	var pan_dir := Vector2.ZERO
 
-	if Input.is_action_pressed("ui_left"):
+	if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
 		pan_dir.x -= 1.0
-	if Input.is_action_pressed("ui_right"):
+	if Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
 		pan_dir.x += 1.0
-	if Input.is_action_pressed("ui_up"):
+	if Input.is_action_pressed("ui_up") or Input.is_key_pressed(KEY_W):
 		pan_dir.y -= 1.0
-	if Input.is_action_pressed("ui_down"):
+	if Input.is_action_pressed("ui_down") or Input.is_key_pressed(KEY_S):
 		pan_dir.y += 1.0
 
 	var vp_size := get_viewport().get_visible_rect().size
@@ -177,7 +188,6 @@ func _on_map_loaded(_id: String) -> void:
 		_camera.zoom = Vector2(1.0, 1.0)
 	_refresh_all()
 	_center_camera_on_party()
-	_update_exit_button()
 
 
 func _on_fog_updated() -> void:
@@ -187,7 +197,6 @@ func _on_fog_updated() -> void:
 
 func _on_party_moved(_from: Vector2i, _to: Vector2i) -> void:
 	_update_entity_tokens()
-	_update_exit_button()
 	queue_redraw()
 
 
@@ -202,20 +211,6 @@ func _on_level_changed(_from_level: int, _to_level: int) -> void:
 		_camera.zoom = Vector2(1.0, 1.0)
 	_refresh_all()
 	_center_camera_on_party()
-	_update_exit_button()
-
-
-func _on_exit_button_pressed() -> void:
-	exit_requested.emit()
-
-
-## Enables or disables the exit button based on transition cell position.
-func _update_exit_button() -> void:
-	if _exit_button == null or _controller == null:
-		return
-	var on_exit: bool = _controller.is_on_transition_cell()
-	_exit_button.disabled = not on_exit
-	_exit_button.text = "Exit Dungeon" if on_exit else "Move to an exit to leave"
 
 
 # ---------------------------------------------------------------------------
@@ -524,40 +519,36 @@ func _update_entity_tokens() -> void:
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed:
-		match event.button_index:
-			MOUSE_BUTTON_LEFT:
-				var local_pos := get_local_mouse_position()
-				var cell_pos := IsometricGrid.screen_to_cell(local_pos)
-				if _combat_mode:
-					var hit_eid := _entity_id_near_screen_pos(local_pos)
-					if not hit_eid.is_empty():
-						entity_clicked.emit(hit_eid)
-						get_viewport().set_input_as_handled()
-						return
-				else:
-					var hit_eid := _entity_id_near_screen_pos(local_pos)
-					if not hit_eid.is_empty():
-						var additive := Input.is_key_pressed(KEY_SHIFT)
-						select_entity(hit_eid, additive)
-						get_viewport().set_input_as_handled()
-						return
-				if _map != null and _map.has_cell(cell_pos):
-					cell_clicked.emit(cell_pos)
+	# --- Mouse button events ---
+	if event is InputEventMouseButton:
+		if event.pressed:
+			match event.button_index:
+				MOUSE_BUTTON_LEFT:
+					_handle_left_click(event)
+				MOUSE_BUTTON_RIGHT:
+					_handle_right_click(event)
+				MOUSE_BUTTON_MIDDLE:
+					_middle_dragging = true
+					_middle_drag_start = event.position
 					get_viewport().set_input_as_handled()
-			MOUSE_BUTTON_RIGHT:
-				var local_pos := get_local_mouse_position()
-				var cell_pos := IsometricGrid.screen_to_cell(local_pos)
-				if _map != null and _map.is_door(cell_pos):
-					door_interact_requested.emit(cell_pos)
+				MOUSE_BUTTON_WHEEL_UP:
+					_apply_zoom(_zoom_level + ZOOM_STEP, event.position)
 					get_viewport().set_input_as_handled()
-			MOUSE_BUTTON_WHEEL_UP:
-				_apply_zoom(_zoom_level + ZOOM_STEP, event.position)
-				get_viewport().set_input_as_handled()
-			MOUSE_BUTTON_WHEEL_DOWN:
-				_apply_zoom(_zoom_level - ZOOM_STEP, event.position)
-				get_viewport().set_input_as_handled()
+				MOUSE_BUTTON_WHEEL_DOWN:
+					_apply_zoom(_zoom_level - ZOOM_STEP, event.position)
+					get_viewport().set_input_as_handled()
+		else:
+			# Button released.
+			if event.button_index == MOUSE_BUTTON_MIDDLE:
+				_middle_dragging = false
 
+	# --- Middle mouse drag for camera panning ---
+	elif event is InputEventMouseMotion and _middle_dragging:
+		if _camera != null:
+			_camera.position -= event.relative / _zoom_level
+			get_viewport().set_input_as_handled()
+
+	# --- Key events ---
 	elif event is InputEventKey and event.pressed:
 		if event.ctrl_pressed:
 			match event.keycode:
@@ -567,10 +558,78 @@ func _unhandled_input(event: InputEvent) -> void:
 				KEY_MINUS, KEY_KP_SUBTRACT:
 					_apply_zoom(_zoom_level - ZOOM_STEP)
 					get_viewport().set_input_as_handled()
-		elif event.keycode == KEY_HOME:
-			_apply_zoom(1.0)
-			_center_camera_on_selected()
+				KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
+					# Ctrl+N: assign current selection to control group N.
+					var group_num: int = event.keycode - KEY_0
+					control_group_assign_requested.emit(group_num, _selected_entity_ids.duplicate())
+					get_viewport().set_input_as_handled()
+		elif not event.ctrl_pressed and not event.alt_pressed:
+			match event.keycode:
+				KEY_HOME:
+					_apply_zoom(1.0)
+					_center_camera_on_selected()
+					get_viewport().set_input_as_handled()
+				KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
+					# Number key: select control group (double-tap: center camera too).
+					var group_num: int = event.keycode - KEY_0
+					var now := Time.get_ticks_msec() / 1000.0
+					if _last_number_key == group_num and (now - _last_number_key_time) < DOUBLE_TAP_THRESHOLD:
+						# Double-tap: select + center.
+						_last_number_key = -1
+						control_group_recall_requested.emit(group_num)
+					else:
+						_last_number_key = group_num
+						_last_number_key_time = now
+						control_group_recall_requested.emit(group_num)
+					get_viewport().set_input_as_handled()
+				KEY_M:
+					minimap_toggle_requested.emit()
+					get_viewport().set_input_as_handled()
+				KEY_ESCAPE:
+					# Escape clears selection.
+					if not _selected_entity_ids.is_empty():
+						clear_selection()
+						selection_cleared.emit()
+						get_viewport().set_input_as_handled()
+
+
+func _handle_left_click(event: InputEventMouseButton) -> void:
+	var local_pos := get_local_mouse_position()
+	var cell_pos := IsometricGrid.screen_to_cell(local_pos)
+	if _combat_mode:
+		var hit_eid := _entity_id_near_screen_pos(local_pos)
+		if not hit_eid.is_empty():
+			entity_clicked.emit(hit_eid)
 			get_viewport().set_input_as_handled()
+			return
+	else:
+		var hit_eid := _entity_id_near_screen_pos(local_pos)
+		if not hit_eid.is_empty():
+			if event.double_click:
+				# Double-click: select all in this entity's control group.
+				control_group_select_requested.emit(hit_eid)
+			else:
+				var additive := Input.is_key_pressed(KEY_SHIFT)
+				select_entity(hit_eid, additive)
+			get_viewport().set_input_as_handled()
+			return
+	# Clicked on empty cell or non-entity — clear selection and emit cell click.
+	if not _selected_entity_ids.is_empty():
+		clear_selection()
+		selection_cleared.emit()
+	if _map != null and _map.has_cell(cell_pos):
+		cell_clicked.emit(cell_pos)
+	get_viewport().set_input_as_handled()
+
+
+func _handle_right_click(event: InputEventMouseButton) -> void:
+	var local_pos := get_local_mouse_position()
+	var cell_pos := IsometricGrid.screen_to_cell(local_pos)
+	if _map == null:
+		return
+	# Emit context menu request with both grid and screen position.
+	context_menu_requested.emit(cell_pos, event.position)
+	get_viewport().set_input_as_handled()
 
 
 ## Returns the entity_id of the token closest to [param screen_pos] within

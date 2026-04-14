@@ -99,6 +99,8 @@ extends Node
 @onready var _currency_tests = $CurrencyTests
 @onready var _shop_inventory_generator_tests = $ShopInventoryGeneratorTests
 @onready var _shop_service_tests = $ShopServiceTests
+@onready var _dungeon_session_state_tests = $DungeonSessionStateTests
+@onready var _context_menu_builder_tests = $ContextMenuBuilderTests
 
 
 func _ready() -> void:
@@ -177,7 +179,9 @@ func run() -> void:
 			_scheduler_loop_tests,
 			_currency_tests,
 			_shop_inventory_generator_tests,
-			_shop_service_tests]:
+			_shop_service_tests,
+			_dungeon_session_state_tests,
+			_context_menu_builder_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

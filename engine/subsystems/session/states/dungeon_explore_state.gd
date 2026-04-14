@@ -14,6 +14,14 @@ extends SessionState
 ## The dungeon operates on the party clock independently from the overworld.
 ## On dungeon exit, the party may be time-locked until the world catches up.
 
+const DungeonSessionState := preload("res://engine/subsystems/exploration/dungeon_session_state.gd")
+const ContextMenuBuilder := preload("res://engine/subsystems/exploration/dungeon_context_menu_builder.gd")
+const ContextMenuScene := preload("res://scenes/maps/dungeon_context_menu.gd")
+const UnitInfoPanelScene := preload("res://scenes/maps/dungeon_unit_info_panel.gd")
+const ControlGroupBarScene := preload("res://scenes/maps/dungeon_control_group_bar.gd")
+const NotificationLogScene := preload("res://scenes/maps/dungeon_notification_log.gd")
+const MinimapScene := preload("res://scenes/maps/dungeon_minimap.gd")
+
 var _runner = null
 var _controller: DungeonMapController = null
 var _scene: Node = null
@@ -23,8 +31,17 @@ var _finalizer := CombatFinalizer.new()
 var _spawner := DungeonEncounterSpawner.new()
 var _handlers: DungeonHandlers = null
 
-## Current order type from the selection panel.
-var _current_order_type: String = "move"
+## Per-dungeon-visit in-memory state (control groups, idle behaviors, etc.).
+var _session_state: RefCounted = null  # DungeonSessionState
+
+## Active context menu popup (if any).
+var _context_menu: PanelContainer = null
+
+## UI panels.
+var _unit_info_panel: PanelContainer = null
+var _control_group_bar: PanelContainer = null
+var _notification_log: PanelContainer = null
+var _minimap: PanelContainer = null
 
 
 func enter(runner, context: Dictionary) -> void:
@@ -43,6 +60,9 @@ func enter(runner, context: Dictionary) -> void:
 		push_error("DungeonExploreState: JSON parse failed")
 		runner.transition_to_state("wilderness")
 		return
+
+	# Create session state for this dungeon visit.
+	_session_state = DungeonSessionState.new()
 
 	# Create controller
 	_controller = DungeonMapController.new()
@@ -77,10 +97,16 @@ func enter(runner, context: Dictionary) -> void:
 	_scene = packed.instantiate()
 	_scene.setup(_controller)
 
+	# Wire scene signals (context menu replaces old selection panel + door interact).
 	_scene.exit_requested.connect(_on_exit_requested)
 	_scene.cell_clicked.connect(_on_cell_clicked)
-	_scene.door_interact_requested.connect(_on_door_interact)
 	_scene.entity_selected.connect(_on_entity_selected)
+	_scene.selection_cleared.connect(_on_selection_cleared)
+	_scene.context_menu_requested.connect(_on_context_menu_requested)
+	_scene.control_group_assign_requested.connect(_on_control_group_assign)
+	_scene.control_group_recall_requested.connect(_on_control_group_recall)
+	_scene.control_group_select_requested.connect(_on_control_group_select_entity)
+	_scene.minimap_toggle_requested.connect(_on_minimap_toggle)
 
 	runner.get_nav_stack().push_node(
 		_scene, "dungeon_%s" % entrance.get("id", "unknown")
@@ -96,16 +122,8 @@ func enter(runner, context: Dictionary) -> void:
 	elif _controller.get_entity_ids().size() > 0:
 		_scene.add_entity_token("party_leader", "Party", 0, "?")
 
-	# Wire selection panel
-	var sel_panel = _scene.get_node_or_null("DungeonHUD/SelectionPanel")
-	if sel_panel != null:
-		sel_panel.end_turn_pressed.connect(_on_end_turn)
-		sel_panel.reform_formation_pressed.connect(_on_reform_formation)
-		sel_panel.formation_preset_selected.connect(_on_formation_preset_selected)
-		sel_panel.character_selected.connect(_on_panel_character_selected)
-		sel_panel.select_all_pressed.connect(_on_select_all)
-		sel_panel.order_type_selected.connect(_on_order_type_selected)
-		_refresh_selection_panel(sel_panel, party_data)
+	# Create UI panels and add them to the HUD.
+	_create_ui_panels()
 
 	# Register dungeon event handlers with the scheduler.
 	_handlers = DungeonHandlers.new(runner)
@@ -122,7 +140,6 @@ func enter(runner, context: Dictionary) -> void:
 		EventBus.scheduler_event_resolved.connect(_on_scheduler_event_resolved)
 
 	# Auto-activate light sources from inventory.
-	# Scan party for characters with torches/lanterns equipped in hand slots.
 	_auto_activate_lights(runner)
 
 	# Seed recurring dungeon events (wandering monster checks, light ticks).
@@ -154,11 +171,17 @@ func exit(runner) -> void:
 	if loop != null and not loop.is_paused():
 		loop.pause()
 
+	# Clean up context menu if open.
+	if _context_menu != null and is_instance_valid(_context_menu):
+		_context_menu.queue_free()
+		_context_menu = null
+
 	if is_instance_valid(_controller):
 		_controller.queue_free()
 	_controller = null
 	_scene = null
 	_runner = null
+	_session_state = null
 
 	CampaignRepository.clear_party_dungeon_position(runner.get_party_id())
 
@@ -221,9 +244,6 @@ func _change_movement_mode(runner, payload: Dictionary) -> void:
 		_:
 			mode_value = DungeonHandlers.MODE_EXPLORATION
 	_handlers.set_movement_mode(mode_value)
-	# Movement speed change takes effect on the next movement tick —
-	# no need to cancel and reschedule, since cells_per_round is read
-	# dynamically each tick.
 
 
 ## Light a torch or lantern for a character. Scheduled as a 1-round action
@@ -236,7 +256,6 @@ func _light_source(runner, payload: Dictionary) -> void:
 	var source_type: String = payload.get("source_type", "torch")
 	var scheduler: EventScheduler = runner.get_scheduler()
 	var party_id: String = runner.get_party_id()
-	# Schedule as a 1-round action (tinderbox takes 1 round to use).
 	scheduler.schedule_at(
 		Timekeeping.get_party_time(party_id) + 1,
 		"dungeon_light_action",
@@ -256,7 +275,6 @@ func _douse_source(runner, payload: Dictionary) -> void:
 		return
 	var character_id: String = payload.get("character_id", "")
 	_handlers.douse_light(character_id)
-	# Update fog immediately.
 	if _controller != null:
 		_controller._update_fog_for_all_members()
 
@@ -325,51 +343,376 @@ static func _get_darkvision_cells(_cd: CharacterData) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Cell interaction (real-time movement orders)
+# Context menu system
 # ---------------------------------------------------------------------------
 
-func _on_cell_clicked(pos: Vector2i) -> void:
-	if _in_combat or _runner == null or _controller == null:
+func _on_context_menu_requested(cell_pos: Vector2i, screen_pos: Vector2) -> void:
+	if _in_combat or _runner == null or _controller == null or _scene == null:
 		return
 
-	var selected: Array[String] = []
-	if _scene != null:
-		selected = _scene.get_selected_entity_ids()
+	# Close any existing context menu.
+	_close_context_menu()
+
+	var selected: Array[String] = _scene.get_selected_entity_ids()
+	if selected.is_empty():
+		# No selection — select all party members for context actions.
+		var all_ids: Array[String] = []
+		for eid in _controller.get_entity_ids():
+			all_ids.append(eid)
+		selected = all_ids
+
+	var map: TacticalMapData = _controller.get_map()
+	var party_data: PartyData = _runner.get_party_data()
+	var light_mgr = _handlers.get_light_manager() if _handlers != null else null
+
+	var options: Array[Dictionary] = ContextMenuBuilder.build_menu(
+		selected, cell_pos, map, party_data, _session_state, light_mgr
+	)
+
+	if options.is_empty():
+		return
+
+	# Create and show the context menu popup.
+	_context_menu = ContextMenuScene.new()
+	var ctx_layer = _scene.get_node_or_null("DungeonHUD/ContextMenuLayer")
+	if ctx_layer != null:
+		ctx_layer.add_child(_context_menu)
+	else:
+		_scene.add_child(_context_menu)
+
+	_context_menu.option_selected.connect(_on_context_action)
+	_context_menu.cancelled.connect(_on_context_cancelled)
+
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	_context_menu.show_at(screen_pos, options, loop)
+
+
+func _on_context_action(action_data: Dictionary) -> void:
+	if _runner == null or _controller == null:
+		return
+
+	var action_type: String = action_data.get("action_type", "")
+	var cell: Vector2i = action_data.get("cell", Vector2i(-1, -1))
+	var character_id: String = action_data.get("character_id", "")
+	var target_id: String = action_data.get("target_id", "")
+
+	var selected: Array[String] = _scene.get_selected_entity_ids() if _scene != null else []
+	if selected.is_empty():
+		for eid in _controller.get_entity_ids():
+			selected.append(eid)
 
 	var scheduler: EventScheduler = _runner.get_scheduler()
 	var party_id: String = _runner.get_party_id()
 	var party_data: PartyData = _runner.get_party_data()
 
-	if not selected.is_empty():
-		# Issue orders based on current order type.
-		match _current_order_type:
-			"move":
-				_issue_move_orders(selected, pos, party_data, scheduler, party_id)
-			"search":
-				for eid in selected:
-					_handlers.schedule_action("search", eid, pos, DungeonHandlers.TURN_ROUNDS, scheduler, party_id)
-				_start_clock_if_paused()
-			"listen":
-				for eid in selected:
-					_handlers.schedule_action("listen", eid, pos, 1, scheduler, party_id)
-				_start_clock_if_paused()
-			"wait":
-				pass  # Explicit no-op, no scheduling needed.
+	match action_type:
+		# --- Universal ---
+		"move_here":
+			_issue_move_orders(selected, cell, party_data, scheduler, party_id)
+		"search_here":
+			# Move to cell, then search (1 turn = 60 rounds).
+			for eid in selected:
+				_handlers.schedule_action("search", eid, cell, DungeonHandlers.TURN_ROUNDS, scheduler, party_id)
+			_start_clock_if_paused()
+		"listen_here":
+			# Move to cell, then listen (1 round).
+			for eid in selected:
+				_handlers.schedule_action("listen", eid, cell, 1, scheduler, party_id)
+			_start_clock_if_paused()
 
-		if _scene != null:
-			_scene.update_order_overlay(_controller.get_order_manager().get_all_orders())
-		_refresh_order_status()
+		# --- Door interactions ---
+		"open_door", "close_door":
+			_controller.interact_door(cell)
+		"force_door":
+			for eid in selected:
+				_handlers.schedule_action("force_door", eid, cell, 1, scheduler, party_id)
+			_start_clock_if_paused()
+		"pick_lock":
+			for eid in selected:
+				_handlers.schedule_action("pick_lock", eid, cell, DungeonHandlers.TURN_ROUNDS, scheduler, party_id)
+			_start_clock_if_paused()
+		"bash_door":
+			var bash_turns: int = action_data.get("turns", 3)
+			for eid in selected:
+				_handlers.schedule_action("bash_door", eid, cell, bash_turns * DungeonHandlers.TURN_ROUNDS, scheduler, party_id)
+			_start_clock_if_paused()
+		"spike_shut", "wedge_open", "listen_at_door":
+			# 1-round actions at the door.
+			var action_name: String = action_type
+			for eid in selected:
+				_handlers.schedule_action(action_name, eid, cell, 1, scheduler, party_id)
+			_start_clock_if_paused()
+		"raise_portcullis":
+			for eid in selected:
+				_handlers.schedule_action("force_door", eid, cell, 1, scheduler, party_id)
+			_start_clock_if_paused()
+
+		# --- Stairs ---
+		"ascend", "descend":
+			_controller.use_stairs(cell)
+		"exit_dungeon":
+			_on_exit_requested()
+
+		# --- Light source ---
+		"light_torch":
+			_light_source(_runner, {"character_id": character_id, "source_type": "torch"})
+		"light_lantern":
+			_light_source(_runner, {"character_id": character_id, "source_type": "lantern"})
+		"extinguish_light":
+			_douse_source(_runner, {"character_id": character_id})
+
+		# --- Entity interactions ---
+		"trade":
+			EventBus.notification_requested.emit({
+				"type": "info", "category": "ui",
+				"title": "Trade", "body": "Trade system not yet implemented.",
+				"duration": 3.0,
+			})
+		"attack":
+			EventBus.notification_requested.emit({
+				"type": "warning", "category": "combat",
+				"title": "Attack", "body": "Combat initiation via context menu — handled in combat pass.",
+				"duration": 3.0,
+			})
+		"add_to_group":
+			if not selected.is_empty() and not target_id.is_empty():
+				var group_num := _session_state.get_entity_group(selected[0]) if _session_state != null else 0
+				if group_num == 0:
+					# Find first available group number.
+					for i in range(1, 10):
+						if _session_state.get_group(i).is_empty():
+							group_num = i
+							break
+				if group_num > 0 and _session_state != null:
+					var members := _session_state.get_group(group_num)
+					if target_id not in members:
+						members.append(target_id)
+					_session_state.assign_group(group_num, members)
+
+		# --- Deferred / placeholder ---
+		"talk", "heal", "heal_self", "cast_spell", "cast_spell_self", \
+		"use_item", "drop_item", "hide", "check_status", "carry", "loot", \
+		"pick_up_all", "disarm_trap", "trigger_trap", "use_lever", "examine", \
+		"pick_pockets", "unlock_door", "drop_portcullis":
+			EventBus.notification_requested.emit({
+				"type": "info", "category": "ui",
+				"title": action_type.replace("_", " ").capitalize(),
+				"body": "Not yet implemented.",
+				"duration": 3.0,
+			})
+		"set_idle_behavior":
+			# TODO: Open idle behavior submenu (Phase 8).
+			EventBus.notification_requested.emit({
+				"type": "info", "category": "ui",
+				"title": "Idle Behavior",
+				"body": "Idle behavior configuration coming soon.",
+				"duration": 3.0,
+			})
+
+	# Update order overlay after any action.
+	if _scene != null and _controller != null:
+		_scene.update_order_overlay(_controller.get_order_manager().get_all_orders())
+
+	_close_context_menu()
+
+
+func _on_context_cancelled() -> void:
+	_close_context_menu()
+
+
+func _close_context_menu() -> void:
+	if _context_menu != null and is_instance_valid(_context_menu):
+		_context_menu.queue_free()
+		_context_menu = null
+
+
+# ---------------------------------------------------------------------------
+# Cell interaction (left-click fallback — no context menu, direct move)
+# ---------------------------------------------------------------------------
+
+func _on_cell_clicked(pos: Vector2i) -> void:
+	# Left-click on a cell with no entity: currently a no-op in the new model.
+	# Movement is done via right-click context menu "Move Here".
+	# This signal is kept for potential future use (cell inspection, etc.).
+	pass
+
+
+# ---------------------------------------------------------------------------
+# Selection
+# ---------------------------------------------------------------------------
+
+func _on_entity_selected(entity_id: String) -> void:
+	if _unit_info_panel == null or _runner == null:
+		return
+	var selected: Array[String] = _scene.get_selected_entity_ids() if _scene != null else []
+	var party_data: PartyData = _runner.get_party_data()
+	if party_data == null:
 		return
 
-	# No selection: move all party members to the clicked cell (group move).
-	if not _controller.can_move_to(pos):
+	if selected.size() == 1:
+		var cd: CharacterData = party_data.get_member(selected[0])
+		if cd != null:
+			var light_info := {}
+			if _handlers != null:
+				var lm = _handlers.get_light_manager()
+				if lm != null:
+					var src_type: String = lm.get_source_type(selected[0])
+					if not src_type.is_empty():
+						light_info = {
+							"source_type": src_type,
+							"remaining": lm.get_remaining_turns(selected[0]),
+						}
+			_unit_info_panel.show_entity(cd, {}, light_info)
+	elif selected.size() > 1:
+		var chars: Array = []
+		for eid in selected:
+			var cd: CharacterData = party_data.get_member(eid)
+			if cd != null:
+				chars.append(cd)
+		_unit_info_panel.show_multi_select(chars)
+
+
+func _on_selection_cleared() -> void:
+	if _unit_info_panel != null:
+		_unit_info_panel.clear()
+
+
+# ---------------------------------------------------------------------------
+# Control groups
+# ---------------------------------------------------------------------------
+
+func _on_control_group_assign(group_number: int, entity_ids: Array) -> void:
+	if _session_state == null or entity_ids.is_empty():
+		return
+	_session_state.assign_group(group_number, entity_ids)
+
+
+func _on_control_group_recall(group_number: int) -> void:
+	if _session_state == null or _scene == null:
+		return
+	var members := _session_state.get_group(group_number)
+	if members.is_empty():
+		return
+	_scene.clear_selection()
+	for eid in members:
+		_scene.select_entity(eid, true)
+
+
+func _on_control_group_select_entity(entity_id: String) -> void:
+	# Double-click on entity: select all members of that entity's control group.
+	if _session_state == null or _scene == null:
+		return
+	var group_num := _session_state.get_entity_group(entity_id)
+	if group_num == 0:
+		return
+	_on_control_group_recall(group_num)
+
+
+# ---------------------------------------------------------------------------
+# UI panel creation
+# ---------------------------------------------------------------------------
+
+func _create_ui_panels() -> void:
+	if _scene == null:
+		return
+	var hud = _scene.get_node_or_null("DungeonHUD")
+	if hud == null:
 		return
 
-	var all_ids: Array[String] = []
-	for eid in _controller.get_entity_ids():
-		all_ids.append(eid)
-	_issue_move_orders(all_ids, pos, party_data, scheduler, party_id)
+	# Unit info panel (left side).
+	_unit_info_panel = UnitInfoPanelScene.new()
+	_unit_info_panel.anchors_preset = Control.PRESET_LEFT_WIDE
+	_unit_info_panel.anchor_right = 0.0
+	_unit_info_panel.offset_left = 8.0
+	_unit_info_panel.offset_top = 8.0
+	_unit_info_panel.offset_right = 210.0
+	_unit_info_panel.offset_bottom = -60.0
+	_unit_info_panel.grow_horizontal = Control.GROW_DIRECTION_END
+	hud.add_child(_unit_info_panel)
 
+	# Control group bar (bottom center).
+	_control_group_bar = ControlGroupBarScene.new()
+	_control_group_bar.anchors_preset = Control.PRESET_BOTTOM_WIDE
+	_control_group_bar.anchor_top = 1.0
+	_control_group_bar.offset_left = 220.0
+	_control_group_bar.offset_top = -52.0
+	_control_group_bar.offset_right = -290.0
+	_control_group_bar.offset_bottom = -8.0
+	_control_group_bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_control_group_bar.group_clicked.connect(_on_control_group_recall)
+	_control_group_bar.group_double_clicked.connect(_on_control_group_recall)
+	hud.add_child(_control_group_bar)
+
+	# Notification log (bottom right).
+	_notification_log = NotificationLogScene.new()
+	_notification_log.anchors_preset = Control.PRESET_BOTTOM_RIGHT
+	_notification_log.anchor_left = 1.0
+	_notification_log.anchor_top = 1.0
+	_notification_log.offset_left = -290.0
+	_notification_log.offset_top = -210.0
+	_notification_log.offset_right = -8.0
+	_notification_log.offset_bottom = -56.0
+	_notification_log.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_notification_log.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_notification_log.log_entry_clicked.connect(_on_log_entry_clicked)
+	hud.add_child(_notification_log)
+
+	# Minimap (top right).
+	_minimap = MinimapScene.new()
+	_minimap.anchors_preset = Control.PRESET_TOP_RIGHT
+	_minimap.anchor_left = 1.0
+	_minimap.offset_left = -192.0
+	_minimap.offset_top = 8.0
+	_minimap.offset_right = -8.0
+	_minimap.offset_bottom = 192.0
+	_minimap.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_minimap.visible = false  # Toggle with M key.
+	_minimap.cell_clicked.connect(_on_minimap_cell_clicked)
+	hud.add_child(_minimap)
+
+	# Initial minimap update.
+	_update_minimap()
+
+
+func _update_minimap() -> void:
+	if _minimap == null or _controller == null:
+		return
+	var map: TacticalMapData = _controller.get_map()
+	if map == null:
+		return
+	# Check if party has a mapper.
+	var has_mapper := false
+	var party_data: PartyData = _runner.get_party_data() if _runner != null else null
+	if party_data != null:
+		for cd: CharacterData in party_data.character_data:
+			if not cd.is_dead and cd.is_active and cd.has_proficiency("mapping"):
+				has_mapper = true
+				break
+	_minimap.update(map, map.entity_positions, has_mapper)
+
+
+func _on_log_entry_clicked(cell: Vector2i) -> void:
+	if _scene == null:
+		return
+	var camera = _scene.get_node_or_null("Camera2D")
+	if camera != null:
+		camera.position = IsometricGrid.cell_to_screen(cell.x, cell.y)
+
+
+func _on_minimap_cell_clicked(cell: Vector2i) -> void:
+	_on_log_entry_clicked(cell)  # Same behavior — center camera.
+
+
+func _on_minimap_toggle() -> void:
+	if _minimap != null:
+		_minimap.toggle()
+		if _minimap.visible:
+			_update_minimap()
+
+
+# ---------------------------------------------------------------------------
+# Movement orders
+# ---------------------------------------------------------------------------
 
 ## Issue movement orders for a list of entities to a target cell.
 func _issue_move_orders(
@@ -381,7 +724,6 @@ func _issue_move_orders(
 ) -> void:
 	var any_ordered := false
 	for eid in entity_ids:
-		# Determine base movement for this entity.
 		var base_mv: int = 120  # default
 		if party_data != null:
 			var cd: CharacterData = party_data.get_member(eid)
@@ -392,11 +734,6 @@ func _issue_move_orders(
 
 	if any_ordered:
 		_start_clock_if_paused()
-
-
-func _on_door_interact(pos: Vector2i) -> void:
-	if _controller != null:
-		_controller.interact_door(pos)
 
 
 func _on_exit_requested() -> void:
@@ -434,103 +771,49 @@ func _on_scheduler_event_resolved(event_type: String, _event_data: Dictionary) -
 				_start_dungeon_combat(enc)
 				return
 
+	# After resolving events, check idle behaviors for entities without orders.
+	_check_idle_behaviors()
 
-# ---------------------------------------------------------------------------
-# Selection panel + UI
-# ---------------------------------------------------------------------------
-
-func _on_entity_selected(entity_id: String) -> void:
-	var sel_panel = _scene.get_node_or_null("DungeonHUD/SelectionPanel") if _scene != null else null
-	if sel_panel != null:
-		sel_panel.set_selected(entity_id, true)
+	# Refresh minimap after any state change.
+	_update_minimap()
 
 
-func _on_panel_character_selected(character_id: String) -> void:
-	if _scene != null:
-		_scene.select_entity(character_id, false)
-
-
-func _on_select_all() -> void:
-	if _scene != null:
-		_scene.select_all_on_side(0)
-	var sel_panel = _scene.get_node_or_null("DungeonHUD/SelectionPanel") if _scene != null else null
-	if sel_panel != null:
-		for eid in _controller.get_entity_ids():
-			sel_panel.set_selected(eid, true)
-
-
-func _on_order_type_selected(order_type: String) -> void:
-	_current_order_type = order_type
-
-
-func _on_end_turn() -> void:
-	## "End Turn" convenience: advance the clock by 1 turn (10 minutes).
-	## Useful for waiting, resting, or letting time pass without movement.
-	if _runner == null or _controller == null or _in_combat:
+## Check idle behaviors for all entities that have no active orders.
+func _check_idle_behaviors() -> void:
+	if _session_state == null or _controller == null or _handlers == null or _runner == null:
 		return
-	var loop: SchedulerLoop = _runner.get_scheduler_loop()
-	if loop != null:
-		if loop.is_paused():
-			loop.resume(SchedulerLoop.SPEED_MAX)
-		# The scheduler will advance to the next event (encounter check,
-		# light tick, etc.) or sit idle. MAX speed means it happens instantly.
-
-
-func _on_reform_formation() -> void:
-	if _controller == null:
-		return
-	_controller.reform_formation()
-	_controller.get_order_manager().clear()
-	if _handlers != null:
-		_handlers.cancel_all_moves()
-	if _scene != null:
-		_scene.clear_order_overlay()
-	_refresh_order_status()
-
-
-func _on_formation_preset_selected(preset_name: String) -> void:
-	if _controller == null or _runner == null:
-		return
+	var scheduler: EventScheduler = _runner.get_scheduler()
+	var party_id: String = _runner.get_party_id()
 	var party_data: PartyData = _runner.get_party_data()
-	if party_data == null:
+	var map: TacticalMapData = _controller.get_map()
+	if map == null or party_data == null:
 		return
-	var fm: RefCounted = _controller.get_formation_manager()
-	var active_chars: Array = []
-	for cd: CharacterData in party_data.character_data:
-		if not cd.is_dead and cd.is_active:
-			active_chars.append(cd)
-	fm.apply_preset(preset_name, party_data, active_chars)
-	_controller.reform_formation()
-	if _scene != null:
-		_scene.clear_order_overlay()
-	_refresh_order_status()
 
-
-func _refresh_selection_panel(sel_panel, party_data: PartyData) -> void:
-	if sel_panel == null or party_data == null:
-		return
-	var chars: Array = []
-	for cd: CharacterData in party_data.character_data:
-		if not cd.is_dead and cd.is_active:
-			chars.append({
-				"character_id": cd.id,
-				"display_name": cd.name,
-				"class_letter": _class_letter(cd.character_class),
-				"hp_current": cd.hp_current,
-				"hp_max": cd.hp_max,
-				"order_status": "",
-			})
-	sel_panel.set_characters(chars)
-
-
-func _refresh_order_status() -> void:
-	var sel_panel = _scene.get_node_or_null("DungeonHUD/SelectionPanel") if _scene != null else null
-	if sel_panel == null or _controller == null:
-		return
-	var om: RefCounted = _controller.get_order_manager()
 	for eid in _controller.get_entity_ids():
-		var order: Dictionary = om.get_order(eid)
-		sel_panel.update_order_status(eid, order.get("order_type", ""))
+		if _handlers.has_active_movement(eid):
+			continue
+		if _session_state.has_active_action(eid):
+			continue
+
+		var behavior: String = _session_state.get_idle_behavior(eid)
+		match behavior:
+			"auto_listen_at_doors":
+				# If adjacent to a closed door, auto-listen.
+				var pos: Vector2i = map.get_entity_pos(eid)
+				if pos == Vector2i(-1, -1):
+					continue
+				for neighbor in IsometricGrid.get_neighbors(pos):
+					if map.is_door(neighbor) and map.get_door_state(neighbor) != "open":
+						_handlers.schedule_action("listen", eid, neighbor, 1, scheduler, party_id)
+						break
+			"guard":
+				# Check for hostiles in awareness radius — auto-pause if found.
+				# For now, this is handled by the encounter check system.
+				pass
+			_:
+				# hold_position, follow_group_lead, auto_search, hide — more complex,
+				# deferred to when the systems they depend on are built.
+				pass
 
 
 # ---------------------------------------------------------------------------
@@ -679,15 +962,20 @@ func _on_dungeon_combat_finished(result: Dictionary) -> void:
 func _set_dungeon_hud_visible(vis: bool) -> void:
 	if _scene == null:
 		return
-	var sel_panel = _scene.get_node_or_null("DungeonHUD/SelectionPanel")
-	var bottom_bar = _scene.get_node_or_null("DungeonHUD/BottomBar")
-	var exit_btn = _scene.get_node_or_null("DungeonHUD/ExitButton")
-	if sel_panel != null:
-		sel_panel.visible = vis
-	if bottom_bar != null:
-		bottom_bar.visible = vis
-	if exit_btn != null:
-		exit_btn.visible = vis
+	var ctx_layer = _scene.get_node_or_null("DungeonHUD/ContextMenuLayer")
+	if ctx_layer != null:
+		ctx_layer.visible = vis
+	if _unit_info_panel != null:
+		_unit_info_panel.visible = vis and _unit_info_panel.visible
+	if _control_group_bar != null:
+		_control_group_bar.visible = vis
+	if _notification_log != null:
+		_notification_log.visible = vis
+	if _minimap != null and vis:
+		# Don't force minimap visible — respect its toggle state.
+		pass
+	elif _minimap != null and not vis:
+		_minimap.visible = false
 
 
 static func _class_letter(character_class: String) -> String:

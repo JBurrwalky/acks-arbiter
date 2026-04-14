@@ -207,8 +207,11 @@ func cancel_all_moves() -> void:
 
 
 ## Returns true if any entity currently has a movement order.
-func has_active_movement() -> bool:
-	return not _movement_orders.is_empty()
+## If [param entity_id] is provided, checks only that entity.
+func has_active_movement(entity_id: String = "") -> bool:
+	if entity_id.is_empty():
+		return not _movement_orders.is_empty()
+	return _movement_orders.has(entity_id)
 
 
 ## Schedule a timed dungeon action (search, listen, door interact, etc.).
@@ -429,8 +432,24 @@ func _handle_light_tick(event: ScheduledEvent) -> Dictionary:
 			"priority": ScheduledEvent.PRIORITY_ENVIRONMENTAL,
 		}]
 
-	# Update fog (light radius may have changed).
+	# Evil door auto-close: every turn tick, all open evil doors that are not
+	# wedged or spiked swing shut automatically (per GDD §3.2.1).
 	var controller: DungeonMapController = _find_dungeon_controller()
+	if controller != null:
+		var tmap: TacticalMapData = controller.get_map()
+		if tmap != null:
+			for pos in tmap._cells.keys():
+				if tmap.is_evil_door(pos) and tmap.get_door_state(pos) == "open":
+					# TODO: check wedged/spiked state when spike system is built.
+					tmap.set_door_state(pos, "closed")
+					EventBus.notification_requested.emit({
+						"type": "warning",
+						"category": "environment",
+						"title": "An evil door swings shut!",
+						"duration": 4.0,
+					})
+
+	# Update fog (light radius may have changed).
 	if controller != null:
 		controller._update_fog_for_all_members()
 

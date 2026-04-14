@@ -1948,13 +1948,31 @@ Within the same priority tier, alphabetical `owner_id` breaks ties.
 
 ### 19.6 Dungeon Real-Time-With-Pause Model
 
-Dungeon exploration is real-time at round granularity (not turn-based with an "End Turn" button). Units move continuously as the clock ticks:
+*(Updated 2026-04-14: context menu system replaces selection panel)*
 
-- Cell clicks issue movement orders via `DungeonHandlers.order_move()`.
+Dungeon exploration is real-time at round granularity. The primary interaction model is RTS-style:
+
+- **Left-click** selects entities; Shift+click multi-selects; click empty cell deselects.
+- **Right-click** opens a dynamic context menu (auto-pauses the scheduler). Menu options are built by `DungeonContextMenuBuilder.build_menu()` based on cell state, selected entities, fog, and character abilities.
+- **Context menu dispatch** routes through `DungeonExploreState._on_context_action()` to existing handler/controller methods.
+- **Control groups** (Ctrl+1-9 assign, 1-9 recall) stored in `DungeonSessionState` per dungeon visit.
+- **Idle behaviors** (hold, follow, auto-listen, auto-search, guard, hide) are per-entity, set via context menu.
 - A `dungeon_movement_tick` event fires every round, advancing all moving entities by their `cells_per_round` rate.
 - Movement modes: exploration (1/3 combat speed), combat (full), running (2x). Mode change takes effect on the next tick.
 - The scheduler auto-pauses when all movement completes, on encounters, light expiry, and action completion.
 - Combat transitions to turn-based on the same diamond grid, then returns to real-time on combat end.
+- **Evil doors** auto-close on turn tick (every 60 rounds) unless wedged open. Controlled by `is_evil` field on CellData.
+
+**Key files (dungeon UI):**
+- `engine/subsystems/exploration/dungeon_context_menu_builder.gd` — Pure logic: builds menu options from game state.
+- `scenes/maps/dungeon_context_menu.gd` — UI popup scene for the context menu.
+- `engine/subsystems/exploration/dungeon_session_state.gd` — Per-visit state: control groups, idle behaviors, action queues.
+- `scenes/maps/dungeon_unit_info_panel.gd` — Left-side selected entity details.
+- `scenes/maps/dungeon_control_group_bar.gd` — Bottom bar with group slots [1]-[9].
+- `scenes/maps/dungeon_notification_log.gd` — Scrolling colored event log.
+- `scenes/maps/dungeon_minimap.gd` — Top-right schematic minimap (toggle: M key).
+
+**Removed (2026-04-14):** `SelectionPanel` (order type radio buttons M/S/L/W), `BottomBar` (LevelLabel/TurnLabel), standalone `ExitButton`, `door_interact_requested` signal, `end_turn_requested` signal. These are replaced by the context menu system. The files `dungeon_selection_panel.gd` and `.tscn` are orphaned and can be deleted.
 
 ### 19.7 Day Planner System (Removed)
 

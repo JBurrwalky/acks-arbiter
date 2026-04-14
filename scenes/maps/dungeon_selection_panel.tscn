@@ -1,7 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://c5sel_panel"]
-
-[ext_resource type="Script" path="res://scenes/maps/dungeon_selection_panel.gd" id="1_script"]
-
-[node name="SelectionPanel" type="PanelContainer"]
-anchors_preset = 0
-script = ExtResource("1_script")

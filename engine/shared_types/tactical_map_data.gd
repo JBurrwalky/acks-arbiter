@@ -38,6 +38,8 @@ enum FogState {
 # door_state: String = ""              ("","open","closed","locked","stuck")
 # door_type: String = ""               ("","arch","unlocked","locked","trapped","secret","portcullis")
 # door_detected: bool = true           (false for undiscovered secret doors)
+# door_material: String = "wood_standard" ("wood_simple","wood_standard","wood_reinforced","iron","stone")
+# is_evil: bool = false                (evil doors auto-close on turn tick unless wedged/held)
 # room_id: int = -1                    (assigned by detect_rooms())
 # is_corridor: bool = false
 
@@ -109,6 +111,8 @@ static func from_dict(data: Dictionary) -> TacticalMapData:
 			"door_state": door_state,
 			"door_type": door_type,
 			"door_detected": door_detected,
+			"door_material": cell_data.get("door_material", "wood_standard"),
+			"is_evil": cell_data.get("is_evil", false),
 			"room_id": -1,
 			"is_corridor": false,
 		}
@@ -155,6 +159,8 @@ static func generate_open_field(width: int = 20, height: int = 16) -> TacticalMa
 				"door_state": "",
 				"door_type": "",
 				"door_detected": true,
+				"door_material": "",
+				"is_evil": false,
 				"room_id": -1,
 				"is_corridor": false,
 				"passable": true,
@@ -263,6 +269,22 @@ func get_door_type(pos: Vector2i) -> String:
 	if cell.is_empty():
 		return ""
 	return cell.get("door_type", "")
+
+
+## Returns the door material at [param pos], or "wood_standard" if not set.
+func get_door_material(pos: Vector2i) -> String:
+	var cell := get_cell(pos)
+	if cell.is_empty():
+		return ""
+	return cell.get("door_material", "wood_standard")
+
+
+## Returns true if the door at [param pos] is an evil door (auto-closes on turn tick).
+func is_evil_door(pos: Vector2i) -> bool:
+	var cell := get_cell(pos)
+	if cell.is_empty():
+		return false
+	return cell.get("is_evil", false)
 
 
 ## Updates the door state at [param pos] and re-derives passable/blocks_los.
