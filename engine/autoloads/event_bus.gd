@@ -409,3 +409,29 @@ signal vehicle_changed(party_id: String, vehicle_id: String)
 
 ## A draft vehicle's hitched team was changed.
 signal vehicle_hitch_changed(vehicle_id: String)
+
+
+# ---------------------------------------------------------------------------
+# Event scheduler signals
+# ---------------------------------------------------------------------------
+
+## A scheduled event was popped and resolved by the SchedulerLoop.
+signal scheduler_event_resolved(event_type: String, event_data: Dictionary)
+
+## The scheduler paused (auto-pause on event, player pause, or empty queue).
+signal scheduler_paused(reason: String)
+
+## The scheduler resumed after a pause.
+signal scheduler_resumed
+
+## The scheduler speed changed (PAUSED=0, NORMAL=1, FAST=2, VERY_FAST=5, MAX=-1).
+signal scheduler_speed_changed(new_speed: int)
+
+## UI requests a clock speed change. SchedulerLoop listens for this.
+signal clock_speed_requested(speed: int)
+
+## A scheduled order for an entity was cancelled (travel, activity, etc.).
+signal order_cancelled(entity_id: String, event_type: String)
+
+## A new order was queued for an entity in the scheduler.
+signal order_queued(entity_id: String, event_type: String, fire_time: int)

@@ -3,11 +3,13 @@ extends SessionState
 
 ## Wilderness exploration: hex map movement, encounter checks, time advance.
 ##
-## On enter: shows hex map, connects renderer signals.
-## On hex click: move party → encounter check → time advance → autosave.
+## On enter: shows hex map, registers wilderness event handlers with the
+## scheduler, connects renderer signals.
+## On hex click: schedules travel_leg events via WildernessHandlers.
 ## On dungeon/settlement entry: transition to dungeon/settlement state.
 
 var _runner = null  # stored reference to avoid closure issues
+var _handlers: WildernessHandlers = null
 
 
 func enter(runner, context: Dictionary) -> void:
@@ -30,6 +32,18 @@ func enter(runner, context: Dictionary) -> void:
 	if not EventBus.day_declaration_requested.is_connected(_on_day_declaration_requested):
 		EventBus.day_declaration_requested.connect(_on_day_declaration_requested)
 
+	# Register wilderness event handlers with the scheduler
+	_handlers = WildernessHandlers.new(runner)
+	_handlers.register(runner.get_handler_registry())
+
+	# Check if the party is time-locked (returning from combat/dungeon
+	# with time ahead of the global clock).
+	runner.check_party_time_lock()
+
+	# Start the scheduler paused — player issues orders, then unpauses.
+	# (If the scheduler was already running and we returned from combat,
+	# it was paused by CombatState. Leave it paused for the player.)
+
 
 func exit(runner) -> void:
 	var renderer: Node = runner.get_hex_map_renderer()
@@ -44,6 +58,11 @@ func exit(runner) -> void:
 		EventBus.camp_requested.disconnect(_on_camp_requested)
 	if EventBus.day_declaration_requested.is_connected(_on_day_declaration_requested):
 		EventBus.day_declaration_requested.disconnect(_on_day_declaration_requested)
+
+	# Unregister wilderness event handlers
+	if _handlers != null:
+		_handlers.unregister(runner.get_handler_registry())
+		_handlers = null
 
 	# Hide hex map (only needed when transitioning to dungeon/settlement,
 	# but safe to always do — re-shown on enter)
@@ -60,9 +79,25 @@ func handle_action(runner, action: String, payload: Dictionary) -> String:
 			return "dungeon"
 		"enter_settlement":
 			return "settlement"
+		"cancel_travel":
+			_cancel_current_orders(runner)
 		"end_session":
 			return "session_end"
 	return ""
+
+
+## Cancel all travel orders for the active party. Party stops at current hex.
+func _cancel_current_orders(runner) -> void:
+	var party_id: String = runner.get_party_id()
+	var scheduler: EventScheduler = runner.get_scheduler()
+	var cancelled: int = scheduler.cancel_all_for_owner(party_id, "travel_leg")
+	cancelled += scheduler.cancel_all_for_owner(party_id, "getting_lost_check")
+	cancelled += scheduler.cancel_all_for_owner(party_id, "forced_march_check")
+	if cancelled > 0:
+		EventBus.order_cancelled.emit(party_id, "travel_leg")
+	var loop: SchedulerLoop = runner.get_scheduler_loop()
+	if loop != null and not loop.is_paused():
+		loop.pause()
 
 
 # ---------------------------------------------------------------------------
@@ -72,46 +107,48 @@ func handle_action(runner, action: String, payload: Dictionary) -> String:
 func _on_hex_clicked(coord: Vector2i) -> void:
 	if _runner == null:
 		return
+
+	# Block orders if the party is time-locked
+	if _runner.is_party_locked(_runner.get_party_id()):
+		EventBus.notification_requested.emit({
+			"type": "warning",
+			"category": "system",
+			"title": "Party Locked",
+			"body": "This party is committed to an activity. Wait for the world clock to catch up.",
+		})
+		return
+
 	var controller: HexMapController = _runner.get_hex_map_controller()
 	if not controller.can_move_to(coord):
 		return
 
-	controller.move_party(coord)
-
-	# Save map state
+	var scheduler: EventScheduler = _runner.get_scheduler()
+	var party_data: PartyData = _runner.get_party_data()
 	var map_data: HexMapData = controller.get_map()
-	if map_data != null:
-		CampaignRepository.save_hex_map(map_data, _runner.get_campaign_id())
 
-	# Encounter check
-	var terrain: HexTerrainData = map_data.get_hex(coord) if map_data != null else null
-	if terrain != null:
-		var encounter: Dictionary = _runner.do_encounter_check(terrain)
-		if encounter.get("triggered", false):
-			var enc: Dictionary = encounter["encounter_data"]
-			var monster_name: String = enc.get("monster_group", "unknown")
-			var count: int = enc.get("number", 0)
-			var disposition: String = enc.get("behavioral_disposition", "neutral")
-			print("ENCOUNTER at %s: %d x %s (%s, reaction %d)" % [
-				str(coord), count, monster_name, disposition,
-				enc.get("reaction_roll", 0)])
-			var combat_context := {
-				"encounter_data": enc,
-				"return_state":   "wilderness",
-			}
-			_runner.transition_to_state("combat", combat_context)
-			return  # CombatState handles time advance on exit; stop further processing
+	# Cancel any existing travel orders for this party
+	var party_id: String = _runner.get_party_id()
+	var cancelled: int = scheduler.cancel_all_for_owner(party_id, "travel_leg")
+	if cancelled > 0:
+		EventBus.order_cancelled.emit(party_id, "travel_leg")
 
-	# Time advance (1 turn per hex for now — future: terrain-based turn cost)
-	_runner.advance_exploration_time(1)
+	# Schedule the travel path (single hex for now — future: full pathfinding)
+	var path: Array = [coord]
+	_handlers.schedule_travel_path(path, scheduler, party_data, map_data)
 
-	# Autosave
-	_runner.save_session()
+	# Start the clock if paused
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	if loop.is_paused():
+		loop.resume(SchedulerLoop.SPEED_NORMAL)
 
 
 func _on_camp_requested() -> void:
 	if _runner == null:
 		return
+	# Pause the scheduler before transitioning
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	if loop != null:
+		loop.pause()
 	_runner.transition_to_state("camp", {
 		"return_state": "wilderness",
 		"is_town": false,
@@ -121,6 +158,9 @@ func _on_camp_requested() -> void:
 func _on_day_declaration_requested() -> void:
 	if _runner == null:
 		return
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	if loop != null:
+		loop.pause()
 	_runner.transition_to_state("day_declaration", {
 		"return_state": "wilderness",
 	})
@@ -129,6 +169,10 @@ func _on_day_declaration_requested() -> void:
 func _on_dungeon_entry(entrance: Dictionary, spawn_cell: Vector2i) -> void:
 	if _runner == null:
 		return
+	# Pause scheduler — dungeon runs its own time independently
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	if loop != null:
+		loop.pause()
 	_runner.transition_to_state("dungeon", {
 		"entrance": entrance,
 		"spawn_cell": spawn_cell,
@@ -138,6 +182,9 @@ func _on_dungeon_entry(entrance: Dictionary, spawn_cell: Vector2i) -> void:
 func _on_settlement_entry(entrance: Dictionary, gate_node_id: int) -> void:
 	if _runner == null:
 		return
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	if loop != null:
+		loop.pause()
 	_runner.transition_to_state("settlement", {
 		"entrance": entrance,
 		"gate_node_id": gate_node_id,

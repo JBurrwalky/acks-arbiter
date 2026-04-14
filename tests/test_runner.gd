@@ -95,6 +95,8 @@ extends Node
 @onready var _camp_manager_tests = $CampManagerTests
 @onready var _light_source_tracker_tests = $LightSourceTrackerTests
 @onready var _day_budget_manager_tests = $DayBudgetManagerTests
+@onready var _event_scheduler_tests = $EventSchedulerTests
+@onready var _scheduler_loop_tests = $SchedulerLoopTests
 
 
 func _ready() -> void:
@@ -169,7 +171,9 @@ func run() -> void:
 			_notification_manager_tests,
 			_camp_manager_tests,
 			_light_source_tracker_tests,
-			_day_budget_manager_tests]:
+			_day_budget_manager_tests,
+			_event_scheduler_tests,
+			_scheduler_loop_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

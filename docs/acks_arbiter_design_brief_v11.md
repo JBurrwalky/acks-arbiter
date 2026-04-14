@@ -100,6 +100,7 @@ Monster catalog (split alphabetically): `acore_monster_catalog_a-dop.xml`, `acor
 | `gdd-ui-ux-design.md` | Full UI/UX specification (visual style, screen layouts, interaction patterns, Godot implementation) |
 | `gdd-proficiency-specializations.md` | Proficiency specialization enumeration system — closed lists for open-ended proficiencies, trained-creature entity model |
 | `gdd_combat_behavior_tags.md` | Eight-family combat AI behavior tag system |
+| `gdd-realtime-scheduler.md` | Real-time-with-pause game clock and event scheduler (Draft) — replaces §8.3 day-cycle scheduling and build plan E-2 session runner state machine |
 
 ### 3.5 Supporting Architecture Documents — Current Files
 
@@ -167,7 +168,7 @@ Transitions are prompted at defined transition points:
 - Any context → Battle (combat triggers; dungeon/interior maps used directly; wilderness/city generate temporary battle maps per §6.4)
 - Wilderness/Settlement ↔ Sea Voyage (board/disembark vessel)
 
-The session runner switches rules context automatically on transition.
+Rules context is an entity-level property, not a global game state. Multiple entities can operate in different contexts simultaneously (e.g., one party in a dungeon while another travels the overworld). Context transitions occur when an entity moves between spatial layers. See `gdd-realtime-scheduler.md` §2.
 
 ### 5.3 Unified Map Data Model
 
@@ -185,6 +186,8 @@ Flat-top hexagonal grid. Terrain taxonomy from ACKS encounter tables, represente
 
 Irregular polygon blocks on a street graph. Movement is node-to-node on the street network. Districts group blocks by function. POI markers on block perimeters. Vertical layers for undercity and upper-city structures. Full spec in `gdd-settlement-layout.md`; stocking in `gdd-settlement-stocking.md`.
 
+> **Note (Draft):** The walkable polygon-block spatial model is replaced by a node-graph model per `gdd-realtime-scheduler.md` §4. Settlements become weighted node graphs where nodes = Points of Interest and edges = travel connections with time weights. Settlement generation (districts, PoI placement, demographics) is unchanged; only the spatial representation and movement model changes.
+
 ### 6.3 Dungeon / Interior Maps
 
 5' diamond grid (isometric) with cell-based walls. Pre-rendered isometric 2D view. Each party member individually positioned. Light radius via Godot 2D lighting. Near-side wall transparency for occluded areas. Rooms detected by flood-fill from wall model. Full spec in `gdd-dungeon-layout.md`.
@@ -200,7 +203,7 @@ When combat triggers outside a dungeon, a temporary 5' isometric diamond grid ba
 
 ## 7. Rules Context System
 
-The session runner applies different mechanical rules depending on the current map type:
+The event scheduler applies different mechanical rules depending on each entity's current spatial context (see `gdd-realtime-scheduler.md`). Context is entity-level, not a global game state — multiple entities may operate in different contexts simultaneously. The rule sets by context:
 
 - **Wilderness (§8.1):** Movement cost by terrain, daily travel distance, encounter checks per hex, getting-lost checks, foraging, supply consumption, camping/watches, weather, scouting
 - **Urban (§8.2):** Movement cost per block, district encounter tables, shopping/hiring/information, law enforcement, district modifiers
@@ -228,9 +231,13 @@ The session runner applies different mechanical rules depending on the current m
 
 Both input paths resolve into the same engine action vocabulary. The LLM interprets and selects; the engine validates and executes.
 
+> **Scheduler note (Draft):** The core loop is now driven by the EventScheduler priority queue rather than a step-by-step state machine. The clock advances to the next scheduled event, the event resolves, and the loop repeats. Player input occurs while the clock is paused. See `gdd-realtime-scheduler.md` §2.
+
 ### 8.2 Session States
 
 Major states: Wilderness Exploration, Urban Exploration, Dungeon Exploration, Encounter (uncertain disposition), Combat, Camp/Rest, Downtime, Domain Management, Sea Voyage. Each state has its own loop, action set, and UI layout. Transitions between states are defined in §5.2 and the UI spec in `gdd-ui-ux-design.md`.
+
+> **Scheduler note (Draft):** The states listed above are now entity-level contexts, not global game states. The session runner itself has three states: CAMPAIGN_SELECT, SESSION_ACTIVE (running the event scheduler), and SESSION_END. An entity's context (wilderness, dungeon, urban, combat, etc.) is a property of that entity. Multiple entities can be in different contexts simultaneously. See `gdd-realtime-scheduler.md` §8.
 
 ### 8.3 Timekeeping
 
@@ -239,7 +246,7 @@ IMPORTANT: The game is to run on a in-game calendar of 13 months with 28 days ea
 
 Dawn and dusk times are provided per-hex per-day by the weather system (`gdd-weather-generation.md` §6), which derives them from hex latitude and calendar day. Season definitions are in `gdd-calendar-seasons.md`.
 
-**Day-cycle scheduling (multi-party):** Each game day, all active parties declare intended activities simultaneously, then each party's day resolves in sequence. Split parties synchronize via this system. Cross-party interruptions insert at the appropriate time-of-day.
+**Clock-driven scheduling (multi-party):** The game clock advances continuously via the EventScheduler. Each entity's orders are scheduled events in a priority queue; the clock advances to the next event and resolves it. Split parties advance independently on the shared clock. Cross-party interactions resolve naturally when entities share a spatial location at the same timestamp. See `gdd-realtime-scheduler.md` §2–3. *(Replaces the previous simultaneous-declaration day-cycle model.)*
 
 ### 8.4 Dice System
 
@@ -494,9 +501,9 @@ Engine fundamentals that must work before anything else:
 - Dungeon square grid with cell-based walls, room auto-detection
 - Settlement map (single-district minimum)
 - Navigation stack and transitions (state machine)
-- Session runner state machine with all exploration loops
+- Event scheduler and session runner (real-time-with-pause clock, priority-queue event resolution per `gdd-realtime-scheduler.md`) with all exploration contexts
 - Combat loop (initiative, attack throws, cleave, morale, conditions)
-- Timekeeping (day-cycle scheduling, turn/round zoom, multi-party sync)
+- Timekeeping (scheduler-driven clock advancement, turn/round zoom, multi-party sync)
 - Dice system (digital/physical/hybrid)
 - Roll transparency log
 - Character data model, unified generation engine, positional inventory

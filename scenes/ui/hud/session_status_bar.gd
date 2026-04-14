@@ -19,6 +19,8 @@ const BORDER_COLOR := Color(0.46, 0.33, 0.19, 1.0)
 var _bar: PanelContainer = null
 var _location_label: Label = null
 var _time_label: Label = null
+var _speed_controls: ClockSpeedControls = null
+var _pause_reason_label: Label = null
 var _camp_btn: Button = null
 var _plan_day_btn: Button = null
 
@@ -67,6 +69,18 @@ func _build_ui() -> void:
 	_time_label = _make_label("Day 1", LABEL_COLOR, FONT_SIZE)
 	_time_label.custom_minimum_size = Vector2(160, 0)
 	hbox.add_child(_time_label)
+
+	hbox.add_child(_vsep())
+
+	# Clock speed controls.
+	_speed_controls = ClockSpeedControls.new()
+	hbox.add_child(_speed_controls)
+
+	# Auto-pause reason (shown briefly when scheduler pauses on an event).
+	_pause_reason_label = _make_label("", DIM_COLOR, FONT_SIZE)
+	_pause_reason_label.custom_minimum_size = Vector2(0, 0)
+	_pause_reason_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	hbox.add_child(_pause_reason_label)
 
 	hbox.add_child(_vsep())
 
@@ -124,6 +138,8 @@ func _connect_signals() -> void:
 	EventBus.room_entered.connect(_on_room_entered)
 	EventBus.settlement_entered.connect(_on_settlement_entered)
 	Timekeeping.round_advanced.connect(_on_time_advanced)
+	EventBus.scheduler_paused.connect(_on_scheduler_paused)
+	EventBus.scheduler_resumed.connect(_on_scheduler_resumed)
 
 
 func _on_state_changed(_from: int, _to: int) -> void:
@@ -186,5 +202,21 @@ func _update_time_display() -> void:
 	elif hour >= 18 and hour < 21:
 		time_of_day = "Evening"
 	_time_label.text = "Day %d, %02d:00 (%s)" % [day, hour, time_of_day]
+
+
+func _on_scheduler_paused(reason: String) -> void:
+	if _pause_reason_label != null:
+		_pause_reason_label.text = reason
+		# Flash the time label to draw attention.
+		_time_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4, 1.0))
+		# Create a tween to fade back to normal after 2 seconds.
+		var tween := create_tween()
+		tween.tween_property(_time_label, "theme_override_colors/font_color",
+			LABEL_COLOR, 1.0).set_delay(1.0)
+
+
+func _on_scheduler_resumed() -> void:
+	if _pause_reason_label != null:
+		_pause_reason_label.text = ""
 
 

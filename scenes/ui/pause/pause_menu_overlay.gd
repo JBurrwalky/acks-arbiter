@@ -37,12 +37,16 @@ func _toggle_pause() -> void:
 	if GameState.current_state == GameState.State.PAUSED:
 		_hide()
 		GameState.resume()
+		# Resume the scheduler if it was running before the menu opened.
+		EventBus.scheduler_resumed.emit()
 	elif GameState.current_state in [
 		GameState.State.EXPLORATION,
 		GameState.State.COMBAT,
 		GameState.State.DOWNTIME,
 		GameState.State.DOMAIN,
 	]:
+		# Pause the scheduler along with the game state.
+		EventBus.clock_speed_requested.emit(SchedulerLoop.SPEED_PAUSED)
 		GameState.pause()
 		_show()
 
@@ -133,6 +137,8 @@ func _add_button(parent: Control, text: String, callback: Callable) -> void:
 func _on_resume() -> void:
 	_hide()
 	GameState.resume()
+	# Scheduler remains in whatever speed state it was in before the menu.
+	# The player uses the clock speed controls to unpause the scheduler.
 
 
 func _on_save() -> void:

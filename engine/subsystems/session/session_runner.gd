@@ -7,6 +7,12 @@ extends Node
 ## settlement exploration, combat handoff, session save/load. Uses an
 ## object-per-state pattern where each state is a SessionState subclass.
 ##
+## The real-time-with-pause event scheduler is the backbone of gameplay.
+## During active exploration states (wilderness, dungeon, settlement), the
+## scheduler loop advances the game clock, resolves events, and dispatches
+## to registered event handlers. Meta-states (campaign_select, party_creation,
+## session_load, session_end) bypass the scheduler entirely.
+##
 ## Placed in Main.tscn as a child of Main. NOT an autoload.
 ## This is the SOLE caller of GameState.transition_to() and
 ## GameState.set_exploration_context() (per E-1 architectural decision).
@@ -37,6 +43,26 @@ signal session_saved(campaign_id: String)
 var _current_state: SessionState = null
 var _current_state_key: String = ""
 var _state_registry: Dictionary = {}
+
+
+# ---------------------------------------------------------------------------
+# Event scheduler (real-time-with-pause clock)
+# ---------------------------------------------------------------------------
+
+var _scheduler: EventScheduler = null
+var _handler_registry: EventHandlerRegistry = null
+var _scheduler_loop: SchedulerLoop = null
+var _domain_handlers: DomainHandlers = null
+var _entity_outliner: EntityOutliner = null
+
+## State keys where the scheduler loop should tick.
+const _SCHEDULER_STATES := ["wilderness", "dungeon", "settlement", "camp", "day_declaration", "encounter", "downtime"]
+
+## Parties whose time is ahead of the global clock (post-combat rounding,
+## post-dungeon exit). A locked party cannot receive new movement or activity
+## orders until the world clock catches up. The UI should gray out controls.
+## Keys: party_id (String), values: true.
+var _locked_parties: Dictionary = {}
 
 
 # ---------------------------------------------------------------------------
@@ -85,11 +111,40 @@ func _ready() -> void:
 	# Monster data for encounter generation
 	_monster_registry = MonsterRegistry.new()
 
+	# Initialize event scheduler subsystem
+	_scheduler = EventScheduler.new()
+	_handler_registry = EventHandlerRegistry.new()
+	_scheduler_loop = SchedulerLoop.new()
+	EventBus.clock_speed_requested.connect(_on_clock_speed_requested)
+
 	# Register all states
 	_register_states()
 
 	# Boot into campaign select
 	transition_to_state("campaign_select")
+
+
+func _process(delta: float) -> void:
+	if _scheduler_loop == null:
+		return
+	if _current_state_key not in _SCHEDULER_STATES:
+		return
+
+	_scheduler_loop.tick(delta)
+
+	# After each tick, check if the loop requested combat or a state transition.
+	if _scheduler_loop.combat_requested:
+		var combat_data: Dictionary = _scheduler_loop.combat_data
+		_scheduler_loop.combat_requested = false
+		_scheduler_loop.combat_data = {}
+		transition_to_state("combat", combat_data)
+
+	elif not _scheduler_loop.transition_requested.is_empty():
+		var target_state: String = _scheduler_loop.transition_requested
+		var target_data: Dictionary = _scheduler_loop.transition_data
+		_scheduler_loop.transition_requested = ""
+		_scheduler_loop.transition_data = {}
+		transition_to_state(target_state, target_data)
 
 
 func _register_states() -> void:
@@ -217,6 +272,15 @@ func get_class_registry() -> ClassRegistry:
 func get_current_state_key() -> String:
 	return _current_state_key
 
+func get_scheduler() -> EventScheduler:
+	return _scheduler
+
+func get_handler_registry() -> EventHandlerRegistry:
+	return _handler_registry
+
+func get_scheduler_loop() -> SchedulerLoop:
+	return _scheduler_loop
+
 
 # ---------------------------------------------------------------------------
 # Session lifecycle
@@ -270,6 +334,45 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	# 5. Wire EffectTicker to Timekeeping
 	_effect_ticker.connect_signals()
 
+	# 6. Initialize scheduler for this session
+	_scheduler.clear()
+	_handler_registry.clear()
+	_scheduler_loop.setup(_scheduler, _handler_registry, party_id)
+	var saved_events: Array = CampaignRepository.get_scheduled_events(campaign_id)
+	if not saved_events.is_empty():
+		_scheduler.load_from_dicts(saved_events)
+
+	# 7. Register domain handlers if the campaign has active domains.
+	#    Domain ticks are global (not per-exploration-state) so they persist
+	#    across state transitions.
+	if _domain_handlers != null:
+		_domain_handlers.unregister(_handler_registry)
+		_domain_handlers = null
+	var domains: Array = CampaignRepository.list_campaign_domains(campaign_id)
+	if not domains.is_empty():
+		_domain_handlers = DomainHandlers.new(self)
+		_domain_handlers.register(_handler_registry)
+		# Only seed the monthly tick if one isn't already in the restored queue.
+		var has_domain_tick := false
+		for ev in _scheduler.get_all_events():
+			if ev.event_type == "domain_monthly_tick":
+				has_domain_tick = true
+				break
+		if not has_domain_tick:
+			_domain_handlers.seed_monthly_tick(_scheduler, party_id)
+
+	# 8. Create the entity outliner and give it the scheduler reference.
+	if _entity_outliner == null:
+		_entity_outliner = EntityOutliner.new()
+		_entity_outliner.name = "EntityOutliner"
+		# Position on the right side of the screen as a CanvasLayer child.
+		_entity_outliner.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
+		_entity_outliner.offset_left = -EntityOutliner.PANEL_WIDTH
+		_entity_outliner.offset_bottom = -SessionStatusBar.BAR_HEIGHT
+		get_parent().add_child(_entity_outliner)
+	_entity_outliner.set_scheduler(_scheduler)
+	_entity_outliner.visible = true
+
 	session_loaded.emit(campaign_id)
 
 
@@ -295,6 +398,12 @@ func save_session() -> void:
 		db_effect["campaign_id"] = _campaign_id
 		CampaignRepository.save_active_effect(db_effect)
 
+	# Scheduled events — clear and re-persist all non-cancelled
+	CampaignRepository.clear_scheduled_events(_campaign_id)
+	if _scheduler != null:
+		for event_dict: Dictionary in _scheduler.to_dicts():
+			CampaignRepository.save_scheduled_event(_campaign_id, event_dict)
+
 	session_saved.emit(_campaign_id)
 	EventBus.campaign_saved.emit(_campaign_id)
 
@@ -305,6 +414,14 @@ func end_session() -> void:
 	save_session()
 	_effect_ticker.disconnect_signals()
 	_active_effects.clear()
+	if _domain_handlers != null:
+		_domain_handlers.unregister(_handler_registry)
+		_domain_handlers = null
+	if _entity_outliner != null:
+		_entity_outliner.visible = false
+	_scheduler.clear()
+	_handler_registry.clear()
+	_scheduler_loop.pause()
 	_party_data = null
 	_campaign_id = ""
 	_party_id = ""
@@ -430,3 +547,46 @@ func advance_exploration_time(turns: int) -> void:
 ## Called at every state transition boundary.
 func cancel_pending_roll() -> void:
 	EventBus.player_roll_cancelled.emit()
+
+
+# ---------------------------------------------------------------------------
+# Scheduler integration
+# ---------------------------------------------------------------------------
+
+## Handles UI-driven clock speed change requests via EventBus.
+func _on_clock_speed_requested(speed: int) -> void:
+	if _scheduler_loop == null:
+		return
+	if _current_state_key not in _SCHEDULER_STATES:
+		return
+	_scheduler_loop.set_speed(speed)
+
+
+## Check whether the active party's clock is ahead of the global clock
+## (e.g., after combat turn-rounding or dungeon exit). If so, mark it locked.
+## Called by exploration states on re-entry after combat or dungeon exit.
+func check_party_time_lock() -> void:
+	if _party_id.is_empty():
+		return
+	var party_time: int = Timekeeping.get_party_time(_party_id)
+	var leading: String = Timekeeping.get_leading_party()
+	if leading.is_empty() or leading == _party_id:
+		# Single party or this party IS the leader — no lock needed.
+		_locked_parties.erase(_party_id)
+		return
+	var leader_time: int = Timekeeping.get_party_time(leading)
+	if party_time > leader_time:
+		# Party is ahead — lock it until the world catches up.
+		_locked_parties[_party_id] = true
+	else:
+		_locked_parties.erase(_party_id)
+
+
+## Returns true if [param party_id] is time-locked (ahead of the global clock).
+func is_party_locked(party_id: String) -> bool:
+	return _locked_parties.get(party_id, false)
+
+
+## Unlock a party (called when the global clock catches up).
+func unlock_party(party_id: String) -> void:
+	_locked_parties.erase(party_id)

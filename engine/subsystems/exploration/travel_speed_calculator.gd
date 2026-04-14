@@ -46,6 +46,12 @@ const FORCED_MARCH_MULTIPLIER := 1.5
 ## Road travel multiplier.
 const ROAD_MULTIPLIER := 1.5
 
+## ACKS standard hex size in miles.
+const MILES_PER_HEX := 6.0
+
+## Normal travel day length in hours (forced march extends to 12).
+const TRAVEL_HOURS_PER_DAY := 8
+
 
 # ---------------------------------------------------------------------------
 # Main API
@@ -135,6 +141,25 @@ static func calculate_party_speed(party: PartyData, terrain_category: String, on
 static func get_miles_per_day(party: PartyData, terrain_category: String, on_road: bool = false) -> float:
 	var result: Dictionary = calculate_party_speed(party, terrain_category, on_road)
 	return result["miles_per_day"]
+
+
+## Returns the number of game rounds to cross one 6-mile hex at the party's
+## speed in the given terrain. Used by the event scheduler to set travel_leg
+## fire times.
+##
+## Derivation: 8-hour travel day = 2880 rounds. At X miles/day the party
+## covers X/6 hexes per day. So rounds_per_hex = 2880 / (miles_per_day / 6).
+## Minimum 1 round (degenerate case protection).
+static func hex_crossing_rounds(party: PartyData, terrain_category: String, on_road: bool = false) -> int:
+	var mpd: float = get_miles_per_day(party, terrain_category, on_road)
+	if mpd <= 0.0:
+		return Timekeeping.ROUNDS_PER_HOUR * 8  # fallback: full travel day per hex
+	var hexes_per_day: float = mpd / MILES_PER_HEX
+	if hexes_per_day <= 0.0:
+		return Timekeeping.ROUNDS_PER_HOUR * 8
+	var travel_rounds_per_day: int = Timekeeping.ROUNDS_PER_HOUR * TRAVEL_HOURS_PER_DAY
+	var rounds: float = float(travel_rounds_per_day) / hexes_per_day
+	return maxi(1, int(_bankers_round(rounds)))
 
 
 ## Returns the terrain multiplier for a given movement_cost_category.

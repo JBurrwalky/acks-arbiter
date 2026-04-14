@@ -79,6 +79,11 @@ func enter(runner, context: Dictionary) -> void:
 	if tactical_map != null:
 		_place_combatants_on_grid(roster, tactical_map)
 
+	# Pause the scheduler — combat runs its own time loop.
+	var sched_loop: SchedulerLoop = runner.get_scheduler_loop()
+	if sched_loop != null:
+		sched_loop.pause()
+
 	EventBus.combat_started.emit(_encounter_id)
 
 	# Push the combat screen with interactive HUD.
@@ -94,6 +99,15 @@ func enter(runner, context: Dictionary) -> void:
 
 func exit(runner) -> void:
 	runner.get_nav_stack().pop()
+
+	# Resume the scheduler. It starts paused — the returning exploration state
+	# or the player decides when to unpause. The party's time may now be ahead
+	# of the global clock after combat time rounding.
+	var sched_loop: SchedulerLoop = runner.get_scheduler_loop()
+	if sched_loop != null and not sched_loop.is_paused():
+		# Already unpaused by the return state — don't double-resume.
+		pass
+
 	_controller = null
 	_combat_screen = null
 	_runner_ref = null

@@ -2646,3 +2646,49 @@ func list_henchman_states_for_employer(employer_id: String) -> Array:
 		   WHERE c.employer_id = ? AND c.character_type = 'henchman'""",
 		[employer_id])
 	return db.query_result.duplicate()
+
+
+# ---------------------------------------------------------------------------
+# Scheduled Events — Migration 028
+# ---------------------------------------------------------------------------
+
+## Persist a single scheduled event. [param event_dict] must include event_id,
+## fire_time, event_type, owner_id, data, priority.
+func save_scheduled_event(campaign_id: String, event_dict: Dictionary) -> bool:
+	return db.query_with_bindings("""
+		INSERT OR REPLACE INTO scheduled_events
+		(event_id, campaign_id, fire_time, event_type, owner_id, data_json, priority, cancelled)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		event_dict.get("event_id", ""),
+		campaign_id,
+		event_dict.get("fire_time", 0),
+		event_dict.get("event_type", ""),
+		event_dict.get("owner_id", ""),
+		JSON.stringify(event_dict.get("data", {})),
+		event_dict.get("priority", 20),
+		1 if event_dict.get("cancelled", false) else 0,
+	])
+
+
+## Return all non-cancelled scheduled events for [param campaign_id],
+## ordered by fire_time. Each row's data_json is parsed back to a Dictionary.
+func get_scheduled_events(campaign_id: String) -> Array:
+	var rows := _query_rows(
+		"SELECT * FROM scheduled_events WHERE campaign_id = ? AND cancelled = 0 ORDER BY fire_time",
+		[campaign_id])
+	var result: Array = []
+	for row in rows:
+		var d: Dictionary = row.duplicate()
+		var parsed = JSON.parse_string(d.get("data_json", "{}"))
+		d["data"] = parsed if parsed is Dictionary else {}
+		d.erase("data_json")
+		d["cancelled"] = d.get("cancelled", 0) == 1
+		result.append(d)
+	return result
+
+
+## Delete all scheduled events for [param campaign_id].
+func clear_scheduled_events(campaign_id: String) -> bool:
+	return db.query_with_bindings(
+		"DELETE FROM scheduled_events WHERE campaign_id = ?", [campaign_id])

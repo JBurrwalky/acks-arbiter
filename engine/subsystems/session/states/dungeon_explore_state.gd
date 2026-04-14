@@ -1,11 +1,18 @@
 class_name DungeonExploreState
 extends SessionState
 
-## Dungeon exploration: cell-to-cell movement, encounter checks, time advance.
+## Dungeon exploration: real-time-with-pause movement on the diamond grid.
 ##
-## On enter: creates DungeonMapController, loads dungeon, pushes dungeon scene.
-## On cell click: move → auto-stairs → encounter check → time advance.
-## On exit: pops scene, destroys controller.
+## Units move continuously as the game clock ticks at round granularity.
+## The player pauses to issue movement and action orders, then unpauses
+## to watch them play out. The scheduler auto-pauses on interesting events
+## (encounters, activity completion, light expiry, arrival at destination).
+##
+## Combat transitions to turn-based on the same map grid. All other
+## dungeon activity (movement, searching, listening) is real-time.
+##
+## The dungeon operates on the party clock independently from the overworld.
+## On dungeon exit, the party may be time-locked until the world catches up.
 
 var _runner = null
 var _controller: DungeonMapController = null
@@ -14,6 +21,10 @@ var _combat_overlay: DungeonCombatOverlay = null
 var _in_combat: bool = false
 var _finalizer := CombatFinalizer.new()
 var _spawner := DungeonEncounterSpawner.new()
+var _handlers: DungeonHandlers = null
+
+## Current order type from the selection panel.
+var _current_order_type: String = "move"
 
 
 func enter(runner, context: Dictionary) -> void:
@@ -43,12 +54,11 @@ func enter(runner, context: Dictionary) -> void:
 	if party_data != null:
 		_controller.set_party_data(party_data)
 
-	# Add all active living party members — each occupies their own cell.
+	# Add all active living party members
 	if party_data != null:
 		for cd: CharacterData in party_data.character_data:
 			if not cd.is_dead and cd.is_active:
 				_controller.add_party_member(cd.id)
-	# Fallback: if no party data yet, use the legacy placeholder.
 	if _controller.get_entity_ids().is_empty():
 		_controller.add_party_member("party_leader")
 
@@ -67,18 +77,16 @@ func enter(runner, context: Dictionary) -> void:
 	_scene = packed.instantiate()
 	_scene.setup(_controller)
 
-	# Connect signals before tree entry (signal connections work pre-tree)
 	_scene.exit_requested.connect(_on_exit_requested)
 	_scene.cell_clicked.connect(_on_cell_clicked)
 	_scene.door_interact_requested.connect(_on_door_interact)
 	_scene.entity_selected.connect(_on_entity_selected)
 
-	# Push to tree first — @onready vars (EntityLayer, etc.) resolve in _ready()
 	runner.get_nav_stack().push_node(
 		_scene, "dungeon_%s" % entrance.get("id", "unknown")
 	)
 
-	# Now safe to create tokens (EntityLayer is available after tree entry)
+	# Create tokens
 	if party_data != null:
 		for cd: CharacterData in party_data.character_data:
 			if not cd.is_dead and cd.is_active:
@@ -88,7 +96,7 @@ func enter(runner, context: Dictionary) -> void:
 	elif _controller.get_entity_ids().size() > 0:
 		_scene.add_entity_token("party_leader", "Party", 0, "?")
 
-	# Wire the selection panel (also needs tree entry for get_node_or_null)
+	# Wire selection panel
 	var sel_panel = _scene.get_node_or_null("DungeonHUD/SelectionPanel")
 	if sel_panel != null:
 		sel_panel.end_turn_pressed.connect(_on_end_turn)
@@ -99,9 +107,46 @@ func enter(runner, context: Dictionary) -> void:
 		sel_panel.order_type_selected.connect(_on_order_type_selected)
 		_refresh_selection_panel(sel_panel, party_data)
 
+	# Register dungeon event handlers with the scheduler.
+	_handlers = DungeonHandlers.new(runner)
+	_handlers.register(runner.get_handler_registry())
+
+	# Listen for scheduler events to detect dungeon encounters.
+	if not EventBus.scheduler_event_resolved.is_connected(_on_scheduler_event_resolved):
+		EventBus.scheduler_event_resolved.connect(_on_scheduler_event_resolved)
+
+	# Activate a default light source (torch).
+	# Future: check party inventory for actual light sources.
+	_handlers.activate_light("torch")
+
+	# Seed recurring dungeon events (wandering monster checks, light ticks).
+	_handlers.seed_dungeon_events(runner.get_scheduler(), runner.get_party_id())
+
+	# Scheduler starts paused — player issues orders, then unpauses.
+
 
 func exit(runner) -> void:
 	runner.get_nav_stack().pop()
+
+	# Disconnect scheduler event listener.
+	if EventBus.scheduler_event_resolved.is_connected(_on_scheduler_event_resolved):
+		EventBus.scheduler_event_resolved.disconnect(_on_scheduler_event_resolved)
+
+	# Unregister dungeon event handlers and cancel dungeon events.
+	if _handlers != null:
+		_handlers.cancel_all_moves()
+		_handlers.unregister(runner.get_handler_registry())
+		var party_id: String = runner.get_party_id()
+		runner.get_scheduler().cancel_all_for_owner(party_id, "dungeon_movement_tick")
+		runner.get_scheduler().cancel_all_for_owner(party_id, "dungeon_encounter_check")
+		runner.get_scheduler().cancel_all_for_owner(party_id, "dungeon_light_tick")
+		runner.get_scheduler().cancel_all_for_owner(party_id, "dungeon_action_complete")
+		_handlers = null
+
+	# Pause scheduler when leaving dungeon.
+	var loop: SchedulerLoop = runner.get_scheduler_loop()
+	if loop != null and not loop.is_paused():
+		loop.pause()
 
 	if is_instance_valid(_controller):
 		_controller.queue_free()
@@ -109,78 +154,136 @@ func exit(runner) -> void:
 	_scene = null
 	_runner = null
 
-	# Clear dungeon position
 	CampaignRepository.clear_party_dungeon_position(runner.get_party_id())
+
+	# Check party time lock (dungeon may have advanced party clock ahead).
+	runner.check_party_time_lock()
 
 
 func handle_action(runner, action: String, payload: Dictionary) -> String:
 	match action:
 		"exit_dungeon":
 			return "wilderness"
+		"cancel_movement":
+			_cancel_all_movement(runner)
+		"cancel_action":
+			_cancel_pending_actions(runner)
+		"set_movement_mode":
+			_change_movement_mode(runner, payload)
 		"end_session":
 			return "session_end"
 	return ""
 
 
-func _on_cell_clicked(pos: Vector2i) -> void:
-	# Block exploration movement during in-place combat
-	if _in_combat:
+## Cancel all real-time movement orders. Entities stop at their current cells.
+func _cancel_all_movement(runner) -> void:
+	if _handlers != null:
+		_handlers.cancel_all_moves()
+	var party_id: String = runner.get_party_id()
+	runner.get_scheduler().cancel_all_for_owner(party_id, "dungeon_movement_tick")
+	EventBus.order_cancelled.emit(party_id, "dungeon_move")
+	var loop: SchedulerLoop = runner.get_scheduler_loop()
+	if loop != null and not loop.is_paused():
+		loop.pause()
+
+
+## Cancel any pending timed actions (search, listen, etc.).
+## Time already elapsed is consumed — no partial progress per ACKS.
+func _cancel_pending_actions(runner) -> void:
+	var party_id: String = runner.get_party_id()
+	var cancelled: int = runner.get_scheduler().cancel_all_for_owner(party_id, "dungeon_action_complete")
+	if cancelled > 0:
+		EventBus.order_cancelled.emit(party_id, "dungeon_action_complete")
+
+
+## Change the dungeon movement mode and recalculate any active movement.
+## payload keys: "mode" — "exploration", "combat", or "running"
+func _change_movement_mode(runner, payload: Dictionary) -> void:
+	if _handlers == null:
 		return
-	if _runner == null or _controller == null:
+	var mode_name: String = payload.get("mode", "exploration")
+	var mode_value: float = DungeonHandlers.MODE_EXPLORATION
+	match mode_name:
+		"combat":
+			mode_value = DungeonHandlers.MODE_COMBAT
+		"running":
+			mode_value = DungeonHandlers.MODE_RUNNING
+		_:
+			mode_value = DungeonHandlers.MODE_EXPLORATION
+	_handlers.set_movement_mode(mode_value)
+	# Movement speed change takes effect on the next movement tick —
+	# no need to cancel and reschedule, since cells_per_round is read
+	# dynamically each tick.
+
+
+# ---------------------------------------------------------------------------
+# Cell interaction (real-time movement orders)
+# ---------------------------------------------------------------------------
+
+func _on_cell_clicked(pos: Vector2i) -> void:
+	if _in_combat or _runner == null or _controller == null:
 		return
 
-	# Check if any entities are selected — queue individual or group orders
 	var selected: Array[String] = []
 	if _scene != null:
 		selected = _scene.get_selected_entity_ids()
 
+	var scheduler: EventScheduler = _runner.get_scheduler()
+	var party_id: String = _runner.get_party_id()
+	var party_data: PartyData = _runner.get_party_data()
+
 	if not selected.is_empty():
-		# Queue orders for selected entities based on current order type
+		# Issue orders based on current order type.
 		match _current_order_type:
 			"move":
-				for eid in selected:
-					_controller.queue_move_order(eid, pos)
+				_issue_move_orders(selected, pos, party_data, scheduler, party_id)
 			"search":
 				for eid in selected:
-					_controller.get_order_manager().add_order(eid, "search", pos)
+					_handlers.schedule_action("search", eid, pos, DungeonHandlers.TURN_ROUNDS, scheduler, party_id)
+				_start_clock_if_paused()
 			"listen":
 				for eid in selected:
-					_controller.get_order_manager().add_order(eid, "listen", pos)
+					_handlers.schedule_action("listen", eid, pos, 1, scheduler, party_id)
+				_start_clock_if_paused()
 			"wait":
-				for eid in selected:
-					_controller.get_order_manager().add_order(eid, "wait")
-		# Update order overlay and panel
+				pass  # Explicit no-op, no scheduling needed.
+
 		if _scene != null:
 			_scene.update_order_overlay(_controller.get_order_manager().get_all_orders())
 		_refresh_order_status()
 		return
 
-	# No selection: legacy group move behavior (click-to-move all + auto-execute)
+	# No selection: move all party members to the clicked cell (group move).
 	if not _controller.can_move_to(pos):
 		return
 
-	_controller.move_party(pos)
+	var all_ids: Array[String] = []
+	for eid in _controller.get_entity_ids():
+		all_ids.append(eid)
+	_issue_move_orders(all_ids, pos, party_data, scheduler, party_id)
 
-	# Auto-use stairs
-	var m: TacticalMapData = _controller.get_map()
-	if m != null:
-		var tf: String = m.get_cell(pos).get("terrain_feature", "")
-		if tf == "stairs_up" or tf == "stairs_down":
-			_controller.use_stairs(pos)
 
-	# Encounter check (1 in 6 per dungeon turn)
-	var encounter: Dictionary = _runner.do_encounter_check(null)
-	if encounter.get("triggered", false):
-		var enc: Dictionary = encounter["encounter_data"]
-		print("ENCOUNTER (dungeon): %d x %s (%s, reaction %d)" % [
-			enc.get("number", 0), enc.get("monster_group", "unknown"),
-			enc.get("behavioral_disposition", "neutral"),
-			enc.get("reaction_roll", 0)])
-		_start_dungeon_combat(enc)
-		return  # Combat overlay handles time advance on finish
+## Issue movement orders for a list of entities to a target cell.
+func _issue_move_orders(
+	entity_ids: Array,
+	target: Vector2i,
+	party_data: PartyData,
+	scheduler: EventScheduler,
+	party_id: String,
+) -> void:
+	var any_ordered := false
+	for eid in entity_ids:
+		# Determine base movement for this entity.
+		var base_mv: int = 120  # default
+		if party_data != null:
+			var cd: CharacterData = party_data.get_member(eid)
+			if cd != null:
+				base_mv = cd.get_effective_movement()
+		if _handlers.order_move(eid, target, base_mv, _controller, scheduler, party_id):
+			any_ordered = true
 
-	# Advance 1 dungeon turn (10 minutes)
-	_runner.advance_exploration_time(1)
+	if any_ordered:
+		_start_clock_if_paused()
 
 
 func _on_door_interact(pos: Vector2i) -> void:
@@ -194,28 +297,54 @@ func _on_exit_requested() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Selection panel + individual movement UI
+# Clock control
 # ---------------------------------------------------------------------------
 
-## Current order type from the selection panel.
-var _current_order_type: String = "move"
+## Start the clock at normal speed if currently paused.
+func _start_clock_if_paused() -> void:
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	if loop != null and loop.is_paused():
+		loop.resume(SchedulerLoop.SPEED_NORMAL)
+
+
+# ---------------------------------------------------------------------------
+# Scheduler event listener — detect dungeon encounters for in-place combat
+# ---------------------------------------------------------------------------
+
+func _on_scheduler_event_resolved(event_type: String, _event_data: Dictionary) -> void:
+	if _in_combat or _runner == null:
+		return
+
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	if loop == null:
+		return
+	for result in loop.last_tick_results:
+		var presentation: Dictionary = result.get("presentation", {})
+		if presentation.get("type") == "dungeon_encounter":
+			var enc: Dictionary = presentation.get("encounter_data", {})
+			if not enc.is_empty():
+				_start_dungeon_combat(enc)
+				return
+
+
+# ---------------------------------------------------------------------------
+# Selection panel + UI
+# ---------------------------------------------------------------------------
 
 func _on_entity_selected(entity_id: String) -> void:
-	# Sync selection panel with renderer selection
 	var sel_panel = _scene.get_node_or_null("DungeonHUD/SelectionPanel") if _scene != null else null
 	if sel_panel != null:
 		sel_panel.set_selected(entity_id, true)
 
 
 func _on_panel_character_selected(character_id: String) -> void:
-	# Sync renderer selection with panel click
 	if _scene != null:
 		_scene.select_entity(character_id, false)
 
 
 func _on_select_all() -> void:
 	if _scene != null:
-		_scene.select_all_on_side(0)  # 0 = PARTY
+		_scene.select_all_on_side(0)
 	var sel_panel = _scene.get_node_or_null("DungeonHUD/SelectionPanel") if _scene != null else null
 	if sel_panel != null:
 		for eid in _controller.get_entity_ids():
@@ -227,40 +356,25 @@ func _on_order_type_selected(order_type: String) -> void:
 
 
 func _on_end_turn() -> void:
+	## "End Turn" convenience: advance the clock by 1 turn (10 minutes).
+	## Useful for waiting, resting, or letting time pass without movement.
 	if _runner == null or _controller == null or _in_combat:
 		return
-
-	# Execute all queued orders
-	var result: Dictionary = _controller.execute_orders()
-
-	# Update order overlay (clear after execution)
-	if _scene != null:
-		_scene.clear_order_overlay()
-
-	# Refresh selection panel order status
-	_refresh_order_status()
-
-	# Encounter check (1 in 6 per dungeon turn)
-	var encounter: Dictionary = _runner.do_encounter_check(null)
-	if encounter.get("triggered", false):
-		var enc: Dictionary = encounter["encounter_data"]
-		print("ENCOUNTER (dungeon): %d x %s (%s, reaction %d)" % [
-			enc.get("number", 0), enc.get("monster_group", "unknown"),
-			enc.get("behavioral_disposition", "neutral"),
-			enc.get("reaction_roll", 0)])
-		_start_dungeon_combat(enc)
-		return
-
-	# Advance 1 dungeon turn (10 minutes)
-	_runner.advance_exploration_time(1)
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	if loop != null:
+		if loop.is_paused():
+			loop.resume(SchedulerLoop.SPEED_MAX)
+		# The scheduler will advance to the next event (encounter check,
+		# light tick, etc.) or sit idle. MAX speed means it happens instantly.
 
 
 func _on_reform_formation() -> void:
 	if _controller == null:
 		return
 	_controller.reform_formation()
-	# Clear any pending orders since positions changed
 	_controller.get_order_manager().clear()
+	if _handlers != null:
+		_handlers.cancel_all_moves()
 	if _scene != null:
 		_scene.clear_order_overlay()
 	_refresh_order_status()
@@ -315,16 +429,23 @@ func _refresh_order_status() -> void:
 # In-place dungeon combat
 # ---------------------------------------------------------------------------
 
-## Start in-place combat on the dungeon map. Monsters spawn at encounter
-## distance, combat HUD overlays, and the existing dungeon grid is reused.
 func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 	if _runner == null or _controller == null or _scene == null:
 		return
 	_in_combat = true
 
+	# Pause scheduler — combat is turn-based.
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	if loop != null:
+		loop.pause()
+
+	# Cancel all real-time movement.
+	if _handlers != null:
+		_handlers.cancel_all_moves()
+
 	var tactical_map: TacticalMapData = _controller.get_map()
 
-	# Gather current party positions from the tactical map
+	# Gather current party positions
 	var party_positions: Array[Vector2i] = []
 	for eid in _controller.get_entity_ids():
 		if tactical_map.entity_positions.has(eid):
@@ -332,7 +453,7 @@ func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 	if party_positions.is_empty():
 		party_positions.append(_controller.get_party_position())
 
-	# Spawn monsters on the dungeon map at ACKS encounter distance
+	# Spawn monsters
 	var monster_registry = _runner.get_monster_registry()
 	var placements: Array = _spawner.spawn_encounter(
 		tactical_map, party_positions, encounter_data, monster_registry, DiceSystem)
@@ -342,39 +463,32 @@ func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 		_in_combat = false
 		return
 
-	# Build CombatRoster from party + spawned monsters
+	# Build CombatRoster
 	var party_data: PartyData = _runner.get_party_data()
 	var roster := CombatRoster.new()
 
-	# Add party combatants with equipped weapon data
 	var equip_catalog = load("res://engine/subsystems/characters/equipment_catalog.gd")
 	var catalog = equip_catalog.new() if equip_catalog != null else null
 	if party_data != null:
 		for cd: CharacterData in party_data.character_data:
 			if not cd.is_dead and cd.is_active:
 				var combatant := Combatant.from_character(cd)
-				# Set grid position from the tactical map
 				if tactical_map.entity_positions.has(cd.id):
 					combatant.grid_position = tactical_map.entity_positions[cd.id]
-				# Wire equipped weapon + ammo
 				var inv_rows: Array = CampaignRepository.get_inventory_items(cd.id)
 				combatant.wire_equipment(inv_rows, catalog)
 				roster.add_combatant(combatant)
 
-	# Add monster combatants and place tokens on the renderer
 	for p in placements:
 		var m_combatant := Combatant.from_monster(
 			p["monster_data"], p["rolled_hp"], p["combatant_id"], p["group_id"])
 		m_combatant.grid_position = p["grid_position"]
 		roster.add_combatant(m_combatant)
-		# Place on tactical map
 		tactical_map.set_entity_pos(p["combatant_id"], p["grid_position"])
-		# Add token to renderer and position it
 		var mname: String = p["monster_data"].get("name", "Monster")
 		_scene.add_entity_token(p["combatant_id"], mname, 1, mname.substr(0, 1).to_upper())
 		_scene.move_token(p["combatant_id"], p["grid_position"])
 
-	# Record enemy count for morale tracking
 	roster.enemy_count_at_start = roster.get_alive_on_side(Combatant.Side.ENEMY).size()
 
 	# Build combat subsystems
@@ -402,32 +516,26 @@ func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 
 	EventBus.combat_started.emit(combat_controller.encounter_id)
 
-	# Hide dungeon exploration HUD during combat
 	_set_dungeon_hud_visible(false)
 
-	# Create and wire the combat overlay
 	_combat_overlay = DungeonCombatOverlay.new()
 	_runner.add_child(_combat_overlay)
 	_combat_overlay.combat_finished.connect(_on_dungeon_combat_finished)
 	_combat_overlay.start_combat(combat_controller, _scene)
 
 
-## Called when in-place dungeon combat ends.
 func _on_dungeon_combat_finished(result: Dictionary) -> void:
 	_in_combat = false
 
-	# 1. Finalize: mortal wounds, XP, timekeeping
+	# Finalize: mortal wounds, XP, timekeeping (party clock + turn rounding).
 	var party_data: PartyData = _runner.get_party_data()
 	_finalizer.finalize(_runner, result, party_data)
 
-	# 2. Remove monster tokens from the renderer and tactical map
+	# Remove monster tokens
 	var tactical_map: TacticalMapData = _controller.get_map()
 	if tactical_map != null:
-		# Find all enemy entity IDs in the map and remove them
 		var to_remove: Array = []
 		for eid in tactical_map.entity_positions.keys():
-			# Party member IDs come from CharacterData; monster IDs contain "_"
-			# (e.g., "goblin_1", "orc_2"). Check if it's NOT a party member.
 			var is_party := false
 			if party_data != null:
 				for cd: CharacterData in party_data.character_data:
@@ -436,17 +544,15 @@ func _on_dungeon_combat_finished(result: Dictionary) -> void:
 						break
 			if not is_party:
 				to_remove.append(eid)
-
 		for eid in to_remove:
 			tactical_map.remove_entity(eid)
 			_scene.remove_entity_token(eid)
 
-	# 3. Clean up overlay
 	if _combat_overlay != null:
 		_combat_overlay.end_combat()
 		_combat_overlay = null
 
-	# 4. Remove dead party member tokens
+	# Remove dead party member tokens
 	if party_data != null:
 		for cd: CharacterData in party_data.character_data:
 			if cd.is_dead:
@@ -454,9 +560,8 @@ func _on_dungeon_combat_finished(result: Dictionary) -> void:
 					tactical_map.remove_entity(cd.id)
 				_scene.remove_entity_token(cd.id)
 
-	# 5. Restore dungeon exploration HUD and resume
 	_set_dungeon_hud_visible(true)
-	print("Dungeon combat finished: %s" % result.get("result", "unknown"))
+	# Scheduler stays paused after combat — player decides when to resume.
 
 
 # ---------------------------------------------------------------------------
@@ -476,7 +581,7 @@ func _set_dungeon_hud_visible(vis: bool) -> void:
 	if exit_btn != null:
 		exit_btn.visible = vis
 
-## Returns a single uppercase letter representing a character class.
+
 static func _class_letter(character_class: String) -> String:
 	match character_class.to_lower():
 		"fighter", "warrior":   return "F"

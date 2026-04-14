@@ -171,7 +171,7 @@ Central registry mapping semantic IDs (e.g., terrain.grass, portrait.fighter_01,
 
 **Complexity: 3**
 
-Scene transition state machine: campaign select → world map → settlement → dungeon → combat. Push/pop stack with transition animations. Each screen implements a standardized interface (enter/exit signals, state save/restore hooks). This is pure Godot architecture — no ACKS rules involved — but the design decisions here constrain every future scene and need to be right the first time. The session runner (E-2) sits directly on top of this.
+Scene transition state machine: campaign select → world map → settlement → dungeon → combat. Push/pop stack with transition animations. Each screen implements a standardized interface (enter/exit signals, state save/restore hooks). This is pure Godot architecture — no ACKS rules involved — but the design decisions here constrain every future scene and need to be right the first time. The session runner (E-2) sits directly on top of this. (Note: scene transitions are now driven by entity context changes via the EventScheduler per `gdd-realtime-scheduler.md`, not a global state machine.)
 
 **Deliverables:**
 - NavigationStack manager (autoload or scene-tree singleton).
@@ -216,6 +216,8 @@ Scene transition state machine: campaign select → world map → settlement →
 
 250′×250′ (50×50 cells) urban grid. Building footprints, streets, market squares. Single-district scope for v1 — enough to support the settlement exploration loop (shopping, hiring, rumors, taverns). Follows the same grid and renderer patterns established by D-4, but simpler (no fog of war, no combat grid, just navigable spaces with labeled buildings). The gdd-settlement-layout.md provides the design spec.
 
+> **Note (Draft):** The settlement spatial model is now a node graph (PoIs as nodes, travel connections as weighted edges) per `gdd-realtime-scheduler.md` §4, not a rendered walkable map. Settlement generation (districts, PoI types, population) is unchanged. Adjust deliverables accordingly when this item enters active development.
+
 **Deliverables:**
 - SettlementMapData shared type (grid, building footprints, labeled locations).
 - SettlementMapRenderer (isometric diamond tiles, building labels).
@@ -251,9 +253,11 @@ Party data model (formation slots, marching order), party splitting/merging (mul
 
 ---
 
-#### E-2: Session Runner State Machine
+#### E-2: Session Runner & Event Scheduler
 
 **Complexity: 4**
+
+> **Superseded by GDD (Draft):** The session runner state machine described below is replaced by the real-time-with-pause EventScheduler model in `gdd-realtime-scheduler.md`. The session runner becomes a thin orchestrator: campaign load → create EventScheduler → enter clock loop → present results → save on exit. Discrete exploration states (WILDERNESS_EXPLORE, DUNGEON_EXPLORE, SETTLEMENT_EXPLORE) become entity-level contexts, not session-level states. The deliverables, dependencies, and test targets below should be revised to match the scheduler model when this item enters active development.
 
 This is the backbone of the game. It orchestrates every other system and has been correctly deferred until now. The session runner manages:
 
@@ -270,7 +274,7 @@ Complexity 4 because: it touches every autoload (GameState, CampaignRepository, 
 
 **Deliverables:**
 - SessionRunner autoload or scene-tree manager.
-- State machine: CAMPAIGN_SELECT, SESSION_ACTIVE, WILDERNESS_EXPLORE, DUNGEON_EXPLORE, SETTLEMENT_EXPLORE, COMBAT, SESSION_END.
+- Session states: CAMPAIGN_SELECT, SESSION_ACTIVE (event scheduler loop), SESSION_END. Entity-level contexts replace exploration states per `gdd-realtime-scheduler.md` §8.
 - Encounter check wiring (hex_entered → DiceSystem → encounter resolution).
 - Time advance wiring (movement → Timekeeping.advance_turns/hours).
 - ActiveEffectTracker ↔ Timekeeping signal connections.
@@ -858,7 +862,7 @@ Character language list, language requirements for reading/writing (INT-based li
 | D-4 | Dungeon Grid | Cell-based walls, room detection, fog | 3 | ☐ |
 | D-5 | Settlement Map | Single-district urban grid | 2 | ☐ |
 | E-1 | Party Management | Formation, travel speed, splitting | 2 | ☐ |
-| E-2 | Session Runner | Core game loop state machine | 4 | ☐ |
+| E-2 | Session Runner & Event Scheduler | Clock-driven event scheduler per `gdd-realtime-scheduler.md` | 4 | ☐ |
 | F-1 | Combat Loop | Full ACKS combat sequence | 4 | ☐ |
 | G-1 | Reputation System | Per-faction/settlement scoped reputation | 2 | ☐ |
 | G-2 | Henchman Lifecycle | Search → hire → adventure → depart | 3 | ☐ |

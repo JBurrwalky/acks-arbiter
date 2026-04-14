@@ -171,6 +171,7 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 | `gdd-ui-ux-design.md` | Full UI/UX specification: visual style, screen inventory, interaction patterns, and Godot presentation guidance | Draft | All rules reference docs; `gdd-setting-generation`, `gdd-dungeon-layout`, `gdd-settlement-layout`, `gdd-npc-personality`, `gdd-terrain-system`, `gdd-name-generation`, `gdd-cultural-religious-generation` |
 | `gdd_combat_behavior_tags.md` | Combat AI tag system: deterministic action selection, scoring, tie-breaking per tag | Draft | Morale rules (implicit); no explicit XML dependencies listed |
 | `gdd-proficiency-specializations.md` | Closed specialization lists for open-ended proficiencies (Weapon Focus, Riding, Craft, Art, Knowledge, etc.), trained-creature entity model | Draft | `acore_proficiencies_rules_and_catalog`, `pc_proficiencies_catalog`, `le_monster_training_rules`, `gdd-setting-generation`, `gdd-cultural-religious-generation`, `proficiency_system_map.md` |
+| `gdd-realtime-scheduler.md` | Real-time-with-pause game clock and event scheduler: Paradox-style continuous clock, priority-queue event resolution, entity-level context model; replaces session runner state machine and simultaneous-declaration scheduling | Draft | Timekeeping, EventBus, CampaignRepository, DiceSystem; consumes `gdd-terrain-system`, `gdd-calendar-seasons`, `gdd-weather-generation`, `gdd-dungeon-layout`, `gdd-settlement-layout`, `gdd-combat-map-generation`, `gdd-ui-ux-design` |
 
 ---
 
@@ -197,6 +198,6 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 - **Lairs & Encounters XML:** 14 files (5 monster systems + 9 monster catalogs)
 - **Axioms XML:** 11 files
 - **Total XML:** 70 files
-- **GDDs:** 20 files
+- **GDDs:** 21 files
 - **Architecture and planning docs:** 8 files
-- **Grand total indexed:** 98 files
+- **Grand total indexed:** 99 files
