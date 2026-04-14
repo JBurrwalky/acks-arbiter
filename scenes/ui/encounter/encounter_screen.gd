@@ -65,12 +65,12 @@ func _build_ui() -> void:
 		child.queue_free()
 
 	var bg := PanelContainer.new()
-	bg.set_anchors_preset(PRESET_FULL_RECT)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	UiSurfaceStyles.apply_framed_window_chrome(bg)
 	add_child(bg)
 
 	var margin := MarginContainer.new()
-	margin.set_anchors_preset(PRESET_FULL_RECT)
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	margin.add_theme_constant_override("margin_left", 30)
 	margin.add_theme_constant_override("margin_right", 30)
 	margin.add_theme_constant_override("margin_top", 24)
@@ -162,14 +162,14 @@ func _build_attitude_ladder() -> VBoxContainer:
 
 func _build_narrative_area(parent: Control) -> void:
 	var panel := VBoxContainer.new()
-	panel.size_flags_horizontal = SIZE_EXPAND_FILL
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.add_theme_constant_override("separation", 8)
 	parent.add_child(panel)
 
 	panel.add_child(_heading("Encounter"))
 
 	_narrative_area = RichTextLabel.new()
-	_narrative_area.size_flags_vertical = SIZE_EXPAND_FILL
+	_narrative_area.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_narrative_area.bbcode_enabled = true
 	_narrative_area.scroll_following = true
 	_narrative_area.add_theme_color_override("default_color", BODY_COLOR)

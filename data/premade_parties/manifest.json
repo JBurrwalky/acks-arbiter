@@ -1,0 +1,10 @@
+{
+  "parties": [
+    {
+      "id": "brave_companions",
+      "file": "brave_companions.json",
+      "name": "The Brave Companions",
+      "description": "A balanced party of six adventurers ready for glory."
+    }
+  ]
+}

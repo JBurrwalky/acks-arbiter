@@ -43,12 +43,12 @@ func _build_hub_ui() -> void:
 	_clear()
 
 	var bg := PanelContainer.new()
-	bg.set_anchors_preset(PRESET_FULL_RECT)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	UiSurfaceStyles.apply_framed_window_chrome(bg)
 	add_child(bg)
 
 	var margin := MarginContainer.new()
-	margin.set_anchors_preset(PRESET_FULL_RECT)
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	margin.add_theme_constant_override("margin_left", 40)
 	margin.add_theme_constant_override("margin_right", 40)
 	margin.add_theme_constant_override("margin_top", 30)
@@ -57,7 +57,7 @@ func _build_hub_ui() -> void:
 
 	_content = VBoxContainer.new()
 	_content.add_theme_constant_override("separation", 16)
-	_content.size_flags_horizontal = SIZE_EXPAND_FILL
+	_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	margin.add_child(_content)
 
 	_content.add_child(_heading("Downtime Activities"))
@@ -155,7 +155,7 @@ func _add_activity_card(parent: Control, title_text: String, desc: String,
 	vbox.add_child(desc_label)
 
 	if enabled and callback.is_valid():
-		card.mouse_filter = MOUSE_FILTER_STOP
+		card.mouse_filter = Control.MOUSE_FILTER_STOP
 		card.gui_input.connect(func(event: InputEvent):
 			if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 				callback.call()

@@ -13,6 +13,7 @@ extends CanvasLayer
 # ---------------------------------------------------------------------------
 
 signal create_party_pressed
+signal premade_party_pressed
 signal cancel_pressed
 
 
@@ -93,15 +94,15 @@ func _build_ui() -> void:
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(bg)
 
-	# Centered panel (500 wide x 280 tall)
+	# Centered panel (600 wide x 280 tall)
 	var panel_frame := PanelContainer.new()
 	panel_frame.anchor_left = 0.5
 	panel_frame.anchor_top = 0.5
 	panel_frame.anchor_right = 0.5
 	panel_frame.anchor_bottom = 0.5
-	panel_frame.offset_left = -250.0
+	panel_frame.offset_left = -300.0
 	panel_frame.offset_top = -140.0
-	panel_frame.offset_right = 250.0
+	panel_frame.offset_right = 300.0
 	panel_frame.offset_bottom = 140.0
 	panel_frame.add_theme_stylebox_override("panel", UiSurfaceStyles.make_filled_frame_style())
 	root.add_child(panel_frame)
@@ -156,6 +157,12 @@ func _build_ui() -> void:
 	create_btn.custom_minimum_size = Vector2(140, 36)
 	create_btn.pressed.connect(func(): create_party_pressed.emit())
 	btn_row.add_child(create_btn)
+
+	var premade_btn := Button.new()
+	premade_btn.text = "Use Premade Party"
+	premade_btn.custom_minimum_size = Vector2(180, 36)
+	premade_btn.pressed.connect(func(): premade_party_pressed.emit())
+	btn_row.add_child(premade_btn)
 
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"

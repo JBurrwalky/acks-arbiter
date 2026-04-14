@@ -48,7 +48,7 @@ func _build_ui() -> void:
 
 	# Center panel.
 	var center := VBoxContainer.new()
-	center.set_anchors_preset(PRESET_CENTER)
+	center.set_anchors_preset(Control.PRESET_CENTER)
 	center.offset_left = -BUTTON_WIDTH / 2
 	center.offset_right = BUTTON_WIDTH / 2
 	center.offset_top = -200

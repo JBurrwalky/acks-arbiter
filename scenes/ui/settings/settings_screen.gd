@@ -40,12 +40,12 @@ func exit() -> void:
 
 func _build_ui() -> void:
 	var bg := PanelContainer.new()
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.set_anchors_preset(Control.Control.PRESET_FULL_RECT)
 	UiSurfaceStyles.apply_framed_window_chrome(bg)
 	add_child(bg)
 
 	var margin := MarginContainer.new()
-	margin.set_anchors_preset(PRESET_FULL_RECT)
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	margin.add_theme_constant_override("margin_left", 40)
 	margin.add_theme_constant_override("margin_right", 40)
 	margin.add_theme_constant_override("margin_top", 30)
@@ -53,12 +53,12 @@ func _build_ui() -> void:
 	bg.add_child(margin)
 
 	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	margin.add_child(scroll)
 
 	var vbox := VBoxContainer.new()
-	vbox.size_flags_horizontal = SIZE_EXPAND_FILL
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vbox.add_theme_constant_override("separation", 12)
 	scroll.add_child(vbox)
 
@@ -70,7 +70,7 @@ func _build_ui() -> void:
 	title.text = "Settings"
 	title.add_theme_font_size_override("font_size", 22)
 	title.add_theme_color_override("font_color", HEADING_COLOR)
-	title.size_flags_horizontal = SIZE_EXPAND_FILL
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_bar.add_child(title)
 
 	var back_btn := Button.new()
@@ -169,7 +169,7 @@ func _build_dice_mode_section(parent: Control) -> void:
 		hbox.add_child(radio)
 
 		var desc := _dim_label(mode_info[1])
-		desc.size_flags_horizontal = SIZE_EXPAND_FILL
+		desc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		hbox.add_child(desc)
 
 
