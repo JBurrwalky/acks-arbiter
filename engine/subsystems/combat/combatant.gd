@@ -91,6 +91,9 @@ var set_against_charge: bool = false
 ## Whether this combatant has used their movement this round.
 var has_moved_this_round: bool = false
 
+## Whether this combatant has used the Run action this round (3x movement, no attack).
+var has_run_this_round: bool = false
+
 ## ID of the combatant holding this one in a wrestling hold (empty = not held).
 var held_by_id: String = ""
 

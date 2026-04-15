@@ -22,10 +22,9 @@ enum State {
 	IDLE,                          ## Waiting for first advance() call
 	ADVANCING,                     ## Processing a CombatController step
 	DECLARATION_PHASE,             ## Waiting for player declarations
-	PC_SELECTING_ACTION,           ## PC turn — action button panel visible
-	PC_SELECTING_MOVE_TARGET,      ## PC chose Move — waiting for cell click
+	PC_AWAITING_INPUT,             ## PC turn — waiting for right-click or quick button
+	PC_CONTEXT_MENU_OPEN,          ## Context menu is visible, waiting for selection
 	PC_SELECTING_FACING,           ## After move, waiting for facing click + Confirm Move
-	PC_SELECTING_ATTACK_TARGET,    ## PC chose Attack — waiting for entity click
 	PC_SELECTING_CLEAVE_TARGET,    ## After kill, waiting for cleave target click or Skip Cleave
 	PC_SELECTING_WEAPON,           ## PC chose Sheathe & Draw — weapon popup visible
 	ENEMY_ACTING,                  ## Enemy AI turn (auto-advance)
@@ -96,6 +95,15 @@ signal weapon_switch_requested(combatant_id: String, weapons: Array, has_moved: 
 
 ## Weapon switch completed — host should refresh stat summary.
 signal weapon_switched(combatant_id: String)
+
+## Request the host to build and show a context menu at the given position.
+signal context_menu_requested(combatant_id: String, target_cell: Vector2i, screen_pos: Vector2)
+
+## Proactive movement range display on entering PC_AWAITING_INPUT.
+## walk_cells: cells within combat movement (blue).
+## run_cells: cells within 3x movement (green).
+## engagement_zones: enemy-adjacent cells (red).
+signal movement_range_display(walk_cells: Array, run_cells: Array, engagement_zones: Array)
 
 
 # ---------------------------------------------------------------------------
@@ -198,10 +206,11 @@ func advance() -> Dictionary:
 			_current_pc_id = cid
 			_selected_action = ""
 			_has_moved_this_turn = false
-			_state = State.PC_SELECTING_ACTION
+			_state = State.PC_AWAITING_INPUT
 			clear_highlights_requested.emit()
 			active_token_changed.emit(cid)
 			pc_turn_started.emit(cid)
+			_show_proactive_movement_overlay()
 			return result
 
 		"action_resolved":
@@ -270,104 +279,13 @@ func on_declarations_confirmed(declarations: Array) -> void:
 	advance()
 
 
-## Called when an action button is pressed in the ActionButtonPanel.
+## Called when a quick-action button is pressed (Pass, Delay from the quick bar).
 func on_action_button(action_id: String) -> void:
-	if _state != State.PC_SELECTING_ACTION:
+	if _state != State.PC_AWAITING_INPUT and _state != State.PC_CONTEXT_MENU_OPEN:
 		return
 
-	_selected_action = action_id
-
 	match action_id:
-		"move":
-			_state = State.PC_SELECTING_MOVE_TARGET
-			var cells := _controller.get_reachable_cells(_current_pc_id)
-			var typed_cells: Array[Vector2i] = []
-			for c in cells:
-				typed_cells.append(c)
-			highlight_reachable.emit(typed_cells, Color(0.2, 0.6, 1.0, 0.25))
-
-		"attack_melee":
-			# Check for valid melee targets before entering target selection
-			var melee_targets := _controller.get_melee_targets(_current_pc_id)
-			if melee_targets.is_empty():
-				log_entry.emit({
-					"type": 4, "round": _controller.round_number,
-					"actor_id": _current_pc_id,
-					"actor_name": _resolve_name(_current_pc_id),
-					"target_id": "", "target_name": "",
-					"data": {"note": "No adjacent enemies for melee attack"},
-					"timestamp": 0,
-				})
-				return
-			_state = State.PC_SELECTING_ATTACK_TARGET
-			# Highlight adjacent cells as range overlay + enemy tokens as targets
-			var combatant = _controller.get_combatant(_current_pc_id)
-			if combatant != null and _controller.movement_resolver != null:
-				var pos: Vector2i = _controller.movement_resolver.get_grid_position(combatant)
-				var adj_cells := IsometricGrid.get_neighbors(pos)
-				var typed_cells: Array[Vector2i] = []
-				for c in adj_cells:
-					typed_cells.append(c)
-				highlight_reachable.emit(typed_cells, Color(0.9, 0.3, 0.3, 0.15))
-			var typed_melee_targets: Array[String] = []
-			for t in melee_targets:
-				typed_melee_targets.append(t)
-			highlight_targets.emit(typed_melee_targets)
-
-		"attack_ranged":
-			# Check for valid ranged targets before entering target selection
-			var ranged_targets := _controller.get_ranged_targets(_current_pc_id)
-			if ranged_targets.is_empty():
-				log_entry.emit({
-					"type": 4, "round": _controller.round_number,
-					"actor_id": _current_pc_id,
-					"actor_name": _resolve_name(_current_pc_id),
-					"target_id": "", "target_name": "",
-					"data": {"note": "No enemies in range for ranged attack"},
-					"timestamp": 0,
-				})
-				return
-			_state = State.PC_SELECTING_ATTACK_TARGET
-			# Show range-band overlay (short=green, medium=orange, long=yellow)
-			var combatant_r = _controller.get_combatant(_current_pc_id)
-			if combatant_r != null and _controller.movement_resolver != null:
-				var pos_r: Vector2i = _controller.movement_resolver.get_grid_position(combatant_r)
-				var ranges: Dictionary = combatant_r.get_weapon_ranges()
-				var short_cells: int = int(ranges.get("short", 0)) / 5
-				var medium_cells: int = int(ranges.get("medium", 0)) / 5
-				var long_cells: int = int(ranges.get("long", 0)) / 5
-				_highlight_range_bands(pos_r, short_cells, medium_cells, long_cells)
-			# Highlight enemy tokens in range as targets
-			var typed_ranged_targets: Array[String] = []
-			for t in ranged_targets:
-				typed_ranged_targets.append(t)
-			highlight_targets.emit(typed_ranged_targets)
-
-		"switch_weapon":
-			# Sheathe & Draw — query inventory for switchable weapons
-			var sw_combatant = _controller.get_combatant(_current_pc_id)
-			if sw_combatant == null or not sw_combatant.is_character:
-				return
-			var sw_weapons := _get_switchable_weapons(sw_combatant)
-			# Also allow "go unarmed" if currently armed
-			var current_wpn: Dictionary = sw_combatant.get_equipped_weapon()
-			var has_weapon := not current_wpn.is_empty()
-			if sw_weapons.is_empty() and not has_weapon:
-				log_entry.emit({
-					"type": 4, "round": _controller.round_number,
-					"actor_id": _current_pc_id,
-					"actor_name": _resolve_name(_current_pc_id),
-					"target_id": "", "target_name": "",
-					"data": {"note": "No other weapons available"},
-					"timestamp": 0,
-				})
-				return
-			_state = State.PC_SELECTING_WEAPON
-			weapon_switch_requested.emit(_current_pc_id, sw_weapons, _has_moved_this_turn)
-
 		"delay":
-			# Placeholder: treat delay as pass for now
-			# Future: show initiative count dropdown dialog
 			clear_highlights_requested.emit()
 			_controller.submit_pc_action(_current_pc_id, "pass",
 				{"note": "delayed action"})
@@ -379,24 +297,164 @@ func on_action_button(action_id: String) -> void:
 			advance()
 
 
-## Called when a cell is clicked on the map during move-target or facing selection.
-func on_cell_targeted(pos: Vector2i) -> void:
-	if _state == State.PC_SELECTING_MOVE_TARGET:
-		clear_highlights_requested.emit()
+## Called when the player right-clicks a cell during their turn.
+## The host scene should call this from the renderer's cell_right_clicked signal.
+func on_cell_right_clicked(target_cell: Vector2i, screen_pos: Vector2) -> void:
+	if _state != State.PC_AWAITING_INPUT:
+		return
+	_state = State.PC_CONTEXT_MENU_OPEN
+	context_menu_requested.emit(_current_pc_id, target_cell, screen_pos)
 
-		# Submit the move action
-		_controller.submit_pc_action(_current_pc_id, "move", {"target_cell": pos})
-		var move_result := _controller.advance()
 
-		# Log the move
-		_emit_action_log(move_result)
-		action_resolved.emit(move_result)
-
-		# Enter facing-selection state (do NOT end the turn yet)
-		_state = State.PC_SELECTING_FACING
-		_enter_facing_selection()
+## Called when the player selects an option from the combat context menu.
+## The host scene should connect the menu's option_selected signal to this.
+func on_context_action(action_data: Dictionary) -> void:
+	if _state != State.PC_CONTEXT_MENU_OPEN:
 		return
 
+	var action_type: String = action_data.get("action_type", "")
+
+	match action_type:
+		"cancel":
+			_state = State.PC_AWAITING_INPUT
+			return
+
+		"submenu_back":
+			# Handled by the menu scene itself — should not reach here
+			return
+
+		"pass":
+			clear_highlights_requested.emit()
+			_controller.submit_pc_action(_current_pc_id, "pass")
+			advance()
+
+		"delay":
+			clear_highlights_requested.emit()
+			_controller.submit_pc_action(_current_pc_id, "pass",
+				{"note": "delayed action"})
+			advance()
+
+		"move_here", "run_here":
+			clear_highlights_requested.emit()
+			var cell: Vector2i = action_data.get("cell", Vector2i(-1, -1))
+			_controller.submit_pc_action(_current_pc_id, action_type,
+				{"target_cell": cell})
+			var move_result := _controller.advance()
+			_emit_action_log(move_result)
+			action_resolved.emit(move_result)
+			# Enter facing-selection state
+			_state = State.PC_SELECTING_FACING
+			_enter_facing_selection()
+
+		"attack_melee", "attack_ranged":
+			clear_highlights_requested.emit()
+			var target_id: String = action_data.get("target_id", "")
+			_controller.submit_pc_action(_current_pc_id, action_type,
+				{"target_id": target_id})
+			advance()
+
+		"charge":
+			clear_highlights_requested.emit()
+			var target_id: String = action_data.get("target_id", "")
+			_controller.submit_pc_action(_current_pc_id, "charge",
+				{"target_id": target_id})
+			advance()
+
+		"backstab":
+			clear_highlights_requested.emit()
+			var target_id: String = action_data.get("target_id", "")
+			_controller.submit_pc_action(_current_pc_id, "backstab",
+				{"target_id": target_id})
+			advance()
+
+		"fighting_withdrawal", "full_retreat":
+			clear_highlights_requested.emit()
+			# If Skirmishing on-turn declaration, submit the declaration first
+			var combatant = _controller.get_combatant(_current_pc_id)
+			if combatant != null and combatant.declared_defensive_movement.is_empty():
+				_controller.submit_declaration(_current_pc_id, action_type)
+			var cell: Vector2i = action_data.get("cell", Vector2i(-1, -1))
+			_controller.submit_pc_action(_current_pc_id, action_type,
+				{"target_cell": cell})
+			var move_result := _controller.advance()
+			_emit_action_log(move_result)
+			action_resolved.emit(move_result)
+			_state = State.PC_SELECTING_FACING
+			_enter_facing_selection()
+
+		"set_against_charge":
+			_controller.submit_declaration(_current_pc_id, "set_against_charge")
+			log_entry.emit({
+				"type": 13, "round": _controller.round_number,
+				"actor_id": _current_pc_id, "actor_name": _resolve_name(_current_pc_id),
+				"target_id": "", "target_name": "",
+				"data": {"declaration_type": "set_against_charge"}, "timestamp": 0,
+			})
+			_state = State.PC_AWAITING_INPUT
+
+		"switch_weapon":
+			var sw_combatant = _controller.get_combatant(_current_pc_id)
+			if sw_combatant == null or not sw_combatant.is_character:
+				_state = State.PC_AWAITING_INPUT
+				return
+			var sw_weapons := _get_switchable_weapons(sw_combatant)
+			var current_wpn: Dictionary = sw_combatant.get_equipped_weapon()
+			var has_weapon := not current_wpn.is_empty()
+			if sw_weapons.is_empty() and not has_weapon:
+				log_entry.emit({
+					"type": 4, "round": _controller.round_number,
+					"actor_id": _current_pc_id,
+					"actor_name": _resolve_name(_current_pc_id),
+					"target_id": "", "target_name": "",
+					"data": {"note": "No other weapons available"},
+					"timestamp": 0,
+				})
+				_state = State.PC_AWAITING_INPUT
+				return
+			_state = State.PC_SELECTING_WEAPON
+			weapon_switch_requested.emit(_current_pc_id, sw_weapons, _has_moved_this_turn)
+
+		var maneuver_action when maneuver_action.begins_with("maneuver_") or \
+				maneuver_action.begins_with("brawl_"):
+			clear_highlights_requested.emit()
+			var target_id: String = action_data.get("target_id", "")
+			_controller.submit_pc_action(_current_pc_id, action_type,
+				{"target_id": target_id})
+			advance()
+
+		"use_item", "light_torch", "light_lantern", "stand_up", "drop_item":
+			clear_highlights_requested.emit()
+			_controller.submit_pc_action(_current_pc_id, action_type,
+				{"character_id": action_data.get("character_id", _current_pc_id)})
+			advance()
+
+		"check_status", "carry", "loot", "coup_de_grace":
+			clear_highlights_requested.emit()
+			var target_id: String = action_data.get("target_id", "")
+			_controller.submit_pc_action(_current_pc_id, action_type,
+				{"target_id": target_id})
+			advance()
+
+		"heal", "trade":
+			clear_highlights_requested.emit()
+			var target_id: String = action_data.get("target_id", "")
+			_controller.submit_pc_action(_current_pc_id, action_type,
+				{"target_id": target_id})
+			advance()
+
+		_:
+			# Unknown action — return to awaiting input
+			_state = State.PC_AWAITING_INPUT
+
+
+## Called when the context menu is dismissed without selection.
+func on_context_menu_cancelled() -> void:
+	if _state == State.PC_CONTEXT_MENU_OPEN:
+		_state = State.PC_AWAITING_INPUT
+
+
+## Called when a cell is clicked on the map during facing selection or cleave.
+func on_cell_targeted(pos: Vector2i) -> void:
 	if _state == State.PC_SELECTING_FACING:
 		# Player clicked an adjacent cell to choose facing
 		var combatant = _controller.get_combatant(_current_pc_id)
@@ -443,9 +501,10 @@ func on_confirm_move() -> void:
 		return
 	clear_highlights_requested.emit()
 	_has_moved_this_turn = true
-	_state = State.PC_SELECTING_ACTION
+	_state = State.PC_AWAITING_INPUT
 	pc_turn_started.emit(_current_pc_id)
 	move_completed.emit()
+	_show_proactive_movement_overlay()
 
 
 func _direction_vector(from_pos: Vector2i, to_pos: Vector2i) -> Vector2i:
@@ -464,12 +523,8 @@ func on_entity_targeted(entity_id: String) -> void:
 		advance()
 		return
 
-	if _state != State.PC_SELECTING_ATTACK_TARGET:
-		return
-	clear_highlights_requested.emit()
-	var action_id := _selected_action  # "attack_melee" or "attack_ranged"
-	_controller.submit_pc_action(_current_pc_id, action_id, {"target_id": entity_id})
-	advance()
+	# Left-click on entity during PC turn = selection only (no action).
+	# All attack actions go through the right-click context menu.
 
 
 ## Called when the player clicks "Skip Cleave" to decline the cleave attempt.
@@ -504,15 +559,15 @@ func _enter_cleave_selection(targets: Array, move_available: bool = false, move_
 	cleave_selection_started.emit(_current_pc_id)
 
 
-## Cancel current target/weapon selection — return to action selection.
+## Cancel current selection — return to awaiting input.
 func on_cancel() -> void:
-	if _state == State.PC_SELECTING_MOVE_TARGET or \
-	   _state == State.PC_SELECTING_ATTACK_TARGET or \
+	if _state == State.PC_CONTEXT_MENU_OPEN or \
 	   _state == State.PC_SELECTING_WEAPON:
 		clear_highlights_requested.emit()
-		_state = State.PC_SELECTING_ACTION
+		_state = State.PC_AWAITING_INPUT
 		_selected_action = ""
 		pc_turn_started.emit(_current_pc_id)
+		_show_proactive_movement_overlay()
 
 
 ## Called by the overlay/screen when the player picks a weapon from the popup.
@@ -534,9 +589,10 @@ func on_weapon_selected(weapon_item: Dictionary) -> void:
 	if inner_result.get("continues_turn", false):
 		# Cost was movement — player can still attack this turn
 		_has_moved_this_turn = true
-		_state = State.PC_SELECTING_ACTION
+		_state = State.PC_AWAITING_INPUT
 		pc_turn_started.emit(_current_pc_id)
 		move_completed.emit()
+		_show_proactive_movement_overlay()
 	else:
 		# Cost was attack — turn is over
 		auto_advance_requested.emit()
@@ -583,6 +639,8 @@ func _cache_initiative_display(init_order: Array) -> void:
 			"hp_current": c.get_hp_current(),
 			"hp_max": c.get_hp_max(),
 			"is_alive": c.is_alive(),
+			"is_fleeing": c.is_fleeing,
+			"is_surprised": false,  # Set by surprise system when implemented
 		})
 
 
@@ -595,6 +653,7 @@ func _update_initiative_hp() -> void:
 			continue
 		entry["hp_current"] = c.get_hp_current()
 		entry["is_alive"] = c.is_alive()
+		entry["is_fleeing"] = c.is_fleeing
 	initiative_updated.emit(_initiative_display)
 
 
@@ -662,18 +721,79 @@ func _resolve_name(combatant_id: String) -> String:
 
 func _action_to_log_type(action_id: String) -> int:
 	match action_id:
-		"attack_melee", "attack_ranged":
+		"attack_melee", "attack_ranged", "backstab", "charge", "coup_de_grace":
 			return 1  # CombatLog.EntryType.ATTACK
 		"cast_spell":
 			return 3  # SPELL
-		"move":
+		"move", "move_here", "run_here":
 			return 4  # MOVEMENT
 		"fighting_withdrawal", "full_retreat":
 			return 4  # MOVEMENT
-		"switch_weapon":
-			return 4  # MOVEMENT (sheathe & draw is a movement-type action)
+		"switch_weapon", "stand_up":
+			return 4  # MOVEMENT (movement-type actions)
+		var maneuver when maneuver.begins_with("maneuver_") or \
+				maneuver.begins_with("brawl_"):
+			return 5  # MANEUVER
 		_:
 			return 4  # Default to movement
+
+
+func _show_proactive_movement_overlay() -> void:
+	## Show movement range overlay when entering PC_AWAITING_INPUT.
+	## Blue = walkable, green = running, red = engagement zones.
+	if _controller == null or _controller.movement_resolver == null:
+		return
+	var combatant = _controller.get_combatant(_current_pc_id)
+	if combatant == null:
+		return
+
+	var mr = _controller.movement_resolver
+	var engaged := mr.is_engaged(combatant)
+	var has_defensive := not combatant.declared_defensive_movement.is_empty()
+	var has_skirmishing := combatant.has_proficiency("skirmishing")
+
+	# No movement overlay for engaged entities without declaration or Skirmishing
+	if engaged and not has_defensive and not has_skirmishing:
+		return
+
+	if combatant.has_moved_this_round:
+		return
+
+	# Walk cells (blue)
+	var walk_cells := mr.get_cells_reachable(combatant, combatant.get_combat_movement_cells())
+	if not walk_cells.is_empty():
+		var typed_walk: Array[Vector2i] = []
+		for c in walk_cells:
+			typed_walk.append(c)
+		highlight_reachable.emit(typed_walk, Color(0.2, 0.6, 1.0, 0.15))
+
+	# Running cells (green) — beyond walk range, within 3x
+	var run_cells := mr.get_cells_reachable(combatant, combatant.get_combat_movement_cells() * 3)
+	var walk_set: Dictionary = {}
+	for c in walk_cells:
+		walk_set[c] = true
+	var run_only: Array[Vector2i] = []
+	for c in run_cells:
+		if not walk_set.has(c):
+			run_only.append(c)
+	if not run_only.is_empty():
+		highlight_reachable.emit(run_only, Color(0.3, 0.8, 0.3, 0.10))
+
+	# Engagement zones (red) — cells adjacent to enemies
+	var engagement_cells: Array[Vector2i] = []
+	var enemy_side: int = Combatant.Side.ENEMY if combatant.is_pc_side() else Combatant.Side.PARTY
+	for enemy in _controller.roster.get_alive_on_side(enemy_side):
+		var epos: Vector2i = mr.get_grid_position(enemy)
+		if epos == Vector2i(-1, -1):
+			continue
+		for n in IsometricGrid.get_neighbors(epos):
+			if n not in engagement_cells:
+				engagement_cells.append(n)
+	if not engagement_cells.is_empty():
+		highlight_reachable.emit(engagement_cells, Color(0.9, 0.2, 0.2, 0.12))
+
+	# Emit the combined display signal
+	movement_range_display.emit(walk_cells, run_only, engagement_cells)
 
 
 func _get_switchable_weapons(combatant: Combatant) -> Array:

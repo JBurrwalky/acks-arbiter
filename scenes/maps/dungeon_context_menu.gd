@@ -14,13 +14,19 @@ signal cancelled()
 # Constants
 # ---------------------------------------------------------------------------
 
-const CATEGORY_ORDER := ["universal", "environment", "entity", "self"]
+const CATEGORY_ORDER := ["universal", "environment", "entity", "self",
+	"movement", "attack", "maneuver", "ally", "downed"]
 
 ## Colors for category separator labels.
 const CATEGORY_COLORS := {
 	"environment": Color(0.9, 0.85, 0.6),
 	"entity": Color(0.6, 0.85, 0.9),
 	"self": Color(0.7, 0.9, 0.7),
+	"movement": Color(0.6, 0.8, 1.0),
+	"attack": Color(1.0, 0.6, 0.6),
+	"maneuver": Color(1.0, 0.8, 0.5),
+	"ally": Color(0.6, 0.9, 0.7),
+	"downed": Color(0.9, 0.5, 0.5),
 }
 
 
@@ -31,6 +37,9 @@ const CATEGORY_COLORS := {
 var _scheduler_loop = null
 var _was_paused: bool = true
 var _previous_speed: int = 0
+var _parent_options: Array = []  ## Saved parent menu options for submenu "Back" navigation
+var _current_options: Array = []  ## Currently displayed options (for snapshot before submenu)
+var _current_screen_pos: Vector2 = Vector2.ZERO  ## Saved position for redisplay
 
 
 # ---------------------------------------------------------------------------
@@ -69,6 +78,8 @@ func _unhandled_input(event: InputEvent) -> void:
 ## [param scheduler_loop]: SchedulerLoop reference for auto-pause (or null).
 func show_at(screen_pos: Vector2, options: Array, scheduler_loop = null) -> void:
 	_scheduler_loop = scheduler_loop
+	_parent_options = []
+	_current_screen_pos = screen_pos
 
 	# Auto-pause.
 	if _scheduler_loop != null and _scheduler_loop.has_method("is_paused"):
@@ -77,6 +88,13 @@ func show_at(screen_pos: Vector2, options: Array, scheduler_loop = null) -> void
 			_previous_speed = _scheduler_loop.get_speed() if _scheduler_loop.has_method("get_speed") else 1
 			_scheduler_loop.pause()
 
+	_show_options(options, screen_pos)
+
+
+## Render a list of options into the menu at the given position.
+## Used both for initial display and submenu navigation.
+func _show_options(options: Array, screen_pos: Vector2) -> void:
+	_current_options = options
 	# Clear previous content.
 	_clear_buttons()
 
@@ -113,7 +131,8 @@ func show_at(screen_pos: Vector2, options: Array, scheduler_loop = null) -> void
 			btn.modulate = Color(0.5, 0.5, 0.5, 0.7)
 
 		var action_data: Dictionary = opt.get("action_data", {})
-		btn.pressed.connect(_on_option_pressed.bind(action_data))
+		var submenu: Array = opt.get("submenu_options", [])
+		btn.pressed.connect(_on_option_pressed.bind(action_data, submenu))
 		vbox.add_child(btn)
 
 	# Position the popup, keeping it on-screen.
@@ -140,10 +159,21 @@ func dismiss() -> void:
 # Internals
 # ---------------------------------------------------------------------------
 
-func _on_option_pressed(action_data: Dictionary) -> void:
+func _on_option_pressed(action_data: Dictionary, submenu_options: Array = []) -> void:
 	var action_type: String = action_data.get("action_type", "")
 	if action_type == "cancel":
 		_dismiss()
+		return
+	if action_type == "submenu_back":
+		# Navigate back to parent menu
+		if not _parent_options.is_empty():
+			_show_options(_parent_options, _current_screen_pos)
+			_parent_options = []
+		return
+	if not submenu_options.is_empty():
+		# Enter submenu — save current options for back navigation
+		_parent_options = _current_options.duplicate()
+		_show_options(submenu_options, _current_screen_pos)
 		return
 	option_selected.emit(action_data)
 	_close()

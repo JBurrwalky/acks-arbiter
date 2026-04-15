@@ -139,6 +139,8 @@ func _create_entry_row(entry: Dictionary) -> HBoxContainer:
 	var hp_cur: int = entry.get("hp_current", 0)
 	var hp_max: int = entry.get("hp_max", 1)
 	var alive: bool = entry.get("is_alive", true)
+	var is_fleeing: bool = entry.get("is_fleeing", false)
+	var is_surprised: bool = entry.get("is_surprised", false)
 
 	var row := HBoxContainer.new()
 	row.name = cid
@@ -178,7 +180,25 @@ func _create_entry_row(entry: Dictionary) -> HBoxContainer:
 	name_label.add_theme_font_size_override("font_size", 11)
 	if not alive:
 		name_label.add_theme_color_override("font_color", COLOR_DEAD)
+	elif is_fleeing:
+		name_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.2))
 	row.add_child(name_label)
+
+	# Status badges (fleeing / surprised)
+	if is_fleeing:
+		var flee_badge := Label.new()
+		flee_badge.name = "FleeBadge"
+		flee_badge.text = "FLEE"
+		flee_badge.add_theme_font_size_override("font_size", 9)
+		flee_badge.add_theme_color_override("font_color", Color(1.0, 0.4, 0.2))
+		row.add_child(flee_badge)
+	if is_surprised:
+		var surp_badge := Label.new()
+		surp_badge.name = "SurprisedBadge"
+		surp_badge.text = "SURP"
+		surp_badge.add_theme_font_size_override("font_size", 9)
+		surp_badge.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+		row.add_child(surp_badge)
 
 	# HP label
 	var hp_label := Label.new()

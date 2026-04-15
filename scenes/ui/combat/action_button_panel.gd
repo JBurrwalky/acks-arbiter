@@ -1,11 +1,11 @@
 class_name ActionButtonPanel
 extends PanelContainer
 
-## Vertical panel of combat action buttons.
+## Quick-action bar for combat.
 ##
-## Shows Move, Attack Melee, Attack Ranged, Cast Spell, Fighting Withdrawal,
-## Full Retreat, and Pass. Buttons are enabled/disabled per combatant via
-## set_available_actions(). Hidden during enemy turns.
+## Shows Pass and Delay buttons (context-independent actions), plus conditional
+## Confirm Move and Skip Cleave buttons. All spatially-targeted actions are
+## accessed via the right-click context menu (see CombatContextMenuBuilder).
 ##
 ## Emits action_selected(action_id) when a button is clicked.
 
@@ -21,13 +21,8 @@ signal action_selected(action_id: String)
 # Constants
 # ---------------------------------------------------------------------------
 
-## Ordered list of action IDs and their display labels.
+## Quick actions always available (context-independent).
 const ACTIONS := [
-	{"id": "move", "label": "Move", "icon": ">"},
-	{"id": "attack_melee", "label": "Melee Attack", "icon": "/"},
-	{"id": "attack_ranged", "label": "Ranged Attack", "icon": ")"},
-	{"id": "cast_spell", "label": "Cast Spell", "icon": "*"},
-	{"id": "switch_weapon", "label": "Sheathe & Draw", "icon": "~"},
 	{"id": "delay", "label": "Delay", "icon": ".."},
 	{"id": "pass", "label": "Pass", "icon": "-"},
 ]
@@ -70,11 +65,18 @@ func _ready() -> void:
 	add_child(vbox)
 
 	var title := Label.new()
-	title.text = "Actions"
+	title.text = "Quick Actions"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 13)
 	title.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
 	vbox.add_child(title)
+
+	var hint := Label.new()
+	hint.text = "Right-click for actions"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_font_size_override("font_size", 11)
+	hint.add_theme_color_override("font_color", Color(0.55, 0.55, 0.55))
+	vbox.add_child(hint)
 
 	var sep := HSeparator.new()
 	vbox.add_child(sep)
@@ -88,11 +90,6 @@ func _ready() -> void:
 		btn.disabled = true
 		var action_id: String = action_def["id"]
 		btn.pressed.connect(_on_button_pressed.bind(action_id))
-
-		# Cast Spell always disabled until F-3
-		if action_id == "cast_spell":
-			btn.tooltip_text = "Spell casting (F-3 — not yet available)"
-
 		vbox.add_child(btn)
 		_buttons[action_id] = btn
 
@@ -126,11 +123,8 @@ func _ready() -> void:
 func set_available_actions(actions: Array) -> void:
 	for action_id in _buttons:
 		var btn: Button = _buttons[action_id]
-		# cast_spell always disabled until F-3
-		if action_id == "cast_spell":
-			btn.disabled = true
-			continue
-		btn.disabled = not (action_id in actions)
+		# Pass and Delay are always enabled during PC turns
+		btn.disabled = false
 
 
 ## Disable a single action button by ID.

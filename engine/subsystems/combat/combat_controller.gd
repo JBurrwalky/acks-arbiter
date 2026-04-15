@@ -185,7 +185,9 @@ func submit_pc_action(combatant_id: String, action_id: String, parameters: Dicti
 
 
 ## Submit a PC's pre-initiative declaration (defensive movement, set against charge).
-## Call during the DECLARATION phase before initiative is rolled.
+## Normally called during DECLARATION phase. With Skirmishing proficiency,
+## fighting_withdrawal/full_retreat may also be declared during ACTION phase
+## on the combatant's own turn.
 func submit_declaration(
 		combatant_id: String,
 		declaration_type: String,
@@ -193,6 +195,10 @@ func submit_declaration(
 	var combatant := roster.get_by_id(combatant_id)
 	if combatant == null:
 		return
+	# Allow on-turn declarations for Skirmishing proficiency
+	if phase == Phase.ACTION and declaration_type in ["fighting_withdrawal", "full_retreat"]:
+		if not combatant.has_proficiency("skirmishing"):
+			return  # Not allowed without Skirmishing
 	match declaration_type:
 		"fighting_withdrawal":
 			combatant.declared_defensive_movement = "fighting_withdrawal"
@@ -366,6 +372,7 @@ func _resolve_declaration() -> Dictionary:
 		c.declared_defensive_movement = ""
 		c.set_against_charge = false
 		c.has_moved_this_round = false
+		c.has_run_this_round = false
 
 		# --- Spell hooks: on_declaration_phase (per combatant) ---
 		if spell_hooks != null:
@@ -595,12 +602,26 @@ func _resolve_combatant_action(
 			result = _resolve_switch_weapon(combatant, parameters)
 		"charge":
 			result = _resolve_charge_action(combatant, parameters, condition_atk_mod)
+		"run_here":
+			result = _resolve_run_action(combatant, parameters)
+		"backstab":
+			result = _resolve_backstab_action(combatant, parameters, condition_atk_mod)
 		"fighting_withdrawal":
 			result = _resolve_defensive_movement(combatant, "fighting_withdrawal")
 		"full_retreat":
 			result = _resolve_defensive_movement(combatant, "full_retreat")
 		var maneuver_action when maneuver_action.begins_with("maneuver_"):
 			result = _resolve_maneuver_action(combatant, parameters, maneuver_action)
+		var brawl_action when brawl_action.begins_with("brawl_"):
+			result = _resolve_maneuver_action(combatant, parameters, brawl_action)
+		"stand_up":
+			result = _resolve_stand_up(combatant)
+		"use_item", "light_torch", "light_lantern", "drop_item":
+			result = _resolve_simple_self_action(combatant, action_id, parameters)
+		"check_status", "carry", "loot", "coup_de_grace":
+			result = _resolve_downed_interaction(combatant, action_id, parameters)
+		"trade", "heal":
+			result = _resolve_ally_interaction(combatant, action_id, parameters)
 		"pass":
 			result = {
 				"phase": "action",
@@ -1814,3 +1835,220 @@ func process_mortal_wounds() -> Array:
 		results.append({"combatant_id": c.id, "mortal_wound_result": mw_result})
 
 	return results
+
+
+# ---------------------------------------------------------------------------
+# Run action (3x combat movement, no attack this round)
+# ---------------------------------------------------------------------------
+
+func _resolve_run_action(
+		combatant: Combatant,
+		parameters: Dictionary) -> Dictionary:
+	var target_cell: Vector2i = parameters.get("target_cell", Vector2i(-1, -1))
+	if movement_resolver == null or not movement_resolver.has_grid():
+		combatant.has_moved_this_round = true
+		combatant.has_run_this_round = true
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "run_here",
+			"result": {"note": "run (no grid)"},
+		}
+
+	var max_cells := combatant.get_combat_movement_cells() * 3
+	var path := movement_resolver.find_path(
+		movement_resolver.get_grid_position(combatant), target_cell, true, max_cells + 1)
+	var cells_moved := movement_resolver.move_along_path(combatant, path, max_cells)
+	combatant.has_moved_this_round = true
+	combatant.has_run_this_round = true
+	_update_engagement()
+
+	return {
+		"phase": "action", "status": "action_resolved",
+		"combatant_id": combatant.id, "action": "run_here",
+		"result": {
+			"cells_moved": cells_moved,
+			"new_position": combatant.grid_position,
+		},
+	}
+
+
+# ---------------------------------------------------------------------------
+# Backstab action (thief class, multiplied damage)
+# ---------------------------------------------------------------------------
+
+func _resolve_backstab_action(
+		combatant: Combatant,
+		parameters: Dictionary,
+		extra_attack_mod: int = 0) -> Dictionary:
+	var target_id: String = parameters.get("target_id", "")
+	var target: Combatant = roster.get_by_id(target_id) if not target_id.is_empty() else null
+
+	if target == null:
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "backstab",
+			"result": {"note": "no valid target"},
+		}
+
+	# Backstab: +4 attack bonus
+	var backstab_bonus := 4
+	var attack_result := attack_resolver.resolve_melee_attack(
+		combatant, target, "", extra_attack_mod + backstab_bonus)
+
+	if attack_result.get("hit", false):
+		# Multiply the damage by backstab multiplier
+		var level := combatant.get_level_or_hd()
+		var multiplier := 2
+		if level >= 13:
+			multiplier = 5
+		elif level >= 9:
+			multiplier = 4
+		elif level >= 5:
+			multiplier = 3
+
+		var base_damage: int = attack_result.get("damage", 0)
+		var extra_damage := base_damage * (multiplier - 1)
+		if extra_damage > 0 and target.is_alive():
+			var extra_result := target.apply_damage(extra_damage)
+			attack_result["total_damage"] = base_damage + extra_damage
+			attack_result["backstab_multiplier"] = multiplier
+			if extra_result.get("is_downed", false):
+				attack_result["target_downed"] = true
+				roster.record_casualty(target, round_number)
+				_check_morale_after_casualty(target)
+
+		target.last_attacker_id = combatant.id
+
+	# Check cleave eligibility
+	if attack_result.get("target_downed", false) and cleave_resolver != null:
+		var cleave_budget := cleave_resolver.get_remaining_cleaves(combatant.id)
+		if cleave_budget > 0:
+			attack_result["cleave_eligible"] = true
+			attack_result["cleave_targets"] = _get_cleave_targets(combatant, target)
+
+	combatant.facing = _direction_vector(combatant.grid_position, target.grid_position)
+
+	return {
+		"phase": "action", "status": "action_resolved",
+		"combatant_id": combatant.id, "action": "backstab",
+		"result": attack_result,
+	}
+
+
+# ---------------------------------------------------------------------------
+# Stand Up from prone
+# ---------------------------------------------------------------------------
+
+func _resolve_stand_up(combatant: Combatant) -> Dictionary:
+	combatant.remove_condition("prone")
+	if condition_manager != null:
+		condition_manager.remove_condition(combatant, "prone")
+	combatant.has_moved_this_round = true  # Standing costs movement
+	return {
+		"phase": "action", "status": "action_resolved",
+		"combatant_id": combatant.id, "action": "stand_up",
+		"result": {"note": "stood up from prone"},
+	}
+
+
+# ---------------------------------------------------------------------------
+# Simple self-actions (use_item, light_torch, light_lantern, drop_item)
+# ---------------------------------------------------------------------------
+
+func _resolve_simple_self_action(
+		combatant: Combatant,
+		action_id: String,
+		parameters: Dictionary) -> Dictionary:
+	# Placeholder implementations — full item/light effects will be wired
+	# when inventory and light management subsystems are integrated into combat.
+	var note := ""
+	match action_id:
+		"use_item":
+			note = "item use (pending inventory integration)"
+		"light_torch":
+			combatant.has_moved_this_round = true
+			note = "lighting torch (full round action)"
+		"light_lantern":
+			combatant.has_moved_this_round = true
+			note = "lighting lantern (full round action)"
+		"drop_item":
+			note = "item dropped"
+	return {
+		"phase": "action", "status": "action_resolved",
+		"combatant_id": combatant.id, "action": action_id,
+		"result": {"note": note},
+	}
+
+
+# ---------------------------------------------------------------------------
+# Downed entity interactions (check_status, carry, loot, coup_de_grace)
+# ---------------------------------------------------------------------------
+
+func _resolve_downed_interaction(
+		combatant: Combatant,
+		action_id: String,
+		parameters: Dictionary) -> Dictionary:
+	var target_id: String = parameters.get("target_id", "")
+	var target: Combatant = roster.get_by_id(target_id) if not target_id.is_empty() else null
+
+	match action_id:
+		"check_status":
+			if target != null and mortal_wounds_resolver != null:
+				var mw_result := mortal_wounds_resolver.resolve(
+					target, target.hp_when_downed, target.killing_blow_damage_type,
+					"during_combat")
+				EventBus.mortal_wound_rolled.emit(target_id, mw_result)
+				return {
+					"phase": "action", "status": "action_resolved",
+					"combatant_id": combatant.id, "action": "check_status",
+					"result": {"target_id": target_id, "mortal_wound": mw_result},
+				}
+		"coup_de_grace":
+			if target != null:
+				# Auto-hit with maximum damage
+				var max_dmg := 20  # Placeholder max damage
+				target.apply_damage(max_dmg)
+				return {
+					"phase": "action", "status": "action_resolved",
+					"combatant_id": combatant.id, "action": "coup_de_grace",
+					"result": {"target_id": target_id, "damage": max_dmg,
+						"note": "coup de grace — automatic hit"},
+				}
+		"carry":
+			return {
+				"phase": "action", "status": "action_resolved",
+				"combatant_id": combatant.id, "action": "carry",
+				"result": {"target_id": target_id,
+					"note": "carrying %s" % (target.display_name if target else target_id)},
+			}
+		"loot":
+			return {
+				"phase": "action", "status": "action_resolved",
+				"combatant_id": combatant.id, "action": "loot",
+				"result": {"target_id": target_id,
+					"note": "looting (pending inventory integration)"},
+			}
+
+	return {
+		"phase": "action", "status": "action_resolved",
+		"combatant_id": combatant.id, "action": action_id,
+		"result": {"note": "downed interaction not fully implemented"},
+	}
+
+
+# ---------------------------------------------------------------------------
+# Ally interactions (trade, heal)
+# ---------------------------------------------------------------------------
+
+func _resolve_ally_interaction(
+		combatant: Combatant,
+		action_id: String,
+		parameters: Dictionary) -> Dictionary:
+	var target_id: String = parameters.get("target_id", "")
+
+	return {
+		"phase": "action", "status": "action_resolved",
+		"combatant_id": combatant.id, "action": action_id,
+		"result": {"target_id": target_id,
+			"note": "%s (pending full integration)" % action_id},
+	}

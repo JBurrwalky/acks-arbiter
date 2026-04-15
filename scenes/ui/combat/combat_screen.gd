@@ -29,9 +29,14 @@ var _log_panel: CombatLogPanel = null
 var _decl_overlay: DeclarationOverlay = null
 var _weapon_popup: WeaponSwitchPopup = null
 var _end_overlay: CombatEndOverlay = null
+var _context_menu = null  ## Dungeon context menu scene (reused for combat)
 
 ## Cached combat result for the Continue button
 var _combat_result: Dictionary = {}
+
+## Preloaded scripts for context menu
+var _ContextMenuBuilder = preload("res://engine/subsystems/combat/combat_context_menu_builder.gd")
+var _ContextMenuScene = preload("res://scenes/maps/dungeon_context_menu.gd")
 
 
 # ---------------------------------------------------------------------------
@@ -119,6 +124,9 @@ func start_interactive() -> void:
 	# Wire deferred auto-advance
 	_ui_controller.auto_advance_requested.connect(_on_auto_advance)
 
+	# Wire context menu
+	_ui_controller.context_menu_requested.connect(_on_context_menu_requested)
+
 	# Wire UI controller signals -> map renderer
 	if _map_renderer != null:
 		_ui_controller.highlight_reachable.connect(_on_highlight_reachable)
@@ -128,7 +136,7 @@ func start_interactive() -> void:
 		# Wire renderer input -> UI controller
 		_map_renderer.cell_clicked.connect(_on_map_cell_clicked)
 		_map_renderer.entity_clicked.connect(_on_map_entity_clicked)
-		_map_renderer.right_click_cancel.connect(_on_map_cancel)
+		_map_renderer.cell_right_clicked.connect(_on_map_cell_right_clicked)
 
 	# Build name lookup for the combat log
 	var name_lookup: Dictionary = {}
@@ -286,6 +294,7 @@ func _build_ui() -> void:
 # ---------------------------------------------------------------------------
 
 func _on_show_declarations(alive_pcs: Array) -> void:
+	_show_combat_banner()
 	_action_panel.set_panel_visible(false)
 	_decl_overlay.set_pc_list(alive_pcs)
 	_decl_overlay.visible = true
@@ -377,9 +386,41 @@ func _on_map_entity_clicked(entity_id: String) -> void:
 		_ui_controller.on_entity_targeted(entity_id)
 
 
-func _on_map_cancel() -> void:
+func _on_map_cell_right_clicked(cell_pos: Vector2i, screen_pos: Vector2) -> void:
 	if _ui_controller != null:
-		_ui_controller.on_cancel()
+		_ui_controller.on_cell_right_clicked(cell_pos, screen_pos)
+
+
+func _on_context_menu_requested(
+		combatant_id: String, target_cell: Vector2i, screen_pos: Vector2) -> void:
+	# Build options using the combat context menu builder
+	var options: Array = _ContextMenuBuilder.build_menu(
+		combatant_id, target_cell, _controller, null)
+	if options.is_empty():
+		_ui_controller.on_context_menu_cancelled()
+		return
+
+	# Dismiss any existing context menu
+	if _context_menu != null and is_instance_valid(_context_menu):
+		_context_menu.queue_free()
+		_context_menu = null
+
+	# Create and show the context menu
+	_context_menu = _ContextMenuScene.new()
+	add_child(_context_menu)
+	_context_menu.option_selected.connect(_on_context_option_selected)
+	_context_menu.cancelled.connect(_on_context_menu_dismissed)
+	_context_menu.show_at(screen_pos, options, null)
+
+
+func _on_context_option_selected(action_data: Dictionary) -> void:
+	if _ui_controller != null:
+		_ui_controller.on_context_action(action_data)
+
+
+func _on_context_menu_dismissed() -> void:
+	if _ui_controller != null:
+		_ui_controller.on_context_menu_cancelled()
 
 
 func _on_action_selected(action_id: String) -> void:
@@ -504,6 +545,32 @@ func _on_may_cleave(combatant_id: String, _combatant_name: String, _target_name:
 	var tween := create_tween()
 	tween.tween_property(flash, "modulate:a", 0.0, 1.0)
 	tween.tween_callback(flash.queue_free)
+
+
+var _combat_banner_shown: bool = false
+
+func _show_combat_banner() -> void:
+	if _combat_banner_shown:
+		return
+	_combat_banner_shown = true
+	var banner := Label.new()
+	banner.text = "COMBAT!"
+	banner.add_theme_font_size_override("font_size", 48)
+	banner.add_theme_color_override("font_color", Color(1.0, 0.3, 0.2))
+	banner.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
+	banner.add_theme_constant_override("shadow_offset_x", 3)
+	banner.add_theme_constant_override("shadow_offset_y", 3)
+	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner.set_anchors_preset(Control.PRESET_CENTER)
+	banner.offset_left = -150.0
+	banner.offset_right = 150.0
+	banner.offset_top = -40.0
+	banner.offset_bottom = 40.0
+	add_child(banner)
+	var tween := create_tween()
+	tween.tween_interval(0.8)
+	tween.tween_property(banner, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(banner.queue_free)
 
 
 func _on_auto_advance() -> void:

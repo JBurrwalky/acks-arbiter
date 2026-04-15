@@ -51,9 +51,15 @@ var _controller: CombatController = null
 ## Cached combat result for the Continue button.
 var _combat_result: Dictionary = {}
 
+## Context menu support
+var _context_menu = null
+var _ContextMenuBuilder = preload("res://engine/subsystems/combat/combat_context_menu_builder.gd")
+var _ContextMenuScene = preload("res://scenes/maps/dungeon_context_menu.gd")
+
 ## Connections we need to disconnect on cleanup.
 var _cell_conn: Callable = Callable()
 var _entity_conn: Callable = Callable()
+var _right_click_conn: Callable = Callable()
 
 
 # ---------------------------------------------------------------------------
@@ -119,11 +125,17 @@ func start_combat(controller: CombatController, renderer) -> void:
 	# Wire cleave flash signal
 	_ui_controller.may_cleave.connect(_on_may_cleave)
 
+	# Wire context menu
+	_ui_controller.context_menu_requested.connect(_on_context_menu_requested)
+
 	# Wire renderer input -> UI controller
 	_cell_conn = _on_renderer_cell_clicked
 	_entity_conn = _on_renderer_entity_clicked
+	_right_click_conn = _on_renderer_right_clicked
 	renderer.cell_clicked.connect(_cell_conn)
 	renderer.entity_clicked.connect(_entity_conn)
+	if renderer.has_signal("cell_right_clicked"):
+		renderer.cell_right_clicked.connect(_right_click_conn)
 
 	# Wire action panel -> UI controller
 	_action_panel.action_selected.connect(_on_action_selected)
@@ -155,6 +167,9 @@ func end_combat() -> void:
 			_renderer.cell_clicked.disconnect(_cell_conn)
 		if _renderer.entity_clicked.is_connected(_entity_conn):
 			_renderer.entity_clicked.disconnect(_entity_conn)
+		if _renderer.has_signal("cell_right_clicked") and \
+				_renderer.cell_right_clicked.is_connected(_right_click_conn):
+			_renderer.cell_right_clicked.disconnect(_right_click_conn)
 
 	_ui_controller = null
 	_controller = null
@@ -251,7 +266,10 @@ func _build_ui() -> void:
 # CombatUIController signal handlers
 # ---------------------------------------------------------------------------
 
+var _combat_banner_shown: bool = false
+
 func _on_show_declarations(alive_pcs: Array) -> void:
+	_show_combat_banner()
 	_round_label.text = "Round %d — Declarations" % _controller.round_number
 	_action_panel.set_panel_visible(false)
 	_decl_overlay.set_pc_list(alive_pcs)
@@ -359,6 +377,40 @@ func _on_renderer_cell_clicked(pos: Vector2i) -> void:
 func _on_renderer_entity_clicked(entity_id: String) -> void:
 	if _ui_controller != null:
 		_ui_controller.on_entity_targeted(entity_id)
+
+
+func _on_renderer_right_clicked(cell_pos: Vector2i, screen_pos: Vector2) -> void:
+	if _ui_controller != null:
+		_ui_controller.on_cell_right_clicked(cell_pos, screen_pos)
+
+
+func _on_context_menu_requested(
+		combatant_id: String, target_cell: Vector2i, screen_pos: Vector2) -> void:
+	var options: Array = _ContextMenuBuilder.build_menu(
+		combatant_id, target_cell, _controller, null)
+	if options.is_empty():
+		_ui_controller.on_context_menu_cancelled()
+		return
+
+	if _context_menu != null and is_instance_valid(_context_menu):
+		_context_menu.queue_free()
+		_context_menu = null
+
+	_context_menu = _ContextMenuScene.new()
+	add_child(_context_menu)
+	_context_menu.option_selected.connect(_on_context_option_selected)
+	_context_menu.cancelled.connect(_on_context_menu_dismissed)
+	_context_menu.show_at(screen_pos, options, null)
+
+
+func _on_context_option_selected(action_data: Dictionary) -> void:
+	if _ui_controller != null:
+		_ui_controller.on_context_action(action_data)
+
+
+func _on_context_menu_dismissed() -> void:
+	if _ui_controller != null:
+		_ui_controller.on_context_menu_cancelled()
 
 
 # ---------------------------------------------------------------------------
@@ -492,6 +544,30 @@ func _on_may_cleave(combatant_id: String, combatant_name: String, target_name: S
 	var tween := create_tween()
 	tween.tween_property(flash, "modulate:a", 0.0, 1.0)
 	tween.tween_callback(flash.queue_free)
+
+
+func _show_combat_banner() -> void:
+	if _combat_banner_shown:
+		return
+	_combat_banner_shown = true
+	var banner := Label.new()
+	banner.text = "COMBAT!"
+	banner.add_theme_font_size_override("font_size", 48)
+	banner.add_theme_color_override("font_color", Color(1.0, 0.3, 0.2))
+	banner.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
+	banner.add_theme_constant_override("shadow_offset_x", 3)
+	banner.add_theme_constant_override("shadow_offset_y", 3)
+	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner.set_anchors_preset(Control.PRESET_CENTER)
+	banner.offset_left = -150.0
+	banner.offset_right = 150.0
+	banner.offset_top = -40.0
+	banner.offset_bottom = 40.0
+	add_child(banner)
+	var tween := create_tween()
+	tween.tween_interval(0.8)
+	tween.tween_property(banner, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(banner.queue_free)
 
 
 func _on_auto_advance() -> void:

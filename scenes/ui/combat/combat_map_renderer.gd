@@ -26,6 +26,7 @@ const EDGE_MARGIN := 40.0
 signal cell_clicked(pos: Vector2i)
 signal entity_clicked(entity_id: String)
 signal right_click_cancel()
+signal cell_right_clicked(cell_pos: Vector2i, screen_pos: Vector2)
 
 
 # ---------------------------------------------------------------------------
@@ -252,7 +253,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 	elif event.button_index == MOUSE_BUTTON_RIGHT:
-		right_click_cancel.emit()
+		cell_right_clicked.emit(cell_pos, event.position)
 		get_viewport().set_input_as_handled()
 
 
