@@ -40,24 +40,24 @@ static func build_menu(
 	var map: TacticalMapData = controller.tactical_map
 
 	# Determine target cell contents.
-	var target_entity = _get_entity_at_cell(target_cell, controller)
-	var is_self_click := _is_self_click(combatant, target_cell, controller)
-	var is_enemy := target_entity != null and not target_entity.is_pc_side() and target_entity.is_alive()
-	var is_ally := target_entity != null and target_entity.is_pc_side() \
+	var target_entity: Combatant = _get_entity_at_cell(target_cell, controller)
+	var is_self_click: bool = _is_self_click(combatant, target_cell, controller)
+	var is_enemy: bool = target_entity != null and not target_entity.is_pc_side() and target_entity.is_alive()
+	var is_ally: bool = target_entity != null and target_entity.is_pc_side() \
 		and target_entity.id != active_combatant_id and target_entity.is_alive()
-	var is_downed := target_entity != null and not target_entity.is_alive()
-	var is_empty := target_entity == null and not is_self_click
+	var is_downed: bool = target_entity != null and not target_entity.is_alive()
+	var is_empty: bool = target_entity == null and not is_self_click
 
 	# Engagement state.
-	var engaged := _is_engaged(combatant, controller)
-	var has_defensive_decl := not combatant.declared_defensive_movement.is_empty()
-	var has_skirmishing := combatant.has_proficiency("skirmishing")
-	var movement_locked := engaged and not has_defensive_decl and not has_skirmishing
+	var engaged: bool = _is_engaged(combatant, controller)
+	var has_defensive_decl: bool = not combatant.declared_defensive_movement.is_empty()
+	var has_skirmishing: bool = combatant.has_proficiency("skirmishing")
+	var movement_locked: bool = engaged and not has_defensive_decl and not has_skirmishing
 
 	# Can the combatant act?
-	var can_attack := _can_attack(combatant, controller)
-	var can_move := not combatant.has_moved_this_round and not movement_locked
-	var has_run := combatant.get("has_run_this_round") == true
+	var can_attack: bool = _can_attack(combatant, controller)
+	var can_move: bool = not combatant.has_moved_this_round and not movement_locked
+	var has_run: bool = combatant.has_run_this_round
 
 	# --- Build options by target type ---
 	if is_self_click:
@@ -138,7 +138,7 @@ static func _build_movement_options(
 			"Already moved this round", "movement",
 			{"action_type": "move_here", "cell": target_cell}))
 	elif dist >= 0 and dist <= combat_move_cells:
-		var reachable := mr.can_reach(combatant, target_cell, combat_move_cells)
+		var reachable: bool = mr.can_reach(combatant, target_cell, combat_move_cells)
 		options.append(_option("move_here", "Move Here", reachable,
 			"Move to this cell" if reachable else "Cell not reachable within movement range",
 			"movement",
@@ -218,8 +218,8 @@ static func _build_attack_options(
 ) -> Array[Dictionary]:
 	var options: Array[Dictionary] = []
 	var mr = controller.movement_resolver
-	var is_adjacent := mr != null and mr.is_adjacent(combatant, target)
-	var movement_locked := engaged and not has_defensive_decl and not has_skirmishing
+	var is_adjacent: bool = mr != null and mr.is_adjacent(combatant, target)
+	var movement_locked: bool = engaged and not has_defensive_decl and not has_skirmishing
 
 	# Melee Attack
 	if is_adjacent and can_attack and not has_run:
@@ -283,7 +283,7 @@ static func _build_attack_options(
 	if not is_adjacent and can_move and not movement_locked:
 		var combat_move_cells := combatant.get_combat_movement_cells()
 		if mr != null:
-			var reachable := mr.can_reach(combatant, target_cell, combat_move_cells)
+			var reachable: bool = mr.can_reach(combatant, target_cell, combat_move_cells)
 			if reachable:
 				options.append(_option("move_here", "Move Here", true,
 					"Move toward %s" % target.display_name, "movement",
@@ -425,7 +425,7 @@ static func _build_ally_options(
 ) -> Array[Dictionary]:
 	var options: Array[Dictionary] = []
 	var mr = controller.movement_resolver
-	var is_adjacent := mr != null and mr.is_adjacent(combatant, ally)
+	var is_adjacent: bool = mr != null and mr.is_adjacent(combatant, ally)
 
 	# Cast Spell (on ally) — deferred
 	options.append(_option("cast_spell_ally", "Cast Spell", false,
@@ -433,7 +433,7 @@ static func _build_ally_options(
 		{"action_type": "cast_spell", "target_id": ally.id}))
 
 	# Heal
-	var can_heal := combatant.has_proficiency("healing") and is_adjacent
+	var can_heal: bool = combatant.has_proficiency("healing") and is_adjacent
 	options.append(_option("heal_ally", "Heal", can_heal,
 		"Apply Healing proficiency to %s" % ally.display_name if can_heal \
 			else "Requires Healing proficiency and adjacency",
@@ -462,7 +462,7 @@ static func _build_downed_options(
 ) -> Array[Dictionary]:
 	var options: Array[Dictionary] = []
 	var mr = controller.movement_resolver
-	var is_adjacent := mr != null and mr.is_adjacent(combatant, downed)
+	var is_adjacent: bool = mr != null and mr.is_adjacent(combatant, downed)
 
 	# Check Status
 	options.append(_option("check_status", "Check Status", is_adjacent,

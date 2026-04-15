@@ -309,7 +309,7 @@ func test_maneuver_submenu_present() -> void:
 	var result := Builder.build_menu("pc1", Vector2i(6, 5), ctrl, null)
 	var maneuver_opt := _find_option(result, "combat_maneuver")
 	check(not maneuver_opt.is_empty(), "Combat Maneuver submenu should be present")
-	var sub := maneuver_opt.get("submenu_options", [])
+	var sub: Array = maneuver_opt.get("submenu_options", [])
 	check(sub.size() >= 9, "Submenu should have at least 9 options (8 maneuvers + back)")
 	# Verify disarm is in submenu
 	var has_disarm := false

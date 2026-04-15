@@ -747,10 +747,10 @@ func _show_proactive_movement_overlay() -> void:
 	if combatant == null:
 		return
 
-	var mr = _controller.movement_resolver
-	var engaged := mr.is_engaged(combatant)
-	var has_defensive := not combatant.declared_defensive_movement.is_empty()
-	var has_skirmishing := combatant.has_proficiency("skirmishing")
+	var mr: MovementResolver = _controller.movement_resolver
+	var engaged: bool = mr.is_engaged(combatant)
+	var has_defensive: bool = not combatant.declared_defensive_movement.is_empty()
+	var has_skirmishing: bool = combatant.has_proficiency("skirmishing")
 
 	# No movement overlay for engaged entities without declaration or Skirmishing
 	if engaged and not has_defensive and not has_skirmishing:

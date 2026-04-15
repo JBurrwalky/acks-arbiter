@@ -1921,10 +1921,10 @@ func _resolve_backstab_action(
 
 	# Check cleave eligibility
 	if attack_result.get("target_downed", false) and cleave_resolver != null:
-		var cleave_budget := cleave_resolver.get_remaining_cleaves(combatant.id)
+		var cleave_budget: int = cleave_resolver.get_remaining_cleaves(combatant.id)
 		if cleave_budget > 0:
 			attack_result["cleave_eligible"] = true
-			attack_result["cleave_targets"] = _get_cleave_targets(combatant, target)
+			attack_result["cleave_targets"] = _get_cleave_targets(combatant)
 
 	combatant.facing = _direction_vector(combatant.grid_position, target.grid_position)
 
