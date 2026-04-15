@@ -160,7 +160,7 @@ When working on system X:
 
 ### UI & Presentation
 - **Rule files:** (none directly — load the rule files for the subsystem a given screen presents)
-- **GDDs:** `gdd-ui-ux-design`, `gdd-realtime-scheduler`
+- **GDDs:** `gdd-dungeon-map-ui`, `gdd-settlement-exploration-ui`, `gdd-combat-ui`, `gdd-realtime-scheduler`
 - **Depends on:** All gameplay systems, Combat Maps & Tactical Terrain, Asset Architecture, Navigation Stack
 - **Depended on by:** (end-system)
 
@@ -241,9 +241,9 @@ gdd-realtime-scheduler (cross-cuts all exploration, domain, and UI systems; bloc
   <- gdd-combat-map-generation (combat transition)
   <- gdd_combat_behavior_tags (monster behavior in combat)
   <- gdd-poi-generation (overworld discoveries)
-  <- gdd-ui-ux-design (clock UI, entity outliner, notification feed)
-
-gdd-ui-ux-design (cross-cuts presentation for all player-facing systems; consult continuously)
+  <- gdd-dungeon-map-ui (dungeon interaction, fog of war, context menus)
+  <- gdd-settlement-exploration-ui (settlement PoI navigation, travel calculator)
+  <- gdd-combat-ui (turn-based combat UI, initiative, engagement, cleave)
 gdd-proficiency-specializations (peripheral — augments Proficiencies system; feeds from setting/cultural generation; does not gate other GDDs)
 ```
 
@@ -268,4 +268,6 @@ gdd-proficiency-specializations (peripheral — augments Proficiencies system; f
 18. `gdd-quest-rumor-system` (needs POIs, settlement context, dungeon/faction context, and NPC/cultural data)
 19. `gdd-henchman-class-selection` (needs NPC personality and culture/religion context)
 20. `gdd-proficiency-specializations` (standalone; feeds from setting generation and monster training rules; can be implemented in parallel with any other GDD)
-21. `gdd-ui-ux-design` (cross-cutting presentation reference; consult early, then refine alongside every player-facing subsystem)
+21. `gdd-dungeon-map-ui` (dungeon interaction — RTS selection, context menus, fog of war, control groups)
+22. `gdd-settlement-exploration-ui` (settlement PoI navigation — menu-driven panel overlay, travel calculator)
+23. `gdd-combat-ui` (turn-based combat UI — initiative, engagement, cleave, morale; shares grid with dungeon UI)

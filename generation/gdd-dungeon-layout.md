@@ -424,6 +424,10 @@ DungeonLayout:
   #   position: Vector2i         # Grid cell of the door (the door IS this cell)
   #   type: string               # arch / unlocked / locked / trapped / secret / portcullis
   #   connects: Array[int]       # Room IDs this door connects (may include corridor pseudo-room)
+  #   door_material: string      # wood_simple / wood_standard / wood_reinforced / iron / stone
+  #                              # Determines Bash Door availability and duration (see gdd-dungeon-map-ui.md)
+  #   is_evil: bool              # Default false. Evil doors auto-close every turn (60 rounds)
+  #                              # unless wedged, spiked, held, bashed, or magically held
   
   stairs: Array[StairData]
   # StairData:
@@ -519,3 +523,4 @@ engine/subsystems/generation/dungeon_layout/
 - **2026-03-10:** Initial draft. Algorithm adapted from donjon dungeon generator. Dungeon type theming table designed from ACKS flavor table. ACKS placement constraints documented.
 - **2026-03-10 (rev 2):** All four open questions resolved. Cellular automata for cavern types. Dual room purpose system (original + current). Multi-level rules split by structure type (subterranean vs above-ground). Corridor width standardized to 10' default with width variation by theme. Room purpose tables added per dungeon type. Corridor generation updated for 2-cell-wide default carving.
 - **2026-03-25:** Grid system unified with project-wide diamond grid (per `gdd-combat-map-generation.md` §3). Replaced edge-based wall model with cell-based walls — walls are impassable cells, doors are cells with state. Eliminated edge-model conversion step (§10); generator's native cell output IS the final wall model. Updated CellData to include elevation, door_state, door_detected fields. Updated file organization (edge_converter.gd → cell_finalizer.gd).
+- **2026-04-14:** Added `door_material` (string) and `is_evil` (bool) fields to DoorData schema (§11). Required by `gdd-dungeon-map-ui.md` for Bash Door mechanics and evil door auto-close scheduler events.

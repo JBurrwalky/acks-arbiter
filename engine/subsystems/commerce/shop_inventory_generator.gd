@@ -105,10 +105,9 @@ func generate(
 			continue
 
 		# Apply shop size fraction with banker's rounding.
+		# Guarantee at least 1 if the settlement has the item at all.
 		var raw_qty: float = settlement_qty * fraction
-		var shop_qty: int = _bankers_round(raw_qty)
-		if shop_qty <= 0:
-			continue
+		var shop_qty: int = maxi(1, _bankers_round(raw_qty))
 
 		# Persist to DB.
 		CampaignRepository.upsert_shop_inventory(

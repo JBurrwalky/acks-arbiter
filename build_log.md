@@ -4958,3 +4958,172 @@ Day Planner Removal:
 - Consider updating `EquipmentCatalog.format_cost()` to delegate to `Currency.format_cost()` or deprecate it
 - Verify character creation equipment shop panel still works (it uses its own gold tracking)
 - Investigate and fix `party_state.gold_current` missing column bug in henchman wages
+
+---
+
+## Session 2026-04-14 — Document Updates for Scheduler/UI Architecture Pivot
+
+**Task:** Update project documentation to reflect three new GDDs: `gdd-realtime-scheduler.md` (EventScheduler replaces session runner state machine), `gdd-dungeon-map-ui.md` (RTS-style dungeon interaction), `gdd-settlement-exploration-ui.md` (menu-driven settlement navigation). Finalize draft scheduler notes in design brief, add DoorData fields, update coding conventions for scheduler-driven timekeeping.
+**Model used:** Opus 4.6 for planning and edits.
+
+**Completed:**
+- `docs/acks_arbiter_design_brief_v11.md`: Rewrote §6.2 (settlement maps) to describe menu-driven PoI panel overlay; street graph retained for travel time calculation only. Rewrote §8.1 (core loop) to describe EventScheduler-driven loop, folding Draft note into main text. Rewrote §8.2 (session states) to describe three session runner states and entity-level contexts, folding Draft note into main text. §8.3 unchanged (already finalized in prior session).
+- `generation/gdd-dungeon-layout.md`: Added `door_material` (string: wood_simple/wood_standard/wood_reinforced/iron/stone) and `is_evil` (bool, default false) fields to DoorData schema in §11 output section. Updated revision history.
+- `generation/gdd-settlement-layout.md`: Replaced "navigable" framing in §1 Purpose with neutral framing plus travel-calculator note. Added cross-reference in §12 (undercity level 1, item e) noting that all undercity levels inherit `gdd-dungeon-layout.md`'s DoorData schema including door_material and is_evil. Updated revision history.
+- `docs/coding_conventions.md`: Updated §6.8 Timekeeping Patterns — passive clock paragraph now describes scheduler-driven advancement via `advance_party_rounds()`, cross-references §19. Code example updated: scheduler pattern is GOOD, direct `advance_hours()` is BAD (test setup only). Date comment updated.
+- `CLAUDE.md`: Expanded generation/ directory listing to call out the three architecturally significant GDDs. Added EventScheduler-first architecture bullet to Architecture Patterns. Added sub-note to build protocol step 7 for exploration/session/UI work.
+
+**Decisions made:**
+- DoorData fields (`door_material`, `is_evil`) added to `gdd-dungeon-layout.md` only, not `gdd-settlement-layout.md`. Settlement undercity layers use dungeon layout format and inherit those fields via cross-reference. Avoids duplicate schemas that drift.
+- `advance_hours()` marked BAD in §6.8 — all game-time advancement should go through the scheduler via `advance_party_rounds()`. Direct calls acceptable only in test setup.
+- Design brief §8.1 and §8.2 Draft scheduler notes folded into main text (full rewrite), not just relabeled.
+
+**Interfaces defined or changed:**
+- `DoorData` schema in `gdd-dungeon-layout.md` §11: added `door_material: string` and `is_evil: bool`.
+
+**Database changes:**
+- None (schema-level changes deferred to implementation sessions).
+
+**Tests added/updated:**
+- None (documentation-only session).
+
+**Known issues:**
+- Street graph edge weights in `gdd-settlement-layout.md` §7 store `length: float` in map units; the travel time calculator in `gdd-settlement-exploration-ui.md` needs these in block counts. Conversion factor or normalization needed at implementation time.
+- `gdd-settlement-layout.md` §3.1 (line 81) still says "Mechanically navigable" — retained because it describes the graph being traversable for the calculator, which is still true.
+
+**Next session should:**
+- Run test_runner.tscn to verify all existing tests still pass
+- Visual-test shop panel in a settlement (may need to seed test shop POI data)
+- Begin settlement exploration UI build (SettlementPanel, PoI list, travel time calculator) or dungeon DoorData implementation
+- Update `docs/document_map.md` to reference the three new GDDs
+
+---
+
+## Session 2026-04-14 — Settlement Exploration UI Overhaul (Phases 1-8)
+
+**Task:** Implement the menu-driven settlement exploration UI per `gdd-settlement-exploration-ui.md`. Replace the interactive node-click map navigation with a PoI panel system. Full 8-phase implementation.
+**Model used:** Opus 4.6 for planning and full implementation.
+
+**Completed:**
+
+Phase 1 — Travel Calculator + Route Memory DB:
+- `engine/subsystems/exploration/settlement_travel_calculator.gd`: AStar2D pathfinding on street graph with alley filtering (streets_only toggle), block counting, edge type breakdown, commute/meander time calculation (15 rounds/block and 60 rounds/block respectively), straggling group penalties (2x for 6-11 chars, 4x for 12+). `calculate_route()` and `calculate_all_poi_distances()` static methods.
+- `db/migrations/030_settlement_routes.sql`: `known_city_routes` table (route memory for Navigation throw exemptions) and `visited_pois` table (POI discovery tracking with discovery_method).
+- `engine/autoloads/campaign_repository.gd`: Added `record_city_route()`, `has_city_route()`, `record_visited_poi()`, `has_visited_poi()`, `get_visited_pois()`, `get_discovered_poi_ids()`.
+- `db/schema.sql`: Updated to migration 030.
+
+Phase 2 — Navigation Throw + Encounter Scheduling:
+- `engine/subsystems/exploration/settlement_navigation.gd`: Navigation throw (11+ on d20) with route exemption (known routes auto-succeed), visited destination bonus (+4), Navigation proficiency bonus (+4). `check_navigation()` and `roll_deviation()` (1d4+1 blocks).
+- `engine/subsystems/exploration/settlement_encounter_scheduler.gd`: Time-based encounter checks per GDD §6.2: streets day 360 rounds, streets night 180, alleys day 180, alleys night 60. Threshold 6+ normal, 5+ looking-for-trouble. `schedule_encounter_checks()` returns event IDs for cancellation.
+
+Phase 3 — Settlement Handlers Rewrite:
+- `engine/subsystems/session/handlers/settlement_handlers.gd`: Near-complete rewrite. New event types: `city_travel_arrival`, `navigation_check`, `city_encounter_check`, `got_lost`. New `schedule_travel()` orchestrates full travel: calculates route, schedules arrival, nav checks (commuting only, every turn), encounter checks (time-based). `cancel_travel()` cancels all pending travel events. Per-party `_active_travel` state dict. Fixed encounter bug (old code checked `<= 1` on d6, now correctly checks `>= threshold`). Route memory recorded on arrival (both directions). Kept `schedule_activity()` and `commission_ready` handler.
+
+Phase 4 — SettlementPanel UI:
+- `scenes/ui/settlement/settlement_panel.gd` + `.tscn`: Right-side panel (40% width) with settlement header, PoI list (collapsible by district, distance/time estimates), travel indicator (progress bar, ETA, cancel, nav result), toggle controls (Commuting/Meandering, Streets Only/Use Alleys, Looking for Trouble), activity area, party status strip. Emits signals: `poi_clicked`, `travel_cancelled`, `speed_toggled`, `route_toggled`, `trouble_toggled`, `exit_requested`.
+
+Phase 5 — SettlementExploreState Rewire:
+- `engine/subsystems/session/states/settlement_explore_state.gd`: Complete rewrite. Panel attached to HUD CanvasLayer (layer 10) instead of nav_stack push — hex map stays visible. Wires SettlementPanel signals to travel scheduling. Auto-discovers obvious POIs on entry. Scheduler event listener updates panel on arrival/nav check/encounter. Night detection via Timekeeping. `_on_poi_clicked()` calls `_handlers.schedule_travel()`. Exit only at gate nodes.
+- `engine/subsystems/exploration/settlement_map_controller.gd`: Added `get_current_poi()` and `get_pois_by_district()` convenience methods.
+
+Phase 6 — City Overview Widget:
+- `scenes/ui/settlement/city_overview_widget.gd`: Non-interactive settlement schematic (280x280px). Draws block polygons colored by district, streets, walls, POI markers (discovered only), party pin. Transform maps settlement coordinates to widget space. Positioned top-left of screen.
+
+Phase 7 — Activity Panel + Sub-Panel Integration:
+- `scenes/ui/settlement/activity_panel.gd`: Dynamic panel showing available activities by POI type (per GDD §4.1 table). Supports tavern, inn, temple, shop, guild, gate, market types. Minor activities resolve immediately; major activities (gather_info 24 turns, carouse 144 turns, rest_long 48 turns) scheduled as events. Routes to ShopPanel for buy/sell/commission. Gate shows Exit Settlement.
+- `scenes/ui/settlement/shop_panel.gd`: Modified to support embedded layout — detects parent container type and adjusts sizing (expand-fill vs. fixed modal).
+
+Phase 8 — Cleanup:
+- Verified no remaining references to old `settlement_map.tscn` or `settlement_map_renderer.gd` node_clicked pattern in engine or test code. Old files exist but are unused (can be deleted in a follow-up cleanup commit).
+
+**Decisions made:**
+- Settlement panel is a HUD CanvasLayer overlay (layer 10), NOT a nav_stack entry. This keeps the hex map visible underneath.
+- Travel time is per-edge (each edge = 1 block), not per-length-unit. Edge `length` field used for AStar2D weight optimization but block count = edge count.
+- Navigation throw exemptions are directional — recording route A→B also records B→A.
+- Straggling group penalty affects commuting only (not meandering), per GDD §3.3.5.
+- ShopPanel re-embedding: detects parent type at build time to choose sizing mode.
+- City overview widget uses Control (not Node2D) for _draw() compatibility with CanvasLayer.
+
+**Interfaces defined or changed:**
+- `SettlementTravelCalculator.calculate_route(map_data, origin, dest, streets_only, party_size) -> Dictionary`
+- `SettlementTravelCalculator.calculate_all_poi_distances(map_data, origin, streets_only, party_size) -> Dictionary`
+- `SettlementNavigation.check_navigation(campaign_id, settlement_id, origin_poi_id, dest_poi_id, party_characters) -> Dictionary`
+- `SettlementNavigation.roll_deviation() -> int`
+- `SettlementEncounterScheduler.schedule_encounter_checks(scheduler, party_id, start, duration, has_alleys, is_night, trouble, ...) -> Array[String]`
+- `SettlementHandlers.schedule_travel(map_data, origin, dest_poi, speed, streets_only, party_size, scheduler, party_id, ...) -> Dictionary`
+- `SettlementHandlers.cancel_travel(scheduler, party_id) -> int`
+- `SettlementHandlers.is_traveling(party_id) -> bool`
+- `SettlementHandlers.get_active_travel(party_id) -> Dictionary`
+- `SettlementPanel` signals: `poi_clicked`, `travel_cancelled`, `speed_toggled`, `route_toggled`, `trouble_toggled`, `exit_requested`, `activity_selected`
+- `SettlementActivityPanel` signals: `activity_requested`, `exit_settlement_requested`, `shop_requested`, `hiring_requested`
+- `SettlementMapController.get_current_poi() -> Dictionary`
+- `SettlementMapController.get_pois_by_district() -> Dictionary`
+- `CampaignRepository.record_city_route()`, `has_city_route()`, `record_visited_poi()`, `has_visited_poi()`, `get_visited_pois()`, `get_discovered_poi_ids()`
+- Event types changed: `settlement_move` → `city_travel_arrival`; added `navigation_check`, `city_encounter_check`, `got_lost`
+
+**Database changes:**
+- Migration 030: `known_city_routes` and `visited_pois` tables.
+
+**Tests added/updated:**
+- `tests/test_settlement_travel_calculator.gd` — 16 tests: pathfinding, alley filtering, block counting, commute/meander timing, straggling penalties, boundary values, all-POI distance calculation.
+- `tests/test_settlement_navigation.gd` — 15 tests: route exemption, visited destination bonus, proficiency bonus, stacking, success/failure thresholds, deviation range, encounter intervals (streets/alleys × day/night), encounter count for travel durations, looking-for-trouble threshold.
+- Both registered in test_runner.gd and test_runner.tscn.
+
+**Known issues:**
+- Old files `scenes/maps/settlement_map_renderer.gd` and `scenes/maps/settlement_map.tscn` still exist but are unused. Safe to delete in a cleanup commit.
+- HiringPanel integration in activity panel is a stub (notification only). Needs wiring to existing `hiring_panel.gd` when Phase G-2 is complete.
+- Mid-travel speed changes currently cancel travel (player must re-click destination). Could be improved to reschedule in-place.
+- City overview widget does not yet animate character pins during travel (shows current position only).
+- Activity durations are hardcoded (gather_info=24 turns, carouse=144, rest_long=48). Should be derived from ACKS rules or GDD constants.
+- Dawn/dusk Timekeeping signal wiring for activity availability gating not yet connected (PoI open/close status uses rough approximation).
+- Party status strip is empty (placeholder HBoxContainer). Needs portrait/HP/encumbrance/coin display.
+- No straggling group warning indicator in travel indicator yet.
+- `_is_nighttime()` uses rough approximation (75%/25% of day). Should use Timekeeping dawn/dusk signals when available.
+
+**Next session should:**
+- Run test_runner.tscn to verify all 31 new tests pass alongside existing tests
+- Visual-test the settlement panel in a running settlement (enter from hex map)
+- Delete old settlement_map_renderer.gd and settlement_map.tscn
+- Wire dawn/dusk Timekeeping signals for activity availability
+- Build party status strip content (portraits, HP, coins)
+- Add straggling group indicator to travel indicator
+- Animate character pins on city overview widget during travel
+- Connect HiringPanel to activity panel (when G-2 hiring is ready)
+- Update `docs/document_map.md` to reference new GDDs and settlement UI files
+
+---
+
+## Session 2026-04-14 — Combat UI GDD Integration & gdd-ui-ux-design Removal
+
+**Task:** Integrate new `gdd-combat-ui.md` into project documentation. Remove all references to deprecated `gdd-ui-ux-design.md` (file deleted) except historical build log notes.
+**Model used:** Opus 4.6.
+
+**Completed:**
+- `docs/acks_arbiter_design_brief_v11.md`: Replaced `gdd-ui-ux-design.md` GDD table entry with `gdd-combat-ui.md`. Updated §8.2 to reference all three UI GDDs instead of the old monolithic spec. Added combat UI reference to §7 Combat context. Removed `gdd-ui-ux-design.md` references from §9.6, §13.3, §13.4 (inlined or removed dangling refs).
+- `docs/document_map.md`: Replaced `gdd-ui-ux-design.md` row with `gdd-combat-ui.md` entry. Removed `gdd-ui-ux-design` from dependency lists of `gdd-stronghold-construction` and `gdd-realtime-scheduler`.
+- `docs/rule_system_map.md`: Replaced `gdd-ui-ux-design` in UI & Presentation section with `gdd-dungeon-map-ui`, `gdd-settlement-exploration-ui`, `gdd-combat-ui`. Updated dependency graph and implementation order list (items 21-23 now the three specific UI GDDs).
+- `CLAUDE.md`: Added `gdd-combat-ui.md` to generation/ directory listing.
+- `generation/gdd-stronghold-construction.md`: Removed `gdd-ui-ux-design.md` from Depends on GDDs header.
+- `generation/gdd-dungeon-map-ui.md`: Removed TBD reference to `gdd-ui-ux-design.md` in Unit Info Panel section.
+
+**Decisions made:**
+- `gdd-ui-ux-design.md` was a monolithic UI spec that is now superseded by three focused GDDs: `gdd-dungeon-map-ui.md`, `gdd-settlement-exploration-ui.md`, `gdd-combat-ui.md`. References updated to point to the appropriate specific GDD.
+- Visual style notes (dark fantasy vellum) kept inline in §13.4 of the design brief rather than referencing a deleted file.
+- Build log historical references to `gdd-ui-ux-design.md` preserved (append-only policy).
+
+**Interfaces defined or changed:**
+- None (documentation-only session).
+
+**Database changes:**
+- None.
+
+**Tests added/updated:**
+- None.
+
+**Known issues:**
+- None.
+
+**Next session should:**
+- Run test_runner.tscn to verify all tests pass
+- Visual-test settlement panel and dungeon UI
+- Begin combat UI implementation per `gdd-combat-ui.md`

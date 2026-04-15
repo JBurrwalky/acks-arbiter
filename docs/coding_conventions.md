@@ -841,15 +841,21 @@ func load_settings() -> void:
 
 ### 6.8 Timekeeping Patterns
 
-<!-- Added 2026-03-27 after Timekeeping autoload build -->
+<!-- Added 2026-03-27 after Timekeeping autoload build; updated 2026-04-14 for scheduler-driven advancement -->
 
-**Passive clock:** `Timekeeping` never ticks on its own. Only the session runner advances it by calling `advance_*()` or `advance_to_*()` methods. No background timer, no `_process()`.
+**Passive clock:** `Timekeeping` never ticks on its own. The EventScheduler (via `SchedulerLoop`) advances it by calling `Timekeeping.advance_party_rounds()` as the clock reaches each event's timestamp. No background timer, no `_process()`. Direct `advance_hours()` calls from the session runner are superseded by scheduler-driven advancement — see §19 (Event Scheduler Conventions) for the full pattern.
 
 **Advance methods emit boundary signals automatically:**
 
 ```gdscript
-# GOOD — advance and let Timekeeping emit day_changed, month_changed, dawn, dusk as needed
-Timekeeping.advance_hours(8)    # crosses midnight → day_changed fires automatically
+# GOOD — scheduler advances time to the next event timestamp
+# (SchedulerLoop handles this automatically via advance_party_rounds)
+var delta = next_event.fire_time - Timekeeping.get_party_rounds(party_id)
+Timekeeping.advance_party_rounds(party_id, delta)
+# Boundary signals (day_changed, month_changed, dawn, dusk) fire automatically
+
+# BAD — direct advance_hours() bypasses the scheduler
+Timekeeping.advance_hours(8)  # only acceptable in test setup, not game code
 
 # BAD — manually tracking time to decide whether to emit signals
 _elapsed_hours += 8

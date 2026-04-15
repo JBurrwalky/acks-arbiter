@@ -94,6 +94,8 @@
 [ext_resource type="Script" path="res://tests/test_shop_service.gd" id="88_shop_service_tests"]
 [ext_resource type="Script" path="res://tests/test_dungeon_session_state.gd" id="89_dungeon_session_state_tests"]
 [ext_resource type="Script" path="res://tests/test_context_menu_builder.gd" id="90_context_menu_builder_tests"]
+[ext_resource type="Script" path="res://tests/test_settlement_travel_calculator.gd" id="91_settlement_travel_calculator_tests"]
+[ext_resource type="Script" path="res://tests/test_settlement_navigation.gd" id="92_settlement_navigation_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -376,3 +378,9 @@ script = ExtResource("89_dungeon_session_state_tests")
 
 [node name="ContextMenuBuilderTests" type="Node" parent="."]
 script = ExtResource("90_context_menu_builder_tests")
+
+[node name="SettlementTravelCalculatorTests" type="Node" parent="."]
+script = ExtResource("91_settlement_travel_calculator_tests")
+
+[node name="SettlementNavigationTests" type="Node" parent="."]
+script = ExtResource("92_settlement_navigation_tests")

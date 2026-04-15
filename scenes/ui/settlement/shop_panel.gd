@@ -58,9 +58,20 @@ func setup(shop_data: Dictionary, runner, service: ShopService) -> void:
 # ---------------------------------------------------------------------------
 
 func _build_ui() -> void:
-	custom_minimum_size = Vector2(700, 500)
-	size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	# When embedded in a parent layout (e.g. SettlementPanel activity area),
+	# let the parent control sizing. Otherwise center as a modal.
+	if get_parent() is VBoxContainer or get_parent() is HBoxContainer:
+		size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		size_flags_vertical = Control.SIZE_EXPAND_FILL
+		custom_minimum_size = Vector2(0, 350)
+	else:
+		set_anchors_preset(Control.PRESET_CENTER)
+		custom_minimum_size = Vector2(700, 500)
+		size = Vector2(700, 500)
+		offset_left -= 50
+		offset_top -= 50
+		offset_right -= 50
+		offset_bottom -= 50
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 16)

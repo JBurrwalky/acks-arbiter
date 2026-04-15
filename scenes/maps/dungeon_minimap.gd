@@ -159,7 +159,8 @@ func _on_draw() -> void:
 
 func _on_minimap_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var local_pos := event.position - _offset
+		var mb: InputEventMouseButton = event as InputEventMouseButton
+		var local_pos: Vector2 = mb.position - _offset
 		var cell_x := int(local_pos.x / CELL_PX)
 		var cell_y := int(local_pos.y / CELL_PX)
 		var cell_pos := Vector2i(cell_x, cell_y)

@@ -18,15 +18,16 @@ extends RefCounted
 # ---------------------------------------------------------------------------
 
 ## Ordered highest → lowest for change-making and display.
+## Keys use plural "coins_" prefix to match existing DB data and premade party JSON.
 const DENOMINATIONS := [
-	{"key": "coin_pp", "name": "Platinum Pieces", "cp_value": 1000, "abbr": "pp"},
-	{"key": "coin_ep", "name": "Electrum Pieces", "cp_value": 500,  "abbr": "ep"},
-	{"key": "coin_gp", "name": "Gold Pieces",     "cp_value": 100,  "abbr": "gp"},
-	{"key": "coin_sp", "name": "Silver Pieces",    "cp_value": 10,   "abbr": "sp"},
-	{"key": "coin_cp", "name": "Copper Pieces",    "cp_value": 1,    "abbr": "cp"},
+	{"key": "coins_pp", "name": "Platinum Pieces", "cp_value": 1000, "abbr": "pp"},
+	{"key": "coins_ep", "name": "Electrum Pieces", "cp_value": 500,  "abbr": "ep"},
+	{"key": "coins_gp", "name": "Gold Pieces",     "cp_value": 100,  "abbr": "gp"},
+	{"key": "coins_sp", "name": "Silver Pieces",    "cp_value": 10,   "abbr": "sp"},
+	{"key": "coins_cp", "name": "Copper Pieces",    "cp_value": 1,    "abbr": "cp"},
 ]
 
-const COIN_KEYS := ["coin_pp", "coin_ep", "coin_gp", "coin_sp", "coin_cp"]
+const COIN_KEYS := ["coins_pp", "coins_ep", "coins_gp", "coins_sp", "coins_cp"]
 
 ## Encumbrance per coin in 1/1000-stone units.
 const ENC_PER_COIN := 1

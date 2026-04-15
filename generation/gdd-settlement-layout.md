@@ -11,9 +11,11 @@
 
 ## 1. Purpose
 
-Generate a navigable settlement map — city blocks, a street graph, districts, POIs, walls, and gates — given a settlement's population, market class, terrain context, and cultural group. The output is the spatial structure that the ACKS settlement stocking procedure (§14A.5 of the design brief) then populates with NPCs, shops, services, and encounters.
+Generate a settlement map — city blocks, a street graph, districts, POIs, walls, and gates — given a settlement's population, market class, terrain context, and cultural group. The output is the spatial structure that the ACKS settlement stocking procedure (§14A.5 of the design brief) then populates with NPCs, shops, services, and encounters.
 
-The generator must produce settlements that feel like medieval fantasy towns: organic irregular blocks (not grid cities), a navigable street network of avenues and alleys, functional districts, defensive walls for larger settlements, and appropriate scaling from hamlets to major cities.
+The generator must produce settlements that feel like medieval fantasy towns: organic irregular blocks (not grid cities), a street network of avenues and alleys, functional districts, defensive walls for larger settlements, and appropriate scaling from hamlets to major cities.
+
+> **Note:** The street graph is consumed by the travel time calculator in `gdd-settlement-exploration-ui.md`, not rendered as an interactive navigable map. Settlement exploration uses a menu-driven PoI panel overlay; the street graph provides block distances, avenue/alley routing, and encounter frequency data under the hood.
 
 **Critical design constraint:** The ACKS movement model for settlements uses **avenues** (streets around blocks — the primary movement network) and **alleys** (shortcuts through blocks — 1 turn to traverse regardless of block size). The generator must produce a street graph that supports this avenue/alley distinction. See design brief §4.2.
 
@@ -541,6 +543,9 @@ All vertical layers are generated up front during settlement creation. Connectio
       - Sewer junction rooms (larger open areas at major intersections)
    d. The sewer map uses the dungeon grid format (5' squares)
       not the surface block format
+   e. All undercity levels use the `DoorData` schema from `gdd-dungeon-layout.md`,
+      including `door_material` and `is_evil` fields required by the dungeon
+      interaction system (`gdd-dungeon-map-ui.md`)
 
 2. CATACOMBS (Undercity Level 2, if applicable):
    a. Beneath the temple district and/or castle district
@@ -771,3 +776,4 @@ engine/subsystems/generation/settlement_layout/
 
 - **2026-03-19:** Initial draft. Ward-based Voronoi subdivision with block sub-partitioning. Street graph derived from block boundaries. Five settlement size categories with template-based hamlets. ACKS market class integration. Avenue/alley movement model supported.
 - **2026-03-19 (rev 2):** All open questions resolved. Vertical layers generated up front with mapped transition points and cross-layer POI referencing. Individual buildings are artistic only, developed on interaction. Settlement growth is numeric-only in v1. ACKS recommended POI list integrated with market class scaling. Temple count rule based on 6th+ level cleric population. POI placement procedure expanded with priority ordering and district assignment.
+- **2026-04-14:** Removed "navigable" framing from §1 — street graph is consumed by travel time calculator (`gdd-settlement-exploration-ui.md`), not rendered as interactive map. Added DoorData cross-reference note in §12 for undercity layers.

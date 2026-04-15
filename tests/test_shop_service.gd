@@ -48,7 +48,7 @@ func _setup() -> void:
 	GameState.campaign_id = TEST_CAMPAIGN_ID
 
 	# Give the character 10gp (1000cp) to work with.
-	CampaignRepository.add_specific_coins(TEST_CHARACTER_ID, "coin_gp", 10)
+	CampaignRepository.add_specific_coins(TEST_CHARACTER_ID, "coins_gp", 10)
 
 
 func _teardown() -> void:

@@ -73,6 +73,10 @@ C:/Users/jttau/acks-arbiter/
 │   └── ax_*.xml
 ├── generation/                   # GDDs — modify freely
 │   ├── gdd-*.md
+│   ├── gdd-realtime-scheduler.md         # EventScheduler architecture (replaces session runner state machine)
+│   ├── gdd-dungeon-map-ui.md             # RTS-style dungeon interaction (context menus, control groups)
+│   ├── gdd-settlement-exploration-ui.md  # Menu-driven settlement PoI navigation
+│   ├── gdd-combat-ui.md                  # Turn-based combat UI (shares grid with dungeon UI)
 │   ├── gdd-proficiency-specializations.md
 │   └── combat_behavior_tags.md
 ├── engine/                       # Godot project (you build this)
@@ -93,6 +97,7 @@ Every session that modifies application code:
 5. Read `docs/coding_conventions.md` before writing code, edit after creating new conventions or modifying existing conventions. (Modify only according to coding conventions section rules below).
 6. Read `docs/proficiency_system_map.md`, `docs/spell_system_map.md` as needed to understand how spells and proficiencies relate to game systems during planning. Read `docs/acks-arbiter-build-plan.md` for context surrounding the current build phase task.
 7. Identify which XML rule summaries and GDDs are relevant to the current task. **Load only those files.** Never load the entire rules corpus.
+   - For exploration, session runner, or UI work: also load `gdd-realtime-scheduler.md`, `gdd-dungeon-map-ui.md`, and/or `gdd-settlement-exploration-ui.md` as relevant.
 8. If persistence is involved, inspect the current database schema.
 9. If touching shared subsystem boundaries, inspect the relevant interface definitions.
 10. Implement in Godot-native terms: scenes, nodes, resources, autoloads, signals, GDScript classes, SQLite-backed repositories.
@@ -173,6 +178,7 @@ When updating, add the new content in the appropriate section — do not append 
 - **Resources** for data that Godot's resource system handles well (configuration, templates).
 - **SQLite** for all persistent game state. The database schema is ground truth.
 - **Migrations** for schema changes. Sequential, versioned, never destructive.
+- **EventScheduler-first architecture.** The game runs on a real-time-with-pause event scheduler (`gdd-realtime-scheduler.md`). All game activity is expressed as scheduled events in a priority queue. The session runner has three states (CAMPAIGN_SELECT, SESSION_ACTIVE, SESSION_END); entity context (wilderness, dungeon, urban, combat) is a property of each entity, not a global game state. See `docs/coding_conventions.md` §19 for implementation conventions.
 
 ### Testing
 

@@ -135,6 +135,24 @@ func is_on_gate() -> bool:
 	return node.get("type", "") == "gate"
 
 
+## Returns the POI at the party's current position, or {} if not at a POI.
+func get_current_poi() -> Dictionary:
+	if _map == null or _party_node_id < 0:
+		return {}
+	return _map.get_poi_at_node(_party_node_id)
+
+
+## Returns all POIs grouped by district. Result: {district_id: Array[POI dict]}.
+func get_pois_by_district() -> Dictionary:
+	if _map == null:
+		return {}
+	var result := {}
+	for district in _map.districts:
+		var dist_id: String = district.get("id", "")
+		result[dist_id] = _map.get_pois_in_district(dist_id)
+	return result
+
+
 ## Sets the party position to a specific node (e.g. a non-default gate on entry).
 func set_party_node(node_id: int) -> void:
 	if _map == null:

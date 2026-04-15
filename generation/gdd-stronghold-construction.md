@@ -3,7 +3,7 @@
 **Authority:** HYBRID — Structure catalog, construction rates, supervision rules, materials rules, magic-assisted construction, and domain stronghold value thresholds come from ACKS sourcebooks (DaW, ACore, Axioms) and are sacred. Grid placement logic, the commission pipeline, size preset definitions, accessory sub-menu behavior, NPC stronghold generation, and construction interruption handling are PROJECT-DESIGNED and may be modified freely.
 **Status:** Draft
 **Depends on ACKS rules:** `daw_equipment_and_construction.xml` (structure catalog, accessories, civilian structures, construction projects, worker rates, supervision, materials, magic assistance), `acore_axioms_strongholds_and_domains.xml` (minimum stronghold value, domain classification, followers)
-**Depends on GDDs:** `gdd-ui-ux-design.md` (G-08 Domain Management, G-10 Stronghold Planner), `gdd-settlement-layout.md` (market class for hiring workers), `gdd-dungeon-layout.md` (shared cell-based wall model, dungeon-to-stronghold claiming), `gdd-combat-map-generation.md` (unified diamond grid system, cell-based wall model definition)
+**Depends on GDDs:** `gdd-settlement-layout.md` (market class for hiring workers), `gdd-dungeon-layout.md` (shared cell-based wall model, dungeon-to-stronghold claiming), `gdd-combat-map-generation.md` (unified diamond grid system, cell-based wall model definition)
 **Modifiable by Claude Code:** Sections marked PROJECT-DESIGNED — yes, suggest improvements freely. Sections marked ACKS RULES — never modify.
 **Last updated:** 2026-03-25
 

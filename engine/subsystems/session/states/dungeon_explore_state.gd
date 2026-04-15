@@ -75,12 +75,21 @@ func enter(runner, context: Dictionary) -> void:
 		_controller.set_party_data(party_data)
 
 	# Add all active living party members
+	var active_chars: Array = []
 	if party_data != null:
 		for cd: CharacterData in party_data.character_data:
 			if not cd.is_dead and cd.is_active:
 				_controller.add_party_member(cd.id)
+				active_chars.append(cd)
 	if _controller.get_entity_ids().is_empty():
 		_controller.add_party_member("party_leader")
+
+	# Apply a formation preset so members spread across cells at entry
+	# instead of all stacking on the same cell.
+	if party_data != null and active_chars.size() > 1:
+		var fm: RefCounted = _controller.get_formation_manager()
+		if fm != null:
+			fm.apply_preset("column", party_data, active_chars)
 
 	_controller.load_dungeon(dungeon_dict, spawn_cell)
 
@@ -476,7 +485,7 @@ func _on_context_action(action_data: Dictionary) -> void:
 			})
 		"add_to_group":
 			if not selected.is_empty() and not target_id.is_empty():
-				var group_num := _session_state.get_entity_group(selected[0]) if _session_state != null else 0
+				var group_num: int = _session_state.get_entity_group(selected[0]) if _session_state != null else 0
 				if group_num == 0:
 					# Find first available group number.
 					for i in range(1, 10):
@@ -484,7 +493,7 @@ func _on_context_action(action_data: Dictionary) -> void:
 							group_num = i
 							break
 				if group_num > 0 and _session_state != null:
-					var members := _session_state.get_group(group_num)
+					var members: Array[String] = _session_state.get_group(group_num)
 					if target_id not in members:
 						members.append(target_id)
 					_session_state.assign_group(group_num, members)
@@ -590,7 +599,7 @@ func _on_control_group_assign(group_number: int, entity_ids: Array) -> void:
 func _on_control_group_recall(group_number: int) -> void:
 	if _session_state == null or _scene == null:
 		return
-	var members := _session_state.get_group(group_number)
+	var members: Array[String] = _session_state.get_group(group_number)
 	if members.is_empty():
 		return
 	_scene.clear_selection()
@@ -602,7 +611,7 @@ func _on_control_group_select_entity(entity_id: String) -> void:
 	# Double-click on entity: select all members of that entity's control group.
 	if _session_state == null or _scene == null:
 		return
-	var group_num := _session_state.get_entity_group(entity_id)
+	var group_num: int = _session_state.get_entity_group(entity_id)
 	if group_num == 0:
 		return
 	_on_control_group_recall(group_num)

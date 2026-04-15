@@ -266,7 +266,7 @@ This is the most common idle behavior for henchmen and non-PC party members. Whe
 
 ### 5.1 Unit Info Panel
 
-A panel (bottom-left or left sidebar — exact position TBD per `gdd-ui-ux-design.md` when created) showing details for the currently selected entity:
+A panel (bottom-left or left sidebar) showing details for the currently selected entity:
 
 - Portrait (from the character portrait system: 256×256 PNG)
 - Name

@@ -74,6 +74,15 @@ var _zoom_level: float = 1.0
 var _middle_dragging: bool = false
 var _middle_drag_start: Vector2 = Vector2.ZERO
 
+## Drag-select (rubber-band) state.
+var _drag_selecting: bool = false
+var _drag_select_start: Vector2 = Vector2.ZERO  # screen-space
+var _drag_select_end: Vector2 = Vector2.ZERO
+const DRAG_SELECT_THRESHOLD := 5.0  # pixels before drag-select activates
+
+## Token animation speed (pixels per second for smooth movement).
+const TOKEN_MOVE_DURATION := 0.15  # seconds per cell hop
+
 ## Double-click detection for control group recall.
 var _last_number_key: int = -1
 var _last_number_key_time: float = 0.0
@@ -108,6 +117,7 @@ func setup(controller: DungeonMapController) -> void:
 	controller.map_loaded.connect(_on_map_loaded)
 	controller.fog_updated.connect(_on_fog_updated)
 	controller.party_moved.connect(_on_party_moved)
+	controller.entity_moved.connect(_on_entity_moved)
 	controller.door_state_changed.connect(_on_door_state_changed)
 	controller.level_changed.connect(_on_level_changed)
 
@@ -200,6 +210,28 @@ func _on_party_moved(_from: Vector2i, _to: Vector2i) -> void:
 	queue_redraw()
 
 
+## Smooth-move a single entity token from one cell to another.
+func _on_entity_moved(entity_id: String, _from_pos: Vector2i, to_pos: Vector2i) -> void:
+	if not _tokens.has(entity_id):
+		return
+	var token: Node2D = _tokens[entity_id]
+	var target_screen := IsometricGrid.cell_to_screen(to_pos.x, to_pos.y)
+
+	# Kill any existing tween on this token.
+	if token.has_meta("move_tween"):
+		var old_tween: Tween = token.get_meta("move_tween")
+		if old_tween != null and old_tween.is_valid():
+			old_tween.kill()
+
+	# Create a smooth slide tween.
+	var tween: Tween = create_tween()
+	tween.tween_property(token, "position", target_screen, TOKEN_MOVE_DURATION)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	token.set_meta("move_tween", tween)
+
+	queue_redraw()
+
+
 func _on_door_state_changed(_pos: Vector2i, _old: String, _new: String) -> void:
 	queue_redraw()
 
@@ -225,6 +257,7 @@ func _draw() -> void:
 	_draw_grid_lines()
 	_draw_fog()
 	_draw_highlights()
+	_draw_drag_select_rect()
 
 
 func _draw_ground() -> void:
@@ -372,6 +405,30 @@ func _draw_highlights() -> void:
 				PackedVector2Array([pts[0], pts[1], pts[2], pts[3], pts[0]]),
 				Color(color.r, color.g, color.b, minf(color.a * 2.0, 1.0)),
 				1.5, true)
+
+
+func _draw_drag_select_rect() -> void:
+	if not _drag_selecting:
+		return
+	# Convert screen-space drag rect corners to world-space for drawing.
+	var world_start := _screen_to_world(_drag_select_start)
+	var world_end := _screen_to_world(_drag_select_end)
+	var rect_pos := Vector2(minf(world_start.x, world_end.x), minf(world_start.y, world_end.y))
+	var rect_size := Vector2(absf(world_end.x - world_start.x), absf(world_end.y - world_start.y))
+	var rect := Rect2(rect_pos, rect_size)
+	# Draw filled semi-transparent rectangle.
+	draw_rect(rect, Color(0.2, 0.6, 1.0, 0.15))
+	# Draw border.
+	draw_rect(rect, Color(0.3, 0.7, 1.0, 0.7), false, 1.5)
+
+
+## Convert a screen-space position to world-space (inverse of _world_to_screen).
+func _screen_to_world(screen_pos: Vector2) -> Vector2:
+	if _camera == null:
+		return screen_pos
+	var vp_size := get_viewport().get_visible_rect().size
+	var cam_pos := _camera.position
+	return (screen_pos - vp_size * 0.5) / _zoom_level + cam_pos
 
 
 # ---------------------------------------------------------------------------
@@ -524,7 +581,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.pressed:
 			match event.button_index:
 				MOUSE_BUTTON_LEFT:
-					_handle_left_click(event)
+					_handle_left_press(event)
 				MOUSE_BUTTON_RIGHT:
 					_handle_right_click(event)
 				MOUSE_BUTTON_MIDDLE:
@@ -539,13 +596,21 @@ func _unhandled_input(event: InputEvent) -> void:
 					get_viewport().set_input_as_handled()
 		else:
 			# Button released.
-			if event.button_index == MOUSE_BUTTON_MIDDLE:
-				_middle_dragging = false
+			match event.button_index:
+				MOUSE_BUTTON_LEFT:
+					_handle_left_release(event)
+				MOUSE_BUTTON_MIDDLE:
+					_middle_dragging = false
 
-	# --- Middle mouse drag for camera panning ---
-	elif event is InputEventMouseMotion and _middle_dragging:
-		if _camera != null:
-			_camera.position -= event.relative / _zoom_level
+	# --- Mouse motion ---
+	elif event is InputEventMouseMotion:
+		if _middle_dragging:
+			if _camera != null:
+				_camera.position -= event.relative / _zoom_level
+				get_viewport().set_input_as_handled()
+		elif _drag_selecting:
+			_drag_select_end = event.position
+			queue_redraw()
 			get_viewport().set_input_as_handled()
 
 	# --- Key events ---
@@ -593,33 +658,104 @@ func _unhandled_input(event: InputEvent) -> void:
 						get_viewport().set_input_as_handled()
 
 
-func _handle_left_click(event: InputEventMouseButton) -> void:
+## Left mouse button pressed — start potential drag-select or immediate click.
+func _handle_left_press(event: InputEventMouseButton) -> void:
 	var local_pos := get_local_mouse_position()
-	var cell_pos := IsometricGrid.screen_to_cell(local_pos)
+
+	# Double-click is always immediate (no drag).
+	if event.double_click and not _combat_mode:
+		var hit_eid := _entity_id_near_screen_pos(local_pos)
+		if not hit_eid.is_empty():
+			control_group_select_requested.emit(hit_eid)
+			get_viewport().set_input_as_handled()
+			return
+
+	# In combat mode, clicks are immediate.
 	if _combat_mode:
 		var hit_eid := _entity_id_near_screen_pos(local_pos)
 		if not hit_eid.is_empty():
 			entity_clicked.emit(hit_eid)
 			get_viewport().set_input_as_handled()
 			return
+
+	# Begin drag-select tracking.
+	_drag_selecting = true
+	_drag_select_start = event.position
+	_drag_select_end = event.position
+	get_viewport().set_input_as_handled()
+
+
+## Left mouse button released — finish drag-select or do normal click.
+func _handle_left_release(event: InputEventMouseButton) -> void:
+	if not _drag_selecting:
+		return
+	_drag_selecting = false
+
+	var drag_dist := _drag_select_start.distance_to(event.position)
+	if drag_dist > DRAG_SELECT_THRESHOLD:
+		# Rubber-band select: find all tokens within the selection rectangle.
+		_perform_drag_select(event)
 	else:
-		var hit_eid := _entity_id_near_screen_pos(local_pos)
-		if not hit_eid.is_empty():
-			if event.double_click:
-				# Double-click: select all in this entity's control group.
-				control_group_select_requested.emit(hit_eid)
-			else:
-				var additive := Input.is_key_pressed(KEY_SHIFT)
-				select_entity(hit_eid, additive)
-			get_viewport().set_input_as_handled()
-			return
-	# Clicked on empty cell or non-entity — clear selection and emit cell click.
+		# Normal click (no drag).
+		_perform_click_select()
+
+	queue_redraw()  # Clear the selection rectangle.
+
+
+## Perform rubber-band selection on all tokens within the drag rectangle.
+func _perform_drag_select(event: InputEventMouseButton) -> void:
+	var additive := Input.is_key_pressed(KEY_SHIFT)
+	if not additive:
+		clear_selection()
+
+	# Build the selection rect in screen space.
+	var rect := Rect2(
+		Vector2(minf(_drag_select_start.x, event.position.x),
+				minf(_drag_select_start.y, event.position.y)),
+		Vector2(absf(event.position.x - _drag_select_start.x),
+				absf(event.position.y - _drag_select_start.y))
+	)
+
+	# Convert token positions to screen space and test containment.
+	var any_selected := false
+	for eid in _tokens.keys():
+		var token: Node2D = _tokens[eid]
+		# Token position is in world space — convert to screen space.
+		var world_pos: Vector2 = token.position
+		var screen_pos: Vector2 = _world_to_screen(world_pos)
+		if rect.has_point(screen_pos):
+			select_entity(eid, true)
+			any_selected = true
+
+	if not any_selected and not additive:
+		selection_cleared.emit()
+
+
+## Single-click select (no drag detected).
+func _perform_click_select() -> void:
+	var local_pos := get_local_mouse_position()
+	var hit_eid := _entity_id_near_screen_pos(local_pos)
+	if not hit_eid.is_empty():
+		var additive := Input.is_key_pressed(KEY_SHIFT)
+		select_entity(hit_eid, additive)
+		return
+
+	# Clicked empty space — clear selection.
+	var cell_pos := IsometricGrid.screen_to_cell(local_pos)
 	if not _selected_entity_ids.is_empty():
 		clear_selection()
 		selection_cleared.emit()
 	if _map != null and _map.has_cell(cell_pos):
 		cell_clicked.emit(cell_pos)
-	get_viewport().set_input_as_handled()
+
+
+## Convert a world-space position to screen-space (viewport coordinates).
+func _world_to_screen(world_pos: Vector2) -> Vector2:
+	if _camera == null:
+		return world_pos
+	var vp_size := get_viewport().get_visible_rect().size
+	var cam_pos := _camera.position
+	return (world_pos - cam_pos) * _zoom_level + vp_size * 0.5
 
 
 func _handle_right_click(event: InputEventMouseButton) -> void:

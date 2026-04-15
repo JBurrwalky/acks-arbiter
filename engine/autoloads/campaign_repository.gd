@@ -2716,13 +2716,17 @@ func get_character_coins(character_id: String) -> Dictionary:
 	var coins := {}
 	for key in Currency.COIN_KEYS:
 		coins[key] = 0
+	# Query all inventory for this character and filter to coin items in GDScript,
+	# since godot-sqlite's IN clause handling can be unreliable.
 	if not db.query_with_bindings(
-		"SELECT item_key, quantity FROM inventory_items WHERE character_id = ? AND item_key IN ('coin_pp','coin_ep','coin_gp','coin_sp','coin_cp')",
+		"SELECT item_key, quantity FROM inventory_items WHERE character_id = ?",
 		[character_id]
 	):
 		return coins
 	for row in db.query_result:
-		coins[row["item_key"]] = int(row["quantity"])
+		var key: String = row.get("item_key", "")
+		if key in Currency.COIN_KEYS:
+			coins[key] = int(row.get("quantity", 0))
 	return coins
 
 
@@ -2942,3 +2946,85 @@ func get_all_commissions_for_character(campaign_id: String, character_id: String
 func mark_commission_picked_up(commission_id: String) -> bool:
 	return db.query_with_bindings(
 		"UPDATE commissions SET picked_up = 1 WHERE id = ?", [commission_id])
+
+
+# ---------------------------------------------------------------------------
+# Settlement route memory and POI discovery (Migration 030)
+# ---------------------------------------------------------------------------
+
+## Records that the party has successfully traveled a route between two POIs.
+## Used for Navigation throw exemptions (gdd-settlement-exploration-ui.md §3.3.4).
+func record_city_route(
+	campaign_id: String, settlement_id: String,
+	origin_poi_id: String, destination_poi_id: String,
+) -> void:
+	var id := generate_id()
+	db.query_with_bindings(
+		"INSERT OR IGNORE INTO known_city_routes " +
+		"(id, campaign_id, settlement_id, origin_poi_id, destination_poi_id) " +
+		"VALUES (?, ?, ?, ?, ?)",
+		[id, campaign_id, settlement_id, origin_poi_id, destination_poi_id])
+
+
+## Returns true if the party has previously traveled a specific route.
+func has_city_route(
+	campaign_id: String, settlement_id: String,
+	origin_poi_id: String, destination_poi_id: String,
+) -> bool:
+	db.query_with_bindings(
+		"SELECT 1 FROM known_city_routes " +
+		"WHERE campaign_id = ? AND settlement_id = ? " +
+		"AND origin_poi_id = ? AND destination_poi_id = ?",
+		[campaign_id, settlement_id, origin_poi_id, destination_poi_id])
+	return db.query_result.size() > 0
+
+
+## Records that the party has discovered or visited a POI.
+## discovery_method: "visited", "obvious", "meander", or "rumor".
+func record_visited_poi(
+	campaign_id: String, settlement_id: String,
+	poi_id: String, round: int, discovery_method: String = "visited",
+) -> void:
+	var id := generate_id()
+	db.query_with_bindings(
+		"INSERT OR IGNORE INTO visited_pois " +
+		"(id, campaign_id, settlement_id, poi_id, discovered_at_round, discovery_method) " +
+		"VALUES (?, ?, ?, ?, ?, ?)",
+		[id, campaign_id, settlement_id, poi_id, round, discovery_method])
+
+
+## Returns true if the party has discovered or visited a specific POI.
+func has_visited_poi(
+	campaign_id: String, settlement_id: String, poi_id: String,
+) -> bool:
+	db.query_with_bindings(
+		"SELECT 1 FROM visited_pois " +
+		"WHERE campaign_id = ? AND settlement_id = ? AND poi_id = ?",
+		[campaign_id, settlement_id, poi_id])
+	return db.query_result.size() > 0
+
+
+## Returns all visited/discovered POI IDs for a settlement.
+func get_visited_pois(
+	campaign_id: String, settlement_id: String,
+) -> Array:
+	db.query_with_bindings(
+		"SELECT poi_id, discovered_at_round, discovery_method FROM visited_pois " +
+		"WHERE campaign_id = ? AND settlement_id = ? " +
+		"ORDER BY discovered_at_round",
+		[campaign_id, settlement_id])
+	return db.query_result.duplicate()
+
+
+## Returns just the POI ID strings for quick lookup.
+func get_discovered_poi_ids(
+	campaign_id: String, settlement_id: String,
+) -> Array[String]:
+	db.query_with_bindings(
+		"SELECT poi_id FROM visited_pois " +
+		"WHERE campaign_id = ? AND settlement_id = ?",
+		[campaign_id, settlement_id])
+	var result: Array[String] = []
+	for row in db.query_result:
+		result.append(row.get("poi_id", ""))
+	return result

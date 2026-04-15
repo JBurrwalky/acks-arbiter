@@ -42,7 +42,7 @@ const CHARACTER_STAT_FIELDS := [
 ]
 
 ## Gold coin item key. All GP adjustments target an inventory_item with this key.
-const GOLD_ITEM_KEY := "coin_gp"
+const GOLD_ITEM_KEY := "coins_gp"
 const GOLD_ITEM_NAME := "Gold Pieces"
 
 ## Maximum snapshots kept per campaign (oldest pruned when exceeded).
