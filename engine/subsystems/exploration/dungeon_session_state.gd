@@ -226,3 +226,152 @@ func has_active_action(entity_id: String) -> bool:
 ## Replace the current action immediately (for move order interrupts).
 func replace_current_action(entity_id: String, action: Dictionary) -> void:
 	_action_queues[entity_id] = {"current_action": action, "pending_action": {}}
+
+
+# ---------------------------------------------------------------------------
+# Pick Lock Tracking
+# ---------------------------------------------------------------------------
+
+## Locks successfully picked this visit. Reverted on dungeon exit.
+## Key: Vector2i door position -> true.
+var _picked_locks: Dictionary = {}
+
+## Characters who failed a pick lock this visit.
+## Key: String entity_id -> int character_level at time of failure.
+var _pick_lock_failures: Dictionary = {}
+
+
+## Record that a lock was successfully picked (for reverting on exit).
+func record_picked_lock(pos: Vector2i) -> void:
+	_picked_locks[pos] = true
+
+
+## Get all positions of locks picked this visit.
+func get_picked_locks() -> Array:
+	return _picked_locks.keys()
+
+
+## Record a pick lock failure for a character at their current level.
+func record_pick_lock_failure(entity_id: String, level: int) -> void:
+	_pick_lock_failures[entity_id] = level
+
+
+## Returns true if the character has failed a pick lock and hasn't leveled up since.
+func has_failed_pick_lock(entity_id: String, current_level: int) -> bool:
+	if not _pick_lock_failures.has(entity_id):
+		return false
+	return _pick_lock_failures[entity_id] >= current_level
+
+
+# ---------------------------------------------------------------------------
+# Spike / Wedge Tracking
+# ---------------------------------------------------------------------------
+
+## Doors spiked shut this visit. Key: Vector2i -> true.
+var _spiked_doors: Dictionary = {}
+
+## Doors wedged open this visit. Key: Vector2i -> true.
+var _wedged_doors: Dictionary = {}
+
+
+func spike_door(pos: Vector2i) -> void:
+	_spiked_doors[pos] = true
+	_wedged_doors.erase(pos)  # Can't be both.
+
+
+func unspike_door(pos: Vector2i) -> void:
+	_spiked_doors.erase(pos)
+
+
+func wedge_door(pos: Vector2i) -> void:
+	_wedged_doors[pos] = true
+	_spiked_doors.erase(pos)  # Can't be both.
+
+
+func unwedge_door(pos: Vector2i) -> void:
+	_wedged_doors.erase(pos)
+
+
+func is_spiked(pos: Vector2i) -> bool:
+	return _spiked_doors.has(pos)
+
+
+func is_wedged(pos: Vector2i) -> bool:
+	return _wedged_doors.has(pos)
+
+
+# ---------------------------------------------------------------------------
+# Held Portcullis Tracking
+# ---------------------------------------------------------------------------
+
+## Portcullises held open by brute force. Key: Vector2i -> String entity_id.
+## Drops as soon as the holding entity performs any other action.
+var _held_portcullises: Dictionary = {}
+
+
+func hold_portcullis(pos: Vector2i, entity_id: String) -> void:
+	_held_portcullises[pos] = entity_id
+
+
+func release_portcullis(pos: Vector2i) -> void:
+	_held_portcullises.erase(pos)
+
+
+func is_held_open(pos: Vector2i) -> bool:
+	return _held_portcullises.has(pos)
+
+
+func get_portcullis_holder(pos: Vector2i) -> String:
+	return _held_portcullises.get(pos, "")
+
+
+## Release all portcullises held by [param entity_id]. Returns the positions released.
+func release_all_held_by(entity_id: String) -> Array:
+	var released: Array = []
+	for pos in _held_portcullises.keys():
+		if _held_portcullises[pos] == entity_id:
+			released.append(pos)
+	for pos in released:
+		_held_portcullises.erase(pos)
+	return released
+
+
+# ---------------------------------------------------------------------------
+# Exited Entity Tracking
+# ---------------------------------------------------------------------------
+
+## Entities that have successfully exited the dungeon this visit.
+## Key: String entity_id -> true.
+var _exited_entities: Dictionary = {}
+
+
+## Mark an entity as having exited the dungeon.
+func mark_exited(entity_id: String) -> void:
+	_exited_entities[entity_id] = true
+
+
+## Returns true if [param entity_id] has already exited.
+func is_exited(entity_id: String) -> bool:
+	return _exited_entities.has(entity_id)
+
+
+## Returns all entity IDs that have exited.
+func get_exited_entities() -> Array:
+	return _exited_entities.keys()
+
+
+## Returns true when every entity in [param party_ids] has either exited,
+## is incapacitated, or is dead.
+func all_party_resolved(party_ids: Array, party_data) -> bool:
+	if party_data == null:
+		return false
+	for eid in party_ids:
+		if is_exited(str(eid)):
+			continue
+		var cd = party_data.get_member(str(eid))
+		if cd == null:
+			continue
+		if cd.is_dead or cd.is_incapacitated:
+			continue
+		return false
+	return true

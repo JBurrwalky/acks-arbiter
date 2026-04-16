@@ -287,6 +287,8 @@ func _format_attack(data: Dictionary, actor: String, target: String) -> String:
 			return "\n".join(lines)
 		if inner.has("hit"):
 			return _format_single_attack(inner, actor, inner.get("target_id", target))
+		if inner.has("note"):
+			return "%s: %s" % [actor, inner["note"]]
 
 	# Direct single attack
 	return _format_single_attack(data, actor, target)
@@ -303,6 +305,31 @@ func _format_single_attack(atk: Dictionary, actor: String, target: String) -> St
 
 	# Use the resolved target name passed in; fall back to raw ID from attack result
 	var atk_target: String = target if not target.is_empty() else atk.get("target_id", "")
+
+	# --- Special cases: no d20 was rolled (attack_roll == 0) ---
+
+	# Ranged: target beyond weapon range
+	if atk.get("out_of_range", false):
+		return "%s -> %s: Out of range" % [actor, atk_target]
+
+	# Ranged: blocked by melee engagement
+	if atk.get("into_melee_blocked", false):
+		var reason: String = atk.get("blocked_reason", "firing into melee")
+		if reason == "no_precise_shooting":
+			return "%s -> %s: Blocked — cannot fire into melee without Precise Shooting" % [actor, atk_target]
+		return "%s -> %s: Blocked — %s" % [actor, atk_target, reason]
+
+	# Auto-hit (spell effect) — no d20 rolled, skip to damage
+	if hit and roll == 0:
+		var line := "%s -> %s: Auto-hit" % [actor, atk_target]
+		line += _format_damage_suffix(atk, atk_target)
+		return line
+
+	# Attack prevented (spell hook cancellation etc.) — no d20 rolled
+	if not hit and roll == 0:
+		return "%s -> %s: Attack prevented" % [actor, atk_target]
+
+	# --- Normal attack: d20 was rolled ---
 	var bonus_str := "+%d" % bonus if bonus >= 0 else str(bonus)
 
 	var line := "%s -> %s: d20(%d)%s = %d vs AC target %d" % [
@@ -317,26 +344,32 @@ func _format_single_attack(atk: Dictionary, actor: String, target: String) -> St
 	else:
 		line += " — miss"
 
-	# Append damage on the same entry if hit
 	if hit:
-		var dmg_expr: String = atk.get("damage_expression", "")
-		var dmg_total: int = atk.get("damage_total", 0)
-		var dmg_result: Dictionary = atk.get("damage_result", {})
-		var hp_dmg: int = dmg_result.get("hp_damage", dmg_total)
-		var resisted: int = dmg_result.get("resisted", 0)
-		var new_hp: int = dmg_result.get("new_hp", -1)
-		var downed: bool = atk.get("target_downed", false)
-
-		line += "\n  Damage: %s = %d" % [dmg_expr, dmg_total] if not dmg_expr.is_empty() \
-			else "\n  Damage: %d" % dmg_total
-		if resisted > 0:
-			line += " (%d resisted, %d applied)" % [resisted, hp_dmg]
-		if new_hp >= 0:
-			line += " [%s HP: %d]" % [atk_target, new_hp]
-		if downed:
-			line += " — DOWNED!"
+		line += _format_damage_suffix(atk, atk_target)
 
 	return line
+
+
+func _format_damage_suffix(atk: Dictionary, atk_target: String) -> String:
+	## Formats the damage portion of an attack log entry.
+	var dmg_expr: String = atk.get("damage_expression", "")
+	var dmg_total: int = atk.get("damage_total", 0)
+	var dmg_result: Dictionary = atk.get("damage_result", {})
+	var hp_dmg: int = dmg_result.get("hp_damage", dmg_total)
+	var resisted: int = dmg_result.get("resisted", 0)
+	var new_hp: int = dmg_result.get("new_hp", -1)
+	var downed: bool = atk.get("target_downed", false)
+
+	var suffix := ""
+	suffix += "\n  Damage: %s = %d" % [dmg_expr, dmg_total] if not dmg_expr.is_empty() \
+		else "\n  Damage: %d" % dmg_total
+	if resisted > 0:
+		suffix += " (%d resisted, %d applied)" % [resisted, hp_dmg]
+	if new_hp >= 0:
+		suffix += " [%s HP: %d]" % [atk_target, new_hp]
+	if downed:
+		suffix += " — DOWNED!"
+	return suffix
 
 
 func _format_movement(data: Dictionary, actor: String) -> String:

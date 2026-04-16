@@ -760,7 +760,7 @@ func _show_proactive_movement_overlay() -> void:
 		return
 
 	# Walk cells (blue)
-	var walk_cells := mr.get_cells_reachable(combatant, combatant.get_combat_movement_cells())
+	var walk_cells := mr.get_cells_reachable(combatant, combatant.get_combat_movement_cells(), combatant.side)
 	if not walk_cells.is_empty():
 		var typed_walk: Array[Vector2i] = []
 		for c in walk_cells:
@@ -768,7 +768,7 @@ func _show_proactive_movement_overlay() -> void:
 		highlight_reachable.emit(typed_walk, Color(0.2, 0.6, 1.0, 0.15))
 
 	# Running cells (green) — beyond walk range, within 3x
-	var run_cells := mr.get_cells_reachable(combatant, combatant.get_combat_movement_cells() * 3)
+	var run_cells := mr.get_cells_reachable(combatant, combatant.get_combat_movement_cells() * 3, combatant.side)
 	var walk_set: Dictionary = {}
 	for c in walk_cells:
 		walk_set[c] = true

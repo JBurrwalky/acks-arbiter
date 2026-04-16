@@ -18,6 +18,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/level_up/level_up_overlay.tscn" id="16_level_up"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/session_status_bar.tscn" id="17_status_bar"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause/pause_menu_overlay.tscn" id="18_pause_menu"]
+[ext_resource type="Script" path="res://engine/subsystems/ui/game_log_recorder.gd" id="19_game_log_recorder"]
+[ext_resource type="PackedScene" path="res://scenes/ui/game_log/game_log_panel.tscn" id="20_game_log_panel"]
 
 [node name="Main" type="Node" unique_id=389479426]
 script = ExtResource("1_main_script")
@@ -53,6 +55,11 @@ script = ExtResource("13_notification_mgr")
 [node name="NotificationDisplay" parent="." instance=ExtResource("14_notification_display")]
 
 [node name="RollLogOverlay" parent="." instance=ExtResource("15_roll_log")]
+
+[node name="GameLogRecorder" type="Node" parent="."]
+script = ExtResource("19_game_log_recorder")
+
+[node name="GameLogPanel" parent="." instance=ExtResource("20_game_log_panel")]
 
 [node name="LevelUpOverlay" parent="." instance=ExtResource("16_level_up")]
 

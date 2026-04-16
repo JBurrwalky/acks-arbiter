@@ -321,7 +321,7 @@ func get_reachable_cells(combatant_id: String) -> Array[Vector2i]:
 	var c := roster.get_by_id(combatant_id)
 	if c == null:
 		return []
-	return movement_resolver.get_cells_reachable(c, c.get_combat_movement_cells())
+	return movement_resolver.get_cells_reachable(c, c.get_combat_movement_cells(), c.side)
 
 
 ## Helper: returns IDs of all alive enemies for [param combatant_id].
@@ -596,7 +596,7 @@ func _resolve_combatant_action(
 			}
 		"cast_spell":
 			result = _resolve_cast_spell(combatant, parameters)
-		"move":
+		"move", "move_here":
 			result = _resolve_movement_action(combatant, parameters)
 		"switch_weapon":
 			result = _resolve_switch_weapon(combatant, parameters)
@@ -987,18 +987,22 @@ func _resolve_monster_action(combatant: Combatant) -> Dictionary:
 
 	# Auto-move monster toward target if not adjacent (grid combat)
 	if ai_target != null and movement_resolver != null and movement_resolver.has_grid():
-		if not movement_resolver.is_adjacent(combatant, ai_target):
+		# Engaged monsters cannot move without defensive movement (ZoC lock)
+		var engaged_and_locked: bool = movement_resolver.is_engaged(combatant) \
+			and combatant.declared_defensive_movement.is_empty()
+		if not engaged_and_locked and not movement_resolver.is_adjacent(combatant, ai_target):
 			var adj_cell: Vector2i = movement_resolver.find_adjacent_cell_to(combatant, ai_target)
 			if adj_cell == Vector2i(-1, -1):
 				return _resolve_combatant_action(combatant, "pass",
 					{"note": "target out of reach"})
 			var start_pos: Vector2i = movement_resolver.get_grid_position(combatant)
-			var path: Array[Vector2i] = movement_resolver.find_path(start_pos, adj_cell)
+			var path: Array[Vector2i] = movement_resolver.find_path(
+				start_pos, adj_cell, true, 50, combatant.side)
 			var move_budget := combatant.get_combat_movement_cells()
 			if path.is_empty() or (path.size() - 1) > move_budget:
 				return _resolve_combatant_action(combatant, "pass",
 					{"note": "target out of movement range"})
-			movement_resolver.move_along_path(combatant, path, move_budget)
+			movement_resolver.move_along_path(combatant, path, move_budget, combatant.side)
 			combatant.has_moved_this_round = true
 			_update_engagement()
 
@@ -1587,7 +1591,8 @@ func _resolve_movement_action(
 			"result": {"note": "no target position specified"},
 		}
 	var start: Vector2i = movement_resolver.get_grid_position(combatant)
-	var path: Array[Vector2i] = movement_resolver.find_path(start, target_pos)
+	var path: Array[Vector2i] = movement_resolver.find_path(
+		start, target_pos, true, 50, combatant.side)
 	var max_cells := combatant.get_combat_movement_cells()
 	if path.is_empty():
 		return {
@@ -1597,7 +1602,8 @@ func _resolve_movement_action(
 			"action": "move",
 			"result": {"note": "target unreachable"},
 		}
-	var cells_moved: int = movement_resolver.move_along_path(combatant, path, max_cells)
+	var cells_moved: int = movement_resolver.move_along_path(
+		combatant, path, max_cells, combatant.side)
 	combatant.has_moved_this_round = true
 	_update_engagement()
 	return {
@@ -1856,8 +1862,10 @@ func _resolve_run_action(
 
 	var max_cells := combatant.get_combat_movement_cells() * 3
 	var path := movement_resolver.find_path(
-		movement_resolver.get_grid_position(combatant), target_cell, true, max_cells + 1)
-	var cells_moved := movement_resolver.move_along_path(combatant, path, max_cells)
+		movement_resolver.get_grid_position(combatant), target_cell, true,
+		max_cells + 1, combatant.side)
+	var cells_moved := movement_resolver.move_along_path(
+		combatant, path, max_cells, combatant.side)
 	combatant.has_moved_this_round = true
 	combatant.has_run_this_round = true
 	_update_engagement()

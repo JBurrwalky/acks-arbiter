@@ -165,6 +165,14 @@ func _place_formation(
 	var result: Dictionary = {}
 	var occupied: Array[Vector2i] = []
 
+	# Pre-populate with positions of entities already on the map that are NOT
+	# in this placement batch (prevents stacking on non-party entities).
+	for eid in map.entity_positions:
+		if eid not in marching_order:
+			var epos: Vector2i = map.entity_positions[eid]
+			if epos not in occupied:
+				occupied.append(epos)
+
 	# The leader (first in marching order) goes at leader_pos
 	if marching_order.is_empty():
 		return result

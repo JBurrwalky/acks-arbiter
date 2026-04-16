@@ -19,7 +19,7 @@ var _ui_controller: CombatUIController = null
 var _auto_advance: bool = false
 
 ## Map renderer (loaded lazily to avoid parse-time dependency)
-var _map_renderer: Node2D = null
+var _map_renderer: Node = null
 
 ## HUD widgets
 var _init_strip: InitiativeStrip = null
@@ -29,6 +29,7 @@ var _log_panel: CombatLogPanel = null
 var _decl_overlay: DeclarationOverlay = null
 var _weapon_popup: WeaponSwitchPopup = null
 var _end_overlay: CombatEndOverlay = null
+var _leave_field_btn: Button = null
 var _context_menu = null  ## Dungeon context menu scene (reused for combat)
 
 ## Cached combat result for the Continue button
@@ -70,7 +71,7 @@ func start_interactive() -> void:
 	# Set up the map renderer with the tactical map and roster.
 	# Node2D must be embedded via SubViewport to render inside the Control layout.
 	if _controller.tactical_map != null:
-		var MapRendererScript = load("res://scenes/ui/combat/combat_map_renderer.gd")
+		var MapRendererScript = load("res://scenes/ui/combat/combat_map_renderer_3d.gd")
 		_map_renderer = MapRendererScript.new()
 		_map_renderer.setup(_controller.tactical_map, _controller.roster)
 
@@ -86,6 +87,7 @@ func start_interactive() -> void:
 			sv.name = "MapViewport"
 			sv.transparent_bg = true
 			sv.handle_input_locally = true
+			sv.own_world_3d = true  # Isolate 3D world for combat map
 			svc.add_child(sv)
 
 			sv.add_child(_map_renderer)
@@ -278,6 +280,22 @@ func _build_ui() -> void:
 	_weapon_popup.cancelled.connect(_on_weapon_popup_cancelled)
 	add_child(_weapon_popup)
 
+	# "Leave the Field" button — shown only when all enemies are dead
+	_leave_field_btn = Button.new()
+	_leave_field_btn.name = "LeaveFieldButton"
+	_leave_field_btn.text = "Leave the Field"
+	_leave_field_btn.anchor_left = 0.45
+	_leave_field_btn.anchor_right = 0.55
+	_leave_field_btn.anchor_top = 0.25
+	_leave_field_btn.anchor_bottom = 0.31
+	_leave_field_btn.offset_left = 0.0
+	_leave_field_btn.offset_right = 0.0
+	_leave_field_btn.offset_top = 0.0
+	_leave_field_btn.offset_bottom = 0.0
+	_leave_field_btn.visible = false
+	_leave_field_btn.pressed.connect(_on_leave_field_pressed)
+	add_child(_leave_field_btn)
+
 	_end_overlay = CombatEndOverlay.new()
 	_end_overlay.set_anchors_preset(Control.PRESET_CENTER)
 	_end_overlay.offset_left = -230.0
@@ -329,6 +347,9 @@ func _on_action_resolved(result: Dictionary) -> void:
 		var target = _controller.get_combatant(target_id)
 		if target != null:
 			_init_strip.update_hp(target_id, target.get_hp_current(), target.get_hp_max())
+
+	# Show "Leave the Field" when all enemies are down
+	_update_leave_field_visibility()
 
 
 func _on_combat_ended(result: Dictionary) -> void:
@@ -477,6 +498,17 @@ func _on_continue_pressed() -> void:
 	combat_finished.emit(_combat_result)
 
 
+func _update_leave_field_visibility() -> void:
+	if _leave_field_btn == null or _controller == null:
+		return
+	_leave_field_btn.visible = _controller.roster.is_enemies_eliminated()
+
+
+func _on_leave_field_pressed() -> void:
+	_leave_field_btn.visible = false
+	combat_finished.emit(_combat_result)
+
+
 # ---------------------------------------------------------------------------
 # Deferred auto-advance (yields one frame for UI rendering)
 # ---------------------------------------------------------------------------
@@ -529,7 +561,7 @@ func _on_skip_cleave_pressed() -> void:
 func _on_may_cleave(combatant_id: String, _combatant_name: String, _target_name: String) -> void:
 	if _map_renderer == null:
 		return
-	var token: Node2D = _map_renderer.get_entity_token(combatant_id)
+	var token: Node = _map_renderer.get_entity_token(combatant_id)
 	if token == null:
 		return
 	var flash := Label.new()
@@ -539,7 +571,17 @@ func _on_may_cleave(combatant_id: String, _combatant_name: String, _target_name:
 	flash.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	flash.add_theme_constant_override("shadow_offset_x", 2)
 	flash.add_theme_constant_override("shadow_offset_y", 2)
-	var token_screen_pos: Vector2 = token.get_global_transform_with_canvas().origin
+	var token_screen_pos: Vector2
+	if token is Node2D:
+		token_screen_pos = token.get_global_transform_with_canvas().origin
+	else:
+		# 3D token — project world position to screen
+		var vp: Viewport = token.get_viewport()
+		var cam: Camera3D = vp.get_camera_3d() if vp != null else null
+		if cam != null:
+			token_screen_pos = cam.unproject_position(token.global_position)
+		else:
+			token_screen_pos = Vector2(400, 300)
 	flash.position = token_screen_pos + Vector2(-40, -50)
 	add_child(flash)
 	var tween := create_tween()

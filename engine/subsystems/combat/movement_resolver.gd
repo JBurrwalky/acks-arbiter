@@ -121,10 +121,12 @@ func find_path(
 		start: Vector2i,
 		goal: Vector2i,
 		exclude_occupied: bool = true,
-		max_range: int = 50) -> Array[Vector2i]:
+		max_range: int = 50,
+		mover_side: int = -1) -> Array[Vector2i]:
 	## BFS shortest path from start to goal on passable cells.
 	## Returns the path INCLUDING start and goal, or empty if unreachable.
 	## [param max_range] caps the BFS depth to avoid expensive searches.
+	## [param mover_side] when >= 0, enemy ZoC cells block routing (except as goal).
 	if _map == null:
 		return []
 	if not _map.has_cell(start) or not _map.has_cell(goal):
@@ -139,6 +141,9 @@ func find_path(
 			var epos: Vector2i = _map.entity_positions[eid]
 			if epos != start and epos != goal:
 				occupied[epos] = true
+
+	# Build enemy ZoC set (cells adjacent to enemies of mover_side)
+	var enemy_zoc: Dictionary = _build_enemy_zoc_set(mover_side) if mover_side >= 0 else {}
 
 	var visited: Dictionary = {start: null}  # pos -> predecessor
 	var queue: Array[Vector2i] = [start]
@@ -157,6 +162,9 @@ func find_path(
 				continue
 			if occupied.has(neighbor) and neighbor != goal:
 				continue
+			# ZoC cells can be a destination but not a waypoint
+			if not enemy_zoc.is_empty() and enemy_zoc.has(neighbor) and neighbor != goal:
+				continue
 
 			visited[neighbor] = current
 			depth[neighbor] = current_depth + 1
@@ -169,14 +177,16 @@ func find_path(
 	return []  # Unreachable
 
 
-func can_reach(combatant: Combatant, target_pos: Vector2i, max_cells: int) -> bool:
+func can_reach(combatant: Combatant, target_pos: Vector2i, max_cells: int,
+		mover_side: int = -1) -> bool:
 	## Returns true if combatant can reach target_pos within max_cells steps.
+	## [param mover_side] when >= 0, enemy ZoC cells block routing (except as destination).
 	if _map == null:
 		return true  # No grid = everything reachable
 	var start: Vector2i = get_grid_position(combatant)
 	if start == Vector2i(-1, -1):
 		return true
-	var path: Array[Vector2i] = find_path(start, target_pos, true, max_cells + 1)
+	var path: Array[Vector2i] = find_path(start, target_pos, true, max_cells + 1, mover_side)
 	# Path includes start, so actual steps = path.size() - 1
 	return not path.is_empty() and (path.size() - 1) <= max_cells
 
@@ -188,11 +198,14 @@ func can_reach(combatant: Combatant, target_pos: Vector2i, max_cells: int) -> bo
 func move_along_path(
 		combatant: Combatant,
 		path: Array[Vector2i],
-		max_cells: int) -> int:
+		max_cells: int,
+		mover_side: int = -1) -> int:
 	## Move combatant along the given path up to max_cells steps.
 	## Updates grid positions. Returns the number of cells actually moved.
+	## [param mover_side] when >= 0, movement stops upon entering an enemy ZoC cell.
 	if _map == null or path.is_empty():
 		return 0
+	var enemy_zoc: Dictionary = _build_enemy_zoc_set(mover_side) if mover_side >= 0 else {}
 	var cells_moved := 0
 	# Path[0] is current position; move through path[1], path[2], ...
 	for i in range(1, path.size()):
@@ -200,11 +213,17 @@ func move_along_path(
 			break
 		set_grid_position(combatant, path[i])
 		cells_moved += 1
+		# Stop if we just entered an enemy ZoC cell (now engaged)
+		if not enemy_zoc.is_empty() and enemy_zoc.has(path[i]):
+			break
 	return cells_moved
 
 
-func get_cells_reachable(combatant: Combatant, max_cells: int) -> Array[Vector2i]:
+func get_cells_reachable(combatant: Combatant, max_cells: int,
+		mover_side: int = -1) -> Array[Vector2i]:
 	## Flood-fill to find all cells reachable within max_cells steps.
+	## [param mover_side] when >= 0, enemy ZoC cells are reachable but act as
+	## dead-ends (can enter but not leave — movement stops there).
 	var result: Array[Vector2i] = []
 	if _map == null:
 		return result
@@ -217,6 +236,8 @@ func get_cells_reachable(combatant: Combatant, max_cells: int) -> Array[Vector2i
 		var epos: Vector2i = _map.entity_positions[eid]
 		if epos != start:
 			occupied[epos] = true
+
+	var enemy_zoc: Dictionary = _build_enemy_zoc_set(mover_side) if mover_side >= 0 else {}
 
 	var visited: Dictionary = {start: 0}
 	var queue: Array[Vector2i] = [start]
@@ -234,8 +255,11 @@ func get_cells_reachable(combatant: Combatant, max_cells: int) -> Array[Vector2i
 			if occupied.has(neighbor):
 				continue
 			visited[neighbor] = current_dist + 1
-			queue.append(neighbor)
 			result.append(neighbor)
+			# ZoC cells are reachable but act as dead-ends — don't expand from them
+			if not enemy_zoc.is_empty() and enemy_zoc.has(neighbor):
+				continue
+			queue.append(neighbor)
 
 	return result
 
@@ -367,6 +391,22 @@ func find_adjacent_cell_to(
 # ---------------------------------------------------------------------------
 # Private helpers
 # ---------------------------------------------------------------------------
+
+func _build_enemy_zoc_set(mover_side: int) -> Dictionary:
+	## Returns a set (Dictionary of Vector2i -> true) of all cells adjacent to
+	## alive enemies of the given side. These cells form the enemy zone of control.
+	var zoc: Dictionary = {}
+	if _roster == null or _map == null:
+		return zoc
+	var enemy_side: int = Combatant.Side.ENEMY if mover_side == Combatant.Side.PARTY else Combatant.Side.PARTY
+	for c: Combatant in _roster.get_alive_on_side(enemy_side):
+		var c_pos: Vector2i = get_grid_position(c)
+		if c_pos == Vector2i(-1, -1):
+			continue
+		for neighbor: Vector2i in IsometricGrid.get_neighbors(c_pos):
+			zoc[neighbor] = true
+	return zoc
+
 
 func _reconstruct_path(
 		visited: Dictionary,

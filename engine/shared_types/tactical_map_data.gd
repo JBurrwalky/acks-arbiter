@@ -35,7 +35,7 @@ enum FogState {
 # blocks_los: bool                      (derived from terrain_feature + door_state)
 # cover_value: int = 0                  (future combat use)
 # surface_type: String = "stone"
-# door_state: String = ""              ("","open","closed","locked","stuck")
+# door_state: String = ""              ("","open","closed","locked","stuck","destroyed")
 # door_type: String = ""               ("","arch","unlocked","locked","trapped","secret","portcullis")
 # door_detected: bool = true           (false for undiscovered secret doors)
 # door_material: String = "wood_standard" ("wood_simple","wood_standard","wood_reinforced","iron","stone")
@@ -116,6 +116,11 @@ static func from_dict(data: Dictionary) -> TacticalMapData:
 			"room_id": -1,
 			"is_corridor": false,
 		}
+
+		# Lever cells store target portcullis position.
+		if tf == "lever":
+			cell["lever_target_col"] = cell_data.get("lever_target_col", -1)
+			cell["lever_target_row"] = cell_data.get("lever_target_row", -1)
 
 		# Derive passable and blocks_los
 		cell["passable"] = _compute_passable(tf, door_type, door_state)
@@ -279,6 +284,16 @@ func get_door_material(pos: Vector2i) -> String:
 	return cell.get("door_material", "wood_standard")
 
 
+## Returns the linked portcullis position for a lever cell, or Vector2i(-1, -1).
+func get_lever_target(pos: Vector2i) -> Vector2i:
+	var cell := get_cell(pos)
+	if cell.is_empty():
+		return Vector2i(-1, -1)
+	return Vector2i(
+		cell.get("lever_target_col", -1),
+		cell.get("lever_target_row", -1))
+
+
 ## Returns true if the door at [param pos] is an evil door (auto-closes on turn tick).
 func is_evil_door(pos: Vector2i) -> bool:
 	var cell := get_cell(pos)
@@ -298,6 +313,20 @@ func set_door_state(pos: Vector2i, state: String) -> void:
 	var dt: String = cell.get("door_type", "")
 	cell["passable"] = _compute_passable(tf, dt, state)
 	cell["blocks_los"] = _compute_blocks_los(tf, state)
+
+
+## Sets an arbitrary cell field (e.g. "door_type") and re-derives passable/blocks_los.
+func set_cell_field(pos: Vector2i, field: String, value) -> void:
+	if not _cells.has(pos):
+		push_error("TacticalMapData.set_cell_field: no cell at %s" % str(pos))
+		return
+	var cell = _cells[pos]
+	cell[field] = value
+	var tf: String = cell.get("terrain_feature", "open")
+	var dt: String = cell.get("door_type", "")
+	var ds: String = cell.get("door_state", "")
+	cell["passable"] = _compute_passable(tf, dt, ds)
+	cell["blocks_los"] = _compute_blocks_los(tf, ds)
 
 
 # ---------------------------------------------------------------------------
@@ -452,6 +481,22 @@ func get_entities_at(pos: Vector2i) -> Array[String]:
 	return result
 
 
+## Returns true if any entity occupies [param pos].
+func is_occupied(pos: Vector2i) -> bool:
+	for eid in entity_positions:
+		if entity_positions[eid] == pos:
+			return true
+	return false
+
+
+## Returns true if any entity other than [param exclude_id] occupies [param pos].
+func is_occupied_by_other(pos: Vector2i, exclude_id: String) -> bool:
+	for eid in entity_positions:
+		if eid != exclude_id and entity_positions[eid] == pos:
+			return true
+	return false
+
+
 ## Removes [param entity_id] from entity_positions.
 func remove_entity(entity_id: String) -> void:
 	entity_positions.erase(entity_id)
@@ -478,16 +523,16 @@ func get_transition_cell_label(pos: Vector2i) -> String:
 ## Derives whether a cell is passable from its terrain and door state.
 static func _compute_passable(tf: String, door_type: String, door_state: String) -> bool:
 	match tf:
-		"open", "stairs_up", "stairs_down":
+		"open", "stairs_up", "stairs_down", "lever":
 			return true
 		"wall_stone", "wall_wood", "rock":
 			return false
 		"portcullis":
-			return false  # portcullis blocks movement but not LOS
+			return door_state in ["open", "destroyed"]
 		"door", "door_locked", "door_secret":
 			if door_type == "arch":
 				return true  # arch is always open
-			return door_state == "open"
+			return door_state in ["open", "destroyed"]
 		_:
 			return false
 
@@ -495,13 +540,13 @@ static func _compute_passable(tf: String, door_type: String, door_state: String)
 ## Derives whether a cell blocks line of sight.
 static func _compute_blocks_los(tf: String, door_state: String) -> bool:
 	match tf:
-		"open", "stairs_up", "stairs_down":
+		"open", "stairs_up", "stairs_down", "lever":
 			return false
 		"wall_stone", "wall_wood", "rock":
 			return true
 		"portcullis":
 			return false  # see-through
 		"door", "door_locked", "door_secret":
-			return door_state != "open"
+			return door_state not in ["open", "destroyed"]
 		_:
 			return true

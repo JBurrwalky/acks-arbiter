@@ -4,7 +4,7 @@
 **Status:** Draft
 **Depends on ACKS rules:** `acore-setting-construction-rules.xml` (dungeon stocking tables, dungeon type/flavor table, special features — applied after layout, not during)
 **Modifiable by Claude Code:** Yes — suggest improvements freely. The algorithm, parameters, and room templates are all engineering decisions.
-**Last updated:** 2026-03-25
+**Last updated:** 2026-04-16
 
 ---
 
@@ -466,7 +466,7 @@ The generator is called by the region zoom-in pipeline (§14A.3) or dungeon stoc
 
 ### 12.3 Rendering
 
-The output `DungeonLayout` is rendered by the dungeon map renderer using Godot's isometric TileMap system (per `gdd-combat-map-generation.md` §12). Wall cells, floor cells, door cells, and corridor cells each map to tile types. Room interiors and corridors are floor tiles; wall cells and rock cells are impassable solid tiles. The cell-based wall model maps cleanly to TileMap autotile rules — each cell IS either passable or impassable, and the autotile system handles visual wall-face presentation based on neighbor adjacency.
+The output `DungeonLayout` is rendered by the dungeon map renderer as a true runtime 3D tactical scene (per `gdd-combat-map-generation.md` §12). Wall cells, floor cells, door cells, and corridor cells map directly to 3D tactical surfaces and blocking geometry. Room interiors and corridors are walkable floor cells; wall cells and rock cells are impassable solid geometry. The cell-based wall model still maps cleanly to rendering because each cell IS either passable or impassable; the renderer simply presents that state in 3D rather than through 2D autotiling.
 
 ### 12.4 Stronghold Claiming
 
@@ -478,11 +478,11 @@ A cleared dungeon may be claimed as a stronghold or sanctum by a qualifying char
 
 ### 13.1 No Godot-Native Dungeon Generation
 
-Godot provides TileMap/TileMapLayer for rendering grids but no built-in procedural generation. The entire generation algorithm lives in GDScript as pure data manipulation on 2D arrays. Godot's contribution is rendering the output, not generating it.
+Godot provides the 3D scene, camera, mesh, and material systems needed to render the dungeon, but no built-in procedural generator for this layout style. The entire generation algorithm lives in GDScript as pure data manipulation on 2D arrays. Godot's contribution is rendering the output, not generating it.
 
 ### 13.2 Key Godot Classes Used
 
-- `TileMapLayer` — renders the generated dungeon (floor tiles, wall autotiling)
+- `Node3D` / `Camera3D` / generated mesh instances — render the dungeon as a 3D tactical scene
 - `RandomNumberGenerator` — seeded RNG for reproducible generation
 - `Vector2i` — grid coordinate math
 - `Rect2i` — room bounding boxes

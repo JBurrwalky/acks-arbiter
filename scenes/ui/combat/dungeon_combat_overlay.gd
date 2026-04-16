@@ -38,6 +38,7 @@ var _decl_overlay: DeclarationOverlay = null
 var _weapon_popup: WeaponSwitchPopup = null
 var _end_overlay: CombatEndOverlay = null
 var _round_label: Label = null
+var _leave_field_btn: Button = null
 
 
 # ---------------------------------------------------------------------------
@@ -250,6 +251,22 @@ func _build_ui() -> void:
 	_weapon_popup.cancelled.connect(_on_weapon_popup_cancelled)
 	add_child(_weapon_popup)
 
+	# "Leave the Field" button — shown only when all enemies are dead
+	_leave_field_btn = Button.new()
+	_leave_field_btn.name = "LeaveFieldButton"
+	_leave_field_btn.text = "Leave the Field"
+	_leave_field_btn.anchor_left = 0.45
+	_leave_field_btn.anchor_right = 0.55
+	_leave_field_btn.anchor_top = 0.25
+	_leave_field_btn.anchor_bottom = 0.31
+	_leave_field_btn.offset_left = 0.0
+	_leave_field_btn.offset_right = 0.0
+	_leave_field_btn.offset_top = 0.0
+	_leave_field_btn.offset_bottom = 0.0
+	_leave_field_btn.visible = false
+	_leave_field_btn.pressed.connect(_on_leave_field_pressed)
+	add_child(_leave_field_btn)
+
 	_end_overlay = CombatEndOverlay.new()
 	_end_overlay.name = "CombatEndOverlay"
 	_end_overlay.set_anchors_preset(Control.PRESET_CENTER)
@@ -321,6 +338,9 @@ func _on_action_resolved(result: Dictionary) -> void:
 		var target = _controller.get_combatant(target_id)
 		if target != null:
 			_init_strip.update_hp(target_id, target.get_hp_current(), target.get_hp_max())
+
+	# Show "Leave the Field" when all enemies are down
+	_update_leave_field_visibility()
 
 
 func _on_combat_ended(result: Dictionary) -> void:
@@ -473,6 +493,17 @@ func _on_continue_pressed() -> void:
 	combat_finished.emit(_combat_result)
 
 
+func _update_leave_field_visibility() -> void:
+	if _leave_field_btn == null or _controller == null:
+		return
+	_leave_field_btn.visible = _controller.roster.is_enemies_eliminated()
+
+
+func _on_leave_field_pressed() -> void:
+	_leave_field_btn.visible = false
+	combat_finished.emit(_combat_result)
+
+
 # ---------------------------------------------------------------------------
 # Deferred auto-advance (yields one frame for UI rendering)
 # ---------------------------------------------------------------------------
@@ -538,7 +569,17 @@ func _on_may_cleave(combatant_id: String, combatant_name: String, target_name: S
 	flash.add_theme_constant_override("shadow_offset_x", 2)
 	flash.add_theme_constant_override("shadow_offset_y", 2)
 	# Position above the token in the canvas layer's space
-	var token_screen_pos: Vector2 = token.get_global_transform_with_canvas().origin
+	var token_screen_pos: Vector2
+	if token is Node2D:
+		token_screen_pos = token.get_global_transform_with_canvas().origin
+	else:
+		# 3D token — project world position to screen
+		var vp: Viewport = token.get_viewport()
+		var cam: Camera3D = vp.get_camera_3d() if vp != null else null
+		if cam != null:
+			token_screen_pos = cam.unproject_position(token.global_position)
+		else:
+			token_screen_pos = Vector2(400, 300)
 	flash.position = token_screen_pos + Vector2(-40, -50)
 	add_child(flash)
 	var tween := create_tween()

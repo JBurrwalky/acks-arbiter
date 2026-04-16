@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/game_log/game_log_panel.gd" id="1_script"]
+
+[node name="GameLogPanel" type="CanvasLayer"]
+script = ExtResource("1_script")

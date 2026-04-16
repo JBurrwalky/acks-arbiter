@@ -26,7 +26,7 @@ The settlement's street graph and block data still exist under the hood. They dr
 
 ### 1.3 Visual Representation
 
-A **small city overview widget** (not full-screen) shows the settlement's node graph schematically with the party's current position and animated travel. This provides spatial orientation without requiring interactive navigation. Think of it as a minimap for the city — informational, not the primary input method.
+A **small 2D city overview widget** (not full-screen) shows the settlement's node graph schematically with the party's current position and animated travel. This provides spatial orientation without requiring interactive navigation. Think of it as a minimap for the city — informational, not the primary input method. The overview should use the same heroic cel-shaded fantasy art direction as the rest of the world-facing presentation, translated into a readable 2D schematic.
 
 ---
 
@@ -38,7 +38,7 @@ When a party is inside a settlement, the main game screen reorganizes into a spl
 
 The overworld hex map remains visible, centered on the settlement's hex, at a zoomed-in scale. This keeps the player oriented in the world and allows them to see nearby hex activity (army movements, other parties, etc.) without switching screens. The world is still alive and visible.
 
-Alternatively, for settlements with generated layout data, this space could show a **stylized top-down city overview** — the block/ward/district map from `gdd-settlement-layout.md` rendered as a non-interactive illustration with the party's current position marked and travel routes animated. This is purely decorative/informational. The player does not click on it to navigate.
+Alternatively, for settlements with generated layout data, this space could show a **stylized 2D city overview** — the block/ward/district map from `gdd-settlement-layout.md` rendered as a non-interactive illustration with the party's current position marked and travel routes animated. This is purely decorative/informational. The player does not click on it to navigate.
 
 Which view to show (hex map vs. city overview) can be a toggle, or default to city overview when available and hex map when the settlement is too small (hamlets) to have generated layout data.
 
@@ -440,7 +440,7 @@ If multiple characters are at the same PoI, their pins stack with a count badge.
 
 ### 9.5 Placement
 
-The widget sits in the top-left corner of the primary view area (§2.1), overlaying the hex map or serving as the city overview itself. When the player toggles to hex map view, the widget shrinks to a corner overlay. When toggled to city overview, the widget expands to fill the primary view area as a larger, more detailed (but still non-interactive) illustration.
+The widget sits in the top-left corner of the primary view area (§2.1), overlaying the hex map or serving as the city overview itself. When the player toggles to hex map view, the widget shrinks to a corner overlay. When toggled to city overview, the widget expands to fill the primary view area as a larger, more detailed (but still non-interactive) 2D illustration. Settlement panel chrome and background materials can continue using vellum/parchment textures, refreshed to harmonize with the cel-shaded world-art direction rather than define it by themselves.
 
 ---
 
@@ -461,7 +461,7 @@ D-5 was "Settlement Map (Single-District Minimum)" — a 250×250 navigable urba
 - **Travel time calculator** (shortest-path on street graph → blocks → turns).
 - **Urban encounter system** (encounter checks during travel, district-based tables).
 
-The isometric diamond grid renderer is NOT needed for the settlement surface layer. The settlement layout data is consumed for travel calculations and the overview widget, not for tile-by-tile rendering. (The undercity IS a dungeon and uses the dungeon renderer as before.)
+The isometric diamond grid renderer is NOT needed for the settlement surface layer. The settlement layout data is consumed for travel calculations and a 2D overview widget, not for tile-by-tile rendering. (The undercity IS a dungeon and uses the dungeon renderer as before.)
 
 ### 10.3 Design Brief §6.2
 

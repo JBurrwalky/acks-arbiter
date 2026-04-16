@@ -303,7 +303,9 @@ func _draw_features() -> void:
 			"door", "door_locked":
 				var ds: String = cell.get("door_state", "closed")
 				var dt: String = cell.get("door_type", "")
-				if dt == "arch":
+				if ds == "destroyed":
+					pass  # No icon — floor shows through as open passage.
+				elif dt == "arch":
 					# Arch: always open, draw "A" label for visual identification
 					draw_string(font, screen_pos + Vector2(-4.0, 4.0), "A",
 						HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color(1.0, 1.0, 0.8))
@@ -325,7 +327,9 @@ func _draw_features() -> void:
 			"door_secret":
 				var detected: bool = cell.get("door_detected", true)
 				var ds: String = cell.get("door_state", "closed")
-				if detected:
+				if ds == "destroyed":
+					pass  # No icon — floor shows through.
+				elif detected:
 					if ds == "open":
 						draw_arc(screen_pos, hw * 0.4, 0.0, TAU, 16, Color.WHITE, 2.0)
 					else:
@@ -338,7 +342,9 @@ func _draw_features() -> void:
 
 			"portcullis":
 				var ds: String = cell.get("door_state", "closed")
-				if ds != "open":
+				if ds == "destroyed":
+					pass  # No icon — floor shows through.
+				elif ds != "open":
 					# Vertical bars across the diamond
 					for i in range(3):
 						var t := (float(i) + 1.0) / 4.0

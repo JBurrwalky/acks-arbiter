@@ -24,6 +24,11 @@ signal door_state_changed(pos: Vector2i, old_state: String, new_state: String)
 signal level_changed(from_level: int, to_level: int)
 signal orders_executed(result: Dictionary)
 
+## Relay signals for renderer-driven movement animation.
+## DungeonExploreState emits these; the renderer connects in setup().
+signal movement_animation_requested(entity_id: String, path: Array, cells_per_round: float)
+signal movement_animation_cancelled(entity_id: String)
+
 
 # ---------------------------------------------------------------------------
 # Private state
@@ -45,6 +50,9 @@ var _light_manager: DungeonLightManager = null
 
 ## Fallback light radius (used when no DungeonLightManager is set).
 var _fallback_light_radius: int = 10  # 50 feet / 5 feet per cell
+
+## Per-dungeon-visit session state (for spike/wedge checks).
+var _session_state: RefCounted = null
 
 ## Per-entity darkvision bonuses: { entity_id: int (cells) }.
 var _darkvision_bonuses: Dictionary = {}
@@ -219,6 +227,10 @@ func interact_door(pos: Vector2i) -> bool:
 	if door_type == "arch":
 		return false
 
+	# Destroyed door — permanently open, no interaction
+	if door_state == "destroyed":
+		return false
+
 	# Secret door that hasn't been detected yet — search check needed first
 	var cell := _map.get_cell(pos)
 	if not cell.get("door_detected", true):
@@ -236,12 +248,63 @@ func interact_door(pos: Vector2i) -> bool:
 	if door_state == "stuck":
 		return false
 
+	# Spiked shut — cannot open until spike is removed
+	if _session_state != null and _session_state.has_method("is_spiked") \
+			and _session_state.is_spiked(pos):
+		return false
+
+	# Wedged open — cannot close until wedge is removed
+	if _session_state != null and _session_state.has_method("is_wedged") \
+			and _session_state.is_wedged(pos):
+		return false
+
 	# Toggle open/closed for unlocked/detected-secret doors
 	var old_state := door_state
 	var new_state := "open" if door_state == "closed" else "closed"
 	_map.set_door_state(pos, new_state)
 	door_state_changed.emit(pos, old_state, new_state)
 	return true
+
+
+## Queue a compound "move to door + interact" order for an entity.
+## If the entity is already adjacent to the door, interacts immediately and
+## returns "immediate". Otherwise pathfinds to the nearest passable cell adjacent
+## to the door and queues a move_and_interact_door order, returning "queued".
+## Returns "" if no path or door is invalid.
+func queue_door_interaction_order(entity_id: String, door_pos: Vector2i) -> String:
+	if _map == null:
+		return ""
+
+	var entity_pos := _map.get_entity_pos(entity_id)
+	if entity_pos == Vector2i(-1, -1):
+		return ""
+
+	# Already adjacent → interact immediately
+	if IsometricGrid.is_adjacent(entity_pos, door_pos):
+		if interact_door(door_pos):
+			return "immediate"
+		return ""
+
+	# Find nearest passable neighbor of the door to pathfind to
+	var door_neighbors := IsometricGrid.get_neighbors(door_pos)
+	var best_path: Array[Vector2i] = []
+	var best_path_len := 999999
+
+	for neighbor in door_neighbors:
+		if not _map.has_cell(neighbor) or not _map.is_passable(neighbor):
+			continue
+		var path := _bfs_path(entity_pos, neighbor, entity_id)
+		if not path.is_empty() and path.size() < best_path_len:
+			best_path = path
+			best_path_len = path.size()
+
+	if best_path.is_empty():
+		return ""
+
+	# Queue a compound order: move to adjacent cell, then interact with door
+	_ensure_managers()
+	_order_manager.add_order(entity_id, "move_and_interact_door", door_pos, best_path)
+	return "queued"
 
 
 ## Attempts to use stairs at [param pos], transitioning the party to the connected level.
@@ -350,6 +413,11 @@ func set_party_data(party_data: PartyData) -> void:
 	_party_data_ref = party_data
 
 
+## Set the per-visit session state (for spike/wedge checks on door toggle).
+func set_session_state(state: RefCounted) -> void:
+	_session_state = state
+
+
 ## Returns the FormationManager for preset application.
 func get_formation_manager() -> RefCounted:
 	_ensure_managers()
@@ -392,12 +460,15 @@ func queue_move_order(entity_id: String, target_pos: Vector2i) -> bool:
 		return false
 	if not _map.has_cell(target_pos) or not _map.is_passable(target_pos):
 		return false
+	# Allies cannot stop on the same cell — reject if occupied by another entity.
+	if _map.is_occupied_by_other(target_pos, entity_id):
+		return false
 
 	var start := _map.get_entity_pos(entity_id)
 	if start == Vector2i(-1, -1):
 		return false
 
-	var path := _bfs_path(start, target_pos)
+	var path := _bfs_path(start, target_pos, entity_id)
 	if path.is_empty():
 		return false
 
@@ -422,7 +493,7 @@ func queue_group_move(target_pos: Vector2i) -> bool:
 		return false
 
 	# BFS path for the leader
-	var leader_path := _bfs_path(leader_pos, target_pos)
+	var leader_path := _bfs_path(leader_pos, target_pos, leader_id)
 	if leader_path.is_empty():
 		return false
 
@@ -440,10 +511,10 @@ func queue_group_move(target_pos: Vector2i) -> bool:
 		var member_pos := _map.get_entity_pos(eid)
 		if member_pos == Vector2i(-1, -1):
 			continue
-		var member_path := _bfs_path(member_pos, member_target)
+		var member_path := _bfs_path(member_pos, member_target, eid)
 		if member_path.is_empty():
 			# Fallback: path to leader target
-			member_path = _bfs_path(member_pos, target_pos)
+			member_path = _bfs_path(member_pos, target_pos, eid)
 		if not member_path.is_empty():
 			_order_manager.add_order(eid, "move", member_target, member_path)
 		else:
@@ -464,6 +535,34 @@ func execute_orders() -> Dictionary:
 	var orders: Dictionary = _order_manager.get_all_orders()
 	_order_manager.clear()
 
+	# --- Collision resolution: prevent two entities targeting the same cell ---
+	# Build a map of move destinations to detect conflicts.
+	var claimed_cells: Dictionary = {}  # Vector2i -> String (first claimant)
+
+	# First pass: collect stationary entities (not moving) as occupied.
+	var moving_eids: Dictionary = {}
+	for eid in orders:
+		if orders[eid].get("order_type", "") == "move":
+			moving_eids[eid] = true
+
+	for eid in _map.entity_positions:
+		if not moving_eids.has(eid):
+			claimed_cells[_map.entity_positions[eid]] = eid
+
+	# Second pass: for each mover, claim the target or downgrade to wait.
+	for eid in orders:
+		var order: Dictionary = orders[eid]
+		if order.get("order_type", "") != "move":
+			continue
+		var target: Vector2i = order.get("target_pos", Vector2i(-1, -1))
+		if target == Vector2i(-1, -1):
+			continue
+		if claimed_cells.has(target):
+			# Target already claimed — downgrade to wait.
+			order["order_type"] = "wait"
+		else:
+			claimed_cells[target] = eid
+
 	for eid in orders:
 		var order: Dictionary = orders[eid]
 		var order_type: String = order.get("order_type", "")
@@ -474,10 +573,7 @@ func execute_orders() -> Dictionary:
 				var path: Array = order.get("path", [])
 				if target == Vector2i(-1, -1) or path.is_empty():
 					continue
-				# Move entity step by step (for now, teleport to destination)
 				var old_pos := _map.get_entity_pos(eid)
-				# Walk the path: move one step at a time (adjacent steps)
-				# For simplicity in exploration, move to final target directly
 				if _map.is_passable(target):
 					_map.set_entity_pos(eid, target)
 					entity_moved.emit(eid, old_pos, target)
@@ -513,9 +609,17 @@ func execute_orders() -> Dictionary:
 # BFS pathfinding
 # ---------------------------------------------------------------------------
 
-## Simple BFS pathfinding from [param start] to [param goal] on the current map.
-## Returns array of cells from start (exclusive) to goal (inclusive), or empty if no path.
-func _bfs_path(start: Vector2i, goal: Vector2i) -> Array[Vector2i]:
+## BFS pathfinding from [param start] to [param goal] on the current map.
+## Returns array of cells from start (exclusive) to goal (inclusive).
+##
+## Allies can route THROUGH occupied cells but will not select an occupied
+## cell as the final destination. If [param mover_id] is provided, that
+## entity's own position is excluded from occupancy checks.
+##
+## If the goal is unreachable or occupied, falls back to the closest
+## reachable unoccupied cell (by Chebyshev distance to goal). Returns
+## empty only if the entity cannot move at all (completely boxed in).
+func _bfs_path(start: Vector2i, goal: Vector2i, mover_id: String = "") -> Array[Vector2i]:
 	if start == goal:
 		return [goal]
 	if _map == null:
@@ -525,11 +629,23 @@ func _bfs_path(start: Vector2i, goal: Vector2i) -> Array[Vector2i]:
 	var came_from: Dictionary = {start: null}
 	var found := false
 
+	# Track closest reachable UNOCCUPIED cell to the goal for fallback.
+	var best_cell := start
+	var best_dist: int = IsometricGrid.chebyshev_distance(start, goal)
+
 	while not frontier.is_empty():
 		var current: Vector2i = frontier.pop_front()
 		if current == goal:
 			found = true
 			break
+
+		# Update best fallback cell (only unoccupied cells qualify).
+		var dist: int = IsometricGrid.chebyshev_distance(current, goal)
+		if dist < best_dist and not _map.is_occupied_by_other(current, mover_id):
+			best_dist = dist
+			best_cell = current
+
+		# Allies can route through occupied cells — no occupancy check here.
 		for neighbor in IsometricGrid.get_neighbors(current):
 			if came_from.has(neighbor):
 				continue
@@ -540,12 +656,25 @@ func _bfs_path(start: Vector2i, goal: Vector2i) -> Array[Vector2i]:
 			came_from[neighbor] = current
 			frontier.append(neighbor)
 
-	if not found:
+	# If the goal was reached but is occupied by another entity, treat as
+	# unreachable and fall through to the closest unoccupied fallback.
+	if found and _map.is_occupied_by_other(goal, mover_id):
+		found = false
+
+	# Determine which cell to reconstruct path to
+	var path_target: Vector2i
+	if found:
+		path_target = goal
+	elif best_cell != start:
+		# Fallback: closest reachable unoccupied cell to the goal
+		path_target = best_cell
+	else:
+		# Can't move at all
 		return []
 
 	# Reconstruct path (excluding start)
 	var path: Array[Vector2i] = []
-	var current: Vector2i = goal
+	var current: Vector2i = path_target
 	while current != start:
 		path.push_front(current)
 		current = came_from[current]

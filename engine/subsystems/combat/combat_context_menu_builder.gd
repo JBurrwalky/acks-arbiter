@@ -138,7 +138,7 @@ static func _build_movement_options(
 			"Already moved this round", "movement",
 			{"action_type": "move_here", "cell": target_cell}))
 	elif dist >= 0 and dist <= combat_move_cells:
-		var reachable: bool = mr.can_reach(combatant, target_cell, combat_move_cells)
+		var reachable: bool = mr.can_reach(combatant, target_cell, combat_move_cells, combatant.side)
 		options.append(_option("move_here", "Move Here", reachable,
 			"Move to this cell" if reachable else "Cell not reachable within movement range",
 			"movement",
@@ -230,26 +230,50 @@ static func _build_attack_options(
 	# Ranged Attack
 	if not is_adjacent and can_attack and not has_run:
 		if combatant.has_ranged_capability() and combatant.get_ammo_count() != 0:
-			var in_range := false
-			if mr != null:
-				in_range = mr.has_line_of_sight(
-					mr.get_grid_position(combatant),
-					mr.get_grid_position(target))
-			else:
-				in_range = true
-			# Into-melee penalty check
-			var into_melee := _is_target_in_melee(target, controller)
-			var tooltip := "Ranged attack on %s" % target.display_name
-			if into_melee:
-				tooltip += " (-4 into melee penalty)"
-			if not engaged:
-				options.append(_option("attack_ranged", "Ranged Attack", in_range,
-					tooltip if in_range else "No line of sight", "attack",
-					{"action_type": "attack_ranged", "target_id": target.id}))
-			else:
+			var action_data := {"action_type": "attack_ranged", "target_id": target.id}
+
+			# Attacker engaged in melee — cannot fire
+			if engaged:
 				options.append(_option("attack_ranged", "Ranged Attack", false,
 					"Cannot fire ranged weapons while engaged in melee", "attack",
-					{"action_type": "attack_ranged", "target_id": target.id}))
+					action_data))
+			else:
+				# Check line of sight
+				var has_los := true
+				if mr != null:
+					has_los = mr.has_line_of_sight(
+						mr.get_grid_position(combatant),
+						mr.get_grid_position(target))
+
+				# Check weapon range
+				var dist_ft: int = mr.get_distance_ft(combatant, target) if mr != null else -1
+				var ranges := combatant.get_weapon_ranges()
+				var long_range: int = ranges.get("long", 0)
+				var beyond_range: bool = dist_ft >= 0 and long_range > 0 and dist_ft > long_range
+
+				# Check into-melee and Precise Shooting
+				var into_melee := _is_target_in_melee(target, controller)
+				var ps_rank: int = combatant.get_proficiency_rank("precise_shooting")
+
+				if not has_los:
+					options.append(_option("attack_ranged", "Ranged Attack", false,
+						"No line of sight", "attack", action_data))
+				elif beyond_range:
+					options.append(_option("attack_ranged", "Ranged Attack", false,
+						"Out of range (%d ft, max %d ft)" % [dist_ft, long_range], "attack",
+						action_data))
+				elif into_melee and ps_rank <= 0:
+					options.append(_option("attack_ranged", "Ranged Attack", false,
+						"Cannot fire into melee without Precise Shooting", "attack",
+						action_data))
+				else:
+					var tooltip := "Ranged attack on %s" % target.display_name
+					if into_melee and ps_rank > 0:
+						var ps_penalty: int = maxi(0, 4 - (ps_rank - 1) * 2)
+						if ps_penalty > 0:
+							tooltip += " (-%d into melee penalty)" % ps_penalty
+					options.append(_option("attack_ranged", "Ranged Attack", true,
+						tooltip, "attack", action_data))
 
 	# Charge
 	if not is_adjacent and can_move and can_attack and not movement_locked and not has_run:
@@ -283,7 +307,7 @@ static func _build_attack_options(
 	if not is_adjacent and can_move and not movement_locked:
 		var combat_move_cells := combatant.get_combat_movement_cells()
 		if mr != null:
-			var reachable: bool = mr.can_reach(combatant, target_cell, combat_move_cells)
+			var reachable: bool = mr.can_reach(combatant, target_cell, combat_move_cells, combatant.side)
 			if reachable:
 				options.append(_option("move_here", "Move Here", true,
 					"Move toward %s" % target.display_name, "movement",

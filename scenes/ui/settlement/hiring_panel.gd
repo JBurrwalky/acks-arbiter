@@ -110,7 +110,7 @@ func _add_candidate_row(candidate: Dictionary) -> void:
 	var label := Label.new()
 	label.text = "%s — %s Lv%d — %dgp/mo" % [
 		candidate.get("name", "Unknown"),
-		candidate.get("class_id", "?"),
+		candidate.get("character_class", "?"),
 		int(candidate.get("level", 1)),
 		HenchmanTables.monthly_wage(int(candidate.get("level", 1))),
 	]

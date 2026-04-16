@@ -228,6 +228,8 @@ func test_transition_cell_produces_exit() -> void:
 		[{"col": 2, "row": 2, "label": "Main Entrance"}],
 	)
 	map.set_fog(Vector2i(2, 2), TacticalMapData.FogState.VISIBLE)
+	# Entity must be ON the transition cell for Exit Dungeon to appear.
+	map.set_entity_pos("hero", Vector2i(2, 2))
 	var result := Builder.build_menu(["hero"], Vector2i(2, 2), map, null, null)
 	check(_has_option(result, "exit_dungeon"), "Exit Dungeon should appear on transition cell")
 	# Should NOT also show Ascend (exit takes priority on transition cells).

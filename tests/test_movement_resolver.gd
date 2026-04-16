@@ -22,6 +22,12 @@ func run_all_tests() -> void:
 	test_charge_valid()
 	test_charge_too_close()
 	test_charge_blocked()
+	test_find_path_avoids_enemy_zoc()
+	test_find_path_allows_zoc_as_destination()
+	test_find_path_no_side_ignores_zoc()
+	test_get_cells_reachable_zoc_dead_end()
+	test_move_along_path_stops_at_zoc()
+	test_allied_zoc_ignored()
 	if not has_failures():
 		print("MovementResolver: all tests passed.")
 
@@ -206,6 +212,117 @@ func test_charge_blocked() -> void:
 	var result: Dictionary = env.resolver.validate_charge(env.pc, env.monster)
 	check(result["valid"] == false,
 		"charge should be invalid when path is blocked")
+
+
+# ---------------------------------------------------------------------------
+# Zone of Control
+# ---------------------------------------------------------------------------
+
+func test_find_path_avoids_enemy_zoc() -> void:
+	## Monster at (3,1) creates ZoC on (3,0). PC-side path from (0,0) to (6,0)
+	## should route around (3,0) when mover_side = ENEMY.
+	var env := _make_grid_env(10, 10)
+	env.resolver.set_grid_position(env.pc, Vector2i(3, 1))
+	env.resolver.set_grid_position(env.monster, Vector2i(0, 0))
+	# Path for monster (ENEMY side) from (0,0) to (6,0) must avoid PC ZoC
+	var path: Array[Vector2i] = env.resolver.find_path(
+		Vector2i(0, 0), Vector2i(6, 0), true, 50, Combatant.Side.ENEMY)
+	check(not path.is_empty(), "ZoC: path should still exist (routing around)")
+	check(path[-1] == Vector2i(6, 0), "ZoC: path should reach goal")
+	# Cell (3,0) is adjacent to PC at (3,1) — should NOT appear as a waypoint
+	var has_zoc_waypoint := false
+	for i in range(1, path.size() - 1):  # Exclude start and goal
+		if IsometricGrid.chebyshev_distance(path[i], Vector2i(3, 1)) == 1:
+			has_zoc_waypoint = true
+			break
+	check(not has_zoc_waypoint,
+		"ZoC: path should not route through cells adjacent to the PC")
+
+
+func test_find_path_allows_zoc_as_destination() -> void:
+	## A ZoC cell should be reachable as the goal (entering is allowed).
+	var env := _make_grid_env(10, 10)
+	env.resolver.set_grid_position(env.pc, Vector2i(5, 5))
+	env.resolver.set_grid_position(env.monster, Vector2i(0, 0))
+	# Monster wants to reach (5,4) which is adjacent to PC — a ZoC cell
+	var path: Array[Vector2i] = env.resolver.find_path(
+		Vector2i(0, 0), Vector2i(5, 4), true, 50, Combatant.Side.ENEMY)
+	check(not path.is_empty(), "ZoC: should be able to path TO a ZoC cell")
+	check(path[-1] == Vector2i(5, 4), "ZoC: goal should be the ZoC cell")
+
+
+func test_find_path_no_side_ignores_zoc() -> void:
+	## Default mover_side=-1 should NOT filter by ZoC (backward compat).
+	var env := _make_grid_env(10, 10)
+	env.resolver.set_grid_position(env.pc, Vector2i(3, 1))
+	env.resolver.set_grid_position(env.monster, Vector2i(0, 0))
+	# Path without side should go straight through
+	var path_no_side: Array[Vector2i] = env.resolver.find_path(
+		Vector2i(0, 0), Vector2i(6, 0))
+	var path_with_side: Array[Vector2i] = env.resolver.find_path(
+		Vector2i(0, 0), Vector2i(6, 0), true, 50, Combatant.Side.ENEMY)
+	check(not path_no_side.is_empty(), "ZoC compat: path without side should exist")
+	check(path_no_side.size() <= path_with_side.size(),
+		"ZoC compat: path without side should be equal or shorter (no ZoC detour)")
+
+
+func test_get_cells_reachable_zoc_dead_end() -> void:
+	## ZoC cells should be reachable but not expandable (dead-ends).
+	var env := _make_grid_env(10, 10)
+	env.resolver.set_grid_position(env.pc, Vector2i(5, 3))
+	env.resolver.set_grid_position(env.monster, Vector2i(5, 0))
+	# Monster at (5,0), PC at (5,3). Cell (5,2) is in PC's ZoC.
+	# Monster with 5 cells budget: should reach (5,2) but not go through it
+	var reachable: Array[Vector2i] = env.resolver.get_cells_reachable(
+		env.monster, 5, Combatant.Side.ENEMY)
+	check(Vector2i(5, 2) in reachable,
+		"ZoC dead-end: (5,2) is in ZoC and should be reachable")
+	# (5,3) is occupied by the PC so it won't be reachable regardless.
+	# Check that cells BEYOND the ZoC line in that direction are not reachable
+	# via the (5,2) path. (5,2) is a dead-end so the flood should not continue
+	# south through it. Cells like (5,4) or (4,3) should only be reachable via
+	# routes that do not pass through ZoC cells.
+	# Actually, (4,3) is also in PC's ZoC so it too is a dead-end.
+	# Let's check a cell that's only reachable by going through ZoC:
+	# (5,4) is behind the PC — can only be reached via (5,2)->(5,3) which is
+	# blocked by occupation AND ZoC. So it should not be reachable.
+	check(Vector2i(5, 4) not in reachable,
+		"ZoC dead-end: (5,4) behind PC should not be reachable through ZoC")
+
+
+func test_move_along_path_stops_at_zoc() -> void:
+	## move_along_path should stop when entering an enemy ZoC cell.
+	var env := _make_grid_env(10, 10)
+	env.resolver.set_grid_position(env.pc, Vector2i(3, 1))
+	env.resolver.set_grid_position(env.monster, Vector2i(0, 0))
+	# Manually construct a path that goes through a ZoC cell at (3,0)
+	var path: Array[Vector2i] = [
+		Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0),
+		Vector2i(3, 0), Vector2i(4, 0), Vector2i(5, 0)]
+	var moved: int = env.resolver.move_along_path(
+		env.monster, path, 10, Combatant.Side.ENEMY)
+	check(moved == 3, "ZoC stop: should stop after entering ZoC cell (3,0), moved %d" % moved)
+	check(env.resolver.get_grid_position(env.monster) == Vector2i(3, 0),
+		"ZoC stop: monster should be at ZoC cell (3,0)")
+
+
+func test_allied_zoc_ignored() -> void:
+	## Allied units should NOT be affected by each other's ZoC.
+	var env := _make_grid_env(10, 10)
+	# Add a second PC
+	var pc2 := _make_pc_combatant("pc_2", 10, 3)
+	env.roster.add_combatant(pc2)
+	env.resolver.set_grid_position(env.pc, Vector2i(0, 0))
+	env.resolver.set_grid_position(pc2, Vector2i(3, 1))
+	env.resolver.set_grid_position(env.monster, Vector2i(8, 8))
+	# PC1 paths from (0,0) to (6,0). PC2 at (3,1) is an ally — its ZoC
+	# should NOT block PC1's path.
+	var path: Array[Vector2i] = env.resolver.find_path(
+		Vector2i(0, 0), Vector2i(6, 0), true, 50, Combatant.Side.PARTY)
+	check(not path.is_empty(), "Allied ZoC: path should exist")
+	# The straight path through (3,0) should be available since PC2 is an ally
+	check(path.size() <= 7,
+		"Allied ZoC: path should be direct (no detour around ally)")
 
 
 # ---------------------------------------------------------------------------

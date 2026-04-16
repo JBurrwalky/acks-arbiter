@@ -44,9 +44,14 @@ const MODE_RUNNING := 2.0
 
 var _runner = null  # SessionRunner
 var _light_manager: DungeonLightManager = null
+var _session_state: RefCounted = null  # DungeonSessionState (set by DungeonExploreState)
 
 ## Active movement orders: { entity_id: { path: Array[Vector2i], progress: float, mode: float } }
 var _movement_orders: Dictionary = {}
+
+## Entities whose movement is driven by the renderer's continuous animation
+## rather than the scheduler tick. The tick skips position advancement for these.
+var _renderer_animated: Dictionary = {}  # { entity_id: true }
 
 ## Whether a movement tick is currently scheduled (prevents double-scheduling).
 var _tick_scheduled: bool = false
@@ -55,6 +60,11 @@ var _tick_scheduled: bool = false
 func _init(runner) -> void:
 	_runner = runner
 	_light_manager = DungeonLightManager.new()
+
+
+## Set the per-visit session state (for pick lock tracking).
+func set_session_state(state: RefCounted) -> void:
+	_session_state = state
 
 
 # ---------------------------------------------------------------------------
@@ -76,6 +86,7 @@ func unregister(registry: EventHandlerRegistry) -> void:
 	registry.unregister("dungeon_action_complete")
 	registry.unregister("dungeon_light_action")
 	_movement_orders.clear()
+	_renderer_animated.clear()
 	_tick_scheduled = false
 
 
@@ -168,6 +179,9 @@ func order_move(
 	scheduler: EventScheduler,
 	party_id: String,
 ) -> bool:
+	# A character moving releases any held portcullis.
+	_release_held_portcullises(entity_id)
+
 	# Cancel existing movement for this entity.
 	_movement_orders.erase(entity_id)
 
@@ -196,6 +210,46 @@ func order_move(
 	return true
 
 
+## Order a compound "move to adjacent cell + interact with door" action.
+## The entity moves along the precomputed path; on arrival, auto-interacts with the door.
+func order_move_and_interact_door(
+	entity_id: String,
+	door_pos: Vector2i,
+	base_movement: int,
+	controller: DungeonMapController,
+	scheduler: EventScheduler,
+	party_id: String,
+) -> bool:
+	_movement_orders.erase(entity_id)
+
+	# Use the controller's compound order which already computed the path.
+	var result := controller.queue_door_interaction_order(entity_id, door_pos)
+	if result == "immediate":
+		return true  # Door was already interacted with
+	if result != "queued":
+		return false
+
+	# Extract the path from the order manager.
+	var om: RefCounted = controller.get_order_manager()
+	var order: Dictionary = om.get_order(entity_id)
+	var path: Array = order.get("path", [])
+	om.remove_order(entity_id)
+
+	if path.is_empty():
+		return false
+
+	_movement_orders[entity_id] = {
+		"path": path,
+		"progress": 0.0,
+		"base_movement": base_movement,
+		"on_arrival": {"action": "interact_door", "target": door_pos},
+	}
+
+	_ensure_movement_tick(scheduler, party_id)
+	EventBus.order_queued.emit(party_id, "dungeon_move", 0)
+	return true
+
+
 ## Cancel movement for an entity. Returns true if it had a movement order.
 func cancel_move(entity_id: String) -> bool:
 	return _movement_orders.erase(entity_id)
@@ -204,6 +258,7 @@ func cancel_move(entity_id: String) -> bool:
 ## Cancel all movement orders.
 func cancel_all_moves() -> void:
 	_movement_orders.clear()
+	_renderer_animated.clear()
 
 
 ## Returns true if any entity currently has a movement order.
@@ -212,6 +267,93 @@ func has_active_movement(entity_id: String = "") -> bool:
 	if entity_id.is_empty():
 		return not _movement_orders.is_empty()
 	return _movement_orders.has(entity_id)
+
+
+# ---------------------------------------------------------------------------
+# Renderer-driven animation support
+# ---------------------------------------------------------------------------
+
+## Mark an entity as renderer-animated (tick handler skips position updates).
+func mark_renderer_animated(entity_id: String) -> void:
+	_renderer_animated[entity_id] = true
+
+
+## Clear renderer-animated flag for one entity.
+func clear_renderer_animated(entity_id: String) -> void:
+	_renderer_animated.erase(entity_id)
+
+
+## Clear all renderer-animated flags.
+func clear_all_renderer_animated() -> void:
+	_renderer_animated.clear()
+
+
+## Called by DungeonExploreState when the renderer's tween reaches a new cell.
+## Updates the mechanical position, fog, and checks for passability/completion.
+## Returns a result dict: { blocked: bool, path_complete: bool, all_complete: bool }
+func on_cell_reached(entity_id: String, cell: Vector2i) -> Dictionary:
+	if not _movement_orders.has(entity_id):
+		return {"error": true}
+
+	var controller: DungeonMapController = _find_dungeon_controller()
+	if controller == null:
+		return {"error": true}
+	var tactical_map: TacticalMapData = controller.get_map()
+	if tactical_map == null:
+		return {"error": true}
+
+	var order: Dictionary = _movement_orders[entity_id]
+
+	# Check passability before committing the move.
+	if not tactical_map.is_passable(cell):
+		cancel_move(entity_id)
+		clear_renderer_animated(entity_id)
+		return {"blocked": true}
+
+	# No-stacking: block if this is the FINAL cell and another entity is there.
+	# Intermediate cells allow pass-through (allies move through each other).
+	var path: Array = order["path"]
+	var next_mech_idx: int = order.get("mechanical_index", -1) + 1
+	if next_mech_idx >= path.size() - 1:
+		if tactical_map.is_occupied_by_other(cell, entity_id):
+			cancel_move(entity_id)
+			clear_renderer_animated(entity_id)
+			return {"blocked": true}
+
+	# Commit the mechanical position update.
+	var old_pos: Vector2i = tactical_map.get_entity_pos(entity_id)
+	tactical_map.set_entity_pos(entity_id, cell)
+	# Emit entity_moved (renderer ignores via _active_movements guard).
+	controller.entity_moved.emit(entity_id, old_pos, cell)
+
+	# Update fog of war.
+	controller._update_fog_for_all_members()
+
+	# Track mechanical progress along the path.
+	var mech_idx: int = order.get("mechanical_index", -1) + 1
+	order["mechanical_index"] = mech_idx
+
+	# Check if entity reached end of path.
+	var path: Array = order["path"]
+	if mech_idx >= path.size() - 1:
+		# Path complete — handle on_arrival callbacks and remove order.
+		var on_arrival: Dictionary = order.get("on_arrival", {})
+		_movement_orders.erase(entity_id)
+		_renderer_animated.erase(entity_id)
+
+		if not on_arrival.is_empty() and controller != null:
+			var action: String = on_arrival.get("action", "")
+			var target: Vector2i = on_arrival.get("target", Vector2i(-1, -1))
+			match action:
+				"interact_door":
+					controller.interact_door(target)
+
+		return {
+			"path_complete": true,
+			"all_complete": _movement_orders.is_empty(),
+		}
+
+	return {}
 
 
 ## Schedule a timed dungeon action (search, listen, door interact, etc.).
@@ -224,6 +366,9 @@ func schedule_action(
 	scheduler: EventScheduler,
 	party_id: String,
 ) -> String:
+	# A character performing any action releases any held portcullis.
+	_release_held_portcullises(entity_id)
+
 	var current_time: int = Timekeeping.get_party_time(party_id)
 	return scheduler.schedule_at(
 		current_time + duration_rounds,
@@ -244,7 +389,12 @@ func schedule_action(
 # ---------------------------------------------------------------------------
 
 ## Advance all moving entities along their paths. Fires every round while
-## any entity is moving. Checks for passive detection at each cell traversed.
+## any entity is moving.
+##
+## At normal/fast/very-fast speeds, renderer-animated entities are skipped
+## (the renderer drives their position updates via on_cell_reached callbacks).
+## At MAX speed the renderer is disabled, so this handler runs the original
+## burst-advance logic for all entities.
 func _handle_movement_tick(event: ScheduledEvent) -> Dictionary:
 	_tick_scheduled = false
 	var controller: DungeonMapController = _find_dungeon_controller()
@@ -257,11 +407,19 @@ func _handle_movement_tick(event: ScheduledEvent) -> Dictionary:
 		_movement_orders.clear()
 		return {}
 
+	# Determine if we're in MAX speed (renderer is disabled).
+	var is_max_speed: bool = false
+	var loop: SchedulerLoop = _runner.get_scheduler_loop() if _runner != null else null
+	if loop != null and loop.get_speed() == SchedulerLoop.SPEED_MAX:
+		is_max_speed = true
+
 	var completed_entities: Array = []
-	var encounter_triggered: bool = false
-	var encounter_data: Dictionary = {}
 
 	for entity_id in _movement_orders.keys():
+		# At non-MAX speeds, skip entities whose animation is renderer-driven.
+		if not is_max_speed and _renderer_animated.has(entity_id):
+			continue
+
 		var order: Dictionary = _movement_orders[entity_id]
 		var path: Array = order["path"]
 		var progress: float = order["progress"]
@@ -274,32 +432,48 @@ func _handle_movement_tick(event: ScheduledEvent) -> Dictionary:
 		var new_cell_index: int = mini(int(progress), path.size() - 1)
 
 		# Move through each cell between old and new position.
+		var stopped_early := false
 		for ci in range(old_cell_index, new_cell_index + 1):
 			if ci >= path.size():
 				break
 			var cell: Vector2i = path[ci]
-			# Move entity to this cell on the tactical map.
-			if tactical_map.is_passable(cell):
-				var old_pos := tactical_map.get_entity_pos(entity_id)
-				tactical_map.set_entity_pos(entity_id, cell)
-				controller.entity_moved.emit(entity_id, old_pos, cell)
-			else:
-				# Path blocked — cancel this entity's movement.
+			if not tactical_map.is_passable(cell):
 				completed_entities.append(entity_id)
+				stopped_early = true
 				break
+			# No-stacking: block on the final cell if occupied by another.
+			# Intermediate cells allow pass-through.
+			if ci >= path.size() - 1 and tactical_map.is_occupied_by_other(cell, entity_id):
+				completed_entities.append(entity_id)
+				stopped_early = true
+				break
+			var old_pos := tactical_map.get_entity_pos(entity_id)
+			tactical_map.set_entity_pos(entity_id, cell)
+			controller.entity_moved.emit(entity_id, old_pos, cell)
 
 			# TODO: passive detection checks (dwarf/elf) for secret features
 			# at this cell would fire here in the future.
+		if stopped_early:
+			continue
 
 		order["progress"] = progress
 
-		# Check if entity reached end of path.
 		if progress >= path.size() - 1:
 			completed_entities.append(entity_id)
 
-	# Remove completed entities.
+	# Remove completed entities and execute any on_arrival callbacks.
 	for eid in completed_entities:
+		var order: Dictionary = _movement_orders.get(eid, {})
+		var on_arrival: Dictionary = order.get("on_arrival", {})
 		_movement_orders.erase(eid)
+		_renderer_animated.erase(eid)
+
+		if not on_arrival.is_empty() and controller != null:
+			var action: String = on_arrival.get("action", "")
+			var target: Vector2i = on_arrival.get("target", Vector2i(-1, -1))
+			match action:
+				"interact_door":
+					controller.interact_door(target)
 
 	# Update fog of war after all movements.
 	if not completed_entities.is_empty() or _movement_orders.size() > 0:
@@ -440,8 +614,12 @@ func _handle_light_tick(event: ScheduledEvent) -> Dictionary:
 		if tmap != null:
 			for pos in tmap._cells.keys():
 				if tmap.is_evil_door(pos) and tmap.get_door_state(pos) == "open":
-					# TODO: check wedged/spiked state when spike system is built.
+					# Wedged doors resist evil auto-close.
+					if _session_state != null and _session_state.has_method("is_wedged") \
+							and _session_state.is_wedged(pos):
+						continue
 					tmap.set_door_state(pos, "closed")
+					controller.door_state_changed.emit(pos, "open", "closed")
 					EventBus.notification_requested.emit({
 						"type": "warning",
 						"category": "environment",
@@ -471,6 +649,26 @@ func _handle_action_complete(event: ScheduledEvent) -> Dictionary:
 			return _resolve_listen(entity_id, cell)
 		"force_door":
 			return _resolve_force_door(entity_id, cell)
+		"bash_door":
+			return _resolve_bash_door(entity_id, cell)
+		"pick_lock":
+			return _resolve_pick_lock(entity_id, cell)
+		"use_lever":
+			return _resolve_use_lever(entity_id, cell)
+		"force_portcullis":
+			return _resolve_force_portcullis(entity_id, cell)
+		"drop_portcullis":
+			return _resolve_drop_portcullis(entity_id, cell)
+		"spike_shut":
+			return _resolve_spike_shut(entity_id, cell)
+		"wedge_open":
+			return _resolve_wedge_open(entity_id, cell)
+		"remove_spike":
+			return _resolve_remove_spike(entity_id, cell)
+		"remove_wedge":
+			return _resolve_remove_wedge(entity_id, cell)
+		"exit_dungeon":
+			return _resolve_exit_dungeon(entity_id, cell)
 		_:
 			return {
 				"auto_pause": true,
@@ -515,9 +713,50 @@ func _resolve_listen(entity_id: String, cell: Vector2i) -> Dictionary:
 
 
 func _resolve_force_door(entity_id: String, cell: Vector2i) -> Dictionary:
-	# Force stuck door: d20 vs modified target (usually 18+).
-	var roll: RollResult = DiceSystem.roll_digital(20, 1, 0, "force_door")
-	var forced: bool = roll.modified_total >= 18
+	# Force stuck door: d20 vs target (base 18, modified by STR×4 and Dungeon Bashing).
+	# Use ThiefSkillResolver for proper modifier calculation.
+	var party_data: PartyData = _runner.get_party_data() if _runner != null else null
+	var char_data: CharacterData = party_data.get_member(entity_id) if party_data != null else null
+
+	var roll: RollResult
+	var effective_target: int = 18
+	if char_data != null:
+		var bundle := CharacterBundle.new()
+		bundle.character = char_data
+		bundle.proficiencies = CampaignRepository.get_character_proficiencies(entity_id)
+		bundle.character.proficiencies = bundle.proficiencies
+		bundle.powers = CampaignRepository.get_character_powers(entity_id)
+		bundle.inventory = []
+
+		var class_reg: ClassRegistry = _runner.get_class_registry()
+		var prof_reg := ProficiencyRegistry.new()
+		var power_reg := PowerRegistry.new()
+		var resolver := ThiefSkillResolver.new(class_reg, prof_reg, power_reg)
+
+		var skill_check: Dictionary = resolver.get_skill_check(bundle, "force_door")
+		if skill_check.get("effective_target", null) != null:
+			effective_target = int(skill_check.get("effective_target"))
+		roll = resolver.roll_skill_digital(bundle, "force_door")
+	else:
+		roll = DiceSystem.roll_digital(20, 1, 0, "force_door")
+
+	var forced: bool = roll.modified_total >= effective_target
+
+	if forced:
+		var controller: DungeonMapController = _find_dungeon_controller()
+		if controller != null and controller.get_map() != null:
+			var tmap: TacticalMapData = controller.get_map()
+			tmap.set_door_state(cell, "closed")  # stuck → closed (now openable)
+			controller.door_state_changed.emit(cell, "stuck", "closed")
+
+	EventBus.notification_requested.emit({
+		"type": "success" if forced else "warning",
+		"category": "environment",
+		"title": ("Door forced open! (rolled %d vs %d)" if forced else "Door held fast (rolled %d vs %d)") \
+			% [roll.modified_total, effective_target],
+		"duration": 4.0,
+	})
+
 	return {
 		"auto_pause": true,
 		"pause_reason": "Door " + ("forced open!" if forced else "held fast"),
@@ -526,9 +765,469 @@ func _resolve_force_door(entity_id: String, cell: Vector2i) -> Dictionary:
 			"entity_id": entity_id,
 			"cell": str(cell),
 			"roll": roll.modified_total,
+			"target": effective_target,
 			"forced": forced,
 		},
 	}
+
+
+func _resolve_bash_door(entity_id: String, cell: Vector2i) -> Dictionary:
+	# Verify the basher has an axe.
+	var axe_keys := ["hand_axe", "battle_axe", "great_axe"]
+	var has_axe := false
+	var items: Array = CampaignRepository.get_inventory_items(entity_id)
+	for item in items:
+		if item.get("item_key", "") in axe_keys:
+			has_axe = true
+			break
+	if not has_axe:
+		return {"auto_pause": true, "pause_reason": "Cannot bash — no axe!"}
+
+	# Bash is deterministic — time spent = success per ACKS.
+	var controller: DungeonMapController = _find_dungeon_controller()
+	if controller != null and controller.get_map() != null:
+		var tmap: TacticalMapData = controller.get_map()
+		var old_state: String = tmap.get_door_state(cell)
+		tmap.set_door_state(cell, "destroyed")
+		controller.door_state_changed.emit(cell, old_state, "destroyed")
+
+	EventBus.notification_requested.emit({
+		"type": "info",
+		"category": "environment",
+		"title": "The door splinters apart!",
+		"duration": 4.0,
+	})
+	return {
+		"auto_pause": true,
+		"pause_reason": "Door destroyed!",
+		"presentation": {
+			"type": "dungeon_bash_door",
+			"cell": str(cell),
+		},
+	}
+
+
+func _resolve_pick_lock(entity_id: String, cell: Vector2i) -> Dictionary:
+	# Build a CharacterBundle for the thief skill check.
+	var party_data: PartyData = _runner.get_party_data() if _runner != null else null
+	if party_data == null:
+		return {"auto_pause": true, "pause_reason": "Pick lock failed — no party data"}
+
+	var char_data: CharacterData = party_data.get_member(entity_id)
+	if char_data == null:
+		return {"auto_pause": true, "pause_reason": "Pick lock failed — character not found"}
+
+	var bundle := CharacterBundle.new()
+	bundle.character = char_data
+	bundle.proficiencies = CampaignRepository.get_character_proficiencies(entity_id)
+	bundle.character.proficiencies = bundle.proficiencies
+	bundle.powers = CampaignRepository.get_character_powers(entity_id)
+	bundle.inventory = []
+
+	# Build ThiefSkillResolver with registries.
+	var class_reg: ClassRegistry = _runner.get_class_registry()
+	var prof_reg := ProficiencyRegistry.new()
+	var power_reg := PowerRegistry.new()
+	var resolver := ThiefSkillResolver.new(class_reg, prof_reg, power_reg)
+
+	# Check if the skill is available before rolling.
+	var skill_check: Dictionary = resolver.get_skill_check(bundle, "open_locks")
+	if not bool(skill_check.get("is_available", false)):
+		return {
+			"auto_pause": true,
+			"pause_reason": "Cannot pick locks — no applicable skill",
+		}
+
+	# Roll the skill check.
+	var roll: RollResult = resolver.roll_skill_digital(bundle, "open_locks")
+	var effective_target = skill_check.get("effective_target", 20)
+	var success: bool = roll.modified_total >= int(effective_target)
+
+	if success:
+		var controller: DungeonMapController = _find_dungeon_controller()
+		if controller != null and controller.get_map() != null:
+			var tmap: TacticalMapData = controller.get_map()
+			var old_state: String = tmap.get_door_state(cell)
+			tmap.set_door_state(cell, "closed")
+			tmap.set_cell_field(cell, "door_type", "unlocked")
+			controller.door_state_changed.emit(cell, old_state, "closed")
+
+		# Record in session state for revert on dungeon exit.
+		_record_picked_lock(cell)
+
+		EventBus.notification_requested.emit({
+			"type": "success",
+			"category": "environment",
+			"title": "Lock picked! (rolled %d vs %d)" % [roll.modified_total, int(effective_target)],
+			"duration": 4.0,
+		})
+	else:
+		# Record failure — character cannot retry until gaining a level.
+		_record_pick_lock_failure(entity_id, char_data.level)
+
+		EventBus.notification_requested.emit({
+			"type": "warning",
+			"category": "environment",
+			"title": "Lock pick failed! (rolled %d vs %d)" % [roll.modified_total, int(effective_target)],
+			"duration": 4.0,
+		})
+
+	return {
+		"auto_pause": true,
+		"pause_reason": "Lock " + ("picked!" if success else "resists!"),
+		"presentation": {
+			"type": "dungeon_pick_lock",
+			"entity_id": entity_id,
+			"cell": str(cell),
+			"roll": roll.modified_total,
+			"target": int(effective_target),
+			"success": success,
+		},
+	}
+
+
+func _resolve_use_lever(_entity_id: String, cell: Vector2i) -> Dictionary:
+	var controller: DungeonMapController = _find_dungeon_controller()
+	if controller == null or controller.get_map() == null:
+		return {"auto_pause": true, "pause_reason": "Lever — no map"}
+
+	var tmap: TacticalMapData = controller.get_map()
+	var target_pos: Vector2i = tmap.get_lever_target(cell)
+	if target_pos == Vector2i(-1, -1):
+		EventBus.notification_requested.emit({
+			"type": "info",
+			"category": "environment",
+			"title": "The lever doesn't seem to be connected to anything.",
+			"duration": 4.0,
+		})
+		return {"auto_pause": true, "pause_reason": "Lever — no target"}
+
+	# Spiked or wedged portcullises resist lever operation.
+	if _session_state != null:
+		if _session_state.has_method("is_spiked") and _session_state.is_spiked(target_pos):
+			EventBus.notification_requested.emit({
+				"type": "warning", "category": "environment",
+				"title": "The portcullis is spiked and won't move!", "duration": 3.0,
+			})
+			return {"auto_pause": true, "pause_reason": "Portcullis is spiked!"}
+		if _session_state.has_method("is_wedged") and _session_state.is_wedged(target_pos):
+			EventBus.notification_requested.emit({
+				"type": "warning", "category": "environment",
+				"title": "The portcullis is wedged and won't move!", "duration": 3.0,
+			})
+			return {"auto_pause": true, "pause_reason": "Portcullis is wedged!"}
+
+	var old_state: String = tmap.get_door_state(target_pos)
+	var new_state: String = "open" if old_state != "open" else "closed"
+	tmap.set_door_state(target_pos, new_state)
+	controller.door_state_changed.emit(target_pos, old_state, new_state)
+
+	var msg: String = "The portcullis rises with a grinding sound!" if new_state == "open" \
+		else "The portcullis drops with a heavy clang!"
+	EventBus.notification_requested.emit({
+		"type": "info",
+		"category": "environment",
+		"title": msg,
+		"duration": 4.0,
+	})
+	return {
+		"auto_pause": true,
+		"pause_reason": msg,
+		"presentation": {
+			"type": "dungeon_lever",
+			"cell": str(cell),
+			"target": str(target_pos),
+			"new_state": new_state,
+		},
+	}
+
+
+func _resolve_force_portcullis(entity_id: String, cell: Vector2i) -> Dictionary:
+	# Same throw as force_door (base 18, STR×4, Dungeon Bashing), but on success
+	# the portcullis is held open only while the character does nothing else.
+	var party_data: PartyData = _runner.get_party_data() if _runner != null else null
+	var char_data: CharacterData = party_data.get_member(entity_id) if party_data != null else null
+
+	var roll: RollResult
+	var effective_target: int = 18
+	if char_data != null:
+		var bundle := CharacterBundle.new()
+		bundle.character = char_data
+		bundle.proficiencies = CampaignRepository.get_character_proficiencies(entity_id)
+		bundle.character.proficiencies = bundle.proficiencies
+		bundle.powers = CampaignRepository.get_character_powers(entity_id)
+		bundle.inventory = []
+
+		var class_reg: ClassRegistry = _runner.get_class_registry()
+		var prof_reg := ProficiencyRegistry.new()
+		var power_reg := PowerRegistry.new()
+		var resolver := ThiefSkillResolver.new(class_reg, prof_reg, power_reg)
+
+		var skill_check: Dictionary = resolver.get_skill_check(bundle, "force_door")
+		if skill_check.get("effective_target", null) != null:
+			effective_target = int(skill_check.get("effective_target"))
+		roll = resolver.roll_skill_digital(bundle, "force_door")
+	else:
+		roll = DiceSystem.roll_digital(20, 1, 0, "force_door")
+
+	var forced: bool = roll.modified_total >= effective_target
+
+	if forced:
+		var controller: DungeonMapController = _find_dungeon_controller()
+		if controller != null and controller.get_map() != null:
+			var tmap: TacticalMapData = controller.get_map()
+			tmap.set_door_state(cell, "open")
+			controller.door_state_changed.emit(cell, "closed", "open")
+
+		# Record that this character is holding the portcullis.
+		if _session_state != null and _session_state.has_method("hold_portcullis"):
+			_session_state.hold_portcullis(cell, entity_id)
+
+	var msg: String
+	if forced:
+		msg = "Portcullis forced open! (rolled %d vs %d) — drops if you act" \
+			% [roll.modified_total, effective_target]
+	else:
+		msg = "Portcullis won't budge (rolled %d vs %d)" \
+			% [roll.modified_total, effective_target]
+
+	EventBus.notification_requested.emit({
+		"type": "success" if forced else "warning",
+		"category": "environment",
+		"title": msg, "duration": 4.0,
+	})
+	return {
+		"auto_pause": true,
+		"pause_reason": msg,
+		"presentation": {
+			"type": "dungeon_force_portcullis",
+			"entity_id": entity_id,
+			"cell": str(cell),
+			"roll": roll.modified_total,
+			"target": effective_target,
+			"forced": forced,
+		},
+	}
+
+
+func _resolve_drop_portcullis(_entity_id: String, cell: Vector2i) -> Dictionary:
+	var controller: DungeonMapController = _find_dungeon_controller()
+	if controller == null or controller.get_map() == null:
+		return {"auto_pause": true, "pause_reason": "No map"}
+
+	var tmap: TacticalMapData = controller.get_map()
+
+	# Spiked or wedged portcullises resist.
+	if _session_state != null:
+		if _session_state.has_method("is_spiked") and _session_state.is_spiked(cell):
+			EventBus.notification_requested.emit({
+				"type": "warning", "category": "environment",
+				"title": "The portcullis is spiked and won't move!", "duration": 3.0,
+			})
+			return {"auto_pause": true, "pause_reason": "Portcullis is spiked!"}
+		if _session_state.has_method("is_wedged") and _session_state.is_wedged(cell):
+			EventBus.notification_requested.emit({
+				"type": "warning", "category": "environment",
+				"title": "The portcullis is wedged and won't move!", "duration": 3.0,
+			})
+			return {"auto_pause": true, "pause_reason": "Portcullis is wedged!"}
+
+	tmap.set_door_state(cell, "closed")
+	controller.door_state_changed.emit(cell, "open", "closed")
+
+	EventBus.notification_requested.emit({
+		"type": "info", "category": "environment",
+		"title": "The portcullis drops with a heavy clang!", "duration": 3.0,
+	})
+	return {
+		"auto_pause": true,
+		"pause_reason": "Portcullis dropped.",
+		"presentation": {"type": "dungeon_drop_portcullis", "cell": str(cell)},
+	}
+
+
+func _resolve_spike_shut(entity_id: String, cell: Vector2i) -> Dictionary:
+	# Find and consume one iron spike from the character's inventory.
+	var spike_item: Dictionary = _find_iron_spike(entity_id)
+	if spike_item.is_empty():
+		EventBus.notification_requested.emit({
+			"type": "warning", "category": "environment",
+			"title": "No iron spikes available!", "duration": 3.0,
+		})
+		return {"auto_pause": true, "pause_reason": "No iron spikes!"}
+
+	# Consume one spike.
+	var item_id: String = spike_item.get("id", "")
+	var qty: int = spike_item.get("quantity", 1)
+	CampaignRepository.update_inventory_item_quantity(item_id, qty - 1)
+
+	# Record spiked state in session.
+	if _session_state != null and _session_state.has_method("spike_door"):
+		_session_state.spike_door(cell)
+
+	EventBus.notification_requested.emit({
+		"type": "info", "category": "environment",
+		"title": "Door spiked shut!", "duration": 3.0,
+	})
+	return {
+		"auto_pause": true,
+		"pause_reason": "Door spiked shut!",
+		"presentation": {"type": "dungeon_spike_door", "cell": str(cell)},
+	}
+
+
+func _resolve_wedge_open(entity_id: String, cell: Vector2i) -> Dictionary:
+	# Find and consume one iron spike from the character's inventory.
+	var spike_item: Dictionary = _find_iron_spike(entity_id)
+	if spike_item.is_empty():
+		EventBus.notification_requested.emit({
+			"type": "warning", "category": "environment",
+			"title": "No iron spikes available!", "duration": 3.0,
+		})
+		return {"auto_pause": true, "pause_reason": "No iron spikes!"}
+
+	# Consume one spike.
+	var item_id: String = spike_item.get("id", "")
+	var qty: int = spike_item.get("quantity", 1)
+	CampaignRepository.update_inventory_item_quantity(item_id, qty - 1)
+
+	# Record wedged state in session.
+	if _session_state != null and _session_state.has_method("wedge_door"):
+		_session_state.wedge_door(cell)
+
+	EventBus.notification_requested.emit({
+		"type": "info", "category": "environment",
+		"title": "Door wedged open!", "duration": 3.0,
+	})
+	return {
+		"auto_pause": true,
+		"pause_reason": "Door wedged open!",
+		"presentation": {"type": "dungeon_wedge_door", "cell": str(cell)},
+	}
+
+
+## Find an iron spike item in a character's inventory. Returns the item dict or {}.
+func _find_iron_spike(entity_id: String) -> Dictionary:
+	var items: Array = CampaignRepository.get_inventory_items(entity_id)
+	for item in items:
+		if item.get("item_key", "") == "iron_spikes_12" and item.get("quantity", 0) > 0:
+			return item
+	return {}
+
+
+func _resolve_remove_spike(entity_id: String, cell: Vector2i) -> Dictionary:
+	if _session_state == null or not _session_state.has_method("is_spiked") \
+			or not _session_state.is_spiked(cell):
+		return {"auto_pause": true, "pause_reason": "No spike to remove"}
+
+	_session_state.unspike_door(cell)
+
+	# Return the spike to the character's inventory.
+	_return_iron_spike(entity_id)
+
+	EventBus.notification_requested.emit({
+		"type": "info", "category": "environment",
+		"title": "Spike removed.", "duration": 3.0,
+	})
+	return {
+		"auto_pause": true,
+		"pause_reason": "Spike removed.",
+		"presentation": {"type": "dungeon_remove_spike", "cell": str(cell)},
+	}
+
+
+func _resolve_remove_wedge(entity_id: String, cell: Vector2i) -> Dictionary:
+	if _session_state == null or not _session_state.has_method("is_wedged") \
+			or not _session_state.is_wedged(cell):
+		return {"auto_pause": true, "pause_reason": "No wedge to remove"}
+
+	_session_state.unwedge_door(cell)
+
+	# Return the spike to the character's inventory.
+	_return_iron_spike(entity_id)
+
+	EventBus.notification_requested.emit({
+		"type": "info", "category": "environment",
+		"title": "Wedge removed.", "duration": 3.0,
+	})
+	return {
+		"auto_pause": true,
+		"pause_reason": "Wedge removed.",
+		"presentation": {"type": "dungeon_remove_wedge", "cell": str(cell)},
+	}
+
+
+func _resolve_exit_dungeon(entity_id: String, _cell: Vector2i) -> Dictionary:
+	var controller: DungeonMapController = _find_dungeon_controller()
+	if controller == null:
+		return {"auto_pause": true, "pause_reason": "Exit failed — no controller"}
+
+	# Cancel any active movement for this entity.
+	cancel_move(entity_id)
+	clear_renderer_animated(entity_id)
+
+	# Remove character from the dungeon map.
+	controller.remove_party_member(entity_id)
+
+	# Mark as exited in session state.
+	if _session_state != null:
+		_session_state.mark_exited(entity_id)
+
+	# Get character name for notification.
+	var char_name := entity_id
+	var party_data: PartyData = _runner.get_party_data() if _runner != null else null
+	if party_data != null:
+		var cd: CharacterData = party_data.get_member(entity_id)
+		if cd != null:
+			char_name = cd.name
+
+	EventBus.notification_requested.emit({
+		"type": "info", "category": "exploration",
+		"title": "%s exits the dungeon." % char_name,
+		"duration": 4.0,
+	})
+
+	# Check if all party members have now exited or are incapacitated/dead.
+	# Use all active characters from party_data — all_party_resolved checks
+	# each character's exited/dead/incapacitated status.
+	var all_resolved := false
+	if _session_state != null and party_data != null:
+		var all_ids: Array[String] = []
+		for cd: CharacterData in party_data.character_data:
+			if cd.is_active:
+				all_ids.append(cd.id)
+		all_resolved = _session_state.all_party_resolved(all_ids, party_data)
+
+	return {
+		"auto_pause": true,
+		"pause_reason": "%s exited the dungeon" % char_name,
+		"presentation": {
+			"type": "dungeon_character_exited",
+			"entity_id": entity_id,
+			"all_resolved": all_resolved,
+		},
+	}
+
+
+## Return one iron spike to a character's inventory (after removing spike/wedge).
+func _return_iron_spike(entity_id: String) -> void:
+	# Try to stack onto existing spike item.
+	var existing: Dictionary = _find_iron_spike(entity_id)
+	if not existing.is_empty():
+		var item_id: String = existing.get("id", "")
+		var qty: int = existing.get("quantity", 0)
+		CampaignRepository.update_inventory_item_quantity(item_id, qty + 1)
+	else:
+		# Create a new stack of 1 spike.
+		CampaignRepository.add_inventory_item({
+			"character_id": entity_id,
+			"item_key": "iron_spikes_12",
+			"name": "Iron Spikes (12)",
+			"quantity": 1,
+			"encumbrance_units": 1000,
+			"item_category": "gear",
+			"slot": "pack",
+		})
 
 
 ## Player-initiated light/douse action (takes 1 round to light with tinderbox).
@@ -606,6 +1305,41 @@ func _ensure_movement_tick(scheduler: EventScheduler, party_id: String) -> void:
 		ScheduledEvent.PRIORITY_ARRIVAL,
 	)
 	_tick_scheduled = true
+
+
+## Release any portcullises held open by this entity (they slam shut).
+func _release_held_portcullises(entity_id: String) -> void:
+	if _session_state == null or not _session_state.has_method("release_all_held_by"):
+		return
+	var released: Array = _session_state.release_all_held_by(entity_id)
+	if released.is_empty():
+		return
+	var controller: DungeonMapController = _find_dungeon_controller()
+	if controller == null or controller.get_map() == null:
+		return
+	var tmap: TacticalMapData = controller.get_map()
+	for pos in released:
+		if tmap.get_door_state(pos) == "open":
+			tmap.set_door_state(pos, "closed")
+			controller.door_state_changed.emit(pos, "open", "closed")
+			EventBus.notification_requested.emit({
+				"type": "warning",
+				"category": "environment",
+				"title": "The portcullis slams shut!",
+				"duration": 3.0,
+			})
+
+
+## Record a successfully picked lock in session state (reverted on dungeon exit).
+func _record_picked_lock(pos: Vector2i) -> void:
+	if _session_state != null and _session_state.has_method("record_picked_lock"):
+		_session_state.record_picked_lock(pos)
+
+
+## Record a pick lock failure in session state.
+func _record_pick_lock_failure(entity_id: String, level: int) -> void:
+	if _session_state != null and _session_state.has_method("record_pick_lock_failure"):
+		_session_state.record_pick_lock_failure(entity_id, level)
 
 
 func _find_dungeon_controller() -> DungeonMapController:

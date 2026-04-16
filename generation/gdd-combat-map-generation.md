@@ -5,7 +5,7 @@
 **Depends on ACKS rules:** `acore_combat_and_wounds.xml` (combat movement, cover penalties, missile range bands, charging, defensive movement), `acore_adventures_and_encounters.xml` (wilderness encounter distance by terrain), `ax_conditions_catalog.xml` (engaged, prone, exhausted, and other combat-relevant conditions)
 **Depends on project GDDs:** `gdd-terrain-system.md` (hex terrain tags — elevation + biome + water + civilization), `gdd-dungeon-layout.md` (5' diamond grid, cell-based wall model, room detection), `gdd-settlement-layout.md` (district types, block structure), `gdd-stronghold-construction.md` (stronghold grid as battle map), `gdd_combat_behavior_tags.md` (AI engagement profiles, aggression, positioning)
 **Modifiable by Claude Code:** Yes — all algorithms, feature tables, placement logic, and rendering parameters are engineering decisions.
-**Last updated:** 2026-03-25
+**Last updated:** 2026-04-16
 
 ---
 
@@ -115,19 +115,19 @@ The threshold for "walkable slope" vs. "requires climbing" is:
 
 ### 4.4 FFT-Style Isometric Rendering
 
-The elevation model uses a rendering approach inspired by Final Fantasy Tactics to make height differences dramatically visible:
+The elevation model uses a true runtime 3D isometric presentation inspired by Final Fantasy Tactics to make height differences dramatically visible while preserving the same tactical rules:
 
-**Per-cell vertical offset:** Each cell's screen position is offset vertically (screen-Y) by a value proportional to its elevation score. Higher cells appear higher on screen within the isometric projection.
+**Per-cell world elevation:** Each cell's rendered position is offset on the 3D scene's vertical axis by a value proportional to its elevation score. Higher cells occupy physically higher positions in world space while still reading as a diamond-grid tactical map from the fixed isometric camera.
 
-**Cliff faces:** When adjacent cells differ in elevation, the renderer draws visible **cliff face panels** on the exposed edges between them. These are shaded polygons (darker than the cell's top face) that represent the vertical surface. Larger elevation differences produce taller, more visually dramatic cliff faces.
+**Cliff faces:** When adjacent cells differ in elevation, the renderer draws visible **cliff face geometry** on the exposed edges between them. These faces are shaded darker than the cell's top face to communicate the vertical surface. Larger elevation differences produce taller, more dramatic cliff faces.
 
-**Draw order:** Cells are rendered back-to-front (painter's algorithm) relative to the isometric camera, ensuring that higher cells and their cliff faces correctly occlude lower cells behind them.
+**Camera and occlusion:** The tactical scene uses a fixed isometric camera and normal 3D occlusion. Renderer ordering should preserve clear readability of elevated cells, cliff faces, and units without changing the underlying grid logic.
 
-**Top face:** The walkable surface of each cell is drawn as a diamond (the isometric projection of the 5' square). Its visual style is determined by the cell's `surface_type`.
+**Top face:** The walkable surface of each cell is rendered as a diamond-shaped top surface. Its visual treatment is determined by the cell's `surface_type`.
 
-**Elevation shading:** In addition to cliff faces, the cell's top face surface uses graduated shading, hatching, or contour-line effects to indicate relative height at a glance. The exact visual treatment is an art direction decision, but the data model supports it — the renderer has access to each cell's elevation score and can compute gradients, shade bands, or other visual cues.
+**Elevation shading:** In addition to cliff geometry, the cell's top surface can use graduated shading, contour banding, or similar cel-shaded treatments to indicate relative height at a glance. The exact art treatment remains an art direction decision; the data model already exposes the elevation information needed for it.
 
-**Vertical surface indicators:** Cells where the elevation difference to a neighbor is 4+ units (the climbing threshold) should have a distinct visual marker on the cliff face — a different texture, color, or edge highlight — so the player can immediately distinguish walkable slopes from climbing surfaces.
+**Vertical surface indicators:** Cells where the elevation difference to a neighbor is 4+ units (the climbing threshold) should have a distinct visual marker on the cliff face — a different material treatment, color break, or edge highlight — so the player can immediately distinguish walkable slopes from climbing surfaces.
 
 ---
 
@@ -658,13 +658,13 @@ The combat system calls this generator when combat triggers and no pre-existing 
 
 ### 11.3 Rendering
 
-The `BattleMap` is rendered by the battle map renderer using Godot's isometric TileMap system:
-- Diamond grid cells rendered as isometric diamonds
-- Elevation offset applied per cell (screen-Y shift proportional to elevation score)
-- Cliff faces drawn as shaded side panels between cells of different elevation
-- Feature sprites placed on cells per their `terrain_feature` value
-- Character sprites drawn at cell positions with elevation-adjusted screen-Y
-- Back-to-front draw order for correct occlusion
+The `BattleMap` is rendered by the battle map renderer as a true runtime 3D tactical scene:
+- Diamond grid cells rendered as diamond-topped 3D surfaces
+- Elevation applied as world-space height, not a 2D screen offset
+- Cliff faces drawn as shaded side geometry between cells of different elevation
+- Terrain features instantiated as 3D battlefield props aligned to the cell grid
+- Combatants placed on the same 3D tactical surface with the existing grid coordinates
+- A fixed isometric camera preserves tactical readability while using normal 3D occlusion
 
 ### 11.4 Dungeon and Interior Combat — Same System, No Conversion
 
@@ -674,29 +674,33 @@ Because dungeons, interiors, strongholds, and procedurally generated battle maps
 
 ## 12. Godot Implementation Notes
 
-### 12.1 TileMap Configuration
+### 12.1 3D Renderer Configuration
 
-The battle map renderer uses Godot's `TileMapLayer` node configured for isometric (diamond) tiles:
-- Tile shape: isometric
-- Tile size: determined by art assets (e.g., 64×32 pixels for a standard isometric diamond)
-- Multiple TileMapLayer nodes stacked for: ground surface, features/obstacles, cliff faces, elevation shading overlays
+The battle map renderer uses a 3D scene with a fixed isometric camera:
+- Tactical cells remain addressed in the same diamond-grid coordinate system
+- Ground surfaces, cliff faces, and blocking features are generated as 3D geometry or instanced meshes from `BattleMap.cells`
+- Terrain props and combatants align to cell centers in world space
+- HUD, action panels, and other interaction chrome remain 2D UI layered above the 3D combat scene
 
-### 12.2 Elevation Rendering with Multiple Layers
+### 12.2 Elevation Rendering in 3D
 
-To achieve the FFT-style stacked-tile look in Godot 2D:
-- Each elevation band (or each individual elevation score) can use a separate rendering layer or Y-sort adjustment
-- Cliff face sprites are drawn as separate elements positioned at the edge between two cells of different elevation
-- Godot's Y-sort rendering mode or manual Z-index assignment handles draw order
+To achieve the FFT-style stacked-height look in true runtime 3D:
+- Each cell's elevation score maps to an actual height offset in world space
+- Cliff faces are generated as separate side surfaces between cells of different elevation
+- Material/shading choices should emphasize bold silhouette readability and cel-shaded color separation rather than photoreal surface detail
+- Camera angle and zoom should be fixed or tightly constrained so the battlefield remains tactically legible
 
 ### 12.3 Performance
 
 Generation is a one-time cost per encounter. The largest grid (100×100 = 10,000 cells) should generate in under 200ms on modern hardware. Perlin noise, Poisson disk sampling, and flood-fill validation are all well-understood algorithms with predictable performance at this scale.
 
-Runtime rendering of 10,000 isometric cells is within Godot's comfortable range, especially since only a portion of the map is visible on screen at any time. View culling (only rendering cells within the camera viewport) is essential and standard practice for isometric tile maps.
+Runtime rendering of 10,000 tactical cells should remain feasible in Godot when cells and repeated terrain props are instanced efficiently and only the visible battlefield area is drawn at full detail. View culling and batched rendering remain important.
 
 ### 12.4 Key Godot Classes
 
-- `TileMapLayer` — renders the isometric grid (ground, features, overlays)
+- `Node3D` — root for the tactical combat scene
+- `Camera3D` — fixed isometric tactical camera
+- `MeshInstance3D` / `MultiMeshInstance3D` — battlefield surfaces, cliff faces, and repeated terrain features
 - `RandomNumberGenerator` — seeded RNG for deterministic generation
 - `FastNoiseLite` — Godot's built-in Perlin/simplex noise for elevation generation
 - `Vector2i` — grid coordinate math
@@ -742,7 +746,7 @@ Naval combat is deferred to post-v1, but if implemented, would need an ocean bat
 - **Lair maps persist, wandering monster maps do not: DECIDED.** This matches the fiction — a lair is a fixed location in the world, while a random encounter on the road happens wherever the party happens to be.
 - **Single urban template for v1: DECIDED.** One Town Street template covers the most common case. District variants are post-v1 expansion. This avoids overengineering a system before the combat loop is proven.
 - **No explicit height combat modifiers defined: DECIDED.** ACKS 1e does not define explicit bonuses or penalties for elevation in individual combat. Any such mechanics are applied per ACKS rules if any — the elevation data exists for climbing, falling, LOS, and visual presentation, not for project-invented combat modifiers.
-- **FFT-style visual elevation: DECIDED.** Cliff faces rendered as shaded side panels, cells offset vertically by elevation score, back-to-front draw order. This produces visually dramatic height differences that are immediately readable without requiring 3D rendering.
+- **FFT-style visual elevation: DECIDED.** Cliff faces are rendered as shaded side geometry, cells are placed at true world-space height by elevation score, and the fixed isometric camera preserves clear tactical readability in runtime 3D.
 - **Templates not hand-authored maps: DECIDED.** Each terrain type defines generation parameters (density ranges, elevation profiles, feature tables), not fixed map layouts. Every encounter produces a unique map from the template, preventing repetition while maintaining terrain-appropriate tactical character.
 
 ---

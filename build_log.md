@@ -5127,3 +5127,99 @@ Phase 8 — Cleanup:
 - Run test_runner.tscn to verify all tests pass
 - Visual-test settlement panel and dungeon UI
 - Begin combat UI implementation per `gdd-combat-ui.md`
+
+---
+
+## Session 2026-04-15 — 3D Migration: Dungeon & Combat Tactical Renderers
+
+**Task:** Migrate dungeon and combat tactical-scale renderers from 2D isometric to 3D isometric. Hex map, settlement panel, and all CanvasLayer HUD panels stay 2D. Data models and game logic controllers unchanged.
+
+**Model used:** Opus for planning and implementation.
+
+**Completed:**
+
+New files created (in dependency order):
+- `scenes/maps/tactical_grid_3d.gd` — Shared 3D grid infrastructure (class_name TacticalGrid3D, extends RefCounted). Coordinate conversion, mesh builders (floor MultiMesh, walls, doors, stairs, grid lines, fog overlay, highlight overlay, transition markers, feature labels), camera/lighting factory methods, material cache.
+- `scenes/ui/components/combatant_token_3d.gd` — 3D entity token (class_name CombatantToken3D, extends Node3D). Wraps existing 2D CombatantToken inside SubViewport (80×80), feeds ViewportTexture to billboard Sprite3D. Same public API: setup(), set_sprite_atlas(), set_facing(), update_position(Vector3).
+- `scenes/ui/components/combatant_token_3d.tscn` — Scene for CombatantToken3D.
+- `scenes/maps/dungeon_order_overlay_3d.gd` — 3D order overlay (extends Node3D). Ghost trail spheres, ImmediateMesh path lines, Label3D order icons. Same API: update_overlays(orders), clear_overlays().
+- `scenes/maps/dungeon_map_renderer_3d.gd` — 3D dungeon renderer (extends Node3D, no class_name). Identical signals and public API to 2D dungeon_map_renderer.gd. Uses TacticalGrid3D for mesh building, CombatantToken3D for tokens. Walls are tall BoxMesh, doors are thin rotatable slabs, elevation uses real Y-axis, fog via MultiMesh overlay.
+- `scenes/maps/dungeon_map_3d.tscn` — Scene tree: DungeonMap3D → GridMeshes, FogLayer, HighlightLayer, EntityLayer, OrderOverlayLayer, Camera3D (orthographic isometric), DirectionalLight3D, DungeonHUD (CanvasLayer layer=10: TooltipPanel, ContextMenuLayer).
+- `scenes/ui/combat/combat_map_renderer_3d.gd` — 3D combat map renderer (extends Node3D, no class_name). Identical signals and API to 2D combat_map_renderer.gd. Simpler than dungeon: no fog, no doors, no explore selection. Creates own Camera3D, DirectionalLight3D, WorldEnvironment.
+
+Files modified (wiring changes only):
+- `engine/subsystems/session/states/dungeon_explore_state.gd` (line 105) — Changed preload path from `dungeon_map.tscn` to `dungeon_map_3d.tscn`.
+- `scenes/ui/combat/combat_screen.gd` — Changed renderer load path from `combat_map_renderer.gd` to `combat_map_renderer_3d.gd`; changed `_map_renderer` type from `Node2D` to `Node`; added `sv.own_world_3d = true` to SubViewport; fixed `get_global_transform_with_canvas()` on token to handle 3D via `camera.unproject_position()`.
+- `scenes/ui/combat/dungeon_combat_overlay.gd` (line 541) — Same `get_global_transform_with_canvas()` fix for 3D tokens.
+
+**Decisions made:**
+- 3D coordinate system: `x = (col - row) * 0.5`, `z = (col + row) * 0.5`, `y = elevation * 0.5`. CELL_SIZE = 1.0 world unit (5 feet). WALL_HEIGHT = 2.0 (10 feet). ELEVATION_SCALE = 0.5 per unit.
+- Camera: orthographic, rotation (-35.264°, -45°, 0°), size 12.0 default. This is true isometric.
+- CombatantToken3D reuses 2D CombatantToken via SubViewport → Sprite3D billboard to avoid duplicating all drawing logic.
+- Materials use SHADING_MODE_UNSHADED for flat 2D-like visual style.
+- MultiMeshInstance3D for floor cells (performance with up to 10K cells), individual MeshInstance3D for walls (fewer, varied heights).
+- All 2D renderer files preserved as rollback path.
+
+**Interfaces defined or changed:**
+- `TacticalGrid3D.cell_to_world(col, row, elevation) -> Vector3` — central coordinate conversion.
+- `TacticalGrid3D.world_to_cell(world_pos) -> Vector2i` — reverse conversion.
+- `TacticalGrid3D.screen_to_cell(camera, screen_pos) -> Vector2i` — raycast through Camera3D.
+- `CombatantToken3D.update_position(world_pos: Vector3)` — note: takes Vector3 not Vector2.
+- All 3D renderers expose identical signal names and public method signatures to their 2D counterparts.
+
+**Database changes:**
+- None.
+
+**Tests added/updated:**
+- None (existing tests are data/logic tests, not rendering; they should pass unchanged).
+
+**Known issues:**
+- Camera zoom-toward-cursor not implemented (zoom changes size but doesn't keep world point under cursor fixed). Marked as TODO in dungeon_map_renderer_3d.gd.
+- Camera pan direction mapping (WASD → world XZ with 45° rotated camera) needs visual testing — the direction math may need tuning.
+- CombatantToken3D SubViewport approach may have a 1-frame delay on first render (uses `await process_frame`).
+- .tscn Camera3D transform matrix was hand-computed for isometric angles; may need adjustment if it doesn't match the expected rotation.
+- `build_floor_multimesh` passes color_func as `Callable(TacticalGrid3D, "floor_color_for")` — needs verification that static method callables work correctly in Godot 4.
+- Middle-mouse camera drag uses `camera.basis.x/y` for screen-to-world delta conversion; may need refinement with the isometric projection.
+
+**Next session should:**
+- Run the game and visually test the "Goblin Warrens" dungeon in 3D.
+- Verify camera pan, zoom, cell clicking, entity selection, and door interaction work.
+- Test combat mode: highlights, active token, move_token animation.
+- Test wilderness encounter to verify CombatScreen 3D SubViewport renders correctly.
+- Fix any camera/coordinate issues discovered during testing.
+- Run test_runner.tscn to confirm all existing tests still pass.
+- If 3D doesn't work: revert the 3 wiring changes (dungeon_explore_state.gd line 105, combat_screen.gd lines 22/73/89, dungeon_combat_overlay.gd line 541) to restore 2D.
+
+---
+
+## Session 2026-04-16 — Presentation Docs Alignment for 2D/3D Split
+
+**Task:** Update architecture/design documents to reflect the current presentation contract: hex and city overview layers remain 2D, dungeon and combat layers are true runtime 3D, world assets use the new cel-shaded fantasy direction, and UI backgrounds retain refreshed vellum treatment.
+**Model used:** GPT-5 Codex.
+
+**Completed:**
+- `docs/acks_arbiter_design_brief_v11.md`: Updated the navigation stack table to include presentation layer, revised map type descriptions to state 2D hex/city and 3D dungeon/combat, replaced the old vellum-only visual style note with the new canonical cel-shaded art direction plus vellum UI guidance, and aligned Tier 1 implementation bullets with the current presentation split.
+- `generation/gdd-combat-map-generation.md`: Rewrote rendering sections to describe true runtime 3D tactical presentation while preserving the same diamond-grid, elevation, and battle-map data model.
+- `generation/gdd-dungeon-layout.md`: Replaced 2D TileMap-specific dungeon rendering language with 3D tactical renderer wording, leaving the generation algorithm and cell model unchanged.
+- `generation/gdd-settlement-exploration-ui.md`: Clarified that the settlement overview is a 2D non-interactive city layer, aligned it to the cel-shaded world art direction, and explicitly kept vellum as supporting UI chrome/background treatment.
+
+**Decisions made:**
+- Documentation now treats the cel-shaded 1980s sword-and-sorcery animation prompt as the canonical world-art direction for both 2D and 3D generated assets.
+- Vellum/parchment remains part of the UI system only, especially panel framing and background textures, and is no longer described as the primary world-art direction.
+- Rendering implementation details were updated only where old 2D assumptions directly contradicted the current 3D dungeon/combat direction; mechanics and schemas were not changed.
+
+**Interfaces defined or changed:**
+- None (documentation-only session).
+
+**Database changes:**
+- None.
+
+**Tests added/updated:**
+- None.
+
+**Known issues:**
+- `docs/acks_arbiter_build_plan.md` still contains older renderer phrasing in some roadmap items; this session intentionally left the roadmap untouched unless a directly edited line would have conflicted.
+
+**Next session should:**
+- Continue visual verification of the live 3D dungeon/combat renderers against the updated docs.
+- Update roadmap wording only when those sections are otherwise being revised, to avoid unnecessary churn.

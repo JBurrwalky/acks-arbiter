@@ -74,6 +74,9 @@ func enter(runner, context: Dictionary) -> void:
 	if party_data != null:
 		_controller.set_party_data(party_data)
 
+	# Wire session state for spike/wedge checks on door toggle.
+	_controller.set_session_state(_session_state)
+
 	# Add all active living party members
 	var active_chars: Array = []
 	if party_data != null:
@@ -102,7 +105,7 @@ func enter(runner, context: Dictionary) -> void:
 	)
 
 	# Instantiate and wire dungeon scene
-	var packed: PackedScene = preload("res://scenes/maps/dungeon_map.tscn")
+	var packed: PackedScene = preload("res://scenes/maps/dungeon_map_3d.tscn")
 	_scene = packed.instantiate()
 	_scene.setup(_controller)
 
@@ -116,6 +119,9 @@ func enter(runner, context: Dictionary) -> void:
 	_scene.control_group_recall_requested.connect(_on_control_group_recall)
 	_scene.control_group_select_requested.connect(_on_control_group_select_entity)
 	_scene.minimap_toggle_requested.connect(_on_minimap_toggle)
+	# Renderer-driven movement animation callbacks.
+	_scene.movement_cell_reached.connect(_on_movement_cell_reached)
+	_scene.movement_path_complete.connect(_on_movement_path_complete)
 
 	runner.get_nav_stack().push_node(
 		_scene, "dungeon_%s" % entrance.get("id", "unknown")
@@ -136,6 +142,7 @@ func enter(runner, context: Dictionary) -> void:
 
 	# Register dungeon event handlers with the scheduler.
 	_handlers = DungeonHandlers.new(runner)
+	_handlers.set_session_state(_session_state)
 	_handlers.register(runner.get_handler_registry())
 
 	# Set dungeon time scale — round-level granularity.
@@ -160,9 +167,24 @@ func enter(runner, context: Dictionary) -> void:
 func exit(runner) -> void:
 	runner.get_nav_stack().pop()
 
+	# Revert picked locks before saving (locks reset on dungeon exit).
+	if _session_state != null and _controller != null and _controller.get_map() != null:
+		var tmap: TacticalMapData = _controller.get_map()
+		for pos in _session_state.get_picked_locks():
+			if tmap.get_door_state(pos) in ["closed", "open"]:
+				tmap.set_door_state(pos, "locked")
+				tmap.set_cell_field(pos, "door_type", "locked")
+
+	# Save dungeon cell states (door + fog) for all loaded levels.
+	_save_dungeon_cell_states()
+
 	# Disconnect scheduler event listener.
 	if EventBus.scheduler_event_resolved.is_connected(_on_scheduler_event_resolved):
 		EventBus.scheduler_event_resolved.disconnect(_on_scheduler_event_resolved)
+
+	# Cancel movement animations before tearing down.
+	if _scene != null:
+		_scene.cancel_all_movement_animations()
 
 	# Unregister dungeon event handlers and cancel dungeon events.
 	if _handlers != null:
@@ -201,7 +223,7 @@ func exit(runner) -> void:
 func handle_action(runner, action: String, payload: Dictionary) -> String:
 	match action:
 		"exit_dungeon":
-			return "wilderness"
+			pass  # Now handled as per-character scheduled action via context menu.
 		"cancel_movement":
 			_cancel_all_movement(runner)
 		"cancel_action":
@@ -221,12 +243,47 @@ func handle_action(runner, action: String, payload: Dictionary) -> String:
 func _cancel_all_movement(runner) -> void:
 	if _handlers != null:
 		_handlers.cancel_all_moves()
+	if _scene != null:
+		_scene.cancel_all_movement_animations()
 	var party_id: String = runner.get_party_id()
 	runner.get_scheduler().cancel_all_for_owner(party_id, "dungeon_movement_tick")
 	EventBus.order_cancelled.emit(party_id, "dungeon_move")
 	var loop: SchedulerLoop = runner.get_scheduler_loop()
 	if loop != null and not loop.is_paused():
 		loop.pause()
+
+
+## Persist dungeon cell states (door_state + fog) for all loaded levels.
+func _save_dungeon_cell_states() -> void:
+	if _controller == null:
+		return
+	var dungeon_id: String = _controller.get_dungeon_id()
+	if dungeon_id.is_empty():
+		return
+	for level_num in _controller._all_levels:
+		var tmap: TacticalMapData = _controller._all_levels[level_num]
+		var cells_to_save: Array = []
+		for pos in tmap._cells:
+			var cell: Dictionary = tmap._cells[pos]
+			var tf: String = cell.get("terrain_feature", "open")
+			var ds: String = cell.get("door_state", "")
+			var fog_int: int = tmap.fog.get(pos, TacticalMapData.FogState.HIDDEN)
+			var fog_str: String = "hidden"
+			match fog_int:
+				TacticalMapData.FogState.EXPLORED:
+					fog_str = "explored"
+				TacticalMapData.FogState.VISIBLE:
+					fog_str = "explored"  # visible reverts to explored on save
+			# Only save cells that have meaningful state (doors or explored fog).
+			if tf in ["door", "door_locked", "door_secret", "portcullis"] or fog_int != TacticalMapData.FogState.HIDDEN:
+				cells_to_save.append({
+					"col": pos.x,
+					"row": pos.y,
+					"door_state": ds,
+					"fog_state": fog_str,
+				})
+		if not cells_to_save.is_empty():
+			CampaignRepository.save_dungeon_cell_states(dungeon_id, level_num, cells_to_save)
 
 
 ## Cancel any pending timed actions (search, listen, etc.).
@@ -429,9 +486,27 @@ func _on_context_action(action_data: Dictionary) -> void:
 				_handlers.schedule_action("listen", eid, cell, 1, scheduler, party_id)
 			_start_clock_if_paused()
 
-		# --- Door interactions ---
+		# --- Door interactions (compound: move to door + interact) ---
 		"open_door", "close_door":
-			_controller.interact_door(cell)
+			var any_door_ordered := false
+			for eid in selected:
+				var base_mv: int = 120
+				if party_data != null:
+					var cd: CharacterData = party_data.get_member(eid)
+					if cd != null:
+						base_mv = cd.get_effective_movement()
+				if _handlers.order_move_and_interact_door(eid, cell, base_mv, _controller, scheduler, party_id):
+					any_door_ordered = true
+					# Start continuous animation for the walk-to-door path.
+					if _scene != null and _handlers != null:
+						var cpr: float = _handlers.cells_per_round(base_mv)
+						var order: Dictionary = _handlers._movement_orders.get(eid, {})
+						var path: Array = order.get("path", [])
+						if not path.is_empty():
+							_scene.start_movement_animation(eid, path, cpr)
+							_handlers.mark_renderer_animated(eid)
+			if any_door_ordered:
+				_start_clock_if_paused()
 		"force_door":
 			for eid in selected:
 				_handlers.schedule_action("force_door", eid, cell, 1, scheduler, party_id)
@@ -445,22 +520,27 @@ func _on_context_action(action_data: Dictionary) -> void:
 			for eid in selected:
 				_handlers.schedule_action("bash_door", eid, cell, bash_turns * DungeonHandlers.TURN_ROUNDS, scheduler, party_id)
 			_start_clock_if_paused()
-		"spike_shut", "wedge_open", "listen_at_door":
-			# 1-round actions at the door.
+		"spike_shut", "wedge_open", "listen_at_door", "remove_spike", "remove_wedge":
 			var action_name: String = action_type
 			for eid in selected:
 				_handlers.schedule_action(action_name, eid, cell, 1, scheduler, party_id)
 			_start_clock_if_paused()
-		"raise_portcullis":
+		"force_portcullis":
 			for eid in selected:
-				_handlers.schedule_action("force_door", eid, cell, 1, scheduler, party_id)
+				_handlers.schedule_action("force_portcullis", eid, cell, 1, scheduler, party_id)
 			_start_clock_if_paused()
 
 		# --- Stairs ---
 		"ascend", "descend":
 			_controller.use_stairs(cell)
 		"exit_dungeon":
-			_on_exit_requested()
+			# Per-character exit: schedule a 1-round action for the character.
+			var exit_char_id: String = action_data.get("character_id", "")
+			if exit_char_id.is_empty() and not selected.is_empty():
+				exit_char_id = selected[0]
+			if not exit_char_id.is_empty():
+				_handlers.schedule_action("exit_dungeon", exit_char_id, cell, 1, scheduler, party_id)
+				_start_clock_if_paused()
 
 		# --- Light source ---
 		"light_torch":
@@ -498,11 +578,20 @@ func _on_context_action(action_data: Dictionary) -> void:
 						members.append(target_id)
 					_session_state.assign_group(group_num, members)
 
+		"use_lever":
+			for eid in selected:
+				_handlers.schedule_action("use_lever", eid, cell, 1, scheduler, party_id)
+			_start_clock_if_paused()
+		"drop_portcullis":
+			for eid in selected:
+				_handlers.schedule_action("drop_portcullis", eid, cell, 1, scheduler, party_id)
+			_start_clock_if_paused()
+
 		# --- Deferred / placeholder ---
 		"talk", "heal", "heal_self", "cast_spell", "cast_spell_self", \
 		"use_item", "drop_item", "hide", "check_status", "carry", "loot", \
-		"pick_up_all", "disarm_trap", "trigger_trap", "use_lever", "examine", \
-		"pick_pockets", "unlock_door", "drop_portcullis":
+		"pick_up_all", "disarm_trap", "trigger_trap", "examine", \
+		"pick_pockets", "unlock_door":
 			EventBus.notification_requested.emit({
 				"type": "info", "category": "ui",
 				"title": action_type.replace("_", " ").capitalize(),
@@ -639,14 +728,13 @@ func _create_ui_panels() -> void:
 	_unit_info_panel.grow_horizontal = Control.GROW_DIRECTION_END
 	hud.add_child(_unit_info_panel)
 
-	# Control group bar (bottom center).
+	# Control group bar (top left, below unit info panel).
 	_control_group_bar = ControlGroupBarScene.new()
-	_control_group_bar.anchors_preset = Control.PRESET_BOTTOM_WIDE
-	_control_group_bar.anchor_top = 1.0
-	_control_group_bar.offset_left = 220.0
-	_control_group_bar.offset_top = -52.0
-	_control_group_bar.offset_right = -290.0
-	_control_group_bar.offset_bottom = -8.0
+	_control_group_bar.anchors_preset = Control.PRESET_TOP_LEFT
+	_control_group_bar.offset_left = 8.0
+	_control_group_bar.offset_top = 270.0
+	_control_group_bar.offset_right = 210.0
+	_control_group_bar.offset_bottom = 310.0
 	_control_group_bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_control_group_bar.group_clicked.connect(_on_control_group_recall)
 	_control_group_bar.group_double_clicked.connect(_on_control_group_recall)
@@ -658,9 +746,9 @@ func _create_ui_panels() -> void:
 	_notification_log.anchor_left = 1.0
 	_notification_log.anchor_top = 1.0
 	_notification_log.offset_left = -290.0
-	_notification_log.offset_top = -210.0
+	_notification_log.offset_top = -240.0
 	_notification_log.offset_right = -8.0
-	_notification_log.offset_bottom = -56.0
+	_notification_log.offset_bottom = -36.0
 	_notification_log.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_notification_log.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_notification_log.log_entry_clicked.connect(_on_log_entry_clicked)
@@ -740,6 +828,14 @@ func _issue_move_orders(
 				base_mv = cd.get_effective_movement()
 		if _handlers.order_move(eid, target, base_mv, _controller, scheduler, party_id):
 			any_ordered = true
+			# Start continuous animation immediately (before clock unpauses).
+			if _scene != null and _handlers != null:
+				var cpr: float = _handlers.cells_per_round(base_mv)
+				var order: Dictionary = _handlers._movement_orders.get(eid, {})
+				var path: Array = order.get("path", [])
+				if not path.is_empty():
+					_scene.start_movement_animation(eid, path, cpr)
+					_handlers.mark_renderer_animated(eid)
 
 	if any_ordered:
 		_start_clock_if_paused()
@@ -748,6 +844,48 @@ func _issue_move_orders(
 func _on_exit_requested() -> void:
 	if _runner != null:
 		_runner.transition_to_state("wilderness")
+
+
+## Called when all party members have either exited or are incapacitated/dead.
+func _on_all_party_resolved() -> void:
+	if _runner == null:
+		return
+	_record_abandoned_characters()
+	_runner.transition_to_state("wilderness")
+
+
+## Record positions and timestamps of characters left behind in the dungeon
+## (incapacitated or dead but body still present). They survive for 1 game day
+## after the last member exits, after which they are considered dead.
+func _record_abandoned_characters() -> void:
+	if _session_state == null or _controller == null or _runner == null:
+		return
+	var party_data: PartyData = _runner.get_party_data()
+	if party_data == null:
+		return
+	var party_id: String = _runner.get_party_id()
+	var current_time: int = Timekeeping.get_party_time(party_id)
+	var map: TacticalMapData = _controller.get_map()
+	if map == null:
+		return
+
+	for cd: CharacterData in party_data.character_data:
+		if not cd.is_active:
+			continue
+		if _session_state.is_exited(cd.id):
+			continue  # Successfully exited — not abandoned.
+		if not cd.is_dead and not cd.is_incapacitated:
+			continue  # Still active — shouldn't happen if all_party_resolved is true.
+		var pos: Vector2i = map.get_entity_pos(cd.id)
+		if pos == Vector2i(-1, -1):
+			continue
+		CampaignRepository.record_abandoned_character(
+			cd.id,
+			_controller.get_dungeon_id(),
+			_controller.get_current_level(),
+			pos.x, pos.y,
+			current_time,
+		)
 
 
 # ---------------------------------------------------------------------------
@@ -759,6 +897,52 @@ func _start_clock_if_paused() -> void:
 	var loop: SchedulerLoop = _runner.get_scheduler_loop()
 	if loop != null and loop.is_paused():
 		loop.resume(SchedulerLoop.SPEED_NORMAL)
+
+
+# ---------------------------------------------------------------------------
+# Renderer-driven movement animation callbacks
+# ---------------------------------------------------------------------------
+
+## Called when the renderer's tween crosses a cell boundary during continuous
+## movement animation. Updates the mechanical position and checks passability.
+func _on_movement_cell_reached(entity_id: String, cell: Vector2i) -> void:
+	if _handlers == null or _in_combat:
+		return
+	var result: Dictionary = _handlers.on_cell_reached(entity_id, cell)
+
+	if result.get("blocked", false):
+		# Path became impassable — cancel the visual animation.
+		if _scene != null:
+			_scene.cancel_movement_animation(entity_id)
+		_check_all_movement_done()
+		return
+
+	if result.get("all_complete", false):
+		_check_all_movement_done()
+
+
+## Called when the renderer finishes the full path for an entity.
+func _on_movement_path_complete(entity_id: String) -> void:
+	if _handlers == null or _in_combat:
+		return
+	# The final cell was already committed by the last movement_cell_reached
+	# callback. Clean up the movement order and handle on_arrival.
+	if _handlers._movement_orders.has(entity_id):
+		# The last on_cell_reached should have handled this, but as a safety
+		# net: remove the order and clear renderer flag.
+		_handlers._movement_orders.erase(entity_id)
+		_handlers.clear_renderer_animated(entity_id)
+	_check_all_movement_done()
+
+
+## If all movement orders have been completed, auto-pause the scheduler.
+func _check_all_movement_done() -> void:
+	if _handlers == null:
+		return
+	if not _handlers.has_active_movement():
+		var loop: SchedulerLoop = _runner.get_scheduler_loop()
+		if loop != null and not loop.is_paused():
+			loop.pause()
 
 
 # ---------------------------------------------------------------------------
@@ -774,10 +958,20 @@ func _on_scheduler_event_resolved(event_type: String, _event_data: Dictionary) -
 		return
 	for result in loop.last_tick_results:
 		var presentation: Dictionary = result.get("presentation", {})
-		if presentation.get("type") == "dungeon_encounter":
+		var ptype: String = presentation.get("type", "")
+
+		if ptype == "dungeon_encounter":
 			var enc: Dictionary = presentation.get("encounter_data", {})
 			if not enc.is_empty():
 				_start_dungeon_combat(enc)
+				return
+
+		if ptype == "dungeon_character_exited":
+			var exited_id: String = presentation.get("entity_id", "")
+			if not exited_id.is_empty() and _scene != null:
+				_scene.remove_entity_token(exited_id)
+			if presentation.get("all_resolved", false):
+				_on_all_party_resolved()
 				return
 
 	# After resolving events, check idle behaviors for entities without orders.
@@ -839,9 +1033,11 @@ func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 	if loop != null:
 		loop.pause()
 
-	# Cancel all real-time movement.
+	# Cancel all real-time movement and visual animations.
 	if _handlers != null:
 		_handlers.cancel_all_moves()
+	if _scene != null:
+		_scene.cancel_all_movement_animations()
 
 	var tactical_map: TacticalMapData = _controller.get_map()
 

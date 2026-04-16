@@ -2600,7 +2600,7 @@ func add_pool_member(pool_id: String, character_id: String, week: int) -> bool:
 
 func get_pool_members(pool_id: String, max_week: int = 3) -> Array:
 	db.query_with_bindings(
-		"""SELECT pm.*, c.name, c.class_id, c.level, c.character_type
+		"""SELECT pm.*, c.name, c.character_class, c.level, c.character_type
 		   FROM henchman_pool_members pm
 		   JOIN characters c ON c.id = pm.character_id
 		   WHERE pm.pool_id = ? AND pm.allotment_week <= ? AND pm.is_hired = 0
@@ -3028,3 +3028,20 @@ func get_discovered_poi_ids(
 	for row in db.query_result:
 		result.append(row.get("poi_id", ""))
 	return result
+
+
+# ---------------------------------------------------------------------------
+# Abandoned characters (migration 031)
+# ---------------------------------------------------------------------------
+
+## Record a character left behind in a dungeon. They survive 1 game day
+## (1440 rounds) from [param abandoned_at], after which they are dead.
+func record_abandoned_character(
+	character_id: String, dungeon_id: String, level_num: int,
+	col: int, row: int, abandoned_at: int,
+) -> void:
+	db.query_with_bindings("""
+		INSERT OR REPLACE INTO abandoned_characters
+			(character_id, dungeon_id, level_num, col, row, abandoned_at, resolved)
+		VALUES (?, ?, ?, ?, ?, ?, 0)
+	""", [character_id, dungeon_id, level_num, col, row, abandoned_at])

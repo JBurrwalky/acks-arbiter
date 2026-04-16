@@ -66,7 +66,7 @@ func _build_ui() -> void:
 
 	# Time.
 	_time_label = _make_label("Day 1", LABEL_COLOR, FONT_SIZE)
-	_time_label.custom_minimum_size = Vector2(160, 0)
+	_time_label.custom_minimum_size = Vector2(220, 0)
 	hbox.add_child(_time_label)
 
 	hbox.add_child(_vsep())
@@ -180,8 +180,11 @@ func _on_time_advanced(_rounds: int) -> void:
 # ---------------------------------------------------------------------------
 
 func _update_time_display() -> void:
+	var date := Timekeeping.get_date()
 	var day: int = Timekeeping.get_total_days() + 1
-	var hour: int = Timekeeping.get_time_of_day()
+	var hour: int = date["hour"]
+	var minute: int = date["minute"]
+	var second: int = date["round"] * 10  # each round = 10 seconds
 	var time_of_day := "Night"
 	if hour >= 6 and hour < 12:
 		time_of_day = "Morning"
@@ -189,7 +192,7 @@ func _update_time_display() -> void:
 		time_of_day = "Afternoon"
 	elif hour >= 18 and hour < 21:
 		time_of_day = "Evening"
-	_time_label.text = "Day %d, %02d:00 (%s)" % [day, hour, time_of_day]
+	_time_label.text = "Day %d, %02d:%02d:%02d (%s)" % [day, hour, minute, second, time_of_day]
 
 
 func _on_scheduler_paused(reason: String) -> void:
