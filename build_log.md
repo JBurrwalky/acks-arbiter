@@ -5223,3 +5223,83 @@ Files modified (wiring changes only):
 **Next session should:**
 - Continue visual verification of the live 3D dungeon/combat renderers against the updated docs.
 - Update roadmap wording only when those sections are otherwise being revised, to avoid unnecessary churn.
+
+---
+
+## Session 2026-04-16 — Character Creation Proficiency Detail Pane
+
+**Task:** Add a clickable long-form proficiency detail pane to the character creation proficiency step, sourcing full ACKS Core descriptions from the supplied markdown file without introducing a runtime dependency on the external path.
+**Model used:** GPT-5 Codex.
+
+**Completed:**
+- Bulk-imported long-form ACKS Core proficiency descriptions into `data/proficiencies/proficiency_catalog.json` as optional `full_description` fields (96 entries), normalized from `104-ACKS Core-Proficiencies.md` into plain prose.
+- Added `ProficiencyRegistry.get_full_description(key) -> String`, which resolves compound keys and falls back to the existing short `description` when no imported long-form text exists.
+- Updated `scenes/ui/character_creation/proficiency_selection_panel.gd` so the right pane is now vertically split: selected proficiencies on top, read-only detail box on bottom.
+- Made both available-list rows and selected-proficiency rows clickable, with specialization-aware titles in the detail pane and base-key description lookup for compound/specialized proficiencies.
+- Preserved inspected proficiency state across panel refreshes so add/remove/rank-up UI rebuilds do not wipe the currently displayed description.
+- Expanded `tests/test_proficiency_registry.gd` with long-description import/fallback coverage.
+- Replaced `tests/test_proficiency_selection_panel.gd` with focused coverage for available-row clicks, selected-row clicks, compound-key description lookup, refresh persistence, and the prior Gambling rank-up regression.
+- Ran the approved headless Godot test runner command successfully (exit code `0`).
+
+**Decisions made:**
+- The external OneDrive markdown is treated as a one-time source document only; shipped runtime data now lives in the repo catalog.
+- Imported long descriptions cover ACKS Core proficiencies from the supplied source file. Non-Core or otherwise unimported proficiencies intentionally continue using the existing short catalog `description`.
+- The new detail pane is informational only. No proficiency effects or gameplay wiring were changed.
+
+**Interfaces defined or changed:**
+- `data/proficiencies/proficiency_catalog.json`: optional `full_description: String` field added per proficiency entry.
+- `ProficiencyRegistry.get_full_description(key: String) -> String` — returns imported long-form rules text when present, otherwise falls back to `description`.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- Updated `tests/test_proficiency_registry.gd`.
+- Replaced/expanded `tests/test_proficiency_selection_panel.gd`.
+- Full headless test runner completed successfully (exit code `0`).
+
+**Known issues:**
+- This session verified behavior headlessly, but did not visually smoke-test the character creation Step 6 layout in-editor.
+- The long-form import currently covers the ACKS Core proficiencies contained in the supplied markdown source; Player's Companion-only proficiencies still show the existing shorter text by design.
+
+**Next session should:**
+- Open character creation Step 6 in-editor and visually confirm the right-side split feels balanced on common desktop resolutions.
+- Spot-check a few specialized proficiencies in the live UI (for example `Knowledge (History)` and `Weapon Focus`) to confirm the clickable rows and detail titles read cleanly.
+- If the pattern feels good, consider reusing the same click-to-inspect behavior in the level-up proficiency picker for consistency.
+
+---
+
+## Session 2026-04-17 — Pack Animal & Vehicle State Audit
+
+**Task:** Read-only audit of pack animal and vehicle support to inform the upcoming Party Inventory overlay design.
+**Model used:** Opus 4.6
+
+**Completed:**
+- Created `docs/pack_animal_state_report.md` — comprehensive audit answering 6 sections of questions with file:line citations.
+- Key finding: pack animal and vehicle support is **substantially implemented**. Dedicated `trained_creatures` and `draft_vehicles` DB tables, `TrainedCreatureData` first-class type, `CreatureEquipmentService` for tack validation, `DraftVehicleService` for vehicle capacity/hitch logic, `TravelSpeedCalculator` integration, and character sheet UI for both animals and vehicles all exist and are wired end-to-end.
+- The rope-lashing x2 encumbrance rule is implemented as a 0.5x capacity multiplier in `TrainedCreatureData.get_load_multiplier()`.
+- Tests exist for creature data (12 tests), creature equipment service, and draft vehicle service.
+
+**Decisions made:**
+- The Party Inventory overlay needs primarily new UI code — the engine infrastructure is already in place.
+- Three-phase cleanup plan proposed: Phase A (overlay + transfers, complexity 3), Phase B (vehicle terrain rules + catalog items, complexity 2), Phase C (mount/rider binding + training + elephant, complexity 3).
+
+**Interfaces defined or changed:**
+- None (read-only audit session).
+
+**Database changes:**
+- None.
+
+**Tests added/updated:**
+- None.
+
+**Known issues:**
+- Elephant is referenced in `acore_equipment.xml` but has no `transport.json` or `monster_catalog.json` entry.
+- Pack saddle and panniers are not in the equipment catalog (only draft/riding/war saddles and saddlebags).
+- No mount/rider binding exists — `cs_tab_creature_stats.gd` has a comment noting this is deferred.
+- Party Management overlay does not show animals or vehicles at all.
+- `shared_inventory` (party-level items) has no UI surface.
+
+**Next session should:**
+- Design the Party Inventory overlay GDD based on the audit findings.
+- Decide whether the overlay is a standalone panel or a new tab within Party Management.
+- Begin Phase A implementation if the GDD is approved.

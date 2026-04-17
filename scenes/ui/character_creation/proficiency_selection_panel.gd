@@ -32,6 +32,8 @@ var _slot_label: Label
 var _tab_bar: TabBar
 var _list_container: VBoxContainer   # holds the active tab's item rows
 var _selected_panel: VBoxContainer   # right-side selected profs
+var _detail_title_label: Label
+var _detail_body_edit: TextEdit
 var _status_label: Label
 var _spec_popup_frame: PanelContainer
 var _spec_popup_container: VBoxContainer  # holds spec selector when needed
@@ -42,6 +44,11 @@ var _pending_slot_type: String = ""
 
 # Apostasy spell picker tracking (temp state during picker session)
 var _apostasy_selected_keys: Dictionary = {}  # spell_key -> true
+
+# Detail pane state
+var _inspected_prof_key: String = ""
+var _inspected_prof_display_name: String = ""
+var _last_class_id: String = ""
 
 
 func setup(state: Dictionary, class_registry: ClassRegistry,
@@ -54,6 +61,7 @@ func setup(state: Dictionary, class_registry: ClassRegistry,
 	_compute_slots()
 	_build_prof_lists()
 	_restore_from_state()
+	_sync_inspected_proficiency()
 	_refresh_all()
 
 
@@ -186,19 +194,60 @@ func _build_ui() -> void:
 	right_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right_vbox.size_flags_stretch_ratio = 0.45
 	right_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right_vbox.add_theme_constant_override("separation", 8)
 	hbox.add_child(right_vbox)
+
+	var selected_section := VBoxContainer.new()
+	selected_section.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	selected_section.size_flags_stretch_ratio = 1.0
+	selected_section.add_theme_constant_override("separation", 6)
+	right_vbox.add_child(selected_section)
 
 	var sel_header := Label.new()
 	sel_header.text = "Selected Proficiencies:"
-	right_vbox.add_child(sel_header)
+	selected_section.add_child(sel_header)
 
 	var sel_scroll := ScrollContainer.new()
 	sel_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right_vbox.add_child(sel_scroll)
+	selected_section.add_child(sel_scroll)
 
 	_selected_panel = VBoxContainer.new()
 	_selected_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sel_scroll.add_child(_selected_panel)
+
+	var detail_frame := PanelContainer.new()
+	detail_frame.name = "DetailFrame"
+	detail_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	detail_frame.size_flags_stretch_ratio = 1.0
+	UiSurfaceStyles.apply_framed_window_chrome(detail_frame)
+	right_vbox.add_child(detail_frame)
+
+	var detail_margin := MarginContainer.new()
+	detail_margin.add_theme_constant_override("margin_left", 10)
+	detail_margin.add_theme_constant_override("margin_right", 10)
+	detail_margin.add_theme_constant_override("margin_top", 10)
+	detail_margin.add_theme_constant_override("margin_bottom", 10)
+	detail_frame.add_child(detail_margin)
+
+	var detail_vbox := VBoxContainer.new()
+	detail_vbox.add_theme_constant_override("separation", 8)
+	detail_margin.add_child(detail_vbox)
+
+	_detail_title_label = Label.new()
+	_detail_title_label.name = "DetailTitle"
+	_detail_title_label.text = "Proficiency Detail"
+	_detail_title_label.add_theme_font_size_override("font_size", 13)
+	detail_vbox.add_child(_detail_title_label)
+
+	detail_vbox.add_child(HSeparator.new())
+
+	_detail_body_edit = TextEdit.new()
+	_detail_body_edit.name = "DetailBody"
+	_detail_body_edit.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_detail_body_edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	_detail_body_edit.placeholder_text = "Click a proficiency to read its full description."
+	_detail_body_edit.editable = false
+	detail_vbox.add_child(_detail_body_edit)
 
 	_status_label = Label.new()
 	_status_label.text = ""
@@ -214,6 +263,7 @@ func _refresh_all() -> void:
 	_refresh_slot_label()
 	_refresh_list()
 	_refresh_selected()
+	_refresh_detail_panel()
 
 
 func _refresh_slot_label() -> void:
@@ -250,21 +300,23 @@ func _refresh_list() -> void:
 		_list_container.add_child(row)
 
 		var def := _proficiency_registry.get_proficiency(prof_key)
-		var display_name: String = def.get("proficiency_name", prof_key.replace("_", " ").capitalize())
-		# Compound keys (e.g., "knowledge_history") show the locked specialization in the name.
-		var embedded_spec := _proficiency_registry.get_specialization_from_compound_key(prof_key)
-		if not embedded_spec.is_empty():
-			var base_key := _proficiency_registry.resolve_key(prof_key)
-			var spec_display := _proficiency_registry.get_specialization_display_name(base_key, embedded_spec)
-			display_name += " (%s)" % spec_display
+		var display_name := _format_available_display_name(prof_key)
 		var desc: String = (def.get("description", "") as String).left(80)
+
+		var inspect_hitbox := MarginContainer.new()
+		inspect_hitbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		inspect_hitbox.mouse_filter = Control.MOUSE_FILTER_STOP
+		inspect_hitbox.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		inspect_hitbox.gui_input.connect(_on_available_row_input.bind(prof_key))
+		row.add_child(inspect_hitbox)
 
 		var info_vbox := VBoxContainer.new()
 		info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(info_vbox)
+		inspect_hitbox.add_child(info_vbox)
 
 		var name_lbl := Label.new()
 		name_lbl.text = display_name
+		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		info_vbox.add_child(name_lbl)
 
 		if not desc.is_empty():
@@ -273,6 +325,7 @@ func _refresh_list() -> void:
 			desc_lbl.add_theme_font_size_override("font_size", 11)
 			desc_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 			desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			desc_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			info_vbox.add_child(desc_lbl)
 
 		# Rank indicator (if already selected)
@@ -323,7 +376,7 @@ func _refresh_selected() -> void:
 		child.queue_free()
 
 	# Always show Adventuring as first entry
-	var adv_row := _make_selected_row("Adventuring", "general", 1, "", false)
+	var adv_row := _make_selected_row("adventuring", "general", 1, "", false)
 	_selected_panel.add_child(adv_row)
 
 	# Show bonus proficiencies (origin/tradition grants) — non-removable
@@ -350,13 +403,7 @@ func _make_selected_row(key: String, slot_type: String, rank: int, spec: String,
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 
-	var def := _proficiency_registry.get_proficiency(key) if _proficiency_registry.has_proficiency(key) else {}
-	var display_name: String = def.get("proficiency_name", key.replace("_", " ").capitalize())
-	if not spec.is_empty():
-		var spec_display := _proficiency_registry.get_specialization_display_name(key, spec)
-		display_name += " (%s)" % spec_display
-	if rank > 1:
-		display_name += " (Rank %d)" % rank
+	var display_name := _format_selected_display_name(key, rank, spec)
 	var slot_tag: String
 	match slot_type:
 		"class": slot_tag = "[C]"
@@ -364,10 +411,18 @@ func _make_selected_row(key: String, slot_type: String, rank: int, spec: String,
 		"bonus": slot_tag = "[FREE]"
 		_: slot_tag = "[?]"
 
+	var inspect_hitbox := MarginContainer.new()
+	inspect_hitbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inspect_hitbox.mouse_filter = Control.MOUSE_FILTER_STOP
+	inspect_hitbox.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	inspect_hitbox.gui_input.connect(_on_selected_row_input.bind(key, rank, spec))
+	row.add_child(inspect_hitbox)
+
 	var lbl := Label.new()
 	lbl.text = "%s %s" % [slot_tag, display_name]
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(lbl)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inspect_hitbox.add_child(lbl)
 
 	if removable:
 		var remove_btn := Button.new()
@@ -382,6 +437,84 @@ func _make_selected_row(key: String, slot_type: String, rank: int, spec: String,
 # ---------------------------------------------------------------------------
 # Selection logic
 # ---------------------------------------------------------------------------
+func _format_available_display_name(prof_key: String) -> String:
+	var def := _proficiency_registry.get_proficiency(prof_key)
+	var display_name: String = def.get("proficiency_name", prof_key.replace("_", " ").capitalize())
+	var embedded_spec := _proficiency_registry.get_specialization_from_compound_key(prof_key)
+	if not embedded_spec.is_empty():
+		var base_key := _proficiency_registry.resolve_key(prof_key)
+		var spec_display := _proficiency_registry.get_specialization_display_name(base_key, embedded_spec)
+		display_name += " (%s)" % spec_display
+	return display_name
+
+
+func _format_selected_display_name(key: String, rank: int, spec: String) -> String:
+	var def := _proficiency_registry.get_proficiency(key) if _proficiency_registry.has_proficiency(key) else {}
+	var display_name: String = def.get("proficiency_name", key.replace("_", " ").capitalize())
+	if not spec.is_empty():
+		var spec_display := _proficiency_registry.get_specialization_display_name(key, spec)
+		display_name += " (%s)" % spec_display
+	if rank > 1:
+		display_name += " (Rank %d)" % rank
+	return display_name
+
+
+func _clear_inspected_proficiency() -> void:
+	_inspected_prof_key = ""
+	_inspected_prof_display_name = ""
+
+
+func _sync_inspected_proficiency() -> void:
+	var class_id: String = _state.get("class_id", "")
+	if class_id != _last_class_id:
+		_clear_inspected_proficiency()
+	_last_class_id = class_id
+	if not _inspected_prof_key.is_empty() and not _proficiency_registry.has_proficiency(_inspected_prof_key):
+		_clear_inspected_proficiency()
+
+
+func _inspect_proficiency(prof_key: String, display_name: String) -> void:
+	var resolved_key := _proficiency_registry.resolve_key(prof_key)
+	_inspected_prof_key = resolved_key if not resolved_key.is_empty() else prof_key
+	_inspected_prof_display_name = display_name
+	_refresh_detail_panel()
+
+
+func _refresh_detail_panel() -> void:
+	if _detail_title_label == null or _detail_body_edit == null:
+		return
+	if _inspected_prof_key.is_empty():
+		_detail_title_label.text = "Proficiency Detail"
+		_detail_body_edit.text = ""
+		return
+	_detail_title_label.text = _inspected_prof_display_name
+	var description := _proficiency_registry.get_full_description(_inspected_prof_key)
+	_detail_body_edit.text = description if not description.is_empty() else "No description available."
+
+
+func _on_available_proficiency_clicked(prof_key: String) -> void:
+	_inspect_proficiency(prof_key, _format_available_display_name(prof_key))
+
+
+func _on_selected_proficiency_clicked(key: String, rank: int, spec: String) -> void:
+	_inspect_proficiency(key, _format_selected_display_name(key, rank, spec))
+
+
+func _is_primary_click(event: InputEvent) -> bool:
+	return event is InputEventMouseButton \
+		and event.button_index == MOUSE_BUTTON_LEFT \
+		and event.pressed
+
+
+func _on_available_row_input(event: InputEvent, prof_key: String) -> void:
+	if _is_primary_click(event):
+		_on_available_proficiency_clicked(prof_key)
+
+
+func _on_selected_row_input(event: InputEvent, key: String, rank: int, spec: String) -> void:
+	if _is_primary_click(event):
+		_on_selected_proficiency_clicked(key, rank, spec)
+
 
 func _get_current_rank(prof_key: String, _slot_type: String) -> int:
 	## Returns aggregated rank across ALL slot types for this proficiency key,

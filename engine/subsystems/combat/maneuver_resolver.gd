@@ -1,12 +1,14 @@
 class_name ManeuverResolver
 extends RefCounted
 
-## Resolves all 7 ACKS special combat maneuvers.
+## Resolves all 8 ACKS special combat maneuvers.
 ##
-## Shared pattern: -4 attack throw (except sunder varies), target saves vs
-## Paralysis on hit, then maneuver-specific effect.
+## Shared pattern: -4 attack throw (except sunder varies; -2 with Combat
+## Trickery proficiency), target saves vs Paralysis on hit, then
+## maneuver-specific effect.
 ##
-## Maneuvers: brawl, disarm, force_back, knock_down, overrun, sunder, wrestle.
+## Maneuvers: brawl, disarm, force_back, incapacitate, knock_down, overrun,
+## sunder, wrestle.
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -66,6 +68,8 @@ func resolve_maneuver(
 			return _resolve_sunder(attacker, target, parameters)
 		"wrestle":
 			return _resolve_wrestle(attacker, target)
+		"incapacitate":
+			return _resolve_incapacitate(attacker, target)
 		_:
 			return {"success": false, "reason": "unknown maneuver type: " + maneuver_type}
 
@@ -86,6 +90,8 @@ func _resolve_brawl(
 	var kick: bool = parameters.get("kick", false)
 	var damage_expr: String = "1d3" if not kick else "1d4"
 	var extra_mod: int = MANEUVER_ATTACK_PENALTY
+	if attacker.has_proficiency("combat_trickery"):
+		extra_mod += 2  # -4 → -2
 	if kick:
 		extra_mod -= 2  # Additional -2 for kicks
 
@@ -93,8 +99,23 @@ func _resolve_brawl(
 	if not target.held_by_id.is_empty() and target.held_by_id == attacker.id:
 		extra_mod = 0  # No throw needed when holding target
 
+	# Metal armor reflection: character in light/no armor punching metal armor
+	# takes the damage instead of the target.
+	var reflects_damage := false
+	if target.get_equipped_armor_material() == "metal" \
+			and attacker.get_equipped_armor_material() != "metal":
+		reflects_damage = true
+
 	var hit_result := _attack_resolver.resolve_melee_attack(
 		attacker, target, damage_expr, extra_mod)
+
+	if reflects_damage and hit_result.get("hit", false):
+		var dmg: int = hit_result.get("damage_result", {}).get("hp_damage", 0)
+		if dmg > 0:
+			target.apply_healing(dmg)
+			attacker.apply_damage(dmg, "physical")
+		hit_result["reflected"] = true
+		hit_result["reflected_damage"] = dmg
 
 	hit_result["maneuver"] = "brawl"
 	hit_result["nonlethal"] = true
@@ -366,6 +387,8 @@ func _resolve_sunder(
 		attack_penalty = SUNDER_PENALTY_FRAGILE
 	else:
 		attack_penalty = SUNDER_PENALTY_STURDY
+	if attacker.has_proficiency("combat_trickery"):
+		attack_penalty += 2  # Reduce penalty by 2
 
 	var hit_result := _attack_resolver.resolve_melee_attack(
 		attacker, target, "", attack_penalty)
@@ -463,15 +486,33 @@ func _resolve_wrestle(
 
 
 # ---------------------------------------------------------------------------
+# Incapacitate
+# ---------------------------------------------------------------------------
+
+func _resolve_incapacitate(
+		attacker: Combatant,
+		target: Combatant) -> Dictionary:
+	## Melee attack at -4 (-2 with Combat Trickery). Normal weapon damage dealt
+	## as nonlethal. No saving throw.
+	var hit_result := _maneuver_attack(attacker, target)
+	hit_result["maneuver"] = "incapacitate"
+	hit_result["nonlethal"] = hit_result.get("hit", false)
+	return hit_result
+
+
+# ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
 
 func _maneuver_attack(
 		attacker: Combatant,
 		target: Combatant) -> Dictionary:
-	## Standard melee attack at MANEUVER_ATTACK_PENALTY (-4).
+	## Standard melee attack at MANEUVER_ATTACK_PENALTY (-4, or -2 with Combat Trickery).
+	var penalty := MANEUVER_ATTACK_PENALTY
+	if attacker.has_proficiency("combat_trickery"):
+		penalty += 2  # -4 → -2
 	return _attack_resolver.resolve_melee_attack(
-		attacker, target, "", MANEUVER_ATTACK_PENALTY)
+		attacker, target, "", penalty)
 
 
 func _save_vs_paralysis(target: Combatant, extra_modifier: int = 0) -> bool:

@@ -35,6 +35,9 @@ func run_all_tests() -> void:
 	test_public_compound_key_method()
 	test_public_resolve_key_method()
 	test_specialization_display_name_via_registry()
+	test_full_description_prefers_imported_text()
+	test_full_description_resolves_compound_keys()
+	test_full_description_falls_back_to_short_description()
 	if not has_failures():
 		print("ProficiencyRegistry: all tests passed.")
 
@@ -348,3 +351,26 @@ func test_specialization_display_name_via_registry() -> void:
 	var fallback := reg_no_spec.get_specialization_display_name("riding", "horses")
 	check(not fallback.is_empty(),
 		"ProficiencyRegistry: fallback display name for riding/horses should not be empty")
+
+
+func test_full_description_prefers_imported_text() -> void:
+	var reg := ProficiencyRegistry.new()
+	var description := reg.get_full_description("healing")
+	check(description.contains("especially skilled at treating wounds"),
+		"ProficiencyRegistry: healing full description should use imported long-form text")
+	check(description.length() > len(reg.get_proficiency("healing").get("description", "")),
+		"ProficiencyRegistry: healing full description should be longer than the short description")
+
+
+func test_full_description_resolves_compound_keys() -> void:
+	var reg := ProficiencyRegistry.new(SpecializationRegistry.new())
+	var description := reg.get_full_description("knowledge_history")
+	check(description.contains("specialized study of a particular field"),
+		"ProficiencyRegistry: compound key should resolve to the base proficiency full description")
+
+
+func test_full_description_falls_back_to_short_description() -> void:
+	var reg := ProficiencyRegistry.new()
+	var description := reg.get_full_description("armor_training")
+	check(description == reg.get_proficiency("armor_training").get("description", ""),
+		"ProficiencyRegistry: proficiencies without imported text should fall back to short description")

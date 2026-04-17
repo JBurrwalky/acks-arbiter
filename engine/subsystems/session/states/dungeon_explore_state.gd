@@ -534,12 +534,23 @@ func _on_context_action(action_data: Dictionary) -> void:
 		"ascend", "descend":
 			_controller.use_stairs(cell)
 		"exit_dungeon":
-			# Per-character exit: schedule a 1-round action for the character.
-			var exit_char_id: String = action_data.get("character_id", "")
-			if exit_char_id.is_empty() and not selected.is_empty():
-				exit_char_id = selected[0]
-			if not exit_char_id.is_empty():
-				_handlers.schedule_action("exit_dungeon", exit_char_id, cell, 1, scheduler, party_id)
+			# Queue all selected characters to exit the dungeon.
+			var map: TacticalMapData = _controller.get_map()
+			var any_queued := false
+			for eid in selected:
+				if _session_state != null and (_session_state.is_exited(eid) or _session_state.is_queued_for_exit(eid)):
+					continue
+				if map != null and map.get_entity_pos(eid) == cell:
+					# Already on the exit cell — schedule the 1-round action now.
+					_handlers.schedule_action("exit_dungeon", eid, cell, 1, scheduler, party_id)
+					any_queued = true
+				else:
+					# Not on the exit cell — add to exit queue; they'll advance
+					# toward the exit automatically as space opens up.
+					if _session_state != null:
+						_session_state.queue_for_exit(eid, cell)
+						any_queued = true
+			if any_queued:
 				_start_clock_if_paused()
 
 		# --- Light source ---
@@ -889,6 +900,70 @@ func _record_abandoned_characters() -> void:
 
 
 # ---------------------------------------------------------------------------
+# Exit queue processing
+# ---------------------------------------------------------------------------
+
+## Advance queued exit characters toward the exit cell. Called after each
+## scheduler tick. Characters queue up in adjacent cells and step forward
+## as space opens.
+func _check_exit_queue() -> void:
+	if _session_state == null or _controller == null or _handlers == null or _runner == null:
+		return
+	var exit_queue: Dictionary = _session_state.get_exit_queue()
+	if exit_queue.is_empty():
+		return
+
+	var map: TacticalMapData = _controller.get_map()
+	if map == null:
+		return
+
+	var scheduler: EventScheduler = _runner.get_scheduler()
+	var party_id: String = _runner.get_party_id()
+	var party_data: PartyData = _runner.get_party_data()
+	var any_ordered := false
+
+	for eid in exit_queue:
+		var exit_cell: Vector2i = exit_queue[eid]
+		var entity_id: String = str(eid)
+
+		# Skip if this entity already has an active movement.
+		if _handlers.has_active_movement(entity_id):
+			continue
+
+		var current_pos: Vector2i = map.get_entity_pos(entity_id)
+		if current_pos == Vector2i(-1, -1):
+			# Entity no longer on the map — remove from queue.
+			_session_state.dequeue_exit(entity_id)
+			continue
+
+		if current_pos == exit_cell:
+			# On the exit cell — schedule the 1-round exit action and dequeue.
+			_session_state.dequeue_exit(entity_id)
+			_handlers.schedule_action("exit_dungeon", entity_id, exit_cell, 1, scheduler, party_id)
+			any_ordered = true
+		else:
+			# Not on the exit cell yet — try to move closer.
+			var base_mv: int = 120
+			if party_data != null:
+				var cd: CharacterData = party_data.get_member(entity_id)
+				if cd != null:
+					base_mv = cd.get_effective_movement()
+			if _handlers.order_move(entity_id, exit_cell, base_mv, _controller, scheduler, party_id):
+				# Start continuous animation for the movement.
+				if _scene != null:
+					var cpr: float = _handlers.cells_per_round(base_mv)
+					var order: Dictionary = _handlers._movement_orders.get(entity_id, {})
+					var path: Array = order.get("path", [])
+					if not path.is_empty():
+						_scene.start_movement_animation(entity_id, path, cpr)
+						_handlers.mark_renderer_animated(entity_id)
+				any_ordered = true
+
+	if any_ordered:
+		_start_clock_if_paused()
+
+
+# ---------------------------------------------------------------------------
 # Clock control
 # ---------------------------------------------------------------------------
 
@@ -976,6 +1051,9 @@ func _on_scheduler_event_resolved(event_type: String, _event_data: Dictionary) -
 
 	# After resolving events, check idle behaviors for entities without orders.
 	_check_idle_behaviors()
+
+	# Advance queued exit characters toward the exit cell.
+	_check_exit_queue()
 
 	# Refresh minimap after any state change.
 	_update_minimap()

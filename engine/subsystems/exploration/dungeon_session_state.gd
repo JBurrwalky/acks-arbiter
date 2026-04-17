@@ -375,3 +375,38 @@ func all_party_resolved(party_ids: Array, party_data) -> bool:
 			continue
 		return false
 	return true
+
+
+# ---------------------------------------------------------------------------
+# Exit Queue
+# ---------------------------------------------------------------------------
+
+## Entities queued to exit the dungeon. They will automatically advance
+## toward the exit cell as space becomes available.
+## Key: String entity_id -> Vector2i exit cell position.
+var _exit_queue: Dictionary = {}
+
+
+## Add an entity to the exit queue targeting [param exit_cell].
+func queue_for_exit(entity_id: String, exit_cell: Vector2i) -> void:
+	_exit_queue[entity_id] = exit_cell
+
+
+## Remove an entity from the exit queue.
+func dequeue_exit(entity_id: String) -> void:
+	_exit_queue.erase(entity_id)
+
+
+## Returns true if [param entity_id] is in the exit queue.
+func is_queued_for_exit(entity_id: String) -> bool:
+	return _exit_queue.has(entity_id)
+
+
+## Returns a copy of the exit queue dictionary.
+func get_exit_queue() -> Dictionary:
+	return _exit_queue.duplicate()
+
+
+## Clears the entire exit queue.
+func clear_exit_queue() -> void:
+	_exit_queue.clear()

@@ -105,6 +105,10 @@ var hp_when_downed: int = 0
 ## Defaults to "slashing" until weapon/ability data is wired per-attack.
 var killing_blow_damage_type: String = "slashing"
 
+## Nonlethal damage accumulated during this combat (brawl, incapacitate).
+## Tracked separately for the Mortal Wounds d20 bonus (+1 per point).
+var nonlethal_damage_taken: int = 0
+
 ## Equipped weapon data (merged inventory + catalog fields). Set at combat start.
 ## Keys: name, item_key, item_id, weapon_damage, magical_bonus, weapon_tags,
 ##        range_short, range_medium, range_long, damage_type
@@ -113,6 +117,10 @@ var _equipped_weapon: Dictionary = {}
 ## Equipped ammunition inventory item reference (for quantity tracking).
 ## Keys: item_id, name, quantity (mutable), item_key
 var _equipped_ammo: Dictionary = {}
+
+## Material of equipped body armor ("metal", "leather", or "" for none).
+## Used by brawl metal armor reflection check.
+var _equipped_armor_material: String = ""
 
 
 # ---------------------------------------------------------------------------
@@ -233,6 +241,17 @@ func wire_equipment(inventory_rows: Array, catalog) -> void:
 			"quantity": qty,
 		})
 		break  # Use first available ammo stack
+
+	# Find equipped body armor material (for brawl reflection check)
+	for row in inventory_rows:
+		if int(row.get("is_equipped", 0)) != 1:
+			continue
+		if row.get("slot", "") != "body":
+			continue
+		if row.get("item_category", "") != "armor":
+			continue
+		_equipped_armor_material = row.get("material", "")
+		break
 
 
 # ---------------------------------------------------------------------------
@@ -624,6 +643,17 @@ func apply_healing(amount: int) -> int:
 	var old_hp := _monster_hp_current
 	_monster_hp_current = mini(_monster_hp_current + amount, _monster_hp_max)
 	return _monster_hp_current - old_hp
+
+
+func add_nonlethal_damage(amount: int) -> void:
+	## Accumulates nonlethal damage for Mortal Wounds bonus.
+	## Only counts damage dealt while the combatant is still alive.
+	if is_alive():
+		nonlethal_damage_taken += amount
+
+
+func get_equipped_armor_material() -> String:
+	return _equipped_armor_material
 
 
 # ---------------------------------------------------------------------------

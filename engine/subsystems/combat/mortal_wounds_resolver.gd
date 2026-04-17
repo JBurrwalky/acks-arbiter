@@ -458,7 +458,8 @@ func resolve(
 		damage_type: String,
 		treatment_timing: String,
 		healing_magic_bhr: int = 0,
-		healing_proficiency_rank: int = 0) -> Dictionary:
+		healing_proficiency_rank: int = 0,
+		nonlethal_bonus: int = 0) -> Dictionary:
 	## Roll and resolve a mortal wound for a downed PC.
 	##
 	## combatant:              The downed Combatant (must be is_character == true).
@@ -495,7 +496,7 @@ func resolve(
 	# --- Calculate d20 modifiers ---
 	var mods := _calculate_d20_modifiers(
 		combatant, hp_when_downed, treatment_timing,
-		healing_magic_bhr, healing_proficiency_rank)
+		healing_magic_bhr, healing_proficiency_rank, nonlethal_bonus)
 
 	var d20_total: int = d20_raw
 	for mod_value in mods.values():
@@ -539,8 +540,9 @@ func _calculate_d20_modifiers(
 		hp_when_downed: int,
 		treatment_timing: String,
 		healing_magic_bhr: int,
-		healing_proficiency_rank: int) -> Dictionary:
-	## Returns itemized modifiers dict: { con, hd_value, hp_deficit, timing, healing_magic, healing_prof }
+		healing_proficiency_rank: int,
+		nonlethal_bonus: int = 0) -> Dictionary:
+	## Returns itemized modifiers dict: { con, hd_value, hp_deficit, timing, healing_magic, healing_prof, nonlethal }
 
 	# CON modifier
 	var con_mod: int = 0
@@ -572,6 +574,7 @@ func _calculate_d20_modifiers(
 		"timing":       timing_mod,
 		"healing_magic": healing_mod,
 		"healing_prof": prof_mod,
+		"nonlethal":    nonlethal_bonus,
 	}
 
 

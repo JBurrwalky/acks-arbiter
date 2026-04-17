@@ -204,6 +204,18 @@ func get_specialization_display_name(prof_key: String, spec_id: String) -> Strin
 	return spec_id.replace("_", " ").capitalize()
 
 
+func get_full_description(key: String) -> String:
+	## Returns the imported long-form rules text when available.
+	## Falls back to the shorter catalog description for non-imported entries.
+	var entry := get_proficiency(key)
+	if entry.is_empty():
+		return ""
+	var full_description: String = entry.get("full_description", "")
+	if not full_description.is_empty():
+		return full_description
+	return entry.get("description", "")
+
+
 # ---------------------------------------------------------------------------
 # Effects access
 # ---------------------------------------------------------------------------

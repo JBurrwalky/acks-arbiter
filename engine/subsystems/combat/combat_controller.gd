@@ -1530,8 +1530,16 @@ func _resolve_maneuver_action(
 			"result": {"note": "no valid target"},
 		}
 
-	# Strip "maneuver_" prefix to get type
-	var maneuver_type := action_id.substr(len("maneuver_"))
+	# Extract maneuver type from action_id.
+	# brawl_punch / brawl_kick use a different prefix than maneuver_*.
+	var maneuver_type: String
+	var maneuver_params := parameters.duplicate()
+	if action_id.begins_with("brawl_"):
+		maneuver_type = "brawl"
+		if action_id == "brawl_kick":
+			maneuver_params["kick"] = true
+	else:
+		maneuver_type = action_id.substr(len("maneuver_"))
 
 	# Grid adjacency check for melee maneuvers (overrun exempted — it moves through)
 	if movement_resolver != null and movement_resolver.has_grid():
@@ -1545,7 +1553,13 @@ func _resolve_maneuver_action(
 			}
 
 	var maneuver_result: Dictionary = maneuver_resolver.resolve_maneuver(
-		combatant, target, maneuver_type, parameters)
+		combatant, target, maneuver_type, maneuver_params)
+
+	# Track nonlethal damage for Mortal Wounds bonus (+1 per point on d20)
+	if maneuver_result.get("nonlethal", false) and maneuver_result.get("hit", false):
+		var hp_damage: int = maneuver_result.get("damage_result", {}).get("hp_damage", 0)
+		if hp_damage > 0:
+			target.add_nonlethal_damage(hp_damage)
 
 	# Update engagement after maneuvers that move combatants
 	_update_engagement()
@@ -1822,7 +1836,8 @@ func process_mortal_wounds() -> Array:
 		var mw_result: Dictionary
 		if mortal_wounds_resolver != null:
 			mw_result = mortal_wounds_resolver.resolve(
-				c, c.hp_when_downed, c.killing_blow_damage_type, timing)
+				c, c.hp_when_downed, c.killing_blow_damage_type, timing,
+				0, 0, c.nonlethal_damage_taken)
 		else:
 			# No resolver — treat all downed PCs as instantly killed.
 			mw_result = {
@@ -2004,7 +2019,7 @@ func _resolve_downed_interaction(
 			if target != null and mortal_wounds_resolver != null:
 				var mw_result := mortal_wounds_resolver.resolve(
 					target, target.hp_when_downed, target.killing_blow_damage_type,
-					"during_combat")
+					"during_combat", 0, 0, target.nonlethal_damage_taken)
 				EventBus.mortal_wound_rolled.emit(target_id, mw_result)
 				return {
 					"phase": "action", "status": "action_resolved",

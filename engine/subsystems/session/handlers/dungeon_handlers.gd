@@ -1169,9 +1169,10 @@ func _resolve_exit_dungeon(entity_id: String, _cell: Vector2i) -> Dictionary:
 	# Remove character from the dungeon map.
 	controller.remove_party_member(entity_id)
 
-	# Mark as exited in session state.
+	# Mark as exited in session state and remove from exit queue.
 	if _session_state != null:
 		_session_state.mark_exited(entity_id)
+		_session_state.dequeue_exit(entity_id)
 
 	# Get character name for notification.
 	var char_name := entity_id

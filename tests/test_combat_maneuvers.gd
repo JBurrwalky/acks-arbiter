@@ -1,15 +1,19 @@
 extends "res://tests/test_suite_base.gd"
 
-## Unit tests for ManeuverResolver: all 7 ACKS combat maneuvers.
+## Unit tests for ManeuverResolver: all 8 ACKS combat maneuvers.
 
 
 func run_all_tests() -> void:
 	test_brawl_punch_deals_nonlethal()
 	test_brawl_monster_cannot_brawl()
+	test_brawl_metal_armor_reflects_damage()
+	test_brawl_metal_vs_metal_no_reflection()
 	test_disarm_on_hit_and_failed_save()
 	test_disarm_target_saves()
 	test_force_back_pushes_target()
 	test_force_back_target_saves()
+	test_incapacitate_deals_nonlethal()
+	test_incapacitate_miss()
 	test_knock_down_applies_prone()
 	test_knock_down_target_saves()
 	test_overrun_does_not_consume_attack()
@@ -18,6 +22,8 @@ func run_all_tests() -> void:
 	test_wrestle_applies_grappled()
 	test_wrestle_target_saves()
 	test_wrestling_hold_skip_attack_throw()
+	test_combat_trickery_reduces_penalty()
+	test_nonlethal_damage_accumulates()
 	if not has_failures():
 		print("ManeuverResolver: all tests passed.")
 
@@ -37,6 +43,33 @@ func test_brawl_monster_cannot_brawl() -> void:
 	var env := _make_env(20)
 	var result: Dictionary = env.resolver.resolve_maneuver(env.monster, env.pc, "brawl", {})
 	check(result.get("success") == false, "monsters should not be able to brawl")
+
+
+func test_brawl_metal_armor_reflects_damage() -> void:
+	# Attacker in leather (non-metal), target in metal → damage reflects to attacker
+	var env := _make_env(20)  # Hit
+	env.pc._equipped_armor_material = "leather"
+	env.monster._equipped_armor_material = "metal"
+	var pc_hp_before: int = env.pc.get_hp_current()
+	var monster_hp_before: int = env.monster.get_hp_current()
+	var result: Dictionary = env.resolver.resolve_maneuver(env.pc, env.monster, "brawl", {})
+	check(result.get("reflected") == true, "damage should reflect to attacker")
+	check(env.monster.get_hp_current() == monster_hp_before,
+		"target HP should be unchanged after reflection")
+	check(env.pc.get_hp_current() < pc_hp_before,
+		"attacker should take reflected damage")
+
+
+func test_brawl_metal_vs_metal_no_reflection() -> void:
+	# Both in metal armor → no reflection
+	var env := _make_env(20)
+	env.pc._equipped_armor_material = "metal"
+	env.monster._equipped_armor_material = "metal"
+	var monster_hp_before: int = env.monster.get_hp_current()
+	var result: Dictionary = env.resolver.resolve_maneuver(env.pc, env.monster, "brawl", {})
+	check(result.get("reflected", false) == false, "should not reflect when both in metal")
+	check(env.monster.get_hp_current() < monster_hp_before,
+		"target should take damage normally")
 
 
 # ---------------------------------------------------------------------------
@@ -78,6 +111,26 @@ func test_force_back_target_saves() -> void:
 	var result: Dictionary = env.resolver.resolve_maneuver(env.pc, env.monster, "force_back", {})
 	check(result.get("forced_back") == false,
 		"force back should fail when target saves")
+
+
+# ---------------------------------------------------------------------------
+# Incapacitate
+# ---------------------------------------------------------------------------
+
+func test_incapacitate_deals_nonlethal() -> void:
+	var env := _make_env(20)  # High roll = hit
+	var result: Dictionary = env.resolver.resolve_maneuver(env.pc, env.monster, "incapacitate", {})
+	check(result.get("maneuver") == "incapacitate", "should be incapacitate maneuver")
+	check(result.get("nonlethal") == true, "incapacitate hit should be nonlethal")
+	check(result.get("hit") == true, "should hit on natural 20")
+
+
+func test_incapacitate_miss() -> void:
+	var env := _make_env(1)  # Natural 1 = miss
+	var result: Dictionary = env.resolver.resolve_maneuver(env.pc, env.monster, "incapacitate", {})
+	check(result.get("maneuver") == "incapacitate", "should be incapacitate maneuver")
+	check(result.get("nonlethal") == false, "miss should not flag nonlethal")
+	check(result.get("hit") == false, "should miss on natural 1")
 
 
 # ---------------------------------------------------------------------------
@@ -159,6 +212,40 @@ func test_wrestling_hold_skip_attack_throw() -> void:
 	var result: Dictionary = env.resolver.resolve_maneuver(env.pc, env.monster, "disarm", {})
 	check(result.get("disarmed") == true,
 		"disarm on held target should skip attack throw and succeed on failed save")
+
+
+# ---------------------------------------------------------------------------
+# Combat Trickery
+# ---------------------------------------------------------------------------
+
+func test_combat_trickery_reduces_penalty() -> void:
+	# With Combat Trickery, the attack penalty should be -2 instead of -4.
+	# Use STR 10 (modifier 0) so to_hit_bonus is purely the maneuver penalty.
+	var env := _make_env(20)  # Hit regardless
+	env.pc._character.strength = 10  # Modifier 0
+	env.pc._character.proficiencies = [{"proficiency_key": "combat_trickery", "rank": 1}]
+	var result: Dictionary = env.resolver.resolve_maneuver(env.pc, env.monster, "disarm", {})
+	var hit_result: Dictionary = result.get("hit_result", {})
+	check(hit_result.get("to_hit_bonus", -99) == -2,
+		"combat trickery should reduce maneuver penalty from -4 to -2 (got %d)" % hit_result.get("to_hit_bonus", -99))
+
+
+# ---------------------------------------------------------------------------
+# Nonlethal damage tracking
+# ---------------------------------------------------------------------------
+
+func test_nonlethal_damage_accumulates() -> void:
+	# Brawl and incapacitate both flag nonlethal. Verify the combatant tracker.
+	var env := _make_env(20)  # Hit
+	check(env.monster.nonlethal_damage_taken == 0, "should start at 0")
+	# Simulate what CombatController does: check for nonlethal flag and accumulate
+	var result: Dictionary = env.resolver.resolve_maneuver(env.pc, env.monster, "brawl", {})
+	if result.get("nonlethal", false) and result.get("hit", false):
+		var hp_dmg: int = result.get("damage_result", {}).get("hp_damage", 0)
+		if hp_dmg > 0:
+			env.monster.add_nonlethal_damage(hp_dmg)
+	check(env.monster.nonlethal_damage_taken > 0,
+		"nonlethal damage should accumulate after brawl hit")
 
 
 # ---------------------------------------------------------------------------

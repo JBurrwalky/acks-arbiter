@@ -224,16 +224,21 @@ func test_stairs_down_produces_descend() -> void:
 
 func test_transition_cell_produces_exit() -> void:
 	var map := _make_map_with_transitions(
-		[{"col": 2, "row": 2, "terrain_feature": "stairs_up"}],
+		[{"col": 2, "row": 2, "terrain_feature": "stairs_up"},
+		 {"col": 3, "row": 2, "terrain_feature": "open"}],
 		[{"col": 2, "row": 2, "label": "Main Entrance"}],
 	)
 	map.set_fog(Vector2i(2, 2), TacticalMapData.FogState.VISIBLE)
-	# Entity must be ON the transition cell for Exit Dungeon to appear.
+	# Entity on the exit cell — Exit Dungeon should appear.
 	map.set_entity_pos("hero", Vector2i(2, 2))
 	var result := Builder.build_menu(["hero"], Vector2i(2, 2), map, null, null)
 	check(_has_option(result, "exit_dungeon"), "Exit Dungeon should appear on transition cell")
 	# Should NOT also show Ascend (exit takes priority on transition cells).
 	check(not _has_option(result, "ascend"), "Ascend should not appear when exit is available")
+	# Entity NOT on the exit cell — Exit Dungeon should still appear (queue behavior).
+	map.set_entity_pos("hero", Vector2i(3, 2))
+	var result2 := Builder.build_menu(["hero"], Vector2i(2, 2), map, null, null)
+	check(_has_option(result2, "exit_dungeon"), "Exit Dungeon should appear even when not on exit cell")
 	print("  transition_cell_produces_exit: OK")
 
 

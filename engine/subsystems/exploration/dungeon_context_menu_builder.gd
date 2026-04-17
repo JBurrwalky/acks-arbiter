@@ -284,14 +284,10 @@ static func _build_stair_options(
 
 	if tf == "stairs_up":
 		if is_transition:
-			# Per-character exit: only show if a selected character is ON this cell
-			# and hasn't already exited.
-			var exit_id := _find_exit_candidate(selected_ids, target_cell, map, session_state)
-			if not exit_id.is_empty():
+			if _has_exit_candidates(selected_ids, map, session_state):
 				options.append(_option("exit_dungeon", "Exit Dungeon", true,
-					"Send this character out of the dungeon (1 round)", "environment",
-					{"action_type": "exit_dungeon", "cell": target_cell,
-					 "character_id": exit_id}))
+					"Queue selected characters to exit the dungeon", "environment",
+					{"action_type": "exit_dungeon", "cell": target_cell}))
 		else:
 			options.append(_option("ascend", "Ascend", true,
 				"Climb to the level above", "environment",
@@ -304,32 +300,31 @@ static func _build_stair_options(
 
 	elif is_transition and tf != "stairs_up" and tf != "stairs_down":
 		# Non-stair transition cell (e.g., cave entrance).
-		var exit_id := _find_exit_candidate(selected_ids, target_cell, map, session_state)
-		if not exit_id.is_empty():
+		if _has_exit_candidates(selected_ids, map, session_state):
 			options.append(_option("exit_dungeon", "Exit Dungeon", true,
-				"Send this character out of the dungeon (1 round)", "environment",
-				{"action_type": "exit_dungeon", "cell": target_cell,
-				 "character_id": exit_id}))
+				"Queue selected characters to exit the dungeon", "environment",
+				{"action_type": "exit_dungeon", "cell": target_cell}))
 
 	return options
 
 
-## Returns the first selected entity that is ON [param cell] and hasn't exited.
-## Returns "" if no candidate found.
-static func _find_exit_candidate(
+## Returns true if any selected entity hasn't already exited or been queued.
+static func _has_exit_candidates(
 	selected_ids: Array,
-	cell: Vector2i,
 	map: TacticalMapData,
 	session_state,
-) -> String:
+) -> bool:
 	for eid in selected_ids:
 		var sid: String = str(eid)
-		if map.get_entity_pos(sid) != cell:
-			continue
-		if session_state != null and session_state.has_method("is_exited") and session_state.is_exited(sid):
-			continue
-		return sid
-	return ""
+		if map.get_entity_pos(sid) == Vector2i(-1, -1):
+			continue  # Not on the map.
+		if session_state != null:
+			if session_state.has_method("is_exited") and session_state.is_exited(sid):
+				continue
+			if session_state.has_method("is_queued_for_exit") and session_state.is_queued_for_exit(sid):
+				continue
+		return true
+	return false
 
 
 # ---------------------------------------------------------------------------
