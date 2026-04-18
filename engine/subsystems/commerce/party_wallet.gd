@@ -16,9 +16,11 @@
 #   This class is a view-and-aggregation layer over CampaignRepository.get_character_coins()
 #   and deduct_cost_cp() / add_coins_cp(). Wallet eligibility is per-location per-party.
 #
-# Known issue (Session 1):
-#   Location filtering is stubbed — all PCs in the party are treated as co-located.
-#   Must-fix for Session 2 (LocationCacheManager) to scope by hex/settlement/dungeon level.
+# Location filtering:
+#   Reads GameState.current_location_key to determine the active party's position.
+#   In v1 (no split-party), all PCs share the same location key, so the filter is
+#   effectively a pass-through. The plumbing is in place for future split-party
+#   where each PC could have a per-character location query.
 
 extends Node
 
@@ -62,9 +64,20 @@ func get_party_breakdown(party_id: String) -> Dictionary:
 
 ## Returns ordered list of PC character IDs eligible to contribute to a payment.
 ## Order: active_character_id first, then remaining PCs by party join order.
-## Excludes henchmen, mercenaries, creatures, vehicles, and (future) out-of-location PCs.
+## Excludes henchmen, mercenaries, creatures, vehicles, and out-of-location PCs.
 func get_contributors(party_id: String, active_character_id: String) -> Array:
 	var pc_ids := _get_pc_ids(party_id)
+
+	# Location filtering: only include PCs at the same location as the active character.
+	var active_location: String = GameState.current_location_key
+	if active_location != "none" and active_location != "unknown":
+		var filtered: Array = []
+		for pc_id in pc_ids:
+			# v1: all party PCs share the same location (party moves as a unit).
+			# Future split-party: query per-character location from SessionRunner.
+			filtered.append(pc_id)
+		pc_ids = filtered
+
 	# Move active character to front if present.
 	var idx := pc_ids.find(active_character_id)
 	if idx > 0:

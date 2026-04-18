@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://party_inventory_overlay_001"]
+
+[ext_resource type="Script" path="res://scenes/ui/party_inventory/party_inventory_overlay.gd" id="1_overlay"]
+
+[node name="PartyInventoryOverlay" type="CanvasLayer"]
+layer = 50
+script = ExtResource("1_overlay")

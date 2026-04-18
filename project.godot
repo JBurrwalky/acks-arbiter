@@ -29,6 +29,7 @@ AudioRouter="*res://engine/autoloads/audio_router.gd"
 DiceSystem="*res://engine/autoloads/dice_system.gd"
 Timekeeping="*res://engine/autoloads/timekeeping.gd"
 PartyWallet="*res://engine/subsystems/commerce/party_wallet.gd"
+LocationCacheManager="*res://engine/subsystems/inventory/location_cache_manager.gd"
 
 [input]
 
@@ -60,6 +61,11 @@ character_sheet_toggle={
 party_management_toggle={
 "deadzone": 0.5,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":true,"shift_pressed":false,"ctrl_pressed":true,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":80,"key_label":0,"unicode":112,"location":0,"echo":false,"script":null)
+]
+}
+party_inventory_toggle={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":true,"shift_pressed":false,"ctrl_pressed":true,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":73,"key_label":0,"unicode":105,"location":0,"echo":false,"script":null)
 ]
 }
 game_log_toggle={

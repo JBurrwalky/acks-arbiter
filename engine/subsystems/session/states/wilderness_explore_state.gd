@@ -30,6 +30,15 @@ func enter(runner, context: Dictionary) -> void:
 	if not EventBus.camp_requested.is_connected(_on_camp_requested):
 		EventBus.camp_requested.connect(_on_camp_requested)
 
+	# Listen for active party switches
+	if not EventBus.active_party_changed.is_connected(_on_active_party_changed):
+		EventBus.active_party_changed.connect(_on_active_party_changed)
+
+	# Ensure all parties in the campaign are registered with Timekeeping
+	var all_parties := CampaignRepository.list_parties_for_campaign(GameState.campaign_id)
+	for p in all_parties:
+		Timekeeping.register_party(p.id)
+
 	# Register wilderness event handlers with the scheduler
 	_handlers = WildernessHandlers.new(runner)
 	_handlers.register(runner.get_handler_registry())
@@ -57,6 +66,8 @@ func exit(runner) -> void:
 	# Disconnect status bar action buttons
 	if EventBus.camp_requested.is_connected(_on_camp_requested):
 		EventBus.camp_requested.disconnect(_on_camp_requested)
+	if EventBus.active_party_changed.is_connected(_on_active_party_changed):
+		EventBus.active_party_changed.disconnect(_on_active_party_changed)
 
 	# Unregister wilderness event handlers
 	if _handlers != null:
@@ -198,3 +209,28 @@ func _connect(obj: Node, sig_name: String, method: Callable) -> void:
 func _disconnect(obj: Node, sig_name: String, method: Callable) -> void:
 	if obj.is_connected(sig_name, method):
 		obj.disconnect(sig_name, method)
+
+
+func get_location_key_for_character(character_id: String) -> String:
+	# For multi-party: look up which party this character belongs to
+	var char_party_id := CampaignRepository.get_party_for_character(character_id)
+	if char_party_id.is_empty():
+		return "unknown"
+	var party := CampaignRepository.get_party(char_party_id)
+	if party.is_empty():
+		return "unknown"
+	var q: int = party.get("current_hex_q", 0) if party.get("current_hex_q") != null else 0
+	var r: int = party.get("current_hex_r", 0) if party.get("current_hex_r") != null else 0
+	return "hex:%d,%d" % [q, r]
+
+
+func _on_active_party_changed(_prev_id: String, _new_id: String) -> void:
+	if _runner == null:
+		return
+	# Re-center the camera on the newly active party's hex
+	var renderer: Node = _runner.get_hex_map_renderer()
+	var party := CampaignRepository.get_party(_new_id)
+	if not party.is_empty() and renderer != null:
+		var q: int = party.get("current_hex_q", 0) if party.get("current_hex_q") != null else 0
+		var r: int = party.get("current_hex_r", 0) if party.get("current_hex_r") != null else 0
+		renderer.center_on_hex(Vector2i(q, r))

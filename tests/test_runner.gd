@@ -106,6 +106,10 @@ extends Node
 @onready var _combat_context_menu_builder_tests = $CombatContextMenuBuilderTests
 @onready var _game_log_tests = $GameLogTests
 @onready var _party_wallet_tests = $PartyWalletTests
+@onready var _location_cache_manager_tests = $LocationCacheManagerTests
+@onready var _transfer_validator_tests = $TransferValidatorTests
+@onready var _party_split_merge_tests = $PartySplitMergeTests
+@onready var _entity_promotion_tests = $EntityPromotionTests
 
 
 func _ready() -> void:
@@ -191,7 +195,11 @@ func run() -> void:
 			_settlement_navigation_tests,
 			_combat_context_menu_builder_tests,
 			_game_log_tests,
-			_party_wallet_tests]:
+			_party_wallet_tests,
+			_location_cache_manager_tests,
+			_transfer_validator_tests,
+			_party_split_merge_tests,
+			_entity_promotion_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

@@ -158,7 +158,8 @@ func handle_action(runner, action: String, payload: Dictionary) -> String:
 
 func _finish_combat(runner, result: Dictionary) -> String:
 	var party_data: PartyData = runner.get_party_data()
-	_finalizer.finalize(runner, result, party_data)
+	var roster: CombatRoster = _controller.roster if _controller != null else null
+	_finalizer.finalize(runner, result, party_data, roster)
 	# combat_ended signal is emitted by the controller in _emit_combat_ended().
 	return _return_state_key
 

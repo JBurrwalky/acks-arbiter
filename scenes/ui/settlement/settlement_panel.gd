@@ -294,11 +294,15 @@ func _rebuild_poi_list() -> void:
 
 	# Group POIs by district.
 	var district_pois: Dictionary = {}  # district_id → Array[Dictionary]
+	var gate_pois: Array = []
 	for poi in _map_data.pois:
-		var dist_id: String = poi.get("district_id", "unknown")
-		if not district_pois.has(dist_id):
-			district_pois[dist_id] = []
-		district_pois[dist_id].append(poi)
+		var dist_id: String = poi.get("district_id", "")
+		if dist_id.is_empty() and poi.get("type", "") == "gate":
+			gate_pois.append(poi)
+		else:
+			if not district_pois.has(dist_id):
+				district_pois[dist_id] = []
+			district_pois[dist_id].append(poi)
 
 	# Build collapsible district sections.
 	for district in _map_data.districts:
@@ -309,6 +313,10 @@ func _rebuild_poi_list() -> void:
 			continue
 
 		_add_district_section(dist_name, pois_in_dist, distances)
+
+	# Add gate POIs in a separate "City Gates" section.
+	if not gate_pois.is_empty():
+		_add_district_section("City Gates", gate_pois, distances)
 
 
 func _add_district_section(dist_name: String, pois: Array, distances: Dictionary) -> void:
@@ -331,14 +339,16 @@ func _add_poi_entry(poi: Dictionary, distances: Dictionary) -> void:
 	var is_discovered: bool = poi_id in _discovered_poi_ids
 	var is_obvious: bool = poi.get("importance", "minor") == "major"
 
-	# Show undiscovered POIs as "???".
-	if not is_discovered and not is_obvious:
-		var hidden := Label.new()
-		hidden.text = "    ??? (Unknown location)"
-		hidden.add_theme_font_size_override("font_size", 12)
-		hidden.add_theme_color_override("font_color", Color(0.5, 0.48, 0.42))
-		_poi_list.add_child(hidden)
-		return
+	# TODO: Re-enable hidden POI display once a discovery method (rumours,
+	# asking locals, exploration rolls) is implemented in late-stage development.
+	# Until then, treat all POIs as visible so they remain reachable during testing.
+	#if not is_discovered and not is_obvious:
+	#	var hidden := Label.new()
+	#	hidden.text = "    ??? (Unknown location)"
+	#	hidden.add_theme_font_size_override("font_size", 12)
+	#	hidden.add_theme_color_override("font_color", Color(0.5, 0.48, 0.42))
+	#	_poi_list.add_child(hidden)
+	#	return
 
 	var poi_name: String = poi.get("name", "???")
 	var poi_type: String = poi.get("type", "")

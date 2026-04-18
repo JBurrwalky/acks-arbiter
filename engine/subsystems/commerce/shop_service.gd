@@ -9,11 +9,13 @@ extends RefCounted
 
 var _catalog: EquipmentCatalog = null
 var _generator: ShopInventoryGenerator = null
+var _monster_registry: MonsterRegistry = null
 
 
 func _init() -> void:
 	_catalog = EquipmentCatalog.new()
 	_generator = ShopInventoryGenerator.new()
+	_monster_registry = MonsterRegistry.new()
 
 
 # ---------------------------------------------------------------------------
@@ -105,8 +107,8 @@ func buy_item(
 		CampaignRepository.increment_shop_stock(campaign_id, poi_id, item_key, quantity)
 		return {"success": false, "message": deduct_result["message"], "wealth_remaining_cp": 0}
 
-	# Add item to character inventory (or increment quantity if they already own one).
-	_add_item_to_character(character_id, item_key, quantity, catalog_item)
+	# Add item to character inventory, or promote to entity if applicable.
+	_add_item_to_character(character_id, item_key, quantity, catalog_item, campaign_id)
 
 	var remaining := CampaignRepository.get_character_wealth_cp(character_id)
 
@@ -347,7 +349,8 @@ func pickup_commission(
 	if catalog_item.is_empty():
 		return {"success": false, "message": "Item no longer in catalog."}
 
-	_add_item_to_character(character_id, item_key, quantity, catalog_item)
+	var comm_campaign_id: String = commission.get("campaign_id", "")
+	_add_item_to_character(character_id, item_key, quantity, catalog_item, comm_campaign_id)
 
 	# Mark picked up.
 	CampaignRepository.mark_commission_picked_up(commission_id)
@@ -361,13 +364,28 @@ func pickup_commission(
 # Private helpers
 # ---------------------------------------------------------------------------
 
-## Adds items to a character's inventory, merging with existing stacks by item_key.
+## Adds items to a character's inventory, merging with existing stacks by
+## item_key.  Animals and vehicles are promoted to entity rows instead.
 func _add_item_to_character(
 	character_id: String,
 	item_key: String,
 	quantity: int,
 	catalog_item: Dictionary,
+	campaign_id: String = "",
 ) -> void:
+	# Check if this item should be promoted to an entity (creature or vehicle).
+	var classification := CampaignRepository.classify_item_for_promotion(catalog_item)
+	if classification != "inventory":
+		var party_id := CampaignRepository.get_party_for_character(character_id)
+		if party_id.is_empty():
+			push_warning("ShopService._add_item_to_character: character %s has no party, cannot promote %s" % [character_id, item_key])
+		else:
+			CampaignRepository.promote_inventory_to_entity(
+				item_key, quantity, character_id,
+				campaign_id, party_id, _catalog, _monster_registry)
+		EventBus.inventory_updated.emit(character_id)
+		return
+
 	# Check if character already has this item in their pack (non-equipped).
 	var items := CampaignRepository.get_inventory_items(character_id)
 	for existing in items:

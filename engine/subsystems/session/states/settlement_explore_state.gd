@@ -339,7 +339,9 @@ func _on_hiring_requested(poi: Dictionary) -> void:
 
 	# Create lifecycle manager on demand.
 	var rep_system := ReputationSystem.new(CampaignRepository, _campaign_id, party_id)
-	var lifecycle := HenchmanLifecycleManager.new(CampaignRepository, rep_system)
+	var char_gen := CharacterGenerator.new(
+		_runner.get_class_registry(), PowerRegistry.new(), ProficiencyRegistry.new())
+	var lifecycle := HenchmanLifecycleManager.new(CampaignRepository, rep_system, char_gen)
 
 	# Get current month/year and week for pool generation.
 	var date: Dictionary = Timekeeping.get_date()
@@ -431,14 +433,22 @@ func _on_exit_requested() -> void:
 # Scheduler event listener
 # ---------------------------------------------------------------------------
 
-func _on_scheduler_event_resolved(event_type: String, data: Dictionary) -> void:
-	match event_type:
-		"city_travel_arrival":
-			_on_arrival(data)
-		"navigation_check":
-			_on_nav_check(data)
-		"city_encounter_check":
-			_on_encounter_check(data)
+func _on_scheduler_event_resolved(_event_type: String, _event_data: Dictionary) -> void:
+	if _runner == null:
+		return
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	if loop == null:
+		return
+	for result in loop.last_tick_results:
+		var presentation: Dictionary = result.get("presentation", {})
+		var ptype: String = presentation.get("type", "")
+		match ptype:
+			"city_travel_arrival":
+				_on_arrival(presentation)
+			"navigation_check":
+				_on_nav_check(presentation)
+			"city_encounter_check":
+				_on_encounter_check(presentation)
 
 
 func _on_arrival(data: Dictionary) -> void:
@@ -504,3 +514,9 @@ func _is_nighttime() -> bool:
 	var dusk_rounds: int = Timekeeping.ROUNDS_PER_DAY * 3 / 4  # ~18:00
 	var dawn_rounds: int = Timekeeping.ROUNDS_PER_DAY / 4       # ~06:00
 	return time_of_day >= dusk_rounds or time_of_day < dawn_rounds
+
+
+func get_location_key_for_character(_character_id: String) -> String:
+	if _settlement_id.is_empty():
+		return "unknown"
+	return "settlement:%s" % _settlement_id

@@ -237,7 +237,12 @@ func _populate_buy_tab() -> void:
 		return a.get("name", "") < b.get("name", "")
 	)
 
-	var wealth_cp := CampaignRepository.get_character_wealth_cp(_selected_character_id)
+	var party_id_buy: String = _runner.get_party_id() if _runner != null else ""
+	var wealth_cp: int
+	if party_id_buy != "":
+		wealth_cp = PartyWallet.get_party_total_cp(party_id_buy)
+	else:
+		wealth_cp = CampaignRepository.get_character_wealth_cp(_selected_character_id)
 	var current_cat := ""
 
 	for item_data in sorted:
@@ -288,9 +293,14 @@ func _populate_commission_tab() -> void:
 		_item_list.add_child(empty_label)
 		return
 
-	var wealth_cp := CampaignRepository.get_character_wealth_cp(_selected_character_id)
+	var party_id_comm: String = _runner.get_party_id() if _runner != null else ""
+	var wealth_cp_comm: int
+	if party_id_comm != "":
+		wealth_cp_comm = PartyWallet.get_party_total_cp(party_id_comm)
+	else:
+		wealth_cp_comm = CampaignRepository.get_character_wealth_cp(_selected_character_id)
 	for item_data in zero_stock:
-		var row := _create_commission_row(item_data, wealth_cp)
+		var row := _create_commission_row(item_data, wealth_cp_comm)
 		_item_list.add_child(row)
 
 

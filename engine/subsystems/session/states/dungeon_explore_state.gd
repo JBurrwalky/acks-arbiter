@@ -26,6 +26,7 @@ var _runner = null
 var _controller: DungeonMapController = null
 var _scene: Node = null
 var _combat_overlay: DungeonCombatOverlay = null
+var _dungeon_combat_controller: CombatController = null
 var _in_combat: bool = false
 var _finalizer := CombatFinalizer.new()
 var _spawner := DungeonEncounterSpawner.new()
@@ -1153,6 +1154,24 @@ func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 				combatant.wire_equipment(inv_rows, catalog)
 				roster.add_combatant(combatant)
 
+	# Add trained creatures with combat roles (war mounts, guards, hunters).
+	if party_data != null:
+		var mr: MonsterRegistry = _runner.get_monster_registry()
+		roster.add_party_creatures(party_data, mr)
+		# Place creature combatants on the grid near party members.
+		for c: Combatant in roster.get_alive_on_side(Combatant.Side.PARTY):
+			if c.is_character:
+				continue
+			if not tactical_map.entity_positions.has(c.id):
+				var placement := _find_creature_placement(tactical_map, party_positions)
+				if placement != Vector2i(-1, -1):
+					c.grid_position = placement
+					tactical_map.set_entity_pos(c.id, placement)
+				# Add a token for the creature on the dungeon map.
+				var cname: String = c.display_name
+				_scene.add_entity_token(c.id, cname, 1, cname.substr(0, 1).to_upper())
+				_scene.move_token(c.id, c.grid_position)
+
 	for p in placements:
 		var m_combatant := Combatant.from_monster(
 			p["monster_data"], p["rolled_hp"], p["combatant_id"], p["group_id"])
@@ -1181,42 +1200,47 @@ func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 	var cleave_resolver := CleaveResolver.new()
 	var mortal_wounds_resolver := MortalWoundsResolver.new(DiceSystem)
 
-	var combat_controller := CombatController.new(
+	_dungeon_combat_controller = CombatController.new(
 		roster, init_resolver, attack_resolver,
 		spell_hooks, condition_manager, ranged_resolver,
 		monster_ai, morale_resolver, cleave_resolver,
 		tactical_map, mortal_wounds_resolver)
-	combat_controller.encounter_id = encounter_data.get("encounter_id", "")
+	_dungeon_combat_controller.encounter_id = encounter_data.get("encounter_id", "")
 
-	EventBus.combat_started.emit(combat_controller.encounter_id)
+	EventBus.combat_started.emit(_dungeon_combat_controller.encounter_id)
 
 	_set_dungeon_hud_visible(false)
 
 	_combat_overlay = DungeonCombatOverlay.new()
 	_runner.add_child(_combat_overlay)
 	_combat_overlay.combat_finished.connect(_on_dungeon_combat_finished)
-	_combat_overlay.start_combat(combat_controller, _scene)
+	_combat_overlay.start_combat(_dungeon_combat_controller, _scene)
 
 
 func _on_dungeon_combat_finished(result: Dictionary) -> void:
 	_in_combat = false
 
-	# Finalize: mortal wounds, XP, timekeeping (party clock + turn rounding).
+	# Finalize: mortal wounds, XP, creature casualties, timekeeping.
 	var party_data: PartyData = _runner.get_party_data()
-	_finalizer.finalize(_runner, result, party_data)
+	var roster: CombatRoster = _dungeon_combat_controller.roster if _dungeon_combat_controller != null else null
+	_finalizer.finalize(_runner, result, party_data, roster)
+	_dungeon_combat_controller = null
 
-	# Remove monster tokens
+	# Remove non-party tokens (monsters, dead creatures).
+	# Keep alive PCs and alive creature tokens on the map.
 	var tactical_map: TacticalMapData = _controller.get_map()
 	if tactical_map != null:
+		var keep_ids: Dictionary = {}
+		if party_data != null:
+			for cd: CharacterData in party_data.character_data:
+				if not cd.is_dead:
+					keep_ids[cd.id] = true
+			for creature: TrainedCreatureData in party_data.creature_data:
+				if creature.is_alive:
+					keep_ids["creature_" + creature.id] = true
 		var to_remove: Array = []
 		for eid in tactical_map.entity_positions.keys():
-			var is_party := false
-			if party_data != null:
-				for cd: CharacterData in party_data.character_data:
-					if cd.id == eid:
-						is_party = true
-						break
-			if not is_party:
+			if not keep_ids.has(eid):
 				to_remove.append(eid)
 		for eid in to_remove:
 			tactical_map.remove_entity(eid)
@@ -1226,14 +1250,6 @@ func _on_dungeon_combat_finished(result: Dictionary) -> void:
 		_combat_overlay.end_combat()
 		_combat_overlay = null
 
-	# Remove dead party member tokens
-	if party_data != null:
-		for cd: CharacterData in party_data.character_data:
-			if cd.is_dead:
-				if tactical_map != null:
-					tactical_map.remove_entity(cd.id)
-				_scene.remove_entity_token(cd.id)
-
 	_set_dungeon_hud_visible(true)
 	# Scheduler stays paused after combat — player decides when to resume.
 
@@ -1241,6 +1257,21 @@ func _on_dungeon_combat_finished(result: Dictionary) -> void:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+func _find_creature_placement(
+		tactical_map: TacticalMapData,
+		party_positions: Array[Vector2i]) -> Vector2i:
+	## Find a passable, unoccupied cell adjacent to any party member.
+	## Returns Vector2i(-1, -1) if none found.
+	for pos in party_positions:
+		for neighbor in IsometricGrid.get_neighbors(pos):
+			if tactical_map.is_passable(neighbor) and tactical_map.get_entities_at(neighbor).is_empty():
+				return neighbor
+	# Fallback: if no free adjacent cell, stack on leader position.
+	if not party_positions.is_empty():
+		return party_positions[0]
+	return Vector2i(-1, -1)
+
 
 func _set_dungeon_hud_visible(vis: bool) -> void:
 	if _scene == null:
@@ -1272,3 +1303,9 @@ static func _class_letter(character_class: String) -> String:
 		"paladin":              return "P"
 		"assassin":             return "A"
 		_:                      return character_class.substr(0, 1).to_upper()
+
+
+func get_location_key_for_character(_character_id: String) -> String:
+	if _controller == null:
+		return "unknown"
+	return "dungeon:%s:level:%d" % [_controller.get_dungeon_id(), _controller.get_current_level()]

@@ -81,6 +81,21 @@ var campaign_id: String = ""
 ## Identifier for the active party record in the database.
 var party_id: String = ""
 
+## The party currently being controlled by the player. When there is only one
+## party, this equals party_id. When split, the player can switch this via the
+## Party Management overlay to control the other party.
+var active_party_id: String = ""
+
+## Currently active (selected) player character. Set by the UI when the player
+## picks a character in the party roster. Used by PartyWallet and inventory
+## transfer logic to determine who initiates transactions.
+var active_character_id: String = ""
+
+## Location key for the active party's current position. Updated by SessionRunner
+## on state transitions. Read by autoloads that can't reference SessionRunner directly.
+## Format: "hex:Q,R" | "dungeon:ID:level:N" | "settlement:ID" | "none" | "unknown"
+var current_location_key: String = "unknown"
+
 ## Pending dice override queue. Keys are roll_type strings (snake_case from the
 ## action vocabulary, e.g. "attack_throw", "encounter_check"). Values are the
 ## forced modified_total (final result including modifiers). Consumed by DiceSystem
@@ -140,6 +155,7 @@ func start_session(p_campaign_id: String, p_party_id: String) -> void:
 	assert(not p_party_id.is_empty(), "GameState.start_session: party_id must not be empty")
 	campaign_id = p_campaign_id
 	party_id = p_party_id
+	active_party_id = p_party_id
 	transition_to(State.EXPLORATION)
 	session_started.emit(campaign_id)
 
@@ -148,9 +164,20 @@ func start_session(p_campaign_id: String, p_party_id: String) -> void:
 func end_session() -> void:
 	campaign_id = ""
 	party_id = ""
+	active_party_id = ""
+	current_location_key = "unknown"
 	exploration_context = ExplorationContext.NONE
 	transition_to(State.MAIN_MENU)
 	session_ended.emit()
+
+
+## Switch the active party. Emits EventBus.active_party_changed on change.
+func set_active_party(new_party_id: String) -> void:
+	if active_party_id == new_party_id:
+		return
+	var prev := active_party_id
+	active_party_id = new_party_id
+	EventBus.active_party_changed.emit(prev, new_party_id)
 
 
 ## Returns true if a campaign is currently loaded.

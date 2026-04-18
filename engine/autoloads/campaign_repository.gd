@@ -25,6 +25,102 @@ func _ready() -> void:
 	db.path = DB_PATH
 	db.open_db()
 	_run_migrations()
+	_run_data_sweeps()
+
+
+func _run_data_sweeps() -> void:
+	# Only run if migration 034 (schema_sweep_markers table) has been applied.
+	db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='schema_sweep_markers'")
+	if db.query_result.is_empty():
+		return
+	_sweep_promote_inventory_entities()
+
+
+func _sweep_promote_inventory_entities() -> void:
+	## One-time sweep: promote inventory_items that should be creatures or
+	## vehicles but were created before entity promotion was wired into the
+	## shop purchase path.
+	var sweep_name := "promote_inventory_entities_v1"
+	db.query_with_bindings(
+		"SELECT 1 FROM schema_sweep_markers WHERE sweep_name = ?", [sweep_name])
+	if not db.query_result.is_empty():
+		return  # already applied
+
+	var catalog := EquipmentCatalog.new()
+	var registry := MonsterRegistry.new()
+
+	# Find inventory items owned by a character (not cargo on a creature/vehicle,
+	# not a ground-drop in a location cache).
+	var ok := db.query("""
+		SELECT ii.id, ii.character_id, ii.item_key, ii.quantity,
+		       c.campaign_id, pm.party_id
+		FROM inventory_items ii
+		JOIN characters c ON ii.character_id = c.id
+		LEFT JOIN party_members pm ON pm.character_id = c.id
+		WHERE ii.character_id IS NOT NULL
+		  AND ii.creature_id IS NULL
+		  AND ii.vehicle_id IS NULL
+		  AND ii.location_cache_id IS NULL
+	""")
+	if not ok:
+		push_error("CampaignRepository._sweep_promote_inventory_entities: query failed")
+		return
+
+	var rows: Array = db.query_result.duplicate()
+	var promoted_count := 0
+
+	db.query("BEGIN TRANSACTION")
+
+	for row in rows:
+		var item_key: String = str(row.get("item_key", ""))
+		var catalog_entry: Dictionary = catalog.get_item(item_key)
+		if catalog_entry.is_empty():
+			continue
+		var classification: String = classify_item_for_promotion(catalog_entry)
+		if classification == "inventory":
+			continue
+
+		var campaign_id: String = str(row.get("campaign_id", ""))
+		var party_id: String = str(row.get("party_id", ""))
+		var handler_id: String = str(row.get("character_id", ""))
+		var quantity: int = maxi(1, int(row.get("quantity", 1)))
+
+		if campaign_id.is_empty() or party_id.is_empty():
+			push_warning("CampaignRepository sweep: skipping item_key=%s, character %s missing campaign/party" % [item_key, handler_id])
+			continue
+
+		for _i in range(quantity):
+			match classification:
+				"creature":
+					var monster_id: String = str(catalog_entry.get("monster_id", ""))
+					var cid := create_creature_from_purchase(
+						campaign_id, party_id, handler_id,
+						item_key, monster_id, registry)
+					if cid.is_empty():
+						push_error("CampaignRepository sweep: creature promotion failed for %s" % item_key)
+						db.query("ROLLBACK")
+						return
+				"vehicle":
+					var vid := _create_vehicle_from_purchase(
+						campaign_id, party_id, item_key, catalog_entry)
+					if vid.is_empty():
+						push_error("CampaignRepository sweep: vehicle promotion failed for %s" % item_key)
+						db.query("ROLLBACK")
+						return
+
+		# Delete the old inventory row.
+		if not remove_inventory_item(str(row.get("id", ""))):
+			push_error("CampaignRepository sweep: failed to remove inventory row id=%s" % str(row.get("id", "")))
+			db.query("ROLLBACK")
+			return
+
+		promoted_count += 1
+
+	# Mark sweep complete.
+	db.query_with_bindings(
+		"INSERT INTO schema_sweep_markers (sweep_name) VALUES (?)", [sweep_name])
+	db.query("COMMIT")
+	print("[CampaignRepository] Entity promotion sweep: promoted %d inventory rows." % promoted_count)
 
 
 func _run_migrations() -> void:
@@ -439,6 +535,171 @@ func update_party_position(party_id: String, map_id: String, q: int, r: int) -> 
 		[map_id, q, r, party_id]
 	):
 		push_error("CampaignRepository.update_party_position: failed. party_id=%s" % party_id)
+
+
+## Returns all parties for a campaign, ordered by creation time.
+func list_parties_for_campaign(campaign_id: String) -> Array:
+	var ok := db.query_with_bindings(
+		"SELECT * FROM parties WHERE campaign_id = ? ORDER BY created_at ASC, id ASC",
+		[campaign_id]
+	)
+	if not ok:
+		return []
+	return db.query_result.duplicate()
+
+
+## Returns the party_id for the party a character belongs to, or "" if not in any.
+func get_party_for_character(character_id: String) -> String:
+	var ok := db.query_with_bindings(
+		"SELECT party_id FROM party_members WHERE character_id = ? LIMIT 1",
+		[character_id]
+	)
+	if not ok or db.query_result.is_empty():
+		return ""
+	return db.query_result[0].party_id
+
+
+## Creates a new party in the same campaign, moves selected characters from
+## source party to the new party, and copies the source party's current position.
+## Returns the new party_id, or empty string on failure.
+func split_party(source_party_id: String, new_party_name: String,
+		character_ids_to_split: Array) -> String:
+	# 1. Validate source exists
+	var source := get_party(source_party_id)
+	if source.is_empty():
+		push_error("CampaignRepository.split_party: source party not found. id=%s" % source_party_id)
+		return ""
+
+	# 2. Validate all characters are in source party
+	var source_members := list_party_characters(source_party_id)
+	var source_member_ids: Array = []
+	for m in source_members:
+		source_member_ids.append(m.id)
+	for char_id in character_ids_to_split:
+		if not source_member_ids.has(char_id):
+			push_error("CampaignRepository.split_party: character %s not in party %s" % [char_id, source_party_id])
+			return ""
+
+	# 3. Validate source retains at least 1 member after split
+	if character_ids_to_split.is_empty():
+		push_error("CampaignRepository.split_party: no characters specified for split")
+		return ""
+	var remaining_count := source_members.size() - character_ids_to_split.size()
+	if remaining_count < 1:
+		push_error("CampaignRepository.split_party: source party would be empty after split (%d members, splitting %d)" % [source_members.size(), character_ids_to_split.size()])
+		return ""
+
+	# 4. Transactional move
+	db.query("BEGIN TRANSACTION")
+
+	var new_party_id := create_party(source.campaign_id, new_party_name)
+	if new_party_id.is_empty():
+		db.query("ROLLBACK")
+		return ""
+
+	# Copy position fields
+	var pos_ok := db.query_with_bindings(
+		"UPDATE parties SET current_map_id = ?, current_hex_q = ?, current_hex_r = ?, current_location_type = ? WHERE id = ?",
+		[source.current_map_id, source.current_hex_q, source.current_hex_r, source.current_location_type, new_party_id]
+	)
+	if not pos_ok:
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.split_party: failed to copy position to new party")
+		return ""
+
+	# Move members (land unplaced in new party)
+	for char_id in character_ids_to_split:
+		var remove_ok := remove_party_member(source_party_id, char_id)
+		if not remove_ok:
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.split_party: failed to remove %s from source" % char_id)
+			return ""
+		var add_ok := add_party_member(new_party_id, char_id)
+		if not add_ok:
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.split_party: failed to add %s to new party" % char_id)
+			return ""
+
+	db.query("COMMIT")
+
+	Timekeeping.register_party(new_party_id)
+	EventBus.party_split.emit(source_party_id, new_party_id)
+	return new_party_id
+
+
+## Merges two parties. Moves all members from source into target, transfers
+## owned creatures/vehicles/inventory, syncs time, deletes source.
+## Both parties must be at the same hex / location. Returns true on success.
+func merge_parties(target_party_id: String, source_party_id: String) -> bool:
+	var target := get_party(target_party_id)
+	var source := get_party(source_party_id)
+	if target.is_empty() or source.is_empty():
+		push_error("CampaignRepository.merge_parties: one or both parties not found")
+		return false
+	if target_party_id == source_party_id:
+		push_error("CampaignRepository.merge_parties: cannot merge party with itself")
+		return false
+
+	# Co-location check
+	if target.current_map_id != source.current_map_id \
+			or target.current_hex_q != source.current_hex_q \
+			or target.current_hex_r != source.current_hex_r:
+		push_error("CampaignRepository.merge_parties: parties not co-located (target %s:%d,%d source %s:%d,%d)" % [
+			target.current_map_id, target.current_hex_q, target.current_hex_r,
+			source.current_map_id, source.current_hex_q, source.current_hex_r
+		])
+		return false
+
+	# Sync time first
+	Timekeeping.sync_parties()
+
+	db.query("BEGIN TRANSACTION")
+
+	# Move source members to target (unplaced)
+	var source_members := list_party_characters(source_party_id)
+	for member in source_members:
+		var remove_ok := remove_party_member(source_party_id, member.id)
+		if not remove_ok:
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.merge_parties: failed to remove %s from source" % member.id)
+			return false
+		var add_ok := add_party_member(target_party_id, member.id)
+		if not add_ok:
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.merge_parties: failed to add %s to target" % member.id)
+			return false
+
+	# Move source-owned trained creatures, vehicles, and inventory to target
+	var creatures_ok := db.query_with_bindings(
+		"UPDATE trained_creatures SET party_id = ? WHERE party_id = ?",
+		[target_party_id, source_party_id]
+	)
+	var vehicles_ok := db.query_with_bindings(
+		"UPDATE draft_vehicles SET party_id = ? WHERE party_id = ?",
+		[target_party_id, source_party_id]
+	)
+	var inventory_ok := db.query_with_bindings(
+		"UPDATE inventory_items SET party_id = ? WHERE party_id = ?",
+		[target_party_id, source_party_id]
+	)
+	if not (creatures_ok and vehicles_ok and inventory_ok):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.merge_parties: FK updates failed")
+		return false
+
+	# Delete source party_state and party row
+	db.query_with_bindings("DELETE FROM party_state WHERE party_id = ?", [source_party_id])
+	var del_ok := db.query_with_bindings("DELETE FROM parties WHERE id = ?", [source_party_id])
+	if not del_ok:
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.merge_parties: failed to delete source party")
+		return false
+
+	db.query("COMMIT")
+
+	Timekeeping.unregister_party(source_party_id)
+	EventBus.party_merged.emit(target_party_id, source_party_id)
+	return true
 
 
 # ---------------------------------------------------------------------------
@@ -1261,6 +1522,21 @@ func save_character_inventory(character_id: String, items: Array) -> bool:
 	return true
 
 
+## Returns "creature", "vehicle", or "inventory" based on catalog entry fields.
+## Used by all purchase paths to determine whether an item should be promoted
+## to a trained_creatures or draft_vehicles row instead of inventory_items.
+static func classify_item_for_promotion(catalog_entry: Dictionary) -> String:
+	var monster_id: String = str(catalog_entry.get("monster_id", ""))
+	var category: String = str(catalog_entry.get("item_category", ""))
+	# Animals with a monster_id that aren't livestock become creatures.
+	if not monster_id.is_empty() and category != "livestock":
+		return "creature"
+	# Vehicles become draft_vehicles rows.
+	if category == "vehicle":
+		return "vehicle"
+	return "inventory"
+
+
 ## Role mapping from equipment item_category + item_key to trained creature role.
 const _CREATURE_ROLE_MAP := {
 	# Warhorses → War Mount
@@ -1343,6 +1619,58 @@ func create_creature_from_purchase(
 	return create_trained_creature(creature_data)
 
 
+## Creates a draft_vehicles row for a purchased vehicle item.
+## Returns the new vehicle_id, or "" on failure.
+func _create_vehicle_from_purchase(
+		campaign_id: String,
+		party_id: String,
+		item_key: String,
+		catalog_entry: Dictionary) -> String:
+	var data := {
+		"campaign_id": campaign_id,
+		"party_id": party_id,
+		"item_key": item_key,
+		"name": catalog_entry.get("name", item_key),
+	}
+	var vehicle_id := create_draft_vehicle(data)
+	if vehicle_id.is_empty():
+		push_error("CampaignRepository._create_vehicle_from_purchase: create_draft_vehicle failed. item_key=%s" % item_key)
+	return vehicle_id
+
+
+## Promotes an item to the appropriate entity table (trained_creatures or
+## draft_vehicles) based on its catalog classification.  Returns the new
+## entity_id (or last created, if quantity > 1), or "" if no promotion occurred.
+##
+## Every purchase path (character creation, shop, commission pickup) must route
+## promotable items through this method instead of add_inventory_item().
+func promote_inventory_to_entity(
+		item_key: String,
+		quantity: int,
+		handler_character_id: String,
+		campaign_id: String,
+		party_id: String,
+		equipment_catalog: EquipmentCatalog,
+		monster_registry: MonsterRegistry) -> String:
+	var catalog_entry := equipment_catalog.get_item(item_key)
+	var classification := classify_item_for_promotion(catalog_entry)
+	if classification == "inventory":
+		return ""
+
+	var last_id := ""
+	for _i in range(maxi(1, quantity)):
+		match classification:
+			"creature":
+				var monster_id: String = str(catalog_entry.get("monster_id", ""))
+				last_id = create_creature_from_purchase(
+					campaign_id, party_id, handler_character_id,
+					item_key, monster_id, monster_registry)
+			"vehicle":
+				last_id = _create_vehicle_from_purchase(
+					campaign_id, party_id, item_key, catalog_entry)
+	return last_id
+
+
 func save_character_inventory_with_creatures(
 		character_id: String,
 		items: Array,
@@ -1350,22 +1678,27 @@ func save_character_inventory_with_creatures(
 		party_id: String,
 		equipment_catalog: EquipmentCatalog,
 		monster_registry: MonsterRegistry) -> bool:
-	## Like save_character_inventory but extracts animal purchases and creates
-	## trained_creature rows for them. Livestock stays as inventory items.
+	## Like save_character_inventory but extracts animal and vehicle purchases,
+	## promoting them to trained_creatures / draft_vehicles rows respectively.
+	## Livestock and regular items stay as inventory_items.
 	var regular_items: Array = []
 	for item in items:
 		var item_key: String = str(item.get("item_key", ""))
 		var catalog_entry: Dictionary = equipment_catalog.get_item(item_key)
-		var monster_id: String = str(catalog_entry.get("monster_id", ""))
-		var cat: String = str(catalog_entry.get("item_category", ""))
+		var classification := classify_item_for_promotion(catalog_entry)
 
-		# Items with a monster_id and non-livestock category become creatures.
-		if not monster_id.is_empty() and cat != "livestock":
+		if classification != "inventory":
 			var qty: int = int(item.get("quantity", 1))
 			for _i in range(qty):
-				create_creature_from_purchase(
-					campaign_id, party_id, character_id,
-					item_key, monster_id, monster_registry)
+				match classification:
+					"creature":
+						var monster_id: String = str(catalog_entry.get("monster_id", ""))
+						create_creature_from_purchase(
+							campaign_id, party_id, character_id,
+							item_key, monster_id, monster_registry)
+					"vehicle":
+						_create_vehicle_from_purchase(
+							campaign_id, party_id, item_key, catalog_entry)
 		else:
 			regular_items.append(item)
 
@@ -3045,3 +3378,175 @@ func record_abandoned_character(
 			(character_id, dungeon_id, level_num, col, row, abandoned_at, resolved)
 		VALUES (?, ?, ?, ?, ?, ?, 0)
 	""", [character_id, dungeon_id, level_num, col, row, abandoned_at])
+
+
+# ---------------------------------------------------------------------------
+# Location Caches (migration 032, Party Inventory §8)
+# ---------------------------------------------------------------------------
+
+## Creates a new location cache record. [param data] must contain:
+##   campaign_id, location_type, location_key, cache_variant, created_at_day.
+## Optional: container_item_id, is_persistent, decay_check_day, raid_monthly_modifier.
+## Returns the generated cache_id.
+func create_location_cache(data: Dictionary) -> String:
+	var id := generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO location_caches
+			(id, campaign_id, location_type, location_key, cache_variant,
+			 container_item_id, is_persistent, decay_check_day, created_at_day,
+			 raid_monthly_modifier)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		data["campaign_id"],
+		data["location_type"],
+		data["location_key"],
+		data["cache_variant"],
+		data.get("container_item_id"),  # nullable
+		data.get("is_persistent", 0),
+		data.get("decay_check_day"),  # nullable
+		data["created_at_day"],
+		data.get("raid_monthly_modifier", 0),
+	]):
+		push_error("CampaignRepository.create_location_cache: INSERT failed. key=%s variant=%s" % [
+			data.get("location_key", ""), data.get("cache_variant", "")])
+		return ""
+	return id
+
+
+## Returns a single cache record by ID, or empty dict if not found.
+func get_location_cache(cache_id: String) -> Dictionary:
+	db.query_with_bindings(
+		"SELECT * FROM location_caches WHERE id = ?", [cache_id])
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+## Returns the cache at a specific location key, or empty dict if none.
+func get_cache_at_location_key(campaign_id: String, location_key: String) -> Dictionary:
+	db.query_with_bindings(
+		"SELECT * FROM location_caches WHERE campaign_id = ? AND location_key = ?",
+		[campaign_id, location_key])
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+## Returns all ephemeral (non-persistent) caches whose decay day has arrived.
+func list_ephemeral_caches_due(campaign_id: String, cutoff_day: int) -> Array:
+	db.query_with_bindings("""
+		SELECT * FROM location_caches
+		WHERE campaign_id = ? AND is_persistent = 0 AND decay_check_day <= ?
+	""", [campaign_id, cutoff_day])
+	return db.query_result.duplicate()
+
+
+## Returns all hidden_wilderness caches for the campaign.
+func list_hidden_wilderness_caches(campaign_id: String) -> Array:
+	db.query_with_bindings("""
+		SELECT * FROM location_caches
+		WHERE campaign_id = ? AND cache_variant = 'hidden_wilderness'
+	""", [campaign_id])
+	return db.query_result.duplicate()
+
+
+## Returns all caches for a campaign.
+func list_location_caches(campaign_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM location_caches WHERE campaign_id = ?", [campaign_id])
+	return db.query_result.duplicate()
+
+
+## Returns all inventory_items assigned to a cache.
+func list_items_in_cache(cache_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM inventory_items WHERE location_cache_id = ?", [cache_id])
+	return db.query_result.duplicate()
+
+
+## Updates the monthly raid modifier on a hidden wilderness cache.
+func update_cache_raid_modifier(cache_id: String, new_modifier: int) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE location_caches SET raid_monthly_modifier = ? WHERE id = ?",
+		[new_modifier, cache_id]):
+		push_error("CampaignRepository.update_cache_raid_modifier: failed. id=%s" % cache_id)
+		return false
+	return true
+
+
+## Deletes a location cache. ON DELETE CASCADE handles items automatically.
+func delete_location_cache(cache_id: String) -> bool:
+	if not db.query_with_bindings(
+		"DELETE FROM location_caches WHERE id = ?", [cache_id]):
+		push_error("CampaignRepository.delete_location_cache: failed. id=%s" % cache_id)
+		return false
+	return true
+
+
+## Transfers an item into a location cache.
+## Clears character_id, creature_id, vehicle_id, party_id, container_id;
+## sets location_cache_id.
+func transfer_item_to_cache(item_id: String, cache_id: String) -> bool:
+	if not db.query_with_bindings("""
+		UPDATE inventory_items
+		SET location_cache_id = ?, character_id = '', creature_id = NULL,
+			vehicle_id = NULL, party_id = NULL, container_id = '',
+			is_equipped = 0, slot = 'pack'
+		WHERE id = ?
+	""", [cache_id, item_id]):
+		push_error("CampaignRepository.transfer_item_to_cache: failed. item=%s cache=%s" % [
+			item_id, cache_id])
+		return false
+	return true
+
+
+## Transfers an item from a cache to a carrier.
+## [param carrier_type]: "character", "creature", or "vehicle".
+func transfer_item_from_cache(item_id: String, target_carrier_id: String, carrier_type: String) -> bool:
+	var sql: String
+	match carrier_type:
+		"character":
+			sql = "UPDATE inventory_items SET character_id = ?, location_cache_id = NULL, creature_id = NULL, vehicle_id = NULL, party_id = NULL, is_equipped = 0, slot = 'pack' WHERE id = ?"
+		"creature":
+			sql = "UPDATE inventory_items SET creature_id = ?, location_cache_id = NULL, character_id = '', vehicle_id = NULL, party_id = NULL, is_equipped = 0, slot = 'pack' WHERE id = ?"
+		"vehicle":
+			sql = "UPDATE inventory_items SET vehicle_id = ?, location_cache_id = NULL, character_id = '', creature_id = NULL, party_id = NULL, is_equipped = 0, slot = 'pack' WHERE id = ?"
+		_:
+			push_error("CampaignRepository.transfer_item_from_cache: unknown carrier_type '%s'" % carrier_type)
+			return false
+	if not db.query_with_bindings(sql, [target_carrier_id, item_id]):
+		push_error("CampaignRepository.transfer_item_from_cache: failed. item=%s carrier=%s type=%s" % [
+			item_id, target_carrier_id, carrier_type])
+		return false
+	return true
+
+
+# ---------------------------------------------------------------------------
+# Character Preferences (migration 033)
+# ---------------------------------------------------------------------------
+
+## Returns the preferred_tags array for a character, or [] if no row exists.
+func get_character_preferences(character_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT preferred_tags FROM character_preferences WHERE character_id = ?",
+		[character_id])
+	if db.query_result.is_empty():
+		return []
+	var raw: String = str(db.query_result[0].get("preferred_tags", "[]"))
+	var parsed = JSON.parse_string(raw)
+	if parsed is Array:
+		return parsed
+	return []
+
+
+## Saves the preferred_tags array for a character (upsert).
+func save_character_preferences(character_id: String, tags: Array) -> bool:
+	var json_str := JSON.stringify(tags)
+	if not db.query_with_bindings(
+		"INSERT OR REPLACE INTO character_preferences (character_id, preferred_tags) VALUES (?, ?)",
+		[character_id, json_str]):
+		push_error("CampaignRepository.save_character_preferences: failed. character=%s tags=%s" % [
+			character_id, json_str])
+		return false
+	return true

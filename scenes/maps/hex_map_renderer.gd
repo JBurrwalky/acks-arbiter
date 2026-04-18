@@ -95,6 +95,9 @@ var _gate_dialog: CanvasLayer
 ## Cached settlement entrances: Vector2i(hex_q, hex_r) → entrance dict.
 var _settlement_entrance_cache: Dictionary = {}
 
+## Multi-party token management: party_id → Polygon2D
+var _party_tokens: Dictionary = {}
+
 
 # ---------------------------------------------------------------------------
 # Signals
@@ -120,6 +123,8 @@ func _ready() -> void:
 	move_child(_overlay_layer, _fog_layer.get_index())
 
 	# Party token: small flat-top hexagon (start angle 0 = vertex at right).
+	# The original scene token is the "primary" — kept as fallback and used for
+	# single-party play. Multi-party mode creates additional tokens dynamically.
 	var r := 14.0
 	var points: PackedVector2Array = []
 	for i in range(6):
@@ -127,6 +132,11 @@ func _ready() -> void:
 		points.append(Vector2(r * cos(angle_rad), r * sin(angle_rad)))
 	_party_token.polygon = points
 	_party_token.color = Color(1.0, 0.9, 0.1)  # yellow
+
+	# Connect party lifecycle signals for multi-party token management
+	EventBus.party_split.connect(_on_party_split)
+	EventBus.party_merged.connect(_on_party_merged)
+	EventBus.active_party_changed.connect(_on_active_party_switched)
 
 	# "Enter Dungeon" button — child of HexHUD (CanvasLayer) so it stays on screen.
 	_enter_dungeon_btn = Button.new()
@@ -230,7 +240,7 @@ func _on_map_loaded(_map_id: String) -> void:
 	_refresh_terrain_layer()
 	_refresh_overlay_layer()
 	_refresh_fog_layer()
-	_update_party_token_position()
+	_rebuild_party_tokens()
 	_compute_camera_limits()
 	center_on_hex(_map_data.party_hex)
 	_refresh_dungeon_markers()
@@ -245,7 +255,7 @@ func _on_visibility_updated() -> void:
 
 
 func _on_party_moved(_from_hex: Vector2i, _to_hex: Vector2i) -> void:
-	_update_party_token_position()
+	_rebuild_party_tokens()
 	_update_enter_dungeon_button()
 	_update_enter_settlement_button()
 
@@ -552,6 +562,103 @@ func _update_party_token_position() -> void:
 		return
 	var godot_coord := HexMapController.axial_to_godot_map(_map_data.party_hex)
 	_party_token.position = _terrain_layer.map_to_local(godot_coord)
+
+
+## Rebuilds all party tokens from the database. Creates/removes Polygon2D nodes
+## as needed. Active party token is full-color yellow; inactive tokens are
+## desaturated grey-blue and slightly smaller.
+func _rebuild_party_tokens() -> void:
+	if _map_data == null or _terrain_layer == null:
+		return
+
+	var active_id := GameState.active_party_id
+	if active_id.is_empty():
+		active_id = GameState.party_id
+
+	# Query all parties for the campaign
+	var all_parties: Array = CampaignRepository.list_parties_for_campaign(GameState.campaign_id)
+
+	# Track which party_ids are still valid
+	var valid_ids: Dictionary = {}
+
+	for p in all_parties:
+		var pid: String = p.id
+		valid_ids[pid] = true
+
+		# Skip the "primary" party — use the original scene token for it
+		var hex_q: int = p.get("current_hex_q", 0) if p.get("current_hex_q") != null else 0
+		var hex_r: int = p.get("current_hex_r", 0) if p.get("current_hex_r") != null else 0
+
+		if pid == GameState.party_id:
+			# Position the original token
+			var coord := Vector2i(hex_q, hex_r)
+			var godot_coord := HexMapController.axial_to_godot_map(coord)
+			_party_token.position = _terrain_layer.map_to_local(godot_coord)
+			_style_token(_party_token, pid == active_id)
+			continue
+
+		# Create or reuse a dynamic token
+		var token: Polygon2D
+		if _party_tokens.has(pid):
+			token = _party_tokens[pid]
+		else:
+			token = _create_party_token_node()
+			_entity_layer.add_child(token)
+			_party_tokens[pid] = token
+
+		# Position
+		var coord := Vector2i(hex_q, hex_r)
+		var godot_coord := HexMapController.axial_to_godot_map(coord)
+		token.position = _terrain_layer.map_to_local(godot_coord)
+		_style_token(token, pid == active_id)
+
+	# Style the primary token as well
+	_style_token(_party_token, GameState.party_id == active_id)
+
+	# Remove tokens for parties that no longer exist
+	var stale_ids: Array = []
+	for pid in _party_tokens:
+		if not valid_ids.has(pid):
+			stale_ids.append(pid)
+	for pid in stale_ids:
+		var token: Polygon2D = _party_tokens[pid]
+		if is_instance_valid(token):
+			token.queue_free()
+		_party_tokens.erase(pid)
+
+
+## Creates a new Polygon2D party token node with the standard hex shape.
+func _create_party_token_node() -> Polygon2D:
+	var token := Polygon2D.new()
+	var r := 14.0
+	var points: PackedVector2Array = []
+	for i in range(6):
+		var angle_rad := deg_to_rad(60.0 * i)
+		points.append(Vector2(r * cos(angle_rad), r * sin(angle_rad)))
+	token.polygon = points
+	return token
+
+
+## Styles a party token as active (bright yellow, larger) or inactive (grey-blue, smaller).
+func _style_token(token: Polygon2D, is_active: bool) -> void:
+	if is_active:
+		token.color = Color(1.0, 0.9, 0.1)  # bright yellow
+		token.scale = Vector2(1.15, 1.15)
+	else:
+		token.color = Color(0.5, 0.55, 0.7)  # desaturated grey-blue
+		token.scale = Vector2(0.9, 0.9)
+
+
+func _on_party_split(_original_id: String, _new_id: String) -> void:
+	_rebuild_party_tokens()
+
+
+func _on_party_merged(_surviving_id: String, _dissolved_id: String) -> void:
+	_rebuild_party_tokens()
+
+
+func _on_active_party_switched(_prev_id: String, _new_id: String) -> void:
+	_rebuild_party_tokens()
 
 
 ## Places a "D" label marker on each revealed hex that has a dungeon entrance.

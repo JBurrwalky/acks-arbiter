@@ -157,6 +157,29 @@ signal wallet_deposited(party_id: String, details: Dictionary)
 ## The wallet's available total changed (catch-all for UI refresh).
 signal wallet_changed(party_id: String)
 
+
+# ---------------------------------------------------------------------------
+# Inventory / Location Cache
+# ---------------------------------------------------------------------------
+
+## A new location cache was created. variant: "loose", "locked_container", "hidden_wilderness"
+signal cache_created(cache_id: String, location_key: String, variant: String)
+
+## An ephemeral cache decayed — all items lost.
+## items_lost: Array of Dictionaries [{item_id: String, name: String}, ...]
+signal cache_decayed(cache_id: String, items_lost: Array)
+
+## A hidden wilderness cache was raided — partial item loss.
+## items_lost: Array of Dictionaries [{item_id, name, value_cp}, ...]
+signal cache_raided(cache_id: String, items_lost: Array, value_lost_gp: float)
+
+## An item was dropped into a location cache.
+signal cache_dropped(cache_id: String, item_id: String, source_carrier_id: String)
+
+## An item was picked up from a location cache.
+signal cache_picked_up(cache_id: String, item_id: String, carrier_id: String)
+
+
 ## XP was awarded to a character.
 signal xp_awarded(character_id: String, amount: int)
 
@@ -364,6 +387,9 @@ signal player_roll_cancelled
 
 ## Emitted after SessionRunner completes a state transition.
 signal session_state_transitioned(from_key: String, to_key: String)
+
+## Active party switched. Consumers: wilderness renderer, HUD, character sheet.
+signal active_party_changed(previous_party_id: String, new_party_id: String)
 
 # ---------------------------------------------------------------------------
 # Dev testing signals (temporary — remove when session runner exists)

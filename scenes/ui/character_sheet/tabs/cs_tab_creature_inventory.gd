@@ -28,7 +28,7 @@ func display(creature: TrainedCreatureData, registries: Dictionary) -> void:
 
 	_render_equip_slot("Barding", "barding", creature)
 	_render_equip_slot("Saddle", "saddle", creature)
-	_render_equip_slot("Saddlebags", "saddlebags", creature)
+	_render_equip_slot("Pack Container", "pack_container", creature)
 	_render_equip_slot("Caparison", "caparison", creature)
 
 	# Equip from handler button
@@ -55,18 +55,27 @@ func display(creature: TrainedCreatureData, registries: Dictionary) -> void:
 
 	add_child(HSeparator.new())
 
-	# --- Saddlebag Contents ---
-	var saddlebag_id := CreatureEquipmentService.get_saddlebag_item_id(creature)
-	if not saddlebag_id.is_empty():
-		_add_section_header("Saddlebag Contents")
+	# --- Pack Container Contents (saddlebags or panniers) ---
+	var pack_container_id := CreatureEquipmentService.get_pack_container_item_id(creature)
+	if not pack_container_id.is_empty():
+		# Find the actual item key for capacity lookup
+		var container_key := ""
+		var container_name := "Container"
+		for item in creature.inventory:
+			var iid := _item_field(item, "id")
+			if iid == pack_container_id:
+				container_key = _item_field(item, "item_key")
+				container_name = _item_field(item, "name")
+				break
+		_add_section_header("%s Contents" % container_name)
 		var used_units := 0
 		var sb_items: Array = []
 		for item in creature.inventory:
 			var cid := _item_field(item, "container_id")
-			if cid == saddlebag_id:
+			if cid == pack_container_id:
 				sb_items.append(item)
 				used_units += _item_int(item, "encumbrance_units") * _item_int(item, "quantity", 1)
-		var capacity_units: int = _catalog.get_container_capacity_units("saddlebags")
+		var capacity_units: int = _catalog.get_container_capacity_units(container_key)
 		var cap_stone := "%.1f / %.1f stone" % [used_units / 1000.0, capacity_units / 1000.0]
 		_add_row("Capacity", cap_stone)
 
@@ -237,8 +246,8 @@ func _find_equipped_by_type(creature: TrainedCreatureData, slot_type: String):
 			"saddle":
 				if key.begins_with("saddle_"):
 					return item
-			"saddlebags":
-				if key == "saddlebags":
+			"pack_container":
+				if key == "saddlebags" or key == "panniers":
 					return item
 			"caparison":
 				if key == "caparison":
@@ -255,7 +264,7 @@ func _get_equippable_handler_items(creature: TrainedCreatureData) -> Array:
 		var cat: String = str(item.get("item_category", ""))
 		var key: String = str(item.get("item_key", ""))
 		# Only show items that could be equipped on this creature.
-		if cat == "barding" or key.begins_with("saddle_") or key == "saddlebags" or key == "caparison":
+		if cat == "barding" or key.begins_with("saddle_") or key == "saddlebags" or key == "panniers" or key == "caparison":
 			var error := CreatureEquipmentService.validate_equip_on_creature(creature, item, _catalog)
 			if error.is_empty():
 				result.append(item)

@@ -31,3 +31,20 @@ func exit(runner) -> void:
 ## doesn't know or care which input channel produced the action.
 func handle_action(runner, action: String, payload: Dictionary) -> String:
 	return ""
+
+
+## Returns a location key for the given character's current position.
+## Override in exploration states. Default "unknown" means the state
+## doesn't define a location (overlay/meta states).
+##
+## Format:
+##   Wilderness:  "hex:Q,R"
+##   Dungeon:     "dungeon:<dungeon_id>:level:<level_number>"
+##   Settlement:  "settlement:<settlement_id>"
+##   Overlay/meta states: "unknown" (inherits parent via GameState bridge)
+##
+## v1 simplification: all PCs in the same party state return the same key
+## (party moves as a unit). The character_id parameter is reserved for
+## future split-party support.
+func get_location_key_for_character(_character_id: String) -> String:
+	return "unknown"

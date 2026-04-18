@@ -5365,3 +5365,368 @@ Files modified (wiring changes only):
 - Session 2: Build LocationCacheManager (location cache subsystem per GDD §12.2) — ground drops, hide caches, stronghold storage.
 - Wire location-key filtering into PartyWallet.get_contributors() so split-party scenarios work correctly.
 - Run the full test suite in Godot headless mode to verify no regressions from the Currency rate fix.
+
+
+## Session 2026-04-17 — LocationCacheManager & Location-Key Plumbing (Party Inventory Session 2)
+
+**Task:** Implement Session 2 of the Party Inventory system: location-key plumbing on session runner states, LocationCacheManager autoload for ground-drop inventory persistence, DB migration for location_caches table, and PartyWallet location-key retrofit. Per `gdd-party-inventory.md` §8 and §12.2.
+**Model used:** Opus 4.6
+
+**Completed:**
+
+- **GameState bridge** (`engine/autoloads/game_state.gd`): Added `current_location_key: String` property. SessionRunner updates this on exploration state transitions. Autoloads (PartyWallet, LocationCacheManager) read it instead of traversing the scene tree. Reset on `end_session()`.
+- **SessionState virtual method** (`engine/subsystems/session/session_state.gd`): Added `get_location_key_for_character(_character_id: String) -> String` with "unknown" default. Reserved character_id param for future split-party support.
+- **SessionRunner helper** (`engine/subsystems/session/session_runner.gd`): Added `get_location_key_for_character(character_id)` that delegates to current state, falls back to `GameState.current_location_key`. Added GameState sync in `transition_to_state()` — exploration states set the key, meta states set "none", overlay states preserve parent key.
+- **3 state overrides**: WildernessExploreState returns `"hex:Q,R"` from `party_data.current_hex_q/r`. DungeonExploreState returns `"dungeon:ID:level:N"` from `_controller.get_dungeon_id()/get_current_level()`. SettlementExploreState returns `"settlement:ID"` from `_settlement_id` field. 8 remaining states use base class "unknown" default (overlay states inherit, meta states handled by runner).
+- **EventBus signals** (`engine/autoloads/event_bus.gd`): Added 5 cache lifecycle signals: `cache_created`, `cache_decayed`, `cache_raided`, `cache_dropped`, `cache_picked_up`.
+- **Migration 032** (`db/migrations/032_location_caches.sql`): Created `location_caches` table with CHECK constraints for `location_type` and `cache_variant`. Added `location_cache_id` FK column to `inventory_items` with ON DELETE CASCADE. Two indexes for location and decay queries. Updated `db/schema.sql`.
+- **CampaignRepository additions** (`engine/autoloads/campaign_repository.gd`): Added 11 methods — `create_location_cache`, `get_location_cache`, `get_cache_at_location_key`, `list_ephemeral_caches_due`, `list_hidden_wilderness_caches`, `list_location_caches`, `list_items_in_cache`, `update_cache_raid_modifier`, `delete_location_cache`, `transfer_item_to_cache`, `transfer_item_from_cache`.
+- **LocationCacheManager autoload** (`engine/subsystems/inventory/location_cache_manager.gd`): 9th autoload. 5 cache creation methods (dungeon loose, dungeon container, wilderness loose, wilderness hidden, settlement loose). Item routing via `drop_item_to_cache()` and `pick_up_item()`. Daily decay resolution connected to `Timekeeping.day_changed`. Monthly raid resolution connected to `Timekeeping.month_changed` with 2d4 loss curve (25%–75% value). Hide-and-memorize flow (6 turns = 1 hour). Instantiates EquipmentCatalog locally for value computation.
+- **PartyWallet retrofit** (`engine/subsystems/commerce/party_wallet.gd`): `get_contributors()` now reads `GameState.current_location_key` with guards for "none"/"unknown". In v1 the filter is a pass-through (all PCs co-located). Removed Session 1 "Known issue" comment.
+- **Tests** (`tests/test_location_cache_manager.gd`): 25 tests covering cache creation (5), item routing (5), daily decay (4), monthly raids (6), hide-and-memorize (2), and PartyWallet location filter (3). Uses `GameState.dice_overrides` for deterministic dice. Registered in `test_runner.gd` and `test_runner.tscn`.
+- **Documentation**: Updated `docs/coding_conventions.md` — §5.1 autoload count (8→9, added LocationCacheManager), §10.2 dice roll types (3 new), §12 ACKS rules (location cache decay, hide-and-memorize cost). Updated `build_log.md`.
+
+**Decisions made:**
+
+- **GameState bridge instead of direct SessionRunner access**: SessionRunner is a scene-tree node, not an autoload. Rather than fragile `get_tree().root.get_node("Main/SessionRunner")` from autoloads, we store `current_location_key` on GameState (autoload). SessionRunner updates it on exploration state transitions. Overlay states (combat, camp, encounter, downtime) don't touch it, so the parent exploration state's key persists naturally.
+- **Base class default "unknown" + runner logic**: Only 3 exploration states need explicit overrides. Overlay states inherit via GameState. Transient states handled by `transition_to_state()` checking `state_key`. More maintainable than adding override methods to all 11 states.
+- **No MockDice class**: Prompt specified "MockDice pattern from test_combat_*.gd" but no such class exists. Tests use `GameState.dice_overrides[roll_type] = value` (single-shot, consumed by DiceSystem on next matching roll).
+- **EquipmentCatalog instantiated locally**: Not an autoload. LocationCacheManager creates its own instance in `_ready()`, matching the pattern from ShopService and CombatState.
+- **v1 location filter is pass-through**: `PartyWallet.get_contributors()` reads `GameState.current_location_key` and has a filter loop, but in v1 all party PCs share the same location key (party moves as a unit). The plumbing is in place for future split-party without API changes.
+
+**Interfaces defined or changed:**
+
+- `GameState.current_location_key: String` — new property
+- `SessionState.get_location_key_for_character(_character_id: String) -> String` — new virtual method
+- `SessionRunner.get_location_key_for_character(character_id: String) -> String` — new public method
+- `EventBus.cache_created(cache_id: String, location_key: String, variant: String)` — new signal
+- `EventBus.cache_decayed(cache_id: String, items_lost: Array)` — new signal
+- `EventBus.cache_raided(cache_id: String, items_lost: Array, value_lost_gp: float)` — new signal
+- `EventBus.cache_dropped(cache_id: String, item_id: String, source_carrier_id: String)` — new signal
+- `EventBus.cache_picked_up(cache_id: String, item_id: String, carrier_id: String)` — new signal
+- `CampaignRepository.create_location_cache(data: Dictionary) -> String`
+- `CampaignRepository.get_location_cache(cache_id: String) -> Dictionary`
+- `CampaignRepository.get_cache_at_location_key(campaign_id: String, location_key: String) -> Dictionary`
+- `CampaignRepository.list_ephemeral_caches_due(campaign_id: String, cutoff_day: int) -> Array`
+- `CampaignRepository.list_hidden_wilderness_caches(campaign_id: String) -> Array`
+- `CampaignRepository.list_location_caches(campaign_id: String) -> Array`
+- `CampaignRepository.list_items_in_cache(cache_id: String) -> Array`
+- `CampaignRepository.update_cache_raid_modifier(cache_id: String, new_modifier: int) -> bool`
+- `CampaignRepository.delete_location_cache(cache_id: String) -> bool`
+- `CampaignRepository.transfer_item_to_cache(item_id: String, cache_id: String) -> bool`
+- `CampaignRepository.transfer_item_from_cache(item_id: String, target_carrier_id: String, carrier_type: String) -> bool`
+- `LocationCacheManager.create_dungeon_loose_cache(dungeon_id: String, cell_xy: Vector2i) -> String`
+- `LocationCacheManager.create_dungeon_container_cache(dungeon_id: String, cell_xy: Vector2i, container_item_id: String) -> String`
+- `LocationCacheManager.create_wilderness_loose_cache(hex_qr: Vector2i) -> String`
+- `LocationCacheManager.create_wilderness_hidden_cache(hex_qr: Vector2i) -> String`
+- `LocationCacheManager.create_settlement_cache(settlement_id: String, poi_id: String) -> String`
+- `LocationCacheManager.get_cache_at_location(location_key: String) -> Dictionary`
+- `LocationCacheManager.list_caches_for_campaign() -> Array`
+- `LocationCacheManager.get_items_in_cache(cache_id: String) -> Array`
+- `LocationCacheManager.drop_item_to_cache(item_id: String, cache_id: String, source_carrier_id: String) -> bool`
+- `LocationCacheManager.pick_up_item(item_id: String, target_carrier_id: String, carrier_type: String) -> bool`
+- `LocationCacheManager.hide_and_memorize_wilderness_cache(hex_qr: Vector2i, party_id: String) -> String`
+- `LocationCacheManager.resolve_daily_decay(current_day: int) -> void`
+- `LocationCacheManager.resolve_monthly_raids() -> void`
+
+**Database changes:**
+
+- Migration 032: `location_caches` table. `location_cache_id` column added to `inventory_items`.
+
+**Tests added/updated:**
+
+- `tests/test_location_cache_manager.gd` — 25 new tests (cache creation 5, item routing 5, daily decay 4, monthly raids 6, hide-and-memorize 2, PartyWallet location filter 3)
+- Registered `LocationCacheManagerTests` in `test_runner.gd` and `test_runner.tscn`
+
+**Known issues:**
+
+- **Dungeon-loose-cache relocation deferred**: GDD §13.1 specifies that when dungeon loose caches decay, 50% of items should relocate to pre-existing dungeon treasure caches. v1 simply deletes all items on decay. This is noted with a comment in `resolve_daily_decay()`.
+- **GameState.current_location_key not updated mid-state**: When the party moves to a new hex during wilderness exploration, `GameState.current_location_key` isn't updated until the next state transition. For v1 this is fine (all PCs co-located, filter is pass-through). Future split-party work may need more granular updates.
+- **Session 1 "Location filtering stubbed" known issue**: RESOLVED by this session's GameState bridge and PartyWallet retrofit.
+
+**Next session should:**
+
+- Session 3: Build Party Inventory overlay (GDD §12.3) — F9 toggle overlay showing all carriers, their items, and location caches. The overlay queries LocationCacheManager for cache data.
+- Add Drop/Hide dialog UX for moving items from carriers to caches.
+
+---
+
+## Session 2026-04-17 — Override Panel Cache Creation
+
+**Task:** Add cache creation to the Override panel's Spawning tab so dev/playtest can create location caches without the Party Inventory overlay (which doesn't exist yet).
+**Model used:** Opus 4.6
+
+**Completed:**
+
+- Added 4 new methods to `engine/subsystems/override/override_manager.gd`:
+  - `override_create_wilderness_loose_cache(hex_q, hex_r) -> String`
+  - `override_create_wilderness_hidden_cache(hex_q, hex_r) -> String`
+  - `override_create_dungeon_loose_cache(dungeon_id, cell_col, cell_row) -> String`
+  - `override_create_settlement_cache(settlement_id, poi_id) -> String`
+  Each wraps the corresponding `LocationCacheManager.create_*` method with `_log_override()` audit entry and `EventBus.override_applied` signal.
+- Added "Place Cache" section to Spawning tab in `scenes/ui/override/override_panel.gd`:
+  - Variant dropdown (Wilderness Loose, Wilderness Hidden, Dungeon Loose, Settlement Loose)
+  - Dynamic input rebuilding based on variant selection
+  - Wilderness variants auto-fill hex Q/R from party's current hex
+  - Dungeon variant shows dropdown populated from `CampaignRepository.get_dungeon_entrances_for_map()`
+  - Settlement variant shows dropdown populated from `CampaignRepository.get_settlement_entrances_for_map()` + LineEdit for POI ID
+  - Status label shows success/failure with cache ID
+  - Disables Create button with helpful message when no dungeons/settlements exist
+- Added 6 new tests to `tests/test_override_manager.gd`:
+  - `test_override_create_wilderness_loose_cache` — verifies location_key, variant, non-persistent
+  - `test_override_create_wilderness_hidden_cache` — verifies variant=hidden_wilderness, persistent, raid_modifier=0
+  - `test_override_create_dungeon_loose_cache` — verifies location_type=dungeon_cell, decay_check_day set
+  - `test_override_create_settlement_cache` — verifies location_type=settlement_node, decay_check_day set
+  - `test_override_create_cache_logs_audit_entry` — verifies override_log row exists with correct target_id
+  - `test_override_create_cache_returns_nonempty_id` — all 4 methods return non-empty IDs
+
+**Decisions made:**
+
+- Settlement POI input uses a LineEdit (free text) rather than a dropdown. POIs are stored in SettlementMapData (in-memory), not as a DB table, so populating a dropdown would require loading and parsing settlement_data JSON. A text input is simpler and appropriate for a dev panel.
+- Dungeon container caches are not exposed in the Override UI. They require selecting a pre-existing container inventory item, which is awkward for a dev panel.
+
+**Interfaces defined or changed:**
+
+- 4 new public methods on OverrideManager (signatures above). All return `String` (cache_id).
+- 5 new member variables on OverridePanel: `_cache_variant_dropdown`, `_cache_inputs_container`, `_cache_create_button`, `_cache_status_label`, `_cache_input_widgets`.
+- Override log types: `cache_create_wilderness_loose`, `cache_create_wilderness_hidden`, `cache_create_dungeon_loose`, `cache_create_settlement`.
+
+**Database changes:** None. Uses existing `location_caches` and `override_log` tables.
+
+**Tests added/updated:** 6 new tests in `test_override_manager.gd` (listed above).
+
+**Known issues:**
+
+- **Dungeon container caches not in Override UI** — requires a pre-existing container inventory item; deferred to gameplay UI.
+- **Settlement POI ID not validated** — the LineEdit accepts any string; if the POI doesn't exist in the settlement's SettlementMapData, the cache will be created with a non-matching location_key. Acceptable for dev use.
+
+**Next session should:**
+
+- Session 3: Build Party Inventory overlay (GDD §12.3) — F9 toggle overlay showing all carriers, their items, and location caches.
+- Add Drop/Hide dialog UX for moving items from carriers to caches.
+
+---
+
+## Session 2026-04-17 — Pack Saddle and Panniers Catalog Pull-Forward
+
+**Task:** Pull forward `saddle_pack` and `panniers` catalog entries from Session 5 scope so players can buy them in the equipment shop now. Temporary stubs in CreatureEquipmentService; full saddle taxonomy rewrite stays in Session 5.
+**Model used:** Opus 4.6
+**Completed:**
+- Added `saddle_pack` and `panniers` entries to `data/equipment/transport.json` per GDD §10.1 and §10.2. Both cost 5 gp (500 cp). Saddle_pack is 1 stone encumbrance; panniers are 1/3 stone with 5 stone container capacity.
+- Updated `engine/subsystems/characters/creature_equipment_service.gd`:
+  - Generalized saddlebags validation block to also handle panniers (mutually exclusive — both use "pack" slot).
+  - Added `has_pack_container_equipped()` and `get_pack_container_item_id()` methods that check for saddlebags OR panniers. Old methods delegate to new ones for backward compatibility.
+  - Generalized `validate_into_saddlebags()` to find actual container item_key and use it for capacity lookup (supports panniers' 5000-unit capacity vs saddlebags' 3000).
+  - Added `panniers` to `determine_creature_slot()` → returns "pack".
+  - Added TODO comments marking all Session 5 enforcement gaps.
+- Updated `scenes/ui/character_sheet/tabs/cs_tab_creature_inventory.gd`:
+  - Changed "Saddlebags" slot to "Pack Container" slot type that matches saddlebags OR panniers.
+  - Container contents section now dynamically reads the equipped container's name and item_key for header and capacity lookup.
+  - Equip-from-handler filter now includes panniers.
+- Added 6 new tests in `tests/test_creature_equipment_service.gd`: pack saddle equip, panniers require saddle, panniers with saddle, panniers conflict with saddlebags, panniers slot, panniers container capacity.
+- Added 2 new tests in `tests/test_equipment_catalog.gd`: pack_saddle_in_catalog, panniers_in_catalog. Updated item count (174 → 176), container identification, and container capacity tests.
+
+**Decisions made:**
+- Panniers and saddlebags are mutually exclusive (both occupy "pack" slot). A creature can have one or the other, not both.
+- `saddle_pack` works via existing `begins_with("saddle_")` pattern — no special-casing needed for saddle validation.
+- Old `has_saddlebags_equipped()` and `get_saddlebag_item_id()` kept as delegates to new generalized methods, avoiding breakage of any external callers.
+
+**Interfaces defined or changed:**
+- `CreatureEquipmentService.has_pack_container_equipped(creature) -> bool` — checks saddlebags or panniers.
+- `CreatureEquipmentService.get_pack_container_item_id(creature) -> String` — returns ID of equipped saddlebags or panniers.
+- `validate_into_saddlebags()` now accepts panniers as valid container targets (method name kept for backward compatibility).
+
+**Database changes:** None. Equipment catalog is JSON-only.
+
+**Tests added/updated:**
+- `test_creature_equipment_service.gd`: +6 tests (pack saddle equip, panniers require saddle, panniers with saddle, panniers conflict with saddlebags, panniers slot, panniers container capacity).
+- `test_equipment_catalog.gd`: +2 tests (pack_saddle_in_catalog, panniers_in_catalog), updated item count and container assertions.
+
+**Known issues:**
+- `saddle_pack` currently behaves identically to `saddle_draft` for hitching validation (should reject hitching per GDD §2.3a but may currently accept). Full enforcement is Session 5.
+- `panniers` currently equip-validates against any saddle (should require `saddle_pack` specifically per GDD §2.3a). Full enforcement is Session 5.
+- No change to the original Session 5 scope — the saddle taxonomy rewrite still needs to happen. This fix only ensures the items exist and don't crash.
+
+**Next session should:**
+- Session 3: Build Party Inventory overlay (GDD §12.3).
+- Session 5 (unchanged): Full saddle taxonomy rewrite per GDD §2.3a — enforce saddle-type-specific container permissions, hitching rejection for non-draft saddles, rope-as-rigging-state.
+
+---
+
+## Session 2026-04-17 — Party Inventory Overlay (Session 3)
+
+**Task:** Build the Party Inventory overlay — a Ctrl+Alt+I-toggled CanvasLayer 50 UI showing all party carriers as columns with drag-and-drop transfers, plus supporting modals and a pure-logic transfer validator.
+**Model used:** Opus 4.6 for planning and implementation.
+**Completed:**
+
+*New files:*
+- `db/migrations/033_character_preferences.sql` — `character_preferences` table (single row per character, JSON array of preferred_tags).
+- `db/schema.sql` — appended character_preferences CREATE TABLE.
+- `engine/subsystems/inventory/party_inventory_transfer_validator.gd` — `class_name PartyInventoryTransferValidator`, extends RefCounted. Pure validation: coin lock, equipped clothing lock, carrier-type restrictions (with explicit draft saddle rejection), context friction (location key matching), capacity/encumbrance checks, slot resolution. Stubs for dungeon adjacency and combat trade action.
+- `tests/test_party_inventory_transfer_validator.gd` — 20 tests covering coin locks, clothing lock, carrier-type restrictions, context friction, capacity bands, slot resolution, same-carrier rejection.
+- `scenes/ui/party_inventory/carrier_column.tscn` + `carrier_column.gd` — Reusable column component (VBoxContainer, no class_name). 5 variants: PC, HENCHMAN, CREATURE, VEHICLE, CACHE. Inner `_ItemRow` class with drag-and-drop. Reuses GoldDisplay and EncumbranceBar. Filter/search support (dims non-matching to 30% alpha).
+- `scenes/ui/party_inventory/party_inventory_overlay.tscn` + `party_inventory_overlay.gd` — Main overlay (CanvasLayer 50, no class_name). Programmatic UI: header with filter/search, horizontal scroll of CarrierColumns, footer with party GP total + rations + auto-distribute stub. Transfer coordinator with full dispatch table. Lazy modal creation. Drop-to-ground routing by location type.
+- `scenes/ui/party_inventory/character_preferences_modal.gd` — 8-tag checkbox editor (torch_bearer, rations_keeper, etc.). Persists via CampaignRepository.
+- `scenes/ui/party_inventory/drop_item_dialog.gd` — Wilderness-only dialog: "Drop on ground" (ephemeral) vs "Hide and memorize" (permanent, 1 hour cost).
+- `scenes/ui/party_inventory/transfer_gold_modal.gd` — Source/target dropdowns from PartyWallet.get_contributors(). GP float amount, banker's rounding to CP. Live preview.
+- `scenes/ui/party_inventory/item_context_menu.gd` — PopupMenu: coins → "Transfer Gold…"; non-coins → "Send to…" submenu (greyed-out invalid targets with tooltip), "Drop on ground", "Split stack" (stub), "View details" (stub), "Equip/Unequip".
+
+*Modified files:*
+- `engine/autoloads/campaign_repository.gd` — added `get_character_preferences()` and `save_character_preferences()` (JSON array UPSERT).
+- `project.godot` — added `party_inventory_toggle` input action (Ctrl+Alt+I, physical_keycode 73).
+- `scenes/Main.tscn` — added PartyInventoryOverlay instance between PartyManagementOverlay and NotificationManager.
+- `tests/test_runner.gd` + `tests/test_runner.tscn` — registered TransferValidatorTests suite.
+- `docs/coding_conventions.md` — added CanvasLayer 50 row to §13.1, PartyInventoryOverlay to Main.tscn tree diagram, transfer validation convention to §12.
+
+**Decisions made:**
+- CanvasLayer 50 (between CharSheet 48 and DicePrompt 64) per prompt specification.
+- Explicit draft saddle rejection in transfer validator — `CreatureEquipmentService.validate_cargo_on_creature()` checks `get_load_multiplier() <= 0.0` which returns 1.0 for draft saddle, so the validator adds its own check.
+- Missing transfer pairs (creature→creature, creature→vehicle, vehicle→creature, vehicle→vehicle) routed through intermediate character hop rather than adding new CampaignRepository methods.
+- Character preferences stored as JSON array in single row (simpler than normalized table for fixed 8-tag set).
+- No `class_name` on any scene-instantiated UI scripts; `class_name` only on the RefCounted validator.
+
+**Interfaces defined or changed:**
+- `PartyInventoryTransferValidator.validate_transfer(source, target, context, item) -> {ok: bool, reason: String, warnings: Array, resolved_slot: String}` — source: `{carrier_type, carrier_id, item_id, quantity}`, target: `{carrier_type, carrier_id, slot, data}`, context: `{location_key, is_in_combat, active_character_id}`.
+- `CampaignRepository.get_character_preferences(character_id) -> Array` — returns array of tag strings.
+- `CampaignRepository.save_character_preferences(character_id, tags) -> bool` — UPSERT with JSON serialization.
+- CarrierColumn signals: `transfer_requested`, `item_context_menu_requested`, `gold_display_clicked`, `prefs_clicked`, `pick_up_all_clicked`.
+- ItemContextMenu signals: `send_to_requested`, `drop_requested`, `transfer_gold_requested`.
+- DropItemDialog signal: `drop_confirmed(item_id, source_carrier_type, source_carrier_id, mode)`.
+- TransferGoldModal signal: `transfer_completed`.
+- CharacterPreferencesModal signal: `preferences_saved(character_id, tags)`.
+
+**Database changes:**
+- Migration 033: `character_preferences` table (character_id TEXT PK, preferred_tags TEXT DEFAULT '[]').
+
+**Tests added/updated:**
+- `test_party_inventory_transfer_validator.gd`: 20 tests — coin locks (2), clothing lock (1), carrier-type restrictions (5), context friction (4), capacity bands (3), slot resolution (2), same-carrier rejection (1), equipped clothing edge case (1), cross-location creature (1).
+
+**Known issues:**
+- Dungeon adjacency check (`_check_dungeon_adjacency()`) is a stub — always returns ok. Full Chebyshev ≤1 check needs `DungeonMapController.are_adjacent()`. Session 5 polish.
+- Combat trade action check (`_check_combat_trade_action()`) is a stub — always returns ok. Needs combat turn economy integration.
+- Auto-distribute button shows "Coming in Session 4" notification.
+- Missing direct transfer pairs (creature→creature, creature→vehicle, vehicle→creature, vehicle→vehicle) use intermediate character hop.
+- "View details" context menu item is a stub (no item detail panel).
+- "Split stack" context menu item is a stub (needs numeric input dialog).
+- Draft saddle cargo rejection relies on validator-level check, not `CreatureEquipmentService`. Full saddle taxonomy rewrite is Session 5.
+
+**Next session should:**
+- Session 4: Loot Distribution modal and Auto-distribute algorithm per GDD §12.4.
+- Session 5: Full saddle taxonomy rewrite, dungeon adjacency enforcement, direct transfer pair methods.
+
+---
+
+## Session 2026-04-18 — Wilderness Party Splitting (Bug Fix 2)
+
+**Task:** Implement minimum viable party split/merge: CampaignRepository methods, active party tracking, multi-party hex renderer tokens, Party Management overlay split/merge UI.
+**Model used:** Opus 4.6
+
+**Completed:**
+- `engine/autoloads/event_bus.gd`: Added `active_party_changed(previous_party_id, new_party_id)` signal.
+- `engine/autoloads/game_state.gd`: Added `active_party_id` property, `set_active_party()` method. Initialised in `start_session()`, cleared in `end_session()`.
+- `engine/autoloads/campaign_repository.gd`: Added 4 new methods:
+  - `list_parties_for_campaign(campaign_id) -> Array` — all parties for a campaign.
+  - `get_party_for_character(character_id) -> String` — reverse lookup from character to party.
+  - `split_party(source_party_id, new_party_name, character_ids_to_split) -> String` — transactional split with validation, position copy, Timekeeping registration, signal emission.
+  - `merge_parties(target_party_id, source_party_id) -> bool` — transactional merge with co-location check, FK transfer (trained_creatures, draft_vehicles, inventory_items), party_state cleanup, Timekeeping unregistration, signal emission.
+- `engine/subsystems/session/states/wilderness_explore_state.gd`: Connects to `active_party_changed`; registers all campaign parties with Timekeeping on enter; `get_location_key_for_character()` now does per-character party lookup; `_on_active_party_changed` re-centers camera.
+- `scenes/maps/hex_map_renderer.gd`: Multi-party token system — `_party_tokens` dictionary manages dynamic Polygon2D nodes per party. Active token is bright yellow + 1.15x scale; inactive tokens are grey-blue + 0.9x scale. Rebuilds on map load, party_moved, party_split, party_merged, active_party_changed.
+- `scenes/ui/party_management/party_management_overlay.gd`: Members tab now has Active Party dropdown (switches via `GameState.set_active_party`), Split Party button (opens modal dialog with character checkboxes and name field), Merge With dropdown (filtered to co-located parties, disabled when none). `_load_party()` uses `active_party_id`. Connected to `party_split`, `party_merged`, `active_party_changed` signals for auto-refresh.
+
+**Decisions made:**
+- No migration needed — all data fits in existing schema (`parties`, `party_members`, `party_clocks`, etc.).
+- `GameState.active_party_id` is runtime-only (not persisted to DB). On session load it defaults to `party_id`. Future: persist if needed for save/reload mid-split.
+- Formation positions reset to UNASSIGNED on split/merge — player re-places characters. Avoids complex formation migration logic.
+- Merge deletes the source party's `party_state` row before deleting the party row itself, preventing FK violations.
+- Hex-click to switch active party is deferred to polish. Switching is dropdown-only for v1.
+
+**Interfaces defined or changed:**
+- `EventBus.active_party_changed(previous_party_id: String, new_party_id: String)` — new signal.
+- `GameState.active_party_id: String` — new property.
+- `GameState.set_active_party(party_id: String)` — new method.
+- `CampaignRepository.list_parties_for_campaign(campaign_id: String) -> Array` — new method.
+- `CampaignRepository.get_party_for_character(character_id: String) -> String` — new method.
+- `CampaignRepository.split_party(source_party_id: String, new_party_name: String, character_ids_to_split: Array) -> String` — new method.
+- `CampaignRepository.merge_parties(target_party_id: String, source_party_id: String) -> bool` — new method.
+
+**Database changes:**
+- None. No migration needed.
+
+**Tests added/updated:**
+- `tests/test_party_split_merge.gd`: 12 tests — split with 1 character, split N-1, split all rejected, split empty list rejected, split wrong character rejected, split copies position, split emits signal, merge same hex, merge different hex rejected, merge self rejected, merge transfers FKs, merge emits signal. Registered in `test_runner.gd` and `test_runner.tscn`.
+
+**Known issues:**
+- Party split/merge is wilderness-only. Dungeon/settlement splitting is a larger UX problem — flagged for future work.
+- No party-to-party item/gold transfer. Deferred to later session.
+- Multi-party combat not implemented — encounter triggers against active party only.
+- `active_party_id` is not persisted; a mid-split save/reload defaults back to original party.
+- Hex-click on inactive party token does not switch active party (dropdown only for v1).
+
+**Next session should:**
+- Test the split/merge flow end-to-end in the running game.
+- Consider persisting `active_party_id` to the campaigns table if save/reload during split is needed.
+- Session 4: Loot Distribution modal and Auto-distribute algorithm per GDD §12.4.
+
+---
+
+## Session 2026-04-18 — Bug Fix 4: Animal & Vehicle Entity Promotion
+
+**Task:** Fix animals and vehicles purchased through the settlement shop remaining as `inventory_items` instead of being promoted to `trained_creatures` and `draft_vehicles` entity rows. Also wire creature combatants into dungeon combat and handle creature death.
+**Model used:** Opus 4.6 for investigation, planning, and implementation.
+
+**Investigation findings:**
+- **Cause A confirmed:** `ShopService.buy_item()` → `_add_item_to_character()` → `add_inventory_item()` with no category check.
+- **Cause B confirmed:** `save_character_inventory_with_creatures()` only checked `monster_id` for animals; vehicles had no promotion path.
+- **Cause C partially wrong:** Wilderness combat (CombatState) already called `roster.add_party_creatures()`. Only dungeon combat (DungeonExploreState) was missing creatures.
+- **Cause D confirmed:** Shop-purchased animals/vehicles sitting as inventory_items rows.
+
+**Completed:**
+- Added `CampaignRepository.classify_item_for_promotion(catalog_entry)` — static method returning "creature", "vehicle", or "inventory".
+- Added `CampaignRepository._create_vehicle_from_purchase(campaign_id, party_id, item_key, catalog_entry)` — mirrors `create_creature_from_purchase()` for vehicles.
+- Added `CampaignRepository.promote_inventory_to_entity(item_key, quantity, handler_character_id, campaign_id, party_id, equipment_catalog, monster_registry)` — unified promotion method for all purchase paths.
+- Updated `CampaignRepository.save_character_inventory_with_creatures()` to handle vehicles via `classify_item_for_promotion()`.
+- Updated `ShopService._add_item_to_character()` with promotion-aware branch. Added `campaign_id` parameter. Added `_monster_registry` field.
+- Fixed `ShopService.pickup_commission()` to pass `campaign_id` from commission row.
+- Added creatures to dungeon combat roster in `DungeonExploreState._start_dungeon_combat()` via `roster.add_party_creatures()`.
+- Added `_find_creature_placement()` helper for grid positioning near party members.
+- Stored dungeon combat controller as `_dungeon_combat_controller` instance var for post-combat access.
+- Updated `CombatFinalizer.finalize()` with optional `roster` parameter and `_process_creature_casualties()` method.
+- Updated `CombatState._finish_combat()` and `DungeonExploreState._on_dungeon_combat_finished()` to pass roster to finalizer.
+- Fixed dungeon post-combat token cleanup to preserve alive creature tokens (keep_ids pattern).
+- Migration 034: `schema_sweep_markers` table for tracking one-time data sweeps.
+- One-time sweep `_sweep_promote_inventory_entities()` runs after migrations, promotes orphaned inventory_items to entities, transaction-wrapped.
+
+**Decisions made:**
+- Kept method name `save_character_inventory_with_creatures()` unchanged — renaming creates unnecessary churn.
+- `classify_item_for_promotion()` is a static method — callable without CampaignRepository instance (needed by ShopService).
+- `CombatFinalizer.finalize()` roster parameter is optional with default `null` — backward compatible, no signature break.
+- Creature death = immediate death (no mortal wounds table). Emit `creature_died` signal (already existed in EventBus, was never emitted).
+
+**Interfaces defined or changed:**
+- `CampaignRepository.classify_item_for_promotion(catalog_entry: Dictionary) -> String` — new static method.
+- `CampaignRepository.promote_inventory_to_entity(item_key, quantity, handler_character_id, campaign_id, party_id, equipment_catalog, monster_registry) -> String` — new public method.
+- `CampaignRepository._create_vehicle_from_purchase(campaign_id, party_id, item_key, catalog_entry) -> String` — new private method.
+- `CombatFinalizer.finalize(runner, result, party_data, roster=null)` — added optional `roster` parameter.
+- `ShopService._add_item_to_character(character_id, item_key, quantity, catalog_item, campaign_id="")` — added `campaign_id` parameter.
+- `ShopService._monster_registry: MonsterRegistry` — new field, instantiated in `_init()`.
+- `DungeonExploreState._dungeon_combat_controller: CombatController` — new instance var.
+- `DungeonExploreState._find_creature_placement(tactical_map, party_positions) -> Vector2i` — new helper.
+
+**Database changes:**
+- Migration 034: `schema_sweep_markers` table (sweep_name TEXT PK, applied_at TEXT).
+- schema.sql updated to include sweep_markers table. Last migration marker updated to 034.
+
+**Tests added/updated:**
+- `tests/test_entity_promotion.gd` — 13 tests: classify (4), promote (4), shop buy (3), combat roster (2).
+- Registered in `test_runner.gd` and `test_runner.tscn`.
+
+**Known issues:**
+- Vehicles do NOT participate in combat — deferred per user direction.
+- Creature placement in tight dungeon corridors may stack on leader cell (fallback behavior).
+- Commission pickup for animals/vehicles now works but was not separately tested with a commission-specific test.
+- `creature_died` signal is now emitted but no UI consumer reacts to it yet.
+
+**Next session should:**
+- Test entity promotion end-to-end in the running game (smoke test per acceptance criteria).
+- Add UI reaction to `creature_died` signal (notification/game log entry).
+- Consider adding creature token display in dungeon exploration (pre-combat) — currently creatures only appear as tokens during combat.

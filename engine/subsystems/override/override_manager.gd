@@ -430,6 +430,43 @@ func override_place_dungeon(map_id: String, coord: Vector2i, dungeon_name: Strin
 
 
 # ---------------------------------------------------------------------------
+# Cache overrides
+# ---------------------------------------------------------------------------
+
+## Create a loose wilderness cache at the given hex. Returns cache_id.
+func override_create_wilderness_loose_cache(hex_q: int, hex_r: int) -> String:
+	var cache_id := LocationCacheManager.create_wilderness_loose_cache(Vector2i(hex_q, hex_r))
+	_log_override("cache_create_wilderness_loose", cache_id, "hex_q,hex_r", "", "%d,%d" % [hex_q, hex_r])
+	EventBus.override_applied.emit("cache_create_wilderness_loose", cache_id, "location")
+	return cache_id
+
+
+## Create a hidden wilderness cache at the given hex. Returns cache_id.
+## Does NOT advance time (unlike hide_and_memorize_wilderness_cache).
+func override_create_wilderness_hidden_cache(hex_q: int, hex_r: int) -> String:
+	var cache_id := LocationCacheManager.create_wilderness_hidden_cache(Vector2i(hex_q, hex_r))
+	_log_override("cache_create_wilderness_hidden", cache_id, "hex_q,hex_r", "", "%d,%d" % [hex_q, hex_r])
+	EventBus.override_applied.emit("cache_create_wilderness_hidden", cache_id, "location")
+	return cache_id
+
+
+## Create a loose dungeon cache at the given dungeon cell. Returns cache_id.
+func override_create_dungeon_loose_cache(dungeon_id: String, cell_col: int, cell_row: int) -> String:
+	var cache_id := LocationCacheManager.create_dungeon_loose_cache(dungeon_id, Vector2i(cell_col, cell_row))
+	_log_override("cache_create_dungeon_loose", cache_id, "dungeon,cell", "", "%s,%d,%d" % [dungeon_id, cell_col, cell_row])
+	EventBus.override_applied.emit("cache_create_dungeon_loose", cache_id, "location")
+	return cache_id
+
+
+## Create a loose settlement cache at the given PoI. Returns cache_id.
+func override_create_settlement_cache(settlement_id: String, poi_id: String) -> String:
+	var cache_id := LocationCacheManager.create_settlement_cache(settlement_id, poi_id)
+	_log_override("cache_create_settlement", cache_id, "settlement,poi", "", "%s,%s" % [settlement_id, poi_id])
+	EventBus.override_applied.emit("cache_create_settlement", cache_id, "location")
+	return cache_id
+
+
+# ---------------------------------------------------------------------------
 # Snapshot overrides
 # ---------------------------------------------------------------------------
 

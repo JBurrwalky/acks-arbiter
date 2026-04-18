@@ -99,6 +99,10 @@
 [ext_resource type="Script" path="res://tests/test_combat_context_menu_builder.gd" id="93_combat_context_menu_builder_tests"]
 [ext_resource type="Script" path="res://tests/test_game_log.gd" id="94_game_log_tests"]
 [ext_resource type="Script" path="res://tests/test_party_wallet.gd" id="95_party_wallet_tests"]
+[ext_resource type="Script" path="res://tests/test_location_cache_manager.gd" id="96_location_cache_manager_tests"]
+[ext_resource type="Script" path="res://tests/test_party_inventory_transfer_validator.gd" id="97_transfer_validator_tests"]
+[ext_resource type="Script" path="res://tests/test_party_split_merge.gd" id="98_party_split_merge_tests"]
+[ext_resource type="Script" path="res://tests/test_entity_promotion.gd" id="99_entity_promotion_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -396,3 +400,15 @@ script = ExtResource("94_game_log_tests")
 
 [node name="PartyWalletTests" type="Node" parent="."]
 script = ExtResource("95_party_wallet_tests")
+
+[node name="LocationCacheManagerTests" type="Node" parent="."]
+script = ExtResource("96_location_cache_manager_tests")
+
+[node name="TransferValidatorTests" type="Node" parent="."]
+script = ExtResource("97_transfer_validator_tests")
+
+[node name="PartySplitMergeTests" type="Node" parent="."]
+script = ExtResource("98_party_split_merge_tests")
+
+[node name="EntityPromotionTests" type="Node" parent="."]
+script = ExtResource("99_entity_promotion_tests")

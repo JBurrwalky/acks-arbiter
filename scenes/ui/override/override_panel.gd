@@ -91,6 +91,13 @@ var _spawn_btn: Button
 var _spawn_status: Label
 var _monster_registry: MonsterRegistry = null
 
+# Per-tab node refs (Spawning tab — cache section)
+var _cache_variant_dropdown: OptionButton
+var _cache_inputs_container: VBoxContainer
+var _cache_create_button: Button
+var _cache_status_label: Label
+var _cache_input_widgets: Dictionary = {}
+
 # Per-tab node refs (Dice tab)
 var _dice_roll_type: OptionButton
 var _dice_value: SpinBox
@@ -456,6 +463,175 @@ func _on_spawn() -> void:
 	)
 	_spawn_status.text = "Spawned %d x %s (%s) at (%d, %d)" % [
 		count, monster_id, disposition, coord.x, coord.y]
+
+
+# ---------------------------------------------------------------------------
+# Cache section (within Spawning tab)
+# ---------------------------------------------------------------------------
+
+func _on_cache_variant_changed(index: int) -> void:
+	_rebuild_cache_inputs(index)
+
+
+func _rebuild_cache_inputs(variant_index: int) -> void:
+	for child in _cache_inputs_container.get_children():
+		child.queue_free()
+	_cache_input_widgets.clear()
+
+	match variant_index:
+		0, 1:  # Wilderness loose / hidden — need hex Q/R
+			var q_row := HBoxContainer.new()
+			_cache_inputs_container.add_child(q_row)
+			q_row.add_child(_label("Hex Q:"))
+			var q_spin := SpinBox.new()
+			q_spin.min_value = -999
+			q_spin.max_value = 999
+			q_row.add_child(q_spin)
+			_cache_input_widgets["hex_q"] = q_spin
+
+			var r_row := HBoxContainer.new()
+			_cache_inputs_container.add_child(r_row)
+			r_row.add_child(_label("Hex R:"))
+			var r_spin := SpinBox.new()
+			r_spin.min_value = -999
+			r_spin.max_value = 999
+			r_row.add_child(r_spin)
+			_cache_input_widgets["hex_r"] = r_spin
+
+			_try_fill_cache_from_party_hex()
+
+		2:  # Dungeon loose — dungeon_id dropdown + cell col/row
+			var dung_row := HBoxContainer.new()
+			_cache_inputs_container.add_child(dung_row)
+			dung_row.add_child(_label("Dungeon:"))
+			var dung_drop := OptionButton.new()
+			dung_drop.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			dung_row.add_child(dung_drop)
+			_cache_input_widgets["dungeon_id"] = dung_drop
+
+			# Populate dungeon dropdown
+			if not _selected_map_id.is_empty():
+				var entrances := CampaignRepository.get_dungeon_entrances_for_map(_selected_map_id)
+				for e in entrances:
+					dung_drop.add_item(e.get("name", e.get("id", "?")))
+					dung_drop.set_item_metadata(dung_drop.item_count - 1, e.get("id", ""))
+			if dung_drop.item_count == 0:
+				_cache_status_label.text = "No dungeons placed — place one first via World tab"
+				_cache_status_label.modulate = Color(1.0, 0.8, 0.5)
+				_cache_create_button.disabled = true
+			else:
+				_cache_create_button.disabled = false
+				_cache_status_label.text = ""
+
+			var col_row := HBoxContainer.new()
+			_cache_inputs_container.add_child(col_row)
+			col_row.add_child(_label("Cell Col:"))
+			var col_spin := SpinBox.new()
+			col_spin.min_value = 0
+			col_spin.max_value = 100
+			col_row.add_child(col_spin)
+			_cache_input_widgets["cell_col"] = col_spin
+
+			var row_row := HBoxContainer.new()
+			_cache_inputs_container.add_child(row_row)
+			row_row.add_child(_label("Cell Row:"))
+			var row_spin := SpinBox.new()
+			row_spin.min_value = 0
+			row_spin.max_value = 100
+			row_row.add_child(row_spin)
+			_cache_input_widgets["cell_row"] = row_spin
+
+		3:  # Settlement — settlement_id dropdown + poi_id text input
+			var sett_row := HBoxContainer.new()
+			_cache_inputs_container.add_child(sett_row)
+			sett_row.add_child(_label("Settlement:"))
+			var sett_drop := OptionButton.new()
+			sett_drop.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			sett_row.add_child(sett_drop)
+			_cache_input_widgets["settlement_id"] = sett_drop
+
+			if not _selected_map_id.is_empty():
+				var settlements := CampaignRepository.get_settlement_entrances_for_map(_selected_map_id)
+				for s in settlements:
+					sett_drop.add_item(s.get("name", s.get("id", "?")))
+					sett_drop.set_item_metadata(sett_drop.item_count - 1, s.get("id", ""))
+			if sett_drop.item_count == 0:
+				_cache_status_label.text = "No settlements placed — place one first via World tab"
+				_cache_status_label.modulate = Color(1.0, 0.8, 0.5)
+				_cache_create_button.disabled = true
+			else:
+				_cache_create_button.disabled = false
+				_cache_status_label.text = ""
+
+			var poi_row := HBoxContainer.new()
+			_cache_inputs_container.add_child(poi_row)
+			poi_row.add_child(_label("POI ID:"))
+			var poi_input := LineEdit.new()
+			poi_input.placeholder_text = "e.g. tavern_01, gate_north"
+			poi_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			poi_row.add_child(poi_input)
+			_cache_input_widgets["poi_id"] = poi_input
+
+	# Re-enable button for wilderness variants (no dropdown dependency)
+	if variant_index in [0, 1]:
+		_cache_create_button.disabled = false
+		_cache_status_label.text = ""
+		_cache_status_label.modulate = Color(0.7, 0.9, 0.7)
+
+
+func _try_fill_cache_from_party_hex() -> void:
+	if GameState.party_id.is_empty():
+		return
+	var party := CampaignRepository.get_party(GameState.party_id)
+	if party.is_empty():
+		return
+	if _cache_input_widgets.has("hex_q"):
+		_cache_input_widgets["hex_q"].value = party.get("current_hex_q", 0)
+	if _cache_input_widgets.has("hex_r"):
+		_cache_input_widgets["hex_r"].value = party.get("current_hex_r", 0)
+
+
+func _on_cache_create_pressed() -> void:
+	if _override_manager == null:
+		return
+	var variant_idx: int = _cache_variant_dropdown.selected
+	var cache_id: String = ""
+
+	match variant_idx:
+		0:  # Wilderness loose
+			var q: int = int(_cache_input_widgets["hex_q"].value)
+			var r: int = int(_cache_input_widgets["hex_r"].value)
+			cache_id = _override_manager.override_create_wilderness_loose_cache(q, r)
+		1:  # Wilderness hidden
+			var q: int = int(_cache_input_widgets["hex_q"].value)
+			var r: int = int(_cache_input_widgets["hex_r"].value)
+			cache_id = _override_manager.override_create_wilderness_hidden_cache(q, r)
+		2:  # Dungeon loose
+			var dung_drop: OptionButton = _cache_input_widgets["dungeon_id"]
+			if dung_drop.selected < 0:
+				return
+			var dungeon_id: String = dung_drop.get_item_metadata(dung_drop.selected)
+			var col: int = int(_cache_input_widgets["cell_col"].value)
+			var row: int = int(_cache_input_widgets["cell_row"].value)
+			cache_id = _override_manager.override_create_dungeon_loose_cache(dungeon_id, col, row)
+		3:  # Settlement
+			var sett_drop: OptionButton = _cache_input_widgets["settlement_id"]
+			if sett_drop.selected < 0:
+				return
+			var settlement_id: String = sett_drop.get_item_metadata(sett_drop.selected)
+			var poi_id: String = _cache_input_widgets["poi_id"].text.strip_edges()
+			if poi_id.is_empty():
+				_cache_status_label.text = "POI ID is required"
+				_cache_status_label.modulate = Color(1.0, 0.5, 0.5)
+				return
+			cache_id = _override_manager.override_create_settlement_cache(settlement_id, poi_id)
+
+	if cache_id.is_empty():
+		_cache_status_label.text = "Cache creation failed — check console"
+		_cache_status_label.modulate = Color(1.0, 0.5, 0.5)
+	else:
+		_cache_status_label.text = "Created cache %s" % cache_id
+		_cache_status_label.modulate = Color(0.7, 0.9, 0.7)
 
 
 # ---------------------------------------------------------------------------
@@ -913,6 +1089,38 @@ func _build_spawning_tab() -> void:
 	_spawn_status = Label.new()
 	_spawn_status.text = ""
 	tab.add_child(_spawn_status)
+
+	# --- Place Cache section ---
+	tab.add_child(HSeparator.new())
+	tab.add_child(_section_label("Place Cache"))
+
+	var variant_row := HBoxContainer.new()
+	tab.add_child(variant_row)
+	variant_row.add_child(_label("Variant:"))
+	_cache_variant_dropdown = OptionButton.new()
+	_cache_variant_dropdown.add_item("Wilderness — Loose", 0)
+	_cache_variant_dropdown.add_item("Wilderness — Hidden", 1)
+	_cache_variant_dropdown.add_item("Dungeon — Loose", 2)
+	_cache_variant_dropdown.add_item("Settlement — Loose", 3)
+	_cache_variant_dropdown.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_cache_variant_dropdown.item_selected.connect(_on_cache_variant_changed)
+	variant_row.add_child(_cache_variant_dropdown)
+
+	_cache_inputs_container = VBoxContainer.new()
+	tab.add_child(_cache_inputs_container)
+
+	_cache_create_button = Button.new()
+	_cache_create_button.text = "Create Cache"
+	_cache_create_button.pressed.connect(_on_cache_create_pressed)
+	tab.add_child(_cache_create_button)
+
+	_cache_status_label = Label.new()
+	_cache_status_label.text = ""
+	_cache_status_label.modulate = Color(0.7, 0.9, 0.7)
+	tab.add_child(_cache_status_label)
+
+	# Initialize with wilderness loose inputs
+	_rebuild_cache_inputs(0)
 
 
 func _populate_monster_dropdown() -> void:

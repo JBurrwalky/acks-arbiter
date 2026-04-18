@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://carrier_column_001"]
+
+[ext_resource type="Script" path="res://scenes/ui/party_inventory/carrier_column.gd" id="1_carrier_col"]
+
+[node name="CarrierColumn" type="VBoxContainer"]
+script = ExtResource("1_carrier_col")

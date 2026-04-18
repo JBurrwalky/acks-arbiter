@@ -138,7 +138,7 @@ func _build_ui() -> void:
 
 	_gold_display_label = Label.new()
 	_gold_display_label.add_theme_font_size_override("font_size", 12)
-	_gold_display_label.add_theme_color_override("font_color", Color(1.0, 0.84, 0.0))
+	_gold_display_label.add_theme_color_override("font_color", Color(0.0, 0.0, 0.0))
 	title_row.add_child(_gold_display_label)
 
 	var close_btn := Button.new()

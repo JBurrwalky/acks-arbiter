@@ -39,12 +39,15 @@ static func validate_equip_on_creature(
 			return "Creature already has a saddle equipped."
 		return ""
 
-	# Saddlebags
-	if key == "saddlebags":
+	# Saddlebags or Panniers
+	# TODO: Session 5 — replace with §2.3a authoritative validation
+	# (panniers should require saddle_pack specifically; saddlebags should be
+	# rejected on pack saddles; currently any saddle permits either container)
+	if key == "saddlebags" or key == "panniers":
 		if not has_saddle_equipped(creature):
-			return "A saddle must be equipped before saddlebags."
-		if has_saddlebags_equipped(creature):
-			return "Creature already has saddlebags equipped."
+			return "A saddle must be equipped before %s." % item.get("name", key)
+		if has_pack_container_equipped(creature):
+			return "Creature already has a pack container equipped."
 		return ""
 
 	# Caparison
@@ -72,33 +75,34 @@ static func validate_cargo_on_creature(
 	return ""
 
 
-## Returns "" if the item can be placed into the creature's saddlebags, or error.
+## Returns "" if the item can be placed into the creature's pack container, or error.
+## Works with saddlebags, panniers, or any future pack-slot container.
 static func validate_into_saddlebags(
 		creature: TrainedCreatureData,
 		item: Dictionary,
 		saddlebag_item_id: String,
 		catalog: EquipmentCatalog) -> String:
 	if saddlebag_item_id.is_empty():
-		return "No saddlebags specified."
-	# Verify the saddlebag exists and is equipped on this creature.
-	var found := false
+		return "No pack container specified."
+	# Verify the container exists and is equipped on this creature.
+	var found_key := ""
 	for inv_item in creature.inventory:
 		var iid := _get_field(inv_item, "id")
 		var ikey := _get_field(inv_item, "item_key")
 		var equipped := _get_bool(inv_item, "is_equipped")
-		if iid == saddlebag_item_id and ikey == "saddlebags" and equipped:
-			found = true
+		if iid == saddlebag_item_id and (ikey == "saddlebags" or ikey == "panniers") and equipped:
+			found_key = ikey
 			break
-	if not found:
-		return "Saddlebags not found or not equipped on this creature."
-	# Check capacity.
-	var capacity: int = catalog.get_container_capacity_units("saddlebags")
+	if found_key.is_empty():
+		return "Pack container not found or not equipped on this creature."
+	# Check capacity using the actual item_key for catalog lookup.
+	var capacity: int = catalog.get_container_capacity_units(found_key)
 	if capacity <= 0:
-		return "Saddlebags have no defined capacity."
+		return "Container has no defined capacity."
 	var used: int = _calculate_container_used_units(creature, saddlebag_item_id)
 	var item_units: int = int(item.get("encumbrance_units", 0)) * int(item.get("quantity", 1))
 	if used + item_units > capacity:
-		return "Saddlebags are full (%d/%d units used)." % [used, capacity]
+		return "Container is full (%d/%d units used)." % [used, capacity]
 	return ""
 
 
@@ -114,7 +118,7 @@ static func determine_creature_slot(item: Dictionary) -> String:
 		return "body"
 	if key.begins_with("saddle_"):
 		return "mount"
-	if key == "saddlebags" or key == "caparison":
+	if key == "saddlebags" or key == "panniers" or key == "caparison":
 		return "pack"
 	return ""
 
@@ -142,20 +146,30 @@ static func has_barding_equipped(creature: TrainedCreatureData) -> bool:
 
 
 static func has_saddlebags_equipped(creature: TrainedCreatureData) -> bool:
+	return has_pack_container_equipped(creature)
+
+
+## Returns true if any pack container (saddlebags or panniers) is equipped.
+static func has_pack_container_equipped(creature: TrainedCreatureData) -> bool:
 	for item in creature.inventory:
 		var key := _get_field(item, "item_key")
 		var equipped := _get_bool(item, "is_equipped")
-		if equipped and key == "saddlebags":
+		if equipped and (key == "saddlebags" or key == "panniers"):
 			return true
 	return false
 
 
 ## Returns the inventory item ID of the equipped saddlebags, or "".
 static func get_saddlebag_item_id(creature: TrainedCreatureData) -> String:
+	return get_pack_container_item_id(creature)
+
+
+## Returns the inventory item ID of the equipped pack container (saddlebags or panniers), or "".
+static func get_pack_container_item_id(creature: TrainedCreatureData) -> String:
 	for item in creature.inventory:
 		var key := _get_field(item, "item_key")
 		var equipped := _get_bool(item, "is_equipped")
-		if equipped and key == "saddlebags":
+		if equipped and (key == "saddlebags" or key == "panniers"):
 			return _get_field(item, "id")
 	return ""
 

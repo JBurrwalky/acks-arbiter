@@ -223,7 +223,7 @@ func get_alive_on_side(target_side: Combatant.Side):  # parse error
 acks-arbiter/               (Godot project root = repo root)
 ├── project.godot           # Autoload registrations, input map
 ├── engine/
-│   ├── autoloads/          # Eight global singletons (see §5.1)
+│   ├── autoloads/          # Nine global singletons (see §5.1)
 │   │   ├── game_state.gd
 │   │   ├── event_bus.gd
 │   │   ├── campaign_repository.gd
@@ -626,24 +626,25 @@ Combat, Exploration, Character, Domain, Magic, Damage, LLM/Narration, Persistenc
 
 ## 5. Autoload Rules
 
-### 5.1 The Eight Autoloads
+### 5.1 The Nine Autoloads
 
-<!-- 2026-03-25: EventBus added. 2026-03-27: DiceSystem added (approved by Jedidiah — dice needed by every subsystem). 2026-03-27: Timekeeping added (approved by Jedidiah — clock consumed by session runner, domain, encounter, and condition subsystems). -->
+<!-- 2026-03-25: EventBus added. 2026-03-27: DiceSystem added (approved by Jedidiah — dice needed by every subsystem). 2026-03-27: Timekeeping added (approved by Jedidiah — clock consumed by session runner, domain, encounter, and condition subsystems). 2026-04-17: PartyWallet added (Session 1). LocationCacheManager added (Session 2). -->
 
-Eight autoload singletons exist. This list requires **explicit approval from Jedidiah** to extend. The bar is "needed by every subsystem" — if only one or two callers use it, make it a scene-local node instead.
+Nine autoload singletons exist. This list requires **explicit approval from Jedidiah** to extend. The bar is "needed by every subsystem" — if only one or two callers use it, make it a scene-local node instead.
 
 | Autoload | Responsibility | Lives in |
 |----------|---------------|----------|
-| `GameState` | Session state machine, dice mode, settings persistence | `engine/autoloads/game_state.gd` |
-| `EventBus` | Cross-subsystem signal bus (40+ signals, all past-tense) | `engine/autoloads/event_bus.gd` |
+| `GameState` | Session state machine, dice mode, settings persistence, `current_location_key` bridge | `engine/autoloads/game_state.gd` |
+| `EventBus` | Cross-subsystem signal bus (45+ signals, all past-tense) | `engine/autoloads/event_bus.gd` |
 | `CampaignRepository` | All SQLite read/write, migration runner, ID generation | `engine/autoloads/campaign_repository.gd` |
 | `LLMManager` | Provider routing, request/response, token tracking (stub) | `engine/autoloads/llm_manager.gd` |
 | `AudioRouter` | SFX/music playback, audio bus management (stub) | `engine/autoloads/audio_router.gd` |
 | `DiceSystem` | Dice rolling (digital/physical/hybrid), override consumption, roll log | `engine/autoloads/dice_system.gd` |
 | `Timekeeping` | Passive in-game clock, multi-party sync, dawn/dusk/day/month boundary signals | `engine/autoloads/timekeeping.gd` |
 | `PartyWallet` | Gold aggregation and auto-deduction across party PCs. Wraps CampaignRepository coin methods. | `engine/subsystems/commerce/party_wallet.gd` |
+| `LocationCacheManager` | Location-scoped inventory caches (loose/locked/hidden). Decay and raid resolution. | `engine/subsystems/inventory/location_cache_manager.gd` |
 
-**Load order matters.** DiceSystem depends on GameState, EventBus, and CampaignRepository. Timekeeping depends on GameState (session_ended signal) and CampaignRepository (DB access) — both must be registered before it in `project.godot`. PartyWallet depends on CampaignRepository, EventBus, and GameState.
+**Load order matters.** DiceSystem depends on GameState, EventBus, and CampaignRepository. Timekeeping depends on GameState (session_ended signal) and CampaignRepository (DB access) — both must be registered before it in `project.godot`. PartyWallet depends on CampaignRepository, EventBus, and GameState. LocationCacheManager depends on CampaignRepository, EventBus, GameState, Timekeeping, and DiceSystem — all must be registered before it.
 
 ### 5.2 Autoload Constraints
 
@@ -1218,7 +1219,11 @@ Roll types are snake_case strings identifying the mechanical purpose of a dice r
 `player_surprise_check`, `initiative`, `attack_throw`, `damage_roll`, `saving_throw_petrification`, `saving_throw_poison`, `saving_throw_blast`, `saving_throw_wands`, `saving_throw_spells`, `thief_skill_throw`, `proficiency_throw`, `mortal_wound_roll`, `tampering_with_mortality`
 
 **GM/digital-only rolls** (never prompted — use `DiceSystem.roll_digital()`):
-`encounter_check`, `encounter_number`, `monster_surprise_check`, `morale_check`, `reaction`, `reaction_roll`, `domain_event_roll`, `hijink_roll`, `starting_spell`
+`encounter_check`, `encounter_number`, `monster_surprise_check`, `morale_check`, `reaction`, `reaction_roll`, `domain_event_roll`, `hijink_roll`, `starting_spell`, `cache_raid_roll`, `cache_raid_loss`, `cache_decay_timer`
+
+- `cache_raid_roll` — 1d100 vs accumulated monthly modifier (hidden wilderness caches)
+- `cache_raid_loss` — 2d4 for loss percentage curve (25%–75% value)
+- `cache_decay_timer` — 1d4 or 1d7 for ephemeral cache decay day offset
 
 **Adding a new roll type:** Add to both the `OverrideManager` header comment and the `ROLL_TYPES` array in `override_panel.gd`. The DiceSystem itself is type-agnostic — any string works as a roll_type.
 
@@ -1346,15 +1351,20 @@ These are not coding style — they are mechanical rules that must be followed i
 | Effective getters are mandatory | All code that reads a character stat must call `get_effective_*()` on `CharacterData`, never raw fields. Raw fields (`armor_class`, `attack_throw`, etc.) are the base value before spells/items. `get_effective_ac()` returns base + all active modifier stacks. | Phase 1A |
 | CharacterData runtime state | `modifiers`, `flags`, `damage_resistances`, `temp_hp`, `mirror_images` are runtime-only. They are NOT in `to_dict()`/`from_dict()`. They are rebuilt from the `active_effects` table on session load. Do NOT serialize them. | Phase 1A |
 | Conditions use ConditionCatalog | Never hardcode condition mechanical effects (ac_modifier, prevents_casting, etc.). Always query `ConditionCatalog` by condition key. Source of truth: `data/conditions/condition_catalog.json` (extracted from ax_conditions_catalog.xml — sacred). | Phase 0D |
+| Entity promotion | Animals (catalog `monster_id` present + category ≠ `livestock`) promote to `trained_creatures`. Vehicles (`item_category == "vehicle"`) promote to `draft_vehicles`. Livestock remains `inventory_items`. Every purchase path must route through `CampaignRepository.promote_inventory_to_entity()` — direct `add_inventory_item()` for an animal or vehicle is a bug. | `pack_animal_state_report.md` §1 |
 | Active effects are source of truth | `active_effects` table is the persisted record of what spell effects are currently active. `ActiveEffectTracker` is the runtime view. On session load, the spell resolution engine reads `active_effects` and reconstructs runtime state. | Phase 2A |
 | Proficiency effects are permanent | Proficiency modifiers/flags are permanent — they do NOT go through `ActiveEffectTracker`. Apply with `ProficiencyEffectResolver.apply_proficiency_effects(character)` after loading proficiencies. Call again after any proficiency change. The resolver is idempotent. | Phase proficiency |
 | Proficiency compound keys | Class JSONs use compound keys like `"combat_trickery_disarm"` or `"fighting_style_missile"`. `ProficiencyRegistry` resolves these to the base catalog key by progressive prefix stripping. Always call `has_proficiency(key)` or `get_proficiency(key)` — never hard-code the lookup. | Phase proficiency |
 | Proficiency source IDs | Proficiency modifiers use source IDs `"proficiency:<key>"` (unique/stacking proficiencies) or `"proficiency:<key>:<spec>"` (specialization proficiencies, e.g., `"proficiency:fighting_style:missile"`). Spell modifiers use `"spell:<key>"`. The prefixes prevent cross-system contamination in `ModifierContainer`. | Phase proficiency |
 | Conditional proficiency effects | Proficiency effects with a `"condition"` field in the catalog are NOT applied at load time. The consuming system (combat, exploration, etc.) reads the catalog and evaluates the condition at runtime. Only unconditional effects are applied by `ProficiencyEffectResolver`. | Phase proficiency |
 | Currency exchange rates | 1 PP = 5 GP = 500 CP; 1 GP = 10 SP = 100 CP; 1 EP = 5 SP = 50 CP; 1 SP = 10 CP. Order by value descending: PP > GP > EP > SP > CP. ACKS 1e Core p.36. | `currency.gd`, ACKS Core |
-| Party gold aggregation | `PartyWallet` autoload wraps `CampaignRepository` coin methods to coordinate payments across PCs. Henchmen, creatures, and vehicles are never wallet contributors. Location-scoped (stubbed in Session 1 — all PCs treated as co-located). | `gdd-party-inventory.md` §3 |
+| Party gold aggregation | `PartyWallet` autoload wraps `CampaignRepository` coin methods to coordinate payments across PCs. Henchmen, creatures, and vehicles are never wallet contributors. Location filtering via `GameState.current_location_key` (v1: all PCs co-located). | `gdd-party-inventory.md` §3 |
 | Gold float display | `GP: 242.35` summary format using `total_cp / 100.0`. PP and EP fold into the float at ACKS rates. Breakdown format `PP: 4 | GP: 200 | EP: 0 | SP: 20 | CP: 35` ordered by value descending. | GDD §3.2 |
 | Encumbrance bands | Character: green ≤5000, yellow 5001–7000, orange 7001–10000, red 10001–max, flashing red over max (max = 20000 + STR_mod × 1000). Creature: green ≤ normal, red overload, rejected past max. | GDD §5 |
+| Location caches | Ephemeral variants (dungeon/wilderness/settlement loose) decay per 1d7 days or 1d4 weeks. Persistent variants (locked container, hidden-memorized) don't decay. Hidden wilderness caches gain +1% monthly raid risk; raids use 2d4 curve (25%–75% value) and reset the modifier. | `gdd-party-inventory.md` §8 |
+| Hide-and-memorize cost | 1 hour party time (6 turns via `Timekeeping.advance_party_turns`). No proficiency check. | GDD §8.3 |
+| Transfer validation | All inventory transfers route through `PartyInventoryTransferValidator` (RefCounted, `class_name`). Returns `{ok, reason, warnings, resolved_slot}`. Coin transfers are blocked ("use Transfer Gold modal"). Equipped clothing is immovable. Cross-location transfers rejected. Draft-saddle creatures reject cargo (explicit check — `CreatureEquipmentService` doesn't catch this). Dungeon adjacency and combat trade action are stubs for v1. | `gdd-party-inventory.md` §4 |
+| Party split/merge | Splits create a new party at the same hex via `CampaignRepository.split_party()`. Merges require co-location (same hex, same map) via `CampaignRepository.merge_parties()`. Timekeeping is synced on merge via `sync_parties()`. `GameState.active_party_id` tracks which party the player controls; switch via `GameState.set_active_party()`. Wilderness-only for v1. | `coding_conventions.md` §15.5, 2026-04-18 |
 
 ---
 
@@ -1375,6 +1385,7 @@ UI panels that overlay the game use CanvasLayer nodes with explicit layer assign
 | 32 | Full-screen wizard flows | CharacterCreationScreen |
 | 46 | Persistent party sidebar | PartyManagementOverlay |
 | 48 | Character sheet sidebar | CharacterSheetOverlay |
+| 50 | Party inventory overlay | PartyInventoryOverlay |
 | 64 | Modal prompts (dice rolls, dialogs) | DicePrompt |
 | 128 | Developer override panel | OverridePanel |
 
@@ -1470,6 +1481,7 @@ Main (Node, script: main_scene.gd)
 ├── CharacterCreationScreen (instance of character_creation_screen.tscn, CanvasLayer 32)
 ├── CharacterSheetOverlay (instance of character_sheet_overlay.tscn, CanvasLayer 48)
 ├── PartyManagementOverlay (instance of party_management_overlay.tscn, CanvasLayer 46)
+├── PartyInventoryOverlay (instance of party_inventory_overlay.tscn, CanvasLayer 50)
 └── SessionRunner (Node, script: session_runner.gd)  ← MUST be last child
 ```
 
@@ -1624,8 +1636,9 @@ This pattern applies to any shared type's `from_db()` / `from_dict()` when readi
 | Signal | Parameters | When emitted |
 |---|---|---|
 | `party_formed` | `party_id` | New party created |
-| `party_split` | `original_party_id, new_party_id` | Party divided |
-| `party_merged` | `surviving_party_id, dissolved_party_id` | Parties reunited |
+| `party_split` | `original_party_id, new_party_id` | Party divided (CampaignRepository.split_party) |
+| `party_merged` | `surviving_party_id, dissolved_party_id` | Parties reunited (CampaignRepository.merge_parties) |
+| `active_party_changed` | `previous_party_id, new_party_id` | Player switched active party (GameState.set_active_party) |
 | `party_member_joined` | `party_id, character_id` | Character added to party |
 | `party_member_left` | `party_id, character_id` | Character removed from party |
 | `formation_changed` | `party_id` | Grid positions changed |

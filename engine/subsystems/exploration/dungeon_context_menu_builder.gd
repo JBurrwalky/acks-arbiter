@@ -141,9 +141,9 @@ static func _build_door_options(
 		return options
 
 	# Check spike/wedge state from session.
-	var is_spiked := session_state != null and session_state.has_method("is_spiked") \
+	var is_spiked: bool = session_state != null and session_state.has_method("is_spiked") \
 		and session_state.is_spiked(target_cell)
-	var is_wedged := session_state != null and session_state.has_method("is_wedged") \
+	var is_wedged: bool = session_state != null and session_state.has_method("is_wedged") \
 		and session_state.is_wedged(target_cell)
 	var has_spikes := _any_selected_has_iron_spikes(selected_ids)
 
@@ -180,7 +180,7 @@ static func _build_door_options(
 				{"action_type": "spike_shut", "cell": target_cell}))
 		else:
 			# Check if held open (not wedged — wedged is handled above).
-			var is_held := session_state != null and session_state.has_method("is_held_open") \
+			var is_held: bool = session_state != null and session_state.has_method("is_held_open") \
 				and session_state.is_held_open(target_cell)
 			if not is_held:
 				options.append(_option("drop_portcullis", "Drop Portcullis", true,

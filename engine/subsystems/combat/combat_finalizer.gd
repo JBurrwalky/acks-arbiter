@@ -11,12 +11,13 @@ extends RefCounted
 ##   finalizer.finalize(runner, result, party_data)
 
 
-## Process the end of combat: mark dead PCs, award XP on victory,
+## Process the end of combat: mark dead PCs/creatures, award XP on victory,
 ## advance time by rounds fought.
 ## [param runner]: SessionRunner (provides get_class_registry(), advance_exploration_time()).
 ## [param result]: Dictionary from CombatController.advance() on combat_over.
 ## [param party_data]: PartyData for the active party.
-func finalize(runner, result: Dictionary, party_data: PartyData) -> void:
+## [param roster]: CombatRoster — optional, used to sync creature HP/death state.
+func finalize(runner, result: Dictionary, party_data: PartyData, roster: CombatRoster = null) -> void:
 	var combat_result_str: String = result.get("result", "")
 
 	# 1. Process downed PCs — either deferred (needs_mortal_wound_check) or
@@ -31,6 +32,9 @@ func finalize(runner, result: Dictionary, party_data: PartyData) -> void:
 			var mw: Dictionary = entry.get("mortal_wound_result", {})
 			if mw.get("is_dead", false):
 				_mark_pc_dead(party_data, entry.get("combatant_id", ""))
+
+	# 1b. Process creature casualties — sync HP and mark dead.
+	_process_creature_casualties(party_data, roster)
 
 	# 2. Award XP — only on victory.
 	if combat_result_str == "victory":
@@ -63,6 +67,28 @@ func _persist_party(party_data: PartyData) -> void:
 		return
 	for cd: CharacterData in party_data.character_data:
 		CampaignRepository.save_character(cd.to_dict())
+
+
+func _process_creature_casualties(party_data: PartyData, roster: CombatRoster) -> void:
+	if party_data == null or roster == null:
+		return
+	for creature: TrainedCreatureData in party_data.creature_data:
+		var combatant_id := "creature_" + creature.id
+		var combatant: Combatant = roster.get_by_id(combatant_id)
+		if combatant == null:
+			continue
+		# Sync HP from combat back to creature data.
+		var combat_hp: int = combatant.get_hp_current()
+		if combat_hp != creature.hp_current:
+			creature.hp_current = combat_hp
+		if combat_hp <= 0:
+			creature.is_alive = false
+			EventBus.creature_died.emit(creature.id)
+		# Persist creature state to DB.
+		CampaignRepository.update_trained_creature(creature.id, {
+			"hp_current": creature.hp_current,
+			"is_alive": creature.is_alive,
+		})
 
 
 func _mark_pc_incapacitated(party_data: PartyData, combatant_id: String) -> void:

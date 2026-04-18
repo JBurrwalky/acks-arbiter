@@ -183,6 +183,15 @@ func transition_to_state(state_key: String, context: Dictionary = {}) -> void:
 	_current_state_key = state_key
 	_current_state = _state_registry[state_key].call()
 	_current_state.enter(self, context)
+
+	# Update GameState.current_location_key for autoload consumers.
+	# Only exploration states return real keys; overlay states return "unknown"
+	# (preserving the parent exploration state's key); meta states get "none".
+	if state_key in ["campaign_select", "party_creation", "session_load", "session_end"]:
+		GameState.current_location_key = "none"
+	elif state_key in ["wilderness", "dungeon", "settlement"]:
+		GameState.current_location_key = _current_state.get_location_key_for_character("")
+
 	_sync_game_state(state_key)
 	state_transitioned.emit(old_key, state_key)
 	EventBus.session_state_transitioned.emit(old_key, state_key)
@@ -279,6 +288,17 @@ func get_handler_registry() -> EventHandlerRegistry:
 
 func get_scheduler_loop() -> SchedulerLoop:
 	return _scheduler_loop
+
+
+## Returns the location key for a character by delegating to the current state.
+## Falls back to GameState.current_location_key for overlay states that return "unknown".
+func get_location_key_for_character(character_id: String) -> String:
+	if _current_state == null:
+		return "unknown"
+	var key := _current_state.get_location_key_for_character(character_id)
+	if key == "unknown":
+		return GameState.current_location_key
+	return key
 
 
 # ---------------------------------------------------------------------------

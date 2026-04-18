@@ -178,7 +178,7 @@ func check_morale_override(combatant: Combatant) -> Dictionary:
 	# Check morale_modifiers for overrides
 	var morale_mods: Array = combatant.get_morale_modifiers()
 	for entry: Dictionary in morale_mods:
-		if entry.has("override") and entry["override"] == "no_check":
+		if entry.has("override") and str(entry["override"]) == "no_check":
 			var condition: String = entry.get("condition", "")
 			# Check if the override condition is active
 			if _is_override_condition_active(combatant, condition):

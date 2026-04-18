@@ -22,6 +22,12 @@ func run_all_tests() -> void:
 	test_cargo_with_draft_saddle()
 	test_cargo_exceeds_max()
 	test_saddlebag_capacity()
+	test_pack_saddle_equips_on_creature()
+	test_panniers_require_saddle()
+	test_panniers_with_saddle()
+	test_panniers_conflict_with_saddlebags()
+	test_panniers_slot_is_pack()
+	test_panniers_container_capacity()
 	test_determine_creature_slot()
 	test_saddlebag_contents_excluded_from_load()
 
@@ -59,6 +65,10 @@ func _saddle_item(key: String = "saddle_draft") -> Dictionary:
 
 func _saddlebags_item() -> Dictionary:
 	return {"item_key": "saddlebags", "item_category": "tack", "encumbrance_units": 167}
+
+
+func _panniers_item() -> Dictionary:
+	return {"item_key": "panniers", "item_category": "tack", "encumbrance_units": 333}
 
 
 func _caparison_item() -> Dictionary:
@@ -152,6 +162,75 @@ func test_caparison_requires_saddle() -> void:
 	result = CreatureEquipmentService.validate_equip_on_creature(c, _caparison_item(), _catalog)
 	check(result == "", "caparison with saddle should succeed, got: %s" % result)
 	print("  caparison_requires_saddle: OK")
+
+
+# --- Pack Saddle ---
+
+func test_pack_saddle_equips_on_creature() -> void:
+	var c := _make_creature("WB")
+	var result := CreatureEquipmentService.validate_equip_on_creature(c, _saddle_item("saddle_pack"), _catalog)
+	check(result == "", "pack saddle on workbeast should succeed, got: %s" % result)
+	# Verify slot determination
+	var slot := CreatureEquipmentService.determine_creature_slot(_saddle_item("saddle_pack"))
+	check(slot == "mount", "pack saddle should go to mount slot, got: %s" % slot)
+	print("  pack_saddle_equips: OK")
+
+
+# --- Panniers ---
+
+func test_panniers_require_saddle() -> void:
+	var c := _make_creature("WB")
+	var result := CreatureEquipmentService.validate_equip_on_creature(c, _panniers_item(), _catalog)
+	check(result != "", "panniers without saddle should fail")
+	print("  panniers_require_saddle: OK")
+
+
+func test_panniers_with_saddle() -> void:
+	var c := _make_creature("WB")
+	# TODO: Session 5 — panniers should require saddle_pack specifically
+	c.inventory = [_equipped(_saddle_item("saddle_pack"), "mount")]
+	var result := CreatureEquipmentService.validate_equip_on_creature(c, _panniers_item(), _catalog)
+	check(result == "", "panniers with pack saddle should succeed, got: %s" % result)
+	print("  panniers_with_saddle: OK")
+
+
+func test_panniers_conflict_with_saddlebags() -> void:
+	var c := _make_creature("WB")
+	c.inventory = [
+		_equipped(_saddle_item("saddle_pack"), "mount"),
+		_equipped(_saddlebags_item(), "pack"),
+	]
+	var result := CreatureEquipmentService.validate_equip_on_creature(c, _panniers_item(), _catalog)
+	check(result != "", "panniers should conflict with saddlebags")
+	print("  panniers_conflict_with_saddlebags: OK")
+
+
+func test_panniers_slot_is_pack() -> void:
+	var slot := CreatureEquipmentService.determine_creature_slot(_panniers_item())
+	check(slot == "pack", "panniers should go to pack slot, got: %s" % slot)
+	print("  panniers_slot_is_pack: OK")
+
+
+func test_panniers_container_capacity() -> void:
+	var c := _make_creature("WB")
+	var pann := _equipped(_panniers_item(), "pack")
+	pann["id"] = "panniers_1"
+	c.inventory = [
+		_equipped(_saddle_item("saddle_pack"), "mount"),
+		pann,
+	]
+	# Panniers capacity = 5000 units. A 4-stone item should fit.
+	var small_item := _cargo_item(4000)
+	var result := CreatureEquipmentService.validate_into_saddlebags(c, small_item, "panniers_1", _catalog)
+	check(result == "", "4-stone item should fit in empty panniers, got: %s" % result)
+
+	# Add item that nearly fills panniers, then try to exceed.
+	var filler := _cargo_item(4500)
+	filler["container_id"] = "panniers_1"
+	c.inventory.append(filler)
+	result = CreatureEquipmentService.validate_into_saddlebags(c, _cargo_item(600), "panniers_1", _catalog)
+	check(result != "", "item should not fit in nearly-full panniers")
+	print("  panniers_container_capacity: OK")
 
 
 # --- Cargo ---

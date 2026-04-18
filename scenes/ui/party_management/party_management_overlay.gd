@@ -29,6 +29,7 @@ const CELL_MARGIN := 2
 var _party: PartyData = null
 var _available_characters: Array = []  ## characters in campaign not in party
 var _selected_unplaced_id: String = ""  ## character_id selected from unplaced list
+var _split_dialog: CanvasLayer = null   ## modal split party dialog
 
 # ---------------------------------------------------------------------------
 # UI references
@@ -40,6 +41,9 @@ var _tab_container: TabContainer
 
 # Members tab
 var _members_vbox: VBoxContainer
+var _active_party_dropdown: OptionButton
+var _split_btn: Button
+var _merge_dropdown: OptionButton
 
 # Formation tab
 var _grid_container: Control       ## holds the formation grid cells
@@ -163,9 +167,48 @@ func _build_members_tab() -> void:
 	scroll.name = "Members"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
+	var outer_vbox := VBoxContainer.new()
+	outer_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	outer_vbox.add_theme_constant_override("separation", 6)
+	scroll.add_child(outer_vbox)
+
+	# -- Active Party selector row --
+	var party_row := HBoxContainer.new()
+	party_row.add_theme_constant_override("separation", 4)
+	outer_vbox.add_child(party_row)
+
+	var party_lbl := Label.new()
+	party_lbl.text = "Active Party:"
+	party_lbl.add_theme_font_size_override("font_size", 11)
+	party_row.add_child(party_lbl)
+
+	_active_party_dropdown = OptionButton.new()
+	_active_party_dropdown.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_active_party_dropdown.item_selected.connect(_on_active_party_selected)
+	party_row.add_child(_active_party_dropdown)
+
+	# -- Party Actions row --
+	var actions_row := HBoxContainer.new()
+	actions_row.add_theme_constant_override("separation", 6)
+	outer_vbox.add_child(actions_row)
+
+	_split_btn = Button.new()
+	_split_btn.text = "Split Party"
+	_split_btn.pressed.connect(_on_split_pressed)
+	actions_row.add_child(_split_btn)
+
+	_merge_dropdown = OptionButton.new()
+	_merge_dropdown.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_merge_dropdown.item_selected.connect(_on_merge_selected)
+	actions_row.add_child(_merge_dropdown)
+
+	outer_vbox.add_child(HSeparator.new())
+
+	# -- Members list --
 	_members_vbox = VBoxContainer.new()
 	_members_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(_members_vbox)
+	outer_vbox.add_child(_members_vbox)
+
 	_tab_container.add_child(scroll)
 
 
@@ -260,24 +303,28 @@ func _build_travel_tab() -> void:
 # ---------------------------------------------------------------------------
 
 func _load_party() -> void:
-	if GameState.party_id.is_empty():
+	# Use active_party_id for multi-party support
+	var pid := GameState.active_party_id
+	if pid.is_empty():
+		pid = GameState.party_id
+	if pid.is_empty():
 		_party = null
 		_refresh_all()
 		return
 
-	_party = CampaignRepository.load_party_data(GameState.party_id)
+	_party = CampaignRepository.load_party_data(pid)
 	if _party == null:
 		_refresh_all()
 		return
 
 	# Populate character_data from DB
 	_party.character_data = []
-	var char_rows: Array = CampaignRepository.list_party_characters(GameState.party_id)
+	var char_rows: Array = CampaignRepository.list_party_characters(pid)
 	for row: Dictionary in char_rows:
 		_party.character_data.append(CharacterData.from_dict(row))
 
 	# Populate shared inventory
-	var inv_rows: Array = CampaignRepository.get_party_inventory(GameState.party_id)
+	var inv_rows: Array = CampaignRepository.get_party_inventory(pid)
 	_party.shared_inventory = []
 	for row: Dictionary in inv_rows:
 		_party.shared_inventory.append(InventoryItem.from_dict(row))
@@ -307,6 +354,8 @@ func _load_available_characters() -> void:
 
 func _refresh_all() -> void:
 	_refresh_title()
+	_refresh_party_dropdown()
+	_refresh_merge_dropdown()
 	_refresh_members()
 	_refresh_formation_grid()
 	_refresh_travel_info()
@@ -547,6 +596,273 @@ func _add_info_row(label_text: String, value_text: String) -> void:
 
 
 # ---------------------------------------------------------------------------
+# Party Dropdown / Split / Merge
+# ---------------------------------------------------------------------------
+
+## Populates the Active Party dropdown with all campaign parties.
+func _refresh_party_dropdown() -> void:
+	_active_party_dropdown.clear()
+	if not GameState.is_in_session():
+		return
+	var all_parties := CampaignRepository.list_parties_for_campaign(GameState.campaign_id)
+	var active_id := GameState.active_party_id
+	if active_id.is_empty():
+		active_id = GameState.party_id
+	var select_idx := 0
+	for i in range(all_parties.size()):
+		var p: Dictionary = all_parties[i]
+		_active_party_dropdown.add_item(p.name, i)
+		_active_party_dropdown.set_item_metadata(i, p.id)
+		if p.id == active_id:
+			select_idx = i
+	if _active_party_dropdown.item_count > 0:
+		_active_party_dropdown.select(select_idx)
+
+
+## Populates the Merge With dropdown with co-located parties (not the active one).
+func _refresh_merge_dropdown() -> void:
+	_merge_dropdown.clear()
+	_merge_dropdown.add_item("Merge With...", 0)
+	_merge_dropdown.set_item_disabled(0, true)
+	if _party == null or not GameState.is_in_session():
+		_merge_dropdown.disabled = true
+		_merge_dropdown.tooltip_text = "No parties at this hex."
+		return
+	var all_parties := CampaignRepository.list_parties_for_campaign(GameState.campaign_id)
+	var active_id := _party.id
+	var count := 0
+	for p in all_parties:
+		if p.id == active_id:
+			continue
+		# Co-location check
+		if p.current_map_id == _party.current_map_id \
+				and p.current_hex_q == _party.current_hex_q \
+				and p.current_hex_r == _party.current_hex_r:
+			var idx: int = _merge_dropdown.item_count
+			_merge_dropdown.add_item(p.name, idx)
+			_merge_dropdown.set_item_metadata(idx, p.id)
+			count += 1
+	if count == 0:
+		_merge_dropdown.disabled = true
+		_merge_dropdown.tooltip_text = "No parties at this hex."
+	else:
+		_merge_dropdown.disabled = false
+		_merge_dropdown.tooltip_text = ""
+
+
+func _on_active_party_selected(index: int) -> void:
+	var pid: String = _active_party_dropdown.get_item_metadata(index)
+	if pid.is_empty():
+		return
+	GameState.set_active_party(pid)
+	_load_party()
+
+
+func _on_merge_selected(index: int) -> void:
+	if index == 0:
+		return  # placeholder item
+	var source_id: String = _merge_dropdown.get_item_metadata(index)
+	if source_id.is_empty() or _party == null:
+		return
+	var source := CampaignRepository.get_party(source_id)
+	var source_name: String = source.get("name", source_id)
+	# Confirm merge
+	var ok := CampaignRepository.merge_parties(_party.id, source_id)
+	if ok:
+		EventBus.notification_requested.emit({
+			"type": "success",
+			"category": "system",
+			"title": "Parties Merged",
+			"body": "%s merged into %s." % [source_name, _party.name],
+		})
+	else:
+		EventBus.notification_requested.emit({
+			"type": "danger",
+			"category": "system",
+			"title": "Merge Failed",
+			"body": "Could not merge %s." % source_name,
+		})
+	_load_party()
+
+
+func _on_split_pressed() -> void:
+	if _party == null or _party.character_data.size() < 2:
+		EventBus.notification_requested.emit({
+			"type": "warning",
+			"category": "system",
+			"title": "Cannot Split",
+			"body": "Need at least 2 characters to split the party.",
+		})
+		return
+	_open_split_dialog()
+
+
+func _open_split_dialog() -> void:
+	if _split_dialog != null:
+		return
+
+	_split_dialog = CanvasLayer.new()
+	_split_dialog.layer = 50
+
+	var panel := PanelContainer.new()
+	panel.anchor_left = 0.25
+	panel.anchor_top = 0.15
+	panel.anchor_right = 0.75
+	panel.anchor_bottom = 0.85
+	panel.offset_left = 0.0
+	panel.offset_right = 0.0
+	panel.offset_top = 0.0
+	panel.offset_bottom = 0.0
+	UiSurfaceStyles.apply_framed_window_chrome(panel)
+	_split_dialog.add_child(panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 16)
+	margin.add_theme_constant_override("margin_right", 16)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_bottom", 12)
+	panel.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 8)
+	margin.add_child(vbox)
+
+	# Title row
+	var title_row := HBoxContainer.new()
+	vbox.add_child(title_row)
+	var title_lbl := Label.new()
+	title_lbl.text = "Split Party"
+	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_lbl.add_theme_font_size_override("font_size", 14)
+	title_row.add_child(title_lbl)
+	var close_btn := Button.new()
+	close_btn.text = "X"
+	close_btn.flat = true
+	close_btn.custom_minimum_size = Vector2(28, 28)
+	close_btn.pressed.connect(_close_split_dialog)
+	title_row.add_child(close_btn)
+
+	vbox.add_child(HSeparator.new())
+
+	var inst_lbl := Label.new()
+	inst_lbl.text = "Select characters to move to the new party:"
+	inst_lbl.add_theme_font_size_override("font_size", 11)
+	inst_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(inst_lbl)
+
+	# Character checkboxes
+	var check_scroll := ScrollContainer.new()
+	check_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(check_scroll)
+
+	var check_vbox := VBoxContainer.new()
+	check_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	check_scroll.add_child(check_vbox)
+
+	var checkboxes: Array = []
+	for cd: CharacterData in _party.character_data:
+		var cb := CheckBox.new()
+		cb.text = "%s (L%d %s)" % [cd.name, cd.level, cd.character_class.capitalize()]
+		cb.set_meta("character_id", cd.id)
+		check_vbox.add_child(cb)
+		checkboxes.append(cb)
+
+	# Name field
+	var name_row := HBoxContainer.new()
+	name_row.add_theme_constant_override("separation", 4)
+	vbox.add_child(name_row)
+	var name_lbl := Label.new()
+	name_lbl.text = "New party name:"
+	name_lbl.add_theme_font_size_override("font_size", 11)
+	name_row.add_child(name_lbl)
+	var name_edit := LineEdit.new()
+	name_edit.text = "%s (Detachment)" % _party.name
+	name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_row.add_child(name_edit)
+
+	# Warning
+	var warn_lbl := Label.new()
+	warn_lbl.text = "At least 1 character must remain in the original party."
+	warn_lbl.add_theme_font_size_override("font_size", 9)
+	warn_lbl.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR)
+	vbox.add_child(warn_lbl)
+
+	# Buttons
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_END
+	btn_row.add_theme_constant_override("separation", 8)
+	vbox.add_child(btn_row)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.pressed.connect(_close_split_dialog)
+	btn_row.add_child(cancel_btn)
+
+	var create_btn := Button.new()
+	create_btn.text = "Create"
+	create_btn.pressed.connect(_on_split_confirm.bind(checkboxes, name_edit))
+	btn_row.add_child(create_btn)
+
+	add_child(_split_dialog)
+
+
+func _close_split_dialog() -> void:
+	if _split_dialog != null:
+		_split_dialog.queue_free()
+		_split_dialog = null
+
+
+func _on_split_confirm(checkboxes: Array, name_edit: LineEdit) -> void:
+	var selected_ids: Array = []
+	for cb: CheckBox in checkboxes:
+		if cb.button_pressed:
+			selected_ids.append(cb.get_meta("character_id"))
+
+	if selected_ids.is_empty():
+		EventBus.notification_requested.emit({
+			"type": "warning",
+			"category": "system",
+			"title": "No Characters Selected",
+			"body": "Select at least one character to split off.",
+		})
+		return
+
+	if selected_ids.size() >= _party.character_data.size():
+		EventBus.notification_requested.emit({
+			"type": "warning",
+			"category": "system",
+			"title": "Cannot Empty Party",
+			"body": "At least 1 character must remain in the original party.",
+		})
+		return
+
+	var new_name: String = name_edit.text.strip_edges()
+	if new_name.is_empty():
+		new_name = "%s (Detachment)" % _party.name
+
+	var new_id := CampaignRepository.split_party(_party.id, new_name, selected_ids)
+	if new_id.is_empty():
+		EventBus.notification_requested.emit({
+			"type": "danger",
+			"category": "system",
+			"title": "Split Failed",
+			"body": "Could not split the party. Check the error log.",
+		})
+	else:
+		EventBus.notification_requested.emit({
+			"type": "success",
+			"category": "system",
+			"title": "Party Split",
+			"body": "%s created with %d character%s." % [
+				new_name, selected_ids.size(),
+				"" if selected_ids.size() == 1 else "s"],
+		})
+
+	_close_split_dialog()
+	_load_party()
+
+
+# ---------------------------------------------------------------------------
 # Signal Handlers
 # ---------------------------------------------------------------------------
 
@@ -555,6 +871,9 @@ func _connect_signals() -> void:
 	EventBus.party_member_left.connect(_on_party_changed)
 	EventBus.formation_changed.connect(_on_party_event_refresh)
 	EventBus.inventory_updated.connect(_on_inventory_change)
+	EventBus.party_split.connect(_on_party_lifecycle_changed)
+	EventBus.party_merged.connect(_on_party_lifecycle_changed)
+	EventBus.active_party_changed.connect(_on_active_party_event)
 
 
 func _on_party_changed(_party_id: String, _character_id: String) -> void:
@@ -570,6 +889,16 @@ func _on_party_event_refresh(_party_id: String) -> void:
 func _on_inventory_change(_character_id: String) -> void:
 	if visible:
 		_refresh_travel_info()
+
+
+func _on_party_lifecycle_changed(_id_a: String, _id_b: String) -> void:
+	if visible:
+		_load_party()
+
+
+func _on_active_party_event(_prev_id: String, _new_id: String) -> void:
+	if visible:
+		_load_party()
 
 
 func _on_add_member(character_id: String) -> void:

@@ -14,6 +14,7 @@ func run_all_tests() -> void:
 	test_barding_size_validation()
 	test_saddle_role_validation()
 	test_load_multiplier_with_draft_saddle()
+	test_load_multiplier_with_pack_saddle()
 	test_load_multiplier_with_rope()
 	test_load_multiplier_without_rigging()
 	test_overload_detection()
@@ -174,6 +175,14 @@ func test_load_multiplier_with_draft_saddle() -> void:
 	check(is_equal_approx(c.get_load_multiplier(), 1.0), "draft saddle should give 1.0 multiplier")
 	check(c.get_effective_capacity_normal() == 30, "capacity should be full 30 stone")
 	print("  load_multiplier_draft: OK")
+
+
+func test_load_multiplier_with_pack_saddle() -> void:
+	var c := _make_creature()
+	c.inventory = [_make_saddle_item("saddle_pack")]
+	check(is_equal_approx(c.get_load_multiplier(), 1.0), "pack saddle should give 1.0 multiplier")
+	check(c.get_effective_capacity_normal() == 30, "capacity with pack saddle should be full 30 stone")
+	print("  load_multiplier_pack: OK")
 
 
 func test_load_multiplier_with_rope() -> void:

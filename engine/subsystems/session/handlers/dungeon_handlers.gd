@@ -334,7 +334,6 @@ func on_cell_reached(entity_id: String, cell: Vector2i) -> Dictionary:
 	order["mechanical_index"] = mech_idx
 
 	# Check if entity reached end of path.
-	var path: Array = order["path"]
 	if mech_idx >= path.size() - 1:
 		# Path complete — handle on_arrival callbacks and remove order.
 		var on_arrival: Dictionary = order.get("on_arrival", {})

@@ -21,6 +21,8 @@ func run_all_tests() -> void:
 	test_load_errors_empty()
 	test_container_identification()
 	test_container_capacity()
+	test_pack_saddle_in_catalog()
+	test_panniers_in_catalog()
 	if not has_failures():
 		print("EquipmentCatalog: all tests passed.")
 
@@ -31,10 +33,10 @@ func run_all_tests() -> void:
 
 func test_load_count() -> void:
 	var cat := EquipmentCatalog.new()
-	# base (130) + transport (30) + foodstuffs (14) = 174
+	# base (130) + transport (32) + foodstuffs (14) = 176
 	var count := cat.get_item_count()
-	check(count == 174,
-		"expected 174 items total, got %d" % count)
+	check(count == 176,
+		"expected 176 items total, got %d" % count)
 	print("  load_count: OK (%d items)" % count)
 
 
@@ -311,6 +313,8 @@ func test_container_identification() -> void:
 		"chest_ironbound should be a container")
 	check(cat.is_container("saddlebags"),
 		"saddlebags should be a container")
+	check(cat.is_container("panniers"),
+		"panniers should be a container")
 
 	# Must NOT be containers
 	check(not cat.is_container("spell_component_pouch"),
@@ -342,6 +346,8 @@ func test_container_capacity() -> void:
 		"chest_ironbound capacity should be 20000 units (20 stone), got %d" % cat.get_container_capacity_units("chest_ironbound"))
 	check(cat.get_container_capacity_units("saddlebags") == 3000,
 		"saddlebags capacity should be 3000 units (3 stone), got %d" % cat.get_container_capacity_units("saddlebags"))
+	check(cat.get_container_capacity_units("panniers") == 5000,
+		"panniers capacity should be 5000 units (5 stone), got %d" % cat.get_container_capacity_units("panniers"))
 
 	# Non-containers should return 0
 	check(cat.get_container_capacity_units("sword") == 0,
@@ -350,3 +356,32 @@ func test_container_capacity() -> void:
 		"spell_component_pouch container capacity should be 0")
 
 	print("  container_capacity: OK")
+
+
+# ---------------------------------------------------------------------------
+# Pack saddle catalog entry
+# ---------------------------------------------------------------------------
+
+func test_pack_saddle_in_catalog() -> void:
+	var cat := EquipmentCatalog.new()
+	var item := cat.get_item("saddle_pack")
+	check(not item.is_empty(), "saddle_pack should be in the catalog")
+	check(item.get("cost_cp", 0) == 500, "saddle_pack cost should be 500cp (5gp)")
+	check(item.get("encumbrance_units", 0) == 1000, "saddle_pack encumbrance should be 1000 units (1 stone)")
+	check(item.get("item_category", "") == "tack", "saddle_pack category should be tack")
+	print("  pack_saddle_in_catalog: OK")
+
+
+# ---------------------------------------------------------------------------
+# Panniers catalog entry
+# ---------------------------------------------------------------------------
+
+func test_panniers_in_catalog() -> void:
+	var cat := EquipmentCatalog.new()
+	var item := cat.get_item("panniers")
+	check(not item.is_empty(), "panniers should be in the catalog")
+	check(item.get("cost_cp", 0) == 500, "panniers cost should be 500cp (5gp)")
+	check(item.get("encumbrance_units", 0) == 333, "panniers encumbrance should be 333 units")
+	check(item.get("item_category", "") == "tack", "panniers category should be tack")
+	check(item.get("container_capacity_units", 0) == 5000, "panniers should have 5000 unit capacity (5 stone)")
+	print("  panniers_in_catalog: OK")

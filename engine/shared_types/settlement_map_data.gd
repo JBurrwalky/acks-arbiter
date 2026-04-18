@@ -203,6 +203,43 @@ static func from_dict(data: Dictionary) -> SettlementMapData:
 		for nid in poi["street_node_ids"]:
 			m._poi_at_node[nid] = poi
 
+	# --- Synthesize gate POIs from street graph nodes ---
+	# Gates exist as street nodes with type "gate" but are not in the pois array.
+	# Create synthetic POI entries so they appear in the settlement panel as
+	# travelable destinations (required for exiting the settlement).
+	var gate_index := 0
+	for node in nodes:
+		if node.get("type", "") != "gate":
+			continue
+		var node_id: int = int(node.get("id", 0))
+		# Skip if a POI already exists at this node.
+		if m._poi_at_node.has(node_id):
+			continue
+
+		gate_index += 1
+		# Try to get the gate name from walls data.
+		var gate_name := ""
+		for g in m.walls.get("gates", []):
+			if int(g.get("street_node_id", -1)) == node_id:
+				gate_name = g.get("name", "")
+				break
+		if gate_name.is_empty():
+			gate_name = "Gate %d" % gate_index
+
+		var gate_poi: Dictionary = {
+			"id": "gate_%d" % node_id,
+			"name": gate_name,
+			"type": "gate",
+			"subtype": "",
+			"block_id": -1,
+			"street_node_ids": [node_id],
+			"district_id": "",
+			"importance": "major",
+			"label": gate_name,
+		}
+		m.pois.append(gate_poi)
+		m._poi_at_node[node_id] = gate_poi
+
 	# --- Bounds ---
 	m.bounds = m.compute_bounds()
 

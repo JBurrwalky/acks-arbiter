@@ -30,6 +30,12 @@ func run_all_tests() -> void:
 	test_adjust_gold_subtract()
 	test_adjust_gold_floors_at_zero()
 	test_snapshot_save_restore()
+	test_override_create_wilderness_loose_cache()
+	test_override_create_wilderness_hidden_cache()
+	test_override_create_dungeon_loose_cache()
+	test_override_create_settlement_cache()
+	test_override_create_cache_logs_audit_entry()
+	test_override_create_cache_returns_nonempty_id()
 	_teardown()
 	if not has_failures():
 		print("OverrideManager: all tests passed.")
@@ -273,3 +279,87 @@ func test_snapshot_save_restore() -> void:
 	var restored := CampaignRepository.get_character(TEST_CHARACTER_ID)
 	check(restored.get("strength", -1) == 15, "restored strength should be 15, got %d" % restored.get("strength", -1))
 	check(restored.get("xp", -1) == 999, "restored xp should be 999, got %d" % restored.get("xp", -1))
+
+
+# ---------------------------------------------------------------------------
+# Cache overrides
+# ---------------------------------------------------------------------------
+
+func test_override_create_wilderness_loose_cache() -> void:
+	var cache_id := _mgr.override_create_wilderness_loose_cache(5, 7)
+	check(not cache_id.is_empty(), "wilderness loose cache_id should not be empty")
+	var cache := CampaignRepository.get_location_cache(cache_id)
+	check(not cache.is_empty(), "cache should exist in DB")
+	check(cache.get("location_key", "") == "hex:5,7", "location_key should be hex:5,7, got %s" % cache.get("location_key", ""))
+	check(cache.get("cache_variant", "") == "loose", "variant should be loose, got %s" % cache.get("cache_variant", ""))
+	check(cache.get("is_persistent", -1) == 0, "should not be persistent")
+	CampaignRepository.delete_location_cache(cache_id)
+
+
+func test_override_create_wilderness_hidden_cache() -> void:
+	var cache_id := _mgr.override_create_wilderness_hidden_cache(3, 4)
+	check(not cache_id.is_empty(), "wilderness hidden cache_id should not be empty")
+	var cache := CampaignRepository.get_location_cache(cache_id)
+	check(not cache.is_empty(), "cache should exist in DB")
+	check(cache.get("location_key", "") == "hex:3,4", "location_key should be hex:3,4, got %s" % cache.get("location_key", ""))
+	check(cache.get("cache_variant", "") == "hidden_wilderness", "variant should be hidden_wilderness, got %s" % cache.get("cache_variant", ""))
+	check(cache.get("is_persistent", -1) == 1, "should be persistent")
+	check(cache.get("raid_monthly_modifier", -1) == 0, "raid modifier should start at 0")
+	CampaignRepository.delete_location_cache(cache_id)
+
+
+func test_override_create_dungeon_loose_cache() -> void:
+	var cache_id := _mgr.override_create_dungeon_loose_cache("test_dungeon", 2, 3)
+	check(not cache_id.is_empty(), "dungeon loose cache_id should not be empty")
+	var cache := CampaignRepository.get_location_cache(cache_id)
+	check(not cache.is_empty(), "cache should exist in DB")
+	check(cache.get("location_type", "") == "dungeon_cell", "location_type should be dungeon_cell")
+	check(cache.get("location_key", "") == "dungeon:test_dungeon:cell:2,3",
+		"location_key mismatch: %s" % cache.get("location_key", ""))
+	check(cache.get("cache_variant", "") == "loose", "variant should be loose")
+	check(cache.get("decay_check_day", 0) > 0, "decay_check_day should be set")
+	CampaignRepository.delete_location_cache(cache_id)
+
+
+func test_override_create_settlement_cache() -> void:
+	var cache_id := _mgr.override_create_settlement_cache("test_settlement", "tavern_01")
+	check(not cache_id.is_empty(), "settlement cache_id should not be empty")
+	var cache := CampaignRepository.get_location_cache(cache_id)
+	check(not cache.is_empty(), "cache should exist in DB")
+	check(cache.get("location_type", "") == "settlement_node", "location_type should be settlement_node")
+	check(cache.get("location_key", "") == "settlement:test_settlement:poi:tavern_01",
+		"location_key mismatch: %s" % cache.get("location_key", ""))
+	check(cache.get("decay_check_day", 0) > 0, "decay_check_day should be set")
+	CampaignRepository.delete_location_cache(cache_id)
+
+
+func test_override_create_cache_logs_audit_entry() -> void:
+	# Clear existing override_log entries for this campaign
+	CampaignRepository.db.query_with_bindings(
+		"DELETE FROM override_log WHERE campaign_id = ? AND override_type LIKE 'cache_create_%'",
+		[TEST_CAMPAIGN_ID]
+	)
+	var cache_id := _mgr.override_create_wilderness_loose_cache(10, 20)
+	CampaignRepository.db.query_with_bindings(
+		"SELECT * FROM override_log WHERE campaign_id = ? AND override_type = 'cache_create_wilderness_loose'",
+		[TEST_CAMPAIGN_ID]
+	)
+	check(not CampaignRepository.db.query_result.is_empty(),
+		"override_log should have an entry for cache creation")
+	var log_row: Dictionary = CampaignRepository.db.query_result[0]
+	check(log_row.get("target_id", "") == cache_id,
+		"log target_id should match cache_id")
+	CampaignRepository.delete_location_cache(cache_id)
+
+
+func test_override_create_cache_returns_nonempty_id() -> void:
+	var ids: Array[String] = []
+	ids.append(_mgr.override_create_wilderness_loose_cache(0, 0))
+	ids.append(_mgr.override_create_wilderness_hidden_cache(1, 1))
+	ids.append(_mgr.override_create_dungeon_loose_cache("d1", 0, 0))
+	ids.append(_mgr.override_create_settlement_cache("s1", "p1"))
+	for id in ids:
+		check(not id.is_empty(), "all cache creation methods should return non-empty IDs")
+	# Cleanup
+	for id in ids:
+		CampaignRepository.delete_location_cache(id)

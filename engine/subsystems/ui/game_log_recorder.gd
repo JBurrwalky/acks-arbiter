@@ -80,15 +80,20 @@ func _name(entity_id: String) -> String:
 		return ""
 	if _name_cache.has(entity_id):
 		return _name_cache[entity_id]
-	# Try looking up in CampaignRepository
-	var ch: Dictionary = CampaignRepository.get_character(entity_id)
-	if not ch.is_empty():
-		var display: String = ch.get("name", entity_id)
-		_name_cache[entity_id] = display
-		return display
-	# Fallback: return the raw ID
-	_name_cache[entity_id] = entity_id
-	return entity_id
+	# Try looking up in CampaignRepository (only if the entity is a character —
+	# monster combatant IDs like "wolf_0" are not in the characters table).
+	if CampaignRepository.db.query_with_bindings(
+			"SELECT id FROM characters WHERE id = ?", [entity_id]) \
+			and not CampaignRepository.db.query_result.is_empty():
+		var ch: Dictionary = CampaignRepository.get_character(entity_id)
+		if not ch.is_empty():
+			var display: String = ch.get("name", entity_id)
+			_name_cache[entity_id] = display
+			return display
+	# Fallback: prettify the raw ID (e.g. "wolf_0" -> "Wolf 0")
+	var pretty: String = entity_id.replace("_", " ").capitalize()
+	_name_cache[entity_id] = pretty
+	return pretty
 
 
 # ---------------------------------------------------------------------------

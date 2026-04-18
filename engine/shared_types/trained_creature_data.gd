@@ -212,9 +212,9 @@ func is_overloaded() -> bool:
 
 
 func get_load_multiplier() -> float:
-	# Full capacity with draft saddle, half with rope, zero without rigging.
+	# Full capacity with draft or pack saddle, half with rope, zero without rigging.
 	var saddle_type := get_equipped_saddle_type()
-	if saddle_type == "draft":
+	if saddle_type in ["draft", "pack"]:
 		return 1.0
 	if _has_rope_in_inventory():
 		return 0.5
@@ -260,6 +260,8 @@ func get_equipped_saddle_type() -> String:
 				return "riding"
 			elif key == "saddle_war":
 				return "war"
+			elif key == "saddle_pack":
+				return "pack"
 	return ""
 
 
