@@ -172,6 +172,7 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 | `gdd_combat_behavior_tags.md` | Combat AI tag system: deterministic action selection, scoring, tie-breaking per tag | Draft | Morale rules (implicit); no explicit XML dependencies listed |
 | `gdd-proficiency-specializations.md` | Closed specialization lists for open-ended proficiencies (Weapon Focus, Riding, Craft, Art, Knowledge, etc.), trained-creature entity model | Draft | `acore_proficiencies_rules_and_catalog`, `pc_proficiencies_catalog`, `le_monster_training_rules`, `gdd-setting-generation`, `gdd-cultural-religious-generation`, `proficiency_system_map.md` |
 | `gdd-realtime-scheduler.md` | Real-time-with-pause game clock and event scheduler: Paradox-style continuous clock, priority-queue event resolution, entity-level context model; replaces session runner state machine and simultaneous-declaration scheduling | Draft | Timekeeping, EventBus, CampaignRepository, DiceSystem; consumes `gdd-terrain-system`, `gdd-calendar-seasons`, `gdd-weather-generation`, `gdd-dungeon-layout`, `gdd-settlement-layout`, `gdd-combat-map-generation` |
+| `gdd-party-inventory.md` | Party inventory overlay: PartyWallet gold pooling, location caches, loot distribution, encumbrance visualization, transfer/send-to mechanics. 5-session build plan. | Draft | `acore_equipment`, Currency, CampaignRepository, `gdd-proficiency-specializations` (trained creatures) |
 
 ---
 

@@ -127,6 +127,12 @@ func _add_candidate_row(candidate: Dictionary) -> void:
 
 
 func _on_pay_pressed() -> void:
+	# Search cost is stored in GP — convert to CP for PartyWallet.
+	var cost_cp: int = _search_cost * 100
+	var result: Dictionary = PartyWallet.pay(cost_cp, _party_id, _employer_id)
+	if not result["ok"]:
+		_status_label.text = "Cannot afford search fee: %s" % result.get("message", "insufficient funds")
+		return
 	_search_paid = true
 	_pay_button.visible = false
 	_update_view()

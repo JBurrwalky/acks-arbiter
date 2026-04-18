@@ -98,6 +98,7 @@
 [ext_resource type="Script" path="res://tests/test_settlement_navigation.gd" id="92_settlement_navigation_tests"]
 [ext_resource type="Script" path="res://tests/test_combat_context_menu_builder.gd" id="93_combat_context_menu_builder_tests"]
 [ext_resource type="Script" path="res://tests/test_game_log.gd" id="94_game_log_tests"]
+[ext_resource type="Script" path="res://tests/test_party_wallet.gd" id="95_party_wallet_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -392,3 +393,6 @@ script = ExtResource("93_combat_context_menu_builder_tests")
 
 [node name="GameLogTests" type="Node" parent="."]
 script = ExtResource("94_game_log_tests")
+
+[node name="PartyWalletTests" type="Node" parent="."]
+script = ExtResource("95_party_wallet_tests")

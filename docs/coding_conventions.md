@@ -121,7 +121,7 @@ const MAXPARTYSIZE := 8        # No underscores
 
 ### 1.6 Autoload Singletons — PascalCase
 
-Six autoloads exist (see Section 5). Reference them by their PascalCase name directly.
+Eight autoloads exist (see Section 5). Reference them by their PascalCase name directly.
 
 ```gdscript
 # GOOD
@@ -223,7 +223,7 @@ func get_alive_on_side(target_side: Combatant.Side):  # parse error
 acks-arbiter/               (Godot project root = repo root)
 ├── project.godot           # Autoload registrations, input map
 ├── engine/
-│   ├── autoloads/          # Six global singletons (see §5.1)
+│   ├── autoloads/          # Eight global singletons (see §5.1)
 │   │   ├── game_state.gd
 │   │   ├── event_bus.gd
 │   │   ├── campaign_repository.gd
@@ -620,17 +620,17 @@ signal combat_ended(encounter: EncounterData, outcome: CombatOutcome)
 ```
 
 **EventBus signal groups** (keep signals organized under section headers):
-Combat, Exploration, Character, Domain, Magic, Damage, LLM/Narration, Persistence, Override system, Dice system.
+Combat, Exploration, Character, Domain, Magic, Damage, LLM/Narration, Persistence, Override system, Dice system, Commerce/Economy.
 
 ---
 
 ## 5. Autoload Rules
 
-### 5.1 The Six Autoloads
+### 5.1 The Eight Autoloads
 
 <!-- 2026-03-25: EventBus added. 2026-03-27: DiceSystem added (approved by Jedidiah — dice needed by every subsystem). 2026-03-27: Timekeeping added (approved by Jedidiah — clock consumed by session runner, domain, encounter, and condition subsystems). -->
 
-Seven autoload singletons exist. This list requires **explicit approval from Jedidiah** to extend. The bar is "needed by every subsystem" — if only one or two callers use it, make it a scene-local node instead.
+Eight autoload singletons exist. This list requires **explicit approval from Jedidiah** to extend. The bar is "needed by every subsystem" — if only one or two callers use it, make it a scene-local node instead.
 
 | Autoload | Responsibility | Lives in |
 |----------|---------------|----------|
@@ -641,8 +641,9 @@ Seven autoload singletons exist. This list requires **explicit approval from Jed
 | `AudioRouter` | SFX/music playback, audio bus management (stub) | `engine/autoloads/audio_router.gd` |
 | `DiceSystem` | Dice rolling (digital/physical/hybrid), override consumption, roll log | `engine/autoloads/dice_system.gd` |
 | `Timekeeping` | Passive in-game clock, multi-party sync, dawn/dusk/day/month boundary signals | `engine/autoloads/timekeeping.gd` |
+| `PartyWallet` | Gold aggregation and auto-deduction across party PCs. Wraps CampaignRepository coin methods. | `engine/subsystems/commerce/party_wallet.gd` |
 
-**Load order matters.** DiceSystem depends on GameState, EventBus, and CampaignRepository. Timekeeping depends on GameState (session_ended signal) and CampaignRepository (DB access) — both must be registered before it in `project.godot`.
+**Load order matters.** DiceSystem depends on GameState, EventBus, and CampaignRepository. Timekeeping depends on GameState (session_ended signal) and CampaignRepository (DB access) — both must be registered before it in `project.godot`. PartyWallet depends on CampaignRepository, EventBus, and GameState.
 
 ### 5.2 Autoload Constraints
 
@@ -1274,6 +1275,26 @@ When a subsystem depends on another, document it in the subsystem's top-level sc
 #   - GameState.encounter_triggered → starts combat
 ```
 
+Example for a subsystem that wraps another autoload:
+
+```gdscript
+# engine/subsystems/commerce/party_wallet.gd
+#
+# Dependencies:
+#   - CampaignRepository (autoload): coin read/write, character queries
+#   - EventBus (autoload): emits wallet_paid, wallet_deposited, wallet_changed
+#   - Currency (subsystem): coins_to_cp conversion
+#   - CharacterData (shared_type): character_type filtering
+#
+# Signals emitted (via EventBus):
+#   - wallet_paid(party_id: String, details: Dictionary)
+#   - wallet_deposited(party_id: String, details: Dictionary)
+#   - wallet_changed(party_id: String)
+#
+# Signals consumed:
+#   - (none — callers invoke methods directly)
+```
+
 ### 11.4 The Build Log Is the Memory
 
 When you define or change any contract, record it in `build_log.md` under "Interfaces defined or changed." This prevents naming drift across sessions. Be exact — write the signal signature, not just "added a signal."
@@ -1330,6 +1351,10 @@ These are not coding style — they are mechanical rules that must be followed i
 | Proficiency compound keys | Class JSONs use compound keys like `"combat_trickery_disarm"` or `"fighting_style_missile"`. `ProficiencyRegistry` resolves these to the base catalog key by progressive prefix stripping. Always call `has_proficiency(key)` or `get_proficiency(key)` — never hard-code the lookup. | Phase proficiency |
 | Proficiency source IDs | Proficiency modifiers use source IDs `"proficiency:<key>"` (unique/stacking proficiencies) or `"proficiency:<key>:<spec>"` (specialization proficiencies, e.g., `"proficiency:fighting_style:missile"`). Spell modifiers use `"spell:<key>"`. The prefixes prevent cross-system contamination in `ModifierContainer`. | Phase proficiency |
 | Conditional proficiency effects | Proficiency effects with a `"condition"` field in the catalog are NOT applied at load time. The consuming system (combat, exploration, etc.) reads the catalog and evaluates the condition at runtime. Only unconditional effects are applied by `ProficiencyEffectResolver`. | Phase proficiency |
+| Currency exchange rates | 1 PP = 5 GP = 500 CP; 1 GP = 10 SP = 100 CP; 1 EP = 5 SP = 50 CP; 1 SP = 10 CP. Order by value descending: PP > GP > EP > SP > CP. ACKS 1e Core p.36. | `currency.gd`, ACKS Core |
+| Party gold aggregation | `PartyWallet` autoload wraps `CampaignRepository` coin methods to coordinate payments across PCs. Henchmen, creatures, and vehicles are never wallet contributors. Location-scoped (stubbed in Session 1 — all PCs treated as co-located). | `gdd-party-inventory.md` §3 |
+| Gold float display | `GP: 242.35` summary format using `total_cp / 100.0`. PP and EP fold into the float at ACKS rates. Breakdown format `PP: 4 | GP: 200 | EP: 0 | SP: 20 | CP: 35` ordered by value descending. | GDD §3.2 |
+| Encumbrance bands | Character: green ≤5000, yellow 5001–7000, orange 7001–10000, red 10001–max, flashing red over max (max = 20000 + STR_mod × 1000). Creature: green ≤ normal, red overload, rejected past max. | GDD §5 |
 
 ---
 
@@ -1410,6 +1435,23 @@ Runtime-built windows, overlays, and modal popups should use the shared `UiSurfa
 - Vellum background `TextureRect` nodes added by the helper must draw with `show_behind_parent = true` so built-in dialog content is never covered by the parchment layer.
 - Prefer the registered asset ID `ui.bg.vellum_subtle` via `AssetRegistry` rather than hard-coded file paths when applying parchment textures.
 - Exceptions are explicit: the dice prompt modal and the hex-map tooltip keep their specialized styling unless design changes call them out separately.
+
+### 13.5.5 Reusable UI Components (`scenes/ui/components/`)
+
+<!-- Added 2026-04-17 — GoldDisplay and EncumbranceBar from Party Inventory Session 1 -->
+
+Small, self-contained display widgets live in `scenes/ui/components/`. Each is a `.gd` + `.tscn` pair with no `class_name` (instantiated via scene, not script reference). They auto-refresh on relevant EventBus signals and expose a public API for setup and mode switching.
+
+| Component | Base node | Purpose | Signals consumed |
+|-----------|-----------|---------|-----------------|
+| `GoldDisplay` | HBoxContainer | Coin display in summary (`GP: 242.35`) or breakdown (`PP: 4 | GP: 200 | …`) mode | `wallet_changed`, `inventory_updated` |
+| `EncumbranceBar` | Control (`_draw()`) | Colored capacity bar with ACKS four-band or two-tier rendering | `inventory_updated` |
+
+**Conventions for new components in this folder:**
+- Expose `setup_*()` or `set_source()` for initial configuration, `refresh()` for manual update.
+- Connect to EventBus signals in `_ready()`, disconnect in `_exit_tree()`.
+- Keep display logic self-contained — no cross-subsystem writes, only reads.
+- Use `_draw()` for custom rendering that needs color bands, tick marks, or non-rectangular shapes.
 
 ### 13.6 Scene Tree — Main.tscn
 

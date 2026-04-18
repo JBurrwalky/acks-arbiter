@@ -40,6 +40,7 @@ var _henchman_ids: Array = []
 
 var _panel: PanelContainer
 var _title_label: Label
+var _gold_display_label: Label
 var _entity_list: ItemList
 
 # Content panels (visibility-toggled)
@@ -134,6 +135,11 @@ func _build_ui() -> void:
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_title_label.add_theme_font_size_override("font_size", 14)
 	title_row.add_child(_title_label)
+
+	_gold_display_label = Label.new()
+	_gold_display_label.add_theme_font_size_override("font_size", 12)
+	_gold_display_label.add_theme_color_override("font_color", Color(1.0, 0.84, 0.0))
+	title_row.add_child(_gold_display_label)
 
 	var close_btn := Button.new()
 	close_btn.text = "X"
@@ -492,6 +498,7 @@ func _select_character(character_id: String) -> void:
 		_title_label.text = _bundle.character.name if not _bundle.character.name.is_empty() else "(unnamed)"
 	else:
 		_title_label.text = "Character Sheet"
+	_update_gold_display(character_id)
 	_refresh_all_character_tabs()
 	var idx := _party_ids.find(character_id)
 	if idx >= 0:
@@ -796,6 +803,20 @@ func _on_vehicle_hitch_changed(vehicle_id: String) -> void:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+func _update_gold_display(character_id: String) -> void:
+	if _gold_display_label == null or character_id.is_empty():
+		return
+	var wealth_cp: int = CampaignRepository.get_character_wealth_cp(character_id)
+	_gold_display_label.text = "GP: %.2f" % (wealth_cp / 100.0)
+	# Tooltip shows denomination breakdown.
+	var coins: Dictionary = CampaignRepository.get_character_coins(character_id)
+	var parts: Array[String] = []
+	for d in Currency.DENOMINATIONS:
+		var qty: int = coins.get(d["key"], 0)
+		parts.append("%s: %d" % [d["abbr"].to_upper(), qty])
+	_gold_display_label.tooltip_text = " | ".join(parts)
+
 
 func _close() -> void:
 	_abort_pending_advancement_if_needed()

@@ -4,10 +4,10 @@ extends RefCounted
 ## Currency denomination constants and utility methods for ACKS coin system.
 ##
 ## All five ACKS 1e coin denominations, with values expressed in copper pieces (cp).
-## Exchange rates:
-##   1 pp = 10 gp = 100 sp = 1000 cp
-##   1 ep = 5 gp  = 50 sp  = 500 cp
+## Exchange rates (ACKS 1e Core p.36):
+##   1 pp = 5 gp  = 50 sp  = 500 cp
 ##   1 gp = 10 sp = 100 cp
+##   1 ep = 5 sp  = 50 cp
 ##   1 sp = 10 cp
 ##
 ## Encumbrance: all coin types weigh 1 enc unit per coin (1000 coins = 1 stone).
@@ -17,17 +17,17 @@ extends RefCounted
 # Constants
 # ---------------------------------------------------------------------------
 
-## Ordered highest → lowest for change-making and display.
+## Ordered highest → lowest by cp_value for change-making and display.
 ## Keys use plural "coins_" prefix to match existing DB data and premade party JSON.
 const DENOMINATIONS := [
-	{"key": "coins_pp", "name": "Platinum Pieces", "cp_value": 1000, "abbr": "pp"},
-	{"key": "coins_ep", "name": "Electrum Pieces", "cp_value": 500,  "abbr": "ep"},
-	{"key": "coins_gp", "name": "Gold Pieces",     "cp_value": 100,  "abbr": "gp"},
-	{"key": "coins_sp", "name": "Silver Pieces",    "cp_value": 10,   "abbr": "sp"},
-	{"key": "coins_cp", "name": "Copper Pieces",    "cp_value": 1,    "abbr": "cp"},
+	{"key": "coins_pp", "name": "Platinum Pieces", "cp_value": 500, "abbr": "pp"},
+	{"key": "coins_gp", "name": "Gold Pieces",     "cp_value": 100, "abbr": "gp"},
+	{"key": "coins_ep", "name": "Electrum Pieces", "cp_value": 50,  "abbr": "ep"},
+	{"key": "coins_sp", "name": "Silver Pieces",    "cp_value": 10,  "abbr": "sp"},
+	{"key": "coins_cp", "name": "Copper Pieces",    "cp_value": 1,   "abbr": "cp"},
 ]
 
-const COIN_KEYS := ["coins_pp", "coins_ep", "coins_gp", "coins_sp", "coins_cp"]
+const COIN_KEYS := ["coins_pp", "coins_gp", "coins_ep", "coins_sp", "coins_cp"]
 
 ## Encumbrance per coin in 1/1000-stone units.
 const ENC_PER_COIN := 1

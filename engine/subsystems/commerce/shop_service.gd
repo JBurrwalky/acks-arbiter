@@ -73,12 +73,14 @@ func open_shop(
 
 ## Buy an item from the shop.
 ## Returns { "success": bool, "message": String, "wealth_remaining_cp": int }.
+## When party_id is provided, payment goes through PartyWallet (multi-PC pooling).
 func buy_item(
 	character_id: String,
 	item_key: String,
 	quantity: int,
 	poi_id: String,
 	campaign_id: String,
+	party_id: String = "",
 ) -> Dictionary:
 	# Look up catalog item.
 	var catalog_item := _catalog.get_item(item_key)
@@ -91,8 +93,13 @@ func buy_item(
 	if not CampaignRepository.decrement_shop_stock(campaign_id, poi_id, item_key, quantity):
 		return {"success": false, "message": "Insufficient stock.", "wealth_remaining_cp": 0}
 
-	# Deduct cost from character's coins.
-	var deduct_result := CampaignRepository.deduct_cost_cp(character_id, cost_cp)
+	# Deduct cost — via PartyWallet if party_id provided, else direct per-character.
+	var deduct_result: Dictionary
+	if party_id != "":
+		var payment := PartyWallet.pay(cost_cp, party_id, character_id)
+		deduct_result = {"success": payment["ok"], "message": payment.get("message", "")}
+	else:
+		deduct_result = CampaignRepository.deduct_cost_cp(character_id, cost_cp)
 	if not deduct_result["success"]:
 		# Revert stock decrement.
 		CampaignRepository.increment_shop_stock(campaign_id, poi_id, item_key, quantity)
@@ -241,8 +248,13 @@ func commission_item(
 	var unit_cost_cp: int = int(catalog_item.get("cost_cp", 0))
 	var total_cost_cp: int = unit_cost_cp * quantity
 
-	# Deduct cost.
-	var deduct_result := CampaignRepository.deduct_cost_cp(character_id, total_cost_cp)
+	# Deduct cost — via PartyWallet if party_id provided.
+	var deduct_result: Dictionary
+	if party_id != "":
+		var payment := PartyWallet.pay(total_cost_cp, party_id, character_id)
+		deduct_result = {"success": payment["ok"], "message": payment.get("message", "")}
+	else:
+		deduct_result = CampaignRepository.deduct_cost_cp(character_id, total_cost_cp)
 	if not deduct_result["success"]:
 		return {"success": false, "message": deduct_result["message"], "commission_id": "", "ready_at_round": 0}
 

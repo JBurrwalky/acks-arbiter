@@ -40,9 +40,9 @@ func test_denomination_count() -> void:
 
 
 func test_coin_key_to_cp_value() -> void:
-	check(Currency.coin_key_to_cp_value("coins_pp") == 1000, "pp should be 1000cp")
-	check(Currency.coin_key_to_cp_value("coins_ep") == 500, "ep should be 500cp")
+	check(Currency.coin_key_to_cp_value("coins_pp") == 500, "pp should be 500cp")
 	check(Currency.coin_key_to_cp_value("coins_gp") == 100, "gp should be 100cp")
+	check(Currency.coin_key_to_cp_value("coins_ep") == 50, "ep should be 50cp")
 	check(Currency.coin_key_to_cp_value("coins_sp") == 10, "sp should be 10cp")
 	check(Currency.coin_key_to_cp_value("coins_cp") == 1, "cp should be 1cp")
 	check(Currency.coin_key_to_cp_value("coin_bogus") == 0, "unknown coin should be 0")
@@ -62,10 +62,10 @@ func test_is_coin() -> void:
 # ---------------------------------------------------------------------------
 
 func test_coins_to_cp_all_denominations() -> void:
-	var coins := {"coins_pp": 2, "coins_ep": 1, "coins_gp": 3, "coins_sp": 5, "coins_cp": 7}
-	# 2*1000 + 1*500 + 3*100 + 5*10 + 7 = 2000 + 500 + 300 + 50 + 7 = 2857
+	var coins := {"coins_pp": 2, "coins_gp": 3, "coins_ep": 1, "coins_sp": 5, "coins_cp": 7}
+	# 2*500 + 3*100 + 1*50 + 5*10 + 7 = 1000 + 300 + 50 + 50 + 7 = 1407
 	var total := Currency.coins_to_cp(coins)
-	check(total == 2857, "expected 2857cp, got %d" % total)
+	check(total == 1407, "expected 1407cp, got %d" % total)
 	print("  coins_to_cp_all: OK")
 
 
@@ -76,19 +76,19 @@ func test_coins_to_cp_empty() -> void:
 
 
 func test_cp_to_coins_exact_pp() -> void:
-	var coins := Currency.cp_to_coins(1000)
-	check(coins.get("coins_pp", 0) == 1, "1000cp should be 1pp")
+	var coins := Currency.cp_to_coins(500)
+	check(coins.get("coins_pp", 0) == 1, "500cp should be 1pp")
 	check(coins.get("coins_gp", 0) == 0, "no gp remainder")
 	print("  cp_to_coins_exact_pp: OK")
 
 
 func test_cp_to_coins_mixed() -> void:
-	# 2857cp = 2pp + 1ep + 3gp + 5sp + 7cp
-	var coins := Currency.cp_to_coins(2857)
-	check(coins.get("coins_pp", 0) == 2, "expected 2pp, got %d" % coins.get("coins_pp", 0))
+	# 667cp = 1pp(500) + 1gp(100) + 1ep(50) + 1sp(10) + 7cp
+	var coins := Currency.cp_to_coins(667)
+	check(coins.get("coins_pp", 0) == 1, "expected 1pp, got %d" % coins.get("coins_pp", 0))
+	check(coins.get("coins_gp", 0) == 1, "expected 1gp, got %d" % coins.get("coins_gp", 0))
 	check(coins.get("coins_ep", 0) == 1, "expected 1ep, got %d" % coins.get("coins_ep", 0))
-	check(coins.get("coins_gp", 0) == 3, "expected 3gp, got %d" % coins.get("coins_gp", 0))
-	check(coins.get("coins_sp", 0) == 5, "expected 5sp, got %d" % coins.get("coins_sp", 0))
+	check(coins.get("coins_sp", 0) == 1, "expected 1sp, got %d" % coins.get("coins_sp", 0))
 	check(coins.get("coins_cp", 0) == 7, "expected 7cp, got %d" % coins.get("coins_cp", 0))
 	print("  cp_to_coins_mixed: OK")
 
@@ -105,15 +105,15 @@ func test_cp_to_coins_small() -> void:
 # ---------------------------------------------------------------------------
 
 func test_format_cost_gp() -> void:
-	check(Currency.format_cost(1000) == "10gp", "1000cp should format as 10gp, got '%s'" % Currency.format_cost(1000))
+	# 300cp = 3gp (below pp threshold of 500cp)
+	check(Currency.format_cost(300) == "3gp", "300cp should format as 3gp, got '%s'" % Currency.format_cost(300))
 	print("  format_cost_gp: OK")
 
 
 func test_format_cost_mixed() -> void:
-	# 1557cp = 1pp 5ep... wait, format_cost breaks down by denomination.
-	# 1557cp = 1pp (1000) + 557 remaining. 557/500 = 1ep + 57 remaining. 57/100 = 0gp. 57/10 = 5sp + 7cp.
-	check(Currency.format_cost(1557) == "1pp 1ep 5sp 7cp",
-		"1557cp format_cost: got '%s'" % Currency.format_cost(1557))
+	# 667cp = 1pp(500) + 1gp(100) + 1ep(50) + 1sp(10) + 7cp
+	check(Currency.format_cost(667) == "1pp 1gp 1ep 1sp 7cp",
+		"667cp format_cost: got '%s'" % Currency.format_cost(667))
 	print("  format_cost_mixed: OK")
 
 
@@ -123,10 +123,10 @@ func test_format_cost_zero() -> void:
 
 
 func test_format_cost_with_ep_pp() -> void:
-	# 500cp = 1ep
-	check(Currency.format_cost(500) == "1ep", "500cp = 1ep, got '%s'" % Currency.format_cost(500))
-	# 1500cp = 1pp 1ep
-	check(Currency.format_cost(1500) == "1pp 1ep", "1500cp = 1pp 1ep, got '%s'" % Currency.format_cost(1500))
+	# 50cp = 1ep (ACKS RAW: 1ep = 50cp)
+	check(Currency.format_cost(50) == "1ep", "50cp = 1ep, got '%s'" % Currency.format_cost(50))
+	# 550cp = 1pp(500) + 1ep(50)
+	check(Currency.format_cost(550) == "1pp 1ep", "550cp = 1pp 1ep, got '%s'" % Currency.format_cost(550))
 	print("  format_cost_with_ep_pp: OK")
 
 
@@ -178,9 +178,10 @@ func test_deduction_makes_change() -> void:
 	var result := Currency.compute_deduction(coins, 3)
 	check(result["success"], "should succeed")
 	var new_coins: Dictionary = result["new_coins"]
-	# 100cp - 3cp = 97cp change = 0pp 0ep 0gp 9sp 7cp
+	# 100cp - 3cp = 97cp change = 1ep(50) + 4sp(40) + 7cp
 	check(new_coins.get("coins_gp", 0) == 0, "gp should be 0")
-	check(new_coins.get("coins_sp", 0) == 9, "sp: expected 9, got %d" % new_coins.get("coins_sp", 0))
+	check(new_coins.get("coins_ep", 0) == 1, "ep: expected 1, got %d" % new_coins.get("coins_ep", 0))
+	check(new_coins.get("coins_sp", 0) == 4, "sp: expected 4, got %d" % new_coins.get("coins_sp", 0))
 	check(new_coins.get("coins_cp", 0) == 7, "cp: expected 7, got %d" % new_coins.get("coins_cp", 0))
 	print("  deduction_makes_change: OK")
 
@@ -194,12 +195,12 @@ func test_deduction_insufficient_funds() -> void:
 
 
 func test_deduction_all_platinum() -> void:
-	# Have: 2pp (2000cp). Deduct 1553cp.
-	var coins := {"coins_pp": 2}
+	# Have: 4pp (2000cp). Deduct 1553cp.
+	var coins := {"coins_pp": 4}
 	var result := Currency.compute_deduction(coins, 1553)
 	check(result["success"], "should succeed")
 	var new_coins: Dictionary = result["new_coins"]
-	# 2000 - 1553 = 447cp change = 0pp 0ep 4gp 4sp 7cp
+	# 2000 - 1553 = 447cp change = 4gp(400) + 4sp(40) + 7cp
 	var remaining_cp := Currency.coins_to_cp(new_coins)
 	check(remaining_cp == 447, "remaining should be 447cp, got %d" % remaining_cp)
 	print("  deduction_all_platinum: OK")

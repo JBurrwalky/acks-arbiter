@@ -149,7 +149,7 @@ The breakdown is always authoritative for transactions; the float is display-onl
 
 ### 3.3 PartyWallet Subsystem
 
-**File:** `engine/subsystems/economy/party_wallet.gd` (autoload: `PartyWallet`)
+**File:** `engine/subsystems/commerce/party_wallet.gd` (autoload: `PartyWallet`) — sits alongside the existing `currency.gd` and `shop_service.gd` in the commerce subsystem.
 
 **Eligibility rule — a carrier is "in the wallet" if:**
 

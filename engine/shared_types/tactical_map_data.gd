@@ -217,15 +217,6 @@ func has_cell(pos: Vector2i) -> bool:
 	return _cells.has(pos)
 
 
-## Sets a single field on the cell at [param pos].
-## Creates the cell if it does not exist (use with care).
-func set_cell_field(pos: Vector2i, field: String, value: Variant) -> void:
-	if not _cells.has(pos):
-		push_error("TacticalMapData.set_cell_field: no cell at %s" % str(pos))
-		return
-	_cells[pos][field] = value
-
-
 # ---------------------------------------------------------------------------
 # Navigation queries
 # ---------------------------------------------------------------------------

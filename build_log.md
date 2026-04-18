@@ -5303,3 +5303,65 @@ Files modified (wiring changes only):
 - Design the Party Inventory overlay GDD based on the audit findings.
 - Decide whether the overlay is a standalone panel or a new tab within Party Management.
 - Begin Phase A implementation if the GDD is approved.
+
+
+## Session 2026-04-17 — Party Inventory Session 1: PartyWallet, Gold Display, Encumbrance Bar
+
+**Task:** Implement the foundational layer for the Party Inventory system: PartyWallet autoload for cross-PC gold aggregation and payments, GoldDisplay and EncumbranceBar reusable UI components, and integration wiring into existing shop/henchman/character sheet systems. Also fixed Currency.gd exchange rates to match ACKS RAW.
+**Model used:** Opus 4.6
+
+**Completed:**
+- **Currency fix** (`engine/subsystems/commerce/currency.gd`): Changed PP from 1000→500 CP (was 10GP, now 5GP per ACKS 1e Core p.36). Changed EP from 500→50 CP (was 5GP, now 0.5GP). Reordered DENOMINATIONS array to value-descending: PP(500) > GP(100) > EP(50) > SP(10) > CP(1). Updated `tests/test_currency.gd` — all 18 assertions updated.
+- **PartyWallet autoload** (`engine/subsystems/commerce/party_wallet.gd`): Created with 10-method public API. All costs in CP (integers), not GP floats. Wraps CampaignRepository coin methods for multi-PC payment coordination. Registered in `project.godot`.
+- **EventBus signals** (`engine/autoloads/event_bus.gd`): Added `wallet_paid`, `wallet_deposited`, `wallet_changed` signals.
+- **GoldDisplay component** (`scenes/ui/components/gold_display.gd` + `.tscn`): Two modes (summary "GP: 242.35" and breakdown "PP: 4 | GP: 200 | ..."). Auto-refreshes on wallet_changed and inventory_updated.
+- **EncumbranceBar component** (`scenes/ui/components/encumbrance_bar.gd` + `.tscn`): Four-band character mode (green/yellow/orange/red) + two-tier creature/vehicle mode. Custom `_draw()` rendering. STR-adjusted max capacity.
+- **Shop integration** (`engine/subsystems/commerce/shop_service.gd`): `buy_item()` and `commission_item()` now route through PartyWallet.pay() when party_id is provided, with backward-compatible fallback.
+- **Shop panel UI** (`scenes/ui/settlement/shop_panel.gd`): Wealth display now shows "Party: X.XX GP (Yours: Y.YY GP)" instead of single-character wealth.
+- **Henchman wages** (`engine/subsystems/henchmen/henchman_lifecycle_manager.gd`): Rewrote `process_monthly_wages()` — removed broken `party_state.gold_current` query (column didn't exist in schema), replaced with `PartyWallet.pay()` per henchman. Wages now deposit to henchman's personal purse via `add_coins_cp()`.
+- **Hiring search fee** (`scenes/ui/settlement/hiring_panel.gd`): `_on_pay_pressed()` now actually deducts gold via `PartyWallet.pay()` (was previously a no-op that just set a flag).
+- **Character sheet** (`scenes/ui/character_sheet/character_sheet_overlay.gd`): Added gold display label to title row showing "GP: X.XX" with denomination breakdown tooltip.
+- **Tests** (`tests/test_party_wallet.gd`): 20 tests covering eligibility (4), aggregation (3), affordability (3), payment (6), distribution (4). Registered in test_runner.
+- **Documentation**: Updated `docs/coding_conventions.md` §5.1 (autoload table) and §12 (ACKS rules). Added `gdd-party-inventory.md` to `docs/document_map.md`.
+
+**Decisions made:**
+- **CP not GP in PartyWallet API**: All costs are CP integers, not GP floats. Avoids float-to-int conversion bugs. Every existing call site already works in CP.
+- **Currency rate fix**: ACKS RAW rates applied to Currency.gd. This changes the DENOMINATIONS order — EP is now between GP and SP, not between PP and GP.
+- **Henchman wages fully refactored**: The old `party_state.gold_current` column was never in the canonical schema. The wage system now uses per-character coin inventory via PartyWallet, matching the shop system.
+- **Location filtering stubbed**: All party PCs treated as co-located. Must-fix for Session 2 (LocationCacheManager).
+
+**Interfaces defined or changed:**
+- `PartyWallet.get_party_total_cp(party_id: String) -> int`
+- `PartyWallet.get_party_total_gp_float(party_id: String) -> float`
+- `PartyWallet.get_party_breakdown(party_id: String) -> Dictionary`
+- `PartyWallet.get_contributors(party_id: String, active_character_id: String) -> Array`
+- `PartyWallet.can_afford(cost_cp: int, party_id: String, active_character_id: String) -> Dictionary`
+- `PartyWallet.pay(cost_cp: int, party_id: String, active_character_id: String) -> Dictionary`
+- `PartyWallet.pay_from_character(character_id: String, cost_cp: int) -> Dictionary`
+- `PartyWallet.deposit_to_character(character_id: String, amount_cp: int) -> void`
+- `PartyWallet.deposit_to_party_even_split(party_id: String, amount_cp: int, active_character_id: String) -> Dictionary`
+- `PartyWallet.deposit_to_party_by_shares(party_id: String, amount_cp: int, shares: Dictionary) -> Dictionary`
+- `EventBus.wallet_paid(party_id: String, details: Dictionary)` — signal
+- `EventBus.wallet_deposited(party_id: String, details: Dictionary)` — signal
+- `EventBus.wallet_changed(party_id: String)` — signal
+- `ShopService.buy_item()` — added optional `party_id: String = ""` parameter
+- `HenchmanLifecycleManager.process_monthly_wages()` — return dict key changed from `total_deducted` to `total_deducted_gp`
+
+**Database changes:**
+- None. No migrations added this session. Removed reference to non-existent `party_state.gold_current` column.
+
+**Tests added/updated:**
+- `tests/test_party_wallet.gd` — 20 new tests (eligibility, aggregation, affordability, payment, distribution)
+- `tests/test_currency.gd` — 8 tests updated for new exchange rates
+- Registered `PartyWalletTests` in `test_runner.gd` and `test_runner.tscn`
+
+**Known issues:**
+- **Location filtering stubbed**: All party PCs are treated as co-located in PartyWallet.get_contributors(). Must-fix for Session 2 when LocationCacheManager is built.
+- **Currency rate change may affect existing save data**: Any characters with PP or EP coins stored in the DB will have their wealth recalculated at the new rates. This is correct behavior (the old rates were wrong) but could surprise players who saved with old rates.
+- **EncumbranceBar creature/vehicle refresh**: Uses `has_method()` guard for creature/vehicle inventory methods that may not exist yet. Will work once those methods are confirmed in CampaignRepository.
+- **No `active_character_id` in GameState**: PartyWallet works around this by requiring callers to pass it as a parameter. A future session may want to add this property to GameState.
+
+**Next session should:**
+- Session 2: Build LocationCacheManager (location cache subsystem per GDD §12.2) — ground drops, hide caches, stronghold storage.
+- Wire location-key filtering into PartyWallet.get_contributors() so split-party scenarios work correctly.
+- Run the full test suite in Godot headless mode to verify no regressions from the Currency rate fix.

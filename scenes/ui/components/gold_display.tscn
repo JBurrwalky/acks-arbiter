@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://gold_display_001"]
+
+[ext_resource type="Script" path="res://scenes/ui/components/gold_display.gd" id="1_gold_display"]
+
+[node name="GoldDisplay" type="HBoxContainer"]
+script = ExtResource("1_gold_display")

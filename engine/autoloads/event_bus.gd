@@ -146,6 +146,17 @@ signal shop_transaction_completed(transaction: Dictionary)
 ## A commissioned item is ready for pickup at a settlement shop.
 signal commission_ready(commission_id: String, character_id: String, item_key: String)
 
+## Party gold was deducted by PartyWallet.pay() or pay_from_character().
+## [param details] keys: cost_cp, per_character_deductions, active_character_id
+signal wallet_paid(party_id: String, details: Dictionary)
+
+## Gold was deposited to one or more characters via PartyWallet.
+## [param details] keys: amount_cp, recipients (Array of character IDs)
+signal wallet_deposited(party_id: String, details: Dictionary)
+
+## The wallet's available total changed (catch-all for UI refresh).
+signal wallet_changed(party_id: String)
+
 ## XP was awarded to a character.
 signal xp_awarded(character_id: String, amount: int)
 

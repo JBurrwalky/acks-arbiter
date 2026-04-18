@@ -183,8 +183,15 @@ func _update_character_selector() -> void:
 func _update_wealth_display() -> void:
 	if _wealth_label == null or _selected_character_id.is_empty():
 		return
-	var coins := CampaignRepository.get_character_coins(_selected_character_id)
-	_wealth_label.text = "Wealth: %s" % Currency.format_wealth(coins)
+	# Show party wallet total with personal share.
+	var party_id: String = _runner.get_party_id() if _runner != null else ""
+	if party_id != "":
+		var party_total_gp: float = PartyWallet.get_party_total_gp_float(party_id)
+		var char_wealth_cp: int = CampaignRepository.get_character_wealth_cp(_selected_character_id)
+		_wealth_label.text = "Party: %.2f GP  (Yours: %.2f GP)" % [party_total_gp, char_wealth_cp / 100.0]
+	else:
+		var coins := CampaignRepository.get_character_coins(_selected_character_id)
+		_wealth_label.text = "Wealth: %s" % Currency.format_wealth(coins)
 
 	# Encumbrance.
 	var items := CampaignRepository.get_inventory_items(_selected_character_id)
@@ -464,8 +471,9 @@ func _on_buy_pressed(item_key: String) -> void:
 		return
 	var campaign_id: String = _shop_data.get("campaign_id", "")
 	var poi_id: String = _shop_data.get("poi", {}).get("id", "")
+	var party_id: String = _runner.get_party_id() if _runner != null else ""
 
-	var result := _service.buy_item(_selected_character_id, item_key, 1, poi_id, campaign_id)
+	var result := _service.buy_item(_selected_character_id, item_key, 1, poi_id, campaign_id, party_id)
 	if result["success"]:
 		_status_label.text = "Purchased!"
 		# Refresh shop inventory data from DB.

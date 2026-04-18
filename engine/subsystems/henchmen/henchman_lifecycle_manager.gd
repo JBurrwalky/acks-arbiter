@@ -137,15 +137,12 @@ func finalize_hire(character_id: String, employer_id: String, party_id: String,
 # Monthly wages
 # ---------------------------------------------------------------------------
 
-## Process wages for all henchmen of the given party. Deducts from party gold.
-## Returns {total_deducted, unpaid_henchmen}.
+## Process wages for all henchmen of the given party. Deducts from party wallet
+## (per-character coin inventory via PartyWallet), then deposits wages into each
+## henchman's personal purse.
+## Returns {total_deducted_gp, unpaid_henchmen}.
 func process_monthly_wages(party_id: String) -> Dictionary:
-	# Get party gold.
-	_repo.db.query_with_bindings(
-		"SELECT gold_current FROM party_state WHERE party_id = ?", [party_id])
-	var party_gold: int = 0
-	if not _repo.db.query_result.is_empty():
-		party_gold = int(_repo.db.query_result[0].get("gold_current", 0))
+	var wallet = _get_party_wallet()
 
 	# Get all employed henchmen in this party.
 	_repo.db.query_with_bindings(
@@ -160,35 +157,55 @@ func process_monthly_wages(party_id: String) -> Dictionary:
 	var unpaid: Array = []
 
 	for h in henchmen:
-		var wage: int = int(h.get("wage_gp_per_month", 0))
-		if party_gold >= wage:
-			party_gold -= wage
-			total_deducted += wage
+		var wage_gp: int = int(h.get("wage_gp_per_month", 0))
+		if wage_gp <= 0:
+			continue
+		var wage_cp: int = wage_gp * 100
+		var employer_id: String = h.get("employer_id", "")
+
+		if wallet != null and employer_id != "":
+			var result: Dictionary = wallet.pay(wage_cp, party_id, employer_id)
+			if result["ok"]:
+				total_deducted += wage_gp
+				# Deposit wages into the henchman's personal purse.
+				_repo.add_coins_cp(h["id"], wage_cp)
+			else:
+				unpaid.append(h["id"])
+				_increment_unpaid_months(h["id"])
 		else:
+			# Fallback if PartyWallet not available (e.g. testing).
 			unpaid.append(h["id"])
-			var state: Dictionary = _repo.get_henchman_state(h["id"])
-			var months: int = int(state.get("unpaid_months", 0)) + 1
-			_repo.upsert_henchman_state(h["id"], {
-				"morale_score": int(state.get("morale_score", 0)),
-				"treasure_share_percent": int(state.get("treasure_share_percent", 15)),
-				"unpaid_months": months,
-				"is_grudging": state.get("is_grudging", 0),
-				"is_fanatic": state.get("is_fanatic", 0),
-				"hired_month": int(state.get("hired_month", 0)),
-				"hired_year": int(state.get("hired_year", 0)),
-			})
+			_increment_unpaid_months(h["id"])
 
-	# Update party gold.
-	if total_deducted > 0:
-		_repo.db.query_with_bindings(
-			"UPDATE party_state SET gold_current = gold_current - ? WHERE party_id = ?",
-			[total_deducted, party_id])
-
-	var summary := {"total_deducted": total_deducted, "unpaid_henchmen": unpaid}
+	var summary := {"total_deducted_gp": total_deducted, "unpaid_henchmen": unpaid}
 	var bus := _event_bus()
 	if bus != null:
 		bus.emit_signal("wages_processed", party_id, summary)
 	return summary
+
+
+func _increment_unpaid_months(character_id: String) -> void:
+	var state: Dictionary = _repo.get_henchman_state(character_id)
+	var months: int = int(state.get("unpaid_months", 0)) + 1
+	_repo.upsert_henchman_state(character_id, {
+		"morale_score": int(state.get("morale_score", 0)),
+		"treasure_share_percent": int(state.get("treasure_share_percent", 15)),
+		"unpaid_months": months,
+		"is_grudging": state.get("is_grudging", 0),
+		"is_fanatic": state.get("is_fanatic", 0),
+		"hired_month": int(state.get("hired_month", 0)),
+		"hired_year": int(state.get("hired_year", 0)),
+	})
+
+
+func _get_party_wallet():
+	var main_loop := Engine.get_main_loop()
+	if main_loop == null or not (main_loop is SceneTree):
+		return null
+	var root := (main_loop as SceneTree).root
+	if root == null:
+		return null
+	return root.get_node_or_null("PartyWallet")
 
 
 # ---------------------------------------------------------------------------

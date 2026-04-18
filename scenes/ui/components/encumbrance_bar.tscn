@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://encumbrance_bar_001"]
+
+[ext_resource type="Script" path="res://scenes/ui/components/encumbrance_bar.gd" id="1_enc_bar"]
+
+[node name="EncumbranceBar" type="Control"]
+script = ExtResource("1_enc_bar")
