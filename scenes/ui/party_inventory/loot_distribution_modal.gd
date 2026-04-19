@@ -24,8 +24,12 @@ extends CanvasLayer
 const Currency := preload("res://engine/subsystems/commerce/currency.gd")
 const EquipCatalogScript := preload("res://engine/subsystems/characters/equipment_catalog.gd")
 const GoldShareModalScript := preload("res://scenes/ui/party_inventory/gold_share_modal.gd")
+const LootGenerator := preload("res://engine/subsystems/combat/loot_generator.gd")
 
-signal distribution_completed()
+## Emitted after the player applies loot distribution.
+## cache_id: the source cache (empty for combat loot). cache_cell: cell position
+## for has_ground_items cleanup (Vector2i(-1,-1) for non-cache sources).
+signal distribution_completed(cache_id: String, cache_cell: Vector2i)
 
 # ---------------------------------------------------------------------------
 # Private state
@@ -42,6 +46,10 @@ var _encounter_title: String = ""
 # Gold share state
 var _gold_shares: Dictionary = {}  # {char_id: float_weight} — empty = even split
 var _gold_share_modal = null       # GoldShareModal (lazily created)
+
+# Cache source state (set when opened from a dungeon cache; empty for combat loot)
+var _cache_id: String = ""
+var _cache_cell: Vector2i = Vector2i(-1, -1)
 
 # UI references
 var _title_label: Label
@@ -69,12 +77,34 @@ func open(title: String, coins: Dictionary, items: Array = []) -> void:
 	_coins = coins.duplicate()
 	_items = items.duplicate()
 	_gold_shares.clear()
+	_cache_id = ""
+	_cache_cell = Vector2i(-1, -1)
 
 	if not _is_built:
 		_build_ui()
 
 	_update_display()
 	visible = true
+
+
+## Opens the modal from a dungeon location cache. Loads items from the DB,
+## separates coins from non-coin items, and presents them for distribution.
+func open_from_cache(cache_id: String, cell: Vector2i = Vector2i(-1, -1)) -> void:
+	_cache_id = cache_id
+	_cache_cell = cell
+
+	var items: Array = CampaignRepository.list_items_in_cache(cache_id)
+	var coins := {}
+	var non_coin_items: Array = []
+
+	for item in items:
+		var item_key: String = item.get("item_key", "")
+		if Currency.is_coin(item_key):
+			coins[item_key] = coins.get(item_key, 0) + int(item.get("quantity", 0))
+		else:
+			non_coin_items.append(item)
+
+	open("Loot", coins, non_coin_items)
 
 
 # ---------------------------------------------------------------------------
@@ -357,12 +387,26 @@ func _on_apply() -> void:
 	# For each move in auto-distribute plan, call CampaignRepository.add_inventory_item()
 	# with target carrier FK.
 
+	# If opened from a cache, remove distributed coin items from the cache DB.
+	if not _cache_id.is_empty():
+		var cache_items: Array = CampaignRepository.list_items_in_cache(_cache_id)
+		for item in cache_items:
+			if Currency.is_coin(item.get("item_key", "")):
+				CampaignRepository.remove_inventory_item(item.get("id", ""))
+
+	# Award treasure XP for recovered coins.
+	# ACKS RAW: 1 XP per 1 GP of coins, gems, jewelry recovered on adventures.
+	# Equipment is excluded. v1: coins-only.
+	var treasure_gp := LootGenerator.compute_treasure_gp_value(_coins)
+	if treasure_gp > 0:
+		_award_treasure_xp(treasure_gp)
+
 	visible = false
 	EventBus.notification_requested.emit({
 		"message": "Loot distributed successfully.",
 		"type": "info",
 	})
-	distribution_completed.emit()
+	distribution_completed.emit(_cache_id, _cache_cell)
 
 
 # ---------------------------------------------------------------------------
@@ -377,7 +421,7 @@ func _on_drop_all() -> void:
 		"message": "Loot dropped on the ground.",
 		"type": "warning",
 	})
-	distribution_completed.emit()
+	distribution_completed.emit(_cache_id, _cache_cell)
 
 
 func _on_close_pressed() -> void:
@@ -390,3 +434,61 @@ func _on_close_pressed() -> void:
 			"type": "warning",
 		})
 	visible = false
+
+
+# ---------------------------------------------------------------------------
+# Treasure XP
+# ---------------------------------------------------------------------------
+
+## Awards treasure XP to all eligible party members.
+## ACKS RAW: 1 XP per 1 GP of recovered coins, gems, jewelry, or special treasure.
+## Equipment is excluded until a sell-for-XP system exists.
+func _award_treasure_xp(treasure_gp: int) -> void:
+	if treasure_gp <= 0:
+		return
+
+	var party_id: String = GameState.active_party_id
+	if party_id.is_empty():
+		party_id = GameState.party_id
+
+	var eligible := CampaignRepository.list_xp_eligible_entities(party_id)
+	if eligible.is_empty():
+		return
+
+	# Build members array matching XPAwardCalculator format.
+	var members: Array = []
+	for row in eligible:
+		var cid: String = row.get("id", "")
+		var char_dict: Dictionary = CampaignRepository.get_character(cid)
+		if char_dict.is_empty():
+			continue
+		var cd: CharacterData = CharacterData.from_dict(char_dict)
+		members.append({
+			"character_id": cid,
+			"is_henchman": cd.character_type == "henchman",
+			"xp_adjustment_percent": cd.xp_adjustment_percent,
+			"character_data": cd,
+		})
+
+	if members.is_empty():
+		return
+
+	var class_registry := ClassRegistry.new()
+	var calculator := XPAwardCalculator.new(class_registry)
+	var xp_results: Array = calculator.award_adventure_xp(0, treasure_gp, members)
+
+	for xp_entry in xp_results:
+		var cid: String = xp_entry["character_id"]
+		var clamped: int = xp_entry["clamped_share"]
+		# Persist XP to database.
+		var cd: CharacterData = null
+		for m in members:
+			if m["character_id"] == cid:
+				cd = m["character_data"]
+				break
+		if cd != null:
+			cd.xp = xp_entry["xp_after"]
+			CampaignRepository.save_character(cd.to_dict())
+		EventBus.xp_awarded.emit(cid, clamped)
+		if xp_entry.get("leveled_up", false):
+			EventBus.character_leveled_up.emit(cid, (cd.level + 1) if cd != null else 0)

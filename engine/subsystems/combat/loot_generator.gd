@@ -7,6 +7,7 @@ extends RefCounted
 #
 # Dependencies:
 #   - DiceSystem (autoload): percentage checks and coin dice rolls
+#   - Currency: denomination conversion for GP value computation
 #
 # Design note:
 #   Pure computation — no side effects. Instantiated locally by CombatController
@@ -15,6 +16,8 @@ extends RefCounted
 #
 # Source: rules/acore_treasure_and_magic_items_rules.xml §treasure_type_table
 # Coin columns are in thousands (e.g., "80% 2d20" copper = 80% chance, 2d20 × 1000 cp).
+
+const Currency := preload("res://engine/subsystems/commerce/currency.gd")
 
 
 # ---------------------------------------------------------------------------
@@ -234,3 +237,17 @@ func _roll_coin_column(chance_pct: int, dice_expr: String) -> int:
 	# Roll the dice expression and multiply by 1000 (table is in thousands of coins).
 	var coin_roll: int = DiceSystem.roll_expression(dice_expr, "treasure_coins").modified_total
 	return coin_roll * 1000
+
+
+# ---------------------------------------------------------------------------
+# Treasure XP valuation
+# ---------------------------------------------------------------------------
+
+## Returns the GP value of a coins dictionary for XP purposes.
+## ACKS RAW (acore_treasure_and_magic_items_rules.xml): 1 XP per 1 GP of
+## coins, gems, jewelry, or special treasure recovered on adventures.
+## Equipment is excluded — only sold equipment counts (future feature).
+## v1: coins-only, so this is a straight denomination conversion.
+static func compute_treasure_gp_value(coins: Dictionary) -> int:
+	var total_cp := Currency.coins_to_cp(coins)
+	return total_cp / 100  # Integer division; 100 cp = 1 gp

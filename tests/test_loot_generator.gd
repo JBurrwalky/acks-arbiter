@@ -13,6 +13,10 @@ func run_all_tests() -> void:
 	test_generate_with_override_produces_coins()
 	test_generate_failed_chance_produces_zero()
 	test_multiple_types_aggregate()
+	test_gp_value_mixed_coins()
+	test_gp_value_empty_dict()
+	test_gp_value_copper_only_rounds_down()
+	test_gp_value_gold_only()
 
 	if not has_failures():
 		print("LootGenerator: all tests passed.")
@@ -113,3 +117,34 @@ func test_multiple_types_aggregate() -> void:
 	# At minimum, the first A contributed 2000 sp (second is random).
 	check(result.get("coins_sp", 0) >= 2000,
 		"two A types: expected at least 2000 sp, got %d" % result.get("coins_sp", 0))
+
+
+# ---------------------------------------------------------------------------
+# compute_treasure_gp_value tests
+# ---------------------------------------------------------------------------
+
+func test_gp_value_mixed_coins() -> void:
+	# 2 pp (1000 cp) + 5 gp (500 cp) + 3 ep (150 cp) + 10 sp (100 cp) + 40 cp = 1790 cp
+	# 1790 / 100 = 17 gp (integer division)
+	var coins := {"coins_pp": 2, "coins_gp": 5, "coins_ep": 3, "coins_sp": 10, "coins_cp": 40}
+	var gp := LootGenerator.compute_treasure_gp_value(coins)
+	check(gp == 17,
+		"mixed coins: expected 17 gp, got %d" % gp)
+
+
+func test_gp_value_empty_dict() -> void:
+	var gp := LootGenerator.compute_treasure_gp_value({})
+	check(gp == 0, "empty dict: expected 0 gp, got %d" % gp)
+
+
+func test_gp_value_copper_only_rounds_down() -> void:
+	# 99 cp = 0 gp (truncated, not rounded)
+	var coins := {"coins_cp": 99}
+	var gp := LootGenerator.compute_treasure_gp_value(coins)
+	check(gp == 0, "99 cp: expected 0 gp, got %d" % gp)
+
+
+func test_gp_value_gold_only() -> void:
+	var coins := {"coins_gp": 100}
+	var gp := LootGenerator.compute_treasure_gp_value(coins)
+	check(gp == 100, "100 gp: expected 100, got %d" % gp)

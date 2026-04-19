@@ -716,7 +716,7 @@ func _ensure_loot_modal() -> void:
 		push_error("PartyInventoryOverlay: could not load loot_distribution_modal.gd")
 		return
 	_loot_modal = script.new()
-	_loot_modal.distribution_completed.connect(func():
+	_loot_modal.distribution_completed.connect(func(_cache_id: String, _cache_cell: Vector2i):
 		_refresh_all_columns()
 		_update_footer()
 	)

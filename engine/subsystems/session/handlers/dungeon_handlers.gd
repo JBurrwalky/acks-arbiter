@@ -668,6 +668,17 @@ func _handle_action_complete(event: ScheduledEvent) -> Dictionary:
 			return _resolve_remove_wedge(entity_id, cell)
 		"exit_dungeon":
 			return _resolve_exit_dungeon(entity_id, cell)
+		"loot":
+			var dungeon_id: String = event.data.get("dungeon_id", "")
+			return _resolve_loot(entity_id, cell, dungeon_id)
+		"pick_up_all":
+			var dungeon_id: String = event.data.get("dungeon_id", "")
+			return _resolve_pick_up_all(entity_id, cell, dungeon_id)
+		# TODO (dungeon stocking session): "open_container" — after Pick Lock / Bash
+		# resolves on a container cell, create a cache via
+		# LocationCacheManager.create_dungeon_container_cache() and emit
+		# EventBus.container_opened(container_id, contents). The LootDistributionModal
+		# can then open via its existing open() or open_from_cache() API.
 		_:
 			return {
 				"auto_pause": true,
@@ -1349,3 +1360,179 @@ func _find_dungeon_controller() -> DungeonMapController:
 		if child is DungeonMapController:
 			return child
 	return null
+
+
+# ---------------------------------------------------------------------------
+# Loot action resolvers
+# ---------------------------------------------------------------------------
+
+## Resolves the "loot" action: opens the loot distribution modal over the cache.
+## The dungeon explore state listens for the "open_loot_modal" presentation type.
+func _resolve_loot(_entity_id: String, cell: Vector2i, dungeon_id: String) -> Dictionary:
+	# TODO (voxel migration): extend location_key to include level coordinate
+	# per gdd-voxel-tactical-architecture-v1.1.md §6.3 — currently 2D (col,row);
+	# becomes 3D (col,row,level) when the voxel schema lands.
+	var location_key := "dungeon:%s:cell:%d,%d" % [dungeon_id, cell.x, cell.y]
+	var cache: Dictionary = CampaignRepository.get_cache_at_location_key(
+		GameState.campaign_id, location_key)
+	if cache.is_empty():
+		return {
+			"auto_pause": true,
+			"pause_reason": "Nothing to loot here.",
+		}
+
+	return {
+		"auto_pause": true,
+		"pause_reason": "Looting",
+		"presentation": {
+			"type": "open_loot_modal",
+			"cache_id": cache.get("id", ""),
+			"cell_x": cell.x,
+			"cell_y": cell.y,
+		},
+	}
+
+
+## Resolves the "pick_up_all" action: transfers all cache items to the acting
+## character, respecting encumbrance. Coins are deposited directly; non-coin
+## items are transferred via LocationCacheManager. Awards treasure XP.
+func _resolve_pick_up_all(entity_id: String, cell: Vector2i, dungeon_id: String) -> Dictionary:
+	# TODO (voxel migration): extend location_key to include level coordinate
+	# per gdd-voxel-tactical-architecture-v1.1.md §6.3 — currently 2D (col,row);
+	# becomes 3D (col,row,level) when the voxel schema lands.
+	var location_key := "dungeon:%s:cell:%d,%d" % [dungeon_id, cell.x, cell.y]
+	var cache: Dictionary = CampaignRepository.get_cache_at_location_key(
+		GameState.campaign_id, location_key)
+	if cache.is_empty():
+		return {
+			"auto_pause": true,
+			"pause_reason": "Nothing to pick up.",
+		}
+
+	var cache_id: String = cache.get("id", "")
+	var items: Array = CampaignRepository.list_items_in_cache(cache_id)
+	if items.is_empty():
+		return {
+			"auto_pause": true,
+			"pause_reason": "Cache is empty.",
+		}
+
+	# Separate coins from non-coins, then process.
+	var total_coin_cp := 0
+	var coin_item_ids: Array = []
+	var non_coin_items: Array = []
+	for item in items:
+		var item_key: String = item.get("item_key", "")
+		if Currency.is_coin(item_key):
+			var qty: int = item.get("quantity", 0)
+			total_coin_cp += qty * Currency.coin_key_to_cp_value(item_key)
+			coin_item_ids.append(item.get("id", ""))
+		else:
+			non_coin_items.append(item)
+
+	# Deposit coins to the acting character.
+	if total_coin_cp > 0:
+		CampaignRepository.add_coins_cp(entity_id, total_coin_cp)
+		# Remove coin items from cache.
+		for cid in coin_item_ids:
+			CampaignRepository.remove_inventory_item(cid)
+
+	# Transfer non-coin items (future: check encumbrance before each transfer).
+	var items_picked := 0
+	for item in non_coin_items:
+		var item_id: String = item.get("id", "")
+		if LocationCacheManager.pick_up_item(item_id, entity_id, "character"):
+			items_picked += 1
+
+	# Award treasure XP for recovered coins.
+	var treasure_gp := total_coin_cp / 100  # Integer division; 100 cp = 1 gp
+	if treasure_gp > 0:
+		_award_treasure_xp(treasure_gp)
+
+	# Clean up empty cache and clear cell flag.
+	var remaining := CampaignRepository.list_items_in_cache(cache_id)
+	if remaining.is_empty():
+		CampaignRepository.delete_location_cache(cache_id)
+		var controller: DungeonMapController = _find_dungeon_controller()
+		if controller != null:
+			var tmap: TacticalMapData = controller.get_map()
+			if tmap != null:
+				tmap.set_cell_field(cell, "has_ground_items", false)
+
+	# Build summary notification.
+	var char_name := entity_id
+	var party_data: PartyData = _runner.get_party_data() if _runner != null else null
+	if party_data != null:
+		var cd: CharacterData = party_data.get_member(entity_id)
+		if cd != null:
+			char_name = cd.name
+	var summary := "%s picked up" % char_name
+	if total_coin_cp > 0:
+		summary += " %s" % Currency.format_cost(total_coin_cp)
+	if items_picked > 0:
+		summary += " and %d item(s)" % items_picked
+	summary += "."
+
+	EventBus.notification_requested.emit({
+		"type": "info", "category": "exploration",
+		"title": summary,
+		"duration": 5.0,
+	})
+
+	return {
+		"auto_pause": true,
+		"pause_reason": summary,
+	}
+
+
+## Awards treasure XP to all eligible party members.
+## ACKS RAW: 1 XP per 1 GP of recovered treasure.
+func _award_treasure_xp(treasure_gp: int) -> void:
+	if treasure_gp <= 0 or _runner == null:
+		return
+
+	var party_id: String = GameState.active_party_id
+	if party_id.is_empty():
+		party_id = GameState.party_id
+
+	var eligible := CampaignRepository.list_xp_eligible_entities(party_id)
+	if eligible.is_empty():
+		return
+
+	# Build members array matching XPAwardCalculator format.
+	var members: Array = []
+	for row in eligible:
+		var cid: String = row.get("id", "")
+		var char_dict: Dictionary = CampaignRepository.get_character(cid)
+		if char_dict.is_empty():
+			continue
+		var cd: CharacterData = CharacterData.from_dict(char_dict)
+		members.append({
+			"character_id": cid,
+			"is_henchman": cd.character_type == "henchman",
+			"xp_adjustment_percent": cd.xp_adjustment_percent,
+			"character_data": cd,
+		})
+
+	if members.is_empty():
+		return
+
+	var class_registry: ClassRegistry = _runner.get_class_registry()
+	var calculator := XPAwardCalculator.new(class_registry)
+	var xp_results: Array = calculator.award_adventure_xp(0, treasure_gp, members)
+
+	for xp_entry in xp_results:
+		var cid: String = xp_entry["character_id"]
+		var clamped: int = xp_entry["clamped_share"]
+		# Persist XP to database.
+		var cd: CharacterData = null
+		for m in members:
+			if m["character_id"] == cid:
+				cd = m["character_data"]
+				break
+		if cd != null:
+			cd.xp = xp_entry["xp_after"]
+			CampaignRepository.save_character(cd.to_dict())
+		EventBus.xp_awarded.emit(cid, clamped)
+		if xp_entry.get("leveled_up", false):
+			EventBus.character_leveled_up.emit(cid, (cd.level + 1) if cd != null else 0)

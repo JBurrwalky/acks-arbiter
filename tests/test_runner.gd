@@ -112,6 +112,7 @@ extends Node
 @onready var _entity_promotion_tests = $EntityPromotionTests
 @onready var _loot_generator_tests = $LootGeneratorTests
 @onready var _loot_auto_distributor_tests = $LootAutoDistributorTests
+@onready var _dungeon_loot_placement_tests = $DungeonLootPlacementTests
 
 
 func _ready() -> void:
@@ -203,7 +204,8 @@ func run() -> void:
 			_party_split_merge_tests,
 			_entity_promotion_tests,
 			_loot_generator_tests,
-			_loot_auto_distributor_tests]:
+			_loot_auto_distributor_tests,
+			_dungeon_loot_placement_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

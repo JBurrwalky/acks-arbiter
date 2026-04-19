@@ -21,6 +21,8 @@ const UnitInfoPanelScene := preload("res://scenes/maps/dungeon_unit_info_panel.g
 const ControlGroupBarScene := preload("res://scenes/maps/dungeon_control_group_bar.gd")
 const NotificationLogScene := preload("res://scenes/maps/dungeon_notification_log.gd")
 const MinimapScene := preload("res://scenes/maps/dungeon_minimap.gd")
+const LootGenerator := preload("res://engine/subsystems/combat/loot_generator.gd")
+const LootModalScript := preload("res://scenes/ui/party_inventory/loot_distribution_modal.gd")
 
 var _runner = null
 var _controller: DungeonMapController = null
@@ -37,6 +39,9 @@ var _session_state: RefCounted = null  # DungeonSessionState
 
 ## Active context menu popup (if any).
 var _context_menu: PanelContainer = null
+
+## Loot distribution modal for dungeon cache looting.
+var _loot_modal = null  # LootDistributionModal (lazy-created)
 
 ## UI panels.
 var _unit_info_panel: PanelContainer = null
@@ -599,10 +604,42 @@ func _on_context_action(action_data: Dictionary) -> void:
 				_handlers.schedule_action("drop_portcullis", eid, cell, 1, scheduler, party_id)
 			_start_clock_if_paused()
 
+		# --- Loot actions ---
+		"loot":
+			if not selected.is_empty():
+				var eid: String = selected[0]
+				# TODO (voxel migration): extend location_key to include level coordinate
+				# per gdd-voxel-tactical-architecture-v1.1.md §6.3 — currently 2D (col,row);
+				# becomes 3D (col,row,level) when the voxel schema lands.
+				var current_time: int = Timekeeping.get_party_time(party_id)
+				scheduler.schedule_at(
+					current_time + DungeonHandlers.TURN_ROUNDS,
+					"dungeon_action_complete", party_id,
+					{"action_type": "loot", "entity_id": eid,
+					 "cell_x": cell.x, "cell_y": cell.y,
+					 "dungeon_id": _controller.get_dungeon_id()},
+					ScheduledEvent.PRIORITY_ARRIVAL)
+				_start_clock_if_paused()
+		"pick_up_all":
+			if not selected.is_empty():
+				var eid: String = selected[0]
+				# TODO (voxel migration): extend location_key to include level coordinate
+				# per gdd-voxel-tactical-architecture-v1.1.md §6.3 — currently 2D (col,row);
+				# becomes 3D (col,row,level) when the voxel schema lands.
+				var current_time: int = Timekeeping.get_party_time(party_id)
+				scheduler.schedule_at(
+					current_time + DungeonHandlers.TURN_ROUNDS,
+					"dungeon_action_complete", party_id,
+					{"action_type": "pick_up_all", "entity_id": eid,
+					 "cell_x": cell.x, "cell_y": cell.y,
+					 "dungeon_id": _controller.get_dungeon_id()},
+					ScheduledEvent.PRIORITY_ARRIVAL)
+				_start_clock_if_paused()
+
 		# --- Deferred / placeholder ---
 		"talk", "heal", "heal_self", "cast_spell", "cast_spell_self", \
-		"use_item", "drop_item", "hide", "check_status", "carry", "loot", \
-		"pick_up_all", "disarm_trap", "trigger_trap", "examine", \
+		"use_item", "drop_item", "hide", "check_status", "carry", \
+		"disarm_trap", "trigger_trap", "examine", \
 		"pick_pockets", "unlock_door":
 			EventBus.notification_requested.emit({
 				"type": "info", "category": "ui",
@@ -1050,6 +1087,14 @@ func _on_scheduler_event_resolved(event_type: String, _event_data: Dictionary) -
 				_on_all_party_resolved()
 				return
 
+		if ptype == "open_loot_modal":
+			var cache_id: String = presentation.get("cache_id", "")
+			var cell_x: int = presentation.get("cell_x", 0)
+			var cell_y: int = presentation.get("cell_y", 0)
+			if not cache_id.is_empty():
+				_open_loot_modal_from_cache(cache_id, Vector2i(cell_x, cell_y))
+			return
+
 	# After resolving events, check idle behaviors for entities without orders.
 	_check_idle_behaviors()
 
@@ -1224,6 +1269,11 @@ func _on_dungeon_combat_finished(result: Dictionary) -> void:
 	var party_data: PartyData = _runner.get_party_data()
 	var roster: CombatRoster = _dungeon_combat_controller.roster if _dungeon_combat_controller != null else null
 	_finalizer.finalize(_runner, result, party_data, roster)
+
+	# Place loot at death cells on dungeon victory (before clearing the controller).
+	if result.get("result", "") == "victory" and roster != null:
+		_place_dungeon_loot(roster)
+
 	_dungeon_combat_controller = null
 
 	# Remove non-party tokens (monsters, dead creatures).
@@ -1252,6 +1302,108 @@ func _on_dungeon_combat_finished(result: Dictionary) -> void:
 
 	_set_dungeon_hud_visible(true)
 	# Scheduler stays paused after combat — player decides when to resume.
+
+
+# ---------------------------------------------------------------------------
+# Dungeon loot placement
+# ---------------------------------------------------------------------------
+
+## Creates a location cache at the first defeated enemy's death cell and deposits
+## rolled treasure (coins) into it. Called after dungeon combat victory.
+## The context menu's "Loot" option appears when has_ground_items is set on the cell.
+func _place_dungeon_loot(roster: CombatRoster) -> void:
+	if _controller == null:
+		return
+
+	# Collect treasure types and the first valid death cell from defeated enemies.
+	# TODO (voxel migration): extend location_key to include level coordinate
+	# per gdd-voxel-tactical-architecture-v1.1.md §6.3 — currently 2D (col,row);
+	# becomes 3D (col,row,level) when the voxel schema lands.
+	var treasure_types: Array = []
+	var loot_cell := Vector2i(-1, -1)
+	for c: Combatant in roster.get_all():
+		if c.is_enemy_side() and not c.is_alive():
+			var tt: String = c._monster_data.get("treasure_type", "None")
+			if tt != "None" and not tt.is_empty():
+				treasure_types.append(tt)
+			if loot_cell == Vector2i(-1, -1) and c.grid_position != Vector2i(-1, -1):
+				loot_cell = c.grid_position
+
+	if treasure_types.is_empty():
+		return
+	if loot_cell == Vector2i(-1, -1):
+		push_warning("DungeonExploreState._place_dungeon_loot: no valid death cell for loot placement")
+		return
+
+	# Roll coins from treasure types.
+	var generator := LootGenerator.new()
+	var loot: Dictionary = generator.generate_from_treasure_types(treasure_types)
+	if loot.is_empty():
+		return
+	var total_cp := Currency.coins_to_cp(loot)
+	if total_cp <= 0:
+		return
+
+	# Create a loose cache at the death cell.
+	var dungeon_id: String = _controller.get_dungeon_id()
+	var cache_id: String = LocationCacheManager.create_dungeon_loose_cache(dungeon_id, loot_cell)
+	if cache_id.is_empty():
+		push_error("DungeonExploreState._place_dungeon_loot: failed to create cache at %s" % str(loot_cell))
+		return
+
+	# Insert coin items into the cache.
+	for denom in Currency.DENOMINATIONS:
+		var coin_key: String = denom["key"]
+		var qty: int = loot.get(coin_key, 0)
+		if qty <= 0:
+			continue
+		var item_id: String = CampaignRepository.add_inventory_item({
+			"item_key": coin_key,
+			"name": denom["name"],
+			"quantity": qty,
+			"encumbrance_units": Currency.ENC_PER_COIN,
+			"item_category": Currency.COIN_ITEM_CATEGORY,
+		})
+		if not item_id.is_empty():
+			CampaignRepository.transfer_item_to_cache(item_id, cache_id)
+
+	# Flag the cell so the context menu shows Loot / Pick Up All.
+	var tactical_map: TacticalMapData = _controller.get_map()
+	if tactical_map != null:
+		tactical_map.set_cell_field(loot_cell, "has_ground_items", true)
+
+	print("Placed dungeon loot cache at cell %s (cache_id=%s, total_cp=%d)" % [
+		str(loot_cell), cache_id, total_cp])
+
+
+# ---------------------------------------------------------------------------
+# Loot modal management
+# ---------------------------------------------------------------------------
+
+func _ensure_loot_modal() -> void:
+	if _loot_modal != null:
+		return
+	_loot_modal = LootModalScript.new()
+	_loot_modal.distribution_completed.connect(_on_loot_modal_completed)
+	if _runner != null:
+		_runner.add_child(_loot_modal)
+
+
+func _open_loot_modal_from_cache(cache_id: String, cell: Vector2i) -> void:
+	_ensure_loot_modal()
+	_loot_modal.open_from_cache(cache_id, cell)
+
+
+func _on_loot_modal_completed(cache_id: String, cache_cell: Vector2i) -> void:
+	if cache_id.is_empty():
+		return
+	# If the cache is now empty, delete it and clear the cell flag.
+	var remaining := CampaignRepository.list_items_in_cache(cache_id)
+	if remaining.is_empty():
+		CampaignRepository.delete_location_cache(cache_id)
+		var tactical_map: TacticalMapData = _controller.get_map() if _controller != null else null
+		if tactical_map != null and cache_cell != Vector2i(-1, -1):
+			tactical_map.set_cell_field(cache_cell, "has_ground_items", false)
 
 
 # ---------------------------------------------------------------------------

@@ -5857,3 +5857,78 @@ Files modified (wiring changes only):
 - Run the full test suite to verify no regressions.
 - Consider implementing dungeon corpse search action.
 - Consider gems/jewelry/magic items from treasure types (v2 loot generation).
+
+## Session 2026-04-18 — Session 4.5: Dungeon Loot + Treasure XP
+
+**Task:** Close four gaps left by Session 4: dungeon combat discards generated loot, no dungeon Loot/Pick Up All context menu action, container_opened signal is inert, and treasure XP is always 0. Make dungeon combat drop loot to corpse cells, wire Loot and Pick Up All context menu actions, add treasure XP (1 XP per 1 GP) at distribution time, and add container-opened scaffolding TODOs.
+
+**Model used:** Claude Opus 4.6 for all phases.
+
+**Completed:**
+- `engine/subsystems/combat/loot_generator.gd` — added `compute_treasure_gp_value(coins: Dictionary) -> int` static method. Converts coin dict to total CP via `Currency.coins_to_cp()`, returns integer GP value (floor division by 100). Added Currency preload.
+- `engine/subsystems/session/states/dungeon_explore_state.gd`:
+  - Added `_place_dungeon_loot(roster: CombatRoster)` — collects defeated enemy treasure types and first valid death cell from roster, generates coins via LootGenerator, creates a `dungeon_cell` loose cache via `LocationCacheManager.create_dungeon_loose_cache()`, inserts coin items via `add_inventory_item()` + `transfer_item_to_cache()`, sets `has_ground_items = true` on TacticalMapData cell.
+  - Wired `_place_dungeon_loot()` call in `_on_dungeon_combat_finished()` between `_finalizer.finalize()` and `_dungeon_combat_controller = null` (victory only).
+  - Removed "loot" and "pick_up_all" from the deferred context action stub.
+  - Added "loot" and "pick_up_all" match arms using `scheduler.schedule_at()` directly (passes `dungeon_id` in event data).
+  - Added `open_loot_modal` presentation handler in `_on_scheduler_event_resolved()`.
+  - Added `_ensure_loot_modal()`, `_open_loot_modal_from_cache()`, `_on_loot_modal_completed()`.
+- `engine/subsystems/session/handlers/dungeon_handlers.gd`:
+  - Added "loot" and "pick_up_all" match arms in `_handle_action_complete()`, extracting `dungeon_id` from event data.
+  - Added `_resolve_loot(entity_id, cell, dungeon_id)` — builds location_key, looks up cache via `get_cache_at_location_key()`, returns `open_loot_modal` presentation.
+  - Added `_resolve_pick_up_all(entity_id, cell, dungeon_id)` — transfers coins via `add_coins_cp()`, transfers non-coin items via `pick_up_item()`, awards treasure XP, cleans up empty cache, clears `has_ground_items`.
+  - Added `_award_treasure_xp(treasure_gp)` — builds members from `list_xp_eligible_entities()`, uses `CharacterData.from_dict()`, creates `XPAwardCalculator`, awards XP, persists to DB, emits `EventBus.xp_awarded`.
+  - Added container-opened TODO scaffolding comment.
+- `scenes/ui/party_inventory/loot_distribution_modal.gd`:
+  - Changed signal from `distribution_completed()` to `distribution_completed(cache_id: String, cache_cell: Vector2i)`.
+  - Added `_cache_id: String` and `_cache_cell: Vector2i` state variables.
+  - Added `open_from_cache(cache_id, cell)` — loads cache items, separates coins from non-coins, calls `open()`.
+  - Modified `_on_apply()` — after gold distribution, removes distributed coin items from cache DB when `_cache_id` is set, awards treasure XP via `compute_treasure_gp_value()`.
+  - Added `_award_treasure_xp(treasure_gp)` method.
+- `scenes/ui/party_inventory/party_inventory_overlay.gd` — updated `distribution_completed` connection lambda to accept new `(cache_id, cache_cell)` params.
+- `docs/coding_conventions.md` — added two entries to §12 ACKS Implementation Rules: Treasure XP rule (1 XP per 1 GP, awarded at distribution time) and Dungeon loot placement rule (defeated monsters' treasure lands in location_cache at leader's death cell).
+
+**Decisions made:**
+- **Loot placement in `_on_dungeon_combat_finished()` not combat_finalizer**: Placement needs access to roster (for death cell positions) and dungeon controller (for dungeon_id). Both are available in dungeon_explore_state but not in the finalizer.
+- **Single cache per encounter**: All coins placed at the first defeated enemy's death cell rather than per-monster caches. Simplifies the model and matches encounter-level treasure types.
+- **Direct `scheduler.schedule_at()` for loot/pick_up_all dispatch**: `schedule_action()` has a fixed signature with no room for `dungeon_id`. Using `schedule_at()` directly lets us include `dungeon_id` in the event data dict.
+- **Two-step item creation**: `add_inventory_item()` then `transfer_item_to_cache()` because `add_inventory_item()` doesn't include `location_cache_id` in its INSERT.
+- **Treasure XP awarded in both paths**: The modal Apply path and the Pick Up All handler path both compute and award treasure XP independently.
+- **`CampaignRepository.get_character()` returns Dictionary**: Resolvers use `CharacterData.from_dict()` to hydrate before accessing typed properties.
+
+**Cross-cutting: Voxel migration TODOs** — Added `# TODO (voxel migration): extend location_key to include level coordinate` comments at all `location_key` construction sites and `grid_position` access sites:
+1. `_place_dungeon_loot()` in `dungeon_explore_state.gd` — death cell lookup via `grid_position`
+2. `_resolve_loot()` in `dungeon_handlers.gd` — location_key construction
+3. `_resolve_pick_up_all()` in `dungeon_handlers.gd` — location_key construction
+4. Loot/pick_up_all `schedule_at()` calls in `_on_context_action()` — cell coordinates in event data
+
+**Interfaces defined or changed:**
+- `LootGenerator.compute_treasure_gp_value(coins: Dictionary) -> int` — static, returns GP value for XP.
+- `LootDistributionModal.distribution_completed(cache_id: String, cache_cell: Vector2i)` — signal now carries cache context (empty string + Vector2i(-1,-1) for non-cache opens).
+- `LootDistributionModal.open_from_cache(cache_id: String, cell: Vector2i) -> void` — new entry point for dungeon cache loot.
+- `DungeonHandlers._resolve_loot(entity_id, cell, dungeon_id) -> Dictionary` — returns `open_loot_modal` presentation.
+- `DungeonHandlers._resolve_pick_up_all(entity_id, cell, dungeon_id) -> Dictionary` — direct transfer + XP award.
+
+**Database changes:**
+- None.
+
+**Tests added/updated:**
+- `tests/test_loot_generator.gd` — 4 new tests: `compute_treasure_gp_value` with mixed coins (pp+gp+ep+sp+cp → 17 gp), empty dict (→ 0), copper-only truncation (99 cp → 0 gp), gold-only (100 gp → 100).
+- `tests/test_dungeon_loot_placement.gd` (new) — 5 integration tests: cache created with coins at cell, cache lookup by location_key, empty cache cleanup, coin item category, multiple denominations in cache. Uses DB seeding/teardown pattern from `test_location_cache_manager.gd`.
+- Both suites registered in `test_runner.gd` and `test_runner.tscn`.
+
+**Known issues:**
+- **`has_ground_items` is runtime-only**: TacticalMapData cell flags don't persist across dungeon reloads. Caches persist in DB but the flag won't be set until cache-to-cell-flag regeneration is added in dungeon load.
+- **Treasure XP at pickup, not civilization**: v1 simplification — ACKS RAW awards XP when treasure is "returned to civilization." Deferred.
+- **Equipment recovery XP**: Selling recovered gear for GP value deferred to future sell system.
+- **Gems, jewelry, magic items**: Not in loot tables (v1 coins-only).
+- **Treasure type duplication**: 6 goblins = type E rolled 6 times (pre-existing from Session 4).
+- **No integration test for `_place_dungeon_loot()` directly**: Private method tightly coupled to scene tree. Pipeline tested at DB level instead.
+
+**Next session should:**
+- Run the full test suite to verify no regressions from this session.
+- Smoke test dungeon loot: force combat with treasure-bearing monsters, win, navigate to death cell, right-click → Loot, verify modal opens with coins, Apply → gold distributed + XP awarded.
+- Smoke test Pick Up All on a dungeon death cell.
+- Verify wilderness loot flow still works (regression check).
+- Consider adding `has_ground_items` regeneration from DB caches on dungeon load.
+- Consider gems/jewelry/magic items from treasure types (v2 loot generation).
