@@ -116,9 +116,7 @@ func finalize_hire(character_id: String, employer_id: String, party_id: String,
 	})
 
 	# Add to party.
-	_repo.db.query_with_bindings(
-		"INSERT OR IGNORE INTO party_members (party_id, character_id, slot) VALUES (?, ?, 'middle')",
-		[party_id, character_id])
+	_repo.add_party_member(party_id, character_id, "middle")
 
 	# Emit.
 	var bus := _event_bus()
@@ -266,11 +264,9 @@ func process_departure(character_id: String, reason: String,
 		   WHERE id = ?""",
 		[character_id])
 
-	# Remove from party.
+	# Remove from party (departure to NPC — intentional orphaning).
 	if party_id != "":
-		_repo.db.query_with_bindings(
-			"DELETE FROM party_members WHERE party_id = ? AND character_id = ?",
-			[party_id, character_id])
+		_repo.remove_party_member(party_id, character_id)
 
 	# Update henchman_state with departure info.
 	var state: Dictionary = _repo.get_henchman_state(character_id)

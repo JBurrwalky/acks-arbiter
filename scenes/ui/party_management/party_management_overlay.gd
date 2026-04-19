@@ -349,12 +349,8 @@ func _load_available_characters() -> void:
 	_available_characters = []
 	if _party == null:
 		return
-	var all_chars: Array = CampaignRepository.list_characters(GameState.campaign_id)
-	for row: Dictionary in all_chars:
-		var cid: String = row.get("id", "")
-		if not _party.has_member(cid) and row.get("is_active", 1) == 1 \
-				and not bool(row.get("is_dead", 0)):
-			_available_characters.append(row)
+	# Only show characters not in ANY party (not just this one).
+	_available_characters = CampaignRepository.list_unpartied_characters(GameState.campaign_id)
 
 
 # ---------------------------------------------------------------------------
@@ -397,8 +393,10 @@ func _refresh_members() -> void:
 	header.add_theme_font_size_override("font_size", 12)
 	_members_vbox.add_child(header)
 
+	var campaign_party_count: int = CampaignRepository.list_parties_for_campaign(
+		GameState.campaign_id).size()
 	for cd: CharacterData in _party.character_data:
-		var row := _make_member_row(cd)
+		var row := _make_member_row(cd, campaign_party_count)
 		_members_vbox.add_child(row)
 
 	_members_vbox.add_child(HSeparator.new())
@@ -421,7 +419,7 @@ func _refresh_members() -> void:
 			_members_vbox.add_child(row)
 
 
-func _make_member_row(cd: CharacterData) -> HBoxContainer:
+func _make_member_row(cd: CharacterData, campaign_party_count: int = 1) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 
@@ -447,6 +445,9 @@ func _make_member_row(cd: CharacterData) -> HBoxContainer:
 	var remove_btn := Button.new()
 	remove_btn.text = "Remove"
 	remove_btn.custom_minimum_size = Vector2(60, 0)
+	if campaign_party_count <= 1:
+		remove_btn.disabled = true
+		remove_btn.tooltip_text = "Cannot remove — only one party exists"
 	remove_btn.pressed.connect(_on_remove_member.bind(cd.id))
 	row.add_child(remove_btn)
 
@@ -1006,6 +1007,11 @@ func _on_add_member(character_id: String) -> void:
 
 func _on_remove_member(character_id: String) -> void:
 	if _party == null:
+		return
+	# Prevent orphaning: only allow removal if other parties exist to receive the character.
+	var parties := CampaignRepository.list_parties_for_campaign(GameState.campaign_id)
+	if parties.size() <= 1:
+		push_warning("Cannot remove character from only party — use Split Party instead")
 		return
 	CampaignRepository.remove_party_member(_party.id, character_id)
 	EventBus.party_member_left.emit(_party.id, character_id)

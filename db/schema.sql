@@ -109,7 +109,9 @@ CREATE TABLE IF NOT EXISTS party_members (
     formation_col INTEGER NOT NULL DEFAULT -1,
     formation_row INTEGER NOT NULL DEFAULT -1,
     joined_at TEXT NOT NULL DEFAULT (datetime('now')),
-    PRIMARY KEY (party_id, character_id)
+    PRIMARY KEY (party_id, character_id),
+    -- Migration 035: enforce mutual exclusivity (one party per character)
+    UNIQUE (character_id)
 );
 
 -- Migration 021: Party travel/exploration state
@@ -195,7 +197,8 @@ CREATE TABLE IF NOT EXISTS inventory_items (
 CREATE TABLE IF NOT EXISTS trained_creatures (
     id TEXT PRIMARY KEY,
     campaign_id TEXT NOT NULL REFERENCES campaigns(id),
-    party_id TEXT REFERENCES parties(id),
+    -- Migration 035: party_id is required (NOT NULL)
+    party_id TEXT NOT NULL REFERENCES parties(id),
     species_id TEXT NOT NULL,
     purchase_item_key TEXT NOT NULL DEFAULT '',
     name TEXT NOT NULL DEFAULT '',

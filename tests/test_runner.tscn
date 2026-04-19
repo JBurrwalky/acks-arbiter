@@ -106,6 +106,7 @@
 [ext_resource type="Script" path="res://tests/test_loot_generator.gd" id="100_loot_generator_tests"]
 [ext_resource type="Script" path="res://tests/test_loot_auto_distributor.gd" id="101_loot_auto_distributor_tests"]
 [ext_resource type="Script" path="res://tests/test_dungeon_loot_placement.gd" id="102_dungeon_loot_placement_tests"]
+[ext_resource type="Script" path="res://tests/test_party_membership_invariants.gd" id="103_party_membership_invariant_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -424,3 +425,6 @@ script = ExtResource("101_loot_auto_distributor_tests")
 
 [node name="DungeonLootPlacementTests" type="Node" parent="."]
 script = ExtResource("102_dungeon_loot_placement_tests")
+
+[node name="PartyMembershipInvariantTests" type="Node" parent="."]
+script = ExtResource("103_party_membership_invariant_tests")

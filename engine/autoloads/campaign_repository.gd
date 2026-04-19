@@ -491,6 +491,18 @@ func list_party_characters(party_id: String) -> Array:
 	return _sanitize_character_records(db.query_result.duplicate())
 
 
+## Returns active, living characters in this campaign that are not in any party.
+func list_unpartied_characters(campaign_id: String) -> Array:
+	db.query_with_bindings("""
+		SELECT c.* FROM characters c
+		LEFT JOIN party_members pm ON pm.character_id = c.id
+		WHERE c.campaign_id = ? AND c.is_active = 1 AND c.is_dead = 0
+		  AND pm.character_id IS NULL
+		ORDER BY c.name
+	""", [campaign_id])
+	return _sanitize_character_records(db.query_result.duplicate())
+
+
 func get_henchmen_for_employer(employer_id: String) -> Array:
 	db.query_with_bindings(
 		"SELECT * FROM characters WHERE employer_id = ? AND character_type = 'henchman' AND is_active = 1 ORDER BY name",
@@ -523,6 +535,14 @@ func get_party(id: String) -> Dictionary:
 
 func add_party_member(party_id: String, character_id: String, slot: String = "middle",
 		col: int = -1, row: int = -1) -> bool:
+	# Enforce mutual exclusivity: remove from any existing party first.
+	var existing_party := get_party_for_character(character_id)
+	if not existing_party.is_empty() and existing_party != party_id:
+		if not db.query_with_bindings(
+			"DELETE FROM party_members WHERE character_id = ?",
+			[character_id]):
+			push_error("CampaignRepository.add_party_member: failed to remove %s from old party %s" % [character_id, existing_party])
+			return false
 	return db.query_with_bindings(
 		"INSERT OR REPLACE INTO party_members (party_id, character_id, formation_slot, formation_col, formation_row) VALUES (?, ?, ?, ?, ?)",
 		[party_id, character_id, slot, col, row]
@@ -551,11 +571,13 @@ func list_parties_for_campaign(campaign_id: String) -> Array:
 ## Returns the party_id for the party a character belongs to, or "" if not in any.
 func get_party_for_character(character_id: String) -> String:
 	var ok := db.query_with_bindings(
-		"SELECT party_id FROM party_members WHERE character_id = ? LIMIT 1",
+		"SELECT party_id FROM party_members WHERE character_id = ?",
 		[character_id]
 	)
 	if not ok or db.query_result.is_empty():
 		return ""
+	if db.query_result.size() > 1:
+		push_warning("CampaignRepository.get_party_for_character: character %s is in %d parties (invariant violation)" % [character_id, db.query_result.size()])
 	return db.query_result[0].party_id
 
 
@@ -2553,6 +2575,10 @@ func get_trained_creature(creature_id: String) -> Dictionary:
 
 
 func create_trained_creature(data: Dictionary) -> String:
+	var pid: String = data.get("party_id", "")
+	if pid.is_empty():
+		push_error("CampaignRepository.create_trained_creature: party_id is required")
+		return ""
 	var id: String = data.get("id", "")
 	if id.is_empty():
 		id = generate_id()
