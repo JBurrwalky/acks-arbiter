@@ -5730,3 +5730,130 @@ Files modified (wiring changes only):
 - Test entity promotion end-to-end in the running game (smoke test per acceptance criteria).
 - Add UI reaction to `creature_died` signal (notification/game log entry).
 - Consider adding creature token display in dungeon exploration (pre-combat) — currently creatures only appear as tokens during combat.
+
+---
+
+## Session 2026-04-18 — Integration Patch: Inventory/Split/Overlay Fixes
+
+**Task:** Fix four issues found during post-Session-3 smoke testing: (1) active party not threading through character sheet and party inventory overlays, (2) hitched vehicles grayed out in "Send to" context menu, (3) party inventory overlay blocking settlement shop panel, (4) party split not supporting creatures or vehicles.
+**Model used:** Opus 4.6 for planning and implementation.
+
+**Completed:**
+
+### Fix 1 — Active Party Threading
+- Replaced `GameState.party_id` → `GameState.active_party_id` (with fallback) across:
+  - `scenes/ui/character_sheet/character_sheet_overlay.gd` — 7 references swapped in `_load_entity_list()`, `_select_creature()`, `_load_vehicle_bundle()`.
+  - `scenes/ui/party_inventory/party_inventory_overlay.gd` — 4 references swapped in `_load_columns()`, `_update_footer()`, `_count_rations()`, cache drop handler.
+  - `scenes/ui/party_inventory/transfer_gold_modal.gd` — 1 reference swapped in `_populate_dropdowns()`.
+- Connected `EventBus.active_party_changed` signal in both overlays with handlers that reload content when visible.
+
+### Fix 2 — Vehicle "Send to" Context Menu
+- **Root cause (corrected from patch prompt):** The validator's `_validate_to_vehicle()` was working correctly. The actual bug was a data shape mismatch: the overlay passed raw DB vehicle rows (with `hitched_creatures` as a JSON string), but the validator expected `hitched_creatures_data` (an Array of TrainedCreatureData objects with `species_id` for computing draft equivalents). With missing key, `calculate_team_equivalents([])` returned 0.0, failing all capacity lookups.
+- **Fix:** In `party_inventory_overlay.gd` `_load_columns()`, enriched vehicle data by parsing the `hitched_creatures` JSON, looking up each creature via `CampaignRepository.get_trained_creature()`, and attaching as `hitched_creatures_data`. Pattern matches `character_sheet_overlay.gd` `_load_vehicle_bundle()`.
+
+### Fix 3 — Party Inventory Side Panel
+- Changed `party_inventory_overlay.gd` `_build_ui()` from `PRESET_FULL_RECT` (100% viewport) to right-anchored (`anchor_left=0.34`) matching the character sheet's 66%-width side panel pattern.
+- Added mutual exclusion: opening party inventory closes character sheet, and vice versa. Both use `get_parent().get_node_or_null()` to find their sibling in Main.tscn.
+
+### Fix 4 — Party Split with Creatures and Vehicles
+- Extended `CampaignRepository.split_party()` signature:
+  ```
+  split_party(source_party_id, new_party_name, character_ids_to_split,
+      creature_ids_to_split=[], vehicle_ids_to_split=[], split_context={})
+  ```
+  Backward-compatible (existing callers pass 3 args).
+- Validation: checks handler integrity for ALL party creatures — both moving and staying. Requires `split_context.handler_reassignments` dict when creature/handler directions mismatch.
+- Transaction: moves creatures, applies handler reassignments, moves vehicles with partial unhitching (removes non-split creatures from hitch JSON), and unhitches split creatures from vehicles staying behind.
+- `merge_parties()` — no change needed, already handles creatures/vehicles/inventory.
+- Populated `creature_data` and `vehicle_data` in `party_management_overlay.gd` `_load_party()`.
+- Extended split dialog UI: creature section (with handler info) and vehicle section (with hitch status) below character checkboxes.
+- Updated `_on_split_confirm()` to collect creature/vehicle selections, auto-clear mismatched handlers, and call the extended `split_party()`.
+- Added 6 tests to `tests/test_party_split_merge.gd`:
+  - `test_split_character_and_creature_handler_moving` — handler preserved
+  - `test_split_creature_no_reassignment_rejected` — rejected without reassignment
+  - `test_split_creature_handler_cleared` — handler cleared on reassignment to ""
+  - `test_split_vehicle_full_team` — hitch preserved
+  - `test_split_vehicle_partial_team_unhitch` — partial team auto-unhitched
+  - `test_split_staying_vehicle_creature_leaves` — creature unhitched from staying vehicle
+
+**Decisions made:**
+- Handler reassignment UX: v1 auto-clears handler when mismatch occurs, with notification warning. Dropdown-based reassignment deferred to future session.
+- Vehicle unhitching: auto-unhitch on partial team split (never reject). Simpler UX, matching user expectations for scout-split-off play.
+- Mutual exclusion for right-side overlays: opening one closes the other. Both are 66% width right-anchored; overlapping would be unusable.
+
+**Interfaces defined or changed:**
+- `CampaignRepository.split_party()` — new optional params: `creature_ids_to_split: Array = []`, `vehicle_ids_to_split: Array = []`, `split_context: Dictionary = {}`. The `split_context` dict supports key `handler_reassignments: {creature_id: new_handler_id}`.
+
+**Database changes:**
+- None. All operations use existing schema.
+
+**Tests added/updated:**
+- `tests/test_party_split_merge.gd` — 6 new tests (18 total: 7 split, 5 merge, 6 creature/vehicle split).
+
+**Known issues:**
+- Handler reassignment UI is v1 (auto-clear only). A richer dropdown UX is deferred.
+- Persisting `active_party_id` across save/reload still not implemented (runtime-only per Fix 2's known issues).
+- Auto-distribute button still stubbed (pending Session 4).
+
+**Next session should:**
+- Smoke test all 4 fixes in the running game.
+- Run the full test suite to verify no regressions.
+- Consider dropdown-based handler reassignment for the split dialog.
+- Begin work on auto-distribute or next feature per the build plan.
+
+## Session 2026-04-18 — Party Inventory Session 4: Loot Distribution + Auto-Distribute
+
+**Task:** Deliver the auto-distribute algorithm, loot distribution modal (triggered on combat victory), gold share sub-modal, and minimal combat loot generation (coins-only from ACKS treasure types). Replace the party inventory overlay's auto-distribute stub with a real implementation.
+
+**Model used:** Claude Opus 4.6 for all phases.
+
+**Completed:**
+- `engine/subsystems/combat/loot_generator.gd` — pure-logic class generating coin loot from ACKS treasure types A–R. Rolls coins via DiceSystem (d100 percentage checks + dice expressions × 1000). Parses suffixed strings like "E (per warband)" to extract type letter.
+- `engine/subsystems/inventory/loot_auto_distributor.gd` — pure-logic item distribution algorithm per GDD §6.5. Preference-tag matching (8 tags from character preferences), round-robin distribution, encumbrance band protection, heuristic fallback (heavy→STR, ammo→matching weapon, magic→PCs, rations→creatures first).
+- `engine/subsystems/combat/combat_controller.gd` — extended `_emit_combat_ended()` to collect treasure types from defeated monsters and generate loot. Loot key added to outcome dict ONLY for wilderness victory (not dungeon — corpse searching is a deliberate time-costly action in dungeons).
+- `engine/autoloads/event_bus.gd` — added `container_opened` signal (stub, no emitters in v1), updated `combat_ended` documentation with all outcome keys including optional `loot`.
+- `engine/autoloads/campaign_repository.gd` — added `list_xp_eligible_entities(party_id)` query returning PCs and henchmen for gold share and XP distribution.
+- `scenes/ui/party_inventory/gold_share_modal.gd` — weighted gold-share editor (CanvasLayer 54). PCs default weight 1.0, henchmen 0.5 (ACKS half-share). SpinBox per recipient, live preview with banker's rounding, residual CP to smallest-share recipient. Static `compute_shares()` reusable by parent modal.
+- `scenes/ui/party_inventory/loot_distribution_modal.gd` — main loot modal (CanvasLayer 52). Shows gold summary, item queue (empty in v1), share preview. Buttons: Edit Gold Shares, Drop All, Cancel, Apply. On Apply: computes gold shares and calls `PartyWallet.deposit_to_character()` per recipient (bypasses `deposit_to_party_by_shares` which filters out henchmen).
+- `scenes/ui/party_inventory/party_inventory_overlay.gd` — replaced `_on_auto_distribute_stub()` with full `_on_auto_distribute_pressed()`. Added `_gather_distributable_items()`, `_gather_carrier_info()`, `_show_distribute_preview()` (AcceptDialog confirmation), `_execute_distribute_plan()`. Wired `EventBus.combat_ended` → `_on_combat_ended_loot()` handler that checks `outcome.has("loot")` and lazily creates the loot modal. Loot modal added as sibling (child of Main, not child of overlay CanvasLayer).
+
+**Decisions made:**
+- **Filter at emission, not handler**: The `loot` key is absent from the outcome dict for non-loot events (dungeon, defeat, no treasure). This is cleaner than present-but-empty — future consumers check `outcome.has("loot")`.
+- **Manual per-character gold deposit**: Gold share amounts computed in the modal, `PartyWallet.deposit_to_character()` called per recipient. This bypasses `deposit_to_party_by_shares()` which explicitly filters to PCs only, excluding henchmen from their rightful half-shares.
+- **Wilderness-only auto-loot**: `GameState.exploration_context` retains its pre-combat value (DUNGEON or WILDERNESS) during combat state because `SessionRunner._sync_game_state("combat")` only changes `current_state`, not `exploration_context`. Loot generation gated by `exploration_context != DUNGEON`.
+- **Text-only confirmation** for overlay auto-distribute preview (AcceptDialog, not drag-and-drop).
+- **Preference tag matching uses item_key substrings**, not just item_category (most equipment is broad "gear" category).
+
+**Interfaces defined or changed:**
+- `LootGenerator.generate_from_treasure_types(types: Array) -> Dictionary` — returns `{coins_cp, coins_sp, coins_ep, coins_gp, coins_pp}` or empty dict.
+- `LootAutoDistributor.distribute(items: Array, carriers: Array, context: Dictionary) -> Dictionary` — returns `{moves: Array, unassigned: Array, summary: Dictionary}`.
+- `GoldShareModal.compute_shares(total_cp: int, shares: Dictionary) -> Dictionary` — static, returns `{char_id: int_cp_amount}`.
+- `GoldShareModal` signals: `shares_confirmed(shares: Dictionary)`, `cancelled()`.
+- `LootDistributionModal` signal: `distribution_completed()`.
+- `EventBus.container_opened(container_id: String, contents: Dictionary)` — stub signal, no emitters.
+- `CampaignRepository.list_xp_eligible_entities(party_id: String) -> Array` — returns PCs and henchmen rows.
+- `combat_ended` outcome dict now optionally includes `loot: Dictionary` key (present only for wilderness victory with treasure).
+
+**Database changes:**
+- None.
+
+**Tests added/updated:**
+- `tests/test_loot_generator.gd` — 8 tests: parse None, parse letter only, parse with suffix, parse invalid, no valid types, override produces coins, failed chance produces zero, multiple types aggregate.
+- `tests/test_loot_auto_distributor.gd` — 10 tests: empty items, coin exclusion, preference tag match, round-robin, heavy→STR, ammunition→weapon, band worsening skip, no valid target → unassigned, rations→creatures first, magic→PCs round-robin. Uses MockCatalog (no DB dependency).
+- Both suites registered in `test_runner.gd` and `test_runner.tscn`.
+
+**Known issues:**
+- **Ammunition-to-weapon matching** is substring-based ("arrow" → "bow", "bolt" → "crossbow"). Needs explicit catalog field for weapon/ammo relationships.
+- **Gems, jewelry, magic items** not rolled from treasure types (v1 coins-only).
+- **Individual vs. lair treasure** distinction ignored — "(per warband)" suffix stripped, all treasure treated as encounter-level.
+- **Monster inventory drops** don't exist — v1 item queue will always be empty after combat.
+- **Container-opened signal** declared but no emitters wired.
+- **Dungeon corpse searching** — loot is generated but not presented in dungeon combat. A "Search body" action (costing turns, triggering wandering monster checks) is needed in DungeonExploreState. Deferred.
+- **Treasure XP** hook (`XPAwardCalculator.award_adventure_xp(..., treasure_xp=0, ...)`) remains unconnected.
+
+**Next session should:**
+- Smoke test the loot distribution flow: force a wilderness combat victory with treasure-bearing monsters, verify modal opens, gold distributes correctly.
+- Smoke test auto-distribute from the party inventory overlay.
+- Run the full test suite to verify no regressions.
+- Consider implementing dungeon corpse search action.
+- Consider gems/jewelry/magic items from treasure types (v2 loot generation).

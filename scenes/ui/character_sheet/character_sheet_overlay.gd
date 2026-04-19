@@ -325,6 +325,14 @@ func _connect_signals() -> void:
 	# Vehicle signals
 	EventBus.vehicle_changed.connect(_on_vehicle_list_changed)
 	EventBus.vehicle_hitch_changed.connect(_on_vehicle_hitch_changed)
+	# Party switch
+	EventBus.active_party_changed.connect(_on_active_party_changed)
+
+
+func _on_active_party_changed(_prev: String, _new: String) -> void:
+	if visible:
+		_load_entity_list(_active_category)
+		_auto_select_first_entity()
 
 
 # ---------------------------------------------------------------------------
@@ -332,6 +340,10 @@ func _connect_signals() -> void:
 # ---------------------------------------------------------------------------
 
 func open(character_id: String = "") -> void:
+	# Close party inventory if open (both are right-anchored side panels).
+	var inv_overlay = get_parent().get_node_or_null("PartyInventoryOverlay")
+	if inv_overlay and inv_overlay.visible:
+		inv_overlay.close()
 	visible = true
 	_load_entity_list(_active_category)
 	if _active_category == "characters":
@@ -389,11 +401,14 @@ func _swap_content(category: String) -> void:
 
 func _load_entity_list(category: String) -> void:
 	_entity_list.clear()
+	var pid := GameState.active_party_id
+	if pid.is_empty():
+		pid = GameState.party_id
 
 	match category:
 		"characters":
 			_party_ids.clear()
-			var members := CampaignRepository.list_party_characters(GameState.party_id)
+			var members := CampaignRepository.list_party_characters(pid)
 			for row in members:
 				var character := CharacterData.from_dict(row)
 				_party_ids.append(character.id)
@@ -401,7 +416,7 @@ func _load_entity_list(category: String) -> void:
 
 		"animals":
 			_creature_ids.clear()
-			var creatures := CampaignRepository.get_trained_creatures_for_party(GameState.party_id)
+			var creatures := CampaignRepository.get_trained_creatures_for_party(pid)
 			for row in creatures:
 				var creature := TrainedCreatureData.from_db(row)
 				creature.monster_data = _monster_registry.get_monster(creature.species_id)
@@ -412,7 +427,7 @@ func _load_entity_list(category: String) -> void:
 
 		"vehicles":
 			_vehicle_ids.clear()
-			var vehicles := CampaignRepository.get_draft_vehicles_for_party(GameState.party_id)
+			var vehicles := CampaignRepository.get_draft_vehicles_for_party(pid)
 			for v in vehicles:
 				_vehicle_ids.append(str(v.get("id", "")))
 				var vname: String = str(v.get("name", ""))
@@ -424,7 +439,7 @@ func _load_entity_list(category: String) -> void:
 			_henchman_ids.clear()
 			# Aggregate henchmen from all PCs.
 			var seen := {}
-			var members2 := CampaignRepository.list_party_characters(GameState.party_id)
+			var members2 := CampaignRepository.list_party_characters(pid)
 			for row in members2:
 				var pc_id: String = str(row.get("id", ""))
 				var henchmen := CampaignRepository.get_henchmen_for_employer(pc_id)
@@ -554,8 +569,11 @@ func _select_creature(creature_id: String) -> void:
 		_title_label.text = "Unknown Creature"
 	var reg := _make_registries_dict()
 	# Load party characters for handler tier display.
+	var active_pid := GameState.active_party_id
+	if active_pid.is_empty():
+		active_pid = GameState.party_id
 	var party_chars: Array = []
-	for row in CampaignRepository.list_party_characters(GameState.party_id):
+	for row in CampaignRepository.list_party_characters(active_pid):
 		var cd := CharacterData.from_dict(row)
 		cd.proficiencies = CampaignRepository.get_character_proficiencies(cd.id)
 		party_chars.append(cd)
@@ -611,8 +629,11 @@ func _load_vehicle_bundle(vehicle_id: String) -> Dictionary:
 				hitched_creatures.append(c)
 
 	# All party creatures for the eligible dropdown.
+	var vb_pid := GameState.active_party_id
+	if vb_pid.is_empty():
+		vb_pid = GameState.party_id
 	var all_creatures: Array = []
-	for row in CampaignRepository.get_trained_creatures_for_party(GameState.party_id):
+	for row in CampaignRepository.get_trained_creatures_for_party(vb_pid):
 		var c := TrainedCreatureData.from_db(row)
 		c.monster_data = _monster_registry.get_monster(c.species_id)
 		var inv_rows := CampaignRepository.get_creature_inventory(c.id)
@@ -621,7 +642,7 @@ func _load_vehicle_bundle(vehicle_id: String) -> Dictionary:
 			c.inventory.append(InventoryItem.from_dict(inv_row))
 		all_creatures.append(c)
 
-	var all_vehicles := CampaignRepository.get_draft_vehicles_for_party(GameState.party_id)
+	var all_vehicles := CampaignRepository.get_draft_vehicles_for_party(vb_pid)
 
 	return {
 		"vehicle": vehicle,

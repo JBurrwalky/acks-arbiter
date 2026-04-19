@@ -28,7 +28,12 @@ signal combat_started(encounter_id: String)
 ## [param outcome] keys:
 ##   result: String  — "victory", "defeat", "fled", "surrendered"
 ##   rounds: int     — number of rounds the combat lasted
-##   xp_earned: int  — total XP from defeated enemies (pre-division)
+##   monster_xp_total: int — total XP from defeated enemies (pre-division)
+##   downed_pcs: Array — raw downed PC data for mortal wound checks
+##   combat_log: Array — full combat log entries
+##   loot: Dictionary (OPTIONAL — present only for wilderness victory with treasure)
+##     coins_cp: int, coins_sp: int, coins_ep: int, coins_gp: int, coins_pp: int
+##     Absent = not a loot distribution event (dungeon, defeat, no treasure).
 signal combat_ended(encounter_id: String, outcome: Dictionary)
 
 ## All combatant actions for one round have resolved.
@@ -178,6 +183,14 @@ signal cache_dropped(cache_id: String, item_id: String, source_carrier_id: Strin
 
 ## An item was picked up from a location cache.
 signal cache_picked_up(cache_id: String, item_id: String, carrier_id: String)
+
+## A dungeon container (chest, sack, barrel) was opened with contents.
+## [param contents] keys:
+##   items: Array of {item_key, quantity}
+##   coins: {coins_pp, coins_ep, coins_gp, coins_sp, coins_cp}
+##   source_container_id: String — inventory_items.id of the container
+## TODO: emit from dungeon loot generator (future session)
+signal container_opened(container_id: String, contents: Dictionary)
 
 
 ## XP was awarded to a character.

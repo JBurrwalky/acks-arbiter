@@ -163,7 +163,9 @@ func _populate_dropdowns() -> void:
 	_source_ids.clear()
 	_target_ids.clear()
 
-	var party_id: String = GameState.party_id
+	var party_id: String = GameState.active_party_id
+	if party_id.is_empty():
+		party_id = GameState.party_id
 	var active_id: String = GameState.active_character_id
 
 	# Source: wallet contributors (PCs only)

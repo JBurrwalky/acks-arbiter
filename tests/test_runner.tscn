@@ -103,6 +103,8 @@
 [ext_resource type="Script" path="res://tests/test_party_inventory_transfer_validator.gd" id="97_transfer_validator_tests"]
 [ext_resource type="Script" path="res://tests/test_party_split_merge.gd" id="98_party_split_merge_tests"]
 [ext_resource type="Script" path="res://tests/test_entity_promotion.gd" id="99_entity_promotion_tests"]
+[ext_resource type="Script" path="res://tests/test_loot_generator.gd" id="100_loot_generator_tests"]
+[ext_resource type="Script" path="res://tests/test_loot_auto_distributor.gd" id="101_loot_auto_distributor_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -412,3 +414,9 @@ script = ExtResource("98_party_split_merge_tests")
 
 [node name="EntityPromotionTests" type="Node" parent="."]
 script = ExtResource("99_entity_promotion_tests")
+
+[node name="LootGeneratorTests" type="Node" parent="."]
+script = ExtResource("100_loot_generator_tests")
+
+[node name="LootAutoDistributorTests" type="Node" parent="."]
+script = ExtResource("101_loot_auto_distributor_tests")

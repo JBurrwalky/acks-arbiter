@@ -329,6 +329,15 @@ func _load_party() -> void:
 	for row: Dictionary in inv_rows:
 		_party.shared_inventory.append(InventoryItem.from_dict(row))
 
+	# Populate creature_data
+	_party.creature_data = []
+	var creature_rows := CampaignRepository.get_trained_creatures_for_party(pid)
+	for row: Dictionary in creature_rows:
+		_party.creature_data.append(TrainedCreatureData.from_db(row))
+
+	# Populate vehicle_data
+	_party.vehicle_data = CampaignRepository.get_draft_vehicles_for_party(pid)
+
 	# Load available characters (in campaign but not in this party)
 	_load_available_characters()
 
@@ -767,6 +776,50 @@ func _open_split_dialog() -> void:
 		check_vbox.add_child(cb)
 		checkboxes.append(cb)
 
+	# Creature checkboxes
+	var creature_checkboxes: Array = []
+	if not _party.creature_data.is_empty():
+		check_vbox.add_child(HSeparator.new())
+		var creature_header := Label.new()
+		creature_header.text = "Creatures:"
+		creature_header.add_theme_font_size_override("font_size", 11)
+		check_vbox.add_child(creature_header)
+		for creature: TrainedCreatureData in _party.creature_data:
+			var cb := CheckBox.new()
+			var display_name: String = creature.name if not creature.name.is_empty() else creature.species_id.capitalize()
+			var handler_text := ""
+			if not creature.handler_id.is_empty():
+				var handler_char := CampaignRepository.get_character(creature.handler_id)
+				handler_text = " (handler: %s)" % str(handler_char.get("name", "unknown"))
+			cb.text = "%s%s" % [display_name, handler_text]
+			cb.set_meta("creature_id", creature.id)
+			cb.set_meta("handler_id", creature.handler_id)
+			check_vbox.add_child(cb)
+			creature_checkboxes.append(cb)
+
+	# Vehicle checkboxes
+	var vehicle_checkboxes: Array = []
+	if not _party.vehicle_data.is_empty():
+		check_vbox.add_child(HSeparator.new())
+		var vehicle_header := Label.new()
+		vehicle_header.text = "Vehicles:"
+		vehicle_header.add_theme_font_size_override("font_size", 11)
+		check_vbox.add_child(vehicle_header)
+		for v: Dictionary in _party.vehicle_data:
+			var cb := CheckBox.new()
+			var vname: String = str(v.get("name", ""))
+			if vname.is_empty():
+				vname = str(v.get("item_key", "vehicle")).capitalize()
+			var hitch_text := ""
+			var h_json: String = str(v.get("hitched_creatures", "[]"))
+			var h_ids = JSON.parse_string(h_json)
+			if h_ids is Array and not h_ids.is_empty():
+				hitch_text = " (hitched: %d creature%s)" % [h_ids.size(), "" if h_ids.size() == 1 else "s"]
+			cb.text = "%s%s" % [vname, hitch_text]
+			cb.set_meta("vehicle_id", str(v.get("id", "")))
+			check_vbox.add_child(cb)
+			vehicle_checkboxes.append(cb)
+
 	# Name field
 	var name_row := HBoxContainer.new()
 	name_row.add_theme_constant_override("separation", 4)
@@ -800,7 +853,7 @@ func _open_split_dialog() -> void:
 
 	var create_btn := Button.new()
 	create_btn.text = "Create"
-	create_btn.pressed.connect(_on_split_confirm.bind(checkboxes, name_edit))
+	create_btn.pressed.connect(_on_split_confirm.bind(checkboxes, creature_checkboxes, vehicle_checkboxes, name_edit))
 	btn_row.add_child(create_btn)
 
 	add_child(_split_dialog)
@@ -812,7 +865,8 @@ func _close_split_dialog() -> void:
 		_split_dialog = null
 
 
-func _on_split_confirm(checkboxes: Array, name_edit: LineEdit) -> void:
+func _on_split_confirm(checkboxes: Array, creature_checkboxes: Array,
+		vehicle_checkboxes: Array, name_edit: LineEdit) -> void:
 	var selected_ids: Array = []
 	for cb: CheckBox in checkboxes:
 		if cb.button_pressed:
@@ -823,7 +877,7 @@ func _on_split_confirm(checkboxes: Array, name_edit: LineEdit) -> void:
 			"type": "warning",
 			"category": "system",
 			"title": "No Characters Selected",
-			"body": "Select at least one character to split off.",
+			"body": "The new party must have at least one character.",
 		})
 		return
 
@@ -836,11 +890,43 @@ func _on_split_confirm(checkboxes: Array, name_edit: LineEdit) -> void:
 		})
 		return
 
+	# Collect creature selections
+	var selected_creature_ids: Array = []
+	for cb: CheckBox in creature_checkboxes:
+		if cb.button_pressed:
+			selected_creature_ids.append(cb.get_meta("creature_id"))
+
+	# Collect vehicle selections
+	var selected_vehicle_ids: Array = []
+	for cb: CheckBox in vehicle_checkboxes:
+		if cb.button_pressed:
+			selected_vehicle_ids.append(cb.get_meta("vehicle_id"))
+
+	# Build handler reassignment context — auto-clear handler when mismatch
+	var handler_reassignments := {}
+	var handler_warnings: Array = []
+	for creature: TrainedCreatureData in _party.creature_data:
+		if creature.handler_id.is_empty():
+			continue
+		var creature_moving: bool = selected_creature_ids.has(creature.id)
+		var handler_moving: bool = selected_ids.has(creature.handler_id)
+		if creature_moving != handler_moving:
+			# Mismatch — auto-clear handler
+			handler_reassignments[creature.id] = ""
+			var cname: String = creature.name if not creature.name.is_empty() else creature.species_id.capitalize()
+			handler_warnings.append(cname)
+
+	var split_context := {}
+	if not handler_reassignments.is_empty():
+		split_context["handler_reassignments"] = handler_reassignments
+
 	var new_name: String = name_edit.text.strip_edges()
 	if new_name.is_empty():
 		new_name = "%s (Detachment)" % _party.name
 
-	var new_id := CampaignRepository.split_party(_party.id, new_name, selected_ids)
+	var new_id := CampaignRepository.split_party(
+		_party.id, new_name, selected_ids,
+		selected_creature_ids, selected_vehicle_ids, split_context)
 	if new_id.is_empty():
 		EventBus.notification_requested.emit({
 			"type": "danger",
@@ -849,13 +935,23 @@ func _on_split_confirm(checkboxes: Array, name_edit: LineEdit) -> void:
 			"body": "Could not split the party. Check the error log.",
 		})
 	else:
+		var parts: Array = []
+		parts.append("%d character%s" % [selected_ids.size(),
+			"" if selected_ids.size() == 1 else "s"])
+		if not selected_creature_ids.is_empty():
+			parts.append("%d creature%s" % [selected_creature_ids.size(),
+				"" if selected_creature_ids.size() == 1 else "s"])
+		if not selected_vehicle_ids.is_empty():
+			parts.append("%d vehicle%s" % [selected_vehicle_ids.size(),
+				"" if selected_vehicle_ids.size() == 1 else "s"])
+		var body_text := "%s created with %s." % [new_name, ", ".join(parts)]
+		if not handler_warnings.is_empty():
+			body_text += " Handler cleared for: %s." % ", ".join(handler_warnings)
 		EventBus.notification_requested.emit({
 			"type": "success",
 			"category": "system",
 			"title": "Party Split",
-			"body": "%s created with %d character%s." % [
-				new_name, selected_ids.size(),
-				"" if selected_ids.size() == 1 else "s"],
+			"body": body_text,
 		})
 
 	_close_split_dialog()

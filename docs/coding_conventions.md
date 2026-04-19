@@ -1386,6 +1386,8 @@ UI panels that overlay the game use CanvasLayer nodes with explicit layer assign
 | 46 | Persistent party sidebar | PartyManagementOverlay |
 | 48 | Character sheet sidebar | CharacterSheetOverlay |
 | 50 | Party inventory overlay | PartyInventoryOverlay |
+| 52 | Loot distribution modal | LootDistributionModal |
+| 54 | Gold share modal | GoldShareModal |
 | 64 | Modal prompts (dice rolls, dialogs) | DicePrompt |
 | 128 | Developer override panel | OverridePanel |
 

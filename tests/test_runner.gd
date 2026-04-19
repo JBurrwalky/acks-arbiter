@@ -110,6 +110,8 @@ extends Node
 @onready var _transfer_validator_tests = $TransferValidatorTests
 @onready var _party_split_merge_tests = $PartySplitMergeTests
 @onready var _entity_promotion_tests = $EntityPromotionTests
+@onready var _loot_generator_tests = $LootGeneratorTests
+@onready var _loot_auto_distributor_tests = $LootAutoDistributorTests
 
 
 func _ready() -> void:
@@ -199,7 +201,9 @@ func run() -> void:
 			_location_cache_manager_tests,
 			_transfer_validator_tests,
 			_party_split_merge_tests,
-			_entity_promotion_tests]:
+			_entity_promotion_tests,
+			_loot_generator_tests,
+			_loot_auto_distributor_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

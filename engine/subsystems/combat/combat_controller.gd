@@ -1768,11 +1768,15 @@ func _emit_combat_ended() -> Dictionary:
 	## Processes combat end: XP tally, mortal wounds, log entry, signal emit.
 	## Returns the outcome dict so _end_round() can forward it to callers.
 
-	# Sum XP from all defeated enemies using their pre-computed catalog xp field.
+	# Sum XP from all defeated enemies and collect treasure types.
 	var monster_xp_total := 0
+	var treasure_types: Array = []
 	for c: Combatant in roster.get_all():
 		if c.is_enemy_side() and not c.is_alive():
 			monster_xp_total += c._monster_data.get("xp", 0)
+			var tt: String = c._monster_data.get("treasure_type", "None")
+			if tt != "None" and not tt.is_empty():
+				treasure_types.append(tt)
 
 	# Collect downed PCs without auto-rolling mortal wounds.
 	# Per ACKS rules, mortal wound checks are deferred until another character
@@ -1791,6 +1795,14 @@ func _emit_combat_ended() -> Dictionary:
 		"downed_pcs":       downed_pcs,
 		"combat_log":       combat_log.to_array(),
 	}
+
+	# Generate loot ONLY for wilderness victory.
+	# In dungeons, looting corpses is a deliberate action costing turns/torch time.
+	# Loot key absent = "not a distribution event" — consumers check outcome.has("loot").
+	var is_wilderness := GameState.exploration_context == GameState.ExplorationContext.WILDERNESS
+	if combat_result == "victory" and is_wilderness and not treasure_types.is_empty():
+		var generator := LootGenerator.new()
+		outcome["loot"] = generator.generate_from_treasure_types(treasure_types)
 
 	EventBus.combat_ended.emit(encounter_id, outcome)
 	return outcome

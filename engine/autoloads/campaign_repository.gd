@@ -562,8 +562,15 @@ func get_party_for_character(character_id: String) -> String:
 ## Creates a new party in the same campaign, moves selected characters from
 ## source party to the new party, and copies the source party's current position.
 ## Returns the new party_id, or empty string on failure.
+## Splits characters (and optionally creatures and vehicles) from source party
+## into a new party.
+##
+## split_context fields:
+##   handler_reassignments: {creature_id: new_handler_character_id} — for creatures
+##     whose handler/creature split direction mismatches. Use "" to clear handler.
 func split_party(source_party_id: String, new_party_name: String,
-		character_ids_to_split: Array) -> String:
+		character_ids_to_split: Array, creature_ids_to_split: Array = [],
+		vehicle_ids_to_split: Array = [], split_context: Dictionary = {}) -> String:
 	# 1. Validate source exists
 	var source := get_party(source_party_id)
 	if source.is_empty():
@@ -589,7 +596,50 @@ func split_party(source_party_id: String, new_party_name: String,
 		push_error("CampaignRepository.split_party: source party would be empty after split (%d members, splitting %d)" % [source_members.size(), character_ids_to_split.size()])
 		return ""
 
-	# 4. Transactional move
+	# 4. Validate creatures belong to source party
+	for creature_id in creature_ids_to_split:
+		var c_row := get_trained_creature(creature_id)
+		if c_row.is_empty() or str(c_row.get("party_id", "")) != source_party_id:
+			push_error("CampaignRepository.split_party: creature %s not in party %s" % [creature_id, source_party_id])
+			return ""
+
+	# 5. Validate handler integrity for ALL party creatures
+	var reassignments: Dictionary = split_context.get("handler_reassignments", {})
+	var all_creatures := get_trained_creatures_for_party(source_party_id)
+	for c_row in all_creatures:
+		var cid: String = str(c_row.get("id", ""))
+		var handler: String = str(c_row.get("handler_id", ""))
+		if handler.is_empty():
+			continue
+		var creature_moving: bool = creature_ids_to_split.has(cid)
+		var handler_moving: bool = character_ids_to_split.has(handler)
+		if creature_moving and not handler_moving:
+			# Creature goes to new party, handler stays — need reassignment
+			if not reassignments.has(cid):
+				push_error("CampaignRepository.split_party: creature %s moves but handler %s stays; no reassignment provided" % [cid, handler])
+				return ""
+			var new_handler: String = reassignments[cid]
+			if not new_handler.is_empty() and not character_ids_to_split.has(new_handler):
+				push_error("CampaignRepository.split_party: reassignment target %s for creature %s not moving to new party" % [new_handler, cid])
+				return ""
+		elif not creature_moving and handler_moving:
+			# Creature stays, handler leaves — need reassignment
+			if not reassignments.has(cid):
+				push_error("CampaignRepository.split_party: creature %s stays but handler %s leaves; no reassignment provided" % [cid, handler])
+				return ""
+			var new_handler: String = reassignments[cid]
+			if not new_handler.is_empty() and character_ids_to_split.has(new_handler):
+				push_error("CampaignRepository.split_party: reassignment target %s for staying creature %s is also leaving" % [new_handler, cid])
+				return ""
+
+	# 6. Validate vehicles belong to source party
+	for vehicle_id in vehicle_ids_to_split:
+		var v_row := get_draft_vehicle(vehicle_id)
+		if v_row.is_empty() or str(v_row.get("party_id", "")) != source_party_id:
+			push_error("CampaignRepository.split_party: vehicle %s not in party %s" % [vehicle_id, source_party_id])
+			return ""
+
+	# 7. Transactional move
 	db.query("BEGIN TRANSACTION")
 
 	var new_party_id := create_party(source.campaign_id, new_party_name)
@@ -607,7 +657,7 @@ func split_party(source_party_id: String, new_party_name: String,
 		push_error("CampaignRepository.split_party: failed to copy position to new party")
 		return ""
 
-	# Move members (land unplaced in new party)
+	# Move characters
 	for char_id in character_ids_to_split:
 		var remove_ok := remove_party_member(source_party_id, char_id)
 		if not remove_ok:
@@ -619,6 +669,71 @@ func split_party(source_party_id: String, new_party_name: String,
 			db.query("ROLLBACK")
 			push_error("CampaignRepository.split_party: failed to add %s to new party" % char_id)
 			return ""
+
+	# Move creatures
+	for creature_id in creature_ids_to_split:
+		var c_move_ok := db.query_with_bindings(
+			"UPDATE trained_creatures SET party_id = ? WHERE id = ?",
+			[new_party_id, creature_id])
+		if not c_move_ok:
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.split_party: failed to move creature %s" % creature_id)
+			return ""
+
+	# Apply handler reassignments (covers both moving and staying creatures)
+	for cid in reassignments:
+		var new_handler: String = reassignments[cid]
+		var reassign_ok := db.query_with_bindings(
+			"UPDATE trained_creatures SET handler_id = ? WHERE id = ?",
+			[new_handler, cid])
+		if not reassign_ok:
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.split_party: failed to reassign handler for creature %s" % cid)
+			return ""
+
+	# Move vehicles + handle partial unhitching
+	for vehicle_id in vehicle_ids_to_split:
+		var v_row := get_draft_vehicle(vehicle_id)
+		var hitched_json: String = str(v_row.get("hitched_creatures", "[]"))
+		var hitched_ids = JSON.parse_string(hitched_json)
+		if hitched_ids is Array and not hitched_ids.is_empty():
+			var keep_hitched: Array = []
+			for hcid in hitched_ids:
+				if creature_ids_to_split.has(str(hcid)):
+					keep_hitched.append(hcid)
+			if keep_hitched.size() != hitched_ids.size():
+				var hitch_ok := update_draft_vehicle_hitch(vehicle_id, JSON.stringify(keep_hitched))
+				if not hitch_ok:
+					db.query("ROLLBACK")
+					push_error("CampaignRepository.split_party: failed to update hitch for split vehicle %s" % vehicle_id)
+					return ""
+		var v_move_ok := db.query_with_bindings(
+			"UPDATE draft_vehicles SET party_id = ? WHERE id = ?",
+			[new_party_id, vehicle_id])
+		if not v_move_ok:
+			db.query("ROLLBACK")
+			push_error("CampaignRepository.split_party: failed to move vehicle %s" % vehicle_id)
+			return ""
+
+	# Unhitch split creatures from vehicles staying behind
+	var all_vehicles := get_draft_vehicles_for_party(source_party_id)
+	for v_row in all_vehicles:
+		var vid: String = str(v_row.get("id", ""))
+		if vehicle_ids_to_split.has(vid):
+			continue
+		var hitched_json2: String = str(v_row.get("hitched_creatures", "[]"))
+		var hitched_ids2 = JSON.parse_string(hitched_json2)
+		if hitched_ids2 is Array:
+			var remaining: Array = []
+			for hcid in hitched_ids2:
+				if not creature_ids_to_split.has(str(hcid)):
+					remaining.append(hcid)
+			if remaining.size() != hitched_ids2.size():
+				var h_ok := update_draft_vehicle_hitch(vid, JSON.stringify(remaining))
+				if not h_ok:
+					db.query("ROLLBACK")
+					push_error("CampaignRepository.split_party: failed to unhitch from staying vehicle %s" % vid)
+					return ""
 
 	db.query("COMMIT")
 
@@ -3550,3 +3665,17 @@ func save_character_preferences(character_id: String, tags: Array) -> bool:
 			character_id, json_str])
 		return false
 	return true
+
+
+## Returns all characters and henchmen in the party who are alive and eligible
+## for XP and gold shares. Excludes dead, incapacitated, and non-PC/non-henchman types.
+## Future (Session 6): extend to include trained_creatures WHERE is_henchman = 1.
+func list_xp_eligible_entities(party_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT c.id, c.name, c.character_type, c.level, c.is_active " +
+		"FROM characters c " +
+		"INNER JOIN party_members pm ON pm.character_id = c.id " +
+		"WHERE pm.party_id = ? AND c.is_active = 1 " +
+		"AND c.character_type IN ('pc', 'henchman')",
+		[party_id])
+	return db.query_result.duplicate()
