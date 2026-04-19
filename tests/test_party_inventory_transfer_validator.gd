@@ -47,8 +47,14 @@ func run_all_tests() -> void:
 	# Context friction
 	test_settlement_transfer_ok()
 	test_wilderness_transfer_ok()
-	test_dungeon_adjacency_stub_ok()
-	test_combat_trade_stub_ok()
+	test_dungeon_adjacency_adjacent_ok()
+	test_dungeon_adjacency_far_rejected()
+	test_dungeon_adjacency_cross_level_ok()
+	test_dungeon_adjacency_cross_level_two_apart_rejected()
+	test_dungeon_adjacency_missing_positions_rejected()
+	test_combat_trade_with_action_ok()
+	test_combat_trade_no_action_rejected()
+	test_combat_trade_not_adjacent_rejected()
 
 	# Capacity
 	test_character_capacity_ok_no_warning()
@@ -228,11 +234,15 @@ func _make_target(carrier_type: String, carrier_id: String,
 
 
 func _make_context(location_key: String = "hex:5,3",
-		is_in_combat: bool = false) -> Dictionary:
+		is_in_combat: bool = false,
+		carrier_positions: Dictionary = {},
+		combat_action_available: bool = false) -> Dictionary:
 	return {
 		"location_key": location_key,
 		"is_in_combat": is_in_combat,
 		"active_character_id": PC_A,
+		"carrier_positions": carrier_positions,
+		"combat_action_available": combat_action_available,
 	}
 
 
@@ -458,7 +468,61 @@ func test_wilderness_transfer_ok() -> void:
 	_cleanup()
 
 
-func test_dungeon_adjacency_stub_ok() -> void:
+func test_dungeon_adjacency_adjacent_ok() -> void:
+	_setup()
+	var item := _make_item("sword", "Sword", 1, 1000)
+	var source := _make_source("character", PC_A)
+	var target := _make_target("character", PC_B)
+	var positions := {PC_A: Vector3i(5, 5, 0), PC_B: Vector3i(6, 5, 0)}
+	var ctx := _make_context("dungeon:test:level:1", false, positions)
+
+	var result: Dictionary = _validator.validate_transfer(source, target, ctx, item)
+	check(result.ok, "adjacent carriers in dungeon should allow transfer")
+	_cleanup()
+
+
+func test_dungeon_adjacency_far_rejected() -> void:
+	_setup()
+	var item := _make_item("sword", "Sword", 1, 1000)
+	var source := _make_source("character", PC_A)
+	var target := _make_target("character", PC_B)
+	var positions := {PC_A: Vector3i(5, 5, 0), PC_B: Vector3i(8, 5, 0)}
+	var ctx := _make_context("dungeon:test:level:1", false, positions)
+
+	var result: Dictionary = _validator.validate_transfer(source, target, ctx, item)
+	check(not result.ok, "non-adjacent carriers should be rejected")
+	check(str(result.get("reason", "")).contains("not adjacent"),
+		"rejection reason should mention 'not adjacent'")
+	_cleanup()
+
+
+func test_dungeon_adjacency_cross_level_ok() -> void:
+	_setup()
+	var item := _make_item("sword", "Sword", 1, 1000)
+	var source := _make_source("character", PC_A)
+	var target := _make_target("character", PC_B)
+	var positions := {PC_A: Vector3i(5, 5, 0), PC_B: Vector3i(5, 5, 1)}
+	var ctx := _make_context("dungeon:test:level:1", false, positions)
+
+	var result: Dictionary = _validator.validate_transfer(source, target, ctx, item)
+	check(result.ok, "carriers 1 level apart should be adjacent (3D Chebyshev)")
+	_cleanup()
+
+
+func test_dungeon_adjacency_cross_level_two_apart_rejected() -> void:
+	_setup()
+	var item := _make_item("sword", "Sword", 1, 1000)
+	var source := _make_source("character", PC_A)
+	var target := _make_target("character", PC_B)
+	var positions := {PC_A: Vector3i(5, 5, 0), PC_B: Vector3i(5, 5, 2)}
+	var ctx := _make_context("dungeon:test:level:1", false, positions)
+
+	var result: Dictionary = _validator.validate_transfer(source, target, ctx, item)
+	check(not result.ok, "carriers 2 levels apart should be rejected")
+	_cleanup()
+
+
+func test_dungeon_adjacency_missing_positions_rejected() -> void:
 	_setup()
 	var item := _make_item("sword", "Sword", 1, 1000)
 	var source := _make_source("character", PC_A)
@@ -466,19 +530,52 @@ func test_dungeon_adjacency_stub_ok() -> void:
 	var ctx := _make_context("dungeon:test:level:1")
 
 	var result: Dictionary = _validator.validate_transfer(source, target, ctx, item)
-	check(result.ok, "dungeon adjacency stub should allow transfer")
+	check(not result.ok, "missing carrier_positions should be rejected")
+	check(str(result.get("reason", "")).contains("position unknown"),
+		"rejection reason should mention 'position unknown'")
 	_cleanup()
 
 
-func test_combat_trade_stub_ok() -> void:
+func test_combat_trade_with_action_ok() -> void:
 	_setup()
 	var item := _make_item("sword", "Sword", 1, 1000)
 	var source := _make_source("character", PC_A)
 	var target := _make_target("character", PC_B)
-	var ctx := _make_context("dungeon:test:level:1", true)
+	var positions := {PC_A: Vector3i(5, 5, 0), PC_B: Vector3i(6, 5, 0)}
+	var ctx := _make_context("dungeon:test:level:1", true, positions, true)
 
 	var result: Dictionary = _validator.validate_transfer(source, target, ctx, item)
-	check(result.ok, "combat trade action stub should allow transfer")
+	check(result.ok, "combat trade with action + adjacent should allow transfer")
+	_cleanup()
+
+
+func test_combat_trade_no_action_rejected() -> void:
+	_setup()
+	var item := _make_item("sword", "Sword", 1, 1000)
+	var source := _make_source("character", PC_A)
+	var target := _make_target("character", PC_B)
+	var positions := {PC_A: Vector3i(5, 5, 0), PC_B: Vector3i(6, 5, 0)}
+	var ctx := _make_context("dungeon:test:level:1", true, positions, false)
+
+	var result: Dictionary = _validator.validate_transfer(source, target, ctx, item)
+	check(not result.ok, "combat trade without action should be rejected")
+	check(str(result.get("reason", "")).contains("action"),
+		"rejection reason should mention 'action'")
+	_cleanup()
+
+
+func test_combat_trade_not_adjacent_rejected() -> void:
+	_setup()
+	var item := _make_item("sword", "Sword", 1, 1000)
+	var source := _make_source("character", PC_A)
+	var target := _make_target("character", PC_B)
+	var positions := {PC_A: Vector3i(5, 5, 0), PC_B: Vector3i(8, 5, 0)}
+	var ctx := _make_context("dungeon:test:level:1", true, positions, true)
+
+	var result: Dictionary = _validator.validate_transfer(source, target, ctx, item)
+	check(not result.ok, "combat trade with action but not adjacent should be rejected")
+	check(str(result.get("reason", "")).contains("not adjacent"),
+		"rejection reason should mention 'not adjacent'")
 	_cleanup()
 
 

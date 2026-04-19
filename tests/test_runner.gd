@@ -114,6 +114,16 @@ extends Node
 @onready var _loot_auto_distributor_tests = $LootAutoDistributorTests
 @onready var _dungeon_loot_placement_tests = $DungeonLootPlacementTests
 @onready var _party_membership_invariant_tests = $PartyMembershipInvariantTests
+@onready var _voxel_cell_tests = $VoxelCellTests
+@onready var _voxel_map_data_tests = $VoxelMapDataTests
+@onready var _voxel_grid_tests = $VoxelGridTests
+@onready var _falling_resolver_tests = $FallingResolverTests
+@onready var _voxel_los_tests = $VoxelLOSTests
+@onready var _campaign_repository_voxel_tests = $CampaignRepositoryVoxelTests
+@onready var _voxel_map_data_json_tests = $VoxelMapDataJsonTests
+@onready var _voxel_dungeon_integration_tests = $VoxelDungeonIntegrationTests
+@onready var _visibility_manager_tests = $VisibilityManagerTests
+@onready var _movement_resolver_3d_tests = $MovementResolver3DTests
 
 
 func _ready() -> void:
@@ -207,7 +217,17 @@ func run() -> void:
 			_loot_generator_tests,
 			_loot_auto_distributor_tests,
 			_dungeon_loot_placement_tests,
-			_party_membership_invariant_tests]:
+			_party_membership_invariant_tests,
+			_voxel_cell_tests,
+			_voxel_map_data_tests,
+			_voxel_grid_tests,
+			_falling_resolver_tests,
+			_voxel_los_tests,
+			_campaign_repository_voxel_tests,
+			_voxel_map_data_json_tests,
+			_voxel_dungeon_integration_tests,
+			_visibility_manager_tests,
+			_movement_resolver_3d_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

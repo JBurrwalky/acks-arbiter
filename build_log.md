@@ -5932,3 +5932,88 @@ Files modified (wiring changes only):
 - Verify wilderness loot flow still works (regression check).
 - Consider adding `has_ground_items` regeneration from DB caches on dungeon load.
 - Consider gems/jewelry/magic items from treasure types (v2 loot generation).
+
+---
+
+## Session 2026-04-18 — Voxel Migration Sessions 1-6 (Planning + Data Layer)
+
+**Task:** Plan and implement the data-layer foundation for the 3D voxel cube-cell migration per `gdd-voxel-tactical-architecture.md`. Sessions 1-6 of the 11-session migration plan — all data-only, no renderer or UI changes.
+**Model used:** Opus 4.6 for planning and implementation throughout.
+
+**Completed:**
+
+**Session 1 — Core Data Types and Adjacency Math:**
+- `engine/shared_types/voxel_cell.gd` — `VoxelCell` (RefCounted, class_name). All fields from GDD §7: solidity, feature, floor_type, door_state/type/detected, room_id, is_corridor, fog_state, cover_value. Four derived methods: `is_passable_by_walker()`, `blocks_los()`, `blocks_flight()`, `blocks_burrow()`. `from_dict()`/`to_dict()` serialization.
+- `engine/shared_types/voxel_map_data.gd` — `VoxelMapData` (RefCounted, class_name). Sparse `Dictionary[Vector3i, VoxelCell]` storage. Sentinel pattern for absent keys. Level iteration. Metadata fields: id, name, theme, tileset_group, entry_pos, generation_seed. `from_dict()`/`to_dict()`, `load_from_file()`/`save_to_file()`.
+- `engine/shared_types/voxel_grid.gd` — `VoxelGrid` (RefCounted, class_name, all static). `cell_to_world(col, row, level)` with `y = level * 1.0`. `world_to_cell()` including Y. `get_neighbors_3d()` (26 neighbors), `get_neighbors_2d()` (8 same-level). `is_adjacent()` (3D Chebyshev ≤ 1). `chebyshev_distance()`. `Direction` enum with `DIRECTION_OFFSETS` matching `IsometricGrid.get_neighbors()` order.
+- Tests: `test_voxel_cell.gd` (25 tests), `test_voxel_map_data.gd` (13 tests), `test_voxel_grid.gd` (24 tests).
+
+**Session 2 — Falling Resolver and 3D Line of Sight:**
+- `engine/subsystems/combat/falling_resolver.gd` — `FallingResolver` (RefCounted, all static). `has_support(map, pos)` checks floor_type, solid below, or ladder. `resolve_fall(map, from_pos)` returns {landing_pos, distance_feet, damage_dice, spike_dice}. ACKS formula: `floor(feet / 10) × d6`.
+- `engine/subsystems/presentation/voxel_los.gd` — `VoxelLOS` (RefCounted, all static). 3D DDA (Amanatides-Woo) raycast. `has_los(map, from, to)` skips start/end cells. `get_cover_value()` returns max cover of intermediate cells. Created `engine/subsystems/presentation/` directory.
+- Tests: `test_falling_resolver.gd` (16 tests), `test_voxel_los.gd` (18 tests).
+
+**Session 3 — Database Migration and Repository Wiring:**
+- `db/migrations/036_voxel_grid.sql` — Creates `voxel_map_cells` table (PK: map_id, col, row, level). Forward-migrates `dungeon_map_cells` data with `level = level_num * 2`.
+- `db/schema.sql` — Updated with voxel_map_cells table, header to migration 036.
+- `engine/autoloads/campaign_repository.gd` — Added 6 methods: `save_voxel_cell()`, `load_voxel_cells_for_map()`, `update_voxel_cell_state()`, `save_voxel_cells_batch()` (with BEGIN TRANSACTION/COMMIT), `load_voxel_map()`, `_voxel_cell_from_row()`. Deprecated 3 old dungeon_map_cells methods with `@deprecated` comments.
+- Tests: `test_campaign_repository_voxel.gd` (12 tests).
+
+**Session 4 — Inventory Validator Wiring + VoxelMapData JSON Format:**
+- `engine/subsystems/inventory/party_inventory_transfer_validator.gd` — Replaced `_check_dungeon_adjacency()` stub with real check using `context["carrier_positions"]` (Dictionary: carrier_id → Vector3i) and `VoxelGrid.is_adjacent()`. Missing positions → explicit rejection. Replaced `_check_combat_trade_action()` stub: checks `context["combat_action_available"]` flag, then delegates to adjacency. Changed signature to include source/target params.
+- `data/test_dungeon.json` — Converted from old `levels[]` + `stairs[]` format to unified voxel `cells[]` format. 560 voxel cells across 4 levels from 2 old dungeon levels. Stair cells have direction suffixes (stairs_up_SW, stairs_down_NE). Wall cells stamped at both floor and ceiling levels.
+- Tests: Updated 2 existing validator tests, added 6 new adjacency/combat tests. New `test_voxel_map_data_json.gd` (8 tests).
+
+**Session 5 — Integration Tests + Format Verification:**
+- Scope reduced: no dungeon generator exists, so no generator to update. Generator is L-1's responsibility.
+- `tests/test_voxel_dungeon_integration.gd` — 10 integration tests verifying converted Goblin Warrens: wall stacks, stair direction suffixes, door states, LOS through rooms, LOS blocked by walls.
+
+**Session 6 — VisibilityManager and Voxel-Based Movement:**
+- `engine/subsystems/presentation/visibility_manager.gd` — `VisibilityManager` (Node, class_name, NOT autoload). Tracks `focus_level`, `party_positions`, `explored_levels`. `set_focus_level()` clamps to nearest explored level in requested direction. `get_level_visibility()`: focus=1.0, below=0.6, focus+1=0.3, else=0.0. `update_explored_levels()` recomputes from VoxelMapData fog state.
+- `engine/subsystems/combat/movement_resolver.gd` — Added `_voxel_map: VoxelMapData` field and 3D methods alongside untouched 2D methods: `path_bfs_3d()` (BFS with 5 movement types: ground/flying/tunnel_burrow/earth_pass/climbing), `has_los_3d()`, `is_adjacent_3d()`, `get_distance_3d()`, `get_cells_reachable_3d()`. Private helpers: `_can_enter_3d()`, `_has_stair_connection()` (checks directional feature suffixes), `_direction_suffix_for_delta()`, `_reverse_direction()`.
+- Tests: `test_visibility_manager.gd` (14 tests), `test_movement_resolver_3d.gd` (16 tests).
+
+**Decisions made:**
+- **Vector3i convention:** `Vector3i(col, row, level)` — x=col, y=row, z=level. Extends `Vector2i(col, row)` naturally.
+- **`is_passable_by_walker()` does NOT check floor support.** Pathfinder checks support via `FallingResolver.has_support()`.
+- **Party `dungeon_level` column untouched in migration 036.** Application-layer `* 2` conversion later.
+- **Carrier positions via context dict, not service query.** Missing positions → reject.
+- **`has_action` renamed to `combat_action_available`** for clarity.
+- **No dungeon generator in voxel migration.** Generator is L-1's responsibility.
+- **MovementResolver parallel approach.** `_3d` suffix on all new methods. Existing 2D methods untouched.
+- **VisibilityManager is NOT an autoload** — instanced in scene tree.
+- **Focus level clamping:** nearest explored level in requested direction; stay put if none found.
+- **Cover value aggregation:** max of intermediate cells (not sum).
+
+**Interfaces defined or changed:**
+- `VoxelCell`: `is_passable_by_walker()`, `blocks_los()`, `blocks_flight()`, `blocks_burrow()`, `from_dict()`, `to_dict()`
+- `VoxelMapData`: `get_cell(Vector3i)`, `set_cell()`, `from_dict()`/`to_dict()`, `load_from_file()`/`save_to_file()`
+- `VoxelGrid`: `cell_to_world()`, `world_to_cell()`, `get_neighbors_3d()`, `is_adjacent()`, `chebyshev_distance()`
+- `FallingResolver`: `has_support()`, `resolve_fall()`
+- `VoxelLOS`: `has_los()`, `get_cover_value()`
+- `VisibilityManager`: `set_focus_level()`, `jump_to_party_leader()`, `get_level_visibility()`, `should_dither()`, `update_explored_levels()`
+- `MovementResolver`: `set_voxel_map()`, `path_bfs_3d()`, `has_los_3d()`, `is_adjacent_3d()`, `get_distance_3d()`, `get_cells_reachable_3d()`
+- `CampaignRepository`: `save_voxel_cell()`, `load_voxel_cells_for_map()`, `update_voxel_cell_state()`, `save_voxel_cells_batch()`, `load_voxel_map()`
+- `PartyInventoryTransferValidator._check_dungeon_adjacency()` — now checks `context["carrier_positions"]`
+- `PartyInventoryTransferValidator._check_combat_trade_action()` — signature changed, checks `context["combat_action_available"]`
+
+**Database changes:**
+- Migration 036: `voxel_map_cells` table. Forward migration from `dungeon_map_cells` with `level = level_num * 2`.
+
+**Tests added/updated:**
+- 11 new test suites (IDs 104-113): test_voxel_cell, test_voxel_map_data, test_voxel_grid, test_falling_resolver, test_voxel_los, test_campaign_repository_voxel, test_voxel_map_data_json, test_voxel_dungeon_integration, test_visibility_manager, test_movement_resolver_3d.
+- Updated `test_party_inventory_transfer_validator.gd`: renamed 2 tests, added 6 new, updated `_make_context()` helper.
+- Total new tests: ~198.
+
+**Known issues:**
+- **Old test_dungeon.json format consumers:** `TacticalMapData.load_from_file()` and `DungeonMapController.load_dungeon()` expect the old `levels[]`/`stairs[]` format. Converted file breaks these callers until they're updated.
+- **Migration 036 data sparsity:** Migrated rows only carry door_state and fog_state from old table.
+- **3D DDA edge cases:** Not exhaustively tested for rays exactly aligned with cell edges.
+- **godot-sqlite transactions:** `save_voxel_cells_batch()` is first use of explicit transactions in the codebase.
+
+**Next session should:**
+1. Run full test suite to verify all 113+ suites pass.
+2. Begin Session 7 (Renderer Refactor) or prioritize other build plan work.
+3. When the dungeon generator (L-1) is built, it should output `VoxelMapData` directly.
+4. Update `DungeonMapController.load_dungeon()` to handle the voxel JSON format (or add a format-detection shim).
+5. Update `docs/document_map.md` and `docs/rule_system_map.md` to reference the voxel GDD.

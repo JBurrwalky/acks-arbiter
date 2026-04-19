@@ -248,7 +248,10 @@ acks-arbiter/               (Godot project root = repo root)
 │   │   ├── modifier_stack.gd       # ordered modifier list for a single stat
 │   │   ├── response_envelope.gd
 │   │   ├── roll_result.gd
-│   │   └── tactical_map_data.gd    # unified cell grid (dungeon + combat); TacticalMapData
+│   │   ├── tactical_map_data.gd    # unified cell grid (dungeon + combat); TacticalMapData
+│   │   ├── voxel_cell.gd           # 5' cube cell for 3D voxel grid; VoxelCell
+│   │   ├── voxel_grid.gd           # static 3D grid math (cell↔world, 26-neighbor adjacency); VoxelGrid
+│   │   └── voxel_map_data.gd       # sparse 3D voxel storage (Dictionary[Vector3i, VoxelCell]); VoxelMapData
 │   └── subsystems/
 │       ├── calendar/       # CalendarConstants, CalendarSeasons (pure static computation)
 │       ├── characters/     # PowerRegistry, ClassRegistry, ProficiencyRegistry, ProficiencyEffectResolver,
@@ -260,9 +263,11 @@ acks-arbiter/               (Godot project root = repo root)
 │       ├── combat/         # Combatant, CombatRoster, InitiativeResolver, AttackResolver, CombatController,
 │       │                   # SpellCombatHooks, RangedAttackResolver, CombatConditionManager,
 │       │                   # MonsterAI, MoraleResolver, CleaveResolver, CombatFinalizer,
-│       │                   # MovementResolver, ManeuverResolver, MortalWoundsResolver, CombatLog
+│       │                   # MovementResolver (2D + 3D voxel methods), ManeuverResolver,
+│       │                   # MortalWoundsResolver, CombatLog, FallingResolver
 │       ├── exploration/    # HexMapController, DungeonMapController, DungeonEncounterSpawner,
 │       │                   # FormationManager, DungeonOrderManager
+│       ├── presentation/   # VisibilityManager (focus level + per-level opacity), VoxelLOS (3D DDA raycast)
 │       ├── domain/         # (planned)
 │       └── magic/          # (planned)
 ├── scenes/
@@ -283,7 +288,7 @@ acks-arbiter/               (Godot project root = repo root)
 ├── tests/                  # All test scripts + test_runner.tscn
 ├── db/
 │   ├── schema.sql          # Canonical schema (update after every migration)
-│   └── migrations/         # 001_initial_schema .. 017_dungeon_grid
+│   └── migrations/         # 001_initial_schema .. 036_voxel_grid
 ├── data/
 │   ├── classes/            # One JSON per ACKS class (25 files)
 │   ├── powers/             # power_catalog.json (reusable power definitions)
@@ -299,7 +304,7 @@ acks-arbiter/               (Godot project root = repo root)
 │   ├── spells/             # spell_catalog.json (231 entries), spell_list_indices.json, spell_effects.json
 │   ├── monsters/           # monster_catalog.json (13 starter monsters; F-0)
 │   ├── test_hex_map.json   # Test hex map data (31-hex Ashford Vale)
-│   └── test_dungeon.json   # Test dungeon data (Goblin Warrens, 2 levels)
+│   └── test_dungeon.json   # Test dungeon data (Goblin Warrens, voxel format)
 ├── rules/                  # SACRED XML rule summaries — never modify
 ├── generation/             # GDD markdown files — modifiable
 └── docs/                   # Architecture docs, this file, maps
@@ -1581,6 +1586,52 @@ During D-4 development, undetected secret doors (`door_detected = false`) are re
 `DungeonMapController` is NOT an autoload. Instantiate dynamically in `main_scene.gd._enter_dungeon()`, add as child, call `load_dungeon()`, then pass to the dungeon scene via `setup(controller)`. The controller is freed when the dungeon scene is popped from NavigationStack (via `queue_free` on the scene's `exit()`).
 
 *Last major update: 2026-04-02 — D-4 dungeon grid. Updated directory tree (§2.1), migration list to 017, maps/ entry, added §13 (tactical grid conventions).*
+
+### 13.7 Voxel Grid Conventions (Voxel Migration)
+
+<!-- Added 2026-04-18 for 3D voxel cube-cell migration -->
+
+**Core types** (all in `engine/shared_types/`):
+
+| Type | Role |
+|---|---|
+| `VoxelCell` | Single 5' cube cell. Fields: `solidity`, `feature`, `floor_type`, `door_state/type/detected`, `room_id`, `is_corridor`, `fog_state`, `cover_value`. Derived methods: `is_passable_by_walker()`, `blocks_los()`, `blocks_flight()`, `blocks_burrow()`. |
+| `VoxelMapData` | Sparse `Dictionary[Vector3i, VoxelCell]` storage. Absent keys return a fresh sentinel (air/open/none/hidden). Methods: `get_cell()`, `set_cell()`, `get_cells_at_level()`, `get_levels()`, `from_dict()`/`to_dict()`, `load_from_file()`/`save_to_file()`. Metadata: `id`, `name`, `theme`, `tileset_group`, `entry_pos`, `generation_seed`. |
+| `VoxelGrid` | Static 3D math. `cell_to_world(col, row, level)` with `y = level * 1.0`. `get_neighbors_3d()` (26 neighbors), `is_adjacent()` (3D Chebyshev ≤ 1), `chebyshev_distance()`. `Direction` enum + `DIRECTION_OFFSETS` for stair suffixes. |
+
+**Vector3i convention:** `Vector3i(col, row, level)` — x=col, y=row, z=level. This differs from world-space `Vector3` where y=up. Always use `VoxelGrid.cell_to_world()` / `world_to_cell()` to convert.
+
+**Adjacency:** 3D Chebyshev distance ≤ 1 (26 neighbors). Single predicate for melee engagement, inventory transfers, and area effects. Implemented in `VoxelGrid.is_adjacent()`.
+
+**Support checking:** `FallingResolver.has_support(map, pos)` — floor_type != "none" OR solid cell below OR ladder feature. Ground walkers need support; flyers do not.
+
+**Level transitions (ground walkers):** Level diff 0 = free. Level diff 1 requires stair/ramp feature with matching compass direction suffix (e.g., `stairs_up_N`, `ramp_SE`). Level diff 2+ = blocked for walkers.
+
+**Movement modes** (on `MovementResolver` 3D methods):
+- `"ground"` — passable + supported + stair for level changes
+- `"flying"` — any non-blocking-flight cell, no support needed
+- `"tunnel_burrow"` — solid is passable (air blocks burrowing)
+- `"earth_pass"` — same pathing as tunnel_burrow
+- `"climbing"` — air cell adjacent to at least one solid cell
+
+**MovementResolver 3D methods** use `_3d` suffix (`path_bfs_3d`, `has_los_3d`, `is_adjacent_3d`, `get_distance_3d`, `get_cells_reachable_3d`). All existing 2D methods are untouched and continue to work. Set `_voxel_map` via `set_voxel_map()`.
+
+**VisibilityManager** tracks `focus_level`, `explored_levels`, `party_positions`. Per-level visibility: focus = 1.0, below = 0.6, focus+1 = 0.3 (dither), else = 0.0.
+
+**Voxel JSON format** (replaces old `levels[]` + `stairs[]`):
+```json
+{
+  "id": "...", "name": "...", "theme": "...", "tileset_group": "...",
+  "entry": {"col": 3, "row": 3, "level": 0},
+  "cells": [
+    {"col": 3, "row": 3, "level": 0, "solidity": "air", "feature": "open", "floor_type": "stone", ...}
+  ]
+}
+```
+
+**Inventory adjacency:** `party_inventory_transfer_validator.gd` checks `context["carrier_positions"]` (Dictionary: carrier_id → Vector3i) via `VoxelGrid.is_adjacent()`. Combat mode also requires `context["combat_action_available"] == true`.
+
+**DB table:** `voxel_map_cells` (migration 036) — PK `(map_id, col, row, level)`, stores all VoxelCell fields. Old `dungeon_map_cells` kept for backward compat until cleanup.
 
 ---
 

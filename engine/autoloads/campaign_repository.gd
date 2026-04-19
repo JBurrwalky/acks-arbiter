@@ -2067,6 +2067,7 @@ func update_settlement_entrance_data(entrance_id: String, settlement_data_json: 
 # Dungeon cell state persistence (migration 017)
 # ---------------------------------------------------------------------------
 
+## @deprecated Use save_voxel_cells_batch() instead.
 ## Batch-saves cell states (fog + door) for a dungeon level.
 ## [param cells] is an Array of {col, row, door_state, fog_state} dictionaries.
 func save_dungeon_cell_states(dungeon_id: String, level_num: int, cells: Array) -> bool:
@@ -2090,6 +2091,7 @@ func save_dungeon_cell_states(dungeon_id: String, level_num: int, cells: Array) 
 	return true
 
 
+## @deprecated Use load_voxel_cells_for_map() instead.
 ## Loads saved cell states for a dungeon level. Returns [{col, row, door_state, fog_state}].
 func load_dungeon_cell_states(dungeon_id: String, level_num: int) -> Array:
 	db.query_with_bindings(
@@ -2099,6 +2101,7 @@ func load_dungeon_cell_states(dungeon_id: String, level_num: int) -> Array:
 	return db.query_result.duplicate()
 
 
+## @deprecated Use update_voxel_cell_state() instead.
 ## Upserts a single cell's state.
 func update_dungeon_cell(dungeon_id: String, level_num: int, col: int, row: int,
 		door_state: String, fog_state: String) -> bool:
@@ -2106,6 +2109,97 @@ func update_dungeon_cell(dungeon_id: String, level_num: int, col: int, row: int,
 		INSERT OR REPLACE INTO dungeon_map_cells (dungeon_id, level_num, col, row, door_state, fog_state)
 		VALUES (?, ?, ?, ?, ?, ?)
 	""", [dungeon_id, level_num, col, row, door_state, fog_state])
+
+
+# ---------------------------------------------------------------------------
+# Voxel cell persistence (migration 036)
+# ---------------------------------------------------------------------------
+
+## Saves a single VoxelCell to the voxel_map_cells table (insert or replace).
+func save_voxel_cell(map_id: String, cell: VoxelCell) -> bool:
+	return db.query_with_bindings("""
+		INSERT OR REPLACE INTO voxel_map_cells
+		(map_id, col, row, level, solidity, feature, floor_type,
+		 door_state, door_type, door_detected, fog_state,
+		 room_id, is_corridor, cover_value)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		map_id,
+		cell.col, cell.row, cell.level,
+		cell.solidity, cell.feature, cell.floor_type,
+		cell.door_state, cell.door_type,
+		1 if cell.door_detected else 0,
+		cell.fog_state,
+		cell.room_id,
+		1 if cell.is_corridor else 0,
+		cell.cover_value,
+	])
+
+
+## Loads all voxel cells for [param map_id]. Returns an Array of VoxelCell.
+func load_voxel_cells_for_map(map_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM voxel_map_cells WHERE map_id = ?", [map_id]
+	)
+	var cells: Array = []
+	for row_data: Dictionary in db.query_result:
+		cells.append(_voxel_cell_from_row(row_data))
+	return cells
+
+
+## Updates the door_state and fog_state of a single voxel cell (insert or replace).
+func update_voxel_cell_state(map_id: String, col: int, row: int, level: int,
+		door_state: String, fog_state: String) -> bool:
+	return db.query_with_bindings("""
+		INSERT OR REPLACE INTO voxel_map_cells
+		(map_id, col, row, level, door_state, fog_state)
+		VALUES (?, ?, ?, ?, ?, ?)
+	""", [map_id, col, row, level, door_state, fog_state])
+
+
+## Batch-saves an array of VoxelCell instances. Wraps in a transaction for
+## performance with large cell counts.
+func save_voxel_cells_batch(map_id: String, cells: Array) -> bool:
+	db.query("BEGIN TRANSACTION")
+	for cell: VoxelCell in cells:
+		if not save_voxel_cell(map_id, cell):
+			push_error("CampaignRepository.save_voxel_cells_batch: failed at (%d,%d,%d)" % [
+				cell.col, cell.row, cell.level
+			])
+			db.query("ROLLBACK")
+			return false
+	db.query("COMMIT")
+	return true
+
+
+## Convenience: loads all cells for [param map_id] and returns a populated
+## VoxelMapData instance.
+func load_voxel_map(map_id: String) -> VoxelMapData:
+	var map := VoxelMapData.new()
+	map.id = map_id
+	var cells := load_voxel_cells_for_map(map_id)
+	for cell: VoxelCell in cells:
+		map.set_cell(cell.pos, cell)
+	return map
+
+
+## Constructs a VoxelCell from a database row dictionary.
+func _voxel_cell_from_row(row_data: Dictionary) -> VoxelCell:
+	var cell := VoxelCell.new()
+	cell.col = row_data.get("col", 0)
+	cell.row = row_data.get("row", 0)
+	cell.level = row_data.get("level", 0)
+	cell.solidity = row_data.get("solidity", "air")
+	cell.feature = row_data.get("feature", "open")
+	cell.floor_type = row_data.get("floor_type", "none")
+	cell.door_state = row_data.get("door_state", "")
+	cell.door_type = row_data.get("door_type", "")
+	cell.door_detected = bool(row_data.get("door_detected", 1))
+	cell.fog_state = row_data.get("fog_state", "hidden")
+	cell.room_id = row_data.get("room_id", -1)
+	cell.is_corridor = bool(row_data.get("is_corridor", 0))
+	cell.cover_value = row_data.get("cover_value", 0)
+	return cell
 
 
 # ---------------------------------------------------------------------------

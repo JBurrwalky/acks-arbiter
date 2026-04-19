@@ -127,24 +127,37 @@ func _check_context_friction(source: Dictionary, target: Dictionary,
 	# Dungeon
 	if location_key.begins_with("dungeon:"):
 		if context.get("is_in_combat", false):
-			return _check_combat_trade_action(context)
+			return _check_combat_trade_action(source, target, context)
 		return _check_dungeon_adjacency(source, target, context)
 
 	# Unknown or "none" — check if source and target share location
 	return _ok()
 
 
-## STUB: Dungeon adjacency check. Always returns ok for v1.
-## Full implementation needs DungeonMapController.are_adjacent() — Session 5 polish.
-func _check_dungeon_adjacency(_source: Dictionary, _target: Dictionary,
-		_context: Dictionary) -> Dictionary:
-	return _ok()
+## Checks that source and target carriers are at 3D Chebyshev distance <= 1.
+## Requires context["carrier_positions"]: Dictionary mapping carrier_id -> Vector3i.
+## If positions are not supplied, rejects — the caller must populate this key.
+func _check_dungeon_adjacency(source: Dictionary, target: Dictionary,
+		context: Dictionary) -> Dictionary:
+	var positions: Dictionary = context.get("carrier_positions", {})
+	var src_id: String = source.get("carrier_id", "")
+	var tgt_id: String = target.get("carrier_id", "")
+	if not positions.has(src_id) or not positions.has(tgt_id):
+		return _reject("Carrier position unknown")
+	var src_pos: Vector3i = positions[src_id]
+	var tgt_pos: Vector3i = positions[tgt_id]
+	if VoxelGrid.is_adjacent(src_pos, tgt_pos):
+		return _ok()
+	return _reject("Carriers are not adjacent")
 
 
-## STUB: Combat trade action check. Always returns ok for v1.
-## Full implementation needs combat turn economy integration.
-func _check_combat_trade_action(_context: Dictionary) -> Dictionary:
-	return _ok()
+## Checks that the active character has a combat action available, then adjacency.
+## Requires context["combat_action_available"]: bool. Ignored when not in combat.
+func _check_combat_trade_action(source: Dictionary, target: Dictionary,
+		context: Dictionary) -> Dictionary:
+	if not context.get("combat_action_available", false):
+		return _reject("No action available to trade in combat")
+	return _check_dungeon_adjacency(source, target, context)
 
 
 # ---------------------------------------------------------------------------

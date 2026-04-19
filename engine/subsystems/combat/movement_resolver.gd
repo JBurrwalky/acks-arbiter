@@ -19,6 +19,7 @@ const MIN_CHARGE_CELLS := 4  ## 20 feet minimum for a charge
 
 var _map: TacticalMapData = null
 var _roster: CombatRoster = null
+var _voxel_map: VoxelMapData = null
 
 
 # ---------------------------------------------------------------------------
@@ -513,3 +514,212 @@ func _find_retreat_cell(
 				best_pos = neighbor
 
 	return best_pos
+
+
+# ---------------------------------------------------------------------------
+# 3D voxel methods (parallel to 2D methods above)
+# ---------------------------------------------------------------------------
+
+func set_voxel_map(voxel_map: VoxelMapData) -> void:
+	_voxel_map = voxel_map
+
+
+func has_voxel_grid() -> bool:
+	return _voxel_map != null
+
+
+## 3D BFS pathfinding on VoxelMapData.
+## [param movement_type]: "ground", "flying", "tunnel_burrow", "earth_pass", "climbing".
+## Returns path INCLUDING start and goal, or empty if unreachable.
+func path_bfs_3d(from_pos: Vector3i, to_pos: Vector3i,
+		movement_type: String = "ground",
+		max_range: int = 50) -> Array[Vector3i]:
+	if _voxel_map == null:
+		return []
+	if from_pos == to_pos:
+		return [from_pos]
+
+	var visited: Dictionary = {from_pos: null}  # pos -> predecessor
+	var depth: Dictionary = {from_pos: 0}
+	var queue: Array[Vector3i] = [from_pos]
+
+	while not queue.is_empty():
+		var current: Vector3i = queue.pop_front()
+		var current_depth: int = depth[current]
+		if current_depth >= max_range:
+			continue
+
+		for neighbor: Vector3i in VoxelGrid.get_neighbors_3d(current):
+			if visited.has(neighbor):
+				continue
+			if not _can_enter_3d(current, neighbor, movement_type):
+				continue
+
+			visited[neighbor] = current
+			depth[neighbor] = current_depth + 1
+
+			if neighbor == to_pos:
+				return _reconstruct_path_3d(visited, from_pos, to_pos)
+			queue.append(neighbor)
+
+	return []  # Unreachable
+
+
+## 3D line of sight. Delegates to VoxelLOS.
+## Returns true if no voxel map is set (graceful fallback).
+func has_los_3d(from_pos: Vector3i, to_pos: Vector3i) -> bool:
+	if _voxel_map == null:
+		return true
+	return VoxelLOS.has_los(_voxel_map, from_pos, to_pos)
+
+
+## 3D adjacency check. Delegates to VoxelGrid.
+func is_adjacent_3d(a: Vector3i, b: Vector3i) -> bool:
+	return VoxelGrid.is_adjacent(a, b)
+
+
+## 3D Chebyshev distance. Delegates to VoxelGrid.
+func get_distance_3d(a: Vector3i, b: Vector3i) -> int:
+	return VoxelGrid.chebyshev_distance(a, b)
+
+
+## Flood-fill BFS returning all cells reachable from [param from_pos]
+## within [param max_cells] steps using the given [param movement_type].
+func get_cells_reachable_3d(from_pos: Vector3i,
+		movement_type: String, max_cells: int) -> Array[Vector3i]:
+	if _voxel_map == null:
+		return []
+	var visited: Dictionary = {from_pos: 0}
+	var queue: Array[Vector3i] = [from_pos]
+	var result: Array[Vector3i] = [from_pos]
+
+	while not queue.is_empty():
+		var current: Vector3i = queue.pop_front()
+		var current_depth: int = visited[current]
+		if current_depth >= max_cells:
+			continue
+
+		for neighbor: Vector3i in VoxelGrid.get_neighbors_3d(current):
+			if visited.has(neighbor):
+				continue
+			if not _can_enter_3d(current, neighbor, movement_type):
+				continue
+			visited[neighbor] = current_depth + 1
+			queue.append(neighbor)
+			result.append(neighbor)
+
+	return result
+
+
+# ---------------------------------------------------------------------------
+# 3D movement helpers (private)
+# ---------------------------------------------------------------------------
+
+## Returns true if [param movement_type] allows moving from [param from_pos]
+## to [param to_pos].
+func _can_enter_3d(from_pos: Vector3i, to_pos: Vector3i,
+		movement_type: String) -> bool:
+	var cell := _voxel_map.get_cell(to_pos)
+	var level_diff: int = abs(to_pos.z - from_pos.z)
+
+	match movement_type:
+		"ground":
+			if not cell.is_passable_by_walker():
+				return false
+			if not FallingResolver.has_support(_voxel_map, to_pos):
+				return false
+			if level_diff == 0:
+				return true
+			if level_diff == 1:
+				return _has_stair_connection(from_pos, to_pos)
+			return false  # level diff 2+ blocked for ground
+
+		"flying":
+			return not cell.blocks_flight()
+
+		"tunnel_burrow", "earth_pass":
+			return not cell.blocks_burrow()
+
+		"climbing":
+			if cell.solidity != "air":
+				return false
+			# Must be adjacent to at least one solid cell (wall face)
+			for adj: Vector3i in VoxelGrid.get_neighbors_3d(to_pos):
+				if _voxel_map.get_cell(adj).solidity == "solid":
+					return true
+			return false
+
+		_:
+			return false
+
+
+## Checks if a stair or ramp feature connects [param from_pos] to
+## [param to_pos] (which must differ by exactly 1 level).
+func _has_stair_connection(from_pos: Vector3i, to_pos: Vector3i) -> bool:
+	var going_up: bool = to_pos.z > from_pos.z
+	var h_delta := Vector2i(to_pos.x - from_pos.x, to_pos.y - from_pos.y)
+
+	# Find the direction suffix for this horizontal movement
+	var suffix := _direction_suffix_for_delta(h_delta)
+	if suffix.is_empty():
+		# Pure vertical movement (no horizontal delta) — check for ladder
+		var from_cell := _voxel_map.get_cell(from_pos)
+		var to_cell := _voxel_map.get_cell(to_pos)
+		return from_cell.feature == "ladder" or to_cell.feature == "ladder"
+
+	var from_cell := _voxel_map.get_cell(from_pos)
+	var to_cell := _voxel_map.get_cell(to_pos)
+
+	if going_up:
+		# From cell has stairs_up_<suffix> or ramp_<suffix>
+		if from_cell.feature == "stairs_up_" + suffix:
+			return true
+		if from_cell.feature == "ramp_" + suffix:
+			return true
+		# To cell has stairs_down_<reverse> (entering from above)
+		var rev := _reverse_direction(suffix)
+		if to_cell.feature == "stairs_down_" + rev:
+			return true
+		if to_cell.feature == "ramp_" + rev:
+			return true
+	else:
+		# Going down: from cell has stairs_down_<suffix>
+		if from_cell.feature == "stairs_down_" + suffix:
+			return true
+		if from_cell.feature == "ramp_" + suffix:
+			return true
+		var rev := _reverse_direction(suffix)
+		if to_cell.feature == "stairs_up_" + rev:
+			return true
+		if to_cell.feature == "ramp_" + rev:
+			return true
+
+	return false
+
+
+## Maps a horizontal delta to its compass direction suffix string.
+func _direction_suffix_for_delta(delta: Vector2i) -> String:
+	for i in VoxelGrid.DIRECTION_OFFSETS.size():
+		if VoxelGrid.DIRECTION_OFFSETS[i] == delta:
+			return VoxelGrid.Direction.keys()[i]
+	return ""
+
+
+## Returns the opposite compass direction.
+func _reverse_direction(dir: String) -> String:
+	const REVERSE := {
+		"N": "S", "NE": "SW", "E": "W", "SE": "NW",
+		"S": "N", "SW": "NE", "W": "E", "NW": "SE",
+	}
+	return REVERSE.get(dir, "")
+
+
+## Reconstructs a path from BFS visited dictionary (3D version).
+func _reconstruct_path_3d(visited: Dictionary, start: Vector3i,
+		goal: Vector3i) -> Array[Vector3i]:
+	var path: Array[Vector3i] = []
+	var current := goal
+	while current != null:
+		path.push_front(current)
+		current = visited.get(current)
+	return path

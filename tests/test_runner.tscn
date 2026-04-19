@@ -107,6 +107,16 @@
 [ext_resource type="Script" path="res://tests/test_loot_auto_distributor.gd" id="101_loot_auto_distributor_tests"]
 [ext_resource type="Script" path="res://tests/test_dungeon_loot_placement.gd" id="102_dungeon_loot_placement_tests"]
 [ext_resource type="Script" path="res://tests/test_party_membership_invariants.gd" id="103_party_membership_invariant_tests"]
+[ext_resource type="Script" path="res://tests/test_voxel_cell.gd" id="104_voxel_cell_tests"]
+[ext_resource type="Script" path="res://tests/test_voxel_map_data.gd" id="105_voxel_map_data_tests"]
+[ext_resource type="Script" path="res://tests/test_voxel_grid.gd" id="106_voxel_grid_tests"]
+[ext_resource type="Script" path="res://tests/test_falling_resolver.gd" id="107_falling_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_voxel_los.gd" id="108_voxel_los_tests"]
+[ext_resource type="Script" path="res://tests/test_campaign_repository_voxel.gd" id="109_campaign_repository_voxel_tests"]
+[ext_resource type="Script" path="res://tests/test_voxel_map_data_json.gd" id="110_voxel_map_data_json_tests"]
+[ext_resource type="Script" path="res://tests/test_voxel_dungeon_integration.gd" id="111_voxel_dungeon_integration_tests"]
+[ext_resource type="Script" path="res://tests/test_visibility_manager.gd" id="112_visibility_manager_tests"]
+[ext_resource type="Script" path="res://tests/test_movement_resolver_3d.gd" id="113_movement_resolver_3d_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -428,3 +438,33 @@ script = ExtResource("102_dungeon_loot_placement_tests")
 
 [node name="PartyMembershipInvariantTests" type="Node" parent="."]
 script = ExtResource("103_party_membership_invariant_tests")
+
+[node name="VoxelCellTests" type="Node" parent="."]
+script = ExtResource("104_voxel_cell_tests")
+
+[node name="VoxelMapDataTests" type="Node" parent="."]
+script = ExtResource("105_voxel_map_data_tests")
+
+[node name="VoxelGridTests" type="Node" parent="."]
+script = ExtResource("106_voxel_grid_tests")
+
+[node name="FallingResolverTests" type="Node" parent="."]
+script = ExtResource("107_falling_resolver_tests")
+
+[node name="VoxelLOSTests" type="Node" parent="."]
+script = ExtResource("108_voxel_los_tests")
+
+[node name="CampaignRepositoryVoxelTests" type="Node" parent="."]
+script = ExtResource("109_campaign_repository_voxel_tests")
+
+[node name="VoxelMapDataJsonTests" type="Node" parent="."]
+script = ExtResource("110_voxel_map_data_json_tests")
+
+[node name="VoxelDungeonIntegrationTests" type="Node" parent="."]
+script = ExtResource("111_voxel_dungeon_integration_tests")
+
+[node name="VisibilityManagerTests" type="Node" parent="."]
+script = ExtResource("112_visibility_manager_tests")
+
+[node name="MovementResolver3DTests" type="Node" parent="."]
+script = ExtResource("113_movement_resolver_3d_tests")

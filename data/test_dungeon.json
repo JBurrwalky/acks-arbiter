@@ -3,487 +3,4508 @@
   "name": "Goblin Warrens",
   "theme": "humanoid_warren",
   "tileset_group": "natural_excavated",
-  "levels": [
+  "entry": {
+    "col": 3,
+    "row": 3,
+    "level": 0
+  },
+  "cells": [
     {
+      "col": 1,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 1,
       "level": 1,
-      "grid_width": 29,
-      "grid_height": 21,
-      "entry_col": 3,
-      "entry_row": 3,
-      "transition_cells": [
-        {"col": 3, "row": 3, "label": "West Entrance"},
-        {"col": 26, "row": 5, "label": "East Passage"}
-      ],
-      "cells": [
-
-        {"col":1,"row":1,"terrain_feature":"wall_stone"},
-        {"col":2,"row":1,"terrain_feature":"wall_stone"},
-        {"col":3,"row":1,"terrain_feature":"wall_stone"},
-        {"col":4,"row":1,"terrain_feature":"wall_stone"},
-        {"col":5,"row":1,"terrain_feature":"wall_stone"},
-        {"col":6,"row":1,"terrain_feature":"wall_stone"},
-        {"col":7,"row":1,"terrain_feature":"wall_stone"},
-
-        {"col":1,"row":2,"terrain_feature":"wall_stone"},
-        {"col":2,"row":2,"terrain_feature":"open","surface_type":"stone"},
-        {"col":3,"row":2,"terrain_feature":"open","surface_type":"stone"},
-        {"col":4,"row":2,"terrain_feature":"open","surface_type":"stone"},
-        {"col":5,"row":2,"terrain_feature":"open","surface_type":"stone"},
-        {"col":6,"row":2,"terrain_feature":"open","surface_type":"stone"},
-        {"col":7,"row":2,"terrain_feature":"wall_stone"},
-
-        {"col":1,"row":3,"terrain_feature":"wall_stone"},
-        {"col":2,"row":3,"terrain_feature":"open","surface_type":"stone"},
-        {"col":3,"row":3,"terrain_feature":"open","surface_type":"stone"},
-        {"col":4,"row":3,"terrain_feature":"open","surface_type":"stone"},
-        {"col":5,"row":3,"terrain_feature":"open","surface_type":"stone"},
-        {"col":6,"row":3,"terrain_feature":"open","surface_type":"stone"},
-        {"col":7,"row":3,"terrain_feature":"wall_stone"},
-
-        {"col":1,"row":4,"terrain_feature":"wall_stone"},
-        {"col":2,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":3,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":4,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":5,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":6,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":7,"row":4,"terrain_feature":"open","surface_type":"stone"},
-
-        {"col":1,"row":5,"terrain_feature":"wall_stone"},
-        {"col":2,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":3,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":4,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":5,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":6,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":7,"row":5,"terrain_feature":"open","surface_type":"stone"},
-
-        {"col":1,"row":6,"terrain_feature":"wall_stone"},
-        {"col":2,"row":6,"terrain_feature":"open","surface_type":"stone"},
-        {"col":3,"row":6,"terrain_feature":"open","surface_type":"stone"},
-        {"col":4,"row":6,"terrain_feature":"open","surface_type":"stone"},
-        {"col":5,"row":6,"terrain_feature":"open","surface_type":"stone"},
-        {"col":6,"row":6,"terrain_feature":"open","surface_type":"stone"},
-        {"col":7,"row":6,"terrain_feature":"wall_stone"},
-
-        {"col":1,"row":7,"terrain_feature":"wall_stone"},
-        {"col":2,"row":7,"terrain_feature":"wall_stone"},
-        {"col":3,"row":7,"terrain_feature":"wall_stone"},
-        {"col":4,"row":7,"terrain_feature":"door","door_type":"unlocked","door_state":"closed"},
-        {"col":5,"row":7,"terrain_feature":"wall_stone"},
-        {"col":6,"row":7,"terrain_feature":"wall_stone"},
-        {"col":7,"row":7,"terrain_feature":"wall_stone"},
-
-        {"col":8,"row":3,"terrain_feature":"wall_stone"},
-        {"col":9,"row":3,"terrain_feature":"wall_stone"},
-        {"col":10,"row":3,"terrain_feature":"wall_stone"},
-        {"col":11,"row":3,"terrain_feature":"wall_stone"},
-        {"col":12,"row":3,"terrain_feature":"wall_stone"},
-        {"col":8,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":9,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":10,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":11,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":12,"row":4,"terrain_feature":"door","door_type":"unlocked","door_state":"open"},
-        {"col":8,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":9,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":10,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":11,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":12,"row":5,"terrain_feature":"wall_stone"},
-        {"col":8,"row":6,"terrain_feature":"wall_stone"},
-        {"col":9,"row":6,"terrain_feature":"wall_stone"},
-        {"col":10,"row":6,"terrain_feature":"wall_stone"},
-        {"col":11,"row":6,"terrain_feature":"wall_stone"},
-        {"col":12,"row":6,"terrain_feature":"wall_stone"},
-
-        {"col":13,"row":1,"terrain_feature":"wall_stone"},
-        {"col":14,"row":1,"terrain_feature":"wall_stone"},
-        {"col":15,"row":1,"terrain_feature":"wall_stone"},
-        {"col":16,"row":1,"terrain_feature":"wall_stone"},
-        {"col":17,"row":1,"terrain_feature":"wall_stone"},
-        {"col":18,"row":1,"terrain_feature":"wall_stone"},
-        {"col":19,"row":1,"terrain_feature":"wall_stone"},
-        {"col":20,"row":1,"terrain_feature":"wall_stone"},
-
-        {"col":13,"row":2,"terrain_feature":"wall_stone"},
-        {"col":14,"row":2,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":2,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":2,"terrain_feature":"open","surface_type":"stone"},
-        {"col":17,"row":2,"terrain_feature":"open","surface_type":"stone"},
-        {"col":18,"row":2,"terrain_feature":"open","surface_type":"stone"},
-        {"col":19,"row":2,"terrain_feature":"open","surface_type":"stone"},
-        {"col":20,"row":2,"terrain_feature":"wall_stone"},
-
-        {"col":13,"row":3,"terrain_feature":"wall_stone"},
-        {"col":14,"row":3,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":3,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":3,"terrain_feature":"open","surface_type":"stone"},
-        {"col":17,"row":3,"terrain_feature":"open","surface_type":"stone"},
-        {"col":18,"row":3,"terrain_feature":"open","surface_type":"stone"},
-        {"col":19,"row":3,"terrain_feature":"open","surface_type":"stone"},
-        {"col":20,"row":3,"terrain_feature":"door_locked","door_type":"locked","door_state":"locked"},
-
-        {"col":13,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":14,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":17,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":18,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":19,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":20,"row":4,"terrain_feature":"wall_stone"},
-
-        {"col":13,"row":5,"terrain_feature":"wall_stone"},
-        {"col":14,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":17,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":18,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":19,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":20,"row":5,"terrain_feature":"wall_stone"},
-
-        {"col":13,"row":6,"terrain_feature":"wall_stone"},
-        {"col":14,"row":6,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":6,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":6,"terrain_feature":"open","surface_type":"stone"},
-        {"col":17,"row":6,"terrain_feature":"open","surface_type":"stone"},
-        {"col":18,"row":6,"terrain_feature":"open","surface_type":"stone"},
-        {"col":19,"row":6,"terrain_feature":"open","surface_type":"stone"},
-        {"col":20,"row":6,"terrain_feature":"wall_stone"},
-
-        {"col":13,"row":7,"terrain_feature":"wall_stone"},
-        {"col":14,"row":7,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":7,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":7,"terrain_feature":"open","surface_type":"stone"},
-        {"col":17,"row":7,"terrain_feature":"open","surface_type":"stone"},
-        {"col":18,"row":7,"terrain_feature":"open","surface_type":"stone"},
-        {"col":19,"row":7,"terrain_feature":"open","surface_type":"stone"},
-        {"col":20,"row":7,"terrain_feature":"wall_stone"},
-
-        {"col":13,"row":8,"terrain_feature":"wall_stone"},
-        {"col":14,"row":8,"terrain_feature":"wall_stone"},
-        {"col":15,"row":8,"terrain_feature":"wall_stone"},
-        {"col":16,"row":8,"terrain_feature":"wall_stone"},
-        {"col":17,"row":8,"terrain_feature":"wall_stone"},
-        {"col":18,"row":8,"terrain_feature":"wall_stone"},
-        {"col":19,"row":8,"terrain_feature":"wall_stone"},
-        {"col":20,"row":8,"terrain_feature":"wall_stone"},
-
-        {"col":21,"row":2,"terrain_feature":"wall_stone"},
-        {"col":22,"row":2,"terrain_feature":"wall_stone"},
-        {"col":21,"row":3,"terrain_feature":"open","surface_type":"stone"},
-        {"col":22,"row":3,"terrain_feature":"door","door_type":"unlocked","door_state":"closed"},
-        {"col":21,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":22,"row":4,"terrain_feature":"wall_stone"},
-        {"col":21,"row":5,"terrain_feature":"wall_stone"},
-        {"col":22,"row":5,"terrain_feature":"wall_stone"},
-
-        {"col":23,"row":1,"terrain_feature":"wall_stone"},
-        {"col":24,"row":1,"terrain_feature":"wall_stone"},
-        {"col":25,"row":1,"terrain_feature":"wall_stone"},
-        {"col":26,"row":1,"terrain_feature":"wall_stone"},
-        {"col":27,"row":1,"terrain_feature":"wall_stone"},
-
-        {"col":23,"row":2,"terrain_feature":"wall_stone"},
-        {"col":24,"row":2,"terrain_feature":"open","surface_type":"stone"},
-        {"col":25,"row":2,"terrain_feature":"open","surface_type":"stone"},
-        {"col":26,"row":2,"terrain_feature":"open","surface_type":"stone"},
-        {"col":27,"row":2,"terrain_feature":"wall_stone"},
-
-        {"col":23,"row":3,"terrain_feature":"open","surface_type":"stone"},
-        {"col":24,"row":3,"terrain_feature":"open","surface_type":"stone"},
-        {"col":25,"row":3,"terrain_feature":"open","surface_type":"stone"},
-        {"col":26,"row":3,"terrain_feature":"open","surface_type":"stone"},
-        {"col":27,"row":3,"terrain_feature":"door_secret","door_type":"secret","door_state":"closed","door_detected":false},
-
-        {"col":23,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":24,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":25,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":26,"row":4,"terrain_feature":"open","surface_type":"stone"},
-        {"col":27,"row":4,"terrain_feature":"wall_stone"},
-
-        {"col":23,"row":5,"terrain_feature":"wall_stone"},
-        {"col":24,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":25,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":26,"row":5,"terrain_feature":"open","surface_type":"stone"},
-        {"col":27,"row":5,"terrain_feature":"wall_stone"},
-
-        {"col":23,"row":6,"terrain_feature":"wall_stone"},
-        {"col":24,"row":6,"terrain_feature":"open","surface_type":"stone"},
-        {"col":25,"row":6,"terrain_feature":"open","surface_type":"stone"},
-        {"col":26,"row":6,"terrain_feature":"open","surface_type":"stone"},
-        {"col":27,"row":6,"terrain_feature":"wall_stone"},
-
-        {"col":23,"row":7,"terrain_feature":"wall_stone"},
-        {"col":24,"row":7,"terrain_feature":"open","surface_type":"stone"},
-        {"col":25,"row":7,"terrain_feature":"open","surface_type":"stone"},
-        {"col":26,"row":7,"terrain_feature":"open","surface_type":"stone"},
-        {"col":27,"row":7,"terrain_feature":"wall_stone"},
-
-        {"col":23,"row":8,"terrain_feature":"wall_stone"},
-        {"col":24,"row":8,"terrain_feature":"wall_stone"},
-        {"col":25,"row":8,"terrain_feature":"stairs_down","surface_type":"stone"},
-        {"col":26,"row":8,"terrain_feature":"wall_stone"},
-        {"col":27,"row":8,"terrain_feature":"wall_stone"},
-
-        {"col":25,"row":9,"terrain_feature":"wall_stone"},
-
-        {"col":3,"row":8,"terrain_feature":"wall_stone"},
-        {"col":4,"row":8,"terrain_feature":"open","surface_type":"stone"},
-        {"col":5,"row":8,"terrain_feature":"open","surface_type":"stone"},
-        {"col":6,"row":8,"terrain_feature":"wall_stone"},
-
-        {"col":3,"row":9,"terrain_feature":"wall_stone"},
-        {"col":4,"row":9,"terrain_feature":"open","surface_type":"stone"},
-        {"col":5,"row":9,"terrain_feature":"open","surface_type":"stone"},
-        {"col":6,"row":9,"terrain_feature":"wall_stone"},
-
-        {"col":3,"row":10,"terrain_feature":"wall_stone"},
-        {"col":4,"row":10,"terrain_feature":"open","surface_type":"stone"},
-        {"col":5,"row":10,"terrain_feature":"open","surface_type":"stone"},
-        {"col":6,"row":10,"terrain_feature":"wall_stone"},
-
-        {"col":3,"row":11,"terrain_feature":"wall_stone"},
-        {"col":4,"row":11,"terrain_feature":"open","surface_type":"stone"},
-        {"col":5,"row":11,"terrain_feature":"open","surface_type":"stone"},
-        {"col":6,"row":11,"terrain_feature":"wall_stone"},
-
-        {"col":1,"row":12,"terrain_feature":"wall_stone"},
-        {"col":2,"row":12,"terrain_feature":"wall_stone"},
-        {"col":3,"row":12,"terrain_feature":"wall_stone"},
-        {"col":4,"row":12,"terrain_feature":"door","door_type":"arch","door_state":"open"},
-        {"col":5,"row":12,"terrain_feature":"wall_stone"},
-        {"col":6,"row":12,"terrain_feature":"wall_stone"},
-
-        {"col":1,"row":13,"terrain_feature":"wall_stone"},
-        {"col":2,"row":13,"terrain_feature":"open","surface_type":"stone"},
-        {"col":3,"row":13,"terrain_feature":"open","surface_type":"stone"},
-        {"col":4,"row":13,"terrain_feature":"open","surface_type":"stone"},
-        {"col":5,"row":13,"terrain_feature":"open","surface_type":"stone"},
-        {"col":6,"row":13,"terrain_feature":"wall_stone"},
-
-        {"col":1,"row":14,"terrain_feature":"wall_stone"},
-        {"col":2,"row":14,"terrain_feature":"open","surface_type":"stone"},
-        {"col":3,"row":14,"terrain_feature":"open","surface_type":"stone"},
-        {"col":4,"row":14,"terrain_feature":"open","surface_type":"stone"},
-        {"col":5,"row":14,"terrain_feature":"open","surface_type":"stone"},
-        {"col":6,"row":14,"terrain_feature":"wall_stone"},
-
-        {"col":1,"row":15,"terrain_feature":"wall_stone"},
-        {"col":2,"row":15,"terrain_feature":"open","surface_type":"stone"},
-        {"col":3,"row":15,"terrain_feature":"open","surface_type":"stone"},
-        {"col":4,"row":15,"terrain_feature":"open","surface_type":"stone"},
-        {"col":5,"row":15,"terrain_feature":"lever","surface_type":"stone","lever_target_col":6,"lever_target_row":15},
-        {"col":6,"row":15,"terrain_feature":"portcullis","door_type":"portcullis","door_state":"closed"},
-
-        {"col":1,"row":16,"terrain_feature":"wall_stone"},
-        {"col":2,"row":16,"terrain_feature":"open","surface_type":"stone"},
-        {"col":3,"row":16,"terrain_feature":"open","surface_type":"stone"},
-        {"col":4,"row":16,"terrain_feature":"open","surface_type":"stone"},
-        {"col":5,"row":16,"terrain_feature":"open","surface_type":"stone"},
-        {"col":6,"row":16,"terrain_feature":"wall_stone"},
-
-        {"col":1,"row":17,"terrain_feature":"wall_stone"},
-        {"col":2,"row":17,"terrain_feature":"open","surface_type":"stone"},
-        {"col":3,"row":17,"terrain_feature":"open","surface_type":"stone"},
-        {"col":4,"row":17,"terrain_feature":"open","surface_type":"stone"},
-        {"col":5,"row":17,"terrain_feature":"open","surface_type":"stone"},
-        {"col":6,"row":17,"terrain_feature":"wall_stone"},
-
-        {"col":1,"row":18,"terrain_feature":"wall_stone"},
-        {"col":2,"row":18,"terrain_feature":"wall_stone"},
-        {"col":3,"row":18,"terrain_feature":"wall_stone"},
-        {"col":4,"row":18,"terrain_feature":"wall_stone"},
-        {"col":5,"row":18,"terrain_feature":"wall_stone"},
-        {"col":6,"row":18,"terrain_feature":"wall_stone"},
-
-        {"col":7,"row":14,"terrain_feature":"wall_stone"},
-        {"col":8,"row":14,"terrain_feature":"wall_stone"},
-        {"col":9,"row":14,"terrain_feature":"wall_stone"},
-        {"col":10,"row":14,"terrain_feature":"wall_stone"},
-        {"col":11,"row":14,"terrain_feature":"wall_stone"},
-        {"col":12,"row":14,"terrain_feature":"wall_stone"},
-
-        {"col":7,"row":15,"terrain_feature":"open","surface_type":"stone"},
-        {"col":8,"row":15,"terrain_feature":"open","surface_type":"stone"},
-        {"col":9,"row":15,"terrain_feature":"open","surface_type":"stone"},
-        {"col":10,"row":15,"terrain_feature":"open","surface_type":"stone"},
-        {"col":11,"row":15,"terrain_feature":"open","surface_type":"stone"},
-        {"col":12,"row":15,"terrain_feature":"door","door_type":"unlocked","door_state":"stuck"},
-
-        {"col":7,"row":16,"terrain_feature":"open","surface_type":"stone"},
-        {"col":8,"row":16,"terrain_feature":"open","surface_type":"stone"},
-        {"col":9,"row":16,"terrain_feature":"open","surface_type":"stone"},
-        {"col":10,"row":16,"terrain_feature":"open","surface_type":"stone"},
-        {"col":11,"row":16,"terrain_feature":"open","surface_type":"stone"},
-        {"col":12,"row":16,"terrain_feature":"wall_stone"},
-
-        {"col":7,"row":17,"terrain_feature":"wall_stone"},
-        {"col":8,"row":17,"terrain_feature":"wall_stone"},
-        {"col":9,"row":17,"terrain_feature":"wall_stone"},
-        {"col":10,"row":17,"terrain_feature":"wall_stone"},
-        {"col":11,"row":17,"terrain_feature":"wall_stone"},
-        {"col":12,"row":17,"terrain_feature":"wall_stone"},
-
-        {"col":13,"row":12,"terrain_feature":"wall_stone"},
-        {"col":14,"row":12,"terrain_feature":"wall_stone"},
-        {"col":15,"row":12,"terrain_feature":"wall_stone"},
-        {"col":16,"row":12,"terrain_feature":"wall_stone"},
-        {"col":17,"row":12,"terrain_feature":"wall_stone"},
-        {"col":18,"row":12,"terrain_feature":"wall_stone"},
-
-        {"col":13,"row":13,"terrain_feature":"wall_stone"},
-        {"col":14,"row":13,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":13,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":13,"terrain_feature":"open","surface_type":"stone"},
-        {"col":17,"row":13,"terrain_feature":"open","surface_type":"stone"},
-        {"col":18,"row":13,"terrain_feature":"wall_stone"},
-
-        {"col":13,"row":14,"terrain_feature":"wall_stone"},
-        {"col":14,"row":14,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":14,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":14,"terrain_feature":"open","surface_type":"stone"},
-        {"col":17,"row":14,"terrain_feature":"open","surface_type":"stone"},
-        {"col":18,"row":14,"terrain_feature":"wall_stone"},
-
-        {"col":13,"row":15,"terrain_feature":"open","surface_type":"stone"},
-        {"col":14,"row":15,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":15,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":15,"terrain_feature":"open","surface_type":"stone"},
-        {"col":17,"row":15,"terrain_feature":"open","surface_type":"stone"},
-        {"col":18,"row":15,"terrain_feature":"wall_stone"},
-
-        {"col":13,"row":16,"terrain_feature":"wall_stone"},
-        {"col":14,"row":16,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":16,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":16,"terrain_feature":"open","surface_type":"stone"},
-        {"col":17,"row":16,"terrain_feature":"open","surface_type":"stone"},
-        {"col":18,"row":16,"terrain_feature":"wall_stone"},
-
-        {"col":13,"row":17,"terrain_feature":"wall_stone"},
-        {"col":14,"row":17,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":17,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":17,"terrain_feature":"open","surface_type":"stone"},
-        {"col":17,"row":17,"terrain_feature":"open","surface_type":"stone"},
-        {"col":18,"row":17,"terrain_feature":"wall_stone"},
-
-        {"col":13,"row":18,"terrain_feature":"wall_stone"},
-        {"col":14,"row":18,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":18,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":18,"terrain_feature":"open","surface_type":"stone"},
-        {"col":17,"row":18,"terrain_feature":"open","surface_type":"stone"},
-        {"col":18,"row":18,"terrain_feature":"wall_stone"},
-
-        {"col":13,"row":19,"terrain_feature":"wall_stone"},
-        {"col":14,"row":19,"terrain_feature":"wall_stone"},
-        {"col":15,"row":19,"terrain_feature":"wall_stone"},
-        {"col":16,"row":19,"terrain_feature":"wall_stone"},
-        {"col":17,"row":19,"terrain_feature":"wall_stone"},
-        {"col":18,"row":19,"terrain_feature":"wall_stone"}
-      ]
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
     },
     {
+      "col": 2,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 3,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 3,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 4,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 4,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 5,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 5,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 6,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 6,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 7,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 7,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 2,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 2,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 2,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 3,
+      "row": 2,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 4,
+      "row": 2,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 5,
+      "row": 2,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 6,
+      "row": 2,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 7,
+      "row": 2,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 7,
+      "row": 2,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 3,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 3,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 3,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 4,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 5,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 6,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 7,
+      "row": 3,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 7,
+      "row": 3,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 4,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 4,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 3,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 4,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 5,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 6,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 7,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 1,
+      "row": 5,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 5,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 3,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 4,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 5,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 6,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 7,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 1,
+      "row": 6,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 6,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 6,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 3,
+      "row": 6,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 4,
+      "row": 6,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 5,
+      "row": 6,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 6,
+      "row": 6,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 7,
+      "row": 6,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 7,
+      "row": 6,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 7,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 7,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 7,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 7,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 3,
+      "row": 7,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 3,
+      "row": 7,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 4,
+      "row": 7,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone",
+      "door_state": "closed",
+      "door_type": "unlocked"
+    },
+    {
+      "col": 5,
+      "row": 7,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 5,
+      "row": 7,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 6,
+      "row": 7,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 6,
+      "row": 7,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 7,
+      "row": 7,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 7,
+      "row": 7,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 8,
+      "row": 3,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 8,
+      "row": 3,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 3,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 3,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 3,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 3,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 11,
+      "row": 3,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 11,
+      "row": 3,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 12,
+      "row": 3,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 12,
+      "row": 3,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 8,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 9,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 10,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 11,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 12,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone",
+      "door_state": "open",
+      "door_type": "unlocked"
+    },
+    {
+      "col": 8,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 9,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 10,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 11,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 12,
+      "row": 5,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 12,
+      "row": 5,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 8,
+      "row": 6,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 8,
+      "row": 6,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 6,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 6,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 6,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 6,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 11,
+      "row": 6,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 11,
+      "row": 6,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 12,
+      "row": 6,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 12,
+      "row": 6,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 15,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 15,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 17,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 17,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 18,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 18,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 19,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 19,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 20,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 20,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 2,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 2,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 2,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 2,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 2,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 17,
+      "row": 2,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 18,
+      "row": 2,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 19,
+      "row": 2,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 20,
+      "row": 2,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 20,
+      "row": 2,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 3,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 3,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 17,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 18,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 19,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 20,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone",
+      "door_state": "locked",
+      "door_type": "locked"
+    },
+    {
+      "col": 13,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 14,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 17,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 18,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 19,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 20,
+      "row": 4,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 20,
+      "row": 4,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 5,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 5,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 17,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 18,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 19,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 20,
+      "row": 5,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 20,
+      "row": 5,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 6,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 6,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 6,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 6,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 6,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 17,
+      "row": 6,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 18,
+      "row": 6,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 19,
+      "row": 6,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 20,
+      "row": 6,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 20,
+      "row": 6,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 7,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 7,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 7,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 7,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 7,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 17,
+      "row": 7,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 18,
+      "row": 7,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 19,
+      "row": 7,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 20,
+      "row": 7,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 20,
+      "row": 7,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 8,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 8,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 8,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 8,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 15,
+      "row": 8,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 15,
+      "row": 8,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 8,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 8,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 17,
+      "row": 8,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 17,
+      "row": 8,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 18,
+      "row": 8,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 18,
+      "row": 8,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 19,
+      "row": 8,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 19,
+      "row": 8,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 20,
+      "row": 8,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 20,
+      "row": 8,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 21,
+      "row": 2,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 21,
+      "row": 2,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 22,
+      "row": 2,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 22,
+      "row": 2,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 21,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 22,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone",
+      "door_state": "closed",
+      "door_type": "unlocked"
+    },
+    {
+      "col": 21,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 22,
+      "row": 4,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 22,
+      "row": 4,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 21,
+      "row": 5,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 21,
+      "row": 5,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 22,
+      "row": 5,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 22,
+      "row": 5,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 23,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 23,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 24,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 24,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 25,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 25,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 26,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 26,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 27,
+      "row": 1,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 27,
+      "row": 1,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 23,
+      "row": 2,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 23,
+      "row": 2,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 24,
+      "row": 2,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 25,
+      "row": 2,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 26,
+      "row": 2,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 27,
+      "row": 2,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 27,
+      "row": 2,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 23,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 24,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 25,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 26,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 27,
+      "row": 3,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone",
+      "door_state": "closed",
+      "door_type": "secret",
+      "door_detected": false
+    },
+    {
+      "col": 23,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 24,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 25,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 26,
+      "row": 4,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 27,
+      "row": 4,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 27,
+      "row": 4,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 23,
+      "row": 5,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 23,
+      "row": 5,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 24,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 25,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 26,
+      "row": 5,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 27,
+      "row": 5,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 27,
+      "row": 5,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 23,
+      "row": 6,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 23,
+      "row": 6,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 24,
+      "row": 6,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 25,
+      "row": 6,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 26,
+      "row": 6,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 27,
+      "row": 6,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 27,
+      "row": 6,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 23,
+      "row": 7,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 23,
+      "row": 7,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 24,
+      "row": 7,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 25,
+      "row": 7,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 26,
+      "row": 7,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 27,
+      "row": 7,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 27,
+      "row": 7,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 23,
+      "row": 8,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 23,
+      "row": 8,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 24,
+      "row": 8,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 24,
+      "row": 8,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 25,
+      "row": 8,
+      "level": 0,
+      "solidity": "air",
+      "feature": "stairs_up_SW",
+      "floor_type": "stone"
+    },
+    {
+      "col": 26,
+      "row": 8,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 26,
+      "row": 8,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 27,
+      "row": 8,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 27,
+      "row": 8,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 25,
+      "row": 9,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 25,
+      "row": 9,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 3,
+      "row": 8,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 3,
+      "row": 8,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 4,
+      "row": 8,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 5,
+      "row": 8,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 6,
+      "row": 8,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 6,
+      "row": 8,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 3,
+      "row": 9,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 3,
+      "row": 9,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 4,
+      "row": 9,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 5,
+      "row": 9,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 6,
+      "row": 9,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 6,
+      "row": 9,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 3,
+      "row": 10,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 3,
+      "row": 10,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 4,
+      "row": 10,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 5,
+      "row": 10,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 6,
+      "row": 10,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 6,
+      "row": 10,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 3,
+      "row": 11,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 3,
+      "row": 11,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 4,
+      "row": 11,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 5,
+      "row": 11,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 6,
+      "row": 11,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 6,
+      "row": 11,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 12,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 12,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 12,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 12,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 3,
+      "row": 12,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 3,
+      "row": 12,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 4,
+      "row": 12,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone",
+      "door_state": "open",
+      "door_type": "arch"
+    },
+    {
+      "col": 5,
+      "row": 12,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 5,
+      "row": 12,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 6,
+      "row": 12,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 6,
+      "row": 12,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 13,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 13,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 13,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 3,
+      "row": 13,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 4,
+      "row": 13,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 5,
+      "row": 13,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 6,
+      "row": 13,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 6,
+      "row": 13,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 14,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 14,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 14,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 3,
+      "row": 14,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 4,
+      "row": 14,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 5,
+      "row": 14,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 6,
+      "row": 14,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 6,
+      "row": 14,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 15,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 15,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 15,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 3,
+      "row": 15,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 4,
+      "row": 15,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 5,
+      "row": 15,
+      "level": 0,
+      "solidity": "air",
+      "feature": "lever",
+      "floor_type": "stone"
+    },
+    {
+      "col": 6,
+      "row": 15,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone",
+      "door_state": "closed",
+      "door_type": "portcullis"
+    },
+    {
+      "col": 1,
+      "row": 16,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 16,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 16,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 3,
+      "row": 16,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 4,
+      "row": 16,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 5,
+      "row": 16,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 6,
+      "row": 16,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 6,
+      "row": 16,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 17,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 17,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 17,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 3,
+      "row": 17,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 4,
+      "row": 17,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 5,
+      "row": 17,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 6,
+      "row": 17,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 6,
+      "row": 17,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 18,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 1,
+      "row": 18,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 18,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 2,
+      "row": 18,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 3,
+      "row": 18,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 3,
+      "row": 18,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 4,
+      "row": 18,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 4,
+      "row": 18,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 5,
+      "row": 18,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 5,
+      "row": 18,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 6,
+      "row": 18,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 6,
+      "row": 18,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 7,
+      "row": 14,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 7,
+      "row": 14,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 8,
+      "row": 14,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 8,
+      "row": 14,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 14,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 14,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 14,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 14,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 11,
+      "row": 14,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 11,
+      "row": 14,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 12,
+      "row": 14,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 12,
+      "row": 14,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 7,
+      "row": 15,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 8,
+      "row": 15,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 9,
+      "row": 15,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 10,
+      "row": 15,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 11,
+      "row": 15,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 12,
+      "row": 15,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone",
+      "door_state": "stuck",
+      "door_type": "unlocked"
+    },
+    {
+      "col": 7,
+      "row": 16,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 8,
+      "row": 16,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 9,
+      "row": 16,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 10,
+      "row": 16,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 11,
+      "row": 16,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 12,
+      "row": 16,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 12,
+      "row": 16,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 7,
+      "row": 17,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 7,
+      "row": 17,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 8,
+      "row": 17,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 8,
+      "row": 17,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 17,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 17,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 17,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 17,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 11,
+      "row": 17,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 11,
+      "row": 17,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 12,
+      "row": 17,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 12,
+      "row": 17,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 12,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 12,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 12,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 12,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 15,
+      "row": 12,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 15,
+      "row": 12,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 12,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 12,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 17,
+      "row": 12,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 17,
+      "row": 12,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 18,
+      "row": 12,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 18,
+      "row": 12,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 13,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 13,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 13,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 13,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 13,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 17,
+      "row": 13,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 18,
+      "row": 13,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 18,
+      "row": 13,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 14,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 14,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 14,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 14,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 14,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 17,
+      "row": 14,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 18,
+      "row": 14,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 18,
+      "row": 14,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 15,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 14,
+      "row": 15,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 15,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 15,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 17,
+      "row": 15,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 18,
+      "row": 15,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 18,
+      "row": 15,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 16,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 16,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 16,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 16,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 16,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 17,
+      "row": 16,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 18,
+      "row": 16,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 18,
+      "row": 16,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 17,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 17,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 17,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 17,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 17,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 17,
+      "row": 17,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 18,
+      "row": 17,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 18,
+      "row": 17,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 18,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 18,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 18,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 18,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 18,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 17,
+      "row": 18,
+      "level": 0,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 18,
+      "row": 18,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 18,
+      "row": 18,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 19,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 19,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 19,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 19,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 15,
+      "row": 19,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 15,
+      "row": 19,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 19,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 19,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 17,
+      "row": 19,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 17,
+      "row": 19,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 18,
+      "row": 19,
+      "level": 0,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 18,
+      "row": 19,
+      "level": 1,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 7,
       "level": 2,
-      "grid_width": 18,
-      "grid_height": 17,
-      "entry_col": 13,
-      "entry_row": 11,
-      "cells": [
-        {"col":9,"row":7,"terrain_feature":"wall_stone"},
-        {"col":10,"row":7,"terrain_feature":"wall_stone"},
-        {"col":11,"row":7,"terrain_feature":"wall_stone"},
-        {"col":12,"row":7,"terrain_feature":"wall_stone"},
-        {"col":13,"row":7,"terrain_feature":"wall_stone"},
-        {"col":14,"row":7,"terrain_feature":"wall_stone"},
-        {"col":15,"row":7,"terrain_feature":"wall_stone"},
-        {"col":16,"row":7,"terrain_feature":"wall_stone"},
-
-        {"col":9,"row":8,"terrain_feature":"wall_stone"},
-        {"col":10,"row":8,"terrain_feature":"open","surface_type":"stone"},
-        {"col":11,"row":8,"terrain_feature":"open","surface_type":"stone"},
-        {"col":12,"row":8,"terrain_feature":"open","surface_type":"stone"},
-        {"col":13,"row":8,"terrain_feature":"open","surface_type":"stone"},
-        {"col":14,"row":8,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":8,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":8,"terrain_feature":"wall_stone"},
-
-        {"col":9,"row":9,"terrain_feature":"wall_stone"},
-        {"col":10,"row":9,"terrain_feature":"open","surface_type":"stone"},
-        {"col":11,"row":9,"terrain_feature":"open","surface_type":"stone"},
-        {"col":12,"row":9,"terrain_feature":"open","surface_type":"stone"},
-        {"col":13,"row":9,"terrain_feature":"open","surface_type":"stone"},
-        {"col":14,"row":9,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":9,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":9,"terrain_feature":"wall_stone"},
-
-        {"col":9,"row":10,"terrain_feature":"wall_stone"},
-        {"col":10,"row":10,"terrain_feature":"open","surface_type":"stone"},
-        {"col":11,"row":10,"terrain_feature":"open","surface_type":"stone"},
-        {"col":12,"row":10,"terrain_feature":"open","surface_type":"stone"},
-        {"col":13,"row":10,"terrain_feature":"open","surface_type":"stone"},
-        {"col":14,"row":10,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":10,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":10,"terrain_feature":"wall_stone"},
-
-        {"col":9,"row":11,"terrain_feature":"wall_stone"},
-        {"col":10,"row":11,"terrain_feature":"open","surface_type":"stone"},
-        {"col":11,"row":11,"terrain_feature":"open","surface_type":"stone"},
-        {"col":12,"row":11,"terrain_feature":"open","surface_type":"stone"},
-        {"col":13,"row":11,"terrain_feature":"stairs_up","surface_type":"stone"},
-        {"col":14,"row":11,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":11,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":11,"terrain_feature":"wall_stone"},
-
-        {"col":9,"row":12,"terrain_feature":"wall_stone"},
-        {"col":10,"row":12,"terrain_feature":"open","surface_type":"stone"},
-        {"col":11,"row":12,"terrain_feature":"open","surface_type":"stone"},
-        {"col":12,"row":12,"terrain_feature":"open","surface_type":"stone"},
-        {"col":13,"row":12,"terrain_feature":"open","surface_type":"stone"},
-        {"col":14,"row":12,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":12,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":12,"terrain_feature":"wall_stone"},
-
-        {"col":9,"row":13,"terrain_feature":"wall_stone"},
-        {"col":10,"row":13,"terrain_feature":"open","surface_type":"stone"},
-        {"col":11,"row":13,"terrain_feature":"open","surface_type":"stone"},
-        {"col":12,"row":13,"terrain_feature":"open","surface_type":"stone"},
-        {"col":13,"row":13,"terrain_feature":"open","surface_type":"stone"},
-        {"col":14,"row":13,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":13,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":13,"terrain_feature":"wall_stone"},
-
-        {"col":9,"row":14,"terrain_feature":"wall_stone"},
-        {"col":10,"row":14,"terrain_feature":"open","surface_type":"stone"},
-        {"col":11,"row":14,"terrain_feature":"open","surface_type":"stone"},
-        {"col":12,"row":14,"terrain_feature":"open","surface_type":"stone"},
-        {"col":13,"row":14,"terrain_feature":"open","surface_type":"stone"},
-        {"col":14,"row":14,"terrain_feature":"open","surface_type":"stone"},
-        {"col":15,"row":14,"terrain_feature":"open","surface_type":"stone"},
-        {"col":16,"row":14,"terrain_feature":"wall_stone"},
-
-        {"col":9,"row":15,"terrain_feature":"wall_stone"},
-        {"col":10,"row":15,"terrain_feature":"wall_stone"},
-        {"col":11,"row":15,"terrain_feature":"wall_stone"},
-        {"col":12,"row":15,"terrain_feature":"wall_stone"},
-        {"col":13,"row":15,"terrain_feature":"wall_stone"},
-        {"col":14,"row":15,"terrain_feature":"wall_stone"},
-        {"col":15,"row":15,"terrain_feature":"wall_stone"},
-        {"col":16,"row":15,"terrain_feature":"wall_stone"}
-      ]
-    }
-  ],
-  "stairs": [
-    {
-      "from_level": 1,
-      "from_col": 25,
-      "from_row": 8,
-      "to_level": 2,
-      "to_col": 13,
-      "to_row": 11
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
     },
     {
-      "from_level": 2,
-      "from_col": 13,
-      "from_row": 11,
-      "to_level": 1,
-      "to_col": 25,
-      "to_row": 8
+      "col": 9,
+      "row": 7,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 7,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 7,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 11,
+      "row": 7,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 11,
+      "row": 7,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 12,
+      "row": 7,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 12,
+      "row": 7,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 7,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 7,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 7,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 7,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 15,
+      "row": 7,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 15,
+      "row": 7,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 7,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 7,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 8,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 8,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 8,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 11,
+      "row": 8,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 12,
+      "row": 8,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 13,
+      "row": 8,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 14,
+      "row": 8,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 8,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 8,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 8,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 9,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 9,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 9,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 11,
+      "row": 9,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 12,
+      "row": 9,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 13,
+      "row": 9,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 14,
+      "row": 9,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 9,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 9,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 9,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 10,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 10,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 10,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 11,
+      "row": 10,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 12,
+      "row": 10,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 13,
+      "row": 10,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 14,
+      "row": 10,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 10,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 10,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 10,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 11,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 11,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 11,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 11,
+      "row": 11,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 12,
+      "row": 11,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 13,
+      "row": 11,
+      "level": 2,
+      "solidity": "air",
+      "feature": "stairs_down_NE",
+      "floor_type": "stone"
+    },
+    {
+      "col": 14,
+      "row": 11,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 11,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 11,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 11,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 12,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 12,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 12,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 11,
+      "row": 12,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 12,
+      "row": 12,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 13,
+      "row": 12,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 14,
+      "row": 12,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 12,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 12,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 12,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 13,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 13,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 13,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 11,
+      "row": 13,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 12,
+      "row": 13,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 13,
+      "row": 13,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 14,
+      "row": 13,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 13,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 13,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 13,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 14,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 14,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 14,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 11,
+      "row": 14,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 12,
+      "row": 14,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 13,
+      "row": 14,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 14,
+      "row": 14,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 15,
+      "row": 14,
+      "level": 2,
+      "solidity": "air",
+      "feature": "open",
+      "floor_type": "stone"
+    },
+    {
+      "col": 16,
+      "row": 14,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 14,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 15,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 9,
+      "row": 15,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 15,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 10,
+      "row": 15,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 11,
+      "row": 15,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 11,
+      "row": 15,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 12,
+      "row": 15,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 12,
+      "row": 15,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 15,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 13,
+      "row": 15,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 15,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 14,
+      "row": 15,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 15,
+      "row": 15,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 15,
+      "row": 15,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 15,
+      "level": 2,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
+    },
+    {
+      "col": 16,
+      "row": 15,
+      "level": 3,
+      "solidity": "solid",
+      "feature": "wall_stone",
+      "floor_type": "none"
     }
   ]
 }
