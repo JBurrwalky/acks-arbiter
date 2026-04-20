@@ -590,8 +590,10 @@ func _rebuild_party_tokens() -> void:
 		var hex_r: int = p.get("current_hex_r", 0) if p.get("current_hex_r") != null else 0
 
 		if pid == GameState.party_id:
-			# Position the original token
+			# Position the original token — prefer live map data over DB
 			var coord := Vector2i(hex_q, hex_r)
+			if _map_data != null:
+				coord = _map_data.party_hex
 			var godot_coord := HexMapController.axial_to_godot_map(coord)
 			_party_token.position = _terrain_layer.map_to_local(godot_coord)
 			_style_token(_party_token, pid == active_id)

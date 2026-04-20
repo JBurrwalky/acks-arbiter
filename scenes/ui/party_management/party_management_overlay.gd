@@ -30,6 +30,7 @@ var _party: PartyData = null
 var _available_characters: Array = []  ## characters in campaign not in party
 var _selected_unplaced_id: String = ""  ## character_id selected from unplaced list
 var _split_dialog: CanvasLayer = null   ## modal split party dialog
+var _colocated_parties: Array = []      ## parties at same hex as active party
 
 # ---------------------------------------------------------------------------
 # UI references
@@ -393,10 +394,20 @@ func _refresh_members() -> void:
 	header.add_theme_font_size_override("font_size", 12)
 	_members_vbox.add_child(header)
 
-	var campaign_party_count: int = CampaignRepository.list_parties_for_campaign(
-		GameState.campaign_id).size()
+	# Build co-located party list once for all member rows
+	var all_parties := CampaignRepository.list_parties_for_campaign(GameState.campaign_id)
+	_colocated_parties = []
+	for p in all_parties:
+		if p.id == _party.id:
+			continue
+		if p.current_map_id == _party.current_map_id \
+				and p.current_hex_q == _party.current_hex_q \
+				and p.current_hex_r == _party.current_hex_r:
+			_colocated_parties.append(p)
+
+	var is_solo: bool = _party.character_data.size() <= 1
 	for cd: CharacterData in _party.character_data:
-		var row := _make_member_row(cd, campaign_party_count)
+		var row := _make_member_row(cd, _colocated_parties, is_solo)
 		_members_vbox.add_child(row)
 
 	_members_vbox.add_child(HSeparator.new())
@@ -419,7 +430,8 @@ func _refresh_members() -> void:
 			_members_vbox.add_child(row)
 
 
-func _make_member_row(cd: CharacterData, campaign_party_count: int = 1) -> HBoxContainer:
+func _make_member_row(cd: CharacterData, colocated_parties: Array = [],
+		is_solo: bool = false) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 
@@ -442,14 +454,24 @@ func _make_member_row(cd: CharacterData, campaign_party_count: int = 1) -> HBoxC
 	pos_lbl.custom_minimum_size = Vector2(60, 0)
 	row.add_child(pos_lbl)
 
-	var remove_btn := Button.new()
-	remove_btn.text = "Remove"
-	remove_btn.custom_minimum_size = Vector2(60, 0)
-	if campaign_party_count <= 1:
-		remove_btn.disabled = true
-		remove_btn.tooltip_text = "Cannot remove — only one party exists"
-	remove_btn.pressed.connect(_on_remove_member.bind(cd.id))
-	row.add_child(remove_btn)
+	# Transfer-to dropdown (replaces old Remove button)
+	var transfer_dd := OptionButton.new()
+	transfer_dd.custom_minimum_size = Vector2(100, 0)
+	transfer_dd.add_item("Transfer to...", 0)
+	transfer_dd.set_item_disabled(0, true)
+	if colocated_parties.is_empty() or is_solo:
+		transfer_dd.disabled = true
+		if is_solo:
+			transfer_dd.tooltip_text = "Cannot transfer last member of a party"
+		else:
+			transfer_dd.tooltip_text = "No other parties at this location"
+	else:
+		for i in colocated_parties.size():
+			var idx: int = i + 1
+			transfer_dd.add_item(colocated_parties[i].name, idx)
+			transfer_dd.set_item_metadata(idx, colocated_parties[i].id)
+		transfer_dd.item_selected.connect(_on_transfer_member.bind(cd.id))
+	row.add_child(transfer_dd)
 
 	return row
 
@@ -1005,16 +1027,24 @@ func _on_add_member(character_id: String) -> void:
 	EventBus.party_member_joined.emit(_party.id, character_id)
 
 
-func _on_remove_member(character_id: String) -> void:
-	if _party == null:
+func _on_transfer_member(index: int, character_id: String) -> void:
+	if index == 0 or _party == null:
+		return  # placeholder item
+	# All transfer dropdowns share the same co-located party list
+	var party_index: int = index - 1  # offset for placeholder item
+	if party_index < 0 or party_index >= _colocated_parties.size():
+		push_error("PartyManagementOverlay._on_transfer_member: invalid index %d" % index)
 		return
-	# Prevent orphaning: only allow removal if other parties exist to receive the character.
-	var parties := CampaignRepository.list_parties_for_campaign(GameState.campaign_id)
-	if parties.size() <= 1:
-		push_warning("Cannot remove character from only party — use Split Party instead")
+	var target_party_id: String = _colocated_parties[party_index].id
+	# Prevent emptying the party
+	if _party.character_data.size() <= 1:
+		push_warning("Cannot transfer last member of a party")
 		return
-	CampaignRepository.remove_party_member(_party.id, character_id)
+	# add_party_member auto-removes from the old party via mutual exclusivity
+	CampaignRepository.add_party_member(target_party_id, character_id)
 	EventBus.party_member_left.emit(_party.id, character_id)
+	EventBus.party_member_joined.emit(target_party_id, character_id)
+	_load_party()
 
 
 func _on_unplaced_selected(index: int) -> void:

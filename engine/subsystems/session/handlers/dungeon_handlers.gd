@@ -173,7 +173,7 @@ func seed_dungeon_events(scheduler: EventScheduler, party_id: String) -> void:
 ## schedules the first movement tick.
 func order_move(
 	entity_id: String,
-	target: Vector2i,
+	target,  # Vector2i or Vector3i
 	base_movement: int,
 	controller: DungeonMapController,
 	scheduler: EventScheduler,
@@ -214,7 +214,7 @@ func order_move(
 ## The entity moves along the precomputed path; on arrival, auto-interacts with the door.
 func order_move_and_interact_door(
 	entity_id: String,
-	door_pos: Vector2i,
+	door_pos,  # Vector2i or Vector3i
 	base_movement: int,
 	controller: DungeonMapController,
 	scheduler: EventScheduler,
@@ -291,14 +291,14 @@ func clear_all_renderer_animated() -> void:
 ## Called by DungeonExploreState when the renderer's tween reaches a new cell.
 ## Updates the mechanical position, fog, and checks for passability/completion.
 ## Returns a result dict: { blocked: bool, path_complete: bool, all_complete: bool }
-func on_cell_reached(entity_id: String, cell: Vector2i) -> Dictionary:
+func on_cell_reached(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	if not _movement_orders.has(entity_id):
 		return {"error": true}
 
 	var controller: DungeonMapController = _find_dungeon_controller()
 	if controller == null:
 		return {"error": true}
-	var tactical_map: TacticalMapData = controller.get_map()
+	var tactical_map = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
 	if tactical_map == null:
 		return {"error": true}
 
@@ -342,7 +342,7 @@ func on_cell_reached(entity_id: String, cell: Vector2i) -> Dictionary:
 
 		if not on_arrival.is_empty() and controller != null:
 			var action: String = on_arrival.get("action", "")
-			var target: Vector2i = on_arrival.get("target", Vector2i(-1, -1))
+			var target = on_arrival.get("target", Vector2i(-1, -1))  # Vector2i or Vector3i
 			match action:
 				"interact_door":
 					controller.interact_door(target)
@@ -360,7 +360,7 @@ func on_cell_reached(entity_id: String, cell: Vector2i) -> Dictionary:
 func schedule_action(
 	action_type: String,
 	entity_id: String,
-	cell: Vector2i,
+	cell,  # Vector2i or Vector3i
 	duration_rounds: int,
 	scheduler: EventScheduler,
 	party_id: String,
@@ -401,7 +401,7 @@ func _handle_movement_tick(event: ScheduledEvent) -> Dictionary:
 		_movement_orders.clear()
 		return {}
 
-	var tactical_map: TacticalMapData = controller.get_map()
+	var tactical_map = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
 	if tactical_map == null:
 		_movement_orders.clear()
 		return {}
@@ -435,7 +435,7 @@ func _handle_movement_tick(event: ScheduledEvent) -> Dictionary:
 		for ci in range(old_cell_index, new_cell_index + 1):
 			if ci >= path.size():
 				break
-			var cell: Vector2i = path[ci]
+			var cell = path[ci]  # Vector2i or Vector3i
 			if not tactical_map.is_passable(cell):
 				completed_entities.append(entity_id)
 				stopped_early = true
@@ -469,7 +469,7 @@ func _handle_movement_tick(event: ScheduledEvent) -> Dictionary:
 
 		if not on_arrival.is_empty() and controller != null:
 			var action: String = on_arrival.get("action", "")
-			var target: Vector2i = on_arrival.get("target", Vector2i(-1, -1))
+			var target = on_arrival.get("target", Vector2i(-1, -1))  # Vector2i or Vector3i
 			match action:
 				"interact_door":
 					controller.interact_door(target)
@@ -609,7 +609,7 @@ func _handle_light_tick(event: ScheduledEvent) -> Dictionary:
 	# wedged or spiked swing shut automatically (per GDD §3.2.1).
 	var controller: DungeonMapController = _find_dungeon_controller()
 	if controller != null:
-		var tmap: TacticalMapData = controller.get_map()
+		var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
 		if tmap != null:
 			for pos in tmap._cells.keys():
 				if tmap.is_evil_door(pos) and tmap.get_door_state(pos) == "open":
@@ -690,7 +690,7 @@ func _handle_action_complete(event: ScheduledEvent) -> Dictionary:
 # Action resolution
 # ---------------------------------------------------------------------------
 
-func _resolve_search(entity_id: String, cell: Vector2i) -> Dictionary:
+func _resolve_search(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	var roll: RollResult = DiceSystem.roll_digital(6, 1, 0, "search")
 	var found: bool = roll.modified_total <= 1
 	return {
@@ -706,7 +706,7 @@ func _resolve_search(entity_id: String, cell: Vector2i) -> Dictionary:
 	}
 
 
-func _resolve_listen(entity_id: String, cell: Vector2i) -> Dictionary:
+func _resolve_listen(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	var roll: RollResult = DiceSystem.roll_digital(6, 1, 0, "listen")
 	var heard: bool = roll.modified_total <= 1
 	return {
@@ -722,7 +722,7 @@ func _resolve_listen(entity_id: String, cell: Vector2i) -> Dictionary:
 	}
 
 
-func _resolve_force_door(entity_id: String, cell: Vector2i) -> Dictionary:
+func _resolve_force_door(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	# Force stuck door: d20 vs target (base 18, modified by STR×4 and Dungeon Bashing).
 	# Use ThiefSkillResolver for proper modifier calculation.
 	var party_data: PartyData = _runner.get_party_data() if _runner != null else null
@@ -755,7 +755,7 @@ func _resolve_force_door(entity_id: String, cell: Vector2i) -> Dictionary:
 	if forced:
 		var controller: DungeonMapController = _find_dungeon_controller()
 		if controller != null and controller.get_map() != null:
-			var tmap: TacticalMapData = controller.get_map()
+			var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
 			tmap.set_door_state(cell, "closed")  # stuck → closed (now openable)
 			controller.door_state_changed.emit(cell, "stuck", "closed")
 
@@ -781,7 +781,7 @@ func _resolve_force_door(entity_id: String, cell: Vector2i) -> Dictionary:
 	}
 
 
-func _resolve_bash_door(entity_id: String, cell: Vector2i) -> Dictionary:
+func _resolve_bash_door(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	# Verify the basher has an axe.
 	var axe_keys := ["hand_axe", "battle_axe", "great_axe"]
 	var has_axe := false
@@ -796,7 +796,7 @@ func _resolve_bash_door(entity_id: String, cell: Vector2i) -> Dictionary:
 	# Bash is deterministic — time spent = success per ACKS.
 	var controller: DungeonMapController = _find_dungeon_controller()
 	if controller != null and controller.get_map() != null:
-		var tmap: TacticalMapData = controller.get_map()
+		var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
 		var old_state: String = tmap.get_door_state(cell)
 		tmap.set_door_state(cell, "destroyed")
 		controller.door_state_changed.emit(cell, old_state, "destroyed")
@@ -817,7 +817,7 @@ func _resolve_bash_door(entity_id: String, cell: Vector2i) -> Dictionary:
 	}
 
 
-func _resolve_pick_lock(entity_id: String, cell: Vector2i) -> Dictionary:
+func _resolve_pick_lock(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	# Build a CharacterBundle for the thief skill check.
 	var party_data: PartyData = _runner.get_party_data() if _runner != null else null
 	if party_data == null:
@@ -856,7 +856,7 @@ func _resolve_pick_lock(entity_id: String, cell: Vector2i) -> Dictionary:
 	if success:
 		var controller: DungeonMapController = _find_dungeon_controller()
 		if controller != null and controller.get_map() != null:
-			var tmap: TacticalMapData = controller.get_map()
+			var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
 			var old_state: String = tmap.get_door_state(cell)
 			tmap.set_door_state(cell, "closed")
 			tmap.set_cell_field(cell, "door_type", "unlocked")
@@ -896,12 +896,12 @@ func _resolve_pick_lock(entity_id: String, cell: Vector2i) -> Dictionary:
 	}
 
 
-func _resolve_use_lever(_entity_id: String, cell: Vector2i) -> Dictionary:
+func _resolve_use_lever(_entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	var controller: DungeonMapController = _find_dungeon_controller()
 	if controller == null or controller.get_map() == null:
 		return {"auto_pause": true, "pause_reason": "Lever — no map"}
 
-	var tmap: TacticalMapData = controller.get_map()
+	var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
 	var target_pos: Vector2i = tmap.get_lever_target(cell)
 	if target_pos == Vector2i(-1, -1):
 		EventBus.notification_requested.emit({
@@ -952,7 +952,7 @@ func _resolve_use_lever(_entity_id: String, cell: Vector2i) -> Dictionary:
 	}
 
 
-func _resolve_force_portcullis(entity_id: String, cell: Vector2i) -> Dictionary:
+func _resolve_force_portcullis(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	# Same throw as force_door (base 18, STR×4, Dungeon Bashing), but on success
 	# the portcullis is held open only while the character does nothing else.
 	var party_data: PartyData = _runner.get_party_data() if _runner != null else null
@@ -985,7 +985,7 @@ func _resolve_force_portcullis(entity_id: String, cell: Vector2i) -> Dictionary:
 	if forced:
 		var controller: DungeonMapController = _find_dungeon_controller()
 		if controller != null and controller.get_map() != null:
-			var tmap: TacticalMapData = controller.get_map()
+			var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
 			tmap.set_door_state(cell, "open")
 			controller.door_state_changed.emit(cell, "closed", "open")
 
@@ -1020,12 +1020,12 @@ func _resolve_force_portcullis(entity_id: String, cell: Vector2i) -> Dictionary:
 	}
 
 
-func _resolve_drop_portcullis(_entity_id: String, cell: Vector2i) -> Dictionary:
+func _resolve_drop_portcullis(_entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	var controller: DungeonMapController = _find_dungeon_controller()
 	if controller == null or controller.get_map() == null:
 		return {"auto_pause": true, "pause_reason": "No map"}
 
-	var tmap: TacticalMapData = controller.get_map()
+	var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
 
 	# Spiked or wedged portcullises resist.
 	if _session_state != null:
@@ -1056,7 +1056,7 @@ func _resolve_drop_portcullis(_entity_id: String, cell: Vector2i) -> Dictionary:
 	}
 
 
-func _resolve_spike_shut(entity_id: String, cell: Vector2i) -> Dictionary:
+func _resolve_spike_shut(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	# Find and consume one iron spike from the character's inventory.
 	var spike_item: Dictionary = _find_iron_spike(entity_id)
 	if spike_item.is_empty():
@@ -1086,7 +1086,7 @@ func _resolve_spike_shut(entity_id: String, cell: Vector2i) -> Dictionary:
 	}
 
 
-func _resolve_wedge_open(entity_id: String, cell: Vector2i) -> Dictionary:
+func _resolve_wedge_open(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	# Find and consume one iron spike from the character's inventory.
 	var spike_item: Dictionary = _find_iron_spike(entity_id)
 	if spike_item.is_empty():
@@ -1125,7 +1125,7 @@ func _find_iron_spike(entity_id: String) -> Dictionary:
 	return {}
 
 
-func _resolve_remove_spike(entity_id: String, cell: Vector2i) -> Dictionary:
+func _resolve_remove_spike(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	if _session_state == null or not _session_state.has_method("is_spiked") \
 			or not _session_state.is_spiked(cell):
 		return {"auto_pause": true, "pause_reason": "No spike to remove"}
@@ -1146,7 +1146,7 @@ func _resolve_remove_spike(entity_id: String, cell: Vector2i) -> Dictionary:
 	}
 
 
-func _resolve_remove_wedge(entity_id: String, cell: Vector2i) -> Dictionary:
+func _resolve_remove_wedge(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	if _session_state == null or not _session_state.has_method("is_wedged") \
 			or not _session_state.is_wedged(cell):
 		return {"auto_pause": true, "pause_reason": "No wedge to remove"}
@@ -1167,7 +1167,7 @@ func _resolve_remove_wedge(entity_id: String, cell: Vector2i) -> Dictionary:
 	}
 
 
-func _resolve_exit_dungeon(entity_id: String, _cell: Vector2i) -> Dictionary:
+func _resolve_exit_dungeon(entity_id: String, _cell) -> Dictionary:  # _cell: Vector2i or Vector3i
 	var controller: DungeonMapController = _find_dungeon_controller()
 	if controller == null:
 		return {"auto_pause": true, "pause_reason": "Exit failed — no controller"}
@@ -1328,7 +1328,7 @@ func _release_held_portcullises(entity_id: String) -> void:
 	var controller: DungeonMapController = _find_dungeon_controller()
 	if controller == null or controller.get_map() == null:
 		return
-	var tmap: TacticalMapData = controller.get_map()
+	var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
 	for pos in released:
 		if tmap.get_door_state(pos) == "open":
 			tmap.set_door_state(pos, "closed")
@@ -1368,7 +1368,7 @@ func _find_dungeon_controller() -> DungeonMapController:
 
 ## Resolves the "loot" action: opens the loot distribution modal over the cache.
 ## The dungeon explore state listens for the "open_loot_modal" presentation type.
-func _resolve_loot(_entity_id: String, cell: Vector2i, dungeon_id: String) -> Dictionary:
+func _resolve_loot(_entity_id: String, cell, dungeon_id: String) -> Dictionary:  # cell: Vector2i or Vector3i
 	# TODO (voxel migration): extend location_key to include level coordinate
 	# per gdd-voxel-tactical-architecture-v1.1.md §6.3 — currently 2D (col,row);
 	# becomes 3D (col,row,level) when the voxel schema lands.
@@ -1396,7 +1396,7 @@ func _resolve_loot(_entity_id: String, cell: Vector2i, dungeon_id: String) -> Di
 ## Resolves the "pick_up_all" action: transfers all cache items to the acting
 ## character, respecting encumbrance. Coins are deposited directly; non-coin
 ## items are transferred via LocationCacheManager. Awards treasure XP.
-func _resolve_pick_up_all(entity_id: String, cell: Vector2i, dungeon_id: String) -> Dictionary:
+func _resolve_pick_up_all(entity_id: String, cell, dungeon_id: String) -> Dictionary:  # cell: Vector2i or Vector3i
 	# TODO (voxel migration): extend location_key to include level coordinate
 	# per gdd-voxel-tactical-architecture-v1.1.md §6.3 — currently 2D (col,row);
 	# becomes 3D (col,row,level) when the voxel schema lands.
@@ -1455,7 +1455,7 @@ func _resolve_pick_up_all(entity_id: String, cell: Vector2i, dungeon_id: String)
 		CampaignRepository.delete_location_cache(cache_id)
 		var controller: DungeonMapController = _find_dungeon_controller()
 		if controller != null:
-			var tmap: TacticalMapData = controller.get_map()
+			var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
 			if tmap != null:
 				tmap.set_cell_field(cell, "has_ground_items", false)
 

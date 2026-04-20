@@ -116,10 +116,15 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 		_runner.get_scheduler().cancel_all_for_owner(event.owner_id, "travel_leg")
 		return {"auto_pause": true, "pause_reason": "Path blocked at %s" % str(coord)}
 
-	# Update party data position
+	# Update party data position (in-memory and DB)
 	if party_data != null:
 		party_data.current_hex_q = coord.x
 		party_data.current_hex_r = coord.y
+	var moving_pid: String = event.owner_id
+	if not moving_pid.is_empty():
+		var map_data_for_pos: HexMapData = controller.get_map()
+		var map_id: String = map_data_for_pos.id if map_data_for_pos != null else ""
+		CampaignRepository.update_party_position(moving_pid, map_id, coord.x, coord.y)
 
 	# Save map state
 	var map_data: HexMapData = controller.get_map()

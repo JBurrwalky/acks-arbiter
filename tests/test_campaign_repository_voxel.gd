@@ -89,7 +89,7 @@ func test_save_and_load_single_cell() -> void:
 	cell.floor_type = "none"
 	cell.fog_state = "visible"
 
-	var ok := _repo.save_voxel_cell(mid, cell)
+	var ok: bool = _repo.save_voxel_cell(mid, cell)
 	check(ok, "save_voxel_cell should return true")
 
 	var cells: Array = _repo.load_voxel_cells_for_map(mid)
@@ -112,7 +112,7 @@ func test_save_batch_and_load() -> void:
 	for i in range(5):
 		cells.append(_make_cell(i, 0, 0))
 
-	var ok := _repo.save_voxel_cells_batch(mid, cells)
+	var ok: bool = _repo.save_voxel_cells_batch(mid, cells)
 	check(ok, "save_voxel_cells_batch should return true")
 
 	var loaded: Array = _repo.load_voxel_cells_for_map(mid)
@@ -230,7 +230,7 @@ func test_batch_save_100_cells() -> void:
 	var cells: Array = []
 	for i in range(100):
 		cells.append(_make_cell(i, 0, 0))
-	var ok := _repo.save_voxel_cells_batch(mid, cells)
+	var ok: bool = _repo.save_voxel_cells_batch(mid, cells)
 	check(ok, "batch save of 100 cells should succeed")
 
 	var loaded: Array = _repo.load_voxel_cells_for_map(mid)

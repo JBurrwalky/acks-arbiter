@@ -26,7 +26,7 @@ extends RefCounted
 ## Returns Array[Dictionary] of menu options in display order.
 static func build_menu(
 	active_combatant_id: String,
-	target_cell: Vector2i,
+	target_cell,  # Vector2i or Vector3i
 	controller,  # CombatController
 	party_data,  # PartyData or null
 ) -> Array[Dictionary]:
@@ -37,11 +37,19 @@ static func build_menu(
 		return []
 
 	var options: Array[Dictionary] = []
-	var map: TacticalMapData = controller.tactical_map
+	# Use whichever map is active (voxel or tactical).
+	var map = controller.voxel_map if controller.voxel_map != null \
+		and DungeonMapController.use_voxel_renderer else controller.tactical_map
+	# Ensure target_cell is Vector2i for downstream 2D logic
+	var target_cell_2d: Vector2i
+	if target_cell is Vector3i:
+		target_cell_2d = Vector2i(target_cell.x, target_cell.y)
+	else:
+		target_cell_2d = target_cell
 
 	# Determine target cell contents.
-	var target_entity: Combatant = _get_entity_at_cell(target_cell, controller)
-	var is_self_click: bool = _is_self_click(combatant, target_cell, controller)
+	var target_entity: Combatant = _get_entity_at_cell(target_cell_2d, controller)
+	var is_self_click: bool = _is_self_click(combatant, target_cell_2d, controller)
 	var is_enemy: bool = target_entity != null and not target_entity.is_pc_side() and target_entity.is_alive()
 	var is_ally: bool = target_entity != null and target_entity.is_pc_side() \
 		and target_entity.id != active_combatant_id and target_entity.is_alive()
@@ -64,17 +72,17 @@ static func build_menu(
 		options.append_array(_build_self_options(combatant, controller, party_data))
 	elif is_enemy:
 		options.append_array(_build_attack_options(
-			combatant, target_entity, target_cell, controller, party_data,
+			combatant, target_entity, target_cell_2d, controller, party_data,
 			can_attack, can_move, engaged, has_defensive_decl, has_skirmishing, has_run))
 	elif is_ally:
 		options.append_array(_build_ally_options(
-			combatant, target_entity, target_cell, controller, party_data))
+			combatant, target_entity, target_cell_2d, controller, party_data))
 	elif is_downed:
 		options.append_array(_build_downed_options(
-			combatant, target_entity, target_cell, controller))
+			combatant, target_entity, target_cell_2d, controller))
 	elif is_empty:
 		options.append_array(_build_movement_options(
-			combatant, target_cell, controller,
+			combatant, target_cell_2d, controller,
 			can_move, engaged, has_defensive_decl, has_skirmishing, has_run))
 
 	# --- Universal options (always present, at the end) ---
@@ -525,6 +533,16 @@ static func _build_downed_options(
 
 static func _get_entity_at_cell(cell: Vector2i, controller) -> Combatant:
 	## Returns the first combatant at the given cell, or null.
+	## Supports both VoxelMapData (3D lookup using z from entity) and TacticalMapData.
+	if controller.voxel_map != null and DungeonMapController.use_voxel_renderer:
+		# Check all entities whose 2D projection matches the target cell
+		for eid in controller.voxel_map.entity_positions.keys():
+			var pos: Vector3i = controller.voxel_map.entity_positions[eid]
+			if Vector2i(pos.x, pos.y) == cell:
+				var c = controller.roster.get_by_id(str(eid))
+				if c != null:
+					return c
+		return null
 	if controller.tactical_map == null:
 		return null
 	var entities: Array = controller.tactical_map.get_entities_at(cell)
@@ -570,10 +588,24 @@ static func _find_enemy_adjacent_to_cell(
 	cell: Vector2i, combatant: Combatant, controller
 ) -> Combatant:
 	## Finds an enemy adjacent to the target cell (for charge from empty cell).
-	if controller.movement_resolver == null or controller.tactical_map == null:
+	## Supports both VoxelMapData and TacticalMapData.
+	if controller.movement_resolver == null:
+		return null
+	var enemy_side: int = Combatant.Side.ENEMY if combatant.is_pc_side() else Combatant.Side.PARTY
+	if controller.voxel_map != null and DungeonMapController.use_voxel_renderer:
+		var neighbors := IsometricGrid.get_neighbors(cell)
+		for n_cell in neighbors:
+			# Check all entities whose 2D projection matches the neighbor
+			for eid in controller.voxel_map.entity_positions.keys():
+				var pos: Vector3i = controller.voxel_map.entity_positions[eid]
+				if Vector2i(pos.x, pos.y) == n_cell:
+					var c = controller.roster.get_by_id(str(eid))
+					if c != null and c.side == enemy_side and c.is_alive():
+						return c
+		return null
+	if controller.tactical_map == null:
 		return null
 	var neighbors := IsometricGrid.get_neighbors(cell)
-	var enemy_side: int = Combatant.Side.ENEMY if combatant.is_pc_side() else Combatant.Side.PARTY
 	for n_cell in neighbors:
 		var entities: Array = controller.tactical_map.get_entities_at(n_cell)
 		for eid in entities:

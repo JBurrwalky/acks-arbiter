@@ -34,12 +34,18 @@ signal movement_animation_cancelled(entity_id: String)
 # Private state
 # ---------------------------------------------------------------------------
 
+## Feature flag: when true, uses VoxelMapData; when false, legacy TacticalMapData.
+static var use_voxel_renderer: bool = true
+
 var _dungeon_id: String = ""
 var _dungeon_name: String = ""
-var _all_levels: Dictionary = {}   # int (level number) → TacticalMapData
-var _stairs: Array = []            # Array of stair connection Dictionaries from JSON
+var _all_levels: Dictionary = {}   # int (level number) → TacticalMapData (legacy)
+var _stairs: Array = []            # Array of stair connection Dictionaries (legacy)
 var _current_level: int = 1
-var _map: TacticalMapData          # Alias for _all_levels[_current_level]
+var _map: TacticalMapData          # Alias for _all_levels[_current_level] (legacy)
+
+## Voxel map storage — single VoxelMapData containing all levels.
+var _voxel_map: VoxelMapData = null
 
 ## Entity IDs of all party members (moved as a group in D-4).
 var _party_entity_ids: Array[String] = []
@@ -101,6 +107,11 @@ func load_dungeon(dungeon_dict: Dictionary, spawn_pos: Vector2i = Vector2i(-1, -
 	_ensure_managers()
 	_dungeon_id = dungeon_dict.get("id", "")
 	_dungeon_name = dungeon_dict.get("name", "")
+
+	if use_voxel_renderer:
+		_load_dungeon_voxel(dungeon_dict, spawn_pos)
+		return
+
 	_all_levels.clear()
 	_stairs.clear()
 
@@ -142,6 +153,41 @@ func load_dungeon(dungeon_dict: Dictionary, spawn_pos: Vector2i = Vector2i(-1, -
 			_map.set_entity_pos(eid, entry)
 
 	_reveal_entry_room()
+	map_loaded.emit(_dungeon_id)
+
+
+## Voxel path for load_dungeon. Loads a single VoxelMapData from the dict.
+## Handles both voxel format (has "cells" key) and legacy format (has "levels" key).
+func _load_dungeon_voxel(dungeon_dict: Dictionary, spawn_pos: Vector2i) -> void:
+	if dungeon_dict.has("cells"):
+		# Native voxel format — unified cells array
+		_voxel_map = VoxelMapData.from_dict(dungeon_dict)
+	elif dungeon_dict.has("levels"):
+		# Legacy format — convert levels[] + stairs[] to VoxelMapData
+		_voxel_map = _convert_legacy_to_voxel(dungeon_dict)
+	else:
+		push_error("DungeonMapController._load_dungeon_voxel: unrecognized format for '%s'" % _dungeon_id)
+		return
+
+	if _voxel_map.cell_count() == 0:
+		push_error("DungeonMapController._load_dungeon_voxel: no cells in dungeon '%s'" % _dungeon_id)
+		return
+
+	# Determine entry position
+	var entry_3d: Vector3i
+	if spawn_pos != Vector2i(-1, -1):
+		entry_3d = Vector3i(spawn_pos.x, spawn_pos.y, _voxel_map.entry_pos.z)
+	else:
+		entry_3d = _voxel_map.entry_pos
+
+	_current_level = entry_3d.z
+
+	# Position party at entry
+	for eid in _party_entity_ids:
+		_voxel_map.set_entity_pos(eid, entry_3d)
+
+	# Reveal entry room
+	_reveal_entry_room_voxel()
 	map_loaded.emit(_dungeon_id)
 
 
@@ -454,13 +500,16 @@ func reform_formation(center_pos: Vector2i = Vector2i(-1, -1)) -> void:
 
 ## Queue a move order for a single entity via BFS pathfinding.
 ## Returns true if a valid path was found and queued.
-func queue_move_order(entity_id: String, target_pos: Vector2i) -> bool:
+func queue_move_order(entity_id: String, target_pos) -> bool:
 	_ensure_managers()
+
+	if use_voxel_renderer:
+		return _queue_move_order_voxel(entity_id, target_pos)
+
 	if _map == null:
 		return false
 	if not _map.has_cell(target_pos) or not _map.is_passable(target_pos):
 		return false
-	# Allies cannot stop on the same cell — reject if occupied by another entity.
 	if _map.is_occupied_by_other(target_pos, entity_id):
 		return false
 
@@ -474,6 +523,84 @@ func queue_move_order(entity_id: String, target_pos: Vector2i) -> bool:
 
 	_order_manager.add_order(entity_id, "move", target_pos, path)
 	return true
+
+
+## Voxel path for queue_move_order.
+func _queue_move_order_voxel(entity_id: String, target_pos) -> bool:
+	if _voxel_map == null:
+		return false
+	var pos_3d: Vector3i = target_pos if target_pos is Vector3i else Vector3i(target_pos.x, target_pos.y, _current_level)
+	if not _voxel_map.has_cell(pos_3d) or not _voxel_map.is_passable(pos_3d):
+		return false
+	if _voxel_map.is_occupied_by_other(pos_3d, entity_id):
+		return false
+
+	var start: Vector3i = _voxel_map.get_entity_pos(entity_id)
+	if start == Vector3i(-1, -1, -1):
+		return false
+
+	# BFS on same level using 2D neighbors
+	var path: Array = _bfs_path_voxel(start, pos_3d, entity_id)
+	if path.is_empty():
+		return false
+
+	_order_manager.add_order(entity_id, "move", pos_3d, path)
+	return true
+
+
+## BFS pathfinding on VoxelMapData (same-level, 2D neighbors).
+func _bfs_path_voxel(start: Vector3i, goal: Vector3i, mover_id: String = "") -> Array:
+	if start == goal:
+		return [goal]
+	if _voxel_map == null:
+		return []
+
+	var frontier: Array = [start]
+	var came_from: Dictionary = {start: null}
+	var found := false
+
+	var best_cell: Vector3i = start
+	var best_dist: int = VoxelGrid.chebyshev_distance(start, goal)
+
+	while not frontier.is_empty():
+		var current: Vector3i = frontier.pop_front()
+		if current == goal:
+			found = true
+			break
+
+		var dist: int = VoxelGrid.chebyshev_distance(current, goal)
+		if dist < best_dist and not _voxel_map.is_occupied_by_other(current, mover_id):
+			best_dist = dist
+			best_cell = current
+
+		for neighbor: Vector3i in VoxelGrid.get_neighbors_2d(current):
+			if came_from.has(neighbor):
+				continue
+			if not _voxel_map.has_cell(neighbor):
+				continue
+			if not _voxel_map.is_passable(neighbor) and neighbor != goal:
+				continue
+			came_from[neighbor] = current
+			frontier.append(neighbor)
+
+	if found and _voxel_map.is_occupied_by_other(goal, mover_id):
+		found = false
+
+	var path_target: Vector3i
+	if found:
+		path_target = goal
+	elif best_cell != start:
+		path_target = best_cell
+	else:
+		return []
+
+	var path: Array = []
+	var current: Vector3i = path_target
+	while current != start:
+		path.push_front(current)
+		current = came_from[current]
+
+	return path
 
 
 ## Queue a group move for all party members, maintaining formation.
@@ -772,6 +899,11 @@ func get_map() -> TacticalMapData:
 	return _map
 
 
+## Returns the VoxelMapData (only valid when use_voxel_renderer is true).
+func get_voxel_map() -> VoxelMapData:
+	return _voxel_map
+
+
 func get_current_level() -> int:
 	return _current_level
 
@@ -786,9 +918,33 @@ func get_dungeon_name() -> String:
 
 ## Returns true if the party is standing on a designated transition cell.
 func is_on_transition_cell() -> bool:
+	if use_voxel_renderer:
+		if _voxel_map == null:
+			return false
+		return _voxel_map.is_transition_cell(get_party_position_3d())
 	if _map == null:
 		return false
 	return _map.is_transition_cell(get_party_position())
+
+
+## Returns the 3D position of the party leader (voxel mode).
+func get_party_position_3d() -> Vector3i:
+	if _voxel_map == null:
+		return Vector3i.ZERO
+	if _party_entity_ids.is_empty():
+		return _voxel_map.entry_pos
+	var first_id := _party_entity_ids[0]
+	var pos := _voxel_map.get_entity_pos(first_id)
+	if pos == Vector3i(-1, -1, -1):
+		return _voxel_map.entry_pos
+	return pos
+
+
+## Returns the entity position in voxel mode.
+func get_entity_pos_3d(entity_id: String) -> Vector3i:
+	if _voxel_map == null:
+		return Vector3i(-1, -1, -1)
+	return _voxel_map.get_entity_pos(entity_id)
 
 
 # ---------------------------------------------------------------------------
@@ -836,3 +992,170 @@ func _update_visibility_on_move(old_pos: Vector2i, new_pos: Vector2i) -> void:
 		_reveal_room(new_room)
 	else:
 		fog_updated.emit()
+
+
+# ---------------------------------------------------------------------------
+# Voxel fog reveal helpers
+# ---------------------------------------------------------------------------
+
+func _reveal_entry_room_voxel() -> void:
+	var party_pos := get_party_position_3d()
+	var room_id := _voxel_map.get_room_at(party_pos)
+	if room_id >= 0:
+		_reveal_room_voxel(room_id)
+	else:
+		_voxel_map.set_fog(party_pos, "visible")
+		# Also reveal immediate neighbors
+		for neighbor: Vector3i in VoxelGrid.get_neighbors_2d(party_pos):
+			if _voxel_map.has_cell(neighbor):
+				_voxel_map.set_fog(neighbor, "visible")
+		fog_updated.emit()
+
+
+func _reveal_room_voxel(room_id: int) -> void:
+	var cells := _voxel_map.get_room_cells(room_id)
+	var boundary := _voxel_map.get_room_boundary_cells(room_id)
+
+	for c: Vector3i in cells:
+		_voxel_map.set_fog(c, "visible")
+
+	for c: Vector3i in boundary:
+		if _voxel_map.get_fog(c) == "hidden":
+			_voxel_map.set_fog(c, "visible")
+
+	room_revealed.emit(room_id)
+	fog_updated.emit()
+
+
+## Voxel fog update for all party members.
+func _update_fog_for_all_members_voxel() -> void:
+	if _voxel_map == null:
+		return
+
+	# Mark all currently "visible" cells as "explored" first
+	for cell: VoxelCell in _voxel_map.get_all_cells():
+		if cell.fog_state == "visible":
+			cell.fog_state = "explored"
+
+	# Reveal around each member's position
+	for eid in _party_entity_ids:
+		var member_pos := _voxel_map.get_entity_pos(eid)
+		if member_pos == Vector3i(-1, -1, -1):
+			continue
+
+		var radius := _get_entity_visible_radius(eid)
+		if radius <= 0:
+			continue
+
+		var room_id := _voxel_map.get_room_at(member_pos)
+		if room_id >= 0:
+			_reveal_room_voxel(room_id)
+		else:
+			# Corridor: reveal cells within radius on same level
+			for neighbor: Vector3i in VoxelGrid.get_neighbors_2d(member_pos):
+				if _voxel_map.has_cell(neighbor):
+					_voxel_map.set_fog(neighbor, "visible")
+			_voxel_map.set_fog(member_pos, "visible")
+
+	fog_updated.emit()
+
+
+# ---------------------------------------------------------------------------
+# Legacy-to-voxel format converter
+# ---------------------------------------------------------------------------
+
+## Converts a legacy dungeon dict (levels[] + stairs[]) to a single VoxelMapData.
+## Each old level N maps to voxel levels N*2 (floor) and N*2+1 (ceiling headroom).
+## Walls are stamped as solid at both floor and ceiling levels.
+static func _convert_legacy_to_voxel(dungeon_dict: Dictionary) -> VoxelMapData:
+	var vmap := VoxelMapData.new()
+	vmap.id = str(dungeon_dict.get("id", ""))
+	vmap.name = str(dungeon_dict.get("name", ""))
+
+	var levels_array: Array = dungeon_dict.get("levels", [])
+	var first_level := true
+
+	for level_data: Dictionary in levels_array:
+		var level_num: int = level_data.get("level", 1)
+		var voxel_floor: int = level_num * 2
+		var voxel_ceiling: int = voxel_floor + 1
+
+		var entry_col: int = level_data.get("entry_col", 0)
+		var entry_row: int = level_data.get("entry_row", 0)
+		if first_level:
+			vmap.entry_pos = Vector3i(entry_col, entry_row, voxel_floor)
+			first_level = false
+
+		var cells_array: Array = level_data.get("cells", [])
+		for cell_data: Dictionary in cells_array:
+			var col: int = cell_data.get("col", 0)
+			var row: int = cell_data.get("row", 0)
+			var tf: String = cell_data.get("terrain_feature", "open")
+
+			var vcell := VoxelCell.new()
+			vcell.col = col
+			vcell.row = row
+			vcell.level = voxel_floor
+			vcell.cover_value = cell_data.get("cover_value", 0)
+			vcell.door_state = cell_data.get("door_state", "")
+			vcell.door_type = cell_data.get("door_type", "")
+			vcell.door_detected = cell_data.get("door_detected", true)
+
+			match tf:
+				"wall_stone", "rock":
+					vcell.solidity = "solid"
+					vcell.feature = tf
+					vcell.floor_type = "none"
+					# Also stamp ceiling level as solid
+					var ceil_cell := VoxelCell.new()
+					ceil_cell.col = col
+					ceil_cell.row = row
+					ceil_cell.level = voxel_ceiling
+					ceil_cell.solidity = "solid"
+					ceil_cell.feature = tf
+					ceil_cell.floor_type = "none"
+					vmap.set_cell(Vector3i(col, row, voxel_ceiling), ceil_cell)
+				"wall_wood":
+					vcell.solidity = "solid"
+					vcell.feature = "wall_wood"
+					vcell.floor_type = "none"
+					var ceil_cell := VoxelCell.new()
+					ceil_cell.col = col
+					ceil_cell.row = row
+					ceil_cell.level = voxel_ceiling
+					ceil_cell.solidity = "solid"
+					ceil_cell.feature = "wall_wood"
+					ceil_cell.floor_type = "none"
+					vmap.set_cell(Vector3i(col, row, voxel_ceiling), ceil_cell)
+				"door", "door_locked", "door_secret", "portcullis":
+					vcell.solidity = "air"
+					vcell.feature = "open"
+					vcell.floor_type = "stone"
+					if vcell.door_state.is_empty():
+						vcell.door_state = "closed"
+				"stairs_up":
+					vcell.solidity = "air"
+					vcell.feature = "stairs_up_N"
+					vcell.floor_type = "stone"
+				"stairs_down":
+					vcell.solidity = "air"
+					vcell.feature = "stairs_down_S"
+					vcell.floor_type = "stone"
+				"lever":
+					vcell.solidity = "air"
+					vcell.feature = "lever"
+					vcell.floor_type = "stone"
+				_:  # "open" and anything else
+					vcell.solidity = "air"
+					vcell.feature = tf if tf != "" else "open"
+					vcell.floor_type = "stone"
+
+			vmap.set_cell(Vector3i(col, row, voxel_floor), vcell)
+
+		# Set transition cells from entry position
+		var tc_pos := Vector3i(entry_col, entry_row, voxel_floor)
+		if tc_pos not in vmap.transition_cells:
+			vmap.transition_cells.append(tc_pos)
+
+	vmap.detect_rooms()
+	return vmap

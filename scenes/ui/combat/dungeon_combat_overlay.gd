@@ -389,9 +389,11 @@ func _on_active_token_changed(entity_id: String) -> void:
 # Renderer input -> UI controller
 # ---------------------------------------------------------------------------
 
-func _on_renderer_cell_clicked(pos: Vector2i) -> void:
+func _on_renderer_cell_clicked(pos) -> void:
 	if _ui_controller != null:
-		_ui_controller.on_cell_targeted(pos)
+		# Downcast Vector3i to Vector2i for the combat UI controller
+		var pos_2d: Vector2i = Vector2i(pos.x, pos.y) if pos is Vector3i else pos
+		_ui_controller.on_cell_targeted(pos_2d)
 
 
 func _on_renderer_entity_clicked(entity_id: String) -> void:
@@ -399,9 +401,10 @@ func _on_renderer_entity_clicked(entity_id: String) -> void:
 		_ui_controller.on_entity_targeted(entity_id)
 
 
-func _on_renderer_right_clicked(cell_pos: Vector2i, screen_pos: Vector2) -> void:
+func _on_renderer_right_clicked(cell_pos, screen_pos: Vector2) -> void:
 	if _ui_controller != null:
-		_ui_controller.on_cell_right_clicked(cell_pos, screen_pos)
+		var pos_2d: Vector2i = Vector2i(cell_pos.x, cell_pos.y) if cell_pos is Vector3i else cell_pos
+		_ui_controller.on_cell_right_clicked(pos_2d, screen_pos)
 
 
 func _on_context_menu_requested(

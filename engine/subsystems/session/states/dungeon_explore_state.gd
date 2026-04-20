@@ -174,12 +174,19 @@ func exit(runner) -> void:
 	runner.get_nav_stack().pop()
 
 	# Revert picked locks before saving (locks reset on dungeon exit).
-	if _session_state != null and _controller != null and _controller.get_map() != null:
-		var tmap: TacticalMapData = _controller.get_map()
-		for pos in _session_state.get_picked_locks():
-			if tmap.get_door_state(pos) in ["closed", "open"]:
-				tmap.set_door_state(pos, "locked")
-				tmap.set_cell_field(pos, "door_type", "locked")
+	if _session_state != null and _controller != null:
+		if DungeonMapController.use_voxel_renderer and _controller.get_voxel_map() != null:
+			var vmap: VoxelMapData = _controller.get_voxel_map()
+			for pos in _session_state.get_picked_locks():
+				if vmap.get_door_state(pos) in ["closed", "open"]:
+					vmap.set_door_state(pos, "locked")
+					vmap.set_cell_field(pos, "door_type", "locked")
+		elif _controller.get_map() != null:
+			var tmap: TacticalMapData = _controller.get_map()
+			for pos in _session_state.get_picked_locks():
+				if tmap.get_door_state(pos) in ["closed", "open"]:
+					tmap.set_door_state(pos, "locked")
+					tmap.set_cell_field(pos, "door_type", "locked")
 
 	# Save dungeon cell states (door + fog) for all loaded levels.
 	_save_dungeon_cell_states()
@@ -266,30 +273,60 @@ func _save_dungeon_cell_states() -> void:
 	var dungeon_id: String = _controller.get_dungeon_id()
 	if dungeon_id.is_empty():
 		return
-	for level_num in _controller._all_levels:
-		var tmap: TacticalMapData = _controller._all_levels[level_num]
+	if DungeonMapController.use_voxel_renderer:
+		# Voxel path: save all cells via CampaignRepository.save_voxel_cells_batch()
+		var vmap: VoxelMapData = _controller.get_voxel_map()
+		if vmap == null:
+			return
 		var cells_to_save: Array = []
-		for pos in tmap._cells:
-			var cell: Dictionary = tmap._cells[pos]
-			var tf: String = cell.get("terrain_feature", "open")
-			var ds: String = cell.get("door_state", "")
-			var fog_int: int = tmap.fog.get(pos, TacticalMapData.FogState.HIDDEN)
-			var fog_str: String = "hidden"
-			match fog_int:
-				TacticalMapData.FogState.EXPLORED:
-					fog_str = "explored"
-				TacticalMapData.FogState.VISIBLE:
-					fog_str = "explored"  # visible reverts to explored on save
-			# Only save cells that have meaningful state (doors or explored fog).
-			if tf in ["door", "door_locked", "door_secret", "portcullis"] or fog_int != TacticalMapData.FogState.HIDDEN:
-				cells_to_save.append({
-					"col": pos.x,
-					"row": pos.y,
-					"door_state": ds,
-					"fog_state": fog_str,
-				})
+		for vcell: VoxelCell in vmap.get_all_cells():
+			# Visible reverts to explored on save
+			var save_fog: String = "explored" if vcell.fog_state == "visible" else vcell.fog_state
+			# Only save cells with meaningful state (doors or non-hidden fog)
+			if not vcell.door_state.is_empty() or vcell.fog_state != "hidden":
+				var save_cell := VoxelCell.new()
+				save_cell.col = vcell.col
+				save_cell.row = vcell.row
+				save_cell.level = vcell.level
+				save_cell.solidity = vcell.solidity
+				save_cell.feature = vcell.feature
+				save_cell.floor_type = vcell.floor_type
+				save_cell.door_state = vcell.door_state
+				save_cell.door_type = vcell.door_type
+				save_cell.door_detected = vcell.door_detected
+				save_cell.fog_state = save_fog
+				save_cell.room_id = vcell.room_id
+				save_cell.is_corridor = vcell.is_corridor
+				save_cell.cover_value = vcell.cover_value
+				cells_to_save.append(save_cell)
 		if not cells_to_save.is_empty():
-			CampaignRepository.save_dungeon_cell_states(dungeon_id, level_num, cells_to_save)
+			CampaignRepository.save_voxel_cells_batch(dungeon_id, cells_to_save)
+	else:
+		# Legacy path
+		for level_num in _controller._all_levels:
+			var tmap: TacticalMapData = _controller._all_levels[level_num]
+			var cells_to_save: Array = []
+			for pos in tmap._cells:
+				var cell: Dictionary = tmap._cells[pos]
+				var tf: String = cell.get("terrain_feature", "open")
+				var ds: String = cell.get("door_state", "")
+				var fog_int: int = tmap.fog.get(pos, TacticalMapData.FogState.HIDDEN)
+				var fog_str: String = "hidden"
+				match fog_int:
+					TacticalMapData.FogState.EXPLORED:
+						fog_str = "explored"
+					TacticalMapData.FogState.VISIBLE:
+						fog_str = "explored"  # visible reverts to explored on save
+				# Only save cells that have meaningful state (doors or explored fog).
+				if tf in ["door", "door_locked", "door_secret", "portcullis"] or fog_int != TacticalMapData.FogState.HIDDEN:
+					cells_to_save.append({
+						"col": pos.x,
+						"row": pos.y,
+						"door_state": ds,
+						"fog_state": fog_str,
+					})
+			if not cells_to_save.is_empty():
+				CampaignRepository.save_dungeon_cell_states(dungeon_id, level_num, cells_to_save)
 
 
 ## Cancel any pending timed actions (search, listen, etc.).
@@ -418,7 +455,7 @@ static func _get_darkvision_cells(_cd: CharacterData) -> int:
 # Context menu system
 # ---------------------------------------------------------------------------
 
-func _on_context_menu_requested(cell_pos: Vector2i, screen_pos: Vector2) -> void:
+func _on_context_menu_requested(cell_pos, screen_pos: Vector2) -> void:
 	if _in_combat or _runner == null or _controller == null or _scene == null:
 		return
 
@@ -433,7 +470,7 @@ func _on_context_menu_requested(cell_pos: Vector2i, screen_pos: Vector2) -> void
 			all_ids.append(eid)
 		selected = all_ids
 
-	var map: TacticalMapData = _controller.get_map()
+	var map = _controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else _controller.get_map()
 	var party_data: PartyData = _runner.get_party_data()
 	var light_mgr = _handlers.get_light_manager() if _handlers != null else null
 
@@ -464,7 +501,7 @@ func _on_context_action(action_data: Dictionary) -> void:
 		return
 
 	var action_type: String = action_data.get("action_type", "")
-	var cell: Vector2i = action_data.get("cell", Vector2i(-1, -1))
+	var cell = action_data.get("cell", Vector2i(-1, -1))  # Vector2i or Vector3i
 	var character_id: String = action_data.get("character_id", "")
 	var target_id: String = action_data.get("target_id", "")
 
@@ -541,7 +578,7 @@ func _on_context_action(action_data: Dictionary) -> void:
 			_controller.use_stairs(cell)
 		"exit_dungeon":
 			# Queue all selected characters to exit the dungeon.
-			var map: TacticalMapData = _controller.get_map()
+			var map = _controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else _controller.get_map()
 			var any_queued := false
 			for eid in selected:
 				if _session_state != null and (_session_state.is_exited(eid) or _session_state.is_queued_for_exit(eid)):
@@ -677,7 +714,7 @@ func _close_context_menu() -> void:
 # Cell interaction (left-click fallback — no context menu, direct move)
 # ---------------------------------------------------------------------------
 
-func _on_cell_clicked(pos: Vector2i) -> void:
+func _on_cell_clicked(pos) -> void:
 	# Left-click on a cell with no entity: currently a no-op in the new model.
 	# Movement is done via right-click context menu "Move Here".
 	# This signal is kept for potential future use (cell inspection, etc.).
@@ -823,6 +860,10 @@ func _create_ui_panels() -> void:
 func _update_minimap() -> void:
 	if _minimap == null or _controller == null:
 		return
+	# Minimap doesn't support VoxelMapData yet — skip in voxel mode.
+	if DungeonMapController.use_voxel_renderer:
+		_minimap.visible = false
+		return
 	var map: TacticalMapData = _controller.get_map()
 	if map == null:
 		return
@@ -863,7 +904,7 @@ func _on_minimap_toggle() -> void:
 ## Issue movement orders for a list of entities to a target cell.
 func _issue_move_orders(
 	entity_ids: Array,
-	target: Vector2i,
+	target,  # Vector2i or Vector3i
 	party_data: PartyData,
 	scheduler: EventScheduler,
 	party_id: String,
@@ -914,7 +955,7 @@ func _record_abandoned_characters() -> void:
 		return
 	var party_id: String = _runner.get_party_id()
 	var current_time: int = Timekeeping.get_party_time(party_id)
-	var map: TacticalMapData = _controller.get_map()
+	var map = _controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else _controller.get_map()
 	if map == null:
 		return
 
@@ -951,7 +992,7 @@ func _check_exit_queue() -> void:
 	if exit_queue.is_empty():
 		return
 
-	var map: TacticalMapData = _controller.get_map()
+	var map = _controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else _controller.get_map()
 	if map == null:
 		return
 
@@ -1018,7 +1059,7 @@ func _start_clock_if_paused() -> void:
 
 ## Called when the renderer's tween crosses a cell boundary during continuous
 ## movement animation. Updates the mechanical position and checks passability.
-func _on_movement_cell_reached(entity_id: String, cell: Vector2i) -> void:
+func _on_movement_cell_reached(entity_id: String, cell) -> void:
 	if _handlers == null or _in_combat:
 		return
 	var result: Dictionary = _handlers.on_cell_reached(entity_id, cell)
@@ -1112,7 +1153,7 @@ func _check_idle_behaviors() -> void:
 	var scheduler: EventScheduler = _runner.get_scheduler()
 	var party_id: String = _runner.get_party_id()
 	var party_data: PartyData = _runner.get_party_data()
-	var map: TacticalMapData = _controller.get_map()
+	var map = _controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else _controller.get_map()
 	if map == null or party_data == null:
 		return
 
@@ -1163,7 +1204,7 @@ func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 	if _scene != null:
 		_scene.cancel_all_movement_animations()
 
-	var tactical_map: TacticalMapData = _controller.get_map()
+	var tactical_map = _controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else _controller.get_map()
 
 	# Gather current party positions
 	var party_positions: Array[Vector2i] = []
@@ -1278,7 +1319,7 @@ func _on_dungeon_combat_finished(result: Dictionary) -> void:
 
 	# Remove non-party tokens (monsters, dead creatures).
 	# Keep alive PCs and alive creature tokens on the map.
-	var tactical_map: TacticalMapData = _controller.get_map()
+	var tactical_map = _controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else _controller.get_map()
 	if tactical_map != null:
 		var keep_ids: Dictionary = {}
 		if party_data != null:
@@ -1368,7 +1409,7 @@ func _place_dungeon_loot(roster: CombatRoster) -> void:
 			CampaignRepository.transfer_item_to_cache(item_id, cache_id)
 
 	# Flag the cell so the context menu shows Loot / Pick Up All.
-	var tactical_map: TacticalMapData = _controller.get_map()
+	var tactical_map = _controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else _controller.get_map()
 	if tactical_map != null:
 		tactical_map.set_cell_field(loot_cell, "has_ground_items", true)
 
@@ -1401,7 +1442,7 @@ func _on_loot_modal_completed(cache_id: String, cache_cell: Vector2i) -> void:
 	var remaining := CampaignRepository.list_items_in_cache(cache_id)
 	if remaining.is_empty():
 		CampaignRepository.delete_location_cache(cache_id)
-		var tactical_map: TacticalMapData = _controller.get_map() if _controller != null else null
+		var tactical_map = _controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else _controller.get_map() if _controller != null else null
 		if tactical_map != null and cache_cell != Vector2i(-1, -1):
 			tactical_map.set_cell_field(cache_cell, "has_ground_items", false)
 
@@ -1411,17 +1452,25 @@ func _on_loot_modal_completed(cache_id: String, cache_cell: Vector2i) -> void:
 # ---------------------------------------------------------------------------
 
 func _find_creature_placement(
-		tactical_map: TacticalMapData,
-		party_positions: Array[Vector2i]) -> Vector2i:
+		tactical_map,  # TacticalMapData or VoxelMapData
+		party_positions) -> Vector2i:
 	## Find a passable, unoccupied cell adjacent to any party member.
 	## Returns Vector2i(-1, -1) if none found.
 	for pos in party_positions:
-		for neighbor in IsometricGrid.get_neighbors(pos):
-			if tactical_map.is_passable(neighbor) and tactical_map.get_entities_at(neighbor).is_empty():
-				return neighbor
+		if DungeonMapController.use_voxel_renderer:
+			for neighbor: Vector3i in VoxelGrid.get_neighbors_2d(pos):
+				if tactical_map.is_passable(neighbor) and tactical_map.get_entities_at(neighbor).is_empty():
+					return Vector2i(neighbor.x, neighbor.y)
+		else:
+			for neighbor in IsometricGrid.get_neighbors(pos):
+				if tactical_map.is_passable(neighbor) and tactical_map.get_entities_at(neighbor).is_empty():
+					return neighbor
 	# Fallback: if no free adjacent cell, stack on leader position.
 	if not party_positions.is_empty():
-		return party_positions[0]
+		var first = party_positions[0]
+		if first is Vector3i:
+			return Vector2i(first.x, first.y)
+		return first
 	return Vector2i(-1, -1)
 
 

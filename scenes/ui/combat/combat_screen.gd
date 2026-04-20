@@ -73,7 +73,17 @@ func start_interactive() -> void:
 	if _controller.tactical_map != null:
 		var MapRendererScript = load("res://scenes/ui/combat/combat_map_renderer_3d.gd")
 		_map_renderer = MapRendererScript.new()
-		_map_renderer.setup(_controller.tactical_map, _controller.roster)
+		# Voxel path: convert TacticalMapData to VoxelMapData for the renderer
+		if DungeonMapController.use_voxel_renderer:
+			var voxel_map := VoxelMapData.generate_open_field(
+				_controller.tactical_map.grid_width, _controller.tactical_map.grid_height)
+			# Transfer entity positions from tactical map to voxel map
+			for eid in _controller.tactical_map.entity_positions:
+				var pos_2d: Vector2i = _controller.tactical_map.entity_positions[eid]
+				voxel_map.set_entity_pos(eid, Vector3i(pos_2d.x, pos_2d.y, 0))
+			_map_renderer.setup(voxel_map, _controller.roster)
+		else:
+			_map_renderer.setup(_controller.tactical_map, _controller.roster)
 
 		var map_area: Control = get_node_or_null("HSplit/MapArea")
 		if map_area != null:
@@ -523,6 +533,7 @@ func _sync_token_positions() -> void:
 		return
 	for eid in _controller.tactical_map.entity_positions:
 		var pos: Vector2i = _controller.tactical_map.entity_positions[eid]
+		# The renderer's move_token accepts both Vector2i and Vector3i
 		_map_renderer.move_token(eid, pos)
 		var combatant = _controller.get_combatant(eid)
 		if combatant != null:

@@ -29,8 +29,8 @@ var _orders: Dictionary = {}
 ## Queue an order for [param entity_id].
 ## Replaces any existing order for the same entity.
 func add_order(entity_id: String, order_type: String,
-		target_pos: Vector2i = Vector2i(-1, -1),
-		path: Array[Vector2i] = []) -> void:
+		target_pos = Vector2i(-1, -1),  # Vector2i or Vector3i
+		path: Array = []) -> void:
 	_orders[entity_id] = {
 		"order_type": order_type,
 		"target_pos": target_pos,

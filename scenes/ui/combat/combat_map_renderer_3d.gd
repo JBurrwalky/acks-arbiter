@@ -57,6 +57,7 @@ var _env: WorldEnvironment = null
 # ---------------------------------------------------------------------------
 
 var _map: TacticalMapData = null
+var _voxel_map: VoxelMapData = null   # Voxel path
 var _tokens: Dictionary = {}         # entity_id -> CombatantToken3D
 var _highlight_layers: Array = []
 var _target_rings: Array[String] = []
@@ -69,8 +70,12 @@ var _token_scene: PackedScene = null
 # ---------------------------------------------------------------------------
 
 ## Initialize the renderer with a tactical map and combat roster.
-func setup(tactical_map: TacticalMapData, roster) -> void:
-	_map = tactical_map
+## Accepts either TacticalMapData (legacy) or VoxelMapData (voxel path).
+func setup(tactical_map, roster) -> void:
+	if DungeonMapController.use_voxel_renderer and tactical_map is VoxelMapData:
+		_voxel_map = tactical_map
+	else:
+		_map = tactical_map
 
 	# Create child node structure
 	_grid_meshes = Node3D.new()
@@ -130,11 +135,20 @@ func _populate_tokens(roster) -> void:
 
 		# Position token on grid
 		if c.grid_position != Vector2i(-1, -1):
-			var world_pos := TacticalGrid3D.cell_to_world(c.grid_position.x, c.grid_position.y)
-			token.update_position(world_pos)
+			if _voxel_map != null:
+				var world_pos := VoxelGrid.cell_to_world(c.grid_position.x, c.grid_position.y, 0)
+				world_pos.y += 0.2
+				token.update_position(world_pos)
+			else:
+				var world_pos := TacticalGrid3D.cell_to_world(c.grid_position.x, c.grid_position.y)
+				token.update_position(world_pos)
 
 
 func _build_terrain() -> void:
+	if _voxel_map != null:
+		_build_terrain_voxel()
+		return
+
 	if _map == null:
 		return
 
@@ -146,6 +160,14 @@ func _build_terrain() -> void:
 	# Grid lines
 	var grid_lines := TacticalGrid3D.build_grid_lines(_map)
 	_grid_meshes.add_child(grid_lines)
+
+
+func _build_terrain_voxel() -> void:
+	if _voxel_map == null:
+		return
+	var color_func := Callable(TacticalGrid3D, "combat_ground_color_voxel")
+	var group := TacticalGrid3D.build_level_group(_voxel_map, 0, color_func, false)
+	_grid_meshes.add_child(group)
 
 
 # ---------------------------------------------------------------------------
@@ -185,9 +207,17 @@ func set_active_token(entity_id: String) -> void:
 		_tokens[entity_id].is_active = true
 
 
-func move_token(entity_id: String, to_cell: Vector2i) -> void:
-	if _tokens.has(entity_id):
-		var world_pos := TacticalGrid3D.cell_to_world(to_cell.x, to_cell.y)
+func move_token(entity_id: String, to_cell) -> void:
+	if not _tokens.has(entity_id):
+		return
+	if _voxel_map != null:
+		var pos: Vector3i = to_cell if to_cell is Vector3i else Vector3i(to_cell.x, to_cell.y, 0)
+		var world_pos := VoxelGrid.cell_to_world(pos.x, pos.y, pos.z)
+		world_pos.y += 0.2
+		_tokens[entity_id].update_position(world_pos)
+	else:
+		var pos_2d: Vector2i = to_cell
+		var world_pos := TacticalGrid3D.cell_to_world(pos_2d.x, pos_2d.y)
 		_tokens[entity_id].update_position(world_pos)
 
 
@@ -238,13 +268,26 @@ func _rebuild_highlights() -> void:
 		return
 	for child in _highlight_layer.get_children():
 		child.queue_free()
-	for layer in _highlight_layers:
-		var color: Color = layer.get("color", Color(1.0, 1.0, 0.0, 0.25))
-		var cells: Array[Vector2i] = []
-		for pos in layer.get("cells", []):
-			cells.append(pos)
-		var mmi := TacticalGrid3D.build_highlight_overlay(cells, color, _map)
-		_highlight_layer.add_child(mmi)
+
+	if _voxel_map != null:
+		for layer in _highlight_layers:
+			var color: Color = layer.get("color", Color(1.0, 1.0, 0.0, 0.25))
+			var cells_3d: Array[Vector3i] = []
+			for pos in layer.get("cells", []):
+				if pos is Vector3i:
+					cells_3d.append(pos)
+				elif pos is Vector2i:
+					cells_3d.append(Vector3i(pos.x, pos.y, 0))
+			var mmi := TacticalGrid3D.build_highlight_overlay_voxel(cells_3d, color, _voxel_map)
+			_highlight_layer.add_child(mmi)
+	else:
+		for layer in _highlight_layers:
+			var color: Color = layer.get("color", Color(1.0, 1.0, 0.0, 0.25))
+			var cells: Array[Vector2i] = []
+			for pos in layer.get("cells", []):
+				cells.append(pos)
+			var mmi := TacticalGrid3D.build_highlight_overlay(cells, color, _map)
+			_highlight_layer.add_child(mmi)
 
 
 # ---------------------------------------------------------------------------
@@ -258,21 +301,34 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _camera == null:
 		return
 
-	var cell_pos := TacticalGrid3D.screen_to_cell(_camera, event.position)
-
-	if event.button_index == MOUSE_BUTTON_LEFT:
-		var hit_eid := _entity_id_near(event.position)
-		if not hit_eid.is_empty():
-			entity_clicked.emit(hit_eid)
+	if _voxel_map != null:
+		var cell_pos_3d := TacticalGrid3D.screen_to_cell_voxel(_camera, event.position, 0)
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			var hit_eid := _entity_id_near(event.position)
+			if not hit_eid.is_empty():
+				entity_clicked.emit(hit_eid)
+				get_viewport().set_input_as_handled()
+				return
+			if _voxel_map.has_cell(cell_pos_3d):
+				cell_clicked.emit(Vector2i(cell_pos_3d.x, cell_pos_3d.y))
+				get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			cell_right_clicked.emit(Vector2i(cell_pos_3d.x, cell_pos_3d.y), event.position)
 			get_viewport().set_input_as_handled()
-			return
-		if _map != null and _map.has_cell(cell_pos):
-			cell_clicked.emit(cell_pos)
+	else:
+		var cell_pos := TacticalGrid3D.screen_to_cell(_camera, event.position)
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			var hit_eid := _entity_id_near(event.position)
+			if not hit_eid.is_empty():
+				entity_clicked.emit(hit_eid)
+				get_viewport().set_input_as_handled()
+				return
+			if _map != null and _map.has_cell(cell_pos):
+				cell_clicked.emit(cell_pos)
+				get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			cell_right_clicked.emit(cell_pos, event.position)
 			get_viewport().set_input_as_handled()
-
-	elif event.button_index == MOUSE_BUTTON_RIGHT:
-		cell_right_clicked.emit(cell_pos, event.position)
-		get_viewport().set_input_as_handled()
 
 
 func _process(delta: float) -> void:
@@ -314,7 +370,22 @@ func _entity_id_near(screen_pos: Vector2) -> String:
 
 
 func _center_camera() -> void:
-	if _camera == null or _map == null:
+	if _camera == null:
+		return
+
+	if _voxel_map != null:
+		var sum := Vector3.ZERO
+		var count := 0
+		for pos in _voxel_map.get_all_positions():
+			if pos.z == 0:
+				sum += VoxelGrid.cell_to_world(pos.x, pos.y, 0)
+				count += 1
+		if count > 0:
+			var center := sum / float(count)
+			_camera.position = center + CAM_BACKWARD * 50.0
+		return
+
+	if _map == null:
 		return
 	var sum := Vector3.ZERO
 	var count := 0

@@ -40,7 +40,7 @@ func exit() -> void:
 
 func _build_ui() -> void:
 	var bg := PanelContainer.new()
-	bg.set_anchors_preset(Control.Control.PRESET_FULL_RECT)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	UiSurfaceStyles.apply_framed_window_chrome(bg)
 	add_child(bg)
 
