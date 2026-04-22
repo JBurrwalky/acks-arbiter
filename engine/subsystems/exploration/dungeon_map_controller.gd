@@ -16,11 +16,13 @@ extends Node
 # ---------------------------------------------------------------------------
 
 signal map_loaded(dungeon_id: String)
-signal party_moved(from_pos: Vector2i, to_pos: Vector2i)
-signal entity_moved(entity_id: String, from_pos: Vector2i, to_pos: Vector2i)
+## Positions are Vector3i in voxel mode, Vector2i in legacy TacticalMapData mode.
+## Params are untyped so both ride through until the legacy code path is deleted in D.2.
+signal party_moved(from_pos, to_pos)
+signal entity_moved(entity_id: String, from_pos, to_pos)
 signal room_revealed(room_id: int)
 signal fog_updated()
-signal door_state_changed(pos: Vector2i, old_state: String, new_state: String)
+signal door_state_changed(pos, old_state: String, new_state: String)
 signal level_changed(from_level: int, to_level: int)
 signal orders_executed(result: Dictionary)
 
@@ -34,18 +36,19 @@ signal movement_animation_cancelled(entity_id: String)
 # Private state
 # ---------------------------------------------------------------------------
 
-## Feature flag: when true, uses VoxelMapData; when false, legacy TacticalMapData.
-static var use_voxel_renderer: bool = true
-
 var _dungeon_id: String = ""
 var _dungeon_name: String = ""
-var _all_levels: Dictionary = {}   # int (level number) → TacticalMapData (legacy)
-var _stairs: Array = []            # Array of stair connection Dictionaries (legacy)
-var _current_level: int = 1
-var _map: TacticalMapData          # Alias for _all_levels[_current_level] (legacy)
+var _current_level: int = 0
 
 ## Voxel map storage — single VoxelMapData containing all levels.
 var _voxel_map: VoxelMapData = null
+
+# Legacy TacticalMapData fields. Still declared because test suites and a few
+# adjacent 2D code paths reference them; the voxel code path never writes them.
+# Full deletion belongs to Session 11 (delete TacticalMapData class itself).
+var _all_levels: Dictionary = {}
+var _stairs: Array = []
+var _map: TacticalMapData
 
 ## Entity IDs of all party members (moved as a group in D-4).
 var _party_entity_ids: Array[String] = []
@@ -69,6 +72,10 @@ var _order_manager: RefCounted = null
 ## Formation manager for party layout (FormationManager).
 var _formation_manager: RefCounted = null
 
+## Movement resolver for 3D pathfinding (stair-aware, level-spanning).
+## Only used in voxel mode.
+var _movement_resolver: MovementResolver = null
+
 ## Class references loaded at runtime to avoid parse-time dependency.
 var _OrderManagerClass = null
 var _FormationManagerClass = null
@@ -87,6 +94,10 @@ func _ensure_managers() -> void:
 		if _OrderManagerClass == null:
 			_OrderManagerClass = load("res://engine/subsystems/exploration/dungeon_order_manager.gd")
 		_order_manager = _OrderManagerClass.new()
+	if _movement_resolver == null:
+		_movement_resolver = MovementResolver.new()
+	if _movement_resolver != null and _voxel_map != null:
+		_movement_resolver.set_voxel_map(_voxel_map)
 	if _formation_manager == null:
 		if _FormationManagerClass == null:
 			_FormationManagerClass = load("res://engine/subsystems/exploration/formation_manager.gd")
@@ -107,53 +118,35 @@ func load_dungeon(dungeon_dict: Dictionary, spawn_pos: Vector2i = Vector2i(-1, -
 	_ensure_managers()
 	_dungeon_id = dungeon_dict.get("id", "")
 	_dungeon_name = dungeon_dict.get("name", "")
+	_load_dungeon_voxel(dungeon_dict, spawn_pos)
 
-	if use_voxel_renderer:
-		_load_dungeon_voxel(dungeon_dict, spawn_pos)
+
+## Places party members at and around [param entry], avoiding stacking when
+## adjacent passable cells are available. Leader stays at entry; others try
+## each of the 8 same-level neighbors in turn. All-blocked -> stack at entry.
+func _scatter_party_at_entry(entry: Vector3i) -> void:
+	if _party_entity_ids.is_empty():
 		return
-
-	_all_levels.clear()
-	_stairs.clear()
-
-	var levels_array: Array = dungeon_dict.get("levels", [])
-	for level_data in levels_array:
-		var level_num: int = level_data.get("level", 1)
-		var map_data := TacticalMapData.from_dict(level_data)
-		_all_levels[level_num] = map_data
-
-	_stairs = dungeon_dict.get("stairs", [])
-
-	if _all_levels.is_empty():
-		push_error("DungeonMapController.load_dungeon: no levels found in dungeon '%s'" % _dungeon_id)
-		return
-
-	_current_level = 1
-	if not _all_levels.has(1):
-		var keys: Array = _all_levels.keys()
-		keys.sort()
-		_current_level = keys[0]
-
-	_map = _all_levels[_current_level]
-
-	# Position party at spawn_pos or entry_pos
-	var entry: Vector2i
-	if spawn_pos != Vector2i(-1, -1):
-		entry = spawn_pos
-	else:
-		entry = _map.entry_pos
-
-	# Try formation placement; fall back to stacking at entry
-	var formation_positions: Dictionary = _formation_manager.compute_dungeon_positions(
-		entry, _party_data_ref, _map) if _party_data_ref != null else {}
-
-	for eid in _party_entity_ids:
-		if formation_positions.has(eid):
-			_map.set_entity_pos(eid, formation_positions[eid])
-		else:
-			_map.set_entity_pos(eid, entry)
-
-	_reveal_entry_room()
-	map_loaded.emit(_dungeon_id)
+	# Leader at entry
+	_voxel_map.set_entity_pos(_party_entity_ids[0], entry)
+	var occupied: Dictionary = {entry: true}
+	for i in range(1, _party_entity_ids.size()):
+		var eid: String = _party_entity_ids[i]
+		var placed := false
+		for neighbor: Vector3i in VoxelGrid.get_neighbors_2d(entry):
+			if occupied.has(neighbor):
+				continue
+			if not _voxel_map.has_cell(neighbor):
+				continue
+			if not _voxel_map.is_passable(neighbor):
+				continue
+			_voxel_map.set_entity_pos(eid, neighbor)
+			occupied[neighbor] = true
+			placed = true
+			break
+		if not placed:
+			# All 8 neighbors blocked — fall back to entry (last resort)
+			_voxel_map.set_entity_pos(eid, entry)
 
 
 ## Voxel path for load_dungeon. Loads a single VoxelMapData from the dict.
@@ -182,9 +175,8 @@ func _load_dungeon_voxel(dungeon_dict: Dictionary, spawn_pos: Vector2i) -> void:
 
 	_current_level = entry_3d.z
 
-	# Position party at entry
-	for eid in _party_entity_ids:
-		_voxel_map.set_entity_pos(eid, entry_3d)
+	# Position party at entry with 8-neighbor scatter (no stacking).
+	_scatter_party_at_entry(entry_3d)
 
 	# Reveal entry room
 	_reveal_entry_room_voxel()
@@ -194,49 +186,68 @@ func _load_dungeon_voxel(dungeon_dict: Dictionary, spawn_pos: Vector2i) -> void:
 ## Attempts to move all party members to [param target].
 ## Returns true on success, false if the move is invalid.
 ## Backward-compat wrapper: queues a group move and executes immediately.
-func move_party(target: Vector2i) -> bool:
+## [param target] is Vector3i; Vector2i callers get z inferred from _current_level.
+func move_party(target) -> bool:
 	_ensure_managers()
-	if _map == null:
-		push_error("DungeonMapController.move_party: no map loaded")
+	return _move_party_voxel(target)
+
+
+## Voxel-mode implementation of move_party.
+## Validates adjacency + stair-aware passability via MovementResolver.path_bfs_3d.
+func _move_party_voxel(target) -> bool:
+	if _voxel_map == null:
+		push_error("DungeonMapController._move_party_voxel: no voxel map loaded")
 		return false
 
-	var party_pos := get_party_position()
+	var pos_3d: Vector3i = target if target is Vector3i else Vector3i(target.x, target.y, _current_level)
+	var party_pos := get_party_position_3d()
 
-	if not IsometricGrid.is_adjacent(party_pos, target):
+	if not VoxelGrid.is_adjacent(party_pos, pos_3d):
 		return false
 
-	if not _map.is_passable(target):
+	# Use MovementResolver to validate stair-aware entry (level-diff + feature check).
+	# path_bfs_3d returns [start, target] for a 1-step reachable move, empty if blocked.
+	var validation_path: Array = _movement_resolver.path_bfs_3d(party_pos, pos_3d)
+	if validation_path.is_empty():
 		return false
 
 	var old_pos := party_pos
 
 	# Use formation-aware group move if party data is available
 	if _party_data_ref != null and _party_entity_ids.size() > 1:
-		queue_group_move(target)
+		queue_group_move(pos_3d)
 		execute_orders()
 		return true
 
-	# Fallback: move all entities to same cell (legacy behavior)
+	# Fallback: move all entities to same cell
 	for eid in _party_entity_ids:
-		var from := _map.get_entity_pos(eid)
-		_map.set_entity_pos(eid, target)
-		entity_moved.emit(eid, from, target)
+		var from: Vector3i = _voxel_map.get_entity_pos(eid)
+		_voxel_map.set_entity_pos(eid, pos_3d)
+		entity_moved.emit(eid, from, pos_3d)
 
-	_update_visibility_on_move(old_pos, target)
-	party_moved.emit(old_pos, target)
+	_current_level = pos_3d.z
+	_update_visibility_on_move(old_pos, pos_3d)
+	party_moved.emit(old_pos, pos_3d)
 	return true
 
 
 ## Returns true if the party can legally move to [param target].
-func can_move_to(target: Vector2i) -> bool:
-	if _map == null:
+## [param target] is Vector3i; Vector2i is coerced with z from _current_level.
+func can_move_to(target) -> bool:
+	if _voxel_map == null:
 		return false
-	var party_pos := get_party_position()
-	return IsometricGrid.is_adjacent(party_pos, target) and _map.is_passable(target)
+	var pos_3d: Vector3i = target if target is Vector3i else Vector3i(target.x, target.y, _current_level)
+	var party_pos := get_party_position_3d()
+	if not VoxelGrid.is_adjacent(party_pos, pos_3d):
+		return false
+	_ensure_managers()
+	var validation_path: Array = _movement_resolver.path_bfs_3d(party_pos, pos_3d)
+	return not validation_path.is_empty()
 
 
 ## Attempts to interact with a door at [param pos].
 ## pos must be adjacent to the party's current position.
+## pos is Vector3i in voxel mode, Vector2i in legacy mode.
 ## Returns true if the door state changed, false otherwise.
 ##
 ## D-4 door interactions:
@@ -248,26 +259,34 @@ func can_move_to(target: Vector2i) -> bool:
 ##   secret (undetected) → no effect (returns false — needs search check)
 ##   secret (detected, closed) → opens
 ##   portcullis (closed) → blocked in D-4 (needs lever mechanism)
-func interact_door(pos: Vector2i) -> bool:
-	if _map == null:
+func interact_door(pos) -> bool:
+	return _interact_door_voxel(pos)
+
+
+## Voxel-mode implementation of interact_door. Same rule gates as legacy.
+func _interact_door_voxel(pos) -> bool:
+	if _voxel_map == null:
 		return false
 
-	# Any party member adjacent to the door can interact with it
+	var pos_3d: Vector3i = pos if pos is Vector3i else Vector3i(pos.x, pos.y, _current_level)
+
+	# Any party member adjacent (3D Chebyshev ≤ 1) to the door can interact.
 	var any_adjacent := false
 	for eid in _party_entity_ids:
-		var member_pos := _map.get_entity_pos(eid)
-		if member_pos != Vector2i(-1, -1) and IsometricGrid.is_adjacent(member_pos, pos):
+		var member_pos: Vector3i = _voxel_map.get_entity_pos(eid)
+		if member_pos != Vector3i(-1, -1, -1) and VoxelGrid.is_adjacent(member_pos, pos_3d):
 			any_adjacent = true
 			break
 	if not any_adjacent:
 		return false
 
-	if not _map.is_door(pos):
-		push_error("DungeonMapController.interact_door: no door at %s" % str(pos))
+	if not _voxel_map.is_door(pos_3d):
+		push_error("DungeonMapController.interact_door: no door at %s" % str(pos_3d))
 		return false
 
-	var door_type := _map.get_door_type(pos)
-	var door_state := _map.get_door_state(pos)
+	var cell := _voxel_map.get_cell(pos_3d)
+	var door_type := cell.door_type
+	var door_state := cell.door_state
 
 	# Arch is always open — cannot be interacted with
 	if door_type == "arch":
@@ -277,9 +296,9 @@ func interact_door(pos: Vector2i) -> bool:
 	if door_state == "destroyed":
 		return false
 
-	# Secret door that hasn't been detected yet — search check needed first
-	var cell := _map.get_cell(pos)
-	if not cell.get("door_detected", true):
+	# Secret door that hasn't been detected yet — search check needed first.
+	# Only blocks secret doors; other types don't set door_detected.
+	if door_type == "secret" and not cell.door_detected:
 		return false
 
 	# Portcullis — needs a lever/mechanism in D-4
@@ -296,19 +315,19 @@ func interact_door(pos: Vector2i) -> bool:
 
 	# Spiked shut — cannot open until spike is removed
 	if _session_state != null and _session_state.has_method("is_spiked") \
-			and _session_state.is_spiked(pos):
+			and _session_state.is_spiked(pos_3d):
 		return false
 
 	# Wedged open — cannot close until wedge is removed
 	if _session_state != null and _session_state.has_method("is_wedged") \
-			and _session_state.is_wedged(pos):
+			and _session_state.is_wedged(pos_3d):
 		return false
 
 	# Toggle open/closed for unlocked/detected-secret doors
 	var old_state := door_state
 	var new_state := "open" if door_state == "closed" else "closed"
-	_map.set_door_state(pos, new_state)
-	door_state_changed.emit(pos, old_state, new_state)
+	_voxel_map.set_door_state(pos_3d, new_state)
+	door_state_changed.emit(pos_3d, old_state, new_state)
 	return true
 
 
@@ -316,30 +335,38 @@ func interact_door(pos: Vector2i) -> bool:
 ## If the entity is already adjacent to the door, interacts immediately and
 ## returns "immediate". Otherwise pathfinds to the nearest passable cell adjacent
 ## to the door and queues a move_and_interact_door order, returning "queued".
+## [param door_pos] is Vector3i in voxel mode, Vector2i in legacy mode.
 ## Returns "" if no path or door is invalid.
-func queue_door_interaction_order(entity_id: String, door_pos: Vector2i) -> String:
-	if _map == null:
+func queue_door_interaction_order(entity_id: String, door_pos) -> String:
+	_ensure_managers()
+	return _queue_door_interaction_order_voxel(entity_id, door_pos)
+
+
+## Voxel-mode path for queue_door_interaction_order.
+func _queue_door_interaction_order_voxel(entity_id: String, door_pos) -> String:
+	if _voxel_map == null:
 		return ""
 
-	var entity_pos := _map.get_entity_pos(entity_id)
-	if entity_pos == Vector2i(-1, -1):
+	var door_3d: Vector3i = door_pos if door_pos is Vector3i else Vector3i(door_pos.x, door_pos.y, _current_level)
+	var entity_pos: Vector3i = _voxel_map.get_entity_pos(entity_id)
+	if entity_pos == Vector3i(-1, -1, -1):
 		return ""
 
-	# Already adjacent → interact immediately
-	if IsometricGrid.is_adjacent(entity_pos, door_pos):
-		if interact_door(door_pos):
+	# Already adjacent (3D Chebyshev ≤ 1) → interact immediately
+	if VoxelGrid.is_adjacent(entity_pos, door_3d):
+		if interact_door(door_3d):
 			return "immediate"
 		return ""
 
-	# Find nearest passable neighbor of the door to pathfind to
-	var door_neighbors := IsometricGrid.get_neighbors(door_pos)
-	var best_path: Array[Vector2i] = []
+	# Find nearest passable neighbor on the same level to pathfind to.
+	var door_neighbors := VoxelGrid.get_neighbors_2d(door_3d)
+	var best_path: Array = []
 	var best_path_len := 999999
 
-	for neighbor in door_neighbors:
-		if not _map.has_cell(neighbor) or not _map.is_passable(neighbor):
+	for neighbor: Vector3i in door_neighbors:
+		if not _voxel_map.has_cell(neighbor) or not _voxel_map.is_passable(neighbor):
 			continue
-		var path := _bfs_path(entity_pos, neighbor, entity_id)
+		var path: Array = _bfs_path_voxel(entity_pos, neighbor, entity_id)
 		if not path.is_empty() and path.size() < best_path_len:
 			best_path = path
 			best_path_len = path.size()
@@ -347,68 +374,85 @@ func queue_door_interaction_order(entity_id: String, door_pos: Vector2i) -> Stri
 	if best_path.is_empty():
 		return ""
 
-	# Queue a compound order: move to adjacent cell, then interact with door
-	_ensure_managers()
-	_order_manager.add_order(entity_id, "move_and_interact_door", door_pos, best_path)
+	_order_manager.add_order(entity_id, "move_and_interact_door", door_3d, best_path)
 	return "queued"
 
 
-## Attempts to use stairs at [param pos], transitioning the party to the connected level.
-## Returns true on success, false if pos has no stairs or stair connection not found.
-func use_stairs(pos: Vector2i) -> bool:
-	if _map == null:
+## Given a stair cell [param pos], returns the coordinate on the connected
+## level that the stair leads to. Returns Vector3i(-1, -1, -1) if pos is not
+## a stair cell. Voxel mode only.
+##
+## Preference order:
+##   1. Explicit stair_target_col/row/level on the cell (set by the authored
+##      dungeon when geometric inference doesn't apply).
+##   2. Direction-suffix inference: stairs_up_<DIR> / stairs_down_<DIR> — one
+##      horizontal step in DIR and one level up or down.
+func get_stair_target(pos: Vector3i) -> Vector3i:
+	if _voxel_map == null:
+		return Vector3i(-1, -1, -1)
+	var cell := _voxel_map.get_cell(pos)
+	if cell == null:
+		return Vector3i(-1, -1, -1)
+
+	# 1. Explicit pairing takes priority.
+	if cell.stair_target_col != -1 \
+			and cell.stair_target_row != -1 \
+			and cell.stair_target_level != -1:
+		return Vector3i(cell.stair_target_col, cell.stair_target_row, cell.stair_target_level)
+
+	var feat: String = cell.feature
+	var going_up: bool
+	var suffix: String
+	if feat.begins_with("stairs_up_"):
+		going_up = true
+		suffix = feat.substr("stairs_up_".length())
+	elif feat.begins_with("stairs_down_"):
+		going_up = false
+		suffix = feat.substr("stairs_down_".length())
+	else:
+		return Vector3i(-1, -1, -1)
+
+	var dir_keys: Array = VoxelGrid.Direction.keys()
+	var dir_idx: int = dir_keys.find(suffix)
+	if dir_idx < 0:
+		return Vector3i(-1, -1, -1)
+	var offset: Vector2i = VoxelGrid.DIRECTION_OFFSETS[dir_idx]
+	var z_delta: int = 1 if going_up else -1
+	return Vector3i(pos.x + offset.x, pos.y + offset.y, pos.z + z_delta)
+
+
+## Teleports the party to [param target_pos] and its immediate neighbors.
+## Used by stair traversal (Ascend/Descend) when the stair's destination is
+## not spatially adjacent to the stair cell — bypasses adjacency/BFS checks
+## and places each party member around the target with the same 8-neighbor
+## scatter logic used on dungeon entry.
+## Returns true on success, false if the voxel map is absent or target
+## is not a valid cell.
+func teleport_party_to(target_pos: Vector3i) -> bool:
+	if _voxel_map == null:
+		return false
+	if not _voxel_map.has_cell(target_pos):
+		push_error("DungeonMapController.teleport_party_to: no cell at %s" % str(target_pos))
+		return false
+	if not _voxel_map.is_passable(target_pos):
+		push_error("DungeonMapController.teleport_party_to: target %s is not passable" % str(target_pos))
 		return false
 
-	var cell := _map.get_cell(pos)
-	if cell.is_empty():
-		return false
+	var old_pos := get_party_position_3d()
+	_scatter_party_at_entry(target_pos)
+	_current_level = target_pos.z
 
-	var tf: String = cell.get("terrain_feature", "")
-	if tf != "stairs_up" and tf != "stairs_down":
-		push_error("DungeonMapController.use_stairs: no stairs at %s" % str(pos))
-		return false
-
-	# Find matching stair connection
-	var target_stair: Dictionary = {}
-	for stair in _stairs:
-		if stair.get("from_level", 0) == _current_level and \
-		   stair.get("from_col", -1) == pos.x and \
-		   stair.get("from_row", -1) == pos.y:
-			target_stair = stair
-			break
-
-	if target_stair.is_empty():
-		push_error("DungeonMapController.use_stairs: no stair connection at level=%d pos=%s" % [
-			_current_level, str(pos)
-		])
-		return false
-
-	var target_level: int = target_stair.get("to_level", 1)
-	if not _all_levels.has(target_level):
-		push_error("DungeonMapController.use_stairs: level %d not loaded" % target_level)
-		return false
-
-	var old_level := _current_level
-	_current_level = target_level
-	_map = _all_levels[_current_level]
-
-	var target_pos := Vector2i(
-		target_stair.get("to_col", 0),
-		target_stair.get("to_row", 0)
-	)
-
-	# Move party to target cell — use formation if available
-	var formation_positions: Dictionary = _formation_manager.compute_dungeon_positions(
-		target_pos, _party_data_ref, _map) if _party_data_ref != null else {}
-
+	# Fire per-entity moved signals so renderer/handlers sync.
 	for eid in _party_entity_ids:
-		if formation_positions.has(eid):
-			_map.set_entity_pos(eid, formation_positions[eid])
-		else:
-			_map.set_entity_pos(eid, target_pos)
+		var new_pos: Vector3i = _voxel_map.get_entity_pos(eid)
+		entity_moved.emit(eid, old_pos, new_pos)
 
-	_reveal_entry_room()
-	level_changed.emit(old_level, target_level)
+	# Visibility + level follow + fog.
+	if old_pos.z != target_pos.z:
+		level_changed.emit(old_pos.z, target_pos.z)
+	_update_visibility_on_move(old_pos, target_pos)
+	_update_fog_for_all_members()
+	party_moved.emit(old_pos, target_pos)
 	return true
 
 
@@ -502,27 +546,7 @@ func reform_formation(center_pos: Vector2i = Vector2i(-1, -1)) -> void:
 ## Returns true if a valid path was found and queued.
 func queue_move_order(entity_id: String, target_pos) -> bool:
 	_ensure_managers()
-
-	if use_voxel_renderer:
-		return _queue_move_order_voxel(entity_id, target_pos)
-
-	if _map == null:
-		return false
-	if not _map.has_cell(target_pos) or not _map.is_passable(target_pos):
-		return false
-	if _map.is_occupied_by_other(target_pos, entity_id):
-		return false
-
-	var start := _map.get_entity_pos(entity_id)
-	if start == Vector2i(-1, -1):
-		return false
-
-	var path := _bfs_path(start, target_pos, entity_id)
-	if path.is_empty():
-		return false
-
-	_order_manager.add_order(entity_id, "move", target_pos, path)
-	return true
+	return _queue_move_order_voxel(entity_id, target_pos)
 
 
 ## Voxel path for queue_move_order.
@@ -539,8 +563,15 @@ func _queue_move_order_voxel(entity_id: String, target_pos) -> bool:
 	if start == Vector3i(-1, -1, -1):
 		return false
 
-	# BFS on same level using 2D neighbors
-	var path: Array = _bfs_path_voxel(start, pos_3d, entity_id)
+	var path: Array
+	if start.z != pos_3d.z:
+		# Multi-level move — delegate to MovementResolver for stair-aware pathfinding.
+		_ensure_managers()
+		path = _movement_resolver.path_bfs_3d(start, pos_3d)
+	else:
+		# Same-level — local BFS with fallback-to-closest-unoccupied-cell semantics.
+		path = _bfs_path_voxel(start, pos_3d, entity_id)
+
 	if path.is_empty():
 		return false
 
@@ -605,50 +636,90 @@ func _bfs_path_voxel(start: Vector3i, goal: Vector3i, mover_id: String = "") -> 
 
 ## Queue a group move for all party members, maintaining formation.
 ## Returns true if the leader can reach the target.
-func queue_group_move(target_pos: Vector2i) -> bool:
+## [param target_pos] is Vector3i in voxel mode, Vector2i in legacy mode.
+func queue_group_move(target_pos) -> bool:
 	_ensure_managers()
-	if _map == null or _party_data_ref == null:
-		return false
+	return _queue_group_move_voxel(target_pos)
 
-	# Leader = first entity in the party list
+
+## Voxel-mode group move: leader paths via MovementResolver (stair-aware);
+## followers scatter outward in expanding rings to the nearest unclaimed,
+## passable, unoccupied cell. No two party members share a final cell — if
+## no cell is available within the search radius, the member waits.
+## FormationManager.compute_dungeon_positions is 2D-only and not yet ported;
+## ring-scatter is used as an interim stand-in.
+func _queue_group_move_voxel(target_pos) -> bool:
+	if _voxel_map == null:
+		return false
 	if _party_entity_ids.is_empty():
 		return false
 
+	var target_3d: Vector3i = target_pos if target_pos is Vector3i else Vector3i(target_pos.x, target_pos.y, _current_level)
+
 	var leader_id := _party_entity_ids[0]
-	var leader_pos := _map.get_entity_pos(leader_id)
-	if leader_pos == Vector2i(-1, -1):
+	var leader_pos: Vector3i = _voxel_map.get_entity_pos(leader_id)
+	if leader_pos == Vector3i(-1, -1, -1):
 		return false
 
-	# BFS path for the leader
-	var leader_path := _bfs_path(leader_pos, target_pos, leader_id)
+	# Leader path via MovementResolver (stair/ramp-aware, multi-level-capable).
+	var leader_path: Array = _movement_resolver.path_bfs_3d(leader_pos, target_3d)
 	if leader_path.is_empty():
 		return false
+	_order_manager.add_order(leader_id, "move", target_3d, leader_path)
 
-	# Queue leader move
-	_order_manager.add_order(leader_id, "move", target_pos, leader_path)
+	# Followers: claim the nearest unclaimed passable cell in an expanding ring
+	# around target_3d. The leader's target is reserved; no two followers share.
+	var claimed: Dictionary = {target_3d: leader_id}
+	const MAX_RING_RADIUS := 4  # cells
 
-	# Compute formation positions at the target for other members
-	var formation: Dictionary = _formation_manager.compute_dungeon_positions(
-		target_pos, _party_data_ref, _map)
-
-	for eid in _party_entity_ids:
-		if eid == leader_id:
+	for i in range(1, _party_entity_ids.size()):
+		var eid: String = _party_entity_ids[i]
+		var member_pos: Vector3i = _voxel_map.get_entity_pos(eid)
+		if member_pos == Vector3i(-1, -1, -1):
 			continue
-		var member_target: Vector2i = formation.get(eid, target_pos)
-		var member_pos := _map.get_entity_pos(eid)
-		if member_pos == Vector2i(-1, -1):
-			continue
-		var member_path := _bfs_path(member_pos, member_target, eid)
-		if member_path.is_empty():
-			# Fallback: path to leader target
-			member_path = _bfs_path(member_pos, target_pos, eid)
-		if not member_path.is_empty():
-			_order_manager.add_order(eid, "move", member_target, member_path)
-		else:
-			# Can't reach — queue wait
+
+		var member_target: Vector3i = _find_scatter_cell(target_3d, eid, claimed, MAX_RING_RADIUS)
+		if member_target == Vector3i(-1, -1, -1):
+			# No valid scatter cell within search radius — member waits.
 			_order_manager.add_order(eid, "wait")
+			continue
+
+		claimed[member_target] = eid
+		var member_path: Array = _movement_resolver.path_bfs_3d(member_pos, member_target)
+		if member_path.is_empty():
+			# Reachable check failed — drop the claim and queue wait.
+			claimed.erase(member_target)
+			_order_manager.add_order(eid, "wait")
+		else:
+			_order_manager.add_order(eid, "move", member_target, member_path)
 
 	return true
+
+
+## Finds the nearest cell to [param center] (by Chebyshev distance) that is
+## passable, not [claimed] by any other party member, and not occupied by a
+## different entity. Searches outward in rings up to [max_radius] cells.
+## Returns Vector3i(-1, -1, -1) if no valid cell is found.
+func _find_scatter_cell(center: Vector3i, mover_id: String,
+		claimed: Dictionary, max_radius: int) -> Vector3i:
+	if _voxel_map == null:
+		return Vector3i(-1, -1, -1)
+	for r in range(1, max_radius + 1):
+		# Generate the perimeter of the ring at distance r (same-level).
+		for dc in range(-r, r + 1):
+			for dr in range(-r, r + 1):
+				# Only perimeter cells (Chebyshev == r).
+				if maxi(abs(dc), abs(dr)) != r:
+					continue
+				var candidate := Vector3i(center.x + dc, center.y + dr, center.z)
+				if claimed.has(candidate):
+					continue
+				if not _voxel_map.has_cell(candidate) or not _voxel_map.is_passable(candidate):
+					continue
+				if _voxel_map.is_occupied_by_other(candidate, mover_id):
+					continue
+				return candidate
+	return Vector3i(-1, -1, -1)
 
 
 ## Execute all queued orders simultaneously.
@@ -656,36 +727,38 @@ func queue_group_move(target_pos: Vector2i) -> bool:
 ## Returns {moved_entities: Array[String], events: Array[Dictionary]}.
 func execute_orders() -> Dictionary:
 	_ensure_managers()
+	return _execute_orders_voxel()
+
+
+## Voxel-mode implementation of execute_orders. Mirrors the legacy
+## collision-resolution + move-commit logic using Vector3i positions.
+func _execute_orders_voxel() -> Dictionary:
 	var moved_entities: Array[String] = []
 	var events: Array = []
 
 	var orders: Dictionary = _order_manager.get_all_orders()
 	_order_manager.clear()
 
-	# --- Collision resolution: prevent two entities targeting the same cell ---
-	# Build a map of move destinations to detect conflicts.
-	var claimed_cells: Dictionary = {}  # Vector2i -> String (first claimant)
+	# Collision resolution: prevent two entities targeting the same cell.
+	var claimed_cells: Dictionary = {}
 
-	# First pass: collect stationary entities (not moving) as occupied.
 	var moving_eids: Dictionary = {}
 	for eid in orders:
 		if orders[eid].get("order_type", "") == "move":
 			moving_eids[eid] = true
 
-	for eid in _map.entity_positions:
+	for eid in _voxel_map.entity_positions:
 		if not moving_eids.has(eid):
-			claimed_cells[_map.entity_positions[eid]] = eid
+			claimed_cells[_voxel_map.entity_positions[eid]] = eid
 
-	# Second pass: for each mover, claim the target or downgrade to wait.
 	for eid in orders:
 		var order: Dictionary = orders[eid]
 		if order.get("order_type", "") != "move":
 			continue
-		var target: Vector2i = order.get("target_pos", Vector2i(-1, -1))
-		if target == Vector2i(-1, -1):
+		var target = order.get("target_pos", null)
+		if target == null or not (target is Vector3i) or target == Vector3i(-1, -1, -1):
 			continue
 		if claimed_cells.has(target):
-			# Target already claimed — downgrade to wait.
 			order["order_type"] = "wait"
 		else:
 			claimed_cells[target] = eid
@@ -696,19 +769,19 @@ func execute_orders() -> Dictionary:
 
 		match order_type:
 			"move":
-				var target: Vector2i = order.get("target_pos", Vector2i(-1, -1))
+				var target = order.get("target_pos", null)
 				var path: Array = order.get("path", [])
-				if target == Vector2i(-1, -1) or path.is_empty():
+				if target == null or not (target is Vector3i) or path.is_empty():
 					continue
-				var old_pos := _map.get_entity_pos(eid)
-				if _map.is_passable(target):
-					_map.set_entity_pos(eid, target)
+				var old_pos: Vector3i = _voxel_map.get_entity_pos(eid)
+				if _voxel_map.is_passable(target):
+					_voxel_map.set_entity_pos(eid, target)
 					entity_moved.emit(eid, old_pos, target)
 					moved_entities.append(eid)
 
 			"interact_door":
-				var door_pos: Vector2i = order.get("target_pos", Vector2i(-1, -1))
-				if door_pos != Vector2i(-1, -1):
+				var door_pos = order.get("target_pos", null)
+				if door_pos != null and door_pos is Vector3i and door_pos != Vector3i(-1, -1, -1):
 					interact_door(door_pos)
 					events.append({"type": "door_interaction", "entity_id": eid, "pos": door_pos})
 
@@ -719,13 +792,14 @@ func execute_orders() -> Dictionary:
 				events.append({"type": "listen", "entity_id": eid})
 
 			"wait":
-				pass  # Explicit no-op
+				pass
 
-	# Update fog based on all member positions
 	if not moved_entities.is_empty():
+		# Update _current_level to the leader's level after movement.
+		var leader_pos_after := get_party_position_3d()
+		_current_level = leader_pos_after.z
 		_update_fog_for_all_members()
-		var leader_pos := get_party_position()
-		party_moved.emit(leader_pos, leader_pos)
+		party_moved.emit(leader_pos_after, leader_pos_after)
 
 	var result := {"moved_entities": moved_entities, "events": events}
 	orders_executed.emit(result)
@@ -815,39 +889,7 @@ func _bfs_path(start: Vector2i, goal: Vector2i, mover_id: String = "") -> Array[
 
 ## Update fog-of-war based on the union of all party members' positions.
 func _update_fog_for_all_members() -> void:
-	if _map == null:
-		return
-
-	# Mark all currently VISIBLE cells as EXPLORED first
-	for pos in _map._cells.keys():
-		if _map.get_fog(pos) == TacticalMapData.FogState.VISIBLE:
-			_map.set_fog(pos, TacticalMapData.FogState.EXPLORED)
-
-	# Then reveal around each member's position using per-entity light radius.
-	# Cells illuminated by ANY party member are visible to ALL (shared vision).
-	var any_light := false
-	for eid in _party_entity_ids:
-		var member_pos := _map.get_entity_pos(eid)
-		if member_pos == Vector2i(-1, -1):
-			continue
-
-		var radius := _get_entity_visible_radius(eid)
-		if radius <= 0:
-			continue  # This entity has no light — skip (they see via allies)
-		any_light = true
-
-		# Reveal room if in one
-		var room_id := _map.get_room_at(member_pos)
-		if room_id >= 0:
-			_reveal_room(room_id)
-		else:
-			# Corridor: reveal cells within this entity's light radius
-			var visible_cells := IsometricGrid.get_cells_in_radius(member_pos, radius)
-			for vc in visible_cells:
-				if _map.has_cell(vc):
-					_map.set_fog(vc, TacticalMapData.FogState.VISIBLE)
-
-	fog_updated.emit()
+	_update_fog_for_all_members_voxel()
 
 
 # ---------------------------------------------------------------------------
@@ -899,9 +941,16 @@ func get_map() -> TacticalMapData:
 	return _map
 
 
-## Returns the VoxelMapData (only valid when use_voxel_renderer is true).
+## Returns the VoxelMapData loaded for the current dungeon (or null).
 func get_voxel_map() -> VoxelMapData:
 	return _voxel_map
+
+
+## Returns true if either map type has been loaded. Retained for test suites
+## and a few 2D helpers pending full migration; new code should prefer
+## `get_voxel_map() != null` directly.
+func has_map() -> bool:
+	return _voxel_map != null or _map != null
 
 
 func get_current_level() -> int:
@@ -918,13 +967,9 @@ func get_dungeon_name() -> String:
 
 ## Returns true if the party is standing on a designated transition cell.
 func is_on_transition_cell() -> bool:
-	if use_voxel_renderer:
-		if _voxel_map == null:
-			return false
-		return _voxel_map.is_transition_cell(get_party_position_3d())
-	if _map == null:
+	if _voxel_map == null:
 		return false
-	return _map.is_transition_cell(get_party_position())
+	return _voxel_map.is_transition_cell(get_party_position_3d())
 
 
 ## Returns the 3D position of the party leader (voxel mode).
@@ -952,44 +997,31 @@ func get_entity_pos_3d(entity_id: String) -> Vector3i:
 # ---------------------------------------------------------------------------
 
 func _reveal_entry_room() -> void:
-	var party_pos := get_party_position()
-	var room_id := _map.get_room_at(party_pos)
-	if room_id >= 0:
-		_reveal_room(room_id)
-	else:
-		# Even if not in a named room, mark the entry cell as visible
-		_map.set_fog(party_pos, TacticalMapData.FogState.VISIBLE)
-		fog_updated.emit()
+	_reveal_entry_room_voxel()
 
 
-func _reveal_room(room_id: int) -> void:
-	var cells := _map.get_room_cells(room_id)
-	var boundary := _map.get_room_boundary_cells(room_id)
-
-	for c in cells:
-		_map.set_fog(c, TacticalMapData.FogState.VISIBLE)
-
-	for c in boundary:
-		if _map.get_fog(c) == TacticalMapData.FogState.HIDDEN:
-			_map.set_fog(c, TacticalMapData.FogState.VISIBLE)
-
-	room_revealed.emit(room_id)
-	fog_updated.emit()
+func _update_visibility_on_move(old_pos, new_pos) -> void:
+	_update_visibility_on_move_voxel(old_pos, new_pos)
 
 
-func _update_visibility_on_move(old_pos: Vector2i, new_pos: Vector2i) -> void:
-	var old_room := _map.get_room_at(old_pos)
-	var new_room := _map.get_room_at(new_pos)
+## Voxel-mode visibility update. Marks cells of the old room as explored when
+## the party leaves it, and reveals the new room (if any) when entered.
+func _update_visibility_on_move_voxel(old_pos, new_pos) -> void:
+	if _voxel_map == null:
+		return
+	var old_3d: Vector3i = old_pos if old_pos is Vector3i else Vector3i(old_pos.x, old_pos.y, _current_level)
+	var new_3d: Vector3i = new_pos if new_pos is Vector3i else Vector3i(new_pos.x, new_pos.y, _current_level)
 
-	# If party moved out of a room, mark its cells as EXPLORED
+	var old_room := _voxel_map.get_room_at(old_3d)
+	var new_room := _voxel_map.get_room_at(new_3d)
+
 	if old_room != new_room and old_room >= 0:
-		for c in _map.get_room_cells(old_room):
-			if _map.get_fog(c) == TacticalMapData.FogState.VISIBLE:
-				_map.set_fog(c, TacticalMapData.FogState.EXPLORED)
+		for c: Vector3i in _voxel_map.get_room_cells(old_room):
+			if _voxel_map.get_fog(c) == "visible":
+				_voxel_map.set_fog(c, "explored")
 
-	# Reveal new room if entered
 	if new_room >= 0 and new_room != old_room:
-		_reveal_room(new_room)
+		_reveal_room_voxel(new_room)
 	else:
 		fog_updated.emit()
 

@@ -8,6 +8,7 @@
 extends PopupMenu
 
 const Currency := preload("res://engine/subsystems/commerce/currency.gd")
+const CSTabEquipment := preload("res://scenes/ui/character_sheet/tabs/cs_tab_equipment.gd")
 
 signal send_to_requested(item_data: Dictionary, source_carrier_type: String,
 		source_carrier_id: String, target_carrier: Dictionary)
@@ -140,6 +141,11 @@ func _on_send_to_pressed(target_index: int) -> void:
 func _equip_item() -> void:
 	var item_id: String = str(_item_data.get("id", ""))
 	var cat: String = str(_item_data.get("item_category", ""))
+	var item_key: String = str(_item_data.get("item_key", ""))
+	var catalog := EquipmentCatalog.new()
+	var catalog_entry: Dictionary = catalog.get_item(item_key)
+	var weapon_tags: Array = catalog_entry.get("weapon_tags", [])
+
 	var slot := "pack"
 	match cat:
 		"weapon":
@@ -148,8 +154,36 @@ func _equip_item() -> void:
 			slot = "body"
 		"shield":
 			slot = "hands_off"
-	CampaignRepository.update_inventory_item_equip_state(item_id, true, slot)
-	EventBus.inventory_updated.emit(_source_carrier_id)
+		"ammunition":
+			# Only thrown self-ammo (darts) is equippable; routes to a hand slot.
+			if "thrown" in weapon_tags and not String(catalog_entry.get("weapon_damage", "")).is_empty():
+				slot = "hands_main"
+			else:
+				return  # Non-throwable ammo (arrows/bolts) isn't equippable here.
+
+	if slot == "pack":
+		return  # Unsupported category.
+
+	var qty: int = int(_item_data.get("quantity", 1))
+	if CSTabEquipment.is_thrown_stackable(_item_data, catalog):
+		# Thrown weapons / dart bundles equip the whole stack.
+		if CampaignRepository.update_inventory_item_equip_state(item_id, true, slot):
+			# Seed uses_remaining for fresh dart-style bundles.
+			var uses_per_unit: int = int(catalog_entry.get("uses_per_unit", -1))
+			var current_uses: int = int(_item_data.get("uses_remaining", -1))
+			if uses_per_unit > 0 and current_uses < 0:
+				CampaignRepository.update_inventory_item_uses(item_id, uses_per_unit)
+			EventBus.inventory_updated.emit(_source_carrier_id)
+		return
+
+	# Non-thrown stack: split off one unit so only a single item gets equipped.
+	if qty > 1:
+		var uses_per_unit: int = int(catalog_entry.get("uses_per_unit", -1))
+		if not CampaignRepository.split_item_for_equip(item_id, slot, uses_per_unit).is_empty():
+			EventBus.inventory_updated.emit(_source_carrier_id)
+	else:
+		if CampaignRepository.update_inventory_item_equip_state(item_id, true, slot):
+			EventBus.inventory_updated.emit(_source_carrier_id)
 
 
 func _unequip_item() -> void:

@@ -32,6 +32,17 @@ const TOKEN_MOVE_DURATION := 0.15   ## Fallback seconds per cell hop (legacy/com
 const DOUBLE_TAP_THRESHOLD := 0.3   ## Seconds for double-tap detection
 const HIT_RADIUS_SCREEN := 20.0    ## Screen pixels for entity hit detection
 
+## Per-level albedo tints per GDD §16.2. FULL_COLOR on the focus level,
+## DIM_COLOR on explored levels below focus (0.6× brightness). The tint is
+## multiplied into each mesh's stored base_color by
+## [method TacticalGrid3D.set_level_group_tint].
+const DIM_COLOR := Color(0.6, 0.6, 0.6, 1.0)
+const FULL_COLOR := Color.WHITE
+
+## Alpha applied to enemy-token body material on explored non-focus levels
+## (party tokens stay at full opacity so the player never loses them).
+const NON_FOCUS_ENEMY_ALPHA := 0.5
+
 ## Pre-computed isometric camera basis vectors for rotation_degrees (-35.264, 0, 0).
 ## Diamond layout is baked into cell_to_world(), so no Y rotation needed.
 ## Camera right (+X local in world space):
@@ -116,7 +127,9 @@ var _move_queues: Dictionary = {}
 var _tweening: Dictionary = {}  # { entity_id: true }
 
 ## Continuous movement animations (renderer-driven, used for exploration movement).
-## { entity_id: { "path": Array[Vector2i], "path_index": int, "cells_per_round": float } }
+## { entity_id: { "path": Array[Vector3i], "path_index": int, "cells_per_round": float } }
+## Path elements are Vector3i voxel cells. Legacy 2D paths ride through as Vector2i
+## until the legacy renderer path is deleted in D.2.
 var _active_movements: Dictionary = {}
 ## Current clock speed (mirrors SchedulerLoop speed via EventBus signal).
 var _clock_speed: int = 0  # SchedulerLoop.SPEED_PAUSED
@@ -145,7 +158,9 @@ signal minimap_toggle_requested()
 
 ## Renderer-driven movement animation callbacks.
 ## Emitted when a continuous movement tween crosses a cell boundary.
-signal movement_cell_reached(entity_id: String, cell: Vector2i)
+## In voxel mode, cell is a Vector3i; in legacy 2D mode, Vector2i.
+## Kept as untyped Variant so both path types can ride through until D.2 flag removal.
+signal movement_cell_reached(entity_id: String, cell)
 ## Emitted when the full movement path animation completes.
 signal movement_path_complete(entity_id: String)
 
@@ -170,15 +185,14 @@ func setup(controller: DungeonMapController) -> void:
 	# Clock speed changes control tween speed_scale.
 	EventBus.scheduler_speed_changed.connect(_on_clock_speed_changed)
 
-	# Voxel path: set up VisibilityManager
-	if DungeonMapController.use_voxel_renderer:
-		_voxel_map = controller.get_voxel_map()
-		_visibility_manager = VisibilityManager.new()
-		add_child(_visibility_manager)
-		_visibility_manager.focus_level_changed.connect(_on_focus_level_changed)
-		if _voxel_map != null:
-			_visibility_manager.update_explored_levels(_voxel_map)
-			_visibility_manager.focus_level = controller.get_current_level()
+	# Set up VisibilityManager for per-level focus + opacity.
+	_voxel_map = controller.get_voxel_map()
+	_visibility_manager = VisibilityManager.new()
+	add_child(_visibility_manager)
+	_visibility_manager.focus_level_changed.connect(_on_focus_level_changed)
+	if _voxel_map != null:
+		_visibility_manager.update_explored_levels(_voxel_map)
+		_visibility_manager.focus_level = controller.get_current_level()
 
 
 # ---------------------------------------------------------------------------
@@ -217,7 +231,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if _camera == null or _map == null:
+	if _camera == null or _voxel_map == null:
 		return
 
 	# WASD camera pan (no mouse-to-edge scrolling)
@@ -284,13 +298,10 @@ func restore_state(data: Dictionary) -> void:
 # ---------------------------------------------------------------------------
 
 func _on_map_loaded(_id: String) -> void:
-	if DungeonMapController.use_voxel_renderer:
-		_voxel_map = _controller.get_voxel_map()
-		if _visibility_manager != null and _voxel_map != null:
-			_visibility_manager.update_explored_levels(_voxel_map)
-			_visibility_manager.focus_level = _controller.get_current_level()
-	else:
-		_map = _controller.get_map()
+	_voxel_map = _controller.get_voxel_map()
+	if _visibility_manager != null and _voxel_map != null:
+		_visibility_manager.update_explored_levels(_voxel_map)
+		_visibility_manager.focus_level = _controller.get_current_level()
 	if _camera != null:
 		_camera.size = 12.0
 	_refresh_all()
@@ -298,18 +309,15 @@ func _on_map_loaded(_id: String) -> void:
 
 
 func _on_fog_updated() -> void:
-	if DungeonMapController.use_voxel_renderer:
-		_voxel_map = _controller.get_voxel_map()
-		if _visibility_manager != null and _voxel_map != null:
-			_visibility_manager.update_explored_levels(_voxel_map)
-		# Rebuild level groups to reflect fog changes
-		_rebuild_grid_voxel()
-		return
-	_map = _controller.get_map()
-	_rebuild_fog()
+	_voxel_map = _controller.get_voxel_map()
+	if _visibility_manager != null and _voxel_map != null:
+		_visibility_manager.update_explored_levels(_voxel_map)
+	# Rebuild level groups to reflect fog changes
+	_rebuild_grid_voxel()
 
 
-func _on_party_moved(_from: Vector2i, _to: Vector2i) -> void:
+func _on_party_moved(_from, _to) -> void:
+	# Signal is untyped to carry Vector2i (legacy) or Vector3i (voxel).
 	_update_entity_tokens()
 
 
@@ -321,16 +329,9 @@ func _on_entity_moved(entity_id: String, _from_pos, to_pos) -> void:
 	if not _tokens.has(entity_id):
 		return
 
-	var target_world: Vector3
-	if DungeonMapController.use_voxel_renderer:
-		var pos: Vector3i = to_pos if to_pos is Vector3i else Vector3i(to_pos.x, to_pos.y, _controller.get_current_level())
-		target_world = VoxelGrid.cell_to_world(pos.x, pos.y, pos.z)
-		target_world.y += 0.2
-	else:
-		var pos_2d: Vector2i = to_pos
-		var cell := _map.get_cell(pos_2d) if _map != null else {}
-		var elev: int = cell.get("elevation", 0)
-		target_world = TacticalGrid3D.cell_to_world(pos_2d.x, pos_2d.y, elev)
+	var pos: Vector3i = to_pos if to_pos is Vector3i else Vector3i(to_pos.x, to_pos.y, _controller.get_current_level())
+	var target_world: Vector3 = VoxelGrid.cell_to_world(pos.x, pos.y, pos.z)
+	target_world.y += 0.2
 
 	# At MAX speed, snap instantly (no tween).
 	if _clock_speed == SchedulerLoop.SPEED_MAX:
@@ -433,10 +434,16 @@ func _advance_movement_animation(entity_id: String) -> void:
 		_tweening.erase(entity_id)
 		return
 
-	var next_cell: Vector2i = path[idx]
-	var cell_data := _map.get_cell(next_cell) if _map != null else {}
-	var elev: int = cell_data.get("elevation", 0)
-	var target_world := TacticalGrid3D.cell_to_world(next_cell.x, next_cell.y, elev)
+	var next_cell = path[idx]
+	var target_world: Vector3
+	if next_cell is Vector3i:
+		# Voxel path: level is encoded in z, world Y comes from VoxelGrid.
+		target_world = VoxelGrid.cell_to_world(next_cell.x, next_cell.y, next_cell.z)
+	else:
+		# Legacy 2D path: elevation lives on the TacticalMapData cell.
+		var cell_data := _map.get_cell(next_cell) if _map != null else {}
+		var elev: int = cell_data.get("elevation", 0)
+		target_world = TacticalGrid3D.cell_to_world(next_cell.x, next_cell.y, elev)
 
 	var token: Node3D = _tokens[entity_id]
 	_tweening[entity_id] = true
@@ -463,7 +470,8 @@ func _advance_movement_animation(entity_id: String) -> void:
 ## Called when one cell-hop of a continuous movement finishes.
 ## Emits [signal movement_cell_reached] for the mechanical update, then
 ## continues to the next segment (or signals path completion).
-func _on_continuous_move_finished(entity_id: String, reached_cell: Vector2i) -> void:
+## reached_cell is Vector3i in voxel mode, Vector2i in legacy 2D mode.
+func _on_continuous_move_finished(entity_id: String, reached_cell) -> void:
 	_tweening.erase(entity_id)
 
 	if not _active_movements.has(entity_id):
@@ -562,22 +570,16 @@ func get_animating_entity_ids() -> Array:
 	return _active_movements.keys()
 
 
-func _on_door_state_changed(_pos: Vector2i, _old: String, _new: String) -> void:
+func _on_door_state_changed(_pos, _old: String, _new: String) -> void:
+	# Signal is untyped to carry Vector2i (legacy) or Vector3i (voxel).
 	_rebuild_grid()
 
 
 func _on_level_changed(_from_level: int, to_level: int) -> void:
-	if DungeonMapController.use_voxel_renderer:
-		_voxel_map = _controller.get_voxel_map()
-		if _visibility_manager != null:
-			_visibility_manager.update_explored_levels(_voxel_map)
-			_visibility_manager.set_focus_level(to_level)
-		_refresh_all()
-		_center_camera_on_party()
-		return
-	_map = _controller.get_map()
-	if _camera != null:
-		_camera.size = 12.0
+	_voxel_map = _controller.get_voxel_map()
+	if _visibility_manager != null:
+		_visibility_manager.update_explored_levels(_voxel_map)
+		_visibility_manager.set_focus_level(to_level)
 	_refresh_all()
 	_center_camera_on_party()
 
@@ -588,65 +590,13 @@ func _on_level_changed(_from_level: int, to_level: int) -> void:
 
 func _refresh_all() -> void:
 	if _controller != null:
-		if DungeonMapController.use_voxel_renderer:
-			_voxel_map = _controller.get_voxel_map()
-		else:
-			_map = _controller.get_map()
+		_voxel_map = _controller.get_voxel_map()
 	_rebuild_grid()
 	_update_entity_tokens()
 
 
 func _rebuild_grid() -> void:
-	if DungeonMapController.use_voxel_renderer:
-		_rebuild_grid_voxel()
-		return
-
-	if _map == null or _grid_meshes == null:
-		return
-
-	# Clear existing grid meshes
-	for child in _grid_meshes.get_children():
-		child.queue_free()
-
-	# Build floor
-	var floor_mmi := TacticalGrid3D.build_floor_multimesh(_map, Callable(TacticalGrid3D, "floor_color_for"))
-	floor_mmi.name = "FloorCells"
-	_grid_meshes.add_child(floor_mmi)
-
-	# Build walls and index them by cell position for occlusion fading
-	_wall_meshes.clear()
-	_faded_walls.clear()
-	var walls := TacticalGrid3D.build_walls(_map)
-	_grid_meshes.add_child(walls)
-	for child in walls.get_children():
-		if child is MeshInstance3D and child.has_meta("cell_pos"):
-			_wall_meshes[child.get_meta("cell_pos")] = child
-
-	# Build doors
-	var doors := TacticalGrid3D.build_doors(_map)
-	_grid_meshes.add_child(doors)
-
-	# Build stairs
-	var stairs := TacticalGrid3D.build_stairs(_map)
-	_grid_meshes.add_child(stairs)
-
-	# Build grid lines
-	var grid_lines := TacticalGrid3D.build_grid_lines(_map)
-	_grid_meshes.add_child(grid_lines)
-
-	# Build feature labels
-	var labels := TacticalGrid3D.build_feature_labels(_map)
-	_grid_meshes.add_child(labels)
-
-	# Build transition markers
-	var markers := TacticalGrid3D.build_transition_markers(_map)
-	_grid_meshes.add_child(markers)
-
-	# Rebuild fog
-	_rebuild_fog()
-
-	# Rebuild highlights
-	_rebuild_highlights()
+	_rebuild_grid_voxel()
 
 
 ## Voxel path: builds per-level groups under _grid_meshes (acting as LevelGroups).
@@ -654,8 +604,13 @@ func _rebuild_grid_voxel() -> void:
 	if _voxel_map == null or _grid_meshes == null:
 		return
 
-	# Clear existing level groups
+	# Remove existing level groups from the tree IMMEDIATELY so newly-added
+	# children don't get name collisions (Godot auto-appends "@Node@..." suffixes
+	# to duplicates, which breaks _apply_level_visibility's int-parse of the
+	# level number and leaves upper levels rendering — the "ceiling returns
+	# after a move" symptom). queue_free defers the destructor.
 	for child in _grid_meshes.get_children():
+		_grid_meshes.remove_child(child)
 		child.queue_free()
 
 	_wall_meshes.clear()
@@ -684,18 +639,15 @@ func _rebuild_grid_voxel() -> void:
 	# Rebuild highlights
 	_rebuild_highlights()
 
+	# Re-evaluate wall occlusion: rebuild cleared _faded_walls and recreated
+	# all wall meshes at full opacity. Without this, walls between camera and
+	# party stop fading after any fog update (the symptom reported in 7b D.1).
+	_update_wall_occlusion()
+
 
 func _rebuild_fog() -> void:
-	if DungeonMapController.use_voxel_renderer:
-		# Voxel fog is built per-level inside each level group by _rebuild_grid_voxel()
-		return
-	if _fog_layer == null or _map == null:
-		return
-	for child in _fog_layer.get_children():
-		child.queue_free()
-	# FOG DISABLED — uncomment to re-enable once rendering is stable
-	#var fog_mmi := TacticalGrid3D.build_fog_overlay(_map)
-	#_fog_layer.add_child(fog_mmi)
+	# Voxel fog is built per-level inside each level group by _rebuild_grid_voxel().
+	pass
 
 
 func _rebuild_highlights() -> void:
@@ -704,26 +656,17 @@ func _rebuild_highlights() -> void:
 	for child in _highlight_layer.get_children():
 		child.queue_free()
 
-	if DungeonMapController.use_voxel_renderer:
-		for layer in _highlight_layers:
-			var color: Color = layer.get("color", Color(1.0, 1.0, 0.0, 0.25))
-			var cells_3d: Array[Vector3i] = []
-			for pos in layer.get("cells", []):
-				if pos is Vector3i:
-					cells_3d.append(pos)
-				elif pos is Vector2i:
-					var fl := _visibility_manager.focus_level if _visibility_manager != null else 0
-					cells_3d.append(Vector3i(pos.x, pos.y, fl))
-			var mmi := TacticalGrid3D.build_highlight_overlay_voxel(cells_3d, color, _voxel_map)
-			_highlight_layer.add_child(mmi)
-	else:
-		for layer in _highlight_layers:
-			var color: Color = layer.get("color", Color(1.0, 1.0, 0.0, 0.25))
-			var cells: Array[Vector2i] = []
-			for pos in layer.get("cells", []):
-				cells.append(pos)
-			var mmi := TacticalGrid3D.build_highlight_overlay(cells, color, _map)
-			_highlight_layer.add_child(mmi)
+	for layer in _highlight_layers:
+		var color: Color = layer.get("color", Color(1.0, 1.0, 0.0, 0.25))
+		var cells_3d: Array[Vector3i] = []
+		for pos in layer.get("cells", []):
+			if pos is Vector3i:
+				cells_3d.append(pos)
+			elif pos is Vector2i:
+				var fl := _visibility_manager.focus_level if _visibility_manager != null else 0
+				cells_3d.append(Vector3i(pos.x, pos.y, fl))
+		var mmi := TacticalGrid3D.build_highlight_overlay_voxel(cells_3d, color, _voxel_map)
+		_highlight_layer.add_child(mmi)
 
 
 # ---------------------------------------------------------------------------
@@ -784,30 +727,7 @@ func get_entity_token(entity_id: String) -> Node3D:
 func _update_entity_tokens() -> void:
 	if _entity_layer == null:
 		return
-
-	if DungeonMapController.use_voxel_renderer:
-		_update_entity_tokens_voxel()
-		return
-
-	if _map == null:
-		return
-
-	# Remove tokens for entities no longer in the map
-	var to_remove: Array = []
-	for eid in _tokens.keys():
-		if not _map.entity_positions.has(eid):
-			to_remove.append(eid)
-	for eid in to_remove:
-		remove_entity_token(eid)
-
-	# Update positions for all current entities
-	for eid in _map.entity_positions.keys():
-		var pos: Vector2i = _map.entity_positions[eid]
-		var cell := _map.get_cell(pos)
-		var elev: int = cell.get("elevation", 0)
-		var world_pos := TacticalGrid3D.cell_to_world(pos.x, pos.y, elev)
-		if _tokens.has(eid):
-			_tokens[eid].update_position(world_pos)
+	_update_entity_tokens_voxel()
 
 
 ## Voxel path: sync token positions using VoxelMapData entity positions.
@@ -828,6 +748,14 @@ func _update_entity_tokens_voxel() -> void:
 		world_pos.y += 0.2  # Token offset above floor per GDD §12.3
 		if _tokens.has(eid):
 			_tokens[eid].update_position(world_pos)
+
+	# Re-apply per-level token visibility/opacity per GDD §16.2 in case the
+	# active focus level has since shifted off this token's level.
+	_apply_token_visibility()
+	# Re-evaluate wall occlusion: party positions may have moved, and
+	# _rebuild_grid_voxel clears _faded_walls, so occlusion needs to re-fade
+	# the walls between camera and party.
+	_update_wall_occlusion()
 
 
 # ---------------------------------------------------------------------------
@@ -875,17 +803,10 @@ func move_token(entity_id: String, to_cell) -> void:
 	_tweening.erase(entity_id)
 	_kill_entity_tween(entity_id)
 
-	if DungeonMapController.use_voxel_renderer:
-		var pos: Vector3i = to_cell if to_cell is Vector3i else Vector3i(to_cell.x, to_cell.y, _controller.get_current_level())
-		var world_pos := VoxelGrid.cell_to_world(pos.x, pos.y, pos.z)
-		world_pos.y += 0.2
-		_tokens[entity_id].update_position(world_pos)
-	else:
-		var cell_2d: Vector2i = to_cell
-		var cell := _map.get_cell(cell_2d) if _map != null else {}
-		var elev: int = cell.get("elevation", 0)
-		var world_pos := TacticalGrid3D.cell_to_world(cell_2d.x, cell_2d.y, elev)
-		_tokens[entity_id].update_position(world_pos)
+	var pos: Vector3i = to_cell if to_cell is Vector3i else Vector3i(to_cell.x, to_cell.y, _controller.get_current_level())
+	var world_pos := VoxelGrid.cell_to_world(pos.x, pos.y, pos.z)
+	world_pos.y += 0.2
+	_tokens[entity_id].update_position(world_pos)
 
 
 func set_token_facing(entity_id: String, facing: Vector2i) -> void:
@@ -1004,17 +925,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif not event.ctrl_pressed and not event.alt_pressed:
 			match event.keycode:
 				KEY_HOME:
-					if DungeonMapController.use_voxel_renderer and _visibility_manager != null:
+					if _visibility_manager != null:
 						_visibility_manager.jump_to_party_leader()
 					_camera.size = 12.0
 					_center_camera_on_selected()
 					get_viewport().set_input_as_handled()
 				KEY_PAGEUP:
-					if DungeonMapController.use_voxel_renderer and _visibility_manager != null:
+					if _visibility_manager != null:
 						_visibility_manager.set_focus_level(_visibility_manager.focus_level + 2)
 					get_viewport().set_input_as_handled()
 				KEY_PAGEDOWN:
-					if DungeonMapController.use_voxel_renderer and _visibility_manager != null:
+					if _visibility_manager != null:
 						_visibility_manager.set_focus_level(_visibility_manager.focus_level - 2)
 					get_viewport().set_input_as_handled()
 				KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
@@ -1030,6 +951,29 @@ func _unhandled_input(event: InputEvent) -> void:
 					get_viewport().set_input_as_handled()
 				KEY_M:
 					minimap_toggle_requested.emit()
+					get_viewport().set_input_as_handled()
+				KEY_F3:
+					# Dev aid: print party leader position + stair cells so the
+					# user can navigate without an in-world coordinate overlay.
+					if _controller != null:
+						var leader_pos := _controller.get_party_position_3d()
+						var vm := _controller.get_voxel_map()
+						var summary := PackedStringArray()
+						summary.append("Leader: %s" % str(leader_pos))
+						if vm != null:
+							summary.append("Focus level: %d" % (_visibility_manager.focus_level if _visibility_manager != null else 0))
+							for cell: VoxelCell in vm.get_all_cells():
+								if cell.feature.begins_with("stairs_"):
+									var target := _controller.get_stair_target(Vector3i(cell.col, cell.row, cell.level))
+									summary.append("  %s at (%d,%d,%d) → %s" % [
+										cell.feature, cell.col, cell.row, cell.level, str(target)
+									])
+						print("[F3] ", " | ".join(summary))
+						EventBus.notification_requested.emit({
+							"type": "info", "category": "environment",
+							"title": "Leader: %s (see console for stair list)" % str(leader_pos),
+							"duration": 6.0,
+						})
 					get_viewport().set_input_as_handled()
 				KEY_ESCAPE:
 					if not _selected_entity_ids.is_empty():
@@ -1055,17 +999,11 @@ func _handle_left_press(event: InputEventMouseButton) -> void:
 			get_viewport().set_input_as_handled()
 			return
 		# No entity hit — emit cell_clicked for movement targets
-		if DungeonMapController.use_voxel_renderer:
-			var fl := _visibility_manager.focus_level if _visibility_manager != null else 0
-			var cell_pos_3d := TacticalGrid3D.screen_to_cell_voxel(_camera, event.position, fl)
-			if _voxel_map != null and _voxel_map.has_cell(cell_pos_3d):
-				cell_clicked.emit(cell_pos_3d)
-				get_viewport().set_input_as_handled()
-		else:
-			var cell_pos := TacticalGrid3D.screen_to_cell(_camera, event.position)
-			if _map != null and _map.has_cell(cell_pos):
-				cell_clicked.emit(cell_pos)
-				get_viewport().set_input_as_handled()
+		var fl := _visibility_manager.focus_level if _visibility_manager != null else 0
+		var cell_pos_3d := TacticalGrid3D.screen_to_cell_voxel(_camera, event.position, fl)
+		if _voxel_map != null and _voxel_map.has_cell(cell_pos_3d):
+			cell_clicked.emit(cell_pos_3d)
+			get_viewport().set_input_as_handled()
 		return
 
 	# Begin drag-select tracking
@@ -1126,34 +1064,19 @@ func _perform_click_select(event: InputEventMouseButton) -> void:
 		clear_selection()
 		selection_cleared.emit()
 
-	if DungeonMapController.use_voxel_renderer:
-		var fl := _visibility_manager.focus_level if _visibility_manager != null else 0
-		var cell_pos_3d := TacticalGrid3D.screen_to_cell_voxel(_camera, event.position, fl)
-		if _voxel_map != null and _voxel_map.has_cell(cell_pos_3d):
-			cell_clicked.emit(cell_pos_3d)
-	else:
-		var cell_pos := TacticalGrid3D.screen_to_cell(_camera, event.position)
-		if _map != null and _map.has_cell(cell_pos):
-			cell_clicked.emit(cell_pos)
+	var fl := _visibility_manager.focus_level if _visibility_manager != null else 0
+	var cell_pos_3d := TacticalGrid3D.screen_to_cell_voxel(_camera, event.position, fl)
+	if _voxel_map != null and _voxel_map.has_cell(cell_pos_3d):
+		cell_clicked.emit(cell_pos_3d)
 
 
 func _handle_right_click(event: InputEventMouseButton) -> void:
-	if _camera == null:
+	if _camera == null or _voxel_map == null:
 		return
-
-	if DungeonMapController.use_voxel_renderer:
-		if _voxel_map == null:
-			return
-		var fl := _visibility_manager.focus_level if _visibility_manager != null else 0
-		var cell_pos := TacticalGrid3D.screen_to_cell_voxel(_camera, event.position, fl)
-		context_menu_requested.emit(cell_pos, event.position)
-		cell_right_clicked.emit(cell_pos, event.position)
-	else:
-		if _map == null:
-			return
-		var cell_pos := TacticalGrid3D.screen_to_cell(_camera, event.position)
-		context_menu_requested.emit(cell_pos, event.position)
-		cell_right_clicked.emit(cell_pos, event.position)
+	var fl := _visibility_manager.focus_level if _visibility_manager != null else 0
+	var cell_pos := TacticalGrid3D.screen_to_cell_voxel(_camera, event.position, fl)
+	context_menu_requested.emit(cell_pos, event.position)
+	cell_right_clicked.emit(cell_pos, event.position)
 	get_viewport().set_input_as_handled()
 
 
@@ -1180,29 +1103,18 @@ func _entity_id_near_screen_pos(screen_pos: Vector2) -> String:
 func _center_camera_on_party() -> void:
 	if _camera == null or _controller == null:
 		return
-	if DungeonMapController.use_voxel_renderer:
-		var pos := _controller.get_party_position_3d()
-		var world_pos := VoxelGrid.cell_to_world(pos.x, pos.y, pos.z)
-		_look_at_world_point(world_pos)
-	else:
-		var pos := _controller.get_party_position()
-		var world_pos := TacticalGrid3D.cell_to_world(pos.x, pos.y)
-		_look_at_world_point(world_pos)
+	var pos := _controller.get_party_position_3d()
+	var world_pos := VoxelGrid.cell_to_world(pos.x, pos.y, pos.z)
+	_look_at_world_point(world_pos)
 
 
 func _center_camera_on_selected() -> void:
 	if _camera == null:
 		return
-	if DungeonMapController.use_voxel_renderer and not _selected_entity_ids.is_empty() and _voxel_map != null:
+	if not _selected_entity_ids.is_empty() and _voxel_map != null:
 		var pos := _voxel_map.get_entity_pos(_selected_entity_ids[0])
 		if pos != Vector3i(-1, -1, -1):
 			var world_pos := VoxelGrid.cell_to_world(pos.x, pos.y, pos.z)
-			_look_at_world_point(world_pos)
-			return
-	elif not DungeonMapController.use_voxel_renderer and not _selected_entity_ids.is_empty() and _map != null:
-		var pos := _map.get_entity_pos(_selected_entity_ids[0])
-		if pos != Vector2i(-1, -1):
-			var world_pos := TacticalGrid3D.cell_to_world(pos.x, pos.y)
 			_look_at_world_point(world_pos)
 			return
 	_center_camera_on_party()
@@ -1258,37 +1170,97 @@ func _screen_delta_to_world(screen_delta: Vector2) -> Vector3:
 func _on_focus_level_changed(new_level: int) -> void:
 	if _camera == null:
 		return
-	# Tween camera Y to center on the new focus level
+	# Center of the new focus level, plus the standing camera offset
+	# (CAM_BACKWARD * 50.0 is the viewing distance baked into the initial rig).
 	var base_y: float = float(new_level) * VoxelGrid.CELL_SIZE + (VoxelGrid.CELL_SIZE * 0.5)
-	# Maintain the existing camera offset pattern
-	var cam_target := _camera.position
-	cam_target.y = base_y + 15.0
-	var offset_dir := CAM_BACKWARD * 50.0
-	cam_target = Vector3(cam_target.x, base_y, cam_target.z - _camera.position.z) + offset_dir
-	# Simpler: just tween the Y component
+	var target_y: float = base_y + CAM_BACKWARD.y * 50.0
 	var tween := create_tween()
-	tween.tween_property(_camera, "position:y",
-		_camera.position.y - (_camera.position.y - (base_y + CAM_BACKWARD.y * 50.0)),
-		0.25).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(_camera, "position:y", target_y, 0.25) \
+		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 
 	# Rebuild grid to change which level gets individual walls
 	_rebuild_grid_voxel()
 
 
-## Apply hard-clip visibility to per-level groups.
-## Per GDD §16.3 Fallback 1: levels > focus+1 are hidden, rest visible.
+## Apply per-level visibility and albedo tint per GDD §16.2:
+##   level >  focus     → hidden (hard-clip — BG3 style, GDD §16.3 Fallback 1)
+##   level == focus     → visible, full color
+##   level <  focus     → visible, dimmed to 0.6× (if level has content; else hidden)
+## Tokens receive matching treatment via [method _apply_token_visibility].
 func _apply_level_visibility() -> void:
 	if _visibility_manager == null or _grid_meshes == null:
 		return
+	var focus: int = _visibility_manager.focus_level
 	for child in _grid_meshes.get_children():
-		if not child.name.begins_with("Level_"):
+		if not (child is Node3D) or not child.name.begins_with("Level_"):
 			continue
 		var level_str: String = child.name.trim_prefix("Level_")
 		if not level_str.is_valid_int():
 			continue
 		var level: int = int(level_str)
-		var vis: float = _visibility_manager.get_level_visibility(level)
-		child.visible = vis > 0.0
+		if level > focus:
+			child.visible = false
+		elif level == focus:
+			child.visible = true
+			TacticalGrid3D.set_level_group_tint(child, FULL_COLOR)
+		else:  # level < focus
+			if _visibility_manager.level_has_content(level):
+				child.visible = true
+				TacticalGrid3D.set_level_group_tint(child, DIM_COLOR)
+			else:
+				child.visible = false
+	_apply_token_visibility()
+
+
+## Apply per-level visibility and opacity to entity tokens per GDD §16.2.
+## Party tokens on non-focus explored levels stay fully opaque so the player
+## never loses sight of them. Enemy tokens on non-focus explored levels render
+## at NON_FOCUS_ENEMY_ALPHA. Tokens on hidden or above-focus levels are hidden.
+func _apply_token_visibility() -> void:
+	if _visibility_manager == null or _voxel_map == null:
+		return
+	var focus: int = _visibility_manager.focus_level
+	for eid in _tokens.keys():
+		var token: CombatantToken3D = _tokens[eid]
+		if token == null:
+			continue
+		var pos: Vector3i = _voxel_map.entity_positions.get(eid, Vector3i(-1, -1, -1))
+		if pos == Vector3i(-1, -1, -1):
+			continue
+		var level: int = pos.z
+		if level > focus:
+			token.visible = false
+		elif level == focus:
+			token.visible = true
+			_set_token_alpha(token, 1.0)
+		else:  # level < focus
+			if not _visibility_manager.level_has_content(level):
+				token.visible = false
+				continue
+			token.visible = true
+			if token.side == 0:
+				_set_token_alpha(token, 1.0)
+			else:
+				_set_token_alpha(token, NON_FOCUS_ENEMY_ALPHA)
+
+
+## Set the alpha of a token's body material, toggling transparency mode as
+## needed. Accesses the body mesh by scene-tree name to avoid depending on
+## private fields of [CombatantToken3D].
+func _set_token_alpha(token: CombatantToken3D, alpha: float) -> void:
+	var body: MeshInstance3D = token.get_node_or_null("Body")
+	if body == null:
+		return
+	var mat := body.material_override
+	if mat == null or not (mat is StandardMaterial3D):
+		return
+	var smat: StandardMaterial3D = mat
+	var c: Color = smat.albedo_color
+	smat.albedo_color = Color(c.r, c.g, c.b, alpha)
+	if alpha < 1.0:
+		smat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	else:
+		smat.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
 
 
 # ---------------------------------------------------------------------------
@@ -1328,7 +1300,7 @@ func _update_wall_occlusion() -> void:
 	#   1. The wall is closer to the camera (higher depth) than that member
 	#   2. The wall laterally overlaps that member's screen column
 	# Check per-token so dispersed parties work correctly.
-	var base_margin := 1.5  # world units
+	var base_margin := 2.0  # world units (widened from 1.5 to catch walls further from party)
 	var zoom_scale := 12.0 / maxf(_camera.size, 1.0)
 	var lateral_margin: float = base_margin * maxf(zoom_scale, 1.0)
 
@@ -1373,7 +1345,7 @@ func _update_wall_occlusion() -> void:
 		var mat: StandardMaterial3D = mesh.material_override
 		if mat != null:
 			var base_color: Color = mesh.get_meta("base_color", Color(0.5, 0.5, 0.5))
-			mat.albedo_color = Color(base_color.r, base_color.g, base_color.b, 0.1)
+			mat.albedo_color = Color(base_color.r, base_color.g, base_color.b, 0.08)
 			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 
 

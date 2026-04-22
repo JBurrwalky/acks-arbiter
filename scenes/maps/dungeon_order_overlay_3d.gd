@@ -48,6 +48,7 @@ var _draw_data: Array = []
 ## Update the overlay with the current set of pending orders.
 ## [param orders]: Dictionary from DungeonOrderManager.get_all_orders()
 ##   { entity_id -> { order_type, target_pos, path } }
+## target_pos and path elements may be Vector2i (legacy) or Vector3i (voxel).
 func update_overlays(orders: Dictionary) -> void:
 	_draw_data.clear()
 	for eid in orders:
@@ -55,7 +56,7 @@ func update_overlays(orders: Dictionary) -> void:
 		_draw_data.append({
 			"entity_id": eid,
 			"order_type": order.get("order_type", ""),
-			"target_pos": order.get("target_pos", Vector2i(-1, -1)),
+			"target_pos": order.get("target_pos", null),
 			"path": order.get("path", []),
 		})
 	_rebuild()
@@ -81,7 +82,7 @@ func _rebuild() -> void:
 
 	for entry in _draw_data:
 		var order_type: String = entry["order_type"]
-		var target_pos: Vector2i = entry["target_pos"]
+		var target_pos = entry["target_pos"]
 		var path: Array = entry["path"]
 
 		match order_type:
@@ -91,7 +92,14 @@ func _rebuild() -> void:
 				_build_order_icon(target_pos, order_type)
 
 
-func _build_move_path(path: Array, _target_pos: Vector2i) -> void:
+## Converts a path cell (Vector2i or Vector3i) to a world position.
+func _cell_world_pos(cell) -> Vector3:
+	if cell is Vector3i:
+		return VoxelGrid.cell_to_world(cell.x, cell.y, cell.z)
+	return TacticalGrid3D.cell_to_world(cell.x, cell.y)
+
+
+func _build_move_path(path: Array, _target_pos) -> void:
 	if path.is_empty():
 		return
 
@@ -119,8 +127,8 @@ func _build_move_path(path: Array, _target_pos: Vector2i) -> void:
 	ghost_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 
 	for i in range(path.size()):
-		var cell: Vector2i = path[i]
-		var world_pos := TacticalGrid3D.cell_to_world(cell.x, cell.y)
+		var cell = path[i]
+		var world_pos := _cell_world_pos(cell)
 		world_pos.y += Y_OFFSET
 
 		var mesh_inst := MeshInstance3D.new()
@@ -139,8 +147,8 @@ func _build_move_path(path: Array, _target_pos: Vector2i) -> void:
 		var im := ImmediateMesh.new()
 		im.surface_begin(Mesh.PRIMITIVE_LINES)
 		for i in range(path.size() - 1):
-			var from_pos := TacticalGrid3D.cell_to_world(path[i].x, path[i].y)
-			var to_pos := TacticalGrid3D.cell_to_world(path[i + 1].x, path[i + 1].y)
+			var from_pos := _cell_world_pos(path[i])
+			var to_pos := _cell_world_pos(path[i + 1])
 			from_pos.y += Y_OFFSET
 			to_pos.y += Y_OFFSET
 			im.surface_add_vertex(from_pos)
@@ -158,11 +166,11 @@ func _build_move_path(path: Array, _target_pos: Vector2i) -> void:
 		add_child(line_inst)
 
 
-func _build_order_icon(pos: Vector2i, order_type: String) -> void:
-	if pos == Vector2i(-1, -1):
+func _build_order_icon(pos, order_type: String) -> void:
+	if pos == null or pos == Vector2i(-1, -1) or pos == Vector3i(-1, -1, -1):
 		return
 
-	var world_pos := TacticalGrid3D.cell_to_world(pos.x, pos.y)
+	var world_pos := _cell_world_pos(pos)
 	world_pos.y += 0.3  # Float above floor
 
 	var icon_text: String = ORDER_ICONS.get(order_type, "?")

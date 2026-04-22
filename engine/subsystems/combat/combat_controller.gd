@@ -45,7 +45,7 @@ var cleave_resolver: CleaveResolver = null
 var movement_resolver: MovementResolver = null
 var maneuver_resolver = null  # ManeuverResolver — set after Phase 6
 var tactical_map: TacticalMapData = null
-var voxel_map: VoxelMapData = null  # Set when DungeonMapController.use_voxel_renderer is true
+var voxel_map: VoxelMapData = null  # Populated in voxel mode (default).
 
 ## Current state
 var round_number: int = 0
@@ -361,9 +361,9 @@ func _all_enemy_ids(combatant_id: String) -> Array[String]:
 # Voxel feature flag helper
 # ---------------------------------------------------------------------------
 
-## Returns true when voxel mode is active (both the flag and a voxel_map exist).
+## Returns true when voxel mode is active (voxel_map set on combat init).
 func _use_voxel() -> bool:
-	return voxel_map != null and DungeonMapController.use_voxel_renderer
+	return voxel_map != null
 
 
 # ---------------------------------------------------------------------------
@@ -1072,19 +1072,25 @@ func _resolve_monster_action(combatant: Combatant) -> Dictionary:
 			and combatant.declared_defensive_movement.is_empty()
 		if not engaged_and_locked and not movement_resolver.is_adjacent(combatant, ai_target):
 			var adj_cell: Vector2i = movement_resolver.find_adjacent_cell_to(combatant, ai_target)
-			if adj_cell == Vector2i(-1, -1):
-				return _resolve_combatant_action(combatant, "pass",
-					{"note": "target out of reach"})
-			var start_pos: Vector2i = movement_resolver.get_grid_position(combatant)
-			var path: Array[Vector2i] = movement_resolver.find_path(
-				start_pos, adj_cell, true, 50, combatant.side)
-			var move_budget := combatant.get_combat_movement_cells()
-			if path.is_empty() or (path.size() - 1) > move_budget:
-				return _resolve_combatant_action(combatant, "pass",
-					{"note": "target out of movement range"})
-			movement_resolver.move_along_path(combatant, path, move_budget, combatant.side)
-			combatant.has_moved_this_round = true
-			_update_engagement()
+			if adj_cell != Vector2i(-1, -1):
+				var start_pos: Vector2i = movement_resolver.get_grid_position(combatant)
+				var path: Array[Vector2i] = movement_resolver.find_path(
+					start_pos, adj_cell, true, 50, combatant.side)
+				var move_budget := combatant.get_combat_movement_cells()
+				if not path.is_empty():
+					# move_along_path caps at move_budget; monster moves as far as it can
+					var cells_moved := movement_resolver.move_along_path(
+						combatant, path, move_budget, combatant.side)
+					if cells_moved > 0:
+						combatant.has_moved_this_round = true
+						_update_engagement()
+
+		# After move (or if unable to move), if still not adjacent to AI target,
+		# re-target to any adjacent enemy rather than passing uselessly.
+		if not movement_resolver.is_adjacent(combatant, ai_target):
+			var fallback := _find_adjacent_enemy(combatant)
+			if fallback != null:
+				ai_target = fallback
 
 	# Resolve expanded attack sequence with mid-routine cleave
 	var expanded := combatant.get_expanded_attack_sequence()
@@ -1101,7 +1107,12 @@ func _resolve_monster_action(combatant: Combatant) -> Dictionary:
 		# Verify adjacency for melee attacks (target may have changed mid-routine)
 		if movement_resolver != null and movement_resolver.has_grid():
 			if not movement_resolver.is_adjacent(combatant, target):
-				break  # Can't reach new target mid-routine; end attack sequence
+				# Preferred target unreachable — fall back to any adjacent enemy
+				var adj_enemy := _find_adjacent_enemy(combatant)
+				if adj_enemy == null:
+					break  # Nothing in reach; end attack sequence
+				target = adj_enemy
+				ai_target = adj_enemy  # Persist for subsequent attacks in routine
 
 		# Monster turns to face current target
 		combatant.facing = _direction_vector(combatant.grid_position, target.grid_position)
@@ -1190,6 +1201,23 @@ func _auto_select_target(combatant: Combatant) -> Combatant:
 	if candidates.is_empty():
 		return null
 	return candidates[0]
+
+
+func _find_adjacent_enemy(combatant: Combatant) -> Combatant:
+	## Return any alive enemy currently adjacent to [param combatant], or null.
+	## Used as a fallback when the AI's preferred target is unreachable —
+	## lets the monster attack what's in front of it rather than passing.
+	if movement_resolver == null or not movement_resolver.has_grid():
+		return null
+	var target_side: int
+	if combatant.is_pc_side():
+		target_side = Combatant.Side.ENEMY
+	else:
+		target_side = Combatant.Side.PARTY
+	for c: Combatant in roster.get_alive_on_side(target_side):
+		if movement_resolver.is_adjacent(combatant, c):
+			return c
+	return null
 
 
 # ---------------------------------------------------------------------------

@@ -6017,3 +6017,319 @@ Files modified (wiring changes only):
 3. When the dungeon generator (L-1) is built, it should output `VoxelMapData` directly.
 4. Update `DungeonMapController.load_dungeon()` to handle the voxel JSON format (or add a format-detection shim).
 5. Update `docs/document_map.md` and `docs/rule_system_map.md` to reference the voxel GDD.
+
+---
+
+## Session 2026-04-20 — Voxel Migration Session 7 (Visibility Finalization)
+
+**Task:** Complete the voxel-migration session-plan's Session 7 renderer-refactor scope — specifically, finish the GDD §16.2 per-level visibility table so below-focus levels render dimmed, the focus level renders at full color, and focus+1 and above hard-clip hidden (BG3 style). Sessions 1–6 (2026-04-18) already shipped per-level groups, `VisibilityManager` wiring, per-level camera Y tween, the feature flag, and token positioning; only the opacity/dim + focus+1 policy was outstanding.
+
+**Model used:** Opus 4.7 (1M context) — planning and implementation.
+
+**Scope decision:** Plan initially bundled Session 7 + Session 11 ("Full cleanup now"), but audit of `dungeon_map_controller.gd` and its callers revealed the voxel controller port is incomplete (several public methods — `interact_door`, `use_stairs`, `move_party`, `_update_fog_for_all_members`, `_bfs_path`, `_reveal_entry_room`, `_update_visibility_on_move`, `get_map()` — are legacy-only and still called unconditionally from `dungeon_handlers.gd` and `dungeon_explore_state.gd`). Stripping the `use_voxel_renderer` flag would require writing voxel equivalents for all of these, which was out of the planned scope. Reverted to the session plan's original staging: Session 7 is renderer-only; Session 11 (or a dedicated controller-port session) does the controller cleanup.
+
+**Decision on `level == focus + 1`:** Hard-clip hidden (BG3 style, GDD §16.3 Fallback 1). Dither shader deferred — Level Strip Widget (Session 8) will provide the "Gary is up there" silhouette context. One-line change to re-enable dither later if needed.
+
+**Completed:**
+
+- `scenes/maps/tactical_grid_3d.gd`:
+  - Added `set_meta("base_color", …)` to each voxel builder's output meshes so per-level tinting multiplies instead of overwriting. Covers `build_floor_multimesh_voxel` (base = `Color.WHITE`, drives vertex-color tint), `build_walls_voxel` (base = `Color.WHITE`), `build_doors_voxel` (both portcullis and regular doors), `build_features_voxel` (stairs, ladder). `build_walls_voxel_individual` already had the meta.
+  - Replaced cached-material uses in `build_doors_voxel` (portcullis) and `build_features_voxel` (stairs, ladder) with fresh `StandardMaterial3D.new()` per mesh — the shared material cache in `_get_material()` would have caused one level's tint to apply to the same mesh type on every other level.
+  - New static helper `set_level_group_tint(group: Node3D, tint: Color)` that walks `FloorSlabs` / `Walls` / `Doors` / `Features` children of a `Level_N` group and multiplies each mesh's `material_override.albedo_color` by `tint`, using `get_meta("base_color", Color.WHITE)` as the source. `GridLines`, `FogOverlay`, `TransitionMarkers`, and Label3Ds intentionally skipped (labels use `modulate` not albedo; fog/grid colors are meaningful).
+  - Private `_apply_tint_to_mesh(mesh: GeometryInstance3D, tint: Color)` does the actual component-wise multiplication.
+
+- `scenes/maps/dungeon_map_renderer_3d.gd`:
+  - Added constants `DIM_COLOR = Color(0.6, 0.6, 0.6, 1.0)`, `FULL_COLOR = Color.WHITE`, `NON_FOCUS_ENEMY_ALPHA = 0.5`.
+  - Rewrote `_apply_level_visibility()`: for each `Level_N` child of `_grid_meshes`, hard-clip hidden when `level > focus`; when `level == focus` set visible and tint `FULL_COLOR`; when `level < focus` with content → visible + tint `DIM_COLOR`; when `level < focus` without content → hidden. Final call chains to `_apply_token_visibility()`.
+  - New `_apply_token_visibility()`: per `_tokens` entry, reads token's `pos.z`, hides if above focus or on empty lower level, full-opacity on focus or for party-side tokens on any explored level, `NON_FOCUS_ENEMY_ALPHA` for enemy tokens on explored below-focus levels.
+  - New `_set_token_alpha(token, alpha)`: flips `MeshInstance3D.material_override.transparency` between `TRANSPARENCY_ALPHA` and `TRANSPARENCY_DISABLED` based on alpha; finds the body by `token.get_node_or_null("Body")` to avoid depending on `CombatantToken3D`'s private `_body_material` field.
+  - Simplified `_on_focus_level_changed()`: removed the tangled `_camera.position.y - (_camera.position.y - X)` math at line 1271 (which algebraically collapsed to just `X`). Clean expression now: `target_y = base_y + CAM_BACKWARD.y * 50.0`, tween, then `_rebuild_grid_voxel()` (which ends in `_apply_level_visibility()`).
+  - `_update_entity_tokens_voxel()` now trails with `_apply_token_visibility()` so tokens reposition + re-check their visibility in one pass.
+
+**Decisions made:**
+
+- **Dimming via albedo tint, not shader.** All voxel materials already use `SHADING_MODE_UNSHADED` with `vertex_color_use_as_albedo = true`. In that mode, the fragment shader's output is `per_instance_color * albedo_color`, so setting `material_override.albedo_color = Color(0.6, 0.6, 0.6)` on a MultiMesh tints all its instances by 0.6 in one property write. No shader code, no per-cell mutation.
+- **Tint source = metadata, not runtime albedo read.** Using `get_meta("base_color", …)` rather than reading the current `albedo_color` avoids the "DIM → FULL → dim-again" drift where each transition compounds the last.
+- **Non-focus-level individual wall meshes use the same base_color meta that already existed at [tactical_grid_3d.gd:1003](scenes/maps/tactical_grid_3d.gd#L1003)** — no new metadata needed for focus-level walls.
+- **Combat renderer unchanged.** `combat_map_renderer_3d.gd` builds a single Level_0 group; no VisibilityManager, no focus cycling. Cross-level combat hasn't shipped. Deferring per the approved plan.
+- **`combatant_token_3d.gd` unchanged.** The plan's proposed `update_position(Vector3i)` refactor was deferred; token API stays `update_position(world_pos: Vector3)` and the renderer computes Y.
+- **Labels stay at full brightness on dimmed levels.** Label3D uses `modulate`, not an albedo material. Documented as an accepted limitation; revisit if visual review demands it.
+
+**Interfaces defined or changed:**
+
+- `TacticalGrid3D.set_level_group_tint(group: Node3D, tint: Color) -> void` (new static)
+- `TacticalGrid3D._apply_tint_to_mesh(mesh: GeometryInstance3D, tint: Color) -> void` (new static, private helper)
+- `DungeonMapRenderer3D._apply_level_visibility()` — signature unchanged; body rewritten
+- `DungeonMapRenderer3D._apply_token_visibility() -> void` (new)
+- `DungeonMapRenderer3D._set_token_alpha(token: CombatantToken3D, alpha: float) -> void` (new)
+- All voxel builders now attach `base_color` metadata to their output meshes — consumers reading `get_meta("base_color", Color.WHITE)` get a predictable starting color regardless of future builder internal changes.
+
+**Database changes:** None.
+
+**Tests added/updated:** None added this session (visual behavior; no headless test harness for rendering). Ran `tests/test_runner.tscn` end-to-end: 95 suites passed, 21 failed. All failures are pre-existing (MovementResolver 3D path reconstruction bug at `movement_resolver.gd:918`, EventScheduler/SchedulerLoop flakes, character-class sex/alignment disabling, character-sheet dwarf-language test, level-up confirm test, game-log test, prone/stand-up combat test, party-split vehicle-creature test, and assorted others). No new failures. All voxel-related suites (`VoxelCell`, `VoxelMapData`, `VoxelGrid`, `FallingResolver`, `VoxelLOS`, `CampaignRepositoryVoxel`, `VoxelMapDataJson`, `VoxelDungeonIntegration`, `VisibilityManager`) pass.
+
+**Known issues:**
+
+- **Visual validation still pending.** End-to-end visual check with `data/test_dungeon.json` (Goblin Warrens, 4 levels) was deferred — run the project in the editor to confirm: Level_0 bright at focus=0, Level_1/2/3 hidden; PgUp to focus=2 dims Level_0 and Level_1 to ×0.6, Level_2 bright, Level_3 hidden; Home recenters.
+- **DungeonMapController voxel port incomplete.** `interact_door`, `use_stairs`, `move_party`, `_update_fog_for_all_members`, `_bfs_path`, `_reveal_entry_room`, `_update_visibility_on_move`, `get_map()` are all legacy-only. Called unconditionally from `dungeon_handlers.gd` and `dungeon_explore_state.gd`; in voxel mode they silently no-op (early-return on `_map == null`). A voxel play session probably has broken door interaction and missing fog updates on token movement. Flagged `[NEEDS-OPUS-REVIEW]` — deserves a dedicated session to port the remaining controller methods before the `use_voxel_renderer` flag can be removed.
+- **Test movement resolver 3D failures.** Pre-existing: `_reconstruct_path_3d` at [movement_resolver.gd:918](engine/subsystems/combat/movement_resolver.gd#L918) assigns `Nil` to `Vector3i` when BFS produces an empty `came_from` chain. 5 assertion failures across `test_path_bfs_3d_flat_ground`, `test_path_bfs_3d_stairs_up`, `test_path_bfs_3d_flying_free`, `test_path_bfs_3d_burrow_through_solid`, `test_path_bfs_3d_climbing_wall`. Not touched this session.
+
+**Next session should:**
+
+1. Visual smoke test the voxel renderer with `data/test_dungeon.json` in the editor. Confirm the §16.2 table effect (dimming, hard-clip) looks right; if the "ceiling closes over player" effect is ever re-enabled at focus+1, flip to hard-clip-hidden (already what Session 7 ships).
+2. **Port the remaining DungeonMapController legacy methods to voxel** (Session 11 prerequisite): `interact_door`, `use_stairs`, `move_party`, `_update_fog_for_all_members`, `_bfs_path`, `_reveal_entry_room`, `_update_visibility_on_move`. Once done, strip the `use_voxel_renderer` flag + delete `TacticalMapData` + DB migration 037 to drop `dungeon_map_cells`. This is the Session 11 scope, now unblocked.
+3. Begin session-plan Session 8: Level Strip Widget (HUD component for multi-level party dispersion), input bindings (PgUp/PgDn/Home/Shift+Home — PgUp/PgDn are already wired in the renderer but need to go through the input map), party-bar level chips.
+4. Fix the pre-existing `_reconstruct_path_3d` Nil → Vector3i crash in `movement_resolver.gd`.
+
+---
+
+## Session 2026-04-21 — Wilderness Hexmap Right-Click Context Menu + Active-Party Selection
+
+**Task:** Replace wilderness hexmap left-click-to-move with: (1) left-click on a party token selects active party; (2) right-click opens a Move/Explore/Build Stronghold/Place Loot Cache/Visit Loot Cache/Survey context menu mirroring the dungeon UI; (3) bottom HUD shows the active party's member portraits at 56×56; (4) every menu option queues travel + chained activity, and combat encounters cancel both.
+
+**Model used:** Opus 4.7 (1M context) — planning, design, and implementation.
+
+**Completed:**
+
+- **New file** [engine/subsystems/exploration/wilderness_context_menu_builder.gd](engine/subsystems/exploration/wilderness_context_menu_builder.gd): pure static `RefCounted` mirroring `DungeonContextMenuBuilder`. `build_menu(target_hex, active_party_id, map_data, controller)` returns 7 options (`move_here`, `explore`, `build_stronghold`, `place_loot_cache`, `visit_loot_cache`, `survey`, `cancel`). Place vs Visit Loot Cache are mutually exclusive based on `LocationCacheManager.get_cache_at_location("hex:q,r")`.
+- **Modified** [scenes/maps/hex_map_renderer.gd](scenes/maps/hex_map_renderer.gd): added `party_token_clicked(party_id, coord)` and `hex_context_menu_requested(coord, screen_pos)` signals; new `_party_hex_index: Dictionary` populated alongside party tokens (active party wins tie); `_unhandled_input` left-click now consults the index to disambiguate selection vs movement; right-click emits the context-menu signal. Legacy `hex_clicked` signal preserved but no longer drives movement.
+- **Modified** [engine/subsystems/session/states/wilderness_explore_state.gd](engine/subsystems/session/states/wilderness_explore_state.gd): replaced `_on_hex_clicked` with `_on_party_token_clicked`, `_on_hex_context_menu_requested`, `_on_context_action`, `_close_context_menu`, `_activity_type_for_action`, `_resolve_active_party_id`, `_resolve_party_data`, `_on_wilderness_cache_visit_requested`. Reuses the existing `dungeon_context_menu.gd` scene (preloaded as `ContextMenuScene`) — it's generic enough to need no fork. The dispatcher uses `GameState.active_party_id` (falls back to runner's `_party_id`) and loads PartyData via `CampaignRepository.load_party_data` for non-primary parties.
+- **Modified** [engine/subsystems/session/handlers/wilderness_handlers.gd](engine/subsystems/session/handlers/wilderness_handlers.gd):
+  - Added two event types `wilderness_activity` and `wilderness_activity_complete` (constants `ACTIVITY_EVENT`, `ACTIVITY_COMPLETE_EVENT`) registered in `register()` / `unregister()`.
+  - Changed `schedule_travel_path()` return type from `Array[String]` to `Dictionary {event_ids, arrival_time, current_time}` so callers can chain follow-up events at the arrival time.
+  - New `_handle_wilderness_activity(event)`: dispatches by `activity_type`. `place_loot_cache` schedules a 1-hour `wilderness_activity_complete` follow-up; `visit_loot_cache` resolves immediately (emits `EventBus.wilderness_cache_visit_requested` if a cache exists, else "No cache here" toast); `explore`/`build_stronghold`/`survey` emit "Feature coming soon" toasts.
+  - New `_handle_wilderness_activity_complete(event)`: for `place_loot_cache` calls `LocationCacheManager.create_wilderness_hidden_cache(Vector2i(q,r))` and emits a success toast.
+  - New helper `_cancel_party_movement_and_activity(party_id)` cancels `travel_leg` + both new activity event types in one call. Called from the encounter-trigger branch, the path-blocked branch, the getting-lost failure branch, and the forced-march-exhaustion branch — so an interrupted travel never silently auto-resumes the queued activity.
+  - `_handle_travel_leg` now sets `GameState.current_location_key = "hex:q,r"` on hex entry (only for the active party), keeping the cache-aware Party Inventory overlay in sync without needing an extra signal hop.
+- **Modified** [engine/autoloads/event_bus.gd](engine/autoloads/event_bus.gd): added `signal wilderness_cache_visit_requested(cache_id: String, hex: Vector2i)` in the cache section.
+- **Modified** [scenes/ui/hud/session_status_bar.gd](scenes/ui/hud/session_status_bar.gd): bumped `BAR_HEIGHT` from 48 → 72; added `_portraits_hbox` between the spacer and the Camp button; new `_refresh_party_portraits(party_id)` reads `CampaignRepository.list_party_characters` and renders 56×56 `TextureRect`s (tooltip = character name) loaded via the existing `user://portraits/<id>.png` → `res://assets/portraits/<id>.png` fallback chain. Static `_portrait_cache: Dictionary` avoids re-decoding user portraits. Listens to `EventBus.active_party_changed` for refresh.
+
+**Decisions made:**
+
+- **Reused dungeon context menu scene as-is.** `scenes/maps/dungeon_context_menu.gd` is a fully generic `PanelContainer` that consumes `Array[Dictionary]` options grouped by free-form `category` strings, auto-pauses the scheduler, and emits `option_selected`/`cancelled`. No wilderness-specific fork needed.
+- **Visit Loot Cache is instant on arrival** (user-confirmed). The handler skips the completion-event chain and resolves immediately. Place Loot Cache is the only timed activity (1 hour = `Timekeeping.ROUNDS_PER_HOUR` = 360 rounds).
+- **Place Loot Cache does NOT auto-open the inventory UI** (user-confirmed). Auto-pause + success toast only; player opens Party Inventory manually. The overlay already auto-detects the cache via `GameState.current_location_key`.
+- **Empty-hex left-click is a no-op.** The renderer still emits the legacy `hex_clicked` for empty hexes, but the wilderness state no longer connects to it. Movement is exclusively right-click → Move Here.
+- **Scoped event cancellation, not blanket `cancel_all_for_owner(party_id)`.** Targeted at `travel_leg`, `wilderness_activity`, `wilderness_activity_complete` only — preserves `getting_lost_check` / `forced_march_check` / `wilderness_encounter_check` which have their own lifecycle.
+- **Active-party orders use `GameState.active_party_id`, not `_runner.get_party_id()`.** The runner's `_party_id` is set once at session load and doesn't follow active-party switches; this is a pre-existing limitation of multi-party sessions. The new context-menu dispatcher works around it via `_resolve_active_party_id` and `_resolve_party_data` (loading PartyData from the repository when the active party isn't the runner's primary).
+
+**Interfaces defined or changed:**
+
+- New EventBus signal: `wilderness_cache_visit_requested(cache_id: String, hex: Vector2i)`.
+- New renderer signals: `party_token_clicked(party_id: String, coord: Vector2i)`, `hex_context_menu_requested(coord: Vector2i, screen_pos: Vector2)`.
+- `WildernessHandlers.schedule_travel_path(...)` return type: `Array[String]` → `Dictionary {event_ids, arrival_time, current_time}`. The single existing caller (wilderness state) now consumes `arrival_time`.
+- New event types in scheduler vocabulary: `wilderness_activity` (carries `{activity_type, hex_q, hex_r}` payload) and `wilderness_activity_complete` (same payload).
+- New constants on `WildernessHandlers`: `ACTIVITY_EVENT`, `ACTIVITY_COMPLETE_EVENT`.
+- `WildernessContextMenuBuilder.build_menu(target_hex, active_party_id, map_data, controller=null) -> Array[Dictionary]` (new static).
+
+**Database changes:** None. The loot-cache backend (migration 032 `location_caches` table) was already in place; this session only wires UI to it.
+
+**Tests added/updated:**
+
+- New suite [tests/test_wilderness_context_menu_builder.gd](tests/test_wilderness_context_menu_builder.gd) with 9 tests: option count, expected ids present, cancel action_type, hex coords on action_data, empty-party-disables-actions, cancel-always-enabled, visit-disabled-without-cache, place-enabled-without-cache, controller gating placeholder. Wired into `tests/test_runner.gd` and `tests/test_runner.tscn` as `WildernessContextMenuBuilderTests`.
+
+**Known issues:**
+
+- **Multi-party `can_move_to` adjacency check uses primary party's hex.** `HexMapController.can_move_to(target)` checks adjacency from the controller's stored `party_hex`, which is the primary party. When the active party isn't the primary, the menu's "enabled" state and the runtime guard may report incorrect adjacency. Pre-existing limitation — not introduced here. Flag for `[NEEDS-OPUS-REVIEW]` when multi-party movement gets a proper test pass.
+- **`combat_started` signal does not include `party_id`.** Encounter-time cancellation works because it happens inside the wilderness handler before `CombatState.enter` fires the signal. If other systems ever need to react to combat by canceling per-party events, the signal will need extending. Flag `[NEEDS-OPUS-REVIEW]`.
+- **`Explore`, `Build Stronghold`, `Survey` are placeholder activities.** Selecting them schedules travel + a single `wilderness_activity` event that fires "Feature coming soon" on arrival. No game-state effect.
+- **Visual validation pending.** Manual playtest steps documented in the plan file — verify left-click selection, right-click menu, place-cache 1-hour timer, visit-cache opens Party Inventory, combat-mid-travel cancels follow-up activities, portrait strip renders at 56×56.
+
+**Next session should:**
+
+1. Visual smoke test the wilderness UI (steps 2–7 in the plan's Verification section).
+2. Run `tests/test_runner.tscn` to confirm `WildernessContextMenuBuilderTests` pass and no regressions.
+3. Build out one of the placeholder activities (Survey is the smallest scope — recommend `gdd-survey-activity.md` first for the rules).
+4. When multi-party combat / non-primary `can_move_to` gets attention, fix the adjacency-from-primary bug noted above.
+5. Continue voxel-migration Session 11 (controller cleanup) per the prior session's TODO.
+
+---
+
+## Session 2026-04-22 — Equipment Bugs: Darts, Stack Splitting, Thrown-Weapon Expenditure
+
+**Task:** Fix three character-sheet equipment bugs:
+1. Darts couldn't be equipped (filtered out by category whitelist).
+2. Stacks of melee weapons (e.g. 2 short swords) were equippable as a stack via the party-inventory right-click and shop auto-equip paths.
+3. Thrown weapons (dagger/javelin/dart) were never expended on throw — the equipped weapon row lived forever.
+
+**Model used:** Opus 4.7 (1M) for plan + implementation.
+
+**Completed:**
+
+- `data/equipment/base_equipment.json`: added `uses_per_unit: 5` to the `dart` entry. Bundle's `uses_remaining` tracks darts left (5 → 0).
+- [scenes/ui/character_sheet/tabs/cs_tab_equipment.gd](scenes/ui/character_sheet/tabs/cs_tab_equipment.gd):
+  - Added static `is_thrown_stackable(item, catalog)` helper — true for `weapon` or `ammunition` items tagged `"thrown"`.
+  - Added instance `_is_thrown_self_ammo(item)` — narrower check used by `_can_equip()` to admit dart bundles.
+  - Extended `_can_equip()` to allow `item_category == "ammunition"` when it's thrown self-ammo.
+  - Added `"ammunition"` arm to `_determine_equip_slot()` — routes like a one-handed thrown weapon.
+  - Rewrote `_on_equip()` to dispatch on `is_thrown_stackable`: thrown stacks equip whole; non-thrown stacks split as before. Dart bundle gets `uses_remaining` seeded to `uses_per_unit` on first equip if currently `-1`.
+- [scenes/ui/party_inventory/item_context_menu.gd](scenes/ui/party_inventory/item_context_menu.gd): `_equip_item()` now uses the same dispatch logic (preloads CSTabEquipment for the static helper) — split-on-equip for non-thrown stacks, equip-whole for thrown stacks, handles dart-bundle slot routing and uses_remaining seeding.
+- [scenes/ui/character_creation/equipment_shop_panel.gd](scenes/ui/character_creation/equipment_shop_panel.gd): refactored `_on_auto_equip()` to call new `_equip_one_in_cart()` helper, which splits non-thrown stacks into a new equipped row in the cart (mirroring `split_item_for_equip` semantics in-memory) and seeds dart-bundle `uses_remaining` from the catalog. Added `_cart_item_is_thrown_stackable()`.
+- [engine/subsystems/combat/combatant.gd](engine/subsystems/combat/combatant.gd):
+  - Extended `_equipped_weapon` dict to carry `quantity`, `uses_remaining`, `item_category`.
+  - `wire_equipment()` now accepts `ammunition` rows in `hands_main` if they have the `"thrown"` tag (so dart bundles populate `_equipped_weapon`); and skips the same row from being double-wired into `_equipped_ammo`.
+  - Rewrote `consume_ammo()` to dispatch:
+    - thrown weapon (cat=`weapon`, tag `thrown`): decrement `quantity`; on 0 → delete row + clear `_equipped_weapon`.
+    - dart bundle (cat=`ammunition`, tag `thrown`): decrement `uses_remaining`; on 0 → delete row + clear `_equipped_weapon`.
+    - otherwise: existing `_equipped_ammo` quantity decrement.
+- [engine/autoloads/campaign_repository.gd](engine/autoloads/campaign_repository.gd):
+  - `add_inventory_item()` and `save_character_inventory()` now persist `uses_remaining` (was previously omitted, defaulted to schema -1; per build_log line 1762 this was a known gap).
+  - `merge_item_on_unequip()` now adds `equipped_qty` (read from the equipped row) to the destination pack stack instead of hardcoded `+1`. Fixes the silent-quantity-loss bug for stacked thrown weapons unequipping.
+- New test suite [tests/test_equip_pipeline.gd](tests/test_equip_pipeline.gd) — 10 tests covering all three bugs end-to-end. Wired into `tests/test_runner.gd` and `tests/test_runner.tscn` as `EquipPipelineTests`.
+
+**Decisions made (confirmed with user):**
+
+- **Dart model:** keep the bundle as a single `ammunition` row; track darts via `uses_remaining` (5 → 0). Chosen to avoid a shop/data migration.
+- **Thrown stacks stay equipped whole** in `hands_main`. Throwing decrements; auto-unequip on depletion. User can still split off a single dagger to off-hand via the existing Split UI.
+- **All three equip paths fixed in one pass** — character sheet, party inventory context menu, shop auto-equip.
+
+**Interfaces defined or changed:**
+
+- `CSTabEquipment.is_thrown_stackable(item: Dictionary, catalog: EquipmentCatalog) -> bool` (new static, also called from item_context_menu.gd).
+- `Combatant._equipped_weapon` dict now carries `quantity`, `uses_remaining`, `item_category` (additional keys; backward-compatible — readers using `.get(..., default)` are unaffected).
+- `Combatant.consume_ammo()` semantics expanded: now also decrements the equipped weapon row when it's a thrown self-ammoing weapon. Single call site at [combat_controller.gd:983](engine/subsystems/combat/combat_controller.gd#L983) is unchanged.
+- `CampaignRepository.add_inventory_item()` and `save_character_inventory()` now read and write `uses_remaining` from the data dict (default -1, matching the schema).
+- `CampaignRepository.merge_item_on_unequip()` now merges the entire equipped quantity, not just one unit.
+
+**Database changes:** None (existing `uses_remaining` column from migration 012 is now finally populated by the two insert paths that omitted it).
+
+**Tests added/updated:**
+
+- [tests/test_equip_pipeline.gd](tests/test_equip_pipeline.gd) — new suite, 10 tests:
+  - `test_dart_bundle_is_equippable`
+  - `test_dart_bundle_seeds_uses_remaining_on_first_equip`
+  - `test_short_sword_stack_splits_on_equip`
+  - `test_dagger_stack_stays_equipped_as_stack`
+  - `test_thrown_dagger_consumed_decrements_quantity`
+  - `test_thrown_dagger_last_unit_clears_slot`
+  - `test_thrown_dart_decrements_uses_remaining`
+  - `test_thrown_dart_last_use_destroys_bundle`
+  - `test_party_inventory_short_sword_stack_splits`
+  - `test_unequip_dagger_stack_merges_full_quantity_to_pack`
+
+**Known issues:**
+
+- **Tests not yet run by build agent.** Godot CLI is not on PATH in this environment; the tests must be executed manually via `tests/test_runner.tscn`.
+- **In-combat weapon swap path ([combat_controller.gd:1764](engine/subsystems/combat/combat_controller.gd#L1764)) does not yet honor split-on-equip.** It's a 4th equip path; the user's plan scoped only the three above. If a player ever swaps to a stack of swords mid-combat, the stack will end up equipped. Flag for follow-up.
+- **No "combine two pack stacks" UI.** Only merge-on-unequip is fixed. A player who manually splits a dagger stack and later wants to recombine has no UI affordance. Not a regression — pre-existing.
+
+**Next session should:**
+
+1. Run the full test suite (`tests/test_runner.tscn`) to confirm `EquipPipelineTests` pass and no regressions.
+2. Smoke-test the equipment UI per the plan's verification section: dart equip/throw cycle, dagger stack equip/throw cycle, short-sword stack split-on-equip via all three paths.
+3. Decide whether to extend split-on-equip to the in-combat weapon swap path.
+4. Resume voxel-migration Session 11 controller cleanup as previously planned.
+
+---
+
+## Session 2026-04-22 — Session 7b: DungeonMapController Voxel Port + Feature-Flag Removal + D-4 Smoke Test
+
+**Task:** Complete the voxel migration that Session 7 left half-finished: fix the `_reconstruct_path_3d` Nil crash, sweep the renderer for `Vector2i`→`Vector3i` mismatches, port the 7 legacy-only `DungeonMapController` methods to voxel, strip the `use_voxel_renderer` feature flag + all legacy 2D code paths it gated, and get a live D-4 dungeon run end-to-end (entry, movement, doors, stairs, fog, combat-entry prep).
+
+**Model used:** Opus 4.7 (1M context) — exploration, planning, implementation.
+
+**Completed:**
+
+Task C — **BFS path-reconstruction guard** ([engine/subsystems/combat/movement_resolver.gd:911-927](engine/subsystems/combat/movement_resolver.gd#L911)): terminate `_reconstruct_path_3d` on reaching `start` rather than on `visited.get(current) == null`, which used to hit a runtime assignment of `null` to a Vector3i-typed local. Unblocks the five previously-failing `test_path_bfs_3d_*` tests.
+
+Task B — **Renderer type sweep** ([scenes/maps/dungeon_map_renderer_3d.gd](scenes/maps/dungeon_map_renderer_3d.gd)):
+- Fixed the crash at `_advance_movement_animation` — `_active_movements["path"]` carries Vector3i in voxel mode; the tween now reads `next_cell.z` and calls `VoxelGrid.cell_to_world(x, y, z)` rather than hard-coding level 0.
+- Untyped `movement_cell_reached(entity_id, cell)` signal so Vector3i payloads flow through the `_on_continuous_move_finished` → `on_cell_reached` chain without type errors.
+- Untyped the `_on_party_moved`, `_on_entity_moved`, `_on_door_state_changed` handlers to accept both coordinate types during the transition.
+- Added voxel branches to [scenes/maps/dungeon_order_overlay_3d.gd](scenes/maps/dungeon_order_overlay_3d.gd): new `_cell_world_pos(cell)` helper branches on `is Vector3i`; all callers use it.
+- Dropped Vector2i type annotations that would crash when `map.get_entity_pos` returns Vector3i (dungeon_handlers.gd:324 `old_pos`, dungeon_explore_state.gd:969/1012/1170 `pos`/`current_pos`).
+
+Task A — **DungeonMapController voxel port** ([engine/subsystems/exploration/dungeon_map_controller.gd](engine/subsystems/exploration/dungeon_map_controller.gd)):
+- Signals `party_moved`, `entity_moved`, `door_state_changed` retyped to untyped params — downstream consumers adjusted where they had explicit Vector2i param types.
+- Added voxel implementations: `_move_party_voxel`, `_interact_door_voxel`, `_queue_group_move_voxel`, `_queue_door_interaction_order_voxel`, `_update_visibility_on_move_voxel`, `_execute_orders_voxel`, `_find_scatter_cell` (ring-search for no-stacking group moves).
+- Wired existing voxel helpers (`_bfs_path_voxel`, `_reveal_entry_room_voxel`, `_reveal_room_voxel`, `_update_fog_for_all_members_voxel`) behind public dispatch wrappers.
+- Added `MovementResolver` instance to the controller (lazy-init in `_ensure_managers`) for stair-aware multi-level pathfinding in `_move_party_voxel` and `_queue_group_move_voxel`.
+- New `get_stair_target(pos: Vector3i) -> Vector3i` helper resolves stair destinations via (1) explicit VoxelCell `stair_target_col/row/level` fields, or (2) direction-suffix inference (`stairs_up_<DIR>` → step + level±1).
+- New `teleport_party_to(target_pos)` method for stair traversal when the destination isn't spatially adjacent (handles the paired test-dungeon stairs).
+- Deleted `use_stairs()`; refactored the single caller in [dungeon_explore_state.gd:_on_context_action](engine/subsystems/session/states/dungeon_explore_state.gd) "ascend"/"descend" to call `teleport_party_to(get_stair_target(cell))`.
+
+**Smoke-test fixes (iterated via live dungeon play):**
+
+1. `DungeonSessionState` door-tracking methods (`spike_door`, `wedge_door`, `is_spiked`, `is_wedged`, `hold_portcullis`, `record_picked_lock`, `queue_for_exit` etc.) now accept Vector2i or Vector3i — dict keys hash both identically.
+2. `_resolve_*` functions in dungeon_handlers had `controller.get_map() != null` gates that always failed in voxel mode (get_map returns null). Replaced with new `controller.has_map()` helper that checks either map type.
+3. `_resolve_use_lever` degrades gracefully when `get_lever_target` isn't on the current map class (voxel lever port is deferred).
+4. `scheduled_action` round-trips the level coordinate: serializes `cell_z` + `cell_is_3d` in the event data, `_handle_action_complete` reconstructs Vector3i when flag is set. Force_door / pick_lock / bash_door / spike / wedge / force_portcullis / use_lever / search / listen all resolve on the correct voxel cell now.
+5. Ceiling "re-appearing after every move" bug: `_rebuild_grid_voxel` used `child.queue_free()` which defers destruction — the newly-added `Level_0`/`Level_1` groups collided on name with the queue-freed ones, got auto-renamed `Level_0@Node@N`, and failed `is_valid_int()` in `_apply_level_visibility`. Fixed by using `remove_child(child)` immediately followed by `child.queue_free()`.
+6. Wall occlusion froze at first-frame state after movement. Added `_update_wall_occlusion()` invocations at end of `_rebuild_grid_voxel` and `_update_entity_tokens_voxel` so walls between camera and party re-fade after rebuilds.
+7. New `VoxelCell.is_evil` field + `VoxelMapData.is_evil_door(pos)` for the turn-tick evil-door auto-close path.
+8. Group-move stacking fix: `_queue_group_move_voxel` now ring-scatters followers up to radius 4 around the target cell using `_find_scatter_cell`; no fallback to stacking on the leader. Multi-entity moves via context-menu "move here" now route through `DungeonHandlers.order_group_move` (new) so followers ring-scatter instead of per-entity stacking on the same target.
+9. Leader `z` change during continuous movement emits `level_changed` (from `dungeon_handlers.on_cell_reached`) so VisibilityManager focus follows stair traversal.
+10. Stair context menu recognizes voxel feature suffixes: `tf.begins_with("stairs_up_")` / `"stairs_down_"` in addition to the bare legacy strings.
+11. Explicit stair pairing: `VoxelCell.stair_target_col/row/level` fields override direction inference; `teleport_party_to` handles non-adjacent destinations. Patched [data/test_dungeon.json](data/test_dungeon.json) so the two hand-authored stairs point at passable cells on their connected levels.
+12. Session-load dungeon JSON refresh: `_ensure_test_dungeon_entrance` now calls `update_dungeon_entrance_data` on existing entrances (matches settlement pattern) so dev edits to `data/test_dungeon.json` apply on session load without discarding the campaign.
+13. Hex renderer dungeon entry: [scenes/maps/hex_map_renderer.gd:_on_enter_dungeon_pressed](scenes/maps/hex_map_renderer.gd) now branches on dungeon format — voxel JSON has top-level `cells` + `entry` dict; legacy JSON has `levels[]` with per-level entry fields. Previously the legacy-only parser silently returned with no dungeon_entry_requested emission when fed voxel JSON.
+14. `_bash_door_turns` is now 1 turn for all wooden door materials (house rule). Bash resolver already deterministic auto-success.
+15. Schedule-time info toasts for force_door / pick_lock / bash_door so the player can disambiguate which action fired at click time.
+
+**D.2 — Feature-flag + legacy-path removal:**
+
+`use_voxel_renderer` static flag deleted from [dungeon_map_controller.gd](engine/subsystems/exploration/dungeon_map_controller.gd). 73+ references removed across:
+- `movement_resolver.gd` (18 guard conditions simplified to `if _voxel_map != null:`).
+- `dungeon_handlers.gd` (13 ternaries collapsed).
+- `dungeon_explore_state.gd` (15 sites collapsed; `_save_dungeon_cell_states` is voxel-only; `_update_minimap` hidden until voxel port; `auto_listen_at_doors` idle behavior stubbed until voxel port; `_find_creature_placement` voxel-only).
+- `combat_controller.gd` / `combat_screen.gd` / `combat_map_renderer_3d.gd` / `combat_context_menu_builder.gd` collapsed.
+- `dungeon_map_renderer_3d.gd` — 22 sites collapsed, legacy 2D grid / token / highlight / camera branches deleted.
+
+Legacy 2D bodies deleted from DungeonMapController:
+- `load_dungeon`, `move_party`, `can_move_to`, `interact_door`, `queue_move_order`, `queue_group_move`, `queue_door_interaction_order`, `execute_orders`, `_update_fog_for_all_members`, `_reveal_entry_room`, `_update_visibility_on_move`, `is_on_transition_cell`, and the `_reveal_room` helper (no longer called). Public methods are now thin dispatchers to their voxel variants.
+
+**Retained for Session 11:**
+- `TacticalMapData` + `CellData` classes (combat + tests still reference them).
+- Legacy `dungeon_map_renderer.gd` (2D scene).
+- `_map`, `_all_levels`, `_stairs` fields on DungeonMapController — block-commented as Session 11 cleanup.
+- `get_map()` accessor — returns (null) TacticalMapData for legacy callers pending migration.
+
+**Decisions made:**
+
+- **Stair UX:** Keep the current "transition point" model (Ascend/Descend context menu teleports to paired cell). Redesign to gradient/ramp stairs is deferred to a focused follow-up session to avoid mixing rendering work with migration cleanup.
+- **Minimap in voxel mode:** Hidden until a voxel port; the 2D minimap couldn't meaningfully render multi-level dungeons without a redesign.
+- **Auto-listen idle behavior:** Stubbed in voxel mode (neighbor scan was 2D-only). Behavior port is a follow-up.
+- **Group-move formation:** `FormationManager.compute_dungeon_positions` is still 2D-only. Voxel group moves use ring-scatter instead of formation placement. Formation-aware voxel moves are a follow-up.
+- **Stair pairing:** When hand-authored dungeons have stair destinations that aren't spatially adjacent, use the explicit `stair_target_*` VoxelCell fields. The test dungeon's two stairs are now paired this way.
+
+**Interfaces defined or changed:**
+
+- `DungeonMapController.has_map() -> bool` (new).
+- `DungeonMapController.get_stair_target(pos: Vector3i) -> Vector3i` (new).
+- `DungeonMapController.teleport_party_to(target_pos: Vector3i) -> bool` (new).
+- `DungeonMapController.use_stairs(pos)` DELETED.
+- `DungeonMapController.party_moved / entity_moved / door_state_changed` signals retyped from `(Vector2i, ...)` to untyped params.
+- `DungeonHandlers.order_group_move(entity_ids, target, base_movements, controller, scheduler, party_id) -> Array` (new).
+- `VoxelCell.is_evil: bool`, `VoxelCell.stair_target_col/row/level: int` (new fields, `-1` default).
+- `VoxelMapData.is_evil_door(pos: Vector3i) -> bool` (new).
+- `DungeonSessionState.*_door(pos)` methods untyped for Vector2i/Vector3i.
+- `DungeonHandlers.schedule_action` event data now includes `cell_z` + `cell_is_3d` for voxel-mode round-trip.
+- Renderer signal `movement_cell_reached(entity_id, cell)` — cell param untyped (Vector3i in voxel mode).
+
+**Database changes:** None. `voxel_map_cells` schema unchanged — `is_evil` and `stair_target_*` VoxelCell fields are JSON-only for now; they're not persisted across dungeon visits. Session 11 can add migration columns if those fields need persistence.
+
+**Tests added/updated:**
+
+- New suite [tests/test_dungeon_map_controller_voxel.gd](tests/test_dungeon_map_controller_voxel.gd) (15 tests) covering: voxel map injection, adjacent/non-adjacent/blocked move_party, can_move_to, interact_door (closed/open/locked/arch/secret/non-adjacent), get_stair_target direction + paired, stair traversal via move_party, fog transitions on move, _reveal_entry_room dispatch, get_voxel_map accessor, queue_door_interaction_order, signal payloads carry Vector3i.
+- Registered in [tests/test_runner.gd](tests/test_runner.gd) + [tests/test_runner.tscn](tests/test_runner.tscn).
+- 4 `use_stairs`-dependent tests removed from legacy `test_dungeon_map_controller.gd` (use_stairs method deleted); the legacy file still exercises 2D paths that will be removed in Session 11.
+
+**Smoke-test verification (live D-4 dungeon play):** Entry from hex, party token positioning, wall culling (dynamic occlusion fade), focus-level camera tween, movement orders with ring-scatter, open/close door, bash door with axe-wielder, pick-lock success/fail with thief (retry-block after fail), spike/wedge door, lever + "not connected" graceful toast, Ascend/Descend (teleport model, level_changed follow, fog update on arrival), multi-entity group moves don't stack. F3 dev key prints leader pos + stair directory.
+
+**Known issues:**
+
+- **Minimap hidden in voxel mode.** Deferred to a focused port; the 2D minimap can't render multi-level content without redesign.
+- **Auto-listen-at-doors idle behavior is a no-op** in voxel mode pending a level-aware neighbor scan.
+- **`FormationManager.compute_dungeon_positions` is 2D-only.** Voxel group-moves use ring-scatter (no formation) until ported.
+- **`use_lever` in voxel mode** shows "The lever doesn't seem to be connected to anything." — `VoxelMapData.get_lever_target` isn't implemented. Legacy content has no levers to exercise against.
+- **Voxel stair destinations are NOT spatially adjacent** in the test dungeon. Working as intended via explicit pairing. A true ramp/gradient stair model is a separate design change.
+- **Some Vector2i→Vector3i coercions at combat-setup call sites** (creature placement, loot cache) pass Vector3i via `_controller.get_current_level()`. Level is inferred, not from the actual creature/cache coordinate — combat is still single-level so this is fine in practice.
+- **Legacy TacticalMapData class + test_dungeon_map_controller.gd 2D tests are retained.** Session 11 scope to delete entirely.
+
+**Next session should:**
+
+1. Session 8 — Level Strip Widget (HUD for multi-level party dispersion), input bindings polish (PgUp/PgDn/Home/Shift+Home registered in input map), party-bar level chips.
+2. Stair UX redesign (separate focused session): ramp/gradient stairs with per-cell Y interpolation — will require reauthoring the hand-authored test dungeon's staircases as multi-cell ramp runs.
+3. Session 11 — delete `TacticalMapData` class, `CellData`, legacy `dungeon_map_renderer.gd` 2D scene, `_map`/`_all_levels`/`_stairs` fields, legacy `test_dungeon_map_controller.gd` tests. Strip any remaining ternaries that still read `controller.get_map()`.
+4. Port `FormationManager.compute_dungeon_positions` to Vector3i / VoxelMapData so voxel group-moves can use real formation placement instead of ring-scatter.
+5. Port the voxel minimap.

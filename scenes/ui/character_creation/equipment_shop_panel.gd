@@ -574,8 +574,7 @@ func _on_auto_equip() -> void:
 				best_ac = ac
 				best_armor_idx = i
 	if best_armor_idx >= 0:
-		inventory[best_armor_idx]["slot"] = "body"
-		inventory[best_armor_idx]["is_equipped"] = 1
+		_equip_one_in_cart(inventory, best_armor_idx, "body")
 
 	# Best weapon (highest avg damage, naive: sort by weapon_damage string length as proxy)
 	var best_weapon_idx := -1
@@ -590,24 +589,62 @@ func _on_auto_equip() -> void:
 				best_weapon_idx = i
 	var best_weapon_is_two_handed := false
 	if best_weapon_idx >= 0:
-		inventory[best_weapon_idx]["slot"] = "hands_main"
-		inventory[best_weapon_idx]["is_equipped"] = 1
-		var tags: Array = _catalog.get_item(
-				inventory[best_weapon_idx].get("item_key", "")).get("weapon_tags", [])
+		var weapon_key: String = inventory[best_weapon_idx].get("item_key", "")
+		var tags: Array = _catalog.get_item(weapon_key).get("weapon_tags", [])
 		best_weapon_is_two_handed = "two_handed" in tags
+		_equip_one_in_cart(inventory, best_weapon_idx, "hands_main")
 
 	# Shield — only if the best weapon is not two-handed
 	if not best_weapon_is_two_handed:
 		for i in inventory.size():
 			if inventory[i].get("item_category", "") == "shield":
-				inventory[i]["slot"] = "hands_off"
-				inventory[i]["is_equipped"] = 1
+				_equip_one_in_cart(inventory, i, "hands_off")
 				break
 
 	_state["inventory"] = inventory
 	_commit_inventory()
 	_refresh_cart()
 	_status_label.text = "Auto-equip applied."
+
+
+func _equip_one_in_cart(inventory: Array, idx: int, slot: String) -> void:
+	## Equip a single unit at inventory[idx] into [param slot] within the cart state.
+	## For thrown-stackable items (daggers/javelins/darts), the whole stack is equipped.
+	## Otherwise, splits one unit off the stack into a new equipped row, leaving the
+	## remainder unequipped — keeping commit-time DB rows consistent with the equip rules.
+	var item: Dictionary = inventory[idx]
+	var qty: int = int(item.get("quantity", 1))
+	var is_thrown_stack: bool = _cart_item_is_thrown_stackable(item)
+
+	if is_thrown_stack or qty <= 1:
+		item["slot"] = slot
+		item["is_equipped"] = 1
+		# Seed uses_remaining for fresh dart bundles so combat consumption works.
+		var uses_per_unit: int = int(_catalog.get_item(item.get("item_key", "")).get("uses_per_unit", -1))
+		var current_uses: int = int(item.get("uses_remaining", -1))
+		if uses_per_unit > 0 and current_uses < 0:
+			item["uses_remaining"] = uses_per_unit
+		return
+
+	# Split off one unit into a new equipped row.
+	item["quantity"] = qty - 1
+	var equipped_unit: Dictionary = item.duplicate()
+	equipped_unit["quantity"] = 1
+	equipped_unit["slot"] = slot
+	equipped_unit["is_equipped"] = 1
+	# A freshly-equipped split unit gets a fresh uses_remaining (consumables only).
+	var per_unit: int = int(_catalog.get_item(item.get("item_key", "")).get("uses_per_unit", -1))
+	if per_unit > 0:
+		equipped_unit["uses_remaining"] = per_unit
+	inventory.append(equipped_unit)
+
+
+func _cart_item_is_thrown_stackable(item: Dictionary) -> bool:
+	var category: String = item.get("item_category", "")
+	if category != "weapon" and category != "ammunition":
+		return false
+	var tags: Array = _catalog.get_item(item.get("item_key", "")).get("weapon_tags", [])
+	return "thrown" in tags
 
 
 func _parse_die_sides(weapon_damage: String) -> int:

@@ -190,6 +190,13 @@ func set_door_state(pos: Vector3i, state: String) -> void:
 	cell.door_state = state
 
 
+## Returns true if the door at [param pos] is an evil door (auto-closes on turn tick).
+func is_evil_door(pos: Vector3i) -> bool:
+	if not _cells.has(pos):
+		return false
+	return _cells[pos].is_evil
+
+
 ## Returns the door type at [param pos], or "" if no door.
 func get_door_type(pos: Vector3i) -> String:
 	return get_cell(pos).door_type

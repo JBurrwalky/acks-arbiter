@@ -37,9 +37,8 @@ static func build_menu(
 		return []
 
 	var options: Array[Dictionary] = []
-	# Use whichever map is active (voxel or tactical).
-	var map = controller.voxel_map if controller.voxel_map != null \
-		and DungeonMapController.use_voxel_renderer else controller.tactical_map
+	# Voxel map takes priority when set; fall back to legacy TacticalMapData.
+	var map = controller.voxel_map if controller.voxel_map != null else controller.tactical_map
 	# Ensure target_cell is Vector2i for downstream 2D logic
 	var target_cell_2d: Vector2i
 	if target_cell is Vector3i:
@@ -534,7 +533,7 @@ static func _build_downed_options(
 static func _get_entity_at_cell(cell: Vector2i, controller) -> Combatant:
 	## Returns the first combatant at the given cell, or null.
 	## Supports both VoxelMapData (3D lookup using z from entity) and TacticalMapData.
-	if controller.voxel_map != null and DungeonMapController.use_voxel_renderer:
+	if controller.voxel_map != null:
 		# Check all entities whose 2D projection matches the target cell
 		for eid in controller.voxel_map.entity_positions.keys():
 			var pos: Vector3i = controller.voxel_map.entity_positions[eid]
@@ -592,7 +591,7 @@ static func _find_enemy_adjacent_to_cell(
 	if controller.movement_resolver == null:
 		return null
 	var enemy_side: int = Combatant.Side.ENEMY if combatant.is_pc_side() else Combatant.Side.PARTY
-	if controller.voxel_map != null and DungeonMapController.use_voxel_renderer:
+	if controller.voxel_map != null:
 		var neighbors := IsometricGrid.get_neighbors(cell)
 		for n_cell in neighbors:
 			# Check all entities whose 2D projection matches the neighbor

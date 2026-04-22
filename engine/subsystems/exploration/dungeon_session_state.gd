@@ -242,7 +242,8 @@ var _pick_lock_failures: Dictionary = {}
 
 
 ## Record that a lock was successfully picked (for reverting on exit).
-func record_picked_lock(pos: Vector2i) -> void:
+## [param pos] accepts Vector2i (legacy) or Vector3i (voxel).
+func record_picked_lock(pos) -> void:
 	_picked_locks[pos] = true
 
 
@@ -267,36 +268,38 @@ func has_failed_pick_lock(entity_id: String, current_level: int) -> bool:
 # Spike / Wedge Tracking
 # ---------------------------------------------------------------------------
 
-## Doors spiked shut this visit. Key: Vector2i -> true.
+## Doors spiked shut this visit. Key: Vector2i (legacy) or Vector3i (voxel) -> true.
 var _spiked_doors: Dictionary = {}
 
-## Doors wedged open this visit. Key: Vector2i -> true.
+## Doors wedged open this visit. Key: Vector2i (legacy) or Vector3i (voxel) -> true.
 var _wedged_doors: Dictionary = {}
 
 
-func spike_door(pos: Vector2i) -> void:
+## Door-position params accept Vector2i (legacy TacticalMapData) or Vector3i
+## (VoxelMapData). Dictionaries hash the value directly.
+func spike_door(pos) -> void:
 	_spiked_doors[pos] = true
 	_wedged_doors.erase(pos)  # Can't be both.
 
 
-func unspike_door(pos: Vector2i) -> void:
+func unspike_door(pos) -> void:
 	_spiked_doors.erase(pos)
 
 
-func wedge_door(pos: Vector2i) -> void:
+func wedge_door(pos) -> void:
 	_wedged_doors[pos] = true
 	_spiked_doors.erase(pos)  # Can't be both.
 
 
-func unwedge_door(pos: Vector2i) -> void:
+func unwedge_door(pos) -> void:
 	_wedged_doors.erase(pos)
 
 
-func is_spiked(pos: Vector2i) -> bool:
+func is_spiked(pos) -> bool:
 	return _spiked_doors.has(pos)
 
 
-func is_wedged(pos: Vector2i) -> bool:
+func is_wedged(pos) -> bool:
 	return _wedged_doors.has(pos)
 
 
@@ -304,24 +307,24 @@ func is_wedged(pos: Vector2i) -> bool:
 # Held Portcullis Tracking
 # ---------------------------------------------------------------------------
 
-## Portcullises held open by brute force. Key: Vector2i -> String entity_id.
+## Portcullises held open by brute force. Key: Vector2i (legacy) or Vector3i (voxel) -> String entity_id.
 ## Drops as soon as the holding entity performs any other action.
 var _held_portcullises: Dictionary = {}
 
 
-func hold_portcullis(pos: Vector2i, entity_id: String) -> void:
+func hold_portcullis(pos, entity_id: String) -> void:
 	_held_portcullises[pos] = entity_id
 
 
-func release_portcullis(pos: Vector2i) -> void:
+func release_portcullis(pos) -> void:
 	_held_portcullises.erase(pos)
 
 
-func is_held_open(pos: Vector2i) -> bool:
+func is_held_open(pos) -> bool:
 	return _held_portcullises.has(pos)
 
 
-func get_portcullis_holder(pos: Vector2i) -> String:
+func get_portcullis_holder(pos) -> String:
 	return _held_portcullises.get(pos, "")
 
 
@@ -388,7 +391,8 @@ var _exit_queue: Dictionary = {}
 
 
 ## Add an entity to the exit queue targeting [param exit_cell].
-func queue_for_exit(entity_id: String, exit_cell: Vector2i) -> void:
+## [param exit_cell] accepts Vector2i (legacy) or Vector3i (voxel).
+func queue_for_exit(entity_id: String, exit_cell) -> void:
 	_exit_queue[entity_id] = exit_cell
 
 

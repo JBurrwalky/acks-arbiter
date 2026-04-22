@@ -184,6 +184,11 @@ signal cache_dropped(cache_id: String, item_id: String, source_carrier_id: Strin
 ## An item was picked up from a location cache.
 signal cache_picked_up(cache_id: String, item_id: String, carrier_id: String)
 
+## Emitted when a party arrives at a hex with a cache via the "Visit Loot Cache"
+## context-menu action. Listeners (wilderness state / inventory UI) open the
+## party-inventory overlay pointed at [param cache_id].
+signal wilderness_cache_visit_requested(cache_id: String, hex: Vector2i)
+
 ## A dungeon container (chest, sack, barrel) was opened with contents.
 ## [param contents] keys:
 ##   items: Array of {item_key, quantity}

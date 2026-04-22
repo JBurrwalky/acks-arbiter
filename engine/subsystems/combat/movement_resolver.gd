@@ -47,7 +47,7 @@ func has_grid() -> bool:
 func get_grid_position(combatant: Combatant) -> Vector2i:
 	## Returns the combatant's grid position, or Vector2i(-1,-1) if not placed.
 	## In voxel mode, projects the 3D position to 2D (x, y).
-	if _voxel_map != null and DungeonMapController.use_voxel_renderer:
+	if _voxel_map != null:
 		var pos3d: Vector3i = _voxel_map.get_entity_pos(combatant.id)
 		if pos3d == Vector3i(-1, -1, -1):
 			return Vector2i(-1, -1)
@@ -61,7 +61,7 @@ func set_grid_position(combatant: Combatant, pos: Vector2i) -> void:
 	## Updates both the combatant field and map entity tracking.
 	## In voxel mode, also updates VoxelMapData and grid_position_3d (preserving z).
 	combatant.grid_position = pos
-	if _voxel_map != null and DungeonMapController.use_voxel_renderer:
+	if _voxel_map != null:
 		var z: int = combatant.grid_position_3d.z
 		var pos3d := Vector3i(pos.x, pos.y, z)
 		combatant.grid_position_3d = pos3d
@@ -92,7 +92,7 @@ func set_grid_position_3d(combatant: Combatant, pos: Vector3i) -> void:
 func get_distance_cells(a: Combatant, b: Combatant) -> int:
 	## Chebyshev distance between two combatants. Returns -1 if no grid.
 	## In voxel mode, uses 3D Chebyshev distance.
-	if _voxel_map != null and DungeonMapController.use_voxel_renderer:
+	if _voxel_map != null:
 		var pos_a: Vector3i = get_grid_position_3d(a)
 		var pos_b: Vector3i = get_grid_position_3d(b)
 		if pos_a == Vector3i(-1, -1, -1) or pos_b == Vector3i(-1, -1, -1):
@@ -128,7 +128,7 @@ func get_adjacent_enemies(combatant: Combatant) -> Array[Combatant]:
 	## Returns all alive enemies adjacent to this combatant.
 	## In voxel mode, uses 3D adjacency via VoxelGrid.
 	var result: Array[Combatant] = []
-	if _voxel_map != null and DungeonMapController.use_voxel_renderer:
+	if _voxel_map != null:
 		var pos: Vector3i = get_grid_position_3d(combatant)
 		if pos == Vector3i(-1, -1, -1):
 			return result
@@ -181,7 +181,7 @@ func find_path(
 	## [param mover_side] when >= 0, enemy ZoC cells block routing (except as goal).
 	## [param level_z] z-level for voxel mode pathfinding.
 	# --- Voxel path: delegate to 3D BFS and project result to 2D ---
-	if _voxel_map != null and DungeonMapController.use_voxel_renderer:
+	if _voxel_map != null:
 		var start_3d := Vector3i(start.x, start.y, level_z)
 		var goal_3d := Vector3i(goal.x, goal.y, level_z)
 		var path_3d := path_bfs_3d(start_3d, goal_3d, "ground", max_range)
@@ -243,7 +243,7 @@ func can_reach(combatant: Combatant, target_pos: Vector2i, max_cells: int,
 		mover_side: int = -1) -> bool:
 	## Returns true if combatant can reach target_pos within max_cells steps.
 	## [param mover_side] when >= 0, enemy ZoC cells block routing (except as destination).
-	if _voxel_map != null and DungeonMapController.use_voxel_renderer:
+	if _voxel_map != null:
 		var start_3d: Vector3i = get_grid_position_3d(combatant)
 		if start_3d == Vector3i(-1, -1, -1):
 			return true
@@ -275,7 +275,7 @@ func move_along_path(
 	if path.is_empty():
 		return 0
 	# In voxel mode, set_grid_position handles syncing 3D position
-	if _voxel_map != null and DungeonMapController.use_voxel_renderer:
+	if _voxel_map != null:
 		var cells_moved := 0
 		for i in range(1, path.size()):
 			if cells_moved >= max_cells:
@@ -305,7 +305,7 @@ func get_cells_reachable(combatant: Combatant, max_cells: int,
 	## [param mover_side] when >= 0, enemy ZoC cells are reachable but act as
 	## dead-ends (can enter but not leave — movement stops there).
 	## In voxel mode, delegates to 3D flood-fill and projects results to 2D.
-	if _voxel_map != null and DungeonMapController.use_voxel_renderer:
+	if _voxel_map != null:
 		var pos_3d: Vector3i = get_grid_position_3d(combatant)
 		if pos_3d == Vector3i(-1, -1, -1):
 			return []
@@ -366,7 +366,7 @@ func validate_charge(attacker: Combatant, target: Combatant) -> Dictionary:
 	## Returns {valid: bool, path: Array[Vector2i], reason: String}.
 
 	# --- Voxel path ---
-	if _voxel_map != null and DungeonMapController.use_voxel_renderer:
+	if _voxel_map != null:
 		var start: Vector2i = get_grid_position(attacker)
 		var end: Vector2i = get_grid_position(target)
 		if start == Vector2i(-1, -1) or end == Vector2i(-1, -1):
@@ -447,7 +447,7 @@ func has_line_of_sight(from_pos: Vector2i, to_pos: Vector2i) -> bool:
 	## Bresenham line walk checking blocks_los on each intermediate cell.
 	## In voxel mode, delegates to VoxelLOS with z=0 for both positions.
 	## For full 3D LOS, use has_los_3d() directly.
-	if _voxel_map != null and DungeonMapController.use_voxel_renderer:
+	if _voxel_map != null:
 		# Project 2D positions into 3D at z=0 for compatibility; callers that
 		# need proper z should use has_los_3d() directly.
 		return has_los_3d(Vector3i(from_pos.x, from_pos.y, 0),
@@ -464,7 +464,7 @@ func has_line_of_sight(from_pos: Vector2i, to_pos: Vector2i) -> bool:
 
 ## Overload that accepts combatants directly and uses correct z in voxel mode.
 func has_line_of_sight_combatants(a: Combatant, b: Combatant) -> bool:
-	if _voxel_map != null and DungeonMapController.use_voxel_renderer:
+	if _voxel_map != null:
 		return has_los_3d(get_grid_position_3d(a), get_grid_position_3d(b))
 	return has_line_of_sight(get_grid_position(a), get_grid_position(b))
 
@@ -478,7 +478,7 @@ func resolve_fighting_withdrawal(
 		away_from: Vector2i) -> Vector2i:
 	## Move up to half combat movement cells away from the specified position.
 	## Returns new position.
-	if _map == null and not (_voxel_map != null and DungeonMapController.use_voxel_renderer):
+	if _map == null and _voxel_map == null:
 		return combatant.grid_position
 	var start: Vector2i = get_grid_position(combatant)
 	if start == Vector2i(-1, -1):
@@ -498,7 +498,7 @@ func resolve_full_retreat(
 		away_from: Vector2i) -> Vector2i:
 	## Move at full combat movement away from the specified position.
 	## Returns new position.
-	if _map == null and not (_voxel_map != null and DungeonMapController.use_voxel_renderer):
+	if _map == null and _voxel_map == null:
 		return combatant.grid_position
 	var start: Vector2i = get_grid_position(combatant)
 	if start == Vector2i(-1, -1):
@@ -522,7 +522,7 @@ func find_adjacent_cell_to(
 		target: Combatant) -> Vector2i:
 	## Find the best passable, unoccupied cell adjacent to target that is
 	## closest to mover. Returns Vector2i(-1,-1) if none.
-	if _voxel_map != null and DungeonMapController.use_voxel_renderer:
+	if _voxel_map != null:
 		var mover_pos: Vector2i = get_grid_position(mover)
 		var target_pos: Vector2i = get_grid_position(target)
 		return _find_best_adjacent_cell_voxel(mover_pos, target_pos, mover.grid_position_3d.z)
@@ -544,7 +544,7 @@ func _build_enemy_zoc_set(mover_side: int) -> Dictionary:
 	var zoc: Dictionary = {}
 	if _roster == null:
 		return zoc
-	if _map == null and not (_voxel_map != null and DungeonMapController.use_voxel_renderer):
+	if _map == null and _voxel_map == null:
 		return zoc
 	var enemy_side: int = Combatant.Side.ENEMY if mover_side == Combatant.Side.PARTY else Combatant.Side.PARTY
 	for c: Combatant in _roster.get_alive_on_side(enemy_side):
@@ -633,7 +633,7 @@ func _find_retreat_cell(
 	## BFS to find the cell within max_cells that maximizes distance from away_from.
 	## In voxel mode, uses VoxelMapData for passability and entity lookups.
 	## [param level_z] is the z-level for voxel passability checks.
-	var use_voxel: bool = _voxel_map != null and DungeonMapController.use_voxel_renderer
+	var use_voxel: bool = _voxel_map != null
 	var occupied: Dictionary = {}
 	if use_voxel:
 		for eid: String in _voxel_map.entity_positions.keys():
@@ -909,11 +909,19 @@ func _reverse_direction(dir: String) -> String:
 
 
 ## Reconstructs a path from BFS visited dictionary (3D version).
+## visited[start] is null (start has no predecessor); terminate on start, not null,
+## because assigning null to a Vector3i-typed variable is a runtime type error.
 func _reconstruct_path_3d(visited: Dictionary, start: Vector3i,
 		goal: Vector3i) -> Array[Vector3i]:
 	var path: Array[Vector3i] = []
-	var current := goal
-	while current != null:
+	if not visited.has(goal):
+		return path
+	var current: Vector3i = goal
+	path.push_front(current)
+	while current != start:
+		var prev = visited.get(current)
+		if prev == null:
+			break
+		current = prev
 		path.push_front(current)
-		current = visited.get(current)
 	return path

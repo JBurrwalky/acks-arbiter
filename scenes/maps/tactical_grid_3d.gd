@@ -917,6 +917,7 @@ static func build_floor_multimesh_voxel(
 		floor_mat.uv1_scale = Vector3(FLOOR_UV_SCALE, FLOOR_UV_SCALE, FLOOR_UV_SCALE)
 	mmi.material_override = floor_mat
 	mmi.name = "FloorSlabs"
+	mmi.set_meta("base_color", Color.WHITE)
 	return mmi
 
 
@@ -967,6 +968,7 @@ static func build_walls_voxel(map: VoxelMapData, level: int) -> MultiMeshInstanc
 		wall_mat.uv1_scale = Vector3(WALL_UV_SCALE, WALL_UV_SCALE, WALL_UV_SCALE)
 	mmi.material_override = wall_mat
 	mmi.name = "Walls"
+	mmi.set_meta("base_color", Color.WHITE)
 	return mmi
 
 
@@ -1030,15 +1032,21 @@ static func build_doors_voxel(map: VoxelMapData, level: int) -> Node3D:
 		if cell.door_type == "portcullis":
 			var box := BoxMesh.new()
 			box.size = Vector3(CELL_SIZE * 0.6, CELL_SIZE * 0.8, 0.05)
+			var portcullis_color := Color(0.6, 0.6, 0.6)
 			var mesh_inst := MeshInstance3D.new()
 			mesh_inst.mesh = box
-			mesh_inst.material_override = _get_material("portcullis", Color(0.6, 0.6, 0.6), true)
+			var portcullis_mat := StandardMaterial3D.new()
+			portcullis_mat.albedo_color = portcullis_color
+			portcullis_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			portcullis_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+			mesh_inst.material_override = portcullis_mat
 			mesh_inst.position = world_pos + Vector3(0.0, CELL_SIZE * 0.4, 0.0)
 			mesh_inst.rotation_degrees.y = closed_rotation
 			if cell.door_state == "open":
 				mesh_inst.position.y += CELL_SIZE * 0.6
 			mesh_inst.set_meta("cell_pos", pos)
 			mesh_inst.set_meta("door_type", cell.door_type)
+			mesh_inst.set_meta("base_color", portcullis_color)
 			parent.add_child(mesh_inst)
 		else:
 			var box := BoxMesh.new()
@@ -1077,6 +1085,7 @@ static func build_doors_voxel(map: VoxelMapData, level: int) -> Node3D:
 
 			mesh_inst.set_meta("cell_pos", pos)
 			mesh_inst.set_meta("door_type", cell.door_type)
+			mesh_inst.set_meta("base_color", mat.albedo_color)
 			parent.add_child(mesh_inst)
 
 	return parent
@@ -1124,9 +1133,15 @@ static func build_features_voxel(map: VoxelMapData, level: int) -> Node3D:
 			var box := BoxMesh.new()
 			box.size = Vector3(CELL_SIZE * 0.5, 0.1, CELL_SIZE * 0.6)
 
+			var stair_color := Color(0.9, 0.9, 0.85)
+			var stair_mat := StandardMaterial3D.new()
+			stair_mat.albedo_color = stair_color
+			stair_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			stair_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 			var mesh_inst := MeshInstance3D.new()
 			mesh_inst.mesh = box
-			mesh_inst.material_override = _get_material("stairs", Color(0.9, 0.9, 0.85), true)
+			mesh_inst.material_override = stair_mat
+			mesh_inst.set_meta("base_color", stair_color)
 			mesh_inst.position = world_pos + Vector3(0.0, 0.2, 0.0)
 
 			# Rotate to face the direction encoded in the suffix
@@ -1153,9 +1168,15 @@ static func build_features_voxel(map: VoxelMapData, level: int) -> Node3D:
 			# Ladder: vertical thin box
 			var box := BoxMesh.new()
 			box.size = Vector3(0.15, CELL_SIZE * 0.8, 0.08)
+			var ladder_color := Color(0.55, 0.45, 0.35)
+			var ladder_mat := StandardMaterial3D.new()
+			ladder_mat.albedo_color = ladder_color
+			ladder_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			ladder_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 			var mesh_inst := MeshInstance3D.new()
 			mesh_inst.mesh = box
-			mesh_inst.material_override = _get_material("ladder", Color(0.55, 0.45, 0.35), true)
+			mesh_inst.material_override = ladder_mat
+			mesh_inst.set_meta("base_color", ladder_color)
 			mesh_inst.position = world_pos + Vector3(0.0, 0.4, 0.0)
 			mesh_inst.rotation_degrees.y = 45.0
 			parent.add_child(mesh_inst)
@@ -1430,6 +1451,54 @@ static func build_highlight_overlay_voxel(
 # ---------------------------------------------------------------------------
 # Level group assembly (voxel)
 # ---------------------------------------------------------------------------
+
+## Multiply the albedo_color of every tintable mesh in [param group] by
+## [param tint], preserving each mesh's stored base_color.
+##
+## Per GDD §16.2 per-level visibility table: focus level renders at full
+## brightness (tint = Color.WHITE); levels below focus render dimmed
+## (tint = DIM_COLOR ≈ Color(0.6, 0.6, 0.6)).
+##
+## Tints FloorSlabs / Walls / Doors / Features. Skips GridLines, FogOverlay,
+## TransitionMarkers, and Label3Ds (labels use .modulate, not albedo; the
+## labels left untinted on dimmed levels is an accepted minor limitation).
+static func set_level_group_tint(group: Node3D, tint: Color) -> void:
+	if group == null:
+		return
+	for child in group.get_children():
+		match child.name:
+			"FloorSlabs", "Walls":
+				if child is GeometryInstance3D:
+					_apply_tint_to_mesh(child, tint)
+				else:
+					# "Walls" may be a Node3D container (individual-walls path)
+					for mesh in child.get_children():
+						if mesh is GeometryInstance3D:
+							_apply_tint_to_mesh(mesh, tint)
+			"Doors", "Features":
+				for mesh in child.get_children():
+					if mesh is GeometryInstance3D:
+						_apply_tint_to_mesh(mesh, tint)
+			# Skip GridLines, FogOverlay, TransitionMarkers, FeatureLabels.
+			_:
+				pass
+
+
+## Multiply a single mesh's material_override.albedo_color by [param tint],
+## using the mesh's stored "base_color" metadata as the source color.
+static func _apply_tint_to_mesh(mesh: GeometryInstance3D, tint: Color) -> void:
+	var mat := mesh.material_override
+	if mat == null or not (mat is StandardMaterial3D):
+		return
+	var smat: StandardMaterial3D = mat
+	var base: Color = mesh.get_meta("base_color", Color.WHITE)
+	smat.albedo_color = Color(
+		base.r * tint.r,
+		base.g * tint.g,
+		base.b * tint.b,
+		base.a * tint.a,
+	)
+
 
 ## Build a complete per-level Node3D containing FloorSlabs, Walls, Doors,
 ## Features, FeatureLabels, GridLines, FogOverlay, TransitionMarkers.

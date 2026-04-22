@@ -189,7 +189,8 @@ func _build_ui() -> void:
 	right_panel.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
 	right_panel.offset_left = -220.0
 	right_panel.offset_top = 10.0
-	right_panel.offset_bottom = -10.0
+	# Leave room for SessionStatusBar plus a small gap.
+	right_panel.offset_bottom = -float(SessionStatusBar.BAR_HEIGHT + 10)
 	right_panel.offset_right = -10.0
 	right_panel.add_theme_constant_override("separation", 6)
 	add_child(right_panel)
@@ -209,7 +210,8 @@ func _build_ui() -> void:
 	_log_panel.name = "CombatLog"
 	_log_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	_log_panel.offset_left = 10.0
-	_log_panel.offset_bottom = -10.0
+	# 10px gap above the SessionStatusBar.
+	_log_panel.offset_bottom = -float(SessionStatusBar.BAR_HEIGHT + 10)
 	_log_panel.offset_top = -180.0
 	_log_panel.offset_right = 280.0
 	add_child(_log_panel)

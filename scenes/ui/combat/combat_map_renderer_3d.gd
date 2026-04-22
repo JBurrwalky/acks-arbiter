@@ -70,9 +70,10 @@ var _token_scene: PackedScene = null
 # ---------------------------------------------------------------------------
 
 ## Initialize the renderer with a tactical map and combat roster.
-## Accepts either TacticalMapData (legacy) or VoxelMapData (voxel path).
+## [param tactical_map] is VoxelMapData in voxel mode (default); TacticalMapData
+## is preserved as a fallback path for legacy callers pending their migration.
 func setup(tactical_map, roster) -> void:
-	if DungeonMapController.use_voxel_renderer and tactical_map is VoxelMapData:
+	if tactical_map is VoxelMapData:
 		_voxel_map = tactical_map
 	else:
 		_map = tactical_map
@@ -137,7 +138,6 @@ func _populate_tokens(roster) -> void:
 		if c.grid_position != Vector2i(-1, -1):
 			if _voxel_map != null:
 				var world_pos := VoxelGrid.cell_to_world(c.grid_position.x, c.grid_position.y, 0)
-				world_pos.y += 0.2
 				token.update_position(world_pos)
 			else:
 				var world_pos := TacticalGrid3D.cell_to_world(c.grid_position.x, c.grid_position.y)
@@ -213,7 +213,6 @@ func move_token(entity_id: String, to_cell) -> void:
 	if _voxel_map != null:
 		var pos: Vector3i = to_cell if to_cell is Vector3i else Vector3i(to_cell.x, to_cell.y, 0)
 		var world_pos := VoxelGrid.cell_to_world(pos.x, pos.y, pos.z)
-		world_pos.y += 0.2
 		_tokens[entity_id].update_position(world_pos)
 	else:
 		var pos_2d: Vector2i = to_cell

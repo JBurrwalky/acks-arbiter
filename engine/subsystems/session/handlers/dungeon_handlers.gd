@@ -210,6 +210,69 @@ func order_move(
 	return true
 
 
+## Issue a group move: all entities head toward [param target]. Followers
+## scatter to unclaimed cells around the target (ring-search up to 4 cells)
+## to prevent final-cell stacking. Returns the list of entity_ids that were
+## successfully ordered. Voxel mode only — legacy path falls back to per-entity
+## [method order_move] via the caller.
+func order_group_move(
+	entity_ids: Array,
+	target,
+	base_movements: Dictionary,  # entity_id -> base_movement
+	controller: DungeonMapController,
+	scheduler: EventScheduler,
+	party_id: String,
+) -> Array:
+	if entity_ids.is_empty():
+		return []
+
+	for eid in entity_ids:
+		_release_held_portcullises(eid)
+		_movement_orders.erase(eid)
+
+	# Seed the controller's party list so queue_group_move's leader/follower
+	# split matches the intended ordering (first selected = leader).
+	var prev_party_ids: Array = controller._party_entity_ids.duplicate()
+	var typed_ids: Array[String] = []
+	for eid in entity_ids:
+		typed_ids.append(str(eid))
+	controller._party_entity_ids = typed_ids
+
+	var ok: bool = controller.queue_group_move(target)
+	# Restore the real party list so downstream systems see the full roster.
+	controller._party_entity_ids = prev_party_ids
+
+	if not ok:
+		return []
+
+	var om: RefCounted = controller.get_order_manager()
+	var ordered: Array = []
+	for eid in entity_ids:
+		var sid: String = str(eid)
+		var order: Dictionary = om.get_order(sid)
+		if order.is_empty():
+			continue
+		var order_type: String = order.get("order_type", "")
+		var path: Array = order.get("path", [])
+		om.remove_order(sid)
+
+		if order_type != "move" or path.is_empty():
+			continue
+
+		_movement_orders[sid] = {
+			"path": path,
+			"progress": 0.0,
+			"base_movement": base_movements.get(sid, 120),
+		}
+		ordered.append(sid)
+
+	if not ordered.is_empty():
+		_ensure_movement_tick(scheduler, party_id)
+		EventBus.order_queued.emit(party_id, "dungeon_move", 0)
+
+	return ordered
+
+
 ## Order a compound "move to adjacent cell + interact with door" action.
 ## The entity moves along the precomputed path; on arrival, auto-interacts with the door.
 func order_move_and_interact_door(
@@ -298,7 +361,7 @@ func on_cell_reached(entity_id: String, cell) -> Dictionary:  # cell: Vector2i o
 	var controller: DungeonMapController = _find_dungeon_controller()
 	if controller == null:
 		return {"error": true}
-	var tactical_map = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
+	var tactical_map = controller.get_voxel_map()
 	if tactical_map == null:
 		return {"error": true}
 
@@ -321,10 +384,19 @@ func on_cell_reached(entity_id: String, cell) -> Dictionary:  # cell: Vector2i o
 			return {"blocked": true}
 
 	# Commit the mechanical position update.
-	var old_pos: Vector2i = tactical_map.get_entity_pos(entity_id)
+	# old_pos is Vector2i (legacy TacticalMapData) or Vector3i (VoxelMapData).
+	var old_pos = tactical_map.get_entity_pos(entity_id)
 	tactical_map.set_entity_pos(entity_id, cell)
 	# Emit entity_moved (renderer ignores via _active_movements guard).
 	controller.entity_moved.emit(entity_id, old_pos, cell)
+
+	# If the party leader crossed to a new level (e.g. stair traversal in voxel
+	# mode), notify the controller so VisibilityManager's focus can follow.
+	if old_pos is Vector3i and cell is Vector3i:
+		var party_ids: Array = controller.get_entity_ids()
+		if not party_ids.is_empty() and party_ids[0] == entity_id and old_pos.z != cell.z:
+			controller._current_level = cell.z
+			controller.level_changed.emit(old_pos.z, cell.z)
 
 	# Update fog of war.
 	controller._update_fog_for_all_members()
@@ -368,17 +440,24 @@ func schedule_action(
 	# A character performing any action releases any held portcullis.
 	_release_held_portcullises(entity_id)
 
+	# Serialize the cell coordinate — include level (z) when present so voxel
+	# mode round-trips correctly. Vector2i has no z, so we mark it absent.
+	var data: Dictionary = {
+		"action_type": action_type,
+		"entity_id": entity_id,
+		"cell_x": cell.x,
+		"cell_y": cell.y,
+	}
+	if cell is Vector3i:
+		data["cell_z"] = cell.z
+		data["cell_is_3d"] = true
+
 	var current_time: int = Timekeeping.get_party_time(party_id)
 	return scheduler.schedule_at(
 		current_time + duration_rounds,
 		"dungeon_action_complete",
 		party_id,
-		{
-			"action_type": action_type,
-			"entity_id": entity_id,
-			"cell_x": cell.x,
-			"cell_y": cell.y,
-		},
+		data,
 		ScheduledEvent.PRIORITY_ARRIVAL,
 	)
 
@@ -401,7 +480,7 @@ func _handle_movement_tick(event: ScheduledEvent) -> Dictionary:
 		_movement_orders.clear()
 		return {}
 
-	var tactical_map = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
+	var tactical_map = controller.get_voxel_map()
 	if tactical_map == null:
 		_movement_orders.clear()
 		return {}
@@ -609,7 +688,7 @@ func _handle_light_tick(event: ScheduledEvent) -> Dictionary:
 	# wedged or spiked swing shut automatically (per GDD §3.2.1).
 	var controller: DungeonMapController = _find_dungeon_controller()
 	if controller != null:
-		var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
+		var tmap = controller.get_voxel_map()
 		if tmap != null:
 			for pos in tmap._cells.keys():
 				if tmap.is_evil_door(pos) and tmap.get_door_state(pos) == "open":
@@ -637,9 +716,18 @@ func _handle_light_tick(event: ScheduledEvent) -> Dictionary:
 func _handle_action_complete(event: ScheduledEvent) -> Dictionary:
 	var action_type: String = event.data.get("action_type", "")
 	var entity_id: String = event.data.get("entity_id", "")
-	var cell := Vector2i(
-		int(event.data.get("cell_x", 0)),
-		int(event.data.get("cell_y", 0)))
+	# Reconstruct as Vector3i when the scheduled event carries a level (voxel
+	# mode); otherwise fall back to Vector2i (legacy TacticalMapData).
+	var cell
+	if event.data.get("cell_is_3d", false):
+		cell = Vector3i(
+			int(event.data.get("cell_x", 0)),
+			int(event.data.get("cell_y", 0)),
+			int(event.data.get("cell_z", 0)))
+	else:
+		cell = Vector2i(
+			int(event.data.get("cell_x", 0)),
+			int(event.data.get("cell_y", 0)))
 
 	match action_type:
 		"search":
@@ -754,8 +842,8 @@ func _resolve_force_door(entity_id: String, cell) -> Dictionary:  # cell: Vector
 
 	if forced:
 		var controller: DungeonMapController = _find_dungeon_controller()
-		if controller != null and controller.get_map() != null:
-			var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
+		if controller != null and controller.has_map():
+			var tmap = controller.get_voxel_map()
 			tmap.set_door_state(cell, "closed")  # stuck → closed (now openable)
 			controller.door_state_changed.emit(cell, "stuck", "closed")
 
@@ -795,8 +883,8 @@ func _resolve_bash_door(entity_id: String, cell) -> Dictionary:  # cell: Vector2
 
 	# Bash is deterministic — time spent = success per ACKS.
 	var controller: DungeonMapController = _find_dungeon_controller()
-	if controller != null and controller.get_map() != null:
-		var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
+	if controller != null and controller.has_map():
+		var tmap = controller.get_voxel_map()
 		var old_state: String = tmap.get_door_state(cell)
 		tmap.set_door_state(cell, "destroyed")
 		controller.door_state_changed.emit(cell, old_state, "destroyed")
@@ -855,8 +943,8 @@ func _resolve_pick_lock(entity_id: String, cell) -> Dictionary:  # cell: Vector2
 
 	if success:
 		var controller: DungeonMapController = _find_dungeon_controller()
-		if controller != null and controller.get_map() != null:
-			var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
+		if controller != null and controller.has_map():
+			var tmap = controller.get_voxel_map()
 			var old_state: String = tmap.get_door_state(cell)
 			tmap.set_door_state(cell, "closed")
 			tmap.set_cell_field(cell, "door_type", "unlocked")
@@ -898,12 +986,16 @@ func _resolve_pick_lock(entity_id: String, cell) -> Dictionary:  # cell: Vector2
 
 func _resolve_use_lever(_entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	var controller: DungeonMapController = _find_dungeon_controller()
-	if controller == null or controller.get_map() == null:
+	if controller == null or not controller.has_map():
 		return {"auto_pause": true, "pause_reason": "Lever — no map"}
 
-	var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
-	var target_pos: Vector2i = tmap.get_lever_target(cell)
-	if target_pos == Vector2i(-1, -1):
+	var tmap = controller.get_voxel_map()
+	var target_pos
+	if tmap.has_method("get_lever_target"):
+		target_pos = tmap.get_lever_target(cell)
+	else:
+		target_pos = null
+	if target_pos == null or target_pos == Vector2i(-1, -1) or target_pos == Vector3i(-1, -1, -1):
 		EventBus.notification_requested.emit({
 			"type": "info",
 			"category": "environment",
@@ -984,8 +1076,8 @@ func _resolve_force_portcullis(entity_id: String, cell) -> Dictionary:  # cell: 
 
 	if forced:
 		var controller: DungeonMapController = _find_dungeon_controller()
-		if controller != null and controller.get_map() != null:
-			var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
+		if controller != null and controller.has_map():
+			var tmap = controller.get_voxel_map()
 			tmap.set_door_state(cell, "open")
 			controller.door_state_changed.emit(cell, "closed", "open")
 
@@ -1022,10 +1114,10 @@ func _resolve_force_portcullis(entity_id: String, cell) -> Dictionary:  # cell: 
 
 func _resolve_drop_portcullis(_entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	var controller: DungeonMapController = _find_dungeon_controller()
-	if controller == null or controller.get_map() == null:
+	if controller == null or not controller.has_map():
 		return {"auto_pause": true, "pause_reason": "No map"}
 
-	var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
+	var tmap = controller.get_voxel_map()
 
 	# Spiked or wedged portcullises resist.
 	if _session_state != null:
@@ -1326,9 +1418,9 @@ func _release_held_portcullises(entity_id: String) -> void:
 	if released.is_empty():
 		return
 	var controller: DungeonMapController = _find_dungeon_controller()
-	if controller == null or controller.get_map() == null:
+	if controller == null or not controller.has_map():
 		return
-	var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
+	var tmap = controller.get_voxel_map()
 	for pos in released:
 		if tmap.get_door_state(pos) == "open":
 			tmap.set_door_state(pos, "closed")
@@ -1342,7 +1434,7 @@ func _release_held_portcullises(entity_id: String) -> void:
 
 
 ## Record a successfully picked lock in session state (reverted on dungeon exit).
-func _record_picked_lock(pos: Vector2i) -> void:
+func _record_picked_lock(pos) -> void:
 	if _session_state != null and _session_state.has_method("record_picked_lock"):
 		_session_state.record_picked_lock(pos)
 
@@ -1455,7 +1547,7 @@ func _resolve_pick_up_all(entity_id: String, cell, dungeon_id: String) -> Dictio
 		CampaignRepository.delete_location_cache(cache_id)
 		var controller: DungeonMapController = _find_dungeon_controller()
 		if controller != null:
-			var tmap = controller.get_voxel_map() if DungeonMapController.use_voxel_renderer else controller.get_map()
+			var tmap = controller.get_voxel_map()
 			if tmap != null:
 				tmap.set_cell_field(cell, "has_ground_items", false)
 

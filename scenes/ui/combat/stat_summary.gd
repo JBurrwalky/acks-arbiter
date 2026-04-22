@@ -152,11 +152,14 @@ func show_combatant(combatant) -> void:
 
 	_name_label.text = combatant.display_name
 
-	# Class / HD line
+	# Class / HD line — show the character's actual class, not their combat
+	# progression type (e.g. Paladin/Assassin/Explorer, not "Fighter")
 	if combatant.is_character:
-		var prog: String = combatant.get_combat_progression()
+		var class_id: String = combatant.get_character_class()
+		if class_id.is_empty():
+			class_id = combatant.get_combat_progression()
 		var lvl: int = combatant.get_level_or_hd()
-		_class_label.text = "%s (Lvl %d)" % [prog.capitalize(), lvl]
+		_class_label.text = "%s (Lvl %d)" % [_humanize_class(class_id), lvl]
 	else:
 		var hd: int = combatant.get_level_or_hd()
 		_class_label.text = "HD %d" % hd
@@ -259,6 +262,16 @@ func _clear() -> void:
 	_damage_label.text = ""
 	_ammo_label.text = ""
 	_conditions_label.text = ""
+
+
+func _humanize_class(class_id: String) -> String:
+	## Converts class ids like "dwarf_craftpriest" → "Dwarf Craftpriest" for display.
+	if class_id.is_empty():
+		return "Unknown"
+	var parts := class_id.split("_")
+	for i in parts.size():
+		parts[i] = parts[i].capitalize()
+	return " ".join(parts)
 
 
 func _style_hp_bar(current: int, max_val: int) -> void:

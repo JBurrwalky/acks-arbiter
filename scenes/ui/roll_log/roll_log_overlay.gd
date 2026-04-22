@@ -1,9 +1,9 @@
 class_name RollLogOverlay
 extends CanvasLayer
 
-## Collapsible right-side roll log panel accessible from any game screen.
+## Collapsible movable/resizable roll log panel accessible from any game screen.
 ##
-## Toggle with F6 (roll_log_toggle input action).
+## Toggle with Ctrl+Alt+R (roll_log_toggle input action).
 ## Shows all dice rolls from the current session, color-coded by type,
 ## with click-to-expand modifier breakdowns.
 ##
@@ -11,8 +11,14 @@ extends CanvasLayer
 ## EventBus.dice_rolled for live updates.
 
 const PANEL_WIDTH := 360
+const PANEL_HEIGHT := 500
 const ENTRY_HEIGHT := 36
 const MAX_ENTRIES := 200
+
+# Drag / resize
+const GRIP_SIZE := 14.0
+const MIN_WIDTH := 280.0
+const MIN_HEIGHT := 200.0
 
 const ROLL_TYPE_COLORS := {
 	"attack_throw": Color(0.75, 0.22, 0.18, 1.0),      # Red
@@ -33,9 +39,18 @@ var _scroll: ScrollContainer = null
 var _entry_list: VBoxContainer = null
 var _filter_buttons: HBoxContainer = null
 var _title_bar: HBoxContainer = null
+var _resize_grip: Control = null
 var _active_filter: String = "all"
 var _auto_scroll: bool = true
 var _entries: Array[Dictionary] = []  # Cached roll entries
+
+# Drag / resize state
+var _dragging: bool = false
+var _drag_mouse_start: Vector2 = Vector2.ZERO
+var _drag_panel_start: Vector2 = Vector2.ZERO
+var _resizing: bool = false
+var _resize_mouse_start: Vector2 = Vector2.ZERO
+var _resize_panel_start_size: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
@@ -78,16 +93,21 @@ func hide_log() -> void:
 
 func _build_ui() -> void:
 	_panel = PanelContainer.new()
-	_panel.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
-	_panel.offset_left = -PANEL_WIDTH
-	_panel.offset_right = 0
-	_panel.offset_top = 0
-	_panel.offset_bottom = 0
+	# Dock the default position to the right edge of the viewport; the user
+	# can drag it anywhere once the overlay is shown.
+	_panel.set_anchors_preset(Control.PRESET_TOP_LEFT, true)
+	var vp := get_viewport().get_visible_rect().size
+	_panel.position = Vector2(vp.x - PANEL_WIDTH - 8.0, 8.0)
+	_panel.size = Vector2(PANEL_WIDTH, PANEL_HEIGHT)
+	_panel.custom_minimum_size = Vector2(MIN_WIDTH, MIN_HEIGHT)
 
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.10, 0.08, 0.06, 0.96)
 	style.border_color = UiSurfaceStyles.FRAME_BORDER_COLOR
 	style.border_width_left = 2
+	style.border_width_right = 2
+	style.border_width_top = 2
+	style.border_width_bottom = 2
 	style.content_margin_left = 8
 	style.content_margin_right = 8
 	style.content_margin_top = 4
@@ -95,20 +115,33 @@ func _build_ui() -> void:
 	_panel.add_theme_stylebox_override("panel", style)
 	add_child(_panel)
 
+	# Content wrapper: a plain Control (non-Container) inside the PanelContainer
+	# so children that need corner anchoring (the resize grip) keep their
+	# geometry. A direct PanelContainer child would be forced to fill the
+	# whole panel, which would spread the grip's resize cursor/mouse-stop
+	# over every pixel.
+	var wrap := Control.new()
+	wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel.add_child(wrap)
+
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 4)
-	_panel.add_child(vbox)
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	wrap.add_child(vbox)
 
-	# Title bar.
+	# Title bar doubles as drag handle.
 	_title_bar = HBoxContainer.new()
 	_title_bar.add_theme_constant_override("separation", 8)
+	_title_bar.mouse_filter = Control.MOUSE_FILTER_STOP
+	_title_bar.gui_input.connect(_on_title_bar_input)
 	vbox.add_child(_title_bar)
 
 	var title := Label.new()
-	title.text = "Roll Log"
+	title.text = "Roll Log  ⠿"  # drag-handle glyph
 	title.add_theme_color_override("font_color", Color(0.90, 0.85, 0.75, 1.0))
 	title.add_theme_font_size_override("font_size", 16)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_title_bar.add_child(title)
 
 	var close_btn := Button.new()
@@ -149,6 +182,78 @@ func _build_ui() -> void:
 	_entry_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_entry_list.add_theme_constant_override("separation", 2)
 	_scroll.add_child(_entry_list)
+
+	# Resize grip in bottom-right corner of the content wrapper.
+	_resize_grip = _build_resize_grip()
+	wrap.add_child(_resize_grip)
+
+
+func _build_resize_grip() -> Control:
+	var grip := ColorRect.new()
+	grip.name = "ResizeGrip"
+	grip.color = Color(1, 1, 1, 0.18)
+	grip.mouse_default_cursor_shape = Control.CURSOR_FDIAGSIZE
+	grip.mouse_filter = Control.MOUSE_FILTER_STOP
+	grip.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	grip.size = Vector2(GRIP_SIZE, GRIP_SIZE)
+	grip.offset_left = -GRIP_SIZE
+	grip.offset_top = -GRIP_SIZE
+	grip.offset_right = 0.0
+	grip.offset_bottom = 0.0
+	grip.gui_input.connect(_on_grip_input)
+	return grip
+
+
+# ---------------------------------------------------------------------------
+# Drag / Resize
+# ---------------------------------------------------------------------------
+
+func _on_title_bar_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
+			and event.pressed:
+		_dragging = true
+		_drag_mouse_start = event.global_position
+		_drag_panel_start = _panel.position
+		get_viewport().set_input_as_handled()
+
+
+func _on_grip_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
+			and event.pressed:
+		_resizing = true
+		_resize_mouse_start = event.global_position
+		_resize_panel_start_size = _panel.size
+		get_viewport().set_input_as_handled()
+
+
+func _input(event: InputEvent) -> void:
+	## Handle motion/release globally so drag continues when mouse leaves the
+	## title bar or grip.
+	if not (_dragging or _resizing):
+		return
+	if event is InputEventMouseMotion:
+		if _dragging:
+			var delta: Vector2 = event.global_position - _drag_mouse_start
+			_panel.position = _drag_panel_start + delta
+			_clamp_to_viewport()
+		elif _resizing:
+			var delta2: Vector2 = event.global_position - _resize_mouse_start
+			var new_size: Vector2 = _resize_panel_start_size + delta2
+			new_size.x = maxf(MIN_WIDTH, new_size.x)
+			new_size.y = maxf(MIN_HEIGHT, new_size.y)
+			_panel.size = new_size
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
+			and not event.pressed:
+		_dragging = false
+		_resizing = false
+
+
+func _clamp_to_viewport() -> void:
+	## Keep at least the title bar on screen so the panel is always reachable.
+	var vp := get_viewport().get_visible_rect().size
+	var header_h: float = _title_bar.size.y if _title_bar != null else 24.0
+	_panel.position.x = clampf(_panel.position.x, -_panel.size.x + 64.0, vp.x - 64.0)
+	_panel.position.y = clampf(_panel.position.y, 0.0, vp.y - header_h)
 
 
 func _make_filter_handler(filter_key: String) -> Callable:

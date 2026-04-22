@@ -73,17 +73,14 @@ func start_interactive() -> void:
 	if _controller.tactical_map != null:
 		var MapRendererScript = load("res://scenes/ui/combat/combat_map_renderer_3d.gd")
 		_map_renderer = MapRendererScript.new()
-		# Voxel path: convert TacticalMapData to VoxelMapData for the renderer
-		if DungeonMapController.use_voxel_renderer:
-			var voxel_map := VoxelMapData.generate_open_field(
-				_controller.tactical_map.grid_width, _controller.tactical_map.grid_height)
-			# Transfer entity positions from tactical map to voxel map
-			for eid in _controller.tactical_map.entity_positions:
-				var pos_2d: Vector2i = _controller.tactical_map.entity_positions[eid]
-				voxel_map.set_entity_pos(eid, Vector3i(pos_2d.x, pos_2d.y, 0))
-			_map_renderer.setup(voxel_map, _controller.roster)
-		else:
-			_map_renderer.setup(_controller.tactical_map, _controller.roster)
+		# Convert TacticalMapData to a flat-field VoxelMapData for the renderer
+		# (combat is single-level; voxel mode is the only supported path).
+		var voxel_map := VoxelMapData.generate_open_field(
+			_controller.tactical_map.grid_width, _controller.tactical_map.grid_height)
+		for eid in _controller.tactical_map.entity_positions:
+			var pos_2d: Vector2i = _controller.tactical_map.entity_positions[eid]
+			voxel_map.set_entity_pos(eid, Vector3i(pos_2d.x, pos_2d.y, 0))
+		_map_renderer.setup(voxel_map, _controller.roster)
 
 		var map_area: Control = get_node_or_null("HSplit/MapArea")
 		if map_area != null:
@@ -225,7 +222,9 @@ func _build_ui() -> void:
 	var hsplit := HBoxContainer.new()
 	hsplit.name = "HSplit"
 	hsplit.set_anchors_preset(Control.PRESET_FULL_RECT)
-	hsplit.offset_bottom = -56.0  # Leave room for SessionStatusBar (48px + 8px gap)
+	# Leave room for SessionStatusBar plus an 8px gap so the combat sidebar
+	# meets the top of the bar cleanly.
+	hsplit.offset_bottom = -float(SessionStatusBar.BAR_HEIGHT + 8)
 	add_child(hsplit)
 
 	# Map area (takes up remaining space)
@@ -262,7 +261,8 @@ func _build_ui() -> void:
 	_log_panel.name = "CombatLog"
 	_log_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	_log_panel.offset_left = 10.0
-	_log_panel.offset_bottom = -66.0  # 10px gap + 48px status bar + 8px extra
+	# 10px gap above the SessionStatusBar.
+	_log_panel.offset_bottom = -float(SessionStatusBar.BAR_HEIGHT + 10)
 	_log_panel.offset_top = -180.0
 	_log_panel.offset_right = 350.0
 	add_child(_log_panel)

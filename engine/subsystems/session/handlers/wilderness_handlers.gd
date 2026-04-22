@@ -8,10 +8,15 @@ extends RefCounted
 ## per the EventHandlerRegistry contract.
 ##
 ## Event types handled:
-##   "travel_leg"              — party crosses one hex boundary
-##   "wilderness_encounter_check" — random encounter roll for a hex
-##   "getting_lost_check"      — daily navigation check
-##   "forced_march_check"      — daily forced march endurance check
+##   "travel_leg"                    — party crosses one hex boundary
+##   "wilderness_encounter_check"    — random encounter roll for a hex
+##   "getting_lost_check"            — daily navigation check
+##   "forced_march_check"            — daily forced march endurance check
+##   "wilderness_activity"           — a hex-level activity begins on arrival
+##   "wilderness_activity_complete"  — a timed wilderness activity resolves
+
+const ACTIVITY_EVENT := "wilderness_activity"
+const ACTIVITY_COMPLETE_EVENT := "wilderness_activity_complete"
 
 
 # ---------------------------------------------------------------------------
@@ -35,6 +40,8 @@ func register(registry: EventHandlerRegistry) -> void:
 	registry.register("wilderness_encounter_check", _handle_encounter_check)
 	registry.register("getting_lost_check", _handle_getting_lost_check)
 	registry.register("forced_march_check", _handle_forced_march_check)
+	registry.register(ACTIVITY_EVENT, _handle_wilderness_activity)
+	registry.register(ACTIVITY_COMPLETE_EVENT, _handle_wilderness_activity_complete)
 
 
 ## Unregister all wilderness event handlers.
@@ -43,28 +50,35 @@ func unregister(registry: EventHandlerRegistry) -> void:
 	registry.unregister("wilderness_encounter_check")
 	registry.unregister("getting_lost_check")
 	registry.unregister("forced_march_check")
+	registry.unregister(ACTIVITY_EVENT)
+	registry.unregister(ACTIVITY_COMPLETE_EVENT)
 
 
 # ---------------------------------------------------------------------------
 # Scheduling helpers (called by WildernessExploreState)
 # ---------------------------------------------------------------------------
 
-## Schedule a multi-hex travel path. Returns the event IDs of all travel_leg events.
+## Schedule a multi-hex travel path.
 ## [param path] is an Array[Vector2i] of hex coordinates (excluding current hex).
 ## [param scheduler] is the EventScheduler to insert into.
 ## [param party] is the PartyData (for speed calculation).
 ## [param map_data] is the HexMapData (for terrain lookup).
+## Returns a Dictionary:
+##   "event_ids":    Array[String] — one travel_leg id per leg
+##   "arrival_time": int            — game-round clock after the final leg fires
+##   "current_time": int            — game-round clock before any leg fires
 func schedule_travel_path(
 	path: Array,
 	scheduler: EventScheduler,
 	party: PartyData,
 	map_data: HexMapData,
-) -> Array[String]:
+) -> Dictionary:
 	if path.is_empty() or party == null:
-		return []
+		return {"event_ids": [] as Array[String], "arrival_time": 0, "current_time": 0}
 
 	var party_id: String = party.id
-	var current_time: int = Timekeeping.get_party_time(party_id)
+	var start_time: int = Timekeeping.get_party_time(party_id)
+	var current_time: int = start_time
 	var event_ids: Array[String] = []
 
 	for i in range(path.size()):
@@ -95,7 +109,11 @@ func schedule_travel_path(
 
 		EventBus.order_queued.emit(party_id, "travel_leg", current_time)
 
-	return event_ids
+	return {
+		"event_ids": event_ids,
+		"arrival_time": current_time,
+		"current_time": start_time,
+	}
 
 
 # ---------------------------------------------------------------------------
@@ -112,8 +130,9 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 	if controller.can_move_to(coord):
 		controller.move_party(coord)
 	else:
-		# Path is blocked (e.g., fog of war changed). Cancel remaining legs.
-		_runner.get_scheduler().cancel_all_for_owner(event.owner_id, "travel_leg")
+		# Path is blocked (e.g., fog of war changed). Cancel remaining legs
+		# and any queued follow-up activity at the destination.
+		_cancel_party_movement_and_activity(event.owner_id)
 		return {"auto_pause": true, "pause_reason": "Path blocked at %s" % str(coord)}
 
 	# Update party data position (in-memory and DB)
@@ -136,8 +155,10 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 	if terrain != null:
 		var encounter: Dictionary = _runner.do_encounter_check(terrain)
 		if encounter.get("triggered", false):
-			# Cancel remaining travel legs — combat interrupts the journey
-			_runner.get_scheduler().cancel_all_for_owner(event.owner_id, "travel_leg")
+			# Cancel remaining travel legs AND any queued follow-up activity —
+			# combat interrupts the journey and an ambushed party shouldn't
+			# auto-start the queued task when the fight ends.
+			_cancel_party_movement_and_activity(event.owner_id)
 			EventBus.order_cancelled.emit(event.owner_id, "travel_leg")
 
 			var enc: Dictionary = encounter["encounter_data"]
@@ -152,8 +173,13 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 					enc.get("number", 0), enc.get("monster_group", "unknown")],
 			}
 
-	# Notify hex entry
+	# Notify hex entry and sync location key (consumed by inventory overlay
+	# cache-lookup, among others). Only update if this travel leg belongs to
+	# the currently active party — otherwise another party's motion would
+	# invalidate the active party's location context.
 	EventBus.hex_entered.emit("%d,%d" % [coord.x, coord.y])
+	if event.owner_id == GameState.active_party_id:
+		GameState.current_location_key = "hex:%d,%d" % [coord.x, coord.y]
 
 	# Check if this is the last leg — auto-pause on arrival at destination
 	var path_index: int = event.data.get("path_index", 0)
@@ -214,9 +240,10 @@ func _handle_getting_lost_check(event: ScheduledEvent) -> Dictionary:
 	EventBus.getting_lost_checked.emit(result)
 
 	if not result.get("succeeded", true):
-		# Party got lost — cancel remaining travel_leg events.
-		# The player must reissue orders.
-		_runner.get_scheduler().cancel_all_for_owner(event.owner_id, "travel_leg")
+		# Party got lost — cancel remaining travel_leg events AND any queued
+		# follow-up activity (lost parties shouldn't auto-start a task at the
+		# wrong hex). The player must reissue orders.
+		_cancel_party_movement_and_activity(event.owner_id)
 		EventBus.order_cancelled.emit(event.owner_id, "travel_leg")
 		party_data.is_lost = true
 
@@ -237,9 +264,9 @@ func _handle_forced_march_check(event: ScheduledEvent) -> Dictionary:
 
 	var eligibility: Dictionary = TravelSpeedCalculator.check_force_march_eligibility(party_data)
 	if not eligibility.get("can_continue", false):
-		# Party cannot force march — cancel remaining travel legs beyond
-		# the normal travel day.
-		_runner.get_scheduler().cancel_all_for_owner(event.owner_id, "travel_leg")
+		# Party cannot force march — cancel remaining travel legs beyond the
+		# normal travel day and any queued follow-up activity.
+		_cancel_party_movement_and_activity(event.owner_id)
 		EventBus.order_cancelled.emit(event.owner_id, "travel_leg")
 		return {
 			"auto_pause": true,
@@ -271,3 +298,134 @@ func _handle_forced_march_check(event: ScheduledEvent) -> Dictionary:
 		}
 
 	return {}
+
+
+## Party arrived at the destination and the queued activity begins.
+## For instant activities (visit cache, placeholder toasts) this resolves in
+## one fire. For timed activities (place cache) it schedules a follow-up
+## completion event.
+func _handle_wilderness_activity(event: ScheduledEvent) -> Dictionary:
+	var activity_type: String = str(event.data.get("activity_type", ""))
+	var hex_q: int = int(event.data.get("hex_q", 0))
+	var hex_r: int = int(event.data.get("hex_r", 0))
+	var party_id: String = event.owner_id
+
+	match activity_type:
+		"place_loot_cache":
+			EventBus.notification_requested.emit({
+				"type": "info",
+				"category": "exploration",
+				"title": "Placing Cache",
+				"body": "Your party is hiding a cache here (1 hour).",
+				"duration": 3.0,
+			})
+			var completion_data := event.data.duplicate()
+			var fire_time: int = Timekeeping.get_party_time(party_id) + Timekeeping.ROUNDS_PER_HOUR
+			EventBus.order_queued.emit(party_id, ACTIVITY_COMPLETE_EVENT, fire_time)
+			return {
+				"next_events": [{
+					"event_type": ACTIVITY_COMPLETE_EVENT,
+					"fire_time": fire_time,
+					"owner_id": party_id,
+					"data": completion_data,
+					"priority": ScheduledEvent.PRIORITY_ARRIVAL,
+				}]
+			}
+		"visit_loot_cache":
+			var location_key := "hex:%d,%d" % [hex_q, hex_r]
+			var cache: Dictionary = LocationCacheManager.get_cache_at_location(location_key)
+			if cache.is_empty():
+				EventBus.notification_requested.emit({
+					"type": "info",
+					"category": "exploration",
+					"title": "No Cache Here",
+					"body": "There is no cache at this hex.",
+					"duration": 3.0,
+				})
+			else:
+				var cache_id: String = str(cache.get("id", ""))
+				EventBus.wilderness_cache_visit_requested.emit(cache_id, Vector2i(hex_q, hex_r))
+			return {
+				"auto_pause": true,
+				"pause_reason": "Arrived at cache",
+			}
+		"explore", "build_stronghold", "survey":
+			var label := _activity_label(activity_type)
+			EventBus.notification_requested.emit({
+				"type": "info",
+				"category": "exploration",
+				"title": "Feature coming soon",
+				"body": "%s is not yet implemented." % label,
+				"duration": 4.0,
+			})
+			return {
+				"auto_pause": true,
+				"pause_reason": "Arrived at destination",
+			}
+		_:
+			push_warning("WildernessHandlers: unknown activity_type '%s'" % activity_type)
+			return {
+				"auto_pause": true,
+				"pause_reason": "Arrived at destination",
+			}
+
+
+## Timed wilderness activity resolves. Today this only handles place_loot_cache;
+## other activity types drop here only if more timed activities are added later.
+func _handle_wilderness_activity_complete(event: ScheduledEvent) -> Dictionary:
+	var activity_type: String = str(event.data.get("activity_type", ""))
+	var hex_q: int = int(event.data.get("hex_q", 0))
+	var hex_r: int = int(event.data.get("hex_r", 0))
+
+	match activity_type:
+		"place_loot_cache":
+			var cache_id: String = LocationCacheManager.create_wilderness_hidden_cache(
+				Vector2i(hex_q, hex_r))
+			if cache_id.is_empty():
+				EventBus.notification_requested.emit({
+					"type": "warning",
+					"category": "exploration",
+					"title": "Cache Failed",
+					"body": "Could not place a cache at this hex.",
+					"duration": 4.0,
+				})
+				return {"auto_pause": true, "pause_reason": "Cache placement failed"}
+			EventBus.notification_requested.emit({
+				"type": "success",
+				"category": "exploration",
+				"title": "Cache Hidden",
+				"body": "Open Party Inventory to fill this cache.",
+				"duration": 4.0,
+			})
+			return {"auto_pause": true, "pause_reason": "Cache placed"}
+		_:
+			push_warning("WildernessHandlers: no completion for activity_type '%s'" % activity_type)
+			return {"auto_pause": true, "pause_reason": "Activity complete"}
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+## Cancels a party's pending travel legs AND any queued follow-up activity.
+## Used by encounter triggers and blocked-path branches so that an interrupted
+## journey does not silently resume the queued task after combat or detour.
+func _cancel_party_movement_and_activity(party_id: String) -> void:
+	if _runner == null:
+		return
+	var scheduler: EventScheduler = _runner.get_scheduler()
+	if scheduler == null:
+		return
+	scheduler.cancel_all_for_owner(party_id, "travel_leg")
+	scheduler.cancel_all_for_owner(party_id, ACTIVITY_EVENT)
+	scheduler.cancel_all_for_owner(party_id, ACTIVITY_COMPLETE_EVENT)
+
+
+func _activity_label(activity_type: String) -> String:
+	match activity_type:
+		"explore":          return "Explore"
+		"build_stronghold": return "Build Stronghold"
+		"survey":           return "Survey"
+		"place_loot_cache": return "Place Loot Cache"
+		"visit_loot_cache": return "Visit Loot Cache"
+		_:                   return activity_type.capitalize()

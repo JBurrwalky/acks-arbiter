@@ -9,12 +9,30 @@ extends CanvasLayer
 ## Hidden during MAIN_MENU and CHARACTER_CREATION states.
 ## Visible during EXPLORATION, COMBAT, DOWNTIME, DOMAIN.
 
-const BAR_HEIGHT := 48
+const BAR_HEIGHT := 72  # 56 portrait + 8 padding top/bottom
 const FONT_SIZE := 12
+const SMALL_FONT_SIZE := 10
+const PORTRAIT_SIZE := Vector2(56, 56)
 const LABEL_COLOR := Color(0.85, 0.80, 0.70, 1.0)
 const DIM_COLOR := Color(0.55, 0.50, 0.42, 1.0)
 const BG_COLOR := Color(0.08, 0.06, 0.04, 0.95)
 const BORDER_COLOR := Color(0.46, 0.33, 0.19, 1.0)
+const SUBPANEL_BG := Color(0.13, 0.10, 0.07, 0.85)
+
+## Terrain categories shown in the travel-speed panel, in display order.
+const TRAVEL_TERRAINS := ["clear", "woods", "hills", "desert",
+	"jungle", "swamp", "mountains"]
+
+## Short display labels for the travel-speed grid cells.
+const TERRAIN_LABELS := {
+	"clear": "Clear",
+	"woods": "Woods",
+	"hills": "Hills",
+	"desert": "Desert",
+	"jungle": "Jungle",
+	"swamp": "Swamp",
+	"mountains": "Mtns",
+}
 
 var _bar: PanelContainer = null
 var _location_label: Label = null
@@ -22,6 +40,17 @@ var _time_label: Label = null
 var _speed_controls: ClockSpeedControls = null
 var _pause_reason_label: Label = null
 var _camp_btn: Button = null
+var _portraits_hbox: HBoxContainer = null
+var _rations_panel: PanelContainer = null
+var _rations_label: Label = null
+var _speeds_panel: PanelContainer = null
+var _speeds_base_label: Label = null
+var _speeds_grid: GridContainer = null
+## movement_cost_category -> Label for the miles/day value.
+var _speed_labels: Dictionary = {}
+
+## portrait_id -> Texture2D. Avoids decoding user-portrait PNGs every refresh.
+static var _portrait_cache: Dictionary = {}
 
 
 func _ready() -> void:
@@ -83,10 +112,29 @@ func _build_ui() -> void:
 
 	hbox.add_child(_vsep())
 
-	# Spacer to push action buttons right.
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox.add_child(spacer)
+	# Left spacer: takes half the slack so portraits appear centered in the bar.
+	var spacer_left := Control.new()
+	spacer_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(spacer_left)
+
+	# Party-member portrait strip (populated on active_party_changed).
+	_portraits_hbox = HBoxContainer.new()
+	_portraits_hbox.add_theme_constant_override("separation", 4)
+	_portraits_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_child(_portraits_hbox)
+
+	# Right spacer: balances the left spacer so portraits stay centered.
+	var spacer_right := Control.new()
+	spacer_right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(spacer_right)
+
+	# Rations sub-panel (wilderness only).
+	_rations_panel = _build_rations_panel()
+	hbox.add_child(_rations_panel)
+
+	# Travel speeds sub-panel (wilderness only).
+	_speeds_panel = _build_speeds_panel()
+	hbox.add_child(_speeds_panel)
 
 	# Wilderness action buttons (hidden outside wilderness exploration).
 	_camp_btn = Button.new()
@@ -98,6 +146,77 @@ func _build_ui() -> void:
 	_camp_btn.pressed.connect(func(): EventBus.camp_requested.emit())
 	_camp_btn.visible = false
 	hbox.add_child(_camp_btn)
+
+
+func _build_rations_panel() -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _subpanel_style())
+	panel.visible = false
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 0)
+	panel.add_child(vbox)
+
+	var header := _make_label("Rations", DIM_COLOR, SMALL_FONT_SIZE)
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(header)
+
+	_rations_label = _make_label("--", LABEL_COLOR, FONT_SIZE)
+	_rations_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_rations_label.custom_minimum_size = Vector2(90, 0)
+	vbox.add_child(_rations_label)
+
+	return panel
+
+
+func _build_speeds_panel() -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _subpanel_style())
+	panel.visible = false
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 0)
+	panel.add_child(vbox)
+
+	_speeds_base_label = _make_label("Base: --", LABEL_COLOR, SMALL_FONT_SIZE)
+	_speeds_base_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(_speeds_base_label)
+
+	# 7 terrains in a 4-col grid → 2 rows (4 + 3).
+	_speeds_grid = GridContainer.new()
+	_speeds_grid.columns = 4
+	_speeds_grid.add_theme_constant_override("h_separation", 8)
+	_speeds_grid.add_theme_constant_override("v_separation", 0)
+	vbox.add_child(_speeds_grid)
+
+	_speed_labels.clear()
+	for terrain in TRAVEL_TERRAINS:
+		var cell := _make_label("%s: --" % TERRAIN_LABELS[terrain],
+			LABEL_COLOR, SMALL_FONT_SIZE)
+		cell.custom_minimum_size = Vector2(72, 0)
+		_speeds_grid.add_child(cell)
+		_speed_labels[terrain] = cell
+
+	return panel
+
+
+func _subpanel_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = SUBPANEL_BG
+	style.border_color = BORDER_COLOR
+	style.border_width_left = 1
+	style.border_width_right = 1
+	style.border_width_top = 1
+	style.border_width_bottom = 1
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 2
+	style.content_margin_bottom = 2
+	style.corner_radius_top_left = 3
+	style.corner_radius_top_right = 3
+	style.corner_radius_bottom_left = 3
+	style.corner_radius_bottom_right = 3
+	return style
 
 
 func _make_label(text: String, color: Color, size: int) -> Label:
@@ -129,15 +248,119 @@ func _connect_signals() -> void:
 	Timekeeping.round_advanced.connect(_on_time_advanced)
 	EventBus.scheduler_paused.connect(_on_scheduler_paused)
 	EventBus.scheduler_resumed.connect(_on_scheduler_resumed)
+	EventBus.active_party_changed.connect(_on_active_party_changed)
+	# `start_session` assigns active_party_id directly without emitting
+	# active_party_changed, so we also refresh on session_started and when
+	# members join/leave the active party.
+	GameState.session_started.connect(_on_session_started)
+	EventBus.party_member_joined.connect(_on_party_membership_changed)
+	EventBus.party_member_left.connect(_on_party_membership_changed)
+	# Rations / speeds refresh triggers.
+	Timekeeping.day_changed.connect(_on_day_changed)
+	EventBus.inventory_updated.connect(_on_inventory_changed)
+	EventBus.creature_added.connect(_on_party_roster_changed)
+	EventBus.creature_removed.connect(_on_party_roster_changed)
+	EventBus.vehicle_changed.connect(_on_party_roster_changed)
+	_refresh_party_portraits(GameState.active_party_id)
+	_refresh_party_status(GameState.active_party_id)
+
+
+func _on_active_party_changed(_prev_id: String, new_id: String) -> void:
+	_refresh_party_portraits(new_id)
+	_refresh_party_status(new_id)
+
+
+func _on_session_started(_campaign_id: String) -> void:
+	_refresh_party_portraits(GameState.active_party_id)
+	_refresh_party_status(GameState.active_party_id)
+
+
+func _on_party_membership_changed(party_id: String, _character_id: String) -> void:
+	if party_id == GameState.active_party_id:
+		_refresh_party_portraits(party_id)
+		_refresh_party_status(party_id)
+
+
+func _on_day_changed(_d: int, _m: int, _y: int) -> void:
+	_refresh_party_status(GameState.active_party_id)
+
+
+func _on_inventory_changed(character_id: String) -> void:
+	# Encumbrance change could shift travel speed. Refresh unconditionally —
+	# cheap enough vs. resolving character_id → party_id.
+	if not character_id.is_empty():
+		_refresh_party_status(GameState.active_party_id)
+
+
+func _on_party_roster_changed(party_id: String, _other_id: String) -> void:
+	if party_id == GameState.active_party_id:
+		_refresh_party_status(party_id)
+
+
+## Rebuilds the party-member portrait strip. Silently hides the strip if the
+## party has no members or the party id is empty (e.g. pre-session).
+func _refresh_party_portraits(party_id: String) -> void:
+	if _portraits_hbox == null:
+		return
+	for child in _portraits_hbox.get_children():
+		child.queue_free()
+	if party_id.is_empty():
+		_portraits_hbox.visible = false
+		return
+
+	var rows: Array = CampaignRepository.list_party_characters(party_id)
+	if rows.is_empty():
+		_portraits_hbox.visible = false
+		return
+
+	_portraits_hbox.visible = true
+	for row in rows:
+		var portrait_id: String = str(row.get("portrait_id", ""))
+		var texture: Texture2D = _resolve_portrait(portrait_id)
+		var tr := TextureRect.new()
+		tr.custom_minimum_size = PORTRAIT_SIZE
+		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		tr.texture = texture
+		tr.tooltip_text = str(row.get("name", ""))
+		_portraits_hbox.add_child(tr)
+
+
+## Resolves a portrait texture by id. Shipped portraits live under
+## res://assets/portraits; user-added portraits under user://portraits.
+## Returns null if neither file exists — the TextureRect simply renders blank.
+func _resolve_portrait(portrait_id: String) -> Texture2D:
+	if portrait_id.is_empty():
+		return null
+	if _portrait_cache.has(portrait_id):
+		return _portrait_cache[portrait_id]
+	var texture: Texture2D = null
+	var user_path := "user://portraits/%s.png" % portrait_id
+	if FileAccess.file_exists(user_path):
+		var img := Image.load_from_file(user_path)
+		if img != null:
+			texture = ImageTexture.create_from_image(img)
+	if texture == null:
+		var res_path := "res://assets/portraits/%s.png" % portrait_id
+		if ResourceLoader.exists(res_path):
+			texture = load(res_path) as Texture2D
+	if texture != null:
+		_portrait_cache[portrait_id] = texture
+	return texture
 
 
 func _on_state_changed(_from: int, _to: int) -> void:
 	_update_visibility()
 	_update_wilderness_buttons()
+	# Covers returning to EXPLORATION from dungeon/combat where the active
+	# party may have changed while we were hidden.
+	_refresh_party_portraits(GameState.active_party_id)
+	_refresh_party_status(GameState.active_party_id)
 
 
 func _on_exploration_context_changed(_context: int) -> void:
 	_update_wilderness_buttons()
+	_refresh_party_status(GameState.active_party_id)
 
 
 func _update_visibility() -> void:
@@ -157,6 +380,8 @@ func _update_wilderness_buttons() -> void:
 		and GameState.exploration_context == GameState.ExplorationContext.WILDERNESS
 	)
 	_camp_btn.visible = show_buttons
+	# Rations/speeds panel visibility is managed by `_refresh_party_status`,
+	# which runs right after this in every caller that cares.
 
 
 func _on_hex_entered(hex_id: String) -> void:
@@ -209,5 +434,69 @@ func _on_scheduler_paused(reason: String) -> void:
 func _on_scheduler_resumed() -> void:
 	if _pause_reason_label != null:
 		_pause_reason_label.text = ""
+
+
+# ---------------------------------------------------------------------------
+# Rations / travel speed sub-panels
+# ---------------------------------------------------------------------------
+
+## Refreshes the rations and travel-speeds panels for the given party. Hides
+## the panels when there is no party loaded or the state isn't wilderness.
+func _refresh_party_status(party_id: String) -> void:
+	if _rations_panel == null or _speeds_panel == null:
+		return
+	var show: bool = (
+		GameState.current_state == GameState.State.EXPLORATION
+		and GameState.exploration_context == GameState.ExplorationContext.WILDERNESS
+	)
+	if party_id.is_empty() or not show:
+		_rations_panel.visible = false
+		_speeds_panel.visible = false
+		return
+
+	var party_data: PartyData = CampaignRepository.load_party_data(party_id)
+	if party_data == null:
+		_rations_panel.visible = false
+		_speeds_panel.visible = false
+		return
+	# `load_party_data` returns a bare PartyData; populate characters the way
+	# SessionRunner does so TravelSpeedCalculator sees the real roster.
+	party_data.character_data = []
+	for char_row: Dictionary in CampaignRepository.list_party_characters(party_id):
+		party_data.character_data.append(CharacterData.from_dict(char_row))
+
+	# Rations.
+	var party_size: int = party_data.character_data.size()
+	var consumption: int = CampManager.compute_ration_consumption(party_size)
+	var days_left: int = party_data.rations_days_remaining
+	_rations_label.text = "%d days\n−%d/day" % [days_left, consumption]
+	# Color-warn when rations are nearly exhausted.
+	var ration_color: Color = LABEL_COLOR
+	if consumption > 0:
+		if days_left <= 1:
+			ration_color = Color(0.90, 0.35, 0.30, 1.0)
+		elif days_left <= 3:
+			ration_color = Color(0.90, 0.75, 0.30, 1.0)
+	_rations_label.add_theme_color_override("font_color", ration_color)
+	_rations_panel.visible = true
+
+	# Travel speeds.
+	var base_speed: int = _compute_base_exploration_speed(party_data)
+	_speeds_base_label.text = "Base: %d' / turn" % base_speed
+	for terrain in TRAVEL_TERRAINS:
+		var mpd: float = TravelSpeedCalculator.get_miles_per_day(
+			party_data, terrain, false)
+		var label: Label = _speed_labels[terrain]
+		label.text = "%s: %d mi" % [TERRAIN_LABELS[terrain], int(mpd)]
+	_speeds_panel.visible = true
+
+
+## Derives the party's base exploration speed (ft/turn) by asking the travel
+## calculator with a "clear" terrain — `base_exploration_speed` is unaffected
+## by terrain multiplier, so any land terrain returns the same figure.
+func _compute_base_exploration_speed(party_data: PartyData) -> int:
+	var result: Dictionary = TravelSpeedCalculator.calculate_party_speed(
+		party_data, "clear", false)
+	return int(result.get("base_exploration_speed", 0))
 
 

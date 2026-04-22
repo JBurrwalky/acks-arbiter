@@ -231,13 +231,25 @@ func _on_equip(item_id: String) -> void:
 	if slot.is_empty():
 		push_warning("CSTabEquipment: no free slot for %s" % item.get("item_key", "?"))
 		return
+	var catalog := _get_catalog()
 	var item_key: String = item.get("item_key", "")
 	var qty: int = int(item.get("quantity", 1))
-	# Any stacked item being equipped: split one unit off the stack
+	# Thrown-stackable items (daggers/javelins/darts/etc.) keep their full stack
+	# in the slot — throwing decrements them in combat.
+	if is_thrown_stackable(item, catalog):
+		if CampaignRepository.update_inventory_item_equip_state(item_id, true, slot, ""):
+			# Seed uses_remaining for fresh dart-style bundles (catalog.uses_per_unit > 0
+			# and current uses_remaining is the schema default of -1).
+			var uses_per_unit: int = int(catalog.get_item(item_key).get("uses_per_unit", -1))
+			var current_uses: int = int(item.get("uses_remaining", -1))
+			if uses_per_unit > 0 and current_uses < 0:
+				CampaignRepository.update_inventory_item_uses(item_id, uses_per_unit)
+			EventBus.inventory_updated.emit(_character_id)
+		return
+	# Non-thrown stack: split one unit off so only a single item ends up equipped.
 	if qty > 1:
-		var catalog_entry: Dictionary = _get_catalog().get_item(item_key)
-		var uses_per_unit: int = int(catalog_entry.get("uses_per_unit", -1))
-		if not CampaignRepository.split_item_for_equip(item_id, slot, uses_per_unit).is_empty():
+		var uses_per_unit_split: int = int(catalog.get_item(item_key).get("uses_per_unit", -1))
+		if not CampaignRepository.split_item_for_equip(item_id, slot, uses_per_unit_split).is_empty():
 			EventBus.inventory_updated.emit(_character_id)
 	else:
 		if CampaignRepository.update_inventory_item_equip_state(item_id, true, slot, ""):
@@ -282,6 +294,10 @@ func _can_equip(item: Dictionary) -> bool:
 	var item_key: String = item.get("item_key", "")
 	if category in EQUIPPABLE_CATEGORIES:
 		return true
+	if category == "ammunition":
+		## Throwable ammo bundles (darts) act as the weapon itself.
+		## Other ammo (arrows, bolts, sling stones) has empty weapon_damage and no thrown tag.
+		return _is_thrown_self_ammo(item)
 	if category == "gear":
 		if item_key in HAND_HOLDABLE_KEYS:
 			return true
@@ -293,6 +309,29 @@ func _can_equip(item: Dictionary) -> bool:
 	if "gloves" in item_key or "gauntlets" in item_key:
 		return true
 	return false
+
+
+func _is_thrown_self_ammo(item: Dictionary) -> bool:
+	## Ammunition that is also the projectile (darts). Has weapon_damage and "thrown".
+	if item.get("item_category", "") != "ammunition":
+		return false
+	if String(item.get("weapon_damage", "")).is_empty():
+		return false
+	var tags: Array = _get_catalog().get_item(item.get("item_key", "")).get("weapon_tags", [])
+	return "thrown" in tags
+
+
+static func is_thrown_stackable(item: Dictionary, catalog: EquipmentCatalog) -> bool:
+	## True for items whose stack should stay equipped intact (don't split-on-equip).
+	## Covers item_category "weapon" or "ammunition" tagged "thrown" — daggers, hand axes,
+	## javelins, spears, bolas, nets, silver daggers, dart bundles. Throwing decrements the
+	## equipped row's quantity (or uses_remaining for dart bundles); slot empties when
+	## the row is depleted.
+	var category: String = item.get("item_category", "")
+	if category != "weapon" and category != "ammunition":
+		return false
+	var tags: Array = catalog.get_item(item.get("item_key", "")).get("weapon_tags", [])
+	return "thrown" in tags
 
 
 func _determine_equip_slot(item: Dictionary) -> String:
@@ -345,6 +384,17 @@ func _determine_equip_slot(item: Dictionary) -> String:
 					return "hands_main"
 				return ""
 			## One-handed: blocked if a two-handed weapon occupies main hand
+			if _is_main_hand_two_handed():
+				return ""
+			if not _is_slot_equipped("hands_main"):
+				return "hands_main"
+			if not _is_slot_equipped("hands_off"):
+				return "hands_off"
+			return ""
+
+		"ammunition":
+			## Only thrown self-ammo (darts) gets here — _can_equip filters the rest.
+			## Routes like a one-handed thrown weapon.
 			if _is_main_hand_two_handed():
 				return ""
 			if not _is_slot_equipped("hands_main"):

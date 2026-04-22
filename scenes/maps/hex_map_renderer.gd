@@ -98,12 +98,19 @@ var _settlement_entrance_cache: Dictionary = {}
 ## Multi-party token management: party_id → Polygon2D
 var _party_tokens: Dictionary = {}
 
+## Axial coord → party_id. Rebuilt alongside tokens; consulted on left-click to
+## decide whether the click lands on a party token (active-party selection) or
+## on empty ground (no-op).
+var _party_hex_index: Dictionary = {}
+
 
 # ---------------------------------------------------------------------------
 # Signals
 # ---------------------------------------------------------------------------
 
 signal hex_clicked(coord: Vector2i)
+signal party_token_clicked(party_id: String, coord: Vector2i)
+signal hex_context_menu_requested(coord: Vector2i, screen_pos: Vector2)
 signal dungeon_entry_requested(entrance: Dictionary, spawn_cell: Vector2i)
 signal settlement_entry_requested(entrance: Dictionary, gate_node_id: int)
 
@@ -288,16 +295,32 @@ func _on_enter_dungeon_pressed() -> void:
 	if dungeon_dict == null:
 		return
 
-	var levels: Array = dungeon_dict.get("levels", [])
-	if levels.is_empty():
-		return
-	var level1: Dictionary = levels[0]
-	var tc_array: Array = level1.get("transition_cells", [])
+	# Voxel format: single "cells" array + top-level "entry" + optional
+	# "transition_cells". Legacy format: "levels" array with per-level fields.
+	var tc_array: Array
+	var entry_pos: Vector2i
+
+	if dungeon_dict.has("cells"):
+		tc_array = dungeon_dict.get("transition_cells", [])
+		var entry_dict: Dictionary = dungeon_dict.get("entry", {})
+		entry_pos = Vector2i(
+			int(entry_dict.get("col", 0)),
+			int(entry_dict.get("row", 0))
+		)
+	else:
+		var levels: Array = dungeon_dict.get("levels", [])
+		if levels.is_empty():
+			return
+		var level1: Dictionary = levels[0]
+		tc_array = level1.get("transition_cells", [])
+		entry_pos = Vector2i(
+			int(level1.get("entry_col", 0)),
+			int(level1.get("entry_row", 0))
+		)
 
 	if tc_array.is_empty():
-		# No transition cells — fall back to single entry
-		var entry := Vector2i(level1.get("entry_col", 0), level1.get("entry_row", 0))
-		dungeon_entry_requested.emit(entrance, entry)
+		# No transition cells — fall back to single entry point.
+		dungeon_entry_requested.emit(entrance, entry_pos)
 		return
 
 	_show_transition_cell_dialog(entrance, tc_array)
@@ -580,6 +603,7 @@ func _rebuild_party_tokens() -> void:
 
 	# Track which party_ids are still valid
 	var valid_ids: Dictionary = {}
+	_party_hex_index.clear()
 
 	for p in all_parties:
 		var pid: String = p.id
@@ -597,6 +621,7 @@ func _rebuild_party_tokens() -> void:
 			var godot_coord := HexMapController.axial_to_godot_map(coord)
 			_party_token.position = _terrain_layer.map_to_local(godot_coord)
 			_style_token(_party_token, pid == active_id)
+			_index_party_hex(coord, pid, active_id)
 			continue
 
 		# Create or reuse a dynamic token
@@ -613,6 +638,7 @@ func _rebuild_party_tokens() -> void:
 		var godot_coord := HexMapController.axial_to_godot_map(coord)
 		token.position = _terrain_layer.map_to_local(godot_coord)
 		_style_token(token, pid == active_id)
+		_index_party_hex(coord, pid, active_id)
 
 	# Style the primary token as well
 	_style_token(_party_token, GameState.party_id == active_id)
@@ -627,6 +653,16 @@ func _rebuild_party_tokens() -> void:
 		if is_instance_valid(token):
 			token.queue_free()
 		_party_tokens.erase(pid)
+
+
+## Records a party's hex for left-click lookup. When multiple parties share a
+## hex the active party wins the hit test; otherwise the first party written
+## is kept (stable across renders).
+func _index_party_hex(coord: Vector2i, party_id: String, active_id: String) -> void:
+	if not _party_hex_index.has(coord):
+		_party_hex_index[coord] = party_id
+	elif party_id == active_id:
+		_party_hex_index[coord] = party_id
 
 
 ## Creates a new Polygon2D party token node with the standard hex shape.
@@ -891,7 +927,19 @@ func _unhandled_input(event: InputEvent) -> void:
 				var godot_coord := _terrain_layer.local_to_map(local_pos)
 				var axial_coord := HexMapController.godot_map_to_axial(godot_coord)
 				if _map_data != null and _map_data.is_valid_coord(axial_coord):
-					hex_clicked.emit(axial_coord)
+					# Party-token hits drive active-party selection. Empty hexes
+					# are a no-op — movement is issued via the right-click menu.
+					if _party_hex_index.has(axial_coord):
+						party_token_clicked.emit(_party_hex_index[axial_coord], axial_coord)
+					else:
+						hex_clicked.emit(axial_coord)
+					get_viewport().set_input_as_handled()
+			MOUSE_BUTTON_RIGHT:
+				var local_pos := _terrain_layer.get_local_mouse_position()
+				var godot_coord := _terrain_layer.local_to_map(local_pos)
+				var axial_coord := HexMapController.godot_map_to_axial(godot_coord)
+				if _map_data != null and _map_data.is_valid_coord(axial_coord):
+					hex_context_menu_requested.emit(axial_coord, event.position)
 					get_viewport().set_input_as_handled()
 			MOUSE_BUTTON_WHEEL_UP:
 				_apply_zoom(_zoom_level + ZOOM_STEP, event.position)

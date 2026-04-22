@@ -1026,8 +1026,8 @@ func add_inventory_item(data: Dictionary) -> String:
 			(id, character_id, item_key, name, quantity, encumbrance_units,
 			 slot, is_equipped, notes,
 			 item_category, is_magical, magical_bonus,
-			 weapon_damage, armor_ac_bonus, is_heavy, container_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 weapon_damage, armor_ac_bonus, is_heavy, container_id, uses_remaining)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		id,
 		data.get("character_id", ""),
@@ -1045,6 +1045,7 @@ func add_inventory_item(data: Dictionary) -> String:
 		data.get("armor_ac_bonus", 0),
 		1 if data.get("is_heavy", false) else 0,
 		data.get("container_id", ""),
+		int(data.get("uses_remaining", -1)),
 	]):
 		push_error("CampaignRepository.add_inventory_item: failed. character=%s item=%s" % [
 			data.get("character_id", "?"), data.get("name", "?")
@@ -1237,6 +1238,7 @@ func merge_item_on_unequip(item_id: String, uses_per_unit: int) -> bool:
 	var uses: int = int(item.get("uses_remaining", -1))
 	var item_key: String = item.get("item_key", "")
 	var char_id: String = item.get("character_id", "")
+	var equipped_qty: int = int(item.get("quantity", 1))
 
 	var can_merge: bool = (uses == -1) or (uses == uses_per_unit)
 	if not can_merge:
@@ -1256,7 +1258,7 @@ func merge_item_on_unequip(item_id: String, uses_per_unit: int) -> bool:
 		var stack_qty: int = int(pack_stacks[0].get("quantity", 1))
 		if not db.query_with_bindings(
 			"UPDATE inventory_items SET quantity = ? WHERE id = ?",
-			[stack_qty + 1, stack_id]
+			[stack_qty + equipped_qty, stack_id]
 		):
 			db.query("ROLLBACK")
 			push_error("CampaignRepository.merge_item_on_unequip: failed incrementing stack. id=%s" % stack_id)
@@ -1635,8 +1637,8 @@ func save_character_inventory(character_id: String, items: Array) -> bool:
 				(id, character_id, item_key, name, quantity, encumbrance_units,
 				 slot, is_equipped, notes,
 				 item_category, is_magical, magical_bonus,
-				 weapon_damage, armor_ac_bonus, is_heavy, container_id)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				 weapon_damage, armor_ac_bonus, is_heavy, container_id, uses_remaining)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		""", [
 			item_id, character_id,
 			item.get("item_key", ""), item.get("name", ""),
@@ -1651,6 +1653,7 @@ func save_character_inventory(character_id: String, items: Array) -> bool:
 			item.get("armor_ac_bonus", 0),
 			1 if item.get("is_heavy", false) else 0,
 			item.get("container_id", ""),
+			int(item.get("uses_remaining", -1)),
 		]):
 			db.query("ROLLBACK")
 			push_error("CampaignRepository.save_character_inventory: insert failed. item=%s" % item.get("name", "?"))

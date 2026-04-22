@@ -55,12 +55,27 @@ var _log_text: RichTextLabel = null
 var _toggle_btn: Button = null
 var _export_btn: Button = null
 var _scroll: ScrollContainer = null
+var _header: HBoxContainer = null
+var _resize_grip: Control = null
 
 ## Raw log entries for export. Each entry is the original dict passed to append_event().
 var _entries: Array = []
 
 ## Name lookup: combatant_id -> display_name. Set via set_name_lookup().
 var _name_lookup: Dictionary = {}
+
+# Drag / resize state
+const GRIP_SIZE := 14.0
+const MIN_WIDTH := 220.0
+const MIN_HEIGHT := 120.0
+
+var _dragging: bool = false
+var _drag_mouse_start: Vector2 = Vector2.ZERO
+var _drag_panel_start: Vector2 = Vector2.ZERO
+
+var _resizing: bool = false
+var _resize_mouse_start: Vector2 = Vector2.ZERO
+var _resize_panel_start_size: Vector2 = Vector2.ZERO
 
 
 # ---------------------------------------------------------------------------
@@ -83,30 +98,34 @@ func _ready() -> void:
 	add_theme_stylebox_override("panel", style)
 
 	var vbox := VBoxContainer.new()
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(vbox)
 
-	# Header row with title + toggle button
-	var header := HBoxContainer.new()
-	vbox.add_child(header)
+	# Header row with title + toggle button (doubles as drag handle)
+	_header = HBoxContainer.new()
+	_header.mouse_filter = Control.MOUSE_FILTER_STOP
+	_header.gui_input.connect(_on_header_input)
+	vbox.add_child(_header)
 
 	var title := Label.new()
-	title.text = "Combat Log"
+	title.text = "Combat Log  ⠿"  # visual cue that the header is draggable
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	title.add_theme_font_size_override("font_size", 12)
 	title.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-	header.add_child(title)
+	_header.add_child(title)
 
 	_export_btn = Button.new()
 	_export_btn.text = "Export"
 	_export_btn.custom_minimum_size = Vector2(55, 0)
 	_export_btn.pressed.connect(_on_export_pressed)
-	header.add_child(_export_btn)
+	_header.add_child(_export_btn)
 
 	_toggle_btn = Button.new()
 	_toggle_btn.text = "Hide"
 	_toggle_btn.custom_minimum_size = Vector2(50, 0)
 	_toggle_btn.pressed.connect(_on_toggle_pressed)
-	header.add_child(_toggle_btn)
+	_header.add_child(_toggle_btn)
 
 	var sep := HSeparator.new()
 	vbox.add_child(sep)
@@ -123,6 +142,10 @@ func _ready() -> void:
 	_log_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_log_text.add_theme_font_size_override("normal_font_size", 10)
 	_scroll.add_child(_log_text)
+
+	# Resize grip in the bottom-right corner (on top of vbox)
+	_resize_grip = _build_resize_grip()
+	add_child(_resize_grip)
 
 
 # ---------------------------------------------------------------------------
@@ -285,6 +308,9 @@ func _format_attack(data: Dictionary, actor: String, target: String) -> String:
 				var sub_target: String = _lookup_name(sub.get("target_id", target))
 				lines.append(_format_single_attack(sub, actor, sub_target))
 			return "\n".join(lines)
+		if inner.has("maneuver"):
+			return _format_maneuver(inner, actor, target if not target.is_empty()
+				else inner.get("target_id", ""))
 		if inner.has("hit"):
 			return _format_single_attack(inner, actor, inner.get("target_id", target))
 		if inner.has("note"):
@@ -292,6 +318,110 @@ func _format_attack(data: Dictionary, actor: String, target: String) -> String:
 
 	# Direct single attack
 	return _format_single_attack(data, actor, target)
+
+
+func _format_maneuver(m: Dictionary, actor: String, target: String) -> String:
+	## Format a combat maneuver: shows the attack roll, hit/miss, and outcome.
+	var maneuver: String = m.get("maneuver", "maneuver")
+	var maneuver_label := _humanize_maneuver(maneuver)
+
+	# On a miss, the attack-roll fields are flattened into the top-level dict.
+	# On a hit, they're nested under hit_result. Pick whichever has attack_roll.
+	var roll_src: Dictionary = m
+	if m.has("hit_result") and m["hit_result"] is Dictionary \
+			and m["hit_result"].has("attack_roll"):
+		roll_src = m["hit_result"]
+
+	var hit: bool = m.get("hit", roll_src.get("hit", false))
+	var roll: int = roll_src.get("attack_roll", 0)
+	var bonus: int = roll_src.get("to_hit_bonus", 0)
+	var total: int = roll_src.get("total_attack", 0)
+	var needed: int = roll_src.get("target_number", 0)
+	var nat20: bool = roll_src.get("natural_twenty", false)
+	var nat1: bool = roll_src.get("natural_one", false)
+
+	var bonus_str := "+%d" % bonus if bonus >= 0 else str(bonus)
+	var line: String
+	if roll > 0:
+		line = "%s -> %s: %s d20(%d)%s = %d vs AC target %d" % [
+			actor, target, maneuver_label, roll, bonus_str, total, needed]
+		if nat20:
+			line += " — NATURAL 20, HIT!"
+		elif nat1:
+			line += " — NATURAL 1, miss!"
+		elif hit:
+			line += " — HIT"
+		else:
+			line += " — miss"
+	else:
+		# Wrestling hold can skip the attack throw; describe directly.
+		line = "%s -> %s: %s (auto-hit — target held)" % [actor, target, maneuver_label]
+
+	if not hit:
+		return line
+
+	# Brawl/incapacitate deal damage directly without a save roll
+	var maneuver_id: String = m.get("maneuver", "")
+	if maneuver_id == "brawl" or maneuver_id == "incapacitate":
+		line += _format_damage_suffix(roll_src, target)
+		if m.get("reflected", false):
+			line += "\n  Metal armor reflected %d dmg to %s" % [
+				m.get("reflected_damage", 0), actor]
+		return line
+
+	# Hit — append outcome line describing save and effect.
+	var saved: bool = m.get("saved", false)
+	var outcome := _maneuver_outcome_text(m, target)
+	if saved:
+		line += "\n  Save vs Paralysis — target saved, %s resisted" % maneuver_label.to_lower()
+	elif not outcome.is_empty():
+		line += "\n  Save vs Paralysis — failed, %s" % outcome
+	return line
+
+
+func _humanize_maneuver(id: String) -> String:
+	match id:
+		"force_back": return "Force Back"
+		"knock_down": return "Knock Down"
+		"brawl": return "Brawl"
+		_: return id.capitalize()
+
+
+func _maneuver_outcome_text(m: Dictionary, target: String) -> String:
+	## Describe what happened on a successful maneuver.
+	match m.get("maneuver", ""):
+		"disarm":
+			return "%s disarmed" % target if m.get("disarmed", false) else ""
+		"knock_down":
+			return "%s knocked prone" % target if m.get("knocked_down", false) else ""
+		"wrestle":
+			return "%s grappled" % target if m.get("held", false) else ""
+		"force_back":
+			if not m.get("forced_back", false):
+				return ""
+			var ft: int = m.get("push_distance_ft", 0)
+			var msg := "%s pushed back %d ft" % [target, ft]
+			if m.get("wall_collision", false):
+				msg += " into a wall (prone, %d dmg)" % m.get("collision_damage", 0)
+			return msg
+		"overrun":
+			if m.get("overrun_success", false):
+				return "overrun succeeded"
+			if m.get("target_blocked", false):
+				return "%s blocked the overrun" % target
+			return ""
+		"sunder":
+			if m.get("sundered", false):
+				return "%s's %s sundered" % [target, m.get("sunder_target", "item")]
+			if m.has("reason"):
+				return m["reason"]
+			return ""
+		"incapacitate":
+			return "nonlethal damage applied"
+		"brawl":
+			return "nonlethal damage applied"
+		_:
+			return ""
 
 
 func _format_single_attack(atk: Dictionary, actor: String, target: String) -> String:
@@ -484,3 +614,84 @@ func _lookup_name(raw_id: String) -> String:
 func _on_toggle_pressed() -> void:
 	_scroll.visible = not _scroll.visible
 	_toggle_btn.text = "Show" if not _scroll.visible else "Hide"
+
+
+# ---------------------------------------------------------------------------
+# Drag / Resize
+# ---------------------------------------------------------------------------
+
+func _build_resize_grip() -> Control:
+	var grip := ColorRect.new()
+	grip.name = "ResizeGrip"
+	grip.color = Color(1, 1, 1, 0.18)
+	grip.mouse_default_cursor_shape = Control.CURSOR_FDIAGSIZE
+	grip.mouse_filter = Control.MOUSE_FILTER_STOP
+	grip.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	grip.size = Vector2(GRIP_SIZE, GRIP_SIZE)
+	grip.offset_left = -GRIP_SIZE
+	grip.offset_top = -GRIP_SIZE
+	grip.offset_right = 0.0
+	grip.offset_bottom = 0.0
+	grip.gui_input.connect(_on_grip_input)
+	return grip
+
+
+func _on_header_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
+			and event.pressed:
+		_dragging = true
+		_drag_mouse_start = event.global_position
+		_detach_anchors()
+		_drag_panel_start = position
+		accept_event()
+
+
+func _on_grip_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
+			and event.pressed:
+		_resizing = true
+		_resize_mouse_start = event.global_position
+		_detach_anchors()
+		_resize_panel_start_size = size
+		accept_event()
+
+
+func _input(event: InputEvent) -> void:
+	## Handles motion/release during drag or resize. Mouse may leave the
+	## header or grip during a drag, so we track events viewport-wide.
+	if not (_dragging or _resizing):
+		return
+	if event is InputEventMouseMotion:
+		if _dragging:
+			var delta: Vector2 = event.global_position - _drag_mouse_start
+			position = _drag_panel_start + delta
+			_clamp_to_viewport()
+		elif _resizing:
+			var delta2: Vector2 = event.global_position - _resize_mouse_start
+			var new_size: Vector2 = _resize_panel_start_size + delta2
+			new_size.x = maxf(MIN_WIDTH, new_size.x)
+			new_size.y = maxf(MIN_HEIGHT, new_size.y)
+			size = new_size
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
+			and not event.pressed:
+		_dragging = false
+		_resizing = false
+
+
+func _detach_anchors() -> void:
+	## Convert whatever anchor preset we were instantiated with into a free
+	## TOP_LEFT layout at the panel's current visual position/size so the user
+	## can drag/resize without fighting the parent's layout.
+	var current_pos := position
+	var current_size := size
+	set_anchors_preset(Control.PRESET_TOP_LEFT, true)
+	position = current_pos
+	size = current_size
+
+
+func _clamp_to_viewport() -> void:
+	## Keep at least the header visible so the panel can always be grabbed back.
+	var vp := get_viewport_rect().size
+	var header_h: float = _header.size.y if _header != null else 24.0
+	position.x = clampf(position.x, -size.x + 64.0, vp.x - 64.0)
+	position.y = clampf(position.y, 0.0, vp.y - header_h)

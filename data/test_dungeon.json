@@ -2082,7 +2082,10 @@
       "level": 0,
       "solidity": "air",
       "feature": "stairs_up_SW",
-      "floor_type": "stone"
+      "floor_type": "stone",
+      "stair_target_col": 13,
+      "stair_target_row": 10,
+      "stair_target_level": 2
     },
     {
       "col": 26,
@@ -4104,7 +4107,10 @@
       "level": 2,
       "solidity": "air",
       "feature": "stairs_down_NE",
-      "floor_type": "stone"
+      "floor_type": "stone",
+      "stair_target_col": 25,
+      "stair_target_row": 7,
+      "stair_target_level": 0
     },
     {
       "col": 14,

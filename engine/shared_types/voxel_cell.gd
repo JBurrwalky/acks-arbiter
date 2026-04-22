@@ -55,6 +55,18 @@ var door_type: String = ""
 
 var door_detected: bool = false
 
+## Evil doors auto-close on turn tick unless wedged or spiked.
+var is_evil: bool = false
+
+## Explicit stair-pair target (voxel cell coordinate). When set (any component
+## != -1), overrides the direction-suffix inference in
+## DungeonMapController.get_stair_target. Used when stair geometry doesn't
+## permit a single-step diagonal (e.g. multi-level jumps, hand-authored dungeons
+## whose stair destinations are not spatially adjacent).
+var stair_target_col: int = -1
+var stair_target_row: int = -1
+var stair_target_level: int = -1
+
 
 # ---------------------------------------------------------------------------
 # Dungeon / room metadata
@@ -142,6 +154,10 @@ static func from_dict(data: Dictionary) -> VoxelCell:
 	cell.door_state = data.get("door_state", "")
 	cell.door_type = data.get("door_type", "")
 	cell.door_detected = data.get("door_detected", false)
+	cell.is_evil = data.get("is_evil", false)
+	cell.stair_target_col = data.get("stair_target_col", -1)
+	cell.stair_target_row = data.get("stair_target_row", -1)
+	cell.stair_target_level = data.get("stair_target_level", -1)
 	cell.room_id = data.get("room_id", -1)
 	cell.is_corridor = data.get("is_corridor", false)
 	cell.fog_state = data.get("fog_state", "hidden")
@@ -161,6 +177,10 @@ func to_dict() -> Dictionary:
 		"door_state": door_state,
 		"door_type": door_type,
 		"door_detected": door_detected,
+		"is_evil": is_evil,
+		"stair_target_col": stair_target_col,
+		"stair_target_row": stair_target_row,
+		"stair_target_level": stair_target_level,
 		"room_id": room_id,
 		"is_corridor": is_corridor,
 		"fog_state": fog_state,

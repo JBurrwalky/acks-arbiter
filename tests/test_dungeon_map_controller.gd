@@ -116,10 +116,9 @@ func run_all_tests() -> void:
 	test_room_reveal_on_entry()
 	test_fog_explored_on_leave()
 	test_signals_emitted_on_move()
-	test_use_stairs_transitions_level()
-	test_use_stairs_positions_party_at_target()
-	test_level_changed_signal()
-	test_fog_preserved_across_levels()
+	# Stair-traversal tests removed: DungeonMapController.use_stairs() was
+	# deleted in Session 7b; voxel stair movement goes through move_party +
+	# get_stair_target. Voxel tests live in test_dungeon_map_controller_voxel.
 	test_transition_cells_parsed()
 	test_is_on_transition_cell_at_spawn()
 	test_is_on_transition_cell_false_after_move()
@@ -298,9 +297,10 @@ func test_fog_explored_on_leave() -> void:
 func test_signals_emitted_on_move() -> void:
 	var ctrl := _make_controller()
 
-	var moved_from := Vector2i(-1, -1)
-	var moved_to := Vector2i(-1, -1)
-	ctrl.party_moved.connect(func(from: Vector2i, to: Vector2i) -> void:
+	var moved_from = Vector2i(-1, -1)
+	var moved_to = Vector2i(-1, -1)
+	# Signal params are untyped post-Session-7b to ride both Vector2i and Vector3i.
+	ctrl.party_moved.connect(func(from, to) -> void:
 		moved_from = from
 		moved_to = to
 	)
@@ -311,100 +311,8 @@ func test_signals_emitted_on_move() -> void:
 	ctrl.queue_free()
 
 
-func test_use_stairs_transitions_level() -> void:
-	var ctrl := _make_controller()
-	# Move party to stairs at (7,0)
-	var map := ctrl.get_map()
-	map.set_door_state(Vector2i(3, 0), "open")
-	ctrl.move_party(Vector2i(1, 0))
-	ctrl.move_party(Vector2i(2, 0))
-	ctrl.move_party(Vector2i(3, 0))
-	ctrl.move_party(Vector2i(4, 0))
-	ctrl.move_party(Vector2i(5, 0))
-	ctrl.move_party(Vector2i(6, 0))
-	ctrl.move_party(Vector2i(7, 0))
-
-	check(ctrl.get_current_level() == 1, "should still be on level 1 before using stairs")
-
-	var result := ctrl.use_stairs(Vector2i(7, 0))
-	check(result, "use_stairs on valid stairs_down should return true")
-	check(ctrl.get_current_level() == 2, "level should be 2 after using stairs down")
-	ctrl.queue_free()
-
-
-func test_use_stairs_positions_party_at_target() -> void:
-	var ctrl := _make_controller()
-	var map := ctrl.get_map()
-	map.set_door_state(Vector2i(3, 0), "open")
-	ctrl.move_party(Vector2i(1, 0))
-	ctrl.move_party(Vector2i(2, 0))
-	ctrl.move_party(Vector2i(3, 0))
-	ctrl.move_party(Vector2i(4, 0))
-	ctrl.move_party(Vector2i(5, 0))
-	ctrl.move_party(Vector2i(6, 0))
-	ctrl.move_party(Vector2i(7, 0))
-	ctrl.use_stairs(Vector2i(7, 0))
-
-	var pos := ctrl.get_party_position()
-	check(pos == Vector2i(0, 0),
-		"after stairs down, party should be at (0,0) on level 2, got %s" % str(pos))
-	ctrl.queue_free()
-
-
-func test_level_changed_signal() -> void:
-	var ctrl := _make_controller()
-	var map := ctrl.get_map()
-	map.set_door_state(Vector2i(3, 0), "open")
-	ctrl.move_party(Vector2i(1, 0))
-	ctrl.move_party(Vector2i(2, 0))
-	ctrl.move_party(Vector2i(3, 0))
-	ctrl.move_party(Vector2i(4, 0))
-	ctrl.move_party(Vector2i(5, 0))
-	ctrl.move_party(Vector2i(6, 0))
-	ctrl.move_party(Vector2i(7, 0))
-
-	var from_l := -1
-	var to_l := -1
-	ctrl.level_changed.connect(func(from: int, to: int) -> void:
-		from_l = from
-		to_l = to
-	)
-
-	ctrl.use_stairs(Vector2i(7, 0))
-	check(from_l == 1, "level_changed from should be 1, got %d" % from_l)
-	check(to_l == 2, "level_changed to should be 2, got %d" % to_l)
-	ctrl.queue_free()
-
-
-func test_fog_preserved_across_levels() -> void:
-	var ctrl := _make_controller()
-	var map_l1 := ctrl.get_map()
-
-	# Room A on level 1 is revealed on load
-	check(map_l1.get_fog(Vector2i(1, 0)) == TacticalMapData.FogState.VISIBLE,
-		"room A cell should be VISIBLE before going to level 2")
-
-	# Go to level 2
-	var map := ctrl.get_map()
-	map.set_door_state(Vector2i(3, 0), "open")
-	ctrl.move_party(Vector2i(1, 0))
-	ctrl.move_party(Vector2i(2, 0))
-	ctrl.move_party(Vector2i(3, 0))
-	ctrl.move_party(Vector2i(4, 0))
-	ctrl.move_party(Vector2i(5, 0))
-	ctrl.move_party(Vector2i(6, 0))
-	ctrl.move_party(Vector2i(7, 0))
-	ctrl.use_stairs(Vector2i(7, 0))
-
-	# Come back to level 1
-	ctrl.use_stairs(Vector2i(0, 0))
-
-	# Level 1 fog should be preserved (room A was VISIBLE/EXPLORED, not reset to HIDDEN)
-	var map_l1_again := ctrl.get_map()
-	var fog_val := map_l1_again.get_fog(Vector2i(1, 0))
-	check(fog_val != TacticalMapData.FogState.HIDDEN,
-		"room A fog should be preserved after returning from level 2, got %d" % fog_val)
-	ctrl.queue_free()
+# Stair-traversal tests removed in Session 7b: DungeonMapController.use_stairs()
+# was deleted. Voxel-mode stair coverage lives in test_dungeon_map_controller_voxel.gd.
 
 
 # ---------------------------------------------------------------------------

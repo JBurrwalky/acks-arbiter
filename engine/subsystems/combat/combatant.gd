@@ -115,8 +115,13 @@ var killing_blow_damage_type: String = "slashing"
 var nonlethal_damage_taken: int = 0
 
 ## Equipped weapon data (merged inventory + catalog fields). Set at combat start.
-## Keys: name, item_key, item_id, weapon_damage, magical_bonus, weapon_tags,
-##        range_short, range_medium, range_long, damage_type
+## Keys: name, item_key, item_id, item_category, weapon_damage, magical_bonus,
+##        weapon_tags, range_short, range_medium, range_long, damage_type,
+##        quantity, uses_remaining
+##
+## quantity / uses_remaining track the equipped row for thrown self-ammo:
+##   - thrown weapons (dagger/javelin/etc.): quantity is the stack count; throw decrements
+##   - dart bundle (ammunition with thrown tag): uses_remaining is the darts-in-bundle count
 var _equipped_weapon: Dictionary = {}
 
 ## Equipped ammunition inventory item reference (for quantity tracking).
@@ -183,16 +188,53 @@ func get_ammo_count() -> int:
 	return int(_equipped_ammo.get("quantity", 0))
 
 func consume_ammo() -> void:
-	## Decrement ammo quantity by 1. Persists immediately to DB.
+	## Decrement one projectile from whichever pool the current attack draws from.
+	## Persists immediately to DB. Three cases:
+	##   1. Equipped weapon is a thrown weapon stack (dagger/javelin/etc.) — decrement
+	##      its quantity. Slot empties when the row hits 0.
+	##   2. Equipped weapon is a dart bundle (ammunition with thrown tag) — decrement
+	##      its uses_remaining. Bundle is destroyed (and slot cleared) at 0.
+	##   3. Otherwise (bow/sling + separate ammo) — decrement the separate ammo stack.
+	if not _equipped_weapon.is_empty():
+		var tags: Array = _equipped_weapon.get("weapon_tags", [])
+		if "thrown" in tags:
+			var category: String = _equipped_weapon.get("item_category", "weapon")
+			var item_id: String = _equipped_weapon.get("item_id", "")
+			if category == "ammunition":
+				var uses: int = int(_equipped_weapon.get("uses_remaining", 0))
+				if uses <= 0:
+					return
+				var new_uses: int = uses - 1
+				_equipped_weapon["uses_remaining"] = new_uses
+				if not item_id.is_empty():
+					if new_uses <= 0:
+						CampaignRepository.remove_inventory_item(item_id)
+						_equipped_weapon = {}
+					else:
+						CampaignRepository.update_inventory_item_uses(item_id, new_uses)
+				return
+			# Thrown weapon (item_category "weapon"): decrement stack quantity.
+			var qty: int = int(_equipped_weapon.get("quantity", 0))
+			if qty <= 0:
+				return
+			var new_qty: int = qty - 1
+			_equipped_weapon["quantity"] = new_qty
+			if not item_id.is_empty():
+				CampaignRepository.update_inventory_item_quantity(item_id, new_qty)
+				if new_qty <= 0:
+					_equipped_weapon = {}
+			return
+
+	# Separate ammunition path (bow + arrows, sling + bullets, etc.).
 	if _equipped_ammo.is_empty():
 		return
-	var qty: int = int(_equipped_ammo.get("quantity", 0))
-	if qty <= 0:
+	var ammo_qty: int = int(_equipped_ammo.get("quantity", 0))
+	if ammo_qty <= 0:
 		return
-	_equipped_ammo["quantity"] = qty - 1
-	var item_id: String = _equipped_ammo.get("item_id", "")
-	if not item_id.is_empty():
-		CampaignRepository.update_inventory_item_quantity(item_id, qty - 1)
+	_equipped_ammo["quantity"] = ammo_qty - 1
+	var ammo_item_id: String = _equipped_ammo.get("item_id", "")
+	if not ammo_item_id.is_empty():
+		CampaignRepository.update_inventory_item_quantity(ammo_item_id, ammo_qty - 1)
 
 
 ## Wire equipped weapon + ammo from inventory DB rows and equipment catalog.
@@ -200,41 +242,49 @@ func consume_ammo() -> void:
 ## [param inventory_rows]: raw rows from CampaignRepository.get_inventory_items()
 ## [param catalog]: EquipmentCatalog instance (or null to skip catalog enrichment)
 func wire_equipment(inventory_rows: Array, catalog) -> void:
-	# Find equipped main-hand weapon
+	# Find equipped main-hand weapon (or thrown self-ammo bundle in main hand).
+	var equipped_weapon_item_id: String = ""
 	for row in inventory_rows:
 		if int(row.get("is_equipped", 0)) != 1:
 			continue
 		if row.get("slot", "") != "hands_main":
 			continue
-		if row.get("item_category", "") != "weapon":
-			continue
+		var category: String = row.get("item_category", "")
 		var item_key: String = row.get("item_key", "")
+		var cat_entry: Dictionary = {}
+		if catalog != null and catalog.has_method("get_item"):
+			cat_entry = catalog.get_item(item_key)
+		var tags: Array = cat_entry.get("weapon_tags", [])
+		# Accept item_category "weapon" OR "ammunition" with thrown tag (darts).
+		if category != "weapon":
+			if not (category == "ammunition" and "thrown" in tags):
+				continue
 		var wpn := {
 			"name": row.get("name", "Weapon"),
 			"item_key": item_key,
 			"item_id": row.get("id", ""),
+			"item_category": category,
 			"weapon_damage": row.get("weapon_damage", "1d3"),
 			"magical_bonus": int(row.get("magical_bonus", 0)),
 			"damage_type": row.get("damage_type", "physical"),
-			"weapon_tags": [],
-			"range_short": 0,
-			"range_medium": 0,
-			"range_long": 0,
+			"weapon_tags": tags,
+			"range_short": int(cat_entry.get("range_short", 0)),
+			"range_medium": int(cat_entry.get("range_medium", 0)),
+			"range_long": int(cat_entry.get("range_long", 0)),
+			"quantity": int(row.get("quantity", 1)),
+			"uses_remaining": int(row.get("uses_remaining", -1)),
 		}
-		# Enrich from catalog
-		if catalog != null and catalog.has_method("get_item"):
-			var cat_entry: Dictionary = catalog.get_item(item_key)
-			if not cat_entry.is_empty():
-				wpn["weapon_tags"] = cat_entry.get("weapon_tags", [])
-				wpn["range_short"] = int(cat_entry.get("range_short", 0))
-				wpn["range_medium"] = int(cat_entry.get("range_medium", 0))
-				wpn["range_long"] = int(cat_entry.get("range_long", 0))
 		set_equipped_weapon(wpn)
+		equipped_weapon_item_id = row.get("id", "")
 		break  # Only one main-hand weapon
 
-	# Find equipped/available ammunition
+	# Find equipped/available ammunition stack (separate from the main-hand weapon).
+	# Skip the main-hand row itself when it is a thrown self-ammo bundle (darts) so
+	# consume_ammo does not double-decrement.
 	for row in inventory_rows:
 		if row.get("item_category", "") != "ammunition":
+			continue
+		if row.get("id", "") == equipped_weapon_item_id:
 			continue
 		var qty: int = int(row.get("quantity", 0))
 		if qty <= 0:
@@ -424,6 +474,15 @@ func get_combat_progression() -> String:
 		"M": return "mage"
 		"NM": return "normal_man"
 		_: return "fighter"
+
+
+func get_character_class() -> String:
+	## Returns the character's actual class id (e.g. "paladin", "assassin",
+	## "bladedancer"), distinct from the shared combat progression bucket.
+	## Empty string for monsters.
+	if is_character and _character != null:
+		return _character.character_class
+	return ""
 
 
 func get_level_or_hd() -> int:

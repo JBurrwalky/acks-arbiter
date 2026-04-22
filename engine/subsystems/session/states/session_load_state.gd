@@ -81,18 +81,21 @@ func _load_or_seed_map(campaign_id: String) -> HexMapData:
 
 
 func _ensure_test_dungeon_entrance(campaign_id: String) -> void:
-	var entrances: Array = CampaignRepository.get_dungeon_entrances_for_map(TEST_MAP_ID)
-	for e: Dictionary in entrances:
-		if e.get("hex_q", 999) == TEST_DUNGEON_ENTRANCE_HEX.x and \
-		   e.get("hex_r", 999) == TEST_DUNGEON_ENTRANCE_HEX.y:
-			return
-
 	var file := FileAccess.open(TEST_DUNGEON_JSON_PATH, FileAccess.READ)
 	if file == null:
 		push_error("SessionLoadState: could not open %s" % TEST_DUNGEON_JSON_PATH)
 		return
 	var json_text := file.get_as_text()
 	file.close()
+
+	# Always refresh existing entrance's dungeon_data so dev edits to the JSON
+	# apply on next session load. Matches the settlement entrance pattern.
+	var entrances: Array = CampaignRepository.get_dungeon_entrances_for_map(TEST_MAP_ID)
+	for e: Dictionary in entrances:
+		if e.get("hex_q", 999) == TEST_DUNGEON_ENTRANCE_HEX.x and \
+		   e.get("hex_r", 999) == TEST_DUNGEON_ENTRANCE_HEX.y:
+			CampaignRepository.update_dungeon_entrance_data(e.get("id", ""), json_text)
+			return
 
 	CampaignRepository.create_dungeon_entrance({
 		"campaign_id": campaign_id,

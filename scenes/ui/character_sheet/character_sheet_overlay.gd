@@ -110,7 +110,9 @@ func _build_ui() -> void:
 	_panel.offset_left = 0.0
 	_panel.offset_right = 0.0
 	_panel.offset_top = 0.0
-	_panel.offset_bottom = 0.0
+	# Leave room for the bottom SessionStatusBar so the overlay's bottom
+	# border meets the bar's top border cleanly.
+	_panel.offset_bottom = -float(SessionStatusBar.BAR_HEIGHT)
 	UiSurfaceStyles.apply_framed_window_chrome(_panel)
 	add_child(_panel)
 

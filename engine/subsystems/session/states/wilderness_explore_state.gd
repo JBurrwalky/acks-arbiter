@@ -8,8 +8,11 @@ extends SessionState
 ## On hex click: schedules travel_leg events via WildernessHandlers.
 ## On dungeon/settlement entry: transition to dungeon/settlement state.
 
+const ContextMenuScene := preload("res://scenes/maps/dungeon_context_menu.gd")
+
 var _runner = null  # stored reference to avoid closure issues
 var _handlers: WildernessHandlers = null
+var _context_menu = null  # instance of ContextMenuScene (shared with dungeon UI)
 
 
 func enter(runner, context: Dictionary) -> void:
@@ -21,8 +24,11 @@ func enter(runner, context: Dictionary) -> void:
 	renderer.process_mode = Node.PROCESS_MODE_INHERIT
 	_show_hex_hud(renderer, true)
 
-	# Connect renderer signals (safe: _connect checks for existing connections)
-	_connect(renderer, "hex_clicked", _on_hex_clicked)
+	# Connect renderer signals (safe: _connect checks for existing connections).
+	# Left-clicks on party tokens select that party; right-clicks open the
+	# context menu. Empty-hex left-clicks emit `hex_clicked` but we ignore them.
+	_connect(renderer, "party_token_clicked", _on_party_token_clicked)
+	_connect(renderer, "hex_context_menu_requested", _on_hex_context_menu_requested)
 	_connect(renderer, "dungeon_entry_requested", _on_dungeon_entry)
 	_connect(renderer, "settlement_entry_requested", _on_settlement_entry)
 
@@ -33,6 +39,10 @@ func enter(runner, context: Dictionary) -> void:
 	# Listen for active party switches
 	if not EventBus.active_party_changed.is_connected(_on_active_party_changed):
 		EventBus.active_party_changed.connect(_on_active_party_changed)
+
+	# Cache-visit dispatch: handler emits, we open the inventory overlay.
+	if not EventBus.wilderness_cache_visit_requested.is_connected(_on_wilderness_cache_visit_requested):
+		EventBus.wilderness_cache_visit_requested.connect(_on_wilderness_cache_visit_requested)
 
 	# Ensure all parties in the campaign are registered with Timekeeping
 	var all_parties := CampaignRepository.list_parties_for_campaign(GameState.campaign_id)
@@ -59,7 +69,8 @@ func exit(runner) -> void:
 	var renderer: Node = runner.get_hex_map_renderer()
 
 	# Disconnect renderer signals
-	_disconnect(renderer, "hex_clicked", _on_hex_clicked)
+	_disconnect(renderer, "party_token_clicked", _on_party_token_clicked)
+	_disconnect(renderer, "hex_context_menu_requested", _on_hex_context_menu_requested)
 	_disconnect(renderer, "dungeon_entry_requested", _on_dungeon_entry)
 	_disconnect(renderer, "settlement_entry_requested", _on_settlement_entry)
 
@@ -68,6 +79,10 @@ func exit(runner) -> void:
 		EventBus.camp_requested.disconnect(_on_camp_requested)
 	if EventBus.active_party_changed.is_connected(_on_active_party_changed):
 		EventBus.active_party_changed.disconnect(_on_active_party_changed)
+	if EventBus.wilderness_cache_visit_requested.is_connected(_on_wilderness_cache_visit_requested):
+		EventBus.wilderness_cache_visit_requested.disconnect(_on_wilderness_cache_visit_requested)
+
+	_close_context_menu()
 
 	# Unregister wilderness event handlers
 	if _handlers != null:
@@ -114,12 +129,23 @@ func _cancel_current_orders(runner) -> void:
 # Event handlers
 # ---------------------------------------------------------------------------
 
-func _on_hex_clicked(coord: Vector2i) -> void:
+## Left-click on a party's token selects it as the active party. Issuing
+## orders happens through the right-click context menu.
+func _on_party_token_clicked(party_id: String, _coord: Vector2i) -> void:
+	if party_id.is_empty() or party_id == GameState.active_party_id:
+		return
+	GameState.set_active_party(party_id)
+
+
+## Right-click on a hex opens a context menu for the active party.
+func _on_hex_context_menu_requested(coord: Vector2i, screen_pos: Vector2) -> void:
 	if _runner == null:
 		return
 
-	# Block orders if the party is time-locked
-	if _runner.is_party_locked(_runner.get_party_id()):
+	var party_id: String = _resolve_active_party_id()
+	if party_id.is_empty():
+		return
+	if _runner.is_party_locked(party_id):
 		EventBus.notification_requested.emit({
 			"type": "warning",
 			"category": "system",
@@ -129,27 +155,138 @@ func _on_hex_clicked(coord: Vector2i) -> void:
 		return
 
 	var controller: HexMapController = _runner.get_hex_map_controller()
-	if not controller.can_move_to(coord):
+	var map_data: HexMapData = controller.get_map() if controller != null else null
+	var options: Array[Dictionary] = WildernessContextMenuBuilder.build_menu(
+		coord, party_id, map_data, controller)
+	if options.is_empty():
+		return
+
+	_close_context_menu()
+	_context_menu = ContextMenuScene.new()
+	# Show above the HexHUD CanvasLayer (layer 10) but below dice prompts (64).
+	var layer := CanvasLayer.new()
+	layer.layer = 24
+	layer.add_child(_context_menu)
+	_runner.get_hex_map_renderer().add_child(layer)
+	_context_menu.option_selected.connect(_on_context_action)
+	_context_menu.cancelled.connect(_close_context_menu)
+	_context_menu.show_at(screen_pos, options, _runner.get_scheduler_loop())
+
+
+## Dispatch a context-menu selection.
+## Every non-cancel option schedules travel to the target hex; options other
+## than plain "Move Here" also queue a wilderness_activity event to fire on
+## arrival.
+func _on_context_action(action_data: Dictionary) -> void:
+	_close_context_menu()
+	if _runner == null:
+		return
+
+	var action_type: String = str(action_data.get("action_type", ""))
+	if action_type == "" or action_type == "cancel":
+		return
+
+	var target_hex := Vector2i(
+		int(action_data.get("hex_q", 0)),
+		int(action_data.get("hex_r", 0)))
+	var controller: HexMapController = _runner.get_hex_map_controller()
+	if controller == null or not controller.can_move_to(target_hex):
 		return
 
 	var scheduler: EventScheduler = _runner.get_scheduler()
-	var party_data: PartyData = _runner.get_party_data()
+	var party_id: String = _resolve_active_party_id()
+	if party_id.is_empty():
+		return
+	var party_data: PartyData = _resolve_party_data(party_id)
+	if party_data == null:
+		return
 	var map_data: HexMapData = controller.get_map()
 
-	# Cancel any existing travel orders for this party
-	var party_id: String = _runner.get_party_id()
+	# Cancel prior travel and any queued follow-up activity for this party.
 	var cancelled: int = scheduler.cancel_all_for_owner(party_id, "travel_leg")
+	cancelled += scheduler.cancel_all_for_owner(party_id, WildernessHandlers.ACTIVITY_EVENT)
+	cancelled += scheduler.cancel_all_for_owner(party_id, WildernessHandlers.ACTIVITY_COMPLETE_EVENT)
 	if cancelled > 0:
 		EventBus.order_cancelled.emit(party_id, "travel_leg")
 
-	# Schedule the travel path (single hex for now — future: full pathfinding)
-	var path: Array = [coord]
-	_handlers.schedule_travel_path(path, scheduler, party_data, map_data)
+	# Schedule the travel path (single-hex step for now — future: full pathfinding).
+	var path: Array = [target_hex]
+	var travel: Dictionary = _handlers.schedule_travel_path(path, scheduler, party_data, map_data)
 
-	# Start the clock if paused
+	# For anything other than plain Move Here, queue the activity to begin
+	# when the final travel_leg fires. Priority slightly below PRIORITY_ARRIVAL
+	# so the arrival leg resolves first in the same round.
+	var activity_type := _activity_type_for_action(action_type)
+	if not activity_type.is_empty():
+		var arrival_time: int = int(travel.get("arrival_time", 0))
+		scheduler.schedule_at(
+			arrival_time,
+			WildernessHandlers.ACTIVITY_EVENT,
+			party_id,
+			{
+				"activity_type": activity_type,
+				"hex_q": target_hex.x,
+				"hex_r": target_hex.y,
+			},
+			ScheduledEvent.PRIORITY_ARRIVAL + 1,
+		)
+		EventBus.order_queued.emit(party_id, WildernessHandlers.ACTIVITY_EVENT, arrival_time)
+
 	var loop: SchedulerLoop = _runner.get_scheduler_loop()
-	if loop.is_paused():
+	if loop != null and loop.is_paused():
 		loop.resume(SchedulerLoop.SPEED_NORMAL)
+
+
+func _close_context_menu() -> void:
+	if _context_menu == null:
+		return
+	var parent: Node = _context_menu.get_parent()
+	if is_instance_valid(parent):
+		parent.queue_free()
+	_context_menu = null
+
+
+func _activity_type_for_action(action_type: String) -> String:
+	match action_type:
+		"wilderness_move_here":        return ""
+		"wilderness_explore_hex":      return "explore"
+		"wilderness_build_stronghold": return "build_stronghold"
+		"wilderness_place_cache":      return "place_loot_cache"
+		"wilderness_visit_cache":      return "visit_loot_cache"
+		"wilderness_survey":           return "survey"
+		_:                              return ""
+
+
+## Returns the id of the party that should receive context-menu orders.
+## Prefers GameState.active_party_id; falls back to the runner's tracked id.
+func _resolve_active_party_id() -> String:
+	var pid: String = GameState.active_party_id
+	if pid.is_empty():
+		pid = _runner.get_party_id() if _runner != null else ""
+	return pid
+
+
+## Returns PartyData for [param party_id]. Reuses the runner's cached object
+## when the id matches, otherwise loads from the repository. Multi-party
+## sessions need this because the runner only caches one party at a time.
+func _resolve_party_data(party_id: String) -> PartyData:
+	if _runner != null and _runner.get_party_id() == party_id:
+		return _runner.get_party_data()
+	return CampaignRepository.load_party_data(party_id)
+
+
+## Opens the party inventory overlay so the player can trade with a wilderness
+## loot cache. The overlay already auto-detects caches at the party's current
+## hex via GameState.current_location_key.
+func _on_wilderness_cache_visit_requested(_cache_id: String, _hex: Vector2i) -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null:
+		return
+	var overlay = tree.root.find_child("PartyInventoryOverlay", true, false)
+	if overlay == null or not overlay.has_method("open"):
+		push_warning("WildernessExploreState: PartyInventoryOverlay not found in scene tree")
+		return
+	overlay.open()
 
 
 func _on_camp_requested() -> void:

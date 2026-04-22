@@ -304,9 +304,14 @@ static func _build_stair_options(
 	var options: Array[Dictionary] = []
 	var tf: String = cell.get("terrain_feature", "")
 
+	# Voxel feature strings carry a direction suffix (e.g. "stairs_up_N");
+	# legacy TacticalMapData uses bare "stairs_up"/"stairs_down". Match both.
+	var is_stair_up := tf == "stairs_up" or tf.begins_with("stairs_up_")
+	var is_stair_down := tf == "stairs_down" or tf.begins_with("stairs_down_")
+
 	var is_transition: bool = map.is_transition_cell(target_cell) if map != null else false
 
-	if tf == "stairs_up":
+	if is_stair_up:
 		if is_transition:
 			if _has_exit_candidates(selected_ids, map, session_state):
 				options.append(_option("exit_dungeon", "Exit Dungeon", true,
@@ -317,12 +322,12 @@ static func _build_stair_options(
 				"Climb to the level above", "environment",
 				{"action_type": "ascend", "cell": target_cell}))
 
-	elif tf == "stairs_down":
+	elif is_stair_down:
 		options.append(_option("descend", "Descend", true,
 			"Descend to the level below", "environment",
 			{"action_type": "descend", "cell": target_cell}))
 
-	elif is_transition and tf != "stairs_up" and tf != "stairs_down":
+	elif is_transition:
 		# Non-stair transition cell (e.g., cave entrance).
 		if _has_exit_candidates(selected_ids, map, session_state):
 			options.append(_option("exit_dungeon", "Exit Dungeon", true,
@@ -340,7 +345,8 @@ static func _has_exit_candidates(
 ) -> bool:
 	for eid in selected_ids:
 		var sid: String = str(eid)
-		if map.get_entity_pos(sid) == Vector2i(-1, -1):
+		var pos = map.get_entity_pos(sid)
+		if pos == Vector2i(-1, -1) or pos == Vector3i(-1, -1, -1):
 			continue  # Not on the map.
 		if session_state != null:
 			if session_state.has_method("is_exited") and session_state.is_exited(sid):
@@ -657,14 +663,10 @@ static func _is_wooden_door(door_material: String) -> bool:
 
 
 ## How many turns to bash a wooden door?
-static func _bash_door_turns(door_material: String) -> int:
-	match door_material:
-		"wood_simple":
-			return 1
-		"wood_standard", "wood_reinforced":
-			return 3
-		_:
-			return 0  # Non-wooden doors cannot be bashed.
+## House rule: all wooden doors take 1 turn to bash (auto-success on completion);
+## stone/metal doors are unbashable and Bash Door is disabled upstream.
+static func _bash_door_turns(_door_material: String) -> int:
+	return 1
 
 
 ## Convenience constructor for an option dictionary.
