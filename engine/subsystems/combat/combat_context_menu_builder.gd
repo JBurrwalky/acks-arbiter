@@ -37,8 +37,6 @@ static func build_menu(
 		return []
 
 	var options: Array[Dictionary] = []
-	# Voxel map takes priority when set; fall back to legacy TacticalMapData.
-	var map = controller.voxel_map if controller.voxel_map != null else controller.tactical_map
 	# Ensure target_cell is Vector2i for downstream 2D logic
 	var target_cell_2d: Vector2i
 	if target_cell is Vector3i:
@@ -531,24 +529,15 @@ static func _build_downed_options(
 # ---------------------------------------------------------------------------
 
 static func _get_entity_at_cell(cell: Vector2i, controller) -> Combatant:
-	## Returns the first combatant at the given cell, or null.
-	## Supports both VoxelMapData (3D lookup using z from entity) and TacticalMapData.
-	if controller.voxel_map != null:
-		# Check all entities whose 2D projection matches the target cell
-		for eid in controller.voxel_map.entity_positions.keys():
-			var pos: Vector3i = controller.voxel_map.entity_positions[eid]
-			if Vector2i(pos.x, pos.y) == cell:
-				var c = controller.roster.get_by_id(str(eid))
-				if c != null:
-					return c
+	## Returns the first combatant at the given cell (2D projection), or null.
+	if controller.voxel_map == null:
 		return null
-	if controller.tactical_map == null:
-		return null
-	var entities: Array = controller.tactical_map.get_entities_at(cell)
-	for eid in entities:
-		var c = controller.roster.get_by_id(str(eid))
-		if c != null:
-			return c
+	for eid in controller.voxel_map.entity_positions.keys():
+		var pos: Vector3i = controller.voxel_map.entity_positions[eid]
+		if Vector2i(pos.x, pos.y) == cell:
+			var c = controller.roster.get_by_id(str(eid))
+			if c != null:
+				return c
 	return null
 
 
@@ -587,30 +576,18 @@ static func _find_enemy_adjacent_to_cell(
 	cell: Vector2i, combatant: Combatant, controller
 ) -> Combatant:
 	## Finds an enemy adjacent to the target cell (for charge from empty cell).
-	## Supports both VoxelMapData and TacticalMapData.
-	if controller.movement_resolver == null:
+	if controller.movement_resolver == null or controller.voxel_map == null:
 		return null
 	var enemy_side: int = Combatant.Side.ENEMY if combatant.is_pc_side() else Combatant.Side.PARTY
-	if controller.voxel_map != null:
-		var neighbors := IsometricGrid.get_neighbors(cell)
-		for n_cell in neighbors:
-			# Check all entities whose 2D projection matches the neighbor
-			for eid in controller.voxel_map.entity_positions.keys():
-				var pos: Vector3i = controller.voxel_map.entity_positions[eid]
-				if Vector2i(pos.x, pos.y) == n_cell:
-					var c = controller.roster.get_by_id(str(eid))
-					if c != null and c.side == enemy_side and c.is_alive():
-						return c
-		return null
-	if controller.tactical_map == null:
-		return null
 	var neighbors := IsometricGrid.get_neighbors(cell)
 	for n_cell in neighbors:
-		var entities: Array = controller.tactical_map.get_entities_at(n_cell)
-		for eid in entities:
-			var c = controller.roster.get_by_id(str(eid))
-			if c != null and c.side == enemy_side and c.is_alive():
-				return c
+		# Check all entities whose 2D projection matches the neighbor
+		for eid in controller.voxel_map.entity_positions.keys():
+			var pos: Vector3i = controller.voxel_map.entity_positions[eid]
+			if Vector2i(pos.x, pos.y) == n_cell:
+				var c = controller.roster.get_by_id(str(eid))
+				if c != null and c.side == enemy_side and c.is_alive():
+					return c
 	return null
 
 
@@ -630,7 +607,7 @@ static func _can_backstab(combatant: Combatant, target: Combatant) -> bool:
 			or target.has_condition("sleeping"):
 		return true
 	# Flanking check: attacker behind target based on facing
-	if combatant.grid_position != Vector2i(-1, -1) and target.grid_position != Vector2i(-1, -1):
+	if combatant.grid_position != Vector3i(-1, -1, 0) and target.grid_position != Vector3i(-1, -1, 0):
 		var dir_to_attacker := Vector2i(
 			signi(combatant.grid_position.x - target.grid_position.x),
 			signi(combatant.grid_position.y - target.grid_position.y))

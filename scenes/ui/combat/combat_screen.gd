@@ -68,19 +68,12 @@ func start_interactive() -> void:
 
 	_auto_advance = false
 
-	# Set up the map renderer with the tactical map and roster.
-	# Node2D must be embedded via SubViewport to render inside the Control layout.
-	if _controller.tactical_map != null:
+	# Set up the map renderer with the voxel battle map and roster.
+	# Node3D must be embedded via SubViewport to render inside the Control layout.
+	if _controller.voxel_map != null:
 		var MapRendererScript = load("res://scenes/ui/combat/combat_map_renderer_3d.gd")
 		_map_renderer = MapRendererScript.new()
-		# Convert TacticalMapData to a flat-field VoxelMapData for the renderer
-		# (combat is single-level; voxel mode is the only supported path).
-		var voxel_map := VoxelMapData.generate_open_field(
-			_controller.tactical_map.grid_width, _controller.tactical_map.grid_height)
-		for eid in _controller.tactical_map.entity_positions:
-			var pos_2d: Vector2i = _controller.tactical_map.entity_positions[eid]
-			voxel_map.set_entity_pos(eid, Vector3i(pos_2d.x, pos_2d.y, 0))
-		_map_renderer.setup(voxel_map, _controller.roster)
+		_map_renderer.setup(_controller.voxel_map, _controller.roster)
 
 		var map_area: Control = get_node_or_null("HSplit/MapArea")
 		if map_area != null:
@@ -379,10 +372,9 @@ func _on_log_entry(entry: Dictionary) -> void:
 
 func _on_highlight_reachable(cells: Array, color: Color) -> void:
 	if _map_renderer != null:
-		var typed: Array[Vector2i] = []
-		for c in cells:
-			typed.append(c)
-		_map_renderer.highlight_cells(typed, color)
+		# Renderer's highlight_cells accepts untyped Array and projects internally
+		# (Vector3i passes through; Vector2i coerces to level 0).
+		_map_renderer.highlight_cells(cells, color)
 
 
 func _on_highlight_targets(entity_ids: Array) -> void:
@@ -407,7 +399,7 @@ func _on_active_token_changed(entity_id: String) -> void:
 # User input handlers
 # ---------------------------------------------------------------------------
 
-func _on_map_cell_clicked(pos: Vector2i) -> void:
+func _on_map_cell_clicked(pos: Vector3i) -> void:
 	if _ui_controller != null:
 		_ui_controller.on_cell_targeted(pos)
 
@@ -417,13 +409,13 @@ func _on_map_entity_clicked(entity_id: String) -> void:
 		_ui_controller.on_entity_targeted(entity_id)
 
 
-func _on_map_cell_right_clicked(cell_pos: Vector2i, screen_pos: Vector2) -> void:
+func _on_map_cell_right_clicked(cell_pos: Vector3i, screen_pos: Vector2) -> void:
 	if _ui_controller != null:
 		_ui_controller.on_cell_right_clicked(cell_pos, screen_pos)
 
 
 func _on_context_menu_requested(
-		combatant_id: String, target_cell: Vector2i, screen_pos: Vector2) -> void:
+		combatant_id: String, target_cell: Vector3i, screen_pos: Vector2) -> void:
 	# Build options using the combat context menu builder
 	var options: Array = _ContextMenuBuilder.build_menu(
 		combatant_id, target_cell, _controller, null)
@@ -529,11 +521,10 @@ func _on_move_completed() -> void:
 
 
 func _sync_token_positions() -> void:
-	if _map_renderer == null or _controller == null or _controller.tactical_map == null:
+	if _map_renderer == null or _controller == null or _controller.voxel_map == null:
 		return
-	for eid in _controller.tactical_map.entity_positions:
-		var pos: Vector2i = _controller.tactical_map.entity_positions[eid]
-		# The renderer's move_token accepts both Vector2i and Vector3i
+	for eid in _controller.voxel_map.entity_positions:
+		var pos: Vector3i = _controller.voxel_map.entity_positions[eid]
 		_map_renderer.move_token(eid, pos)
 		var combatant = _controller.get_combatant(eid)
 		if combatant != null:

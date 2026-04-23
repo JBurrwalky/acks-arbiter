@@ -53,8 +53,6 @@ extends Node
 @onready var _asset_registry_tests = $AssetRegistryTests
 @onready var _navigation_stack_tests = $NavigationStackTests
 @onready var _isometric_grid_tests = $IsometricGridTests
-@onready var _tactical_map_data_tests = $TacticalMapDataTests
-@onready var _dungeon_map_controller_tests = $DungeonMapControllerTests
 @onready var _proficiency_cross_slot_tests = $ProficiencyCrossSlotTests
 @onready var _settlement_map_data_tests = $SettlementMapDataTests
 @onready var _settlement_map_controller_tests = $SettlementMapControllerTests
@@ -100,7 +98,6 @@ extends Node
 @onready var _shop_inventory_generator_tests = $ShopInventoryGeneratorTests
 @onready var _shop_service_tests = $ShopServiceTests
 @onready var _dungeon_session_state_tests = $DungeonSessionStateTests
-@onready var _context_menu_builder_tests = $ContextMenuBuilderTests
 @onready var _settlement_travel_calculator_tests = $SettlementTravelCalculatorTests
 @onready var _settlement_navigation_tests = $SettlementNavigationTests
 @onready var _combat_context_menu_builder_tests = $CombatContextMenuBuilderTests
@@ -129,6 +126,7 @@ extends Node
 @onready var _dungeon_map_controller_voxel_tests = $DungeonMapControllerVoxelTests
 @onready var _equip_pipeline_tests = $EquipPipelineTests
 @onready var _inventory_ui_adjacency_tests = $InventoryUIAdjacencyTests
+@onready var _heraldry_data_tests = $HeraldryDataTests
 
 
 func _ready() -> void:
@@ -162,8 +160,7 @@ func run() -> void:
 			_level_up_proficiency_picker_tests, _aging_system_tests,
 			_asset_registry_tests,
 			_navigation_stack_tests,
-			_isometric_grid_tests, _tactical_map_data_tests,
-			_dungeon_map_controller_tests,
+			_isometric_grid_tests,
 			_proficiency_cross_slot_tests,
 			_settlement_map_data_tests,
 			_settlement_map_controller_tests,
@@ -209,7 +206,6 @@ func run() -> void:
 			_shop_inventory_generator_tests,
 			_shop_service_tests,
 			_dungeon_session_state_tests,
-			_context_menu_builder_tests,
 			_settlement_travel_calculator_tests,
 			_settlement_navigation_tests,
 			_combat_context_menu_builder_tests,
@@ -237,7 +233,8 @@ func run() -> void:
 			_wilderness_context_menu_builder_tests,
 			_dungeon_map_controller_voxel_tests,
 			_equip_pipeline_tests,
-			_inventory_ui_adjacency_tests]:
+			_inventory_ui_adjacency_tests,
+			_heraldry_data_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

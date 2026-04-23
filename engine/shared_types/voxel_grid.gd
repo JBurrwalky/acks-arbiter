@@ -116,6 +116,19 @@ static func chebyshev_distance(a: Vector3i, b: Vector3i) -> int:
 	return maxi(abs(d.x), maxi(abs(d.y), abs(d.z)))
 
 
+## Returns all cells within [param radius] Chebyshev distance of [param center]
+## on the same level, including the center. Used for area placement queries
+## (combatant spawning, group scatter, AoE previews).
+static func get_cells_in_radius_3d(center: Vector3i, radius: int) -> Array[Vector3i]:
+	var out: Array[Vector3i] = []
+	if radius < 0:
+		return out
+	for dc in range(-radius, radius + 1):
+		for dr in range(-radius, radius + 1):
+			out.append(Vector3i(center.x + dc, center.y + dr, center.z))
+	return out
+
+
 # ---------------------------------------------------------------------------
 # Direction helpers
 # ---------------------------------------------------------------------------

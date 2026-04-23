@@ -33,7 +33,7 @@ func run_all_tests() -> void:
 # ---------------------------------------------------------------------------
 
 func _make_resolver() -> MovementResolver:
-	return MovementResolver.new(null, null)
+	return MovementResolver.new()
 
 
 func _make_flat_room(width: int, height: int, level: int = 0) -> VoxelMapData:

@@ -840,6 +840,111 @@ func merge_parties(target_party_id: String, source_party_id: String) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Party heraldry CRUD (Migration 038)
+# ---------------------------------------------------------------------------
+
+func get_heraldry(heraldry_id: String) -> HeraldryDescriptor:
+	## Returns a HeraldryDescriptor for the given id, or null on miss.
+	if heraldry_id.is_empty():
+		return null
+	if not db.query_with_bindings(
+			"SELECT * FROM party_heraldry WHERE heraldry_id = ?", [heraldry_id]) \
+			or db.query_result.is_empty():
+		return null
+	return HeraldryDescriptor.from_dict(db.query_result[0])
+
+
+func get_heraldry_for_party(party_id: String) -> HeraldryDescriptor:
+	## Resolves the party's heraldry_id FK and returns the full descriptor.
+	## Returns null when the party has no heraldry assigned yet (pre-backfill).
+	if party_id.is_empty():
+		return null
+	if not db.query_with_bindings(
+			"SELECT heraldry_id FROM parties WHERE id = ?", [party_id]) \
+			or db.query_result.is_empty():
+		return null
+	var heraldry_id = db.query_result[0].get("heraldry_id", "")
+	if heraldry_id == null:
+		return null
+	var id_str := str(heraldry_id)
+	if id_str.is_empty():
+		return null
+	return get_heraldry(id_str)
+
+
+func save_heraldry(descriptor: HeraldryDescriptor) -> bool:
+	## Upsert the descriptor and fire EventBus.heraldry_changed on success.
+	## Caller is responsible for assigning a heraldry_id before calling.
+	if descriptor == null or descriptor.heraldry_id.is_empty():
+		push_error("CampaignRepository.save_heraldry: descriptor/heraldry_id required")
+		return false
+	var ok := db.query_with_bindings("""
+		INSERT INTO party_heraldry
+			(heraldry_id, shape_id, division_id,
+			 tincture_primary, tincture_secondary,
+			 ordinary_id, tincture_ordinary,
+			 charge_id, tincture_charge)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(heraldry_id) DO UPDATE SET
+			shape_id = excluded.shape_id,
+			division_id = excluded.division_id,
+			tincture_primary = excluded.tincture_primary,
+			tincture_secondary = excluded.tincture_secondary,
+			ordinary_id = excluded.ordinary_id,
+			tincture_ordinary = excluded.tincture_ordinary,
+			charge_id = excluded.charge_id,
+			tincture_charge = excluded.tincture_charge
+	""", [
+		descriptor.heraldry_id,
+		descriptor.shape_id,
+		descriptor.division_id,
+		HeraldryDescriptor.color_to_hex(descriptor.tincture_primary),
+		HeraldryDescriptor.color_to_hex(descriptor.tincture_secondary),
+		descriptor.ordinary_id,
+		HeraldryDescriptor.color_to_hex(descriptor.tincture_ordinary),
+		descriptor.charge_id,
+		HeraldryDescriptor.color_to_hex(descriptor.tincture_charge),
+	])
+	if not ok:
+		push_error("CampaignRepository.save_heraldry: upsert failed for %s" % descriptor.heraldry_id)
+		return false
+	EventBus.heraldry_changed.emit(descriptor.heraldry_id)
+	return true
+
+
+func assign_heraldry_to_party(party_id: String, heraldry_id: String) -> bool:
+	if party_id.is_empty() or heraldry_id.is_empty():
+		push_error("CampaignRepository.assign_heraldry_to_party: party_id and heraldry_id required")
+		return false
+	var ok := db.query_with_bindings(
+		"UPDATE parties SET heraldry_id = ? WHERE id = ?",
+		[heraldry_id, party_id]
+	)
+	if not ok:
+		push_error("CampaignRepository.assign_heraldry_to_party: update failed for party %s" % party_id)
+		return false
+	EventBus.heraldry_changed.emit(heraldry_id)
+	return true
+
+
+func create_default_heraldry_for_party(party_id: String, preset_library: PresetLibrary = null) -> String:
+	## Picks a random preset, inserts a new party_heraldry row, links it to
+	## the party, returns the new heraldry_id. Used by the session-load backfill.
+	## Pass a shared PresetLibrary to avoid reloading the JSON for every party.
+	if party_id.is_empty():
+		push_error("CampaignRepository.create_default_heraldry_for_party: party_id required")
+		return ""
+	var library := preset_library if preset_library != null else PresetLibrary.new()
+	var descriptor := library.get_random_preset_descriptor()
+	descriptor.heraldry_id = generate_id()
+	if not save_heraldry(descriptor):
+		return ""
+	if not assign_heraldry_to_party(party_id, descriptor.heraldry_id):
+		return ""
+	return descriptor.heraldry_id
+
+
+# ---------------------------------------------------------------------------
 # Hex Map CRUD
 # ---------------------------------------------------------------------------
 
@@ -2064,54 +2169,6 @@ func update_settlement_entrance_data(entrance_id: String, settlement_data_json: 
 		"UPDATE settlement_entrances SET settlement_data = ? WHERE id = ?",
 		[settlement_data_json, entrance_id]
 	)
-
-
-# ---------------------------------------------------------------------------
-# Dungeon cell state persistence (migration 017)
-# ---------------------------------------------------------------------------
-
-## @deprecated Use save_voxel_cells_batch() instead.
-## Batch-saves cell states (fog + door) for a dungeon level.
-## [param cells] is an Array of {col, row, door_state, fog_state} dictionaries.
-func save_dungeon_cell_states(dungeon_id: String, level_num: int, cells: Array) -> bool:
-	for cell in cells:
-		if not db.query_with_bindings("""
-			INSERT OR REPLACE INTO dungeon_map_cells
-			(dungeon_id, level_num, col, row, door_state, fog_state)
-			VALUES (?, ?, ?, ?, ?, ?)
-		""", [
-			dungeon_id,
-			level_num,
-			cell.get("col", 0),
-			cell.get("row", 0),
-			cell.get("door_state", "closed"),
-			cell.get("fog_state", "hidden"),
-		]):
-			push_error("CampaignRepository.save_dungeon_cell_states: failed at col=%d row=%d" % [
-				cell.get("col", 0), cell.get("row", 0)
-			])
-			return false
-	return true
-
-
-## @deprecated Use load_voxel_cells_for_map() instead.
-## Loads saved cell states for a dungeon level. Returns [{col, row, door_state, fog_state}].
-func load_dungeon_cell_states(dungeon_id: String, level_num: int) -> Array:
-	db.query_with_bindings(
-		"SELECT col, row, door_state, fog_state FROM dungeon_map_cells WHERE dungeon_id = ? AND level_num = ?",
-		[dungeon_id, level_num]
-	)
-	return db.query_result.duplicate()
-
-
-## @deprecated Use update_voxel_cell_state() instead.
-## Upserts a single cell's state.
-func update_dungeon_cell(dungeon_id: String, level_num: int, col: int, row: int,
-		door_state: String, fog_state: String) -> bool:
-	return db.query_with_bindings("""
-		INSERT OR REPLACE INTO dungeon_map_cells (dungeon_id, level_num, col, row, door_state, fog_state)
-		VALUES (?, ?, ?, ?, ?, ?)
-	""", [dungeon_id, level_num, col, row, door_state, fog_state])
 
 
 # ---------------------------------------------------------------------------

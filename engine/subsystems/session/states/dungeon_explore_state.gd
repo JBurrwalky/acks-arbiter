@@ -165,6 +165,11 @@ func enter(runner, context: Dictionary) -> void:
 	if not EventBus.scheduler_event_resolved.is_connected(_on_scheduler_event_resolved):
 		EventBus.scheduler_event_resolved.connect(_on_scheduler_event_resolved)
 
+	# Refresh the minimap when the renderer's focus level changes (PgUp/PgDn,
+	# party-portrait clicks, wandering-encounter auto-focus).
+	if not EventBus.dungeon_focus_level_changed.is_connected(_on_dungeon_focus_level_changed):
+		EventBus.dungeon_focus_level_changed.connect(_on_dungeon_focus_level_changed)
+
 	# Auto-activate light sources from inventory.
 	_auto_activate_lights(runner)
 
@@ -191,6 +196,8 @@ func exit(runner) -> void:
 	# Disconnect scheduler event listener.
 	if EventBus.scheduler_event_resolved.is_connected(_on_scheduler_event_resolved):
 		EventBus.scheduler_event_resolved.disconnect(_on_scheduler_event_resolved)
+	if EventBus.dungeon_focus_level_changed.is_connected(_on_dungeon_focus_level_changed):
+		EventBus.dungeon_focus_level_changed.disconnect(_on_dungeon_focus_level_changed)
 
 	# Cancel movement animations before tearing down.
 	if _scene != null:
@@ -944,21 +951,53 @@ func _create_ui_panels() -> void:
 func _update_minimap() -> void:
 	if _minimap == null or _controller == null:
 		return
-	# Minimap doesn't support VoxelMapData yet — hide it.
-	# TODO: port minimap to VoxelMapData (future session).
-	_minimap.visible = false
+	var vmap: VoxelMapData = _controller.get_voxel_map()
+	if vmap == null:
+		return
+	# Gather party Vector3i positions from the voxel map.
+	var party_positions: Dictionary = {}
+	for eid in _controller.get_entity_ids():
+		if vmap.entity_positions.has(eid):
+			party_positions[eid] = vmap.entity_positions[eid]
+	# Focus level comes from the renderer's VisibilityManager when available;
+	# fall back to the controller's current_level.
+	var focus_level: int = _controller.get_current_level()
+	if _scene != null and _scene.has_method("get_visibility_manager"):
+		var vm = _scene.get_visibility_manager()
+		if vm != null:
+			focus_level = vm.focus_level
+	_minimap.update(vmap, party_positions, focus_level)
+
+
+func _on_minimap_cell_clicked(cell: Vector3i) -> void:
+	## Switch focus level to the clicked cell's level so the player sees
+	## the corresponding dungeon layer. Camera recenter on (cell.x, cell.y)
+	## within that level is a renderer follow-up — requires a scene method
+	## we don't expose yet.
+	if _scene == null:
+		return
+	if _scene.has_method("get_visibility_manager"):
+		var vm = _scene.get_visibility_manager()
+		if vm != null and cell.z != vm.focus_level:
+			vm.set_focus_level(cell.z)
+			_update_minimap()
 
 
 func _on_log_entry_clicked(cell: Vector2i) -> void:
-	if _scene == null:
+	## Notification log entries carry Vector2i cells (historical 2D shape).
+	## Project to the current focus level and delegate to the minimap handler.
+	if _controller == null:
 		return
-	var camera = _scene.get_node_or_null("Camera2D")
-	if camera != null:
-		camera.position = IsometricGrid.cell_to_screen(cell.x, cell.y)
+	var level: int = _controller.get_current_level()
+	if _scene != null and _scene.has_method("get_visibility_manager"):
+		var vm = _scene.get_visibility_manager()
+		if vm != null:
+			level = vm.focus_level
+	_on_minimap_cell_clicked(Vector3i(cell.x, cell.y, level))
 
 
-func _on_minimap_cell_clicked(cell: Vector2i) -> void:
-	_on_log_entry_clicked(cell)  # Same behavior — center camera.
+func _on_dungeon_focus_level_changed(_level: int) -> void:
+	_update_minimap()
 
 
 func _on_minimap_toggle() -> void:
@@ -1296,20 +1335,21 @@ func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 	if _scene != null:
 		_scene.cancel_all_movement_animations()
 
-	var tactical_map = _controller.get_voxel_map()
+	var tactical_map: VoxelMapData = _controller.get_voxel_map()
 
-	# Gather current party positions
-	var party_positions: Array[Vector2i] = []
+	# Gather current party positions (Vector3i; voxel-native)
+	var party_positions: Array[Vector3i] = []
 	for eid in _controller.get_entity_ids():
 		if tactical_map.entity_positions.has(eid):
 			party_positions.append(tactical_map.entity_positions[eid])
 	if party_positions.is_empty():
-		party_positions.append(_controller.get_party_position())
+		party_positions.append(_controller.get_party_position_3d())
 
 	# Spawn monsters
 	var monster_registry = _runner.get_monster_registry()
+	var current_level: int = _controller.get_current_level()
 	var placements: Array = _spawner.spawn_encounter(
-		tactical_map, party_positions, encounter_data, monster_registry, DiceSystem)
+		tactical_map, party_positions, encounter_data, monster_registry, DiceSystem, current_level)
 
 	if placements.is_empty():
 		push_warning("DungeonExploreState: encounter spawn failed, skipping combat")
@@ -1343,9 +1383,8 @@ func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 			if not tactical_map.entity_positions.has(c.id):
 				var placement := _find_creature_placement(tactical_map, party_positions)
 				if placement != Vector2i(-1, -1):
-					c.grid_position = placement
-					# VoxelMapData expects Vector3i; coerce with current level.
-					var placement_3d := Vector3i(placement.x, placement.y, _controller.get_current_level())
+					var placement_3d := Vector3i(placement.x, placement.y, current_level)
+					c.grid_position = placement_3d
 					tactical_map.set_entity_pos(c.id, placement_3d)
 				# Add a token for the creature on the dungeon map.
 				var cname: String = c.display_name
@@ -1355,15 +1394,13 @@ func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 	for p in placements:
 		var m_combatant := Combatant.from_monster(
 			p["monster_data"], p["rolled_hp"], p["combatant_id"], p["group_id"])
-		m_combatant.grid_position = p["grid_position"]
+		var gp_3d: Vector3i = p["grid_position"]
+		m_combatant.grid_position = gp_3d
 		roster.add_combatant(m_combatant)
-		# VoxelMapData expects Vector3i; coerce with current level.
-		var gp = p["grid_position"]
-		var gp_3d: Vector3i = gp if gp is Vector3i else Vector3i(gp.x, gp.y, _controller.get_current_level())
 		tactical_map.set_entity_pos(p["combatant_id"], gp_3d)
 		var mname: String = p["monster_data"].get("name", "Monster")
 		_scene.add_entity_token(p["combatant_id"], mname, 1, mname.substr(0, 1).to_upper())
-		_scene.move_token(p["combatant_id"], p["grid_position"])
+		_scene.move_token(p["combatant_id"], gp_3d)
 
 	roster.enemy_count_at_start = roster.get_alive_on_side(Combatant.Side.ENEMY).size()
 
@@ -1377,7 +1414,8 @@ func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 	var attack_resolver := AttackResolver.new(DiceSystem, spell_hooks)
 	var ranged_resolver := RangedAttackResolver.new(DiceSystem, spell_hooks)
 
-	var movement_resolver := MovementResolver.new(tactical_map, roster)
+	var movement_resolver := MovementResolver.new(roster)
+	movement_resolver.set_voxel_map(tactical_map)
 	var monster_ai := MonsterAI.new(roster, DiceSystem, movement_resolver)
 	var morale_resolver := MoraleResolver.new(DiceSystem)
 	var cleave_resolver := CleaveResolver.new()
@@ -1387,7 +1425,7 @@ func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 		roster, init_resolver, attack_resolver,
 		spell_hooks, condition_manager, ranged_resolver,
 		monster_ai, morale_resolver, cleave_resolver,
-		tactical_map, mortal_wounds_resolver)
+		mortal_wounds_resolver, tactical_map)
 	_dungeon_combat_controller.encounter_id = encounter_data.get("encounter_id", "")
 
 	EventBus.combat_started.emit(_dungeon_combat_controller.encounter_id)
@@ -1454,22 +1492,16 @@ func _place_dungeon_loot(roster: CombatRoster) -> void:
 		return
 
 	# Collect treasure types and the first valid death cell from defeated enemies.
-	# Prefer the combatant's 3D position when available; fall back to the 2D
-	# grid_position stamped with the controller's current level for older
-	# combat flows that never populated grid_position_3d.
 	var treasure_types: Array = []
 	var loot_cell := Vector3i(-1, -1, -1)
-	var current_level: int = _controller.get_current_level()
 	for c: Combatant in roster.get_all():
 		if c.is_enemy_side() and not c.is_alive():
 			var tt: String = c._monster_data.get("treasure_type", "None")
 			if tt != "None" and not tt.is_empty():
 				treasure_types.append(tt)
 			if loot_cell == Vector3i(-1, -1, -1):
-				if c.grid_position_3d != Vector3i(-1, -1, -1):
-					loot_cell = c.grid_position_3d
-				elif c.grid_position != Vector2i(-1, -1):
-					loot_cell = Vector3i(c.grid_position.x, c.grid_position.y, current_level)
+				if c.grid_position != Vector3i(-1, -1, 0):
+					loot_cell = c.grid_position
 
 	if treasure_types.is_empty():
 		return

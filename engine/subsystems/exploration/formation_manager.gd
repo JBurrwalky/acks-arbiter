@@ -90,61 +90,63 @@ func apply_preset(
 
 
 # ---------------------------------------------------------------------------
-# Dungeon cell mapping
+# Dungeon cell mapping (voxel)
 # ---------------------------------------------------------------------------
 
-## Maps the formation grid to dungeon cells relative to [param leader_pos].
-## Returns {character_id: Vector2i} for each placed member.
-## [param party_data]: PartyData with formation positions set.
-## [param map]: TacticalMapData for passability checks.
-func compute_dungeon_positions(
-		leader_pos: Vector2i,
+## Maps the formation grid to voxel cells relative to [param leader_pos] on
+## the leader's level. Returns {character_id: Vector3i} for each placed member.
+##
+## Collapse chain: full formation → double column → single column → stack on
+## leader. Applies preset changes to party_data during collapse then restores
+## the original formation grid before returning, so the caller's preset choice
+## survives.
+##
+## Group movement is single-level: followers stay on [param leader_pos].z.
+func compute_dungeon_positions_3d(
+		leader_pos: Vector3i,
 		party_data: PartyData,
-		map: TacticalMapData) -> Dictionary:
-	if party_data == null or map == null:
+		vmap: VoxelMapData) -> Dictionary:
+	if party_data == null or vmap == null:
 		return {}
-
-	# Get marching order (sorted by row, then col)
 	var marching := party_data.get_marching_order()
 	if marching.is_empty():
 		return {}
 
-	# Attempt full formation placement
-	var result := _place_formation(leader_pos, party_data, map, marching)
+	# Attempt full formation placement.
+	var result := _place_formation_3d(leader_pos, party_data, vmap, marching)
 	if result.size() == marching.size():
 		return result
 
-	# Collapse to double column if full formation doesn't fit
-	var backup_positions := _backup_formation(party_data, marching)
+	# Back up the active formation so we can restore after collapse.
+	var backup := _backup_formation(party_data, marching)
+
+	# Collapse to double column.
 	apply_preset(PRESET_DOUBLE_COLUMN, party_data, _get_active_characters(party_data))
-	result = _place_formation(leader_pos, party_data, map, marching)
+	result = _place_formation_3d(leader_pos, party_data, vmap, marching)
 	if result.size() == marching.size():
+		_restore_formation(party_data, backup)
 		return result
 
-	# Collapse to single column as final fallback
+	# Collapse to single column.
 	apply_preset(PRESET_COLUMN, party_data, _get_active_characters(party_data))
-	result = _place_formation(leader_pos, party_data, map, marching)
+	result = _place_formation_3d(leader_pos, party_data, vmap, marching)
 
-	# If even column doesn't fit everyone, place remaining at leader_pos
+	# Anyone still unplaced stacks on the leader's cell.
 	for cid in marching:
 		if not result.has(cid):
 			result[cid] = leader_pos
 
-	# Restore original formation positions if we had to collapse
-	if not backup_positions.is_empty():
-		for entry in backup_positions:
-			party_data.set_formation_pos(entry["character_id"], entry["col"], entry["row"])
-
+	_restore_formation(party_data, backup)
 	return result
 
 
 ## Compute move orders for all members when the leader moves to [param leader_target].
-## Maintains formation offsets. Returns [{entity_id, target_pos}].
-func compute_group_move(
-		leader_target: Vector2i,
+## Maintains formation offsets. Returns an Array of {entity_id, target_pos: Vector3i}.
+func compute_group_move_3d(
+		leader_target: Vector3i,
 		party_data: PartyData,
-		map: TacticalMapData) -> Array:
-	var positions := compute_dungeon_positions(leader_target, party_data, map)
+		vmap: VoxelMapData) -> Array:
+	var positions := compute_dungeon_positions_3d(leader_target, party_data, vmap)
 	var result: Array = []
 	for cid in positions:
 		result.append({"entity_id": cid, "target_pos": positions[cid]})
@@ -152,28 +154,29 @@ func compute_group_move(
 
 
 # ---------------------------------------------------------------------------
-# Formation placement
+# Formation placement (voxel) — private
 # ---------------------------------------------------------------------------
 
-func _place_formation(
-		leader_pos: Vector2i,
+func _place_formation_3d(
+		leader_pos: Vector3i,
 		party_data: PartyData,
-		map: TacticalMapData,
+		vmap: VoxelMapData,
 		marching_order: Array) -> Dictionary:
-	## Place each member at their formation offset from the leader.
-	## Returns {character_id: Vector2i} for successfully placed members.
+	## Place each marching member at their formation offset from the leader.
+	## Returns {character_id: Vector3i} for successfully placed members.
+	## Falls back to 8-neighbor search when the exact offset is blocked;
+	## returns with the member unplaced if no adjacent alternative exists.
 	var result: Dictionary = {}
-	var occupied: Array[Vector2i] = []
+	var occupied: Array = []
 
 	# Pre-populate with positions of entities already on the map that are NOT
-	# in this placement batch (prevents stacking on non-party entities).
-	for eid in map.entity_positions:
+	# in this placement batch — prevents stacking on non-party entities.
+	for eid in vmap.entity_positions:
 		if eid not in marching_order:
-			var epos: Vector2i = map.entity_positions[eid]
+			var epos: Vector3i = vmap.entity_positions[eid]
 			if epos not in occupied:
 				occupied.append(epos)
 
-	# The leader (first in marching order) goes at leader_pos
 	if marching_order.is_empty():
 		return result
 
@@ -183,32 +186,37 @@ func _place_formation(
 	for cid in marching_order:
 		var form_pos := party_data.get_formation_pos(cid)
 		if form_pos.x == PartyData.UNASSIGNED:
-			# Unplaced member — put at leader_pos
+			# Unassigned member — stack on leader.
 			if leader_pos not in occupied:
 				result[cid] = leader_pos
 				occupied.append(leader_pos)
 			continue
 
-		# Compute dungeon cell offset from leader's formation position
-		var offset := Vector2i(form_pos.x - leader_form.x, form_pos.y - leader_form.y)
-		var target := leader_pos + offset
+		# Compute voxel cell offset from leader's formation position.
+		var offset_x: int = form_pos.x - leader_form.x
+		var offset_y: int = form_pos.y - leader_form.y
+		var target := Vector3i(leader_pos.x + offset_x, leader_pos.y + offset_y, leader_pos.z)
 
-		# Check passability
-		if map.has_cell(target) and map.is_passable(target) and target not in occupied:
+		if vmap.has_cell(target) and vmap.is_passable(target) and target not in occupied:
 			result[cid] = target
 			occupied.append(target)
-		else:
-			# Try adjacent cells as fallback
-			var placed := false
-			for neighbor in IsometricGrid.get_neighbors(leader_pos + offset):
-				if map.has_cell(neighbor) and map.is_passable(neighbor) and neighbor not in occupied:
-					result[cid] = neighbor
-					occupied.append(neighbor)
-					placed = true
-					break
-			if not placed:
-				# Last resort: use leader_pos (stacked)
-				result[cid] = leader_pos
+			continue
+
+		# Fallback: try 8 same-level neighbors of the intended offset.
+		var placed := false
+		for neighbor: Vector3i in VoxelGrid.get_neighbors_2d(target):
+			if not vmap.has_cell(neighbor):
+				continue
+			if not vmap.is_passable(neighbor):
+				continue
+			if neighbor in occupied:
+				continue
+			result[cid] = neighbor
+			occupied.append(neighbor)
+			placed = true
+			break
+		# If nothing adjacent worked, leave the member unplaced; caller handles
+		# the collapse chain.
 
 	return result
 
@@ -219,6 +227,11 @@ func _backup_formation(party_data: PartyData, marching_order: Array) -> Array:
 		var pos := party_data.get_formation_pos(cid)
 		backup.append({"character_id": cid, "col": pos.x, "row": pos.y})
 	return backup
+
+
+func _restore_formation(party_data: PartyData, backup: Array) -> void:
+	for entry in backup:
+		party_data.set_formation_pos(entry["character_id"], entry["col"], entry["row"])
 
 
 func _get_active_characters(party_data: PartyData) -> Array:

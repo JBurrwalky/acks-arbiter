@@ -114,6 +114,10 @@ signal marching_order_changed(party_id: String)
 ## The party's formation was changed.
 signal formation_changed(party_id: String)
 
+## A party's heraldic shield was saved or reassigned. Heraldry renderer caches
+## and any consumer that displays a party's shield should invalidate / refresh.
+signal heraldry_changed(heraldry_id: String)
+
 ## A getting-lost check was rolled at the start of a travel day.
 ## [param result] keys:
 ##   party_id:   String — the party checked

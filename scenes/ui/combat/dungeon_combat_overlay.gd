@@ -363,10 +363,7 @@ func _on_log_entry(entry: Dictionary) -> void:
 
 func _on_highlight_reachable(cells: Array, color: Color) -> void:
 	if _renderer != null:
-		var typed: Array[Vector2i] = []
-		for c in cells:
-			typed.append(c)
-		_renderer.highlight_cells(typed, color)
+		_renderer.highlight_cells(cells, color)
 
 
 func _on_highlight_targets(entity_ids: Array) -> void:
@@ -392,10 +389,12 @@ func _on_active_token_changed(entity_id: String) -> void:
 # ---------------------------------------------------------------------------
 
 func _on_renderer_cell_clicked(pos) -> void:
+	## pos is Vector3i at runtime from both combat_map_renderer_3d and
+	## dungeon_map_renderer_3d (signal declared Vector2i in the dungeon renderer,
+	## but emit site passes Vector3i). Accept untyped to sidestep the mismatch.
 	if _ui_controller != null:
-		# Downcast Vector3i to Vector2i for the combat UI controller
-		var pos_2d: Vector2i = Vector2i(pos.x, pos.y) if pos is Vector3i else pos
-		_ui_controller.on_cell_targeted(pos_2d)
+		var pos_3d: Vector3i = pos if pos is Vector3i else Vector3i(pos.x, pos.y, 0)
+		_ui_controller.on_cell_targeted(pos_3d)
 
 
 func _on_renderer_entity_clicked(entity_id: String) -> void:
@@ -405,12 +404,12 @@ func _on_renderer_entity_clicked(entity_id: String) -> void:
 
 func _on_renderer_right_clicked(cell_pos, screen_pos: Vector2) -> void:
 	if _ui_controller != null:
-		var pos_2d: Vector2i = Vector2i(cell_pos.x, cell_pos.y) if cell_pos is Vector3i else cell_pos
-		_ui_controller.on_cell_right_clicked(pos_2d, screen_pos)
+		var cell_3d: Vector3i = cell_pos if cell_pos is Vector3i else Vector3i(cell_pos.x, cell_pos.y, 0)
+		_ui_controller.on_cell_right_clicked(cell_3d, screen_pos)
 
 
 func _on_context_menu_requested(
-		combatant_id: String, target_cell: Vector2i, screen_pos: Vector2) -> void:
+		combatant_id: String, target_cell: Vector3i, screen_pos: Vector2) -> void:
 	var options: Array = _ContextMenuBuilder.build_menu(
 		combatant_id, target_cell, _controller, null)
 	if options.is_empty():
@@ -521,10 +520,10 @@ func _on_move_completed() -> void:
 
 
 func _sync_token_positions() -> void:
-	if _renderer == null or _controller == null or _controller.tactical_map == null:
+	if _renderer == null or _controller == null or _controller.voxel_map == null:
 		return
-	for eid in _controller.tactical_map.entity_positions:
-		var pos: Vector2i = _controller.tactical_map.entity_positions[eid]
+	for eid in _controller.voxel_map.entity_positions:
+		var pos: Vector3i = _controller.voxel_map.entity_positions[eid]
 		_renderer.move_token(eid, pos)
 		var combatant = _controller.get_combatant(eid)
 		if combatant != null:

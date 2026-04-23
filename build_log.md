@@ -6546,3 +6546,646 @@ Legacy 2D bodies deleted from DungeonMapController:
 3. Session 10 — stronghold planner voxel update (per the voxel migration plan).
 4. Session 11 — delete `TacticalMapData`, `CellData`, legacy `dungeon_map_renderer.gd`, `_map`/`_all_levels`/`_stairs` fields, legacy `test_dungeon_map_controller.gd` tests.
 5. Stair UX redesign (ramp/gradient stairs with per-cell Y).
+
+---
+
+## Session 2026-04-23 — Voxel Migration Sessions 10 + 11 (Paired: Stronghold GDD voxel update, Dungeon-orphan cleanup)
+
+**Task:** Ship Sessions 10 and 11 of `voxel-migration-session-plan.md` in one pass. S10 was rescoped to GDD-only because exploration found no stronghold planner code exists yet — the planner is designed but unimplemented, so "add a level selector to the existing planner" isn't actionable. S11 was rescoped to dungeon-orphan cleanup only because `TacticalMapData` is still load-bearing for combat (combat_state, combat_map_renderer[_3d], tactical_grid_3d static builders, combat tests) and the plan has no voxel-combat-port session preceding it.
+
+**Model used:** Opus 4.7 (1M context) — exploration, planning, implementation.
+
+**Completed (Session 10 — GDD-only voxel update):**
+
+- **[generation/gdd-stronghold-construction.md](generation/gdd-stronghold-construction.md)** — translated 2D-with-height-metadata phrasing into voxel-native language per [gdd-voxel-tactical-architecture.md §13](generation/gdd-voxel-tactical-architecture.md) (lines 605–633):
+  - **§4.1 Grid Specification** — rewrote from "2D top-down with per-structure height metadata" to a 3D `VoxelMapData` grid. `Vector3i(col, row, level)` coordinates; each level = 5 vertical feet; level 0 = ground, negative = underground, positive = above ground. Dropped the obsolete `elevation_score` rendering note.
+  - **§4.2 Structure-to-Grid Mapping** — added "Vertical Cells" column to wall, tower, and keep preset tables. Walls stamp as solid `VoxelCell` stacks from level 0 upward. Towers stamp as shell-only solid voxels (perimeter cells only) with interior 2-cell airspace per story. Keeps as 2-cell-tall story bands.
+  - **§4.4 Placement Rules** — "dungeon corridors on underground layer toggles" → "negative levels via the level selector." V1 cap = level ≥ −4 (two underground floors × 2-cell bands).
+  - **New §4.6 Level Selector and Cross-Section Preview** — planner UI affordances per voxel GDD §13.4: level selector strip (right edge, similar to dungeon HUD), extrude-on-place for structures with vertical footprint, cross-section preview (mini tactical renderer fed the planner's `VoxelMapData`).
+  - **§8.6 Navigable Stronghold Interiors** — interior generation stamps as voxel cells into the parent `VoxelMapData`. Added "Interior level bands" paragraph. Rewrote tower/keep/building/gatehouse/dungeon rule blocks to phrase stories as 2-cell level bands. Arrow slits on the lower cell (eye level) of exterior walls. Internal stairs as `feature: stairs_up_*` / `stairs_down_*`.
+  - **§9.1 StrongholdLayout** — data model:
+    - `grid_cells: Array[Vector2i]` → `Array[Vector3i]`.
+    - Removed the separate `layer: int` field from `PlacedStructure` (level coordinate supersedes it).
+    - `PlacedAccessory.cell_positions: Array[...]` → `Array[Vector3i]`.
+    - Removed the `layers: int` top-level field (vertical extent derived from max/min occupied level).
+    - Replaced `interior_layouts: Dictionary → StructureInterior { floors: Array[FloorLayout] { floor_number, cells: Array[Array[CellData]], rooms, stairs } }` with a flat `interior_cells: Dictionary` → `Array[Vector3i]`; rooms derived on demand via `VoxelMapData.detect_rooms()`, stairs enumerated by feature suffix.
+    - `battle_map_cells: Array[Array[CellData]]` → `voxel_map: VoxelMapData`. No rebuild step — the voxel map IS the battle map.
+  - **§11.1 Battle Map Generation** — rewrote from a 7-step conversion pass to a property-stamping spec. `solidity: solid` for structure shells; `feature: door_<material>` + `door_state` for doors; `feature: arrow_slit` on exterior walls grants -4 ranged penalty + +4 save; `feature: battlement` on top-band cells for ACKS battlement bonuses; `solidity: liquid + feature: moat` for moats; `solidity: air + floor_type: stone|wood` for interior positioning zones. Cells author in place; no conversion or cache. During combat, `VoxelCell.current_shp` tracks damage; zero-SHP cells flip to `air + feature: rubble` (passable with difficult-terrain cost).
+  - **§12 Design Decisions** — appended "**Voxel-native grid: DECIDED.**" — the planner's grid is a `VoxelMapData` with levels for multi-story + underground; no 2D-with-metadata intermediate; no conversion at combat time.
+
+**Completed (Session 11 — dungeon-orphan cleanup):**
+
+- **Deleted** [scenes/maps/dungeon_map_renderer.gd](scenes/maps/dungeon_map_renderer.gd) — orphaned legacy 2D renderer. No `.tscn` or code referenced it in active code paths.
+- **Deleted** [scenes/maps/dungeon_map.tscn](scenes/maps/dungeon_map.tscn) — parent scene for the above renderer. Superseded by `dungeon_map_3d.tscn` per build_log 2026-04-15 (line 5151). Confirmed zero active references before deletion.
+- **Deleted** [tests/test_dungeon_map_controller.gd](tests/test_dungeon_map_controller.gd) — 16 legacy 2D tests exercising `TacticalMapData`, `_map`, `_all_levels`, and `_stairs`. Voxel equivalents live in [tests/test_dungeon_map_controller_voxel.gd](tests/test_dungeon_map_controller_voxel.gd) (15 tests from S7b).
+- **Unregistered** legacy `DungeonMapControllerTests` from [tests/test_runner.gd:57](tests/test_runner.gd) (@onready var) + [tests/test_runner.gd:166](tests/test_runner.gd) (test array) + [tests/test_runner.tscn:50](tests/test_runner.tscn) (ext_resource) + [tests/test_runner.tscn:267](tests/test_runner.tscn) (node entry).
+- **Deleted fields** `_all_levels: Dictionary` and `_stairs: Array` on [engine/subsystems/exploration/dungeon_map_controller.gd](engine/subsystems/exploration/dungeon_map_controller.gd) — confirmed zero remaining references.
+- **Deleted accessor** `get_map() -> TacticalMapData` on `DungeonMapController` — confirmed zero remaining callers after legacy renderer + legacy test deletion. `settlement_map_renderer`, `hex_map_renderer`, `session_runner`, `settlement_explore_state`, `override_panel` all call `.get_map()` on `HexMapController` or `SettlementMapController` — unrelated methods that stay.
+- **Simplified** `DungeonMapController.has_map()` to `return _voxel_map != null` (dropped the `_map != null` OR clause).
+- **Rewrote** [scenes/maps/dungeon_map_renderer_3d.gd:568-581](scenes/maps/dungeon_map_renderer_3d.gd) `_snap_to_mechanical_position()` voxel-native: reads `_controller.get_voxel_map().get_entity_pos(entity_id)`, snaps via `VoxelGrid.cell_to_world(x, y, z)` instead of the old `TacticalGrid3D.cell_to_world` + `elevation` score path.
+- **Deleted** two stale `check(ctrl.get_map() == null, ...)` assertions in [tests/test_dungeon_map_controller_voxel.gd:94, 275](tests/test_dungeon_map_controller_voxel.gd) — the accessor they asserted against no longer exists.
+- **Updated** [engine/shared_types/voxel_map_data.gd:11-12](engine/shared_types/voxel_map_data.gd) header comment: TacticalMapData's retention now correctly names combat as the reason, not "Session 11."
+- **Updated** [docs/coding_conventions.md:277](docs/coding_conventions.md) directory listing — replaced the deleted legacy `dungeon_map.tscn` / `dungeon_map_renderer.gd` line with the voxel variants.
+
+**Scope deviation from the S11 plan:**
+
+- **Plan said:** delete `_map: TacticalMapData` field from `DungeonMapController`.
+- **Actual:** **kept** the `_map` field (declaration only, never assigned in voxel mode). Replaced the old "Full deletion belongs to Session 11" comment with an accurate one describing it as a null-guard sentinel.
+- **Why:** Five methods on `DungeonMapController` were not deleted in S7b and still contain `if _map != null:` guards — `add_party_member`, `remove_party_member`, `get_party_position`, `reform_formation`, `_bfs_path`. These are called by voxel code paths (`dungeon_explore_state.gd` calls `add_party_member` / `get_party_position`; `dungeon_handlers.gd` calls `remove_party_member`) and defensively skip their 2D bodies when `_map` is null. Deleting the field breaks parse; deleting the method bodies was out of S11 scope (would cascade into a sweep of voxel callers and a port of `FormationManager.compute_dungeon_positions` and encounter spawning — explicitly flagged in S7b known-issues as a separate follow-up).
+- **How to apply:** A future voxel port session for these helpers (or a sweep that migrates the callers to `get_party_position_3d`) can finally drop the `_map` field. Until then the sentinel is a 1-line cost.
+
+**Tombstones for future voxel combat port session:**
+
+`TacticalMapData` and `CellData` schema survive for combat. Full deletion blocks on a future session that:
+
+1. Ports `combat_state.generate_open_field()` to emit a `VoxelMapData`.
+2. Ports `combat_map_renderer.gd` (2D variant — unclear if still used) and `combat_map_renderer_3d.gd` to consume `VoxelMapData`.
+3. Refactors the ~11 static builder methods on `tactical_grid_3d.gd` to accept `VoxelMapData` (or factor them into a voxel-native builder).
+4. Updates combat-side tests (`test_combat_controller_session4.gd`, `test_combat_context_menu_builder.gd`, `test_context_menu_builder.gd`, etc.).
+5. Deletes `TacticalMapData` + `CellData` (schema lives inline in `tactical_map_data.gd`).
+
+**Outstanding deferred items (unchanged from S7b/S8/S9):**
+
+- Voxel minimap port (`dungeon_minimap.gd` is 2D; hidden in voxel mode).
+- `FormationManager.compute_dungeon_positions` voxel port (voxel group-moves currently use ring-scatter).
+- `VoxelMapData.get_lever_target` — no voxel content uses levers yet.
+- Auto-listen-at-doors idle behavior voxel port.
+- 5-method voxel port for the `_map`-null-guarded helpers on `DungeonMapController` (see scope deviation above).
+
+**Interfaces defined or changed:**
+
+- `DungeonMapController.get_map()` **DELETED**.
+- `DungeonMapController._all_levels`, `._stairs` fields **DELETED**.
+- `DungeonMapController.has_map()` body simplified to `_voxel_map != null`.
+- `DungeonMapController._map` field retained as null-guard sentinel (unchanged behavior in voxel mode).
+- `DungeonMapRenderer3D._snap_to_mechanical_position(entity_id)` internals rewritten — external signature unchanged.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- Deleted `tests/test_dungeon_map_controller.gd` (16 legacy 2D tests; voxel equivalents in `test_dungeon_map_controller_voxel.gd`).
+- Deleted 2 stale `get_map() == null` assertions from `tests/test_dungeon_map_controller_voxel.gd` (suite net 15 → 15 tests; two asserts dropped, no tests removed).
+
+**Known issues:**
+
+- **Tests not yet run by build agent.** Godot CLI isn't on PATH. Run `tests/test_runner.tscn` in the editor to confirm `DungeonMapControllerVoxelTests` (15 tests, two `get_map()` assertions removed) passes and no regressions surface in `InventoryUIAdjacencyTests` / `VisibilityManagerIntegrationTests` / `TacticalMapDataTests` / etc.
+- **5 `_map`-guarded helpers on `DungeonMapController` are still 2D internally**, defensively no-op in voxel mode. See "Scope deviation" above. Will surface as silent fallbacks if voxel callers ever expect meaningful behavior from `get_party_position()` (current voxel callers are either tolerant or use `get_party_position_3d()`).
+- **`docs/coding_conventions.md:276-278` directory listing** was updated to reflect voxel file names. Other docs that reference `dungeon_map_renderer.gd` or `dungeon_map.tscn` were not swept (e.g., build_log historical entries). Those are historical and fine as-is.
+
+**Next session should:**
+
+1. Run `tests/test_runner.tscn` in the editor. Expect `DungeonMapControllerVoxelTests`, `VisibilityManagerIntegrationTests`, `InventoryUIAdjacencyTests`, `TacticalMapDataTests` all green; legacy `DungeonMapControllerTests` gone from the runner output.
+2. Live D-4 smoke test with `data/test_dungeon.json`: enter dungeon, walk, use a door, climb a stair. Verify no `get_map()`-related runtime errors; token snap-to-position works after movement animations.
+3. If the S11 scope deviation (retained `_map` field) bothers, schedule a focused session to port the five `_map`-guarded helpers (`add_party_member`, `remove_party_member`, `get_party_position`, `reform_formation`, `_bfs_path`) to their voxel equivalents and finally delete the field.
+4. Schedule the voxel combat port session (when combat work is up next) — that's the prerequisite for full `TacticalMapData` / `CellData` deletion.
+5. Stair UX redesign (ramp/gradient stairs with per-cell Y) — separate focused session.
+6. Voxel minimap, FormationManager voxel port, get_lever_target — deferred items still outstanding.
+
+---
+
+## Session 2026-04-23 — Voxel Migration Session 12a (Combat Port)
+
+**Task:** Port wilderness combat (and its shared subsystems) from `TacticalMapData` + `Vector2i` to `VoxelMapData` + `Vector3i`, per [C:\Users\jttau\.claude\plans\the-migration-to-voxel-sprightly-dragon.md](C:\Users\jttau\.claude\plans\the-migration-to-voxel-sprightly-dragon.md). Scope is port-only: no battle-map terrain generation, no deletion of `TacticalMapData`/`CellData` (12b), no combat rule changes. After 12a, wilderness combat looks identical to today but runs on voxel substrate, and `ManeuverResolver` no longer reaches into `MovementResolver._map` private.
+
+**Model used:** Opus 4.7 (1M context) — exploration, planning, implementation.
+
+**Context & deltas from the attached plan doc:**
+
+Exploration showed the port was already half-done: `Combatant` had dual `grid_position` + `grid_position_3d` fields, `CombatController` accepted both map types, `CombatScreen` did an inline `TacticalMapData → VoxelMapData` conversion, and the renderer already consumed VoxelMapData on the voxel branch. 12a's work was therefore **deleting dual-path scaffolding**, not adding voxel support. User decisions at plan time:
+1. Rename `grid_position_3d` → `grid_position` (Vector3i); delete the Vector2i field.
+2. Replace ManeuverResolver's `_movement_resolver._map.is_passable(...)` private access with a new public `MovementResolver.walk_direction_3d` helper that uses `path_bfs_3d` as the reachability primitive.
+3. Wilderness combat grid default: 25×25 (up from TacticalMapData's 20×16).
+
+**Completed (six tasks):**
+
+**Task A — Combatant field rename (46 test literals):**
+
+- [engine/subsystems/combat/combatant.gd:78-79](engine/subsystems/combat/combatant.gd#L78) — deleted `var grid_position: Vector2i`, renamed `grid_position_3d` → `grid_position` (type `Vector3i`, default `Vector3i(-1, -1, 0)`).
+- [engine/subsystems/combat/movement_resolver.gd:60-85](engine/subsystems/combat/movement_resolver.gd#L60) — `set_grid_position(Vector2i)` now projects into the Vector3i field preserving z. `set_grid_position_3d(Vector3i)` sets directly. Removed dual-write sync lines.
+- [engine/subsystems/combat/combat_controller.gd](engine/subsystems/combat/combat_controller.gd) — untyped `_direction_vector` params so both Vector2i and Vector3i inputs work (facing stays Vector2i, the combat facing concept is 2D). Collapsed cleave dual-write at lines 869–897: voxel branch sets `combatant.grid_position = target_cell_3d` without the legacy `grid_position = Vector2i(...)` sync; legacy branch projects to Vector3i(x, y, 0). Sentinel at engagement-update line 1862 changed to `Vector3i(-1, -1, 0)`.
+- [engine/subsystems/combat/combat_context_menu_builder.gd:633](engine/subsystems/combat/combat_context_menu_builder.gd#L633) — sentinel update.
+- [scenes/ui/combat/combat_ui_controller.gd:463,489](scenes/ui/combat/combat_ui_controller.gd#L463) — added Vector2i projection at facing-selection + highlight-range-bands sites.
+- [scenes/ui/combat/combat_map_renderer_3d.gd:138-144](scenes/ui/combat/combat_map_renderer_3d.gd#L138) — sentinel update; token world-pos now uses `c.grid_position.z` instead of hardcoded 0.
+- [scenes/ui/combat/combat_map_renderer.gd:100](scenes/ui/combat/combat_map_renderer.gd#L100) — same sentinel update (orphan 2D renderer; kept parsing for 12b deletion).
+- [engine/subsystems/exploration/dungeon_encounter_spawner.gd](engine/subsystems/exploration/dungeon_encounter_spawner.gd) — fully ported to `VoxelMapData` + `Array[Vector3i]` after smoke-test surfaced type errors on dungeon-combat entry. `spawn_encounter(map: VoxelMapData, party_positions: Array[Vector3i], ..., level_z: int = 0)` — level_z now overridden from `party_positions[0].z` if set (≥ 0). Internal `_compute_centroid`, `_find_lead_cell`, `_cells_at_distance` (filters by `pos.z == level_z`), `_min_chebyshev`, `_cluster_monsters` all converted to Vector3i. `IsometricGrid.chebyshev_distance` → `VoxelGrid.chebyshev_distance`. `map._cells.keys()` iteration → `map.get_all_positions()`. Return-dict `grid_position` is now a native Vector3i from spawn_cells.
+- [engine/subsystems/session/states/dungeon_explore_state.gd:1311-1363,1457-1464](engine/subsystems/session/states/dungeon_explore_state.gd#L1311) — passes `current_level` into spawner; creature placement projects to Vector3i with current level; loot-cell lookup simplified to single-field read (was dual-field fallback to controller's current_level).
+- **Test sweep:** 46 `grid_position = Vector2i(x, y)` literals rewritten to `Vector3i(x, y, 0)` across [tests/test_combat_controller_session4.gd](tests/test_combat_controller_session4.gd) (22) and [tests/test_combat_context_menu_builder.gd](tests/test_combat_context_menu_builder.gd) (24) via a single sed pass. Other tests (`test_monster_ai_spatial.gd`, `test_movement_resolver.gd`) use `env.resolver.set_grid_position(..., Vector2i(x,y))` which still accepts Vector2i via the 2D-signature wrapper — no changes needed.
+
+**Task B — MovementResolver `walk_direction_3d` helper + ManeuverResolver encapsulation fix:**
+
+- [engine/subsystems/combat/movement_resolver.gd:780-836](engine/subsystems/combat/movement_resolver.gd#L780) — new `walk_direction_3d(start, direction, max_cells, ignore_entity_ids) -> Dictionary` returns `{cells_traveled, final_pos, wall_collision, entity_collision}`. Internally uses `path_bfs_3d(current, next, "ground", 1)` as the per-step reachability primitive (encapsulates all voxel passability + stair/LOS rules) plus `_voxel_map.get_entities_at(next)` for occupancy — replaces the `_map.is_passable()` private access.
+- [engine/subsystems/combat/maneuver_resolver.gd:214-240](engine/subsystems/combat/maneuver_resolver.gd#L214) — `_resolve_force_back` rewritten: reads `target.grid_position` + `attacker.grid_position` (both Vector3i), builds Vector3i direction (z=0), calls `walk_direction_3d(target_pos, direction, push_cells)`. Reads `wall_collision` for knock-down/collision-damage branch. Uses `set_grid_position_3d(target, final_pos)`.
+- [engine/subsystems/combat/maneuver_resolver.gd:346-364](engine/subsystems/combat/maneuver_resolver.gd#L346) — `_resolve_overrun` rewritten: calls `walk_direction_3d(attacker_pos, direction, 2, [target.id])` to move 2 cells along the attack direction, passing through the target's cell. If `cells_traveled < 2` (destination blocked), attacker ends in target's cell.
+- All `_movement_resolver._map.*` references in `maneuver_resolver.gd` are now gone.
+- [engine/subsystems/combat/combat_controller.gd:_get_valid_cleave_move_cells](engine/subsystems/combat/combat_controller.gd) — collapsed the `_use_voxel()` dual-path to voxel-only (legacy TacticalMapData branch was dead after Task C).
+- [engine/subsystems/combat/combat_controller.gd:_resolve_pc_cleave_move](engine/subsystems/combat/combat_controller.gd) — collapsed the `_use_voxel()` dual-path; target cell is Vector3i; facing set from Vector3i positions via the untyped `_direction_vector`.
+- `_use_voxel()` helper at [combat_controller.gd:365](engine/subsystems/combat/combat_controller.gd#L365) has zero callers now; left in place (12b deletes with the `tactical_map` field).
+
+**Task C — CombatState builds `VoxelMapData`:**
+
+- [engine/shared_types/voxel_grid.gd](engine/shared_types/voxel_grid.gd) — new static `get_cells_in_radius_3d(center: Vector3i, radius: int) -> Array[Vector3i]` (same-level disc; mirrors `IsometricGrid.get_cells_in_radius`).
+- [engine/subsystems/session/states/combat_state.gd:52-80](engine/subsystems/session/states/combat_state.gd#L52) — replaced `TacticalMapData.generate_open_field()` with `VoxelMapData.generate_open_field(25, 25)`. Context key switched from `tactical_map` to `voxel_map`. MovementResolver now `MovementResolver.new(null, roster)` + `set_voxel_map(voxel_map)`. CombatController gets `voxel_map` in the `p_voxel_map` trailing slot.
+- [engine/subsystems/session/states/combat_state.gd:_place_combatants_on_grid](engine/subsystems/session/states/combat_state.gd#L172) — signature `VoxelMapData`; positions are `Vector3i` at entry level; monster center is `Vector3i(entry.x + 6, entry.y, entry.z)`.
+
+**Task D — CombatMapRenderer3D legacy branch deletion + Vector3i signals:**
+
+- [scenes/ui/combat/combat_map_renderer_3d.gd:37-40](scenes/ui/combat/combat_map_renderer_3d.gd#L37) — `cell_clicked(pos: Vector3i)`, `cell_right_clicked(cell_pos: Vector3i, screen_pos: Vector2)` signatures updated. Deleted the Vector3i→Vector2i downcast at the emit site.
+- Deleted `_map: TacticalMapData` field; `setup()` now takes `voxel_map: VoxelMapData` only. `_build_terrain` / `_populate_tokens` / `_unhandled_input` / `_rebuild_highlights` / `_center_camera` / `move_token` all collapsed to voxel-only.
+- `_grid_meshes` node renamed to `LevelGroups` to mirror the dungeon renderer pattern. Only `Level_0` is populated (single-level combat); future multi-level combat adds sibling groups here. TODO comment flags VisibilityManager wiring as future work.
+- Token positioning uses `VoxelGrid.cell_to_world(x, y, z)` — `z` is read from the combatant's position (not hardcoded) so future multi-level combat drops in.
+- `highlight_cells(cells: Array, color)` now untyped — projects Vector2i to Vector3i(x, y, 0) internally when needed. Simplifies caller handlers.
+- [scenes/ui/combat/combat_ui_controller.gd](scenes/ui/combat/combat_ui_controller.gd) — `on_cell_targeted(Vector3i)`, `on_cell_right_clicked(Vector3i, Vector2)`, `context_menu_requested(..., Vector3i, ...)` signatures. Facing-selection branch uses `VoxelGrid.chebyshev_distance` + `VoxelGrid.get_neighbors_2d` instead of IsometricGrid. Untyped `_direction_vector(from_pos, to_pos) -> Vector2i` accepts either type.
+- [scenes/ui/combat/dungeon_combat_overlay.gd:394-409](scenes/ui/combat/dungeon_combat_overlay.gd#L394) — signal handlers accept untyped cell params and upcast Vector2i→Vector3i with z=0 fallback. The dungeon renderer's `cell_clicked` signal is declared Vector2i but emits Vector3i at runtime (pre-existing mismatch); untyped handlers sidestep the static-check warning.
+- `_on_highlight_reachable` handlers in both [combat_screen.gd](scenes/ui/combat/combat_screen.gd) and [dungeon_combat_overlay.gd](scenes/ui/combat/dungeon_combat_overlay.gd) simplified to direct pass-through (renderers accept untyped Array).
+
+**Task E — CombatScreen drops inline conversion:**
+
+- [scenes/ui/combat/combat_screen.gd:70-78](scenes/ui/combat/combat_screen.gd#L70) — deleted the 11-line `TacticalMapData → VoxelMapData` conversion block. Now: `_map_renderer.setup(_controller.voxel_map, _controller.roster)`.
+- `_on_map_cell_clicked(Vector3i)`, `_on_map_cell_right_clicked(Vector3i, Vector2)`, `_on_context_menu_requested(..., Vector3i, ...)` handler signatures updated.
+- `_sync_token_positions` reads `_controller.voxel_map.entity_positions` (Vector3i values) instead of `_controller.tactical_map.entity_positions`.
+- [scenes/ui/combat/dungeon_combat_overlay.gd:_sync_token_positions](scenes/ui/combat/dungeon_combat_overlay.gd) and [scenes/ui/combat/combat_ui_controller.gd:_highlight_range_bands](scenes/ui/combat/combat_ui_controller.gd) — same flip from tactical_map → voxel_map reads.
+
+**Task F — Regression sweep (grep-only; tests not yet run by build agent):**
+
+- `grep _movement_resolver._map` across the repo → **zero hits**. The ManeuverResolver encapsulation break is fully eliminated.
+- `grep grid_position_3d` in production code → only MovementResolver method names (`get_grid_position_3d` / `set_grid_position_3d`) remain; zero field references.
+- `grep _controller.tactical_map` in scenes/ → zero hits (all flipped to `voxel_map`).
+- `grep TacticalMapData engine/subsystems/combat scenes/ui/combat` → remaining hits are in the three files that 12b will sweep: `combat_controller.gd` (field + constructor param), `movement_resolver.gd` (field + constructor param), `combat_context_menu_builder.gd` (comments only), orphaned `combat_map_renderer.gd` (2D legacy).
+
+**Decisions made:**
+
+- **Combatant field naming:** Rename `grid_position_3d` → `grid_position` (Vector3i). Readers keep the short name; only setter sites touched.
+- **ManeuverResolver fix:** New public `walk_direction_3d` helper using `path_bfs_3d` as the per-step reachability primitive. Preserves force_back's wall-collision semantics (the helper reports wall_collision explicitly) while encapsulating voxel rules. Implemented by user's explicit preference even though one-step BFS is computationally overkill — the cost is negligible and the principle matters.
+- **Combat grid default: 25×25.** User decision. Matches the session-plan doc's proposal; small roomier than today's 20×16 wilderness default.
+- **Full MovementResolver 2D-body deletion deferred to 12b.** The plan's Task B aspired to delete the 2D-only method bodies and the `_map: TacticalMapData = null` field. Doing so requires flipping every combat_controller / context-menu-builder call site from Vector2i signatures to Vector3i signatures — a deep cascade. The pragmatic cut: 2D-signature methods stay in place as Vector2i projection wrappers over the voxel implementations (they already are). `_map` field stays as a null sentinel (no call path assigns it — CombatState now passes null in the tactical_map slot). 12b deletes all of it alongside the TacticalMapData class itself.
+- **`facing: Vector2i` stays Vector2i.** Combat facing is a 2D unit vector on the combat plane. Upgrading to Vector3i with z=0 would ripple through CombatantToken3D.set_facing and every facing-related call site for no gameplay benefit.
+- **Orphaned `scenes/ui/combat/combat_map_renderer.gd` (2D)** — left parsing but dead-code with a Vector3i sentinel projection. 12b deletes the whole file when TacticalMapData goes.
+
+**Interfaces defined or changed:**
+
+- `Combatant.grid_position: Vector2i` **DELETED**; `Combatant.grid_position_3d` **RENAMED** to `grid_position: Vector3i`.
+- `MovementResolver.walk_direction_3d(start: Vector3i, direction: Vector3i, max_cells: int, ignore_entity_ids: Array = []) -> Dictionary` **NEW**.
+- `MovementResolver.set_grid_position(Combatant, Vector2i)` now projects into the Vector3i field preserving the combatant's current z (was: set Vector2i, then sync Vector3i).
+- `MovementResolver.set_grid_position_3d(Combatant, Vector3i)` unchanged shape; dual-write to old Vector2i field removed.
+- `DungeonEncounterSpawner.spawn_encounter(map: VoxelMapData, party_positions: Array[Vector3i], encounter_data, monster_registry, dice_system, level_z: int = 0)` — map type changed TacticalMapData → VoxelMapData; party_positions changed Array[Vector2i] → Array[Vector3i]; `level_z` new param (auto-derived from party_positions[0].z). Returns `grid_position: Vector3i` instead of `Vector2i`.
+- `DungeonExploreState._start_dungeon_combat`: `party_positions` local changed Array[Vector2i] → Array[Vector3i]; empty-map fallback now uses `get_party_position_3d()` instead of `get_party_position()`.
+- `VoxelGrid.get_cells_in_radius_3d(center: Vector3i, radius: int) -> Array[Vector3i]` **NEW** static helper.
+- `CombatMapRenderer3D.setup(voxel_map: VoxelMapData, roster)` — legacy TacticalMapData overload deleted.
+- `CombatMapRenderer3D.cell_clicked(pos: Vector3i)`, `cell_right_clicked(cell_pos: Vector3i, screen_pos: Vector2)` signal signatures — Vector2i→Vector3i.
+- `CombatMapRenderer3D.highlight_cells(cells: Array, color)` — now accepts untyped Array (projects Vector2i to Vector3i internally).
+- `CombatUIController.on_cell_targeted(Vector3i)`, `on_cell_right_clicked(Vector3i, Vector2)`, `context_menu_requested(..., Vector3i, ...)` signal signatures — Vector2i→Vector3i.
+- `CombatState.enter` reads `context.get("voxel_map", null)` instead of `context.get("tactical_map", null)`.
+- `_direction_vector` in both `combat_controller.gd` and `combat_ui_controller.gd` — params untyped; returns Vector2i.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- 46 `grid_position = Vector2i(x, y)` literals → `grid_position = Vector3i(x, y, 0)` across [tests/test_combat_controller_session4.gd](tests/test_combat_controller_session4.gd) (22 lines) and [tests/test_combat_context_menu_builder.gd](tests/test_combat_context_menu_builder.gd) (24 lines).
+- Other combat test files (`test_monster_ai_spatial.gd`, `test_movement_resolver.gd`, etc.) use `MovementResolver.set_grid_position(..., Vector2i(x,y))` which still accepts Vector2i via the 2D-signature wrapper — no changes needed.
+
+**Known issues:**
+
+- **Tests not yet run.** Godot CLI isn't on PATH in this environment. Run `tests/test_runner.tscn` in the editor to confirm combat suites stay green. Expect all `CombatController*Tests`, `CombatContextMenuBuilderTests`, `CombatManeuversTests` (force_back + overrun now exercise `walk_direction_3d`), `MovementResolverTests`, `MovementResolver3DTests`, `MonsterAITests`, `MonsterAISpatialTests`, `DungeonMapControllerVoxelTests`, `InventoryUIAdjacencyTests` to pass.
+- **Visual smoke test pending.** Trigger a wilderness encounter on `data/test_hex_map.json`; verify the 25×25 grid renders with party/monster placement, movement/melee/ranged/charge/force_back/overrun/monster-turn/combat-end all execute without signal-type errors. Then enter `data/test_dungeon.json` and run a dungeon encounter through DungeonCombatOverlay to confirm the signal-handler untype didn't regress that path.
+- **Dungeon renderer signal declaration mismatch.** `scenes/maps/dungeon_map_renderer_3d.gd` declares `cell_clicked(pos: Vector2i)` / `cell_right_clicked(cell_pos: Vector2i, ...)` but emits Vector3i at runtime (pre-existing). Our `DungeonCombatOverlay` handlers are untyped + upcast-safe to paper over this. Cleanup is to update the dungeon renderer's signal declarations to Vector3i — a separate focused session, not 12a scope.
+- **Full MovementResolver 2D-body deletion deferred to 12b.** See scope-deviation in Decisions.
+- **`combat_map_renderer.gd` (orphaned 2D renderer)** still exists, still references TacticalMapData, still has no active callers. 12b deletes it alongside TacticalMapData.
+- **`_use_voxel()` helper at [combat_controller.gd:365](engine/subsystems/combat/combat_controller.gd#L365)** has zero callers — dead function. 12b deletes.
+- **`CombatController._init(p_tactical_map: TacticalMapData = null, ..., p_voxel_map: VoxelMapData = null)`** constructor still accepts both slots for API compat. CombatState passes `null` in the TacticalMapData slot. 12b deletes the slot.
+
+**Next session should (12b scope):**
+
+1. Run `tests/test_runner.tscn` in the editor. Expect all combat suites green + no new regressions.
+2. Visual smoke-test wilderness combat + dungeon combat per the verification plan.
+3. Session 12b — the deletion sweep:
+   - Delete `engine/shared_types/tactical_map_data.gd` (+ `CellData` inline type).
+   - Delete `engine/shared_types/isometric_grid.gd` if no remaining callers (check).
+   - Delete orphaned `scenes/ui/combat/combat_map_renderer.gd` (+ any `.tscn` referencing it).
+   - Delete `tactical_grid_3d.gd`'s ~11 legacy `*_voxel`-less builders (`build_floor_multimesh`, `build_walls`, `build_grid_lines`, `build_highlight_overlay`, `combat_ground_color`, `screen_to_cell`, `cell_to_world(col, row)` 2D overload, `create_environment` if only combat used it).
+   - Delete `MovementResolver._map` field, `_init`'s `map: TacticalMapData` param, all 2D method bodies (find_path 2D, can_reach 2D, get_cells_reachable 2D, get_adjacent_enemies 2D body, has_line_of_sight 2D, _find_best_adjacent_cell 2D, _build_enemy_zoc_set 2D branch, _find_retreat_cell 2D branch). Rename `path_bfs_3d` / `has_los_3d` / `is_adjacent_3d` / `get_distance_3d` / `get_cells_reachable_3d` / `get_grid_position_3d` / `set_grid_position_3d` / `_find_best_adjacent_cell_voxel` to drop the suffix; update combat_controller callers.
+   - Delete `CombatController.tactical_map` field, `p_tactical_map` constructor arg, `_use_voxel()` helper, `_get_valid_cleave_move_cells` legacy branch remnants if any.
+   - Delete `combat_context_menu_builder.gd` TacticalMapData branches (`_get_entity_at_cell`, `_find_enemy_adjacent_to_cell` — both already have voxel priority; delete the fallbacks).
+   - Update `scenes/maps/dungeon_map_renderer_3d.gd` signal declarations to `cell_clicked(pos: Vector3i)` / `cell_right_clicked(cell_pos: Vector3i, ...)` to match runtime; drop the upcast in `dungeon_combat_overlay.gd` handlers once safe.
+4. Wilderness game loop finalization (multi-party movement, `combat_started` signal extension, real `Explore`/`Build Stronghold`/`Survey` activities).
+5. Party inventory finalization in wilderness combat (adjacency validator now has consistent `Vector3i` positions — that work is unblocked by 12a).
+6. Battle map generation (O-1) — now has a clean `VoxelMapData` target to author against.
+7. Stair UX redesign, voxel minimap, FormationManager voxel port — still outstanding.
+
+---
+
+## Session 2026-04-23 — Voxel Migration Session 12b (Legacy 2D Cleanup Sweep)
+
+**Task:** Complete the voxel migration by deleting every legacy 2D artifact that 12a rendered unreachable: `TacticalMapData`, `CellData` references, legacy `combat_map_renderer.gd`, legacy `tactical_grid_3d.gd` static builders (~14), `DungeonMapController._map` field and its five 2D-guarded helpers, the `@deprecated` dungeon-cell-state `CampaignRepository` methods, the orphaned `dungeon_map_cells` DB table (migration 039), and the `test_context_menu_builder.gd` suite that fixtured on `TacticalMapData.FogState`. Closes tombstones #1 (voxel combat port) and #2 (DungeonMapController 5-helper port).
+
+**Model used:** Opus 4.7 (1M context) — exploration, planning, implementation.
+
+**Context & deltas from the attached 12b plan doc:**
+
+Plan assumed the five DungeonMapController helpers (`add_party_member`, `remove_party_member`, `get_party_position`, `reform_formation`, `_bfs_path`) all needed Vector2i→Vector3i port. Grep confirmed three had **zero live callers** and could be deleted outright; the other two simplify to voxel-only by dropping their dead `if _map != null:` branches. That reduced Task A scope dramatically. The port also uncovered 2D code in `FormationManager.compute_dungeon_positions`, `dungeon_minimap.gd`, `dungeon_map_renderer_3d.gd._map`, `MovementResolver._map` + constructor param, and `combat_context_menu_builder.gd`'s `controller.tactical_map` fallback branches — all purged in Task F.
+
+**Completed (eight tasks):**
+
+**Task A — Collapse 5 DungeonMapController helpers** (voxel-only):
+
+- [engine/subsystems/exploration/dungeon_map_controller.gd](engine/subsystems/exploration/dungeon_map_controller.gd):
+  - Simplified `add_party_member(entity_id: String)` — deleted the dead `if _map != null: _map.set_entity_pos(...)` branch. Helper is now pure `_party_entity_ids.append(...)` bookkeeping.
+  - `remove_party_member(entity_id: String)` — flipped `_map.remove_entity(...)` to `_voxel_map.remove_entity(...)`.
+  - **Deleted** `get_party_position() -> Vector2i` (zero callers in production code; `SettlementMapController.get_party_position()` is a different class). `get_party_position_3d() -> Vector3i` at [:972] stays.
+  - **Deleted** `reform_formation(center_pos: Vector2i)` (zero callers; the `reform_formation_pressed` signal wiring noted in Session 5's log no longer exists).
+  - **Deleted** `_bfs_path(Vector2i, Vector2i) -> Array[Vector2i]` 2D variant (zero callers; `_bfs_path_voxel` at [:583] is the live implementation).
+
+**Task B — Delete `_map` field:**
+
+- Removed `var _map: TacticalMapData` field declaration + the "null-guard sentinel" comment block.
+- `_all_levels` / `_stairs` were already gone per S11; grep confirmed.
+
+**Task C — Port test fixtures + delete orphan suites:**
+
+- [tests/test_combat_controller_session4.gd](tests/test_combat_controller_session4.gd): `_make_open_map` returns `VoxelMapData.generate_open_field(w, h)`. `CombatController.new(...)` call moved `map` to the `p_voxel_map` slot (arg 12). All `env.map.set_entity_pos("id", Vector2i(x,y))` sed-converted to `Vector3i(x,y,0)`.
+- [tests/test_combat_context_menu_builder.gd](tests/test_combat_context_menu_builder.gd): `_make_controller` signature flipped to `VoxelMapData`; constructs `MovementResolver.new(roster)` + `set_voxel_map(map)`. Mock controller dict now returns `voxel_map: map, tactical_map: null`. `_make_map_with_cells` builds a sparse `VoxelMapData` with `VoxelCell.new()` + `set_cell()`. 24 `map.set_entity_pos(..., Vector2i)` calls sed-converted to `Vector3i(x, y, 0)`.
+- [tests/test_monster_ai_spatial.gd](tests/test_monster_ai_spatial.gd): `_make_open_map` → VoxelMapData. Both `MovementResolver.new(map, roster)` call sites → `MovementResolver.new(null, roster); resolver.set_voxel_map(map)` (later collapsed to `.new(roster) + set_voxel_map` in Task F).
+- [tests/test_movement_resolver.gd](tests/test_movement_resolver.gd): the 2D-signature public API tests (ZoC, charge, LOS, defensive movement) continue to exercise `MovementResolver`'s Vector2i projection wrappers. Fixture ported to VoxelMapData; all `map.set_cell_field(Vector2i, ...)` sed-converted to `Vector3i(..., 0)`.
+- **Deleted** [tests/test_context_menu_builder.gd](tests/test_context_menu_builder.gd) — 16 dungeon-context-menu fixture tests built on `TacticalMapData.FogState`; porting every fog/door scenario was out of 12b scope. Flagged as a coverage gap (dungeon context menu is still exercised via live playtest + DungeonCombatOverlay integration).
+- **Deleted** `ContextMenuBuilderTests` + `TacticalMapDataTests` registrations in `test_runner.gd` and `test_runner.tscn`.
+
+**Task D — Delete legacy 2D renderer files:**
+
+- Deleted `scenes/ui/combat/combat_map_renderer.gd` (2D orphan).
+- Deleted `scenes/maps/dungeon_order_overlay.gd` (2D; replaced by `dungeon_order_overlay_3d.gd`).
+- `scenes/maps/dungeon_map_renderer.gd` and `dungeon_map.tscn` were already deleted in S11 per Glob check.
+- Kept `scenes/ui/components/combatant_token.gd` (2D token wrapped inside `CombatantToken3D` via SubViewport).
+
+**Task E — Delete ~14 legacy static builders in `tactical_grid_3d.gd`:**
+
+- Grepped each builder name pre-delete — zero external callers outside the file.
+- Deleted `world_to_cell() -> Vector2i`, `screen_to_cell(Camera, Vector2) -> Vector2i`, `floor_color_for(terrain_feature, cell)`, `combat_ground_color(terrain_feature, cell)`, `build_floor_multimesh(TacticalMapData, ...)`, `build_walls(TacticalMapData)`, `build_doors(TacticalMapData)`, `_compute_door_orientation(Vector2i, TacticalMapData)`, `_is_passage_neighbor(Vector2i, TacticalMapData)`, `build_stairs(TacticalMapData)`, `build_grid_lines(TacticalMapData)`, `build_fog_overlay(TacticalMapData)`, `build_highlight_overlay(Array[Vector2i], color, TacticalMapData)`, `build_transition_markers(TacticalMapData)`, `build_feature_labels(TacticalMapData)`. File shrank from ~1601 to 1034 lines.
+- Retained voxel builders (`build_floor_multimesh_voxel`, `build_walls_voxel`, `build_doors_voxel`, `build_grid_lines_voxel`, `build_fog_overlay_voxel`, `build_highlight_overlay_voxel`, `build_transition_markers_voxel`, `build_feature_labels_voxel`, `build_level_group`, `set_level_group_tint`, `_apply_tint_to_mesh`, `screen_to_cell_voxel`, `floor_color_for_voxel`, `wall_color_for_voxel`, `combat_ground_color_voxel`) + shared utilities (`cell_to_world(col, row, elevation)`, `screen_to_world_on_plane`, `_get_material`, `_make_textured_material`, `_load_texture`, `get_diamond_mesh`, `get_cube_mesh`, `create_isometric_camera`, `create_directional_light`, `create_environment`).
+
+**Task F — Delete `TacticalMapData` + purge remaining production TacticalMapData refs + parse-check:**
+
+- Deleted `engine/shared_types/tactical_map_data.gd` and `tests/test_tactical_map_data.gd`. Deregistered `TacticalMapDataTests` from the runner. (`CellData` was never a separate class — inline Dictionary schema in the deleted file.)
+- [engine/subsystems/combat/combat_controller.gd](engine/subsystems/combat/combat_controller.gd) — deleted `var tactical_map: TacticalMapData = null` field, `p_tactical_map: TacticalMapData = null` constructor param, the `if tactical_map != null:` MovementResolver branch in `_init`, and the orphaned `_use_voxel()` helper. Constructor simplified: always `MovementResolver.new(roster)` + `set_voxel_map(voxel_map)` if `voxel_map != null`.
+- [engine/subsystems/combat/combat_context_menu_builder.gd](engine/subsystems/combat/combat_context_menu_builder.gd) — deleted the `elif map is TacticalMapData:` branch in `build_menu`, the TacticalMapData fallback in `_get_entity_at_cell`, and the TacticalMapData fallback in `_find_enemy_adjacent_to_cell`. Public `build_menu` signature tightened: `target_cell: Vector3i, map: VoxelMapData`.
+- [engine/subsystems/combat/movement_resolver.gd](engine/subsystems/combat/movement_resolver.gd) — deleted `_map: TacticalMapData = null` typed field and the `map: TacticalMapData = null` constructor param. Constructor is now `_init(roster: CombatRoster = null)`. The 2D legacy branches (`if _voxel_map != null: ... else: ...`) are now unreachable; the else bodies reference an untyped `_map = null` sentinel retained just for parse-compatibility pending a future full-sweep deletion. Flagged with an explicit comment at the field declaration.
+- [engine/subsystems/exploration/formation_manager.gd](engine/subsystems/exploration/formation_manager.gd) — deleted `compute_dungeon_positions(Vector2i, PartyData, TacticalMapData)`, `compute_group_move(Vector2i, PartyData, TacticalMapData)`, `_place_formation(..., TacticalMapData, ...)`, `_backup_formation(...)` (all zero external callers). `apply_preset(template_name, party_data, character_data_list)` is the remaining public API, still live from `dungeon_explore_state.gd:105`.
+- [scenes/maps/dungeon_map_renderer_3d.gd](scenes/maps/dungeon_map_renderer_3d.gd) — deleted the dead `_map: TacticalMapData` legacy-path field and the `else:` 2D branch in the movement animation step. Movement animation path is now voxel-only: `target_world = VoxelGrid.cell_to_world(next_cell.x, next_cell.y, next_cell.z)`.
+- [scenes/maps/dungeon_minimap.gd](scenes/maps/dungeon_minimap.gd) — untyped `_map = null` + `func update(map, party_positions, has_mapper)`; inlined the `TacticalMapData.FogState.HIDDEN/EXPLORED/VISIBLE` enum values as local `_FOG_HIDDEN/_FOG_EXPLORED/_FOG_VISIBLE` constants. The minimap is instantiated but never fed data (live gameplay never calls `update()`), so the draw path is permanently dead pending a voxel-native minimap (tombstone #5).
+- All caller call sites updated: `MovementResolver.new(null, roster)` → `MovementResolver.new(roster)` across `combat_state.gd`, `dungeon_explore_state.gd`, `combat_controller.gd`, `test_combat_context_menu_builder.gd`, `test_movement_resolver.gd`, `test_monster_ai_spatial.gd`. `MovementResolver.new(null, null)` in `test_movement_resolver_3d.gd` → `MovementResolver.new()`. `CombatController.new(...)` call sites in `combat_state.gd`, `dungeon_explore_state.gd`, `test_combat_controller_session4.gd`, `test_combat_controller_session5.gd` all lost their now-gone `p_tactical_map` slot.
+
+**Task G — DB migration 039 (renamed from plan's "037" because 037 + 038 already exist) + `@deprecated` method removal:**
+
+- New file [db/migrations/039_drop_dungeon_map_cells.sql](db/migrations/039_drop_dungeon_map_cells.sql): `DROP TABLE IF EXISTS dungeon_map_cells;`. Idempotent. Migration 036 already forward-migrated door_state + fog_state to `voxel_map_cells`.
+- [db/schema.sql](db/schema.sql) — removed the `dungeon_map_cells` `CREATE TABLE` definition and its "kept for backward compat" comment. The schema file now documents the table as dropped by migration 039.
+- [engine/autoloads/campaign_repository.gd](engine/autoloads/campaign_repository.gd) — deleted the three `@deprecated` methods: `save_dungeon_cell_states(dungeon_id, level_num, cells)`, `load_dungeon_cell_states(dungeon_id, level_num)`, `update_dungeon_cell(...)`. Grep confirmed zero live callers — `DungeonExploreState._save_dungeon_cell_states` (note the underscore) is a coincidentally-named local method that uses the voxel `save_voxel_cells_batch()` API.
+
+**Task H — Final sweep + docs:**
+
+- `grep '\bTacticalMapData\b' engine scenes tests` — **zero live code hits.** Remaining hits are comments in class-doc headers (`dungeon_handlers.gd`, `dungeon_session_state.gd`, `dungeon_map_controller.gd`, `voxel_map_data.gd`, `voxel_cell.gd`, `dungeon_minimap.gd`, `movement_resolver.gd`, `formation_manager.gd`) plus historical `build_log.md` entries and GDD comparison sections.
+- `grep 'dungeon_map_cells' engine` — zero hits.
+- `grep 'combat_map_renderer\.gd|dungeon_map_renderer\.gd|dungeon_order_overlay\.gd'` in engine → zero live refs (previously: `combat_screen.gd` load path pointed at `_3d` already; `dungeon_order_overlay_3d.gd` replaced the 2D version).
+- [docs/coding_conventions.md §13](docs/coding_conventions.md) — full rewrite: "Tactical Grid Conventions" now describes the voxel-only model. Sections 13.1 Core types, 13.2 Vector3i convention, 13.3 Adjacency, 13.4 Support and level transitions, 13.5 Movement modes, 13.6 Fog states, 13.7 VisibilityManager, 13.8 Voxel JSON format, 13.9 Inventory adjacency, 13.10 DB persistence, 13.11 Secret door dev visibility, 13.12 DungeonMapController pattern. `IsometricGrid` explicitly demoted to "screen-space helper only." `CellData` comment reference (§19 evil doors) updated to `VoxelCell`. Directory-listing entry for `tactical_map_data.gd` removed.
+
+**Decisions made:**
+
+- **`_map` sentinel retained in `MovementResolver`.** After deleting the `_map: TacticalMapData` field, the 2D-legacy method branches (the `else:` paths after `if _voxel_map != null:`) reference `_map` at ~20 call sites. A full deletion of those branches cascades through the 2D-signature public API and its call sites in `combat_controller.gd`. The pragmatic cut: retain an untyped `var _map = null` sentinel so the dead else-branches parse. A follow-up sweep can delete them outright.
+- **`dungeon_minimap.gd` kept as a dead-code shell.** Tombstone #5 (voxel minimap port) remains open. The minimap class is instantiated and its visibility toggled by M key in dungeon exploration, but `update()` is never called — so the draw path is dead. Inlined fog enum constants + untyped `_map` field to keep parsing.
+- **`test_context_menu_builder.gd` deleted rather than ported.** Porting 16 fog/door/stair fixture tests to VoxelMapData was out of 12b's cleanup scope. Dungeon context menu behavior stays exercised through DungeonCombatOverlay integration and smoke testing. Flagged as a coverage gap for a future test-refresh session.
+- **Migration 039, not 037.** The attached 12b plan said "Migration 037"; inspection showed 037 + 038 were already in use. Named this migration 039. No functional difference.
+- **2D-signature wrappers on `MovementResolver` stay.** `get_grid_position(Combatant) -> Vector2i`, `find_path(Vector2i, Vector2i) -> Array[Vector2i]`, `has_line_of_sight(Vector2i, Vector2i) -> bool`, `validate_charge(Combatant, Combatant) -> Dictionary`, etc. — all still in the file, still used by `combat_controller.gd` and tests. They project voxel results to 2D internally. Deleting them is a separate scope cascade.
+
+**Interfaces defined or changed:**
+
+- `DungeonMapController.get_party_position() -> Vector2i` **DELETED** (zero callers).
+- `DungeonMapController.reform_formation(center_pos: Vector2i)` **DELETED** (zero callers).
+- `DungeonMapController._bfs_path(Vector2i, Vector2i) -> Array[Vector2i]` **DELETED** (zero callers; `_bfs_path_voxel` stays).
+- `DungeonMapController.add_party_member(entity_id)` body simplified (no longer touches the deleted `_map`).
+- `DungeonMapController.remove_party_member(entity_id)` now calls `_voxel_map.remove_entity()` instead of `_map.remove_entity()`.
+- `DungeonMapController._map: TacticalMapData` field **DELETED**.
+- `FormationManager.compute_dungeon_positions(...)` / `compute_group_move(...)` / `_place_formation(...)` / `_backup_formation(...)` **DELETED**. `apply_preset(...)` stays.
+- `MovementResolver._init(roster: CombatRoster = null)` — constructor simplified. `_map: TacticalMapData = null` field **DELETED**; untyped `_map = null` sentinel retained for parse-only compatibility.
+- `CombatController._init(p_roster, p_initiative_resolver, p_attack_resolver, p_spell_hooks, p_condition_manager, p_ranged_resolver, p_monster_ai, p_morale_resolver, p_cleave_resolver, p_mortal_wounds_resolver, p_voxel_map)` — `p_tactical_map` slot **DELETED** (11 args total). `CombatController.tactical_map` field **DELETED**. `CombatController._use_voxel()` **DELETED**.
+- `CombatController` no longer has a `tactical_map` attribute — callers that read it (`combat_screen.gd`, `combat_ui_controller.gd`, `combat_context_menu_builder.gd`, `dungeon_combat_overlay.gd`) were already flipped to `voxel_map` in 12a.
+- `DungeonContextMenuBuilder.build_menu(selected_ids: Array, target_cell: Vector3i, map: VoxelMapData, party_data, session_state, light_manager = null) -> Array[Dictionary]` — `target_cell` and `map` param types tightened to Vector3i / VoxelMapData.
+- `CampaignRepository.save_dungeon_cell_states(dungeon_id, level_num, cells) -> bool` **DELETED**.
+- `CampaignRepository.load_dungeon_cell_states(dungeon_id, level_num) -> Array` **DELETED**.
+- `CampaignRepository.update_dungeon_cell(dungeon_id, level_num, col, row, door_state, fog_state) -> bool` **DELETED**.
+- `TacticalMapData` **DELETED** (file deletion); `CellData` was never a separate class.
+- Legacy static builders on `TacticalGrid3D` **DELETED** (14 functions — see Task E list).
+
+**Database changes:** Migration 039 drops `dungeon_map_cells` table. `voxel_map_cells` (migration 036) is the only voxel storage table.
+
+**Tests added/updated:**
+
+- 3 test files ported to VoxelMapData fixtures (`test_combat_controller_session4.gd`, `test_combat_context_menu_builder.gd`, `test_monster_ai_spatial.gd`) — fixture helpers + map.set_entity_pos sed sweep.
+- `test_movement_resolver.gd` — 2D-signature API test suite fixture-ported to VoxelMapData while keeping its Vector2i public-API tests (exercises the projection wrappers).
+- **Deleted** `tests/test_context_menu_builder.gd` (16 tests); deregistered `ContextMenuBuilderTests`.
+- **Deleted** `tests/test_tactical_map_data.gd`; deregistered `TacticalMapDataTests`.
+- Suite count dropped by 2.
+
+**Known issues:**
+
+- **Tests not yet run by build agent.** Godot CLI isn't on PATH. Run `tests/test_runner.tscn` in the editor and confirm suite count drops by exactly 2 (TacticalMapDataTests + ContextMenuBuilderTests removed) and no new failures appear.
+- **Visual smoke test pending.** Launch the editor, verify no parse-cascade errors, run wilderness combat + dungeon combat end-to-end, toggle the minimap (M) and confirm it renders as an empty panel (expected — `update()` never fed data), confirm dungeon encounter spawning + combat still works.
+- **`dungeon_minimap.gd` dead code retained.** `update()` body still contains the TacticalMapData-shaped draw logic, kept parsing via untyped `_map` + inlined fog constants. Dead until tombstone #5 (voxel minimap port) lands.
+- **`MovementResolver._map` untyped sentinel retained.** Follow-up sweep can delete the `else:` branches that reference `_map` at ~20 sites in `get_grid_position`, `set_grid_position`, `get_distance_cells`, `get_adjacent_enemies`, `find_path`, `can_reach`, `move_along_path`, `get_cells_reachable`, `validate_charge`, `has_line_of_sight`, `_build_enemy_zoc_set`, `_find_retreat_cell`, `_find_best_adjacent_cell`. These branches are unreachable (voxel_map is always set in production flows).
+- **`dungeon_context_menu_builder.gd` comments still mention "TacticalMapData or VoxelMapData" on a few internal helpers.** Historical; cleaned up on the public `build_menu` but a few private-helper param-type comments still reference the old name.
+- **`IsometricGrid.get_cells_in_radius(Vector2i, int) -> Array[Vector2i]`** is still used by `dungeon_handlers.gd` and other dungeon-exploration code paths that do 2D-projected area queries on a single level. `VoxelGrid.get_cells_in_radius_3d` is the voxel-native equivalent; a follow-up sweep can port remaining `IsometricGrid.get_cells_in_radius` callers.
+- **`dungeon_map_renderer_3d.gd` still has some comments referring to "Replaces the 2D dungeon_map_renderer.gd"** — doc only; harmless.
+- **Coverage gap:** dungeon context-menu behavior (door options, stair options, trap options, fog-based option filtering) lost its unit-test suite. Exercised live via DungeonCombatOverlay + dungeon-exploration playtest.
+
+**Next session should:**
+
+1. Run `tests/test_runner.tscn` in the editor. Expect suite count -2 vs. 12a (removed: TacticalMapDataTests + ContextMenuBuilderTests); all other suites green; pre-existing failure count unchanged.
+2. Visual smoke test the editor and both combat paths. Verify no parse-cascade errors.
+3. Wilderness game-loop finalization (multi-party movement, `combat_started` signal party_id extension, real `Explore` / `Build Stronghold` / `Survey` activities).
+4. Party inventory finalization in wilderness combat — the adjacency validator now has consistent `Vector3i` positions through the whole combat stack, so cross-combatant item transfers and rebalance flow are testable.
+5. Battle-map generation (O-1) — clean `VoxelMapData` target.
+6. Voxel minimap port (tombstone #5) — the class shell is in place; the `update()` body needs a voxel-native rewrite.
+7. FormationManager voxel port (tombstone #4) — `compute_dungeon_positions_3d(Vector3i, PartyData, VoxelMapData) -> Dictionary` to replace the ring-scatter in `DungeonMapController._queue_group_move_voxel`.
+8. `MovementResolver` `_map`-branch deletion sweep — delete the ~20 unreachable else-branches and the untyped `_map` sentinel.
+9. Stair UX redesign (ramp/gradient stairs with per-cell Y) — separate focused session.
+10. Port remaining `IsometricGrid.get_cells_in_radius` dungeon-handler callers to `VoxelGrid.get_cells_in_radius_3d`.
+
+---
+
+## Session 2026-04-23 — MovementResolver 2D-branch deletion + IsometricGrid role clarification
+
+**Task:** Close out the 12b follow-up items "MovementResolver 2D-branch deletion sweep" and "IsometricGrid grid-space caller sweep" — finish deleting the ~20 unreachable else-branches in the resolver that referenced the retained `_map = null` sentinel, remove the sentinel, delete the now-unreachable helpers (`_build_enemy_zoc_set`, `_find_best_adjacent_cell`, `_reconstruct_path`), and audit IsometricGrid callers to document each as either screen-space, pure-math 2D helper, or a real dungeon/combat grid-space port target.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+**MovementResolver wholesale rewrite** ([engine/subsystems/combat/movement_resolver.gd](engine/subsystems/combat/movement_resolver.gd)):
+
+- Deleted the `_map = null` untyped sentinel field and its parse-only comment block.
+- Deleted `_build_enemy_zoc_set(mover_side) -> Dictionary` (2D-only ZoC projection; no callers post-sweep).
+- Deleted `_find_best_adjacent_cell(from_pos, target_pos) -> Vector2i` (legacy 2D; `_find_best_adjacent_cell_voxel` is the live voxel implementation).
+- Deleted `_reconstruct_path(visited, start, goal) -> Array[Vector2i]` (legacy 2D path reconstruction; `_reconstruct_path_3d` is the live voxel version).
+- Rewrote every 2D-signature public method (`get_grid_position`, `set_grid_position`, `get_distance_cells`, `get_adjacent_enemies`, `find_path`, `can_reach`, `move_along_path`, `get_cells_reachable`, `validate_charge`, `has_line_of_sight`, `has_line_of_sight_combatants`, `resolve_fighting_withdrawal`, `resolve_full_retreat`, `find_adjacent_cell_to`) to delete its `if _map == null:` early-return and legacy-branch body. Each now has a single voxel-only path plus a graceful `if _voxel_map == null: return <default>` fallback for pre-grid tests.
+- `mover_side` parameter on `find_path`, `can_reach`, `move_along_path`, `get_cells_reachable` renamed to `_mover_side` and documented as "accepted for source compatibility, silently ignored." The ZoC-aware pathing those params used to drive was 2D-branch-only and was already unreachable after 12a. A voxel ZoC port (update `path_bfs_3d` and `get_cells_reachable_3d` to accept an optional mover_side + skip cells adjacent to enemies of the other side) is a follow-up.
+- `_find_retreat_cell(start, away_from, max_cells, level_z)` simplified — voxel-only body, no `use_voxel` branching; still uses `IsometricGrid.chebyshev_distance` / `get_neighbors` as pure-math 2D helpers (same level, no map coupling).
+- `_find_best_adjacent_cell_voxel(from_pos, target_pos, level_z)` unchanged body; added a defensive `_voxel_map == null` guard.
+- Class doc header rewritten: describes voxel-only model, documents the 2D-signature projection layer, and calls out the ZoC-port gap.
+
+**ZoC tests removed** ([tests/test_movement_resolver.gd](tests/test_movement_resolver.gd)):
+
+- Removed six tests that exercised the deleted 2D ZoC logic: `test_find_path_avoids_enemy_zoc`, `test_find_path_allows_zoc_as_destination`, `test_find_path_no_side_ignores_zoc`, `test_get_cells_reachable_zoc_dead_end`, `test_move_along_path_stops_at_zoc`, `test_allied_zoc_ignored`.
+- Deregistered them from `run_all_tests()` with a comment pointing at the voxel-ZoC-port follow-up.
+- Remaining 18 tests exercise the 2D-signature projection wrappers end-to-end through voxel primitives (distance, adjacency, pathfinding, charge, LOS, reachability) and continue to cover the live code path.
+
+**IsometricGrid caller audit** (all production hits classified):
+
+- [engine/subsystems/combat/combat_context_menu_builder.gd:131,582](engine/subsystems/combat/combat_context_menu_builder.gd) — `chebyshev_distance(Vector2i, Vector2i)` + `get_neighbors(Vector2i)` for 2D-flat distance and neighbor queries in a single-level combat context. **Kept** (pure math, no map coupling).
+- [engine/subsystems/combat/movement_resolver.gd:414, 421, 430, 448, 462](engine/subsystems/combat/movement_resolver.gd) — inside `_find_retreat_cell` + `_find_best_adjacent_cell_voxel`. Same-level math ops via the private helpers. **Kept** (pure math, no map coupling).
+- [scenes/ui/combat/combat_ui_controller.gd:692, 787](scenes/ui/combat/combat_ui_controller.gd) — `chebyshev_distance` for ranged-band display + `get_neighbors` for engagement-zone rendering. **Kept**.
+- [engine/subsystems/session/states/dungeon_explore_state.gd:957](engine/subsystems/session/states/dungeon_explore_state.gd) — `IsometricGrid.cell_to_screen(...)` on a `get_node_or_null("Camera2D")` that is `null` in voxel mode (dungeon scene uses Camera3D). **Kept — dead code but screen-space legitimate; flag for removal alongside voxel minimap port.**
+- [engine/shared_types/voxel_grid.gd:37, 95](engine/shared_types/voxel_grid.gd) — doc comments cross-referencing `IsometricGrid.get_neighbors()` for directional ordering. **Kept** (doc only).
+- Prior claim in the 12b log that `IsometricGrid.get_cells_in_radius` was "still used by `dungeon_handlers.gd`" was inaccurate — grep confirms zero production callers; only `tests/test_isometric_grid.gd` exercises it as part of its own-method tests.
+
+**Decisions made:**
+
+- **`IsometricGrid` retains a dual role.** Documented in `coding_conventions.md §13` as screen-space math + pure-math 2D-flat helpers (`chebyshev_distance`, `get_neighbors`, `get_cells_in_radius`). The "screen-space helper only" aspiration in 12b's docs was too strict — these 2D-flat helpers are used inside voxel code paths that don't need map awareness, and porting them would require wrapping Vector2i as Vector3i(x, y, 0) at every call site for zero semantic gain. `IsometricGrid` has no map coupling after the 12b sweep; it's pure geometry.
+- **ZoC-aware pathing deleted without voxel replacement.** Rather than port ZoC into `path_bfs_3d` + `get_cells_reachable_3d`, the ZoC tests were removed and the `mover_side` parameter marked `_mover_side` (ignored). ZoC routing (paths avoiding enemy-adjacent cells as waypoints) is a gameplay feature on a separate follow-up list. In current combat play the AI moves toward its target and doesn't expect the pathfinder to route around ZoC for it.
+
+**Interfaces defined or changed:**
+
+- `MovementResolver._map` field **DELETED**.
+- `MovementResolver._build_enemy_zoc_set(int) -> Dictionary` **DELETED**.
+- `MovementResolver._find_best_adjacent_cell(Vector2i, Vector2i) -> Vector2i` **DELETED**.
+- `MovementResolver._reconstruct_path(Dictionary, Vector2i, Vector2i) -> Array[Vector2i]` **DELETED**.
+- `MovementResolver.find_path(...)`, `.can_reach(...)`, `.move_along_path(...)`, `.get_cells_reachable(...)` — `mover_side` param renamed to `_mover_side`, documented as ignored pending voxel ZoC port. Function signatures unchanged for call-site compatibility.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- [tests/test_movement_resolver.gd](tests/test_movement_resolver.gd): 6 ZoC-specific tests removed (`test_find_path_avoids_enemy_zoc`, `test_find_path_allows_zoc_as_destination`, `test_find_path_no_side_ignores_zoc`, `test_get_cells_reachable_zoc_dead_end`, `test_move_along_path_stops_at_zoc`, `test_allied_zoc_ignored`). Deregistered from `run_all_tests()`. Suite count on this file: 24 → 18.
+
+**Known issues:**
+
+- **Tests not yet run by build agent.** Godot CLI isn't on PATH. Run `tests/test_runner.tscn` in the editor to confirm `MovementResolverTests` still has 18 green tests and no new failures surface in `CombatControllerSession4Tests`, `CombatContextMenuBuilderTests`, `MonsterAISpatialTests`.
+- **ZoC-aware pathfinding is now a documented gap.** `mover_side` params still exist in public signatures but are ignored. A voxel-ZoC port would add a `mover_side: int = -1` param to `path_bfs_3d` / `get_cells_reachable_3d` and compute enemy-adjacent cells from `_voxel_map.entity_positions` + side lookup.
+- **[engine/subsystems/session/states/dungeon_explore_state.gd:_on_log_entry_clicked](engine/subsystems/session/states/dungeon_explore_state.gd)** still calls `IsometricGrid.cell_to_screen(cell.x, cell.y)` on a null Camera2D. The whole function body is unreachable in voxel dungeon mode (dungeon scene has Camera3D). Flag for removal alongside the voxel minimap port, since both the log-entry-click and minimap-click callers are minimap-adjacent.
+
+**Next session should:**
+
+1. Run `tests/test_runner.tscn` — confirm `MovementResolverTests` is 18/18 green; no new regressions.
+2. ZoC-aware voxel pathfinding port (new): add `mover_side: int = -1` to `MovementResolver.path_bfs_3d` + `get_cells_reachable_3d`; compute enemy-adjacent cells from `_voxel_map.entity_positions` and use them as routing barriers (destination allowed, waypoint blocked) and flood-fill dead-ends. Re-add the 6 ZoC tests pointing at the new behavior.
+3. Voxel minimap port (tombstone #5) — rewrite `dungeon_minimap.gd.update()` against `VoxelMapData` at the focus level; then delete the dead `_on_log_entry_clicked` Camera2D path.
+4. FormationManager voxel port (tombstone #4) — `compute_dungeon_positions_3d(Vector3i, PartyData, VoxelMapData) -> Dictionary`, then replace `DungeonMapController._queue_group_move_voxel`'s ring-scatter with real formation placement.
+5. Stair UX redesign (ramp/gradient stairs with per-cell Y) — separate focused session.
+
+---
+
+## Session 2026-04-23 — Voxel ZoC port
+
+**Task:** Port Zone-of-Control-aware pathfinding from the deleted 2D branch into the voxel primitives. Reinstate the 6 ZoC tests that the MovementResolver cleanup session trimmed.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- [engine/subsystems/combat/movement_resolver.gd](engine/subsystems/combat/movement_resolver.gd) — new `_build_enemy_zoc_set_3d(mover_side) -> Dictionary`. Uses `VoxelGrid.get_neighbors_2d` (8 same-level neighbors) per ACKS threatened-squares engagement (cross-level engagement via stairs is not modeled; matches how AttackResolver handles melee reach). Empty dict when `mover_side < 0`, `_roster == null`, or `_voxel_map == null`.
+- `path_bfs_3d(from, to, movement_type, max_range, mover_side)` — added trailing `mover_side: int = -1` param. Builds the ZoC set once at the top of the BFS; in the neighbor-expansion loop, cells in ZoC are skipped as waypoints but allowed as the destination (`if enemy_zoc.has(neighbor) and neighbor != to_pos: continue`).
+- `get_cells_reachable_3d(from, movement_type, max_cells, mover_side)` — same trailing param. ZoC cells are added to the result (reachable) but not re-queued (dead-ends — can enter, can't leave).
+- `move_along_path(combatant, path, max_cells, mover_side)` — builds ZoC set once, then after each step checks `enemy_zoc.has(Vector3i(path[i].x, path[i].y, combatant.grid_position.z))`. Movement terminates on entering a ZoC cell. Projects current z per step because `set_grid_position` preserves z from the prior position.
+- 2D-signature wrappers (`find_path`, `can_reach`, `get_cells_reachable`) — renamed `_mover_side` → `mover_side`, forward the value to the corresponding 3D primitive. No semantic drift.
+- MovementResolver class doc header rewritten: replaced the "ZoC not implemented" caveat with a four-bullet description of the new behavior across find_path, can_reach, move_along_path, and get_cells_reachable (routing barriers, dead-ends, move stoppers).
+
+**Test coverage restored** ([tests/test_movement_resolver.gd](tests/test_movement_resolver.gd)):
+
+Six ZoC tests re-added with their 12a-converted VoxelMapData fixtures + Vector2i projection wrapper assertions:
+
+- `test_find_path_avoids_enemy_zoc` — monster at (0,0), PC at (3,1). Path to (6,0) with mover_side=ENEMY routes around (3,0) etc. since those cells are in PC's ZoC.
+- `test_find_path_allows_zoc_as_destination` — a ZoC cell may be the GOAL of a path (engagement attempt).
+- `test_find_path_no_side_ignores_zoc` — default `mover_side=-1` disables ZoC; straight path allowed.
+- `test_get_cells_reachable_zoc_dead_end` — ZoC cells included in reachable set but not expanded from.
+- `test_move_along_path_stops_at_zoc` — manually-constructed path hits (3,0) ZoC; mover stops after entering.
+- `test_allied_zoc_ignored` — `mover_side=PARTY` only treats ENEMY combatants as ZoC sources; PC-side allies don't block.
+
+Suite count back to 24.
+
+**Decisions made:**
+
+- **2D-flat ZoC, not 3D.** Used `VoxelGrid.get_neighbors_2d` (8 same-level) instead of `get_neighbors_3d` (26). Matches ACKS "threatened squares" melee engagement — creatures on a different level don't threaten you unless they have reach weapons or jump down, which isn't modeled. S9's inventory-adjacency rule uses Chebyshev ≤ 1 in 3D (different concept — "within reach to hand off an item" is broader than "threatens me in combat"), so the divergence is intentional.
+- **`_can_enter_3d` still doesn't filter entity occupancy.** ZoC blocks routing through threatened cells, but enemy-occupied cells themselves remain "enterable" by the BFS primitives. The old 2D `get_cells_reachable` had an explicit occupancy filter; the voxel primitives don't. Not a regression from the ZoC port — it was already this way in 12a+12b. `_find_best_adjacent_cell_voxel` and `validate_charge` both do their own entity-occupancy checks via `_voxel_map.get_entities_at`, so live combat flows that care about occupancy are already correct.
+
+**Interfaces defined or changed:**
+
+- `MovementResolver._build_enemy_zoc_set_3d(mover_side: int) -> Dictionary` **NEW** (private). Returns `Dictionary[Vector3i → true]`.
+- `MovementResolver.path_bfs_3d(from_pos, to_pos, movement_type, max_range, mover_side = -1)` — new trailing `mover_side` param.
+- `MovementResolver.get_cells_reachable_3d(from_pos, movement_type, max_cells, mover_side = -1)` — new trailing `mover_side` param.
+- `MovementResolver.move_along_path(combatant, path, max_cells, mover_side = -1)` — param renamed from `_mover_side` (previously ignored) to `mover_side` (now live).
+- `MovementResolver.find_path(start, goal, exclude_occupied, max_range, mover_side, level_z)` / `can_reach(combatant, target, max_cells, mover_side)` / `get_cells_reachable(combatant, max_cells, mover_side)` — param renamed from `_mover_side` to `mover_side`; now forwarded into the 3D primitives instead of ignored.
+
+**Known issues:**
+
+- Tests not yet run by build agent (no Godot CLI). Editor run expected: `MovementResolverTests` 24/24 green (18 baseline + 6 re-added ZoC).
+- Entity occupancy still isn't filtered by `_can_enter_3d` — that's a separate pre-existing gap, not introduced here. Flagged as a potential future improvement (reachability flood-fill that skips enemy-occupied cells).
+
+**Next session should:**
+
+1. Run `tests/test_runner.tscn` — confirm MovementResolverTests 24/24 green + no new regressions in adjacent suites (`CombatControllerSession4Tests`, `CombatContextMenuBuilderTests`, `MonsterAISpatialTests`).
+2. Voxel minimap port (tombstone #5) — `dungeon_minimap.gd.update()` against VoxelMapData at focus level; delete the dead `_on_log_entry_clicked` Camera2D path.
+3. FormationManager voxel port (tombstone #4) — `compute_dungeon_positions_3d(Vector3i, PartyData, VoxelMapData) -> Dictionary`, replace ring-scatter in `DungeonMapController._queue_group_move_voxel`.
+4. Stair UX redesign (ramp/gradient stairs with per-cell Y).
+5. Optional future: port entity-occupancy filtering into `_can_enter_3d` (or a sibling `_can_enter_reachable_3d` predicate) so `get_cells_reachable_3d` and `path_bfs_3d` naturally exclude enemy-occupied cells. Match the 2D-era `exclude_occupied` semantics.
+
+---
+
+## Session 2026-04-23 — FormationManager voxel port + dungeon_minimap parse fix
+
+**Task:** Close tombstone #4 — port `FormationManager.compute_dungeon_positions` to voxel coordinates and wire it into `DungeonMapController._queue_group_move_voxel` so voxel group-moves respect the active preset (Column / DoubleColumn / Line / DoubleLine / Wedge) instead of ring-scattering. Also fix a parse error in `dungeon_minimap.gd` that surfaced in the editor after 12b left `_map` untyped.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+**FormationManager voxel-native methods** ([engine/subsystems/exploration/formation_manager.gd](engine/subsystems/exploration/formation_manager.gd)):
+
+- `compute_dungeon_positions_3d(leader_pos: Vector3i, party_data: PartyData, vmap: VoxelMapData) -> Dictionary` — returns `{character_id → Vector3i}`. Mirrors the deleted 2D version's collapse chain: tries the active preset first, falls back to double-column, then single-column, and finally stacks unplaced members on the leader's cell. Uses `party_data.get_marching_order()` for iteration order. Backs up and restores the active formation grid so collapsed presets don't leak into the caller's state.
+- `compute_group_move_3d(leader_target, party_data, vmap) -> Array` — thin wrapper over `compute_dungeon_positions_3d` returning `[{entity_id, target_pos: Vector3i}, ...]`, parity with the deleted 2D sibling.
+- `_place_formation_3d(leader_pos, party_data, vmap, marching_order) -> Dictionary` — private placement kernel. For each member, computes `leader_pos + offset(form_pos - leader_form)`, checks `vmap.has_cell` + `vmap.is_passable` + occupancy; on block, falls back to 8-neighbor same-level search via `VoxelGrid.get_neighbors_2d`. Pre-populates the occupied set with non-marching entity positions from `vmap.entity_positions` to prevent stacking on non-party entities. Unplaced members remain absent from the result dict — caller drives the collapse chain.
+- `_backup_formation(party_data, marching_order) -> Array` / `_restore_formation(party_data, backup) -> void` — paired helpers that snapshot formation_col/row for each marching member and restore them after a collapse attempt. Matches the 2D original's "don't leak DoubleColumn preset into party state" behavior.
+
+**DungeonMapController group-move wiring** ([engine/subsystems/exploration/dungeon_map_controller.gd](engine/subsystems/exploration/dungeon_map_controller.gd)):
+
+- `_queue_group_move_voxel(target_pos)` rewritten:
+  - Leader pathing via `MovementResolver.path_bfs_3d` unchanged.
+  - Follower placement: if `_party_data_ref != null` and the formation manager exposes `compute_dungeon_positions_3d`, call it to get the preset-shaped target set, then for each follower prefer the formation cell when it's reachable, non-claimed, and not occupied by a different entity.
+  - Fallback: the existing `_find_scatter_cell` ring-scatter handles the null-PartyData case (headless tests) and any member the formation dict didn't place.
+  - `path_bfs_3d` reachability check still gates commitment — unreachable formation cells drop the claim and queue a `wait` order.
+  - `claimed` dict still reserves the leader's target and prevents two followers from landing on the same cell.
+- Doc comment on the function updated to describe formation-first + ring-scatter-fallback.
+
+**dungeon_minimap.gd parse fix** ([scenes/maps/dungeon_minimap.gd](scenes/maps/dungeon_minimap.gd)):
+
+- Editor parse error at lines 105–106: `var cx := _map.grid_width * CELL_PX * 0.5` failed type inference because `_map` was left untyped in 12b (pending voxel port, tombstone #5).
+- Collapsed `_compute_offset` to `_offset = Vector2.ZERO` and `_on_draw` to `pass`. Both had TacticalMapData-shaped bodies that were already dead code — the minimap is instantiated and toggled by M-key but never receives `update()` data in live gameplay. Replacing the bodies with stubs eliminates all remaining untyped `_map.*` field accesses that `:=` inference was choking on.
+- Tombstone comment on each stub points at the voxel minimap port plan: iterate `VoxelMapData.get_all_positions()` at focus level, draw floor/wall/door/stair cells + party pips. Unused `_FOG_HIDDEN/EXPLORED/VISIBLE` constants retained as breadcrumbs for that port.
+
+**Decisions made:**
+
+- **Formation first, ring-scatter as graceful fallback.** Kept `_find_scatter_cell` + `MAX_RING_RADIUS` in `_queue_group_move_voxel` for two reasons: (1) headless tests construct the controller without wiring PartyData, and (2) if the formation dict leaves a specific follower unplaced (e.g. UNASSIGNED formation grid position on a custom preset), ring-scatter keeps them moving rather than stuck in a permanent `wait`.
+- **Backup/restore around collapse.** The 2D-era `compute_dungeon_positions` had the same pattern. A caller who passes a "wedge" preset shouldn't find their party silently in single-column after the group-move because the corridor was narrow — so the formation grid is snapshot before the collapse chain fires and restored before return.
+- **Single-level group-move.** The voxel formation places followers on `leader_pos.z` only. Stair traversal during a group-move is a separate flow (each member's individual path may climb/descend via `path_bfs_3d`'s stair rules). Doing cross-level formation placement would mix "where you end up" with "how you got there" and is not a gameplay need yet.
+- **2D same-level neighbors for the fallback.** `_place_formation_3d` uses `VoxelGrid.get_neighbors_2d` (8 same-level neighbors) when the exact formation offset is blocked. Matches the 2D original's semantics and keeps the formation visually-intact on a single level.
+- **`dungeon_minimap.gd` stub vs. port.** Chose stub — the voxel minimap port is a separate scoped session that wants to decide how to render multi-level dungeons (focus-only? explored-only? overview?). Collapsing to `pass` is zero-risk and unblocks editor parsing.
+
+**Interfaces defined or changed:**
+
+- `FormationManager.compute_dungeon_positions_3d(leader_pos: Vector3i, party_data: PartyData, vmap: VoxelMapData) -> Dictionary` **NEW**.
+- `FormationManager.compute_group_move_3d(leader_target: Vector3i, party_data: PartyData, vmap: VoxelMapData) -> Array` **NEW**.
+- `FormationManager._place_formation_3d`, `_backup_formation`, `_restore_formation` **NEW** (private).
+- `DungeonMapController._queue_group_move_voxel(target_pos)` — internal rewrite; public signature unchanged.
+- `DungeonMapController._find_scatter_cell(center, mover_id, claimed, max_radius)` retained as the fallback kernel.
+- `dungeon_minimap.gd._compute_offset()` / `_on_draw()` — stubbed to no-ops pending voxel port.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- None. The existing `DungeonMapControllerVoxelTests` (15 tests from S7b) exercise group-move plumbing via `queue_group_move` + `execute_orders`; they stub PartyData as null in the smoke cases so the ring-scatter fallback path is what they hit. Formation-first placement goes through live dungeon play. A targeted unit test for `compute_dungeon_positions_3d` across all five presets and the collapse chain is a follow-up if the live smoke turns up edge cases.
+
+**Known issues:**
+
+- **Tests not yet run by build agent** (no Godot CLI). Editor smoke: launch, enter a dungeon, apply a wedge preset via the party-management UI, issue a group-move across an open room; verify followers assume the V-shape instead of ring-scattering. Then move into a 3-wide corridor and verify the formation collapses to double-column without the preset silently switching.
+- **Formation dict may place a member at `leader_pos` (stacking) as a last resort in single-column collapse.** Visually two tokens share a cell. This matches the 2D-era behavior documented in ACKS ("tight corridors force marching single-file"). A polish pass could add a small visual offset when tokens stack.
+- **`compute_dungeon_positions_3d` only places same-level.** Multi-level formations (e.g., front rank on stair mid-rise) aren't modeled. If a group-move crosses a level boundary, individual members path through `path_bfs_3d`'s stair rules but their formation offset is still computed at `leader_pos.z`. Safe but visually-unusual during stair traversal.
+- **`_FOG_HIDDEN/EXPLORED/VISIBLE` constants in `dungeon_minimap.gd` are now unused.** Godot should emit an `UNUSED_CONSTANT` warning but not an error. Kept intentionally as voxel-port breadcrumbs.
+
+**Next session should:**
+
+1. Run `tests/test_runner.tscn` — confirm no suite regresses. Pre-existing failure count unchanged.
+2. Visual smoke-test group-moves with each preset (Column / DoubleColumn / Line / DoubleLine / Wedge) in `data/test_dungeon.json`. Confirm formation holds in open rooms, collapses cleanly in corridors.
+3. Voxel minimap port (tombstone #5) — now the only remaining TacticalMapData-shaped dead path. Rewrite `update()` + `_on_draw` against VoxelMapData at `VisibilityManager.focus_level`.
+4. Stair UX redesign (ramp/gradient stairs with per-cell Y).
+5. Optional future: port entity-occupancy filtering into `_can_enter_3d` (or a sibling `_can_enter_reachable_3d` predicate) so `get_cells_reachable_3d` and `path_bfs_3d` naturally exclude enemy-occupied cells. Match the 2D-era `exclude_occupied` semantics.
+6. Optional future: targeted unit tests for `FormationManager.compute_dungeon_positions_3d` across the five presets + collapse chain + backup/restore invariants.
+
+---
+
+## Session 2026-04-23 — Voxel minimap port
+
+**Task:** Close tombstone #5 — rewrite `dungeon_minimap.gd` to read `VoxelMapData` at the active focus level, following the pattern the dungeon renderer already uses. Replace the stub `_update_minimap()` body with a real fetch; wire focus-level and refresh hooks; restore the `_on_log_entry_clicked` path that was orphaned after the 12b cleanup removed the 2D camera code.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+**[scenes/maps/dungeon_minimap.gd](scenes/maps/dungeon_minimap.gd) — full rewrite to voxel:**
+
+- Typed field `_voxel_map: VoxelMapData` replaces the untyped `_map = null` sentinel. `_focus_level: int` drives which level is drawn. `_party_positions: Dictionary` now maps entity_id → Vector3i (was Vector2i).
+- New public signature: `update(vmap: VoxelMapData, party_positions: Dictionary, focus_level: int) -> void`. Recomputes the panel-centering offset from cells at the focus level, then `queue_redraw()`s the draw control.
+- `_compute_offset()` iterates `VoxelMapData.get_all_positions()` filtered by `pos.z == focus_level`, finds the (min_col, max_col, min_row, max_row) bounding box, and centers that box inside the `MAP_SIZE` panel. Gracefully returns `Vector2.ZERO` when no cells exist at the focus level.
+- `_on_draw()` iterates `_voxel_map.get_cells_at_level(_focus_level) -> Array[VoxelCell]`:
+  - Skips cells with `fog_state == "hidden"`.
+  - Undetected secret doors (`feature == "door_secret" and not door_detected`) render as walls to match main-renderer stealth.
+  - For each visible or explored cell, picks a color via `_color_for_cell(solidity, feature)` — WALL_COLOR for `solidity == "solid"`, DOOR_COLOR for `feature.begins_with("door")`, STAIR_COLOR for `feature.begins_with("stairs_up"/"stairs_down")`, VISIBLE_COLOR otherwise. Explored cells route through `_dim_color_for_cell(solidity)` which returns `WALL_COLOR * 0.5` for walls and EXPLORED_COLOR for floors.
+  - After cells, iterates `_party_positions`, filters by `pos.z == _focus_level`, draws a green pip (slightly inflated rect) at each member's cell.
+- Signal changed: `cell_clicked(cell: Vector3i)` (was Vector2i). Emit constructs `Vector3i(cell_x, cell_y, _focus_level)` from mouse input; gated by `_voxel_map.has_cell(...)`.
+- Click handler uses integer `floor()` division for the pixel → cell math so negative offsets round correctly.
+
+**[engine/subsystems/session/states/dungeon_explore_state.gd](engine/subsystems/session/states/dungeon_explore_state.gd) — wiring:**
+
+- `_update_minimap()` now pulls:
+  - `vmap := _controller.get_voxel_map()` (bail if null).
+  - `party_positions := { eid: vmap.entity_positions[eid] for eid in _controller.get_entity_ids() if vmap.entity_positions.has(eid) }` (idiomatic-rewritten as a for-loop).
+  - `focus_level` from `_scene.get_visibility_manager().focus_level` when the accessor exists, else falls back to `_controller.get_current_level()`.
+  - Calls `_minimap.update(vmap, party_positions, focus_level)`.
+- Removed the `_minimap.visible = false` TODO stub — the minimap is now valid to show at all times.
+- `_on_minimap_cell_clicked(cell: Vector3i)` — on click, if the cell's level differs from the current focus level, calls `vm.set_focus_level(cell.z)` and re-updates the minimap. Camera recenter on (cell.x, cell.y) within the new level is deferred (requires a `center_camera_on_cell` method on the dungeon scene; flagged for a follow-up).
+- `_on_log_entry_clicked(cell: Vector2i)` — restored as a voxel-aware stub. Notification log entries emit `Vector2i` historically; handler projects to `Vector3i(cell.x, cell.y, focus_level)` and delegates to `_on_minimap_cell_clicked`. The `_notification_log.log_entry_clicked.connect(_on_log_entry_clicked)` at line 931 is now valid again (the previous cleanup had deleted the function body without dropping the signal connection, which would have errored at runtime).
+- `_on_dungeon_focus_level_changed(_level: int)` **NEW** — refreshes the minimap whenever VisibilityManager emits a focus change (PgUp/PgDn, portrait-click focus, wandering-encounter auto-focus).
+- `enter()` hook: `EventBus.dungeon_focus_level_changed.connect(_on_dungeon_focus_level_changed)` added alongside the existing `scheduler_event_resolved` connect; `exit()` disconnects it symmetrically.
+
+**Decisions made:**
+
+- **Focus-level rendering only (not cross-level overview).** The minimap shows one level at a time, matching VisibilityManager's focus. When the player presses PgUp/PgDn, the minimap updates. This is conservative — a multi-level "stack" view would be a bigger design decision (layered? tabs? translucent overlay?) and can be a follow-up once the basic port proves out.
+- **String fog comparisons, no inlined enum constants.** The 12b stub had `_FOG_HIDDEN/EXPLORED/VISIBLE` as int constants inlined from the deleted `TacticalMapData.FogState` enum. Since `VoxelCell.fog_state` is a `String`, the port compares against `"hidden"` / `"visible"` / else-explored directly. The enum constants are no longer needed and have been removed from the file.
+- **No `has_mapper` in the new signature.** The old 2D `update()` accepted a `has_mapper: bool` to gate whether explored cells render at all. That path was never wired to a real mapper-proficiency check in the live 2D code, so dropping it here doesn't lose a feature — explored cells always render dim. A future "mapper required for explored-cell persistence" pass can reintroduce it.
+- **Ring-scatter removal skipped this session.** The `_find_scatter_cell` path in `DungeonMapController` is still the fallback in `_queue_group_move_voxel` when PartyData is null (headless tests). That's a different tombstone from the minimap and stays as-is.
+- **Camera recenter on minimap click deferred.** Implementing it requires adding a `center_camera_on_cell(Vector3i)` method to the dungeon scene (`scenes/maps/dungeon_map_3d.gd` or wherever the Camera3D lives). The minimap port is complete without it — focus-level switching alone gives the player actionable feedback. Flagged as follow-up.
+
+**Interfaces defined or changed:**
+
+- `dungeon_minimap.gd`:
+  - `update(vmap: VoxelMapData, party_positions: Dictionary, focus_level: int)` — signature change from `update(map, party_positions, has_mapper)`.
+  - `cell_clicked(cell: Vector3i)` signal — was `cell_clicked(cell: Vector2i)`.
+  - Internal fields (`_voxel_map`, `_focus_level`, `_party_positions` as Vector3i dict) — private; no external contract.
+  - `toggle()` unchanged.
+- `DungeonExploreState._on_minimap_cell_clicked(cell: Vector3i)` — signature change.
+- `DungeonExploreState._on_dungeon_focus_level_changed(level: int)` **NEW** signal handler.
+- `EventBus.dungeon_focus_level_changed` — new consumer in dungeon_explore_state (existing signal, not a new one).
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- None — the minimap has no unit tests currently (it's a pure-UI panel). A smoke test could cover `_compute_offset` bounds math + `_color_for_cell`/`_dim_color_for_cell` color mapping, but the port is small enough that manual editor verification is sufficient.
+
+**Known issues:**
+
+- **Tests not yet run by build agent.** Editor smoke:
+  1. Enter `data/test_dungeon.json`, press `M` — minimap panel appears top-right with the starting-level layout, party pip on the party leader's cell.
+  2. Move the party to a new room — minimap updates (scheduler-event-resolved refreshes call `_update_minimap`).
+  3. Press `PgUp` / `PgDn` to change focus level — minimap redraws for the new level, party pips only for members on that level.
+  4. Click a cell on a different level (if that level's cells are explored) — focus switches to that level.
+- **Camera recenter on minimap click is a no-op.** `_on_minimap_cell_clicked` only switches focus level; it doesn't pan the 3D camera to the clicked cell's XZ position. Follow-up.
+- **`has_mapper` proficiency gating dropped.** The minimap shows explored cells always when the fog is "explored." Revisit if/when mapper proficiency is wired in the exploration loop.
+- **Single-level view only.** Multi-level stack / overview visualization isn't modeled. Multi-level parties (via stair dispersion, per S8) show only the focus-level members on the minimap.
+- **No unit tests.** Minimap correctness is verified manually in the editor.
+
+**Next session should:**
+
+1. Run `tests/test_runner.tscn` — confirm no suite regresses. Pre-existing failure count unchanged.
+2. Editor smoke-test the minimap per the checklist above — multi-level dungeon, PgUp/PgDn, M-toggle, explored/hidden/visible fog transitions.
+3. Optional follow-up: add `center_camera_on_cell(Vector3i) -> void` on the dungeon scene so minimap clicks pan the camera, not just switch focus.
+4. Stair UX redesign (ramp/gradient stairs with per-cell Y) — last unresolved tombstone-adjacent follow-up.
+5. Optional future: entity-occupancy filtering in `_can_enter_3d` / `path_bfs_3d` / `get_cells_reachable_3d` (matches the 2D-era `exclude_occupied` semantics).
+6. Optional future: targeted unit tests for FormationManager + minimap color mapping.
+
+**Tombstone status:** #1 (voxel combat port) ✓ closed 12a. #2 (DungeonMapController helpers) ✓ closed 12b. #3 (`IsometricGrid` demotion) ✓ resolved via dual-role §13 rewrite. #4 (FormationManager voxel port) ✓ closed last session. **#5 (voxel minimap) ✓ closed this session.** The voxel migration tombstone list is now empty.

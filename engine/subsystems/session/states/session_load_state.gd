@@ -27,6 +27,9 @@ func enter(runner, context: Dictionary) -> void:
 	# Load session data (triggers Timekeeping.load_state, loads party, effects)
 	runner.load_session(campaign_id, party_id)
 
+	# Backfill heraldry for any party that predates the heraldry migration.
+	_backfill_party_heraldry(campaign_id)
+
 	# Load the hex map
 	var map_data := _load_or_seed_map(campaign_id)
 	if map_data == null:
@@ -53,6 +56,25 @@ func enter(runner, context: Dictionary) -> void:
 
 	# Auto-transition to wilderness
 	runner.transition_to_state("wilderness")
+
+
+func _backfill_party_heraldry(campaign_id: String) -> void:
+	## Assigns a random preset heraldry to every party in the campaign that
+	## has heraldry_id IS NULL. Idempotent — parties with a heraldry_id set
+	## are skipped. One shared PresetLibrary for the whole pass.
+	var parties: Array = CampaignRepository.list_parties_for_campaign(campaign_id)
+	if parties.is_empty():
+		return
+	var library := PresetLibrary.new()
+	for p_var in parties:
+		var p: Dictionary = p_var
+		var existing_id = p.get("heraldry_id", null)
+		if existing_id != null and not str(existing_id).is_empty():
+			continue
+		var new_id := CampaignRepository.create_default_heraldry_for_party(
+			str(p.get("id", "")), library)
+		if new_id.is_empty():
+			push_warning("SessionLoadState: heraldry backfill failed for party %s" % str(p.get("id", "")))
 
 
 func _get_or_create_party(campaign_id: String) -> String:

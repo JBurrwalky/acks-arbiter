@@ -185,11 +185,11 @@ All archetypes share the same underlying grid, cell-based wall model, and struct
 
 ### 4.1 Grid Specification
 
-The planner uses the project's unified 5' diamond grid (per `gdd-combat-map-generation.md` §3). The stronghold footprint IS the battle map if the stronghold is ever attacked.
+The planner uses the project's unified 5' voxel grid (per `gdd-voxel-tactical-architecture.md` §6). The stronghold footprint IS the battle map if the stronghold is ever attacked — no conversion step.
 
-- **Grid size:** The planner starts with a default 200' × 200' (40 × 40 cells) grid. The player can expand the grid in 50' (10-cell) increments up to a maximum of 500' × 500' (100 × 100 cells). Larger strongholds may use multiple adjacent grids if needed, but this is a v2 consideration.
-- **Cell-based walls:** Walls are impassable cells, consistent with the project-wide wall model (per `gdd-combat-map-generation.md` §9.2). A 5' wall is 1 cell thick; a 10' wall is 2 cells thick. Doors are cells that toggle between passable and impassable.
-- **Elevation:** The grid is 2D (top-down). Height information is stored per-structure-piece as metadata (a 60' wall is placed on the grid as a 2-cell-thick line with `height: 60` in its data). The isometric renderer uses per-cell elevation scores (0-30, each unit = 2.5 feet, per `gdd-combat-map-generation.md` §4) to render height during battle map view.
+- **Grid model:** 3D voxel grid. Coordinates are `Vector3i(col, row, level)`. Each level = 5 vertical feet. Level 0 = ground plane; negative levels = underground; positive levels = above ground. The planner edits a `VoxelMapData` (sparse `Dictionary[Vector3i, VoxelCell]`) directly.
+- **Grid size:** The planner starts with a default 200' × 200' (40 × 40 cells) horizontal footprint. The player can expand the horizontal footprint in 50' (10-cell) increments up to 500' × 500' (100 × 100 cells). Vertical extent is unbounded at the data layer — limited only by the tallest placed structure. Larger strongholds may use multiple adjacent grids if needed (v2).
+- **Cell-based walls:** Walls are stacks of solid `VoxelCell`s, consistent with the project-wide voxel wall model (per `gdd-voxel-tactical-architecture.md` §8). A 5' wall is 1 cell thick horizontally; a 10' wall is 2 cells thick; a 40' wall is 8 cells tall vertically. Doors are cells with `feature: door_*` and `door_state: open/closed`.
 
 ### 4.2 Structure-to-Grid Mapping
 
@@ -197,40 +197,44 @@ Each structure from the ACKS catalog is mapped to a grid footprint using **size 
 
 **Wall presets:**
 
-| Preset | Length | Thickness | Height Options | Grid Footprint |
-|---|---|---|---|---|
-| Short segment | 50' | 10' | 20'/30'/40'/50'/60' | 10 × 2 cells |
-| Standard segment | 100' | 10' | 20'/30'/40'/50'/60' | 20 × 2 cells |
-| Long segment | 150' | 10' | 20'/30'/40'/50'/60' | 30 × 2 cells |
-| Custom | Player-defined (multiples of 5') | 10' | 20'/30'/40'/50'/60' | Calculated |
+| Preset | Length | Thickness | Height Options | Horizontal Footprint | Vertical Cells (= height_ft / 5) |
+|---|---|---|---|---|---|
+| Short segment | 50' | 10' | 20'/30'/40'/50'/60' | 10 × 2 cells | 4 / 6 / 8 / 10 / 12 |
+| Standard segment | 100' | 10' | 20'/30'/40'/50'/60' | 20 × 2 cells | 4 / 6 / 8 / 10 / 12 |
+| Long segment | 150' | 10' | 20'/30'/40'/50'/60' | 30 × 2 cells | 4 / 6 / 8 / 10 / 12 |
+| Custom | Player-defined (multiples of 5') | 10' | 20'/30'/40'/50'/60' | Calculated | height_ft / 5 |
 
-Height is selected from a dropdown when placing the wall. Cost, SHP, and unit capacity scale proportionately from the ACKS base values per the standard wall entries.
+Height is selected from a dropdown when placing the wall. The wall stamps as a solid `VoxelCell` stack across its horizontal footprint from level 0 up to (vertical_cells − 1). Cost, SHP, and unit capacity scale proportionately from the ACKS base values per the standard wall entries.
 
 **Tower presets:**
 
-| Preset | Matches ACKS Entry | Grid Footprint | Shape |
-|---|---|---|---|
-| Small round | Small round tower (30' high, 20' dia) | 4 × 4 cells (circular mask) | Round |
-| Medium round | Medium round tower (40' high, 20' dia) | 4 × 4 cells (circular mask) | Round |
-| Large round | Large round tower (40' high, 30' dia) | 6 × 6 cells (circular mask) | Round |
-| Huge round | Huge round tower (60' high, 30' dia) | 6 × 6 cells (circular mask) | Round |
-| Small square | Derived: 50% less cost, -1 AC | 4 × 4 cells | Square |
-| Medium square | Derived: 50% less cost, -1 AC | 4 × 4 cells | Square |
-| Large square | Derived: 50% less cost, -1 AC | 6 × 6 cells | Square |
-| Huge square | Derived: 50% less cost, -1 AC | 6 × 6 cells | Square |
-| Custom | Player-defined height and diameter (multiples of 10') | Calculated | Round or square |
+| Preset | Matches ACKS Entry | Horizontal Footprint | Vertical Cells (= height_ft / 5) | Shape |
+|---|---|---|---|---|
+| Small round | Small round tower (30' high, 20' dia) | 4 × 4 cells (circular mask) | 6 | Round |
+| Medium round | Medium round tower (40' high, 20' dia) | 4 × 4 cells (circular mask) | 8 | Round |
+| Large round | Large round tower (40' high, 30' dia) | 6 × 6 cells (circular mask) | 8 | Round |
+| Huge round | Huge round tower (60' high, 30' dia) | 6 × 6 cells (circular mask) | 12 | Round |
+| Small square | Derived: 50% less cost, -1 AC | 4 × 4 cells | 6 | Square |
+| Medium square | Derived: 50% less cost, -1 AC | 4 × 4 cells | 8 | Square |
+| Large square | Derived: 50% less cost, -1 AC | 6 × 6 cells | 8 | Square |
+| Huge square | Derived: 50% less cost, -1 AC | 6 × 6 cells | 12 | Square |
+| Custom | Player-defined height and diameter (multiples of 10') | Calculated | height_ft / 5 | Round or square |
 
-Round towers on the diamond grid use a circular occupancy mask: cells whose center falls within the circle are marked as tower interior. This produces an approximate circle. The isometric renderer draws the actual round shape; the grid stores the cell mask.
+Towers stamp as **shell-only solid voxels**: only the perimeter cells of the horizontal mask stamp as `solidity: solid` across the full vertical extent. Interior cells are `solidity: air` and subdivide into 2-cell-tall stories (levels 0–1 = ground floor, levels 2–3 = 2nd floor, etc.) per [gdd-voxel-tactical-architecture.md §13.2](gdd-voxel-tactical-architecture.md#L611). A 30' × 20'-diameter tower = 4×4 horizontal mask × 6 vertical cells = 96 solid shell cells, ~96 air interior cells across 3 stories.
+
+Round towers on the voxel grid use a circular occupancy mask: cells whose center falls within the circle are marked as tower interior; cells on the perimeter form the solid shell. The mask stamps at every level in the tower's vertical run (not just the base). The tactical renderer draws the actual round shape; the grid stores the cell mask.
 
 **Keep presets:**
 
-| Preset | Dimensions | Grid Footprint |
-|---|---|---|
-| Standard square | 80' high, 60' × 60' | 12 × 12 cells |
-| Small square | 60' high, 40' × 40' | 8 × 8 cells |
-| Large square | 80' high, 80' × 80' | 16 × 16 cells |
-| Standard round | +50% cost, +1 AC | 12 × 12 cells (circular mask) |
-| Custom | Player-defined (multiples of 10') | Calculated |
+| Preset | Dimensions | Horizontal Footprint | Vertical Cells (= height_ft / 5) |
+|---|---|---|---|
+| Standard square | 80' high, 60' × 60' | 12 × 12 cells | 16 |
+| Small square | 60' high, 40' × 40' | 8 × 8 cells | 12 |
+| Large square | 80' high, 80' × 80' | 16 × 16 cells | 16 |
+| Standard round | +50% cost, +1 AC | 12 × 12 cells (circular mask) | 16 |
+| Custom | Player-defined (multiples of 10') | Calculated | height_ft / 5 |
+
+Each keep story = 2 vertical cells (one 5' floor level + one 5' headroom level) per [gdd-voxel-tactical-architecture.md §13.3](gdd-voxel-tactical-architecture.md#L617). A standard 80' keep = 16 cells tall = 8 stories. The shell stamps as `solidity: solid` at every level; story interiors auto-generate per §8.6.
 
 **Other structures** (gatehouse, barbican, moat, palisade, rampart, buildings) each have 2–3 presets following the same pattern: a standard size matching the ACKS listed dimensions, one smaller variant, and one larger variant. Custom is always available. Cost and SHP scale proportionately from the base entry.
 
@@ -263,7 +267,7 @@ Unit capacity scales proportionately with the structure's defending surface area
 - **Tower anchoring:** Towers may be placed freestanding or at wall corners/midpoints. When placed at a wall junction, the tower's footprint abuts or overlaps the wall's endpoint cells, forming a continuous run of impassable cells.
 - **Moat adjacency:** Moats must be placed adjacent to walls, ramparts, or palisades (on the exterior side). The system prevents moat placement on the interior of an enclosure.
 - **Building placement:** Buildings may be placed anywhere on the grid — inside or outside wall perimeters.
-- **Dungeon corridors/rooms:** For hideout and sanctum archetypes, dungeon corridors and rooms are placed on underground layer toggles. The planner supports up to 3 layers for v1: surface, underground level 1, and underground level 2. Stairs connect adjacent layers. Claimed dungeons (§8.4) may display more layers if the source dungeon had them, but new PC-built underground construction is capped at 2 underground levels.
+- **Dungeon corridors/rooms:** For hideout and sanctum archetypes, dungeon corridors and rooms are placed at negative levels via the level selector (§4.6). Level 0 = surface; `level = -1`, `level = -2` are the two underground floors supported in v1 (each floor = 2 vertical cells, so underground floor 1 stamps at levels -1 and -2, underground floor 2 at levels -3 and -4). Above-ground multi-story construction uses positive levels with no cap at the data layer (practical cap = tallest placed structure). Stairs connect adjacent level bands via `feature: stairs_up_*` / `stairs_down_*` cells. Claimed dungeons (§8.4) may display more underground levels if the source dungeon had them, but new PC-built underground construction is capped at 2 underground floors.
 - **Overlap prevention:** Structures may not overlap except at designed connection points (wall-to-tower, gate-in-wall). The system rejects invalid placements with a visual indicator.
 
 ### 4.5 Accessory Sub-Menu
@@ -290,6 +294,14 @@ When a structure piece is placed on the grid, the player may immediately configu
 - Buildings: 1 wood door, 1 wood floor/roof.
 
 The player can modify all defaults. Accessory cost during construction is 25% of the accessory's base cost (ACKS rule). The sub-menu shows both the discounted construction cost and the full retrofit cost so the player understands the savings.
+
+### 4.6 Level Selector and Cross-Section Preview
+
+The planner's grid view is inherently multi-level (per §4.1). Two UI affordances surface that:
+
+- **Level selector.** A vertical strip (similar to the dungeon HUD's Level Strip Widget) on the right edge of the planner shows every level containing placed structures, sorted top-down. The selected level is the active edit target — clicks on the main grid place/remove cells at that level. Defaults to level 0 (ground). PgUp/PgDn (or clicks on the strip) switch the active level. When a new structure is placed, the selector auto-expands to cover the structure's vertical run.
+- **Extrude-on-place.** Structures with a vertical footprint (walls, towers, keeps, multi-story buildings) stamp across all their levels automatically when placed on the ground. The default behavior is "place on ground + extrude up." Per-level edits (e.g. cutting an arrow slit only on the 3rd story's level band) happen via the level selector after extrusion.
+- **Cross-section preview.** A small side panel shows an isometric cross-section of the design — a mini instance of the tactical renderer fed the planner's `VoxelMapData`. Useful for verifying multi-story construction, interior stair runs, and underground connections before committing. The preview uses the same dither/hide behavior as the dungeon view (§gdd-voxel-tactical-architecture §16.3) so the selected level reads cleanly.
 
 ---
 
@@ -737,44 +749,59 @@ Every stronghold — player-built and NPC-generated — must have navigable inte
 2. **Player strongholds can be defended** with interior tactical positioning during sieges that breach the outer perimeter.
 3. **Strongholds claimed from dungeons** (§8.4) seamlessly integrate their existing interior layout.
 
-**Interior generation principle:** When a structure piece (building, tower, keep, gatehouse) is placed on the grid, the system auto-generates a simple interior layout within the structure's footprint. The interior uses the same cell-based wall model as dungeons — walls are impassable cells, doors are cells with open/closed state, stairs are passable cells connecting floors.
+**Interior generation principle:** When a structure piece (building, tower, keep, gatehouse) is placed on the grid, the system auto-generates a simple interior layout within the structure's footprint. The interior stamps as `VoxelCell`s directly into the parent `VoxelMapData` — walls are `solidity: solid` cells, doors are cells with `feature: door_*` + open/closed `door_state`, stairs are cells with `feature: stairs_up_*` / `stairs_down_*` connecting floors.
+
+**Interior level bands:** Each story occupies a 2-cell vertical band — a floor level (`floor_type: stone` or `wood`) and a headroom level (`floor_type: none`). Ground floor = levels 0 & 1. Second floor = levels 2 & 3. Third floor = levels 4 & 5. Underground floor 1 = levels -1 & -2. Underground floor 2 = levels -3 & -4. Arrow slit cells sit on the lower cell of the band (eye level) on exterior walls.
 
 **Auto-generated interior rules by structure type:**
 
 ```
 Tower:
-  - Ground floor: single room filling the tower's circular/square mask
+  - Ground floor (levels 0-1): single room filling the tower's
+    circular/square mask; floor_type: stone on level 0, floor_type: none
+    on level 1 (airspace above the stone slab)
   - One entry door cell on a perimeter wall (facing courtyard or wall walk)
-  - Internal stairs (wood or stone, per accessory selection) connecting
-    each floor to the one above
-  - Each upper floor: single room with arrow slit cells on exterior walls
-  - Top floor: open battlement ring (if battlements accessory is present)
-  - Total rooms = number of stories (height / 10', typically 3-6)
+  - Internal stairs (wood or stone, per accessory selection) as
+    feature: stairs_up_<DIR> cells connecting each story's level band
+    to the next (level 1 -> level 2 for ground-to-2nd, etc.)
+  - Each upper story (levels 2-3, 4-5, ...): single-room level band;
+    arrow slit cells on exterior walls at the lower cell of the band
+  - Top story: open battlement ring (if battlements accessory is present)
+    at the story's upper level; the lower level remains the walkable floor
+  - Total stories = height_ft / 10 (typically 3-6)
 
 Keep:
-  - Ground floor: great hall (large central room) + 1-2 side chambers
+  - Ground floor (levels 0-1): great hall (large central room) + 1-2
+    side chambers; floor_type: stone on level 0
   - One main entry door (reinforced) + optional secondary/postern door
-  - Internal stairs connecting all floors
-  - Upper floors: 2-4 rooms per floor (lord's quarters, armory, chapel,
-    storage) sized proportionally to the keep's footprint
-  - Top floor: battlement ring + possible tower peak room
-  - Underground level (if applicable): dungeon cells or vault rooms
+  - Internal stairs (feature: stairs_*) connecting every adjacent story's
+    level bands
+  - Upper stories (levels 2-3, 4-5, ...): 2-4 rooms per story (lord's
+    quarters, armory, chapel, storage) sized proportionally; floor_type:
+    wood on the lower cell of each upper band
+  - Top story: battlement ring + possible tower peak room
+  - Underground stories (levels -1 to -2, -3 to -4, ...): dungeon cells
+    or vault rooms; floor_type: stone on the upper cell of each
+    underground band (the ceiling of the level below)
 
 Building (civilian):
-  - Single-story building: 1 room filling the footprint, 1 door
-  - Multi-story building: 1 room per floor, internal stairs, 1 ground-floor door
-  - Small buildings (≤20' × 20'): always single room per floor
-  - Large buildings (>20' × 20'): may be subdivided into 2-3 rooms per floor
+  - Single-story (levels 0-1): 1 room filling the footprint, 1 door
+  - Multi-story: 1 room per level band, internal stairs (feature:
+    stairs_*), 1 ground-floor door
+  - Small buildings (<=20' × 20'): always single room per level band
+  - Large buildings (>20' × 20'): may be subdivided into 2-3 rooms
+    per level band
 
 Gatehouse:
-  - Ground floor: gate passage (open corridor through the structure)
-    with portcullis cell and door cells at both ends
-  - Upper floor(s): guard room(s) overlooking the gate passage
-    (murder holes represented as a special floor cell type)
-  - Arrow slit cells on exterior walls
+  - Ground floor (levels 0-1): gate passage (open corridor through the
+    structure) with portcullis cell and door cells at both ends
+  - Upper level band(s): guard room(s) overlooking the gate passage
+    (murder holes represented as a cell with floor_type: none on the
+    lower cell of the upper band, directly above the passage)
+  - Arrow slit cells on exterior walls at the lower cell of each band
 
-Dungeon corridors/rooms (underground layer):
-  - Already use the cell-based wall model natively
+Dungeon corridors/rooms (negative levels):
+  - Already use the cell-based voxel wall model natively
   - No additional interior generation needed — they ARE the interior
 ```
 
@@ -839,11 +866,12 @@ StrongholdLayout:
   owner_character_id: string
   domain_id: string or null       # Linked domain, if any
   hex_id: string                  # Location on the campaign map
-  
-  grid_width: int                 # In 5' cells
-  grid_height: int
-  layers: int                     # 1 = surface only, 2 = surface + 1 underground, 3 = surface + 2 underground (v1 max)
-  
+
+  grid_width: int                 # Horizontal extent in 5' cells
+  grid_height: int                # Horizontal extent in 5' cells
+  # No "layers" field — vertical extent is derived from the max/min
+  # occupied level in voxel_map. v1 underground cap = level >= -4.
+
   structures: Array[PlacedStructure]
   # PlacedStructure:
   #   structure_id: string          # Unique ID for this placed piece
@@ -852,9 +880,10 @@ StrongholdLayout:
   #   dimensions: { length: int, width: int, height: int }  # In feet
   #   shape: string                 # "square" | "round"
   #   material: string              # "wood" | "stone" | "earthen"
-  #   grid_origin: Vector2i         # Top-left cell of this structure's footprint
-  #   grid_cells: Array[Vector2i]   # All cells occupied
-  #   layer: int                    # 0 = surface, 1 = underground
+  #   grid_origin: Vector3i         # Anchor cell (col, row, base_level)
+  #   grid_cells: Array[Vector3i]   # All voxel cells occupied (shell stacks
+  #                                 #   for towers/walls/keeps, interior air
+  #                                 #   cells auto-generated per §8.6)
   #   cost: int                     # GP (scaled from base)
   #   shp: int                      # Structural HP (scaled from base)
   #   current_shp: int              # Current SHP (may differ from max after damage)
@@ -862,42 +891,41 @@ StrongholdLayout:
   #   unit_capacity: float          # Garrison capacity in units
   #   accessories: Array[PlacedAccessory]
   #   connections: Array[string]    # IDs of structures this piece connects to
-  
+
   # PlacedAccessory:
   #   accessory_type: string        # "arrow_slit" | "door_wood" | "door_reinforced" | etc.
   #   count: int                    # Number of this accessory on this structure
   #   cost: int                     # Total cost (at 25% if during construction, 100% if retrofit)
   #   shp: int                      # Per-unit SHP
-  #   cell_positions: Array[...]    # Which cells on the structure (for battle map rendering)
-  
+  #   cell_positions: Array[Vector3i]  # Voxel cells where this accessory lives
+
   total_value: int                # Sum of all structure + accessory costs
   total_shp: int                  # Sum of all SHP
   total_unit_capacity: float      # Sum of garrison capacity
-  
+
   construction_state: string      # "planned" | "in_progress" | "complete" | "damaged" | "ruined"
   construction_project: ConstructionProject or null   # Active project data if in_progress
-  
+
   # Claiming / source tracking
   source_type: string             # "built" | "claimed_dungeon" | "claimed_ruin" | "npc_generated"
   source_dungeon_id: string or null  # If claimed from a dungeon, the original DungeonLayout ID
   appraised_value: int or null    # GP value at time of claiming (null if built from scratch)
-  
+
   # Interior navigation (§8.6)
-  interior_layouts: Dictionary    # structure_id → StructureInterior
-  # StructureInterior:
-  #   floors: Array[FloorLayout]
-  #   FloorLayout:
-  #     floor_number: int           # 0 = ground, 1 = first upper, -1 = underground
-  #     cells: Array[Array[CellData]]  # Cell-based wall model, same as dungeon
-  #     rooms: Array[RoomData]      # Same RoomData format as DungeonLayout
-  #     stairs: Array[StairData]    # Connects to floor_number ± 1
-  #   NOTE: For claimed dungeons, interior_layouts is populated directly
-  #   from the DungeonLayout's rooms/cells. For built structures, interior
-  #   is auto-generated per §8.6 rules.
-  
-  # Battle map integration
-  battle_map_cells: Array[Array[CellData]]   # Cell-based wall model, same format as dungeon layouts
-  # Generated from structures array + interior_layouts; rebuilt whenever the layout changes
+  interior_cells: Dictionary      # structure_id → Array[Vector3i]
+  # For each structure, the voxel cells (in voxel_map) that belong to its
+  # interior (rooms + corridors + stair cells). Rooms within the interior
+  # are derived on demand via VoxelMapData.detect_rooms() scoped to the
+  # structure's footprint; stairs are enumerated by feature suffix.
+  # For claimed dungeons, interior_cells is populated from the source
+  # DungeonLayout's cells. For built structures, it is auto-generated
+  # per §8.6 rules.
+
+  # Battle map / world state
+  voxel_map: VoxelMapData         # Sparse Dictionary[Vector3i, VoxelCell].
+  # This IS the battle map. Stamped directly by the planner during design
+  # and during incremental edits; no conversion step at combat time
+  # (see gdd-voxel-tactical-architecture.md §13.5).
 ```
 
 ### 9.2 ConstructionProject
@@ -984,17 +1012,16 @@ The completed (or in-progress) stronghold layout doubles as the battle map for a
 
 ### 11.1 Battle Map Generation
 
-When the stronghold is attacked:
+When the stronghold is attacked, `StrongholdLayout.voxel_map` IS the battle map — no conversion pass. The planner has already stamped every cell at design time per the rules below (see [gdd-voxel-tactical-architecture.md §13.5](gdd-voxel-tactical-architecture.md#L631)). Cell properties used by the combat layer:
 
-1. Convert `StrongholdLayout.structures` to `battle_map_cells` using the project's cell-based wall model (per `gdd-combat-map-generation.md` §9.2).
-2. Each structure's footprint becomes wall cells (impassable) on the grid.
-3. Doors become door cells (passable when open, impassable when closed; type: wood/reinforced/iron/secret).
-4. Arrow slits become special wall cells that grant the -4 ranged attack penalty and +4 save bonus to defenders behind them.
-5. Battlements grant their defensive bonuses to units positioned on top of walls.
-6. Moats become impassable terrain cells (or passable only with fascines/bridges).
-7. Interior spaces become open passable cells for defender positioning.
+1. **Structure footprints** — shell stacks set `solidity: solid` on their occupied `Vector3i`s. Ground walkers cannot enter; flyers are blocked per `VoxelCell.blocks_flight()`; earth-passers can traverse.
+2. **Doors** — cells with `feature: door_<material>` and `door_state: open|closed|locked|spiked|wedged`. Passability derives from state; closed/locked doors are equivalent to solid cells for movement and LOS until forced/picked/bashed.
+3. **Arrow slits** — cells with `feature: arrow_slit` on exterior walls. Grant the -4 ranged attack penalty and +4 save bonus to defenders in the adjacent interior cell, and pass LOS for rangedd attacks while still reading as solid for movement and melee.
+4. **Battlements** — cells with `feature: battlement` on the top level band of a wall or tower. Defenders standing on the cell below (the walkable level of the band) gain the ACKS battlement bonuses.
+5. **Moats** — cells with `solidity: liquid` and `feature: moat` at level 0. Impassable to ground walkers without fascines/bridges; flyers and climbers resolve per their movement mode (`gdd-voxel-tactical-architecture.md` §11).
+6. **Interior spaces** — `solidity: air` cells at each story's walkable level (`floor_type: stone | wood`). These are the defender-positioning zones.
 
-This conversion is deterministic and produces identical results each time. The battle map is cached and only regenerated if the stronghold layout changes.
+Because cells are authored in place, no rebuild step runs when the stronghold layout changes — the voxel map is always current. During live combat, `VoxelCell.current_shp` (on shell cells) tracks damage; a cell whose SHP hits zero flips to `solidity: air, feature: rubble` and becomes passable with difficult-terrain cost.
 
 ### 11.2 Garrison Positioning
 
@@ -1018,6 +1045,7 @@ The battle map system auto-suggests defender positions based on unit capacity. E
 - **Interior tweak scope limited: DECIDED.** Players can move doors, move stairs, add/remove interior doors, and change door types. Players cannot move exterior walls, add rooms beyond the footprint, change floor count, or draw freeform interior walls. This keeps the planner manageable while allowing meaningful customization.
 - **Barbican as atomic unit: DECIDED.** Barbicans are placed as a single grid stamp (gatehouse + 2 towers + drawbridge) matching the ACKS fixed-price listing. No component-level assembly.
 - **Two underground levels for v1: DECIDED.** The planner supports up to 2 underground levels for new construction. Claimed dungeons may display deeper levels from their source layout. Expansion to deeper PC-built construction is post-v1.
+- **Voxel-native grid: DECIDED.** The planner's grid is a `VoxelMapData` (sparse `Dictionary[Vector3i, VoxelCell]`) with levels for multi-story structures and underground floors. No 2D-with-height-metadata intermediate; no conversion pass at combat time. See [gdd-voxel-tactical-architecture.md §13](gdd-voxel-tactical-architecture.md#L605) for the voxel stronghold model and §6 for coordinate conventions.
 
 ---
 

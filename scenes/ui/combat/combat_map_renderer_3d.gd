@@ -34,10 +34,10 @@ const CAM_BACKWARD := Vector3(0.0, 0.5774, 0.8165)
 # Signals (identical to 2D combat_map_renderer.gd)
 # ---------------------------------------------------------------------------
 
-signal cell_clicked(pos: Vector2i)
+signal cell_clicked(pos: Vector3i)
 signal entity_clicked(entity_id: String)
 signal right_click_cancel()
-signal cell_right_clicked(cell_pos: Vector2i, screen_pos: Vector2)
+signal cell_right_clicked(cell_pos: Vector3i, screen_pos: Vector2)
 
 
 # ---------------------------------------------------------------------------
@@ -56,8 +56,7 @@ var _env: WorldEnvironment = null
 # State
 # ---------------------------------------------------------------------------
 
-var _map: TacticalMapData = null
-var _voxel_map: VoxelMapData = null   # Voxel path
+var _voxel_map: VoxelMapData = null
 var _tokens: Dictionary = {}         # entity_id -> CombatantToken3D
 var _highlight_layers: Array = []
 var _target_rings: Array[String] = []
@@ -69,18 +68,16 @@ var _token_scene: PackedScene = null
 # Setup
 # ---------------------------------------------------------------------------
 
-## Initialize the renderer with a tactical map and combat roster.
-## [param tactical_map] is VoxelMapData in voxel mode (default); TacticalMapData
-## is preserved as a fallback path for legacy callers pending their migration.
-func setup(tactical_map, roster) -> void:
-	if tactical_map is VoxelMapData:
-		_voxel_map = tactical_map
-	else:
-		_map = tactical_map
+## Initialize the renderer with a voxel battle map and combat roster.
+func setup(voxel_map: VoxelMapData, roster) -> void:
+	_voxel_map = voxel_map
 
-	# Create child node structure
+	# Create child node structure. LevelGroups mirrors the dungeon renderer's
+	# per-level grouping; combat is single-level today (Level_0 only), but the
+	# structure leaves room for future multi-level combat to drop in.
+	# TODO: wire VisibilityManager once multi-level combat lands.
 	_grid_meshes = Node3D.new()
-	_grid_meshes.name = "GridMeshes"
+	_grid_meshes.name = "LevelGroups"
 	add_child(_grid_meshes)
 
 	_highlight_layer = Node3D.new()
@@ -135,36 +132,16 @@ func _populate_tokens(roster) -> void:
 		_tokens[c.id] = token
 
 		# Position token on grid
-		if c.grid_position != Vector2i(-1, -1):
-			if _voxel_map != null:
-				var world_pos := VoxelGrid.cell_to_world(c.grid_position.x, c.grid_position.y, 0)
-				token.update_position(world_pos)
-			else:
-				var world_pos := TacticalGrid3D.cell_to_world(c.grid_position.x, c.grid_position.y)
-				token.update_position(world_pos)
+		if c.grid_position != Vector3i(-1, -1, 0):
+			var world_pos := VoxelGrid.cell_to_world(
+				c.grid_position.x, c.grid_position.y, c.grid_position.z)
+			token.update_position(world_pos)
 
 
 func _build_terrain() -> void:
-	if _voxel_map != null:
-		_build_terrain_voxel()
-		return
-
-	if _map == null:
-		return
-
-	# Floor cells — use combat ground colors
-	var floor_mmi := TacticalGrid3D.build_floor_multimesh(_map, Callable(TacticalGrid3D, "combat_ground_color"))
-	floor_mmi.name = "FloorCells"
-	_grid_meshes.add_child(floor_mmi)
-
-	# Grid lines
-	var grid_lines := TacticalGrid3D.build_grid_lines(_map)
-	_grid_meshes.add_child(grid_lines)
-
-
-func _build_terrain_voxel() -> void:
 	if _voxel_map == null:
 		return
+	# Single Level_0 group today; future multi-level combat adds sibling groups here.
 	var color_func := Callable(TacticalGrid3D, "combat_ground_color_voxel")
 	var group := TacticalGrid3D.build_level_group(_voxel_map, 0, color_func, false)
 	_grid_meshes.add_child(group)
@@ -178,7 +155,9 @@ func set_combat_mode(_enabled: bool) -> void:
 	pass  # Always in combat mode
 
 
-func highlight_cells(cells: Array[Vector2i], color: Color) -> void:
+func highlight_cells(cells: Array, color: Color) -> void:
+	## Accepts Array[Vector3i] for voxel-native cells, or Array[Vector2i] for
+	## same-level legacy callers (projected to the active combat level, z=0).
 	_highlight_layers.append({"cells": cells, "color": color})
 	_rebuild_highlights()
 
@@ -210,14 +189,9 @@ func set_active_token(entity_id: String) -> void:
 func move_token(entity_id: String, to_cell) -> void:
 	if not _tokens.has(entity_id):
 		return
-	if _voxel_map != null:
-		var pos: Vector3i = to_cell if to_cell is Vector3i else Vector3i(to_cell.x, to_cell.y, 0)
-		var world_pos := VoxelGrid.cell_to_world(pos.x, pos.y, pos.z)
-		_tokens[entity_id].update_position(world_pos)
-	else:
-		var pos_2d: Vector2i = to_cell
-		var world_pos := TacticalGrid3D.cell_to_world(pos_2d.x, pos_2d.y)
-		_tokens[entity_id].update_position(world_pos)
+	var pos: Vector3i = to_cell if to_cell is Vector3i else Vector3i(to_cell.x, to_cell.y, 0)
+	var world_pos := VoxelGrid.cell_to_world(pos.x, pos.y, pos.z)
+	_tokens[entity_id].update_position(world_pos)
 
 
 func set_token_facing(entity_id: String, facing: Vector2i) -> void:
@@ -263,30 +237,21 @@ func remove_entity_token(entity_id: String) -> void:
 
 
 func _rebuild_highlights() -> void:
-	if _highlight_layer == null:
+	if _highlight_layer == null or _voxel_map == null:
 		return
 	for child in _highlight_layer.get_children():
 		child.queue_free()
 
-	if _voxel_map != null:
-		for layer in _highlight_layers:
-			var color: Color = layer.get("color", Color(1.0, 1.0, 0.0, 0.25))
-			var cells_3d: Array[Vector3i] = []
-			for pos in layer.get("cells", []):
-				if pos is Vector3i:
-					cells_3d.append(pos)
-				elif pos is Vector2i:
-					cells_3d.append(Vector3i(pos.x, pos.y, 0))
-			var mmi := TacticalGrid3D.build_highlight_overlay_voxel(cells_3d, color, _voxel_map)
-			_highlight_layer.add_child(mmi)
-	else:
-		for layer in _highlight_layers:
-			var color: Color = layer.get("color", Color(1.0, 1.0, 0.0, 0.25))
-			var cells: Array[Vector2i] = []
-			for pos in layer.get("cells", []):
-				cells.append(pos)
-			var mmi := TacticalGrid3D.build_highlight_overlay(cells, color, _map)
-			_highlight_layer.add_child(mmi)
+	for layer in _highlight_layers:
+		var color: Color = layer.get("color", Color(1.0, 1.0, 0.0, 0.25))
+		var cells_3d: Array[Vector3i] = []
+		for pos in layer.get("cells", []):
+			if pos is Vector3i:
+				cells_3d.append(pos)
+			elif pos is Vector2i:
+				cells_3d.append(Vector3i(pos.x, pos.y, 0))
+		var mmi := TacticalGrid3D.build_highlight_overlay_voxel(cells_3d, color, _voxel_map)
+		_highlight_layer.add_child(mmi)
 
 
 # ---------------------------------------------------------------------------
@@ -297,37 +262,22 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventMouseButton) or not event.pressed:
 		return
 
-	if _camera == null:
+	if _camera == null or _voxel_map == null:
 		return
 
-	if _voxel_map != null:
-		var cell_pos_3d := TacticalGrid3D.screen_to_cell_voxel(_camera, event.position, 0)
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			var hit_eid := _entity_id_near(event.position)
-			if not hit_eid.is_empty():
-				entity_clicked.emit(hit_eid)
-				get_viewport().set_input_as_handled()
-				return
-			if _voxel_map.has_cell(cell_pos_3d):
-				cell_clicked.emit(Vector2i(cell_pos_3d.x, cell_pos_3d.y))
-				get_viewport().set_input_as_handled()
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			cell_right_clicked.emit(Vector2i(cell_pos_3d.x, cell_pos_3d.y), event.position)
+	var cell_pos_3d := TacticalGrid3D.screen_to_cell_voxel(_camera, event.position, 0)
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		var hit_eid := _entity_id_near(event.position)
+		if not hit_eid.is_empty():
+			entity_clicked.emit(hit_eid)
 			get_viewport().set_input_as_handled()
-	else:
-		var cell_pos := TacticalGrid3D.screen_to_cell(_camera, event.position)
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			var hit_eid := _entity_id_near(event.position)
-			if not hit_eid.is_empty():
-				entity_clicked.emit(hit_eid)
-				get_viewport().set_input_as_handled()
-				return
-			if _map != null and _map.has_cell(cell_pos):
-				cell_clicked.emit(cell_pos)
-				get_viewport().set_input_as_handled()
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			cell_right_clicked.emit(cell_pos, event.position)
+			return
+		if _voxel_map.has_cell(cell_pos_3d):
+			cell_clicked.emit(cell_pos_3d)
 			get_viewport().set_input_as_handled()
+	elif event.button_index == MOUSE_BUTTON_RIGHT:
+		cell_right_clicked.emit(cell_pos_3d, event.position)
+		get_viewport().set_input_as_handled()
 
 
 func _process(delta: float) -> void:
@@ -369,29 +319,14 @@ func _entity_id_near(screen_pos: Vector2) -> String:
 
 
 func _center_camera() -> void:
-	if _camera == null:
-		return
-
-	if _voxel_map != null:
-		var sum := Vector3.ZERO
-		var count := 0
-		for pos in _voxel_map.get_all_positions():
-			if pos.z == 0:
-				sum += VoxelGrid.cell_to_world(pos.x, pos.y, 0)
-				count += 1
-		if count > 0:
-			var center := sum / float(count)
-			_camera.position = center + CAM_BACKWARD * 50.0
-		return
-
-	if _map == null:
+	if _camera == null or _voxel_map == null:
 		return
 	var sum := Vector3.ZERO
 	var count := 0
-	for pos in _map._cells.keys():
-		sum += TacticalGrid3D.cell_to_world(pos.x, pos.y)
-		count += 1
+	for pos in _voxel_map.get_all_positions():
+		if pos.z == 0:
+			sum += VoxelGrid.cell_to_world(pos.x, pos.y, 0)
+			count += 1
 	if count > 0:
 		var center := sum / float(count)
-		# Offset along camera's backward direction to keep geometry in near/far range
 		_camera.position = center + CAM_BACKWARD * 50.0

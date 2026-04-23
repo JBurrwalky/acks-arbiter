@@ -97,7 +97,7 @@ signal weapon_switch_requested(combatant_id: String, weapons: Array, has_moved: 
 signal weapon_switched(combatant_id: String)
 
 ## Request the host to build and show a context menu at the given position.
-signal context_menu_requested(combatant_id: String, target_cell: Vector2i, screen_pos: Vector2)
+signal context_menu_requested(combatant_id: String, target_cell: Vector3i, screen_pos: Vector2)
 
 ## Proactive movement range display on entering PC_AWAITING_INPUT.
 ## walk_cells: cells within combat movement (blue).
@@ -299,7 +299,7 @@ func on_action_button(action_id: String) -> void:
 
 ## Called when the player right-clicks a cell during their turn.
 ## The host scene should call this from the renderer's cell_right_clicked signal.
-func on_cell_right_clicked(target_cell: Vector2i, screen_pos: Vector2) -> void:
+func on_cell_right_clicked(target_cell: Vector3i, screen_pos: Vector2) -> void:
 	if _state != State.PC_AWAITING_INPUT:
 		return
 	_state = State.PC_CONTEXT_MENU_OPEN
@@ -454,14 +454,14 @@ func on_context_menu_cancelled() -> void:
 
 
 ## Called when a cell is clicked on the map during facing selection or cleave.
-func on_cell_targeted(pos: Vector2i) -> void:
+func on_cell_targeted(pos: Vector3i) -> void:
 	if _state == State.PC_SELECTING_FACING:
 		# Player clicked an adjacent cell to choose facing
 		var combatant = _controller.get_combatant(_current_pc_id)
 		if combatant == null:
 			return
-		var origin: Vector2i = combatant.grid_position
-		if IsometricGrid.chebyshev_distance(origin, pos) != 1:
+		var origin: Vector3i = combatant.grid_position
+		if VoxelGrid.chebyshev_distance(origin, pos) != 1:
 			return  # Only accept adjacent cells
 		combatant.facing = _direction_vector(origin, pos)
 		token_facing_preview.emit(_current_pc_id, combatant.facing)
@@ -486,11 +486,10 @@ func _enter_facing_selection() -> void:
 	var combatant = _controller.get_combatant(_current_pc_id)
 	if combatant == null:
 		return
-	var origin: Vector2i = combatant.grid_position
-	var adj := IsometricGrid.get_neighbors(origin)
-	var typed_cells: Array[Vector2i] = []
-	for c in adj:
-		typed_cells.append(c)
+	var origin: Vector3i = combatant.grid_position
+	var typed_cells: Array[Vector3i] = []
+	for n: Vector3i in VoxelGrid.get_neighbors_2d(origin):
+		typed_cells.append(n)
 	highlight_reachable.emit(typed_cells, Color(0.9, 0.9, 0.2, 0.20))
 	facing_selection_started.emit(_current_pc_id)
 
@@ -507,7 +506,8 @@ func on_confirm_move() -> void:
 	_show_proactive_movement_overlay()
 
 
-func _direction_vector(from_pos: Vector2i, to_pos: Vector2i) -> Vector2i:
+func _direction_vector(from_pos, to_pos) -> Vector2i:
+	## Accepts Vector2i or Vector3i; returns Vector2i (combat facing is 2D).
 	return Vector2i(signi(to_pos.x - from_pos.x), signi(to_pos.y - from_pos.y))
 
 
@@ -551,10 +551,7 @@ func _enter_cleave_selection(targets: Array, move_available: bool = false, move_
 
 	# Highlight valid 5ft step cells (yellow) if the move is still available
 	if move_available and not move_cells.is_empty():
-		var typed_cells: Array[Vector2i] = []
-		for c in move_cells:
-			typed_cells.append(c)
-		highlight_reachable.emit(typed_cells, Color(0.9, 0.9, 0.2, 0.30))
+		highlight_reachable.emit(move_cells, Color(0.9, 0.9, 0.2, 0.30))
 
 	cleave_selection_started.emit(_current_pc_id)
 
@@ -683,23 +680,24 @@ func _emit_action_log(result: Dictionary) -> void:
 func _highlight_range_bands(origin: Vector2i, short_r: int, medium_r: int, long_r: int) -> void:
 	## Emit highlight layers for ranged weapon range bands.
 	## Short = green, Medium = orange, Long = yellow.
-	if _controller == null or _controller.tactical_map == null:
+	if _controller == null or _controller.voxel_map == null:
 		return
-	var map: TacticalMapData = _controller.tactical_map
+	var map: VoxelMapData = _controller.voxel_map
 	var short_cells: Array[Vector2i] = []
 	var medium_cells: Array[Vector2i] = []
 	var long_cells: Array[Vector2i] = []
 
-	for cell_pos in map._cells.keys():
-		var dist: int = IsometricGrid.chebyshev_distance(origin, cell_pos)
+	for cell_pos in map.get_all_positions():
+		var cell_2d := Vector2i(cell_pos.x, cell_pos.y)
+		var dist: int = IsometricGrid.chebyshev_distance(origin, cell_2d)
 		if dist == 0:
 			continue
 		if dist <= short_r:
-			short_cells.append(cell_pos)
+			short_cells.append(cell_2d)
 		elif dist <= medium_r:
-			medium_cells.append(cell_pos)
+			medium_cells.append(cell_2d)
 		elif dist <= long_r:
-			long_cells.append(cell_pos)
+			long_cells.append(cell_2d)
 
 	if not short_cells.is_empty():
 		highlight_reachable.emit(short_cells, Color(0.2, 0.8, 0.3, 0.12))

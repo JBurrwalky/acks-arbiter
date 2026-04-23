@@ -44,8 +44,7 @@ var morale_resolver: MoraleResolver = null
 var cleave_resolver: CleaveResolver = null
 var movement_resolver: MovementResolver = null
 var maneuver_resolver = null  # ManeuverResolver — set after Phase 6
-var tactical_map: TacticalMapData = null
-var voxel_map: VoxelMapData = null  # Populated in voxel mode (default).
+var voxel_map: VoxelMapData = null
 
 ## Current state
 var round_number: int = 0
@@ -114,7 +113,6 @@ func _init(
 		p_monster_ai: MonsterAI = null,
 		p_morale_resolver: MoraleResolver = null,
 		p_cleave_resolver: CleaveResolver = null,
-		p_tactical_map: TacticalMapData = null,
 		p_mortal_wounds_resolver: MortalWoundsResolver = null,
 		p_voxel_map: VoxelMapData = null) -> void:
 	roster = p_roster
@@ -126,17 +124,11 @@ func _init(
 	monster_ai = p_monster_ai
 	morale_resolver = p_morale_resolver
 	cleave_resolver = p_cleave_resolver
-	tactical_map = p_tactical_map
 	voxel_map = p_voxel_map
 	mortal_wounds_resolver = p_mortal_wounds_resolver
 	combat_log = CombatLog.new()
-	if tactical_map != null:
-		movement_resolver = MovementResolver.new(tactical_map, roster)
-	# Voxel path: wire VoxelMapData into MovementResolver
+	movement_resolver = MovementResolver.new(roster)
 	if voxel_map != null:
-		if movement_resolver == null:
-			# Create a MovementResolver with null TacticalMapData — voxel path handles spatial queries
-			movement_resolver = MovementResolver.new(null, roster)
 		movement_resolver.set_voxel_map(voxel_map)
 	# ManeuverResolver works with or without grid
 	if attack_resolver != null:
@@ -342,7 +334,7 @@ func get_reachable_cells_3d(combatant_id: String) -> Array[Vector3i]:
 	if c == null:
 		return []
 	return movement_resolver.get_cells_reachable_3d(
-		c.grid_position_3d, "ground", c.get_combat_movement_cells())
+		c.grid_position, "ground", c.get_combat_movement_cells())
 
 
 ## Helper: returns IDs of all alive enemies for [param combatant_id].
@@ -355,15 +347,6 @@ func _all_enemy_ids(combatant_id: String) -> Array[String]:
 	for enemy in roster.get_alive_on_side(enemy_side):
 		result.append(enemy.id)
 	return result
-
-
-# ---------------------------------------------------------------------------
-# Voxel feature flag helper
-# ---------------------------------------------------------------------------
-
-## Returns true when voxel mode is active (voxel_map set on combat init).
-func _use_voxel() -> bool:
-	return voxel_map != null
 
 
 # ---------------------------------------------------------------------------
@@ -786,41 +769,18 @@ func _get_valid_cleave_move_cells(combatant: Combatant) -> Array:
 	## Per ACKS + project rule: ignores engagement (free disengage), but can't
 	## move through enemies. Dead bodies do not block.
 	var result: Array = []
-
-	# --- Voxel path ---
-	if _use_voxel():
-		var origin_3d: Vector3i = combatant.grid_position_3d
-		if origin_3d == Vector3i(-1, -1, 0):
-			return result
-		for neighbor in VoxelGrid.get_neighbors_3d(origin_3d):
-			if not voxel_map.has_cell(neighbor):
-				continue
-			if not voxel_map.is_passable(neighbor):
-				continue
-			var blocked := false
-			for eid in voxel_map.get_entities_at(neighbor):
-				var occupant = roster.get_by_id(eid)
-				if occupant != null and occupant.is_alive():
-					blocked = true
-					break
-			if not blocked:
-				result.append(neighbor)
+	if voxel_map == null:
 		return result
-
-	# --- Legacy TacticalMapData path ---
-	if tactical_map == null:
+	var origin_3d: Vector3i = combatant.grid_position
+	if origin_3d == Vector3i(-1, -1, 0):
 		return result
-	var origin: Vector2i = combatant.grid_position
-	if origin == Vector2i(-1, -1):
-		return result
-	for neighbor in IsometricGrid.get_neighbors(origin):
-		if not tactical_map.has_cell(neighbor):
+	for neighbor in VoxelGrid.get_neighbors_3d(origin_3d):
+		if not voxel_map.has_cell(neighbor):
 			continue
-		if not tactical_map.is_passable(neighbor):
+		if not voxel_map.is_passable(neighbor):
 			continue
-		# Check for living blockers in the destination cell
 		var blocked := false
-		for eid in tactical_map.get_entities_at(neighbor):
+		for eid in voxel_map.get_entities_at(neighbor):
 			var occupant = roster.get_by_id(eid)
 			if occupant != null and occupant.is_alive():
 				blocked = true
@@ -847,56 +807,29 @@ func _resolve_pc_cleave_move(combatant: Combatant, parameters: Dictionary) -> Di
 			"result": {"note": "cleave move already used this window"},
 		}
 
-	# --- Voxel path: parse 3D target cell ---
-	if _use_voxel():
-		var target_cell_3d: Vector3i
-		if parameters.has("target_cell"):
-			target_cell_3d = parameters["target_cell"]
-		else:
-			target_cell_3d = Vector3i(
-				int(parameters.get("target_x", -1)),
-				int(parameters.get("target_y", -1)),
-				int(parameters.get("target_z", 0)))
-
-		var valid_cells_3d: Array = _get_valid_cleave_move_cells(combatant)
-		if target_cell_3d not in valid_cells_3d:
-			return {
-				"phase": "action", "status": "action_resolved",
-				"combatant_id": combatant.id, "action": "cleave_move",
-				"result": {"note": "invalid cleave move cell"},
-			}
-
-		var old_pos_3d: Vector3i = combatant.grid_position_3d
-		voxel_map.set_entity_pos(combatant.id, target_cell_3d)
-		combatant.grid_position_3d = target_cell_3d
-		combatant.grid_position = Vector2i(target_cell_3d.x, target_cell_3d.y)
-		combatant.facing = _direction_vector(
-			Vector2i(old_pos_3d.x, old_pos_3d.y),
-			Vector2i(target_cell_3d.x, target_cell_3d.y))
-		_pending_cleave_move_used = true
+	var target_cell_3d: Vector3i
+	if parameters.has("target_cell"):
+		target_cell_3d = parameters["target_cell"]
 	else:
-		# --- Legacy TacticalMapData path ---
-		var target_cell: Vector2i
-		if parameters.has("target_cell"):
-			target_cell = parameters["target_cell"]
-		else:
-			target_cell = Vector2i(
-				int(parameters.get("target_x", -1)),
-				int(parameters.get("target_y", -1)))
+		target_cell_3d = Vector3i(
+			int(parameters.get("target_x", -1)),
+			int(parameters.get("target_y", -1)),
+			int(parameters.get("target_z", combatant.grid_position.z)))
 
-		var valid_cells: Array = _get_valid_cleave_move_cells(combatant)
-		if target_cell not in valid_cells:
-			return {
-				"phase": "action", "status": "action_resolved",
-				"combatant_id": combatant.id, "action": "cleave_move",
-				"result": {"note": "invalid cleave move cell"},
-			}
+	var valid_cells_3d: Array = _get_valid_cleave_move_cells(combatant)
+	if target_cell_3d not in valid_cells_3d:
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "cleave_move",
+			"result": {"note": "invalid cleave move cell"},
+		}
 
-		var old_pos: Vector2i = combatant.grid_position
-		tactical_map.set_entity_pos(combatant.id, target_cell)
-		combatant.grid_position = target_cell
-		combatant.facing = _direction_vector(old_pos, target_cell)
-		_pending_cleave_move_used = true
+	var old_pos_3d: Vector3i = combatant.grid_position
+	if voxel_map != null:
+		voxel_map.set_entity_pos(combatant.id, target_cell_3d)
+	combatant.grid_position = target_cell_3d
+	combatant.facing = _direction_vector(old_pos_3d, target_cell_3d)
+	_pending_cleave_move_used = true
 
 	_update_engagement()
 
@@ -910,7 +843,7 @@ func _resolve_pc_cleave_move(combatant: Combatant, parameters: Dictionary) -> Di
 		_pending_cleave_attack = {}
 		_pending_cleave_move_used = false
 
-	var new_pos = combatant.grid_position_3d if _use_voxel() else combatant.grid_position
+	var new_pos: Vector3i = combatant.grid_position
 	var result_data: Dictionary = {
 		"new_position": new_pos,
 		"cleave_move_used": true,
@@ -1829,9 +1762,10 @@ func _resolve_switch_weapon(
 # Engagement tracking
 # ---------------------------------------------------------------------------
 
-func _direction_vector(from_pos: Vector2i, to_pos: Vector2i) -> Vector2i:
+func _direction_vector(from_pos, to_pos) -> Vector2i:
 	## Returns a unit direction vector from from_pos to to_pos.
-	## Components are clamped to -1/0/+1.
+	## Components are clamped to -1/0/+1. Accepts Vector2i or Vector3i inputs —
+	## returns Vector2i (combat facing is 2D; z is always 0 in 12a).
 	return Vector2i(signi(to_pos.x - from_pos.x), signi(to_pos.y - from_pos.y))
 
 
@@ -1859,7 +1793,7 @@ func _update_engagement() -> void:
 		# If NOT previously engaged AND newly engaged, turn to face the engager.
 		if prev_ids.is_empty() and not newly_engaged_ids.is_empty():
 			var engager = roster.get_by_id(newly_engaged_ids[0])
-			if engager != null and engager.grid_position != Vector2i(-1, -1):
+			if engager != null and engager.grid_position != Vector3i(-1, -1, 0):
 				c.facing = _direction_vector(c.grid_position, engager.grid_position)
 
 		_prev_adjacent_enemies[c.id] = curr_ids

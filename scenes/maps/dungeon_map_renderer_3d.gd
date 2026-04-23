@@ -72,8 +72,7 @@ const CAM_BACKWARD := Vector3(0.0, 0.5774, 0.8165)
 # ---------------------------------------------------------------------------
 
 var _controller: DungeonMapController
-var _map: TacticalMapData                  # Legacy path
-var _voxel_map: VoxelMapData = null        # Voxel path
+var _voxel_map: VoxelMapData = null
 var _visibility_manager: VisibilityManager = null  # Voxel path
 var _level_strip_widget: Node = null                # Session 8 HUD
 var _offscreen_indicators: Node = null              # Session 8 HUD
@@ -450,16 +449,9 @@ func _advance_movement_animation(entity_id: String) -> void:
 		_tweening.erase(entity_id)
 		return
 
-	var next_cell = path[idx]
-	var target_world: Vector3
-	if next_cell is Vector3i:
-		# Voxel path: level is encoded in z, world Y comes from VoxelGrid.
-		target_world = VoxelGrid.cell_to_world(next_cell.x, next_cell.y, next_cell.z)
-	else:
-		# Legacy 2D path: elevation lives on the TacticalMapData cell.
-		var cell_data := _map.get_cell(next_cell) if _map != null else {}
-		var elev: int = cell_data.get("elevation", 0)
-		target_world = TacticalGrid3D.cell_to_world(next_cell.x, next_cell.y, elev)
+	var next_cell: Vector3i = path[idx]
+	# Voxel path: level is encoded in z, world Y comes from VoxelGrid.
+	var target_world := VoxelGrid.cell_to_world(next_cell.x, next_cell.y, next_cell.z)
 
 	var token: Node3D = _tokens[entity_id]
 	_tweening[entity_id] = true
@@ -565,20 +557,18 @@ func _kill_entity_tween(entity_id: String) -> void:
 		token.remove_meta("move_tween")
 
 
-## Snap a token to its current mechanical position on the tactical map.
+## Snap a token to its current mechanical position on the voxel map.
 func _snap_to_mechanical_position(entity_id: String) -> void:
 	if not _tokens.has(entity_id) or _controller == null:
 		return
-	var tac_map: TacticalMapData = _controller.get_map()
-	if tac_map == null:
+	var vmap := _controller.get_voxel_map()
+	if vmap == null:
 		return
-	if not tac_map.entity_positions.has(entity_id):
+	var pos: Vector3i = vmap.get_entity_pos(entity_id)
+	if pos == Vector3i(-1, -1, -1):
 		return
-	var pos: Vector2i = tac_map.entity_positions[entity_id]
-	var cell_data := tac_map.get_cell(pos)
-	var elev: int = cell_data.get("elevation", 0)
 	_tokens[entity_id].update_position(
-		TacticalGrid3D.cell_to_world(pos.x, pos.y, elev))
+		VoxelGrid.cell_to_world(pos.x, pos.y, pos.z))
 
 
 ## Returns the list of entity IDs with active continuous movement animations.

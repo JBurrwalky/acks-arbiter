@@ -1,10 +1,29 @@
 class_name MovementResolver
 extends RefCounted
 
-## Grid-based movement, pathfinding, engagement, and charge/retreat validation.
+## Voxel-based movement, pathfinding, engagement, and charge/retreat validation.
 ##
-## When _map is null (no grid), all spatial queries return graceful defaults
-## so pre-grid combat works identically to Sessions 1-3.
+## Construction: `MovementResolver.new(roster)` then `set_voxel_map(voxel_map)`
+## once the active battle map is known. When `_voxel_map` is null (pre-grid
+## tests, cold init), all spatial queries return graceful defaults so callers
+## without a map don't crash.
+##
+## The 2D-signature public API (`get_grid_position`, `find_path`, `can_reach`,
+## `move_along_path`, `get_cells_reachable`, `has_line_of_sight`,
+## `validate_charge`, `resolve_fighting_withdrawal`, `resolve_full_retreat`,
+## `find_adjacent_cell_to`) survives as thin projection wrappers over the 3D
+## voxel primitives. New code should prefer the `*_3d` methods directly.
+##
+## **Zone of Control.** When [param mover_side] >= 0 is passed to find_path /
+## can_reach / move_along_path / get_cells_reachable (or to path_bfs_3d /
+## get_cells_reachable_3d directly), cells within the 8-neighbor same-level
+## threatened range of any alive enemy combatant act as:
+##   - Routing barriers in find_path / can_reach / path_bfs_3d (a ZoC cell
+##     may be the destination but NOT a waypoint).
+##   - Dead-ends in get_cells_reachable / get_cells_reachable_3d (reachable
+##     but not expandable).
+##   - Move stoppers in move_along_path (entering a ZoC cell ends movement).
+## Default `mover_side = -1` disables ZoC entirely.
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -17,7 +36,6 @@ const MIN_CHARGE_CELLS := 4  ## 20 feet minimum for a charge
 # Fields
 # ---------------------------------------------------------------------------
 
-var _map: TacticalMapData = null
 var _roster: CombatRoster = null
 var _voxel_map: VoxelMapData = null
 
@@ -26,9 +44,7 @@ var _voxel_map: VoxelMapData = null
 # Constructor
 # ---------------------------------------------------------------------------
 
-## [param map] may be null when operating in voxel-only mode (set_voxel_map called after).
-func _init(map: TacticalMapData = null, roster: CombatRoster = null) -> void:
-	_map = map
+func _init(roster: CombatRoster = null) -> void:
 	_roster = roster
 
 
@@ -37,7 +53,15 @@ func _init(map: TacticalMapData = null, roster: CombatRoster = null) -> void:
 # ---------------------------------------------------------------------------
 
 func has_grid() -> bool:
-	return _map != null or _voxel_map != null
+	return _voxel_map != null
+
+
+func has_voxel_grid() -> bool:
+	return _voxel_map != null
+
+
+func set_voxel_map(voxel_map: VoxelMapData) -> void:
+	_voxel_map = voxel_map
 
 
 # ---------------------------------------------------------------------------
@@ -45,29 +69,27 @@ func has_grid() -> bool:
 # ---------------------------------------------------------------------------
 
 func get_grid_position(combatant: Combatant) -> Vector2i:
-	## Returns the combatant's grid position, or Vector2i(-1,-1) if not placed.
-	## In voxel mode, projects the 3D position to 2D (x, y).
-	if _voxel_map != null:
-		var pos3d: Vector3i = _voxel_map.get_entity_pos(combatant.id)
-		if pos3d == Vector3i(-1, -1, -1):
-			return Vector2i(-1, -1)
-		return Vector2i(pos3d.x, pos3d.y)
-	if _map == null:
+	## Returns the combatant's 2D-projected grid position, or Vector2i(-1,-1)
+	## if not placed. Drops the z coordinate — callers that care about level
+	## should use get_grid_position_3d().
+	if _voxel_map == null:
 		return Vector2i(-1, -1)
-	return _map.get_entity_pos(combatant.id)
+	var pos3d: Vector3i = _voxel_map.get_entity_pos(combatant.id)
+	if pos3d == Vector3i(-1, -1, -1):
+		return Vector2i(-1, -1)
+	return Vector2i(pos3d.x, pos3d.y)
 
 
 func set_grid_position(combatant: Combatant, pos: Vector2i) -> void:
-	## Updates both the combatant field and map entity tracking.
-	## In voxel mode, also updates VoxelMapData and grid_position_3d (preserving z).
-	combatant.grid_position = pos
+	## Updates the combatant's position using a Vector2i input.
+	## Preserves the combatant's current z when projecting into Vector3i.
+	var z: int = combatant.grid_position.z
+	if z < 0:
+		z = 0
+	var pos3d := Vector3i(pos.x, pos.y, z)
+	combatant.grid_position = pos3d
 	if _voxel_map != null:
-		var z: int = combatant.grid_position_3d.z
-		var pos3d := Vector3i(pos.x, pos.y, z)
-		combatant.grid_position_3d = pos3d
 		_voxel_map.set_entity_pos(combatant.id, pos3d)
-	elif _map != null:
-		_map.set_entity_pos(combatant.id, pos)
 
 
 ## Returns the combatant's 3D grid position, or Vector3i(-1,-1,-1) if not placed.
@@ -77,10 +99,9 @@ func get_grid_position_3d(combatant: Combatant) -> Vector3i:
 	return _voxel_map.get_entity_pos(combatant.id)
 
 
-## Updates the combatant's position in 3D and syncs the 2D projection.
+## Updates the combatant's 3D grid position.
 func set_grid_position_3d(combatant: Combatant, pos: Vector3i) -> void:
-	combatant.grid_position_3d = pos
-	combatant.grid_position = Vector2i(pos.x, pos.y)
+	combatant.grid_position = pos
 	if _voxel_map != null:
 		_voxel_map.set_entity_pos(combatant.id, pos)
 
@@ -90,21 +111,14 @@ func set_grid_position_3d(combatant: Combatant, pos: Vector3i) -> void:
 # ---------------------------------------------------------------------------
 
 func get_distance_cells(a: Combatant, b: Combatant) -> int:
-	## Chebyshev distance between two combatants. Returns -1 if no grid.
-	## In voxel mode, uses 3D Chebyshev distance.
-	if _voxel_map != null:
-		var pos_a: Vector3i = get_grid_position_3d(a)
-		var pos_b: Vector3i = get_grid_position_3d(b)
-		if pos_a == Vector3i(-1, -1, -1) or pos_b == Vector3i(-1, -1, -1):
-			return -1
-		return VoxelGrid.chebyshev_distance(pos_a, pos_b)
-	if _map == null:
+	## 3D Chebyshev distance between two combatants. Returns -1 if no grid.
+	if _voxel_map == null:
 		return -1
-	var pos_a: Vector2i = get_grid_position(a)
-	var pos_b: Vector2i = get_grid_position(b)
-	if pos_a == Vector2i(-1, -1) or pos_b == Vector2i(-1, -1):
+	var pos_a: Vector3i = get_grid_position_3d(a)
+	var pos_b: Vector3i = get_grid_position_3d(b)
+	if pos_a == Vector3i(-1, -1, -1) or pos_b == Vector3i(-1, -1, -1):
 		return -1
-	return IsometricGrid.chebyshev_distance(pos_a, pos_b)
+	return VoxelGrid.chebyshev_distance(pos_a, pos_b)
 
 
 func get_distance_ft(a: Combatant, b: Combatant) -> int:
@@ -120,41 +134,22 @@ func get_distance_ft(a: Combatant, b: Combatant) -> int:
 # ---------------------------------------------------------------------------
 
 func is_adjacent(a: Combatant, b: Combatant) -> bool:
-	## True if a and b are in adjacent cells (Chebyshev distance == 1).
+	## True if a and b are in adjacent cells (3D Chebyshev distance == 1).
 	return get_distance_cells(a, b) == 1
 
 
 func get_adjacent_enemies(combatant: Combatant) -> Array[Combatant]:
-	## Returns all alive enemies adjacent to this combatant.
-	## In voxel mode, uses 3D adjacency via VoxelGrid.
+	## Returns all alive enemies within 3D Chebyshev distance 1.
 	var result: Array[Combatant] = []
-	if _voxel_map != null:
-		var pos: Vector3i = get_grid_position_3d(combatant)
-		if pos == Vector3i(-1, -1, -1):
-			return result
-		var target_side: int
-		if combatant.is_pc_side():
-			target_side = Combatant.Side.ENEMY
-		else:
-			target_side = Combatant.Side.PARTY
-		for c: Combatant in _roster.get_alive_on_side(target_side):
-			var c_pos: Vector3i = get_grid_position_3d(c)
-			if c_pos != Vector3i(-1, -1, -1) and VoxelGrid.is_adjacent(pos, c_pos):
-				result.append(c)
+	if _voxel_map == null or _roster == null:
 		return result
-	if _map == null:
+	var pos: Vector3i = get_grid_position_3d(combatant)
+	if pos == Vector3i(-1, -1, -1):
 		return result
-	var pos: Vector2i = get_grid_position(combatant)
-	if pos == Vector2i(-1, -1):
-		return result
-	var target_side: int
-	if combatant.is_pc_side():
-		target_side = Combatant.Side.ENEMY
-	else:
-		target_side = Combatant.Side.PARTY
+	var target_side: int = Combatant.Side.ENEMY if combatant.is_pc_side() else Combatant.Side.PARTY
 	for c: Combatant in _roster.get_alive_on_side(target_side):
-		var c_pos: Vector2i = get_grid_position(c)
-		if c_pos != Vector2i(-1, -1) and IsometricGrid.chebyshev_distance(pos, c_pos) == 1:
+		var c_pos: Vector3i = get_grid_position_3d(c)
+		if c_pos != Vector3i(-1, -1, -1) and VoxelGrid.is_adjacent(pos, c_pos):
 			result.append(c)
 	return result
 
@@ -165,99 +160,43 @@ func is_engaged(combatant: Combatant) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Pathfinding (BFS)
+# Pathfinding — 2D-signature wrappers delegate to path_bfs_3d
 # ---------------------------------------------------------------------------
 
 func find_path(
 		start: Vector2i,
 		goal: Vector2i,
-		exclude_occupied: bool = true,
+		_exclude_occupied: bool = true,
 		max_range: int = 50,
 		mover_side: int = -1,
 		level_z: int = 0) -> Array[Vector2i]:
-	## BFS shortest path from start to goal on passable cells.
-	## Returns the path INCLUDING start and goal, or empty if unreachable.
-	## [param max_range] caps the BFS depth to avoid expensive searches.
-	## [param mover_side] when >= 0, enemy ZoC cells block routing (except as goal).
-	## [param level_z] z-level for voxel mode pathfinding.
-	# --- Voxel path: delegate to 3D BFS and project result to 2D ---
-	if _voxel_map != null:
-		var start_3d := Vector3i(start.x, start.y, level_z)
-		var goal_3d := Vector3i(goal.x, goal.y, level_z)
-		var path_3d := path_bfs_3d(start_3d, goal_3d, "ground", max_range)
-		var result: Array[Vector2i] = []
-		for p in path_3d:
-			result.append(Vector2i(p.x, p.y))
-		return result
-	if _map == null:
+	## 2D projection of path_bfs_3d. Returns path INCLUDING start and goal,
+	## or empty if unreachable. When [param mover_side] >= 0, enemy ZoC cells
+	## act as routing barriers (destination allowed, not a waypoint).
+	if _voxel_map == null:
 		return []
-	if not _map.has_cell(start) or not _map.has_cell(goal):
-		return []
-	if start == goal:
-		return [start]
-
-	# Build occupied set (excluding start and goal positions)
-	var occupied: Dictionary = {}
-	if exclude_occupied:
-		for eid: String in _map.entity_positions.keys():
-			var epos: Vector2i = _map.entity_positions[eid]
-			if epos != start and epos != goal:
-				occupied[epos] = true
-
-	# Build enemy ZoC set (cells adjacent to enemies of mover_side)
-	var enemy_zoc: Dictionary = _build_enemy_zoc_set(mover_side) if mover_side >= 0 else {}
-
-	var visited: Dictionary = {start: null}  # pos -> predecessor
-	var queue: Array[Vector2i] = [start]
-	var depth: Dictionary = {start: 0}
-
-	while not queue.is_empty():
-		var current: Vector2i = queue.pop_front()
-		var current_depth: int = depth[current]
-		if current_depth >= max_range:
-			continue
-
-		for neighbor: Vector2i in IsometricGrid.get_neighbors(current):
-			if visited.has(neighbor):
-				continue
-			if not _map.is_passable(neighbor):
-				continue
-			if occupied.has(neighbor) and neighbor != goal:
-				continue
-			# ZoC cells can be a destination but not a waypoint
-			if not enemy_zoc.is_empty() and enemy_zoc.has(neighbor) and neighbor != goal:
-				continue
-
-			visited[neighbor] = current
-			depth[neighbor] = current_depth + 1
-
-			if neighbor == goal:
-				# Reconstruct path
-				return _reconstruct_path(visited, start, goal)
-			queue.append(neighbor)
-
-	return []  # Unreachable
+	var start_3d := Vector3i(start.x, start.y, level_z)
+	var goal_3d := Vector3i(goal.x, goal.y, level_z)
+	var path_3d := path_bfs_3d(start_3d, goal_3d, "ground", max_range, mover_side)
+	var result: Array[Vector2i] = []
+	for p in path_3d:
+		result.append(Vector2i(p.x, p.y))
+	return result
 
 
 func can_reach(combatant: Combatant, target_pos: Vector2i, max_cells: int,
 		mover_side: int = -1) -> bool:
 	## Returns true if combatant can reach target_pos within max_cells steps.
-	## [param mover_side] when >= 0, enemy ZoC cells block routing (except as destination).
-	if _voxel_map != null:
-		var start_3d: Vector3i = get_grid_position_3d(combatant)
-		if start_3d == Vector3i(-1, -1, -1):
-			return true
-		var goal_3d := Vector3i(target_pos.x, target_pos.y, start_3d.z)
-		var path_3d := path_bfs_3d(start_3d, goal_3d, "ground", max_cells + 1)
-		return not path_3d.is_empty() and (path_3d.size() - 1) <= max_cells
-	if _map == null:
+	## When [param mover_side] >= 0, enemy ZoC cells act as routing barriers
+	## (destination allowed, not a waypoint).
+	if _voxel_map == null:
 		return true  # No grid = everything reachable
-	var start: Vector2i = get_grid_position(combatant)
-	if start == Vector2i(-1, -1):
+	var start_3d: Vector3i = get_grid_position_3d(combatant)
+	if start_3d == Vector3i(-1, -1, -1):
 		return true
-	var path: Array[Vector2i] = find_path(start, target_pos, true, max_cells + 1, mover_side)
-	# Path includes start, so actual steps = path.size() - 1
-	return not path.is_empty() and (path.size() - 1) <= max_cells
+	var goal_3d := Vector3i(target_pos.x, target_pos.y, start_3d.z)
+	var path_3d := path_bfs_3d(start_3d, goal_3d, "ground", max_cells + 1, mover_side)
+	return not path_3d.is_empty() and (path_3d.size() - 1) <= max_cells
 
 
 # ---------------------------------------------------------------------------
@@ -270,90 +209,42 @@ func move_along_path(
 		max_cells: int,
 		mover_side: int = -1) -> int:
 	## Move combatant along the given path up to max_cells steps.
-	## Updates grid positions. Returns the number of cells actually moved.
-	## [param mover_side] when >= 0, movement stops upon entering an enemy ZoC cell.
-	if path.is_empty():
+	## Returns the number of cells actually moved. When [param mover_side] >= 0,
+	## movement stops immediately after entering an enemy ZoC cell (engagement).
+	if path.is_empty() or _voxel_map == null:
 		return 0
-	# In voxel mode, set_grid_position handles syncing 3D position
-	if _voxel_map != null:
-		var cells_moved := 0
-		for i in range(1, path.size()):
-			if cells_moved >= max_cells:
-				break
-			set_grid_position(combatant, path[i])
-			cells_moved += 1
-		return cells_moved
-	if _map == null:
-		return 0
-	var enemy_zoc: Dictionary = _build_enemy_zoc_set(mover_side) if mover_side >= 0 else {}
+	var enemy_zoc: Dictionary = _build_enemy_zoc_set_3d(mover_side) if mover_side >= 0 else {}
 	var cells_moved := 0
-	# Path[0] is current position; move through path[1], path[2], ...
 	for i in range(1, path.size()):
 		if cells_moved >= max_cells:
 			break
 		set_grid_position(combatant, path[i])
 		cells_moved += 1
-		# Stop if we just entered an enemy ZoC cell (now engaged)
-		if not enemy_zoc.is_empty() and enemy_zoc.has(path[i]):
-			break
+		if not enemy_zoc.is_empty():
+			# ZoC set is keyed by Vector3i; project current cell using the
+			# combatant's z (set_grid_position preserved it from the prior step).
+			var z: int = combatant.grid_position.z
+			if enemy_zoc.has(Vector3i(path[i].x, path[i].y, z)):
+				break
 	return cells_moved
 
 
 func get_cells_reachable(combatant: Combatant, max_cells: int,
 		mover_side: int = -1) -> Array[Vector2i]:
-	## Flood-fill to find all cells reachable within max_cells steps.
-	## [param mover_side] when >= 0, enemy ZoC cells are reachable but act as
-	## dead-ends (can enter but not leave — movement stops there).
-	## In voxel mode, delegates to 3D flood-fill and projects results to 2D.
-	if _voxel_map != null:
-		var pos_3d: Vector3i = get_grid_position_3d(combatant)
-		if pos_3d == Vector3i(-1, -1, -1):
-			return []
-		var cells_3d := get_cells_reachable_3d(pos_3d, "ground", max_cells)
-		var result_2d: Array[Vector2i] = []
-		for c3 in cells_3d:
-			# Exclude start cell to match 2D get_cells_reachable behavior
-			if c3 == pos_3d:
-				continue
-			result_2d.append(Vector2i(c3.x, c3.y))
-		return result_2d
+	## 2D projection of get_cells_reachable_3d. When [param mover_side] >= 0,
+	## ZoC cells are reachable but act as dead-ends (no expansion past them).
+	if _voxel_map == null:
+		return []
+	var pos_3d: Vector3i = get_grid_position_3d(combatant)
+	if pos_3d == Vector3i(-1, -1, -1):
+		return []
+	var cells_3d := get_cells_reachable_3d(pos_3d, "ground", max_cells, mover_side)
 	var result: Array[Vector2i] = []
-	if _map == null:
-		return result
-	var start: Vector2i = get_grid_position(combatant)
-	if start == Vector2i(-1, -1):
-		return result
-
-	var occupied: Dictionary = {}
-	for eid: String in _map.entity_positions.keys():
-		var epos: Vector2i = _map.entity_positions[eid]
-		if epos != start:
-			occupied[epos] = true
-
-	var enemy_zoc: Dictionary = _build_enemy_zoc_set(mover_side) if mover_side >= 0 else {}
-
-	var visited: Dictionary = {start: 0}
-	var queue: Array[Vector2i] = [start]
-
-	while not queue.is_empty():
-		var current: Vector2i = queue.pop_front()
-		var current_dist: int = visited[current]
-		if current_dist >= max_cells:
+	for c3 in cells_3d:
+		# Exclude start cell to match the legacy 2D get_cells_reachable behavior
+		if c3 == pos_3d:
 			continue
-		for neighbor: Vector2i in IsometricGrid.get_neighbors(current):
-			if visited.has(neighbor):
-				continue
-			if not _map.is_passable(neighbor):
-				continue
-			if occupied.has(neighbor):
-				continue
-			visited[neighbor] = current_dist + 1
-			result.append(neighbor)
-			# ZoC cells are reachable but act as dead-ends — don't expand from them
-			if not enemy_zoc.is_empty() and enemy_zoc.has(neighbor):
-				continue
-			queue.append(neighbor)
-
+		result.append(Vector2i(c3.x, c3.y))
 	return result
 
 
@@ -364,78 +255,38 @@ func get_cells_reachable(combatant: Combatant, max_cells: int,
 func validate_charge(attacker: Combatant, target: Combatant) -> Dictionary:
 	## Check if a charge from attacker to target is valid.
 	## Returns {valid: bool, path: Array[Vector2i], reason: String}.
-
-	# --- Voxel path ---
-	if _voxel_map != null:
-		var start: Vector2i = get_grid_position(attacker)
-		var end: Vector2i = get_grid_position(target)
-		if start == Vector2i(-1, -1) or end == Vector2i(-1, -1):
-			return {"valid": false, "path": [], "reason": "combatants not placed on grid"}
-		if not has_line_of_sight_combatants(attacker, target):
-			return {"valid": false, "path": [], "reason": "no line of sight to target"}
-		var z: int = attacker.grid_position_3d.z
-		var best_adj: Vector2i = _find_best_adjacent_cell_voxel(start, end, z)
-		if best_adj == Vector2i(-1, -1):
-			return {"valid": false, "path": [], "reason": "no adjacent cell reachable near target"}
-		var line_path: Array[Vector2i] = _get_line_cells(start, best_adj)
-		for i in range(1, line_path.size()):
-			var cell: Vector2i = line_path[i]
-			var cell_3d := Vector3i(cell.x, cell.y, z)
-			if not _voxel_map.is_passable(cell_3d):
-				return {"valid": false, "path": [], "reason": "path blocked at %s" % str(cell)}
-			var entities := _voxel_map.get_entities_at(cell_3d)
-			for eid: String in entities:
-				if eid != attacker.id and eid != target.id:
-					return {"valid": false, "path": [], "reason": "path blocked by entity at %s" % str(cell)}
-		var charge_distance := line_path.size() - 1
-		if charge_distance < MIN_CHARGE_CELLS:
-			return {"valid": false, "path": line_path, "reason": "too close to charge (need %d+ cells, have %d)" % [MIN_CHARGE_CELLS, charge_distance]}
-		var max_charge_cells := attacker.get_combat_movement_cells() * 3
-		if charge_distance > max_charge_cells:
-			return {"valid": false, "path": line_path, "reason": "target too far to charge (max %d cells)" % max_charge_cells}
-		return {"valid": true, "path": line_path, "reason": ""}
-
-	# --- Legacy TacticalMapData path ---
-	if _map == null:
-		# No grid = assume valid charge (pre-grid fallback)
+	if _voxel_map == null:
+		# No grid = assume valid charge (pre-grid fallback for tests).
 		return {"valid": true, "path": [], "reason": ""}
 
 	var start: Vector2i = get_grid_position(attacker)
 	var end: Vector2i = get_grid_position(target)
 	if start == Vector2i(-1, -1) or end == Vector2i(-1, -1):
 		return {"valid": false, "path": [], "reason": "combatants not placed on grid"}
-
-	# Check LOS at charge start
-	if not has_line_of_sight(start, end):
+	if not has_line_of_sight_combatants(attacker, target):
 		return {"valid": false, "path": [], "reason": "no line of sight to target"}
-
-	# The charge destination is an adjacent cell to the target
-	var best_adj: Vector2i = _find_best_adjacent_cell(start, end)
+	var z: int = attacker.grid_position.z
+	var best_adj: Vector2i = _find_best_adjacent_cell_voxel(start, end, z)
 	if best_adj == Vector2i(-1, -1):
 		return {"valid": false, "path": [], "reason": "no adjacent cell reachable near target"}
-
-	# Check straight-line path (must be clear)
 	var line_path: Array[Vector2i] = _get_line_cells(start, best_adj)
-	for i in range(1, line_path.size()):  # Skip start cell
+	for i in range(1, line_path.size()):
 		var cell: Vector2i = line_path[i]
-		if not _map.is_passable(cell):
+		var cell_3d := Vector3i(cell.x, cell.y, z)
+		if not _voxel_map.is_passable(cell_3d):
 			return {"valid": false, "path": [], "reason": "path blocked at %s" % str(cell)}
-		# Check occupied by other entities (not attacker or target)
-		var entities := _map.get_entities_at(cell)
+		var entities := _voxel_map.get_entities_at(cell_3d)
 		for eid: String in entities:
 			if eid != attacker.id and eid != target.id:
 				return {"valid": false, "path": [], "reason": "path blocked by entity at %s" % str(cell)}
-
-	# Check minimum distance (4+ cells = 20+ feet)
-	var charge_distance := line_path.size() - 1  # Exclude start
+	var charge_distance := line_path.size() - 1
 	if charge_distance < MIN_CHARGE_CELLS:
-		return {"valid": false, "path": line_path, "reason": "too close to charge (need %d+ cells, have %d)" % [MIN_CHARGE_CELLS, charge_distance]}
-
-	# Check max movement (3x combat movement for running/charging)
+		return {"valid": false, "path": line_path,
+			"reason": "too close to charge (need %d+ cells, have %d)" % [MIN_CHARGE_CELLS, charge_distance]}
 	var max_charge_cells := attacker.get_combat_movement_cells() * 3
 	if charge_distance > max_charge_cells:
-		return {"valid": false, "path": line_path, "reason": "target too far to charge (max %d cells)" % max_charge_cells}
-
+		return {"valid": false, "path": line_path,
+			"reason": "target too far to charge (max %d cells)" % max_charge_cells}
 	return {"valid": true, "path": line_path, "reason": ""}
 
 
@@ -444,29 +295,19 @@ func validate_charge(attacker: Combatant, target: Combatant) -> Dictionary:
 # ---------------------------------------------------------------------------
 
 func has_line_of_sight(from_pos: Vector2i, to_pos: Vector2i) -> bool:
-	## Bresenham line walk checking blocks_los on each intermediate cell.
-	## In voxel mode, delegates to VoxelLOS with z=0 for both positions.
-	## For full 3D LOS, use has_los_3d() directly.
-	if _voxel_map != null:
-		# Project 2D positions into 3D at z=0 for compatibility; callers that
-		# need proper z should use has_los_3d() directly.
-		return has_los_3d(Vector3i(from_pos.x, from_pos.y, 0),
-						  Vector3i(to_pos.x, to_pos.y, 0))
-	if _map == null:
+	## 2D-signature LOS. Projects into 3D at z=0 for VoxelLOS; callers that
+	## need proper z should use has_los_3d() directly.
+	if _voxel_map == null:
 		return true
-	var line: Array[Vector2i] = _get_line_cells(from_pos, to_pos)
-	# Check intermediate cells (exclude start and end)
-	for i in range(1, line.size() - 1):
-		if _map.blocks_los(line[i]):
-			return false
-	return true
+	return has_los_3d(Vector3i(from_pos.x, from_pos.y, 0),
+					  Vector3i(to_pos.x, to_pos.y, 0))
 
 
 ## Overload that accepts combatants directly and uses correct z in voxel mode.
 func has_line_of_sight_combatants(a: Combatant, b: Combatant) -> bool:
-	if _voxel_map != null:
-		return has_los_3d(get_grid_position_3d(a), get_grid_position_3d(b))
-	return has_line_of_sight(get_grid_position(a), get_grid_position(b))
+	if _voxel_map == null:
+		return true
+	return has_los_3d(get_grid_position_3d(a), get_grid_position_3d(b))
 
 
 # ---------------------------------------------------------------------------
@@ -477,16 +318,16 @@ func resolve_fighting_withdrawal(
 		combatant: Combatant,
 		away_from: Vector2i) -> Vector2i:
 	## Move up to half combat movement cells away from the specified position.
-	## Returns new position.
-	if _map == null and _voxel_map == null:
-		return combatant.grid_position
+	## Returns new 2D position.
+	if _voxel_map == null:
+		return Vector2i(combatant.grid_position.x, combatant.grid_position.y)
 	var start: Vector2i = get_grid_position(combatant)
 	if start == Vector2i(-1, -1):
 		return start
 	var max_cells := combatant.get_combat_movement_cells() / 2
 	if max_cells <= 0:
 		return start
-	var level_z: int = combatant.grid_position_3d.z
+	var level_z: int = combatant.grid_position.z
 	var best_pos := _find_retreat_cell(start, away_from, max_cells, level_z)
 	if best_pos != start:
 		set_grid_position(combatant, best_pos)
@@ -497,16 +338,16 @@ func resolve_full_retreat(
 		combatant: Combatant,
 		away_from: Vector2i) -> Vector2i:
 	## Move at full combat movement away from the specified position.
-	## Returns new position.
-	if _map == null and _voxel_map == null:
-		return combatant.grid_position
+	## Returns new 2D position.
+	if _voxel_map == null:
+		return Vector2i(combatant.grid_position.x, combatant.grid_position.y)
 	var start: Vector2i = get_grid_position(combatant)
 	if start == Vector2i(-1, -1):
 		return start
 	var max_cells := combatant.get_combat_movement_cells()
 	if max_cells <= 0:
 		return start
-	var level_z: int = combatant.grid_position_3d.z
+	var level_z: int = combatant.grid_position.z
 	var best_pos := _find_retreat_cell(start, away_from, max_cells, level_z)
 	if best_pos != start:
 		set_grid_position(combatant, best_pos)
@@ -522,83 +363,19 @@ func find_adjacent_cell_to(
 		target: Combatant) -> Vector2i:
 	## Find the best passable, unoccupied cell adjacent to target that is
 	## closest to mover. Returns Vector2i(-1,-1) if none.
-	if _voxel_map != null:
-		var mover_pos: Vector2i = get_grid_position(mover)
-		var target_pos: Vector2i = get_grid_position(target)
-		return _find_best_adjacent_cell_voxel(mover_pos, target_pos, mover.grid_position_3d.z)
-	if _map == null:
+	if _voxel_map == null:
 		return Vector2i(-1, -1)
 	var mover_pos: Vector2i = get_grid_position(mover)
 	var target_pos: Vector2i = get_grid_position(target)
-	return _find_best_adjacent_cell(mover_pos, target_pos)
+	return _find_best_adjacent_cell_voxel(mover_pos, target_pos, mover.grid_position.z)
 
 
 # ---------------------------------------------------------------------------
-# Private helpers
+# Private helpers (voxel-only)
 # ---------------------------------------------------------------------------
-
-func _build_enemy_zoc_set(mover_side: int) -> Dictionary:
-	## Returns a set (Dictionary of Vector2i -> true) of all cells adjacent to
-	## alive enemies of the given side. These cells form the enemy zone of control.
-	## In voxel mode, projects 3D ZoC to 2D keys for compatibility with 2D path code.
-	var zoc: Dictionary = {}
-	if _roster == null:
-		return zoc
-	if _map == null and _voxel_map == null:
-		return zoc
-	var enemy_side: int = Combatant.Side.ENEMY if mover_side == Combatant.Side.PARTY else Combatant.Side.PARTY
-	for c: Combatant in _roster.get_alive_on_side(enemy_side):
-		var c_pos: Vector2i = get_grid_position(c)
-		if c_pos == Vector2i(-1, -1):
-			continue
-		for neighbor: Vector2i in IsometricGrid.get_neighbors(c_pos):
-			zoc[neighbor] = true
-	return zoc
-
-
-func _reconstruct_path(
-		visited: Dictionary,
-		start: Vector2i,
-		goal: Vector2i) -> Array[Vector2i]:
-	var path: Array[Vector2i] = []
-	var current := goal
-	while current != start:
-		path.push_front(current)
-		current = visited[current]
-	path.push_front(start)
-	return path
-
-
-func _find_best_adjacent_cell(
-		from_pos: Vector2i,
-		target_pos: Vector2i) -> Vector2i:
-	## Find the passable, unoccupied neighbor of target_pos closest to from_pos.
-	var best := Vector2i(-1, -1)
-	var best_dist := 999999
-	for neighbor: Vector2i in IsometricGrid.get_neighbors(target_pos):
-		if not _map.is_passable(neighbor):
-			continue
-		# Check not occupied by another entity
-		var entities := _map.get_entities_at(neighbor)
-		var blocked := false
-		for eid: String in entities:
-			# Allow the mover to occupy their own cell
-			var epos := _map.get_entity_pos(eid)
-			if epos == from_pos:
-				continue
-			blocked = true
-			break
-		if blocked:
-			continue
-		var dist := IsometricGrid.chebyshev_distance(from_pos, neighbor)
-		if dist < best_dist:
-			best_dist = dist
-			best = neighbor
-	return best
-
 
 func _get_line_cells(from_pos: Vector2i, to_pos: Vector2i) -> Array[Vector2i]:
-	## Bresenham-style line from from_pos to to_pos.
+	## Bresenham-style line from from_pos to to_pos (pure math, no map access).
 	var result: Array[Vector2i] = []
 	var x0 := from_pos.x
 	var y0 := from_pos.y
@@ -630,27 +407,22 @@ func _find_retreat_cell(
 		away_from: Vector2i,
 		max_cells: int,
 		level_z: int = 0) -> Vector2i:
-	## BFS to find the cell within max_cells that maximizes distance from away_from.
-	## In voxel mode, uses VoxelMapData for passability and entity lookups.
-	## [param level_z] is the z-level for voxel passability checks.
-	var use_voxel: bool = _voxel_map != null
+	## Same-level BFS that picks the cell within max_cells maximizing Chebyshev
+	## distance from away_from. Voxel-only.
+	if _voxel_map == null:
+		return start
+
 	var occupied: Dictionary = {}
-	if use_voxel:
-		for eid: String in _voxel_map.entity_positions.keys():
-			var epos: Vector3i = _voxel_map.entity_positions[eid]
-			var epos_2d := Vector2i(epos.x, epos.y)
-			if epos_2d != start:
-				occupied[epos_2d] = true
-	else:
-		for eid: String in _map.entity_positions.keys():
-			var epos: Vector2i = _map.entity_positions[eid]
-			if epos != start:
-				occupied[epos] = true
+	for eid: String in _voxel_map.entity_positions.keys():
+		var epos: Vector3i = _voxel_map.entity_positions[eid]
+		var epos_2d := Vector2i(epos.x, epos.y)
+		if epos_2d != start:
+			occupied[epos_2d] = true
 
 	var visited: Dictionary = {start: 0}
 	var queue: Array[Vector2i] = [start]
 	var best_pos := start
-	var best_dist := IsometricGrid.chebyshev_distance(start, away_from)
+	var best_dist: int = IsometricGrid.chebyshev_distance(start, away_from)
 
 	while not queue.is_empty():
 		var current: Vector2i = queue.pop_front()
@@ -660,12 +432,7 @@ func _find_retreat_cell(
 		for neighbor: Vector2i in IsometricGrid.get_neighbors(current):
 			if visited.has(neighbor):
 				continue
-			var passable: bool
-			if use_voxel:
-				passable = _voxel_map.is_passable(Vector3i(neighbor.x, neighbor.y, level_z))
-			else:
-				passable = _map.is_passable(neighbor)
-			if not passable:
+			if not _voxel_map.is_passable(Vector3i(neighbor.x, neighbor.y, level_z)):
 				continue
 			if occupied.has(neighbor):
 				continue
@@ -683,12 +450,12 @@ func _find_best_adjacent_cell_voxel(
 		from_pos: Vector2i,
 		target_pos: Vector2i,
 		level_z: int = 0) -> Vector2i:
-	## Voxel-mode equivalent of _find_best_adjacent_cell.
-	## Uses VoxelMapData for passability checks, projects to 2D.
-	## [param level_z] is the z-level for voxel lookups.
+	## Returns the passable, unoccupied neighbor of target_pos (on level_z)
+	## closest to from_pos. Vector2i(-1, -1) if none.
+	if _voxel_map == null:
+		return Vector2i(-1, -1)
 	var best := Vector2i(-1, -1)
 	var best_dist := 999999
-	# Iterate 2D neighbors (combat is still on a 2D plane within a level)
 	for neighbor: Vector2i in IsometricGrid.get_neighbors(target_pos):
 		var neighbor_3d := Vector3i(neighbor.x, neighbor.y, level_z)
 		if not _voxel_map.is_passable(neighbor_3d):
@@ -711,28 +478,27 @@ func _find_best_adjacent_cell_voxel(
 
 
 # ---------------------------------------------------------------------------
-# 3D voxel methods (parallel to 2D methods above)
+# 3D voxel primitives
 # ---------------------------------------------------------------------------
-
-func set_voxel_map(voxel_map: VoxelMapData) -> void:
-	_voxel_map = voxel_map
-
-
-func has_voxel_grid() -> bool:
-	return _voxel_map != null
-
 
 ## 3D BFS pathfinding on VoxelMapData.
 ## [param movement_type]: "ground", "flying", "tunnel_burrow", "earth_pass", "climbing".
+## [param mover_side] (optional, default -1 = ignore ZoC): Combatant.Side value
+##   for the mover. When >= 0, cells in enemy ZoC (8 same-level neighbors of
+##   alive enemies of the opposite side) act as routing barriers — a ZoC cell
+##   may be the destination but NOT a waypoint. Matches ACKS threatened-squares
+##   engagement semantics.
 ## Returns path INCLUDING start and goal, or empty if unreachable.
 func path_bfs_3d(from_pos: Vector3i, to_pos: Vector3i,
 		movement_type: String = "ground",
-		max_range: int = 50) -> Array[Vector3i]:
+		max_range: int = 50,
+		mover_side: int = -1) -> Array[Vector3i]:
 	if _voxel_map == null:
 		return []
 	if from_pos == to_pos:
 		return [from_pos]
 
+	var enemy_zoc: Dictionary = _build_enemy_zoc_set_3d(mover_side) if mover_side >= 0 else {}
 	var visited: Dictionary = {from_pos: null}  # pos -> predecessor
 	var depth: Dictionary = {from_pos: 0}
 	var queue: Array[Vector3i] = [from_pos]
@@ -747,6 +513,9 @@ func path_bfs_3d(from_pos: Vector3i, to_pos: Vector3i,
 			if visited.has(neighbor):
 				continue
 			if not _can_enter_3d(current, neighbor, movement_type):
+				continue
+			# ZoC cells can be a destination but not a waypoint.
+			if not enemy_zoc.is_empty() and enemy_zoc.has(neighbor) and neighbor != to_pos:
 				continue
 
 			visited[neighbor] = current
@@ -777,12 +546,74 @@ func get_distance_3d(a: Vector3i, b: Vector3i) -> int:
 	return VoxelGrid.chebyshev_distance(a, b)
 
 
+## Walks a straight line of up to max_cells in [param direction] (unit vector
+## in grid coords). Stops at the first cell that is not passable OR is occupied
+## by an entity not in [param ignore_entity_ids].
+##
+## Returns a Dictionary with:
+##   - cells_traveled: int   — number of cells actually entered
+##   - final_pos: Vector3i   — the cell the walker ended on
+##   - wall_collision: bool  — true if stopped because the next cell was impassable
+##   - entity_collision: bool — true if stopped because the next cell was occupied
+##
+## Used by ManeuverResolver for force_back and overrun. Internally uses
+## path_bfs_3d on each step so the same passability/reachability rules that
+## govern normal movement apply.
+func walk_direction_3d(
+		start: Vector3i,
+		direction: Vector3i,
+		max_cells: int,
+		ignore_entity_ids: Array = []) -> Dictionary:
+	var current := start
+	var traveled := 0
+	var wall := false
+	var entity := false
+	if _voxel_map == null or max_cells <= 0:
+		return {
+			"cells_traveled": 0,
+			"final_pos": current,
+			"wall_collision": false,
+			"entity_collision": false,
+		}
+	for _i in range(max_cells):
+		var next := current + direction
+		# Reachability via the same BFS primitive used by normal movement.
+		# path_bfs_3d returns a 1-step path when next is adjacent and passable.
+		var path := path_bfs_3d(current, next, "ground", 1)
+		if path.is_empty():
+			wall = true
+			break
+		var occupants := _voxel_map.get_entities_at(next)
+		var blocked := false
+		for eid: String in occupants:
+			if eid in ignore_entity_ids:
+				continue
+			blocked = true
+			break
+		if blocked:
+			entity = true
+			break
+		current = next
+		traveled += 1
+	return {
+		"cells_traveled": traveled,
+		"final_pos": current,
+		"wall_collision": wall,
+		"entity_collision": entity,
+	}
+
+
 ## Flood-fill BFS returning all cells reachable from [param from_pos]
 ## within [param max_cells] steps using the given [param movement_type].
+## [param mover_side] (optional, default -1 = ignore ZoC): when >= 0, ZoC
+##   cells are reachable but act as dead-ends — the flood includes them but
+##   does not expand from them (entering costs movement and consumes the turn).
 func get_cells_reachable_3d(from_pos: Vector3i,
-		movement_type: String, max_cells: int) -> Array[Vector3i]:
+		movement_type: String, max_cells: int,
+		mover_side: int = -1) -> Array[Vector3i]:
 	if _voxel_map == null:
 		return []
+	var enemy_zoc: Dictionary = _build_enemy_zoc_set_3d(mover_side) if mover_side >= 0 else {}
 	var visited: Dictionary = {from_pos: 0}
 	var queue: Array[Vector3i] = [from_pos]
 	var result: Array[Vector3i] = [from_pos]
@@ -799,10 +630,36 @@ func get_cells_reachable_3d(from_pos: Vector3i,
 			if not _can_enter_3d(current, neighbor, movement_type):
 				continue
 			visited[neighbor] = current_depth + 1
-			queue.append(neighbor)
 			result.append(neighbor)
+			# ZoC cells are reachable but act as dead-ends — don't expand from them
+			if not enemy_zoc.is_empty() and enemy_zoc.has(neighbor):
+				continue
+			queue.append(neighbor)
 
 	return result
+
+
+## Returns a Dictionary[Vector3i -> true] of cells threatened by alive enemies
+## of the opposite side of [param mover_side]. Uses 2D-flat neighbors (same
+## level, 8 cells) per ACKS threatened-squares engagement — cross-level
+## engagement via stairs is not modeled. Empty if _roster or _voxel_map is null,
+## or if mover_side < 0.
+func _build_enemy_zoc_set_3d(mover_side: int) -> Dictionary:
+	var zoc: Dictionary = {}
+	if mover_side < 0 or _roster == null or _voxel_map == null:
+		return zoc
+	var enemy_side: int
+	if mover_side == Combatant.Side.PARTY:
+		enemy_side = Combatant.Side.ENEMY
+	else:
+		enemy_side = Combatant.Side.PARTY
+	for c: Combatant in _roster.get_alive_on_side(enemy_side):
+		var c_pos: Vector3i = get_grid_position_3d(c)
+		if c_pos == Vector3i(-1, -1, -1):
+			continue
+		for neighbor: Vector3i in VoxelGrid.get_neighbors_2d(c_pos):
+			zoc[neighbor] = true
+	return zoc
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,52 @@
+{
+  "shapes": [
+    {
+      "shape_id": "english",
+      "display_name": "English Heater",
+      "mask_path": "res://assets/heraldry/escutcheons/english_mask.png",
+      "outline_path": "res://assets/heraldry/escutcheons/english_outline.png"
+    },
+    {
+      "shape_id": "old_french",
+      "display_name": "Old French",
+      "mask_path": "res://assets/heraldry/escutcheons/old_french_mask.png",
+      "outline_path": "res://assets/heraldry/escutcheons/old_french_outline.png"
+    },
+    {
+      "shape_id": "german",
+      "display_name": "German Tournament",
+      "mask_path": "res://assets/heraldry/escutcheons/german_mask.png",
+      "outline_path": "res://assets/heraldry/escutcheons/german_outline.png"
+    },
+    {
+      "shape_id": "italian",
+      "display_name": "Italian",
+      "mask_path": "res://assets/heraldry/escutcheons/italian_mask.png",
+      "outline_path": "res://assets/heraldry/escutcheons/italian_outline.png"
+    },
+    {
+      "shape_id": "swiss",
+      "display_name": "Swiss",
+      "mask_path": "res://assets/heraldry/escutcheons/swiss_mask.png",
+      "outline_path": "res://assets/heraldry/escutcheons/swiss_outline.png"
+    },
+    {
+      "shape_id": "polish_xvib",
+      "display_name": "Polish (XVI-B)",
+      "mask_path": "res://assets/heraldry/escutcheons/polish_xvib_mask.png",
+      "outline_path": "res://assets/heraldry/escutcheons/polish_xvib_outline.png"
+    },
+    {
+      "shape_id": "polish_xixa",
+      "display_name": "Polish (XIX-A)",
+      "mask_path": "res://assets/heraldry/escutcheons/polish_xixa_mask.png",
+      "outline_path": "res://assets/heraldry/escutcheons/polish_xixa_outline.png"
+    },
+    {
+      "shape_id": "polish_xixc",
+      "display_name": "Polish (XIX-C)",
+      "mask_path": "res://assets/heraldry/escutcheons/polish_xixc_mask.png",
+      "outline_path": "res://assets/heraldry/escutcheons/polish_xixc_outline.png"
+    }
+  ]
+}

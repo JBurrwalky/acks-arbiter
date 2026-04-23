@@ -43,13 +43,6 @@ var _current_level: int = 0
 ## Voxel map storage — single VoxelMapData containing all levels.
 var _voxel_map: VoxelMapData = null
 
-# Legacy TacticalMapData fields. Still declared because test suites and a few
-# adjacent 2D code paths reference them; the voxel code path never writes them.
-# Full deletion belongs to Session 11 (delete TacticalMapData class itself).
-var _all_levels: Dictionary = {}
-var _stairs: Array = []
-var _map: TacticalMapData
-
 ## Entity IDs of all party members (moved as a group in D-4).
 var _party_entity_ids: Array[String] = []
 
@@ -460,38 +453,25 @@ func teleport_party_to(target_pos: Vector3i) -> bool:
 # Entity management
 # ---------------------------------------------------------------------------
 
-## Adds [param entity_id] to the party. Places them at the current party position.
+## Adds [param entity_id] to the party.
+## Entity placement on the voxel map happens at load_dungeon / reveal time;
+## this helper only manages the party-membership list.
 func add_party_member(entity_id: String) -> void:
 	if entity_id in _party_entity_ids:
 		return
 	_party_entity_ids.append(entity_id)
-	if _map != null:
-		_map.set_entity_pos(entity_id, get_party_position())
 
 
-## Removes [param entity_id] from the party.
+## Removes [param entity_id] from the party and from the voxel map.
 func remove_party_member(entity_id: String) -> void:
 	_party_entity_ids.erase(entity_id)
-	if _map != null:
-		_map.remove_entity(entity_id)
+	if _voxel_map != null:
+		_voxel_map.remove_entity(entity_id)
 
 
 ## Returns a copy of the party entity IDs array.
 func get_entity_ids() -> Array[String]:
 	return _party_entity_ids.duplicate()
-
-
-## Returns the grid position of the first party member, or entry_pos if no members.
-func get_party_position() -> Vector2i:
-	if _map == null:
-		return Vector2i.ZERO
-	if _party_entity_ids.is_empty():
-		return _map.entry_pos
-	var first_id := _party_entity_ids[0]
-	var pos := _map.get_entity_pos(first_id)
-	if pos == Vector2i(-1, -1):
-		return _map.entry_pos
-	return pos
 
 
 # ---------------------------------------------------------------------------
@@ -518,24 +498,6 @@ func get_formation_manager() -> RefCounted:
 func get_order_manager() -> RefCounted:
 	_ensure_managers()
 	return _order_manager
-
-
-## Snap all members to formation around [param center_pos].
-## Uses the current formation preset stored in PartyData.
-func reform_formation(center_pos: Vector2i = Vector2i(-1, -1)) -> void:
-	_ensure_managers()
-	if _map == null or _party_data_ref == null:
-		return
-	var center := center_pos if center_pos != Vector2i(-1, -1) else get_party_position()
-	var positions: Dictionary = _formation_manager.compute_dungeon_positions(center, _party_data_ref, _map)
-	for eid in positions:
-		var old_pos := _map.get_entity_pos(eid)
-		var new_pos: Vector2i = positions[eid]
-		if old_pos != new_pos:
-			_map.set_entity_pos(eid, new_pos)
-			entity_moved.emit(eid, old_pos, new_pos)
-	_update_fog_for_all_members()
-	party_moved.emit(center, center)
 
 
 # ---------------------------------------------------------------------------
@@ -643,11 +605,10 @@ func queue_group_move(target_pos) -> bool:
 
 
 ## Voxel-mode group move: leader paths via MovementResolver (stair-aware);
-## followers scatter outward in expanding rings to the nearest unclaimed,
-## passable, unoccupied cell. No two party members share a final cell — if
-## no cell is available within the search radius, the member waits.
-## FormationManager.compute_dungeon_positions is 2D-only and not yet ported;
-## ring-scatter is used as an interim stand-in.
+## followers place relative to the leader using FormationManager's preset grid
+## (collapse chain: full → double column → single column → stack on leader).
+## When [member _party_data_ref] is null (headless tests, no PartyData wired),
+## falls back to ring-scatter around the target.
 func _queue_group_move_voxel(target_pos) -> bool:
 	if _voxel_map == null:
 		return false
@@ -667,10 +628,18 @@ func _queue_group_move_voxel(target_pos) -> bool:
 		return false
 	_order_manager.add_order(leader_id, "move", target_3d, leader_path)
 
-	# Followers: claim the nearest unclaimed passable cell in an expanding ring
-	# around target_3d. The leader's target is reserved; no two followers share.
+	# Follower placement strategy.
+	# (1) If PartyData is wired, use FormationManager.compute_dungeon_positions_3d
+	#     which respects the active preset and collapses when corridors narrow.
+	# (2) Otherwise fall back to ring-scatter around target_3d.
+	var formation_targets: Dictionary = {}
+	if _party_data_ref != null and _formation_manager != null \
+			and _formation_manager.has_method("compute_dungeon_positions_3d"):
+		formation_targets = _formation_manager.compute_dungeon_positions_3d(
+			target_3d, _party_data_ref, _voxel_map)
+
 	var claimed: Dictionary = {target_3d: leader_id}
-	const MAX_RING_RADIUS := 4  # cells
+	const MAX_RING_RADIUS := 4  # cells — fallback only
 
 	for i in range(1, _party_entity_ids.size()):
 		var eid: String = _party_entity_ids[i]
@@ -678,16 +647,30 @@ func _queue_group_move_voxel(target_pos) -> bool:
 		if member_pos == Vector3i(-1, -1, -1):
 			continue
 
-		var member_target: Vector3i = _find_scatter_cell(target_3d, eid, claimed, MAX_RING_RADIUS)
+		var member_target := Vector3i(-1, -1, -1)
+
+		# Preferred: formation-assigned cell.
+		if formation_targets.has(eid):
+			var formation_cell: Vector3i = formation_targets[eid]
+			if formation_cell != leader_pos and not claimed.has(formation_cell) \
+					and _voxel_map.has_cell(formation_cell) \
+					and _voxel_map.is_passable(formation_cell) \
+					and not _voxel_map.is_occupied_by_other(formation_cell, eid):
+				member_target = formation_cell
+
+		# Fallback: ring-scatter (keeps headless tests + unplaced members moving).
 		if member_target == Vector3i(-1, -1, -1):
-			# No valid scatter cell within search radius — member waits.
+			member_target = _find_scatter_cell(target_3d, eid, claimed, MAX_RING_RADIUS)
+
+		if member_target == Vector3i(-1, -1, -1):
+			# Nothing worked — member waits this turn.
 			_order_manager.add_order(eid, "wait")
 			continue
 
 		claimed[member_target] = eid
 		var member_path: Array = _movement_resolver.path_bfs_3d(member_pos, member_target)
 		if member_path.is_empty():
-			# Reachable check failed — drop the claim and queue wait.
+			# Unreachable — drop the claim and wait.
 			claimed.erase(member_target)
 			_order_manager.add_order(eid, "wait")
 		else:
@@ -807,83 +790,6 @@ func _execute_orders_voxel() -> Dictionary:
 
 
 # ---------------------------------------------------------------------------
-# BFS pathfinding
-# ---------------------------------------------------------------------------
-
-## BFS pathfinding from [param start] to [param goal] on the current map.
-## Returns array of cells from start (exclusive) to goal (inclusive).
-##
-## Allies can route THROUGH occupied cells but will not select an occupied
-## cell as the final destination. If [param mover_id] is provided, that
-## entity's own position is excluded from occupancy checks.
-##
-## If the goal is unreachable or occupied, falls back to the closest
-## reachable unoccupied cell (by Chebyshev distance to goal). Returns
-## empty only if the entity cannot move at all (completely boxed in).
-func _bfs_path(start: Vector2i, goal: Vector2i, mover_id: String = "") -> Array[Vector2i]:
-	if start == goal:
-		return [goal]
-	if _map == null:
-		return []
-
-	var frontier: Array[Vector2i] = [start]
-	var came_from: Dictionary = {start: null}
-	var found := false
-
-	# Track closest reachable UNOCCUPIED cell to the goal for fallback.
-	var best_cell := start
-	var best_dist: int = IsometricGrid.chebyshev_distance(start, goal)
-
-	while not frontier.is_empty():
-		var current: Vector2i = frontier.pop_front()
-		if current == goal:
-			found = true
-			break
-
-		# Update best fallback cell (only unoccupied cells qualify).
-		var dist: int = IsometricGrid.chebyshev_distance(current, goal)
-		if dist < best_dist and not _map.is_occupied_by_other(current, mover_id):
-			best_dist = dist
-			best_cell = current
-
-		# Allies can route through occupied cells — no occupancy check here.
-		for neighbor in IsometricGrid.get_neighbors(current):
-			if came_from.has(neighbor):
-				continue
-			if not _map.has_cell(neighbor):
-				continue
-			if not _map.is_passable(neighbor) and neighbor != goal:
-				continue
-			came_from[neighbor] = current
-			frontier.append(neighbor)
-
-	# If the goal was reached but is occupied by another entity, treat as
-	# unreachable and fall through to the closest unoccupied fallback.
-	if found and _map.is_occupied_by_other(goal, mover_id):
-		found = false
-
-	# Determine which cell to reconstruct path to
-	var path_target: Vector2i
-	if found:
-		path_target = goal
-	elif best_cell != start:
-		# Fallback: closest reachable unoccupied cell to the goal
-		path_target = best_cell
-	else:
-		# Can't move at all
-		return []
-
-	# Reconstruct path (excluding start)
-	var path: Array[Vector2i] = []
-	var current: Vector2i = path_target
-	while current != start:
-		path.push_front(current)
-		current = came_from[current]
-
-	return path
-
-
-# ---------------------------------------------------------------------------
 # Fog update for individual positions
 # ---------------------------------------------------------------------------
 
@@ -937,20 +843,16 @@ func get_visible_radius() -> int:
 # State accessors
 # ---------------------------------------------------------------------------
 
-func get_map() -> TacticalMapData:
-	return _map
-
-
 ## Returns the VoxelMapData loaded for the current dungeon (or null).
 func get_voxel_map() -> VoxelMapData:
 	return _voxel_map
 
 
-## Returns true if either map type has been loaded. Retained for test suites
-## and a few 2D helpers pending full migration; new code should prefer
+## Returns true if a voxel map has been loaded. Retained for test suites and
+## call sites that predate `get_voxel_map`; new code should prefer
 ## `get_voxel_map() != null` directly.
 func has_map() -> bool:
-	return _voxel_map != null or _map != null
+	return _voxel_map != null
 
 
 func get_current_level() -> int:

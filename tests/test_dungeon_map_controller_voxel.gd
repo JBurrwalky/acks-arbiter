@@ -91,8 +91,6 @@ func test_load_populates_voxel_map() -> void:
 	var ctrl := _make_controller_with_map(map)
 	check(ctrl.get_voxel_map() == map,
 		"get_voxel_map should return the loaded VoxelMapData")
-	check(ctrl.get_map() == null,
-		"get_map should return null in voxel mode (no TacticalMapData)")
 	check(ctrl.get_party_position_3d() == Vector3i(0, 0, 0),
 		"hero should be positioned at entry_pos")
 	ctrl.queue_free()
@@ -272,7 +270,6 @@ func test_get_voxel_map_returns_data() -> void:
 	var map := _make_flat_voxel_dungeon(2, 2)
 	var ctrl := _make_controller_with_map(map)
 	check(ctrl.get_voxel_map() == map, "get_voxel_map should return the injected map")
-	check(ctrl.get_map() == null, "get_map should be null in voxel mode")
 	ctrl.queue_free()
 
 

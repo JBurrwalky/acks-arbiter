@@ -166,7 +166,8 @@ func _make_spatial_env() -> Dictionary:
 	roster.add_combatant(monster)
 	roster.enemy_count_at_start = 1
 
-	var resolver: MovementResolver = MovementResolver.new(map, roster)
+	var resolver: MovementResolver = MovementResolver.new(roster)
+	resolver.set_voxel_map(map)
 	var ai: MonsterAI = MonsterAI.new(roster, null, resolver)
 	return {
 		"map": map, "roster": roster, "pcs": pcs, "monster": monster,
@@ -195,7 +196,8 @@ func _make_spatial_env_missile() -> Dictionary:
 	roster.add_combatant(monster)
 	roster.enemy_count_at_start = 1
 
-	var resolver: MovementResolver = MovementResolver.new(map, roster)
+	var resolver: MovementResolver = MovementResolver.new(roster)
+	resolver.set_voxel_map(map)
 	var ai: MonsterAI = MonsterAI.new(roster, null, resolver)
 	return {
 		"map": map, "roster": roster, "pcs": pcs, "monster": monster,
@@ -245,17 +247,5 @@ func _make_missile_monster(id: String) -> Combatant:
 	return Combatant.from_monster(data, 4, id, "test_group")
 
 
-func _make_open_map(w: int, h: int) -> TacticalMapData:
-	var cells_array: Array = []
-	for col in range(w):
-		for row in range(h):
-			cells_array.append({
-				"col": col, "row": row,
-				"terrain_feature": "open",
-				"elevation": 0,
-			})
-	return TacticalMapData.from_dict({
-		"grid_width": w, "grid_height": h,
-		"entry_col": 0, "entry_row": 0,
-		"cells": cells_array,
-	})
+func _make_open_map(w: int, h: int) -> VoxelMapData:
+	return VoxelMapData.generate_open_field(w, h)

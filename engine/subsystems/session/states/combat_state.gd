@@ -50,16 +50,16 @@ func enter(runner, context: Dictionary) -> void:
 	var attack_resolver := AttackResolver.new(DiceSystem, spell_hooks)
 	var ranged_resolver := RangedAttackResolver.new(DiceSystem, spell_hooks)
 
-	# Retrieve tactical map if available, otherwise generate an open-field battle map
-	var tactical_map: TacticalMapData = context.get("tactical_map", null)
-	if tactical_map == null:
-		tactical_map = TacticalMapData.generate_open_field()
+	# Build a fresh 25x25 single-level voxel battle map for the wilderness
+	# encounter. Context may provide a pre-built map (future battle-map generation).
+	var voxel_map: VoxelMapData = context.get("voxel_map", null)
+	if voxel_map == null:
+		voxel_map = VoxelMapData.generate_open_field(25, 25)
 
-	# Create Session 3 subsystems: AI, morale, cleave
-	# Create MovementResolver early so MonsterAI can use spatial queries
-	var movement_resolver: MovementResolver = null
-	if tactical_map != null:
-		movement_resolver = MovementResolver.new(tactical_map, roster)
+	# Create Session 3 subsystems: AI, morale, cleave.
+	# MovementResolver is created early so MonsterAI can use spatial queries.
+	var movement_resolver := MovementResolver.new(roster)
+	movement_resolver.set_voxel_map(voxel_map)
 	var monster_ai := MonsterAI.new(roster, DiceSystem, movement_resolver)
 	var morale_resolver := MoraleResolver.new(DiceSystem)
 	var cleave_resolver := CleaveResolver.new()
@@ -72,12 +72,10 @@ func enter(runner, context: Dictionary) -> void:
 		roster, init_resolver, attack_resolver,
 		spell_hooks, condition_manager, ranged_resolver,
 		monster_ai, morale_resolver, cleave_resolver,
-		tactical_map, mortal_wounds_resolver)
+		mortal_wounds_resolver, voxel_map)
 	_controller.encounter_id = _encounter_id
 
-	# Place combatants on grid if a tactical map is provided
-	if tactical_map != null:
-		_place_combatants_on_grid(roster, tactical_map)
+	_place_combatants_on_grid(roster, voxel_map)
 
 	# Pause the scheduler — combat runs its own time loop.
 	var sched_loop: SchedulerLoop = runner.get_scheduler_loop()
@@ -171,30 +169,30 @@ func get_controller() -> CombatController:
 
 func _place_combatants_on_grid(
 		roster: CombatRoster,
-		tmap: TacticalMapData) -> void:
+		vmap: VoxelMapData) -> void:
 	## Place party near the entry position, monsters spread in the room.
-	var entry := tmap.entry_pos
-	var party_cells := IsometricGrid.get_cells_in_radius(entry, 2)
+	var entry: Vector3i = vmap.entry_pos
+	var party_cells := VoxelGrid.get_cells_in_radius_3d(entry, 2)
 	var idx := 0
 	for c: Combatant in roster.get_alive_on_side(Combatant.Side.PARTY):
 		# Find a passable, unoccupied cell near entry
 		while idx < party_cells.size():
-			var cell: Vector2i = party_cells[idx]
+			var cell: Vector3i = party_cells[idx]
 			idx += 1
-			if tmap.is_passable(cell) and tmap.get_entities_at(cell).is_empty():
+			if vmap.is_passable(cell) and vmap.get_entities_at(cell).is_empty():
 				c.grid_position = cell
-				tmap.set_entity_pos(c.id, cell)
+				vmap.set_entity_pos(c.id, cell)
 				break
 
-	# Place monsters away from party (offset from entry)
-	var monster_center := Vector2i(entry.x + 6, entry.y)
-	var monster_cells := IsometricGrid.get_cells_in_radius(monster_center, 3)
+	# Place monsters away from party (offset from entry, same level)
+	var monster_center := Vector3i(entry.x + 6, entry.y, entry.z)
+	var monster_cells := VoxelGrid.get_cells_in_radius_3d(monster_center, 3)
 	idx = 0
 	for c: Combatant in roster.get_alive_on_side(Combatant.Side.ENEMY):
 		while idx < monster_cells.size():
-			var cell: Vector2i = monster_cells[idx]
+			var cell: Vector3i = monster_cells[idx]
 			idx += 1
-			if tmap.is_passable(cell) and tmap.get_entities_at(cell).is_empty():
+			if vmap.is_passable(cell) and vmap.get_entities_at(cell).is_empty():
 				c.grid_position = cell
-				tmap.set_entity_pos(c.id, cell)
+				vmap.set_entity_pos(c.id, cell)
 				break

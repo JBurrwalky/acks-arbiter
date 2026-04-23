@@ -43,10 +43,10 @@ func test_no_grid_melee_works_as_before() -> void:
 func test_grid_melee_adjacent_succeeds() -> void:
 	var env := _make_controller_with_grid(15, 20, 20)
 	# Place PC adjacent to monster
-	env.map.set_entity_pos("pc_1", Vector2i(5, 5))
-	env.pc.grid_position = Vector2i(5, 5)
-	env.map.set_entity_pos("m_1", Vector2i(5, 6))
-	env.monster.grid_position = Vector2i(5, 6)
+	env.map.set_entity_pos("pc_1", Vector3i(5, 5, 0))
+	env.pc.grid_position = Vector3i(5, 5, 0)
+	env.map.set_entity_pos("m_1", Vector3i(5, 6, 0))
+	env.monster.grid_position = Vector3i(5, 6, 0)
 	_advance_to_action(env.ctrl)
 	env.ctrl.submit_pc_action("pc_1", "attack_melee", {"target_id": "m_1"})
 	var result: Dictionary = _advance_until_pc_resolved(env.ctrl)
@@ -61,10 +61,10 @@ func test_grid_melee_adjacent_succeeds() -> void:
 func test_grid_melee_out_of_range_fails() -> void:
 	var env := _make_controller_with_grid(15, 30, 30)
 	# Place PC far from monster (more than combat movement = 8 cells for 40ft move)
-	env.map.set_entity_pos("pc_1", Vector2i(0, 0))
-	env.pc.grid_position = Vector2i(0, 0)
-	env.map.set_entity_pos("m_1", Vector2i(25, 25))
-	env.monster.grid_position = Vector2i(25, 25)
+	env.map.set_entity_pos("pc_1", Vector3i(0, 0, 0))
+	env.pc.grid_position = Vector3i(0, 0, 0)
+	env.map.set_entity_pos("m_1", Vector3i(25, 25, 0))
+	env.monster.grid_position = Vector3i(25, 25, 0)
 	_advance_to_action(env.ctrl)
 	env.ctrl.submit_pc_action("pc_1", "attack_melee", {"target_id": "m_1"})
 	var result: Dictionary = _advance_until_pc_resolved(env.ctrl)
@@ -78,10 +78,10 @@ func test_grid_melee_auto_move_to_engage() -> void:
 	# PCs must move first (move+attack split turn), no auto-move.
 	var env := _make_controller_with_grid(15, 20, 20)
 	# Place PC 3 cells from monster (not adjacent)
-	env.map.set_entity_pos("pc_1", Vector2i(2, 2))
-	env.pc.grid_position = Vector2i(2, 2)
-	env.map.set_entity_pos("m_1", Vector2i(5, 2))
-	env.monster.grid_position = Vector2i(5, 2)
+	env.map.set_entity_pos("pc_1", Vector3i(2, 2, 0))
+	env.pc.grid_position = Vector3i(2, 2, 0)
+	env.map.set_entity_pos("m_1", Vector3i(5, 2, 0))
+	env.monster.grid_position = Vector3i(5, 2, 0)
 	_advance_to_action(env.ctrl)
 	env.ctrl.submit_pc_action("pc_1", "attack_melee", {"target_id": "m_1"})
 	var result: Dictionary = _advance_until_pc_resolved(env.ctrl)
@@ -97,10 +97,10 @@ func test_grid_melee_auto_move_to_engage() -> void:
 
 func test_grid_ranged_uses_grid_distance() -> void:
 	var env := _make_controller_with_grid(15, 20, 20)
-	env.map.set_entity_pos("pc_1", Vector2i(0, 0))
-	env.pc.grid_position = Vector2i(0, 0)
-	env.map.set_entity_pos("m_1", Vector2i(10, 0))
-	env.monster.grid_position = Vector2i(10, 0)
+	env.map.set_entity_pos("pc_1", Vector3i(0, 0, 0))
+	env.pc.grid_position = Vector3i(0, 0, 0)
+	env.map.set_entity_pos("m_1", Vector3i(10, 0, 0))
+	env.monster.grid_position = Vector3i(10, 0, 0)
 	_advance_to_action(env.ctrl)
 	# 10 cells * 5ft = 50ft distance
 	env.ctrl.submit_pc_action("pc_1", "attack_ranged", {
@@ -117,10 +117,10 @@ func test_grid_ranged_uses_grid_distance() -> void:
 
 func test_charge_action_succeeds() -> void:
 	var env := _make_controller_with_grid(15, 20, 20)
-	env.map.set_entity_pos("pc_1", Vector2i(0, 0))
-	env.pc.grid_position = Vector2i(0, 0)
-	env.map.set_entity_pos("m_1", Vector2i(6, 0))
-	env.monster.grid_position = Vector2i(6, 0)
+	env.map.set_entity_pos("pc_1", Vector3i(0, 0, 0))
+	env.pc.grid_position = Vector3i(0, 0, 0)
+	env.map.set_entity_pos("m_1", Vector3i(6, 0, 0))
+	env.monster.grid_position = Vector3i(6, 0, 0)
 	_advance_to_action(env.ctrl)
 	env.ctrl.submit_pc_action("pc_1", "charge", {"target_id": "m_1"})
 	var result: Dictionary = _advance_until_pc_resolved(env.ctrl)
@@ -130,10 +130,10 @@ func test_charge_action_succeeds() -> void:
 
 func test_charge_too_close_fails() -> void:
 	var env := _make_controller_with_grid(15, 20, 20)
-	env.map.set_entity_pos("pc_1", Vector2i(3, 3))
-	env.pc.grid_position = Vector2i(3, 3)
-	env.map.set_entity_pos("m_1", Vector2i(5, 3))
-	env.monster.grid_position = Vector2i(5, 3)
+	env.map.set_entity_pos("pc_1", Vector3i(3, 3, 0))
+	env.pc.grid_position = Vector3i(3, 3, 0)
+	env.map.set_entity_pos("m_1", Vector3i(5, 3, 0))
+	env.monster.grid_position = Vector3i(5, 3, 0)
 	_advance_to_action(env.ctrl)
 	env.ctrl.submit_pc_action("pc_1", "charge", {"target_id": "m_1"})
 	var result: Dictionary = _advance_until_pc_resolved(env.ctrl)
@@ -148,10 +148,10 @@ func test_charge_too_close_fails() -> void:
 
 func test_move_action_updates_position() -> void:
 	var env := _make_controller_with_grid(15, 20, 20)
-	env.map.set_entity_pos("pc_1", Vector2i(0, 0))
-	env.pc.grid_position = Vector2i(0, 0)
-	env.map.set_entity_pos("m_1", Vector2i(15, 15))
-	env.monster.grid_position = Vector2i(15, 15)
+	env.map.set_entity_pos("pc_1", Vector3i(0, 0, 0))
+	env.pc.grid_position = Vector3i(0, 0, 0)
+	env.map.set_entity_pos("m_1", Vector3i(15, 15, 0))
+	env.monster.grid_position = Vector3i(15, 15, 0)
 	_advance_to_action(env.ctrl)
 	env.ctrl.submit_pc_action("pc_1", "move", {"target_x": 5, "target_y": 0})
 	var result: Dictionary = _advance_until_pc_resolved(env.ctrl)
@@ -165,10 +165,10 @@ func test_move_action_updates_position() -> void:
 
 func test_fighting_withdrawal_action() -> void:
 	var env := _make_controller_with_grid(15, 20, 20)
-	env.map.set_entity_pos("pc_1", Vector2i(5, 5))
-	env.pc.grid_position = Vector2i(5, 5)
-	env.map.set_entity_pos("m_1", Vector2i(5, 6))
-	env.monster.grid_position = Vector2i(5, 6)
+	env.map.set_entity_pos("pc_1", Vector3i(5, 5, 0))
+	env.pc.grid_position = Vector3i(5, 5, 0)
+	env.map.set_entity_pos("m_1", Vector3i(5, 6, 0))
+	env.monster.grid_position = Vector3i(5, 6, 0)
 	_advance_to_action(env.ctrl)
 	env.ctrl.submit_pc_action("pc_1", "fighting_withdrawal", {})
 	var result: Dictionary = _advance_until_pc_resolved(env.ctrl)
@@ -178,10 +178,10 @@ func test_fighting_withdrawal_action() -> void:
 
 func test_full_retreat_applies_vulnerable() -> void:
 	var env := _make_controller_with_grid(15, 20, 20)
-	env.map.set_entity_pos("pc_1", Vector2i(5, 5))
-	env.pc.grid_position = Vector2i(5, 5)
-	env.map.set_entity_pos("m_1", Vector2i(5, 6))
-	env.monster.grid_position = Vector2i(5, 6)
+	env.map.set_entity_pos("pc_1", Vector3i(5, 5, 0))
+	env.pc.grid_position = Vector3i(5, 5, 0)
+	env.map.set_entity_pos("m_1", Vector3i(5, 6, 0))
+	env.monster.grid_position = Vector3i(5, 6, 0)
 	_advance_to_action(env.ctrl)
 	env.ctrl.submit_pc_action("pc_1", "full_retreat", {})
 	var result: Dictionary = _advance_until_pc_resolved(env.ctrl)
@@ -196,10 +196,10 @@ func test_full_retreat_applies_vulnerable() -> void:
 
 func test_submit_declaration_fighting_withdrawal() -> void:
 	var env := _make_controller_with_grid(15, 20, 20)
-	env.map.set_entity_pos("pc_1", Vector2i(5, 5))
-	env.pc.grid_position = Vector2i(5, 5)
-	env.map.set_entity_pos("m_1", Vector2i(15, 15))
-	env.monster.grid_position = Vector2i(15, 15)
+	env.map.set_entity_pos("pc_1", Vector3i(5, 5, 0))
+	env.pc.grid_position = Vector3i(5, 5, 0)
+	env.map.set_entity_pos("m_1", Vector3i(15, 15, 0))
+	env.monster.grid_position = Vector3i(15, 15, 0)
 	# Advance to declaration phase
 	env.ctrl.advance()  # combat_started
 	env.ctrl.submit_declaration("pc_1", "fighting_withdrawal")
@@ -214,10 +214,10 @@ func test_submit_declaration_fighting_withdrawal() -> void:
 func test_engagement_condition_applied() -> void:
 	# Use low roll (5) so attacks miss — keeps both alive for engagement check
 	var env := _make_controller_with_grid(5, 20, 20)
-	env.map.set_entity_pos("pc_1", Vector2i(5, 5))
-	env.pc.grid_position = Vector2i(5, 5)
-	env.map.set_entity_pos("m_1", Vector2i(5, 6))
-	env.monster.grid_position = Vector2i(5, 6)
+	env.map.set_entity_pos("pc_1", Vector3i(5, 5, 0))
+	env.pc.grid_position = Vector3i(5, 5, 0)
+	env.map.set_entity_pos("m_1", Vector3i(5, 6, 0))
+	env.monster.grid_position = Vector3i(5, 6, 0)
 	# Advance through to action phase
 	_advance_to_action(env.ctrl)
 	# PC attacks — miss expected but _update_engagement runs
@@ -289,27 +289,15 @@ func _make_controller_with_grid(forced_roll: int, w: int, h: int) -> Dictionary:
 	var ctrl := CombatController.new(
 		roster, init_resolver, attack_resolver,
 		null, condition_manager, ranged_resolver,
-		null, null, null, map)
+		null, null, null, null, map)
 	return {
 		"ctrl": ctrl, "roster": roster, "pc": pc, "monster": monster,
 		"map": map, "dice": dice,
 	}
 
 
-func _make_open_map(w: int, h: int) -> TacticalMapData:
-	var cells_array: Array = []
-	for col in range(w):
-		for row in range(h):
-			cells_array.append({
-				"col": col, "row": row,
-				"terrain_feature": "open",
-				"elevation": 0,
-			})
-	return TacticalMapData.from_dict({
-		"grid_width": w, "grid_height": h,
-		"entry_col": 0, "entry_row": 0,
-		"cells": cells_array,
-	})
+func _make_open_map(w: int, h: int) -> VoxelMapData:
+	return VoxelMapData.generate_open_field(w, h)
 
 
 func _make_pc(id: String, hp: int, ac: int) -> Combatant:

@@ -117,7 +117,7 @@ func _make_controller_with_mortal_wounds(
 
 	return CombatController.new(
 		roster, init_resolver, attack_resolver,
-		null, null, null, null, null, null, null,
+		null, null, null, null, null, null,
 		mw_resolver)
 
 

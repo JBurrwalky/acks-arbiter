@@ -20,49 +20,33 @@ const DungeonSessionState := preload("res://engine/subsystems/exploration/dungeo
 
 ## Build the full context menu for a right-click on [param target_cell].
 ## [param selected_ids]: currently selected entity IDs.
-## [param map]: the current TacticalMapData level.
+## [param map]: the current VoxelMapData level.
 ## [param party_data]: PartyData for class/proficiency/inventory checks.
 ## [param session_state]: DungeonSessionState for control groups, idle behaviors.
 ## [param light_manager]: DungeonLightManager (or null) for light source checks.
 ## Returns Array[Dictionary] of menu options in display order.
 static func build_menu(
 	selected_ids: Array,
-	target_cell,  # Vector2i (legacy) or Vector3i (voxel)
-	map,  # TacticalMapData (legacy) or VoxelMapData (voxel)
+	target_cell: Vector3i,
+	map: VoxelMapData,
 	party_data,  # PartyData or null
 	session_state,  # DungeonSessionState or null
 	light_manager = null,  # DungeonLightManager or null
 ) -> Array[Dictionary]:
-	if selected_ids.is_empty():
+	if selected_ids.is_empty() or map == null:
 		return []
 
 	var options: Array[Dictionary] = []
-
-	# Handle both TacticalMapData (legacy) and VoxelMapData (voxel) paths.
-	var cell_dict: Dictionary = {}
-	var fog_visible := false
-	var fog_not_hidden := false
-
-	if map is VoxelMapData:
-		var vmap: VoxelMapData = map
-		var pos: Vector3i = target_cell
-		var vcell: VoxelCell = vmap.get_cell(pos)
-		# Build a compatibility dict from VoxelCell for downstream helpers
-		cell_dict = vcell.to_dict()
-		cell_dict["terrain_feature"] = vcell.feature
-		cell_dict["passable"] = vcell.is_passable_by_walker()
-		cell_dict["blocks_los"] = vcell.blocks_los()
-		cell_dict["has_ground_items"] = false  # TODO: wire from location cache
-		var fog_str: String = vmap.get_fog(pos)
-		fog_visible = (fog_str == "visible")
-		fog_not_hidden = (fog_str != "hidden")
-	elif map is TacticalMapData:
-		var tmap: TacticalMapData = map
-		var pos: Vector2i = target_cell
-		cell_dict = tmap.get_cell(pos)
-		var fog_state: int = tmap.get_fog(pos)
-		fog_visible = (fog_state == TacticalMapData.FogState.VISIBLE)
-		fog_not_hidden = (fog_state != TacticalMapData.FogState.HIDDEN)
+	var vcell: VoxelCell = map.get_cell(target_cell)
+	# Build a compatibility dict from VoxelCell for downstream helpers
+	var cell_dict: Dictionary = vcell.to_dict()
+	cell_dict["terrain_feature"] = vcell.feature
+	cell_dict["passable"] = vcell.is_passable_by_walker()
+	cell_dict["blocks_los"] = vcell.blocks_los()
+	cell_dict["has_ground_items"] = false  # TODO: wire from location cache
+	var fog_str: String = map.get_fog(target_cell)
+	var fog_visible: bool = (fog_str == "visible")
+	var fog_not_hidden: bool = (fog_str != "hidden")
 
 	# Determine if the target cell is the selected entity's own cell (self-action).
 	var is_self_click := _is_self_click(selected_ids, target_cell, map)
@@ -139,7 +123,7 @@ static func _build_door_options(
 	cell: Dictionary,
 	selected_ids: Array,
 	party_data,
-	map,  # TacticalMapData or VoxelMapData
+	map,  # VoxelMapData
 	session_state = null,
 ) -> Array[Dictionary]:
 	var options: Array[Dictionary] = []
@@ -297,7 +281,7 @@ static func _build_door_options(
 static func _build_stair_options(
 	target_cell,  # Vector2i or Vector3i
 	cell: Dictionary,
-	map,  # TacticalMapData or VoxelMapData
+	map,  # VoxelMapData
 	selected_ids: Array = [],
 	session_state = null,
 ) -> Array[Dictionary]:
@@ -305,7 +289,7 @@ static func _build_stair_options(
 	var tf: String = cell.get("terrain_feature", "")
 
 	# Voxel feature strings carry a direction suffix (e.g. "stairs_up_N");
-	# legacy TacticalMapData uses bare "stairs_up"/"stairs_down". Match both.
+	# Cell feature matches both modern "stairs_up_<dir>" and legacy "stairs_up" forms.
 	var is_stair_up := tf == "stairs_up" or tf.begins_with("stairs_up_")
 	var is_stair_down := tf == "stairs_down" or tf.begins_with("stairs_down_")
 
@@ -340,7 +324,7 @@ static func _build_stair_options(
 ## Returns true if any selected entity hasn't already exited or been queued.
 static func _has_exit_candidates(
 	selected_ids: Array,
-	map,  # TacticalMapData or VoxelMapData
+	map,  # VoxelMapData
 	session_state,
 ) -> bool:
 	for eid in selected_ids:
@@ -440,7 +424,7 @@ static func _build_loot_options(
 static func _build_entity_options(
 	selected_ids: Array,
 	target_cell,  # Vector2i or Vector3i
-	map,  # TacticalMapData or VoxelMapData
+	map,  # VoxelMapData
 	party_data,
 ) -> Array[Dictionary]:
 	var options: Array[Dictionary] = []

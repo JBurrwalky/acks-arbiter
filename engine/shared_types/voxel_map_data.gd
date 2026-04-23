@@ -8,8 +8,9 @@ extends RefCounted
 ## hidden fog. The get_cell() method returns a fresh sentinel for absent keys
 ## so callers never deal with null.
 ##
-## This replaces TacticalMapData for the voxel architecture. The old type is
-## retained for backward compatibility until Session 11 cleanup.
+## This replaces TacticalMapData for the voxel architecture. The old type
+## survives for combat (combat_state, combat_map_renderer[_3d], tactical_grid_3d
+## static builders); its deletion blocks on a future voxel combat port session.
 ##
 ## See gdd-voxel-tactical-architecture.md section 6.4 for sparse storage rationale.
 

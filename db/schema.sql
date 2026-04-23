@@ -97,7 +97,23 @@ CREATE TABLE IF NOT EXISTS parties (
     current_hex_r INTEGER,
     current_location_type TEXT NOT NULL DEFAULT 'wilderness'
         CHECK(current_location_type IN ('wilderness', 'dungeon', 'settlement', 'sea')),
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    -- Migration 038: heraldry builder FK (NULL → backfilled at session load)
+    heraldry_id TEXT REFERENCES party_heraldry(heraldry_id)
+);
+
+-- Migration 038: per-party heraldic shield.
+CREATE TABLE IF NOT EXISTS party_heraldry (
+    heraldry_id         TEXT PRIMARY KEY,
+    shape_id            TEXT NOT NULL DEFAULT 'english',
+    division_id         TEXT NOT NULL DEFAULT 'plain',
+    tincture_primary    TEXT NOT NULL DEFAULT '#dcdcdc',
+    tincture_secondary  TEXT NOT NULL DEFAULT '#1a1a1a',
+    ordinary_id         TEXT NOT NULL DEFAULT '',
+    tincture_ordinary   TEXT NOT NULL DEFAULT '#dcdcdc',
+    charge_id           TEXT NOT NULL DEFAULT '',
+    tincture_charge     TEXT NOT NULL DEFAULT '#dcdcdc',
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS party_members (
@@ -440,27 +456,13 @@ CREATE TABLE IF NOT EXISTS active_effects (
     created_at_round INTEGER NOT NULL DEFAULT 0
 );
 
--- Migration 017: Dungeon grid cell state + party dungeon position
-
-CREATE TABLE IF NOT EXISTS dungeon_map_cells (
-    dungeon_id TEXT NOT NULL REFERENCES dungeon_entrances(id),
-    level_num INTEGER NOT NULL DEFAULT 1,
-    col INTEGER NOT NULL,
-    row INTEGER NOT NULL,
-    door_state TEXT NOT NULL DEFAULT 'closed',
-    fog_state TEXT NOT NULL DEFAULT 'hidden'
-        CHECK(fog_state IN ('hidden', 'explored', 'visible')),
-    PRIMARY KEY (dungeon_id, level_num, col, row)
-);
-
 -- parties.dungeon_id, dungeon_level, dungeon_col, dungeon_row added by migration 017.
 -- parties.settlement_id, settlement_node_id added by migration 019.
--- ALTER TABLE statements omitted here; they are in the migration files.
+-- The original dungeon_map_cells table (migration 017) was dropped by migration 039
+-- after the 12b cleanup — all voxel dungeon state lives in voxel_map_cells below.
 
 -- Migration 036: Voxel grid cell storage (3D cube-cell model)
 -- Sparse storage: one row per non-default voxel cell.
--- Replaces dungeon_map_cells for the voxel architecture.
--- dungeon_map_cells is kept for backward compatibility until cleanup.
 
 CREATE TABLE IF NOT EXISTS voxel_map_cells (
     map_id TEXT NOT NULL,

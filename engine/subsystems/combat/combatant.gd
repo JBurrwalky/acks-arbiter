@@ -75,13 +75,8 @@ var morale_locked: bool = false
 ## ID of the last combatant that dealt damage to this one (for retaliatory targeting).
 var last_attacker_id: String = ""
 
-## Grid position on TacticalMapData (Vector2i(-1,-1) = not placed on grid).
-var grid_position: Vector2i = Vector2i(-1, -1)
-
-## 3D grid position on VoxelMapData (Vector3i(-1,-1,0) = not placed).
-## The voxel code path uses grid_position_3d; the legacy path uses grid_position.
-## They are kept in sync by CombatController / MovementResolver.
-var grid_position_3d: Vector3i = Vector3i(-1, -1, 0)
+## Grid position on VoxelMapData (Vector3i(-1,-1,0) = not placed on grid).
+var grid_position: Vector3i = Vector3i(-1, -1, 0)
 
 ## Facing direction (unit vector in grid coordinates). Default east.
 ## Drives the CombatantToken beak rotation.

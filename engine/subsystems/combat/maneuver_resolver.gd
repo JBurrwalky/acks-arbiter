@@ -211,26 +211,21 @@ func _resolve_force_back(
 	# Grid-based push
 	var wall_collision := false
 	var collision_damage := 0
-	if _movement_resolver != null and _movement_resolver.has_grid() and push_cells > 0:
-		var target_pos := _movement_resolver.get_grid_position(target)
-		var attacker_pos := _movement_resolver.get_grid_position(attacker)
-		if target_pos != Vector2i(-1, -1) and attacker_pos != Vector2i(-1, -1):
-			# Push direction: away from attacker
-			var dx := target_pos.x - attacker_pos.x
-			var dy := target_pos.y - attacker_pos.y
-			# Normalize to unit direction
-			var dir_x := 0 if dx == 0 else (1 if dx > 0 else -1)
-			var dir_y := 0 if dy == 0 else (1 if dy > 0 else -1)
-			var cells_pushed := 0
-			var current := target_pos
-			for _i in range(push_cells):
-				var next := Vector2i(current.x + dir_x, current.y + dir_y)
-				if not _movement_resolver._map.is_passable(next):
-					wall_collision = true
-					break
-				current = next
-				cells_pushed += 1
-			_movement_resolver.set_grid_position(target, current)
+	if _movement_resolver != null and _movement_resolver.has_voxel_grid() and push_cells > 0:
+		var target_pos: Vector3i = target.grid_position
+		var attacker_pos: Vector3i = attacker.grid_position
+		if target_pos != Vector3i(-1, -1, 0) and attacker_pos != Vector3i(-1, -1, 0):
+			# Push direction: away from attacker (unit vector in grid coords,
+			# preserves z = 0 so the push stays on the same level).
+			var direction := Vector3i(
+				signi(target_pos.x - attacker_pos.x),
+				signi(target_pos.y - attacker_pos.y),
+				0)
+			var walk: Dictionary = _movement_resolver.walk_direction_3d(
+				target_pos, direction, push_cells)
+			var cells_pushed: int = walk.get("cells_traveled", 0)
+			wall_collision = walk.get("wall_collision", false)
+			_movement_resolver.set_grid_position_3d(target, walk.get("final_pos", target_pos))
 			if wall_collision:
 				# Knocked down + 1d6 per 10' traveled
 				if _condition_manager != null:
@@ -343,20 +338,26 @@ func _resolve_overrun(
 		}
 
 	# Overrun succeeds — attacker moves through
-	if _movement_resolver != null and _movement_resolver.has_grid():
-		var target_pos := _movement_resolver.get_grid_position(target)
-		var attacker_pos := _movement_resolver.get_grid_position(attacker)
-		if target_pos != Vector2i(-1, -1) and attacker_pos != Vector2i(-1, -1):
-			# Move attacker through target's cell to the other side
-			var dx := target_pos.x - attacker_pos.x
-			var dy := target_pos.y - attacker_pos.y
-			var beyond := Vector2i(target_pos.x + dx, target_pos.y + dy)
-			if _movement_resolver._map.is_passable(beyond) \
-					and _movement_resolver._map.get_entities_at(beyond).is_empty():
-				_movement_resolver.set_grid_position(attacker, beyond)
+	if _movement_resolver != null and _movement_resolver.has_voxel_grid():
+		var target_pos: Vector3i = target.grid_position
+		var attacker_pos: Vector3i = attacker.grid_position
+		if target_pos != Vector3i(-1, -1, 0) and attacker_pos != Vector3i(-1, -1, 0):
+			# Move attacker 2 cells along the attack direction, passing through
+			# the target's cell. ignore_entity_ids = [target.id] lets the walker
+			# cross the target's cell without stopping.
+			var direction := Vector3i(
+				signi(target_pos.x - attacker_pos.x),
+				signi(target_pos.y - attacker_pos.y),
+				0)
+			var walk: Dictionary = _movement_resolver.walk_direction_3d(
+				attacker_pos, direction, 2, [target.id])
+			var cells_traveled: int = walk.get("cells_traveled", 0)
+			if cells_traveled >= 2:
+				_movement_resolver.set_grid_position_3d(attacker, walk.get("final_pos", attacker_pos))
 			else:
-				# Can't move beyond — stay adjacent on the far side
-				_movement_resolver.set_grid_position(attacker, target_pos)
+				# Can't move beyond — stay in the target's cell (attacker and
+				# target co-occupy; engagement logic will sort out the resolution).
+				_movement_resolver.set_grid_position_3d(attacker, target_pos)
 
 	return {
 		"maneuver": "overrun",

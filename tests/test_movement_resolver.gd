@@ -38,7 +38,7 @@ func run_all_tests() -> void:
 
 func test_no_grid_returns_defaults() -> void:
 	var roster := CombatRoster.new()
-	var resolver: MovementResolver = MovementResolver.new(null, roster)
+	var resolver: MovementResolver = MovementResolver.new(roster)
 	check(not resolver.has_grid(), "no grid should return false")
 	var c := _make_monster_combatant("m1", 5, 5)
 	check(resolver.get_distance_cells(c, c) == -1, "distance should be -1 without grid")
@@ -115,9 +115,9 @@ func test_find_path_with_wall() -> void:
 	# Place a wall across the middle
 	for row in range(10):
 		if row != 5:  # Leave a gap at row 5
-			env.map.set_cell_field(Vector2i(5, row), "terrain_feature", "wall_stone")
-			env.map.set_cell_field(Vector2i(5, row), "passable", false)
-			env.map.set_cell_field(Vector2i(5, row), "blocks_los", true)
+			env.map.set_cell_field(Vector3i(5, row, 0), "terrain_feature", "wall_stone")
+			env.map.set_cell_field(Vector3i(5, row, 0), "passable", false)
+			env.map.set_cell_field(Vector3i(5, row, 0), "blocks_los", true)
 	var path: Array[Vector2i] = env.resolver.find_path(Vector2i(3, 3), Vector2i(7, 3))
 	check(not path.is_empty(), "should find path through gap")
 	check(path[-1] == Vector2i(7, 3), "should reach goal through gap")
@@ -127,8 +127,8 @@ func test_find_path_unreachable() -> void:
 	var env := _make_grid_env(10, 10)
 	# Completely wall off column 5
 	for row in range(10):
-		env.map.set_cell_field(Vector2i(5, row), "terrain_feature", "wall_stone")
-		env.map.set_cell_field(Vector2i(5, row), "passable", false)
+		env.map.set_cell_field(Vector3i(5, row, 0), "terrain_feature", "wall_stone")
+		env.map.set_cell_field(Vector3i(5, row, 0), "passable", false)
 	var path: Array[Vector2i] = env.resolver.find_path(Vector2i(3, 3), Vector2i(7, 3))
 	check(path.is_empty(), "path should be empty when fully blocked")
 
@@ -169,8 +169,8 @@ func test_los_clear() -> void:
 
 func test_los_blocked() -> void:
 	var env := _make_grid_env(10, 10)
-	env.map.set_cell_field(Vector2i(3, 3), "terrain_feature", "wall_stone")
-	env.map.set_cell_field(Vector2i(3, 3), "blocks_los", true)
+	env.map.set_cell_field(Vector3i(3, 3, 0), "terrain_feature", "wall_stone")
+	env.map.set_cell_field(Vector3i(3, 3, 0), "blocks_los", true)
 	check(not env.resolver.has_line_of_sight(Vector2i(0, 0), Vector2i(5, 5)),
 		"LOS should be blocked by wall at (3,3)")
 
@@ -205,7 +205,7 @@ func test_charge_blocked() -> void:
 	env.resolver.set_grid_position(env.monster, Vector2i(8, 0))
 	# Block a vertical strip that the charge line cannot route around
 	for row in range(-2, 3):
-		var wall_pos := Vector2i(4, row)
+		var wall_pos := Vector3i(4, row, 0)
 		if env.map.has_cell(wall_pos):
 			env.map.set_cell_field(wall_pos, "terrain_feature", "wall_stone")
 			env.map.set_cell_field(wall_pos, "passable", false)
@@ -219,17 +219,16 @@ func test_charge_blocked() -> void:
 # ---------------------------------------------------------------------------
 
 func test_find_path_avoids_enemy_zoc() -> void:
-	## Monster at (3,1) creates ZoC on (3,0). PC-side path from (0,0) to (6,0)
-	## should route around (3,0) when mover_side = ENEMY.
+	## PC at (3,1) creates ZoC on (3,0). Enemy path from (0,0) to (6,0) should
+	## route around (3,0) when mover_side = ENEMY.
 	var env := _make_grid_env(10, 10)
 	env.resolver.set_grid_position(env.pc, Vector2i(3, 1))
 	env.resolver.set_grid_position(env.monster, Vector2i(0, 0))
-	# Path for monster (ENEMY side) from (0,0) to (6,0) must avoid PC ZoC
 	var path: Array[Vector2i] = env.resolver.find_path(
 		Vector2i(0, 0), Vector2i(6, 0), true, 50, Combatant.Side.ENEMY)
 	check(not path.is_empty(), "ZoC: path should still exist (routing around)")
 	check(path[-1] == Vector2i(6, 0), "ZoC: path should reach goal")
-	# Cell (3,0) is adjacent to PC at (3,1) — should NOT appear as a waypoint
+	# Cell (3,0) is adjacent to PC at (3,1) — should NOT appear as a waypoint.
 	var has_zoc_waypoint := false
 	for i in range(1, path.size() - 1):  # Exclude start and goal
 		if IsometricGrid.chebyshev_distance(path[i], Vector2i(3, 1)) == 1:
@@ -244,7 +243,7 @@ func test_find_path_allows_zoc_as_destination() -> void:
 	var env := _make_grid_env(10, 10)
 	env.resolver.set_grid_position(env.pc, Vector2i(5, 5))
 	env.resolver.set_grid_position(env.monster, Vector2i(0, 0))
-	# Monster wants to reach (5,4) which is adjacent to PC — a ZoC cell
+	# Monster wants to reach (5,4) which is adjacent to PC — a ZoC cell.
 	var path: Array[Vector2i] = env.resolver.find_path(
 		Vector2i(0, 0), Vector2i(5, 4), true, 50, Combatant.Side.ENEMY)
 	check(not path.is_empty(), "ZoC: should be able to path TO a ZoC cell")
@@ -252,11 +251,10 @@ func test_find_path_allows_zoc_as_destination() -> void:
 
 
 func test_find_path_no_side_ignores_zoc() -> void:
-	## Default mover_side=-1 should NOT filter by ZoC (backward compat).
+	## Default mover_side=-1 should NOT filter by ZoC.
 	var env := _make_grid_env(10, 10)
 	env.resolver.set_grid_position(env.pc, Vector2i(3, 1))
 	env.resolver.set_grid_position(env.monster, Vector2i(0, 0))
-	# Path without side should go straight through
 	var path_no_side: Array[Vector2i] = env.resolver.find_path(
 		Vector2i(0, 0), Vector2i(6, 0))
 	var path_with_side: Array[Vector2i] = env.resolver.find_path(
@@ -272,20 +270,13 @@ func test_get_cells_reachable_zoc_dead_end() -> void:
 	env.resolver.set_grid_position(env.pc, Vector2i(5, 3))
 	env.resolver.set_grid_position(env.monster, Vector2i(5, 0))
 	# Monster at (5,0), PC at (5,3). Cell (5,2) is in PC's ZoC.
-	# Monster with 5 cells budget: should reach (5,2) but not go through it
+	# Monster with 5 cells budget: should reach (5,2) but not expand through it.
 	var reachable: Array[Vector2i] = env.resolver.get_cells_reachable(
 		env.monster, 5, Combatant.Side.ENEMY)
 	check(Vector2i(5, 2) in reachable,
 		"ZoC dead-end: (5,2) is in ZoC and should be reachable")
-	# (5,3) is occupied by the PC so it won't be reachable regardless.
-	# Check that cells BEYOND the ZoC line in that direction are not reachable
-	# via the (5,2) path. (5,2) is a dead-end so the flood should not continue
-	# south through it. Cells like (5,4) or (4,3) should only be reachable via
-	# routes that do not pass through ZoC cells.
-	# Actually, (4,3) is also in PC's ZoC so it too is a dead-end.
-	# Let's check a cell that's only reachable by going through ZoC:
-	# (5,4) is behind the PC — can only be reached via (5,2)->(5,3) which is
-	# blocked by occupation AND ZoC. So it should not be reachable.
+	# (5,4) is behind the PC — only reachable by expanding through ZoC cell (5,2)
+	# or through (4,3)/(6,3) which are also ZoC. So it must not be reachable.
 	check(Vector2i(5, 4) not in reachable,
 		"ZoC dead-end: (5,4) behind PC should not be reachable through ZoC")
 
@@ -295,7 +286,7 @@ func test_move_along_path_stops_at_zoc() -> void:
 	var env := _make_grid_env(10, 10)
 	env.resolver.set_grid_position(env.pc, Vector2i(3, 1))
 	env.resolver.set_grid_position(env.monster, Vector2i(0, 0))
-	# Manually construct a path that goes through a ZoC cell at (3,0)
+	# Manually construct a path that enters a ZoC cell at (3,0).
 	var path: Array[Vector2i] = [
 		Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0),
 		Vector2i(3, 0), Vector2i(4, 0), Vector2i(5, 0)]
@@ -309,7 +300,6 @@ func test_move_along_path_stops_at_zoc() -> void:
 func test_allied_zoc_ignored() -> void:
 	## Allied units should NOT be affected by each other's ZoC.
 	var env := _make_grid_env(10, 10)
-	# Add a second PC
 	var pc2 := _make_pc_combatant("pc_2", 10, 3)
 	env.roster.add_combatant(pc2)
 	env.resolver.set_grid_position(env.pc, Vector2i(0, 0))
@@ -320,7 +310,7 @@ func test_allied_zoc_ignored() -> void:
 	var path: Array[Vector2i] = env.resolver.find_path(
 		Vector2i(0, 0), Vector2i(6, 0), true, 50, Combatant.Side.PARTY)
 	check(not path.is_empty(), "Allied ZoC: path should exist")
-	# The straight path through (3,0) should be available since PC2 is an ally
+	# Straight path through (3,0) should be available since PC2 is an ally.
 	check(path.size() <= 7,
 		"Allied ZoC: path should be direct (no detour around ally)")
 
@@ -330,7 +320,8 @@ func test_allied_zoc_ignored() -> void:
 # ---------------------------------------------------------------------------
 
 func _make_grid_env(w: int, h: int) -> Dictionary:
-	## Create a test environment: open grid, roster with 1 PC and 1 monster, resolver.
+	## Create a test environment: open voxel grid, roster with 1 PC and 1 monster, resolver.
+	## Exercises the 2D-signature projection wrappers on MovementResolver.
 	var map := _make_open_map(w, h)
 	var roster := CombatRoster.new()
 	var pc := _make_pc_combatant("pc_1", 10, 3)
@@ -338,30 +329,14 @@ func _make_grid_env(w: int, h: int) -> Dictionary:
 	roster.add_combatant(pc)
 	roster.add_combatant(monster)
 	roster.enemy_count_at_start = 1
-	var resolver: MovementResolver = MovementResolver.new(map, roster)
+	var resolver: MovementResolver = MovementResolver.new(roster)
+	resolver.set_voxel_map(map)
 	return {"map": map, "roster": roster, "pc": pc, "monster": monster, "resolver": resolver}
 
 
-func _make_open_map(w: int, h: int) -> TacticalMapData:
-	## Create a fully open TacticalMapData grid.
-	var map := TacticalMapData.new()
-	map.grid_width = w
-	map.grid_height = h
-	map.entry_pos = Vector2i(0, 0)
-	var cells_array: Array = []
-	for col in range(w):
-		for row in range(h):
-			cells_array.append({
-				"col": col, "row": row,
-				"terrain_feature": "open",
-				"elevation": 0,
-			})
-	var data := {
-		"grid_width": w, "grid_height": h,
-		"entry_col": 0, "entry_row": 0,
-		"cells": cells_array,
-	}
-	return TacticalMapData.from_dict(data)
+func _make_open_map(w: int, h: int) -> VoxelMapData:
+	## Create a fully open single-level voxel grid.
+	return VoxelMapData.generate_open_field(w, h)
 
 
 func _make_pc_combatant(id: String, hp: int, ac: int) -> Combatant:

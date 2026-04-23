@@ -33,7 +33,7 @@ func run_all_tests() -> void:
 ## Build a minimal mock controller with the fields the builder needs.
 func _make_controller(
 	combatants: Array[Combatant],
-	map: TacticalMapData = null,
+	map: VoxelMapData = null,
 ) -> Dictionary:
 	## Returns a mock controller as a Dictionary, duck-typed for the builder.
 	## We build a real CombatRoster and MovementResolver for accurate tests.
@@ -43,12 +43,14 @@ func _make_controller(
 
 	var mr: MovementResolver = null
 	if map != null:
-		mr = MovementResolver.new(map, roster)
+		mr = MovementResolver.new(roster)
+		mr.set_voxel_map(map)
 
 	return {
 		"roster": roster,
 		"movement_resolver": mr,
-		"tactical_map": map,
+		"voxel_map": map,
+		"tactical_map": null,
 		"condition_manager": null,
 	}
 
@@ -80,19 +82,22 @@ func _make_enemy(id: String, name: String, hp: int = 5) -> Combatant:
 	return c
 
 
-func _make_map_with_cells(cell_positions: Array[Vector2i]) -> TacticalMapData:
-	var cells := []
+func _make_map_with_cells(cell_positions: Array[Vector2i]) -> VoxelMapData:
+	var map := VoxelMapData.new()
+	map.id = "test"
+	map.name = "Test"
+	map.entry_pos = Vector3i(0, 0, 0)
 	for pos in cell_positions:
-		cells.append({"col": pos.x, "row": pos.y, "terrain_feature": "open"})
-	var data := {
-		"grid_width": 20,
-		"grid_height": 20,
-		"entry_col": 0,
-		"entry_row": 0,
-		"cells": cells,
-		"transition_cells": [],
-	}
-	return TacticalMapData.from_dict(data)
+		var cell := VoxelCell.new()
+		cell.col = pos.x
+		cell.row = pos.y
+		cell.level = 0
+		cell.solidity = "air"
+		cell.feature = "open"
+		cell.floor_type = "stone"
+		cell.fog_state = "visible"
+		map.set_cell(Vector3i(pos.x, pos.y, 0), cell)
+	return map
 
 
 func _find_option(options: Array, id: String) -> Dictionary:
@@ -112,9 +117,9 @@ func _has_option(options: Array, id: String) -> bool:
 
 func test_universal_options_always_present() -> void:
 	var pc := _make_pc("pc1", "Bran")
-	pc.grid_position = Vector2i(5, 5)
+	pc.grid_position = Vector3i(5, 5, 0)
 	var map := _make_map_with_cells([Vector2i(5, 5), Vector2i(6, 5)])
-	map.set_entity_pos("pc1", Vector2i(5, 5))
+	map.set_entity_pos("pc1", Vector3i(5, 5, 0))
 	var ctrl := _make_controller([pc], map)
 	var result := Builder.build_menu("pc1", Vector2i(6, 5), ctrl, null)
 	check(_has_option(result, "pass"), "Pass should be present")
@@ -125,9 +130,9 @@ func test_universal_options_always_present() -> void:
 
 func test_empty_cell_movement_options() -> void:
 	var pc := _make_pc("pc1", "Bran")
-	pc.grid_position = Vector2i(5, 5)
+	pc.grid_position = Vector3i(5, 5, 0)
 	var map := _make_map_with_cells([Vector2i(5, 5), Vector2i(6, 5), Vector2i(7, 5)])
-	map.set_entity_pos("pc1", Vector2i(5, 5))
+	map.set_entity_pos("pc1", Vector3i(5, 5, 0))
 	var ctrl := _make_controller([pc], map)
 	var result := Builder.build_menu("pc1", Vector2i(6, 5), ctrl, null)
 	check(_has_option(result, "move_here"), "Move Here should be present for empty cell")
@@ -138,13 +143,13 @@ func test_empty_cell_movement_options() -> void:
 
 func test_enemy_cell_attack_options() -> void:
 	var pc := _make_pc("pc1", "Bran")
-	pc.grid_position = Vector2i(5, 5)
+	pc.grid_position = Vector3i(5, 5, 0)
 	pc.set_equipped_weapon({"name": "Sword", "weapon_damage": "1d8", "weapon_tags": ["melee"]})
 	var enemy := _make_enemy("gob1", "Goblin")
-	enemy.grid_position = Vector2i(6, 5)
+	enemy.grid_position = Vector3i(6, 5, 0)
 	var map := _make_map_with_cells([Vector2i(5, 5), Vector2i(6, 5)])
-	map.set_entity_pos("pc1", Vector2i(5, 5))
-	map.set_entity_pos("gob1", Vector2i(6, 5))
+	map.set_entity_pos("pc1", Vector3i(5, 5, 0))
+	map.set_entity_pos("gob1", Vector3i(6, 5, 0))
 	var ctrl := _make_controller([pc, enemy], map)
 	var result := Builder.build_menu("pc1", Vector2i(6, 5), ctrl, null)
 	check(_has_option(result, "attack_melee"), "Melee Attack should be present for adjacent enemy")
@@ -154,9 +159,9 @@ func test_enemy_cell_attack_options() -> void:
 
 func test_self_click_self_options() -> void:
 	var pc := _make_pc("pc1", "Bran")
-	pc.grid_position = Vector2i(5, 5)
+	pc.grid_position = Vector3i(5, 5, 0)
 	var map := _make_map_with_cells([Vector2i(5, 5)])
-	map.set_entity_pos("pc1", Vector2i(5, 5))
+	map.set_entity_pos("pc1", Vector3i(5, 5, 0))
 	var ctrl := _make_controller([pc], map)
 	var result := Builder.build_menu("pc1", Vector2i(5, 5), ctrl, null)
 	check(_has_option(result, "use_item"), "Use Item should be present for self-click")
@@ -168,12 +173,12 @@ func test_self_click_self_options() -> void:
 
 func test_ally_click_ally_options() -> void:
 	var pc := _make_pc("pc1", "Bran")
-	pc.grid_position = Vector2i(5, 5)
+	pc.grid_position = Vector3i(5, 5, 0)
 	var ally := _make_pc("pc2", "Yara")
-	ally.grid_position = Vector2i(6, 5)
+	ally.grid_position = Vector3i(6, 5, 0)
 	var map := _make_map_with_cells([Vector2i(5, 5), Vector2i(6, 5)])
-	map.set_entity_pos("pc1", Vector2i(5, 5))
-	map.set_entity_pos("pc2", Vector2i(6, 5))
+	map.set_entity_pos("pc1", Vector3i(5, 5, 0))
+	map.set_entity_pos("pc2", Vector3i(6, 5, 0))
 	var ctrl := _make_controller([pc, ally], map)
 	var result := Builder.build_menu("pc1", Vector2i(6, 5), ctrl, null)
 	check(_has_option(result, "trade"), "Trade should be present for adjacent ally")
@@ -183,13 +188,13 @@ func test_ally_click_ally_options() -> void:
 
 func test_downed_click_downed_options() -> void:
 	var pc := _make_pc("pc1", "Bran")
-	pc.grid_position = Vector2i(5, 5)
+	pc.grid_position = Vector3i(5, 5, 0)
 	var downed_enemy := _make_enemy("gob1", "Goblin", 0)
-	downed_enemy.grid_position = Vector2i(6, 5)
+	downed_enemy.grid_position = Vector3i(6, 5, 0)
 	downed_enemy.set_hp_current(0)
 	var map := _make_map_with_cells([Vector2i(5, 5), Vector2i(6, 5)])
-	map.set_entity_pos("pc1", Vector2i(5, 5))
-	map.set_entity_pos("gob1", Vector2i(6, 5))
+	map.set_entity_pos("pc1", Vector3i(5, 5, 0))
+	map.set_entity_pos("gob1", Vector3i(6, 5, 0))
 	var ctrl := _make_controller([pc, downed_enemy], map)
 	var result := Builder.build_menu("pc1", Vector2i(6, 5), ctrl, null)
 	check(_has_option(result, "check_status"), "Check Status should be present for downed entity")
@@ -200,13 +205,13 @@ func test_downed_click_downed_options() -> void:
 
 func test_engaged_no_movement() -> void:
 	var pc := _make_pc("pc1", "Bran")
-	pc.grid_position = Vector2i(5, 5)
+	pc.grid_position = Vector3i(5, 5, 0)
 	var enemy := _make_enemy("gob1", "Goblin")
-	enemy.grid_position = Vector2i(6, 5)
+	enemy.grid_position = Vector3i(6, 5, 0)
 	var map := _make_map_with_cells([
 		Vector2i(5, 5), Vector2i(6, 5), Vector2i(4, 5), Vector2i(3, 5)])
-	map.set_entity_pos("pc1", Vector2i(5, 5))
-	map.set_entity_pos("gob1", Vector2i(6, 5))
+	map.set_entity_pos("pc1", Vector3i(5, 5, 0))
+	map.set_entity_pos("gob1", Vector3i(6, 5, 0))
 	var ctrl := _make_controller([pc, enemy], map)
 
 	# Right-click an empty cell while engaged — movement should be disabled
@@ -231,14 +236,14 @@ func test_engaged_with_skirmishing() -> void:
 	# Add Skirmishing proficiency
 	cd.proficiencies = [{"proficiency_key": "skirmishing", "rank": 1}]
 	var pc := Combatant.from_character(cd, "pc1")
-	pc.grid_position = Vector2i(5, 5)
+	pc.grid_position = Vector3i(5, 5, 0)
 
 	var enemy := _make_enemy("gob1", "Goblin")
-	enemy.grid_position = Vector2i(6, 5)
+	enemy.grid_position = Vector3i(6, 5, 0)
 	var map := _make_map_with_cells([
 		Vector2i(5, 5), Vector2i(6, 5), Vector2i(4, 5)])
-	map.set_entity_pos("pc1", Vector2i(5, 5))
-	map.set_entity_pos("gob1", Vector2i(6, 5))
+	map.set_entity_pos("pc1", Vector3i(5, 5, 0))
+	map.set_entity_pos("gob1", Vector3i(6, 5, 0))
 	var ctrl := _make_controller([pc, enemy], map)
 
 	# Right-click an empty cell while engaged but with Skirmishing
@@ -253,10 +258,10 @@ func test_engaged_with_skirmishing() -> void:
 func test_charge_option_when_valid() -> void:
 	# Place PC at (2,5), enemy at (7,5) — 5 cells apart, straight line
 	var pc := _make_pc("pc1", "Bran")
-	pc.grid_position = Vector2i(2, 5)
+	pc.grid_position = Vector3i(2, 5, 0)
 	pc.set_equipped_weapon({"name": "Sword", "weapon_damage": "1d8", "weapon_tags": ["melee"]})
 	var enemy := _make_enemy("gob1", "Goblin")
-	enemy.grid_position = Vector2i(7, 5)
+	enemy.grid_position = Vector3i(7, 5, 0)
 
 	# Build a map with cells along the line
 	var cells: Array[Vector2i] = []
@@ -267,8 +272,8 @@ func test_charge_option_when_valid() -> void:
 		cells.append(Vector2i(x, 4))
 		cells.append(Vector2i(x, 6))
 	var map := _make_map_with_cells(cells)
-	map.set_entity_pos("pc1", Vector2i(2, 5))
-	map.set_entity_pos("gob1", Vector2i(7, 5))
+	map.set_entity_pos("pc1", Vector3i(2, 5, 0))
+	map.set_entity_pos("gob1", Vector3i(7, 5, 0))
 	var ctrl := _make_controller([pc, enemy], map)
 
 	# Right-click on the enemy — charge should be available (>= 4 cells = 20ft)
@@ -279,14 +284,14 @@ func test_charge_option_when_valid() -> void:
 
 func test_backstab_thief_conditions() -> void:
 	var pc := _make_pc("pc1", "Rogue", "thief", 5, 10)
-	pc.grid_position = Vector2i(5, 5)
+	pc.grid_position = Vector3i(5, 5, 0)
 	pc.set_equipped_weapon({"name": "Dagger", "weapon_damage": "1d4", "weapon_tags": ["melee"]})
 	var enemy := _make_enemy("gob1", "Goblin")
-	enemy.grid_position = Vector2i(6, 5)
+	enemy.grid_position = Vector3i(6, 5, 0)
 	enemy.add_condition("held")  # Held = backstab eligible
 	var map := _make_map_with_cells([Vector2i(5, 5), Vector2i(6, 5)])
-	map.set_entity_pos("pc1", Vector2i(5, 5))
-	map.set_entity_pos("gob1", Vector2i(6, 5))
+	map.set_entity_pos("pc1", Vector3i(5, 5, 0))
+	map.set_entity_pos("gob1", Vector3i(6, 5, 0))
 	var ctrl := _make_controller([pc, enemy], map)
 	var result := Builder.build_menu("pc1", Vector2i(6, 5), ctrl, null)
 	check(_has_option(result, "backstab"), "Backstab should be available for thief vs held enemy")
@@ -298,13 +303,13 @@ func test_backstab_thief_conditions() -> void:
 
 func test_maneuver_submenu_present() -> void:
 	var pc := _make_pc("pc1", "Bran")
-	pc.grid_position = Vector2i(5, 5)
+	pc.grid_position = Vector3i(5, 5, 0)
 	pc.set_equipped_weapon({"name": "Sword", "weapon_damage": "1d8", "weapon_tags": ["melee"]})
 	var enemy := _make_enemy("gob1", "Goblin")
-	enemy.grid_position = Vector2i(6, 5)
+	enemy.grid_position = Vector3i(6, 5, 0)
 	var map := _make_map_with_cells([Vector2i(5, 5), Vector2i(6, 5)])
-	map.set_entity_pos("pc1", Vector2i(5, 5))
-	map.set_entity_pos("gob1", Vector2i(6, 5))
+	map.set_entity_pos("pc1", Vector3i(5, 5, 0))
+	map.set_entity_pos("gob1", Vector3i(6, 5, 0))
 	var ctrl := _make_controller([pc, enemy], map)
 	var result := Builder.build_menu("pc1", Vector2i(6, 5), ctrl, null)
 	var maneuver_opt := _find_option(result, "combat_maneuver")
@@ -331,14 +336,14 @@ func test_maneuver_combat_trickery_penalty() -> void:
 	cd.base_movement = 120
 	cd.proficiencies = [{"proficiency_key": "combat_trickery", "rank": 1}]
 	var pc := Combatant.from_character(cd, "pc1")
-	pc.grid_position = Vector2i(5, 5)
+	pc.grid_position = Vector3i(5, 5, 0)
 	pc.set_equipped_weapon({"name": "Sword", "weapon_damage": "1d8", "weapon_tags": ["melee"]})
 
 	var enemy := _make_enemy("gob1", "Goblin")
-	enemy.grid_position = Vector2i(6, 5)
+	enemy.grid_position = Vector3i(6, 5, 0)
 	var map := _make_map_with_cells([Vector2i(5, 5), Vector2i(6, 5)])
-	map.set_entity_pos("pc1", Vector2i(5, 5))
-	map.set_entity_pos("gob1", Vector2i(6, 5))
+	map.set_entity_pos("pc1", Vector3i(5, 5, 0))
+	map.set_entity_pos("gob1", Vector3i(6, 5, 0))
 	var ctrl := _make_controller([pc, enemy], map)
 	var result := Builder.build_menu("pc1", Vector2i(6, 5), ctrl, null)
 	var maneuver_opt := _find_option(result, "combat_maneuver")
@@ -355,7 +360,7 @@ func test_maneuver_combat_trickery_penalty() -> void:
 
 func test_ranged_attack_not_engaged() -> void:
 	var pc := _make_pc("pc1", "Archer")
-	pc.grid_position = Vector2i(2, 5)
+	pc.grid_position = Vector3i(2, 5, 0)
 	pc.set_equipped_weapon({
 		"name": "Shortbow", "weapon_damage": "1d6",
 		"weapon_tags": ["ranged"],
@@ -363,13 +368,13 @@ func test_ranged_attack_not_engaged() -> void:
 	})
 	pc.set_equipped_ammo({"item_id": "arrow1", "name": "Arrows", "quantity": 20})
 	var enemy := _make_enemy("gob1", "Goblin")
-	enemy.grid_position = Vector2i(5, 5)
+	enemy.grid_position = Vector3i(5, 5, 0)
 	var cells: Array[Vector2i] = []
 	for x in range(0, 10):
 		cells.append(Vector2i(x, 5))
 	var map := _make_map_with_cells(cells)
-	map.set_entity_pos("pc1", Vector2i(2, 5))
-	map.set_entity_pos("gob1", Vector2i(5, 5))
+	map.set_entity_pos("pc1", Vector3i(2, 5, 0))
+	map.set_entity_pos("gob1", Vector3i(5, 5, 0))
 	var ctrl := _make_controller([pc, enemy], map)
 	var result := Builder.build_menu("pc1", Vector2i(5, 5), ctrl, null)
 	check(_has_option(result, "attack_ranged"), "Ranged Attack should be present for ranged weapon")
@@ -378,10 +383,10 @@ func test_ranged_attack_not_engaged() -> void:
 
 func test_prone_stand_up_option() -> void:
 	var pc := _make_pc("pc1", "Bran")
-	pc.grid_position = Vector2i(5, 5)
+	pc.grid_position = Vector3i(5, 5, 0)
 	pc.add_condition("prone")
 	var map := _make_map_with_cells([Vector2i(5, 5)])
-	map.set_entity_pos("pc1", Vector2i(5, 5))
+	map.set_entity_pos("pc1", Vector3i(5, 5, 0))
 	var ctrl := _make_controller([pc], map)
 	# Self-click while prone
 	var result := Builder.build_menu("pc1", Vector2i(5, 5), ctrl, null)
