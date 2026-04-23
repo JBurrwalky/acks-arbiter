@@ -494,3 +494,28 @@ signal order_cancelled(entity_id: String, event_type: String)
 
 ## A new order was queued for an entity in the scheduler.
 signal order_queued(entity_id: String, event_type: String, fire_time: int)
+
+
+# ---------------------------------------------------------------------------
+# Voxel presentation signals (Session 8 UX layer)
+# ---------------------------------------------------------------------------
+
+## A dungeon event fired on a non-focus level warrants an auto camera focus.
+## Handlers emit this from non-focus-level encounter, evil door, torch expire,
+## etc. VisibilityManager listens and calls set_focus_level(level).
+signal dungeon_auto_focus_requested(level: int, reason: String)
+
+## A party portrait in the session status bar was clicked. The dungeon renderer
+## listens, resolves the entity's voxel position, focuses the camera on that
+## level, and selects the entity.
+signal party_portrait_clicked(entity_id: String)
+
+## Broadcast whenever the active VisibilityManager's focus level changes.
+## Consumers (status bar level badges, widgets, etc.) listen here rather than
+## holding a direct ref to the VisibilityManager instance.
+signal dungeon_focus_level_changed(level: int)
+
+## Snapshot of party-member levels emitted by the dungeon renderer whenever
+## party positions refresh. Keys are character ids, values are int levels.
+## An empty dict effectively clears level badges (e.g., leaving the dungeon).
+signal party_member_levels_snapshot(levels: Dictionary)

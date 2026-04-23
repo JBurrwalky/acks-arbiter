@@ -39,12 +39,23 @@ var party_positions: Array[Vector3i] = []
 ## Recomputed by update_explored_levels() — not cached.
 var explored_levels: Array[int] = []
 
+## When true, set_focus_level() bypasses the explored-level clamp. Used for
+## dev/free-camera mode and auto-focus event-driven paths.
+var free_camera: bool = false
+
+## Cycles roster-order when the player presses Shift+Home.
+var _next_member_index: int = 0
+
 
 # ---------------------------------------------------------------------------
 # Signals
 # ---------------------------------------------------------------------------
 
 signal focus_level_changed(new_level: int)
+
+## Emitted by request_auto_focus() before focus is updated. Useful for UI that
+## wants to display which event caused the focus change (e.g., toast banner).
+signal auto_focus_requested(level: int, reason: String)
 
 
 # ---------------------------------------------------------------------------
@@ -57,6 +68,13 @@ signal focus_level_changed(new_level: int)
 ##   Going up (new > current): smallest explored >= new_level, or stays.
 ##   Going down (new < current): largest explored <= new_level, or stays.
 func set_focus_level(new_level: int) -> void:
+	if free_camera:
+		if new_level != focus_level:
+			focus_level = new_level
+			focus_level_changed.emit(focus_level)
+			EventBus.dungeon_focus_level_changed.emit(focus_level)
+		return
+
 	if explored_levels.is_empty():
 		return
 
@@ -82,6 +100,11 @@ func set_focus_level(new_level: int) -> void:
 	if target != focus_level:
 		focus_level = target
 		focus_level_changed.emit(focus_level)
+		EventBus.dungeon_focus_level_changed.emit(focus_level)
+
+
+func set_free_camera(enabled: bool) -> void:
+	free_camera = enabled
 
 
 ## Jumps focus to the party leader's level.
@@ -89,10 +112,38 @@ func set_focus_level(new_level: int) -> void:
 func jump_to_party_leader() -> void:
 	if party_positions.is_empty():
 		return
+	_next_member_index = 0
 	var leader_level: int = party_positions[0].z
 	if leader_level != focus_level:
 		focus_level = leader_level
 		focus_level_changed.emit(focus_level)
+		EventBus.dungeon_focus_level_changed.emit(focus_level)
+
+
+## Cycles to the next party member in roster order, focusing that member's
+## level. Returns the index of the member focused, or -1 if the party is empty.
+## Used by Shift+Home input action.
+func cycle_next_party_member() -> int:
+	if party_positions.is_empty():
+		return -1
+	_next_member_index = (_next_member_index + 1) % party_positions.size()
+	var target_level: int = party_positions[_next_member_index].z
+	if target_level != focus_level:
+		focus_level = target_level
+		focus_level_changed.emit(focus_level)
+		EventBus.dungeon_focus_level_changed.emit(focus_level)
+	return _next_member_index
+
+
+## Called by DungeonHandlers when a scheduler event fires on a non-focus level
+## (encounter, trap, torch expire, evil door close). Emits auto_focus_requested
+## and updates focus without clamping — the event is authoritative.
+func request_auto_focus(level: int, reason: String) -> void:
+	auto_focus_requested.emit(level, reason)
+	if level != focus_level:
+		focus_level = level
+		focus_level_changed.emit(focus_level)
+		EventBus.dungeon_focus_level_changed.emit(focus_level)
 
 
 # ---------------------------------------------------------------------------

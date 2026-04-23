@@ -451,9 +451,9 @@ func override_create_wilderness_hidden_cache(hex_q: int, hex_r: int) -> String:
 
 
 ## Create a loose dungeon cache at the given dungeon cell. Returns cache_id.
-func override_create_dungeon_loose_cache(dungeon_id: String, cell_col: int, cell_row: int) -> String:
-	var cache_id := LocationCacheManager.create_dungeon_loose_cache(dungeon_id, Vector2i(cell_col, cell_row))
-	_log_override("cache_create_dungeon_loose", cache_id, "dungeon,cell", "", "%s,%d,%d" % [dungeon_id, cell_col, cell_row])
+func override_create_dungeon_loose_cache(dungeon_id: String, cell_col: int, cell_row: int, cell_level: int = 0) -> String:
+	var cache_id := LocationCacheManager.create_dungeon_loose_cache(dungeon_id, Vector3i(cell_col, cell_row, cell_level))
+	_log_override("cache_create_dungeon_loose", cache_id, "dungeon,cell", "", "%s,%d,%d,%d" % [dungeon_id, cell_col, cell_row, cell_level])
 	EventBus.override_applied.emit("cache_create_dungeon_loose", cache_id, "location")
 	return cache_id
 

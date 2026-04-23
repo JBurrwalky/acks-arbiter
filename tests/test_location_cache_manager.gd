@@ -141,13 +141,13 @@ func test_create_dungeon_loose_cache() -> void:
 	_setup()
 	GameState.dice_overrides["cache_decay_timer"] = 5  # 5 days
 
-	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector2i(3, 4))
+	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector3i(3, 4, 1))
 	check(not cache_id.is_empty(), "dungeon loose cache should return non-empty id")
 
 	var cache := CampaignRepository.get_location_cache(cache_id)
 	check(cache.get("cache_variant") == "loose", "variant should be 'loose'")
 	check(cache.get("location_type") == "dungeon_cell", "type should be 'dungeon_cell'")
-	check(cache.get("location_key") == "dungeon:%s:cell:3,4" % DUNGEON_ID, "location_key should match")
+	check(cache.get("location_key") == "dungeon:%s:cell:3,4,1" % DUNGEON_ID, "location_key should match")
 	check(int(cache.get("is_persistent", -1)) == 0, "should not be persistent")
 
 	var current_day := Timekeeping.get_total_days()
@@ -160,7 +160,7 @@ func test_create_dungeon_container_cache() -> void:
 	var container_id := _create_test_item(PC_A, "chest_large", "Large Chest")
 
 	var cache_id := LocationCacheManager.create_dungeon_container_cache(
-		DUNGEON_ID, Vector2i(1, 2), container_id)
+		DUNGEON_ID, Vector3i(1, 2, 0), container_id)
 	check(not cache_id.is_empty(), "container cache should return non-empty id")
 
 	var cache := CampaignRepository.get_location_cache(cache_id)
@@ -225,7 +225,7 @@ func test_create_settlement_loose_cache() -> void:
 func test_drop_item_to_cache() -> void:
 	_setup()
 	GameState.dice_overrides["cache_decay_timer"] = 7
-	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector2i(0, 0))
+	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector3i(0, 0, 0))
 	var item_id := _create_test_item(PC_A, "sword", "Longsword")
 
 	var ok := LocationCacheManager.drop_item_to_cache(item_id, cache_id, PC_A)
@@ -244,7 +244,7 @@ func test_drop_item_to_cache() -> void:
 func test_pick_up_item_character() -> void:
 	_setup()
 	GameState.dice_overrides["cache_decay_timer"] = 7
-	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector2i(0, 0))
+	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector3i(0, 0, 0))
 	var item_id := _create_test_item(PC_A, "sword", "Longsword")
 	LocationCacheManager.drop_item_to_cache(item_id, cache_id, PC_A)
 
@@ -271,7 +271,7 @@ func test_pick_up_item_creature() -> void:
 	""", [creature_id, TEST_CAMPAIGN, "mule", "Bessie", 5, 5])
 
 	GameState.dice_overrides["cache_decay_timer"] = 7
-	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector2i(0, 0))
+	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector3i(0, 0, 0))
 	var item_id := _create_test_item(PC_A, "sack", "Sack of Grain")
 	LocationCacheManager.drop_item_to_cache(item_id, cache_id, PC_A)
 
@@ -302,7 +302,7 @@ func test_pick_up_item_vehicle() -> void:
 	""", [vehicle_id, TEST_CAMPAIGN, "cart", "Cart", 10, 10])
 
 	GameState.dice_overrides["cache_decay_timer"] = 7
-	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector2i(0, 0))
+	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector3i(0, 0, 0))
 	var item_id := _create_test_item(PC_A, "barrel", "Barrel")
 	LocationCacheManager.drop_item_to_cache(item_id, cache_id, PC_A)
 
@@ -325,7 +325,7 @@ func test_pick_up_item_vehicle() -> void:
 func test_cache_deletion_cascades_items() -> void:
 	_setup()
 	GameState.dice_overrides["cache_decay_timer"] = 7
-	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector2i(0, 0))
+	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector3i(0, 0, 0))
 	var item_id := _create_test_item(PC_A, "gem", "Ruby")
 	LocationCacheManager.drop_item_to_cache(item_id, cache_id, PC_A)
 
@@ -346,7 +346,7 @@ func test_cache_deletion_cascades_items() -> void:
 func test_decay_fires_on_due_day() -> void:
 	_setup()
 	GameState.dice_overrides["cache_decay_timer"] = 1  # expires tomorrow
-	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector2i(0, 0))
+	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector3i(0, 0, 0))
 	var item_id := _create_test_item(PC_A, "torch", "Torch")
 	LocationCacheManager.drop_item_to_cache(item_id, cache_id, PC_A)
 
@@ -368,7 +368,7 @@ func test_decay_fires_on_due_day() -> void:
 func test_decay_skips_future_caches() -> void:
 	_setup()
 	GameState.dice_overrides["cache_decay_timer"] = 7  # 7 days out
-	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector2i(0, 0))
+	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector3i(0, 0, 0))
 	var item_id := _create_test_item(PC_A, "rope", "50ft Rope")
 	LocationCacheManager.drop_item_to_cache(item_id, cache_id, PC_A)
 
@@ -385,7 +385,7 @@ func test_decay_skips_locked_container() -> void:
 	_setup()
 	var container_id := _create_test_item(PC_A, "chest_large", "Chest")
 	var cache_id := LocationCacheManager.create_dungeon_container_cache(
-		DUNGEON_ID, Vector2i(0, 0), container_id)
+		DUNGEON_ID, Vector3i(0, 0, 0), container_id)
 
 	# Advance far into the future
 	LocationCacheManager.resolve_daily_decay(Timekeeping.get_total_days() + 9999)

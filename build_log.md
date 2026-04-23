@@ -6333,3 +6333,216 @@ Legacy 2D bodies deleted from DungeonMapController:
 3. Session 11 — delete `TacticalMapData` class, `CellData`, legacy `dungeon_map_renderer.gd` 2D scene, `_map`/`_all_levels`/`_stairs` fields, legacy `test_dungeon_map_controller.gd` tests. Strip any remaining ternaries that still read `controller.get_map()`.
 4. Port `FormationManager.compute_dungeon_positions` to Vector3i / VoxelMapData so voxel group-moves can use real formation placement instead of ring-scatter.
 5. Port the voxel minimap.
+
+---
+
+## Session 2026-04-22 — Voxel Migration Session 8 (Multi-Level Camera UX, Level Strip Widget, Input Map, Auto-Focus)
+
+**Task:** Ship the UX layer on top of the voxel renderer from Sessions 7/7b. After this session a player can play a multi-level dungeon fluently — see who's where via a right-side Level Strip Widget, click between levels, press PgUp/PgDn/Home/Shift+Home via the input map (not hardcoded keycodes), get level badges on party-bar portraits, see edge arrows for off-screen party members, get auto-focus when an event fires on a non-focus level, and be required to two-click confirm a cross-level move order.
+
+**Model used:** Opus 4.7 (1M context) — planning + implementation.
+
+**Scope:** voxel-migration-session-plan.md Session 8 (`scenes[16.1/16.4/16.5/16.7/17.5/17.6]`). User-confirmed decisions at plan time: (1) focus+1 policy = split (walls dithered, floors hidden); (2) cross-level move confirm = extra context-menu step (Confirm/Cancel submenu); (3) Level Strip rows = explored levels only, sorted top-down; (4) combat turn-rotation auto-focus = deferred until voxel combat lands.
+
+**Completed:**
+
+- **[engine/autoloads/event_bus.gd](engine/autoloads/event_bus.gd)** — added 4 new signals: `dungeon_auto_focus_requested(level, reason)`, `party_portrait_clicked(entity_id)`, `dungeon_focus_level_changed(level)`, `party_member_levels_snapshot(levels)`.
+
+- **[project.godot](project.godot)** — 4 new input actions: `focus_level_up` (PgUp), `focus_level_down` (PgDn), `recenter_party_leader` (Home), `focus_next_party_member` (Shift+Home).
+
+- **[engine/subsystems/presentation/visibility_manager.gd](engine/subsystems/presentation/visibility_manager.gd)** — added `free_camera` bypass flag + `set_free_camera()`, `cycle_next_party_member() -> int` (roster-order cycling), `auto_focus_requested(level, reason)` signal, `request_auto_focus()` method (bypasses clamp — events are authoritative). Every `focus_level_changed` emit now ALSO emits `EventBus.dungeon_focus_level_changed` so the status bar and other consumers don't need a direct ref.
+
+- **[scenes/maps/dungeon_map_renderer_3d.gd](scenes/maps/dungeon_map_renderer_3d.gd)** — large set of additions:
+  - Input map migration at `_unhandled_input` (lines 942–964): direct `KEY_HOME/PAGEUP/PAGEDOWN` branches replaced with `event.is_action_pressed("focus_level_up"/"focus_level_down"/"recenter_party_leader"/"focus_next_party_member")`. Shift+Home newly wired via `cycle_next_party_member()`.
+  - `_apply_level_visibility` rewritten to split at `level == focus + 1`: shows **walls only** with a screen-door dither material (`BaseMaterial3D.TRANSPARENCY_ALPHA_HASH`, alpha 0.35); hides floors/features/doors. Higher levels still hard-clipped.
+  - New helpers `_apply_focus_plus_one_visibility()`, `_reset_walls_opaque()`, `_set_walls_dithered()`, `_apply_mesh_dither()` implement the split/reset per `base_color` meta.
+  - New public accessors: `get_visibility_manager() -> VisibilityManager`, `get_enemy_levels_snapshot() -> Dictionary` (level → enemy count), `get_party_focus_tokens() -> Array` (focus-level party tokens for offscreen indicators).
+  - `_refresh_visibility_party_positions()` + `_refresh_visibility_party_positions_if_party()` now maintain `VisibilityManager.party_positions` (was never being set in normal gameplay — Session 6 gap) and emit `EventBus.party_member_levels_snapshot` for the status bar.
+  - `_setup_hud_widgets()` instantiates `LevelStripWidget` + `OffscreenPartyIndicators` under `DungeonHUD` CanvasLayer.
+  - `EventBus.dungeon_auto_focus_requested` → routed to `VisibilityManager.request_auto_focus`.
+  - `EventBus.party_portrait_clicked` → resolves the entity's voxel position, sets focus to `pos.z`, selects the entity, recenters the camera.
+
+- **[scenes/ui/hud/level_strip_widget.gd](scenes/ui/hud/level_strip_widget.gd)** + **.tscn** — new right-side PanelContainer HUD. One flat `Button` row per explored level, sorted highest → lowest. Rows show `L{n}`, party count, enemy count, focus marker (●). Clicking a row calls `VisibilityManager.set_focus_level()`. Refreshes on `EventBus.party_member_joined/_left` + renderer-driven `refresh()` calls.
+
+- **[scenes/ui/hud/offscreen_party_indicators.gd](scenes/ui/hud/offscreen_party_indicators.gd)** + **.tscn** — new full-rect Control overlay. Each `_process` projects party tokens via `Camera3D.unproject_position()`, reflects through viewport center when behind camera, clamps to viewport edge with margin, draws a blue triangle arrow with outline.
+
+- **[scenes/ui/hud/session_status_bar.gd](scenes/ui/hud/session_status_bar.gd)** — portraits now wrap `TextureRect` in flat `Button` (56×56). Each button gets a `LevelBadge` Label overlay (TOP_RIGHT anchor, yellow text with outline). Button `pressed` → `EventBus.party_portrait_clicked.emit(character_id)`. Listens to `party_member_levels_snapshot` + `dungeon_focus_level_changed` to populate badge text and mute the badge on the focus level. Clears badges on exploration context change away from DUNGEON.
+
+- **[engine/subsystems/session/states/dungeon_explore_state.gd](engine/subsystems/session/states/dungeon_explore_state.gd)** — two-click confirm for cross-level moves. New `_should_confirm_cross_level_move(cell)` checks `Vector3i` cells against the renderer's VisibilityManager focus. When triggered, `_show_move_confirm_menu()` re-opens the context menu at `_last_menu_screen_pos` with two options: "Confirm move to Level N" (action_type `move_here_confirm`) and "Cancel". The normal `_on_context_action` branch dispatches the confirmed action. Cancel routes through the existing context-menu "cancel" handling.
+
+- **[engine/subsystems/session/handlers/dungeon_handlers.gd](engine/subsystems/session/handlers/dungeon_handlers.gd)** — emits `EventBus.dungeon_auto_focus_requested` from two paths: (1) wandering monster encounter, using `DungeonMapController.get_party_position_3d().z`; (2) evil door auto-close, using the door's `pos.z`.
+
+- **[tests/test_visibility_manager_integration.gd](tests/test_visibility_manager_integration.gd)** — 12 headless integration tests (all pass-by-inspection, not yet executed in Godot): clamp up/down/exact-match/empty-explored, `free_camera` bypass, jump to leader (including empty-party noop), `cycle_next_party_member` advance + wrap, `request_auto_focus` signal + focus update, `should_dither` matrix, `get_level_visibility` matrix parameterized over 5 positions. Registered in `test_runner.gd` + `test_runner.tscn` as `VisibilityManagerIntegrationTests`.
+
+**Decisions made:**
+
+- **Focus+1 dither = walls only, floors hidden** (user-chosen). Implemented via iterating the `Level_N` group's children; only `Walls` gets `TRANSPARENCY_ALPHA_HASH` + alpha 0.35; `FloorSlabs` / `Doors` / `Features` / `GridLines` / `FogOverlay` / `TransitionMarkers` stay hidden. Preserves Session 7's clean top-down silhouette while restoring stair-approach readability.
+- **Party portrait chip → EventBus, not direct VM ref** (plan-level decision). `SessionStatusBar` emits `EventBus.party_portrait_clicked`, renderer listens and does focus+select. Keeps the bar agnostic to dungeon/combat/wilderness scene context.
+- **Level snapshot over per-character events**. Renderer emits `party_member_levels_snapshot(Dictionary)` (character_id → int) instead of per-character update signals. Simpler, batched, self-correcting.
+- **Shift+Home cycles by roster order**, not "next member on different level." Simple to implement, simple to reason about. Flag for later if user finds it noisy.
+- **Combat turn-rotation auto-focus deferred.** Combat renderer still builds a single Level_0 group; wiring the signal emitter before a multi-level combat renderer exists would be premature.
+- **Torch-expire auto-focus skipped.** Torches are carried by party members, who are almost always on the focus level; the added plumbing to look up carrier position wasn't worth it for Session 8. Follow-up if the need arises.
+- **Confirm submenu follows dungeon_context_menu.gd's `action_data` shape** — options carry `{id, label, category, enabled, action_data: {action_type, cell, selected}}`. Dispatches cleanly through the existing `_on_option_pressed` → `option_selected.emit(action_data)` → `_on_context_action(action_data)` chain.
+
+**Interfaces defined or changed:**
+
+- `VisibilityManager`:
+  - `var free_camera: bool`
+  - `set_free_camera(enabled: bool) -> void`
+  - `cycle_next_party_member() -> int`
+  - `request_auto_focus(level: int, reason: String) -> void`
+  - `signal auto_focus_requested(level: int, reason: String)`
+- `DungeonMapRenderer3D`:
+  - `get_visibility_manager() -> VisibilityManager` (new public accessor)
+  - `get_enemy_levels_snapshot() -> Dictionary`
+  - `get_party_focus_tokens() -> Array`
+  - `_refresh_visibility_party_positions()` / `_refresh_visibility_party_positions_if_party()` (private, now wired from `_on_map_loaded`, `_on_party_moved`, `_on_entity_moved`)
+- `EventBus`:
+  - `signal dungeon_auto_focus_requested(level: int, reason: String)`
+  - `signal party_portrait_clicked(entity_id: String)`
+  - `signal dungeon_focus_level_changed(level: int)`
+  - `signal party_member_levels_snapshot(levels: Dictionary)`
+- `LevelStripWidget.setup(vis, renderer, vmap) -> void`, `.refresh() -> void`, `.set_mode(mode: String) -> void`, `signal level_row_clicked(level: int)`
+- `OffscreenPartyIndicators.setup(camera, vis, renderer) -> void`
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- `tests/test_visibility_manager_integration.gd` — new 12-test suite `VisibilityManagerIntegrationTests`. Registered in `test_runner.gd` and `test_runner.tscn`.
+
+**Known issues:**
+
+- **Visual smoke test pending.** End-to-end verification with `data/test_dungeon.json` in the editor still required. Checklist in the plan file covers: Level Strip renders, PgUp/PgDn/Home/Shift+Home in input map, portrait chips show Lx badges, off-screen arrows appear, focus+1 walls are dithered + floors hidden, cross-level move shows confirm submenu, wandering-encounter on non-focus level auto-focuses.
+- **Torch-expire auto-focus not wired.** Carrier position lookup deferred; light source is typically on the party.
+- **Combat turn-rotation auto-focus not wired.** Combat renderer is single-level; deferred until voxel combat lands.
+- **Tests not yet run.** Godot CLI not on PATH in this environment; run `tests/test_runner.tscn` in the editor to confirm `VisibilityManagerIntegrationTests` pass and no regressions (the two existing `VisibilityManager` + `VoxelLOS` suites, plus all pre-existing failures flagged in Session 7 and 7b).
+- **Tests' EventBus emission side-effect.** `VisibilityManager.set_focus_level` / `jump_to_party_leader` / `cycle_next_party_member` / `request_auto_focus` now emit `EventBus.dungeon_focus_level_changed`. Existing `test_visibility_manager.gd` did not listen, so it should still pass — but any test that counts total signal emissions on the VM should be reviewed.
+- **Focus+1 wall dither relies on `base_color` meta being set.** All voxel wall builders in `tactical_grid_3d.gd` set this per Session 7, but if a future builder skips it, the dither path will default to `Color.WHITE` and look wrong. Flagged as an implicit contract.
+- **`_refresh_visibility_party_positions` is called more often than strictly necessary** (every entity-moved event that involves a party member). With a 5-person party this is negligible; a larger party or faster movement tick might benefit from throttling.
+
+**Next session should:**
+
+1. Visual smoke test with `data/test_dungeon.json` (Goblin Warrens, 4 levels). Verify the seven checklist items above.
+2. Run `tests/test_runner.tscn`. Confirm `VisibilityManagerIntegrationTests` passes + no new regressions.
+3. If the wall-dither reads harsh at 0.35 alpha, tune down to 0.25 or up to 0.45 — one constant at the top of `_apply_mesh_dither` in `dungeon_map_renderer_3d.gd`.
+4. If the off-screen arrow overlay shows spurious arrows (e.g., when the party is fully in view), add a "hide when all party on screen" short-circuit in `offscreen_party_indicators.gd._draw`.
+5. Stair UX redesign (ramp/gradient stairs with per-cell Y) — separate focused session.
+6. Session 11 — delete `TacticalMapData`, `CellData`, legacy `dungeon_map_renderer.gd`, `_map`/`_all_levels`/`_stairs` fields, legacy `test_dungeon_map_controller.gd` tests.
+7. Port the voxel minimap.
+8. Port `FormationManager.compute_dungeon_positions` to Vector3i.
+
+---
+
+## Session 2026-04-22 — Voxel Migration Session 9 (Inventory Adjacency View, Rebalance Load, Loot Cell Cache)
+
+**Task:** Close the inventory-side loop from Session 4's transfer validator: populate `carrier_positions` in the overlay's validator context so non-adjacent carriers dim and get disabled; add a "Rebalance Load" button that equalizes encumbrance within the adjacent cluster; extend `LocationCacheManager` dungeon APIs to `Vector3i` (new `location_key` format carries level); finish the `LootDistributionModal` items UI with a participant filter (Chebyshev ≤ 1 of the loot cell).
+
+**Model used:** Opus 4.7 (1M context) — planning + implementation.
+
+**Scope decisions (user-confirmed at plan time):**
+1. Non-adjacent carrier UX: **dim + disable**. Items stay readable; drag/drop + right-click + send-to blocked; tooltip explains distance.
+2. Rebalance vs Auto-distribute: **two separate buttons**. Auto-distribute keeps its "spread new loot" semantic; Rebalance Load is the cluster-equalize-encumbrance action.
+3. Dungeon combat-end loot: **auto-spawn cache on victory, no modal**. (Already implemented by `DungeonExploreState._place_dungeon_loot` — Session 9 upgraded it to native Vector3i.)
+4. Cache coords: **extend to Vector3i now**. New key format `"dungeon:<id>:cell:<col>,<row>,<level>"`. Migration 037 backfills existing rows at level 0.
+
+**Completed:**
+
+- **`engine/subsystems/inventory/party_inventory_transfer_validator.gd`:**
+  - New static helper `collect_adjacent_carrier_ids(anchor_id, carrier_positions) -> Array` — returns carrier_ids within 3D Chebyshev ≤ 1 (includes anchor). Drives overlay dimming and loot-modal participant filtering.
+  - Adjacency check switched from `VoxelGrid.is_adjacent` to `VoxelGrid.chebyshev_distance(...) <= 1`. Fix: `is_adjacent` returns `false` for same-cell (distance 0), which meant two PCs stacked on one cell couldn't trade under Session 4's validator. Now they can.
+
+- **`engine/subsystems/inventory/location_cache_manager.gd`:**
+  - `create_dungeon_loose_cache(dungeon_id, cell: Vector3i)` + `create_dungeon_container_cache(dungeon_id, cell: Vector3i, container_item_id)` — signatures changed from `Vector2i`.
+  - New static helpers: `build_dungeon_cell_key(dungeon_id, cell) -> String` and `parse_dungeon_cell_key(location_key) -> Dictionary`. Parser tolerates legacy 2D keys (treats them as level 0) for rollout safety.
+
+- **`db/migrations/037_location_cache_voxel_coord.sql`:** one-shot update appending `,0` to every existing `dungeon_cell` location_key. Idempotent — re-running skips keys already carrying the third axis. Migration runner at `campaign_repository.gd:142` enumerates migrations by filename prefix, so 037 applies automatically on boot.
+  - `db/schema.sql`: added comment documenting the three `location_key` formats.
+
+- **Vector3i caller updates:**
+  - [engine/subsystems/session/states/dungeon_explore_state.gd:_place_dungeon_loot](engine/subsystems/session/states/dungeon_explore_state.gd) — `loot_cell` is now `Vector3i`. Prefers `combatant.grid_position_3d`; falls back to `Vector3i(grid_position.x, grid_position.y, controller.get_current_level())` for older combat flows. Removed the `TODO (voxel migration)` block.
+  - [scenes/ui/party_inventory/party_inventory_overlay.gd:_execute_dungeon_drop](scenes/ui/party_inventory/party_inventory_overlay.gd) — parses location_key via `LocationCacheManager.parse_dungeon_cell_key`.
+  - [engine/subsystems/override/override_manager.gd:override_create_dungeon_loose_cache](engine/subsystems/override/override_manager.gd) — added optional `cell_level: int = 0` param.
+  - [scenes/ui/override/override_panel.gd](scenes/ui/override/override_panel.gd) — new "Cell Level:" SpinBox in the dungeon-loose cache override UI.
+  - `tests/test_location_cache_manager.gd` — all 7 `create_dungeon_loose_cache` call sites + 1 `create_dungeon_container_cache` updated to Vector3i; `location_key` equality assertion updated to 3D format.
+  - `tests/test_dungeon_loot_placement.gd` — 5 call sites updated; location_key format assertion updated.
+
+- **`engine/subsystems/inventory/loot_auto_distributor.gd`:**
+  - New `redistribute_among_adjacent(items, carriers, anchor_id) -> Dictionary`. Greedy first-fit-decreasing: items sorted heaviest first, each placed with the carrier that would have the lowest projected total (ties broken by larger max capacity). Preserves equipped items. Returns `{moves, summary}` with no `unassigned` — rebalance never ejects items.
+
+- **`scenes/ui/party_inventory/carrier_column.gd`:**
+  - New `set_interaction_enabled(enabled, reason)` — modulates column to grey, disables drag-start, drop, right-click context-menu, and sets tooltip.
+  - New `set_carrier_positions(positions)` — stores the Vector3i snapshot the overlay pushes down; forwarded into `_build_context()` so the embedded validator calls get real data.
+  - `_get_drag_data` and `_ItemRow._gui_input` now early-return when `_interaction_enabled == false`.
+  - `_can_drop_data` returns false when disabled (belt-and-suspenders on top of the validator's own adjacency check).
+
+- **`scenes/ui/party_inventory/party_inventory_overlay.gd`:**
+  - New `_dungeon_controller`, `_carrier_positions`, `_adjacent_carrier_ids`, `_adjacency_refresh_queued` fields.
+  - New `_resolve_dungeon_controller()` — scene-tree lookup (`get_tree().get_root().find_child("DungeonMapController", true, false)`) cached while overlay is visible.
+  - New `_compute_carrier_positions() -> Dictionary` — per displayed carrier, resolves PC/henchman via `controller.get_entity_pos_3d(id)`; creatures and vehicles inherit their owner's cell; caches parse their own location_key.
+  - New `_update_adjacency_view()` — computes `collect_adjacent_carrier_ids` against the active character, calls `set_interaction_enabled` on each column. No-ops outside dungeon context (validator's location branch handles the rest).
+  - `_build_context()` now includes `carrier_positions` for the validator.
+  - New "Rebalance Load" button next to "Auto-distribute" in the footer; `_on_rebalance_pressed()` builds the cluster (active + adjacent characters), gathers inventory + metadata, calls `redistribute_among_adjacent`, then issues `CampaignRepository.transfer_item_to_character` per move.
+  - Subscribed to `EventBus.entity_moved` and `EventBus.party_moved` — both fire `_queue_adjacency_refresh()` which defers to the next frame to coalesce storms.
+  - `_load_columns`, `_on_active_party_changed`, `_on_refresh_needed` all refresh adjacency.
+  - `open()` re-resolves the controller on each show; `close()` clears the cache so stale refs can't leak.
+
+- **`scenes/ui/party_inventory/loot_distribution_modal.gd`:**
+  - `_cache_cell: Vector3i` (was `Vector2i`), `distribution_completed(cache_id, cache_cell: Vector3i)` signal, `open_from_cache(cache_id, cell: Vector3i = Vector3i(-1,-1,-1))`.
+  - Replaced the placeholder item Label with a scrollable VBox (`_items_container`). `_rebuild_item_rows()` builds one row per item with a participant-only OptionButton.
+  - New `_compute_participants()` — filters the party to members whose Vector3i is within Chebyshev ≤ 1 of `_cache_cell`. Falls back to the full party when positions can't be resolved (wilderness combat loot, no cache_cell, or no controller in the scene).
+  - `_on_apply()` now dispatches items. Cache-backed items go through `LocationCacheManager.pick_up_item` so cache bookkeeping stays clean; non-cache items get a fresh `inventory_items` row via `CampaignRepository.add_inventory_item`.
+
+**Decisions made:**
+
+- **Same-cell adjacency fix.** Switching both the validator and the helper to `chebyshev_distance <= 1` (instead of `is_adjacent`, which excludes distance 0) means two PCs stacked on one dungeon cell can now trade. Regression test added (`test_dungeon_adjacency_same_cell_ok`).
+- **Scene-tree lookup for DungeonMapController.** Not adding an autoload; the controller is already accessible via `SessionRunner/DungeonMapController` and Session 7b confirmed this shape is stable. Overlay caches the ref only while visible so stale references get GC'd when dungeon state tears down.
+- **Location key format carries 3 axes, not a separate `level` column.** Keeps the existing `location_caches` schema untouched — migration 037 is a single UPDATE statement, not an ALTER TABLE. Lookups through `get_cache_at_location_key` still hit the existing index on `(campaign_id, location_type, location_key)`.
+- **Rebalance cluster = PCs and henchmen only.** Creatures and vehicles aren't in scope for the "equalize encumbrance" concept (capacity models differ). They stay in the overlay, just don't participate in rebalance.
+- **Rebalance uses `transfer_item_to_character`, not a new dedicated method.** The existing method sets `character_id + party_id = NULL` which is exactly what we want for a PC-to-PC move (creature/vehicle/cache ownership fields aren't touched — they stay whatever they were, which is NULL for a character-owned row). If a rebalance-moved row ever had stale creature_id/vehicle_id, that would be a pre-existing bug in the inventory row, not something this path introduces.
+- **Loot modal participant fallback.** When `_cache_cell == Vector3i(-1,-1,-1)` (combat loot opened without a cell), every party member shows up. This preserves the wilderness combat flow where there's no spatial filtering.
+
+**Interfaces defined or changed:**
+
+- `PartyInventoryTransferValidator.collect_adjacent_carrier_ids(anchor_id: String, carrier_positions: Dictionary) -> Array` (new static).
+- `LocationCacheManager.build_dungeon_cell_key(dungeon_id: String, cell: Vector3i) -> String` (new static).
+- `LocationCacheManager.parse_dungeon_cell_key(location_key: String) -> Dictionary` (new static) — returns `{dungeon_id, cell}` or empty.
+- `LocationCacheManager.create_dungeon_loose_cache(dungeon_id, cell: Vector3i) -> String` (signature change: Vector2i → Vector3i).
+- `LocationCacheManager.create_dungeon_container_cache(dungeon_id, cell: Vector3i, container_item_id) -> String` (signature change).
+- `LootAutoDistributor.redistribute_among_adjacent(items: Array, carriers: Array, anchor_id: String) -> Dictionary` (new method).
+- `CarrierColumn.set_interaction_enabled(enabled: bool, reason: String = "") -> void` (new).
+- `CarrierColumn.set_carrier_positions(positions: Dictionary) -> void` (new).
+- `OverrideManager.override_create_dungeon_loose_cache(dungeon_id, cell_col, cell_row, cell_level: int = 0) -> String` (new optional param).
+- `LootDistributionModal._cache_cell: Vector3i` (field type change); `distribution_completed(cache_id, cache_cell: Vector3i)` (signal param change); `open_from_cache(cache_id, cell: Vector3i)` (signature change).
+- New location_key format: `"dungeon:<id>:cell:<col>,<row>,<level>"`. Legacy 2D keys still parse (level=0) via `parse_dungeon_cell_key`.
+
+**Database changes:** Migration 037 (`db/migrations/037_location_cache_voxel_coord.sql`) appends `,0` to existing `dungeon_cell` rows' `location_key`. Idempotent. Schema unchanged.
+
+**Tests added/updated:**
+
+- New suite [tests/test_inventory_ui_adjacency.gd](tests/test_inventory_ui_adjacency.gd) — 12 tests covering `collect_adjacent_carrier_ids` (5 cases), `redistribute_among_adjacent` (4 cases), and voxel location_key round-trip (2 cases, DB-backed). Registered as `InventoryUIAdjacencyTests` in `test_runner.gd` and `test_runner.tscn`.
+- [tests/test_party_inventory_transfer_validator.gd](tests/test_party_inventory_transfer_validator.gd) — 2 new tests:
+  - `test_dungeon_adjacency_same_cell_ok` (regression guard for the same-cell fix).
+  - `test_dungeon_adjacency_cross_floor_lockout` (GDD §21.7 integration guard — same col/row different floor).
+- [tests/test_location_cache_manager.gd](tests/test_location_cache_manager.gd) — 8 call sites updated to Vector3i; 1 location_key equality assertion updated.
+- [tests/test_dungeon_loot_placement.gd](tests/test_dungeon_loot_placement.gd) — 5 call sites updated; removed 2 now-outdated TODO blocks.
+
+**Known issues:**
+
+- **Tests not yet run by build agent.** Godot CLI isn't on PATH in this environment; run `tests/test_runner.tscn` in the editor to confirm all suites pass. Expect: `InventoryUIAdjacencyTests` green, validator suite green (2 new tests), location cache manager green (Vector3i round-trip), dungeon loot placement green.
+- **Overlay drop flow now resolves the drop cell from the source carrier's Vector3i position** via `_dungeon_controller.get_entity_pos_3d(src_id)`. Before Session 9 the code silently dropped everything at `Vector2i(0,0)` because it parsed `"dungeon:<id>:level:<N>"` looking for a `cell:` token that was never there. Secondary path parses the cell-format key directly for the rare case the overlay is open on a specific cell (e.g. cache-carrier drop source). Shows a "Cannot resolve drop location" toast on the unreachable else branch.
+- **Rebalance preserves equipped-item weight but not preferences.** If a PC is tagged `torch_bearer` in `character_preferences`, rebalance doesn't keep torches on them. Only the auto-distribute path uses preferences today. If this becomes a felt problem, the rebalance helper can accept an `anchor_preferences` dict and bias toward preserving preference matches — signature is unchanged, just unused today.
+- **Multi-party dungeon adjacency.** If `GameState.active_party_id` differs from the runner's primary party, the non-primary party's members may not be tracked by `DungeonMapController` and resolve to `Vector3i(-1,-1,-1)`. They'd be excluded from the adjacent set (safe — they just can't trade). Pre-existing limitation; multi-party dungeon work has the same gap in Session 8.
+- **Visual smoke test pending.** Multi-level dungeon run per plan §Verification: stack the party, confirm Rebalance works; move one PC up a stair, confirm column dims; trigger combat, confirm loot cache spawns at the median death cell; walk back, open cache via context menu, confirm modal filters participants correctly.
+
+**Next session should:**
+
+1. Run `tests/test_runner.tscn` in the editor — confirm `InventoryUIAdjacencyTests` passes + existing suites clean.
+2. Visual smoke test the overlay and loot modal in `data/test_dungeon.json`:
+   - Party stacked: columns all bright, Rebalance equalizes encumbrance.
+   - One PC on a different level: that column dims with "Not adjacent" tooltip; drag/right-click blocked.
+   - Movement restores adjacency without closing the overlay.
+   - Dungeon combat victory: cache auto-spawns at the fallen-enemies' median cell; no modal pops during combat banner; walking the party there + context-menu "Loot" opens the modal with participant-filtered pickers.
+3. Session 10 — stronghold planner voxel update (per the voxel migration plan).
+4. Session 11 — delete `TacticalMapData`, `CellData`, legacy `dungeon_map_renderer.gd`, `_map`/`_all_levels`/`_stairs` fields, legacy `test_dungeon_map_controller.gd` tests.
+5. Stair UX redesign (ramp/gradient stairs with per-cell Y).

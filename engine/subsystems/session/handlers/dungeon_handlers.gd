@@ -601,6 +601,12 @@ func _handle_encounter_check(event: ScheduledEvent) -> Dictionary:
 		var enc: Dictionary = encounter["encounter_data"]
 		# Cancel all movement — combat interrupts.
 		_movement_orders.clear()
+		# Auto-focus the camera on the party leader's level if the encounter
+		# happens on a non-focus level.
+		var enc_ctrl: DungeonMapController = _find_dungeon_controller()
+		if enc_ctrl != null:
+			var leader_pos: Vector3i = enc_ctrl.get_party_position_3d()
+			EventBus.dungeon_auto_focus_requested.emit(leader_pos.z, "encounter")
 		return {
 			"auto_pause": true,
 			"pause_reason": "Wandering monster: %d x %s" % [
@@ -704,6 +710,7 @@ func _handle_light_tick(event: ScheduledEvent) -> Dictionary:
 						"title": "An evil door swings shut!",
 						"duration": 4.0,
 					})
+					EventBus.dungeon_auto_focus_requested.emit(pos.z, "evil_door_close")
 
 	# Update fog (light radius may have changed).
 	if controller != null:

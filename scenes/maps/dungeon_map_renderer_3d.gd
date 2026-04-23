@@ -75,6 +75,8 @@ var _controller: DungeonMapController
 var _map: TacticalMapData                  # Legacy path
 var _voxel_map: VoxelMapData = null        # Voxel path
 var _visibility_manager: VisibilityManager = null  # Voxel path
+var _level_strip_widget: Node = null                # Session 8 HUD
+var _offscreen_indicators: Node = null              # Session 8 HUD
 var _dungeon_id: String = ""
 
 ## CombatantToken3D nodes indexed by entity_id.
@@ -194,6 +196,13 @@ func setup(controller: DungeonMapController) -> void:
 		_visibility_manager.update_explored_levels(_voxel_map)
 		_visibility_manager.focus_level = controller.get_current_level()
 
+	# Session 8 HUD widgets + auto-focus/portrait-click wiring.
+	_setup_hud_widgets()
+	if not EventBus.dungeon_auto_focus_requested.is_connected(_on_dungeon_auto_focus_requested):
+		EventBus.dungeon_auto_focus_requested.connect(_on_dungeon_auto_focus_requested)
+	if not EventBus.party_portrait_clicked.is_connected(_on_party_portrait_clicked):
+		EventBus.party_portrait_clicked.connect(_on_party_portrait_clicked)
+
 
 # ---------------------------------------------------------------------------
 # Lifecycle
@@ -305,6 +314,7 @@ func _on_map_loaded(_id: String) -> void:
 	if _camera != null:
 		_camera.size = 12.0
 	_refresh_all()
+	_refresh_visibility_party_positions()
 	_center_camera_on_party()
 
 
@@ -314,20 +324,26 @@ func _on_fog_updated() -> void:
 		_visibility_manager.update_explored_levels(_voxel_map)
 	# Rebuild level groups to reflect fog changes
 	_rebuild_grid_voxel()
+	if _level_strip_widget != null and _level_strip_widget.has_method("refresh"):
+		_level_strip_widget.refresh()
 
 
 func _on_party_moved(_from, _to) -> void:
 	# Signal is untyped to carry Vector2i (legacy) or Vector3i (voxel).
 	_update_entity_tokens()
+	_refresh_visibility_party_positions()
 
 
 func _on_entity_moved(entity_id: String, _from_pos, to_pos) -> void:
 	# If this entity has an active continuous animation, ignore — the renderer
 	# is already driving its visual position via start_movement_animation().
 	if _active_movements.has(entity_id):
+		_refresh_visibility_party_positions_if_party(entity_id)
 		return
 	if not _tokens.has(entity_id):
 		return
+
+	_refresh_visibility_party_positions_if_party(entity_id)
 
 	var pos: Vector3i = to_pos if to_pos is Vector3i else Vector3i(to_pos.x, to_pos.y, _controller.get_current_level())
 	var target_world: Vector3 = VoxelGrid.cell_to_world(pos.x, pos.y, pos.z)
@@ -923,21 +939,30 @@ func _unhandled_input(event: InputEvent) -> void:
 					control_group_assign_requested.emit(group_num, _selected_entity_ids.duplicate())
 					get_viewport().set_input_as_handled()
 		elif not event.ctrl_pressed and not event.alt_pressed:
+			if event.is_action_pressed("focus_next_party_member"):
+				if _visibility_manager != null:
+					_visibility_manager.cycle_next_party_member()
+				_center_camera_on_selected()
+				get_viewport().set_input_as_handled()
+				return
+			if event.is_action_pressed("recenter_party_leader"):
+				if _visibility_manager != null:
+					_visibility_manager.jump_to_party_leader()
+				_camera.size = 12.0
+				_center_camera_on_selected()
+				get_viewport().set_input_as_handled()
+				return
+			if event.is_action_pressed("focus_level_up"):
+				if _visibility_manager != null:
+					_visibility_manager.set_focus_level(_visibility_manager.focus_level + 2)
+				get_viewport().set_input_as_handled()
+				return
+			if event.is_action_pressed("focus_level_down"):
+				if _visibility_manager != null:
+					_visibility_manager.set_focus_level(_visibility_manager.focus_level - 2)
+				get_viewport().set_input_as_handled()
+				return
 			match event.keycode:
-				KEY_HOME:
-					if _visibility_manager != null:
-						_visibility_manager.jump_to_party_leader()
-					_camera.size = 12.0
-					_center_camera_on_selected()
-					get_viewport().set_input_as_handled()
-				KEY_PAGEUP:
-					if _visibility_manager != null:
-						_visibility_manager.set_focus_level(_visibility_manager.focus_level + 2)
-					get_viewport().set_input_as_handled()
-				KEY_PAGEDOWN:
-					if _visibility_manager != null:
-						_visibility_manager.set_focus_level(_visibility_manager.focus_level - 2)
-					get_viewport().set_input_as_handled()
 				KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
 					var group_num: int = event.keycode - KEY_0
 					var now := Time.get_ticks_msec() / 1000.0
@@ -1182,8 +1207,9 @@ func _on_focus_level_changed(new_level: int) -> void:
 	_rebuild_grid_voxel()
 
 
-## Apply per-level visibility and albedo tint per GDD §16.2:
-##   level >  focus     → hidden (hard-clip — BG3 style, GDD §16.3 Fallback 1)
+## Apply per-level visibility and albedo tint per GDD §16.2 and §16.7:
+##   level >  focus + 1 → hidden (hard-clip)
+##   level == focus + 1 → walls dithered; floors/doors/features hidden (split)
 ##   level == focus     → visible, full color
 ##   level <  focus     → visible, dimmed to 0.6× (if level has content; else hidden)
 ## Tokens receive matching treatment via [method _apply_token_visibility].
@@ -1198,18 +1224,72 @@ func _apply_level_visibility() -> void:
 		if not level_str.is_valid_int():
 			continue
 		var level: int = int(level_str)
-		if level > focus:
+		if level == focus + 1:
+			child.visible = true
+			_apply_focus_plus_one_visibility(child)
+		elif level > focus + 1:
 			child.visible = false
 		elif level == focus:
 			child.visible = true
 			TacticalGrid3D.set_level_group_tint(child, FULL_COLOR)
+			_reset_walls_opaque(child)
 		else:  # level < focus
 			if _visibility_manager.level_has_content(level):
 				child.visible = true
 				TacticalGrid3D.set_level_group_tint(child, DIM_COLOR)
+				_reset_walls_opaque(child)
 			else:
 				child.visible = false
 	_apply_token_visibility()
+
+
+## For the focus+1 level: show walls with a screen-door dither, hide everything
+## else (floors, doors, features, grid lines, fog, transition markers). Matches
+## GDD §16.7 — walls you're about to walk into are visible while the top-down
+## silhouette stays readable.
+func _apply_focus_plus_one_visibility(level_group: Node3D) -> void:
+	for sub in level_group.get_children():
+		if sub.name == "Walls":
+			sub.visible = true
+			_set_walls_dithered(sub, true)
+		else:
+			sub.visible = false
+
+
+## Reset the walls in this level group to full-opacity rendering. Called when
+## the level is at or below the focus level so walls render normally after
+## having been dithered while this level was focus+1.
+func _reset_walls_opaque(level_group: Node3D) -> void:
+	var walls := level_group.get_node_or_null("Walls")
+	if walls == null:
+		return
+	_set_walls_dithered(walls, false)
+
+
+## Walks every GeometryInstance3D under [param walls] and either enables the
+## screen-door dither material state ([param dithered]=true) or restores the
+## opaque state. Uses each mesh's stored "base_color" metadata as the source.
+func _set_walls_dithered(walls: Node, dithered: bool) -> void:
+	if walls is GeometryInstance3D:
+		_apply_mesh_dither(walls, dithered)
+	else:
+		for mesh in walls.get_children():
+			if mesh is GeometryInstance3D:
+				_apply_mesh_dither(mesh, dithered)
+
+
+func _apply_mesh_dither(mesh: GeometryInstance3D, dithered: bool) -> void:
+	var mat := mesh.material_override
+	if mat == null or not (mat is StandardMaterial3D):
+		return
+	var smat: StandardMaterial3D = mat
+	var base: Color = mesh.get_meta("base_color", Color.WHITE)
+	if dithered:
+		smat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_HASH
+		smat.albedo_color = Color(base.r, base.g, base.b, 0.35)
+	else:
+		smat.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+		smat.albedo_color = base
 
 
 ## Apply per-level visibility and opacity to entity tokens per GDD §16.2.
@@ -1359,3 +1439,130 @@ func _restore_all_faded_walls() -> void:
 				mat.albedo_color = base_color
 				mat.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
 	_faded_walls.clear()
+
+
+# ---------------------------------------------------------------------------
+# Session 8: HUD widgets + auto-focus + portrait click wiring
+# ---------------------------------------------------------------------------
+
+## Instances the Level Strip Widget and Off-Screen Party Indicators under the
+## DungeonHUD CanvasLayer. No-op if the scenes aren't loadable (test harness).
+func _setup_hud_widgets() -> void:
+	var hud := get_node_or_null("DungeonHUD")
+	if hud == null:
+		return
+
+	var strip_scene: PackedScene = load("res://scenes/ui/hud/level_strip_widget.tscn")
+	if strip_scene != null:
+		_level_strip_widget = strip_scene.instantiate()
+		hud.add_child(_level_strip_widget)
+		if _level_strip_widget.has_method("setup"):
+			_level_strip_widget.setup(_visibility_manager, self, _voxel_map)
+
+	var indicators_scene: PackedScene = load("res://scenes/ui/hud/offscreen_party_indicators.tscn")
+	if indicators_scene != null:
+		_offscreen_indicators = indicators_scene.instantiate()
+		hud.add_child(_offscreen_indicators)
+		if _offscreen_indicators.has_method("setup"):
+			_offscreen_indicators.setup(_camera, _visibility_manager, self)
+
+
+## EventBus.dungeon_auto_focus_requested handler — routes auto-focus events
+## from scheduler handlers into VisibilityManager.
+func _on_dungeon_auto_focus_requested(level: int, reason: String) -> void:
+	if _visibility_manager != null:
+		_visibility_manager.request_auto_focus(level, reason)
+
+
+## EventBus.party_portrait_clicked handler — focuses the camera on the clicked
+## party member's level and selects their token.
+func _on_party_portrait_clicked(entity_id: String) -> void:
+	if _voxel_map == null or _visibility_manager == null:
+		return
+	var pos: Vector3i = _voxel_map.get_entity_pos(entity_id)
+	if pos == Vector3i(-1, -1, -1):
+		return
+	_visibility_manager.set_focus_level(pos.z)
+	select_entity(entity_id, false)
+	_center_camera_on_selected()
+
+
+## Returns the VisibilityManager instance (or null before setup()). Public
+## accessor for callers that need to query focus level / request auto-focus.
+func get_visibility_manager() -> VisibilityManager:
+	return _visibility_manager
+
+
+## Returns a Dictionary {level: enemy_count} for use by the Level Strip Widget.
+## An enemy is a token with side != 0 whose entity_id has a known voxel position.
+func get_enemy_levels_snapshot() -> Dictionary:
+	var counts: Dictionary = {}
+	if _voxel_map == null:
+		return counts
+	for eid in _tokens.keys():
+		var token = _tokens[eid]
+		if token == null or token.side == 0:
+			continue
+		var pos: Vector3i = _voxel_map.get_entity_pos(eid)
+		if pos == Vector3i(-1, -1, -1):
+			continue
+		counts[pos.z] = int(counts.get(pos.z, 0)) + 1
+	return counts
+
+
+## Re-reads every side==0 token's voxel position into
+## VisibilityManager.party_positions. Called whenever map/entity state shifts
+## so the Level Strip Widget and offscreen indicators have fresh data.
+func _refresh_visibility_party_positions() -> void:
+	if _visibility_manager == null or _voxel_map == null:
+		return
+	var positions: Array[Vector3i] = []
+	var levels_snapshot: Dictionary = {}
+	for eid in _tokens.keys():
+		var token = _tokens[eid]
+		if token == null or token.side != 0:
+			continue
+		var pos: Vector3i = _voxel_map.get_entity_pos(eid)
+		if pos == Vector3i(-1, -1, -1):
+			continue
+		positions.append(pos)
+		levels_snapshot[eid] = pos.z
+	_visibility_manager.party_positions = positions
+	EventBus.party_member_levels_snapshot.emit(levels_snapshot)
+	if _level_strip_widget != null and _level_strip_widget.has_method("refresh"):
+		_level_strip_widget.refresh()
+
+
+## Lightweight refresh hook for `_on_entity_moved`. Only recomputes if the
+## moved entity is party-side (side == 0).
+func _refresh_visibility_party_positions_if_party(entity_id: String) -> void:
+	if not _tokens.has(entity_id):
+		return
+	var token = _tokens[entity_id]
+	if token == null or token.side != 0:
+		return
+	_refresh_visibility_party_positions()
+
+
+## Returns an Array of {entity_id, world_pos} for party-side tokens (side == 0)
+## on the currently focused level. Consumed by OffscreenPartyIndicators to draw
+## viewport-edge arrows.
+func get_party_focus_tokens() -> Array:
+	var result: Array = []
+	if _voxel_map == null or _visibility_manager == null:
+		return result
+	var focus: int = _visibility_manager.focus_level
+	for eid in _tokens.keys():
+		var token = _tokens[eid]
+		if token == null or token.side != 0:
+			continue
+		var pos: Vector3i = _voxel_map.get_entity_pos(eid)
+		if pos == Vector3i(-1, -1, -1):
+			continue
+		if pos.z != focus:
+			continue
+		result.append({
+			"entity_id": eid,
+			"world_pos": VoxelGrid.cell_to_world(pos.x, pos.y, pos.z),
+		})
+	return result

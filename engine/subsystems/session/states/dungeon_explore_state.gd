@@ -40,6 +40,10 @@ var _session_state: RefCounted = null  # DungeonSessionState
 ## Active context menu popup (if any).
 var _context_menu: PanelContainer = null
 
+## Last-requested context menu screen position — used to re-show the menu
+## at the same spot for the Session 8 two-click confirm submenu.
+var _last_menu_screen_pos: Vector2 = Vector2.ZERO
+
 ## Loot distribution modal for dungeon cache looting.
 var _loot_modal = null  # LootDistributionModal (lazy-created)
 
@@ -458,6 +462,7 @@ func _on_context_menu_requested(cell_pos, screen_pos: Vector2) -> void:
 	_context_menu.cancelled.connect(_on_context_cancelled)
 
 	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	_last_menu_screen_pos = screen_pos
 	_context_menu.show_at(screen_pos, options, loop)
 
 
@@ -482,6 +487,11 @@ func _on_context_action(action_data: Dictionary) -> void:
 	match action_type:
 		# --- Universal ---
 		"move_here":
+			if _should_confirm_cross_level_move(cell):
+				_show_move_confirm_menu(cell, selected)
+				return
+			_issue_move_orders(selected, cell, party_data, scheduler, party_id)
+		"move_here_confirm":
 			_issue_move_orders(selected, cell, party_data, scheduler, party_id)
 		"search_here":
 			# Move to cell, then search (1 turn = 60 rounds).
@@ -721,6 +731,61 @@ func _on_context_action(action_data: Dictionary) -> void:
 
 func _on_context_cancelled() -> void:
 	_close_context_menu()
+
+
+## Returns true if [param cell] is a Vector3i targeting a level other than the
+## renderer's current VisibilityManager focus_level. Session 8 requires
+## two-click confirmation for cross-level moves to prevent misclicks on dimmed
+## / dithered levels.
+func _should_confirm_cross_level_move(cell) -> bool:
+	if not (cell is Vector3i):
+		return false
+	if _scene == null or not _scene.has_method("get_visibility_manager"):
+		return false
+	var vis = _scene.get_visibility_manager()
+	if vis == null:
+		return false
+	return int(cell.z) != int(vis.focus_level)
+
+
+## Builds a two-option confirmation submenu (Confirm / Cancel) at the last
+## context-menu screen position. Choosing Confirm dispatches a
+## "move_here_confirm" action through the normal _on_context_action path.
+func _show_move_confirm_menu(cell, selected: Array[String]) -> void:
+	_close_context_menu()
+	if _scene == null or not (cell is Vector3i):
+		return
+	var target_z: int = int(cell.z)
+	var options: Array[Dictionary] = [
+		{
+			"id": "move_here_confirm",
+			"label": "Confirm move to Level %d" % target_z,
+			"category": "confirm",
+			"enabled": true,
+			"action_data": {
+				"action_type": "move_here_confirm",
+				"cell": cell,
+				"selected": selected,
+			},
+		},
+		{
+			"id": "cancel",
+			"label": "Cancel",
+			"category": "confirm",
+			"enabled": true,
+			"action_data": {"action_type": "cancel"},
+		},
+	]
+	_context_menu = ContextMenuScene.new()
+	var ctx_layer = _scene.get_node_or_null("DungeonHUD/ContextMenuLayer")
+	if ctx_layer != null:
+		ctx_layer.add_child(_context_menu)
+	else:
+		_scene.add_child(_context_menu)
+	_context_menu.option_selected.connect(_on_context_action)
+	_context_menu.cancelled.connect(_on_context_cancelled)
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	_context_menu.show_at(_last_menu_screen_pos, options, loop)
 
 
 func _close_context_menu() -> void:
@@ -1389,22 +1454,26 @@ func _place_dungeon_loot(roster: CombatRoster) -> void:
 		return
 
 	# Collect treasure types and the first valid death cell from defeated enemies.
-	# TODO (voxel migration): extend location_key to include level coordinate
-	# per gdd-voxel-tactical-architecture-v1.1.md §6.3 — currently 2D (col,row);
-	# becomes 3D (col,row,level) when the voxel schema lands.
+	# Prefer the combatant's 3D position when available; fall back to the 2D
+	# grid_position stamped with the controller's current level for older
+	# combat flows that never populated grid_position_3d.
 	var treasure_types: Array = []
-	var loot_cell := Vector2i(-1, -1)
+	var loot_cell := Vector3i(-1, -1, -1)
+	var current_level: int = _controller.get_current_level()
 	for c: Combatant in roster.get_all():
 		if c.is_enemy_side() and not c.is_alive():
 			var tt: String = c._monster_data.get("treasure_type", "None")
 			if tt != "None" and not tt.is_empty():
 				treasure_types.append(tt)
-			if loot_cell == Vector2i(-1, -1) and c.grid_position != Vector2i(-1, -1):
-				loot_cell = c.grid_position
+			if loot_cell == Vector3i(-1, -1, -1):
+				if c.grid_position_3d != Vector3i(-1, -1, -1):
+					loot_cell = c.grid_position_3d
+				elif c.grid_position != Vector2i(-1, -1):
+					loot_cell = Vector3i(c.grid_position.x, c.grid_position.y, current_level)
 
 	if treasure_types.is_empty():
 		return
-	if loot_cell == Vector2i(-1, -1):
+	if loot_cell == Vector3i(-1, -1, -1):
 		push_warning("DungeonExploreState._place_dungeon_loot: no valid death cell for loot placement")
 		return
 
@@ -1443,8 +1512,7 @@ func _place_dungeon_loot(roster: CombatRoster) -> void:
 	# Flag the cell so the context menu shows Loot / Pick Up All.
 	var tactical_map = _controller.get_voxel_map()
 	if tactical_map != null:
-		var loot_cell_3d := Vector3i(loot_cell.x, loot_cell.y, _controller.get_current_level())
-		tactical_map.set_cell_field(loot_cell_3d, "has_ground_items", true)
+		tactical_map.set_cell_field(loot_cell, "has_ground_items", true)
 
 	print("Placed dungeon loot cache at cell %s (cache_id=%s, total_cp=%d)" % [
 		str(loot_cell), cache_id, total_cp])

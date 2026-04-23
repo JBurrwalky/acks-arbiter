@@ -52,6 +52,18 @@ var _speed_labels: Dictionary = {}
 ## portrait_id -> Texture2D. Avoids decoding user-portrait PNGs every refresh.
 static var _portrait_cache: Dictionary = {}
 
+## character_id -> level (int). Populated from party_member_levels_snapshot.
+## Used to show the per-portrait level badge. Empty dict ⇒ no badges shown.
+var _party_levels: Dictionary = {}
+
+## Last known dungeon focus level from dungeon_focus_level_changed. Determines
+## whether each portrait's badge is muted (on focus) or bright (off focus).
+var _current_focus_level: int = -9999
+
+## character_id -> Label (the level badge node). Populated by
+## _refresh_party_portraits().
+var _portrait_badges: Dictionary = {}
+
 
 func _ready() -> void:
 	layer = 80
@@ -261,6 +273,9 @@ func _connect_signals() -> void:
 	EventBus.creature_added.connect(_on_party_roster_changed)
 	EventBus.creature_removed.connect(_on_party_roster_changed)
 	EventBus.vehicle_changed.connect(_on_party_roster_changed)
+	# Session 8 level badge wiring.
+	EventBus.party_member_levels_snapshot.connect(_on_party_member_levels_snapshot)
+	EventBus.dungeon_focus_level_changed.connect(_on_dungeon_focus_level_changed)
 	_refresh_party_portraits(GameState.active_party_id)
 	_refresh_party_status(GameState.active_party_id)
 
@@ -297,6 +312,43 @@ func _on_party_roster_changed(party_id: String, _other_id: String) -> void:
 		_refresh_party_status(party_id)
 
 
+## EventBus.party_member_levels_snapshot handler — the dungeon renderer emits
+## this whenever party positions refresh. An empty snapshot clears badges.
+func _on_party_member_levels_snapshot(levels: Dictionary) -> void:
+	_party_levels = levels.duplicate()
+	_apply_level_badges()
+
+
+## EventBus.dungeon_focus_level_changed handler — restyles badges so the
+## member on the focus level is muted (they're already "here").
+func _on_dungeon_focus_level_changed(level: int) -> void:
+	_current_focus_level = level
+	_apply_level_badges()
+
+
+## Portrait button handler — emits party_portrait_clicked. The dungeon renderer
+## listens, resolves the voxel position, and focuses + selects.
+func _on_portrait_pressed(character_id: String) -> void:
+	EventBus.party_portrait_clicked.emit(character_id)
+
+
+## Applies level text + visibility + muted/bright tint to all portrait badges
+## based on the current _party_levels snapshot and _current_focus_level.
+func _apply_level_badges() -> void:
+	for character_id in _portrait_badges.keys():
+		var badge: Label = _portrait_badges[character_id]
+		if badge == null:
+			continue
+		if not _party_levels.has(character_id):
+			badge.visible = false
+			continue
+		var lvl: int = int(_party_levels[character_id])
+		badge.visible = true
+		badge.text = "L%d" % lvl
+		var on_focus := (lvl == _current_focus_level)
+		badge.modulate = Color(0.55, 0.52, 0.40, 1.0) if on_focus else Color(1.0, 0.95, 0.55, 1.0)
+
+
 ## Rebuilds the party-member portrait strip. Silently hides the strip if the
 ## party has no members or the party id is empty (e.g. pre-session).
 func _refresh_party_portraits(party_id: String) -> void:
@@ -304,6 +356,7 @@ func _refresh_party_portraits(party_id: String) -> void:
 		return
 	for child in _portraits_hbox.get_children():
 		child.queue_free()
+	_portrait_badges.clear()
 	if party_id.is_empty():
 		_portraits_hbox.visible = false
 		return
@@ -315,15 +368,52 @@ func _refresh_party_portraits(party_id: String) -> void:
 
 	_portraits_hbox.visible = true
 	for row in rows:
+		var character_id: String = str(row.get("id", ""))
 		var portrait_id: String = str(row.get("portrait_id", ""))
 		var texture: Texture2D = _resolve_portrait(portrait_id)
+		var display_name: String = str(row.get("name", ""))
+
+		var btn := Button.new()
+		btn.flat = true
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.custom_minimum_size = PORTRAIT_SIZE
+		btn.tooltip_text = display_name
+		if not character_id.is_empty():
+			btn.pressed.connect(_on_portrait_pressed.bind(character_id))
+		btn.set_meta("character_id", character_id)
+
 		var tr := TextureRect.new()
 		tr.custom_minimum_size = PORTRAIT_SIZE
+		tr.size = PORTRAIT_SIZE
 		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		tr.texture = texture
-		tr.tooltip_text = str(row.get("name", ""))
-		_portraits_hbox.add_child(tr)
+		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tr.set_anchors_preset(Control.PRESET_FULL_RECT)
+		btn.add_child(tr)
+
+		var badge := Label.new()
+		badge.name = "LevelBadge"
+		badge.text = ""
+		badge.visible = false
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge.add_theme_color_override("font_color", Color(1.0, 0.92, 0.45, 1.0))
+		badge.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		badge.add_theme_constant_override("outline_size", 3)
+		badge.add_theme_font_size_override("font_size", SMALL_FONT_SIZE)
+		badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		badge.offset_left = -24
+		badge.offset_right = -2
+		badge.offset_top = 1
+		badge.offset_bottom = 14
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		btn.add_child(badge)
+
+		_portraits_hbox.add_child(btn)
+		if not character_id.is_empty():
+			_portrait_badges[character_id] = badge
+
+	_apply_level_badges()
 
 
 ## Resolves a portrait texture by id. Shipped portraits live under
@@ -361,6 +451,11 @@ func _on_state_changed(_from: int, _to: int) -> void:
 func _on_exploration_context_changed(_context: int) -> void:
 	_update_wilderness_buttons()
 	_refresh_party_status(GameState.active_party_id)
+	# Clear dungeon level badges when leaving dungeon context.
+	if _context != GameState.ExplorationContext.DUNGEON:
+		_party_levels.clear()
+		_current_focus_level = -9999
+		_apply_level_badges()
 
 
 func _update_visibility() -> void:

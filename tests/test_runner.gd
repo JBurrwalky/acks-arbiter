@@ -123,10 +123,12 @@ extends Node
 @onready var _voxel_map_data_json_tests = $VoxelMapDataJsonTests
 @onready var _voxel_dungeon_integration_tests = $VoxelDungeonIntegrationTests
 @onready var _visibility_manager_tests = $VisibilityManagerTests
+@onready var _visibility_manager_integration_tests = $VisibilityManagerIntegrationTests
 @onready var _movement_resolver_3d_tests = $MovementResolver3DTests
 @onready var _wilderness_context_menu_builder_tests = $WildernessContextMenuBuilderTests
 @onready var _dungeon_map_controller_voxel_tests = $DungeonMapControllerVoxelTests
 @onready var _equip_pipeline_tests = $EquipPipelineTests
+@onready var _inventory_ui_adjacency_tests = $InventoryUIAdjacencyTests
 
 
 func _ready() -> void:
@@ -230,10 +232,12 @@ func run() -> void:
 			_voxel_map_data_json_tests,
 			_voxel_dungeon_integration_tests,
 			_visibility_manager_tests,
+			_visibility_manager_integration_tests,
 			_movement_resolver_3d_tests,
 			_wilderness_context_menu_builder_tests,
 			_dungeon_map_controller_voxel_tests,
-			_equip_pipeline_tests]:
+			_equip_pipeline_tests,
+			_inventory_ui_adjacency_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

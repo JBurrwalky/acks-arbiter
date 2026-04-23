@@ -34,6 +34,27 @@ func _init(catalog: RefCounted = null) -> void:
 
 
 # ---------------------------------------------------------------------------
+# Public API — static helpers
+# ---------------------------------------------------------------------------
+
+## Returns carrier_ids reachable from the anchor (3D Chebyshev <= 1), including
+## the anchor itself. Anchors or carriers missing from `carrier_positions` are
+## excluded. Used by the overlay to dim non-adjacent columns and by the loot
+## modal to filter the participant list.
+static func collect_adjacent_carrier_ids(anchor_id: String,
+		carrier_positions: Dictionary) -> Array:
+	var result: Array = []
+	if anchor_id.is_empty() or not carrier_positions.has(anchor_id):
+		return result
+	var anchor_pos: Vector3i = carrier_positions[anchor_id]
+	for cid in carrier_positions.keys():
+		var pos: Vector3i = carrier_positions[cid]
+		if VoxelGrid.chebyshev_distance(anchor_pos, pos) <= 1:
+			result.append(cid)
+	return result
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -146,7 +167,7 @@ func _check_dungeon_adjacency(source: Dictionary, target: Dictionary,
 		return _reject("Carrier position unknown")
 	var src_pos: Vector3i = positions[src_id]
 	var tgt_pos: Vector3i = positions[tgt_id]
-	if VoxelGrid.is_adjacent(src_pos, tgt_pos):
+	if VoxelGrid.chebyshev_distance(src_pos, tgt_pos) <= 1:
 		return _ok()
 	return _reject("Carriers are not adjacent")
 

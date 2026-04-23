@@ -166,6 +166,102 @@ func distribute(items: Array, carriers: Array, _context: Dictionary = {}) -> Dic
 	}
 
 
+## Rebalances already-owned items across an adjacent-carrier cluster to equalize
+## encumbrance. Differs from distribute():
+##   - Input is existing inventory across `carriers` (no new loot queue).
+##   - Target is even encumbrance_units spread, not preference matching.
+##   - Equipped items never move.
+##   - Coins are skipped (PartyWallet owns them).
+##   - Everything gets a home (no "unassigned").
+##
+## Greedy first-fit-decreasing: items ranked heaviest first, each placed with
+## the carrier that has the lowest projected total. Stable and good enough for
+## party sizes 2–8; swap to a two-pass if the result feels lopsided.
+##
+## items: union of items across `carriers`. Each must carry item_id, source
+##   carrier_id, encumbrance_units, quantity, is_equipped (optional). Coin items
+##   and equipped items are ignored.
+## carriers: same shape as distribute().
+## _anchor_id: active character's carrier_id — preserved for future preference
+##   (e.g. "keep torch on the leader"), not used by the base algorithm today.
+## Returns {moves, summary}. moves only includes items whose destination differs
+## from their current owner.
+func redistribute_among_adjacent(items: Array, carriers: Array, _anchor_id: String = "") -> Dictionary:
+	var moves: Array = []
+
+	if carriers.is_empty():
+		return {"moves": [], "summary": {"total_items": 0, "moved": 0, "unassigned_count": 0}}
+
+	# Filter moveable items: skip coins, skip equipped.
+	var movable: Array = []
+	for raw_item in items:
+		var item: Dictionary = _enrich_item(raw_item.duplicate())
+		if item.get("item_category", "") == "treasure":
+			continue
+		var is_eq = item.get("is_equipped", false)
+		if (is_eq is bool and is_eq) or (not (is_eq is bool) and int(is_eq) == 1):
+			continue
+		movable.append(item)
+
+	# Sort heaviest-first so the greedy decision about the large items is made
+	# before small ones fill the gaps.
+	movable.sort_custom(func(a, b):
+		return _item_total_enc(a) > _item_total_enc(b)
+	)
+
+	# Running totals per carrier start from their current_enc_units minus the
+	# moveable contribution (so we compute the target delta against a clean base).
+	var carrier_enc: Dictionary = {}
+	for c in carriers:
+		carrier_enc[c["carrier_id"]] = c.get("current_enc_units", 0)
+	for item in movable:
+		var src_id: String = str(item.get("source_carrier_id", item.get("character_id", "")))
+		if not src_id.is_empty() and carrier_enc.has(src_id):
+			carrier_enc[src_id] = max(0, carrier_enc[src_id] - _item_total_enc(item))
+
+	# Assign each item to the carrier that would end up with the lowest total
+	# after the item lands there, breaking ties by highest max capacity.
+	for item in movable:
+		var best_id: String = ""
+		var best_total: int = 0
+		var best_max: int = 0
+		for c in carriers:
+			var cid: String = c["carrier_id"]
+			var item_enc: int = _item_total_enc(item)
+			var projected: int = carrier_enc.get(cid, 0) + item_enc
+			var max_units: int = c.get("max_enc_units", 20000)
+			if projected > max_units:
+				continue  # can't overflow capacity
+			if best_id.is_empty() or projected < best_total \
+					or (projected == best_total and max_units > best_max):
+				best_id = cid
+				best_total = projected
+				best_max = max_units
+
+		if best_id.is_empty():
+			# Every carrier would overflow — leave this item where it is.
+			continue
+
+		carrier_enc[best_id] = best_total
+		var src_id: String = str(item.get("source_carrier_id", item.get("character_id", "")))
+		if best_id != src_id:
+			moves.append({
+				"item": item,
+				"to_carrier": best_id,
+				"from_carrier": src_id,
+				"reason": "rebalance",
+			})
+
+	return {
+		"moves": moves,
+		"summary": {
+			"total_items": movable.size(),
+			"moved": moves.size(),
+			"unassigned_count": 0,
+		},
+	}
+
+
 # ---------------------------------------------------------------------------
 # Preference-tag matching
 # ---------------------------------------------------------------------------

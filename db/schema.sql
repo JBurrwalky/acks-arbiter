@@ -694,8 +694,12 @@ CREATE TABLE IF NOT EXISTS abandoned_characters (
 );
 
 -- ============================================================================
--- Location Caches (migration 032)
+-- Location Caches (migration 032; migration 037 extends dungeon keys to 3D)
 -- ============================================================================
+-- location_key formats:
+--   hex:             "hex:<q>,<r>"
+--   dungeon_cell:    "dungeon:<dungeon_id>:cell:<col>,<row>,<level>"   -- level axis added in migration 037
+--   settlement_node: "settlement:<settlement_id>:poi:<poi_id>"
 
 CREATE TABLE IF NOT EXISTS location_caches (
     id TEXT PRIMARY KEY,

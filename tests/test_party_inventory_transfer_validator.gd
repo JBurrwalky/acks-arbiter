@@ -49,8 +49,10 @@ func run_all_tests() -> void:
 	test_wilderness_transfer_ok()
 	test_dungeon_adjacency_adjacent_ok()
 	test_dungeon_adjacency_far_rejected()
+	test_dungeon_adjacency_same_cell_ok()
 	test_dungeon_adjacency_cross_level_ok()
 	test_dungeon_adjacency_cross_level_two_apart_rejected()
+	test_dungeon_adjacency_cross_floor_lockout()
 	test_dungeon_adjacency_missing_positions_rejected()
 	test_combat_trade_with_action_ok()
 	test_combat_trade_no_action_rejected()
@@ -491,6 +493,43 @@ func test_dungeon_adjacency_far_rejected() -> void:
 
 	var result: Dictionary = _validator.validate_transfer(source, target, ctx, item)
 	check(not result.ok, "non-adjacent carriers should be rejected")
+	check(str(result.get("reason", "")).contains("not adjacent"),
+		"rejection reason should mention 'not adjacent'")
+	_cleanup()
+
+
+## Two PCs stacked on the same cell should trivially be able to trade.
+## Regression guard: VoxelGrid.is_adjacent returns false for same-cell, so the
+## validator must use Chebyshev <= 1 (the Session 9 fix).
+func test_dungeon_adjacency_same_cell_ok() -> void:
+	_setup()
+	var item := _make_item("sword", "Sword", 1, 1000)
+	var source := _make_source("character", PC_A)
+	var target := _make_target("character", PC_B)
+	var positions := {PC_A: Vector3i(5, 5, 0), PC_B: Vector3i(5, 5, 0)}
+	var ctx := _make_context("dungeon:test:level:1", false, positions)
+
+	var result: Dictionary = _validator.validate_transfer(source, target, ctx, item)
+	check(result.ok, "carriers in the same cell should allow transfer")
+	_cleanup()
+
+
+## Cross-floor inventory lockout integration guard per
+## gdd-voxel-tactical-architecture-v1.1.md §21.7 — party members whose voxel
+## positions differ by more than 1 on the z-axis cannot trade, even when their
+## (col,row) coincides. Pairs with test_dungeon_adjacency_cross_level_ok which
+## confirms that a 1-level difference remains adjacent.
+func test_dungeon_adjacency_cross_floor_lockout() -> void:
+	_setup()
+	var item := _make_item("sword", "Sword", 1, 1000)
+	var source := _make_source("character", PC_A)
+	var target := _make_target("character", PC_B)
+	# Same (col,row), two floors apart — the forbidden case.
+	var positions := {PC_A: Vector3i(7, 7, 0), PC_B: Vector3i(7, 7, 2)}
+	var ctx := _make_context("dungeon:test:level:1", false, positions)
+
+	var result: Dictionary = _validator.validate_transfer(source, target, ctx, item)
+	check(not result.ok, "cross-floor (level diff 2) transfer should be rejected")
 	check(str(result.get("reason", "")).contains("not adjacent"),
 		"rejection reason should mention 'not adjacent'")
 	_cleanup()

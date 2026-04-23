@@ -50,6 +50,10 @@ var _monster_registry = null  # MonsterRegistry
 
 var _columns: Array = []
 var _is_visible: bool = false
+var _dungeon_controller = null  # Cached DungeonMapController ref (dungeon exploration only)
+var _carrier_positions: Dictionary = {}  # carrier_id -> Vector3i, last snapshot
+var _adjacent_carrier_ids: Array = []  # carriers reachable from the active character
+var _adjacency_refresh_queued: bool = false  # coalesces signal storms into one pass
 
 # UI references
 var _panel: PanelContainer
@@ -59,6 +63,7 @@ var _scroll_container: ScrollContainer
 var _columns_container: HBoxContainer
 var _footer_label: Label
 var _auto_distribute_btn: Button
+var _rebalance_btn: Button
 var _close_btn: Button
 
 # Modals (lazily created)
@@ -116,7 +121,12 @@ func open(filter_key: String = "") -> void:
 		char_sheet._close()
 	_is_visible = true
 	visible = true
+	# Force re-resolve on each open so signal connections are rebuilt cleanly
+	# against the current controller instance (it gets recreated per dungeon).
+	_disconnect_dungeon_controller_signals()
+	_dungeon_controller = null
 	_load_columns()
+	_update_adjacency_view()
 	_update_footer()
 	if not filter_key.is_empty():
 		for i in range(FILTER_LABELS.size()):
@@ -129,6 +139,10 @@ func open(filter_key: String = "") -> void:
 func close() -> void:
 	_is_visible = false
 	visible = false
+	_disconnect_dungeon_controller_signals()
+	_dungeon_controller = null
+	_carrier_positions.clear()
+	_adjacent_carrier_ids.clear()
 
 
 # ---------------------------------------------------------------------------
@@ -232,6 +246,13 @@ func _build_ui() -> void:
 	_auto_distribute_btn.pressed.connect(_on_auto_distribute_pressed)
 	footer.add_child(_auto_distribute_btn)
 
+	_rebalance_btn = Button.new()
+	_rebalance_btn.text = "Rebalance Load"
+	_rebalance_btn.add_theme_font_size_override("font_size", 12)
+	_rebalance_btn.tooltip_text = "Equalize encumbrance among adjacent party members."
+	_rebalance_btn.pressed.connect(_on_rebalance_pressed)
+	footer.add_child(_rebalance_btn)
+
 
 # ---------------------------------------------------------------------------
 # Signal wiring
@@ -255,12 +276,14 @@ func _on_refresh_needed() -> void:
 	if not _is_visible:
 		return
 	_refresh_all_columns()
+	_update_adjacency_view()
 	_update_footer()
 
 
 func _on_active_party_changed(_prev: String, _new: String) -> void:
 	if _is_visible:
 		_load_columns()
+		_update_adjacency_view()
 		_update_footer()
 
 
@@ -492,22 +515,38 @@ func _handle_drop_to_ground(item_id: String, source: Dictionary) -> void:
 
 
 func _execute_dungeon_drop(item_id: String, source: Dictionary) -> void:
-	var loc_key: String = GameState.current_location_key
-	# Parse dungeon:ID:cell:X,Y or dungeon:ID:level:N
-	var parts := loc_key.split(":")
-	var dungeon_id := parts[1] if parts.size() > 1 else ""
-	var cell_xy := Vector2i(0, 0)
-	if parts.size() >= 5 and parts[2] == "cell":
-		var coords: PackedStringArray = parts[3].split(",") if parts.size() > 3 else PackedStringArray()
-		if coords.size() >= 2:
-			cell_xy = Vector2i(int(coords[0]), int(coords[1]))
+	# The active dungeon location_key is "dungeon:<id>:level:<N>" (party-level,
+	# not cell-scoped), so the drop cell comes from the source carrier's
+	# Vector3i position, not from the key. Falls back to parsing the key for
+	# the rare case the overlay is open on a specific cell context (e.g.
+	# hovering a cache — then the key IS cell-scoped).
+	var src_id: String = str(source.get("carrier_id", ""))
+	var controller = _resolve_dungeon_controller()
 
-	var cache_id := LocationCacheManager.create_dungeon_loose_cache(dungeon_id, cell_xy)
+	var dungeon_id: String = ""
+	var cell := Vector3i(-1, -1, -1)
+	if controller != null:
+		dungeon_id = controller.get_dungeon_id()
+		cell = controller.get_entity_pos_3d(src_id)
+
+	# Secondary path: parse a cell-scoped location_key if the controller
+	# couldn't resolve the position (e.g. cache carrier as drop source).
+	if cell == Vector3i(-1, -1, -1) or dungeon_id.is_empty():
+		var parsed := LocationCacheManager.parse_dungeon_cell_key(
+				GameState.current_location_key)
+		if not parsed.is_empty():
+			dungeon_id = parsed.get("dungeon_id", dungeon_id)
+			cell = parsed.get("cell", cell)
+
+	if dungeon_id.is_empty() or cell == Vector3i(-1, -1, -1):
+		_show_toast("Cannot resolve drop location")
+		return
+
+	var cache_id := LocationCacheManager.create_dungeon_loose_cache(dungeon_id, cell)
 	if cache_id.is_empty():
 		_show_toast("Failed to create cache")
 		return
 
-	var src_id: String = str(source.get("carrier_id", ""))
 	LocationCacheManager.drop_item_to_cache(item_id, cache_id, src_id)
 	_emit_update_signals(source, {})
 	_load_columns()
@@ -716,7 +755,7 @@ func _ensure_loot_modal() -> void:
 		push_error("PartyInventoryOverlay: could not load loot_distribution_modal.gd")
 		return
 	_loot_modal = script.new()
-	_loot_modal.distribution_completed.connect(func(_cache_id: String, _cache_cell: Vector2i):
+	_loot_modal.distribution_completed.connect(func(_cache_id: String, _cache_cell: Vector3i):
 		_refresh_all_columns()
 		_update_footer()
 	)
@@ -803,7 +842,233 @@ func _build_context() -> Dictionary:
 		"location_key": GameState.current_location_key,
 		"is_in_combat": GameState.current_state == GameState.State.COMBAT,
 		"active_character_id": GameState.active_character_id,
+		"carrier_positions": _carrier_positions,
 	}
+
+
+# ---------------------------------------------------------------------------
+# Adjacency-filtered view (Session 9)
+# ---------------------------------------------------------------------------
+
+## Locates the active DungeonMapController via scene tree when in a dungeon.
+## Cached on first hit while the overlay is visible; cleared on close. Also
+## connects the controller's party_moved/entity_moved signals so column
+## dimming refreshes when anyone's Vector3i changes.
+func _resolve_dungeon_controller() -> Node:
+	if _dungeon_controller != null and is_instance_valid(_dungeon_controller):
+		return _dungeon_controller
+	if GameState.exploration_context != GameState.ExplorationContext.DUNGEON:
+		return null
+	var root := get_tree().get_root()
+	_dungeon_controller = root.find_child("DungeonMapController", true, false)
+	if _dungeon_controller != null:
+		if _dungeon_controller.has_signal("party_moved") \
+				and not _dungeon_controller.party_moved.is_connected(_on_any_party_moved):
+			_dungeon_controller.party_moved.connect(_on_any_party_moved)
+		if _dungeon_controller.has_signal("entity_moved") \
+				and not _dungeon_controller.entity_moved.is_connected(_on_any_entity_moved):
+			_dungeon_controller.entity_moved.connect(_on_any_entity_moved)
+	return _dungeon_controller
+
+
+func _disconnect_dungeon_controller_signals() -> void:
+	if _dungeon_controller == null or not is_instance_valid(_dungeon_controller):
+		return
+	if _dungeon_controller.has_signal("party_moved") \
+			and _dungeon_controller.party_moved.is_connected(_on_any_party_moved):
+		_dungeon_controller.party_moved.disconnect(_on_any_party_moved)
+	if _dungeon_controller.has_signal("entity_moved") \
+			and _dungeon_controller.entity_moved.is_connected(_on_any_entity_moved):
+		_dungeon_controller.entity_moved.disconnect(_on_any_entity_moved)
+
+
+## Builds a carrier_id → Vector3i snapshot for the currently displayed columns.
+## Creatures and vehicles inherit their owner's position (they travel with the
+## party member who rides them). Caches key off their stored cell. Outside of
+## dungeons the dict is empty — the validator's location-based branches take
+## over (wilderness/settlement free transfers, unknown-location allow).
+func _compute_carrier_positions() -> Dictionary:
+	var result: Dictionary = {}
+	var controller = _resolve_dungeon_controller()
+	if controller == null:
+		return result
+
+	for col in _columns:
+		var info: Dictionary = col.get_carrier_info()
+		var ctype: String = str(info.get("carrier_type", ""))
+		var cid: String = str(info.get("carrier_id", ""))
+		if cid.is_empty():
+			continue
+
+		match ctype:
+			"character":
+				var pos: Vector3i = controller.get_entity_pos_3d(cid)
+				if pos != Vector3i(-1, -1, -1):
+					result[cid] = pos
+			"creature", "vehicle":
+				var owner_id: String = str(info.get("data", {}).get("owner_character_id", ""))
+				if owner_id.is_empty():
+					owner_id = GameState.active_character_id
+				if result.has(owner_id):
+					result[cid] = result[owner_id]
+				else:
+					var owner_pos: Vector3i = controller.get_entity_pos_3d(owner_id)
+					if owner_pos != Vector3i(-1, -1, -1):
+						result[cid] = owner_pos
+			"cache":
+				var parsed := LocationCacheManager.parse_dungeon_cell_key(
+						str(info.get("data", {}).get("location_key", "")))
+				if not parsed.is_empty():
+					result[cid] = parsed["cell"]
+	return result
+
+
+## Recomputes adjacency against the active character and dims non-adjacent
+## columns. Idempotent — safe to call from both _load_columns() and signal
+## handlers while the overlay is visible.
+func _update_adjacency_view() -> void:
+	var anchor_id: String = GameState.active_character_id
+	_carrier_positions = _compute_carrier_positions()
+
+	# Push positions into columns so their own validator calls have context.
+	for col in _columns:
+		col.set_carrier_positions(_carrier_positions)
+
+	# Outside of dungeon mode, all columns stay interactive — the validator's
+	# location branch handles wilderness/settlement/unknown cases without
+	# touching carrier_positions.
+	if _carrier_positions.is_empty() or anchor_id.is_empty():
+		_adjacent_carrier_ids = []
+		for col in _columns:
+			col.set_interaction_enabled(true)
+		return
+
+	_adjacent_carrier_ids = ValidatorScript.collect_adjacent_carrier_ids(
+			anchor_id, _carrier_positions)
+
+	for col in _columns:
+		var info: Dictionary = col.get_carrier_info()
+		var cid: String = str(info.get("carrier_id", ""))
+		var ctype: String = str(info.get("carrier_type", ""))
+		# The active character is always their own cluster leader.
+		if cid == anchor_id:
+			col.set_interaction_enabled(true)
+			continue
+		# Cache columns stay interactive when co-located with the active char
+		# (the transfer check below handles the non-adjacent case); otherwise
+		# dim so the player sees items but can't pull across floors.
+		if cid in _adjacent_carrier_ids:
+			col.set_interaction_enabled(true)
+		else:
+			var reason := "Not adjacent to active character"
+			if ctype == "cache":
+				reason = "Cache is not adjacent"
+			col.set_interaction_enabled(false, reason)
+
+
+func _queue_adjacency_refresh() -> void:
+	if _adjacency_refresh_queued or not _is_visible:
+		return
+	_adjacency_refresh_queued = true
+	call_deferred("_flush_adjacency_refresh")
+
+
+func _flush_adjacency_refresh() -> void:
+	_adjacency_refresh_queued = false
+	if _is_visible:
+		_update_adjacency_view()
+
+
+func _on_any_entity_moved(_entity_id: String, _from_pos, _to_pos) -> void:
+	_queue_adjacency_refresh()
+
+
+func _on_any_party_moved(_from_pos, _to_pos) -> void:
+	_queue_adjacency_refresh()
+
+
+# ---------------------------------------------------------------------------
+# Rebalance Load (GDD §5.6)
+# ---------------------------------------------------------------------------
+
+func _on_rebalance_pressed() -> void:
+	var anchor_id: String = GameState.active_character_id
+	if anchor_id.is_empty():
+		_show_toast("No active character")
+		return
+
+	# Cluster = active character + adjacent party/henchman carriers. Caches,
+	# creatures, and vehicles are excluded — rebalance is a PC/henchman
+	# concept (GDD §5.6). If the anchor has no neighbors, there's nothing to
+	# balance.
+	var cluster_ids: Array = []
+	for col in _columns:
+		var info: Dictionary = col.get_carrier_info()
+		var cid: String = str(info.get("carrier_id", ""))
+		var ctype: String = str(info.get("carrier_type", ""))
+		if ctype != "character":
+			continue
+		if cid == anchor_id or cid in _adjacent_carrier_ids:
+			cluster_ids.append(cid)
+
+	if cluster_ids.size() < 2:
+		_show_toast("No adjacent party members to rebalance with")
+		return
+
+	# Gather items and carrier metadata for the cluster.
+	var items: Array = []
+	var carriers: Array = []
+	for cid in cluster_ids:
+		var inv: Array = CampaignRepository.get_inventory_items(cid)
+		var current_enc: int = 0
+		for raw in inv:
+			var key: String = str(raw.get("item_key", ""))
+			if Currency.is_coin(key):
+				continue
+			var enc: int = int(raw.get("encumbrance_units", 0)) * int(raw.get("quantity", 1))
+			current_enc += enc
+			var is_eq = raw.get("is_equipped", false)
+			var eq_bool: bool = is_eq if is_eq is bool else int(is_eq) == 1
+			if eq_bool:
+				continue  # Equipped stays put; counted in current_enc.
+			items.append({
+				"item_id": str(raw.get("id", "")),
+				"item_key": key,
+				"quantity": int(raw.get("quantity", 1)),
+				"encumbrance_units": int(raw.get("encumbrance_units", 0)),
+				"item_category": str(raw.get("item_category", "")),
+				"is_equipped": false,
+				"source_carrier_id": cid,
+			})
+		var char_row: Dictionary = CampaignRepository.get_character(cid)
+		carriers.append({
+			"carrier_id": cid,
+			"carrier_type": "pc" if str(char_row.get("character_type", "pc")) == "pc" else "henchman",
+			"current_enc_units": current_enc,
+			"max_enc_units": 20000,
+			"preferences": [],
+			"equipped_weapons": [],
+			"strength": int(char_row.get("strength", 10)),
+		})
+
+	var distributor := LootAutoDistributor.new(_catalog)
+	var plan: Dictionary = distributor.redistribute_among_adjacent(items, carriers, anchor_id)
+	var moves: Array = plan.get("moves", [])
+	if moves.is_empty():
+		_show_toast("Nothing to rebalance")
+		return
+
+	for move in moves:
+		var item: Dictionary = move.get("item", {})
+		var item_id: String = str(item.get("item_id", ""))
+		var to_cid: String = str(move.get("to_carrier", ""))
+		if item_id.is_empty() or to_cid.is_empty():
+			continue
+		CampaignRepository.transfer_item_to_character(item_id, to_cid)
+
+	EventBus.inventory_updated.emit("")
+	_show_toast("Rebalanced %d item%s across %d carriers" % [
+			moves.size(), "s" if moves.size() != 1 else "", cluster_ids.size()])
 
 
 # ---------------------------------------------------------------------------

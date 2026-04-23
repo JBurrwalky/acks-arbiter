@@ -55,6 +55,9 @@ var _validator = null  # PartyInventoryTransferValidator — set by overlay
 var _catalog = null  # EquipmentCatalog — set by overlay
 var _current_filter: String = ""
 var _current_search: String = ""
+var _interaction_enabled: bool = true
+var _disabled_reason: String = ""
+var _carrier_positions: Dictionary = {}  # carrier_id -> Vector3i; seeded by overlay in DUNGEON context
 
 # UI references
 var _header_label: Label
@@ -447,6 +450,8 @@ func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 		return false
 	if _validator == null:
 		return false
+	if not _interaction_enabled:
+		return false
 	var target := {
 		"carrier_type": _carrier_type,
 		"carrier_id": _carrier_id,
@@ -489,7 +494,24 @@ func _build_context() -> Dictionary:
 		"location_key": GameState.current_location_key,
 		"is_in_combat": GameState.current_state == GameState.State.COMBAT,
 		"active_character_id": GameState.active_character_id,
+		"carrier_positions": _carrier_positions,
 	}
+
+
+## Greys the column and blocks drag-start / drop / right-click context-menu when
+## `enabled` is false. Items remain readable. The optional `reason` becomes the
+## column's tooltip so hovering explains why interactions are off.
+func set_interaction_enabled(enabled: bool, reason: String = "") -> void:
+	_interaction_enabled = enabled
+	_disabled_reason = reason
+	modulate = Color.WHITE if enabled else Color(0.55, 0.55, 0.55, 1.0)
+	tooltip_text = reason if not enabled else ""
+
+
+## Sets the carrier-position snapshot the column forwards to the validator via
+## `_build_context()`. Called by the overlay whenever positions change.
+func set_carrier_positions(positions: Dictionary) -> void:
+	_carrier_positions = positions
 
 
 # ---------------------------------------------------------------------------
@@ -645,6 +667,8 @@ class _ItemRow extends HBoxContainer:
 
 
 	func _get_drag_data(_at_position: Vector2) -> Variant:
+		if column != null and not column._interaction_enabled:
+			return null
 		var data := {
 			"carrier_type": carrier_type,
 			"carrier_id": carrier_id,
@@ -664,7 +688,7 @@ class _ItemRow extends HBoxContainer:
 	func _gui_input(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.pressed \
 				and event.button_index == MOUSE_BUTTON_RIGHT:
-			if column != null:
+			if column != null and column._interaction_enabled:
 				column.item_context_menu_requested.emit(
 					str(item_data.get("id", "")),
 					carrier_type, carrier_id,

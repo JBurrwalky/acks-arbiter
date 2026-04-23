@@ -120,6 +120,8 @@
 [ext_resource type="Script" path="res://tests/test_wilderness_context_menu_builder.gd" id="114_wilderness_context_menu_builder_tests"]
 [ext_resource type="Script" path="res://tests/test_dungeon_map_controller_voxel.gd" id="115_dungeon_map_controller_voxel_tests"]
 [ext_resource type="Script" path="res://tests/test_equip_pipeline.gd" id="116_equip_pipeline_tests"]
+[ext_resource type="Script" path="res://tests/test_inventory_ui_adjacency.gd" id="117_inventory_ui_adjacency_tests"]
+[ext_resource type="Script" path="res://tests/test_visibility_manager_integration.gd" id="117_visibility_manager_integration_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -480,3 +482,9 @@ script = ExtResource("115_dungeon_map_controller_voxel_tests")
 
 [node name="EquipPipelineTests" type="Node" parent="."]
 script = ExtResource("116_equip_pipeline_tests")
+
+[node name="InventoryUIAdjacencyTests" type="Node" parent="."]
+script = ExtResource("117_inventory_ui_adjacency_tests")
+
+[node name="VisibilityManagerIntegrationTests" type="Node" parent="."]
+script = ExtResource("117_visibility_manager_integration_tests")

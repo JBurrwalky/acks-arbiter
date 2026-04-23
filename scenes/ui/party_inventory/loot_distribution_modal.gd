@@ -27,9 +27,9 @@ const GoldShareModalScript := preload("res://scenes/ui/party_inventory/gold_shar
 const LootGenerator := preload("res://engine/subsystems/combat/loot_generator.gd")
 
 ## Emitted after the player applies loot distribution.
-## cache_id: the source cache (empty for combat loot). cache_cell: cell position
-## for has_ground_items cleanup (Vector2i(-1,-1) for non-cache sources).
-signal distribution_completed(cache_id: String, cache_cell: Vector2i)
+## cache_id: the source cache (empty for combat loot). cache_cell: voxel cell
+## position for has_ground_items cleanup (Vector3i(-1,-1,-1) for non-cache sources).
+signal distribution_completed(cache_id: String, cache_cell: Vector3i)
 
 # ---------------------------------------------------------------------------
 # Private state
@@ -49,13 +49,15 @@ var _gold_share_modal = null       # GoldShareModal (lazily created)
 
 # Cache source state (set when opened from a dungeon cache; empty for combat loot)
 var _cache_id: String = ""
-var _cache_cell: Vector2i = Vector2i(-1, -1)
+var _cache_cell: Vector3i = Vector3i(-1, -1, -1)
+var _item_pickers: Array = []  # per-item {item: Dictionary, picker: OptionButton}
 
 # UI references
 var _title_label: Label
 var _gold_summary_label: Label
 var _share_preview_label: Label
-var _item_list_label: Label
+var _items_container: VBoxContainer
+var _items_empty_label: Label
 var _apply_btn: Button
 
 
@@ -78,7 +80,7 @@ func open(title: String, coins: Dictionary, items: Array = []) -> void:
 	_items = items.duplicate()
 	_gold_shares.clear()
 	_cache_id = ""
-	_cache_cell = Vector2i(-1, -1)
+	_cache_cell = Vector3i(-1, -1, -1)
 
 	if not _is_built:
 		_build_ui()
@@ -89,7 +91,7 @@ func open(title: String, coins: Dictionary, items: Array = []) -> void:
 
 ## Opens the modal from a dungeon location cache. Loads items from the DB,
 ## separates coins from non-coin items, and presents them for distribution.
-func open_from_cache(cache_id: String, cell: Vector2i = Vector2i(-1, -1)) -> void:
+func open_from_cache(cache_id: String, cell: Vector3i = Vector3i(-1, -1, -1)) -> void:
 	_cache_id = cache_id
 	_cache_cell = cell
 
@@ -177,19 +179,29 @@ func _build_ui() -> void:
 
 	vbox.add_child(HSeparator.new())
 
-	# Items section (placeholder for v1)
+	# Items section
 	var items_header := Label.new()
 	items_header.text = "Items"
 	items_header.add_theme_font_size_override("font_size", 14)
 	items_header.add_theme_color_override("font_color", Color(0.9, 0.82, 0.6))
 	vbox.add_child(items_header)
 
-	_item_list_label = Label.new()
-	_item_list_label.text = "No items to distribute."
-	_item_list_label.add_theme_font_size_override("font_size", 11)
-	_item_list_label.add_theme_color_override("font_color", Color(0.6, 0.55, 0.45))
-	_item_list_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	vbox.add_child(_item_list_label)
+	var items_scroll := ScrollContainer.new()
+	items_scroll.custom_minimum_size.y = 180
+	items_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	items_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(items_scroll)
+
+	_items_container = VBoxContainer.new()
+	_items_container.add_theme_constant_override("separation", 4)
+	_items_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	items_scroll.add_child(_items_container)
+
+	_items_empty_label = Label.new()
+	_items_empty_label.text = "No items to distribute."
+	_items_empty_label.add_theme_font_size_override("font_size", 11)
+	_items_empty_label.add_theme_color_override("font_color", Color(0.6, 0.55, 0.45))
+	_items_container.add_child(_items_empty_label)
 
 	# Spacer
 	var spacer := Control.new()
@@ -258,19 +270,105 @@ func _update_display() -> void:
 	# Share preview
 	_update_share_preview()
 
-	# Items
-	if _items.is_empty():
-		_item_list_label.text = "No items to distribute."
-	else:
-		var lines: Array = []
-		for item in _items:
-			var qty: int = item.get("quantity", 1)
-			var key: String = item.get("item_key", "unknown")
-			lines.append("  %dx %s" % [qty, key])
-		_item_list_label.text = "\n".join(lines)
+	# Items — build one row per item with a participant OptionButton.
+	_rebuild_item_rows()
 
 	# Enable/disable apply based on whether there's anything to distribute.
 	_apply_btn.disabled = (total_cp <= 0 and _items.is_empty())
+
+
+## Builds the per-item picker rows. Participants are party members whose
+## Vector3i position is within Chebyshev <= 1 of _cache_cell. Falls back to the
+## full party roster when positions can't be resolved (e.g. combat loot that
+## was opened with no cache_cell).
+func _rebuild_item_rows() -> void:
+	if _items_container == null:
+		return
+	for child in _items_container.get_children():
+		child.queue_free()
+	_item_pickers.clear()
+
+	if _items.is_empty():
+		_items_empty_label = Label.new()
+		_items_empty_label.text = "No items to distribute."
+		_items_empty_label.add_theme_font_size_override("font_size", 11)
+		_items_empty_label.add_theme_color_override("font_color", Color(0.6, 0.55, 0.45))
+		_items_container.add_child(_items_empty_label)
+		return
+
+	var participants := _compute_participants()
+	if participants.is_empty():
+		var warn := Label.new()
+		warn.text = "No party members in range of this cache."
+		warn.add_theme_font_size_override("font_size", 11)
+		warn.add_theme_color_override("font_color", Color(0.95, 0.6, 0.5))
+		_items_container.add_child(warn)
+		_apply_btn.disabled = true
+		return
+
+	for item in _items:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		_items_container.add_child(row)
+
+		var qty: int = item.get("quantity", 1)
+		var name: String = str(item.get("name", item.get("item_key", "?")))
+		var label := Label.new()
+		label.text = ("%dx %s" % [qty, name]) if qty > 1 else name
+		label.add_theme_font_size_override("font_size", 11)
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(label)
+
+		var picker := OptionButton.new()
+		picker.add_theme_font_size_override("font_size", 11)
+		for i in participants.size():
+			var p: Dictionary = participants[i]
+			var suffix := " (H)" if p.get("is_henchman", false) else ""
+			picker.add_item("%s%s" % [p.get("name", "Unknown"), suffix], i)
+			picker.set_item_metadata(i, str(p.get("id", "")))
+		row.add_child(picker)
+
+		_item_pickers.append({"item": item, "picker": picker})
+
+
+## Returns participants: array of {id, name, is_henchman} for party members
+## whose current voxel position is within Chebyshev <= 1 of _cache_cell.
+## When positions aren't available (wilderness combat loot, cache_cell=sentinel,
+## or no dungeon controller in the scene), returns the full party as a fallback.
+func _compute_participants() -> Array:
+	var party_id: String = GameState.active_party_id
+	if party_id.is_empty():
+		party_id = GameState.party_id
+	var all_chars: Array = CampaignRepository.list_party_characters(party_id)
+
+	# Fallback path: no cell filter.
+	if _cache_cell == Vector3i(-1, -1, -1):
+		return _chars_to_participants(all_chars)
+
+	var controller = get_tree().get_root().find_child("DungeonMapController", true, false)
+	if controller == null:
+		return _chars_to_participants(all_chars)
+
+	var filtered: Array = []
+	for c in all_chars:
+		var cid: String = str(c.get("id", ""))
+		var pos: Vector3i = controller.get_entity_pos_3d(cid)
+		if pos == Vector3i(-1, -1, -1):
+			continue
+		if VoxelGrid.chebyshev_distance(pos, _cache_cell) <= 1:
+			filtered.append(c)
+	return _chars_to_participants(filtered)
+
+
+func _chars_to_participants(chars: Array) -> Array:
+	var result: Array = []
+	for c in chars:
+		result.append({
+			"id": str(c.get("id", "")),
+			"name": str(c.get("name", "Unknown")),
+			"is_henchman": str(c.get("character_type", "pc")) == "henchman",
+		})
+	return result
 
 
 func _update_share_preview() -> void:
@@ -383,9 +481,27 @@ func _on_apply() -> void:
 			if amount > 0:
 				PartyWallet.deposit_to_character(char_id, amount)
 
-	# TODO: distribute items when item drops are implemented.
-	# For each move in auto-distribute plan, call CampaignRepository.add_inventory_item()
-	# with target carrier FK.
+	# Distribute items to selected participants. Items in a cache go through
+	# LocationCacheManager.pick_up_item so the cache bookkeeping stays clean.
+	# Items without a source cache (combat auto-gen loot, commissions) write a
+	# fresh inventory_items row owned by the target.
+	for entry in _item_pickers:
+		var item: Dictionary = entry["item"]
+		var picker: OptionButton = entry["picker"]
+		if picker.selected < 0:
+			continue
+		var target_id: String = str(picker.get_item_metadata(picker.selected))
+		if target_id.is_empty():
+			continue
+		var existing_id: String = str(item.get("id", ""))
+		if not existing_id.is_empty() and not _cache_id.is_empty():
+			LocationCacheManager.pick_up_item(existing_id, target_id, "character")
+		elif not existing_id.is_empty():
+			CampaignRepository.transfer_item_to_character(existing_id, target_id)
+		else:
+			var payload: Dictionary = item.duplicate()
+			payload["character_id"] = target_id
+			CampaignRepository.add_inventory_item(payload)
 
 	# If opened from a cache, remove distributed coin items from the cache DB.
 	if not _cache_id.is_empty():

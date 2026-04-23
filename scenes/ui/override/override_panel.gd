@@ -541,6 +541,15 @@ func _rebuild_cache_inputs(variant_index: int) -> void:
 			row_row.add_child(row_spin)
 			_cache_input_widgets["cell_row"] = row_spin
 
+			var level_row := HBoxContainer.new()
+			_cache_inputs_container.add_child(level_row)
+			level_row.add_child(_label("Cell Level:"))
+			var level_spin := SpinBox.new()
+			level_spin.min_value = 0
+			level_spin.max_value = 20
+			level_row.add_child(level_spin)
+			_cache_input_widgets["cell_level"] = level_spin
+
 		3:  # Settlement — settlement_id dropdown + poi_id text input
 			var sett_row := HBoxContainer.new()
 			_cache_inputs_container.add_child(sett_row)
@@ -613,7 +622,8 @@ func _on_cache_create_pressed() -> void:
 			var dungeon_id: String = dung_drop.get_item_metadata(dung_drop.selected)
 			var col: int = int(_cache_input_widgets["cell_col"].value)
 			var row: int = int(_cache_input_widgets["cell_row"].value)
-			cache_id = _override_manager.override_create_dungeon_loose_cache(dungeon_id, col, row)
+			var level: int = int(_cache_input_widgets["cell_level"].value) if _cache_input_widgets.has("cell_level") else 0
+			cache_id = _override_manager.override_create_dungeon_loose_cache(dungeon_id, col, row, level)
 		3:  # Settlement
 			var sett_drop: OptionButton = _cache_input_widgets["settlement_id"]
 			if sett_drop.selected < 0:

@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3 uid="uid://brvlstrpwidget08"]
+
+[ext_resource type="Script" path="res://scenes/ui/hud/level_strip_widget.gd" id="1_script"]
+
+[node name="LevelStripWidget" type="PanelContainer"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -150.0
+offset_right = -10.0
+offset_top = 20.0
+offset_bottom = 20.0
+grow_horizontal = 0
+mouse_filter = 1
+script = ExtResource("1_script")

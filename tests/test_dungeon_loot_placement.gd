@@ -108,10 +108,7 @@ func test_cache_created_with_coins_at_cell() -> void:
 	_setup()
 	GameState.dice_overrides["cache_decay_timer"] = 3
 
-	# TODO (voxel migration): extend location_key to include level coordinate
-	# per gdd-voxel-tactical-architecture-v1.1.md §6.3 — currently 2D (col,row);
-	# becomes 3D (col,row,level) when the voxel schema lands.
-	var cell := Vector2i(5, 7)
+	var cell := Vector3i(5, 7, 1)
 	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, cell)
 	check(not cache_id.is_empty(), "cache_id should be non-empty")
 
@@ -129,16 +126,13 @@ func test_cache_lookup_by_location_key() -> void:
 	_setup()
 	GameState.dice_overrides["cache_decay_timer"] = 3
 
-	# TODO (voxel migration): extend location_key to include level coordinate
-	# per gdd-voxel-tactical-architecture-v1.1.md §6.3 — currently 2D (col,row);
-	# becomes 3D (col,row,level) when the voxel schema lands.
-	var cell := Vector2i(2, 4)
+	var cell := Vector3i(2, 4, 0)
 	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, cell)
 	check(not cache_id.is_empty(), "cache should be created")
 
 	_add_coin_to_cache(cache_id, "coins_sp", "Silver Pieces", 200)
 
-	var location_key := "dungeon:%s:cell:%d,%d" % [DUNGEON_ID, cell.x, cell.y]
+	var location_key := "dungeon:%s:cell:%d,%d,%d" % [DUNGEON_ID, cell.x, cell.y, cell.z]
 	var found := CampaignRepository.get_cache_at_location_key(TEST_CAMPAIGN, location_key)
 	check(not found.is_empty(), "cache should be found by location_key")
 	check(found.get("id") == cache_id, "found cache id should match created id")
@@ -150,7 +144,7 @@ func test_empty_cache_cleanup() -> void:
 	_setup()
 	GameState.dice_overrides["cache_decay_timer"] = 3
 
-	var cell := Vector2i(1, 1)
+	var cell := Vector3i(1, 1, 0)
 	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, cell)
 	var item_id := _add_coin_to_cache(cache_id, "coins_cp", "Copper Pieces", 100)
 
@@ -176,7 +170,7 @@ func test_coin_items_have_correct_category() -> void:
 	_setup()
 	GameState.dice_overrides["cache_decay_timer"] = 3
 
-	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector2i(0, 0))
+	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector3i(0, 0, 0))
 	_add_coin_to_cache(cache_id, "coins_ep", "Electrum Pieces", 10)
 
 	var items := CampaignRepository.list_items_in_cache(cache_id)
@@ -192,7 +186,7 @@ func test_multiple_denominations_in_cache() -> void:
 	_setup()
 	GameState.dice_overrides["cache_decay_timer"] = 3
 
-	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector2i(3, 3))
+	var cache_id := LocationCacheManager.create_dungeon_loose_cache(DUNGEON_ID, Vector3i(3, 3, 0))
 	_add_coin_to_cache(cache_id, "coins_gp", "Gold Pieces", 25)
 	_add_coin_to_cache(cache_id, "coins_sp", "Silver Pieces", 100)
 	_add_coin_to_cache(cache_id, "coins_cp", "Copper Pieces", 500)

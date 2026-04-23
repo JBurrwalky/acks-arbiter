@@ -47,15 +47,48 @@ func _ready() -> void:
 
 
 # ---------------------------------------------------------------------------
+# Public API — Location key format
+# ---------------------------------------------------------------------------
+
+## Builds the canonical location_key for a dungeon cell cache. Format:
+##   "dungeon:<dungeon_id>:cell:<col>,<row>,<level>"
+## The level axis was added in migration 037 (voxel migration session 9);
+## caches from before that point have level 0 backfilled by the migration.
+static func build_dungeon_cell_key(dungeon_id: String, cell: Vector3i) -> String:
+	return "dungeon:%s:cell:%d,%d,%d" % [dungeon_id, cell.x, cell.y, cell.z]
+
+
+## Parses a dungeon cell location_key back to its components. Returns
+##   {dungeon_id: String, cell: Vector3i}
+## on success, or an empty Dictionary if the key doesn't match the dungeon-cell
+## shape. Accepts legacy 2D keys (col,row) as level 0 for safety, though migration
+## 037 upgrades them in place.
+static func parse_dungeon_cell_key(location_key: String) -> Dictionary:
+	var parts := location_key.split(":")
+	if parts.size() < 4 or parts[0] != "dungeon" or parts[2] != "cell":
+		return {}
+	var coords: PackedStringArray = parts[3].split(",")
+	if coords.size() < 2:
+		return {}
+	var level := 0 if coords.size() < 3 else int(coords[2])
+	return {
+		"dungeon_id": parts[1],
+		"cell": Vector3i(int(coords[0]), int(coords[1]), level),
+	}
+
+
+# ---------------------------------------------------------------------------
 # Public API — Cache creation
 # ---------------------------------------------------------------------------
 
 ## Creates a loose cache in a dungeon cell. Decays in 1d7 days.
-func create_dungeon_loose_cache(dungeon_id: String, cell_xy: Vector2i) -> String:
+## Cell is a voxel coordinate (col, row, level); the location_key carries all
+## three axes so caches on different floors at the same (col,row) are distinct.
+func create_dungeon_loose_cache(dungeon_id: String, cell: Vector3i) -> String:
 	var current_day := Timekeeping.get_total_days()
 	var decay_roll := DiceSystem.roll_digital(7, 1, 0, "cache_decay_timer")
 	var decay_day := current_day + decay_roll.modified_total
-	var location_key := "dungeon:%s:cell:%d,%d" % [dungeon_id, cell_xy.x, cell_xy.y]
+	var location_key := build_dungeon_cell_key(dungeon_id, cell)
 	var cache_id := CampaignRepository.create_location_cache({
 		"campaign_id": GameState.campaign_id,
 		"location_type": "dungeon_cell",
@@ -73,9 +106,10 @@ func create_dungeon_loose_cache(dungeon_id: String, cell_xy: Vector2i) -> String
 
 
 ## Creates a locked container cache in a dungeon cell. Persistent, no decay.
-func create_dungeon_container_cache(dungeon_id: String, cell_xy: Vector2i, container_item_id: String) -> String:
+## Cell is a voxel coordinate (col, row, level).
+func create_dungeon_container_cache(dungeon_id: String, cell: Vector3i, container_item_id: String) -> String:
 	var current_day := Timekeeping.get_total_days()
-	var location_key := "dungeon:%s:cell:%d,%d" % [dungeon_id, cell_xy.x, cell_xy.y]
+	var location_key := build_dungeon_cell_key(dungeon_id, cell)
 	var cache_id := CampaignRepository.create_location_cache({
 		"campaign_id": GameState.campaign_id,
 		"location_type": "dungeon_cell",
