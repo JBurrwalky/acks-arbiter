@@ -1236,7 +1236,7 @@ func _on_focus_level_changed(new_level: int) -> void:
 
 ## Apply per-level visibility and albedo tint per GDD §16.2 and §16.7:
 ##   level >  focus + 1 → hidden (hard-clip)
-##   level == focus + 1 → walls dithered; floors/doors/features hidden (split)
+##   level == focus + 1 → walls fade to 10% opacity; floors/doors/features hidden (split)
 ##   level == focus     → visible, full color
 ##   level <  focus     → visible, dimmed to 0.6× (if level has content; else hidden)
 ## Tokens receive matching treatment via [method _apply_token_visibility].
@@ -1270,50 +1270,58 @@ func _apply_level_visibility() -> void:
 	_apply_token_visibility()
 
 
-## For the focus+1 level: show walls with a screen-door dither, hide everything
-## else (floors, doors, features, grid lines, fog, transition markers). Matches
-## GDD §16.7 — walls you're about to walk into are visible while the top-down
-## silhouette stays readable.
+## Alpha applied to focus+1 walls so the top-down silhouette is readable
+## without the screen-door dither pattern. 0.10 = 90% faded out.
+const FOCUS_PLUS_ONE_WALL_ALPHA := 0.10
+
+
+## For the focus+1 level: show walls at 10% opacity (90% faded), hide
+## everything else (floors, doors, features, grid lines, fog, transition
+## markers). Matches GDD §16.7 — walls you're about to walk into are still
+## visible enough to read silhouette but don't obstruct the layout below.
 func _apply_focus_plus_one_visibility(level_group: Node3D) -> void:
 	for sub in level_group.get_children():
 		if sub.name == "Walls":
 			sub.visible = true
-			_set_walls_dithered(sub, true)
+			_set_walls_faded(sub, true)
 		else:
 			sub.visible = false
 
 
 ## Reset the walls in this level group to full-opacity rendering. Called when
 ## the level is at or below the focus level so walls render normally after
-## having been dithered while this level was focus+1.
+## having been faded while this level was focus+1.
 func _reset_walls_opaque(level_group: Node3D) -> void:
 	var walls := level_group.get_node_or_null("Walls")
 	if walls == null:
 		return
-	_set_walls_dithered(walls, false)
+	_set_walls_faded(walls, false)
 
 
 ## Walks every GeometryInstance3D under [param walls] and either enables the
-## screen-door dither material state ([param dithered]=true) or restores the
-## opaque state. Uses each mesh's stored "base_color" metadata as the source.
-func _set_walls_dithered(walls: Node, dithered: bool) -> void:
+## smooth-alpha fade ([param faded]=true) or restores the opaque state. Uses
+## each mesh's stored "base_color" metadata as the source.
+func _set_walls_faded(walls: Node, faded: bool) -> void:
 	if walls is GeometryInstance3D:
-		_apply_mesh_dither(walls, dithered)
+		_apply_mesh_fade(walls, faded)
 	else:
 		for mesh in walls.get_children():
 			if mesh is GeometryInstance3D:
-				_apply_mesh_dither(mesh, dithered)
+				_apply_mesh_fade(mesh, faded)
 
 
-func _apply_mesh_dither(mesh: GeometryInstance3D, dithered: bool) -> void:
+## Apply or remove the smooth fade material state. Uses ALPHA_DEPTH_PRE_PASS
+## so multi-quad walls don't z-fight at the low alpha; falls back to standard
+## ALPHA on platforms that ignore the pre-pass flag.
+func _apply_mesh_fade(mesh: GeometryInstance3D, faded: bool) -> void:
 	var mat := mesh.material_override
 	if mat == null or not (mat is StandardMaterial3D):
 		return
 	var smat: StandardMaterial3D = mat
 	var base: Color = mesh.get_meta("base_color", Color.WHITE)
-	if dithered:
-		smat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_HASH
-		smat.albedo_color = Color(base.r, base.g, base.b, 0.35)
+	if faded:
+		smat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_DEPTH_PRE_PASS
+		smat.albedo_color = Color(base.r, base.g, base.b, FOCUS_PLUS_ONE_WALL_ALPHA)
 	else:
 		smat.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
 		smat.albedo_color = base

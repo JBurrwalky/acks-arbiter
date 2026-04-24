@@ -2165,3 +2165,64 @@ The `TOKEN_SELECTION` step sits between `PORTRAIT` and `LANGUAGES`. It is skippe
 - Instantiates exactly one preview `CharacterToken3D` inside a `SubViewport` and frees it before loading the next — never batch-loads variants.
 
 The `FinalizePanel` sex toggle still works as an override (same class restrictions).
+
+
+## 21. Heraldry Subsystem (2026-04-23)
+
+The heraldry builder lives in `engine/subsystems/heraldry/` and paints per-party heraldic shields that replace the wilderness party tokens. Full design in `generation/gdd-heraldry-builder.md`.
+
+### 21.1 Canonical Type
+
+`HeraldryDescriptor` (`engine/shared_types/heraldry_descriptor.gd`) is the sole contract between DB, UI, and renderer. Mutations flow `UI editor → descriptor → CampaignRepository.save_heraldry → EventBus.heraldry_changed → renderer refresh`. Colors persist as `#RRGGBB` hex strings; the static `color_from_hex` / `color_to_hex` helpers convert at the boundary.
+
+### 21.2 Registries
+
+Five registries follow the established `class_name X extends RefCounted` + `_init()` catalog-load pattern:
+
+- `ShieldShapeRegistry` / `ChargeRegistry` — JSON-backed from `data/heraldry/`.
+- `FieldDivisionRegistry` / `OrdinaryRegistry` — code-defined `const` dictionaries; geometry as normalized `Vector2(0..1, 0..1)` polygons.
+- `TincturePalette` — seven named heraldic colors plus the `is_low_contrast(Color, Color)` luminance predicate for the soft rule-of-tincture warning.
+- `PresetLibrary` — loads the starter preset catalog; used for backfill + the editor's "Reset" dropdown.
+
+No autoloads. Instantiate on demand and cache within the renderer / editor.
+
+### 21.3 Rendering Pipeline
+
+`HeraldryRenderer` (`engine/subsystems/heraldry/heraldry_renderer.gd`) is a `Node2D` that hosts a `SubViewport`. Consumers add it to the tree, call `update_descriptor(desc, size)`, and assign `get_texture()` to a `Sprite2D` or `TextureRect`. The ViewportTexture reference stays stable across descriptor changes — no need to reassign downstream sprites on refresh.
+
+Layer composition inside the viewport:
+
+1. `CanvasGroup` + `heraldry_mask.gdshader` — clips the following field/ordinary/charge layers to the shield silhouette by multiplying alpha by the mask texture's alpha channel.
+2. Outline sprite drawn on top of the group, **unmasked** — it IS the shield's edge.
+
+Bordure is implemented as a full-viewport ordinary-color fill behind an inset (scaled-down) content group. The inset plus the mask produces a visible rim; the rim width doesn't follow shield curves precisely — a v1 approximation.
+
+### 21.4 Normalized Shield Coordinates
+
+All field-division and ordinary polygon definitions use normalized coordinates: `(0,0)` = top-left of the shield's bounding box, `(1,1)` = bottom-right. The renderer scales to pixel space via `HeraldryRenderer.scale_normalized_polygon(array, output_size)`. Decouples geometry from render resolution; the same const dictionaries drive both 64-px hex-map tokens and 256-px editor previews.
+
+### 21.5 Persistence and Backfill
+
+Migration 038 adds `party_heraldry` (+ `parties.heraldry_id` FK). Existing parties get NULL on the FK. `SessionLoadState._backfill_party_heraldry(campaign_id)` runs after `load_session()` and assigns a random preset shield to every party with a NULL `heraldry_id`. Idempotent — subsequent session loads skip parties already bound.
+
+Five repository methods: `get_heraldry`, `get_heraldry_for_party`, `save_heraldry` (upsert + emits signal), `assign_heraldry_to_party`, `create_default_heraldry_for_party`.
+
+### 21.6 EventBus Contract
+
+`heraldry_changed(heraldry_id: String)` — emitted by `save_heraldry` on any upsert. Consumers (renderer cache, hex-map token, party-management UI) listen and refresh only the matching party's presentation.
+
+### 21.7 Hex-Map Token Integration
+
+`scenes/maps/hex_map_renderer.gd` holds `party_id → HeraldryRenderer` in `_heraldry_renderers` (the per-party cache). All renderers are parented under an invisible `HeraldryHolder` Node2D sibling of `EntityLayer`. The `PartyToken` (scene-defined) and dynamic split-party tokens are `Sprite2D` nodes whose `texture` points at their renderer's ViewportTexture.
+
+Active vs inactive state uses scale + modulate only — no color-tinted Polygon2D and no gold ring overlay. Constants on the renderer:
+
+```gdscript
+const ACTIVE_SCALE := Vector2(1.15, 1.15)
+const INACTIVE_SCALE := Vector2(0.9, 0.9)
+const ACTIVE_MODULATE := Color(1.0, 1.0, 1.0, 1.0)
+const INACTIVE_MODULATE := Color(0.72, 0.72, 0.78, 1.0)
+```
+
+Click-pulse tweens scale to `current × 1.15` briefly then back to `current`, so the pulse respects active/inactive baseline without fighting steady-state styling.
+

@@ -7,7 +7,8 @@ extends Node2D
 ##   ├── TerrainLayer (TileMapLayer)
 ##   ├── FogLayer (TileMapLayer)
 ##   ├── EntityLayer (Node2D)
-##   │   └── PartyToken (Polygon2D)
+##   │   └── PartyToken (Sprite2D — texture bound by HeraldryRenderer)
+##   ├── HeraldryHolder (Node2D, invisible — hosts SubViewports for heraldry rendering)
 ##   ├── Camera2D
 ##   └── HexHUD (CanvasLayer, layer=10)
 ##       └── TooltipPanel (PanelContainer)
@@ -62,7 +63,8 @@ const ZOOM_STEP := 0.1     # 10% additive per tick
 @onready var _terrain_layer: TileMapLayer = $TerrainLayer
 @onready var _fog_layer: TileMapLayer = $FogLayer
 @onready var _entity_layer: Node2D = $EntityLayer
-@onready var _party_token: Polygon2D = $EntityLayer/PartyToken
+@onready var _party_token: Sprite2D = $EntityLayer/PartyToken
+@onready var _heraldry_holder: Node2D = $HeraldryHolder
 @onready var _camera: Camera2D = $Camera2D
 @onready var _tooltip_panel: PanelContainer = $HexHUD/TooltipPanel
 @onready var _tooltip_label: Label = $HexHUD/TooltipPanel/TooltipLabel
@@ -95,8 +97,15 @@ var _gate_dialog: CanvasLayer
 ## Cached settlement entrances: Vector2i(hex_q, hex_r) → entrance dict.
 var _settlement_entrance_cache: Dictionary = {}
 
-## Multi-party token management: party_id → Polygon2D
+## Multi-party token management: party_id → Sprite2D
 var _party_tokens: Dictionary = {}
+
+## party_id → HeraldryRenderer that drives the token's texture.
+## Includes the primary party as well as split parties; one renderer per token.
+var _heraldry_renderers: Dictionary = {}
+
+## Token dimensions in pixels (applied as Sprite2D texture render target size).
+const HERALDRY_TOKEN_PX := 64
 
 ## Axial coord → party_id. Rebuilt alongside tokens; consulted on left-click to
 ## decide whether the click lands on a party token (active-party selection) or
@@ -134,25 +143,14 @@ func _ready() -> void:
 	add_child(_overlay_layer)
 	move_child(_overlay_layer, _fog_layer.get_index())
 
-	# Party token: small flat-top hexagon (start angle 0 = vertex at right).
-	# The original scene token is the "primary" — kept as fallback and used for
-	# single-party play. Multi-party mode creates additional tokens dynamically.
-	var r := 14.0
-	var points: PackedVector2Array = []
-	for i in range(6):
-		var angle_rad := deg_to_rad(60.0 * i)
-		points.append(Vector2(r * cos(angle_rad), r * sin(angle_rad)))
-	_party_token.polygon = points
-	_party_token.color = Color(1.0, 0.9, 0.1)  # yellow
-	# The scene-defined primary token has no outline child by default — attach
-	# one now so _style_token can show/hide it like the dynamic tokens.
-	if _party_token.get_node_or_null("ActiveOutline") == null:
-		_attach_active_outline(_party_token, r)
+	# The primary party token is a Sprite2D in the scene; its texture is bound
+	# on first _rebuild_party_tokens() from the party's heraldry descriptor.
 
 	# Connect party lifecycle signals for multi-party token management
 	EventBus.party_split.connect(_on_party_split)
 	EventBus.party_merged.connect(_on_party_merged)
 	EventBus.active_party_changed.connect(_on_active_party_switched)
+	EventBus.heraldry_changed.connect(_on_heraldry_changed)
 
 	# "Enter Dungeon" button — child of HexHUD (CanvasLayer) so it stays on screen.
 	_enter_dungeon_btn = Button.new()
@@ -596,9 +594,9 @@ func _update_party_token_position() -> void:
 	_party_token.position = _terrain_layer.map_to_local(godot_coord)
 
 
-## Rebuilds all party tokens from the database. Creates/removes Polygon2D nodes
-## as needed. Active party token is full-color yellow; inactive tokens are
-## desaturated grey-blue and slightly smaller.
+## Rebuilds all party tokens from the database. Creates/removes Sprite2D nodes
+## and their paired HeraldryRenderer instances as needed. Active party token is
+## full-bright at 1.15×; inactive tokens are slightly desaturated at 0.9×.
 func _rebuild_party_tokens() -> void:
 	if _map_data == null or _terrain_layer == null:
 		return
@@ -618,50 +616,74 @@ func _rebuild_party_tokens() -> void:
 		var pid: String = p.id
 		valid_ids[pid] = true
 
-		# Skip the "primary" party — use the original scene token for it
 		var hex_q: int = p.get("current_hex_q", 0) if p.get("current_hex_q") != null else 0
 		var hex_r: int = p.get("current_hex_r", 0) if p.get("current_hex_r") != null else 0
 
-		if pid == GameState.party_id:
-			# Position the original token — prefer live map data over DB
-			var coord := Vector2i(hex_q, hex_r)
-			if _map_data != null:
-				coord = _map_data.party_hex
-			var godot_coord := HexMapController.axial_to_godot_map(coord)
-			_party_token.position = _terrain_layer.map_to_local(godot_coord)
-			_style_token(_party_token, pid == active_id)
-			_index_party_hex(coord, pid, active_id)
-			continue
-
-		# Create or reuse a dynamic token
-		var token: Polygon2D
-		if _party_tokens.has(pid):
-			token = _party_tokens[pid]
-		else:
-			token = _create_party_token_node()
-			_entity_layer.add_child(token)
-			_party_tokens[pid] = token
-
-		# Position
 		var coord := Vector2i(hex_q, hex_r)
+		# Primary party prefers live map data over DB.
+		if pid == GameState.party_id and _map_data != null:
+			coord = _map_data.party_hex
+
+		var token := _get_or_create_token_for_party(pid)
 		var godot_coord := HexMapController.axial_to_godot_map(coord)
 		token.position = _terrain_layer.map_to_local(godot_coord)
+		_ensure_heraldry_for_party(pid, token)
 		_style_token(token, pid == active_id)
 		_index_party_hex(coord, pid, active_id)
 
-	# Style the primary token as well
-	_style_token(_party_token, GameState.party_id == active_id)
-
-	# Remove tokens for parties that no longer exist
+	# Remove split-party tokens whose parties no longer exist.
+	# The scene-defined primary token is never removed; its heraldry renderer
+	# is left in place even if the party transiently disappears from DB.
 	var stale_ids: Array = []
 	for pid in _party_tokens:
 		if not valid_ids.has(pid):
 			stale_ids.append(pid)
 	for pid in stale_ids:
-		var token: Polygon2D = _party_tokens[pid]
+		var token: Sprite2D = _party_tokens[pid]
 		if is_instance_valid(token):
 			token.queue_free()
 		_party_tokens.erase(pid)
+		_free_heraldry_renderer(pid)
+
+
+## Returns the Sprite2D token for [param party_id], creating one if missing.
+## The primary party uses the scene-defined _party_token; other parties get
+## dynamically-created tokens parented under _entity_layer.
+func _get_or_create_token_for_party(party_id: String) -> Sprite2D:
+	if party_id == GameState.party_id:
+		return _party_token
+	if _party_tokens.has(party_id):
+		return _party_tokens[party_id]
+	var token := _create_party_token_node()
+	_entity_layer.add_child(token)
+	_party_tokens[party_id] = token
+	return token
+
+
+## Ensures the party has a HeraldryRenderer in _heraldry_renderers and its
+## texture is bound to [param token]. Fetches the descriptor from the DB on
+## first call; subsequent calls are cheap no-ops unless the descriptor changed.
+func _ensure_heraldry_for_party(party_id: String, token: Sprite2D) -> void:
+	var renderer: HeraldryRenderer = _heraldry_renderers.get(party_id, null)
+	if renderer == null or not is_instance_valid(renderer):
+		renderer = HeraldryRenderer.new()
+		_heraldry_holder.add_child(renderer)
+		_heraldry_renderers[party_id] = renderer
+		var descriptor := CampaignRepository.get_heraldry_for_party(party_id)
+		if descriptor == null:
+			# Shouldn't happen post-backfill, but stay defensive — use an
+			# empty descriptor with defaults so the token still renders.
+			descriptor = HeraldryDescriptor.new()
+		renderer.update_descriptor(descriptor, HERALDRY_TOKEN_PX)
+	if token.texture != renderer.get_texture():
+		token.texture = renderer.get_texture()
+
+
+func _free_heraldry_renderer(party_id: String) -> void:
+	var renderer: HeraldryRenderer = _heraldry_renderers.get(party_id, null)
+	if renderer != null and is_instance_valid(renderer):
+		renderer.queue_free()
+	_heraldry_renderers.erase(party_id)
 
 
 ## Records a party's hex for left-click lookup. When multiple parties share a
@@ -674,63 +696,32 @@ func _index_party_hex(coord: Vector2i, party_id: String, active_id: String) -> v
 		_party_hex_index[coord] = party_id
 
 
-## Creates a new Polygon2D party token node with the standard hex shape and a
-## hidden gold outline ring child (shown only when the token is active).
-func _create_party_token_node() -> Polygon2D:
-	var token := Polygon2D.new()
-	var r := 14.0
-	var points: PackedVector2Array = []
-	for i in range(6):
-		var angle_rad := deg_to_rad(60.0 * i)
-		points.append(Vector2(r * cos(angle_rad), r * sin(angle_rad)))
-	token.polygon = points
-	_attach_active_outline(token, r)
+## Creates a new Sprite2D party token node. The texture is bound later by
+## _ensure_heraldry_for_party once the paired HeraldryRenderer has rendered.
+func _create_party_token_node() -> Sprite2D:
+	var token := Sprite2D.new()
+	token.centered = true
 	return token
 
 
-## Adds a closed Line2D ring as a child of [param token], named "ActiveOutline".
-## Hidden by default; _style_token shows it when the token is active.
-func _attach_active_outline(token: Polygon2D, r: float) -> void:
-	var outline := Line2D.new()
-	outline.name = "ActiveOutline"
-	var ring: PackedVector2Array = []
-	# Slightly larger than the polygon so the line sits just outside its edge.
-	var ring_r := r + 2.0
-	for i in range(6):
-		var angle_rad := deg_to_rad(60.0 * i)
-		ring.append(Vector2(ring_r * cos(angle_rad), ring_r * sin(angle_rad)))
-	ring.append(ring[0])  # close the loop
-	outline.points = ring
-	outline.width = 2.5
-	outline.default_color = Color(1.0, 0.85, 0.2)
-	outline.antialiased = true
-	outline.visible = false
-	# Z below the polygon so the ring frames the fill cleanly.
-	outline.z_index = -1
-	token.add_child(outline)
+## Styles a party token. Active: full-bright, 1.15× scale. Inactive: slightly
+## desaturated, 0.9× scale. Lets a mid-flight pulse own the scale if active.
+const ACTIVE_SCALE := Vector2(1.15, 1.15)
+const INACTIVE_SCALE := Vector2(0.9, 0.9)
+const ACTIVE_MODULATE := Color(1.0, 1.0, 1.0, 1.0)
+const INACTIVE_MODULATE := Color(0.72, 0.72, 0.78, 1.0)
 
 
-## Styles a party token. Active: full opacity, bright yellow, gold outline ring.
-## Inactive: dimmed (alpha 0.55), desaturated grey-blue, no ring. Both sit at
-## scale 1.0 — the active marker is the outline, not size.
-func _style_token(token: Polygon2D, is_active: bool) -> void:
+func _style_token(token: Sprite2D, is_active: bool) -> void:
 	# Don't fight an in-flight click pulse — leave scale alone if a pulse owns it.
 	if not _pulse_tweens.has(token):
-		token.scale = Vector2.ONE
-	if is_active:
-		token.color = Color(1.0, 0.9, 0.1)  # bright yellow
-		token.modulate = Color(1.0, 1.0, 1.0, 1.0)
-	else:
-		token.color = Color(0.5, 0.55, 0.7)  # desaturated grey-blue
-		token.modulate = Color(1.0, 1.0, 1.0, 0.55)
-	var outline := token.get_node_or_null("ActiveOutline")
-	if outline != null:
-		outline.visible = is_active
+		token.scale = ACTIVE_SCALE if is_active else INACTIVE_SCALE
+	token.modulate = ACTIVE_MODULATE if is_active else INACTIVE_MODULATE
 
 
-## Plays a 200ms scale pulse on [param token] (1.0 → 1.15 → 1.0). Confirms a
-## click landed even when the active party didn't change.
-func _play_click_pulse(token: Polygon2D) -> void:
+## Plays a 200ms scale pulse on [param token]. Confirms a click landed even
+## when the active party didn't change. Restores the steady-state scale at end.
+func _play_click_pulse(token: Sprite2D) -> void:
 	if token == null or not is_instance_valid(token):
 		return
 	# Cancel any prior pulse on this token to avoid stacking tweens.
@@ -739,27 +730,28 @@ func _play_click_pulse(token: Polygon2D) -> void:
 		if prev != null and prev.is_valid():
 			prev.kill()
 		_pulse_tweens.erase(token)
-	token.scale = Vector2.ONE
+	var base_scale := token.scale
+	var pulse_scale := base_scale * 1.15
 	var tw := token.create_tween()
 	tw.set_trans(Tween.TRANS_SINE)
 	tw.set_ease(Tween.EASE_OUT)
-	tw.tween_property(token, "scale", Vector2(1.15, 1.15), 0.1)
-	tw.tween_property(token, "scale", Vector2.ONE, 0.1)
-	tw.finished.connect(_on_pulse_finished.bind(token))
+	tw.tween_property(token, "scale", pulse_scale, 0.1)
+	tw.tween_property(token, "scale", base_scale, 0.1)
+	tw.finished.connect(_on_pulse_finished.bind(token, base_scale))
 	_pulse_tweens[token] = tw
 
 
-func _on_pulse_finished(token: Polygon2D) -> void:
+func _on_pulse_finished(token: Sprite2D, base_scale: Vector2) -> void:
 	if _pulse_tweens.has(token):
 		_pulse_tweens.erase(token)
 	if is_instance_valid(token):
-		token.scale = Vector2.ONE
+		token.scale = base_scale
 
 
-## Returns the Polygon2D token node for [param party_id], or null if absent.
+## Returns the Sprite2D token node for [param party_id], or null if absent.
 ## The "primary" party uses the scene-defined _party_token; all other parties
 ## live in _party_tokens.
-func _token_for_party(party_id: String) -> Polygon2D:
+func _token_for_party(party_id: String) -> Sprite2D:
 	if party_id == GameState.party_id:
 		return _party_token
 	return _party_tokens.get(party_id, null)
@@ -775,6 +767,28 @@ func _on_party_merged(_surviving_id: String, _dissolved_id: String) -> void:
 
 func _on_active_party_switched(_prev_id: String, _new_id: String) -> void:
 	_rebuild_party_tokens()
+
+
+## Looks up which party owns the changed heraldry and re-renders just that
+## token's shield in place. Skips rebuilding all tokens — the change doesn't
+## affect other parties, and the Sprite2D.texture reference remains stable.
+func _on_heraldry_changed(heraldry_id: String) -> void:
+	if GameState.campaign_id.is_empty():
+		return
+	var all_parties: Array = CampaignRepository.list_parties_for_campaign(GameState.campaign_id)
+	for p in all_parties:
+		if str(p.get("heraldry_id", "")) != heraldry_id:
+			continue
+		var pid: String = p.id
+		var renderer: HeraldryRenderer = _heraldry_renderers.get(pid, null)
+		if renderer == null or not is_instance_valid(renderer):
+			# No renderer yet for this party; rebuild will create one on next pass.
+			_rebuild_party_tokens()
+			return
+		var descriptor := CampaignRepository.get_heraldry_for_party(pid)
+		if descriptor != null:
+			renderer.update_descriptor(descriptor, HERALDRY_TOKEN_PX)
+		return
 
 
 ## Places a "D" label marker on each revealed hex that has a dungeon entrance.

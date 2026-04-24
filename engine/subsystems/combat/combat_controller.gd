@@ -460,6 +460,8 @@ func _resolve_next_action() -> Dictionary:
 			and combatant.readied_attack_round < round_number:
 		combatant.has_readied_attack = false
 		combatant.readied_attack_round = 0
+		combatant.readied_trigger_type = ""
+		combatant.readied_trigger_cell = Vector3i.ZERO
 		combat_log.add_entry(
 			CombatLog.EntryType.MOVEMENT, round_number,
 			combatant.id, "",
@@ -643,7 +645,7 @@ func _resolve_combatant_action(
 				"result": {"note": "cleave declined"},
 			}
 		"ready_attack":
-			result = _resolve_ready_attack(combatant)
+			result = _resolve_ready_attack(combatant, parameters)
 		"cast_spell":
 			result = _resolve_cast_spell(combatant, parameters)
 		"move", "move_here":
@@ -910,25 +912,39 @@ func _resolve_pc_cleave_move(combatant: Combatant, parameters: Dictionary) -> Di
 # Ready Attack (held reaction)
 # ---------------------------------------------------------------------------
 
-func _resolve_ready_attack(combatant: Combatant) -> Dictionary:
+func _resolve_ready_attack(combatant: Combatant, parameters: Dictionary = {}) -> Dictionary:
 	## Declare a Ready Attack. The combatant forfeits any remaining movement
 	## and attack for this round; the stored reaction fires the next time an
-	## enemy is in range before that enemy acts, carrying over across rounds
-	## until triggered or until the readied character's next initiative.
+	## enemy satisfies the trigger condition before acting, carrying over
+	## across rounds until triggered or until the readied character's next
+	## initiative.
+	##
+	## parameters:
+	##   trigger_type: one of "melee_adjacent", "ranged_in_range",
+	##                 "ranged_long", "ranged_medium", "ranged_short",
+	##                 "ranged_los", "cell". Defaults to "melee_adjacent".
+	##   trigger_cell: Vector3i — required when trigger_type == "cell".
+	var trigger_type: String = parameters.get("trigger_type", "melee_adjacent")
+	var trigger_cell: Vector3i = parameters.get("trigger_cell", Vector3i.ZERO)
 	combatant.has_readied_attack = true
 	combatant.readied_attack_round = round_number
+	combatant.readied_trigger_type = trigger_type
+	combatant.readied_trigger_cell = trigger_cell
 	# Declaring Ready locks movement for the round (if unused, it is forfeit).
 	combatant.has_moved_this_round = true
 	combat_log.add_entry(
 		CombatLog.EntryType.MOVEMENT, round_number,
 		combatant.id, "",
-		{"note": "readied_attack", "actor_name": combatant.display_name})
+		{"note": "readied_attack", "trigger_type": trigger_type,
+		 "trigger_cell": trigger_cell, "actor_name": combatant.display_name})
 	return {
 		"phase": "action", "status": "action_resolved",
 		"combatant_id": combatant.id, "action": "ready_attack",
 		"result": {
 			"note": "readied attack stored",
 			"readied": true,
+			"trigger_type": trigger_type,
+			"trigger_cell": trigger_cell,
 		},
 	}
 
@@ -955,41 +971,124 @@ func _check_readied_triggers(acting_combatant: Combatant) -> Array:
 		if not _is_readied_target_in_range(pc, acting_combatant):
 			continue
 		var attack_result := _fire_readied_attack(pc, acting_combatant)
-		if not attack_result.is_empty():
-			fired.append(attack_result)
-		# Ready reaction is spent, regardless of hit/miss.
+		if attack_result.is_empty():
+			# Trigger matched but no viable attack path (e.g. cell trigger
+			# outside weapon range). Keep the reaction stored for the next
+			# qualifying trigger instead of silently burning it.
+			continue
+		fired.append(attack_result)
+		# Ready reaction is spent on a resolved attack (hit or miss).
 		pc.has_readied_attack = false
 		pc.readied_attack_round = 0
+		pc.readied_trigger_type = ""
+		pc.readied_trigger_cell = Vector3i.ZERO
 		if not acting_combatant.is_alive():
 			break
 	return fired
 
 
 func _is_readied_target_in_range(shooter: Combatant, target: Combatant) -> bool:
-	## For v1, Ready Attack is melee-range only: trigger fires when the
-	## target is adjacent (3D Chebyshev distance == 1). Ranged Ready Attack
-	## is intentionally deferred.
+	## Dispatches on shooter.readied_trigger_type to decide whether [target]
+	## satisfies the readied trigger. Range checks require a grid; without one,
+	## only non-spatial triggers (none at present) could ever fire.
 	if movement_resolver == null or not movement_resolver.has_grid():
 		return false
-	return movement_resolver.is_adjacent(shooter, target)
+	var trigger: String = shooter.readied_trigger_type
+	if trigger.is_empty():
+		trigger = "melee_adjacent"
+
+	match trigger:
+		"melee_adjacent":
+			return movement_resolver.is_adjacent(shooter, target)
+
+		"cell":
+			# Trigger fires when the target occupies the stored cell.
+			return target.grid_position == shooter.readied_trigger_cell
+
+		"ranged_in_range", "ranged_long", "ranged_medium", \
+				"ranged_short", "ranged_los":
+			var dist_ft: int = movement_resolver.get_distance_ft(shooter, target)
+			if dist_ft < 0:
+				return false
+			var ranges: Dictionary = shooter.get_weapon_ranges()
+			var short_r: int = int(ranges.get("short", 0))
+			var medium_r: int = int(ranges.get("medium", 0))
+			var long_r: int = int(ranges.get("long", 0))
+			if long_r <= 0:
+				return false
+			# Must be in attackable distance (≤ long range) regardless of
+			# trigger variant.
+			if dist_ft > long_r:
+				return false
+			# Line of sight is required for all ranged variants.
+			if not movement_resolver.has_line_of_sight_combatants(shooter, target):
+				return false
+			match trigger:
+				"ranged_in_range":
+					return true
+				"ranged_long":
+					return dist_ft > medium_r and dist_ft <= long_r
+				"ranged_medium":
+					return dist_ft > short_r and dist_ft <= medium_r
+				"ranged_short":
+					return dist_ft >= 0 and dist_ft <= short_r
+				"ranged_los":
+					return true  # already validated LOS + within long range
+			return false
+
+	# Unknown trigger type: never fire.
+	return false
 
 
 func _fire_readied_attack(shooter: Combatant, target: Combatant) -> Dictionary:
-	## Resolve a single melee readied attack. Cleave kills count toward the
-	## normal per-round cleave budget; the chain resolves non-interactively
-	## (same as monster cleave) to keep the reaction atomic.
-	if attack_resolver == null:
+	## Resolve a single readied attack. Chooses melee vs ranged based on
+	## adjacency and weapon capability. Cleave kills count toward the normal
+	## per-round cleave budget; the chain resolves non-interactively (same
+	## as monster cleave) to keep the reaction atomic.
+	if attack_resolver == null or movement_resolver == null:
 		return {}
 	# Face the target.
 	shooter.facing = _direction_vector(shooter.grid_position, target.grid_position)
+
+	var is_adjacent: bool = movement_resolver.is_adjacent(shooter, target)
+	var has_melee: bool = shooter.has_melee_capability()
+	var has_ranged: bool = shooter.has_ranged_capability() \
+			and shooter.get_ammo_count() != 0 \
+			and ranged_resolver != null
+
+	# Melee preferred when the target is adjacent and a melee option exists;
+	# otherwise fall back to ranged (if available and in attackable distance).
+	var use_ranged: bool = not (is_adjacent and has_melee) and has_ranged
+	if not use_ranged and not (is_adjacent and has_melee):
+		# No viable path (e.g. readied melee trigger fired by a cell trigger
+		# against a target that turned out to be out of reach). Release.
+		return {}
+
 	combat_log.add_entry(
 		CombatLog.EntryType.ATTACK, round_number,
 		shooter.id, target.id,
 		{"note": "readied_attack_fires", "actor_name": shooter.display_name,
-		 "target_name": target.display_name})
-	var attack_result: Dictionary = attack_resolver.resolve_melee_attack(
-		shooter, target, "", 0)
+		 "target_name": target.display_name,
+		 "trigger_type": shooter.readied_trigger_type,
+		 "is_ranged": use_ranged})
+
+	var attack_result: Dictionary
+	if use_ranged:
+		var weapon_data: Dictionary = shooter.get_equipped_weapon()
+		var distance_ft: int = movement_resolver.get_distance_ft(shooter, target)
+		if distance_ft < 0:
+			distance_ft = 30  # default, shouldn't happen on a grid
+		var target_in_melee: bool = movement_resolver.is_engaged(target)
+		attack_result = ranged_resolver.resolve_ranged_attack(
+			shooter, target, weapon_data, distance_ft, target_in_melee, 0)
+		# Ammunition is consumed on hit or miss.
+		shooter.consume_ammo()
+	else:
+		attack_result = attack_resolver.resolve_melee_attack(
+			shooter, target, "", 0)
+
 	attack_result["is_readied"] = true
+	attack_result["is_ranged"] = use_ranged
 	attack_result["attacker_id"] = shooter.id
 	attack_result["attacker_name"] = shooter.display_name
 	attack_result["target_id"] = target.id
@@ -999,7 +1098,9 @@ func _fire_readied_attack(shooter: Combatant, target: Combatant) -> Dictionary:
 	if attack_result.get("target_downed", false):
 		roster.record_casualty(target, round_number)
 		_check_morale_after_casualty(target)
-		# Non-interactive cleave chain from the readied kill.
+		# Non-interactive cleave chain from the readied kill. Ranged kills
+		# only chain if the shooter remains in melee adjacency with another
+		# enemy (the chain's internal adjacency check gates this).
 		if cleave_resolver != null and cleave_resolver.can_cleave(shooter):
 			var killing_attack := {
 				"damage": "",

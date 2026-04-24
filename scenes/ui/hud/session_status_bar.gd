@@ -9,10 +9,19 @@ extends CanvasLayer
 ## Hidden during MAIN_MENU and CHARACTER_CREATION states.
 ## Visible during EXPLORATION, COMBAT, DOWNTIME, DOMAIN.
 
-const BAR_HEIGHT := 72  # 56 portrait + 8 padding top/bottom
+## Two-row layout: portraits (top) + widgets (bottom). Portraits live in their
+## own row so they cannot be visually overrun by the time / rations / speeds
+## widgets at small viewport widths.
+const PORTRAIT_ROW_HEIGHT := 60   # 56 portrait + 4 padding
+const WIDGET_ROW_HEIGHT := 64
+const BAR_HEIGHT := PORTRAIT_ROW_HEIGHT + WIDGET_ROW_HEIGHT + 8
 const FONT_SIZE := 12
 const SMALL_FONT_SIZE := 10
 const PORTRAIT_SIZE := Vector2(56, 56)
+## Padding around each portrait inside its slot wrapper. Per-portrait slot is
+## PORTRAIT_SIZE + 2*PORTRAIT_SLOT_PADDING wide; clip_contents on the slot
+## guarantees the portrait can never visually overlap a neighbor.
+const PORTRAIT_SLOT_PADDING := 2
 const LABEL_COLOR := Color(0.85, 0.80, 0.70, 1.0)
 const DIM_COLOR := Color(0.55, 0.50, 0.42, 1.0)
 const BG_COLOR := Color(0.08, 0.06, 0.04, 0.95)
@@ -93,10 +102,34 @@ func _build_ui() -> void:
 	_bar.add_theme_stylebox_override("panel", style)
 	add_child(_bar)
 
+	# Two rows: portraits on top (so the per-character slots never get squeezed
+	# by the time / rations / speeds widgets), info widgets on the bottom.
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	_bar.add_child(vbox)
+
+	# --- Top row: party-member portrait strip ----------------------------
+	# CenterContainer keeps the strip centered without competing with siblings
+	# in an alignment-driven hbox; clip_contents on the strip prevents any
+	# theoretical overflow from rendering outside its zone.
+	var portrait_row := CenterContainer.new()
+	portrait_row.custom_minimum_size = Vector2(0, PORTRAIT_ROW_HEIGHT)
+	portrait_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_child(portrait_row)
+
+	_portraits_hbox = HBoxContainer.new()
+	_portraits_hbox.add_theme_constant_override("separation", 4)
+	_portraits_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	_portraits_hbox.clip_contents = true
+	portrait_row.add_child(_portraits_hbox)
+
+	# --- Bottom row: location / time / speed / rations / speeds / camp ---
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 16)
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	_bar.add_child(hbox)
+	hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(hbox)
 
 	# Location.
 	_location_label = _make_label("--", LABEL_COLOR, FONT_SIZE)
@@ -123,22 +156,6 @@ func _build_ui() -> void:
 	hbox.add_child(_pause_reason_label)
 
 	hbox.add_child(_vsep())
-
-	# Left spacer: takes half the slack so portraits appear centered in the bar.
-	var spacer_left := Control.new()
-	spacer_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox.add_child(spacer_left)
-
-	# Party-member portrait strip (populated on active_party_changed).
-	_portraits_hbox = HBoxContainer.new()
-	_portraits_hbox.add_theme_constant_override("separation", 4)
-	_portraits_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	hbox.add_child(_portraits_hbox)
-
-	# Right spacer: balances the left spacer so portraits stay centered.
-	var spacer_right := Control.new()
-	spacer_right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox.add_child(spacer_right)
 
 	# Rations sub-panel (wilderness only).
 	_rations_panel = _build_rations_panel()
@@ -326,9 +343,13 @@ func _on_dungeon_focus_level_changed(level: int) -> void:
 	_apply_level_badges()
 
 
-## Portrait button handler — emits party_portrait_clicked. The dungeon renderer
-## listens, resolves the voxel position, and focuses + selects.
+## Portrait button handler — opens the character sheet AND emits the legacy
+## party_portrait_clicked signal so the dungeon renderer can also focus the
+## entity's level (existing Session 8 behavior).
 func _on_portrait_pressed(character_id: String) -> void:
+	if character_id.is_empty():
+		return
+	EventBus.character_sheet_requested.emit(character_id)
 	EventBus.party_portrait_clicked.emit(character_id)
 
 
@@ -373,6 +394,20 @@ func _refresh_party_portraits(party_id: String) -> void:
 		var texture: Texture2D = _resolve_portrait(portrait_id)
 		var display_name: String = str(row.get("name", ""))
 
+		# Slot wrapper: fixed-size PanelContainer that clips its contents so a
+		# portrait can never visually overlap a neighbor regardless of how
+		# tightly the bar gets squeezed.
+		var slot := PanelContainer.new()
+		var slot_size := Vector2(
+			PORTRAIT_SIZE.x + PORTRAIT_SLOT_PADDING * 2,
+			PORTRAIT_SIZE.y + PORTRAIT_SLOT_PADDING * 2)
+		slot.custom_minimum_size = slot_size
+		slot.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		slot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		slot.clip_contents = true
+		slot.add_theme_stylebox_override("panel", _portrait_slot_style())
+		slot.set_meta("character_id", character_id)
+
 		var btn := Button.new()
 		btn.flat = true
 		btn.focus_mode = Control.FOCUS_NONE
@@ -409,11 +444,33 @@ func _refresh_party_portraits(party_id: String) -> void:
 		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		btn.add_child(badge)
 
-		_portraits_hbox.add_child(btn)
+		slot.add_child(btn)
+		_portraits_hbox.add_child(slot)
 		if not character_id.is_empty():
 			_portrait_badges[character_id] = badge
 
 	_apply_level_badges()
+
+
+## Subtle border around each portrait slot — makes the per-character zones
+## visually distinct so two portraits never read as merged at a glance.
+func _portrait_slot_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0)  # transparent — let the bar BG show through
+	style.border_color = Color(0.46, 0.33, 0.19, 0.55)
+	style.border_width_left = 1
+	style.border_width_right = 1
+	style.border_width_top = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left = 3
+	style.corner_radius_top_right = 3
+	style.corner_radius_bottom_left = 3
+	style.corner_radius_bottom_right = 3
+	style.content_margin_left = PORTRAIT_SLOT_PADDING
+	style.content_margin_right = PORTRAIT_SLOT_PADDING
+	style.content_margin_top = PORTRAIT_SLOT_PADDING
+	style.content_margin_bottom = PORTRAIT_SLOT_PADDING
+	return style
 
 
 ## Resolves a portrait texture by id. Shipped portraits live under

@@ -31,6 +31,10 @@ Timekeeping="*res://engine/autoloads/timekeeping.gd"
 PartyWallet="*res://engine/subsystems/commerce/party_wallet.gd"
 LocationCacheManager="*res://engine/subsystems/inventory/location_cache_manager.gd"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godot-sqlite/plugin.cfg")
+
 [input]
 
 roll_log_toggle={

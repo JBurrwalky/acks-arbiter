@@ -56,6 +56,12 @@ func run_all_tests() -> void:
 	test_preset_library_loads()
 	test_preset_library_random_returns_valid()
 
+	# ---- HeraldryRenderer polygon scaling (pure math) ----
+	test_renderer_scale_polygon_identity()
+	test_renderer_scale_polygon_64px()
+	test_renderer_scale_polygon_256px()
+	test_renderer_scale_polygon_empty()
+
 	# ---- CampaignRepository heraldry CRUD ----
 	_setup_campaign()
 	test_repo_save_and_get()
@@ -307,6 +313,43 @@ func test_preset_library_random_returns_valid() -> void:
 		check(FieldDivisionRegistry.has_division(d.division_id), "preset division_id '%s' resolves" % d.division_id)
 		if not d.ordinary_id.is_empty():
 			check(OrdinaryRegistry.has_ordinary(d.ordinary_id), "preset ordinary_id '%s' resolves" % d.ordinary_id)
+
+
+# ---------------------------------------------------------------------------
+# HeraldryRenderer polygon scaling
+# ---------------------------------------------------------------------------
+
+func test_renderer_scale_polygon_identity() -> void:
+	# Size 1 — coordinates pass through unchanged.
+	var out := HeraldryRenderer.scale_normalized_polygon(
+		[Vector2(0.25, 0.5), Vector2(0.75, 0.0)], 1)
+	check(out.size() == 2, "output matches input length")
+	check(out[0] == Vector2(0.25, 0.5), "identity scaling preserves first point")
+	check(out[1] == Vector2(0.75, 0.0), "identity scaling preserves second point")
+
+
+func test_renderer_scale_polygon_64px() -> void:
+	# Normalized shield corners at 64px viewport → (0,0), (64,0), (64,64), (0,64).
+	var out := HeraldryRenderer.scale_normalized_polygon([
+		Vector2(0.0, 0.0), Vector2(1.0, 0.0),
+		Vector2(1.0, 1.0), Vector2(0.0, 1.0),
+	], 64)
+	check(out[0] == Vector2(0, 0), "(0,0) maps to (0,0)")
+	check(out[1] == Vector2(64, 0), "(1,0) maps to (64,0)")
+	check(out[2] == Vector2(64, 64), "(1,1) maps to (64,64)")
+	check(out[3] == Vector2(0, 64), "(0,1) maps to (0,64)")
+
+
+func test_renderer_scale_polygon_256px() -> void:
+	# Editor preview size — same normalized input should scale linearly.
+	var out := HeraldryRenderer.scale_normalized_polygon(
+		[Vector2(0.5, 0.5)], 256)
+	check(out[0] == Vector2(128, 128), "0.5 at size 256 gives 128")
+
+
+func test_renderer_scale_polygon_empty() -> void:
+	var out := HeraldryRenderer.scale_normalized_polygon([], 64)
+	check(out.size() == 0, "empty input returns empty output")
 
 
 # ---------------------------------------------------------------------------

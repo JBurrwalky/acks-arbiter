@@ -5,6 +5,12 @@
       "file": "brave_companions.json",
       "name": "The Brave Companions",
       "description": "A balanced party of six adventurers ready for glory."
+    },
+    {
+      "id": "falcons_crown",
+      "file": "falcons_crown.json",
+      "name": "The Falcon's Crown",
+      "description": "A balanced starting company of six sworn to the Falcon's Crown."
     }
   ]
 }

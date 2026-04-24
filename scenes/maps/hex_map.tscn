@@ -11,7 +11,11 @@ script = ExtResource("1_renderer")
 
 [node name="EntityLayer" type="Node2D" parent="."]
 
-[node name="PartyToken" type="Polygon2D" parent="EntityLayer"]
+[node name="PartyToken" type="Sprite2D" parent="EntityLayer"]
+centered = true
+
+[node name="HeraldryHolder" type="Node2D" parent="."]
+visible = false
 
 [node name="Camera2D" type="Camera2D" parent="."]
 

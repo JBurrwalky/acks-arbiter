@@ -102,6 +102,20 @@ var has_readied_attack: bool = false
 ## Round in which the Ready Attack was declared (for log / debugging).
 var readied_attack_round: int = 0
 
+## Readied trigger type. One of:
+##   "melee_adjacent"  — any enemy adjacent to the shooter (default for melee)
+##   "ranged_in_range" — any enemy within weapon long range with LOS
+##   "ranged_long"     — any enemy in the long range band with LOS
+##   "ranged_medium"   — any enemy in the medium range band with LOS
+##   "ranged_short"    — any enemy in the short range band with LOS
+##   "ranged_los"      — any enemy with LOS (within long range to be attackable)
+##   "cell"            — any enemy occupying [readied_trigger_cell]
+var readied_trigger_type: String = ""
+
+## For "cell" trigger, the 3D cell that activates the readied attack when
+## an enemy occupies it. Ignored for other trigger types.
+var readied_trigger_cell: Vector3i = Vector3i.ZERO
+
 ## ID of the combatant holding this one in a wrestling hold (empty = not held).
 var held_by_id: String = ""
 

@@ -7400,3 +7400,226 @@ Suite count back to 24.
 4. Optional polish: HUD indicator on the readied PC's token (e.g. a small "R" glyph or a pulsing outline) so the player can see at a glance which PCs are holding a reaction.
 5. Consider ranged Ready Attack once the trigger model proves out.
 
+---
+
+## Session 2026-04-23 — Ready Attack: Ranged Triggers + Cell Triggers
+
+**Task:** Extend Ready Attack from the melee-adjacent-only v1 to cover the full set of ACKS-flavored trigger conditions: first enemy to be within any weapon range, first to enter a specific range band (long/medium/short), first in line of sight, and first to enter a specific cell (also usable in melee for adjacent-cell guard duty).
+**Model used:** Opus 4.7
+**Completed:**
+
+- **Trigger-type state on Combatant.** Added `readied_trigger_type: String` and `readied_trigger_cell: Vector3i` alongside the existing `has_readied_attack` / `readied_attack_round` fields. Trigger types: `melee_adjacent`, `ranged_in_range`, `ranged_long`, `ranged_medium`, `ranged_short`, `ranged_los`, `cell`. State is cleared when the ready fires, expires, or is carried over.
+- **Submenu of trigger conditions.** [combat_context_menu_builder.gd `_build_ready_attack_submenu`](engine/subsystems/combat/combat_context_menu_builder.gd) — replaces the flat "Ready Attack" entry with a `Ready Attack ▸` submenu whose contents are filtered by the PC's equipped weapon:
+  - Melee entries: "any adjacent enemy", "at a specific cell..." (any same-level neighbor).
+  - Ranged entries (when a ranged weapon is equipped with ammo): "any enemy within N ft", "first to enter long range", "first to enter medium range", "first to enter short range", "first in line of sight", "at a specific cell...".
+  - Range-band labels interpolate actual weapon range bands from `combatant.get_weapon_ranges()`.
+  - Submenu closes over `"← Back"` (`submenu_back`) for parity with the Combat Maneuver submenu.
+- **Controller trigger dispatch.** [combat_controller.gd `_is_readied_target_in_range`](engine/subsystems/combat/combat_controller.gd) now switches on `shooter.readied_trigger_type`:
+  - `melee_adjacent` → `movement_resolver.is_adjacent`.
+  - `cell` → `target.grid_position == shooter.readied_trigger_cell` (simple positional equality, no range/LOS pre-filter — the attack path decides viability).
+  - Ranged variants → distance-ft + LOS check via `movement_resolver.get_distance_ft` + `has_line_of_sight_combatants`, with band-specific distance gating for long/medium/short.
+- **Ranged fire path.** [combat_controller.gd `_fire_readied_attack`](engine/subsystems/combat/combat_controller.gd) now picks melee vs ranged at fire time: adjacent + melee-capable → melee; otherwise ranged (when capable + ammo). Ranged path builds the weapon_data dict from `get_equipped_weapon`, resolves via `ranged_resolver.resolve_ranged_attack(shooter, target, weapon_data, distance_ft, target_in_melee, 0)`, and calls `consume_ammo` on hit or miss. Cell-triggered readies that turn out to have no viable attack path (e.g. target not in range and no ranged weapon) return an empty dict and [`_check_readied_triggers`](engine/subsystems/combat/combat_controller.gd) now *preserves* the reaction for the next qualifying trigger rather than silently burning it.
+- **UI cell-selection sub-state.** [combat_ui_controller.gd](scenes/ui/combat/combat_ui_controller.gd) — new `PC_SELECTING_READY_CELL` state, `_enter_ready_cell_selection(weapon)` helper, `_build_ready_cell_candidates(weapon)` helper:
+  - Melee candidates: same-level neighbors that exist on the voxel map.
+  - Ranged candidates: all voxel cells within weapon long range (feet/5) with LOS from the shooter's 2D position.
+  - Candidates are highlighted orange (distinct from yellow cleave/facing highlights).
+  - Left-click a candidate cell → submits `ready_attack` with `trigger_type="cell"`, `trigger_cell=clicked`, `trigger_weapon`.
+  - Left-click an entity in this state is routed to the entity's current cell (lets the player click a cell that already holds an enemy).
+  - Right-click or `on_cancel()` returns to `PC_AWAITING_INPUT` without consuming the action.
+  - New signal `ready_cell_selection_started(combatant_id, weapon)` — available for hosts that want to add affordances (not required; the orange highlight is the primary feedback).
+- **Context-menu dispatch additions.** `on_context_action` handles three new action types:
+  - `ready_attack` with `trigger_type` parameter → submits the ready directly.
+  - `ready_attack_cell` → enters the new cell-selection state.
+  - `ready_attack_submenu` → parent submenu entry (no-op dispatch; the submenu itself is rendered by `dungeon_context_menu.gd`).
+
+**Decisions made:**
+
+- **"First to enter" is modeled as "first to satisfy the condition on check"**, not as a transition edge. If an enemy is already in long range when a PC readies, and their initiative comes up next, the ready fires on that turn. Tracking true enter-transitions would require per-step movement hooks; that's out of scope and the current behavior is close enough to the player intent that it plays cleanly.
+- **Cell trigger equality is a pure `grid_position` match.** Enemies who *pass through* the cell but don't end there don't trigger. Tracking path-of-movement would require mid-movement hooks into `move_along_path`. Noted as a known limitation.
+- **Ranged cleave is gated by the normal cleave chain adjacency check.** A ranged readied kill chains only if the shooter happens to also be adjacent to another enemy (rare). This matches the existing monster cleave semantics.
+- **LOS candidates use 2D projection** — consistent with `RangedAttackResolver`'s LOS handling; 3D LOS across levels is deferred to whatever broader LOS work covers that case.
+- **No-viable-path triggers preserve the reaction.** See `_check_readied_triggers` change above.
+
+**Interfaces defined or changed:**
+
+- `Combatant.readied_trigger_type: String` — trigger dispatch key; empty string is treated as `melee_adjacent`.
+- `Combatant.readied_trigger_cell: Vector3i` — stored 3D cell for the `cell` trigger variant.
+- `CombatController._resolve_ready_attack(combatant, parameters: Dictionary = {})` — now reads `trigger_type` and `trigger_cell` out of `parameters`.
+- `CombatUIController.ready_cell_selection_started(combatant_id: String, weapon: String)` — signal emitted when entering `PC_SELECTING_READY_CELL`.
+- New UI controller state `PC_SELECTING_READY_CELL`.
+- New context-menu action types: `ready_attack_cell`, `ready_attack_submenu` (dispatched within `on_context_action`).
+
+**Tests added/updated:**
+
+- None this session. The existing `test_combat_context_menu_builder` self-click test still checks for the presence of `ready_attack` by id and does not assert its structure, so adding a submenu does not break it.
+
+**Known issues:**
+
+- **"First to enter" = "first to satisfy on check"** — noted above. Functionally close; not a bug, a semantic simplification.
+- **Cell trigger only fires on end-of-movement occupation** — a monster that transits through the readied cell but stops somewhere else does not fire the trigger. Mid-movement hooks are out of scope.
+- **No path preview before submitting a cell-targeted ready.** Candidate cells are highlighted orange; LOS is pre-filtered; but the actual attack line at fire time is not drawn in advance.
+- **Ranged Ready has no recovery UI if the readied-cell candidate set is empty** (e.g. PC boxed in with no LOS). The state silently reverts to `PC_AWAITING_INPUT` — the player sees nothing happen and has to right-click-ready again with a different option. A small toast/log line here would be nicer.
+- **Godot CLI still not on PATH** — all verification must go through the editor's `tests/test_runner.tscn`.
+
+**Next session should:**
+
+1. Smoke-test the trigger variants in live combat: ranged PC readies with each of the 4 range variants; LOS variant against an enemy that breaks/regains LOS; cell variant where (a) cell is currently empty, (b) cell currently has an enemy token.
+2. Optional: add `test_ready_attack_cell_trigger`, `test_ready_attack_ranged_band_gating`, `test_ready_attack_preserved_when_no_viable_path` tests.
+3. Optional UX: a small toast log line when the readied-cell candidate set is empty; a "Cancel Ready" button on the action panel while in `PC_SELECTING_READY_CELL` (alongside the right-click cancel path).
+4. Consider mid-movement trigger hooks if playtesting surfaces the "transited the cell but didn't stop" case as actually common.
+
+---
+
+## Session 2026-04-23 — SessionStatusBar Two-Row Layout + Per-Portrait Slots + Click-to-Open Character Sheet
+
+**Task:** Two HUD bugs surfaced when running the game at the Godot editor's default window size (1152×648):
+1. The party-portrait strip in the bottom status bar was visually getting overlapped by the time / rations / speeds widgets — at narrow viewport widths the bar's single-row HBoxContainer's total min width exceeded the viewport, and the centered portraits collided with widgets to their left and right.
+2. Clicking a portrait emitted `EventBus.party_portrait_clicked` (Session 8 — focuses dungeon level + selects entity) but did NOT open the character sheet, which the user expects to be the primary action of clicking a portrait.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+[scenes/ui/hud/session_status_bar.gd](scenes/ui/hud/session_status_bar.gd) — three changes:
+
+- **Two-row layout.** `_bar` now wraps a `VBoxContainer` instead of a single `HBoxContainer`. Top row is a `CenterContainer` housing the portrait strip; bottom row is the existing widget hbox (location / time / clock / pause / rations / speeds / camp). Portraits no longer compete with other widgets for horizontal space, so they cannot be visually overrun no matter how narrow the viewport gets.
+  - New constants: `PORTRAIT_ROW_HEIGHT = 60`, `WIDGET_ROW_HEIGHT = 64`, `BAR_HEIGHT = PORTRAIT_ROW_HEIGHT + WIDGET_ROW_HEIGHT + 8 = 132` (was 72).
+  - Removed the `spacer_left` / `spacer_right` `SIZE_EXPAND_FILL` siblings around the portrait strip — they were the original horizontal-centering trick and are no longer needed now that the portraits live in a `CenterContainer` row.
+  - `_portraits_hbox` now has `clip_contents = true` as a belt-and-suspenders against any pathological future layout.
+- **Per-portrait slot wrapper.** `_refresh_party_portraits` builds each portrait inside a `PanelContainer` slot of fixed size `PORTRAIT_SIZE + 2*PORTRAIT_SLOT_PADDING` with `clip_contents = true` and a subtle hairline border (matching the bar's own `BORDER_COLOR` at 0.55 alpha). The slot makes each per-character zone visually distinct at a glance and guarantees no portrait can render over a neighbor regardless of the parent's layout decisions.
+  - New constant: `PORTRAIT_SLOT_PADDING = 2` (so each slot is 60×60 around a 56×56 portrait).
+  - New helper `_portrait_slot_style()` returns the slot's `StyleBoxFlat`.
+- **Click opens character sheet.** `_on_portrait_pressed(character_id)` now emits `EventBus.character_sheet_requested.emit(character_id)` in addition to the legacy `EventBus.party_portrait_clicked.emit(character_id)`. The character_sheet_overlay listens to `character_sheet_requested.connect(open)` (overlay's `open(character_id)` selects the right character), so the click now opens the sheet pre-selected to the clicked PC. The party-portrait-clicked emission is preserved so the dungeon renderer's level-focus-on-portrait-click behavior (Session 8) still works — both consumers fire on a single click.
+
+**Decisions made:**
+
+- **Two rows, not horizontal scrolling.** Scrolling would have hidden some widgets behind a scroll affordance and made the bar feel less informational at a glance. Stacking is the standard "more breathing room" answer for a HUD that's run out of horizontal space at small viewports.
+- **Slot wrapper has a visible border, not just `clip_contents`.** A pure clip would prevent visual overrun but leave the per-character zones reading as a single blob. The hairline border at 0.55 alpha makes the slots feel discrete without competing with the portrait artwork — same intent as the dungeon HUD chip styling.
+- **Both signals fire on click, not just `character_sheet_requested`.** The dungeon renderer's Session 8 wiring (portrait click → focus that PC's level + select their token) is still useful and not replaced by opening the sheet — the focus shift is "show me where they are" and the sheet open is "tell me about them". Keeping both means the click is doubly-useful in the dungeon and harmless elsewhere.
+- **`BAR_HEIGHT` is computed from row constants, so dependent overlays auto-adjust.** [character_sheet_overlay.gd:115](scenes/ui/character_sheet/character_sheet_overlay.gd#L115), [combat_screen.gd:226](scenes/ui/combat/combat_screen.gd#L226), [dungeon_combat_overlay.gd:199](scenes/ui/combat/dungeon_combat_overlay.gd#L199), [session_runner.gd:390](engine/subsystems/session/session_runner.gd#L390) all read `SessionStatusBar.BAR_HEIGHT` at runtime — no manual updates needed; they leave 60 px more room above the bar.
+
+**Interfaces defined or changed:**
+
+- `SessionStatusBar.BAR_HEIGHT` — value changed from 72 to 132. Public consumers via `SessionStatusBar.BAR_HEIGHT` automatically pick up the new value (verified in 4 call sites).
+- `SessionStatusBar.PORTRAIT_ROW_HEIGHT` / `WIDGET_ROW_HEIGHT` / `PORTRAIT_SLOT_PADDING` — new constants.
+- Click contract on portrait buttons: now emits TWO signals on press — `EventBus.character_sheet_requested(character_id)` first, then `EventBus.party_portrait_clicked(character_id)`. Existing subscribers on either signal continue to work unchanged.
+- `SessionStatusBar._portrait_slot_style() -> StyleBoxFlat` — new private helper.
+
+**Database changes:** None.
+
+**Tests added/updated:** None — this is a pure UI restructure. Visual smoke test required:
+1. Launch the game in the editor at default window size.
+2. Confirm the bar renders as two rows: portraits on top, widgets on bottom.
+3. Confirm each portrait sits inside a visible bordered slot.
+4. Confirm the bar widens / squeezes the WIDGET row first; the portrait row stays well-spaced.
+5. Click a portrait — character sheet overlay opens with that character pre-selected.
+6. In a multi-level dungeon, click a non-focus-level PC's portrait — sheet opens AND camera/focus moves to that PC's level (Session 8 behavior preserved).
+7. Verify the four overlays that read `SessionStatusBar.BAR_HEIGHT` auto-adjust: character sheet overlay, combat screen, dungeon combat overlay, entity outliner.
+
+**Known issues:**
+
+- **Bar is now 60 px taller** (132 vs 72). At 648-px-tall viewports this eats ~20% of vertical space. If users complain, options: (a) make the portrait row a single-row toggleable popup; (b) shrink portrait size from 56 to 40; (c) only show the portrait row when in EXPLORATION/COMBAT (matches current visibility but doesn't reduce height). Defer until playtest feedback.
+- **Slot border is purely cosmetic.** It does not change selection state or indicate "active" PC — that's still the dungeon renderer's job via the level focus marker. Adding active-PC highlighting on the slot is a follow-up if the user wants it.
+- **No keyboard shortcut to open the sheet from a portrait** — hover + click only. Accessibility follow-up if needed.
+
+**Next session should:**
+
+1. Visual smoke test the new bar layout per the test list above.
+2. Resume the wilderness Part 2 smoke test (items 2.1, 2.3, 2.4, 2.5, 2.8) now that 2.2/2.6/2.7 closed in the prior batch.
+3. Continue with Parts 3+ of the wilderness smoke test plan.
+
+---
+
+## Session 2026-04-23 — Heraldry Builder Sessions 0, 1, 2 (asset import + data plumbing + hex-map shield tokens)
+
+**Task:** Ship Sessions 0, 1, and 2 of the heraldry builder per `C:/Users/jttau/.claude/plans/start-planning-work-on-harmonic-lerdorf.md`. Session 0 = asset import. Session 1 = shared type + registries + DB migration + CampaignRepository methods + EventBus signal + session-load backfill + tests. Session 2 = HeraldryRenderer + mask shader + hex-map refactor to use Sprite2D tokens backed by rendered shield textures.
+
+**Model used:** Opus 4.7 (1M context) — exploration, planning, implementation.
+
+**Completed (Session 0 — asset import):**
+
+- Copied 760 charge PNGs from `C:/Users/jttau/wikiscraper/heraldry_charges/` -> `assets/heraldry/charges/`.
+- Copied 16 escutcheon PNGs (8 shapes x mask+outline) from `C:/Users/jttau/wikiscraper/heraldry_escutcheons/` -> `assets/heraldry/escutcheons/`, renaming to snake_case regional IDs (english, german, italian, swiss, old_french, polish_xvib, polish_xixa, polish_xixc).
+- Wrote `data/heraldry/shield_shapes.json` (8 entries) and `data/heraldry/presets.json` (12 hand-authored starter presets).
+- Wrote `tools/heraldry/build_charges_catalog.py` (dev-only generator), ran it to produce `data/heraldry/charges.json` (760 entries, tags empty in v1).
+- Wrote `tools/heraldry/README.md` documenting the import provenance and the deferred content-tagging pass.
+
+**Completed (Session 1 — data plumbing):**
+
+- `engine/shared_types/heraldry_descriptor.gd` — `HeraldryDescriptor` with `from_dict` / `to_dict`, `#RRGGBB` color serialization, `visual_hash()` for renderer caches, and `duplicate_descriptor()` for editor working copies.
+- Five registries under `engine/subsystems/heraldry/`:
+  - `shield_shape_registry.gd`, `charge_registry.gd` — JSON-backed catalog loaders.
+  - `field_division_registry.gd`, `ordinary_registry.gd` — code-defined `const` dicts with normalized polygon geometry.
+  - `tincture_palette.gd` — seven named tinctures + luminance-based `is_low_contrast(a, b)` predicate for the soft rule-of-tincture warning.
+  - `preset_library.gd` — loads 12 presets; exposes `get_random_preset_descriptor()` / `get_preset_descriptor(id)`.
+- `db/migrations/038_party_heraldry.sql` — new `party_heraldry` table + `parties.heraldry_id` FK. Mirrored in `db/schema.sql`.
+- Five heraldry methods on `engine/autoloads/campaign_repository.gd` — `get_heraldry`, `get_heraldry_for_party`, `save_heraldry` (upsert + emits signal), `assign_heraldry_to_party`, `create_default_heraldry_for_party(party_id, preset_library=null)`.
+- `EventBus.heraldry_changed(heraldry_id: String)` signal.
+- Session-load backfill in `engine/subsystems/session/states/session_load_state.gd` — `_backfill_party_heraldry(campaign_id)` iterates `list_parties_for_campaign`, creates a random preset for each party with a NULL `heraldry_id`. Shares one `PresetLibrary` across the pass. Idempotent.
+- `tests/test_heraldry_data.gd` — 33 tests covering descriptor round-trip, color hex parsing edge cases, all five registries, preset library validity, renderer polygon-scaling math, and full DB CRUD round-trip. Registered in `test_runner.gd` and `test_runner.tscn` as `HeraldryDataTests`.
+
+**Completed (Session 2 — renderer + hex-map integration):**
+
+- `engine/subsystems/heraldry/heraldry_renderer.gd` — `HeraldryRenderer` (Node2D with a SubViewport child). Exposes `update_descriptor(desc, size)` and `get_texture()`. ViewportTexture is stable across descriptor changes so consumer Sprite2Ds don't need to re-reference. Layer composition: `CanvasGroup` (shader-masked) over `{primary fill, secondary division polygons, non-bordure ordinary polygons, centered charge sprite}`, plus an unmasked outline sprite on top of the group. Bordure is the outer ordinary-tincture fill behind a scaled-down inner group (v1 approximation — rim doesn't follow curve precisely).
+- `engine/subsystems/heraldry/heraldry_mask.gdshader` — `canvas_item` shader that multiplies the CanvasGroup's rendered alpha by the shield mask texture's alpha channel.
+- `scenes/maps/hex_map.tscn` — `PartyToken` changed from Polygon2D to Sprite2D (centered=true). New `HeraldryHolder` Node2D sibling (invisible) hosts per-party HeraldryRenderer instances.
+- `scenes/maps/hex_map_renderer.gd` refactor:
+  - `_party_token: Sprite2D` (was Polygon2D).
+  - New `_heraldry_renderers: Dictionary` (party_id -> HeraldryRenderer) and `_heraldry_holder: Node2D` reference.
+  - Removed the hex-polygon setup block, the `ActiveOutline` Line2D ring, and the `_attach_active_outline` helper.
+  - `_rebuild_party_tokens()` unified primary + split parties through `_get_or_create_token_for_party(pid)` and `_ensure_heraldry_for_party(pid, token)`. Stale party cleanup frees both the token Sprite2D and the paired HeraldryRenderer.
+  - `_create_party_token_node()` returns bare Sprite2D; texture bound lazily by `_ensure_heraldry_for_party`.
+  - `_style_token(Sprite2D, is_active)` uses scale + modulate only (1.15x bright vs 0.9x desaturated). Constants `ACTIVE_SCALE` / `INACTIVE_SCALE` / `ACTIVE_MODULATE` / `INACTIVE_MODULATE`.
+  - `_play_click_pulse` pulses from current baseline scale to x1.15 and back, so the click animation respects active/inactive steady state.
+  - New `_on_heraldry_changed(heraldry_id)` handler — finds the party whose `heraldry_id` matches and calls `update_descriptor` on just its renderer. Falls back to full `_rebuild_party_tokens` if the renderer isn't instantiated yet.
+  - `EventBus.heraldry_changed.connect(_on_heraldry_changed)` in `_ready()`.
+- `tests/test_heraldry_data.gd` — 4 new tests for `HeraldryRenderer.scale_normalized_polygon` (identity, 64-px, 256-px, empty input).
+- `docs/coding_conventions.md` §21 added — Heraldry Subsystem conventions (type, registries, rendering pipeline, normalized coords, persistence, EventBus contract, hex-map token integration).
+
+**Decisions made:**
+
+- **CanvasGroup + shader for mask clipping** chosen over Sprite2D `clip_children` modes. More robust under mixed Node2D/Control children and gives explicit control over the composite alpha. One shader file to maintain.
+- **Bordure = outer fill + inset inner content** accepted as a v1 approximation. Not heraldically perfect (rim is rectangular-ish, doesn't follow shield curves) but reads as a colored rim for most shapes. Documented in conventions §21.3.
+- **Active indicator = scale + modulate only.** Dropped the `ActiveOutline` Line2D ring entirely. The shield shape already reads as distinct; adding a ring on top would clutter. Click-pulse tweens around current baseline rather than absolute so steady-state styling isn't fought.
+- **HeraldryRenderer per party, parented under invisible HeraldryHolder.** ViewportTexture references on Sprite2Ds stay stable across descriptor updates — refresh path is `renderer.update_descriptor(new_desc)` with no downstream sprite rebinding needed.
+- **`_on_heraldry_changed` targets one party.** Avoids the full-rebuild hammer on every save. Falls back to full rebuild only if the per-party renderer isn't instantiated yet.
+- **Color classification via luminance, not named-ID lookup.** `TincturePalette.classify_color(c)` thresholds on luminance >= 0.55 for metal-like. Applies the rule-of-tincture warning to custom colors the player picks, not just the seven named tinctures.
+- **Snake_case regional IDs for escutcheons** (english, german, italian...) rather than the GDD's heater/kite/plank taxonomy. Preserves semantic accuracy — the imported PNGs are named after regional traditions.
+
+**Interfaces defined or changed:**
+
+- New shared type: `HeraldryDescriptor` with fields and the static methods `from_dict`, `color_from_hex`, `color_to_hex`.
+- New registries: `ShieldShapeRegistry`, `ChargeRegistry`, `FieldDivisionRegistry` (static methods), `OrdinaryRegistry` (static methods), `TincturePalette` (static methods), `PresetLibrary`.
+- New `HeraldryRenderer.update_descriptor(HeraldryDescriptor, int) -> void` and `get_texture() -> Texture2D`. Static `scale_normalized_polygon(Array, int) -> PackedVector2Array`.
+- New signal: `EventBus.heraldry_changed(heraldry_id: String)`.
+- New `CampaignRepository` methods: `get_heraldry`, `get_heraldry_for_party`, `save_heraldry`, `assign_heraldry_to_party`, `create_default_heraldry_for_party`.
+- Hex map renderer token types changed from Polygon2D to Sprite2D. Removed `_attach_active_outline`. `_style_token` now takes Sprite2D.
+
+**Database changes:** Migration 038 (`db/migrations/038_party_heraldry.sql`) creates `party_heraldry` table, adds `parties.heraldry_id` FK. Applies automatically via the existing migration runner. `db/schema.sql` mirrored.
+
+**Tests added/updated:**
+
+- New suite `tests/test_heraldry_data.gd` — ~33 tests. Covers descriptor serialization, color hex parsing (lowercase/uppercase/no-hash/empty), all five registries' lookups, preset library random validity, polygon scaling math, DB CRUD round-trip (save/get, assign-to-party, create-default-for-party, missing-party).
+- Registered as `HeraldryDataTests` in `tests/test_runner.gd` + `tests/test_runner.tscn`.
+
+**Known issues:**
+
+- **Tests not yet run by build agent.** Godot CLI isn't on PATH in this environment; run `tests/test_runner.tscn` in the editor to confirm `HeraldryDataTests` green.
+- **Visual smoke test pending.** Must verify in-editor:
+  1. Fresh or existing campaign -> migration 038 applies -> backfill assigns random presets to all parties. DB check: `SELECT id, heraldry_id FROM parties` — none NULL.
+  2. Each party's hex token is a distinct rendered shield (not the old yellow/grey hexagon). Active party full-bright at 1.15x, inactive parties slightly desaturated at 0.9x.
+  3. Split a party — new party gets its own random preset shield, distinct from the source.
+  4. Inject a descriptor change via `CampaignRepository.save_heraldry(...)` from the Godot remote debug console — token updates live via `heraldry_changed`.
+- **Bordure rendering is a v1 approximation.** The rim is a scaled-down inset region, not a true curve-follow. Some shapes may show visible corner gaps. Acceptable for v1.
+- **Charge tag filter is empty in v1.** `ChargeRegistry.get_all_tags()` returns `[]` because the catalog ships with empty tag arrays. The editor's Charge tab will fall back to name-search + scroll (Session 3).
+- **Python dev tool in `tools/heraldry/`.** `build_charges_catalog.py` is the first .py dev tool in the repo. Confirmed with Jedidiah: dev-only, not bundled with exports, Godot ignores .py files. Documented in `tools/heraldry/README.md`.
+
+**Next session should (Session 3):**
+
+1. Run `tests/test_runner.tscn` in the editor — confirm `HeraldryDataTests` passes + existing suites stay green.
+2. Visual smoke test per the list above. Iterate on `HeraldryRenderer` composition if anything looks off (bordure, mask edges, charge scale).
+3. Build the customization UI: `scenes/ui/heraldry/heraldry_editor.tscn` + `heraldry_editor.gd`. Two-column CanvasLayer overlay per GDD §6.2. Charge picker must use lazy thumbnail loading (760 entries). Contrast warning row at bottom-left per §6.5.
+4. Hook the editor into the Party Management overlay's Members tab — add a "Heraldry" button next to the Active Party dropdown that opens the editor for `_current_party_id`.
+5. ~8 editor tests: descriptor preload, confirm/cancel, tincture quick-pick, contrast predicate, random-produces-valid-descriptor.
+6. Manual acceptance per GDD §10 visual checklist (all shapes / divisions / ordinaries / sample charges render; hex-map token updates after editor close).
+

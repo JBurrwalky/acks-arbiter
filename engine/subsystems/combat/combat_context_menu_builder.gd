@@ -440,7 +440,7 @@ static func _build_self_options(
 
 	# Ready Attack — stores an attack reaction that fires when an enemy
 	# enters range. Carries over between rounds. Declaring before moving
-	# skips movement for this round.
+	# skips movement for this round. Opens a submenu of trigger options.
 	if combatant.is_character:
 		var can_ready: bool = not combatant.has_readied_attack \
 			and _can_attack(combatant, controller)
@@ -450,10 +450,112 @@ static func _build_self_options(
 		elif not _can_attack(combatant, controller):
 			tip = "Cannot ready — incapacitated"
 		else:
-			tip = "Hold an attack until an enemy enters range (skips movement if declared before moving)"
-		options.append(_option("ready_attack", "Ready Attack", can_ready,
-			tip, "self",
-			{"action_type": "ready_attack", "character_id": combatant.id}))
+			tip = "Hold an attack to fire when a trigger condition is met (skips movement if declared before moving)"
+		var ready_sub := _build_ready_attack_submenu(combatant, controller)
+		if can_ready and not ready_sub.is_empty():
+			options.append(_option_with_submenu(
+				"ready_attack", "Ready Attack  ▸", true,
+				tip, "self",
+				{"action_type": "ready_attack_submenu", "character_id": combatant.id},
+				ready_sub))
+		else:
+			# Keep the entry visible (disabled) so the player sees why it's unavailable.
+			options.append(_option("ready_attack", "Ready Attack", false,
+				tip, "self",
+				{"action_type": "ready_attack_submenu", "character_id": combatant.id}))
+
+	return options
+
+
+# ---------------------------------------------------------------------------
+# Ready Attack submenu — trigger conditions
+# ---------------------------------------------------------------------------
+
+static func _build_ready_attack_submenu(
+	combatant: Combatant,
+	controller,
+) -> Array[Dictionary]:
+	## Build the trigger-condition submenu for Ready Attack. Options are
+	## filtered by the combatant's equipped weapon capability. "At cell..."
+	## entries require a follow-up cell click in the UI.
+	var options: Array[Dictionary] = []
+	var cid: String = combatant.id
+	var has_melee: bool = combatant.has_melee_capability()
+	var has_ranged: bool = combatant.has_ranged_capability() and combatant.get_ammo_count() != 0
+	var ranges: Dictionary = combatant.get_weapon_ranges()
+	var short_r: int = int(ranges.get("short", 0))
+	var medium_r: int = int(ranges.get("medium", 0))
+	var long_r: int = int(ranges.get("long", 0))
+
+	if has_melee:
+		options.append(_option("ready_melee_adjacent",
+			"Melee: any adjacent enemy", true,
+			"Strike the first enemy to be adjacent when their turn begins",
+			"self",
+			{"action_type": "ready_attack",
+			 "character_id": cid,
+			 "trigger_type": "melee_adjacent"}))
+		options.append(_option("ready_melee_cell",
+			"Melee: at a specific cell...", true,
+			"Strike the first enemy to enter a chosen adjacent cell",
+			"self",
+			{"action_type": "ready_attack_cell",
+			 "character_id": cid,
+			 "trigger_weapon": "melee"}))
+
+	if has_ranged and long_r > 0:
+		options.append(_option("ready_ranged_in_range",
+			"Ranged: any enemy within %d ft" % long_r, true,
+			"Fire at the first enemy within weapon range with line of sight",
+			"self",
+			{"action_type": "ready_attack",
+			 "character_id": cid,
+			 "trigger_type": "ranged_in_range"}))
+		if long_r > medium_r and medium_r > 0:
+			options.append(_option("ready_ranged_long",
+				"Ranged: first to enter long range (%d–%d ft)" % [medium_r + 5, long_r],
+				true,
+				"Fire when an enemy is in the long range band with line of sight",
+				"self",
+				{"action_type": "ready_attack",
+				 "character_id": cid,
+				 "trigger_type": "ranged_long"}))
+		if medium_r > short_r and short_r > 0:
+			options.append(_option("ready_ranged_medium",
+				"Ranged: first to enter medium range (%d–%d ft)" % [short_r + 5, medium_r],
+				true,
+				"Fire when an enemy is in the medium range band with line of sight",
+				"self",
+				{"action_type": "ready_attack",
+				 "character_id": cid,
+				 "trigger_type": "ranged_medium"}))
+		if short_r > 0:
+			options.append(_option("ready_ranged_short",
+				"Ranged: first to enter short range (0–%d ft)" % short_r, true,
+				"Fire when an enemy is in the short range band with line of sight",
+				"self",
+				{"action_type": "ready_attack",
+				 "character_id": cid,
+				 "trigger_type": "ranged_short"}))
+		options.append(_option("ready_ranged_los",
+			"Ranged: first in line of sight", true,
+			"Fire at the first enemy with line of sight (within weapon range)",
+			"self",
+			{"action_type": "ready_attack",
+			 "character_id": cid,
+			 "trigger_type": "ranged_los"}))
+		options.append(_option("ready_ranged_cell",
+			"Ranged: at a specific cell...", true,
+			"Fire at the first enemy to enter a chosen cell (must be in weapon range)",
+			"self",
+			{"action_type": "ready_attack_cell",
+			 "character_id": cid,
+			 "trigger_weapon": "ranged"}))
+
+	# Back button for submenu navigation
+	options.append(_option("submenu_back", "← Back", true,
+		"", "self",
+		{"action_type": "submenu_back"}))
 
 	return options
 

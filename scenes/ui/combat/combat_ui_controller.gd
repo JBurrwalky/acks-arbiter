@@ -27,6 +27,7 @@ enum State {
 	PC_SELECTING_FACING,           ## After move, waiting for facing click + Confirm Move
 	PC_SELECTING_CLEAVE_TARGET,    ## After kill, waiting for cleave target click or Skip Cleave
 	PC_SELECTING_WEAPON,           ## PC chose Sheathe & Draw — weapon popup visible
+	PC_SELECTING_READY_CELL,       ## PC chose "Ready at cell..." — waiting for cell click
 	ENEMY_ACTING,                  ## Enemy AI turn (auto-advance)
 	COMBAT_OVER,                   ## Combat ended
 }
@@ -71,6 +72,10 @@ signal may_cleave(combatant_id: String, combatant_name: String, target_name: Str
 ## Emitted when entering interactive cleave target selection. Host should show
 ## the Skip Cleave button and listen for entity clicks on the highlighted targets.
 signal cleave_selection_started(combatant_id: String)
+
+## Emitted when entering Ready-at-cell selection. Host should show a Cancel
+## button. Clicking one of the highlighted cells submits the Ready Attack.
+signal ready_cell_selection_started(combatant_id: String, weapon: String)
 
 ## Map should highlight reachable cells for movement.
 signal highlight_reachable(cells: Array, color: Color)
@@ -118,6 +123,13 @@ var _has_moved_this_turn: bool = false
 var _cleave_targets: Array = []
 var _cleave_move_cells: Array = []
 var _cleave_move_available: bool = false
+
+## During PC_SELECTING_READY_CELL, the set of cells the player may click.
+var _ready_cell_options: Array = []
+
+## During PC_SELECTING_READY_CELL, "melee" or "ranged" — picks the fallback
+## attack path at fire time.
+var _ready_cell_weapon: String = ""
 
 ## Cached initiative order for the HUD.
 var _initiative_display: Array = []
@@ -300,6 +312,10 @@ func on_action_button(action_id: String) -> void:
 ## Called when the player right-clicks a cell during their turn.
 ## The host scene should call this from the renderer's cell_right_clicked signal.
 func on_cell_right_clicked(target_cell: Vector3i, screen_pos: Vector2) -> void:
+	# Right-click while picking a Ready cell cancels the selection.
+	if _state == State.PC_SELECTING_READY_CELL:
+		on_cancel()
+		return
 	if _state != State.PC_AWAITING_INPUT:
 		return
 	_state = State.PC_CONTEXT_MENU_OPEN
@@ -430,9 +446,20 @@ func on_context_action(action_data: Dictionary) -> void:
 
 		"ready_attack":
 			clear_highlights_requested.emit()
+			var trigger_type: String = action_data.get("trigger_type", "melee_adjacent")
 			_controller.submit_pc_action(_current_pc_id, "ready_attack",
-				{"character_id": action_data.get("character_id", _current_pc_id)})
+				{"character_id": action_data.get("character_id", _current_pc_id),
+				 "trigger_type": trigger_type})
 			advance()
+
+		"ready_attack_cell":
+			# Player must pick a cell — enter cell-selection state.
+			var weapon: String = action_data.get("trigger_weapon", "melee")
+			_enter_ready_cell_selection(weapon)
+
+		"ready_attack_submenu":
+			# Parent submenu entry — only reached when disabled/no submenu; treat as cancel.
+			_state = State.PC_AWAITING_INPUT
 
 		"check_status", "carry", "loot", "coup_de_grace":
 			clear_highlights_requested.emit()
@@ -459,8 +486,89 @@ func on_context_menu_cancelled() -> void:
 		_state = State.PC_AWAITING_INPUT
 
 
+func _enter_ready_cell_selection(weapon: String) -> void:
+	_ready_cell_weapon = weapon
+	_ready_cell_options = _build_ready_cell_candidates(weapon)
+	if _ready_cell_options.is_empty():
+		# Nothing to target — bail silently and return to input.
+		_ready_cell_weapon = ""
+		_state = State.PC_AWAITING_INPUT
+		return
+	_state = State.PC_SELECTING_READY_CELL
+	# Highlight candidate cells (orange — distinct from move/cleave colors).
+	var typed_cells: Array[Vector3i] = []
+	for c: Vector3i in _ready_cell_options:
+		typed_cells.append(c)
+	highlight_reachable.emit(typed_cells, Color(1.0, 0.55, 0.1, 0.30))
+	ready_cell_selection_started.emit(_current_pc_id, weapon)
+
+
+func _build_ready_cell_candidates(weapon: String) -> Array:
+	## Return the set of cells (Vector3i) the player may pick as a Ready trigger.
+	## Melee: same-level neighbors of the combatant.
+	## Ranged: every voxel cell within weapon long range with LOS.
+	var result: Array = []
+	if _controller == null:
+		return result
+	var combatant = _controller.get_combatant(_current_pc_id)
+	if combatant == null:
+		return result
+	var origin: Vector3i = combatant.grid_position
+	if origin == Vector3i(-1, -1, 0):
+		return result
+	var voxel_map = _controller.voxel_map
+	if voxel_map == null:
+		return result
+
+	if weapon == "melee":
+		for n: Vector3i in VoxelGrid.get_neighbors_2d(origin):
+			if voxel_map.has_cell(n):
+				result.append(n)
+		return result
+
+	# Ranged: scan voxel cells within long range (feet / FEET_PER_CELL).
+	var ranges: Dictionary = combatant.get_weapon_ranges()
+	var long_r_ft: int = int(ranges.get("long", 0))
+	if long_r_ft <= 0:
+		return result
+	var FEET_PER_CELL: int = 5
+	var long_r_cells: int = long_r_ft / FEET_PER_CELL
+	var mr = _controller.movement_resolver
+	for cell_pos in voxel_map.get_all_positions():
+		if cell_pos == origin:
+			continue
+		var dist: int = VoxelGrid.chebyshev_distance(origin, cell_pos)
+		if dist <= 0 or dist > long_r_cells:
+			continue
+		# LOS check uses 2D projection (consistent with ranged attack logic).
+		var los_ok := true
+		if mr != null:
+			los_ok = mr.has_line_of_sight(
+				Vector2i(origin.x, origin.y),
+				Vector2i(cell_pos.x, cell_pos.y))
+		if los_ok:
+			result.append(cell_pos)
+	return result
+
+
 ## Called when a cell is clicked on the map during facing selection or cleave.
 func on_cell_targeted(pos: Vector3i) -> void:
+	if _state == State.PC_SELECTING_READY_CELL:
+		if pos not in _ready_cell_options:
+			return
+		var trigger_type: String = "cell"
+		clear_highlights_requested.emit()
+		var weapon := _ready_cell_weapon
+		_ready_cell_options.clear()
+		_ready_cell_weapon = ""
+		_controller.submit_pc_action(_current_pc_id, "ready_attack",
+			{"character_id": _current_pc_id,
+			 "trigger_type": trigger_type,
+			 "trigger_cell": pos,
+			 "trigger_weapon": weapon})
+		advance()
+		return
+
 	if _state == State.PC_SELECTING_FACING:
 		# Player clicked an adjacent cell to choose facing
 		var combatant = _controller.get_combatant(_current_pc_id)
@@ -529,6 +637,15 @@ func on_entity_targeted(entity_id: String) -> void:
 		advance()
 		return
 
+	if _state == State.PC_SELECTING_READY_CELL:
+		# Treat the click as picking the entity's cell (useful when the
+		# target cell currently contains an enemy).
+		var combatant = _controller.get_combatant(entity_id)
+		if combatant == null:
+			return
+		on_cell_targeted(combatant.grid_position)
+		return
+
 	# Left-click on entity during PC turn = selection only (no action).
 	# All attack actions go through the right-click context menu.
 
@@ -565,8 +682,11 @@ func _enter_cleave_selection(targets: Array, move_available: bool = false, move_
 ## Cancel current selection — return to awaiting input.
 func on_cancel() -> void:
 	if _state == State.PC_CONTEXT_MENU_OPEN or \
-	   _state == State.PC_SELECTING_WEAPON:
+	   _state == State.PC_SELECTING_WEAPON or \
+	   _state == State.PC_SELECTING_READY_CELL:
 		clear_highlights_requested.emit()
+		_ready_cell_options.clear()
+		_ready_cell_weapon = ""
 		_state = State.PC_AWAITING_INPUT
 		_selected_action = ""
 		pc_turn_started.emit(_current_pc_id)
