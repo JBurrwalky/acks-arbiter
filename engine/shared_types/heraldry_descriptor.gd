@@ -11,7 +11,7 @@ extends RefCounted
 var heraldry_id: String = ""
 
 # Shield shape (registry key into ShieldShapeRegistry).
-var shape_id: String = "english"
+var shape_id: String = "heater"
 
 # Field division + tinctures.
 var division_id: String = "plain"
@@ -30,7 +30,7 @@ var tincture_charge: Color = Color("#dcdcdc")
 static func from_dict(data: Dictionary) -> HeraldryDescriptor:
 	var d := HeraldryDescriptor.new()
 	d.heraldry_id = str(data.get("heraldry_id", ""))
-	d.shape_id = str(data.get("shape_id", "english"))
+	d.shape_id = str(data.get("shape_id", "heater"))
 	d.division_id = str(data.get("division_id", "plain"))
 	d.tincture_primary = color_from_hex(str(data.get("tincture_primary", "#dcdcdc")))
 	d.tincture_secondary = color_from_hex(str(data.get("tincture_secondary", "#1a1a1a")))

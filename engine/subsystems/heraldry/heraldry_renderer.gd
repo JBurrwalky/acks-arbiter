@@ -14,33 +14,37 @@ extends Node2D
 ## the same SubViewport in place — existing Sprite2D.texture references stay
 ## valid. Free the HeraldryRenderer node when its consumer goes away.
 ##
-## Layer order inside the SubViewport (back to front):
-##   1. CanvasGroup (alpha-masked by the shield mask)
-##        - bordure fill (full-viewport ordinary tincture)  [only if ordinary=bordure]
-##        - inner content (scaled down inside bordure rim, or full size otherwise)
-##            - primary tincture fill
-##            - secondary field-division polygons
-##            - ordinary polygons (cross/chevron/chief)
-##            - charge sprite (centered, modulate-tinted)
-##   2. Outline sprite drawn on top of the group (unmasked — IS the shield edge)
-
-const MASK_SHADER_PATH := "res://engine/subsystems/heraldry/heraldry_mask.gdshader"
+## Rendering approach:
+## - Shield silhouette is a code-defined polygon from ShieldShapeRegistry.
+## - Primary tincture fills the silhouette (Polygon2D with shield polygon).
+## - Secondary + ordinary polygons are clipped against the silhouette via
+##   Geometry2D.intersect_polygons so they never spill outside the shield.
+## - Bordure renders as the outer fill (silhouette colored with
+##   tincture_ordinary) with an inset silhouette in tincture_primary drawn
+##   over it; the inset is computed by shrinking the silhouette toward its
+##   centroid.
+## - Charge is a centered Sprite2D modulate-tinted with tincture_charge.
+##   Sized to CHARGE_FOOTPRINT_RATIO of the shield's short dimension; minor
+##   overhang at the edges is tolerated for v1.
+## - Outline is a closed Line2D tracing the silhouette in near-black.
 
 ## Charge texture fits inside this fraction of the shield's short dimension.
-const CHARGE_FOOTPRINT_RATIO := 0.60
+const CHARGE_FOOTPRINT_RATIO := 0.55
+
+## Outline color for the Line2D ring around the shield silhouette.
+const OUTLINE_COLOR := Color(0.08, 0.08, 0.08, 1.0)
+const OUTLINE_WIDTH_RATIO := 0.035  # fraction of output_size
 
 var _output_size: int = 64
 var _descriptor: HeraldryDescriptor
 var _viewport: SubViewport
 var _shape_registry: ShieldShapeRegistry
 var _charge_registry: ChargeRegistry
-var _mask_shader: Shader
 
 
 func _ready() -> void:
 	_shape_registry = ShieldShapeRegistry.new()
 	_charge_registry = ChargeRegistry.new()
-	_mask_shader = load(MASK_SHADER_PATH)
 	_viewport = SubViewport.new()
 	_viewport.transparent_bg = true
 	_viewport.disable_3d = true
@@ -99,67 +103,63 @@ func _rebuild() -> void:
 
 
 func _build_content() -> void:
-	var shape_entry := _shape_registry.get_shape(_descriptor.shape_id)
-	if shape_entry.is_empty():
+	var shape := _shape_registry.get_shape(_descriptor.shape_id)
+	if shape.is_empty():
 		push_error("HeraldryRenderer: unknown shape_id '%s'" % _descriptor.shape_id)
 		return
-
-	var mask_path: String = shape_entry.get("mask_path", "")
-	var outline_path: String = shape_entry.get("outline_path", "")
-	var mask_texture: Texture2D = load(mask_path) if not mask_path.is_empty() else null
-	var outline_texture: Texture2D = load(outline_path) if not outline_path.is_empty() else null
-	if mask_texture == null or outline_texture == null:
-		push_error("HeraldryRenderer: cannot load shape assets for '%s'" % _descriptor.shape_id)
+	var silhouette_norm: Array = shape.get("polygon", [])
+	if silhouette_norm.is_empty():
+		push_error("HeraldryRenderer: shape '%s' has no polygon" % _descriptor.shape_id)
 		return
 
-	# CanvasGroup with mask shader clips the field/ordinary/charge to the shield silhouette.
-	var group := CanvasGroup.new()
-	group.fit_margin = 0.0
-	var shader_mat := ShaderMaterial.new()
-	shader_mat.shader = _mask_shader
-	shader_mat.set_shader_parameter("mask_texture", mask_texture)
-	group.material = shader_mat
-	_viewport.add_child(group)
-
+	var silhouette_px := scale_normalized_polygon(silhouette_norm, _output_size)
 	var is_bordure: bool = _descriptor.ordinary_id == "bordure"
-	var inset_ratio := 0.0
+
+	# Background fill: the shield silhouette filled with either the primary
+	# tincture (normal case) or the ordinary tincture (bordure case, providing
+	# the outer ring). If bordure, an inset silhouette in primary tincture is
+	# drawn over it so only the rim shows the ordinary color.
+	var bg := Polygon2D.new()
+	bg.polygon = silhouette_px
+	bg.color = _descriptor.tincture_ordinary if is_bordure else _descriptor.tincture_primary
+	_viewport.add_child(bg)
+
+	# The "field" polygon used for clipping secondary/ordinary layers.
+	# When bordure is active, the field is the inset silhouette, not the full one.
+	var field_norm: Array = silhouette_norm
+	var field_px: PackedVector2Array = silhouette_px
 	if is_bordure:
-		inset_ratio = float(OrdinaryRegistry.get_ordinary("bordure").get("border_inset_ratio", 0.08))
+		var inset_ratio := float(OrdinaryRegistry.get_ordinary("bordure").get("border_inset_ratio", 0.08))
+		field_norm = _inset_polygon(silhouette_norm, inset_ratio)
+		field_px = scale_normalized_polygon(field_norm, _output_size)
+		var inner := Polygon2D.new()
+		inner.polygon = field_px
+		inner.color = _descriptor.tincture_primary
+		_viewport.add_child(inner)
 
-	# Bordure fill sits behind the inner content so the inset inner reveals it as a rim.
-	if is_bordure:
-		var bordure_poly := _make_fill_polygon(_output_size, _descriptor.tincture_ordinary)
-		group.add_child(bordure_poly)
-
-	var inner := Node2D.new()
-	if is_bordure:
-		var s := 1.0 - 2.0 * inset_ratio
-		inner.scale = Vector2(s, s)
-		inner.position = Vector2(_output_size * inset_ratio, _output_size * inset_ratio)
-	group.add_child(inner)
-
-	# Primary tincture fill.
-	inner.add_child(_make_fill_polygon(_output_size, _descriptor.tincture_primary))
-
-	# Secondary division polygons.
+	# Secondary field-division polygons, clipped against the field silhouette.
 	var division := FieldDivisionRegistry.get_division(_descriptor.division_id)
 	for poly_var in division.get("secondary_polygons", []):
-		var poly: Array = poly_var
-		var p2d := Polygon2D.new()
-		p2d.polygon = scale_normalized_polygon(poly, _output_size)
-		p2d.color = _descriptor.tincture_secondary
-		inner.add_child(p2d)
+		var poly_norm: Array = poly_var
+		var poly_px := scale_normalized_polygon(poly_norm, _output_size)
+		for piece in Geometry2D.intersect_polygons(poly_px, field_px):
+			var p2d := Polygon2D.new()
+			p2d.polygon = piece
+			p2d.color = _descriptor.tincture_secondary
+			_viewport.add_child(p2d)
 
-	# Ordinary (non-bordure only; bordure handled above as the outer fill).
+	# Ordinary polygons (non-bordure), clipped against the field silhouette.
 	if not is_bordure and not _descriptor.ordinary_id.is_empty():
 		var ordinary := OrdinaryRegistry.get_ordinary(_descriptor.ordinary_id)
 		if ordinary.get("render_type", "") == "filled":
 			for poly_var in ordinary.get("polygons", []):
-				var poly: Array = poly_var
-				var p2d := Polygon2D.new()
-				p2d.polygon = scale_normalized_polygon(poly, _output_size)
-				p2d.color = _descriptor.tincture_ordinary
-				inner.add_child(p2d)
+				var poly_norm: Array = poly_var
+				var poly_px := scale_normalized_polygon(poly_norm, _output_size)
+				for piece in Geometry2D.intersect_polygons(poly_px, field_px):
+					var p2d := Polygon2D.new()
+					p2d.polygon = piece
+					p2d.color = _descriptor.tincture_ordinary
+					_viewport.add_child(p2d)
 
 	# Centered charge.
 	if not _descriptor.charge_id.is_empty():
@@ -178,34 +178,23 @@ func _build_content() -> void:
 				if max_dim > 0.0:
 					var s := target / max_dim
 					sprite.scale = Vector2(s, s)
-				sprite.position = Vector2(_output_size, _output_size) * 0.5
-				inner.add_child(sprite)
+				# Charge centroid slightly above shield center — most historical
+				# charges visually anchor above the point of the shield.
+				sprite.position = Vector2(_output_size * 0.5, _output_size * 0.48)
+				_viewport.add_child(sprite)
 
-	# Outline — drawn OUTSIDE the CanvasGroup, unmasked. It IS the shield's edge.
-	var outline_sprite := Sprite2D.new()
-	outline_sprite.texture = outline_texture
-	outline_sprite.centered = false
-	outline_sprite.position = Vector2.ZERO
-	var out_tex_size := outline_texture.get_size()
-	if out_tex_size.x > 0 and out_tex_size.y > 0:
-		outline_sprite.scale = Vector2(
-			float(_output_size) / out_tex_size.x,
-			float(_output_size) / out_tex_size.y
-		)
-	_viewport.add_child(outline_sprite)
-
-
-static func _make_fill_polygon(size: int, color: Color) -> Polygon2D:
-	var p := Polygon2D.new()
-	var f := float(size)
-	p.polygon = PackedVector2Array([
-		Vector2(0, 0),
-		Vector2(f, 0),
-		Vector2(f, f),
-		Vector2(0, f),
-	])
-	p.color = color
-	return p
+	# Outline — Line2D tracing the silhouette, near-black, antialiased.
+	var line := Line2D.new()
+	var line_points := PackedVector2Array(silhouette_px)
+	line_points.append(silhouette_px[0])  # close the loop
+	line.points = line_points
+	line.width = maxf(1.0, OUTLINE_WIDTH_RATIO * float(_output_size))
+	line.default_color = OUTLINE_COLOR
+	line.joint_mode = Line2D.LINE_JOINT_ROUND
+	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	line.end_cap_mode = Line2D.LINE_CAP_ROUND
+	line.antialiased = true
+	_viewport.add_child(line)
 
 
 ## Maps an array of Vector2 points in normalized shield coordinates (0..1)
@@ -216,4 +205,23 @@ static func scale_normalized_polygon(normalized: Array, size: int) -> PackedVect
 	for v_var in normalized:
 		var v: Vector2 = v_var
 		out.append(Vector2(v.x * f, v.y * f))
+	return out
+
+
+## Shrinks a polygon toward its geometric centroid by [param ratio]. Used to
+## compute the inset silhouette when an ordinary=bordure is active. Ratio is
+## the border width as a fraction of shield short-side; the polygon scales by
+## (1 - 2 * ratio) toward the centroid.
+static func _inset_polygon(polygon: Array, ratio: float) -> Array:
+	if polygon.is_empty():
+		return []
+	var centroid := Vector2.ZERO
+	for v_var in polygon:
+		centroid += v_var as Vector2
+	centroid /= float(polygon.size())
+	var factor := 1.0 - 2.0 * ratio
+	var out: Array = []
+	for v_var in polygon:
+		var v: Vector2 = v_var
+		out.append(centroid + (v - centroid) * factor)
 	return out

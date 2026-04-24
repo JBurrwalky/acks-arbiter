@@ -4,7 +4,7 @@
       "preset_id": "gold_and_sable_eagle",
       "display_name": "Gold and Sable Eagle",
       "descriptor": {
-        "shape_id": "english",
+        "shape_id": "heater",
         "division_id": "plain",
         "tincture_primary": "#d4af37",
         "tincture_secondary": "#1a1a1a",
@@ -18,7 +18,7 @@
       "preset_id": "cross_of_the_faithful",
       "display_name": "Cross of the Faithful",
       "descriptor": {
-        "shape_id": "english",
+        "shape_id": "heater",
         "division_id": "plain",
         "tincture_primary": "#dcdcdc",
         "tincture_secondary": "#1a1a1a",
@@ -32,7 +32,7 @@
       "preset_id": "templar_cross",
       "display_name": "Templar Cross",
       "descriptor": {
-        "shape_id": "old_french",
+        "shape_id": "kite",
         "division_id": "plain",
         "tincture_primary": "#dcdcdc",
         "tincture_secondary": "#1a1a1a",
@@ -46,7 +46,7 @@
       "preset_id": "quartered_lions",
       "display_name": "Quartered Lions",
       "descriptor": {
-        "shape_id": "english",
+        "shape_id": "heater",
         "division_id": "quarterly",
         "tincture_primary": "#a02020",
         "tincture_secondary": "#1f3a8a",
@@ -60,7 +60,7 @@
       "preset_id": "green_stag",
       "display_name": "Stag of the Greenwood",
       "descriptor": {
-        "shape_id": "old_french",
+        "shape_id": "kite",
         "division_id": "plain",
         "tincture_primary": "#2d5a2a",
         "tincture_secondary": "#1a1a1a",
@@ -74,7 +74,7 @@
       "preset_id": "oak_of_kings",
       "display_name": "Oak of Kings",
       "descriptor": {
-        "shape_id": "italian",
+        "shape_id": "horsehead",
         "division_id": "per_fess",
         "tincture_primary": "#1f3a8a",
         "tincture_secondary": "#d4af37",
@@ -88,7 +88,7 @@
       "preset_id": "boar_of_the_north",
       "display_name": "Boar of the North",
       "descriptor": {
-        "shape_id": "german",
+        "shape_id": "norman",
         "division_id": "plain",
         "tincture_primary": "#dcdcdc",
         "tincture_secondary": "#1a1a1a",
@@ -102,7 +102,7 @@
       "preset_id": "sword_of_the_watch",
       "display_name": "Sword of the Watch",
       "descriptor": {
-        "shape_id": "english",
+        "shape_id": "heater",
         "division_id": "per_pale",
         "tincture_primary": "#1a1a1a",
         "tincture_secondary": "#a02020",
@@ -116,7 +116,7 @@
       "preset_id": "florentine_lily",
       "display_name": "Florentine Lily",
       "descriptor": {
-        "shape_id": "italian",
+        "shape_id": "horsehead",
         "division_id": "plain",
         "tincture_primary": "#dcdcdc",
         "tincture_secondary": "#1a1a1a",
@@ -130,7 +130,7 @@
       "preset_id": "purpure_chevron",
       "display_name": "Purpure Chevron",
       "descriptor": {
-        "shape_id": "old_french",
+        "shape_id": "kite",
         "division_id": "plain",
         "tincture_primary": "#d4af37",
         "tincture_secondary": "#1a1a1a",
@@ -158,7 +158,7 @@
       "preset_id": "bordure_argent",
       "display_name": "Bordure Argent",
       "descriptor": {
-        "shape_id": "polish_xvib",
+        "shape_id": "tower",
         "division_id": "plain",
         "tincture_primary": "#1f3a8a",
         "tincture_secondary": "#1a1a1a",
@@ -166,6 +166,20 @@
         "tincture_ordinary": "#dcdcdc",
         "charge_id": "",
         "tincture_charge": "#dcdcdc"
+      }
+    },
+    {
+      "preset_id": "round_sunburst",
+      "display_name": "Round Sunburst",
+      "descriptor": {
+        "shape_id": "round",
+        "division_id": "plain",
+        "tincture_primary": "#a02020",
+        "tincture_secondary": "#1a1a1a",
+        "ordinary_id": "",
+        "tincture_ordinary": "#dcdcdc",
+        "charge_id": "sun_17_rays_heraldic_external_ornament",
+        "tincture_charge": "#d4af37"
       }
     }
   ]

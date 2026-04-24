@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS parties (
 -- Migration 038: per-party heraldic shield.
 CREATE TABLE IF NOT EXISTS party_heraldry (
     heraldry_id         TEXT PRIMARY KEY,
-    shape_id            TEXT NOT NULL DEFAULT 'english',
+    shape_id            TEXT NOT NULL DEFAULT 'heater',
     division_id         TEXT NOT NULL DEFAULT 'plain',
     tincture_primary    TEXT NOT NULL DEFAULT '#dcdcdc',
     tincture_secondary  TEXT NOT NULL DEFAULT '#1a1a1a',

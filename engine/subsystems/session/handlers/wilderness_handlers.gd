@@ -135,46 +135,82 @@ func schedule_travel_path(
 # Event handlers
 # ---------------------------------------------------------------------------
 
-## Party crosses one hex boundary. Move party on map, check encounter.
+## Party crosses one hex boundary. Moves the EVENT'S party (not necessarily
+## the runner's primary party) on the map, persists the new position, reveals
+## fog around the destination, and runs an encounter check.
+##
+## Multi-party correctness: the controller's `move_party` / `can_move_to` /
+## `_map_data.party_hex` all model the *primary* party's position only. For
+## non-primary parties we update the DB directly, reveal fog non-destructively
+## via `controller.reveal_around`, and emit `EventBus.party_hex_changed` so the
+## renderer rebuilds that party's token.
 func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 	var coord := Vector2i(int(event.data.get("hex_q", 0)), int(event.data.get("hex_r", 0)))
 	var controller: HexMapController = _runner.get_hex_map_controller()
-	var party_data: PartyData = _runner.get_party_data()
+	var moving_pid: String = event.owner_id
+	var primary_pid: String = _runner.get_party_id()
+	var is_primary: bool = (not moving_pid.is_empty() and moving_pid == primary_pid)
+	var is_active: bool = (moving_pid == GameState.active_party_id)
 
-	# Move the party
-	if controller.can_move_to(coord):
+	# Validate target passability. We can NOT use `controller.can_move_to`
+	# here — that checks adjacency from the controller's stored primary-party
+	# hex, which is wrong for non-primary parties (and for primary parties is
+	# redundant since the path was validated when scheduling).
+	if not controller.is_hex_passable(coord):
+		# Path is blocked (e.g., terrain changed). Cancel remaining legs and
+		# any queued follow-up activity at the destination.
+		_cancel_party_movement_and_activity(moving_pid)
+		return {
+			"auto_pause": is_active,
+			"pause_reason": "Path blocked at %s" % str(coord),
+		}
+
+	# Resolve the moving party's data (primary uses the runner cache; non-
+	# primary loads fresh from the DB so we don't mutate the wrong party).
+	var party_data: PartyData = _party_data_for_event(event)
+
+	# Move the party. Primary uses controller.move_party so fog of war updates
+	# via _update_visibility (demote-and-reveal). Non-primary updates DB
+	# directly and reveals fog non-destructively so the active party's
+	# vicinity isn't accidentally demoted to EXPLORED.
+	if is_primary:
+		# move_party also calls _update_visibility(coord) and emits party_moved.
 		controller.move_party(coord)
 	else:
-		# Path is blocked (e.g., fog of war changed). Cancel remaining legs
-		# and any queued follow-up activity at the destination.
-		_cancel_party_movement_and_activity(event.owner_id)
-		return {"auto_pause": true, "pause_reason": "Path blocked at %s" % str(coord)}
-
-	# Update party data position (in-memory and DB)
+		controller.reveal_around(coord)
 	if party_data != null:
 		party_data.current_hex_q = coord.x
 		party_data.current_hex_r = coord.y
-	var moving_pid: String = event.owner_id
+
+	# Persist the moving party's position to the DB.
+	var map_data: HexMapData = controller.get_map()
 	if not moving_pid.is_empty():
-		var map_data_for_pos: HexMapData = controller.get_map()
-		var map_id: String = map_data_for_pos.id if map_data_for_pos != null else ""
+		var map_id: String = map_data.id if map_data != null else ""
 		CampaignRepository.update_party_position(moving_pid, map_id, coord.x, coord.y)
 
-	# Save map state
-	var map_data: HexMapData = controller.get_map()
+	# Notify the renderer so this party's token re-anchors. The controller's
+	# `party_moved` only fires for the primary party; non-primary updates
+	# need this signal.
+	EventBus.party_hex_changed.emit(moving_pid, coord)
+
+	# Save map state (fog updates).
 	if map_data != null:
 		CampaignRepository.save_hex_map(map_data, _runner.get_campaign_id())
 
-	# Encounter check
+	# Encounter check (per moving party). `do_encounter_check` doesn't depend
+	# on which party for its core logic — only the hex_id annotation reads
+	# the runner's primary party. The encounter still resolves correctly for
+	# any moving party; the slight hex_id annotation drift for non-primary
+	# encounters is a follow-up.
 	var terrain: HexTerrainData = map_data.get_hex(coord) if map_data != null else null
 	if terrain != null:
 		var encounter: Dictionary = _runner.do_encounter_check(terrain)
 		if encounter.get("triggered", false):
-			# Cancel remaining travel legs AND any queued follow-up activity —
-			# combat interrupts the journey and an ambushed party shouldn't
-			# auto-start the queued task when the fight ends.
-			_cancel_party_movement_and_activity(event.owner_id)
-			EventBus.order_cancelled.emit(event.owner_id, "travel_leg")
+			# Cancel remaining travel legs AND any queued follow-up activity
+			# for the AMBUSHED party only. Other parties' orders are
+			# untouched.
+			_cancel_party_movement_and_activity(moving_pid)
+			EventBus.order_cancelled.emit(moving_pid, "travel_leg")
 
 			var enc: Dictionary = encounter["encounter_data"]
 			return {
@@ -193,15 +229,16 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 	# the currently active party — otherwise another party's motion would
 	# invalidate the active party's location context.
 	EventBus.hex_entered.emit("%d,%d" % [coord.x, coord.y])
-	if event.owner_id == GameState.active_party_id:
+	if is_active:
 		GameState.current_location_key = "hex:%d,%d" % [coord.x, coord.y]
 
 	# Check if this is the last leg — auto-pause on arrival at destination
+	# only when the arriving party is the one the player is watching.
 	var path_index: int = event.data.get("path_index", 0)
 	var path_total: int = event.data.get("path_total", 1)
 	if path_index == path_total - 1:
 		return {
-			"auto_pause": true,
+			"auto_pause": is_active,
 			"pause_reason": "Arrived at destination",
 			"presentation": {"type": "arrival", "hex": str(coord)},
 		}
@@ -210,9 +247,12 @@ func _handle_travel_leg(event: ScheduledEvent) -> Dictionary:
 
 
 ## Random encounter check (can be scheduled independently from travel).
+## Uses the EVENT'S party (event.owner_id), not the runner's primary, so a
+## standalone encounter check fires against the right party in multi-party
+## sessions.
 func _handle_encounter_check(event: ScheduledEvent) -> Dictionary:
 	var map_data: HexMapData = _runner.get_hex_map_controller().get_map()
-	var party_data: PartyData = _runner.get_party_data()
+	var party_data: PartyData = _party_data_for_event(event)
 	if party_data == null or map_data == null:
 		return {}
 
@@ -239,10 +279,14 @@ func _handle_encounter_check(event: ScheduledEvent) -> Dictionary:
 
 
 ## Daily getting-lost check during multi-day travel.
+## Uses the EVENT'S party so non-primary parties traveling in the background
+## also roll their own getting-lost checks.
 func _handle_getting_lost_check(event: ScheduledEvent) -> Dictionary:
-	var party_data: PartyData = _runner.get_party_data()
+	var party_data: PartyData = _party_data_for_event(event)
 	if party_data == null:
 		return {}
+	var moving_pid: String = event.owner_id
+	var is_primary: bool = (not moving_pid.is_empty() and moving_pid == _runner.get_party_id())
 
 	var terrain_cat: String = event.data.get("terrain_category", "clear")
 	var on_road: bool = event.data.get("on_road", false)
@@ -258,12 +302,16 @@ func _handle_getting_lost_check(event: ScheduledEvent) -> Dictionary:
 		# Party got lost — cancel remaining travel_leg events AND any queued
 		# follow-up activity (lost parties shouldn't auto-start a task at the
 		# wrong hex). The player must reissue orders.
-		_cancel_party_movement_and_activity(event.owner_id)
-		EventBus.order_cancelled.emit(event.owner_id, "travel_leg")
+		_cancel_party_movement_and_activity(moving_pid)
+		EventBus.order_cancelled.emit(moving_pid, "travel_leg")
 		party_data.is_lost = true
+		# Non-primary PartyData is loaded fresh per event — must be saved
+		# back to the DB or the `is_lost` mutation is lost on next reload.
+		if not is_primary:
+			CampaignRepository.save_party_state(party_data.to_state_dict())
 
 		return {
-			"auto_pause": true,
+			"auto_pause": (moving_pid == GameState.active_party_id),
 			"pause_reason": "Party is lost!",
 			"presentation": {"type": "getting_lost", "result": result},
 		}
@@ -271,26 +319,31 @@ func _handle_getting_lost_check(event: ScheduledEvent) -> Dictionary:
 	return {}
 
 
-## Daily forced march endurance check.
+## Daily forced march endurance check. Operates on the EVENT'S party.
 func _handle_forced_march_check(event: ScheduledEvent) -> Dictionary:
-	var party_data: PartyData = _runner.get_party_data()
+	var party_data: PartyData = _party_data_for_event(event)
 	if party_data == null:
 		return {}
+	var moving_pid: String = event.owner_id
+	var is_primary: bool = (not moving_pid.is_empty() and moving_pid == _runner.get_party_id())
 
 	var eligibility: Dictionary = TravelSpeedCalculator.check_force_march_eligibility(party_data)
 	if not eligibility.get("can_continue", false):
 		# Party cannot force march — cancel remaining travel legs beyond the
 		# normal travel day and any queued follow-up activity.
-		_cancel_party_movement_and_activity(event.owner_id)
-		EventBus.order_cancelled.emit(event.owner_id, "travel_leg")
+		_cancel_party_movement_and_activity(moving_pid)
+		EventBus.order_cancelled.emit(moving_pid, "travel_leg")
 		return {
-			"auto_pause": true,
+			"auto_pause": (moving_pid == GameState.active_party_id),
 			"pause_reason": "Party must rest — forced march limit reached",
 			"presentation": {"type": "forced_march_exhausted", "result": eligibility},
 		}
 
 	# Roll forced march CON checks for each party member
 	party_data.force_march_days_used += 1
+	# Persist non-primary mutations.
+	if not is_primary:
+		CampaignRepository.save_party_state(party_data.to_state_dict())
 	var failures: Array = []
 	for cd: CharacterData in party_data.character_data:
 		var throw_target: int = cd.get_effective_save("save_petrification")  # CON-based save
@@ -421,6 +474,32 @@ func _handle_wilderness_activity_complete(event: ScheduledEvent) -> Dictionary:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+## Resolves the moving party's PartyData. For events owned by the runner's
+## primary party we reuse the runner's cached object (so in-memory mutations
+## like `is_lost` persist within the session); for non-primary parties we
+## load fresh from the repository AND populate `character_data` (which
+## `load_party_data` leaves empty), so handlers that iterate members
+## (forced march CON checks, etc.) work uniformly across parties.
+##
+## Mutations on freshly-loaded non-primary PartyData must be re-saved
+## explicitly by the caller — this helper does NOT save.
+func _party_data_for_event(event: ScheduledEvent) -> PartyData:
+	if _runner == null:
+		return null
+	var pid: String = event.owner_id
+	if pid.is_empty():
+		return null
+	if pid == _runner.get_party_id():
+		return _runner.get_party_data()
+	var party_data: PartyData = CampaignRepository.load_party_data(pid)
+	if party_data == null:
+		return null
+	party_data.character_data = []
+	for char_row: Dictionary in CampaignRepository.list_party_characters(pid):
+		party_data.character_data.append(CharacterData.from_dict(char_row))
+	return party_data
+
 
 ## Cancels a party's pending travel legs AND any queued follow-up activity.
 ## Used by encounter triggers and blocked-path branches so that an interrupted

@@ -2,15 +2,18 @@
 
 Dev-only tooling for the heraldry builder. Not shipped with the game.
 
-## Assets
+## Shield silhouettes
 
-`assets/heraldry/escutcheons/` and `assets/heraldry/charges/` were imported
-pre-normalized from an external source (Wikimedia-Commons-derived SVGs
-normalized to white-silhouette PNGs). The two Python normalization scripts
-(`normalize_charges.py`, `normalize_escutcheons.py`) described in
-`generation/gdd-heraldry-builder.md` §9 were not needed for the initial
-import and have not been written. If new SVG charges are added later and
-need normalizing, those scripts become worth building.
+Shield silhouettes are **code-defined polygons** in `engine/subsystems/heraldry/shield_shape_registry.gd`, not PNG assets. The escutcheon PNGs originally imported from the wikiscraper turned out to be unusable (every mask was a solid opaque white square; every outline was fully transparent — the upstream normalize step produced degenerate files). They were deleted. If per-shape silhouettes proliferate beyond the v1 heater, consider loading polygon data from JSON or adding a small curve editor rather than growing the const dict inline.
+
+## Charge assets
+
+`assets/heraldry/charges/` contains 760 charge PNGs imported pre-normalized
+from an external source (Wikimedia-Commons-derived white-silhouette PNGs
+with proper alpha channels). The normalization Python script described in
+`generation/gdd-heraldry-builder.md` §9 was NOT needed for the initial
+import and has not been written. If new SVG charges are added later and
+need normalizing, that script becomes worth building.
 
 ## build_charges_catalog.py
 

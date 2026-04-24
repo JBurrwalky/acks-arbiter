@@ -2179,23 +2179,32 @@ The heraldry builder lives in `engine/subsystems/heraldry/` and paints per-party
 
 Five registries follow the established `class_name X extends RefCounted` + `_init()` catalog-load pattern:
 
-- `ShieldShapeRegistry` / `ChargeRegistry` — JSON-backed from `data/heraldry/`.
-- `FieldDivisionRegistry` / `OrdinaryRegistry` — code-defined `const` dictionaries; geometry as normalized `Vector2(0..1, 0..1)` polygons.
+- `ShieldShapeRegistry` — code-defined `const` dictionary. Seven v1 shape_ids: `heater`, `kite`, `round`, `norman`, `tower`, `horsehead`, `swiss`. Each carries a silhouette polygon in normalized `Vector2(0..1)` coordinates. No PNG dependencies.
+- `ChargeRegistry` — JSON-backed from `data/heraldry/charges.json` (~760 white-silhouette PNG charges).
+- `FieldDivisionRegistry` / `OrdinaryRegistry` — code-defined `const` dictionaries; geometry as normalized polygons.
 - `TincturePalette` — seven named heraldic colors plus the `is_low_contrast(Color, Color)` luminance predicate for the soft rule-of-tincture warning.
 - `PresetLibrary` — loads the starter preset catalog; used for backfill + the editor's "Reset" dropdown.
 
 No autoloads. Instantiate on demand and cache within the renderer / editor.
 
+**Shape vocabulary is closed.** Any legacy `shape_id` outside the seven names above is remapped in migration 039 (and re-defended on every render by `ShieldShapeRegistry.has_shape` — the renderer pushes an error and bails on unknown ids rather than silently substituting).
+
 ### 21.3 Rendering Pipeline
 
 `HeraldryRenderer` (`engine/subsystems/heraldry/heraldry_renderer.gd`) is a `Node2D` that hosts a `SubViewport`. Consumers add it to the tree, call `update_descriptor(desc, size)`, and assign `get_texture()` to a `Sprite2D` or `TextureRect`. The ViewportTexture reference stays stable across descriptor changes — no need to reassign downstream sprites on refresh.
 
-Layer composition inside the viewport:
+Shield silhouettes are code-defined polygons in normalized coordinates (`0..1`) inside `ShieldShapeRegistry`. No mask/outline PNG assets — drawing is pure-geometry.
 
-1. `CanvasGroup` + `heraldry_mask.gdshader` — clips the following field/ordinary/charge layers to the shield silhouette by multiplying alpha by the mask texture's alpha channel.
-2. Outline sprite drawn on top of the group, **unmasked** — it IS the shield's edge.
+Layer composition inside the viewport (back to front):
 
-Bordure is implemented as a full-viewport ordinary-color fill behind an inset (scaled-down) content group. The inset plus the mask produces a visible rim; the rim width doesn't follow shield curves precisely — a v1 approximation.
+1. **Background fill**: `Polygon2D` with the shield silhouette, colored with `tincture_primary` (or `tincture_ordinary` when bordure is active, providing the outer rim).
+2. **Inset fill (bordure only)**: `Polygon2D` with the inset silhouette, colored with `tincture_primary`. Revealing the outer ring gives the bordure effect.
+3. **Secondary division polygons**: each clipped against the field silhouette via `Geometry2D.intersect_polygons`, then drawn as `Polygon2D` in `tincture_secondary`.
+4. **Ordinary polygons (non-bordure)**: same clipping pattern as secondary, drawn in `tincture_ordinary`.
+5. **Centered charge** (`Sprite2D`): modulate-tinted with `tincture_charge`, scaled to `CHARGE_FOOTPRINT_RATIO` of the shield's short dimension. Minor overhang past the silhouette is accepted for v1.
+6. **Outline**: `Line2D` tracing the silhouette, closed, antialiased, near-black (`OUTLINE_COLOR`).
+
+Bordure width comes from `OrdinaryRegistry.ORDINARIES.bordure.border_inset_ratio`. The inset silhouette is computed by `HeraldryRenderer._inset_polygon` — points scaled toward the silhouette's geometric centroid by `1 - 2 * ratio`. This gives a reasonable colored rim for heater-family shields; exotic silhouettes may need a different inset algorithm.
 
 ### 21.4 Normalized Shield Coordinates
 

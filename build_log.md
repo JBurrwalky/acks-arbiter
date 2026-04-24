@@ -7470,6 +7470,53 @@ Suite count back to 24.
 
 ---
 
+## Session 2026-04-24 — Readied Ranged: Pre-Engagement Firing Semantics
+
+**Task:** Tighten Readied Ranged Attack engagement rules. Per ACKS RAW, a readied ranged shot fires *before* the triggering enemy reaches engagement range with the shooter (or his allies). Simulate this by ignoring the "engaged" status for the readied shot — but only for engagements that are *newly* forming from the triggering movement, so Readied Ranged can't be exploited as a free bypass for firing at already-engaged targets (with or without Precise Shooting).
+**Model used:** Opus 4.7
+**Completed:**
+
+- **Pre-turn engagement snapshot.** Two new locals capture whether the acting combatant was engaged in melee *before* their turn's movement:
+  - [combat_controller.gd:`_resolve_next_action`](engine/subsystems/combat/combat_controller.gd) — `target_was_engaged_pre_turn` captured before the readied-trigger check (covers the "already adjacent at turn start" case).
+  - [combat_controller.gd:`_resolve_monster_action`](engine/subsystems/combat/combat_controller.gd) — `pre_move_engaged` captured at the top of the function, before the monster's auto-movement block (covers the "moves into range" post-movement trigger).
+- **Signatures extended:**
+  - `_check_readied_triggers(acting_combatant, target_was_engaged_pre_turn: bool = false)` — forwards the snapshot to the fire path.
+  - `_fire_readied_attack(shooter, target, target_was_engaged_pre_turn: bool = false)` — uses the snapshot to decide whether into-melee rules apply on ranged shots.
+- **Ranged fire path.** For the ranged branch of `_fire_readied_attack`, `target_in_melee` passed to `ranged_resolver.resolve_ranged_attack` is now `target_was_engaged_pre_turn` rather than the live `movement_resolver.is_engaged(target)`. Effect:
+  - Target already engaged in melee *before* this turn's movement → normal ACKS rules: blocked without Precise Shooting; PS rank-scaled penalty (−4/−2/0) with it.
+  - Target only engaging *now* (fresh engagement formed by the triggering movement) → no into-melee penalty, no block. The readied shot is simulating pre-engagement firing.
+  - Target not engaged at all → no penalty (unchanged).
+- **Shooter engagement.** `resolve_ranged_attack` does not check the shooter's engagement, and `_fire_readied_attack` does not gate on it either, so readied ranged shots already ignore the shooter's engaged status — this matches the RAW ("fires before the enemy reaches engagement range *with the shooter or his allies*"). Documented in the `_fire_readied_attack` docstring.
+- **Log entry enriched.** The `readied_attack_fires` log entry now carries `"target_already_engaged": <bool>` so the combat log reader can show "Precise Shooting penalty" or "pre-engagement fire" in tooltips when that UI is built.
+
+**Decisions made:**
+
+- **Target-engagement gate uses pre-movement snapshot, not mid-movement tracking.** This is the simplest model that honors the RAW's intent without requiring per-step movement hooks. A monster that was NOT engaged at the start of their turn and moves into adjacency counts as a "new engagement" for every readied PC who triggers on them during that movement. A monster that WAS already engaged (e.g. the meatshield fighter's existing melee partner) and then moves to a new target counts as already engaged — Readied Ranged cannot exploit that as a bypass.
+- **Shooter engagement stays ignored.** No gate needed because `resolve_ranged_attack` already doesn't check it and the RAW explicitly permits pre-engagement firing. Shooter engagement does still block *normal* ranged attacks via the context-menu builder; that path is untouched.
+- **Multi-party / third-faction scoping deferred.** Current snapshot uses `movement_resolver.is_engaged`, which returns true if any alive opposite-side combatant is adjacent. When third-party factions land, `is_engaged` itself will need to be faction-aware before this logic can be; that work is out of scope here.
+
+**Interfaces defined or changed:**
+
+- `CombatController._check_readied_triggers(acting_combatant: Combatant, target_was_engaged_pre_turn: bool = false) -> Array` — second parameter added with default so any call site that doesn't pass it still compiles.
+- `CombatController._fire_readied_attack(shooter, target, target_was_engaged_pre_turn: bool = false) -> Dictionary` — third parameter added with default.
+- Log entry key: `readied_attack_fires` entries now include `target_already_engaged: bool`.
+
+**Tests added/updated:**
+
+- None this session.
+
+**Known issues:**
+
+- **`is_engaged` is side-based, not faction-based.** If / when a third faction is added and two enemy factions fight each other, a Readied Ranged shot from a PC against Faction A could see "target engaged by Faction B" as "already engaged" and apply the penalty. This is acceptable for now — revisit when multi-faction work begins.
+- **Still no mid-movement step hooks.** "Was engaged before this movement" is a single snapshot at turn start. A target who starts unengaged, walks through an ally's reach, and ends unengaged somewhere else would still read as "not pre-engaged" across the whole move — which is the right answer for our firing semantics, but any future rule that cares about moment-to-moment engagement during movement will need a different model.
+
+**Next session should:**
+
+1. Smoke-test: (a) PC readies Ranged, monster starts far away and moves adjacent to PC's ally — readied shot fires without into-melee penalty even though the monster ends the turn engaged; (b) PC readies Ranged, monster was already in melee with another ally at turn start, moves to a new target — readied shot against monster applies the into-melee penalty (PS) or is blocked (no PS); (c) PC readies Ranged while their party is untouched — shots fire with no penalty as expected.
+2. Optional: `test_readied_ranged_ignores_new_engagement`, `test_readied_ranged_applies_precise_shooting_to_pre_existing_engagement`.
+
+---
+
 ## Session 2026-04-23 — SessionStatusBar Two-Row Layout + Per-Portrait Slots + Click-to-Open Character Sheet
 
 **Task:** Two HUD bugs surfaced when running the game at the Godot editor's default window size (1152×648):
@@ -7622,4 +7669,190 @@ Suite count back to 24.
 4. Hook the editor into the Party Management overlay's Members tab — add a "Heraldry" button next to the Active Party dropdown that opens the editor for `_current_party_id`.
 5. ~8 editor tests: descriptor preload, confirm/cancel, tincture quick-pick, contrast predicate, random-produces-valid-descriptor.
 6. Manual acceptance per GDD §10 visual checklist (all shapes / divisions / ordinaries / sample charges render; hex-map token updates after editor close).
+
+---
+
+## Session 2026-04-24 — Heraldry renderer masking fix (smoke-test follow-up)
+
+**Task:** Jedidiah ran the game after Session 2 and reported "All I get is a white box" where the party token should be — both for the primary party and after splitting. The shield wasn't clipping to silhouette and the outline wasn't visible.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Root cause:**
+- The `CanvasGroup + shader` masking approach from Session 2 wasn't clipping under the actual scene composition. The CanvasGroup either failed to wrap the mixed Node2D children into a properly bounded render or the shader's UV mapping was misaligned, so the primary-tincture fill rendered as a full 64×64 rectangle with no silhouette.
+- The imported escutcheon outline PNGs are white-on-transparent (not dark-on-transparent as the GDD's §9 asserted). Even if masking had worked, a white outline on a light primary-tincture field would be invisible.
+
+**Fix (committed on branch 3d-migration, no new branch):**
+
+- `engine/subsystems/heraldry/heraldry_renderer.gd`:
+  - Replaced `CanvasGroup` + `ShaderMaterial` with a `Sprite2D` using `clip_children = CanvasItem.CLIP_CHILDREN_ONLY`. The mask sprite's alpha stencil clips all its children to the shield silhouette; the mask sprite itself is not drawn.
+  - Polygon/charge children are now authored in the mask texture's pixel space (0..mask_w) instead of the output viewport's pixel space, because they inherit the mask sprite's `viewport_scale` transform. All `scale_normalized_polygon(...)` calls now pass `mask_w` instead of `_output_size`. Bordure fill, primary fill, secondary polygons, ordinary polygons, and centered charge all updated. Static `_make_fill_polygon` is unchanged — its `size: int` parameter now receives `mask_w`.
+  - New `OUTLINE_MODULATE = Color(0.08, 0.08, 0.08)` constant and `outline_sprite.modulate = OUTLINE_MODULATE` make the white-on-transparent outline PNG read as a dark shield rim regardless of field tinctures.
+  - Removed `_mask_shader` member, `MASK_SHADER_PATH` constant, and the shader load in `_ready`.
+- Deleted `engine/subsystems/heraldry/heraldry_mask.gdshader` and its orphan `.uid` file — no longer referenced.
+- `docs/coding_conventions.md` §21.3 updated to describe the new `clip_children` approach, the mask-texture-coordinate authoring convention, and the outline-modulate dark tint.
+
+**Interfaces changed:** None external. `HeraldryRenderer.update_descriptor` / `get_texture` / `scale_normalized_polygon` signatures unchanged. All existing tests still exercise the same public surface.
+
+**Tests updated:** None (the 4 polygon-math tests still pass; the ~33 data tests are unaffected).
+
+**Next session should:**
+
+1. Visual smoke test the fix. Expected: each party shows a recognizable shield silhouette with a dark outline; field tinctures fill the shield shape only; no more white rectangle. If clip_children inside a SubViewport has platform-specific quirks (BackBufferCopy interactions), iterate here rather than diving into Session 3.
+2. If the fix works, proceed to Session 3 (customization UI + party management integration) per the plan.
+3. If the bordure rim still looks bad, tune `border_inset_ratio` in `OrdinaryRegistry.ORDINARIES.bordure` (currently 0.08) or revisit the "fill + inset inner" approach.
+
+---
+
+## Session 2026-04-24 — Heraldry renderer pivot to procedural silhouettes
+
+**Task:** After the `clip_children` fix, shields rendered as colored squares rather than shield shapes. Root-cause audit via PIL on every escutcheon PNG showed the masks are solid-opaque 256×256 white (65536/65536 pixels all opaque) and the outlines are 256×256 fully transparent (65536/65536 pixels alpha=0). The wikiscraper source files are identically broken, so the upstream normalize_escutcheons.py output is degenerate across the board. `clip_children` was doing its job — the mask simply didn't carry a silhouette to clip against. Rather than chase a broken content pipeline, pivot to procedural polygon silhouettes.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Pivot:** Shield silhouettes become code polygons in `ShieldShapeRegistry`. The renderer draws them directly as `Polygon2D` and clips secondary/ordinary layers via `Geometry2D.intersect_polygons`. No PNG masks, no PNG outlines.
+
+**Changes:**
+
+- `engine/subsystems/heraldry/shield_shape_registry.gd` — rewritten. Code-defined `const _HEATER_POLYGON` (11-vertex heater silhouette in normalized 0..1 coords) and `const SHAPES` mapping all eight registered shape_ids to it. Per-shape silhouettes can be added later by giving entries distinct polygons. New `get_polygon(shape_id)` accessor; `get_shape` now returns `{shape_id, display_name, polygon}`. `mask_path` / `outline_path` removed.
+- `engine/subsystems/heraldry/heraldry_renderer.gd` — rewritten composition:
+  1. Background `Polygon2D` with the shield silhouette (primary tincture, or ordinary tincture when bordure is active).
+  2. Inset silhouette fill for bordure mode (primary tincture painted inside the rim).
+  3. Secondary division polygons clipped via `Geometry2D.intersect_polygons` against the field silhouette.
+  4. Ordinary polygons (non-bordure) clipped the same way.
+  5. Centered charge `Sprite2D` with modulate tint; `CHARGE_FOOTPRINT_RATIO` lowered from 0.60 to 0.55 to reduce overhang.
+  6. Closed `Line2D` outline around the silhouette (near-black, antialiased, width scales with output size).
+  No mask sprite, no `CanvasGroup`, no shader material. The SubViewport is still used to package the composite as a `ViewportTexture`. New static helper `_inset_polygon(polygon, ratio)` shrinks a polygon toward its centroid for the bordure inset.
+- `tests/test_heraldry_data.gd` — `test_shape_registry_lookup_hit` updated: checks for non-empty `polygon` field instead of `mask_path`.
+- Deleted `assets/heraldry/escutcheons/` (16 degenerate PNGs) and `data/heraldry/shield_shapes.json` (no longer read).
+- `docs/coding_conventions.md` §21.3 rewritten to describe the polygon/`Geometry2D` pipeline.
+- `tools/heraldry/README.md` updated to note that escutcheon PNGs are gone and silhouettes live in code.
+
+**Interfaces changed:**
+
+- `ShieldShapeRegistry.get_shape` return shape changed (polygon replaces mask_path/outline_path).
+- New `ShieldShapeRegistry.get_polygon(shape_id) -> Array`.
+- `HeraldryRenderer` public surface (`update_descriptor`, `get_texture`, static `scale_normalized_polygon`) unchanged.
+
+**Known issues:**
+
+- **Charge overhang.** Charges at ~55% of their bounding box may still extend slightly past the silhouette at small output sizes. Acceptable for v1. If visually distracting, future iteration can clip the charge by re-rendering it as a textured `Polygon2D`.
+- **All shapes share one polygon.** Eight registered shape_ids all resolve to the heater silhouette. Distinct per-region silhouettes are a pure content task for later.
+- **Bordure inset is centroid-based scale.** Works for symmetric silhouettes; may look off on asymmetric shapes once they exist. Acceptable for v1.
+
+**Next session should:**
+
+1. Visual smoke test the new rendering. Expected: each party's token is a recognizable heater shield; primary/secondary/ordinary/charge tinctures render inside the silhouette; dark outline traces the shape; bordure (when chosen) shows a visible colored rim.
+2. If rendering looks good, proceed to Session 3 (customization UI + Party Management integration).
+
+---
+
+## Session 2026-04-23 — Multi-Party Wilderness Movement Fix
+
+**Task:** User-reported: with two parties on the hex map, giving Party B a move order while Party A is moving caused (a) Party A to move toward B's destination instead of B, (b) one party's orders to cancel the other's, and (c) clicking Party B and issuing Move Here resulted in Party A walking. All symptoms of the same root bug: the wilderness travel handler always operated on the runner's *primary* party regardless of which party owned the scheduled event.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Root cause:**
+
+[wilderness_handlers.gd:_handle_travel_leg](engine/subsystems/session/handlers/wilderness_handlers.gd) and the three sibling handlers (`_handle_encounter_check`, `_handle_getting_lost_check`, `_handle_forced_march_check`) all read `var party_data: PartyData = _runner.get_party_data()` — the runner's primary party — and ignored `event.owner_id`. The travel handler additionally:
+
+- Called `controller.can_move_to(coord)`, which checks adjacency against `_map_data.party_hex` — the controller's stored hex for the *primary* party. When Party B's `travel_leg` fired and Party A wasn't adjacent to B's destination, this returned `false` → `_cancel_party_movement_and_activity(B)` ran → B's remaining legs vanished. (That's the "orders cancel each other" symptom.)
+- Called `controller.move_party(coord)`, which mutates `_map_data.party_hex` (the primary's stored position) and emits `party_moved`. So when B's leg fired and adjacency happened to pass, the *primary* party's polygon walked to B's destination instead of B's polygon. (That's the "wrong party moves" symptom.)
+- Persisted to DB via `update_party_position(moving_pid, ...)` correctly — so the DB reflected the right party's hex even when the in-memory state was wrong, leading to the renderer's tokens snapping back/forth between DB-driven (next rebuild) and controller-driven (live) states.
+
+The fix splits the handler so the *primary* party uses `controller.move_party` (which updates `_map_data.party_hex` + fog + emits the legacy `party_moved`), and *non-primary* parties update the DB directly + reveal fog non-destructively + emit a new EventBus signal so the renderer rebuilds their token.
+
+**Completed:**
+
+- **New EventBus signal** [event_bus.gd:417](engine/autoloads/event_bus.gd#L417): `party_hex_changed(party_id: String, hex: Vector2i)`. Fires on every successful `travel_leg` (primary or not) so any renderer can rebuild that party's token without depending on the controller's primary-only `party_moved` signal.
+
+- **`HexMapController.reveal_around(center: Vector2i)`** [hex_map_controller.gd](engine/subsystems/exploration/hex_map_controller.gd): non-destructive fog reveal — sets `center` and its 6 neighbors to `VISIBLE` *without* demoting other currently-VISIBLE hexes. Used when a non-primary party moves so the active party's vicinity isn't accidentally demoted to EXPLORED. Fog accumulates across parties (slight inaccuracy vs. "only currently-visible-from-some-party stays VISIBLE", but acceptable in v1 — same hex-crawl convention shared world knowledge).
+
+- **`WildernessHandlers._party_data_for_event(event)`** new private helper: returns the moving party's `PartyData`. For events owned by the runner's primary party, reuses the runner's cached object so in-memory mutations like `is_lost` persist within the session. For non-primary parties, loads fresh from `CampaignRepository.load_party_data` AND populates `character_data` from `list_party_characters` (which `load_party_data` leaves empty), so per-member iteration in forced-march CON checks works uniformly across parties. Mutations on freshly-loaded PartyData must be re-saved explicitly by the caller.
+
+- **`WildernessHandlers._handle_travel_leg` rewrite** [wilderness_handlers.gd](engine/subsystems/session/handlers/wilderness_handlers.gd):
+  - Replaced `controller.can_move_to(coord)` with `controller.is_hex_passable(coord)` — party-agnostic passability check rather than primary-specific adjacency check. The path was already validated when scheduling.
+  - Branches on `is_primary = (moving_pid == _runner.get_party_id())`:
+    - **Primary**: `controller.move_party(coord)` (updates `_map_data.party_hex`, fog via `_update_visibility`, emits `party_moved`).
+    - **Non-primary**: `controller.reveal_around(coord)` (non-destructive fog).
+  - Always: updates `party_data.current_hex_q/r` on the moving party's PartyData, persists to DB via `update_party_position(moving_pid, ...)`, and emits `EventBus.party_hex_changed(moving_pid, coord)`.
+  - `auto_pause` is now gated on `(moving_pid == GameState.active_party_id)` — background-party arrivals/blocks no longer interrupt the player's actively-watched party.
+  - Encounter trigger keeps `auto_pause: true` because combat starts.
+
+- **Sibling-handler fixes** in the same file: `_handle_encounter_check`, `_handle_getting_lost_check`, `_handle_forced_march_check` all now resolve their party via `_party_data_for_event(event)` instead of `_runner.get_party_data()`. Getting-lost and forced-march persist non-primary mutations via `CampaignRepository.save_party_state(party_data.to_state_dict())`. Auto-pause for these is gated on the moving party being the active one (the player only wants to be interrupted by *their* party's exhaustion / lost-state).
+
+- **Renderer wiring** [hex_map_renderer.gd](scenes/maps/hex_map_renderer.gd): added `EventBus.party_hex_changed.connect(_on_party_hex_changed)` in `_ready`. The new handler calls `_rebuild_party_tokens()` + refreshes the Enter-Dungeon / Enter-Settlement buttons (in case the moved party is the active one and is now standing on / no longer on an entrance). The legacy `_on_party_moved` (controller signal) still fires for primary; the EventBus signal also fires for primary so there's a tiny duplicate-rebuild for primary moves — kept uniform rather than special-cased; rebuild cost is negligible.
+
+**Decisions made:**
+
+- **`reveal_around` is non-destructive (additive only).** A correct multi-party fog system would compute "currently visible" as the union of all parties' sight radii each tick. That's a bigger refactor — the in-memory `_map_data.fog` dict has no per-party axis. v1 accepts that "VISIBLE" can drift to mean "VISIBLE to *some* party recently, not necessarily right now." Looks correct on the map; will be revisited when fog needs precise recompute (e.g., for monster ambush cones).
+- **`is_hex_passable` replaces `can_move_to` in the leg handler.** The path was already pathfound at order time; we don't need adjacency at fire time. `is_hex_passable` is party-agnostic and correctly rejects ocean/lake.
+- **Non-primary PartyData is loaded fresh per event, not cached.** The runner caches one PartyData (the primary). Caching N more would mean keeping them in sync across split / merge / member-changes; far simpler to load on demand. Performance cost is one DB query per leg event — negligible at hex-crawl tick rates.
+- **`auto_pause` gated on active party, not primary party.** Lets a background party travel uninterrupted while the player commands the active one. Background-party events that *do* warrant attention (encounters, lost, exhaustion) still pause the active party because they fire `enter_combat` (always pauses) or are out-of-scope here (lost / exhaustion log silently for background parties; player notices when they switch back).
+- **`character_data` populated in `_party_data_for_event` for non-primary parties.** Without it, forced-march CON checks would iterate an empty array and never roll. The wilderness state already does this populate dance for the dispatcher; centralizing it in the handler helper means every event-driven code path gets a complete PartyData.
+
+**Interfaces defined or changed:**
+
+- `EventBus.party_hex_changed(party_id: String, hex: Vector2i)` **NEW**.
+- `HexMapController.reveal_around(center: Vector2i)` **NEW** public method.
+- `WildernessHandlers._party_data_for_event(event: ScheduledEvent) -> PartyData` **NEW** private helper.
+- `WildernessHandlers._handle_travel_leg` semantics: now correctly multi-party. Returns `auto_pause = (moving_pid == active_party_id)` for arrival/blocked branches; always pauses for encounters.
+- `WildernessHandlers._handle_encounter_check` / `_handle_getting_lost_check` / `_handle_forced_march_check` now use the event's party rather than the runner's primary. Non-primary mutations are persisted via `save_party_state`.
+
+**Database changes:** None. `CampaignRepository.save_party_state` already existed (used by SessionRunner) — non-primary handlers now use it too.
+
+**Tests added/updated:** None — multi-party handler dispatch is hard to unit-test without a full SessionRunner + scheduler harness. Existing `WildernessContextMenuBuilderTests` and `HexMapControllerTests` (now 25 + 14) still cover the menu and pathfinding sides. Live smoke test required.
+
+**Known issues:**
+
+- **Encounter `hex_id` annotation reads primary's hex.** [session_runner.gd:do_encounter_check:486-488](engine/subsystems/session/session_runner.gd#L486) builds `hex_id` from `_party_data.current_hex_q/r` (the runner's primary). For a non-primary encounter, the encounter log will note the *primary* party's hex even though the encounter triggered against the non-primary. Encounter resolution itself is correct — only the annotation is off. Follow-up: pass `from_hex` into `do_encounter_check`.
+- **Non-primary encounters use the primary party's CharacterData for any party-state-derived encounter modifiers** (none today, but future "high-level party adjusts encounter table" rules would be wrong). Same root cause: `_runner.do_encounter_check` is primary-bound. Defer until party-derived encounter modifiers exist.
+- **`check_party_time_lock` only locks the primary party.** [session_runner.gd:587](engine/subsystems/session/session_runner.gd#L587) reads `_party_id`; non-primary parties are never time-locked even when they should be. Pre-existing limitation, separate from this fix.
+- **Background-party "lost" / "exhausted" states do not toast.** When a non-active party gets lost or hits forced-march exhaustion mid-journey, the state mutation persists but the player sees no notification (auto_pause is suppressed for background parties). Acceptable for v1 — switching to that party shows the state in the UI. Could add a non-blocking notification later.
+- **No tests yet for the multi-party path.** Manual verification only.
+
+**Next session should:**
+
+1. Smoke test multi-party movement: split the party, click Party B, give Move Here to a hex 3+ away, confirm B walks (not A); then click Party A, give it a different Move Here, confirm A walks to its target while B continues to B's target.
+2. Confirm cancellation isolation: while both parties move, right-click + Move Here on Party A's destination — A's old orders cancel and re-route; B's orders are untouched and B keeps walking.
+3. Confirm fog: as Party B walks through unexplored territory, hexes reveal around B without demoting Party A's currently-VISIBLE hexes to EXPLORED.
+4. Encounter test: keep both parties moving in encounter terrain; confirm encounters trigger correctly per moving party (combat enters with the right party as PCs).
+5. Optional: add a `from_hex` param to `do_encounter_check` so the encounter log records the correct hex for non-primary triggers.
+
+---
+
+## Session 2026-04-24 — Seven authored shield silhouettes
+
+**Task:** Replace the single placeholder heater polygon (used for all 8 legacy shape_ids) with the seven distinct shape archetypes Jedidiah settled on: heater, kite, round, norman, tower, horsehead (Italian), and swiss. Swiss and horsehead silhouettes were authored against reference images Jedidiah shared (double-lobed Swiss top and hourglass Italian horsehead). The old regional vocabulary (english, old_french, german, italian, polish_xvib, polish_xixa, polish_xixc) is gone — migration 039 remaps any in-flight rows, the presets catalog is rewritten, and tests updated.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Changes:**
+
+- `engine/subsystems/heraldry/shield_shape_registry.gd` — rewritten. Seven `const ..._POLYGON` arrays (`_HEATER`, `_KITE`, `_ROUND`, `_NORMAN`, `_TOWER`, `_HORSEHEAD`, `_SWISS`) in normalized `0..1` coordinates, referenced by the `SHAPES` dict. Heater unchanged (11 points). Kite: 18-point rounded-top tear-drop. Round: 16-point circle centered at (0.5, 0.5) with radius 0.48. Norman: 16-point rounded-top shield, more elongated than heater. Tower: 12-point tall rectangular with rounded corners. Horsehead: 17-point hourglass silhouette (wide top, pinched neck, rounded lower bowl). Swiss: 20-point heater body with the distinctive double-lobed top and central dip.
+- `engine/shared_types/heraldry_descriptor.gd` — default `shape_id` changed from `"english"` to `"heater"` (both on the field default and inside `from_dict`).
+- `db/migrations/039_heraldry_shape_ids.sql` — remaps any surviving legacy rows: `english → heater`, `old_french → kite`, `german → norman`, `italian → horsehead`, `polish_* → tower`. A defensive `UPDATE … WHERE shape_id NOT IN (the seven)` catches anything else.
+- `db/schema.sql` — default on `party_heraldry.shape_id` updated to `'heater'` for documentation (SQLite doesn't propagate new defaults to existing rows, but the column default is only consulted by raw INSERTs that don't specify a value — our repo methods always specify, so this is cosmetic).
+- `data/heraldry/presets.json` — every preset rewritten to use the new vocabulary. Added one new `round_sunburst` preset so the preset library now covers all seven shapes.
+- `tests/test_heraldry_data.gd` — references to `"english"` / `"italian"` replaced with `"heater"` / `"horsehead"`.
+- `docs/coding_conventions.md` §21.2 — documents the closed seven-shape vocabulary and the `ShieldShapeRegistry.has_shape` guard.
+
+**Interfaces changed:**
+
+- `ShieldShapeRegistry.SHAPES` keyset reduced from 8 regional ids to 7 archetype ids. Any code still using legacy ids will fail `has_shape` and the renderer will `push_error` + bail.
+- `HeraldryDescriptor.shape_id` default is now `"heater"`.
+
+**Tests:** 3 test methods edited to use new ids. No new tests added — the existing 33-test suite already exercises shape lookup, polygon presence, and preset validity.
+
+**Known issues:**
+
+- **Migration 039 runs before the renderer reads any row.** The `CampaignRepository._run_migrations()` applies in-order on `_ready`, so existing save games will be re-mapped the first time the updated build runs. No manual intervention needed.
+- **Polygon coordinates are eyeballed, not measured.** Each shape should be visually plausible from a glance, but fine-tuning after in-game playtest is likely. Plenty of headroom to nudge vertices without changing the renderer surface.
+- **Horsehead bordure inset is centroid-based.** Works for heater-family shapes; the pinched horsehead neck may produce a visually odd inset. Acceptable for v1; if it looks wrong in playtest, `_inset_polygon` can be specialized per shape later.
+
+**Next session should:**
+
+1. Reload the game and visual-smoke-test that every party token now renders a distinct shield silhouette matching its preset.
+2. Party Management UI (Session 3 proper) once shields look right: `scenes/ui/heraldry/heraldry_editor.tscn` + overlay button.
 

@@ -470,8 +470,15 @@ func _resolve_next_action() -> Dictionary:
 	# --- Ready Attack: fire any readied PC reactions against this combatant
 	#     before their own action resolves. Consumed reactions do not advance
 	#     the initiative index, so the actor still gets their turn next.
-	#     _check_readied_triggers filters self/same-side internally. ---
-	var readied_fires: Array = _check_readied_triggers(combatant)
+	#     _check_readied_triggers filters self/same-side internally.
+	#     Snapshot the acting combatant's engagement BEFORE their turn's
+	#     movement so readied ranged shots know whether the target was
+	#     already engaged (pre-existing) vs a new engagement forming now. ---
+	var target_was_engaged_pre_turn: bool = false
+	if movement_resolver != null and movement_resolver.has_grid():
+		target_was_engaged_pre_turn = movement_resolver.is_engaged(combatant)
+	var readied_fires: Array = _check_readied_triggers(
+			combatant, target_was_engaged_pre_turn)
 	if not readied_fires.is_empty():
 		var first: Dictionary = readied_fires[0]
 		var additional: Array = []
@@ -954,7 +961,16 @@ func _resolve_ready_attack(combatant: Combatant, parameters: Dictionary = {}) ->
 ## actor is in range of the readied PC and both are alive. The readied
 ## state is consumed when the reaction fires. Returns an Array of fired
 ## attack result dicts (may be empty).
-func _check_readied_triggers(acting_combatant: Combatant) -> Array:
+##
+## [param target_was_engaged_pre_turn]: snapshot of acting_combatant's
+## melee engagement BEFORE any movement on this turn. Used by ranged
+## readied attacks to decide whether the target was already engaged
+## (pre-existing — normal into-melee rules apply) or is only now
+## engaging via this turn's movement (ready simulates pre-engagement
+## fire, so engagement is ignored for this shot).
+func _check_readied_triggers(
+		acting_combatant: Combatant,
+		target_was_engaged_pre_turn: bool = false) -> Array:
 	var fired: Array = []
 	if acting_combatant == null or not acting_combatant.is_alive():
 		return fired
@@ -970,7 +986,8 @@ func _check_readied_triggers(acting_combatant: Combatant) -> Array:
 			continue
 		if not _is_readied_target_in_range(pc, acting_combatant):
 			continue
-		var attack_result := _fire_readied_attack(pc, acting_combatant)
+		var attack_result := _fire_readied_attack(
+				pc, acting_combatant, target_was_engaged_pre_turn)
 		if attack_result.is_empty():
 			# Trigger matched but no viable attack path (e.g. cell trigger
 			# outside weapon range). Keep the reaction stored for the next
@@ -1040,11 +1057,25 @@ func _is_readied_target_in_range(shooter: Combatant, target: Combatant) -> bool:
 	return false
 
 
-func _fire_readied_attack(shooter: Combatant, target: Combatant) -> Dictionary:
+func _fire_readied_attack(
+		shooter: Combatant,
+		target: Combatant,
+		target_was_engaged_pre_turn: bool = false) -> Dictionary:
 	## Resolve a single readied attack. Chooses melee vs ranged based on
 	## adjacency and weapon capability. Cleave kills count toward the normal
 	## per-round cleave budget; the chain resolves non-interactively (same
 	## as monster cleave) to keep the reaction atomic.
+	##
+	## Readied-ranged engagement semantics (per ACKS RAW, simulated):
+	## - The shooter's own engagement status is ignored. The readied shot
+	##   fires before the triggering enemy reaches engagement range, so the
+	##   shooter is treated as not-yet-engaged for this reaction.
+	## - The target's engagement status uses [param target_was_engaged_pre_turn]
+	##   — that is, whether the target was already engaged in melee BEFORE
+	##   their movement on this turn. Pre-existing engagement feeds the
+	##   normal into-melee rules (blocked without Precise Shooting;
+	##   penalty with it). A fresh engagement just formed by this turn's
+	##   movement is ignored — the ready represents pre-engagement fire.
 	if attack_resolver == null or movement_resolver == null:
 		return {}
 	# Face the target.
@@ -1070,7 +1101,8 @@ func _fire_readied_attack(shooter: Combatant, target: Combatant) -> Dictionary:
 		{"note": "readied_attack_fires", "actor_name": shooter.display_name,
 		 "target_name": target.display_name,
 		 "trigger_type": shooter.readied_trigger_type,
-		 "is_ranged": use_ranged})
+		 "is_ranged": use_ranged,
+		 "target_already_engaged": target_was_engaged_pre_turn})
 
 	var attack_result: Dictionary
 	if use_ranged:
@@ -1078,7 +1110,10 @@ func _fire_readied_attack(shooter: Combatant, target: Combatant) -> Dictionary:
 		var distance_ft: int = movement_resolver.get_distance_ft(shooter, target)
 		if distance_ft < 0:
 			distance_ft = 30  # default, shouldn't happen on a grid
-		var target_in_melee: bool = movement_resolver.is_engaged(target)
+		# Only apply into-melee rules if the target was ALREADY engaged
+		# before this turn's movement. A fresh engagement formed this turn
+		# is ignored — the readied shot fires pre-engagement.
+		var target_in_melee: bool = target_was_engaged_pre_turn
 		attack_result = ranged_resolver.resolve_ranged_attack(
 			shooter, target, weapon_data, distance_ft, target_in_melee, 0)
 		# Ammunition is consumed on hit or miss.
@@ -1224,6 +1259,14 @@ func _resolve_cast_spell(
 func _resolve_monster_action(combatant: Combatant) -> Dictionary:
 	## Monster turn: uses MonsterAI for target/action selection,
 	## expanded attack sequences with mid-routine cleave, and morale integration.
+	# Snapshot the monster's melee engagement BEFORE any movement this turn.
+	# Readied ranged shots that fire post-movement use this snapshot to tell
+	# "already engaged in melee" (normal into-melee rules apply) from "new
+	# engagement formed by this movement" (pre-engagement fire, ignored).
+	var pre_move_engaged: bool = false
+	if movement_resolver != null and movement_resolver.has_grid():
+		pre_move_engaged = movement_resolver.is_engaged(combatant)
+
 	if combatant.is_fleeing:
 		return _resolve_combatant_action(combatant, "pass",
 			{"note": "fleeing"})
@@ -1280,8 +1323,11 @@ func _resolve_monster_action(combatant: Combatant) -> Dictionary:
 
 	# --- Ready Attack: check readied PC reactions triggered by this monster's
 	#     movement into range. Fires BEFORE the monster's attack routine.
-	#     (Already-adjacent case fires earlier in _resolve_next_action.) ---
-	var post_move_readied_fires: Array = _check_readied_triggers(combatant)
+	#     (Already-adjacent case fires earlier in _resolve_next_action.)
+	#     Uses the pre-movement engagement snapshot taken at the top of this
+	#     function so ranged readies see the correct "already engaged" state. ---
+	var post_move_readied_fires: Array = _check_readied_triggers(
+			combatant, pre_move_engaged)
 	var readied_fire_results: Array = post_move_readied_fires
 	# If the readied attack killed the monster, end their turn immediately.
 	if not combatant.is_alive():

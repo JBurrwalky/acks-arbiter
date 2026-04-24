@@ -80,7 +80,7 @@ func run_all_tests() -> void:
 func test_descriptor_defaults() -> void:
 	var d := HeraldryDescriptor.new()
 	check(d.heraldry_id == "", "default heraldry_id is empty")
-	check(d.shape_id == "english", "default shape is english")
+	check(d.shape_id == "heater", "default shape is heater")
 	check(d.division_id == "plain", "default division is plain")
 	check(d.ordinary_id == "", "default ordinary is empty")
 	check(d.charge_id == "", "default charge is empty")
@@ -89,7 +89,7 @@ func test_descriptor_defaults() -> void:
 func test_descriptor_round_trip() -> void:
 	var original := HeraldryDescriptor.new()
 	original.heraldry_id = "h_abc123"
-	original.shape_id = "italian"
+	original.shape_id = "horsehead"
 	original.division_id = "quarterly"
 	original.tincture_primary = Color("#d4af37")
 	original.tincture_secondary = Color("#1f3a8a")
@@ -136,7 +136,7 @@ func test_descriptor_visual_hash_changes() -> void:
 	var a := HeraldryDescriptor.new()
 	var b := HeraldryDescriptor.new()
 	check(a.visual_hash() == b.visual_hash(), "identical descriptors have identical visual_hash")
-	b.shape_id = "italian"
+	b.shape_id = "horsehead"
 	check(a.visual_hash() != b.visual_hash(), "shape_id change flips visual_hash")
 	b.shape_id = a.shape_id
 	b.tincture_primary = Color("#ffffff")
@@ -151,7 +151,7 @@ func test_descriptor_duplicate_descriptor() -> void:
 	var b := a.duplicate_descriptor()
 	check(b != a, "duplicate is a different instance")
 	check(b.shape_id == a.shape_id, "duplicate preserves shape_id")
-	b.shape_id = "italian"
+	b.shape_id = "horsehead"
 	check(a.shape_id == "swiss", "mutating duplicate does not affect original")
 
 
@@ -166,10 +166,11 @@ func test_shape_registry_loads() -> void:
 
 func test_shape_registry_lookup_hit() -> void:
 	var reg := ShieldShapeRegistry.new()
-	var s := reg.get_shape("english")
-	check(not s.is_empty(), "english shape exists")
-	check(s.get("mask_path", "").begins_with("res://assets/heraldry/escutcheons/"), "english mask_path points to assets")
-	check(reg.has_shape("english"), "has_shape returns true")
+	var s := reg.get_shape("heater")
+	check(not s.is_empty(), "heater shape exists")
+	check(not s.get("polygon", []).is_empty(), "heater shape carries a silhouette polygon")
+	check(s.get("polygon", []).size() >= 3, "silhouette has at least 3 vertices")
+	check(reg.has_shape("heater"), "has_shape returns true")
 
 
 func test_shape_registry_lookup_miss() -> void:
@@ -368,7 +369,7 @@ func _setup_campaign() -> void:
 func test_repo_save_and_get() -> void:
 	var d := HeraldryDescriptor.new()
 	d.heraldry_id = CampaignRepository.generate_id()
-	d.shape_id = "italian"
+	d.shape_id = "horsehead"
 	d.division_id = "per_fess"
 	d.tincture_primary = Color("#a02020")
 	d.tincture_secondary = Color("#d4af37")
@@ -401,7 +402,7 @@ func test_repo_save_and_get() -> void:
 func test_repo_assign_to_party() -> void:
 	var d := HeraldryDescriptor.new()
 	d.heraldry_id = CampaignRepository.generate_id()
-	d.shape_id = "english"
+	d.shape_id = "heater"
 	check(CampaignRepository.save_heraldry(d), "save for assignment test")
 	check(CampaignRepository.assign_heraldry_to_party(_party_id, d.heraldry_id),
 		"assign_heraldry_to_party succeeds")

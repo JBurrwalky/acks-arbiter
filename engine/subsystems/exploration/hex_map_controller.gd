@@ -279,6 +279,25 @@ func move_party(target: Vector2i) -> bool:
 # Private helpers
 # ---------------------------------------------------------------------------
 
+## Reveals [param center] and its adjacent in-bounds hexes as VISIBLE WITHOUT
+## demoting other currently-VISIBLE hexes. Use this when a non-active party
+## moves so the active party's vicinity stays visible. Fog accumulates across
+## parties (a slight inaccuracy compared to "only currently-visible-from-some-
+## party is VISIBLE", but acceptable in v1).
+func reveal_around(center: Vector2i) -> void:
+	if _map_data == null:
+		return
+	var visible_set: Array[Vector2i] = [center]
+	visible_set.append_array(get_neighbors(center))
+	for coord in visible_set:
+		if _map_data.is_valid_coord(coord):
+			var was_hidden := _map_data.get_fog_state(coord) == HexMapData.FogState.HIDDEN
+			_map_data.set_fog_state(coord, HexMapData.FogState.VISIBLE)
+			if was_hidden:
+				hex_first_revealed.emit(coord)
+	visibility_updated.emit()
+
+
 ## Demotes previously VISIBLE hexes to EXPLORED, then marks the center and
 ## all adjacent in-bounds hexes as VISIBLE. Emits hex_first_revealed for
 ## any hex transitioning out of HIDDEN for the first time.

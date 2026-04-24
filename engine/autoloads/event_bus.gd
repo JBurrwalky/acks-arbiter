@@ -413,6 +413,12 @@ signal session_state_transitioned(from_key: String, to_key: String)
 ## Active party switched. Consumers: wilderness renderer, HUD, character sheet.
 signal active_party_changed(previous_party_id: String, new_party_id: String)
 
+## A party's wilderness hex position changed. Emitted from the wilderness travel
+## handler for both primary and non-primary parties so the hex renderer can
+## rebuild that party's token without depending on the controller's
+## primary-party `party_moved` signal.
+signal party_hex_changed(party_id: String, hex: Vector2i)
+
 # ---------------------------------------------------------------------------
 # Dev testing signals (temporary — remove when session runner exists)
 # ---------------------------------------------------------------------------

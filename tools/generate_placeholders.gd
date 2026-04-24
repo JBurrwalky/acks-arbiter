@@ -17,8 +17,8 @@ extends EditorScript
 ##   16:    river marker
 
 
-const TILE_W := 64
-const TILE_H := 56
+const TILE_W := 83
+const TILE_H := 72
 const COLS := 17
 const OUTPUT_PATH := "res://assets/terrain/terrain_atlas.png"
 

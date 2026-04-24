@@ -25,10 +25,10 @@ extends Node2D
 # Constants
 # ---------------------------------------------------------------------------
 
-# Flat-top hex with circumradius R = 32:
-#   Width  (tip-to-tip)  = 2R = 64
-#   Height (flat-to-flat) = R*sqrt(3) ≈ 55.4 → 56
-const TERRAIN_TILE_SIZE := Vector2i(64, 56)
+# Flat-top hex with circumradius R = 41.5:
+#   Width  (tip-to-tip)  = 2R ≈ 83.1 → 83
+#   Height (flat-to-flat) = R*sqrt(3) ≈ 71.9 → 72
+const TERRAIN_TILE_SIZE := Vector2i(83, 72)
 const TERRAIN_ATLAS_COLS := 17
 
 # Atlas column index for each biome at flat elevation (add 5 for hills, 10 for mountains)
@@ -38,7 +38,7 @@ const BIOME_COL := {
 const OCEAN_COL := 15
 
 # Fog tile atlas: 2 columns × 1 row
-const FOG_TILE_SIZE := Vector2i(64, 56)
+const FOG_TILE_SIZE := Vector2i(83, 72)
 const FOG_SOURCE_ID := 0
 const FOG_HIDDEN_ATLAS := Vector2i(0, 0)
 const FOG_EXPLORED_ATLAS := Vector2i(1, 0)
@@ -150,6 +150,10 @@ func _ready() -> void:
 	EventBus.party_split.connect(_on_party_split)
 	EventBus.party_merged.connect(_on_party_merged)
 	EventBus.active_party_changed.connect(_on_active_party_switched)
+	# Any party (including non-primary) crossed a hex boundary — re-anchor
+	# tokens. The controller's `party_moved` signal only fires for the
+	# primary party, so this catches the rest.
+	EventBus.party_hex_changed.connect(_on_party_hex_changed)
 	EventBus.heraldry_changed.connect(_on_heraldry_changed)
 
 	# "Enter Dungeon" button — child of HexHUD (CanvasLayer) so it stays on screen.
@@ -769,6 +773,16 @@ func _on_active_party_switched(_prev_id: String, _new_id: String) -> void:
 	_rebuild_party_tokens()
 
 
+## A party (primary or non-primary) finished a travel_leg. Rebuild tokens so
+## the moving party's polygon snaps to its new hex. Includes the active-
+## dungeon-entrance / Enter-Settlement button refresh in case the moved party
+## is the active one and is now standing on (or no longer on) an entrance.
+func _on_party_hex_changed(_party_id: String, _hex: Vector2i) -> void:
+	_rebuild_party_tokens()
+	_update_enter_dungeon_button()
+	_update_enter_settlement_button()
+
+
 ## Looks up which party owns the changed heraldry and re-renders just that
 ## token's shield in place. Skips rebuilding all tokens — the change doesn't
 ## affect other parties, and the Sprite2D.texture reference remains stable.
@@ -881,12 +895,12 @@ func _draw_overlay_lines(hex_center: Vector2, edges: Array[int], color: Color) -
 
 ## Returns the pixel offset from hex center to the midpoint of the given edge.
 ## Edge numbering: 0=N, 1=NE, 2=SE, 3=S, 4=SW, 5=NW (clockwise from North).
-## For a flat-top hex with circumradius R = 32:
-##   N/S midpoints:  (0, ±R*√3/2)  = (0, ±27.7)
-##   NE/SW midpoints: (R*3/4, ∓R*√3/4) = (24, ∓13.9)
-##   SE/NW midpoints: (R*3/4, ±R*√3/4) = (24, ±13.9)
+## For a flat-top hex with circumradius R (= TERRAIN_TILE_SIZE.x / 2):
+##   N/S midpoints:  (0, ±R*√3/2)
+##   NE/SW midpoints: (R*3/4, ∓R*√3/4)
+##   SE/NW midpoints: (R*3/4, ±R*√3/4)
 func _edge_midpoint_offset(edge: int) -> Vector2:
-	var r := float(TERRAIN_TILE_SIZE.x) * 0.5  # circumradius = 32
+	var r := float(TERRAIN_TILE_SIZE.x) * 0.5  # circumradius
 	var h := r * 0.866025  # R * √3/2
 	var qr := r * 0.75     # R * 3/4
 	var qh := r * 0.433013 # R * √3/4
@@ -1165,8 +1179,8 @@ func _create_fog_tileset() -> TileSet:
 ## Pixels outside the hexagon stay transparent (RGBA8 default = 0,0,0,0).
 func _draw_hex_tile(img: Image, col_idx: int, tile_size: Vector2i,
 		fill_color: Color, border_color: Color, border_inset: float = 1.5) -> void:
-	var cx := tile_size.x * 0.5        # 32.0
-	var cy := tile_size.y * 0.5        # 28.0
+	var cx := tile_size.x * 0.5
+	var cy := tile_size.y * 0.5
 	var r := cx                         # circumradius = half width
 	var r_fill := r - border_inset
 	var ox := col_idx * tile_size.x    # x offset in atlas image
