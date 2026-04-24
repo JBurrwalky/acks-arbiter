@@ -4,7 +4,7 @@ extends VBoxContainer
 ## Step 6 — Starting Spell Selection.
 ##
 ## Flow by tradition:
-##   Arcane (mage, elf_spellsword, elven_enchanter): player picks 1 judge-selected
+##   Arcane (mage, elven_spellsword, elven_enchanter): player picks 1 judge-selected
 ##     level-1 spell; each INT bonus point rolls 1d12 on the arcane index.
 ##   Divine with level-1 slots (priestess, witch): grants are auto-generated from
 ##     the divine repertoire engine. Shown for confirmation; no player input needed.

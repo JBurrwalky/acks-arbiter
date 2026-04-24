@@ -9,12 +9,16 @@ extends CanvasLayer
 ## Hidden during MAIN_MENU and CHARACTER_CREATION states.
 ## Visible during EXPLORATION, COMBAT, DOWNTIME, DOMAIN.
 
-## Two-row layout: portraits (top) + widgets (bottom). Portraits live in their
-## own row so they cannot be visually overrun by the time / rations / speeds
-## widgets at small viewport widths.
-const PORTRAIT_ROW_HEIGHT := 60   # 56 portrait + 4 padding
-const WIDGET_ROW_HEIGHT := 64
-const BAR_HEIGHT := PORTRAIT_ROW_HEIGHT + WIDGET_ROW_HEIGHT + 8
+## Single-row layout. Bar height scales with viewport (capped) so the bar
+## holds a consistent ~10% of the screen at any window size — never dominates
+## a small editor window, never looks tiny on a 4K display.
+const BAR_HEIGHT_PCT := 0.10
+const BAR_HEIGHT_MIN := 60
+## Hard cap. Also the value other overlays read as `SessionStatusBar.BAR_HEIGHT`
+## for their own bottom-padding calculations — they leave room for the max
+## possible bar height; gap below them when the bar is shorter is acceptable.
+const BAR_HEIGHT_MAX := 76
+const BAR_HEIGHT := BAR_HEIGHT_MAX
 const FONT_SIZE := 12
 const SMALL_FONT_SIZE := 10
 const PORTRAIT_SIZE := Vector2(56, 56)
@@ -22,6 +26,15 @@ const PORTRAIT_SIZE := Vector2(56, 56)
 ## PORTRAIT_SIZE + 2*PORTRAIT_SLOT_PADDING wide; clip_contents on the slot
 ## guarantees the portrait can never visually overlap a neighbor.
 const PORTRAIT_SLOT_PADDING := 2
+## Viewport-width thresholds for graceful widget hiding. The bar prefers to
+## DROP widgets rather than wrap or visually compress, in priority order from
+## least essential (rations, travel speeds) to most essential (location).
+## All thresholds are upper bounds — the widget hides when viewport width is
+## strictly less than the value.
+const HIDE_SIDEPANELS_BELOW := 1300  # rations + travel speeds
+const HIDE_PAUSE_BELOW := 1100        # auto-pause reason label
+const HIDE_CLOCK_BELOW := 900         # clock speed controls
+const HIDE_TIME_BELOW := 720          # time label (very narrow only)
 const LABEL_COLOR := Color(0.85, 0.80, 0.70, 1.0)
 const DIM_COLOR := Color(0.55, 0.50, 0.42, 1.0)
 const BG_COLOR := Color(0.08, 0.06, 0.04, 0.95)
@@ -88,7 +101,7 @@ func _ready() -> void:
 func _build_ui() -> void:
 	_bar = PanelContainer.new()
 	_bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	_bar.offset_top = -BAR_HEIGHT
+	_bar.offset_top = -float(BAR_HEIGHT_MAX)
 	_bar.offset_bottom = 0
 
 	var style := StyleBoxFlat.new()
@@ -102,70 +115,83 @@ func _build_ui() -> void:
 	_bar.add_theme_stylebox_override("panel", style)
 	add_child(_bar)
 
-	# Two rows: portraits on top (so the per-character slots never get squeezed
-	# by the time / rations / speeds widgets), info widgets on the bottom.
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 4)
-	_bar.add_child(vbox)
+	# Three independently-anchored clusters in a single Control root. Each
+	# cluster is anchored to its viewport edge (left / center / right) and
+	# sized by its own contents — they cannot push or compress one another.
+	# Portraits stay centered on the viewport regardless of how heavy or light
+	# the side clusters are.
+	var content_root := Control.new()
+	content_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content_root.clip_contents = true
+	_bar.add_child(content_root)
 
-	# --- Top row: party-member portrait strip ----------------------------
-	# CenterContainer keeps the strip centered without competing with siblings
-	# in an alignment-driven hbox; clip_contents on the strip prevents any
-	# theoretical overflow from rendering outside its zone.
-	var portrait_row := CenterContainer.new()
-	portrait_row.custom_minimum_size = Vector2(0, PORTRAIT_ROW_HEIGHT)
-	portrait_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox.add_child(portrait_row)
+	# --- Left cluster (anchored to viewport left, grows right) ----------
+	var left_cluster := HBoxContainer.new()
+	left_cluster.add_theme_constant_override("separation", 12)
+	left_cluster.set_anchors_preset(Control.PRESET_LEFT_WIDE)
+	left_cluster.grow_horizontal = Control.GROW_DIRECTION_END
+	left_cluster.clip_contents = true
+	content_root.add_child(left_cluster)
+
+	_location_label = _make_label("--", LABEL_COLOR, FONT_SIZE)
+	_location_label.custom_minimum_size = Vector2(100, 0)
+	_location_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	left_cluster.add_child(_location_label)
+
+	left_cluster.add_child(_vsep())
+
+	_time_label = _make_label("Day 1", LABEL_COLOR, FONT_SIZE)
+	_time_label.custom_minimum_size = Vector2(220, 0)
+	_time_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	left_cluster.add_child(_time_label)
+
+	left_cluster.add_child(_vsep())
+
+	_speed_controls = ClockSpeedControls.new()
+	left_cluster.add_child(_speed_controls)
+
+	_pause_reason_label = _make_label("", DIM_COLOR, FONT_SIZE)
+	_pause_reason_label.custom_minimum_size = Vector2(0, 0)
+	_pause_reason_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	left_cluster.add_child(_pause_reason_label)
+
+	# --- Center cluster: party-member portrait strip --------------------
+	# CenterContainer fills the entire content area; its single child (the
+	# portraits HBox) is centered horizontally and vertically within. Because
+	# all three clusters are siblings of the same Control parent and Control
+	# doesn't enforce non-overlap, the portrait centering here is independent
+	# of how wide the side clusters render.
+	var portrait_anchor := CenterContainer.new()
+	portrait_anchor.set_anchors_preset(Control.PRESET_FULL_RECT)
+	portrait_anchor.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content_root.add_child(portrait_anchor)
+	# Render portraits above the side clusters so any visual collision (at
+	# very narrow widths between the threshold check ticks) keeps the
+	# portraits visible on top.
+	portrait_anchor.z_index = 1
 
 	_portraits_hbox = HBoxContainer.new()
 	_portraits_hbox.add_theme_constant_override("separation", 4)
 	_portraits_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	_portraits_hbox.clip_contents = true
-	portrait_row.add_child(_portraits_hbox)
+	portrait_anchor.add_child(_portraits_hbox)
 
-	# --- Bottom row: location / time / speed / rations / speeds / camp ---
-	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 16)
-	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(hbox)
+	# --- Right cluster (anchored to viewport right, grows left) ---------
+	var right_cluster := HBoxContainer.new()
+	right_cluster.add_theme_constant_override("separation", 12)
+	right_cluster.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
+	right_cluster.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	right_cluster.clip_contents = true
+	content_root.add_child(right_cluster)
 
-	# Location.
-	_location_label = _make_label("--", LABEL_COLOR, FONT_SIZE)
-	_location_label.custom_minimum_size = Vector2(100, 0)
-	hbox.add_child(_location_label)
-
-	hbox.add_child(_vsep())
-
-	# Time.
-	_time_label = _make_label("Day 1", LABEL_COLOR, FONT_SIZE)
-	_time_label.custom_minimum_size = Vector2(220, 0)
-	hbox.add_child(_time_label)
-
-	hbox.add_child(_vsep())
-
-	# Clock speed controls.
-	_speed_controls = ClockSpeedControls.new()
-	hbox.add_child(_speed_controls)
-
-	# Auto-pause reason (shown briefly when scheduler pauses on an event).
-	_pause_reason_label = _make_label("", DIM_COLOR, FONT_SIZE)
-	_pause_reason_label.custom_minimum_size = Vector2(0, 0)
-	_pause_reason_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	hbox.add_child(_pause_reason_label)
-
-	hbox.add_child(_vsep())
-
-	# Rations sub-panel (wilderness only).
 	_rations_panel = _build_rations_panel()
-	hbox.add_child(_rations_panel)
+	right_cluster.add_child(_rations_panel)
 
-	# Travel speeds sub-panel (wilderness only).
 	_speeds_panel = _build_speeds_panel()
-	hbox.add_child(_speeds_panel)
+	right_cluster.add_child(_speeds_panel)
 
-	# Wilderness action buttons (hidden outside wilderness exploration).
 	_camp_btn = Button.new()
 	_camp_btn.text = "Camp"
 	_camp_btn.flat = true
@@ -174,7 +200,42 @@ func _build_ui() -> void:
 	_camp_btn.custom_minimum_size = Vector2(50, 0)
 	_camp_btn.pressed.connect(func(): EventBus.camp_requested.emit())
 	_camp_btn.visible = false
-	hbox.add_child(_camp_btn)
+	right_cluster.add_child(_camp_btn)
+
+	# Apply the dynamic-height + narrow-viewport rules now and on every resize.
+	_apply_viewport_layout()
+	get_viewport().size_changed.connect(_apply_viewport_layout)
+
+
+## Resizes the bar to ~BAR_HEIGHT_PCT of viewport height (clamped to
+## [BAR_HEIGHT_MIN, BAR_HEIGHT_MAX]) and DROPS optional widgets in priority
+## order at narrow viewports so the centered portraits never compete for
+## horizontal space.
+func _apply_viewport_layout() -> void:
+	if _bar == null:
+		return
+	var vp_size: Vector2 = get_viewport().get_visible_rect().size
+	var h: int = clampi(int(vp_size.y * BAR_HEIGHT_PCT),
+		BAR_HEIGHT_MIN, BAR_HEIGHT_MAX)
+	_bar.offset_top = -float(h)
+
+	# Optional widgets: hide at narrow viewports. Side panels also have their
+	# wilderness-context visibility toggled via `_refresh_party_status` — for
+	# the panels we set the cached "narrow" flag and let `_refresh_party_status`
+	# combine it with the wilderness-context check.
+	var clock_visible: bool = vp_size.x >= HIDE_CLOCK_BELOW
+	var pause_visible: bool = vp_size.x >= HIDE_PAUSE_BELOW
+	var time_visible: bool = vp_size.x >= HIDE_TIME_BELOW
+	if _speed_controls != null:
+		_speed_controls.visible = clock_visible
+	if _pause_reason_label != null:
+		_pause_reason_label.visible = pause_visible
+	if _time_label != null:
+		_time_label.visible = time_visible
+
+	# Side panels: combine narrow gate + wilderness-context gate by always
+	# routing through `_refresh_party_status`.
+	_refresh_party_status(GameState.active_party_id)
 
 
 func _build_rations_panel() -> PanelContainer:
@@ -593,12 +654,16 @@ func _on_scheduler_resumed() -> void:
 # ---------------------------------------------------------------------------
 
 ## Refreshes the rations and travel-speeds panels for the given party. Hides
-## the panels when there is no party loaded or the state isn't wilderness.
+## the panels when there is no party loaded, the state isn't wilderness, OR
+## the viewport is too narrow to fit them alongside the centered portraits.
 func _refresh_party_status(party_id: String) -> void:
 	if _rations_panel == null or _speeds_panel == null:
 		return
+	var vp_width: float = get_viewport().get_visible_rect().size.x
+	var fits: bool = vp_width >= HIDE_SIDEPANELS_BELOW
 	var show: bool = (
-		GameState.current_state == GameState.State.EXPLORATION
+		fits
+		and GameState.current_state == GameState.State.EXPLORATION
 		and GameState.exploration_context == GameState.ExplorationContext.WILDERNESS
 	)
 	if party_id.is_empty() or not show:

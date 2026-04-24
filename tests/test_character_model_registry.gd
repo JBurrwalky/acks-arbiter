@@ -164,51 +164,51 @@ func test_has_any_model_false_for_unregistered() -> void:
 		"paladin female has no models shipped")
 
 
-## Racial-prefix class IDs (elf_spellsword, elf_nightblade, elven_enchanter)
+## Racial-prefix class IDs (elven_spellsword, elven_nightblade, elven_enchanter)
 ## must resolve to the bare-stem GLBs in assets/tokens/characters/.
 func test_elf_aliases_resolve_to_base_class() -> void:
-	check(CharacterModelRegistryScript.has_model("elf_spellsword", "def", "male"),
-		"elf_spellsword/def/male should alias to spellsword_def_male")
-	check(CharacterModelRegistryScript.has_model("elf_nightblade", "def", "female"),
-		"elf_nightblade/def/female should alias to nightblade_def_female")
+	check(CharacterModelRegistryScript.has_model("elven_spellsword", "def", "male"),
+		"elven_spellsword/def/male should alias to spellsword_def_male")
+	check(CharacterModelRegistryScript.has_model("elven_nightblade", "def", "female"),
+		"elven_nightblade/def/female should alias to nightblade_def_female")
 	check(CharacterModelRegistryScript.has_model("elven_enchanter", "def", "male"),
 		"elven_enchanter/def/male should alias to enchanter_def_male")
 	var path: String = CharacterModelRegistryScript.get_model_path(
-		"elf_spellsword", "def", "male")
+		"elven_spellsword", "def", "male")
 	check(path == "res://assets/tokens/characters/spellsword_def_male.glb",
-		"elf_spellsword path should resolve to spellsword_def_male.glb, got: %s" % path)
+		"elven_spellsword path should resolve to spellsword_def_male.glb, got: %s" % path)
 	var variants: Array[String] = CharacterModelRegistryScript.get_available_variants(
-		"elf_spellsword", "male")
+		"elven_spellsword", "male")
 	check("def" in variants and "alt1" in variants,
-		"elf_spellsword should surface all spellsword variants, got %s" % [variants])
-	check(CharacterModelRegistryScript.has_any_model("elf_spellsword", "male"),
-		"elf_spellsword should pass has_any_model")
+		"elven_spellsword should surface all spellsword variants, got %s" % [variants])
+	check(CharacterModelRegistryScript.has_any_model("elven_spellsword", "male"),
+		"elven_spellsword should pass has_any_model")
 
 
 ## Dwarven-prefix classes alias the same way.
 func test_dwarf_aliases_resolve_to_base_class() -> void:
-	check(CharacterModelRegistryScript.has_model("dwarf_vaultguard", "def", "male"),
-		"dwarf_vaultguard should alias to vaultguard_def_male")
-	check(CharacterModelRegistryScript.has_model("dwarf_craftpriest", "def", "male"),
-		"dwarf_craftpriest should alias to craftpriest_def_male")
+	check(CharacterModelRegistryScript.has_model("dwarven_vaultguard", "def", "male"),
+		"dwarven_vaultguard should alias to vaultguard_def_male")
+	check(CharacterModelRegistryScript.has_model("dwarven_craftpriest", "def", "male"),
+		"dwarven_craftpriest should alias to craftpriest_def_male")
 	check(CharacterModelRegistryScript.has_model("dwarven_fury", "def", "male"),
 		"dwarven_fury should alias to fury_def_male")
-	var sexes: Array[String] = CharacterModelRegistryScript.get_available_sexes("dwarf_vaultguard")
-	check("male" in sexes, "dwarf_vaultguard should expose male sex")
+	var sexes: Array[String] = CharacterModelRegistryScript.get_available_sexes("dwarven_vaultguard")
+	check("male" in sexes, "dwarven_vaultguard should expose male sex")
 
 
 ## Aliased class_ids must still hit the short / medium scale overrides.
 func test_alias_preserves_scale_overrides() -> void:
 	var g: float = CharacterModelRegistryScript.GLOBAL_SCALE
-	var elf_sw: float = CharacterModelRegistryScript.get_scale("elf_spellsword", "male")
+	var elf_sw: float = CharacterModelRegistryScript.get_scale("elven_spellsword", "male")
 	check(is_equal_approx(elf_sw, 1.70 * g),
-		"elf_spellsword should be MEDIUM (1.70 * GLOBAL_SCALE), got %s" % elf_sw)
-	var dwarf_vg: float = CharacterModelRegistryScript.get_scale("dwarf_vaultguard", "male")
+		"elven_spellsword should be MEDIUM (1.70 * GLOBAL_SCALE), got %s" % elf_sw)
+	var dwarf_vg: float = CharacterModelRegistryScript.get_scale("dwarven_vaultguard", "male")
 	check(is_equal_approx(dwarf_vg, 1.25 * g),
-		"dwarf_vaultguard should be SHORT (1.25 * GLOBAL_SCALE), got %s" % dwarf_vg)
-	var dwarf_cp: float = CharacterModelRegistryScript.get_scale("dwarf_craftpriest", "male")
+		"dwarven_vaultguard should be SHORT (1.25 * GLOBAL_SCALE), got %s" % dwarf_vg)
+	var dwarf_cp: float = CharacterModelRegistryScript.get_scale("dwarven_craftpriest", "male")
 	check(is_equal_approx(dwarf_cp, 1.25 * g),
-		"dwarf_craftpriest should be SHORT, got %s" % dwarf_cp)
+		"dwarven_craftpriest should be SHORT, got %s" % dwarf_cp)
 	var dwarven_fury: float = CharacterModelRegistryScript.get_scale("dwarven_fury", "male")
 	check(is_equal_approx(dwarven_fury, 1.85 * g),
 		"dwarven_fury should use the male default (no override), got %s" % dwarven_fury)

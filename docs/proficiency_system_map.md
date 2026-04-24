@@ -643,7 +643,7 @@ For quick lookup when building a specific system, proficiencies sorted by which 
 | **Dungeon Exploration** | Alertness, Cat Burglary, Caving, Climbing, Contortionism, Dungeon Bashing, Land Surveying, Lockpicking, Mapping, Mountaineering, Skulking, Trap Finding |
 | **Wilderness Exploration** | Animal Husbandry, Animal Training, Beast Friendship, Endurance, Naturalism, Navigation, Passing Without Trace, Riding, Running, Survival, Tracking, Trapping |
 | **Domain Play** | Command, Craft, Engineering, Labor, Leadership, Military Strategy, Profession, Siege Engineering, Theology |
-| **Spells & Magic** | Alchemy, Black Lore of Zahar, Collegiate Wizardry, Dwarven Brewing, Elementalism, Loremastery, Magical Engineering, Quiet Magic, Righteous Turning, Sensing Evil, Sensing Power, Transmogrification |
+| **Spells & Magic** | Alchemy, Black Lore of Chaos, Collegiate Wizardry, Dwarven Brewing, Elementalism, Loremastery, Magical Engineering, Quiet Magic, Righteous Turning, Sensing Evil, Sensing Power, Transmogrification |
 | **Treasure & Economics** | Adventuring, Alchemy, Animal Husbandry, Bargaining, Gambling, Healing, Magical Engineering |
 | **Campaign Play** | Art, Craft, Gambling, Healing, Knowledge, Labor, Performance, Profession, Prophecy, Soothsaying |
 | **Sea Travel** | Navigation, Seafaring |

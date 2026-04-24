@@ -17,7 +17,7 @@ signal level_row_clicked(level: int)
 
 
 const ROW_HEIGHT: int = 28
-const WIDGET_WIDTH: int = 140
+const WIDGET_WIDTH: int = 180
 
 const FOCUS_BG_COLOR := Color(0.22, 0.48, 0.72, 0.95)
 const ROW_BG_COLOR := Color(0.10, 0.10, 0.12, 0.85)
@@ -129,7 +129,7 @@ func _create_row(level: int, party_count: int, enemy_count: int) -> Button:
 	btn.pressed.connect(_on_row_pressed.bind(level))
 
 	var hb := HBoxContainer.new()
-	hb.add_theme_constant_override("separation", 4)
+	hb.add_theme_constant_override("separation", 8)
 	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hb.set_anchors_preset(Control.PRESET_FULL_RECT)
 
@@ -142,15 +142,18 @@ func _create_row(level: int, party_count: int, enemy_count: int) -> Button:
 
 	var lbl_party := Label.new()
 	lbl_party.text = "P:%d" % party_count
+	lbl_party.custom_minimum_size = Vector2(32, 0)
 	hb.add_child(lbl_party)
 
 	var lbl_enemy := Label.new()
 	lbl_enemy.text = "E:%d" % enemy_count
+	lbl_enemy.custom_minimum_size = Vector2(32, 0)
 	lbl_enemy.modulate = ENEMY_HIGHLIGHT_COLOR if enemy_count > 0 else ENEMY_ZERO_COLOR
 	hb.add_child(lbl_enemy)
 
 	var lbl_focus := Label.new()
 	lbl_focus.text = "●"
+	lbl_focus.custom_minimum_size = Vector2(12, 0)
 	lbl_focus.visible = (level == _visibility_manager.focus_level)
 	hb.add_child(lbl_focus)
 

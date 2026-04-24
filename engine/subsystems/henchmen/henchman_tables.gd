@@ -47,9 +47,9 @@ const CLASS_RARITY: Dictionary = {
 	"dwarven_machinist": RARITY_LEGENDARY,
 	"elven_courtier": RARITY_LEGENDARY,
 	"elven_enchanter": RARITY_LEGENDARY,
-	"nobiran_wonderworker": RARITY_LEGENDARY,
+	"lightblessed_wonderworker": RARITY_LEGENDARY,
 	"thrassian_gladiator": RARITY_LEGENDARY,
-	"zaharan_ruinguard": RARITY_LEGENDARY,
+	"darkblood_ruinguard": RARITY_LEGENDARY,
 }
 
 

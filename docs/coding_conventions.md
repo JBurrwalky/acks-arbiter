@@ -1606,7 +1606,7 @@ Tracks `focus_level`, `explored_levels`, `party_positions`. Per-level render opa
 
 ### 13.9 Inventory adjacency
 
-`party_inventory_transfer_validator.gd` checks `context["carrier_positions"]` (Dictionary: carrier_id → Vector3i) via `VoxelGrid.chebyshev_distance(a, b) <= 1` (same-cell allowed). Combat mode also requires `context["combat_action_available"] == true`.
+`party_inventory_transfer_validator.gd` checks `context["carrier_positions"]` (Dictionary: carrier_id → Vector3i) via `VoxelGrid.is_adjacent(a, b)` (strict Chebyshev == 1). A carrier at the anchor's own cell is included only when it *is* the anchor — ACKS movement rules forbid two entities sharing one cell, and the validator locks the rule in even though live play can't produce the case. Combat mode also requires `context["combat_action_available"] == true`.
 
 ### 13.10 DB persistence
 
@@ -2093,7 +2093,6 @@ Dungeon exploration is real-time at round granularity. The primary interaction m
 - `engine/subsystems/exploration/dungeon_session_state.gd` — Per-visit state: control groups, idle behaviors, action queues.
 - `scenes/maps/dungeon_unit_info_panel.gd` — Left-side selected entity details.
 - `scenes/maps/dungeon_control_group_bar.gd` — Bottom bar with group slots [1]-[9].
-- `scenes/maps/dungeon_notification_log.gd` — Scrolling colored event log.
 - `scenes/maps/dungeon_minimap.gd` — Top-right schematic minimap (toggle: M key).
 
 **Removed (2026-04-14):** `SelectionPanel` (order type radio buttons M/S/L/W), `BottomBar` (LevelLabel/TurnLabel), standalone `ExitButton`, `door_interact_requested` signal, `end_turn_requested` signal. These are replaced by the context menu system. The files `dungeon_selection_panel.gd` and `.tscn` are orphaned and can be deleted.

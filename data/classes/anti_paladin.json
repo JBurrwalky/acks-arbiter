@@ -1,5 +1,6 @@
 {
   "class_id": "anti_paladin",
+  "enabled": false,
   "class_name": "Anti-Paladin",
   "source": "Player's Companion",
   "race": "human",

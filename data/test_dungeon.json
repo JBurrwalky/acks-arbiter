@@ -8,6 +8,14 @@
     "row": 3,
     "level": 0
   },
+  "lever_links": [
+    {"lever": [5, 15, 0], "target": [6, 15, 0]}
+  ],
+  "wandering_monster_table": [
+    {"monster_key": "goblin", "weight": 3},
+    {"monster_key": "kobold", "weight": 2},
+    {"monster_key": "orc", "weight": 1}
+  ],
   "cells": [
     {
       "col": 1,

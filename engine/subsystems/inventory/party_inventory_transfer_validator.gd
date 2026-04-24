@@ -37,10 +37,14 @@ func _init(catalog: RefCounted = null) -> void:
 # Public API — static helpers
 # ---------------------------------------------------------------------------
 
-## Returns carrier_ids reachable from the anchor (3D Chebyshev <= 1), including
-## the anchor itself. Anchors or carriers missing from `carrier_positions` are
-## excluded. Used by the overlay to dim non-adjacent columns and by the loot
-## modal to filter the participant list.
+## Returns carrier_ids reachable from the anchor via strict 3D adjacency
+## (Chebyshev distance exactly 1), plus the anchor itself. Anchors or carriers
+## missing from `carrier_positions` are excluded. Used by the overlay to dim
+## non-adjacent columns and by the loot modal to filter the participant list.
+##
+## Same-cell is impossible in live play (ACKS movement forbids two entities on
+## one cell), so only the anchor's own entry is included at the anchor's
+## position.
 static func collect_adjacent_carrier_ids(anchor_id: String,
 		carrier_positions: Dictionary) -> Array:
 	var result: Array = []
@@ -48,8 +52,11 @@ static func collect_adjacent_carrier_ids(anchor_id: String,
 		return result
 	var anchor_pos: Vector3i = carrier_positions[anchor_id]
 	for cid in carrier_positions.keys():
+		if cid == anchor_id:
+			result.append(cid)
+			continue
 		var pos: Vector3i = carrier_positions[cid]
-		if VoxelGrid.chebyshev_distance(anchor_pos, pos) <= 1:
+		if VoxelGrid.is_adjacent(anchor_pos, pos):
 			result.append(cid)
 	return result
 
@@ -155,7 +162,9 @@ func _check_context_friction(source: Dictionary, target: Dictionary,
 	return _ok()
 
 
-## Checks that source and target carriers are at 3D Chebyshev distance <= 1.
+## Checks that source and target carriers are at strict 3D adjacency
+## (Chebyshev distance exactly 1). Same-cell is rejected — ACKS movement
+## rules forbid two entities on one cell outside of a movement step.
 ## Requires context["carrier_positions"]: Dictionary mapping carrier_id -> Vector3i.
 ## If positions are not supplied, rejects — the caller must populate this key.
 func _check_dungeon_adjacency(source: Dictionary, target: Dictionary,
@@ -167,7 +176,7 @@ func _check_dungeon_adjacency(source: Dictionary, target: Dictionary,
 		return _reject("Carrier position unknown")
 	var src_pos: Vector3i = positions[src_id]
 	var tgt_pos: Vector3i = positions[tgt_id]
-	if VoxelGrid.chebyshev_distance(src_pos, tgt_pos) <= 1:
+	if VoxelGrid.is_adjacent(src_pos, tgt_pos):
 		return _ok()
 	return _reject("Carriers are not adjacent")
 

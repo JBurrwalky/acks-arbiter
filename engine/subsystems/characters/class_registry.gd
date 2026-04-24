@@ -110,6 +110,10 @@ func get_eligible_classes(ability_scores: Dictionary, race: String) -> Array[Str
 	var eligible: Array[String] = []
 	for class_id in _classes.keys():
 		var cls: Dictionary = _classes[class_id]
+		# Disabled classes are hidden from roster selection but remain loaded
+		# so existing save data referencing them still resolves via get_class_def().
+		if not cls.get("enabled", true):
+			continue
 		# Race check
 		var cls_race: String = cls.get("race", "human")
 		if cls_race != race:

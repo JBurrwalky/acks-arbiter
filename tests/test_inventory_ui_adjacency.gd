@@ -38,13 +38,16 @@ func run_all_tests() -> void:
 # ---------------------------------------------------------------------------
 
 func test_collect_adjacent_ids_same_cell() -> void:
+	# ACKS movement forbids two entities sharing a cell; the anchor's own id
+	# stays included (as the anchor), but any *other* carrier at the same
+	# position is excluded — strict adjacency means Chebyshev == 1.
 	var positions := {
 		"A": Vector3i(5, 5, 0),
 		"B": Vector3i(5, 5, 0),
 	}
 	var result := ValidatorScript.collect_adjacent_carrier_ids("A", positions)
 	check(result.has("A"), "anchor always included")
-	check(result.has("B"), "same-cell carrier should be adjacent")
+	check(not result.has("B"), "other carrier at same cell is not adjacent")
 
 
 func test_collect_adjacent_ids_2d_adjacent() -> void:

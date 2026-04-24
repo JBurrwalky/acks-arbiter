@@ -53,10 +53,10 @@ func test_starting_age_range_fighter() -> void:
 func test_starting_age_range_elf() -> void:
 	## Elf Spellsword: 75+5d4. Range: [80, 95].
 	var aging := AgingSystem.new()
-	var expr := aging.get_starting_age_expression("elf_spellsword")
+	var expr := aging.get_starting_age_expression("elven_spellsword")
 	check(expr == "75+5d4",
 		"Elf spellsword starting age expression: expected '75+5d4', got '%s'" % expr)
-	var age := aging.roll_starting_age("elf_spellsword")
+	var age := aging.roll_starting_age("elven_spellsword")
 	check(age >= 80 and age <= 95,
 		"Elf Spellsword starting age should be in [80, 95], got %d" % age)
 	print("  starting_age_range_elf: OK")

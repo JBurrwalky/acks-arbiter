@@ -29,7 +29,6 @@ const ZOOM_MAX := 30.0           ## Maximum orthographic size (zoomed out)
 const ZOOM_STEP := 1.0           ## Orthographic size change per scroll tick
 const DRAG_SELECT_THRESHOLD := 5.0  ## Pixels before drag-select activates
 const TOKEN_MOVE_DURATION := 0.15   ## Fallback seconds per cell hop (legacy/combat)
-const DOUBLE_TAP_THRESHOLD := 0.3   ## Seconds for double-tap detection
 const HIT_RADIUS_SCREEN := 20.0    ## Screen pixels for entity hit detection
 
 ## Per-level albedo tints per GDD §16.2. FULL_COLOR on the focus level,
@@ -38,10 +37,6 @@ const HIT_RADIUS_SCREEN := 20.0    ## Screen pixels for entity hit detection
 ## [method TacticalGrid3D.set_level_group_tint].
 const DIM_COLOR := Color(0.6, 0.6, 0.6, 1.0)
 const FULL_COLOR := Color.WHITE
-
-## Alpha applied to enemy-token body material on explored non-focus levels
-## (party tokens stay at full opacity so the player never loses them).
-const NON_FOCUS_ENEMY_ALPHA := 0.5
 
 ## Pre-computed isometric camera basis vectors for rotation_degrees (-35.264, 0, 0).
 ## Diamond layout is baked into cell_to_world(), so no Y rotation needed.
@@ -137,11 +132,6 @@ var _tweening: Dictionary = {}  # { entity_id: true }
 var _active_movements: Dictionary = {}
 ## Current clock speed (mirrors SchedulerLoop speed via EventBus signal).
 var _clock_speed: int = 0  # SchedulerLoop.SPEED_PAUSED
-
-## Double-click detection for control group recall.
-var _last_number_key: int = -1
-var _last_number_key_time: float = 0.0
-
 
 # ---------------------------------------------------------------------------
 # Signals (identical to 2D dungeon_map_renderer.gd)
@@ -961,10 +951,13 @@ func _unhandled_input(event: InputEvent) -> void:
 				KEY_MINUS, KEY_KP_SUBTRACT:
 					_apply_zoom(_camera.size + ZOOM_STEP)
 					get_viewport().set_input_as_handled()
-				KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
-					var group_num: int = event.keycode - KEY_0
-					control_group_assign_requested.emit(group_num, _selected_entity_ids.duplicate())
-					get_viewport().set_input_as_handled()
+				KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, \
+						KEY_KP_1, KEY_KP_2, KEY_KP_3, KEY_KP_4, KEY_KP_5, \
+						KEY_KP_6, KEY_KP_7, KEY_KP_8, KEY_KP_9:
+					var group_num: int = _group_num_from_keycode(event.keycode)
+					if group_num > 0:
+						control_group_assign_requested.emit(group_num, _selected_entity_ids.duplicate())
+						get_viewport().set_input_as_handled()
 		elif not event.ctrl_pressed and not event.alt_pressed:
 			if event.is_action_pressed("focus_next_party_member"):
 				if _visibility_manager != null:
@@ -973,34 +966,25 @@ func _unhandled_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				return
 			if event.is_action_pressed("recenter_party_leader"):
-				if _visibility_manager != null:
-					_visibility_manager.jump_to_party_leader()
-				_camera.size = 12.0
-				_center_camera_on_selected()
+				_handle_recenter_party_leader()
 				get_viewport().set_input_as_handled()
 				return
 			if event.is_action_pressed("focus_level_up"):
-				if _visibility_manager != null:
-					_visibility_manager.set_focus_level(_visibility_manager.focus_level + 2)
+				_handle_focus_level_step(2)
 				get_viewport().set_input_as_handled()
 				return
 			if event.is_action_pressed("focus_level_down"):
-				if _visibility_manager != null:
-					_visibility_manager.set_focus_level(_visibility_manager.focus_level - 2)
+				_handle_focus_level_step(-2)
 				get_viewport().set_input_as_handled()
 				return
 			match event.keycode:
-				KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
-					var group_num: int = event.keycode - KEY_0
-					var now := Time.get_ticks_msec() / 1000.0
-					if _last_number_key == group_num and (now - _last_number_key_time) < DOUBLE_TAP_THRESHOLD:
-						_last_number_key = -1
+				KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, \
+						KEY_KP_1, KEY_KP_2, KEY_KP_3, KEY_KP_4, KEY_KP_5, \
+						KEY_KP_6, KEY_KP_7, KEY_KP_8, KEY_KP_9:
+					var group_num: int = _group_num_from_keycode(event.keycode)
+					if group_num > 0:
 						control_group_recall_requested.emit(group_num)
-					else:
-						_last_number_key = group_num
-						_last_number_key_time = now
-						control_group_recall_requested.emit(group_num)
-					get_viewport().set_input_as_handled()
+						get_viewport().set_input_as_handled()
 				KEY_M:
 					minimap_toggle_requested.emit()
 					get_viewport().set_input_as_handled()
@@ -1158,6 +1142,55 @@ func _center_camera_on_party() -> void:
 	var pos := _controller.get_party_position_3d()
 	var world_pos := VoxelGrid.cell_to_world(pos.x, pos.y, pos.z)
 	_look_at_world_point(world_pos)
+
+
+## Returns the 1..9 control-group number for a keycode, or 0 when the keycode
+## is neither a top-row digit (KEY_1..KEY_9) nor a numpad digit
+## (KEY_KP_1..KEY_KP_9). NumLock gates numpad keys automatically — when it's
+## off, Godot reports nav keys (KEY_HOME, KEY_END, etc.) instead.
+func _group_num_from_keycode(kc: int) -> int:
+	if kc >= KEY_1 and kc <= KEY_9:
+		return kc - KEY_0
+	if kc >= KEY_KP_1 and kc <= KEY_KP_9:
+		return kc - KEY_KP_0
+	return 0
+
+
+## Home handler — jump focus to the party leader's level, then recenter the
+## camera on the active selection. Emits a quiet notification if the leader is
+## already on the focus level (so the player sees the key registered).
+func _handle_recenter_party_leader() -> void:
+	if _visibility_manager == null:
+		return
+	var before_level: int = _visibility_manager.focus_level
+	_visibility_manager.jump_to_party_leader()
+	_camera.size = 12.0
+	_center_camera_on_selected()
+	if _visibility_manager.focus_level == before_level:
+		EventBus.notification_requested.emit({
+			"type": "info",
+			"category": "camera",
+			"title": "Already focused on the party leader.",
+			"duration": 2.0,
+		})
+
+
+## PgUp / PgDn handler — step the focus level by [param delta]. If the clamp
+## holds focus steady (nothing explored in that direction), notify the player
+## rather than silently no-op so the key doesn't feel broken.
+func _handle_focus_level_step(delta: int) -> void:
+	if _visibility_manager == null:
+		return
+	var before_level: int = _visibility_manager.focus_level
+	_visibility_manager.set_focus_level(before_level + delta)
+	if _visibility_manager.focus_level == before_level:
+		var direction_word: String = "higher" if delta > 0 else "lower"
+		EventBus.notification_requested.emit({
+			"type": "info",
+			"category": "camera",
+			"title": "No %s level explored yet." % direction_word,
+			"duration": 2.0,
+		})
 
 
 func _center_camera_on_selected() -> void:
@@ -1327,10 +1360,10 @@ func _apply_mesh_fade(mesh: GeometryInstance3D, faded: bool) -> void:
 		smat.albedo_color = base
 
 
-## Apply per-level visibility and opacity to entity tokens per GDD §16.2.
-## Party tokens on non-focus explored levels stay fully opaque so the player
-## never loses sight of them. Enemy tokens on non-focus explored levels render
-## at NON_FOCUS_ENEMY_ALPHA. Tokens on hidden or above-focus levels are hidden.
+## Hide tokens that are not on the focus level; show focus-level tokens at
+## full brightness. Off-focus presence is communicated via the Level Strip
+## Widget's party/enemy counts, not by dimmed tokens sharing the 3D scene
+## with dimmed walls (which made dark-armored PCs hard to read).
 func _apply_token_visibility() -> void:
 	if _visibility_manager == null or _voxel_map == null:
 		return
@@ -1342,21 +1375,11 @@ func _apply_token_visibility() -> void:
 		var pos: Vector3i = _voxel_map.entity_positions.get(eid, Vector3i(-1, -1, -1))
 		if pos == Vector3i(-1, -1, -1):
 			continue
-		var level: int = pos.z
-		if level > focus:
-			token.visible = false
-		elif level == focus:
+		if pos.z == focus:
 			token.visible = true
 			_set_token_alpha(token, 1.0)
-		else:  # level < focus
-			if not _visibility_manager.level_has_content(level):
-				token.visible = false
-				continue
-			token.visible = true
-			if token.side == 0:
-				_set_token_alpha(token, 1.0)
-			else:
-				_set_token_alpha(token, NON_FOCUS_ENEMY_ALPHA)
+		else:
+			token.visible = false
 
 
 ## Set the alpha of a token's mesh material(s), toggling transparency mode

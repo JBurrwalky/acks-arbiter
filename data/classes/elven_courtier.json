@@ -1,5 +1,6 @@
 {
   "class_id": "elven_courtier",
+  "enabled": false,
   "class_name": "Elven Courtier",
   "source": "Player's Companion",
   "race": "elf",

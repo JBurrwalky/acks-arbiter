@@ -7856,3 +7856,287 @@ The fix splits the handler so the *primary* party uses `controller.move_party` (
 1. Reload the game and visual-smoke-test that every party token now renders a distinct shield silhouette matching its preset.
 2. Party Management UI (Session 3 proper) once shields look right: `scenes/ui/heraldry/heraldry_editor.tscn` + overlay button.
 
+---
+
+## Session 2026-04-23 — SessionStatusBar Single-Row Rebuild + Viewport-Scaled Height + Absolute-Centered Portraits
+
+**Task:** User-reported follow-up to the prior status-bar fix:
+1. The two-row layout was wrong — at the editor default 1152×612 the bar dominated the screen. The bar must shrink (drop widgets) instead of wrap to a new row, and bar height should be a percentage of viewport rather than a fixed pixel value.
+2. Portraits were visually off-center in the bar even after the slot-wrapper fix — the original two-spacer pattern around the portrait HBox biases the strip away from viewport center whenever the side clusters have different widths.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+[scenes/ui/hud/session_status_bar.gd](scenes/ui/hud/session_status_bar.gd) — rebuilt the layout architecture:
+
+- **Single row, three independently-anchored clusters.** The PanelContainer's content is a single `Control` (not a Container) holding three sibling clusters that are each anchored to their own viewport edge:
+  - **Left cluster** (`PRESET_LEFT_WIDE`, `GROW_DIRECTION_END`, `clip_contents = true`) — location, time, clock controls, pause-reason label. Grows rightward to fit content.
+  - **Center cluster** — a `CenterContainer` anchored to `PRESET_FULL_RECT` with `z_index = 1` so portraits render above any side widget that happens to extend into the centered area at narrow viewports. The CenterContainer centers its single child (the portraits HBox) horizontally and vertically within the bar's full content rect — true viewport-center positioning, NOT "centered between left and right cluster bounding boxes".
+  - **Right cluster** (`PRESET_RIGHT_WIDE`, `GROW_DIRECTION_BEGIN`, `clip_contents = true`) — rations panel, speeds panel, camp button. Grows leftward to fit content.
+  - Because all three are siblings of a `Control` (not laid out by an HBoxContainer), they cannot push or compress one another. Centering the portraits no longer depends on side-cluster widths balancing.
+- **Bar height = % of viewport.** New `BAR_HEIGHT_PCT = 0.10`, clamped to `[BAR_HEIGHT_MIN = 60, BAR_HEIGHT_MAX = 76]`. The `BAR_HEIGHT` const equals `BAR_HEIGHT_MAX` (used by the four overlays that read `SessionStatusBar.BAR_HEIGHT` for their bottom-padding); when the actual bar is shorter at small viewports there's a small visible gap below those overlays — acceptable tradeoff vs. dynamic recompute everywhere.
+- **`_apply_viewport_layout()`** new method, called once at build time and connected to `get_viewport().size_changed`. On every resize: recomputes bar height, hides non-essential widgets in priority order:
+  - `vp.x < HIDE_SIDEPANELS_BELOW (1300)` → rations + travel-speeds panels hidden (they're routed through `_refresh_party_status` which now ANDs the narrow check with the wilderness-context check).
+  - `vp.x < HIDE_PAUSE_BELOW (1100)` → pause-reason label hidden.
+  - `vp.x < HIDE_CLOCK_BELOW (900)` → clock-speed controls hidden.
+  - `vp.x < HIDE_TIME_BELOW (720)` → time label hidden.
+  - At every threshold the location label remains (most essential identifier).
+- **Per-portrait slot wrappers retained** from the previous fix (PanelContainer per portrait, fixed size = `PORTRAIT_SIZE + 2*PORTRAIT_SLOT_PADDING`, `clip_contents = true`, hairline border at 0.55 alpha). Click handler still emits `EventBus.character_sheet_requested` then `EventBus.party_portrait_clicked`.
+
+**Decisions made:**
+
+- **Drop widgets, never wrap.** The user explicitly forbade row-stacking. Hiding non-essential widgets at narrow widths is the chosen graceful-degradation strategy — easier to reason about than text clipping or shrink-to-fit, and keeps the portraits the visual anchor of the bar at all sizes.
+- **CenterContainer spans `PRESET_FULL_RECT`, not anchored at `PRESET_CENTER`.** Tried the latter first (anchor point at viewport center, grow_horizontal = BOTH) — works in theory but `CenterContainer` then has to be sized by its child's natural width, and the result was finicky at edge cases. Filling the content rect and letting CenterContainer's own centering logic handle horizontal placement is more robust.
+- **Side clusters use `clip_contents = true` but DON'T cap their max width.** They naturally extend to fit their content. At narrow viewports they may extend into the centered area, but the portraits' `z_index = 1` keeps them visible on top. The hide thresholds prevent this from happening at typical viewports.
+- **`BAR_HEIGHT` const == `BAR_HEIGHT_MAX`, not the dynamic value.** Other overlays (`character_sheet_overlay.gd:115`, `combat_screen.gd:226`, `dungeon_combat_overlay.gd:199`, `session_runner.gd:390`) read this const at panel-build time. Making it a function would force runtime recompute on resize — too much refactor for a small visual gap. The gap below those overlays at small viewports is cosmetic.
+- **Per-portrait slot wrapper kept.** Even though side widgets and portraits no longer compete for layout space, the slot wrapper's `clip_contents = true` is a final safety net guaranteeing portraits never visually overlap each other regardless of any future layout change.
+
+**Interfaces defined or changed:**
+
+- `SessionStatusBar.BAR_HEIGHT` — value reverted from `132` (the broken two-row value) back to `76` (single-row max). Other overlays auto-pick up the new value at next build.
+- `SessionStatusBar.BAR_HEIGHT_PCT`, `BAR_HEIGHT_MIN`, `BAR_HEIGHT_MAX` — new constants exposing the dynamic-sizing inputs.
+- `SessionStatusBar.HIDE_SIDEPANELS_BELOW` / `HIDE_PAUSE_BELOW` / `HIDE_CLOCK_BELOW` / `HIDE_TIME_BELOW` — new viewport-width thresholds.
+- `SessionStatusBar._apply_viewport_layout()` — new private method, also connected to `viewport.size_changed`.
+- `SessionStatusBar._refresh_party_status(party_id)` — now ANDs the narrow-viewport check (`vp_width >= HIDE_SIDEPANELS_BELOW`) with the existing wilderness-context check.
+
+**Database changes:** None.
+
+**Tests added/updated:** None — pure UI restructure. Visual smoke test required:
+1. Launch at editor default (1152×612) → bar is single row, ~61 px tall (10% of 612), portraits centered in viewport, rations + speeds panels hidden, location + time + clock + camp visible.
+2. Drag the window WIDER (>= 1300 px wide) → rations + speeds panels appear without disturbing portrait centering.
+3. Drag the window NARROWER:
+   - 1100 → pause-reason label hides.
+   - 900 → clock-speed controls hide.
+   - 720 → time label hides.
+   - Portraits remain centered and clickable at every step.
+4. Drag the window TALLER → bar grows up to BAR_HEIGHT_MAX (76 px) but never beyond.
+5. Click any portrait → character sheet still opens with that PC selected (Session 8 dungeon focus also fires).
+
+**Known issues:**
+
+- **Slight gap below overlays** (character sheet, combat side panels) at small viewports because they read `BAR_HEIGHT` const (= MAX = 76) but the actual bar might be 60. Maximum gap = 16 px. Cosmetic.
+- **Hide thresholds are heuristic, not measured.** Picked from the widget-min-width math (location 100 + time 220 + clock ~120 + side panels ~430). If we add or resize a widget the thresholds may need recalibration.
+- **No graceful "what's hidden?" indicator.** A player on a narrow viewport sees no clue that rations + speeds info exists — they have to widen the window to discover it. A small ⋯ "more" button could be a follow-up.
+- **`speed_controls` exposes a settings affordance that's hidden at narrow widths.** Pause is still triggered by spacebar keybind (not bar-only), so the hide is OK functionally; rebinding remains via the in-game settings menu.
+
+**Next session should:**
+
+1. Visual smoke test per the size-drag checklist above.
+2. Resume wilderness Part 2 smoke test items 2.1, 2.3, 2.4, 2.5, 2.8 if not already.
+3. Optional polish: a "⋯" more-widgets popover button on the right cluster that shows hidden widgets in a dropdown when narrow.
+
+---
+
+## Session 2026-04-24 — Dungeon Fixes + Part 4 Unblockers (Batch 2)
+
+**Task:** Ship the nine-item batch from `dungeon_fixes_and_part4_unblock_prompt.md`. Two items (A1, A2) blocked Part 4 smoke testing; the remaining seven were correctness, UX, and polish tasks surfaced during Part 3. Closes smoke-test items 3.1–3.5 and unblocks Part 4.
+
+**Model used:** Opus 4.7 (1M context) — planning + implementation.
+
+**Scope clarification during planning (user-confirmed):** three prompt premises didn't match the actual code state. A1 was ~80% already implemented (handler + context menu in place; only the VoxelMapData lookup and JSON schema were missing). C1 was a half-wired feature, not a stub — fix and enhance instead of remove. C2 ("L0 P:0 E:0") was the functional Level Strip Widget, not an artifact — widen + re-space labels instead of remove. C4 was `dungeon_notification_log.gd` (user identified via editor inspection) — remove entirely (redundant with roll log + game log, never wired to any source).
+
+**Completed:**
+
+**Block A — Part 4 unblockers:**
+
+- **[engine/shared_types/voxel_map_data.gd](engine/shared_types/voxel_map_data.gd):** new `lever_links: Dictionary` field (Vector3i → Vector3i). New methods `get_lever_target(pos) -> Vector3i` (returns `Vector3i(-1,-1,-1)` sentinel for unlinked levers) and `set_lever_link(lever_pos, target_pos)`. New `wandering_monster_table: Array` field for per-dungeon encounter scoping. Both round-trip through `from_dict` / `to_dict`; `lever_links` encoded as `[{lever: [c,r,l], target: [c,r,l]}, ...]`.
+- **[data/test_dungeon.json](data/test_dungeon.json):** added `lever_links` array linking (5,15,0) → (6,15,0) (the Goblin Warrens lever/portcullis pair). Added `wandering_monster_table` with weighted entries for goblin:3 / kobold:2 / orc:1.
+- **[engine/subsystems/session/handlers/dungeon_handlers.gd](engine/subsystems/session/handlers/dungeon_handlers.gd):** `_resolve_use_lever` now validates adjacency via `VoxelGrid.is_adjacent(actor_pos, cell)` before toggling the linked portcullis; emits "Too far to reach the lever" when the actor has moved away since the menu opened. `_handle_encounter_check` pulls the active dungeon's `wandering_monster_table` via the DungeonMapController and passes it to the runner.
+- **[engine/subsystems/session/session_runner.gd](engine/subsystems/session/session_runner.gd):** `do_encounter_check` and `_pick_encounter_monster` gained an optional `dungeon_wandering_table` parameter. Per-dungeon table takes precedence over the terrain/catalog fallback. New `_weighted_pick_from_table(table)` helper (graceful fallback to uniform pick if all weights are zero).
+
+**Block B — Correctness + UX:**
+
+- **[engine/subsystems/inventory/party_inventory_transfer_validator.gd](engine/subsystems/inventory/party_inventory_transfer_validator.gd):** `collect_adjacent_carrier_ids` now uses `VoxelGrid.is_adjacent` (strict Chebyshev == 1) plus an anchor-self include. `_check_dungeon_adjacency` switched to `VoxelGrid.is_adjacent` (rejects same-cell src/tgt). Same-cell is impossible in live play under ACKS movement rules, and the validator locks that in rather than silently allowing a malformed state.
+- **[scenes/ui/party_inventory/party_inventory_overlay.gd](scenes/ui/party_inventory/party_inventory_overlay.gd):** new `_pause_scheduler_for_inventory` / `_resume_scheduler_after_inventory` helpers wired into `open()` / `close()`. Uses `SessionRunner.get_scheduler_loop()` via scene-tree lookup, tags the pause with reason string `"party_inventory_open"`, and only resumes if that exact reason is still active (a combat pause that lands while inventory is open is not clobbered on close).
+- **[scenes/maps/dungeon_map_renderer_3d.gd](scenes/maps/dungeon_map_renderer_3d.gd):** `_apply_token_visibility` simplified to hide-off-focus (focus level → visible + alpha 1.0; any other level → hidden). Drops the `NON_FOCUS_ENEMY_ALPHA` branch and its constant. Removes the fading-dark-armor-against-dimmed-walls readability problem; off-focus presence is communicated via the Level Strip Widget's per-level counts.
+
+**Block C — Polish + stranded UI:**
+
+- **C3 — PgDn/Home feedback:** added `_handle_recenter_party_leader` and `_handle_focus_level_step(delta)` helpers that capture pre-call focus, invoke the VisibilityManager, then emit an `EventBus.notification_requested` toast when the clamp/no-op left the focus unchanged. Turns silent "Home when leader already on focus" and "PgDn at lowest explored level" into visible "Already focused on the party leader." / "No lower level explored yet." toasts so the key registers visually.
+- **C1 — Control group bar repair:** `_on_control_group_assign` and the `add_to_group` context-menu path now call `_refresh_control_group_bar()`, which forwards to `_control_group_bar.update_groups(_session_state, null)`. Initial refresh fires after the bar is added to the HUD. The bar's slot template gained a "CheckLabel" child ("✓" glyph, green, top-right) that shows only when the group is non-empty. Renderer's `_unhandled_input` now accepts numpad digits — `KEY_KP_1..KEY_KP_9` in both the Ctrl+digit (assign) and plain-digit (recall) branches via new `_group_num_from_keycode` helper. Removed the dead double-tap tracking (`_last_number_key`, `_last_number_key_time`, `DOUBLE_TAP_THRESHOLD`) — both tap branches emitted the same signal.
+- **C2 — Level Strip Widget:** `WIDGET_WIDTH` 140 → 180. HBox separation 4 → 8. Added `custom_minimum_size` on `lbl_party` (32px), `lbl_enemy` (32px), and `lbl_focus` (12px) so labels no longer crowd each other.
+- **C4 — Dungeon notification log removed:** deleted [scenes/maps/dungeon_notification_log.gd](scenes/maps/dungeon_notification_log.gd) and its `.uid`. Removed preload, field declaration, instantiation + hookup block, visibility-toggle branch, and the `_on_log_entry_clicked` handler from `dungeon_explore_state.gd`. Dropped the corresponding bullet from `coding_conventions.md`.
+
+**Interfaces defined or changed:**
+
+- `VoxelMapData.get_lever_target(pos: Vector3i) -> Vector3i` (new).
+- `VoxelMapData.set_lever_link(lever_pos: Vector3i, target_pos: Vector3i) -> void` (new).
+- `VoxelMapData.lever_links: Dictionary` (new public field).
+- `VoxelMapData.wandering_monster_table: Array` (new public field).
+- `SessionRunner.do_encounter_check(terrain, dungeon_wandering_table: Array = [])` (optional param added).
+- `SessionRunner._pick_encounter_monster(terrain, dungeon_wandering_table: Array = [])` (optional param added).
+- `SessionRunner._weighted_pick_from_table(table: Array) -> String` (new helper).
+- `DungeonMapRenderer3D._handle_recenter_party_leader() -> void` (new).
+- `DungeonMapRenderer3D._handle_focus_level_step(delta: int) -> void` (new).
+- `DungeonMapRenderer3D._group_num_from_keycode(kc: int) -> int` (new).
+- `DungeonExploreState._refresh_control_group_bar() -> void` (new).
+- `PartyInventoryOverlay._resolve_scheduler_loop()` / `_pause_scheduler_for_inventory()` / `_resume_scheduler_after_inventory()` (new).
+- JSON schema additions to dungeon files: top-level `lever_links: [{lever: [c,r,l], target: [c,r,l]}, ...]` and `wandering_monster_table: [{monster_key, weight}, ...]`. Both optional; legacy dungeons without them fall through to existing behavior.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- New suite [tests/test_lever.gd](tests/test_lever.gd) (`LeverTests`, registered in `test_runner.gd` + `.tscn`): 3 tests covering `get_lever_target` sentinel, `set_lever_link` registration, and `lever_links` JSON round-trip via `from_dict` / `to_dict`.
+- [tests/test_session_runner.gd](tests/test_session_runner.gd): 3 new tests — `test_weighted_pick_respects_table`, `test_weighted_pick_single_entry_always_returns_it`, `test_weighted_pick_empty_uniform_when_zero_weights` — on the new `_weighted_pick_from_table` helper.
+- [tests/test_party_inventory_transfer_validator.gd](tests/test_party_inventory_transfer_validator.gd): `test_dungeon_adjacency_same_cell_ok` renamed to `test_dungeon_adjacency_same_cell_rejected`, assertion flipped. The rule is now locked in as "same-cell is rejected" even though live play can't produce the case.
+- [tests/test_inventory_ui_adjacency.gd](tests/test_inventory_ui_adjacency.gd): `test_collect_adjacent_ids_same_cell` now asserts `B` is NOT adjacent (anchor still included as itself).
+
+**Documentation updated:**
+
+- [docs/coding_conventions.md](docs/coding_conventions.md) §13.9: rewrote to "strict `VoxelGrid.is_adjacent(a, b)`" phrasing. Dropped the "(same-cell allowed)" note.
+- [docs/coding_conventions.md](docs/coding_conventions.md) §19.6-ish: removed the `dungeon_notification_log.gd` bullet.
+
+**Known issues:**
+
+- **Tests not yet run by build agent.** Godot CLI isn't on PATH in this environment; run `tests/test_runner.tscn` in the editor to confirm `LeverTests` green, `SessionRunnerTests` green (3 new), `InventoryUIAdjacency` green (1 flipped), `PartyInventoryTransferValidator` green (1 renamed + flipped), and no new regressions elsewhere.
+- **Visual smoke test pending for all nine items.** Checklist in the plan file at `~/.claude/plans/see-the-attached-prompt-reflective-waterfall.md` under "Verification end-to-end."
+- **C3 fix is feedback-based, not wiring-based.** Per code inspection, PgUp / PgDn / Home / Shift+Home are correctly wired to VisibilityManager methods. The user's "keys don't work" perception was likely silent no-ops when the actor was already at the target state (leader on focus, no lower explored level). The new notification toasts resolve the perceived-broken UX without changing the underlying input path. If toasts show up as false-positive "broken" indicators in normal flows, tune the notification duration or suppress when focus is in free-camera mode.
+- **Lever adjacency check uses the action's owning entity_id.** If the user right-clicks the lever *without a selected character* (edge case), `entity_id` may be empty and the adjacency check is skipped. The handler still validates via the target linkage — worst case a lever pull fires from any distance. Follow-up: add a "requires selected character" gate in the context menu builder.
+- **Lever handler still returns `Vector2i(-1, -1)` in its sentinel check** — vestigial from the 2D era. Harmless (the `== Vector3i(-1, -1, -1)` branch catches the real case) but should be cleaned up in a future sweep.
+- **C1 checkmark is a Unicode glyph, not an icon asset.** Readable but aesthetically placeholder; swap to a texture when HUD polish pass happens.
+- **`dungeon_notification_log.gd` stale mention** remains in a comment in [scenes/ui/components/character_token_3d.gd:320](scenes/ui/components/character_token_3d.gd#L320) via the phrase "NON_FOCUS_ENEMY_ALPHA." Dead reference only — comment doesn't affect compilation.
+
+**Next session should:**
+
+1. Run `tests/test_runner.tscn` in the editor; confirm all new/updated suites pass with no regressions.
+2. Visual smoke test Part 3 items 3.1–3.5 per the verification section of the plan file.
+3. Begin Part 4 smoke testing now that A1 (lever) and A2 (encounter filter) are in place.
+4. If the control group bar's checkmark glyph reads poorly at runtime, swap to an icon texture.
+5. Consider moving focus hotkeys to `_shortcut_input` if event-swallowing turns out to be a real issue with other focused Controls (not observed in code inspection but possible at runtime).
+
+
+---
+
+## Session 2026-04-24 — Class Roster Reshape: Disable 5, Normalize Prefixes, Import 2 PC Classes, Zahar→Chaos Rebrand
+
+**Task:** Disable five classes from the playable roster; normalize `elf_*`/`dwarf_*` class IDs to `elven_*`/`dwarven_*`; import Nobiran Wonderworker and Zaharan Ruinguard from the Player's Companion under new setting-flavored names; reassign portraits; rename "Black Lore of Zahar" → "Black Lore of Chaos".
+
+**Model used:** Opus 4.7 (1M context) throughout.
+
+**Completed:**
+
+*Step 1 — Disable 5 classes (non-destructive):*
+- Added `"enabled": false` field to `data/classes/anti_paladin.json`, `elven_ranger.json`, `dwarven_delver.json`, `elven_courtier.json`, `warlock.json`.
+- `engine/subsystems/characters/class_registry.gd` `get_eligible_classes()` now skips classes where `cls.get("enabled", true) == false`. Disabled classes remain loaded in `_classes` dict so existing save data referencing them still resolves via `get_class_def()`.
+- `scenes/ui/character_creation/class_selection_panel.gd` button-build loop also skips disabled classes.
+
+*Step 5 — Zahar → Chaos rename:*
+- `data/proficiencies/proficiency_catalog.json`: renamed `proficiency_key` `black_lore_of_zahar` → `black_lore_of_chaos`, name "Black Lore of Zahar" → "Black Lore of Chaos", updated `full_description` to "terrible necromancies of Chaos".
+- Updated `class_proficiency_list` entries in `mage.json`, `witch.json`, `elven_nightblade.json`, `elven_spellsword.json`.
+- Updated witch class power description at `witch.json:101`.
+- Updated `class_customization_panel.gd:54` chthonic witch tradition description.
+- Updated `docs/proficiency_system_map.md:646` table entry.
+
+*Step 2 — Normalize `elf_*`/`dwarf_*` → `elven_*`/`dwarven_*`:*
+- Renamed 4 class JSONs: `elf_nightblade.json` → `elven_nightblade.json`, `elf_spellsword.json` → `elven_spellsword.json`, `dwarf_craftpriest.json` → `dwarven_craftpriest.json`, `dwarf_vaultguard.json` → `dwarven_vaultguard.json`. Updated `class_id` field in each.
+- Renamed 10 portrait PNGs and their `.import` sidecars under the new `elven_*`/`dwarven_*` prefix.
+- Updated references in `data/aging_tables.json`, `data/portrait_manifest.json`, `data/asset_manifest.json`, `data/premade_parties/brave_companions.json`, `data/premade_parties/falcons_crown.json`, `engine/subsystems/characters/aging_system.gd`, `scenes/ui/components/character_model_registry.gd`, `scenes/ui/combat/stat_summary.gd`, `scenes/ui/character_creation/spell_selection_panel.gd`, 6 test files.
+- Race field values (`"race": "elf"`, `"race": "dwarf"`) intentionally left unchanged — only compound IDs/prefixes normalized.
+
+*Step 3 — Import new Player's Companion classes with setting rebrand:*
+- Sourced from PDF provided by Jedidiah (`C:/Users/jttau/Downloads/PC WW ZR.pdf`, Player's Companion pp.32–33 and pp.52–54).
+- Created `rules/pc_classes_5.xml` with full rule summaries for "Nobiran Wonderworker" and "Zaharan Ruinguard" following the existing `<class_catalog>` schema.
+- Created `data/classes/lightblessed_wonderworker.json` (class_id `lightblessed_wonderworker`, display "Lightblessed Wonderworker"):
+  - HD 1d4, max level 12, prime reqs INT + WIS, all-11+ min abilities, mage combat progression.
+  - Arcane casting (mage-style, repertoire) + divine casting (cleric list) starting at L2.
+  - Powers: favored_of_empyrean, ageless, ghoul_paralysis_immunity, divine_health, lay_on_hands, blood_of_kings, spell_research (L5), magic_item_creation (L9), stronghold_sanctum (L9), advanced_arcane_creation (L11).
+- Created `data/classes/darkblood_ruinguard.json` (class_id `darkblood_ruinguard`, display "Darkblood Ruinguard"):
+  - HD 1d6, max level 12, prime reqs STR + INT, INT/WIS/CHA ≥ 9, fighter combat progression.
+  - Arcane casting in armor at half class level starting L2.
+  - Powers: fighter_damage_bonus, cleave, weapon_focus_chosen, dark_blessing, quickening, ancient_pacts, inexorable, after_the_flesh, dark_soul, bonus_languages, arcane_striking (L2), death_healing (L4), dark_charisma (L5), spell_storing (L9), stronghold_dark_fortress (L9), spell_research/scroll_scribing/potion_brewing (L10).
+  - Proficiency list includes `black_lore_of_chaos` and `kin_slaying`.
+- Registered both in `data/aging_tables.json` (lightblessed 17+3d6 per Nobiran; darkblood 17+1d6 per Zaharan).
+- Registered both in `aging_system.gd` prime-req map.
+- Renamed henchman rarity entries in `henchman_tables.gd`: `nobiran_wonderworker` → `lightblessed_wonderworker`, `zaharan_ruinguard` → `darkblood_ruinguard` (both LEGENDARY rarity, unchanged).
+
+*Step 4 — Portrait reassignments:*
+- Ruinguard gains 4 portraits: `portrait_anti_paladin_{01,02}.png` → `portrait_darkblood_ruinguard_{01,02}.png`; `portrait_warlock_{01,02}.png` → `portrait_darkblood_ruinguard_{03,04}.png`. Both manifests updated.
+- Enchanter gains 3 portraits: `portrait_elven_courtier_{01,02,03}.png` → `portrait_elven_enchanter_{03,04,05}.png`. Both manifests updated.
+- Delver portrait deleted: `portrait_dwarven_delver_01.png` deleted; manifest entries removed.
+- Wonderworker gains 1 portrait: `portrait_cleric_02.png` → `portrait_lightblessed_wonderworker_01.png`. Both manifests updated.
+- Net portrait counts: anti_paladin/warlock/elven_courtier/dwarven_delver now have **zero** portraits; ruinguard has 4; enchanter has 5; wonderworker has 1; cleric has 1 (the sole cleric_01).
+
+*Step 6 — Tests:*
+- Updated `tests/test_class_registry.gd` expected count 25 → 27.
+- Refactored `tests/test_class_selection_panel.gd`:
+  - Removed warlock/anti_paladin button-existence assertions (those classes are disabled).
+  - `test_class_details_show_alignment_and_sex_restrictions` now covers bladedancer (sex) and paladin (alignment) only.
+  - Added new `test_disabled_classes_are_hidden_from_roster` asserting warlock, anti_paladin, elven_ranger, elven_courtier, and dwarven_delver buttons are **not** created.
+- Updated `tests/test_asset_registry.gd`: renamed test function (removed hardcoded "25_"); trimmed expected portrait list; added `darkblood_ruinguard` and `lightblessed_wonderworker`.
+- Updated all class_id string references in tests per Step 2 sweep.
+
+**Interfaces defined or changed:**
+- **Class JSON schema** now recognizes optional `"enabled": bool` field (default `true` when absent). Consumed by `ClassRegistry.get_eligible_classes()` and `class_selection_panel._rebuild_class_buttons()`. `get_class_def()`, `has_class()`, `get_all_class_ids()` still return disabled classes (by design).
+- **Two new class_ids registered**: `lightblessed_wonderworker`, `darkblood_ruinguard` (both source "Player's Companion").
+- **Proficiency key rename**: `black_lore_of_zahar` → `black_lore_of_chaos`. Any future save migration must remap this key.
+- **Class_id renames**: `elf_nightblade` → `elven_nightblade`, `elf_spellsword` → `elven_spellsword`, `dwarf_craftpriest` → `dwarven_craftpriest`, `dwarf_vaultguard` → `dwarven_vaultguard`. Save migration required if any persisted character references old IDs. `ClassRegistry._load_class_file` does NOT currently perform legacy-ID translation — flagged as a known migration need.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- New: `test_disabled_classes_are_hidden_from_roster` in `test_class_selection_panel.gd`.
+- Renamed + narrowed: `test_all_portrait_classes_have_variant_01` in `test_asset_registry.gd`.
+- Adjusted 27-class count in `test_class_registry.gd`.
+- Sweep of class_id string updates across 6 test files for Step 2.
+
+**Known issues:**
+- **Save migration gap [NEEDS-OPUS-REVIEW if Jedidiah has existing saves]**: Renamed class_ids will break any pre-existing save that stored `class_id = "elf_nightblade"` etc. No migration adapter written. If saves matter, a migration table in `ClassRegistry._load_class_file` or a save-load adapter is needed.
+- **Ruinguard proficiency `sensing_good` → `sensing_evil`**: Book lists "Sensing Good" for the Ruinguard, but the catalog only defines `sensing_evil` (mechanically bidirectional per ACKS core). Used `sensing_evil` in the JSON; if a distinct `sensing_good` proficiency is later added, revisit.
+- **Pre-existing test failures**: 20 test suites in 3d-migration branch fail (voxel/3D movement, CampaignRepository create_campaign DB issues, EventScheduler timing, combat maneuver context menu, party split edge cases). All unrelated to this session's work. Same baseline going in.
+- **`rules/*.xml` contains "Black Lore of Zahar" and "Zahar" refs**: Intentionally left untouched per SACRED rules-doc policy (CLAUDE.md Layer 1). The display/ID/description rename lives in `data/proficiencies/proficiency_catalog.json` only.
+
+**Next session should:**
+1. Visual smoke test: launch Godot, run character creation end-to-end. Verify the class list shows exactly the 22 enabled classes (no warlock/anti-paladin/elven-ranger/elven-courtier/dwarven-delver; yes to darkblood-ruinguard + lightblessed-wonderworker under Human).
+2. Verify portrait picker: Ruinguard shows 4 portraits, Enchanter shows 5 (2 original + 3 former Courtier), Wonderworker shows 1 (former cleric_02), Cleric shows 1 (cleric_01), all disabled classes show 0.
+3. Verify a Mage character sees "Black Lore of Chaos" (not "of Zahar") in the proficiency selection panel.
+4. Consider writing a class_id migration table in `ClassRegistry._load_class_file` if any save data exists or might exist.
+5. Optionally extract the "Doomwielder" / "Astrologer" pre-generated templates from the PDF into the template system when templates are implemented.
+
+## Session 2026-04-24 — Inventory transfer: contents travel with containers
+
+**Task:** Fix a bug where transferring a container (backpack/sack/chest) via the Send-To context menu, drag-and-drop, or drop-to-cache moved only the container row — leaving its contents orphaned on the old carrier. GDD §4.2 of `generation/gdd-party-inventory.md` specifies the correct behavior: *"Containers: Transferable; all contained items transfer together."*
+
+**Model used:** Opus 4.7 (planning + implementation).
+
+**Completed:**
+- Added private helper `_cascade_container_contents(container_item_id, set_clause, set_bindings)` in `engine/autoloads/campaign_repository.gd` (near `get_items_in_container`, ~line 1398). BFS-walks all transitive descendants of the given item and runs one UPDATE that sets the caller-supplied ownership columns. Descendants' own `container_id` is deliberately left unchanged so nested structure is preserved on the destination.
+- Wrapped all ten ownership-transfer functions in a BEGIN/COMMIT transaction plus a `_cascade_container_contents` call, mirroring each function's own SET fragment:
+  - `transfer_item_to_party`, `transfer_item_to_character`
+  - `transfer_item_to_creature`, `transfer_item_from_creature_to_character`, `transfer_item_from_creature_to_party`
+  - `transfer_item_to_vehicle`, `transfer_item_from_vehicle_to_character`, `transfer_item_from_vehicle_to_party`
+  - `transfer_item_to_cache`, `transfer_item_from_cache` (all three carrier-type branches)
+- Created `tests/test_inventory_container_transfer.gd` — 10 focused tests covering backpack→character, backpack→party, sack→creature, sack→vehicle, chest→cache (via `LocationCacheManager.drop_item_to_cache`), cache→character pickup, creature→character, vehicle→party, nested (pouch-in-backpack with coins), and empty container. Registered in `tests/test_runner.tscn` and `tests/test_runner.gd` as `InventoryContainerTransferTests`.
+- All 10 new tests pass: `InventoryContainerTransfer: all tests passed.`
+- Compared before/after with stash: 100 passing / 20 failing baseline → 102 passing / 20 failing with changes. No regressions; my new suite is one of the extra passes.
+
+**Decisions made:**
+- **Helper signature takes a raw SQL SET fragment plus bindings**, not a typed Dictionary. Each call site mirrors its own single-row UPDATE's SET clause so SQL literals (`NULL`, `''`) stay in the statement and bindings match the existing convention (godot-sqlite has no existing `null`-binding pattern in this codebase — verified via Grep).
+- **Dispatch layer untouched.** `scenes/ui/party_inventory/party_inventory_overlay.gd::_execute_transfer` (line 430) routes by `[src_type, tgt_type]` match. Its composite creature↔creature / vehicle↔vehicle two-step hops automatically gain correct cascading because each leg now cascades.
+- **EventBus signals unchanged.** Descendants share the same carrier ids as the transferred container, so `inventory_updated`, `creature_inventory_updated`, `cache_dropped`, and `cache_picked_up` remain correct. UI refresh-by-carrier sees all descendants on the next query.
+- **Nested containers handled.** Data model allows them (`container_id TEXT NOT NULL DEFAULT ''` with no CHECK, and `can_fit_in_container` in `cs_tab_equipment.gd:440` only validates capacity). The helper's BFS handles arbitrary depth; `test_nested_containers_cascade` covers pouch-in-backpack with coins.
+- **Did NOT add parallel cache-cascade tests to `tests/test_location_cache_manager.gd`** as the plan suggested. A first attempt caused a state-leak regression in `test_cache_deletion_cascades_items`. The new `test_inventory_container_transfer.gd` already covers `drop_item_to_cache` and `pick_up_item` cascading with equivalent assertions, so the duplicates were redundant. Reverted that file to unchanged.
+- **`drop_container` (line 1398) is unchanged.** It's a different code path — "destroy container and all contents" — called from the character sheet equipment tab's "Drop" button. Semantically different from a transfer.
+
+**Interfaces defined or changed:**
+- New private helper `CampaignRepository._cascade_container_contents(container_item_id: String, set_clause: String, set_bindings: Array) -> bool`. Must be called from inside an already-open transaction; caller is responsible for `ROLLBACK` on `false`. Not intended for external use.
+- All ten public `transfer_item_*` functions now wrap their work in a transaction. External callers observe no signature change, but a failure inside the cascade will now correctly roll back the outer UPDATE (previously the outer UPDATE had no transaction at all).
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- New: `tests/test_inventory_container_transfer.gd` (10 tests).
+- Registered in: `tests/test_runner.tscn`, `tests/test_runner.gd`.
+
+**Known issues:**
+- **Pre-existing LocationCacheManager failure** (`test_cache_deletion_cascades_items` at line 337): `ON DELETE CASCADE` on `inventory_items.location_cache_id` does not fire when a cache is deleted. Likely indicates `PRAGMA foreign_keys = ON` is not set in godot-sqlite for this project. Unrelated to this session's work; baseline behavior.
+- **Pre-existing schema drift** in `test_location_cache_manager.gd` `test_pick_up_item_vehicle` at line 298: INSERT references `draft_vehicles.vehicle_type` which doesn't exist in schema. `INSERT OR IGNORE` swallows the error and the test still passes because FK enforcement is off. Same pattern in `test_inventory_container_transfer.gd` was fixed in this session (uses real schema columns `party_id`, `item_key`).
+- **Minor convention inconsistency (pre-existing)**: transfer functions vary between `creature_id = ''` and `creature_id = NULL` in their own top-level UPDATEs. The cascade helper mirrors each function's convention rather than normalizing. Cleanup would be a separate task.
+- **Nesting guard not enforced**: The data model permits placing a container inside a container with no CHECK constraint. The cascade handles it correctly (BFS), but whether the UI should allow this is a separate GDD discussion.
+
+**Next session should:**
+1. Manual UI smoke test of the fix through the F9 party inventory overlay: Send-To menu (PC→PC), drag-and-drop (PC→mule, PC→vehicle), drop-to-cache (chest with loot into dungeon Ground column, walk away, return, pick up). Verify contents follow in every case.
+2. (Optional) Investigate whether `PRAGMA foreign_keys = ON` should be enabled at DB open time. Would fix `test_cache_deletion_cascades_items` and surface other FK violations that are currently silent.
+3. (Optional) Normalize the `creature_id = '' vs NULL` inconsistency across transfer functions (cosmetic, no functional impact).
+

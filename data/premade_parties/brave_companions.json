@@ -1959,7 +1959,7 @@
         "character_type": "pc",
         "persistence_tier": "full",
         "race": "elf",
-        "character_class": "elf_nightblade",
+        "character_class": "elven_nightblade",
         "level": 1,
         "xp": 0,
         "combat_progression": "thief",
@@ -1995,7 +1995,7 @@
         "languages": "[\"common\",\"elvish\",\"gnoll\",\"hobgoblin\",\"orc\",\"goblin\",\"ogre\"]",
         "personality": "{}",
         "is_incapacitated": 0,
-        "portrait_id": "portrait_elf_nightblade_02",
+        "portrait_id": "portrait_elven_nightblade_02",
         "sex": "male",
         "token_variant": ""
       },

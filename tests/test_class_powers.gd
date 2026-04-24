@@ -149,7 +149,7 @@ func test_shared_power_ids() -> void:
 	# backstab should use the same power_id string for Thief, Assassin, and Nightblade
 	var thief_powers := _get_power_ids(reg.get_class_powers("thief"))
 	var assassin_powers := _get_power_ids(reg.get_class_powers("assassin"))
-	var nightblade_powers := _get_power_ids(reg.get_class_powers("elf_nightblade"))
+	var nightblade_powers := _get_power_ids(reg.get_class_powers("elven_nightblade"))
 
 	check("backstab" in thief_powers, "thief should have backstab")
 	check("backstab" in assassin_powers, "assassin should have backstab")

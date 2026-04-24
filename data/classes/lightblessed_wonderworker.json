@@ -1,0 +1,154 @@
+{
+  "class_id": "lightblessed_wonderworker",
+  "class_name": "Lightblessed Wonderworker",
+  "source": "Player's Companion",
+  "race": "human",
+  "prime_requisites": ["INT", "WIS"],
+  "minimum_abilities": {"STR": 11, "INT": 11, "WIS": 11, "DEX": 11, "CON": 11, "CHA": 11},
+  "alignment_restriction": "",
+  "hit_die": "1d4",
+  "hp_after_max_hd": "+1",
+  "max_hd_count": 9,
+  "max_level": 12,
+  "combat_progression": "mage",
+  "base_attack_throw": 10,
+  "attack_progression": {
+    "1": 10, "2": 10, "3": 10, "4": 9, "5": 9, "6": 9, "7": 8, "8": 8, "9": 8, "10": 7, "11": 7, "12": 7
+  },
+  "saving_throws": {
+    "1":  {"petrification": 11, "poison_death": 11, "blast_breath": 13, "staffs_wands":  9, "spells": 10},
+    "2":  {"petrification": 11, "poison_death": 11, "blast_breath": 13, "staffs_wands":  9, "spells": 10},
+    "3":  {"petrification": 11, "poison_death": 11, "blast_breath": 13, "staffs_wands":  9, "spells": 10},
+    "4":  {"petrification": 10, "poison_death": 10, "blast_breath": 12, "staffs_wands":  8, "spells":  9},
+    "5":  {"petrification": 10, "poison_death": 10, "blast_breath": 12, "staffs_wands":  8, "spells":  9},
+    "6":  {"petrification": 10, "poison_death": 10, "blast_breath": 12, "staffs_wands":  8, "spells":  9},
+    "7":  {"petrification":  9, "poison_death":  9, "blast_breath": 11, "staffs_wands":  7, "spells":  8},
+    "8":  {"petrification":  9, "poison_death":  9, "blast_breath": 11, "staffs_wands":  7, "spells":  8},
+    "9":  {"petrification":  9, "poison_death":  9, "blast_breath": 11, "staffs_wands":  7, "spells":  8},
+    "10": {"petrification":  8, "poison_death":  8, "blast_breath": 10, "staffs_wands":  6, "spells":  7},
+    "11": {"petrification":  8, "poison_death":  8, "blast_breath": 10, "staffs_wands":  6, "spells":  7},
+    "12": {"petrification":  8, "poison_death":  8, "blast_breath": 10, "staffs_wands":  6, "spells":  7}
+  },
+  "xp_table": [0, 3125, 6250, 12500, 25000, 50000, 100000, 200000, 390000, 580000, 870000, 1060000],
+  "hd_table": ["1d4", "2d4", "3d4", "4d4", "5d4", "6d4", "7d4", "8d4", "9d4", "9d4+1", "9d4+2", "9d4+3"],
+  "weapon_permissions": ["quarterstaff", "club", "dagger", "dart"],
+  "weapon_restrictions": ["all_except_quarterstaff_club_dagger_dart"],
+  "armor_permissions": [],
+  "shield_permitted": false,
+  "fighting_styles": [],
+  "class_proficiency_list": [
+    "apostasy", "battle_magic", "beast_friendship", "collegiate_wizardry",
+    "command", "contemplation", "craft", "diplomacy", "elementalism",
+    "familiar", "healing", "illusion_resistance", "knowledge", "language",
+    "laying_on_hands", "leadership", "loremastery", "magical_engineering",
+    "martial_training", "mystic_aura", "naturalism", "prestidigitation",
+    "profession", "prophecy", "quiet_magic", "sensing_evil", "sensing_power",
+    "theology", "transmogrification", "unflappable_casting"
+  ],
+  "proficiency_progression": {
+    "class": [1, 5, 9],
+    "general": [1, 5, 9, 13]
+  },
+  "level_titles": [
+    "Divine Arcanist", "Divine Seer", "Divine Theurgist", "Divine Magician",
+    "Divine Thaumaturge", "Divine Enchanter", "Divine Sorcerer", "Divine Mage",
+    "Divine Wizard", "Divine Wizard, 10th lvl", "Divine Wizard, 11th lvl",
+    "Divine Wizard, 12th lvl"
+  ],
+  "class_powers": [
+    {
+      "power_id": "arcane_casting",
+      "unlock_level": 1,
+      "tradition": "arcane",
+      "spell_list": "arcane",
+      "progression": {
+        "1":  [1, 0, 0, 0, 0, 0],
+        "2":  [2, 0, 0, 0, 0, 0],
+        "3":  [2, 1, 0, 0, 0, 0],
+        "4":  [2, 2, 0, 0, 0, 0],
+        "5":  [2, 2, 1, 0, 0, 0],
+        "6":  [2, 2, 2, 0, 0, 0],
+        "7":  [3, 2, 2, 1, 0, 0],
+        "8":  [3, 3, 2, 2, 0, 0],
+        "9":  [3, 3, 3, 2, 1, 0],
+        "10": [3, 3, 3, 3, 2, 0],
+        "11": [4, 3, 3, 3, 2, 1],
+        "12": [4, 4, 3, 3, 3, 2]
+      }
+    },
+    {
+      "power_id": "divine_casting",
+      "unlock_level": 2,
+      "tradition": "divine",
+      "spell_list": "divine_cleric",
+      "progression": {
+        "1":  [0, 0, 0, 0, 0],
+        "2":  [1, 0, 0, 0, 0],
+        "3":  [2, 0, 0, 0, 0],
+        "4":  [2, 1, 0, 0, 0],
+        "5":  [2, 2, 0, 0, 0],
+        "6":  [2, 2, 1, 1, 0],
+        "7":  [2, 2, 2, 1, 1],
+        "8":  [3, 3, 2, 2, 1],
+        "9":  [3, 3, 3, 2, 2],
+        "10": [4, 4, 3, 3, 2],
+        "11": [4, 4, 4, 3, 3],
+        "12": [5, 5, 4, 4, 3]
+      }
+    },
+    {
+      "power_id": "favored_of_empyrean",
+      "unlock_level": 1,
+      "description": "+2 bonus to all saving throws (already factored into the saving_throws table above)."
+    },
+    {
+      "power_id": "ageless",
+      "unlock_level": 1,
+      "description": "Ageless: lifespan three times longer than normal humans; does not age normally."
+    },
+    {
+      "power_id": "ghoul_paralysis_immunity",
+      "unlock_level": 1,
+      "description": "Immune to ghoul paralysis, as elves."
+    },
+    {
+      "power_id": "divine_health",
+      "unlock_level": 1,
+      "description": "Immune to all forms of disease, including magical diseases (mummy rot, lycanthropy, spell-borne)."
+    },
+    {
+      "power_id": "lay_on_hands",
+      "unlock_level": 1,
+      "description": "Heals 2 hp per class level when used. Usable once per day; additional daily uses granted by the Laying on Hands proficiency."
+    },
+    {
+      "power_id": "blood_of_kings",
+      "unlock_level": 1,
+      "description": "May hire one more henchman than Charisma would normally permit. Base henchman morale is increased by +1."
+    },
+    {
+      "power_id": "spell_research",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "scroll_scribing",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "potion_brewing",
+      "unlock_level": 5
+    },
+    {
+      "power_id": "magic_item_creation",
+      "unlock_level": 9
+    },
+    {
+      "power_id": "stronghold_sanctum",
+      "unlock_level": 9
+    },
+    {
+      "power_id": "advanced_arcane_creation",
+      "unlock_level": 11
+    }
+  ]
+}

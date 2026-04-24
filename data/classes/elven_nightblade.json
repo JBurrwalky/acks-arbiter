@@ -1,5 +1,5 @@
 {
-  "class_id": "elf_nightblade",
+  "class_id": "elven_nightblade",
   "class_name": "Elven Nightblade",
   "source": "ACKS Core",
   "race": "elf",
@@ -37,7 +37,7 @@
   "fighting_styles": ["dual_wield", "two_handed"],
   "class_proficiency_list": [
     "alchemy", "alertness", "battle_magic", "beast_friendship",
-    "black_lore_of_zahar", "blind_fighting", "combat_reflexes",
+    "black_lore_of_chaos", "blind_fighting", "combat_reflexes",
     "combat_trickery_disarm", "combat_trickery_incapacitate",
     "contortionism", "elementalism", "familiar", "fighting_style",
     "intimidation", "magical_engineering", "mystic_aura",

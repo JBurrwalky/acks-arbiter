@@ -40,7 +40,7 @@
   "shield_permitted": false,
   "fighting_styles": ["two_handed"],
   "class_proficiency_list": [
-    "alchemy", "apostasy", "beast_friendship", "arcane_dabbling", "black_lore_of_zahar",
+    "alchemy", "apostasy", "beast_friendship", "arcane_dabbling", "black_lore_of_chaos",
     "contemplation", "craft", "divine_blessing", "divine_health",
     "elementalism", "elven_bloodline", "familiar", "healing", "illusion_resistance", "laying_on_hands",
     "loremastery", "magical_engineering", "magical_music", "mystic_aura", "naturalism",
@@ -98,7 +98,7 @@
           "bonus_spells": {"1": "detect_undead", "2": "spiritual_weapon", "3": "necromantic_potence", "4": "animate_dead"},
           "abilities": {
             "1": "Seduction proficiency",
-            "3": "Black Lore of Zahar proficiency",
+            "3": "Black Lore of Chaos proficiency",
             "5": "Mystic Aura proficiency",
             "7": "Charm person once per day (1 round)"
           }

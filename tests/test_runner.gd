@@ -128,6 +128,8 @@ extends Node
 @onready var _equip_pipeline_tests = $EquipPipelineTests
 @onready var _inventory_ui_adjacency_tests = $InventoryUIAdjacencyTests
 @onready var _heraldry_data_tests = $HeraldryDataTests
+@onready var _lever_tests = $LeverTests
+@onready var _inventory_container_transfer_tests = $InventoryContainerTransferTests
 
 
 func _ready() -> void:
@@ -236,7 +238,9 @@ func run() -> void:
 			_equip_pipeline_tests,
 			_inventory_ui_adjacency_tests,
 			_heraldry_data_tests,
-			_character_model_registry_tests]:
+			_character_model_registry_tests,
+			_lever_tests,
+			_inventory_container_transfer_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

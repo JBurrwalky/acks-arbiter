@@ -31,6 +31,9 @@ func run_all_tests() -> void:
 	test_encounter_triggers_on_one()
 	test_encounter_civilized_never_triggers()
 	test_encounter_dungeon_mode()
+	test_weighted_pick_respects_table()
+	test_weighted_pick_single_entry_always_returns_it()
+	test_weighted_pick_empty_uniform_when_zero_weights()
 
 	# Time advance
 	test_advance_exploration_time()
@@ -271,6 +274,46 @@ func test_encounter_dungeon_mode() -> void:
 	check(result["encounter_data"].get("terrain_category", "") == "dungeon",
 		"dungeon: terrain_category = dungeon")
 	print("  encounter_dungeon_mode: OK")
+
+
+func test_weighted_pick_respects_table() -> void:
+	var runner := _make_runner()
+	var table: Array = [
+		{"monster_key": "goblin", "weight": 3},
+		{"monster_key": "kobold", "weight": 2},
+		{"monster_key": "orc", "weight": 1},
+	]
+	var seen := {}
+	for _i in range(200):
+		var key: String = runner._weighted_pick_from_table(table)
+		seen[key] = seen.get(key, 0) + 1
+	check(seen.size() <= 3, "only monsters from table appear")
+	for key in seen.keys():
+		check(key in ["goblin", "kobold", "orc"],
+			"pick '%s' must be from the table" % key)
+	print("  weighted_pick_respects_table: OK")
+
+
+func test_weighted_pick_single_entry_always_returns_it() -> void:
+	var runner := _make_runner()
+	var table: Array = [{"monster_key": "goblin", "weight": 1}]
+	for _i in range(50):
+		var key: String = runner._weighted_pick_from_table(table)
+		check(key == "goblin", "single-entry table always returns that entry")
+	print("  weighted_pick_single_entry: OK")
+
+
+func test_weighted_pick_empty_uniform_when_zero_weights() -> void:
+	var runner := _make_runner()
+	# All weights zero — should fall through to uniform pick.
+	var table: Array = [
+		{"monster_key": "goblin", "weight": 0},
+		{"monster_key": "kobold", "weight": 0},
+	]
+	var key: String = runner._weighted_pick_from_table(table)
+	check(key in ["goblin", "kobold"],
+		"zero-weight table falls back to uniform pick over entries")
+	print("  weighted_pick_zero_weights: OK")
 
 
 # ---------------------------------------------------------------------------

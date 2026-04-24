@@ -12,7 +12,7 @@ func run_all_tests() -> void:
 	test_register_and_retrieve()
 	test_has_asset_true_after_register()
 	test_register_overwrites()
-	test_all_25_portrait_classes_have_variant_01()
+	test_all_portrait_classes_have_variant_01()
 	test_terrain_atlas_registered()
 	test_ui_bg_registered()
 	test_portrait_paths_are_res_scheme()
@@ -54,13 +54,14 @@ func test_register_overwrites() -> void:
 		"second register() should overwrite first, got '%s'" % result)
 
 
-func test_all_25_portrait_classes_have_variant_01() -> void:
+func test_all_portrait_classes_have_variant_01() -> void:
 	var classes := [
-		"fighter", "assassin", "bard", "thief", "dwarf_vaultguard",
-		"dwarven_delver", "explorer", "dwarven_fury", "venturer", "elven_ranger",
-		"bladedancer", "mage", "elven_enchanter", "elf_nightblade", "elven_courtier",
-		"cleric", "dwarf_craftpriest", "elf_spellsword", "barbarian", "shaman",
-		"witch", "anti_paladin", "priestess", "paladin", "warlock"
+		"fighter", "assassin", "bard", "thief", "dwarven_vaultguard",
+		"explorer", "dwarven_fury", "venturer",
+		"bladedancer", "mage", "elven_enchanter", "elven_nightblade",
+		"cleric", "dwarven_craftpriest", "elven_spellsword", "barbarian", "shaman",
+		"witch", "priestess", "paladin",
+		"darkblood_ruinguard", "lightblessed_wonderworker"
 	]
 	for cls in classes:
 		var id := "portrait.%s_01" % cls

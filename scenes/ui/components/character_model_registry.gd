@@ -65,16 +65,16 @@ const _SHORT_CLASSES := ["vaultguard", "craftpriest"]
 ## Classes whose models are between short and tall.
 const _MEDIUM_CLASSES := ["spellsword", "nightblade", "enchanter"]
 
-## ACKS class IDs that use a racial prefix (elf_/elven_/dwarf_/dwarven_) but
-## whose placeholder GLBs are filed under the bare class stem. Add new
-## entries here whenever a racial variant of an existing class ships without
-## its own dedicated model set.
+## ACKS class IDs that use a racial prefix (elven_/dwarven_) but whose
+## placeholder GLBs are filed under the bare class stem. Add new entries
+## here whenever a racial variant of an existing class ships without its
+## own dedicated model set.
 const _CLASS_ALIASES := {
-	"elf_spellsword":    "spellsword",
-	"elf_nightblade":    "nightblade",
+	"elven_spellsword":    "spellsword",
+	"elven_nightblade":    "nightblade",
 	"elven_enchanter":   "enchanter",
-	"dwarf_vaultguard":  "vaultguard",
-	"dwarf_craftpriest": "craftpriest",
+	"dwarven_vaultguard":  "vaultguard",
+	"dwarven_craftpriest": "craftpriest",
 	"dwarven_fury":      "fury",
 }
 
@@ -168,7 +168,7 @@ static func has_any_model(class_id: String, sex: String) -> bool:
 	return not get_available_variants(class_id, sex).is_empty()
 
 
-## Map an ACKS class_id (e.g., "elf_spellsword") to the filename stem
+## Map an ACKS class_id (e.g., "elven_spellsword") to the filename stem
 ## ("spellsword"). Returns the input unchanged when no alias is registered,
 ## so plain IDs like "fighter" pass through.
 static func _canonical(class_id: String) -> String:

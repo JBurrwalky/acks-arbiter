@@ -265,7 +265,7 @@ func _clear() -> void:
 
 
 func _humanize_class(class_id: String) -> String:
-	## Converts class ids like "dwarf_craftpriest" → "Dwarf Craftpriest" for display.
+	## Converts class ids like "dwarven_craftpriest" → "Dwarven Craftpriest" for display.
 	if class_id.is_empty():
 		return "Unknown"
 	var parts := class_id.split("_")

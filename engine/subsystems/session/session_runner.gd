@@ -456,7 +456,12 @@ func end_session() -> void:
 ## Returns {triggered: bool, encounter_data: Dictionary}.
 ## When triggered, encounter_data includes monster_group, number, and reaction_roll
 ## populated from MonsterRegistry and the terrain encounter tables.
-func do_encounter_check(terrain: HexTerrainData) -> Dictionary:
+## [param dungeon_wandering_table]: optional dungeon-local weighted monster
+## table (entries: {monster_key, weight}). When non-empty and [param terrain]
+## is null (dungeon context), the monster is picked from this table instead of
+## the full monster catalog. Unknown in wilderness flows — leave default.
+func do_encounter_check(terrain: HexTerrainData,
+		dungeon_wandering_table: Array = []) -> Dictionary:
 	var threshold: int = 1  # default: encounter on 1 in 6
 
 	if terrain != null:
@@ -470,7 +475,7 @@ func do_encounter_check(terrain: HexTerrainData) -> Dictionary:
 
 	if roll.modified_total <= threshold:
 		# Pick a monster from the terrain's encounter table
-		var monster_id := _pick_encounter_monster(terrain)
+		var monster_id := _pick_encounter_monster(terrain, dungeon_wandering_table)
 		if monster_id.is_empty():
 			# No monsters in catalog for this terrain — skip encounter
 			return {"triggered": false, "encounter_data": {}}
@@ -506,9 +511,17 @@ func do_encounter_check(terrain: HexTerrainData) -> Dictionary:
 
 ## Picks a random monster for an encounter based on terrain weights.
 ## Returns a monster_id from the catalog, or "" if none available.
-func _pick_encounter_monster(terrain: HexTerrainData) -> String:
+## If [param dungeon_wandering_table] is non-empty, it takes precedence over
+## the terrain/catalog fallback — used to scope dungeon wandering rolls to a
+## curated per-dungeon monster list.
+func _pick_encounter_monster(terrain: HexTerrainData,
+		dungeon_wandering_table: Array = []) -> String:
 	if _monster_registry == null or _monster_registry.get_monster_count() == 0:
 		return ""
+
+	# Per-dungeon table overrides everything else.
+	if not dungeon_wandering_table.is_empty():
+		return _weighted_pick_from_table(dungeon_wandering_table)
 
 	# Get weighted terrain table keys for this hex
 	var weights: Dictionary = terrain.encounter_table_weights() if terrain != null else {}
@@ -537,6 +550,29 @@ func _pick_encounter_monster(terrain: HexTerrainData) -> String:
 		return all_ids[randi() % all_ids.size()]
 
 	return candidates[randi() % candidates.size()]
+
+
+## Weighted pick from [{"monster_key": String, "weight": int}, ...].
+## Falls back to uniform selection if every weight is <= 0.
+func _weighted_pick_from_table(table: Array) -> String:
+	var total_weight: int = 0
+	for entry in table:
+		total_weight += maxi(0, int(entry.get("weight", 1)))
+
+	if total_weight <= 0:
+		# Degenerate weights — uniform pick across entries.
+		var idx := randi() % table.size()
+		return str(table[idx].get("monster_key", ""))
+
+	var r := randi() % total_weight
+	var accum := 0
+	for entry in table:
+		accum += maxi(0, int(entry.get("weight", 1)))
+		if r < accum:
+			return str(entry.get("monster_key", ""))
+
+	# Safety net (shouldn't reach here).
+	return str(table[-1].get("monster_key", ""))
 
 
 ## Maps a 2d6 reaction roll total to the ACKS five-state disposition.

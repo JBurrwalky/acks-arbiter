@@ -8,6 +8,7 @@ func run_all_tests() -> void:
 	test_priestess_button_uses_generic_display_name()
 	test_class_details_show_alignment_and_sex_restrictions()
 	test_sex_and_alignment_restrictions_do_not_disable_eligible_classes()
+	test_disabled_classes_are_hidden_from_roster()
 	if not has_failures():
 		print("ClassSelectionPanel: all tests passed.")
 
@@ -72,12 +73,6 @@ func test_class_details_show_alignment_and_sex_restrictions() -> void:
 	var panel := ClassSelectionPanel.new()
 	panel.setup(_make_state(_elite_scores()), ClassRegistry.new())
 
-	panel._select_class("warlock", true)
-	check(_find_detail_value(panel, "Alignment:") == "Neutral or Chaotic",
-		"warlock detail panel should explain the non-lawful alignment restriction")
-	check(_find_detail_value(panel, "Sex:") == "Male",
-		"warlock detail panel should show the male-only restriction")
-
 	panel._select_class("bladedancer", true)
 	check(_find_detail_value(panel, "Sex:") == "Female",
 		"bladedancer detail panel should show the female-only restriction")
@@ -85,10 +80,6 @@ func test_class_details_show_alignment_and_sex_restrictions() -> void:
 	panel._select_class("paladin", true)
 	check(_find_detail_value(panel, "Alignment:") == "Lawful",
 		"paladin detail panel should show the lawful-only restriction")
-
-	panel._select_class("anti_paladin", true)
-	check(_find_detail_value(panel, "Alignment:") == "Chaotic",
-		"anti-paladin detail panel should show the chaotic-only restriction")
 	print("  class_details_show_alignment_and_sex_restrictions: OK")
 
 
@@ -96,23 +87,29 @@ func test_sex_and_alignment_restrictions_do_not_disable_eligible_classes() -> vo
 	var panel := ClassSelectionPanel.new()
 	panel.setup(_make_state(_elite_scores()), ClassRegistry.new())
 
-	var warlock_btn := panel._class_buttons.get("warlock") as Button
 	var witch_btn := panel._class_buttons.get("witch") as Button
 	var bladedancer_btn := panel._class_buttons.get("bladedancer") as Button
 
-	check(warlock_btn != null, "warlock button should exist in the class list")
 	check(witch_btn != null, "witch button should exist in the class list")
 	check(bladedancer_btn != null, "bladedancer button should exist in the class list")
-	if warlock_btn == null or witch_btn == null or bladedancer_btn == null:
+	if witch_btn == null or bladedancer_btn == null:
 		return
 
-	check(not warlock_btn.disabled,
-		"warlock should stay selectable in step 2 when ability scores qualify")
 	check(not witch_btn.disabled,
 		"witch should stay selectable in step 2 when ability scores qualify")
 	check(not bladedancer_btn.disabled,
 		"bladedancer should stay selectable in step 2 when ability scores qualify")
 	print("  sex_and_alignment_restrictions_do_not_disable_eligible_classes: OK")
+
+
+func test_disabled_classes_are_hidden_from_roster() -> void:
+	var panel := ClassSelectionPanel.new()
+	panel.setup(_make_state(_elite_scores()), ClassRegistry.new())
+
+	for disabled_id in ["warlock", "anti_paladin", "elven_ranger", "elven_courtier", "dwarven_delver"]:
+		check(not panel._class_buttons.has(disabled_id),
+			"%s is disabled and must not appear as a selectable class button" % disabled_id)
+	print("  disabled_classes_are_hidden_from_roster: OK")
 
 
 func _make_state(scores: Dictionary) -> Dictionary:

@@ -1,5 +1,6 @@
 {
   "class_id": "elven_ranger",
+  "enabled": false,
   "class_name": "Elven Ranger",
   "source": "Player's Companion",
   "race": "elf",

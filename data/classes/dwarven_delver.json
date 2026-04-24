@@ -1,5 +1,6 @@
 {
   "class_id": "dwarven_delver",
+  "enabled": false,
   "class_name": "Dwarven Delver",
   "source": "Player's Companion",
   "race": "dwarf",

@@ -70,19 +70,26 @@ func update_groups(session_state, party_data = null) -> void:
 		var slot: PanelContainer = _slots[i]
 		var count_label: Label = slot.get_node("CountLabel")
 		var num_label: Label = slot.get_node("NumLabel")
+		var check_label: Label = slot.get_node_or_null("CheckLabel")
 
 		if session_state == null:
 			count_label.text = ""
 			slot.modulate = Color(0.4, 0.4, 0.4, 0.5)
+			if check_label != null:
+				check_label.visible = false
 			continue
 
 		var members = session_state.get_group(group_num)
 		if members.is_empty():
 			count_label.text = ""
 			slot.modulate = Color(0.4, 0.4, 0.4, 0.5)
+			if check_label != null:
+				check_label.visible = false
 		else:
 			count_label.text = str(members.size())
 			slot.modulate = Color(1.0, 1.0, 1.0, 1.0)
+			if check_label != null:
+				check_label.visible = true
 
 
 # ---------------------------------------------------------------------------
@@ -118,6 +125,18 @@ func _create_slot(group_number: int) -> PanelContainer:
 	count_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	count_label.anchors_preset = Control.PRESET_FULL_RECT
 	slot.add_child(count_label)
+
+	# Filled-group checkmark indicator (top-right, hidden until update_groups
+	# reveals it for groups with at least one member). Placeholder until an
+	# icon asset replaces the glyph.
+	var check_label := Label.new()
+	check_label.name = "CheckLabel"
+	check_label.text = "✓"
+	check_label.add_theme_font_size_override("font_size", 10)
+	check_label.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
+	check_label.position = Vector2(SLOT_SIZE.x - 11, 0)
+	check_label.visible = false
+	slot.add_child(check_label)
 
 	# Make clickable.
 	slot.gui_input.connect(_on_slot_input.bind(group_number))

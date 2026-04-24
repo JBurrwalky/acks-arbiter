@@ -41,6 +41,16 @@ var transition_cell_labels: Dictionary = {}  # Vector3i -> String
 ## Detected rooms (populated by detect_rooms()).
 var rooms: Array = []
 
+## Authorial lever -> target linkages. Key: Vector3i (lever cell) -> Vector3i
+## (target cell, usually a portcullis or door). Populated from the map JSON's
+## top-level `lever_links` array at load time; pulling a lever calls
+## get_lever_target() to find what it operates.
+var lever_links: Dictionary = {}
+
+## Optional per-dungeon wandering monster table. Empty array means "fall back
+## to the level-based default catalog." Entries: {monster_key: String, weight: int}.
+var wandering_monster_table: Array = []
+
 
 # ---------------------------------------------------------------------------
 # Cell access
@@ -189,6 +199,17 @@ func get_door_state(pos: Vector3i) -> String:
 func set_door_state(pos: Vector3i, state: String) -> void:
 	var cell := _ensure_cell(pos)
 	cell.door_state = state
+
+
+## Returns the linked target cell of the lever at [param pos], or
+## Vector3i(-1, -1, -1) when the lever has no linkage.
+func get_lever_target(pos: Vector3i) -> Vector3i:
+	return lever_links.get(pos, Vector3i(-1, -1, -1))
+
+
+## Registers a lever -> target linkage.
+func set_lever_link(lever_pos: Vector3i, target_pos: Vector3i) -> void:
+	lever_links[lever_pos] = target_pos
 
 
 ## Returns true if the door at [param pos] is an evil door (auto-closes on turn tick).
@@ -438,6 +459,24 @@ static func from_dict(data: Dictionary) -> VoxelMapData:
 		if not label.is_empty():
 			map.transition_cell_labels[tc_pos] = label
 
+	# Parse lever linkages. Schema: [{"lever": [c, r, l], "target": [c, r, l]}, ...].
+	var lever_array: Array = data.get("lever_links", [])
+	for link in lever_array:
+		var lever_a: Array = link.get("lever", [])
+		var target_a: Array = link.get("target", [])
+		if lever_a.size() == 3 and target_a.size() == 3:
+			map.lever_links[Vector3i(int(lever_a[0]), int(lever_a[1]), int(lever_a[2]))] = \
+				Vector3i(int(target_a[0]), int(target_a[1]), int(target_a[2]))
+
+	# Parse optional dungeon-local wandering monster table.
+	var wm_array: Array = data.get("wandering_monster_table", [])
+	for entry in wm_array:
+		if entry is Dictionary and entry.has("monster_key"):
+			map.wandering_monster_table.append({
+				"monster_key": str(entry["monster_key"]),
+				"weight": int(entry.get("weight", 1)),
+			})
+
 	map.detect_rooms()
 	return map
 
@@ -459,6 +498,14 @@ func to_dict() -> Dictionary:
 			tc_dict["label"] = transition_cell_labels[tc_pos]
 		tc_array.append(tc_dict)
 
+	var lever_array: Array = []
+	for lever_pos in lever_links.keys():
+		var target_pos: Vector3i = lever_links[lever_pos]
+		lever_array.append({
+			"lever": [lever_pos.x, lever_pos.y, lever_pos.z],
+			"target": [target_pos.x, target_pos.y, target_pos.z],
+		})
+
 	return {
 		"id": id,
 		"name": name,
@@ -472,6 +519,8 @@ func to_dict() -> Dictionary:
 		},
 		"cells": cells_array,
 		"transition_cells": tc_array,
+		"lever_links": lever_array,
+		"wandering_monster_table": wandering_monster_table.duplicate(true),
 	}
 
 

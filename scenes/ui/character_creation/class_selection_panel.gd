@@ -103,6 +103,8 @@ func _build_ui() -> void:
 		var all_ids := _class_registry.get_all_class_ids()
 		for class_id in all_ids:
 			var cls := _class_registry.get_class_def(class_id)
+			if not cls.get("enabled", true):
+				continue
 			if cls.get("race", "human") != race:
 				continue
 			var btn := Button.new()

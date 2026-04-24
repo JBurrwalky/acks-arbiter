@@ -49,7 +49,7 @@ func run_all_tests() -> void:
 	test_wilderness_transfer_ok()
 	test_dungeon_adjacency_adjacent_ok()
 	test_dungeon_adjacency_far_rejected()
-	test_dungeon_adjacency_same_cell_ok()
+	test_dungeon_adjacency_same_cell_rejected()
 	test_dungeon_adjacency_cross_level_ok()
 	test_dungeon_adjacency_cross_level_two_apart_rejected()
 	test_dungeon_adjacency_cross_floor_lockout()
@@ -498,10 +498,12 @@ func test_dungeon_adjacency_far_rejected() -> void:
 	_cleanup()
 
 
-## Two PCs stacked on the same cell should trivially be able to trade.
-## Regression guard: VoxelGrid.is_adjacent returns false for same-cell, so the
-## validator must use Chebyshev <= 1 (the Session 9 fix).
-func test_dungeon_adjacency_same_cell_ok() -> void:
+## ACKS movement rules forbid two entities from occupying the same cell
+## outside of a movement step. Even though this state can't arise in live play,
+## the validator locks the rule in: same-cell source/target is rejected. If
+## it ever does arise (e.g. malformed save, vehicle/creature stacking bug), the
+## adjacency gate surfaces the problem rather than silently allowing a move.
+func test_dungeon_adjacency_same_cell_rejected() -> void:
 	_setup()
 	var item := _make_item("sword", "Sword", 1, 1000)
 	var source := _make_source("character", PC_A)
@@ -510,7 +512,9 @@ func test_dungeon_adjacency_same_cell_ok() -> void:
 	var ctx := _make_context("dungeon:test:level:1", false, positions)
 
 	var result: Dictionary = _validator.validate_transfer(source, target, ctx, item)
-	check(result.ok, "carriers in the same cell should allow transfer")
+	check(not result.ok, "same-cell source/target transfer must be rejected")
+	check(str(result.get("reason", "")).contains("not adjacent"),
+		"rejection reason should mention 'not adjacent'")
 	_cleanup()
 
 

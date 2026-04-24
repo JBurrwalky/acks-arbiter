@@ -514,8 +514,8 @@
       "full_description": "The character may enter a berserker rage. While enraged, he gains a +2 bonus to attack throws and becomes immune to fear. However, the character has a -2 penalty to AC and cannot retreat from combat. Once it has begun, a berserker rage cannot be ended until combat ends."
     },
     {
-      "proficiency_key": "black_lore_of_zahar",
-      "proficiency_name": "Black Lore of Zahar",
+      "proficiency_key": "black_lore_of_chaos",
+      "proficiency_name": "Black Lore of Chaos",
       "type": "class",
       "source": "ACKS Core",
       "description": "Control undead as a Chaotic cleric of half class level. Targets suffer -2 on saves versus Death from the character's spells. Necromantic spell effects and research resolve as if 2 class levels higher.",
@@ -540,7 +540,7 @@
           }
         ]
       },
-      "full_description": "The character has studied the terrible necromancies of ancient Zahar. He can control undead as a Chaotic cleric of one half his class level. If the character casts spells that require a saving throw versus Death, his targets suffer a -2 penalty on the save. When the character casts necromantic spells (such as animate dead ), the spell effects are calculated as if he were two class levels higher than his actual level of experience. He may also conduct necromantic research (see Necromancy in Chapter 7) as if he were two class levels higher than actual."
+      "full_description": "The character has studied the terrible necromancies of Chaos. He can control undead as a Chaotic cleric of one half his class level. If the character casts spells that require a saving throw versus Death, his targets suffer a -2 penalty on the save. When the character casts necromantic spells (such as animate dead ), the spell effects are calculated as if he were two class levels higher than his actual level of experience. He may also conduct necromantic research (see Necromancy in Chapter 7) as if he were two class levels higher than actual."
     },
     {
       "proficiency_key": "blind_fighting",

@@ -1,5 +1,5 @@
 {
-  "class_id": "elf_spellsword",
+  "class_id": "elven_spellsword",
   "class_name": "Elven Spellsword",
   "source": "ACKS Core",
   "race": "elf",
@@ -36,7 +36,7 @@
   "fighting_styles": ["weapon_and_shield", "two_handed", "dual_wield"],
   "class_proficiency_list": [
     "acrobatics", "alertness", "battle_magic", "beast_friendship",
-    "black_lore_of_zahar", "blind_fighting", "combat_reflexes",
+    "black_lore_of_chaos", "blind_fighting", "combat_reflexes",
     "combat_trickery_disarm", "combat_trickery_knock_down",
     "command", "elementalism", "familiar", "fighting_style",
     "leadership", "loremastery", "magical_engineering", "magical_music",

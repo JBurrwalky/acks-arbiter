@@ -586,7 +586,17 @@ func _handle_movement_tick(event: ScheduledEvent) -> Dictionary:
 
 ## Wandering monster check — fires every 2 turns per ACKS rules.
 func _handle_encounter_check(event: ScheduledEvent) -> Dictionary:
-	var encounter: Dictionary = _runner.do_encounter_check(null)
+	# Fetch the dungeon's local wandering monster table if one is defined —
+	# scopes the roll to a curated per-dungeon catalog instead of every monster
+	# in the registry.
+	var local_table: Array = []
+	var enc_ctrl: DungeonMapController = _find_dungeon_controller()
+	if enc_ctrl != null and enc_ctrl.has_map():
+		var vmap = enc_ctrl.get_voxel_map()
+		if vmap != null and "wandering_monster_table" in vmap:
+			local_table = vmap.wandering_monster_table
+
+	var encounter: Dictionary = _runner.do_encounter_check(null, local_table)
 
 	# Always reschedule the next check.
 	var next_events := [{
@@ -602,8 +612,8 @@ func _handle_encounter_check(event: ScheduledEvent) -> Dictionary:
 		# Cancel all movement — combat interrupts.
 		_movement_orders.clear()
 		# Auto-focus the camera on the party leader's level if the encounter
-		# happens on a non-focus level.
-		var enc_ctrl: DungeonMapController = _find_dungeon_controller()
+		# happens on a non-focus level. Reuses the controller already fetched
+		# above when resolving the wandering-monster table.
 		if enc_ctrl != null:
 			var leader_pos: Vector3i = enc_ctrl.get_party_position_3d()
 			EventBus.dungeon_auto_focus_requested.emit(leader_pos.z, "encounter")
@@ -991,10 +1001,24 @@ func _resolve_pick_lock(entity_id: String, cell) -> Dictionary:  # cell: Vector2
 	}
 
 
-func _resolve_use_lever(_entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
+func _resolve_use_lever(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	var controller: DungeonMapController = _find_dungeon_controller()
 	if controller == null or not controller.has_map():
 		return {"auto_pause": true, "pause_reason": "Lever — no map"}
+
+	# Adjacency check: the acting entity must be one cell away (Chebyshev == 1).
+	# Guards against stale right-click targets when the party has moved since
+	# the menu opened.
+	if not entity_id.is_empty() and cell is Vector3i:
+		var actor_pos: Vector3i = controller.get_entity_pos_3d(entity_id)
+		if actor_pos != Vector3i(-1, -1, -1) and not VoxelGrid.is_adjacent(actor_pos, cell):
+			EventBus.notification_requested.emit({
+				"type": "warning",
+				"category": "environment",
+				"title": "Too far to reach the lever.",
+				"duration": 3.0,
+			})
+			return {"auto_pause": true, "pause_reason": "Lever — out of reach"}
 
 	var tmap = controller.get_voxel_map()
 	var target_pos

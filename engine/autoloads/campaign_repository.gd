@@ -1395,6 +1395,48 @@ func get_items_in_container(container_item_id: String) -> Array:
 	return db.query_result.duplicate()
 
 
+func _cascade_container_contents(container_item_id: String,
+		set_clause: String, set_bindings: Array) -> bool:
+	## Rewrites ownership columns of every descendant (transitive) of the given
+	## item so contents follow the container to its new carrier or cache. Call
+	## from inside an already-open transaction in a transfer function.
+	##
+	## set_clause mirrors the caller's own UPDATE (e.g. "character_id = ?,
+	## party_id = NULL"); is_equipped = 0 and slot = 'pack' are appended.
+	## Descendants' own container_id is deliberately NOT touched — nested
+	## structure is preserved, only the outer carrier changes.
+	##
+	## Returns false on SQL error. Caller must ROLLBACK on false.
+	var descendant_ids: Array = []
+	var frontier: Array = [container_item_id]
+	while not frontier.is_empty():
+		var in_placeholders := ",".join(frontier.map(func(_x): return "?"))
+		if not db.query_with_bindings(
+				"SELECT id FROM inventory_items WHERE container_id IN (%s)" % in_placeholders,
+				frontier):
+			return false
+		var rows: Array = db.query_result.duplicate()
+		var next_frontier: Array = []
+		for r in rows:
+			var cid := str(r.get("id", ""))
+			if cid.is_empty():
+				continue
+			descendant_ids.append(cid)
+			next_frontier.append(cid)
+		frontier = next_frontier
+
+	if descendant_ids.is_empty():
+		return true
+
+	var id_placeholders := ",".join(descendant_ids.map(func(_x): return "?"))
+	var sql := "UPDATE inventory_items SET %s, is_equipped = 0, slot = 'pack' WHERE id IN (%s)" % [
+			set_clause, id_placeholders]
+	var bindings: Array = []
+	bindings.append_array(set_bindings)
+	bindings.append_array(descendant_ids)
+	return db.query_with_bindings(sql, bindings)
+
+
 func drop_container(container_item_id: String) -> bool:
 	## Remove a container and all items inside it from the character's inventory.
 	## Use when a character drops or loses a container (backpack, sack, etc.).
@@ -2413,19 +2455,43 @@ func add_party_inventory_item(party_id: String, data: Dictionary) -> String:
 
 
 ## Transfers an inventory item from a character to the party shared pool.
+## If the item is a container, its contents are cascaded to the party pool.
 func transfer_item_to_party(item_id: String, party_id: String) -> bool:
-	return db.query_with_bindings(
-		"UPDATE inventory_items SET party_id = ?, character_id = '', is_equipped = 0, slot = 'pack' WHERE id = ?",
-		[party_id, item_id]
-	)
+	db.query("BEGIN TRANSACTION")
+	if not db.query_with_bindings(
+			"UPDATE inventory_items SET party_id = ?, character_id = '', is_equipped = 0, slot = 'pack' WHERE id = ?",
+			[party_id, item_id]):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.transfer_item_to_party: failed. item=%s" % item_id)
+		return false
+	if not _cascade_container_contents(item_id,
+			"party_id = ?, character_id = ''",
+			[party_id]):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.transfer_item_to_party: cascade failed. item=%s" % item_id)
+		return false
+	db.query("COMMIT")
+	return true
 
 
 ## Transfers an inventory item from the party shared pool to a character.
+## If the item is a container, its contents are cascaded to the same character.
 func transfer_item_to_character(item_id: String, character_id: String) -> bool:
-	return db.query_with_bindings(
-		"UPDATE inventory_items SET character_id = ?, party_id = NULL WHERE id = ?",
-		[character_id, item_id]
-	)
+	db.query("BEGIN TRANSACTION")
+	if not db.query_with_bindings(
+			"UPDATE inventory_items SET character_id = ?, party_id = NULL WHERE id = ?",
+			[character_id, item_id]):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.transfer_item_to_character: failed. item=%s" % item_id)
+		return false
+	if not _cascade_container_contents(item_id,
+			"character_id = ?, party_id = NULL",
+			[character_id]):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.transfer_item_to_character: cascade failed. item=%s" % item_id)
+		return false
+	db.query("COMMIT")
+	return true
 
 
 # ---------------------------------------------------------------------------
@@ -2880,56 +2946,110 @@ func remove_creature(creature_id: String) -> bool:
 # ---------------------------------------------------------------------------
 
 func transfer_item_to_creature(item_id: String, creature_id: String) -> bool:
+	db.query("BEGIN TRANSACTION")
 	if not db.query_with_bindings(
-		"UPDATE inventory_items SET creature_id = ?, character_id = '', party_id = NULL, vehicle_id = NULL, is_equipped = 0, slot = 'pack', container_id = '' WHERE id = ?",
-		[creature_id, item_id]):
+			"UPDATE inventory_items SET creature_id = ?, character_id = '', party_id = NULL, vehicle_id = NULL, is_equipped = 0, slot = 'pack', container_id = '' WHERE id = ?",
+			[creature_id, item_id]):
+		db.query("ROLLBACK")
 		push_error("CampaignRepository.transfer_item_to_creature: failed. item=%s" % item_id)
 		return false
+	if not _cascade_container_contents(item_id,
+			"creature_id = ?, character_id = '', party_id = NULL, vehicle_id = NULL",
+			[creature_id]):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.transfer_item_to_creature: cascade failed. item=%s" % item_id)
+		return false
+	db.query("COMMIT")
 	return true
 
 
 func transfer_item_from_creature_to_character(item_id: String, character_id: String) -> bool:
+	db.query("BEGIN TRANSACTION")
 	if not db.query_with_bindings(
-		"UPDATE inventory_items SET character_id = ?, creature_id = '', party_id = NULL, vehicle_id = NULL, is_equipped = 0, slot = 'pack', container_id = '' WHERE id = ?",
-		[character_id, item_id]):
+			"UPDATE inventory_items SET character_id = ?, creature_id = '', party_id = NULL, vehicle_id = NULL, is_equipped = 0, slot = 'pack', container_id = '' WHERE id = ?",
+			[character_id, item_id]):
+		db.query("ROLLBACK")
 		push_error("CampaignRepository.transfer_item_from_creature_to_character: failed. item=%s" % item_id)
 		return false
+	if not _cascade_container_contents(item_id,
+			"character_id = ?, creature_id = '', party_id = NULL, vehicle_id = NULL",
+			[character_id]):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.transfer_item_from_creature_to_character: cascade failed. item=%s" % item_id)
+		return false
+	db.query("COMMIT")
 	return true
 
 
 func transfer_item_from_creature_to_party(item_id: String, party_id: String) -> bool:
+	db.query("BEGIN TRANSACTION")
 	if not db.query_with_bindings(
-		"UPDATE inventory_items SET party_id = ?, creature_id = '', character_id = '', vehicle_id = NULL, is_equipped = 0, slot = 'pack', container_id = '' WHERE id = ?",
-		[party_id, item_id]):
+			"UPDATE inventory_items SET party_id = ?, creature_id = '', character_id = '', vehicle_id = NULL, is_equipped = 0, slot = 'pack', container_id = '' WHERE id = ?",
+			[party_id, item_id]):
+		db.query("ROLLBACK")
 		push_error("CampaignRepository.transfer_item_from_creature_to_party: failed. item=%s" % item_id)
 		return false
+	if not _cascade_container_contents(item_id,
+			"party_id = ?, creature_id = '', character_id = '', vehicle_id = NULL",
+			[party_id]):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.transfer_item_from_creature_to_party: cascade failed. item=%s" % item_id)
+		return false
+	db.query("COMMIT")
 	return true
 
 
 func transfer_item_to_vehicle(item_id: String, vehicle_id: String) -> bool:
+	db.query("BEGIN TRANSACTION")
 	if not db.query_with_bindings(
-		"UPDATE inventory_items SET vehicle_id = ?, character_id = '', creature_id = '', party_id = NULL, is_equipped = 0, slot = 'pack' WHERE id = ?",
-		[vehicle_id, item_id]):
+			"UPDATE inventory_items SET vehicle_id = ?, character_id = '', creature_id = '', party_id = NULL, is_equipped = 0, slot = 'pack' WHERE id = ?",
+			[vehicle_id, item_id]):
+		db.query("ROLLBACK")
 		push_error("CampaignRepository.transfer_item_to_vehicle: failed. item=%s" % item_id)
 		return false
+	if not _cascade_container_contents(item_id,
+			"vehicle_id = ?, character_id = '', creature_id = '', party_id = NULL",
+			[vehicle_id]):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.transfer_item_to_vehicle: cascade failed. item=%s" % item_id)
+		return false
+	db.query("COMMIT")
 	return true
 
 
 func transfer_item_from_vehicle_to_character(item_id: String, character_id: String) -> bool:
+	db.query("BEGIN TRANSACTION")
 	if not db.query_with_bindings(
-		"UPDATE inventory_items SET character_id = ?, vehicle_id = NULL, creature_id = '', party_id = NULL, is_equipped = 0, slot = 'pack', container_id = '' WHERE id = ?",
-		[character_id, item_id]):
+			"UPDATE inventory_items SET character_id = ?, vehicle_id = NULL, creature_id = '', party_id = NULL, is_equipped = 0, slot = 'pack', container_id = '' WHERE id = ?",
+			[character_id, item_id]):
+		db.query("ROLLBACK")
 		push_error("CampaignRepository.transfer_item_from_vehicle_to_character: failed. item=%s" % item_id)
 		return false
+	if not _cascade_container_contents(item_id,
+			"character_id = ?, vehicle_id = NULL, creature_id = '', party_id = NULL",
+			[character_id]):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.transfer_item_from_vehicle_to_character: cascade failed. item=%s" % item_id)
+		return false
+	db.query("COMMIT")
 	return true
 
 
 func transfer_item_from_vehicle_to_party(item_id: String, party_id: String) -> bool:
+	db.query("BEGIN TRANSACTION")
 	if not db.query_with_bindings(
-		"UPDATE inventory_items SET party_id = ?, vehicle_id = NULL, character_id = '', creature_id = '', is_equipped = 0, slot = 'pack', container_id = '' WHERE id = ?",
-		[party_id, item_id]):
+			"UPDATE inventory_items SET party_id = ?, vehicle_id = NULL, character_id = '', creature_id = '', is_equipped = 0, slot = 'pack', container_id = '' WHERE id = ?",
+			[party_id, item_id]):
+		db.query("ROLLBACK")
 		push_error("CampaignRepository.transfer_item_from_vehicle_to_party: failed. item=%s" % item_id)
 		return false
+	if not _cascade_container_contents(item_id,
+			"party_id = ?, vehicle_id = NULL, character_id = '', creature_id = ''",
+			[party_id]):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.transfer_item_from_vehicle_to_party: cascade failed. item=%s" % item_id)
+		return false
+	db.query("COMMIT")
 	return true
 
 
@@ -3780,9 +3900,12 @@ func delete_location_cache(cache_id: String) -> bool:
 
 
 ## Transfers an item into a location cache.
-## Clears character_id, creature_id, vehicle_id, party_id, container_id;
-## sets location_cache_id.
+## Clears character_id, creature_id, vehicle_id, party_id, container_id on the
+## item itself; sets location_cache_id. If the item is a container, its
+## contents are cascaded into the same cache (descendants keep their own
+## container_id so nested structure is preserved).
 func transfer_item_to_cache(item_id: String, cache_id: String) -> bool:
+	db.query("BEGIN TRANSACTION")
 	if not db.query_with_bindings("""
 		UPDATE inventory_items
 		SET location_cache_id = ?, character_id = '', creature_id = NULL,
@@ -3790,30 +3913,50 @@ func transfer_item_to_cache(item_id: String, cache_id: String) -> bool:
 			is_equipped = 0, slot = 'pack'
 		WHERE id = ?
 	""", [cache_id, item_id]):
+		db.query("ROLLBACK")
 		push_error("CampaignRepository.transfer_item_to_cache: failed. item=%s cache=%s" % [
 			item_id, cache_id])
 		return false
+	if not _cascade_container_contents(item_id,
+			"location_cache_id = ?, character_id = '', creature_id = NULL, vehicle_id = NULL, party_id = NULL",
+			[cache_id]):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.transfer_item_to_cache: cascade failed. item=%s" % item_id)
+		return false
+	db.query("COMMIT")
 	return true
 
 
 ## Transfers an item from a cache to a carrier.
 ## [param carrier_type]: "character", "creature", or "vehicle".
+## If the item is a container, its contents are cascaded to the same carrier.
 func transfer_item_from_cache(item_id: String, target_carrier_id: String, carrier_type: String) -> bool:
 	var sql: String
+	var cascade_clause: String
 	match carrier_type:
 		"character":
 			sql = "UPDATE inventory_items SET character_id = ?, location_cache_id = NULL, creature_id = NULL, vehicle_id = NULL, party_id = NULL, is_equipped = 0, slot = 'pack' WHERE id = ?"
+			cascade_clause = "character_id = ?, location_cache_id = NULL, creature_id = NULL, vehicle_id = NULL, party_id = NULL"
 		"creature":
 			sql = "UPDATE inventory_items SET creature_id = ?, location_cache_id = NULL, character_id = '', vehicle_id = NULL, party_id = NULL, is_equipped = 0, slot = 'pack' WHERE id = ?"
+			cascade_clause = "creature_id = ?, location_cache_id = NULL, character_id = '', vehicle_id = NULL, party_id = NULL"
 		"vehicle":
 			sql = "UPDATE inventory_items SET vehicle_id = ?, location_cache_id = NULL, character_id = '', creature_id = NULL, party_id = NULL, is_equipped = 0, slot = 'pack' WHERE id = ?"
+			cascade_clause = "vehicle_id = ?, location_cache_id = NULL, character_id = '', creature_id = NULL, party_id = NULL"
 		_:
 			push_error("CampaignRepository.transfer_item_from_cache: unknown carrier_type '%s'" % carrier_type)
 			return false
+	db.query("BEGIN TRANSACTION")
 	if not db.query_with_bindings(sql, [target_carrier_id, item_id]):
+		db.query("ROLLBACK")
 		push_error("CampaignRepository.transfer_item_from_cache: failed. item=%s carrier=%s type=%s" % [
 			item_id, target_carrier_id, carrier_type])
 		return false
+	if not _cascade_container_contents(item_id, cascade_clause, [target_carrier_id]):
+		db.query("ROLLBACK")
+		push_error("CampaignRepository.transfer_item_from_cache: cascade failed. item=%s" % item_id)
+		return false
+	db.query("COMMIT")
 	return true
 
 

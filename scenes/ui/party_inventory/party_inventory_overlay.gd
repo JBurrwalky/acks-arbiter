@@ -121,6 +121,7 @@ func open(filter_key: String = "") -> void:
 		char_sheet._close()
 	_is_visible = true
 	visible = true
+	_pause_scheduler_for_inventory()
 	# Force re-resolve on each open so signal connections are rebuilt cleanly
 	# against the current controller instance (it gets recreated per dungeon).
 	_disconnect_dungeon_controller_signals()
@@ -143,6 +144,7 @@ func close() -> void:
 	_dungeon_controller = null
 	_carrier_positions.clear()
 	_adjacent_carrier_ids.clear()
+	_resume_scheduler_after_inventory()
 
 
 # ---------------------------------------------------------------------------
@@ -158,7 +160,7 @@ func _build_ui() -> void:
 	_panel.offset_left = 0.0
 	_panel.offset_right = 0.0
 	_panel.offset_top = 0.0
-	_panel.offset_bottom = 0.0
+	_panel.offset_bottom = -float(SessionStatusBar.BAR_HEIGHT)
 	UiSurfaceStyles.apply_framed_window_chrome(_panel)
 	add_child(_panel)
 
@@ -854,6 +856,45 @@ func _build_context() -> Dictionary:
 ## Cached on first hit while the overlay is visible; cleared on close. Also
 ## connects the controller's party_moved/entity_moved signals so column
 ## dimming refreshes when anyone's Vector3i changes.
+const _SCHEDULER_PAUSE_REASON := "party_inventory_open"
+
+
+## Locates the active SchedulerLoop via the SessionRunner in the scene tree.
+## Returns null outside a session.
+func _resolve_scheduler_loop():
+	if not GameState.is_in_session():
+		return null
+	var runner = get_tree().get_root().find_child("SessionRunner", true, false)
+	if runner == null or not runner.has_method("get_scheduler_loop"):
+		return null
+	return runner.get_scheduler_loop()
+
+
+## Force-pauses the scheduler when the overlay opens. Tags the pause with a
+## dedicated reason so close() only resumes the pause *we* caused — if combat
+## or another subsystem paused while we were open, that pause stays in effect.
+func _pause_scheduler_for_inventory() -> void:
+	var loop = _resolve_scheduler_loop()
+	if loop == null:
+		return
+	if loop.is_paused():
+		# Someone else owns the pause; don't overwrite their reason.
+		return
+	loop.auto_pause_reason = _SCHEDULER_PAUSE_REASON
+	loop.pause()
+
+
+## Resumes the scheduler only if the pause we set is still the active one.
+func _resume_scheduler_after_inventory() -> void:
+	var loop = _resolve_scheduler_loop()
+	if loop == null:
+		return
+	if loop.auto_pause_reason != _SCHEDULER_PAUSE_REASON:
+		return
+	loop.auto_pause_reason = ""
+	loop.resume()
+
+
 func _resolve_dungeon_controller() -> Node:
 	if _dungeon_controller != null and is_instance_valid(_dungeon_controller):
 		return _dungeon_controller

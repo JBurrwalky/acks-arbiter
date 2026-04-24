@@ -19,7 +19,6 @@ const ContextMenuBuilder := preload("res://engine/subsystems/exploration/dungeon
 const ContextMenuScene := preload("res://scenes/maps/dungeon_context_menu.gd")
 const UnitInfoPanelScene := preload("res://scenes/maps/dungeon_unit_info_panel.gd")
 const ControlGroupBarScene := preload("res://scenes/maps/dungeon_control_group_bar.gd")
-const NotificationLogScene := preload("res://scenes/maps/dungeon_notification_log.gd")
 const MinimapScene := preload("res://scenes/maps/dungeon_minimap.gd")
 const LootGenerator := preload("res://engine/subsystems/combat/loot_generator.gd")
 const LootModalScript := preload("res://scenes/ui/party_inventory/loot_distribution_modal.gd")
@@ -50,7 +49,6 @@ var _loot_modal = null  # LootDistributionModal (lazy-created)
 ## UI panels.
 var _unit_info_panel: PanelContainer = null
 var _control_group_bar: PanelContainer = null
-var _notification_log: PanelContainer = null
 var _minimap: PanelContainer = null
 
 
@@ -667,6 +665,7 @@ func _on_context_action(action_data: Dictionary) -> void:
 					if target_id not in members:
 						members.append(target_id)
 					_session_state.assign_group(group_num, members)
+					_refresh_control_group_bar()
 
 		"use_lever":
 			for eid in selected:
@@ -860,6 +859,12 @@ func _on_control_group_assign(group_number: int, entity_ids: Array) -> void:
 	if _session_state == null or entity_ids.is_empty():
 		return
 	_session_state.assign_group(group_number, entity_ids)
+	_refresh_control_group_bar()
+
+
+func _refresh_control_group_bar() -> void:
+	if _control_group_bar != null and _session_state != null:
+		_control_group_bar.update_groups(_session_state, null)
 
 
 func _on_control_group_recall(group_number: int) -> void:
@@ -916,20 +921,7 @@ func _create_ui_panels() -> void:
 	_control_group_bar.group_clicked.connect(_on_control_group_recall)
 	_control_group_bar.group_double_clicked.connect(_on_control_group_recall)
 	hud.add_child(_control_group_bar)
-
-	# Notification log (bottom right).
-	_notification_log = NotificationLogScene.new()
-	_notification_log.anchors_preset = Control.PRESET_BOTTOM_RIGHT
-	_notification_log.anchor_left = 1.0
-	_notification_log.anchor_top = 1.0
-	_notification_log.offset_left = -290.0
-	_notification_log.offset_top = -240.0
-	_notification_log.offset_right = -8.0
-	_notification_log.offset_bottom = -36.0
-	_notification_log.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_notification_log.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_notification_log.log_entry_clicked.connect(_on_log_entry_clicked)
-	hud.add_child(_notification_log)
+	_refresh_control_group_bar()
 
 	# Minimap (top right).
 	_minimap = MinimapScene.new()
@@ -981,19 +973,6 @@ func _on_minimap_cell_clicked(cell: Vector3i) -> void:
 		if vm != null and cell.z != vm.focus_level:
 			vm.set_focus_level(cell.z)
 			_update_minimap()
-
-
-func _on_log_entry_clicked(cell: Vector2i) -> void:
-	## Notification log entries carry Vector2i cells (historical 2D shape).
-	## Project to the current focus level and delegate to the minimap handler.
-	if _controller == null:
-		return
-	var level: int = _controller.get_current_level()
-	if _scene != null and _scene.has_method("get_visibility_manager"):
-		var vm = _scene.get_visibility_manager()
-		if vm != null:
-			level = vm.focus_level
-	_on_minimap_cell_clicked(Vector3i(cell.x, cell.y, level))
 
 
 func _on_dungeon_focus_level_changed(_level: int) -> void:
@@ -1614,8 +1593,6 @@ func _set_dungeon_hud_visible(vis: bool) -> void:
 		_unit_info_panel.visible = vis and _unit_info_panel.visible
 	if _control_group_bar != null:
 		_control_group_bar.visible = vis
-	if _notification_log != null:
-		_notification_log.visible = vis
 	if _minimap != null and vis:
 		# Don't force minimap visible — respect its toggle state.
 		pass

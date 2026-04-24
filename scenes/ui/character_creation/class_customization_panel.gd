@@ -51,7 +51,7 @@ const TRADITION_INFO: Dictionary = {
 			"Bonus spells: Detect Undead (1st), Spiritual Weapon (2nd), "
 			+ "Necromantic Potence (3rd), Animate Dead (4th).\n"
 			+ "1st level: Seduction proficiency (automatic — uses no slot).\n"
-			+ "3rd level: Black Lore of Zahar proficiency (automatic — uses no slot).\n"
+			+ "3rd level: Black Lore of Chaos proficiency (automatic — uses no slot).\n"
 			+ "5th level: Mystic Aura proficiency (automatic — uses no slot).\n"
 			+ "7th level: Charm Person once per day.\n"
 			+ "Restriction: Must be Chaotic."

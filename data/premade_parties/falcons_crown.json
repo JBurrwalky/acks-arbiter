@@ -416,7 +416,7 @@
         "character_type": "pc",
         "persistence_tier": "full",
         "race": "elf",
-        "character_class": "elf_spellsword",
+        "character_class": "elven_spellsword",
         "level": 1,
         "xp": 0,
         "combat_progression": "fighter",
@@ -452,7 +452,7 @@
         "languages": "[\"common\",\"elvish\",\"gnoll\",\"hobgoblin\",\"orc\",\"goblin\",\"kobold\"]",
         "personality": "{}",
         "is_incapacitated": 0,
-        "portrait_id": "portrait_elf_spellsword_02",
+        "portrait_id": "portrait_elven_spellsword_02",
         "sex": "female",
         "token_variant": ""
       },

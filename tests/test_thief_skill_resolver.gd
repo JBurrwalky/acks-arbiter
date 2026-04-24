@@ -213,7 +213,7 @@ func test_detect_secret_baselines_for_human_elf_and_dwarf() -> void:
 		"ThiefSkillResolver: humans should default detect secrets to 18+")
 	check(resolver.get_skill_check(_make_bundle("elven_ranger", 1), "detect_secrets").get("display_target", "") == "8+",
 		"ThiefSkillResolver: elves should resolve detect secrets to 8+")
-	check(resolver.get_skill_check(_make_bundle("dwarf_vaultguard", 1), "detect_secrets").get("display_target", "") == "14+",
+	check(resolver.get_skill_check(_make_bundle("dwarven_vaultguard", 1), "detect_secrets").get("display_target", "") == "14+",
 		"ThiefSkillResolver: dwarves should resolve detect secrets to 14+")
 
 
@@ -231,20 +231,20 @@ func test_hear_noise_baselines_and_upgrades() -> void:
 func test_find_traps_baselines_and_thief_dex_rule() -> void:
 	var resolver := _make_resolver()
 	var human_fighter := _make_bundle("fighter", 1, 18)
-	var dwarf_vaultguard := _make_bundle("dwarf_vaultguard", 1, 18)
+	var dwarven_vaultguard := _make_bundle("dwarven_vaultguard", 1, 18)
 	var thief := _make_bundle("thief", 1, 18)
 
 	var human_find_traps := resolver.get_skill_check(human_fighter, "find_traps")
-	var dwarf_find_traps := resolver.get_skill_check(dwarf_vaultguard, "find_traps")
+	var dwarven_find_traps := resolver.get_skill_check(dwarven_vaultguard, "find_traps")
 	var thief_find_traps := resolver.get_skill_check(thief, "find_traps")
 
 	check(human_find_traps.get("display_target", "") == "18+",
 		"ThiefSkillResolver: humans should default find traps to 18+")
 	check(int(human_find_traps.get("dex_modifier", 0)) == 0,
 		"ThiefSkillResolver: the universal find traps baseline should not use DEX")
-	check(dwarf_find_traps.get("display_target", "") == "14+",
+	check(dwarven_find_traps.get("display_target", "") == "14+",
 		"ThiefSkillResolver: dwarves should default find traps to 14+")
-	check(int(dwarf_find_traps.get("dex_modifier", 0)) == 0,
+	check(int(dwarven_find_traps.get("dex_modifier", 0)) == 0,
 		"ThiefSkillResolver: stonework detection style find traps should not use DEX")
 	check(thief_find_traps.get("display_target", "") == "15+",
 		"ThiefSkillResolver: thief-native find traps should still apply DEX")

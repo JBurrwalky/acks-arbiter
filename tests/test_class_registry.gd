@@ -24,8 +24,8 @@ func run_all_tests() -> void:
 
 func test_all_classes_load() -> void:
 	var reg := ClassRegistry.new()
-	check(reg.get_class_count() == 25,
-		"ClassRegistry should load 25 classes, got %d" % reg.get_class_count())
+	check(reg.get_class_count() == 27,
+		"ClassRegistry should load 27 classes, got %d" % reg.get_class_count())
 	print("  all_classes_load: OK")
 
 
@@ -71,8 +71,8 @@ func test_class_eligibility_race_filter() -> void:
 	# All 18s human should not get dwarf classes
 	var human_scores := {"STR": 18, "INT": 18, "WIS": 18, "DEX": 18, "CON": 18, "CHA": 18}
 	var human_eligible := reg.get_eligible_classes(human_scores, "human")
-	check("dwarf_vaultguard" not in human_eligible,
-		"human should not qualify for dwarf_vaultguard")
+	check("dwarven_vaultguard" not in human_eligible,
+		"human should not qualify for dwarven_vaultguard")
 	check("dwarven_delver" not in human_eligible,
 		"human should not qualify for dwarven_delver")
 
@@ -83,8 +83,8 @@ func test_class_eligibility_race_filter() -> void:
 	check("mage" not in dwarf_eligible,
 		"dwarf should not qualify for mage (human class)")
 	# Dwarf should get dwarf classes
-	check("dwarf_vaultguard" in dwarf_eligible,
-		"dwarf with all 18s should qualify for dwarf_vaultguard")
+	check("dwarven_vaultguard" in dwarf_eligible,
+		"dwarf with all 18s should qualify for dwarven_vaultguard")
 	print("  class_eligibility_race_filter: OK")
 
 

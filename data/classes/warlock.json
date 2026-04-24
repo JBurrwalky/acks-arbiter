@@ -1,5 +1,6 @@
 {
   "class_id": "warlock",
+  "enabled": false,
   "class_name": "Warlock",
   "source": "Player's Companion",
   "race": "human",
