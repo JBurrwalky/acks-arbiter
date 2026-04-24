@@ -94,6 +94,14 @@ var has_moved_this_round: bool = false
 ## Whether this combatant has used the Run action this round (3x movement, no attack).
 var has_run_this_round: bool = false
 
+## Ready Attack — combatant holds a stored attack that fires when an enemy
+## comes into range, before the enemy acts. Carries over between rounds until
+## the readied combatant's own initiative comes up again.
+var has_readied_attack: bool = false
+
+## Round in which the Ready Attack was declared (for log / debugging).
+var readied_attack_round: int = 0
+
 ## ID of the combatant holding this one in a wrestling hold (empty = not held).
 var held_by_id: String = ""
 

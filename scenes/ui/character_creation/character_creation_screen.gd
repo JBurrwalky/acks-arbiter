@@ -28,22 +28,24 @@ enum Step {
 	SPELLS               = 6,  ## Starting spell selection (casters only; skipped otherwise)
 	EQUIPMENT            = 7,  ## Starting gold roll + equipment shop
 	PORTRAIT             = 8,  ## Choose character portrait
-	LANGUAGES            = 9,  ## Language selection (skipped if INT modifier <= 0)
-	FINALIZE             = 10, ## Name, alignment, description, character sheet preview
+	TOKEN_SELECTION      = 9,  ## Choose 3D combat token (skipped if class has no GLBs)
+	LANGUAGES            = 10, ## Language selection (skipped if INT modifier <= 0)
+	FINALIZE             = 11, ## Name, alignment, description, character sheet preview
 }
 
 const STEP_LABELS: Array[String] = [
-	"Step 1 of 11 — Ability Scores",
-	"Step 2 of 11 — Class",
-	"Step 3 of 11 — Origin / Tradition",
-	"Step 4 of 11 — Ability Trading",
-	"Step 5 of 11 — Hit Points",
-	"Step 6 of 11 — Proficiencies",
-	"Step 7 of 11 — Starting Spells",
-	"Step 8 of 11 — Equipment",
-	"Step 9 of 11 — Portrait",
-	"Step 10 of 11 — Languages",
-	"Step 11 of 11 — Finalize",
+	"Step 1 of 12 — Ability Scores",
+	"Step 2 of 12 — Class",
+	"Step 3 of 12 — Origin / Tradition",
+	"Step 4 of 12 — Ability Trading",
+	"Step 5 of 12 — Hit Points",
+	"Step 6 of 12 — Proficiencies",
+	"Step 7 of 12 — Starting Spells",
+	"Step 8 of 12 — Equipment",
+	"Step 9 of 12 — Portrait",
+	"Step 10 of 12 — Combat Token",
+	"Step 11 of 12 — Languages",
+	"Step 12 of 12 — Finalize",
 ]
 
 
@@ -253,6 +255,9 @@ func _invalidate_from(step: int) -> void:
 			creation_state["portrait_id"] = ""
 			creation_state["token_variant"] = ""
 			creation_state["language_bonus_picks"] = []
+		Step.TOKEN_SELECTION:
+			creation_state["token_variant"] = ""
+			creation_state["language_bonus_picks"] = []
 		Step.LANGUAGES:
 			creation_state["language_bonus_picks"] = []
 		Step.FINALIZE:
@@ -324,7 +329,8 @@ func _on_back_pressed() -> void:
 
 func _next_valid_step(from_step: int) -> int:
 	## Advance to the next step, skipping CLASS_CUSTOMIZATION for classes that
-	## don't need it, SPELLS for non-casters, and LANGUAGES when no INT bonus.
+	## don't need it, SPELLS for non-casters, TOKEN_SELECTION when the class
+	## has no GLBs, and LANGUAGES when no INT bonus.
 	var next := from_step + 1
 	if next == Step.CLASS_CUSTOMIZATION and _should_skip_customization():
 		next += 1
@@ -332,15 +338,20 @@ func _next_valid_step(from_step: int) -> int:
 		var class_id: String = creation_state.get("class_id", "")
 		if not _is_caster(class_id):
 			next += 1
+	if next == Step.TOKEN_SELECTION and _should_skip_token_selection():
+		next += 1
 	if next == Step.LANGUAGES and _should_skip_languages():
 		next += 1
 	return mini(next, Step.FINALIZE)
 
 
 func _prev_valid_step(from_step: int) -> int:
-	## Step back, skipping CLASS_CUSTOMIZATION, SPELLS, and LANGUAGES as needed.
+	## Step back, skipping CLASS_CUSTOMIZATION, SPELLS, TOKEN_SELECTION, and
+	## LANGUAGES as needed.
 	var prev := from_step - 1
 	if prev == Step.LANGUAGES and _should_skip_languages():
+		prev -= 1
+	if prev == Step.TOKEN_SELECTION and _should_skip_token_selection():
 		prev -= 1
 	if prev == Step.SPELLS:
 		var class_id: String = creation_state.get("class_id", "")
@@ -363,6 +374,17 @@ func _should_skip_customization() -> bool:
 	## Currently only Barbarian (regional origin) and Witch (tradition) use it.
 	var class_id: String = creation_state.get("class_id", "")
 	return class_id != "barbarian" and class_id != "witch"
+
+
+func _should_skip_token_selection() -> bool:
+	## Skip the token picker when no 3D model is registered for the class's
+	## available sexes. The panel would be empty otherwise.
+	var class_id: String = creation_state.get("class_id", "")
+	if class_id.is_empty():
+		return true
+	var CharacterModelRegistryScript := preload("res://scenes/ui/components/character_model_registry.gd")
+	var sexes: Array[String] = CharacterModelRegistryScript.get_available_sexes(class_id)
+	return sexes.is_empty()
 
 
 func _should_skip_languages() -> bool:
@@ -629,9 +651,9 @@ func _build_ui() -> void:
 
 
 func _build_panels() -> void:
-	## Instantiate all 11 step panels and add them to the content area.
+	## Instantiate all 12 step panels and add them to the content area.
 	## Each panel is hidden by default; _show_step() reveals the active one.
-	_panels.resize(11)
+	_panels.resize(12)
 
 	var ability_roll := AbilityRollPanel.new()
 	ability_roll.hide()
@@ -678,6 +700,11 @@ func _build_panels() -> void:
 	_content_area.add_child(portrait)
 	_panels[Step.PORTRAIT] = portrait
 
+	var token_picker := TokenPickerPanel.new()
+	token_picker.hide()
+	_content_area.add_child(token_picker)
+	_panels[Step.TOKEN_SELECTION] = token_picker
+
 	var languages := LanguageSelectionPanel.new()
 	languages.hide()
 	_content_area.add_child(languages)
@@ -694,7 +721,7 @@ func _build_panels() -> void:
 func _setup_panel(step: int) -> void:
 	## Call setup() on the panel for the given step, passing current state and registries.
 	## Called from _show_step() just before the panel becomes visible.
-	if _panels.size() < 11 or _panels[step] == null:
+	if _panels.size() < 12 or _panels[step] == null:
 		return
 	match step:
 		Step.ABILITY_ROLL:
@@ -721,6 +748,9 @@ func _setup_panel(step: int) -> void:
 				_catalog, _class_registry)
 		Step.PORTRAIT:
 			(_panels[Step.PORTRAIT] as PortraitPickerPanel).setup(creation_state)
+		Step.TOKEN_SELECTION:
+			(_panels[Step.TOKEN_SELECTION] as TokenPickerPanel).setup(
+				creation_state, _class_registry)
 		Step.LANGUAGES:
 			(_panels[Step.LANGUAGES] as LanguageSelectionPanel).setup(creation_state,
 				_spec_registry)

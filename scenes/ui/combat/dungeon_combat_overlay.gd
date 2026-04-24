@@ -129,6 +129,12 @@ func start_combat(controller: CombatController, renderer) -> void:
 	# Wire context menu
 	_ui_controller.context_menu_requested.connect(_on_context_menu_requested)
 
+	# Wire token animation triggers (lunge on melee hit, drop on downed).
+	if not EventBus.damage_dealt.is_connected(_on_damage_for_lunge):
+		EventBus.damage_dealt.connect(_on_damage_for_lunge)
+	if not EventBus.combatant_downed.is_connected(_on_combatant_downed_for_drop):
+		EventBus.combatant_downed.connect(_on_combatant_downed_for_drop)
+
 	# Wire renderer input -> UI controller
 	_cell_conn = _on_renderer_cell_clicked
 	_entity_conn = _on_renderer_entity_clicked
@@ -539,6 +545,33 @@ func _on_facing_selection_started(_combatant_id: String) -> void:
 func _on_token_facing_preview(combatant_id: String, facing: Vector2i) -> void:
 	if _renderer != null:
 		_renderer.set_token_facing(combatant_id, facing)
+
+
+## Play a lunge on the attacker when melee-range damage is dealt.
+func _on_damage_for_lunge(target_id: String, _amount: int, _damage_type: String,
+		source_id: String) -> void:
+	if _controller == null or _renderer == null or source_id.is_empty():
+		return
+	var attacker = _controller.get_combatant(source_id)
+	var target = _controller.get_combatant(target_id)
+	if attacker == null or target == null:
+		return
+	var a_pos: Vector3i = attacker.grid_position
+	var t_pos: Vector3i = target.grid_position
+	var dx: int = absi(a_pos.x - t_pos.x)
+	var dy: int = absi(a_pos.y - t_pos.y)
+	if maxi(dx, dy) > 1 or a_pos.z != t_pos.z:
+		return
+	var target_world := VoxelGrid.cell_to_world(t_pos.x, t_pos.y, t_pos.z)
+	target_world.y += 0.2  # Match the dungeon renderer's token Y offset.
+	_renderer.play_token_attack(source_id, target_world)
+
+
+## Play the drop-to-floor animation when a combatant is downed.
+func _on_combatant_downed_for_drop(combatant_id: String, _attacker_id: String) -> void:
+	if _renderer == null:
+		return
+	_renderer.play_token_downed(combatant_id)
 
 
 func _on_confirm_move_pressed() -> void:

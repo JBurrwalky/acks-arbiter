@@ -1660,6 +1660,25 @@ Mounts are **per-character equipment** using the existing `mount` inventory slot
 | Getting lost | d20 proficiency throw vs terrain target; Navigation proficiency +4 |
 | Banker's rounding | All mile calculations use banker's rounding per project convention |
 
+### 15.3a Wilderness Navigation (Hex A*)
+
+<!-- Added 2026-04-23 for the wilderness right-click "Move Here" multi-hex path. -->
+
+`HexMapController.find_path(from, to) -> Array[Vector2i]` is the canonical hex pathfinder for wilderness Move Here orders and any future automated party motion across hexes.
+
+| Concern | v1 rule |
+|---|---|
+| Algorithm | A* over passable hex neighbors |
+| Heuristic | `hex_distance(a, b)` (admissible) |
+| Step cost | Uniform 1 per step — terrain multipliers are a future concern |
+| Passability | `HexMapController.is_hex_passable(coord)` — currently false only for `water == "ocean"` and `water == "lake"`. Add new conditions here, never inline at call sites. |
+| Fog of war | Ignored — pathing through HIDDEN hexes is allowed. The journey reveals them. |
+| Same-hex query | `find_path(c, c)` returns `[c]`, never `[]`. Distinguishes "no path" from "in place". |
+| No path | Returns `[]`. Callers should surface a "No Route" toast, not silently no-op. |
+| Path shape | Includes both endpoints. Travel-leg schedulers strip the first cell (the party already stands on it) before queueing. |
+
+Right-click "Move Here" is **not** gated on adjacency. The wilderness context menu builder asks for passability only; the dispatcher uses `find_path` and lets it report unreachable targets. Mirrors the dungeon UI principle (gdd-dungeon-map-ui.md §3.1: never disable a click whose intent is clear — let execution reject if it must).
+
 ### 15.4 SQLite Null Coalescing
 
 SQLite returns `null` for NULL column values. `Dictionary.get("key", default)` returns `null` (not the default) when the key exists with a null value. Use `PartyData._str()` / `PartyData._int()` helpers, or guard explicitly:
@@ -2082,3 +2101,67 @@ Dungeon exploration is real-time at round granularity. The primary interaction m
 ### 19.7 Day Planner System (Removed)
 
 The `DayDeclarationState`, `DayBudgetManager`, and day declaration screen were removed on 2026-04-14. Activities are now issued directly as scheduler events. Do not reference day_declaration or day_budget in new code. The `day_declaration_requested` EventBus signal no longer exists.
+
+
+## 20. Character Token 3D Conventions (2026-04-23)
+
+PC / henchman combatants render as GLB character-model tokens through `scenes/ui/components/character_token_3d.gd`. Enemies, monsters, and PCs whose class has no registered GLB render through the existing cylinder token `scenes/ui/components/combatant_token_3d.gd`. Both scenes expose the same public API so renderers never branch on token type.
+
+### 20.1 File Layout for Character Models
+
+```
+assets/tokens/characters/
+  <class_id>_<variant>_<sex>.glb    # e.g., fighter_def_male.glb
+```
+
+- `variant` is one of `def`, `alt1`, `alt2`, `alt3`.
+- `sex` is `male` or `female`.
+- Use underscores only; never hyphens. Legacy hyphen-separated files must be renamed before import.
+- Textures must be embedded in the GLB (Blender's "Copy" or "Embed" export option). No sibling `.bin` / `.png` files.
+
+### 20.2 Registry — Add New Models Without Touching Renderers
+
+`scenes/ui/components/character_model_registry.gd` is a static `RefCounted` script (no autoload). Adding a new placeholder model:
+
+1. Drop the GLB into `assets/tokens/characters/`.
+2. Append its stem to the `_FILES` array.
+3. Done — character creation picks it up automatically via `get_available_variants(class_id, sex)`, and renderers instantiate it via `has_any_model(class_id, sex)` at token creation.
+
+Scale is resolved by class first, then sex (`_SHORT_CLASSES`, `_MEDIUM_CLASSES`, male / female defaults). The scale is in world units (= meters). If a new class needs a non-default height, add it to the override list in the registry — do not hard-code heights anywhere else.
+
+### 20.3 Procedural Animation Over Skeletal
+
+Token motion is driven by `Tween` on the outer `Node3D`, not by an `AnimationPlayer` inside the GLB. This applies to sliding, turning, lunging, and falling. Rationale: the placeholder meshes are static, and tween-driven motion is deterministic and inspectable.
+
+If you add a new animation state (e.g., cast, stagger), follow the pattern in `character_token_3d.gd`: kill any prior tween via stored handle, guard with `is_inside_tree()` so pre-tree setup falls through to direct assignment, and keep durations in module-level constants (`MOVE_DURATION`, `ATTACK_OUT_DURATION`, etc.).
+
+### 20.4 Node Structure
+
+```
+CharacterToken3D (Node3D)       # the thing renderers position
+├── ModelPivot   (Node3D)       # pivots for downed rotation; Y-rotation for facing
+│   └── ModelHolder (Node3D)    # scale applied here; holds the instanced GLB
+├── SelectionRing (MeshInstance3D)
+├── ClassLetter   (Label3D)
+└── NameLabel     (Label3D)
+```
+
+Downed animation hinges at mid-height by pre-offsetting `ModelHolder.position.y` to half the model height, rotating `ModelPivot` 90 ° about X, and concurrently tweening `ModelPivot.position.y` down to put the lying model flat on the floor. Do NOT rotate `ModelHolder` for facing — that would break the downed pivot math.
+
+### 20.5 Renderer Integration Checklist
+
+When instantiating tokens:
+
+- Call `CharacterModelRegistry.has_any_model(class_id, sex)` to decide which scene to instantiate. Unknown class or no-model means the cylinder fallback.
+- Pass `sex` through from `CharacterData.sex` — this is an optional param on `add_entity_token()` defaulting to `"male"` for monster / unnamed-entity cases.
+- Procedural animations route through thin forwarders on the renderer: `play_token_attack(entity_id, target_world_pos)`, `play_token_downed(entity_id)`, `play_token_revive(entity_id)`. These are safe to call on cylinder tokens (they `has_method`-guard internally).
+
+### 20.6 Character Creation Wizard
+
+The `TOKEN_SELECTION` step sits between `PORTRAIT` and `LANGUAGES`. It is skipped automatically via `_should_skip_token_selection()` when the class has no registered GLBs for any sex. The panel:
+
+- Owns `creation_state["sex"]` (writes it on toggle; honors `ClassRegistry.get_sex_restriction`).
+- Writes `creation_state["token_variant"]`.
+- Instantiates exactly one preview `CharacterToken3D` inside a `SubViewport` and frees it before loading the next — never batch-loads variants.
+
+The `FinalizePanel` sex toggle still works as an override (same class restrictions).

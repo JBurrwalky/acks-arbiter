@@ -156,8 +156,9 @@ func _on_hex_context_menu_requested(coord: Vector2i, screen_pos: Vector2) -> voi
 
 	var controller: HexMapController = _runner.get_hex_map_controller()
 	var map_data: HexMapData = controller.get_map() if controller != null else null
+	var current_hex: Vector2i = _resolve_party_hex(party_id, map_data)
 	var options: Array[Dictionary] = WildernessContextMenuBuilder.build_menu(
-		coord, party_id, map_data, controller)
+		coord, party_id, map_data, controller, current_hex)
 	if options.is_empty():
 		return
 
@@ -174,9 +175,10 @@ func _on_hex_context_menu_requested(coord: Vector2i, screen_pos: Vector2) -> voi
 
 
 ## Dispatch a context-menu selection.
-## Every non-cancel option schedules travel to the target hex; options other
-## than plain "Move Here" also queue a wilderness_activity event to fire on
-## arrival.
+## Move Here pathfinds via HexMapController.find_path and chains one
+## travel_leg per intermediate hex. Activity options append a
+## wilderness_activity event after the final leg; if the target equals the
+## party's current hex the activity fires in place with no travel.
 func _on_context_action(action_data: Dictionary) -> void:
 	_close_context_menu()
 	if _runner == null:
@@ -190,7 +192,12 @@ func _on_context_action(action_data: Dictionary) -> void:
 		int(action_data.get("hex_q", 0)),
 		int(action_data.get("hex_r", 0)))
 	var controller: HexMapController = _runner.get_hex_map_controller()
-	if controller == null or not controller.can_move_to(target_hex):
+	if controller == null:
+		return
+	var map_data: HexMapData = controller.get_map()
+	if map_data == null:
+		return
+	if not controller.is_hex_passable(target_hex):
 		return
 
 	var scheduler: EventScheduler = _runner.get_scheduler()
@@ -200,23 +207,47 @@ func _on_context_action(action_data: Dictionary) -> void:
 	var party_data: PartyData = _resolve_party_data(party_id)
 	if party_data == null:
 		return
-	var map_data: HexMapData = controller.get_map()
 
 	# Cancel prior travel and any queued follow-up activity for this party.
+	# Right-clicking a new Move Here while traveling supersedes the journey.
 	var cancelled: int = scheduler.cancel_all_for_owner(party_id, "travel_leg")
 	cancelled += scheduler.cancel_all_for_owner(party_id, WildernessHandlers.ACTIVITY_EVENT)
 	cancelled += scheduler.cancel_all_for_owner(party_id, WildernessHandlers.ACTIVITY_COMPLETE_EVENT)
 	if cancelled > 0:
 		EventBus.order_cancelled.emit(party_id, "travel_leg")
 
-	# Schedule the travel path (single-hex step for now — future: full pathfinding).
-	var path: Array = [target_hex]
-	var travel: Dictionary = _handlers.schedule_travel_path(path, scheduler, party_data, map_data)
-
-	# For anything other than plain Move Here, queue the activity to begin
-	# when the final travel_leg fires. Priority slightly below PRIORITY_ARRIVAL
-	# so the arrival leg resolves first in the same round.
+	var current_hex: Vector2i = _resolve_party_hex(party_id, map_data)
 	var activity_type := _activity_type_for_action(action_type)
+
+	# Build the path. Same-hex targets get an empty path (the activity fires in
+	# place); pure Move Here on the same hex was already filtered out by the
+	# context menu (Move Here is omitted when target == current hex).
+	var path: Array[Vector2i] = []
+	if target_hex != current_hex:
+		path = controller.find_path(current_hex, target_hex)
+		if path.is_empty():
+			EventBus.notification_requested.emit({
+				"type": "warning",
+				"category": "exploration",
+				"title": "No Route",
+				"body": "There is no passable path to that hex.",
+				"duration": 3.0,
+			})
+			return
+		# Strip the start hex — schedule_travel_path expects a list of hexes
+		# the party will *enter*, not the hex it's already on.
+		if path.size() > 0 and path[0] == current_hex:
+			var legs: Array[Vector2i] = []
+			for i in range(1, path.size()):
+				legs.append(path[i])
+			path = legs
+
+	var travel: Dictionary = _handlers.schedule_travel_path(
+		path, scheduler, party_data, map_data)
+
+	# For anything other than plain Move Here, queue the activity. Priority
+	# slightly below PRIORITY_ARRIVAL so the arrival leg resolves first in
+	# the same round (when there is one).
 	if not activity_type.is_empty():
 		var arrival_time: int = int(travel.get("arrival_time", 0))
 		scheduler.schedule_at(
@@ -273,6 +304,20 @@ func _resolve_party_data(party_id: String) -> PartyData:
 	if _runner != null and _runner.get_party_id() == party_id:
 		return _runner.get_party_data()
 	return CampaignRepository.load_party_data(party_id)
+
+
+## Returns the active party's current hex. For the runner-tracked primary
+## party we trust the live HexMapData (which is what the renderer paints from);
+## for non-primary parties we read the persisted current_hex_q/r from the DB.
+func _resolve_party_hex(party_id: String, map_data: HexMapData) -> Vector2i:
+	if _runner != null and _runner.get_party_id() == party_id and map_data != null:
+		return map_data.party_hex
+	var party := CampaignRepository.get_party(party_id)
+	if party.is_empty():
+		return Vector2i.ZERO
+	var q: int = party.get("current_hex_q", 0) if party.get("current_hex_q") != null else 0
+	var r: int = party.get("current_hex_r", 0) if party.get("current_hex_r") != null else 0
+	return Vector2i(q, r)
 
 
 ## Opens the party inventory overlay so the player can trade with a wilderness

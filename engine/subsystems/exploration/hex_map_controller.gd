@@ -164,12 +164,101 @@ func update_hex_terrain(coord: Vector2i, field: String, new_value) -> void:
 
 
 ## Returns true if the party can legally move to [param target] this turn.
+##
+## Note: this checks only single-step adjacency. For multi-hex right-click
+## travel, use [method find_path] instead — the wilderness context menu does
+## not gate Move Here on adjacency.
 func can_move_to(target: Vector2i) -> bool:
 	return (
 		_map_data != null
 		and _map_data.is_valid_coord(target)
 		and is_adjacent(_map_data.party_hex, target)
 	)
+
+
+## Returns true if [param coord] is a hex the party may traverse.
+## v1 rule: hex must exist in the map and not be a deep-water (ocean/lake)
+## hex. Terrain-based cost multipliers are a future concern.
+func is_hex_passable(coord: Vector2i) -> bool:
+	if _map_data == null or not _map_data.is_valid_coord(coord):
+		return false
+	var terrain: HexTerrainData = _map_data.get_hex(coord)
+	if terrain == null:
+		return true
+	# Deep water blocks land travel until boats exist.
+	return terrain.water != HexTerrainData.WATER_OCEAN \
+		and terrain.water != HexTerrainData.WATER_LAKE
+
+
+## A* pathfinding from [param from_hex] to [param to_hex] over passable hexes.
+## Returns the full path including the start and end hexes, or an empty array
+## when no path exists. When [param from_hex] equals [param to_hex] the result
+## is a single-element array `[from_hex]`.
+##
+## Uses hex-distance as the admissible heuristic. Uniform unit cost per step
+## (terrain-based cost multipliers are a future concern). Fog state does not
+## restrict pathfinding — intermediate hexes may be HIDDEN, since the journey
+## will reveal them as it progresses. The start and goal must each pass
+## [method is_hex_passable]; an unreachable goal returns [].
+func find_path(from_hex: Vector2i, to_hex: Vector2i) -> Array[Vector2i]:
+	if _map_data == null:
+		return []
+	if from_hex == to_hex:
+		var single: Array[Vector2i] = [from_hex]
+		return single
+	if not is_hex_passable(from_hex) or not is_hex_passable(to_hex):
+		return []
+
+	# Open set keyed by coord → f-score (heuristic + g). We pop the lowest-f
+	# entry each iteration. Map sizes are small enough that a linear scan is
+	# acceptable; replace with a priority queue if profiling demands.
+	var open_set: Dictionary = {from_hex: hex_distance(from_hex, to_hex)}
+	var came_from: Dictionary = {}
+	var g_score: Dictionary = {from_hex: 0}
+
+	while not open_set.is_empty():
+		var current: Vector2i = _pop_lowest_f(open_set)
+		if current == to_hex:
+			return _reconstruct_path(came_from, current)
+		var current_g: int = g_score[current]
+		for n in get_neighbors(current):
+			# Allow the goal to be the only "blocked" cell we'd ever want to
+			# walk into — but is_hex_passable already approved the goal above.
+			if not is_hex_passable(n):
+				continue
+			var tentative: int = current_g + 1
+			if not g_score.has(n) or tentative < int(g_score[n]):
+				came_from[n] = current
+				g_score[n] = tentative
+				open_set[n] = tentative + hex_distance(n, to_hex)
+
+	return []
+
+
+## Removes and returns the coord with the lowest f-score from [param open_set].
+static func _pop_lowest_f(open_set: Dictionary) -> Vector2i:
+	var best: Vector2i = Vector2i.ZERO
+	var best_f: int = 0x7fffffff
+	var first := true
+	for k in open_set.keys():
+		var f: int = int(open_set[k])
+		if first or f < best_f:
+			best = k
+			best_f = f
+			first = false
+	open_set.erase(best)
+	return best
+
+
+## Walks [param came_from] backwards from [param goal] to assemble the path.
+static func _reconstruct_path(came_from: Dictionary, goal: Vector2i) -> Array[Vector2i]:
+	var path: Array[Vector2i] = [goal]
+	var current: Vector2i = goal
+	while came_from.has(current):
+		current = came_from[current]
+		path.append(current)
+	path.reverse()
+	return path
 
 
 ## Attempts to move the party to [param target]. Returns false on failure.

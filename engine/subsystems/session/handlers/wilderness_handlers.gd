@@ -60,21 +60,36 @@ func unregister(registry: EventHandlerRegistry) -> void:
 
 ## Schedule a multi-hex travel path.
 ## [param path] is an Array[Vector2i] of hex coordinates (excluding current hex).
+## An empty path is valid — it represents an in-place activity (target equals
+## current hex). The result still has an `arrival_time` (= current game time)
+## so callers that chain follow-up events on arrival work uniformly.
 ## [param scheduler] is the EventScheduler to insert into.
 ## [param party] is the PartyData (for speed calculation).
 ## [param map_data] is the HexMapData (for terrain lookup).
 ## Returns a Dictionary:
-##   "event_ids":    Array[String] — one travel_leg id per leg
-##   "arrival_time": int            — game-round clock after the final leg fires
-##   "current_time": int            — game-round clock before any leg fires
+##   "event_ids":    Array[String] — one travel_leg id per leg (empty for in-place)
+##   "arrival_time": int           — game-round clock after the final leg fires
+##                                   (== current_time when path is empty)
+##   "current_time": int           — game-round clock before any leg fires
 func schedule_travel_path(
 	path: Array,
 	scheduler: EventScheduler,
 	party: PartyData,
 	map_data: HexMapData,
 ) -> Dictionary:
-	if path.is_empty() or party == null:
+	if party == null:
 		return {"event_ids": [] as Array[String], "arrival_time": 0, "current_time": 0}
+
+	# Same-hex (in-place activity): no legs to schedule, but the activity will
+	# fire "now" — return current_time as arrival_time so the caller's
+	# schedule_at(arrival_time, ...) lands at the next scheduler tick.
+	if path.is_empty():
+		var now: int = Timekeeping.get_party_time(party.id)
+		return {
+			"event_ids": [] as Array[String],
+			"arrival_time": now,
+			"current_time": now,
+		}
 
 	var party_id: String = party.id
 	var start_time: int = Timekeeping.get_party_time(party_id)

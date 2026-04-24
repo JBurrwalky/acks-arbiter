@@ -428,6 +428,12 @@ func on_context_action(action_data: Dictionary) -> void:
 				{"character_id": action_data.get("character_id", _current_pc_id)})
 			advance()
 
+		"ready_attack":
+			clear_highlights_requested.emit()
+			_controller.submit_pc_action(_current_pc_id, "ready_attack",
+				{"character_id": action_data.get("character_id", _current_pc_id)})
+			advance()
+
 		"check_status", "carry", "loot", "coup_de_grace":
 			clear_highlights_requested.emit()
 			var target_id: String = action_data.get("target_id", "")
@@ -719,7 +725,8 @@ func _resolve_name(combatant_id: String) -> String:
 
 func _action_to_log_type(action_id: String) -> int:
 	match action_id:
-		"attack_melee", "attack_ranged", "backstab", "charge", "coup_de_grace":
+		"attack_melee", "attack_ranged", "backstab", "charge", "coup_de_grace", \
+				"ready_attack_fire":
 			return 1  # CombatLog.EntryType.ATTACK
 		"cast_spell":
 			return 3  # SPELL
@@ -727,7 +734,7 @@ func _action_to_log_type(action_id: String) -> int:
 			return 4  # MOVEMENT
 		"fighting_withdrawal", "full_retreat":
 			return 4  # MOVEMENT
-		"switch_weapon", "stand_up":
+		"switch_weapon", "stand_up", "ready_attack":
 			return 4  # MOVEMENT (movement-type actions)
 		var maneuver when maneuver.begins_with("maneuver_") or \
 				maneuver.begins_with("brawl_"):

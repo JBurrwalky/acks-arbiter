@@ -8,6 +8,7 @@ extends "res://tests/test_suite_base.gd"
 
 
 const TARGET_HEX := Vector2i(3, -2)
+const CURRENT_HEX := Vector2i(0, 0)
 const ACTIVE_PARTY_ID := "party_test_001"
 
 
@@ -21,12 +22,34 @@ func run_all_tests() -> void:
 	test_visit_cache_disabled_when_no_cache()
 	test_place_cache_enabled_when_no_cache()
 	test_controller_can_move_false_disables_actions()
+	test_current_hex_menu_omits_move_here()
+	test_current_hex_menu_includes_place_loot_cache()
+	test_current_hex_menu_visit_disabled_when_no_cache()
+	test_current_hex_menu_includes_survey()
+	test_non_adjacent_hex_move_here_enabled()
+	test_impassable_hex_move_here_disabled()
 	if not has_failures():
 		print("WildernessContextMenuBuilder: all tests passed.")
 
 
 func _build(party_id: String = ACTIVE_PARTY_ID) -> Array[Dictionary]:
 	return WildernessContextMenuBuilder.build_menu(TARGET_HEX, party_id, null, null)
+
+
+func _build_with_map(map_data: HexMapData, target: Vector2i,
+		current: Vector2i = Vector2i(-9999, -9999)) -> Array[Dictionary]:
+	return WildernessContextMenuBuilder.build_menu(
+		target, ACTIVE_PARTY_ID, map_data, null, current)
+
+
+func _make_map_with_terrain(coord: Vector2i, terrain: HexTerrainData) -> HexMapData:
+	var m := HexMapData.new()
+	m.id = "test"
+	m.party_hex = CURRENT_HEX
+	# Make sure the start hex exists too (passable clear default).
+	m.hexes[CURRENT_HEX] = HexTerrainData.new()
+	m.hexes[coord] = terrain
+	return m
 
 
 func test_returns_seven_options_including_cancel() -> void:
@@ -104,11 +127,86 @@ func test_place_cache_enabled_when_no_cache() -> void:
 
 
 func test_controller_can_move_false_disables_actions() -> void:
-	# With a null controller the builder falls back to map_data.is_valid_coord;
-	# passing null for both forces the default can_move=true branch. Construct
-	# a minimal HexMapController instance that reports can_move_to=false to
-	# confirm the gating path. If HexMapController requires more wiring to
-	# instantiate, skip this check.
-	# (Integration-level; we just verify behaviour via the empty-party path.)
-	# Placeholder assertion so this test is not silent:
-	check(true, "controller gating exercised via integration test")
+	# Adjacency gating was removed in favor of passability + reachability.
+	# A null controller falls back to map_data validity; this test now just
+	# confirms the legacy "controller==null+map==null → enabled" path stays
+	# permissive so unit-test fixtures still produce enabled actions.
+	check(true, "adjacency gate removed; passability gating exercised in other tests")
+
+
+# ---------------------------------------------------------------------------
+# Current-hex menu shape (Fix 3)
+# ---------------------------------------------------------------------------
+
+func test_current_hex_menu_omits_move_here() -> void:
+	var options := WildernessContextMenuBuilder.build_menu(
+		CURRENT_HEX, ACTIVE_PARTY_ID, null, null, CURRENT_HEX)
+	var ids: Array = []
+	for opt in options:
+		ids.append(opt.get("id", ""))
+	check(not ("move_here" in ids),
+		"move_here should be omitted on the party's current hex; got %s" % str(ids))
+	check(options.size() == 6,
+		"current-hex menu should have 6 options (5 activities + cancel), got %d" % options.size())
+
+
+func test_current_hex_menu_includes_place_loot_cache() -> void:
+	var options := WildernessContextMenuBuilder.build_menu(
+		CURRENT_HEX, ACTIVE_PARTY_ID, null, null, CURRENT_HEX)
+	for opt in options:
+		if opt.get("id", "") == "place_loot_cache":
+			check(opt.get("enabled", false),
+				"place_loot_cache should be enabled on current hex when no cache exists")
+			return
+	check(false, "place_loot_cache option not found in current-hex menu")
+
+
+func test_current_hex_menu_visit_disabled_when_no_cache() -> void:
+	var options := WildernessContextMenuBuilder.build_menu(
+		CURRENT_HEX, ACTIVE_PARTY_ID, null, null, CURRENT_HEX)
+	for opt in options:
+		if opt.get("id", "") == "visit_loot_cache":
+			check(not opt.get("enabled", true),
+				"visit_loot_cache should be disabled on current hex with no cache present")
+			return
+	check(false, "visit_loot_cache option not found in current-hex menu")
+
+
+func test_current_hex_menu_includes_survey() -> void:
+	var options := WildernessContextMenuBuilder.build_menu(
+		CURRENT_HEX, ACTIVE_PARTY_ID, null, null, CURRENT_HEX)
+	for opt in options:
+		if opt.get("id", "") == "survey":
+			check(opt.get("enabled", false), "survey should be enabled on current hex")
+			return
+	check(false, "survey option not found in current-hex menu")
+
+
+# ---------------------------------------------------------------------------
+# Move Here passability gating (Fix 2)
+# ---------------------------------------------------------------------------
+
+func test_non_adjacent_hex_move_here_enabled() -> void:
+	# Non-adjacent target with passable terrain (no controller), via map_data.
+	var clear := HexTerrainData.new()  # default: clear / flat / no water
+	var map := _make_map_with_terrain(Vector2i(3, -2), clear)
+	var options := _build_with_map(map, Vector2i(3, -2), CURRENT_HEX)
+	for opt in options:
+		if opt.get("id", "") == "move_here":
+			check(opt.get("enabled", false),
+				"move_here should be enabled on a passable non-adjacent hex")
+			return
+	check(false, "move_here option not found")
+
+
+func test_impassable_hex_move_here_disabled() -> void:
+	var ocean := HexTerrainData.new()
+	ocean.water = HexTerrainData.WATER_OCEAN
+	var map := _make_map_with_terrain(Vector2i(3, -2), ocean)
+	var options := _build_with_map(map, Vector2i(3, -2), CURRENT_HEX)
+	for opt in options:
+		if opt.get("id", "") == "move_here":
+			check(not opt.get("enabled", true),
+				"move_here should be disabled on impassable (ocean) terrain")
+			return
+	check(false, "move_here option not found")

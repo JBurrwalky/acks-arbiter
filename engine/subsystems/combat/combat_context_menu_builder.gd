@@ -438,6 +438,23 @@ static func _build_self_options(
 			"Switch to a different weapon", "self",
 			{"action_type": "switch_weapon", "character_id": combatant.id}))
 
+	# Ready Attack — stores an attack reaction that fires when an enemy
+	# enters range. Carries over between rounds. Declaring before moving
+	# skips movement for this round.
+	if combatant.is_character:
+		var can_ready: bool = not combatant.has_readied_attack \
+			and _can_attack(combatant, controller)
+		var tip: String
+		if combatant.has_readied_attack:
+			tip = "Already holding a readied attack"
+		elif not _can_attack(combatant, controller):
+			tip = "Cannot ready — incapacitated"
+		else:
+			tip = "Hold an attack until an enemy enters range (skips movement if declared before moving)"
+		options.append(_option("ready_attack", "Ready Attack", can_ready,
+			tip, "self",
+			{"action_type": "ready_attack", "character_id": combatant.id}))
+
 	return options
 
 

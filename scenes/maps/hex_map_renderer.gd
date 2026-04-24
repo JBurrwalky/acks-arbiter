@@ -103,6 +103,11 @@ var _party_tokens: Dictionary = {}
 ## on empty ground (no-op).
 var _party_hex_index: Dictionary = {}
 
+## Active per-token tween for the click-feedback pulse, keyed by the token node.
+## Tracked so a rapid second click cancels the prior pulse before starting a new
+## one (prevents stuck scales).
+var _pulse_tweens: Dictionary = {}
+
 
 # ---------------------------------------------------------------------------
 # Signals
@@ -139,6 +144,10 @@ func _ready() -> void:
 		points.append(Vector2(r * cos(angle_rad), r * sin(angle_rad)))
 	_party_token.polygon = points
 	_party_token.color = Color(1.0, 0.9, 0.1)  # yellow
+	# The scene-defined primary token has no outline child by default — attach
+	# one now so _style_token can show/hide it like the dynamic tokens.
+	if _party_token.get_node_or_null("ActiveOutline") == null:
+		_attach_active_outline(_party_token, r)
 
 	# Connect party lifecycle signals for multi-party token management
 	EventBus.party_split.connect(_on_party_split)
@@ -665,7 +674,8 @@ func _index_party_hex(coord: Vector2i, party_id: String, active_id: String) -> v
 		_party_hex_index[coord] = party_id
 
 
-## Creates a new Polygon2D party token node with the standard hex shape.
+## Creates a new Polygon2D party token node with the standard hex shape and a
+## hidden gold outline ring child (shown only when the token is active).
 func _create_party_token_node() -> Polygon2D:
 	var token := Polygon2D.new()
 	var r := 14.0
@@ -674,17 +684,85 @@ func _create_party_token_node() -> Polygon2D:
 		var angle_rad := deg_to_rad(60.0 * i)
 		points.append(Vector2(r * cos(angle_rad), r * sin(angle_rad)))
 	token.polygon = points
+	_attach_active_outline(token, r)
 	return token
 
 
-## Styles a party token as active (bright yellow, larger) or inactive (grey-blue, smaller).
+## Adds a closed Line2D ring as a child of [param token], named "ActiveOutline".
+## Hidden by default; _style_token shows it when the token is active.
+func _attach_active_outline(token: Polygon2D, r: float) -> void:
+	var outline := Line2D.new()
+	outline.name = "ActiveOutline"
+	var ring: PackedVector2Array = []
+	# Slightly larger than the polygon so the line sits just outside its edge.
+	var ring_r := r + 2.0
+	for i in range(6):
+		var angle_rad := deg_to_rad(60.0 * i)
+		ring.append(Vector2(ring_r * cos(angle_rad), ring_r * sin(angle_rad)))
+	ring.append(ring[0])  # close the loop
+	outline.points = ring
+	outline.width = 2.5
+	outline.default_color = Color(1.0, 0.85, 0.2)
+	outline.antialiased = true
+	outline.visible = false
+	# Z below the polygon so the ring frames the fill cleanly.
+	outline.z_index = -1
+	token.add_child(outline)
+
+
+## Styles a party token. Active: full opacity, bright yellow, gold outline ring.
+## Inactive: dimmed (alpha 0.55), desaturated grey-blue, no ring. Both sit at
+## scale 1.0 — the active marker is the outline, not size.
 func _style_token(token: Polygon2D, is_active: bool) -> void:
+	# Don't fight an in-flight click pulse — leave scale alone if a pulse owns it.
+	if not _pulse_tweens.has(token):
+		token.scale = Vector2.ONE
 	if is_active:
 		token.color = Color(1.0, 0.9, 0.1)  # bright yellow
-		token.scale = Vector2(1.15, 1.15)
+		token.modulate = Color(1.0, 1.0, 1.0, 1.0)
 	else:
 		token.color = Color(0.5, 0.55, 0.7)  # desaturated grey-blue
-		token.scale = Vector2(0.9, 0.9)
+		token.modulate = Color(1.0, 1.0, 1.0, 0.55)
+	var outline := token.get_node_or_null("ActiveOutline")
+	if outline != null:
+		outline.visible = is_active
+
+
+## Plays a 200ms scale pulse on [param token] (1.0 → 1.15 → 1.0). Confirms a
+## click landed even when the active party didn't change.
+func _play_click_pulse(token: Polygon2D) -> void:
+	if token == null or not is_instance_valid(token):
+		return
+	# Cancel any prior pulse on this token to avoid stacking tweens.
+	if _pulse_tweens.has(token):
+		var prev: Tween = _pulse_tweens[token]
+		if prev != null and prev.is_valid():
+			prev.kill()
+		_pulse_tweens.erase(token)
+	token.scale = Vector2.ONE
+	var tw := token.create_tween()
+	tw.set_trans(Tween.TRANS_SINE)
+	tw.set_ease(Tween.EASE_OUT)
+	tw.tween_property(token, "scale", Vector2(1.15, 1.15), 0.1)
+	tw.tween_property(token, "scale", Vector2.ONE, 0.1)
+	tw.finished.connect(_on_pulse_finished.bind(token))
+	_pulse_tweens[token] = tw
+
+
+func _on_pulse_finished(token: Polygon2D) -> void:
+	if _pulse_tweens.has(token):
+		_pulse_tweens.erase(token)
+	if is_instance_valid(token):
+		token.scale = Vector2.ONE
+
+
+## Returns the Polygon2D token node for [param party_id], or null if absent.
+## The "primary" party uses the scene-defined _party_token; all other parties
+## live in _party_tokens.
+func _token_for_party(party_id: String) -> Polygon2D:
+	if party_id == GameState.party_id:
+		return _party_token
+	return _party_tokens.get(party_id, null)
 
 
 func _on_party_split(_original_id: String, _new_id: String) -> void:
@@ -859,12 +937,20 @@ func _apply_zoom(new_zoom: float, center_on_screen: Vector2 = Vector2(-1, -1)) -
 # ---------------------------------------------------------------------------
 
 ## Show terrain info near the cursor for EXPLORED/VISIBLE hexes; hide for HIDDEN.
+## Also swaps the system cursor to a pointing-hand when hovering a party token
+## so the player knows the token is interactable.
 func _update_tooltip(viewport_pos: Vector2) -> void:
 	if _map_data == null or _tooltip_panel == null:
 		return
 	var local_pos := _terrain_layer.get_local_mouse_position()
 	var godot_coord := _terrain_layer.local_to_map(local_pos)
 	var axial_coord := HexMapController.godot_map_to_axial(godot_coord)
+	# Hover cursor over party tokens (interactable). Set every frame so we
+	# revert as soon as the cursor leaves the token's hex.
+	if _party_hex_index.has(axial_coord):
+		Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND)
+	else:
+		Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	if not _map_data.is_valid_coord(axial_coord):
 		_tooltip_panel.visible = false
 		return
@@ -930,7 +1016,11 @@ func _unhandled_input(event: InputEvent) -> void:
 					# Party-token hits drive active-party selection. Empty hexes
 					# are a no-op — movement is issued via the right-click menu.
 					if _party_hex_index.has(axial_coord):
-						party_token_clicked.emit(_party_hex_index[axial_coord], axial_coord)
+						var clicked_pid: String = _party_hex_index[axial_coord]
+						# Pulse the clicked token even when the active party
+						# does not change — confirms the click landed.
+						_play_click_pulse(_token_for_party(clicked_pid))
+						party_token_clicked.emit(clicked_pid, axial_coord)
 					else:
 						hex_clicked.emit(axial_coord)
 					get_viewport().set_input_as_handled()

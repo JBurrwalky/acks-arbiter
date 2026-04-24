@@ -21,6 +21,14 @@ func run_all_tests() -> void:
 	test_hex_never_goes_back_to_hidden()
 	test_get_hex_ring_radius_0_returns_center()
 	test_get_hex_ring_radius_1_returns_six()
+	test_is_hex_passable_clear_terrain()
+	test_is_hex_passable_ocean_blocked()
+	test_is_hex_passable_lake_blocked()
+	test_find_path_same_hex_returns_single_hex()
+	test_find_path_direct_route()
+	test_find_path_routes_around_impassable()
+	test_find_path_no_path_returns_empty()
+	test_find_path_target_impassable_returns_empty()
 	if not has_failures():
 		print("HexMapController: all tests passed.")
 
@@ -148,6 +156,107 @@ func test_get_hex_ring_radius_0_returns_center() -> void:
 func test_get_hex_ring_radius_1_returns_six() -> void:
 	var ring := HexMapController.get_hex_ring(Vector2i(0, 0), 1)
 	check(ring.size() == 6, "ring of radius 1 has 6 hexes")
+
+
+# ---------------------------------------------------------------------------
+# Passability + A* pathfinding (added 2026-04-23)
+# ---------------------------------------------------------------------------
+
+func test_is_hex_passable_clear_terrain() -> void:
+	var controller := HexMapController.new()
+	controller.load_map(_make_test_map())
+	check(controller.is_hex_passable(Vector2i(0, 0)),
+		"default-clear hex should be passable")
+	controller.free()
+
+
+func test_is_hex_passable_ocean_blocked() -> void:
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	var t: HexTerrainData = map.get_hex(Vector2i(1, 0))
+	t.water = HexTerrainData.WATER_OCEAN
+	controller.load_map(map)
+	check(not controller.is_hex_passable(Vector2i(1, 0)),
+		"ocean hex must be impassable for land travel")
+	controller.free()
+
+
+func test_is_hex_passable_lake_blocked() -> void:
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	var t: HexTerrainData = map.get_hex(Vector2i(1, 0))
+	t.water = HexTerrainData.WATER_LAKE
+	controller.load_map(map)
+	check(not controller.is_hex_passable(Vector2i(1, 0)),
+		"lake hex must be impassable for land travel")
+	controller.free()
+
+
+func test_find_path_same_hex_returns_single_hex() -> void:
+	var controller := HexMapController.new()
+	controller.load_map(_make_test_map())
+	var path := controller.find_path(Vector2i(0, 0), Vector2i(0, 0))
+	check(path.size() == 1 and path[0] == Vector2i(0, 0),
+		"start == goal should return [start]; got %s" % str(path))
+	controller.free()
+
+
+func test_find_path_direct_route() -> void:
+	var controller := HexMapController.new()
+	controller.load_map(_make_test_map())
+	var path := controller.find_path(Vector2i(0, 0), Vector2i(3, 0))
+	# Path includes both endpoints; (0,0) → (3,0) is 3 steps so 4 cells total.
+	check(path.size() == 4,
+		"direct path 0,0 → 3,0 should be 4 cells (incl. endpoints); got %d (%s)"
+		% [path.size(), str(path)])
+	check(path[0] == Vector2i(0, 0), "path must start at the start hex")
+	check(path[path.size() - 1] == Vector2i(3, 0), "path must end at the goal hex")
+	controller.free()
+
+
+func test_find_path_routes_around_impassable() -> void:
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	# Block (1,0) — the natural step toward (2,0). The pathfinder must detour.
+	var blocker: HexTerrainData = map.get_hex(Vector2i(1, 0))
+	blocker.water = HexTerrainData.WATER_OCEAN
+	controller.load_map(map)
+	var path := controller.find_path(Vector2i(0, 0), Vector2i(2, 0))
+	check(not path.is_empty(),
+		"detour path 0,0 → 2,0 around blocked (1,0) should exist")
+	for cell in path:
+		check(cell != Vector2i(1, 0),
+			"path must NOT cross the impassable hex (1,0); got %s" % str(path))
+	check(path[0] == Vector2i(0, 0) and path[path.size() - 1] == Vector2i(2, 0),
+		"detour endpoints wrong: %s" % str(path))
+	controller.free()
+
+
+func test_find_path_no_path_returns_empty() -> void:
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	# Surround (2,0) with ocean on every neighbor so no land path reaches it.
+	for n in HexMapController.get_neighbors(Vector2i(2, 0)):
+		var t: HexTerrainData = map.get_hex(n)
+		if t != null:
+			t.water = HexTerrainData.WATER_OCEAN
+	controller.load_map(map)
+	var path := controller.find_path(Vector2i(0, 0), Vector2i(2, 0))
+	check(path.is_empty(),
+		"path through fully-blocked goal should be empty; got %s" % str(path))
+	controller.free()
+
+
+func test_find_path_target_impassable_returns_empty() -> void:
+	var controller := HexMapController.new()
+	var map := _make_test_map()
+	var t: HexTerrainData = map.get_hex(Vector2i(2, 0))
+	t.water = HexTerrainData.WATER_OCEAN
+	controller.load_map(map)
+	var path := controller.find_path(Vector2i(0, 0), Vector2i(2, 0))
+	check(path.is_empty(),
+		"path to an impassable goal should be empty; got %s" % str(path))
+	controller.free()
 
 
 # ---------------------------------------------------------------------------

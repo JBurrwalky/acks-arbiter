@@ -120,6 +120,7 @@
 [ext_resource type="Script" path="res://tests/test_inventory_ui_adjacency.gd" id="117_inventory_ui_adjacency_tests"]
 [ext_resource type="Script" path="res://tests/test_visibility_manager_integration.gd" id="117_visibility_manager_integration_tests"]
 [ext_resource type="Script" path="res://tests/test_heraldry_data.gd" id="118_heraldry_data_tests"]
+[ext_resource type="Script" path="res://tests/test_character_model_registry.gd" id="119_character_model_registry_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -480,3 +481,6 @@ script = ExtResource("117_visibility_manager_integration_tests")
 
 [node name="HeraldryDataTests" type="Node" parent="."]
 script = ExtResource("118_heraldry_data_tests")
+
+[node name="CharacterModelRegistryTests" type="Node" parent="."]
+script = ExtResource("119_character_model_registry_tests")

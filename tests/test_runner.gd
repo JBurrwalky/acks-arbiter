@@ -52,6 +52,7 @@ extends Node
 @onready var _aging_system_tests = $AgingSystemTests
 @onready var _asset_registry_tests = $AssetRegistryTests
 @onready var _navigation_stack_tests = $NavigationStackTests
+@onready var _character_model_registry_tests = $CharacterModelRegistryTests
 @onready var _isometric_grid_tests = $IsometricGridTests
 @onready var _proficiency_cross_slot_tests = $ProficiencyCrossSlotTests
 @onready var _settlement_map_data_tests = $SettlementMapDataTests
@@ -234,7 +235,8 @@ func run() -> void:
 			_dungeon_map_controller_voxel_tests,
 			_equip_pipeline_tests,
 			_inventory_ui_adjacency_tests,
-			_heraldry_data_tests]:
+			_heraldry_data_tests,
+			_character_model_registry_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

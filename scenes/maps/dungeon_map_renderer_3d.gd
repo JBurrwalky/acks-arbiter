@@ -96,6 +96,9 @@ var _combat_mode: bool = false
 
 ## Loaded lazily on first token creation.
 var _token_scene: PackedScene = null
+var _character_token_scene: PackedScene = null
+
+const CharacterModelRegistryScript := preload("res://scenes/ui/components/character_model_registry.gd")
 
 ## Currently selected entity IDs (exploration mode selection).
 var _selected_entity_ids: Array[String] = []
@@ -679,32 +682,66 @@ func _rebuild_highlights() -> void:
 # Entity tokens
 # ---------------------------------------------------------------------------
 
-## Add a CombatantToken3D for the given entity.
+## Add a token (3D character model if registered, else cylinder) for the entity.
 func add_entity_token(
 		entity_id: String,
 		entity_display_name: String,
 		side: int,
 		class_letter: String,
 		class_id: String = "",
-		token_variant: String = "") -> Node3D:
+		token_variant: String = "",
+		sex: String = "male") -> Node3D:
 	if _tokens.has(entity_id):
 		return _tokens[entity_id]
-	if _token_scene == null:
-		_token_scene = load("res://scenes/ui/components/combatant_token_3d.tscn")
 	if _entity_layer == null:
 		push_error("DungeonMapRenderer3D.add_entity_token: EntityLayer is null")
 		return null
-	var token: Node3D = _token_scene.instantiate()
-	token.setup(entity_id, entity_display_name, side, class_letter)
-
-	# Apply class-specific sprite atlas if registered
-	var atlas: Texture2D = _lookup_atlas_for_class(class_id, token_variant)
-	if atlas != null:
-		token.set_sprite_atlas(atlas)
-
+	var token := _instantiate_token(
+		entity_id, entity_display_name, side, class_letter,
+		class_id, token_variant, sex)
 	_entity_layer.add_child(token)
 	_tokens[entity_id] = token
 	return token
+
+
+func _instantiate_token(entity_id: String, entity_display_name: String, side: int,
+		class_letter: String, class_id: String, token_variant: String,
+		sex: String) -> Node3D:
+	if not class_id.is_empty() and CharacterModelRegistryScript.has_any_model(class_id, sex):
+		if _character_token_scene == null:
+			_character_token_scene = load("res://scenes/ui/components/character_token_3d.tscn")
+		var char_token: Node3D = _character_token_scene.instantiate()
+		char_token.setup(entity_id, entity_display_name, side, class_letter,
+			class_id, token_variant, sex)
+		return char_token
+	if _token_scene == null:
+		_token_scene = load("res://scenes/ui/components/combatant_token_3d.tscn")
+	var token: Node3D = _token_scene.instantiate()
+	token.setup(entity_id, entity_display_name, side, class_letter)
+	var atlas: Texture2D = _lookup_atlas_for_class(class_id, token_variant)
+	if atlas != null:
+		token.set_sprite_atlas(atlas)
+	return token
+
+
+## Forwarders for CharacterToken3D procedural animations. No-op when the
+## underlying token is the cylinder (which lacks these methods).
+func play_token_attack(entity_id: String, target_world_pos: Vector3) -> void:
+	var token = _tokens.get(entity_id, null)
+	if token != null and token.has_method("play_attack"):
+		token.play_attack(target_world_pos)
+
+
+func play_token_downed(entity_id: String) -> void:
+	var token = _tokens.get(entity_id, null)
+	if token != null and token.has_method("play_downed"):
+		token.play_downed()
+
+
+func play_token_revive(entity_id: String) -> void:
+	var token = _tokens.get(entity_id, null)
+	if token != null and token.has_method("play_revive"):
+		token.play_revive()
 
 
 static var _atlas_registry_script = null
@@ -1291,7 +1328,7 @@ func _apply_token_visibility() -> void:
 		return
 	var focus: int = _visibility_manager.focus_level
 	for eid in _tokens.keys():
-		var token: CombatantToken3D = _tokens[eid]
+		var token: Node3D = _tokens[eid]
 		if token == null:
 			continue
 		var pos: Vector3i = _voxel_map.entity_positions.get(eid, Vector3i(-1, -1, -1))
@@ -1314,10 +1351,13 @@ func _apply_token_visibility() -> void:
 				_set_token_alpha(token, NON_FOCUS_ENEMY_ALPHA)
 
 
-## Set the alpha of a token's body material, toggling transparency mode as
-## needed. Accesses the body mesh by scene-tree name to avoid depending on
-## private fields of [CombatantToken3D].
-func _set_token_alpha(token: CombatantToken3D, alpha: float) -> void:
+## Set the alpha of a token's mesh material(s), toggling transparency mode
+## as needed. CharacterToken3D handles its own GLB walk via set_render_alpha;
+## CombatantToken3D (cylinder) has its body at "Body" and is faded directly.
+func _set_token_alpha(token: Node3D, alpha: float) -> void:
+	if token.has_method("set_render_alpha"):
+		token.set_render_alpha(alpha)
+		return
 	var body: MeshInstance3D = token.get_node_or_null("Body")
 	if body == null:
 		return

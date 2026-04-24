@@ -454,6 +454,41 @@ func _resolve_next_action() -> Dictionary:
 		_current_combatant_in_group += 1
 		return advance()
 
+	# --- Ready Attack: if this combatant is a PC whose own initiative has
+	#     come up and no trigger fired, the stored action expires now. ---
+	if combatant.is_pc_side() and combatant.has_readied_attack \
+			and combatant.readied_attack_round < round_number:
+		combatant.has_readied_attack = false
+		combatant.readied_attack_round = 0
+		combat_log.add_entry(
+			CombatLog.EntryType.MOVEMENT, round_number,
+			combatant.id, "",
+			{"note": "ready_expired", "actor_name": combatant.display_name})
+
+	# --- Ready Attack: fire any readied PC reactions against this combatant
+	#     before their own action resolves. Consumed reactions do not advance
+	#     the initiative index, so the actor still gets their turn next.
+	#     _check_readied_triggers filters self/same-side internally. ---
+	var readied_fires: Array = _check_readied_triggers(combatant)
+	if not readied_fires.is_empty():
+		var first: Dictionary = readied_fires[0]
+		var additional: Array = []
+		if readied_fires.size() > 1:
+			additional = readied_fires.slice(1)
+		var fired_target_id: String = first.get("target_id", "")
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": first.get("attacker_id", ""),
+			"action": "ready_attack_fire",
+			"result": {
+				"readied_attack": first,
+				"additional_fires": additional,
+				"triggering_actor_id": combatant.id,
+				"triggering_actor_name": combatant.display_name,
+				"target_id": fired_target_id,
+			},
+		}
+
 	# --- Condition check: skip if combatant cannot act ---
 	if condition_manager != null:
 		var can_attack := condition_manager.check_action_allowed(combatant, "attacking")
@@ -607,6 +642,8 @@ func _resolve_combatant_action(
 				"combatant_id": combatant.id, "action": "skip_cleave",
 				"result": {"note": "cleave declined"},
 			}
+		"ready_attack":
+			result = _resolve_ready_attack(combatant)
 		"cast_spell":
 			result = _resolve_cast_spell(combatant, parameters)
 		"move", "move_here":
@@ -736,6 +773,10 @@ func _resolve_melee_action(
 			attack_result["cleave_targets"] = cleave_targets
 			attack_result["cleave_move_available"] = true
 			attack_result["cleave_move_cells"] = move_cells
+			# Keep the PC's turn alive while the cleave window is open so the
+			# controller does not advance past this combatant before the player
+			# picks a cleave target / 5ft step / Skip Cleave.
+			attack_result["continues_turn"] = true
 			# Log entry: "X may cleave!" (target unknown until player picks)
 			combat_log.add_entry(
 				CombatLog.EntryType.CLEAVE, round_number,
@@ -852,12 +893,123 @@ func _resolve_pc_cleave_move(combatant: Combatant, parameters: Dictionary) -> Di
 		"cleave_move_available": false,
 		"cleave_move_cells": [],
 	}
+	# Keep the turn alive while the cleave window is still open (there are
+	# still targets reachable from the new position). If the step led to a
+	# dead end, the cleave window is closed and the turn ends naturally.
+	if still_eligible:
+		result_data["continues_turn"] = true
 
 	return {
 		"phase": "action", "status": "action_resolved",
 		"combatant_id": combatant.id, "action": "cleave_move",
 		"result": result_data,
 	}
+
+
+# ---------------------------------------------------------------------------
+# Ready Attack (held reaction)
+# ---------------------------------------------------------------------------
+
+func _resolve_ready_attack(combatant: Combatant) -> Dictionary:
+	## Declare a Ready Attack. The combatant forfeits any remaining movement
+	## and attack for this round; the stored reaction fires the next time an
+	## enemy is in range before that enemy acts, carrying over across rounds
+	## until triggered or until the readied character's next initiative.
+	combatant.has_readied_attack = true
+	combatant.readied_attack_round = round_number
+	# Declaring Ready locks movement for the round (if unused, it is forfeit).
+	combatant.has_moved_this_round = true
+	combat_log.add_entry(
+		CombatLog.EntryType.MOVEMENT, round_number,
+		combatant.id, "",
+		{"note": "readied_attack", "actor_name": combatant.display_name})
+	return {
+		"phase": "action", "status": "action_resolved",
+		"combatant_id": combatant.id, "action": "ready_attack",
+		"result": {
+			"note": "readied attack stored",
+			"readied": true,
+		},
+	}
+
+
+## Fire any readied PC attacks triggered by [param acting_combatant]
+## being the next combatant about to act. A readied attack fires if the
+## actor is in range of the readied PC and both are alive. The readied
+## state is consumed when the reaction fires. Returns an Array of fired
+## attack result dicts (may be empty).
+func _check_readied_triggers(acting_combatant: Combatant) -> Array:
+	var fired: Array = []
+	if acting_combatant == null or not acting_combatant.is_alive():
+		return fired
+	# Readied attacks react to enemies of the readied PC. Skip self / allies.
+	for pc: Combatant in roster.get_all():
+		if not pc.is_alive():
+			continue
+		if not pc.has_readied_attack:
+			continue
+		if pc.id == acting_combatant.id:
+			continue
+		if pc.side == acting_combatant.side:
+			continue
+		if not _is_readied_target_in_range(pc, acting_combatant):
+			continue
+		var attack_result := _fire_readied_attack(pc, acting_combatant)
+		if not attack_result.is_empty():
+			fired.append(attack_result)
+		# Ready reaction is spent, regardless of hit/miss.
+		pc.has_readied_attack = false
+		pc.readied_attack_round = 0
+		if not acting_combatant.is_alive():
+			break
+	return fired
+
+
+func _is_readied_target_in_range(shooter: Combatant, target: Combatant) -> bool:
+	## For v1, Ready Attack is melee-range only: trigger fires when the
+	## target is adjacent (3D Chebyshev distance == 1). Ranged Ready Attack
+	## is intentionally deferred.
+	if movement_resolver == null or not movement_resolver.has_grid():
+		return false
+	return movement_resolver.is_adjacent(shooter, target)
+
+
+func _fire_readied_attack(shooter: Combatant, target: Combatant) -> Dictionary:
+	## Resolve a single melee readied attack. Cleave kills count toward the
+	## normal per-round cleave budget; the chain resolves non-interactively
+	## (same as monster cleave) to keep the reaction atomic.
+	if attack_resolver == null:
+		return {}
+	# Face the target.
+	shooter.facing = _direction_vector(shooter.grid_position, target.grid_position)
+	combat_log.add_entry(
+		CombatLog.EntryType.ATTACK, round_number,
+		shooter.id, target.id,
+		{"note": "readied_attack_fires", "actor_name": shooter.display_name,
+		 "target_name": target.display_name})
+	var attack_result: Dictionary = attack_resolver.resolve_melee_attack(
+		shooter, target, "", 0)
+	attack_result["is_readied"] = true
+	attack_result["attacker_id"] = shooter.id
+	attack_result["attacker_name"] = shooter.display_name
+	attack_result["target_id"] = target.id
+	attack_result["target_name"] = target.display_name
+	if attack_result.get("hit", false):
+		target.last_attacker_id = shooter.id
+	if attack_result.get("target_downed", false):
+		roster.record_casualty(target, round_number)
+		_check_morale_after_casualty(target)
+		# Non-interactive cleave chain from the readied kill.
+		if cleave_resolver != null and cleave_resolver.can_cleave(shooter):
+			var killing_attack := {
+				"damage": "",
+				"source_index": 0,
+				"extra_attack_mod": 0,
+			}
+			var cleave_results := _resolve_cleave_chain(shooter, killing_attack, 0)
+			attack_result["readied_cleaves"] = cleave_results
+	_update_engagement()
+	return attack_result
 
 
 func _resolve_ranged_action(
@@ -1025,6 +1177,24 @@ func _resolve_monster_action(combatant: Combatant) -> Dictionary:
 			if fallback != null:
 				ai_target = fallback
 
+	# --- Ready Attack: check readied PC reactions triggered by this monster's
+	#     movement into range. Fires BEFORE the monster's attack routine.
+	#     (Already-adjacent case fires earlier in _resolve_next_action.) ---
+	var post_move_readied_fires: Array = _check_readied_triggers(combatant)
+	var readied_fire_results: Array = post_move_readied_fires
+	# If the readied attack killed the monster, end their turn immediately.
+	if not combatant.is_alive():
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id,
+			"action": "attack_melee",
+			"result": {
+				"note": "downed by readied attack",
+				"attacks": [],
+				"readied_fires": readied_fire_results,
+			},
+		}
+
 	# Resolve expanded attack sequence with mid-routine cleave
 	var expanded := combatant.get_expanded_attack_sequence()
 	var results: Array = []
@@ -1094,6 +1264,11 @@ func _resolve_monster_action(combatant: Combatant) -> Dictionary:
 		combined_result = results[0]
 	else:
 		combined_result = {"attacks": results}
+
+	# Surface any readied PC reactions that fired mid-turn so the UI log
+	# can render them alongside the monster's own attacks.
+	if not readied_fire_results.is_empty():
+		combined_result["readied_fires"] = readied_fire_results
 
 	var event := {
 		"phase": "action",
@@ -1220,6 +1395,8 @@ func _resolve_pc_cleave(combatant: Combatant, parameters: Dictionary) -> Diction
 			cleave_result["cleave_targets"] = more_targets
 			cleave_result["cleave_move_available"] = true
 			cleave_result["cleave_move_cells"] = more_move_cells
+			# Keep the turn alive for the next cleave decision.
+			cleave_result["continues_turn"] = true
 			combat_log.add_entry(
 				CombatLog.EntryType.CLEAVE, round_number,
 				combatant.id, "",

@@ -57,11 +57,14 @@ var _env: WorldEnvironment = null
 # ---------------------------------------------------------------------------
 
 var _voxel_map: VoxelMapData = null
-var _tokens: Dictionary = {}         # entity_id -> CombatantToken3D
+var _tokens: Dictionary = {}         # entity_id -> CombatantToken3D | CharacterToken3D
 var _highlight_layers: Array = []
 var _target_rings: Array[String] = []
 var _active_entity_id: String = ""
 var _token_scene: PackedScene = null
+var _character_token_scene: PackedScene = null
+
+const CharacterModelRegistryScript := preload("res://scenes/ui/components/character_model_registry.gd")
 
 
 # ---------------------------------------------------------------------------
@@ -111,31 +114,27 @@ func setup(voxel_map: VoxelMapData, roster) -> void:
 
 
 func _populate_tokens(roster) -> void:
-	if _token_scene == null:
-		_token_scene = load("res://scenes/ui/components/combatant_token_3d.tscn")
-
 	for c in roster.get_all():
 		var side_val: int = c.side
 		var letter: String = c.display_name.substr(0, 1).to_upper()
 		var class_id: String = ""
 		var token_variant: String = ""
+		var sex: String = "male"
 		if c.is_character and c._character != null:
 			class_id = c._character.character_class
 			token_variant = c._character.token_variant
+			sex = c._character.sex
 
-		var token: Node3D = _token_scene.instantiate()
-		token.setup(c.id, c.display_name, side_val, letter)
-		var atlas: Texture2D = _lookup_atlas_for_class(class_id, token_variant)
-		if atlas != null:
-			token.set_sprite_atlas(atlas)
+		var token: Node3D = _instantiate_token(
+			c.id, c.display_name, side_val, letter, class_id, token_variant, sex)
 		_entity_layer.add_child(token)
 		_tokens[c.id] = token
 
-		# Position token on grid
+		# Position token on grid — snap, don't animate, on initial placement.
 		if c.grid_position != Vector3i(-1, -1, 0):
 			var world_pos := VoxelGrid.cell_to_world(
 				c.grid_position.x, c.grid_position.y, c.grid_position.z)
-			token.update_position(world_pos)
+			token.position = world_pos
 
 
 func _build_terrain() -> void:
@@ -199,13 +198,54 @@ func set_token_facing(entity_id: String, facing: Vector2i) -> void:
 		_tokens[entity_id].set_facing(facing)
 
 
+## Forwarders for CharacterToken3D's procedural animations. No-op on the
+## cylinder token, which lacks these methods.
+func play_token_attack(entity_id: String, target_world_pos: Vector3) -> void:
+	var token = _tokens.get(entity_id, null)
+	if token != null and token.has_method("play_attack"):
+		token.play_attack(target_world_pos)
+
+
+func play_token_downed(entity_id: String) -> void:
+	var token = _tokens.get(entity_id, null)
+	if token != null and token.has_method("play_downed"):
+		token.play_downed()
+
+
+func play_token_revive(entity_id: String) -> void:
+	var token = _tokens.get(entity_id, null)
+	if token != null and token.has_method("play_revive"):
+		token.play_revive()
+
+
 func get_entity_token(entity_id: String) -> Node3D:
 	return _tokens.get(entity_id, null)
 
 
-func add_entity_token(entity_id: String, display_name: String, side: int, class_letter: String, class_id: String = "", token_variant: String = "") -> Node3D:
+func add_entity_token(entity_id: String, display_name: String, side: int, class_letter: String, class_id: String = "", token_variant: String = "", sex: String = "male") -> Node3D:
 	if _tokens.has(entity_id):
 		return _tokens[entity_id]
+	var token := _instantiate_token(
+		entity_id, display_name, side, class_letter, class_id, token_variant, sex)
+	_entity_layer.add_child(token)
+	_tokens[entity_id] = token
+	return token
+
+
+func _instantiate_token(entity_id: String, display_name: String, side: int,
+		class_letter: String, class_id: String, token_variant: String,
+		sex: String) -> Node3D:
+	# Use the 3D character model when one exists for the triple; otherwise
+	# fall back to the cylinder. has_any_model(class, sex) returns true when
+	# at least one variant exists, so unknown variants still resolve to the
+	# default model via CharacterToken3D.setup().
+	if not class_id.is_empty() and CharacterModelRegistryScript.has_any_model(class_id, sex):
+		if _character_token_scene == null:
+			_character_token_scene = load("res://scenes/ui/components/character_token_3d.tscn")
+		var char_token: Node3D = _character_token_scene.instantiate()
+		char_token.setup(entity_id, display_name, side, class_letter,
+			class_id, token_variant, sex)
+		return char_token
 	if _token_scene == null:
 		_token_scene = load("res://scenes/ui/components/combatant_token_3d.tscn")
 	var token: Node3D = _token_scene.instantiate()
@@ -213,8 +253,6 @@ func add_entity_token(entity_id: String, display_name: String, side: int, class_
 	var atlas: Texture2D = _lookup_atlas_for_class(class_id, token_variant)
 	if atlas != null:
 		token.set_sprite_atlas(atlas)
-	_entity_layer.add_child(token)
-	_tokens[entity_id] = token
 	return token
 
 

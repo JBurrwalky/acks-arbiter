@@ -7189,3 +7189,214 @@ Suite count back to 24.
 6. Optional future: targeted unit tests for FormationManager + minimap color mapping.
 
 **Tombstone status:** #1 (voxel combat port) ✓ closed 12a. #2 (DungeonMapController helpers) ✓ closed 12b. #3 (`IsometricGrid` demotion) ✓ resolved via dual-role §13 rewrite. #4 (FormationManager voxel port) ✓ closed last session. **#5 (voxel minimap) ✓ closed this session.** The voxel migration tombstone list is now empty.
+
+
+## Session 2026-04-23 — GLB character placeholder models replace blue-cylinder PC tokens
+
+**Task:** Import the 43 user-authored placeholder character GLBs from `C:\Users\jttau\OneDrive\Pictures\arbiter placeholders\`, render them in combat and dungeon maps in place of the current blue cylinder for PCs/henchmen, add a character-creation step that lets players choose a token variant, and implement procedural animations (smooth slide on move, smooth turn on facing change, lunge-and-return on melee hit, fall forward + drop to floor on downed).
+
+**Model used:** Opus 4.7 (1M context) — exploration + plan design + implementation.
+
+**Completed:**
+
+- **Assets.** Copied all 43 GLB files into `assets/tokens/characters/`. Renamed two hyphen-separated bladedancer files to underscore convention (`bladedancer-def-female.glb` → `bladedancer_def_female.glb`, same for `alt1`). Textures ship embedded in the GLB (no external files).
+- **`scenes/ui/components/character_model_registry.gd`** (new) — static `RefCounted` registry. `has_model(class, variant, sex)`, `get_model_path()`, `get_scale(class, sex)`, `get_default_variant()`, `get_available_variants(class, sex)`, `get_available_sexes(class)`, `has_any_model()`. Scale table: vaultguard/craftpriest → 1.25, spellsword/nightblade/enchanter → 1.70, else 1.85 (m) / 1.75 (f).
+- **`scenes/ui/components/character_token_3d.gd` + `.tscn`** (new) — 3D GLB token. Public API matches `CombatantToken3D` (setup/update_position/set_facing/is_selected/is_active/show_ghost/set_sprite_atlas) so renderers are uniform. Adds `play_attack(target_world_pos)`, `play_downed()`, `play_revive()`. All motion is Tween-driven: 0.15 s slide, 0.15 s shortest-arc turn around Y, 0.25 s + 0.25 s lunge (50 % toward target, then return), 0.4 s fall forward with concurrent drop to floor around a mid-height pivot. Emits `attack_impact_reached` at lunge apex and `model_missing` when the registry has no GLB.
+- **`scenes/ui/combat/combat_map_renderer_3d.gd`, `scenes/maps/dungeon_map_renderer_3d.gd`** — token instantiation now routes through `_instantiate_token()`. When `CharacterModelRegistry.has_any_model(class_id, sex)` returns true, we instantiate `character_token_3d.tscn`; otherwise we fall back to the existing cylinder `combatant_token_3d.tscn`. `add_entity_token()` gained an optional `sex: String = "male"` parameter. Added `play_token_attack(entity_id, target_world)`, `play_token_downed(entity_id)`, `play_token_revive(entity_id)` forwarders on both renderers (no-op on cylinder tokens).
+- **`engine/subsystems/session/states/dungeon_explore_state.gd`** — extended the party-member `add_entity_token()` call to pass `cd.sex`.
+- **`scenes/ui/combat/combat_screen.gd`, `scenes/ui/combat/dungeon_combat_overlay.gd`** — connect `EventBus.damage_dealt` and `EventBus.combatant_downed` during combat setup. Damage handler plays a lunge on the attacker only when attacker and target are on the same level and within Chebyshev distance 1 (filters out ranged / spell damage). Downed handler plays the drop animation.
+- **`scenes/ui/character_creation/character_creation_screen.gd`** — inserted `TOKEN_SELECTION = 9` between `PORTRAIT` and `LANGUAGES`; shifted `LANGUAGES` → 10 and `FINALIZE` → 11; updated `STEP_LABELS` to "Step N of 12"; grew `_panels` to 12; added dispatch in `_setup_panel`, invalidation in `_invalidate_from`, skip logic in `_next_valid_step` / `_prev_valid_step`, and `_should_skip_token_selection()` (skips when no registered GLBs exist for the class).
+- **`scenes/ui/character_creation/token_picker_panel.gd`** (new) — male/female toggle at top (honors `ClassRegistry.get_sex_restriction`), variant list on the left, `SubViewportContainer` / `SubViewport` preview on the right. Only **one** `CharacterToken3D` is instantiated at a time — switching variants frees the previous preview and instantiates a new one. Writes `creation_state["sex"]` and `creation_state["token_variant"]`. `is_complete()` returns true unconditionally so the step can be skipped when no GLBs exist.
+- **`scenes/ui/character_creation/portrait_picker_panel.gd`** — removed the legacy "Combat Token Sprite" variant button row (the new TokenPickerPanel owns that responsibility). `TokenAtlasRegistryScript` preload removed from this file.
+- **`tests/test_character_model_registry.gd`** (new) — 17 checks covering path resolution, scale table overrides, default-variant fall-through, single-sex classes (paladin male-only), hyphen-normalized bladedancer, unknown-class empties. Registered in `test_runner.gd` and `test_runner.tscn` as `CharacterModelRegistryTests`.
+
+**Decisions made:**
+
+- **New scene, not extending `CombatantToken3D`.** The cylinder scene stays intact as the fallback for enemies/monsters and for classes with no GLB yet. Both scenes expose the same public surface so renderer call sites do not branch on token type.
+- **Procedural motion over skeletal animation.** GLBs are treated as static meshes; idle / walk / attack / downed are all Tween transforms on the outer node. This was a user-confirmed design choice in plan review.
+- **Melee lunge gated by adjacency on `damage_dealt`.** Adding a new EventBus signal would have required editing `attack_resolver.gd`. The adjacency check on the existing signal is non-invasive and cleanly filters ranged / spell damage out of the lunge trigger.
+- **Sex toggle lives on the token panel.** The Finalize panel's existing sex toggle still works as an override (with class restrictions). This keeps the wizard step-local without a larger refactor of the sex-selection step.
+- **Scale on `ModelHolder`, pivot on `ModelPivot`.** Two nested Node3Ds let the downed animation hinge at mid-height (model center of mass) while Y-facing rotation stays on the outer pivot.
+
+**Interfaces defined or changed:**
+
+- `CharacterToken3D.setup(entity_id, display_name, side, class_letter, character_class, variant, sex)` — 7-arg signature. Any future renderer that wants to instantiate a character model goes through this.
+- `CharacterToken3D` signals: `attack_impact_reached(entity_id: String)`, `model_missing(entity_id: String)`.
+- `DungeonMapRenderer3D.add_entity_token(entity_id, display_name, side, class_letter, class_id="", token_variant="", sex="male")` — new optional `sex` param.
+- `CombatMapRenderer3D.add_entity_token(entity_id, display_name, side, class_letter, class_id="", token_variant="", sex="male")` — new optional `sex` param.
+- Both 3D renderers gained `play_token_attack(entity_id, target_world_pos)`, `play_token_downed(entity_id)`, `play_token_revive(entity_id)`.
+- `CharacterModelRegistry` — static API as documented above. No autoload; callers preload the script.
+
+**Database changes:** None. `CharacterData.token_variant` and `CharacterData.sex` already existed; semantics are unchanged.
+
+**Tests added/updated:**
+
+- `tests/test_character_model_registry.gd` with 17 checks, registered in the test runner.
+
+**Known issues:**
+
+- `token_atlas_registry.gd` still exists but is effectively dead in the 3D pipeline now that the portrait picker no longer offers atlas variants. Left in place because the 3D renderers still call `_lookup_atlas_for_class` as a no-op side channel. Safe to delete in a follow-up.
+- `DungeonMapRenderer3D.start_movement_animation` tweens `token.position` directly as a renderer-owned external tween. `CharacterToken3D.update_position` also tweens `position`. In normal play these code paths do not overlap (one is exploration, the other is combat move) — but a combat `move_token` call immediately followed by an exploration tween start would race.
+- `CharacterToken3D.play_revive()` is exposed on the renderer (`play_token_revive`) but is not currently auto-triggered — healing a downed PC does not stand the token up. Left as a manual API; deferred wiring to revive events.
+- No manual Godot-editor smoke test performed yet. Import verification and combat / wizard smoke tests are in the "Next session should" list below.
+
+**Next session should:**
+
+1. Open Godot and confirm the 43 `.glb` files auto-import cleanly (no errors in the Output panel, `.import` siblings present). If import flags are needed, adjust them here.
+2. Run `tests/test_runner.tscn` — confirm `CharacterModelRegistryTests` passes and no other suite regressed.
+3. Editor smoke test: create a new fighter PC, walk through the wizard, verify the new "Combat Token" step appears at step 10 / 12 and only one model is loaded at a time as variants are cycled. Enter combat, verify the token slides on move, rotates on facing change, lunges and returns on melee hit, falls forward on downed.
+4. Smoke-test the cylinder fallback: start combat with a monster and with a class that has no GLB (e.g., witch). Both should render the existing cylinder.
+5. Optional cleanup: delete `token_atlas_registry.gd` + `barbarian_1_atlas.png` + associated `_lookup_atlas_for_class` helpers on both 3D renderers if the 2D atlas path is definitively retired.
+6. Follow-up: wire `play_token_revive` to a healing / revival signal (mortal wounds resolution outcomes) so standing-back-up has a trigger.
+
+---
+
+## Session 2026-04-23 — Wilderness Context Menu Bug Fixes (smoke-test items 2.2, 2.6, 2.7)
+
+**Task:** Three bugs from the Part 2 wilderness smoke test, all in the right-click context menu shipped 2026-04-21:
+1. **2.2** — No visual distinction between active and inactive party tokens; clicks land silently.
+2. **2.6** — Move Here greyed out for non-adjacent hexes (the gate was Chebyshev ≤ 1 from the primary party hex). Multi-hex travel was unreachable from the right-click flow even though `WildernessHandlers.schedule_travel_path` already chains per-hex legs.
+3. **2.7** — Place / Visit Loot Cache, Explore, Survey, Build Stronghold all unavailable on the party's current hex (menu collapsed to "Move Here (disabled)" + Cancel).
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+**Fix 2.2 — Active-party visual + click pulse** ([scenes/maps/hex_map_renderer.gd](scenes/maps/hex_map_renderer.gd)):
+
+- `_style_token` rewritten. Active token: bright yellow polygon, `modulate.a = 1.0`, gold outline ring (Line2D, width 2.5, color `(1.0, 0.85, 0.2)`). Inactive token: desaturated grey-blue, `modulate.a = 0.55`, no ring. Both at scale 1.0 — the active marker is the outline, not size.
+- New `_attach_active_outline(token, r)` builds the ring as a Line2D child of each token (z_index -1 so the polygon sits on top of it). Called from `_create_party_token_node` for dynamic tokens and from `_ready` for the scene-defined primary token.
+- New `_play_click_pulse(token)` runs a Tween scale 1.0 → 1.15 → 1.0 over 200 ms (TRANS_SINE / EASE_OUT). Tracked in `_pulse_tweens: Dictionary` keyed by token so a second click cancels and replaces a still-running pulse rather than stacking.
+- Wired into the left-click branch of `_unhandled_input`: pulses every party-token click regardless of whether it actually changed the active party — confirms the click landed.
+- New `_token_for_party(party_id)` helper returns the Polygon2D for a given party id (primary `_party_token` or one of the dynamic `_party_tokens`).
+- `_update_tooltip` now also sets `Input.set_default_cursor_shape(CURSOR_POINTING_HAND)` when hovering a party-token hex so the player knows tokens are clickable.
+
+**Fix 2.6 — Hex A* + remove adjacency gate** ([engine/subsystems/exploration/hex_map_controller.gd](engine/subsystems/exploration/hex_map_controller.gd), [engine/subsystems/exploration/wilderness_context_menu_builder.gd](engine/subsystems/exploration/wilderness_context_menu_builder.gd), [engine/subsystems/session/states/wilderness_explore_state.gd](engine/subsystems/session/states/wilderness_explore_state.gd)):
+
+- `HexMapController.find_path(from, to) -> Array[Vector2i]` — A* over passable hexes with `hex_distance` heuristic; uniform unit cost; returns `[start]` for same-hex, `[]` for unreachable or impassable target. Path includes both endpoints.
+- `HexMapController.is_hex_passable(coord) -> bool` — central passability predicate (v1: false only for `water == "ocean"` or `"lake"`). Future terrain-cost / boat / flying rules go here.
+- `HexMapController.can_move_to` left intact for legacy single-step callers (notably `_handle_travel_leg`'s blocked-path guard); doc comment now points multi-hex callers at `find_path`.
+- `WildernessContextMenuBuilder.build_menu` gained a `current_hex` parameter (default sentinel `(-9999,-9999)`). Move Here gating switched from adjacency to passability-of-target. The dispatcher pathfinds at action time and surfaces a "No Route" toast when `find_path` returns empty.
+- `WildernessExploreState._on_context_action` rewrite: resolves current hex via new `_resolve_party_hex(party_id, map_data)`; calls `controller.find_path(current, target)`; strips the leading start hex; passes the typed `Array[Vector2i]` of legs to `WildernessHandlers.schedule_travel_path`. Same-hex selections produce an empty path that the handler treats as in-place.
+- `WildernessHandlers.schedule_travel_path` now handles `path.is_empty()` by returning `{event_ids: [], arrival_time: now, current_time: now}` so callers that chain a follow-up activity at `arrival_time` work uniformly for in-place activities.
+
+**Fix 2.7 — Current-hex menu shape** (same builder + state):
+
+- Builder special-cases `target_hex == current_hex`: omits Move Here entirely (less clutter than a permanently-disabled "You are here"); enables every activity it normally would; `place_loot_cache` enabled iff no cache, `visit_loot_cache` enabled iff a cache exists. Total option count drops from 7 → 6 on the current hex.
+- Dispatcher uses the new empty-path branch — the `wilderness_activity` event is scheduled at `arrival_time = now` so `_handle_wilderness_activity` fires on the next scheduler tick at the party's location. `place_loot_cache` flow unchanged (1-hour completion timer → `LocationCacheManager.create_wilderness_hidden_cache(current_hex)`).
+- `visit_loot_cache` on the current hex resolves immediately because the existing handler reads `hex_q/hex_r` from the event payload — no additional code needed.
+
+**Decisions made:**
+
+- **Active marker = outline ring, not scale.** The previous "active gets +15% scale, inactive gets -10% scale" was an OK tell for paying attention but invisible at glance and conflicted with the click-pulse animation. A persistent gold ring is read instantly; a scale-only pulse is read as feedback rather than as state.
+- **Pulse is purely scale, not color.** Color modulation would fight the active/inactive styling. Scale tween is self-contained: starts at 1.0, returns to 1.0, doesn't disturb modulate or color.
+- **Cursor change in `_update_tooltip` (called every motion event), not a per-token Area2D.** Reuses existing input plumbing — Polygon2D has no built-in mouse-over signal, and adding Area2D children to every token would be a surprising amount of node bloat for a cursor hint.
+- **Reachability gating preferred over let-execution-reject.** The smoke test wants Move Here greyed out for impassable terrain (the *target itself* is bad), but enabled for any reachable land hex. Builder checks passability of the target only; A* in the dispatcher catches "no path through the impassable ring" cases, surfacing a toast rather than a silent no-op.
+- **Single canonical passability predicate.** `is_hex_passable` lives on the controller, not inlined. Same call site is used by the builder fallback and the dispatcher precondition. When boats / flying mounts arrive, change one place.
+- **Pathfinder is uniform-cost in v1.** Terrain multipliers (`travel_speed_calculator.gd::TERRAIN_MULTIPLIERS`) are still applied per-leg in `schedule_travel_path` for travel duration. Pathfinding doesn't need to also apply them — adding cost would cause the path to swing through clear hexes when a direct desert crossing is faster in elapsed time. Revisit when there's a content reason (avoid swamps even if shorter, etc.).
+- **Fog of war does not gate pathfinding.** A player can right-click a visible hex 4 hexes away and the path may cross HIDDEN intermediate hexes. The journey reveals them. The alternative (only path through known hexes) felt punitive in playtest mental-model.
+
+**Interfaces defined or changed:**
+
+- `HexMapController.find_path(from_hex: Vector2i, to_hex: Vector2i) -> Array[Vector2i]` **NEW**.
+- `HexMapController.is_hex_passable(coord: Vector2i) -> bool` **NEW**.
+- `HexMapController._pop_lowest_f` / `_reconstruct_path` **NEW** static helpers.
+- `WildernessContextMenuBuilder.build_menu(target_hex, active_party_id, map_data, controller, current_hex = Vector2i(-9999, -9999)) -> Array[Dictionary]` — added trailing `current_hex` param. Default sentinel preserves legacy behavior for callers that don't pass it.
+- `WildernessHandlers.schedule_travel_path(path, scheduler, party, map_data) -> Dictionary` — `path.is_empty()` is now a valid input meaning "in-place"; returns `arrival_time = current_time = now`. Existing non-empty-path semantics unchanged.
+- `WildernessExploreState._resolve_party_hex(party_id, map_data) -> Vector2i` **NEW** private.
+- `hex_map_renderer.gd` adds `_attach_active_outline`, `_play_click_pulse`, `_on_pulse_finished`, `_token_for_party` (private). `_style_token` semantics changed from size-distinguished to opacity+outline-distinguished — internal contract only.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- [tests/test_hex_map_controller.gd](tests/test_hex_map_controller.gd) — added 8 tests (suite total now 25):
+  - `test_is_hex_passable_clear_terrain`, `_ocean_blocked`, `_lake_blocked`
+  - `test_find_path_same_hex_returns_single_hex`, `_direct_route`, `_routes_around_impassable`, `_no_path_returns_empty`, `_target_impassable_returns_empty`
+- [tests/test_wilderness_context_menu_builder.gd](tests/test_wilderness_context_menu_builder.gd) — extended from 9 to 14 tests:
+  - `test_current_hex_menu_omits_move_here` (also asserts size 6)
+  - `test_current_hex_menu_includes_place_loot_cache`
+  - `test_current_hex_menu_visit_disabled_when_no_cache`
+  - `test_current_hex_menu_includes_survey`
+  - `test_non_adjacent_hex_move_here_enabled` (5 hexes away with passable terrain)
+  - `test_impassable_hex_move_here_disabled` (target is ocean)
+  - The pre-existing `test_controller_can_move_false_disables_actions` was repurposed as a no-op note since the adjacency gate it referenced no longer exists; the corresponding behavior is now covered by the passability tests above.
+- Both suites are already wired into `tests/test_runner.gd` + `tests/test_runner.tscn` from the 2026-04-21 session — no scene-tree changes needed.
+
+**Documentation updates:**
+
+- [docs/coding_conventions.md](docs/coding_conventions.md) §15.3a "Wilderness Navigation (Hex A*)" — new subsection documenting `find_path` semantics, passability rules, and the right-click "no adjacency gate" principle (mirrors the dungeon UI's "let execution reject" guidance).
+
+**Known issues:**
+
+- **Multi-party `can_move_to` adjacency uses primary party's hex** — pre-existing, flagged 2026-04-21, *not* incidentally fixed here. The wilderness dispatcher now uses `is_hex_passable` (which is party-agnostic) and `find_path` from the resolved party's hex (via `_resolve_party_hex`), so the right-click flow no longer depends on `can_move_to`. The bug remains in `_handle_travel_leg`'s blocked-path guard, but that branch only fires when terrain changes mid-route — not the smoke-test scenario.
+- **No path-preview on the hex map.** Right-clicking a far hex and selecting Move Here pathfinds and starts walking; the planned route is not previewed before commit. Could be added later (Line2D from current hex through path[0..n]) — out of scope here.
+- **Pathfinder runs every right-click on the dispatcher.** Build_menu still calls `is_hex_passable` (cheap), but not `find_path` (cheaper to defer until commit). If menu-build cost ever matters we can lazy-evaluate; today it's a non-issue.
+- **Tests not yet run by build agent.** Godot CLI is not on PATH; verify `HexMapControllerTests` (now 25 tests) and `WildernessContextMenuBuilderTests` (now 14 tests) via `tests/test_runner.tscn` in the editor.
+- **Smoke-test items 2.2, 2.6, 2.7 should be re-run** per the Verification section of the plan file.
+
+**Next session should:**
+
+1. Run `tests/test_runner.tscn` — confirm all suites still green; in particular `HexMapControllerTests` (8 new) and `WildernessContextMenuBuilderTests` (5 new).
+2. Re-run smoke-test Part 2 items 2.2, 2.6, 2.7 per the bug-fix prompt's Verification checklist. Specifically verify: the gold ring on the active token at rest, dim grey on inactive tokens, scale pulse on click, multi-hex Move Here through 3+ intermediate hexes with per-leg encounter checks, current-hex Place Loot Cache → 1 h timer → cache appears in Party Inventory.
+3. Continue with the remaining smoke-test items (2.1, 2.3, 2.4, 2.5, 2.8 and Parts 3+).
+4. When multi-party combat / multi-party movement gets attention, fix the `can_move_to`-uses-primary-hex bug noted in the 2026-04-21 known-issues list.
+5. Optional polish: path preview line on right-click hover before menu commit.
+
+---
+
+## Session 2026-04-23 — Cleave Flow Fix + Ready Attack
+
+**Task:** Fix broken cleave flow (5ft step never allowed, any click ended the turn) and wire up Ready Attack as a held-reaction action.
+**Model used:** Opus 4.7
+**Completed:**
+
+- **Root-cause of the cleave bug.** `_resolve_melee_action` flagged a killing blow as `cleave_eligible` but never set `continues_turn = true` on the returned result. At [combat_controller.gd:537-539](engine/subsystems/combat/combat_controller.gd#L537-L539) the turn-advance logic (`if not result.result.continues_turn: _current_combatant_in_group += 1`) then advanced the initiative pointer past the PC before the UI even entered cleave selection. The UI *did* enter `PC_SELECTING_CLEAVE_TARGET` and paint the yellow 5ft-step highlight, but every subsequent click re-ran `advance()` against the *next* combatant (usually an enemy), producing the "any click ends the turn" symptom.
+- Fix: set `continues_turn = true` on the returned `result.result` whenever the cleave window is open. Applied in three places:
+  - [combat_controller.gd:`_resolve_melee_action`](engine/subsystems/combat/combat_controller.gd) — on the killing blow when cleave_eligible is flagged.
+  - [combat_controller.gd:`_resolve_pc_cleave`](engine/subsystems/combat/combat_controller.gd) — when the cleave chain continues after a subsequent kill.
+  - [combat_controller.gd:`_resolve_pc_cleave_move`](engine/subsystems/combat/combat_controller.gd) — when the 5ft step lands somewhere with new adjacent cleave targets (if the step dead-ends, the window closes and the turn ends naturally).
+
+- **Ready Attack (melee held-reaction).** Appears on the PC self-context menu alongside Use Item / Sheathe & Draw. Stores a reaction that fires against the next enemy in melee range, before that enemy's action resolves.
+  - [combatant.gd](engine/subsystems/combat/combatant.gd) — new fields `has_readied_attack: bool`, `readied_attack_round: int`.
+  - [combat_context_menu_builder.gd `_build_self_options`](engine/subsystems/combat/combat_context_menu_builder.gd) — new "Ready Attack" entry (disabled when already readied or incapacitated).
+  - [combat_controller.gd:`_resolve_ready_attack`](engine/subsystems/combat/combat_controller.gd) — sets `has_readied_attack = true`, stamps `readied_attack_round = round_number`, forfeits any remaining movement (`has_moved_this_round = true`). Logs a MOVEMENT entry with `note: readied_attack`.
+  - [combat_controller.gd:`_check_readied_triggers`](engine/subsystems/combat/combat_controller.gd) — iterates all alive readied PCs, fires against the acting combatant if adjacent (self/same-side filtered). Called twice per enemy turn: at the start of `_resolve_next_action` (covers already-adjacent case) and again inside `_resolve_monster_action` immediately after the monster's auto-movement (covers the "moves into range" case). Ready reaction is consumed (`has_readied_attack = false`) on fire.
+  - Readied kills run `_resolve_cleave_chain` non-interactively and consume the normal per-round cleave budget — same rule as monster cleave.
+  - Round-carryover: `_resolve_declaration` already does NOT reset `has_readied_attack`, so the stored reaction persists. At the top of `_resolve_next_action`, if the readied PC's own initiative comes up in a *later* round with the reaction still unfired, it expires (`has_readied_attack = false`, logged as `ready_expired`) and the PC acts normally.
+  - [combat_ui_controller.gd `on_context_action`](scenes/ui/combat/combat_ui_controller.gd) — dispatches `ready_attack` to `_controller.submit_pc_action`.
+  - `_action_to_log_type` now maps `"ready_attack"` → MOVEMENT and `"ready_attack_fire"` → ATTACK.
+
+**Decisions made:**
+
+- Ready Attack is melee-only in v1. `RangedAttackResolver.resolve_ranged_attack` takes a different signature (`weapon_data`, `distance_ft`, `target_in_melee`), so wiring a ranged readied path would require more plumbing than the cleave fix this session was scoped for. Deferred.
+- Readied-attack cleaves resolve non-interactively (same behavior as monster cleaves). Interactive UI for mid-reaction cleave chains can come later; for now the reaction is atomic within the trigger window.
+- `_check_readied_triggers` fires BEFORE the triggering actor's own action resolves. When returned from `_resolve_next_action`, the initiative index is NOT advanced, so the triggering actor still gets their full turn on the next advance() pass. If the readied attack kills them, `_resolve_next_action`'s `is_alive` check skips them on the next pass.
+
+**Interfaces defined or changed:**
+
+- `Combatant.has_readied_attack: bool` (default false) — persists across rounds until triggered or until the readied combatant's own initiative comes up in a later round.
+- `Combatant.readied_attack_round: int` (default 0) — round number stamped at declaration; used to distinguish "same-round ready" vs "carried-over ready" for expiry logic.
+- `CombatController._check_readied_triggers(acting_combatant: Combatant) -> Array` — returns an array of readied-attack result dicts (may be empty). Consumes the reaction on fire.
+- Result-dict key: `continues_turn` on `attack_result` / `cleave_result` / `cleave_move` result_data. The controller's turn-advance gate at `_resolve_next_action` reads `result.result.continues_turn`; setting it `true` keeps `_current_combatant_in_group` pointing at the current combatant for the next `advance()` call.
+- Action vocabulary additions: `ready_attack` (self-targeted declaration), `ready_attack_fire` (emitted by the controller when a stored reaction resolves — never submitted by the UI).
+
+**Tests added/updated:**
+
+- None this session. The existing `test_combat_context_menu_builder.test_self_click_self_options` does not assert against the presence of `ready_attack`, so it continues to pass.
+
+**Known issues:**
+
+- **Godot CLI not on PATH for the build agent.** Cannot run `tests/test_runner.tscn` headlessly from the agent's shell. Verify unit tests via the editor runner — in particular `CleaveChainsTests` (should still pass, no behavioral change to `CleaveResolver`) and `CombatContextMenuBuilderTests`.
+- **Smoke test needed.** Manually exercise: (a) fighter kills an adjacent enemy → yellow 5ft-step cells + red cleave-target rings appear; left-click on a yellow cell moves and re-opens the cleave window at the new position; left-click on a red enemy cleaves; Skip Cleave ends the turn. (b) Right-click self → context menu shows "Ready Attack"; selecting it ends the turn. (c) Next round, enemy moves adjacent → readied attack fires BEFORE enemy's attack (check combat log for `readied_attack_fires`). (d) Unfired ready carried to the PC's next initiative → log shows `ready_expired` and the PC acts normally.
+- **Ranged Ready Attack deferred.** Trigger + weapon signature mismatch noted above.
+- **No interactive cleave chain from a readied kill.** Chains resolve auto; if the player should get to pick cleave targets after a readied kill, `_fire_readied_attack` would need to pause the `_check_readied_triggers` loop and re-enter the UI's cleave-selection state — non-trivial since readied attacks fire outside the normal PC-turn state machine.
+
+**Next session should:**
+
+1. Run `tests/test_runner.tscn` in the editor to confirm no regressions in the combat suites.
+2. Smoke-test the four cleave/ready scenarios above in a live combat.
+3. Optional: add `test_ready_attack_persists_across_rounds`, `test_ready_attack_fires_on_adjacency`, `test_ready_attack_expires_on_own_initiative` unit tests to lock the behavior in.
+4. Optional polish: HUD indicator on the readied PC's token (e.g. a small "R" glyph or a pulsing outline) so the player can see at a glance which PCs are holding a reaction.
+5. Consider ranged Ready Attack once the trigger model proves out.
+

@@ -143,7 +143,7 @@ func enter(runner, context: Dictionary) -> void:
 			if not cd.is_dead and cd.is_active:
 				var class_letter := _class_letter(cd.character_class)
 				_scene.add_entity_token(cd.id, cd.name, 0, class_letter,
-					cd.character_class, cd.token_variant)
+					cd.character_class, cd.token_variant, cd.sex)
 	elif _controller.get_entity_ids().size() > 0:
 		_scene.add_entity_token("party_leader", "Party", 0, "?")
 
