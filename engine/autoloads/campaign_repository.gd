@@ -333,8 +333,8 @@ func create_character(data: Dictionary) -> String:
 			 portrait_id, current_age, age_category, languages, personality,
 			 is_dead, is_active, is_incapacitated,
 			 employer_id, loyalty_score, wage_gp_per_month,
-			 sex, token_variant)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+			 sex, token_variant, class_metadata)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 	""", [
 		data["id"], data.get("campaign_id", ""), data.get("name", "Unknown"),
 		data.get("character_type", "pc"), data.get("persistence_tier", "full"),
@@ -364,6 +364,7 @@ func create_character(data: Dictionary) -> String:
 		data.get("wage_gp_per_month", null),
 		data.get("sex", "male"),
 		data.get("token_variant", ""),
+		data.get("class_metadata", "{}"),
 	]):
 		push_error("CampaignRepository.create_character: failed. name=%s" % data.get("name", "?"))
 		return ""
@@ -402,7 +403,7 @@ func save_character(data: Dictionary) -> bool:
 				languages = ?, personality = ?,
 				is_dead = ?, is_active = ?, is_incapacitated = ?,
 				employer_id = ?, loyalty_score = ?, wage_gp_per_month = ?, sex = ?,
-				token_variant = ?,
+				token_variant = ?, class_metadata = ?,
 				updated_at = datetime('now')
 			WHERE id = ?
 		""", [
@@ -434,6 +435,7 @@ func save_character(data: Dictionary) -> bool:
 			data.get("wage_gp_per_month", null),
 			data.get("sex", "male"),
 			data.get("token_variant", ""),
+			data.get("class_metadata", "{}"),
 			id
 		])
 	else:
@@ -1175,6 +1177,49 @@ func update_inventory_item_equip_state(item_id: String, is_equipped: bool, slot:
 		push_error("CampaignRepository.update_inventory_item_equip_state: failed. id=%s" % item_id)
 		return false
 	return true
+
+
+## Idempotently unequips any items the character's class is not permitted to use.
+## Called on party load to repair existing save data and as a safety net.
+## Returns an array of {item_name, reason} dicts describing what was unequipped.
+func sanitize_character_equipment(character_id: String) -> Array:
+	var unequipped: Array = []
+	if character_id.is_empty():
+		return unequipped
+	var character: Dictionary = get_character(character_id)
+	if character.is_empty():
+		return unequipped
+	var class_id: String = String(character.get("character_class", ""))
+	if class_id.is_empty():
+		return unequipped
+	var validator_script = load("res://engine/subsystems/inventory/class_equipment_restriction_validator.gd")
+	var registry_script = load("res://engine/subsystems/characters/class_registry.gd")
+	var catalog_script = load("res://engine/subsystems/characters/equipment_catalog.gd")
+	if validator_script == null or registry_script == null or catalog_script == null:
+		return unequipped
+	var registry = registry_script.new()
+	var class_def: Dictionary = registry.get_class_def(class_id)
+	if class_def.is_empty():
+		return unequipped
+	var catalog = catalog_script.new()
+	for item in get_inventory_items(character_id):
+		if int(item.get("is_equipped", 0)) != 1:
+			continue
+		var category: String = String(item.get("item_category", ""))
+		if not (category in ["weapon", "armor", "shield"]):
+			continue
+		var check: Dictionary = validator_script.can_equip(class_def, character, item, catalog)
+		if check.get("ok", true):
+			continue
+		var item_id: String = String(item.get("id", ""))
+		if item_id.is_empty():
+			continue
+		if update_inventory_item_equip_state(item_id, false, "pack"):
+			unequipped.append({
+				"item_name": String(item.get("name", item.get("item_key", "item"))),
+				"reason": String(check.get("reason", "")),
+			})
+	return unequipped
 
 
 func update_inventory_item_quantity(item_id: String, new_quantity: int) -> bool:
@@ -2404,6 +2449,10 @@ func load_party_data(party_id: String) -> PartyData:
 		return null
 	var member_rows: Array = get_party_members(party_id)
 	var state_row: Dictionary = get_party_state(party_id)
+	# Repair any equipped items that violate class restrictions (idempotent —
+	# safe to run on every load; no-ops once saves are clean).
+	for member in member_rows:
+		sanitize_character_equipment(String(member.get("character_id", "")))
 	return PartyData.from_db(party_row, member_rows, state_row)
 
 

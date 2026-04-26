@@ -98,6 +98,11 @@ var _pending_cleave_move_used: bool = false
 ## Connected by CombatUIController for on-screen CLEAVE! flash.
 signal cleave_triggered(combatant_id: String, target_id: String)
 
+## Fired when a combat action toggles a dungeon door (open_door / close_door).
+## The hosting state forwards this to the DungeonMapController so the renderer
+## refreshes — combat does not own the controller reference directly.
+signal door_state_changed(pos: Vector3i, old_state: String, new_state: String)
+
 
 # ---------------------------------------------------------------------------
 # Constructor
@@ -681,6 +686,10 @@ func _resolve_combatant_action(
 			result = _resolve_downed_interaction(combatant, action_id, parameters)
 		"trade", "heal":
 			result = _resolve_ally_interaction(combatant, action_id, parameters)
+		"open_door", "close_door":
+			result = _resolve_door_interaction(combatant, parameters, action_id)
+		"use_lever":
+			result = _resolve_lever_interaction(combatant, parameters)
 		"pass":
 			result = {
 				"phase": "action",
@@ -2013,6 +2022,27 @@ func _resolve_switch_weapon(
 	var new_weapon_item: Dictionary = parameters.get("new_weapon_item", {})
 	var is_stow_only: bool = parameters.get("stow_only", false)
 
+	# Class restriction: reject draw of a weapon this character isn't permitted to use.
+	# Stow-only is always allowed (you can always sheathe what you somehow have equipped).
+	if not is_stow_only and not new_weapon_item.is_empty():
+		var swap_char_id: String = combatant._character.id if combatant._character != null else combatant.id
+		var validator_script = load("res://engine/subsystems/inventory/class_equipment_restriction_validator.gd")
+		if validator_script != null and not swap_char_id.is_empty():
+			var check: Dictionary = validator_script.can_equip_for_character(swap_char_id, new_weapon_item)
+			if not check.get("ok", true):
+				return {
+					"phase": "action",
+					"status": "action_resolved",
+					"combatant_id": combatant.id,
+					"action": "switch_weapon",
+					"result": {
+						"note": String(check.get("reason", "Cannot equip this weapon.")),
+						"rejected": true,
+						"costs_move": false,
+						"continues_turn": true,
+					},
+				}
+
 	# Determine cost
 	var costs_move := not combatant.has_moved_this_round
 	var continues_turn := costs_move  # Movement cost keeps turn alive for attack
@@ -2357,6 +2387,117 @@ func _resolve_stand_up(combatant: Combatant) -> Dictionary:
 # ---------------------------------------------------------------------------
 # Simple self-actions (use_item, light_torch, light_lantern, drop_item)
 # ---------------------------------------------------------------------------
+
+func _resolve_door_interaction(
+		combatant: Combatant,
+		parameters: Dictionary,
+		action_id: String) -> Dictionary:
+	var cell = parameters.get("cell", null)
+	if cell == null or voxel_map == null:
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": action_id,
+			"result": {"note": "no door target"},
+		}
+	var cell_3d: Vector3i
+	if cell is Vector3i:
+		cell_3d = cell
+	else:
+		var actor_pos = combatant.grid_position
+		var actor_z: int = actor_pos.z if actor_pos is Vector3i else 0
+		cell_3d = Vector3i(cell.x, cell.y, actor_z)
+	var actor_3d: Vector3i
+	if combatant.grid_position is Vector3i:
+		actor_3d = combatant.grid_position
+	else:
+		actor_3d = Vector3i(combatant.grid_position.x, combatant.grid_position.y, cell_3d.z)
+	if not VoxelGrid.is_adjacent(actor_3d, cell_3d):
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": action_id,
+			"result": {"note": "door not adjacent"},
+		}
+	if not voxel_map.is_door(cell_3d):
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": action_id,
+			"result": {"note": "no door at target"},
+		}
+	var current_state: String = voxel_map.get_door_state(cell_3d)
+	if current_state == "locked" or current_state == "stuck" or current_state == "destroyed":
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": action_id,
+			"result": {"note": "door cannot be %sed" % action_id.replace("_door", "")},
+		}
+	var new_state := "open" if action_id == "open_door" else "closed"
+	voxel_map.set_door_state(cell_3d, new_state)
+	door_state_changed.emit(cell_3d, current_state, new_state)
+	# Consume the actor's standard action this round (1 round per ACKS).
+	combatant.has_moved_this_round = true
+	return {
+		"phase": "action", "status": "action_resolved",
+		"combatant_id": combatant.id, "action": action_id,
+		"result": {"cell": cell_3d, "new_state": new_state},
+	}
+
+
+func _resolve_lever_interaction(
+		combatant: Combatant,
+		parameters: Dictionary) -> Dictionary:
+	var cell = parameters.get("cell", null)
+	if cell == null or voxel_map == null:
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "use_lever",
+			"result": {"note": "no lever target"},
+		}
+	var cell_3d: Vector3i
+	if cell is Vector3i:
+		cell_3d = cell
+	else:
+		var actor_pos = combatant.grid_position
+		var actor_z: int = actor_pos.z if actor_pos is Vector3i else 0
+		cell_3d = Vector3i(cell.x, cell.y, actor_z)
+	var actor_3d: Vector3i
+	if combatant.grid_position is Vector3i:
+		actor_3d = combatant.grid_position
+	else:
+		actor_3d = Vector3i(combatant.grid_position.x, combatant.grid_position.y, cell_3d.z)
+	if not VoxelGrid.is_adjacent(actor_3d, cell_3d):
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "use_lever",
+			"result": {"note": "lever not adjacent"},
+		}
+	var lever_cell := voxel_map.get_cell(cell_3d)
+	if lever_cell == null or lever_cell.feature != "lever":
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "use_lever",
+			"result": {"note": "no lever at target"},
+		}
+	var target_pos: Vector3i = Vector3i(-1, -1, -1)
+	if voxel_map.has_method("get_lever_target"):
+		target_pos = voxel_map.get_lever_target(cell_3d)
+	if target_pos == Vector3i(-1, -1, -1):
+		combatant.has_moved_this_round = true
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "use_lever",
+			"result": {"note": "lever has no linked target"},
+		}
+	var old_state: String = voxel_map.get_door_state(target_pos)
+	var new_state: String = "open" if old_state != "open" else "closed"
+	voxel_map.set_door_state(target_pos, new_state)
+	door_state_changed.emit(target_pos, old_state, new_state)
+	combatant.has_moved_this_round = true
+	return {
+		"phase": "action", "status": "action_resolved",
+		"combatant_id": combatant.id, "action": "use_lever",
+		"result": {"cell": cell_3d, "target": target_pos, "new_state": new_state},
+	}
+
 
 func _resolve_simple_self_action(
 		combatant: Combatant,

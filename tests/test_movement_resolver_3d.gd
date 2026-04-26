@@ -24,6 +24,10 @@ func run_all_tests() -> void:
 	test_is_adjacent_3d()
 	test_get_cells_reachable_3d_ground()
 	test_closed_door_blocks_ground()
+	test_closed_door_walkable_in_explore_mode()
+	test_locked_door_blocks_explore_mode()
+	test_stuck_door_blocks_explore_mode()
+	test_open_door_walkable_strict()
 	if not has_failures():
 		print("MovementResolver3D: all tests passed.")
 
@@ -301,4 +305,79 @@ func test_closed_door_blocks_ground() -> void:
 	var mr := _make_resolver()
 	mr.set_voxel_map(map)
 	var path := mr.path_bfs_3d(Vector3i(0, 0, 0), Vector3i(2, 0, 0))
-	check(path.is_empty(), "closed door should block ground walker")
+	check(path.is_empty(), "closed door should block ground walker (strict)")
+
+
+func test_closed_door_walkable_in_explore_mode() -> void:
+	# Same fixture as above but with explore-mode passability — the path must
+	# now route through the closed unlocked door cell.
+	var map := _make_flat_room(3, 1)
+	var door_cell := VoxelCell.new()
+	door_cell.solidity = "air"
+	door_cell.feature = "open"
+	door_cell.floor_type = "stone"
+	door_cell.door_state = "closed"
+	door_cell.door_type = "unlocked"
+	map.set_cell(Vector3i(1, 0, 0), door_cell)
+
+	var mr := _make_resolver()
+	mr.set_voxel_map(map)
+	var path := mr.path_bfs_3d(
+		Vector3i(0, 0, 0), Vector3i(2, 0, 0), "ground", 50, -1, "explore")
+	check(not path.is_empty(),
+		"explore mode should route through closed unlocked door")
+	check(Vector3i(1, 0, 0) in path,
+		"explore-mode path must pass through the door cell")
+
+
+func test_locked_door_blocks_explore_mode() -> void:
+	var map := _make_flat_room(3, 1)
+	var door_cell := VoxelCell.new()
+	door_cell.solidity = "air"
+	door_cell.feature = "open"
+	door_cell.floor_type = "stone"
+	door_cell.door_state = "locked"
+	door_cell.door_type = "locked"
+	map.set_cell(Vector3i(1, 0, 0), door_cell)
+
+	var mr := _make_resolver()
+	mr.set_voxel_map(map)
+	var path := mr.path_bfs_3d(
+		Vector3i(0, 0, 0), Vector3i(2, 0, 0), "ground", 50, -1, "explore")
+	check(path.is_empty(),
+		"locked door should block path even in explore mode")
+
+
+func test_stuck_door_blocks_explore_mode() -> void:
+	var map := _make_flat_room(3, 1)
+	var door_cell := VoxelCell.new()
+	door_cell.solidity = "air"
+	door_cell.feature = "open"
+	door_cell.floor_type = "stone"
+	door_cell.door_state = "stuck"
+	door_cell.door_type = "unlocked"
+	map.set_cell(Vector3i(1, 0, 0), door_cell)
+
+	var mr := _make_resolver()
+	mr.set_voxel_map(map)
+	var path := mr.path_bfs_3d(
+		Vector3i(0, 0, 0), Vector3i(2, 0, 0), "ground", 50, -1, "explore")
+	check(path.is_empty(),
+		"stuck door should block path even in explore mode")
+
+
+func test_open_door_walkable_strict() -> void:
+	var map := _make_flat_room(3, 1)
+	var door_cell := VoxelCell.new()
+	door_cell.solidity = "air"
+	door_cell.feature = "open"
+	door_cell.floor_type = "stone"
+	door_cell.door_state = "open"
+	door_cell.door_type = "unlocked"
+	map.set_cell(Vector3i(1, 0, 0), door_cell)
+
+	var mr := _make_resolver()
+	mr.set_voxel_map(map)
+	var path := mr.path_bfs_3d(Vector3i(0, 0, 0), Vector3i(2, 0, 0))
+	check(not path.is_empty(),
+		"open door should be walkable in strict mode")

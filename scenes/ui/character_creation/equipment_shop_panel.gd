@@ -343,131 +343,22 @@ func _add_item_row(item: Dictionary, cls: Dictionary) -> void:
 	row.add_child(buy_btn)
 
 
-## Semantic weapon permission tags that are NOT direct item_keys.
-const _SEMANTIC_WEAPON_PERMS := [
-	"piercing_melee", "slashing_melee", "blunt_melee",
-	"any_one_handed_melee", "all_one_handed_melee_weapons", "all_except_oversized",
-	"any_missile", "all_missile_weapons",
-	"all_axes", "all_hammers", "all_flails", "all_maces",
-	"all_melee", "all",
-]
-
-## Armor tier map: semantic permission string → maximum armor_ac_bonus allowed.
-const _ARMOR_TIER_MAP := {
-	"leather_or_lighter":    2,
-	"ring_or_lighter":       3,
-	"chain_mail_or_lighter": 4,
-	"chain_or_lighter":      4,
-	"banded_or_lighter":     5,
-}
-
-## Short armor name aliases → canonical item_keys (some class files abbreviate names).
-const _ARMOR_KEY_ALIASES := {
-	"leather":  "leather_armor",
-	"hide":     "hide_armor",
-	"scale":    "ring_mail",
-	"ring":     "ring_mail",
-	"chain":    "chain_mail",
-	"banded":   "banded_armor",
-	"plate":    "plate_armor",
-}
+const ClassEquipRestrictionValidator := preload("res://engine/subsystems/inventory/class_equipment_restriction_validator.gd")
 
 
 func _get_restriction_warning(item: Dictionary, cls: Dictionary) -> String:
 	if cls.is_empty():
 		return ""
-	var category: String = item.get("item_category", "gear")
-	var item_key: String = item.get("item_key", "")
-
-	if category == "weapon":
-		var wpn_perms: Array = cls.get("weapon_permissions", [])
-		## Resolve sentinel for classes whose weapons depend on a sub-choice made earlier
-		if wpn_perms.size() == 1 and wpn_perms[0] == "determined_by_regional_origin":
-			var origin_key: String = _state.get("barbarian_origin", "")
-			var origins: Dictionary = cls.get("regional_origins", {})
-			if not origin_key.is_empty() and origins.has(origin_key):
-				wpn_perms = origins[origin_key].get("weapons_permitted", [])
-			else:
-				wpn_perms = []  ## no origin chosen yet — suppress warnings
-		if wpn_perms.size() > 0 and wpn_perms[0] != "all":
-			## Lazy-load weapon tags from catalog once.
-			var catalog_entry := _catalog.get_item(item_key)
-			var tags: Array = catalog_entry.get("weapon_tags", [])
-			var permitted := false
-			for perm in wpn_perms:
-				if permitted:
-					break
-				## Direct item_key match
-				if perm == item_key:
-					permitted = true
-					break
-				## Semantic category resolution
-				match perm:
-					"piercing_melee", "slashing_melee":
-						## Any non-blunt melee weapon
-						if "melee" in tags and "blunt" not in tags:
-							permitted = true
-					"blunt_melee":
-						if "melee" in tags and "blunt" in tags:
-							permitted = true
-					"any_one_handed_melee", "all_one_handed_melee_weapons", "all_except_oversized":
-						if "melee" in tags and "two_handed" not in tags:
-							permitted = true
-					"any_missile", "all_missile_weapons":
-						if "ranged" in tags or "thrown" in tags:
-							permitted = true
-					"all_axes":
-						if "axe" in item_key:
-							permitted = true
-					"all_hammers":
-						if "hammer" in item_key:
-							permitted = true
-					"all_flails":
-						if "flail" in item_key:
-							permitted = true
-					"all_maces":
-						if "mace" in item_key:
-							permitted = true
-					"all_melee":
-						if "melee" in tags:
-							permitted = true
-			if not permitted:
-				return "Your class cannot use this weapon proficiently."
-	elif category == "armor":
-		var arm_perms: Array = cls.get("armor_permissions", [])
-		if arm_perms.size() > 0 and arm_perms[0] != "all":
-			var ac_bonus: int = int(item.get("armor_ac_bonus", 0))
-			var permitted := false
-			for perm in arm_perms:
-				if perm == item_key:
-					permitted = true
-					break
-				## Normalize short aliases to canonical item_keys
-				var resolved: String = _ARMOR_KEY_ALIASES.get(perm, perm)
-				if resolved == item_key:
-					permitted = true
-					break
-				## Semantic tier: check AC bonus against maximum allowed
-				if perm in _ARMOR_TIER_MAP:
-					if ac_bonus <= _ARMOR_TIER_MAP[perm]:
-						permitted = true
-					break
-				## Named specific armor: lighter armor (lower AC bonus) is also permitted.
-				## Rule: proficiency with armor AC X implies proficiency with all armor AC < X.
-				var resolved_item := _catalog.get_item(resolved)
-				if not resolved_item.is_empty():
-					if ac_bonus <= int(resolved_item.get("armor_ac_bonus", 0)):
-						permitted = true
-					break
-			if not permitted:
-				return "Your class cannot wear this armor without penalty."
-		elif arm_perms.is_empty():
-			return "Your class cannot wear armor."
-	elif category == "shield":
-		if not cls.get("shield_permitted", true):
-			return "Your class cannot use shields."
-
-	return ""
+	# Synthetic character carries the in-progress barbarian regional origin so the
+	# validator can resolve `determined_by_regional_origin` correctly during creation.
+	var synthetic_character: Dictionary = {
+		"regional_origin": _state.get("barbarian_origin", ""),
+	}
+	var check: Dictionary = ClassEquipRestrictionValidator.can_equip(
+			cls, synthetic_character, item, _catalog)
+	if check.get("ok", true):
+		return ""
+	return String(check.get("reason", ""))
 
 
 # ---------------------------------------------------------------------------

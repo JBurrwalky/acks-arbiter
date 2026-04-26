@@ -8140,3 +8140,334 @@ The fix splits the handler so the *primary* party uses `controller.move_party` (
 2. (Optional) Investigate whether `PRAGMA foreign_keys = ON` should be enabled at DB open time. Would fix `test_cache_deletion_cascades_items` and surface other FK violations that are currently silent.
 3. (Optional) Normalize the `creature_id = '' vs NULL` inconsistency across transfer functions (cosmetic, no functional impact).
 
+
+
+## Session 2026-04-24 — Replace Falcon's Crown premade with Moonsworn Band (with animals + vehicles)
+
+**Task:** The Falcon's Crown premade party broke after recent inventory changes. Delete it and replace with a Moonsworn Band premade exported from the live "Moonsworn Band" campaign save — including trained creatures, draft vehicles, and heraldry.
+
+**Model used:** Opus (data export + importer extension).
+
+**Completed:**
+- Deleted `data/premade_parties/falcons_crown.json`.
+- Created `data/premade_parties/moonsworn_band.json` by exporting party `fa9b3d6b0e9ee59322e4df07840bb62a` from the live `campaign.db` (campaign `13853b3e3529ec056f81399488069b2e`, "Moonsworn Band" / world "Luna"). 6 PCs (Lunariel/spellsword, Eluna/witch, Ghamri/darkblood_ruinguard, Half Moon/shaman, Lou/thief, Selene/bard), 5 trained creatures (donkey, medium draft horse, war dog, mule, trained hawk) each linked to a handler, 2 small carts, and a green kite shield with a gold stag's-head-erased charge.
+- Extended the premade party JSON schema with three optional top-level keys — `heraldry` (embedded descriptor), `trained_creatures` (with `handler_character_index` that references the `characters[]` array), and `draft_vehicles` (with `hitched_creature_indices` that references `trained_creatures[]`).
+- Extended the importer at `engine/subsystems/session/states/party_creation_state.gd::_handle_confirm_premade_party` to build a `char_ids_by_index` / `creature_ids_by_index` map as it creates rows, then remaps handlers and hitched creatures to the newly-minted DB ids. Heraldry is materialized via `HeraldryDescriptor.from_dict` → `CampaignRepository.save_heraldry` → `assign_heraldry_to_party`. Session-load's existing `_backfill_party_heraldry` is idempotent so it skips parties that already got their heraldry here.
+- Updated `data/premade_parties/manifest.json` to drop falcons_crown and add moonsworn_band.
+
+**Decisions made:**
+- Handler relationships in the exported JSON use *indices into the characters array*, not UUIDs — the importer remaps to real character ids when creating creatures. Same pattern for `hitched_creature_indices`. Keeps the JSON self-contained and avoids committing stale, per-campaign UUIDs.
+- `tricks_known` and `introduced_handlers` are stored in the JSON as already-JSON-encoded strings (matching the DB column format), because `create_trained_creature` inserts the value verbatim.
+- Heraldry is optional in the JSON. `brave_companions.json` has none and still works (session-load backfill assigns a random preset). `moonsworn_band.json` supplies one so the party's visual identity survives re-imports.
+- Did not re-export the campaign's hex position / location caches / etc. — a premade party is a roster template, not a campaign snapshot.
+
+**Interfaces defined or changed:**
+- Premade party JSON now supports three new optional top-level keys:
+  - `heraldry: {shape_id, division_id, tincture_primary, tincture_secondary, ordinary_id, tincture_ordinary, charge_id, tincture_charge}` (hex strings for colors).
+  - `trained_creatures: [{species_id, purchase_item_key, name, role, tricks_known, trick_limit, morale, handler_character_index, introduced_handlers, hp_current, hp_max, training_complete, is_alive, formation_col, formation_row}]`.
+  - `draft_vehicles: [{item_key, name, hitched_creature_indices}]`.
+- No new public repository methods; reused `save_heraldry`, `assign_heraldry_to_party`, `create_trained_creature`, `create_draft_vehicle`, `generate_id`.
+
+**Database changes:** None.
+
+**Tests added/updated:** None. Manual UI test recommended (below).
+
+**Known issues:**
+- `brave_companions.json` is untouched and does not supply heraldry/creatures/vehicles — behavior for it is unchanged.
+- No unit test yet covering the extended premade importer. A headless test that round-trips `moonsworn_band.json` through `_handle_confirm_premade_party` would be a worthwhile addition.
+
+**Next session should:**
+1. Launch the game, start a new campaign, pick the Moonsworn Band premade, and verify: 6 PCs in the roster with their gear, 5 trained creatures attached to the correct handlers, 2 carts, and the green kite shield with the gold stag's head showing on the party banner.
+2. (Optional) Add a headless test that imports `moonsworn_band.json` and asserts creature.handler_id and vehicle.hitched_creatures resolve to real rows in the party.
+
+
+## Session 2026-04-25 — Class-based equip restrictions
+
+**Task:** Prohibit characters from equipping weapons/armor/shields their class doesn't permit. Shortcut implementation in lieu of full ACKS RAW penalties.
+
+**Model used:** Opus.
+
+**Completed:**
+- Added `data/classes/cleric.json`: morning_star to weapon_permissions (cleric can use morning stars per Jedidiah).
+- New `engine/subsystems/inventory/class_equipment_restriction_validator.gd` — RefCounted with all-static API. Methods: `can_equip(class_def, character, item, catalog)`, `can_equip_for_character(character_id, item)`, `resolve_weapon_permissions(class_def, character)`, `resolve_armor_permissions(class_def, character)`. Returns `{ok, reason}`. Constants `SEMANTIC_WEAPON_PERMS`, `ARMOR_TIER_MAP`, `ARMOR_KEY_ALIASES` (lifted from the shop panel).
+- `scenes/ui/party_inventory/item_context_menu.gd::_equip_item()` now calls the validator before any DB write; on rejection emits new signal `equip_rejected(reason)` and aborts.
+- `scenes/ui/party_inventory/party_inventory_overlay.gd` wires `_context_menu.equip_rejected` → `_show_toast(reason)`.
+- `engine/subsystems/combat/combat_controller.gd::_resolve_switch_weapon` validates the new weapon at action start; rejects with `result.rejected = true`, `costs_move = false`, `continues_turn = true` so the combatant's turn isn't consumed by an invalid Sheathe & Draw.
+- `scenes/ui/character_creation/equipment_shop_panel.gd`: `_get_restriction_warning()` reduced to a thin call into the validator (synthesizing `{regional_origin: _state.barbarian_origin}` for the barbarian sentinel). Removed the now-duplicated `_SEMANTIC_WEAPON_PERMS`, `_ARMOR_TIER_MAP`, `_ARMOR_KEY_ALIASES` constants.
+- `engine/autoloads/campaign_repository.gd`: added `sanitize_character_equipment(character_id) -> Array` (idempotent — unequips items that violate class restrictions, returns `[{item_name, reason}]`). `load_party_data()` now calls it once per member after loading.
+- New unit suite `tests/test_class_equip_restriction_validator.gd` (14 tests) covering fighter, mage, cleric (incl. morning_star regression test), thief, and the barbarian unresolved-origin shortcut. Wired into `tests/test_runner.gd` and `tests/test_runner.tscn` as `ClassEquipRestrictionValidatorTests`.
+
+**Decisions made:**
+- **Shop unchanged.** The shop still shows warnings on non-conforming purchases but allows the buy. Restriction enforced strictly at equip time. (User decision: keeps loot/transfers/stockpiling friction-free.)
+- **Auto-unequip on load is idempotent**, no migration flag — sanitizer no-ops once the save is clean. Runs every party load.
+- **Combat rejection model:** since combat_controller has no existing rejection status, rejected weapon-draws return `status: action_resolved` with `result.rejected = true` and zero cost. UI surfacing of this rejection note is left for a follow-up — for now the action simply does nothing visible.
+- **Validator logic ported from `equipment_shop_panel.gd::_get_restriction_warning()` lines 376-470 verbatim** (the shop's per-class matching has been the de-facto rule for character creation). Single source of truth now.
+
+**Interfaces defined or changed:**
+- New autoload-adjacent API (RefCounted, not autoloaded): `ClassEquipRestrictionValidator.can_equip(class_def, character, item, catalog) -> {ok: bool, reason: String}` and `can_equip_for_character(character_id, item) -> {ok, reason}`.
+- New `CampaignRepository.sanitize_character_equipment(character_id) -> Array`.
+- New signal on `ItemContextMenu`: `equip_rejected(reason: String)`.
+- New keys on combat switch_weapon result dict: `result.rejected: bool`. Existing keys unchanged.
+
+**Database changes:** None. Schema unaffected; existing equipped rows that violate restrictions are auto-moved to slot=`pack`, is_equipped=0 on first load.
+
+**Tests added/updated:** `tests/test_class_equip_restriction_validator.gd` (14 tests). NOT YET RUN — Godot binary not available on this shell. User should execute `tests/test_runner.tscn` (or headless: `godot --headless --path . res://tests/test_runner.tscn`) before merging.
+
+**Known issues:**
+- **Barbarian regional origin not persisted on `CharacterData`.** Validator falls back to `["all"]` for barbarians whose character record lacks a `regional_origin` field, meaning barbarians effectively get no equip restriction until origin persistence is added. Tracked here for a future pass — would require a `characters` schema column or a per-character JSON metadata field. [NEEDS-OPUS-REVIEW] for the right persistence shape.
+- Combat weapon-swap rejection has no UI surface yet — the Sheathe & Draw popup just appears to do nothing. Adding a toast/log line in the combat UI when `result.rejected == true` is a small follow-up.
+- Did not block the equip pathway in `engine/subsystems/exploration/dungeon_light_manager.gd` (torches/lanterns) — those items are `gear` category, which the validator passes through untouched. Confirmed safe.
+
+**Next session should:**
+1. Run the test suite to confirm `ClassEquipRestrictionValidatorTests` passes alongside the existing suites.
+2. Manual test in Godot: load Moonsworn Band, try equipping a sword on Eluna (witch) and plate on Lunariel — expect rejection toasts. Equip the sword on Lou (thief) — expect success. Confirm shop still permits warning-only purchases of off-class gear during character creation.
+3. (Optional) Surface combat-side rejection (toast or combat log entry) when `_resolve_switch_weapon` rejects a draw.
+4. (Future) Persist barbarian `regional_origin` on character data so the validator can apply real per-origin weapon lists.
+
+
+## Session 2026-04-25 — Dungeon Doors + Deferred Combat Trigger
+
+**Task:** Three connected dungeon problems from Part 4 smoke testing: (1) dungeon movement won't path through doors (even open ones), (2) doors can't be opened during combat, (3) wandering encounters slam straight into combat instead of letting the player react.
+
+**Model used:** Opus 4.7 (1M context) — planning + implementation.
+
+**Completed:**
+
+*Phase 1 — Door pathfinding:*
+- **[engine/shared_types/voxel_cell.gd](engine/shared_types/voxel_cell.gd):** added `is_opening_blocked()` (locked / stuck / closed-portcullis / undetected-secret) and `is_walkable_with_open_door()` (air + not opening-blocked → permits closed unlocked doors). Tightened `is_passable_by_walker` to use `door_state in [...]` for explicit semantics; behavior unchanged.
+- **[engine/shared_types/voxel_map_data.gd](engine/shared_types/voxel_map_data.gd):** added `is_walkable_with_open_door(pos)` paralleling `is_passable(pos)`.
+- **[engine/subsystems/combat/movement_resolver.gd](engine/subsystems/combat/movement_resolver.gd):** `path_bfs_3d` and `_can_enter_3d` gained an optional `passability_mode` parameter (`"strict"` default = current behavior; `"explore"` = treats closed unlocked doors as walkable for ground movers).
+- **[engine/subsystems/exploration/dungeon_map_controller.gd](engine/subsystems/exploration/dungeon_map_controller.gd):** all party-movement BFS calls (`_move_party_voxel`, `can_move_to`, `_queue_move_order_voxel` for multi-level, `_queue_group_move_voxel` for leader and member paths, `_bfs_path_voxel` for same-level) switched to explore-mode passability. Goal-cell check in `_queue_move_order_voxel` uses `is_walkable_with_open_door` so the player can click on a door as a destination.
+- **[engine/subsystems/session/handlers/dungeon_handlers.gd](engine/subsystems/session/handlers/dungeon_handlers.gd):** new helper `_auto_open_door_if_walking_through(controller, tactical_map, cell)` — when a moving entity enters a closed cell with a door, sets `door_state = "open"` and emits `door_state_changed`. Wired into both `on_cell_reached` (renderer-driven path) and `_handle_movement_tick` (scheduler tick path) so doors swing open transparently as the party walks. Spike-shut doors are left untouched. Locked / stuck / portcullis / undetected-secret never reach the helper because BFS rejects them at planning time.
+
+*Phase 2 — Open Door / Close Door as combat actions:*
+- **[engine/subsystems/combat/combat_context_menu_builder.gd](engine/subsystems/combat/combat_context_menu_builder.gd):** new static `_build_door_options(combatant, target_cell, controller)` appends "Open Door" / "Close Door" when the right-clicked cell is a 3D-adjacent door with state `closed`/`open`. Locked, stuck, portcullis, and undetected secret stay exploration-only to keep the combat menu tight. Hooked at the end of `build_menu`.
+- **[engine/subsystems/combat/combat_controller.gd](engine/subsystems/combat/combat_controller.gd):** new public signal `door_state_changed(pos, old_state, new_state)`. New action match `"open_door" / "close_door"` → `_resolve_door_interaction(combatant, parameters, action_id)` validates 3D adjacency, rejects locked / stuck / destroyed states, toggles via `voxel_map.set_door_state`, emits the signal, and consumes the actor's standard action (`combatant.has_moved_this_round = true`) so 1-round ACKS timing is enforced.
+- **[engine/subsystems/session/states/dungeon_explore_state.gd](engine/subsystems/session/states/dungeon_explore_state.gd):** `_start_dungeon_combat` now wires `_dungeon_combat_controller.door_state_changed` → `_controller.door_state_changed.emit` so the dungeon renderer rebuilds when combat toggles a door.
+
+*Phase 3 — Defer combat entry until enemies close:*
+- **[engine/subsystems/session/handlers/dungeon_handlers.gd](engine/subsystems/session/handlers/dungeon_handlers.gd):** `_handle_encounter_check` presentation type renamed `"dungeon_encounter"` → `"dungeon_encounter_spawned"`. Same payload; semantically "monsters spawn into the world, combat does not start yet."
+- **[engine/subsystems/session/states/dungeon_explore_state.gd](engine/subsystems/session/states/dungeon_explore_state.gd):**
+  - New field `_roaming_monsters: Dictionary` keyed by encounter_id holding `{encounter_data, placements}`.
+  - New `_spawn_roaming_encounter(encounter_data)`: runs the spawner, places monster tokens via `_scene.add_entity_token` + `_scene.move_token` and `tactical_map.set_entity_pos`, fires a warning toast ("Encounter: N goblins nearby!"), and runs an immediate proximity check.
+  - New `_check_roaming_proximity()`: for each roaming monster, BFS via a fresh `MovementResolver` in `"explore"` passability mode from monster → each PC; if any path length ≤ `(monster_movement_in_cells + 1)` triggers combat with the existing placements (no re-roll). Wired into `_on_scheduler_event_resolved` after every event tick so the trigger re-evaluates as the party moves.
+  - `_start_dungeon_combat(encounter_data, existing_placements: Array = [])` now accepts pre-spawned placements and skips the spawner call when supplied. Token re-add is idempotent.
+  - `exit()` clears `_roaming_monsters` so leaving the dungeon drops un-engaged monsters.
+
+**Decisions made:**
+
+- **No 1-round dwell on auto-open in exploration.** At exploration speed (40 ft/round = 8 cells/round), one extra round at a door is barely visible and adds animation complexity. The user's "1 round to open or close an unlocked door" rule lives in combat (Phase 2), where it actually matters.
+- **`passability_mode` defaults to `"strict"`.** All existing combat callers of `path_bfs_3d` keep current behavior with no argument changes. Only the dungeon-controller exploration paths opt into `"explore"` mode.
+- **Combat menu `open_door` is terse** — only open/close. Force / pick-lock / bash / spike / wedge / listen stay exploration-only. ACKS-correct: those are noisy turn-scale activities, not 1-round combat actions.
+- **Roaming monster proximity uses explore-mode BFS.** Locked / stuck / portcullis / undetected-secret block the trigger (matches user spec: "until monster door use is wired in later"). Closed unlocked doors do NOT block the trigger — the assumption is monsters will open them if they reach them, so they count as "reachable" today.
+- **Trigger range = monster movement cells per round + 1.** One round of approach + one cell to attack. Conservative; combat triggers well before the monster could hit a PC, giving the player the visible warning.
+
+**Interfaces defined or changed:**
+
+- `VoxelCell.is_opening_blocked() -> bool` (new).
+- `VoxelCell.is_walkable_with_open_door() -> bool` (new).
+- `VoxelMapData.is_walkable_with_open_door(pos: Vector3i) -> bool` (new).
+- `MovementResolver.path_bfs_3d(..., passability_mode: String = "strict")` (new optional param).
+- `MovementResolver._can_enter_3d(..., passability_mode: String = "strict")` (new optional param; ground branch only — flying / burrow / climbing unchanged).
+- `CombatController.door_state_changed(pos: Vector3i, old_state: String, new_state: String)` (new signal).
+- `CombatController._resolve_door_interaction(combatant, parameters, action_id)` (new private resolver).
+- `DungeonExploreState._spawn_roaming_encounter(encounter_data)` (new private).
+- `DungeonExploreState._check_roaming_proximity()` (new private).
+- `DungeonExploreState._start_dungeon_combat(encounter_data, existing_placements: Array = [])` (added optional param).
+- `DungeonExploreState._roaming_monsters: Dictionary` (new private field).
+- Scheduled-event presentation type `"dungeon_encounter"` → `"dungeon_encounter_spawned"`. **Anything else listening to the old type will go silent.**
+- Combat context menu now offers `open_door` / `close_door` action types — UI consumers that wildcard-dispatch should ignore unknown actions; new dispatch path added in `_resolve_combatant_action`.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- [tests/test_voxel_cell.gd](tests/test_voxel_cell.gd): 8 new tests for `is_walkable_with_open_door` covering closed unlocked, locked, stuck, open, no-door, undetected-secret, closed-portcullis, open-portcullis cases.
+- [tests/test_voxel_map_data.gd](tests/test_voxel_map_data.gd): 2 new tests — `test_is_walkable_with_open_door_delegates` (verifies strict rejects but explore permits closed unlocked door, and locked is rejected in both) and `test_is_walkable_with_open_door_absent_false`.
+- [tests/test_movement_resolver_3d.gd](tests/test_movement_resolver_3d.gd): 4 new tests — `test_closed_door_walkable_in_explore_mode`, `test_locked_door_blocks_explore_mode`, `test_stuck_door_blocks_explore_mode`, `test_open_door_walkable_strict`. Existing `test_closed_door_blocks_ground` retained as the strict-mode baseline.
+- All test suites already registered in [tests/test_runner.tscn](tests/test_runner.tscn) — no new node setup needed.
+
+**Known issues:**
+
+- **Roaming monsters don't move autonomously toward the party yet.** They stand still until the party closes the gap. Acceptable per scope (real-time monster AI is a separate system); follow-up: optional `_handle_roaming_movement_tick` that runs monster real-time movement.
+- **No unit test for the auto-open helper** (`_auto_open_door_if_walking_through`) — depends on a fully-wired controller + scheduler + session state. The underlying primitives (cell + map walkability, BFS routing) are tested. Smoke-test path: walk party past a closed unlocked door in `data/test_dungeon.json` (cell at (4,7,0) is closed unlocked).
+- **Trigger range is currently a flat `(movement_cells + 1)`.** Monsters with very long movement (cavalry) can trigger combat from across the dungeon level. If this proves too aggressive in playtest, consider capping at e.g. min(movement_cells + 1, 12).
+- **Tests not yet executed.** Godot CLI not on PATH in this shell. User should run `tests/test_runner.tscn` to confirm `VoxelCellTests` (+8), `VoxelMapDataTests` (+2), `MovementResolver3DTests` (+4) all pass with no regressions.
+
+**Next session should:**
+
+1. **Smoke test door movement** in `data/test_dungeon.json`:
+   - Click past open door at (12,4,0) — party walks straight through.
+   - Click past closed unlocked door at (4,7,0) — party walks to door, door auto-opens (state changes, renderer refreshes), party continues.
+   - Click past locked door at (24,15,0) — no path, no movement.
+2. **Smoke test combat door action**: trigger an encounter, verify "Open Door" appears on right-click of an adjacent closed door, resolves in 1 round, monsters can then path through.
+3. **Smoke test deferred combat trigger**: force an encounter on a level with a closed unlocked door between party and spawn cell. Verify monster tokens appear with notification toast, no combat HUD. Walk the party closer; combat starts when within `monster_movement_cells + 1` cells. Then test with locked door — combat should NOT start until the lock is picked.
+4. Run `tests/test_runner.tscn` and confirm new test counts pass with no regressions.
+5. (Optional) Add real-time monster roaming behavior so they advance toward the party between proximity checks.
+
+---
+
+## Session 2026-04-25 — Lever fix + combat action (follow-up)
+
+**Task:** Same session — user reported the test dungeon lever spamming "Too far to reach the lever" toasts even when standing next to it, and asked for the lever to be usable as a 1-round combat action like the new open/close door.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Root cause:** [engine/subsystems/session/states/dungeon_explore_state.gd](engine/subsystems/session/states/dungeon_explore_state.gd) was scheduling a `use_lever` action for **every** selected character. Only one was actually adjacent to the lever; the others fired `_resolve_use_lever`'s adjacency-fail branch and emitted the warning toast, producing 3-4 false-positive toasts per click in a typical 4-PC selection.
+
+**Completed:**
+
+- **[engine/subsystems/session/states/dungeon_explore_state.gd](engine/subsystems/session/states/dungeon_explore_state.gd):** the `"use_lever"` dispatch now scans the selected characters, picks the first 3D-adjacent PC, and schedules the action only for that one. If no selected PC is adjacent, emits a single "No one is close enough to pull the lever." toast and skips the schedule. Eliminates the toast flurry while preserving the post-walk staleness check in `_resolve_use_lever` (which still fires correctly if the chosen actor moves away mid-round).
+- **[engine/subsystems/combat/combat_context_menu_builder.gd](engine/subsystems/combat/combat_context_menu_builder.gd):** new static `_build_lever_options(combatant, target_cell, controller)` appends "Use Lever" when the right-clicked cell is a 3D-adjacent lever (`feature == "lever"`). Hooked at the end of `build_menu` next to the door options.
+- **[engine/subsystems/combat/combat_controller.gd](engine/subsystems/combat/combat_controller.gd):** new action match `"use_lever"` → `_resolve_lever_interaction(combatant, parameters)`. Validates adjacency, looks up the linked portcullis via `voxel_map.get_lever_target`, toggles its `door_state`, emits `door_state_changed` (forwarded by `DungeonExploreState` to the dungeon controller), and consumes the actor's standard action (`combatant.has_moved_this_round = true`).
+
+**Decisions made:**
+
+- **Did not switch the exploration menu to a "walk to lever then pull" compound action** like `order_move_and_interact_door`. The simpler "filter to adjacent" gate matches the lever's existing flow (adjacency was always required) and avoids new pathing infrastructure. Future enhancement: if a player wants to pull a lever they aren't adjacent to, a compound move-and-pull order can mirror `order_move_and_interact_door`.
+- **No "Use Lever" entry in the combat menu unless adjacent.** Combat menus are tight; offering an unreachable lever option would just be a disabled-row clutter. Mirrors how door open/close are gated.
+- **Combat lever uses the same `door_state_changed` signal** as the combat door action — the renderer rebuilds via the existing forwarder, no extra wiring.
+
+**Interfaces defined or changed:**
+
+- `CombatController._resolve_lever_interaction(combatant, parameters)` (new private resolver).
+- `CombatContextMenuBuilder._build_lever_options(...)` (new static).
+- New combat action type `"use_lever"`.
+
+**Database changes:** None.
+
+**Tests added/updated:** None for this small follow-up. The exploration fix is a straight selection-filter; the combat resolver mirrors the door resolver. Smoke-test paths cover both.
+
+**Known issues:**
+
+- **Cannot pull a lever without a PC already adjacent.** If the player wants to walk a PC over and then pull, they need to issue movement first. Compound walk-and-pull is a reasonable follow-up using the same shape as `order_move_and_interact_door`.
+- **Selection ordering matters.** The "first adjacent PC" wins — if multiple are adjacent, the leftmost in the selection array pulls. No UI affordance to pick. Acceptable given any adjacent PC succeeds equivalently.
+
+**Next session should:**
+
+1. Smoke test the goblin-warrens lever (test_dungeon.json links (5,15,0) → portcullis (6,15,0)). Stand a single PC next to the lever, right-click, "Use Lever" → portcullis toggles, no false-positive toasts. Repeat with 4 PCs selected.
+2. Smoke test combat lever: pause combat with a roaming-encounter trigger near the lever, position the active combatant adjacent, right-click lever, verify "Use Lever" appears, resolves in 1 round, portcullis toggles, monsters can path through.
+
+## Session 2026-04-25 — Persist class sub-selections (`class_metadata`)
+
+**Task:** Resolve the barbarian regional-origin persistence gap noted in the prior session, and bundle the same fix for witch tradition + voudon craft choice (all three had the same problem: captured during character creation, never written to the DB).
+
+**Model used:** Opus.
+
+**Completed:**
+- New `db/migrations/040_class_metadata.sql`: `ALTER TABLE characters ADD COLUMN class_metadata TEXT NOT NULL DEFAULT '{}'`. Existing rows default to `{}` — barbarians among them fall through the validator's permissive fallback, matching pre-migration behavior (no regression).
+- Updated `db/schema.sql` characters table to include the new column.
+- `engine/shared_types/character_data.gd`: added `var class_metadata: String = "{}"` plus from_db_row / to_dict plumbing alongside the existing `personality` field.
+- `engine/autoloads/campaign_repository.gd`: added `class_metadata` to both the INSERT (create_character) and UPDATE (save_character) SQL paths. `_sanitize_character_record` passes the field through unchanged.
+- `scenes/ui/character_creation/character_creation_screen.gd::_on_create_finished`: assembles a dict from `creation_state` keys `barbarian_origin`, `witch_tradition`, and `voudon_craft_choice`, JSON-stringifies it into `character.class_metadata` before `create_character`. Empty/missing keys are omitted (no `{"barbarian_origin": ""}` cruft for non-barbarians).
+- `engine/subsystems/inventory/class_equipment_restriction_validator.gd::resolve_weapon_permissions`: now reads `regional_origin` via the new `_read_class_metadata_field()` helper, which checks a top-level `regional_origin` field FIRST (so the equipment-shop synthetic dict from the prior session keeps working without a rewrite) and then falls back to parsing `class_metadata` JSON.
+- `tests/test_class_equip_restriction_validator.gd`: added 4 new tests — Jutland origin permits Jutland weapons, Jutland blocks crossbow (off-list), top-level `regional_origin` resolves, `class_metadata` JSON resolves with skysostan blocking battle_axe.
+
+**Decisions made:**
+- **Generic `class_metadata` JSON column over per-class columns.** Three classes (barbarian, witch, voudon) had the same persistence gap; one column with a JSON dict scales better than three columns that are mostly NULL. Future class sub-choices slot into the same field with no schema change.
+- **Did NOT reuse the existing `personality` column.** That field is documented as NPC personality and may grow its own structured contents; mixing player class choices into it would couple unrelated concerns.
+- **Validator checks top-level field BEFORE class_metadata JSON.** Lets the equipment-shop panel keep its current synthetic-dict shape (`{regional_origin: _state.barbarian_origin}`) rather than forcing it to construct a JSON string at every restriction check. Both shapes resolve to the same answer.
+- **No backfill / migration UI for existing barbarian saves.** They keep the permissive fallback (no equip restrictions) — same as before this session. Cost of forcing players to re-pick origins outweighs the benefit.
+- **Witch tradition + voudon craft persisted but not yet read by any runtime system.** Their data path is now closed end-to-end; a future feature that needs them (e.g., tradition-specific spell limits) reads from `class_metadata.witch_tradition` and gets the right value with no further plumbing.
+
+**Interfaces defined or changed:**
+- `characters` schema: new column `class_metadata TEXT NOT NULL DEFAULT '{}'`.
+- `CharacterData.class_metadata: String` — JSON-encoded Dictionary; documented keys: `regional_origin`, `witch_tradition`, `voudon_craft_choice`.
+- `ClassEquipRestrictionValidator._read_class_metadata_field(character, key) -> String` — internal helper that reads either top-level `character[key]` or parses `character.class_metadata` JSON.
+
+**Database changes:** Migration 040 (additive — new NOT NULL column with default value, safe for existing rows).
+
+**Tests added/updated:** 4 new tests in `test_class_equip_restriction_validator.gd` (now 18 total). NOT YET RUN — Godot binary not on PATH from this shell.
+
+**Known issues:**
+- The migration loader keys by integer version, and the repo already has TWO files at version 039 (`039_drop_dungeon_map_cells.sql` and `039_heraldry_shape_ids.sql`) — only the alphabetically-first one runs; the second is silently skipped because the version is already in `schema_migrations`. Pre-existing bug, unrelated to this change, but worth flagging. Migration 040 is safe (no version collision).
+- Removed the prior session's "barbarian origin not persisted" Known Issue — resolved by this work.
+
+**Next session should:**
+1. Run the test suite to confirm the 4 new tests pass alongside the existing equip-restriction suite.
+2. Manual test in Godot: create a new barbarian PC, pick Jutland origin, finish creation. Save & reload. Try equipping a crossbow — should be blocked (Jutland doesn't permit crossbows). Try equipping a sword — should succeed.
+3. (Optional, low priority) Fix the duplicate-version-039 migration bug.
+
+
+## Session 2026-04-25 — Single-actor dungeon actions + group-follow
+
+**Task:** Group-action queueing oddity: ordering Force Door / Pick Lock / Bash Door (and similar single-actor activities) on a multi-PC selection scheduled the action for **every** selected character sequentially. Each took its full duration to resolve, even if only one could plausibly complete it. User wanted the most-qualified character to perform the action while the rest move into formation around the action site.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+*Picker:*
+- New file [engine/subsystems/exploration/dungeon_action_actor_picker.gd](engine/subsystems/exploration/dungeon_action_actor_picker.gd). All-static API:
+  - `pick_for_pick_lock(selected_ids, party_data, session_state)` — thief class first, then highest level. Skips characters who already failed at their current level.
+  - `pick_for_force(selected_ids, party_data)` — highest STR. Tiebreak: Dungeon Bashing proficiency. Used for both `force_door` and `force_portcullis`.
+  - `pick_for_bash_door(selected_ids, party_data)` — first PC carrying any axe (`hand_axe`/`battle_axe`/`great_axe`). Tiebreak: STR.
+  - `pick_for_search(selected_ids, party_data)` — elf > dwarf > highest DEX. Within an elf or dwarf bracket, DEX breaks ties.
+  - `pick_for_listen(selected_ids, party_data)` — elf > halfling > highest DEX (matches ACKS 1-in-4 racial bonus).
+  - `pick_for_spike_action(selected_ids, party_data, requires_spikes=true)` — first PC with iron spikes; tiebreak DEX. `requires_spikes=false` falls back to first selected for `remove_spike` / `remove_wedge`.
+  - `pick_first_available(selected_ids, party_data)` — first PC whose CharacterData resolves; used for open/close door, drop_portcullis.
+- Picker queries `CampaignRepository.get_character_proficiencies` and `get_inventory_items` for proficiency/inventory checks.
+
+*Compound move-then-schedule infrastructure:*
+- **[engine/subsystems/exploration/dungeon_map_controller.gd](engine/subsystems/exploration/dungeon_map_controller.gd):** new `queue_move_adjacent_to(entity_id, target_pos) -> String` — generalizes `queue_door_interaction_order_voxel` to any target cell. Returns "immediate" / "queued" / "" without requiring the target itself to be a door.
+- **[engine/subsystems/session/handlers/dungeon_handlers.gd](engine/subsystems/session/handlers/dungeon_handlers.gd):** new `order_move_and_schedule_action(entity_id, target_cell, action_type, duration_rounds, base_movement, controller, scheduler, party_id, adjacent_only=true) -> bool`. Wraps `queue_move_adjacent_to` (when `adjacent_only=true`) or `queue_move_order` (when false, for search/listen). Sets `on_arrival = {action: "schedule_action", action_type, target, duration_rounds, party_id}` on the movement order. Both `_handle_movement_tick` and `on_cell_reached` gained a new `match` arm for `"schedule_action"` that calls `schedule_action(...)` with the actor's id.
+
+*Dispatch refactor:*
+- **[engine/subsystems/session/states/dungeon_explore_state.gd](engine/subsystems/session/states/dungeon_explore_state.gd):** rewrote every action match arm to pick a single best actor + group-follow:
+  - `search_here`, `listen_here` → on-cell flavor (actor walks INTO the cell).
+  - `open_door`/`close_door` → `_issue_door_toggle` (instant on-arrival via existing `interact_door`).
+  - `force_door`, `pick_lock`, `bash_door`, `spike_shut`, `wedge_open`, `remove_spike`, `remove_wedge`, `listen_at_door`, `force_portcullis`, `drop_portcullis` → `_issue_single_actor_action` with `adjacent_only=true`.
+- New private helpers in `dungeon_explore_state.gd`:
+  - `_get_base_movement(entity_id, party_data) -> int` — central base-movement lookup.
+  - `_start_renderer_animation_for(entity_id, base_movement)` — kicks off the renderer's continuous tween from the queued path.
+  - `_issue_single_actor_action(...)` — the canonical single-actor + group-follow shape. If picker returns "", emits a configurable warning toast and exits. Otherwise queues the actor's compound order, group-moves the rest of the selection toward the action cell via `_handlers.order_group_move`, and emits an info toast naming the actor.
+  - `_issue_door_toggle(...)` — same shape but uses `order_move_and_interact_door` (instant) for door open/close.
+
+**Decisions made:**
+
+- **Picker queries the repo at call time** (rather than relying on `CharacterData.proficiencies` / `inventory`, which `PartyData.from_db` doesn't populate). One DB hit per selected PC per action — acceptable for a click-driven path.
+- **Compound order with on_arrival hook** — reused the existing `_movement_orders[on_arrival]` dispatch (originally door-only) and added a new `"schedule_action"` arm. Cleaner than building parallel infrastructure.
+- **Followers use `order_group_move` toward the action cell**, not the actor's adjacent cell. The formation manager picks passable cells and falls back to ring-scatter, so followers naturally cluster around the actor without colliding with the door / lever / target.
+- **`use_lever` not refactored.** It already filters to the first adjacent PC (previous session) — adequate for lever, where adjacency was the original gating concept and there's no skill-roll variance worth picking on.
+- **Search and listen still don't apply racial bonuses to the dice roll** — the resolvers (`_resolve_search`, `_resolve_listen`) are a flat 1d6 vs 1. Picking the right actor is a no-op on the math today; will pay off when the bonuses are wired in. Flagged in known issues.
+
+**Interfaces defined or changed:**
+
+- `DungeonMapController.queue_move_adjacent_to(entity_id: String, target_pos) -> String` (new).
+- `DungeonHandlers.order_move_and_schedule_action(...)` (new public method).
+- `_movement_orders[on_arrival].action == "schedule_action"` is a new shape; previously only `"interact_door"`.
+- `DungeonActionActorPicker` — new class_name; static API documented above.
+- `DungeonExploreState._get_base_movement`, `_start_renderer_animation_for`, `_issue_single_actor_action`, `_issue_door_toggle` (new private helpers).
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- New suite `tests/test_dungeon_action_actor_picker.gd` — 13 tests covering `pick_first_available`, race-bracket logic (`pick_for_search`, `pick_for_listen`), STR-based force, null-party guards, and elf/dwarf/DEX tiebreaks. Registered in `tests/test_runner.tscn` as `DungeonActionActorPickerTests` and added to `tests/test_runner.gd`'s suite list.
+- Skipped: dedicated unit tests for `pick_for_pick_lock` / `pick_for_force` (proficiency tiebreak) / `pick_for_bash_door` / `pick_for_spike_action`. They depend on `CampaignRepository.get_character_proficiencies` / `get_inventory_items` and would need a DB fixture. Verified via the existing menu-builder eligibility tests + smoke-test path below.
+
+**Follow-on fix in same session — Search/Listen now 1d20 per ACKS RAW:**
+
+- **`_resolve_search`** ([dungeon_handlers.gd](engine/subsystems/session/handlers/dungeon_handlers.gd)): rolls 1d20, success on ≥ target. Default 18+ (≈15% — matches ACKS Adventures *Active Search*). Elves throw 8+ (their secret-door bonus, primary search-bonus category). Dwarves throw 14+ (their non-magical-trap bonus). Action is generic so each race gets the better of its category-specific thresholds. Thieves with Find Traps will eventually use ThiefSkillResolver — flagged TODO.
+- **`_resolve_listen`** (and `listen_at_door` via the dispatch fix below): rolls 1d20, success on ≥ target. Default 18+. Elves AND dwarves throw 14+ ("keen hearing" per RAW). Halflings have no listen bonus per RAW.
+- New helpers `_search_target_for(entity_id)`, `_listen_target_for(entity_id)`, `_get_character(entity_id) -> CharacterData`. Presentation payload now carries `target: int` so any UI can show the threshold.
+- **`listen_at_door` now routes to `_resolve_listen`.** `_handle_action_complete` match arm `"listen", "listen_at_door":` — closes the pre-existing fall-through bug.
+
+*Picker correction (was elf > halfling, RAW says elf > dwarf for listen):*
+- [dungeon_action_actor_picker.gd](engine/subsystems/exploration/dungeon_action_actor_picker.gd) `pick_for_listen` updated to prefer `["elf", "dwarf"]`. Halflings drop to highest-DEX fallback bracket.
+- Test suite updated: `test_listen_prefers_elf_over_dwarf`, `test_listen_prefers_dwarf_when_no_elf`, `test_listen_does_not_prefer_halfling` (replaces the prior halfling-preference tests). Total picker tests now 14.
+
+**Known issues:**
+
+- **No "best actor" tooltip in the menu.** Players can't see who the picker chose before invoking. Could be added by extending the menu builder to compute the actor and display "Force Door (Brunhild)" — deferred.
+- **Followers' group_move can sometimes land on the actor's adjacent cell** (the formation manager picks any passable cell). The actor still completes their action because they got there first and `interact_door` / `schedule_action` only checks the actor's own adjacency at resolve time. If a follower steps into the actor's spot mid-walk, the actor's path may stall. Smoke-test this case; if it bites, prefer formation cells that aren't directly adjacent to the target.
+- **Tests not yet executed** (Godot CLI not on PATH). Run `tests/test_runner.tscn` to confirm the 13 new picker tests pass.
+
+**Next session should:**
+
+1. Run `tests/test_runner.tscn` and confirm `DungeonActionActorPickerTests` (13 tests) pass alongside existing suites.
+2. Smoke test in Godot:
+   - Select all 6 PCs of Moonsworn Band in `data/test_dungeon.json`. Right-click locked door (24,15,0), choose "Pick Lock" — verify ONE PC walks to the door (the thief), the rest follow in formation, and only one "Pick Lock" toast fires (not 6).
+   - Same setup with stuck door (51,5,0), choose "Force Door" — verify the highest-STR PC walks up while others tag along.
+   - Right-click a closed unlocked door from far away, "Open Door" — verify only one PC walks to it and others march toward.
+3. Verify search/listen UI / log entries handle the new `target` field in the presentation payload (purely additive — old consumers ignore it).
+4. (Optional) Tune the d20 thresholds if play feels off — current numbers are rough conversions of ACKS 1-in-6 / 2-in-6 / 1-in-4 rates.

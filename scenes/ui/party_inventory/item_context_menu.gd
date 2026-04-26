@@ -9,12 +9,14 @@ extends PopupMenu
 
 const Currency := preload("res://engine/subsystems/commerce/currency.gd")
 const CSTabEquipment := preload("res://scenes/ui/character_sheet/tabs/cs_tab_equipment.gd")
+const ClassEquipRestrictionValidator := preload("res://engine/subsystems/inventory/class_equipment_restriction_validator.gd")
 
 signal send_to_requested(item_data: Dictionary, source_carrier_type: String,
 		source_carrier_id: String, target_carrier: Dictionary)
 signal drop_requested(item_data: Dictionary, source_carrier_type: String,
 		source_carrier_id: String)
 signal transfer_gold_requested(item_data: Dictionary)
+signal equip_rejected(reason: String)
 
 var _item_data: Dictionary = {}
 var _source_carrier_type: String = ""
@@ -163,6 +165,14 @@ func _equip_item() -> void:
 
 	if slot == "pack":
 		return  # Unsupported category.
+
+	# Class restriction check (mage can't equip plate, cleric can't equip swords, etc.)
+	if _source_carrier_type == "character" and not _source_carrier_id.is_empty():
+		var check: Dictionary = ClassEquipRestrictionValidator.can_equip_for_character(
+				_source_carrier_id, _item_data)
+		if not check.get("ok", true):
+			equip_rejected.emit(String(check.get("reason", "Cannot equip this item.")))
+			return
 
 	var qty: int = int(_item_data.get("quantity", 1))
 	if CSTabEquipment.is_thrown_stackable(_item_data, catalog):

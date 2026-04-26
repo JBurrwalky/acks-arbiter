@@ -71,6 +71,15 @@ var languages: String = "[]"
 ## Personality — JSON-encoded Dictionary (populated by NPC personality system, Tier 2)
 var personality: String = "{}"
 
+## Class-specific sub-selections — JSON-encoded Dictionary.
+## Keys vary by class:
+##   barbarian: "regional_origin"  — one of barbarian.json regional_origins keys
+##   witch:     "witch_tradition"  — one of witch.json traditions
+##   voudon:    "witch_tradition" + "voudon_craft_choice"
+## Used by ClassEquipRestrictionValidator for the barbarian
+## `determined_by_regional_origin` weapon-permission sentinel.
+var class_metadata: String = "{}"
+
 ## Status
 var is_dead: bool = false
 var is_active: bool = true
@@ -404,6 +413,7 @@ static func from_dict(data: Dictionary) -> CharacterData:
 	c.age_category = data.get("age_category", "adult")
 	c.languages = sanitize_languages_json(data.get("languages", "[]"))
 	c.personality = data.get("personality", "{}")
+	c.class_metadata = data.get("class_metadata", "{}")
 	# Boolean DB fields are stored as INTEGER (0/1) — convert on read
 	c.is_dead = data.get("is_dead", 0) == 1
 	c.is_active = data.get("is_active", 1) == 1
@@ -457,6 +467,7 @@ func to_dict() -> Dictionary:
 		"age_category": age_category,
 		"languages": sanitize_languages_json(languages),
 		"personality": personality,
+		"class_metadata": class_metadata,
 		"is_dead": 1 if is_dead else 0,
 		"is_active": 1 if is_active else 0,
 		"is_incapacitated": 1 if is_incapacitated else 0,

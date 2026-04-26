@@ -62,7 +62,6 @@ var _search_field: LineEdit
 var _scroll_container: ScrollContainer
 var _columns_container: HBoxContainer
 var _footer_label: Label
-var _auto_distribute_btn: Button
 var _rebalance_btn: Button
 var _close_btn: Button
 
@@ -242,16 +241,10 @@ func _build_ui() -> void:
 	_footer_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(_footer_label)
 
-	_auto_distribute_btn = Button.new()
-	_auto_distribute_btn.text = "Auto-distribute"
-	_auto_distribute_btn.add_theme_font_size_override("font_size", 12)
-	_auto_distribute_btn.pressed.connect(_on_auto_distribute_pressed)
-	footer.add_child(_auto_distribute_btn)
-
 	_rebalance_btn = Button.new()
 	_rebalance_btn.text = "Rebalance Load"
 	_rebalance_btn.add_theme_font_size_override("font_size", 12)
-	_rebalance_btn.tooltip_text = "Equalize encumbrance among adjacent party members."
+	_rebalance_btn.tooltip_text = "Equalize encumbrance across PCs/henchmen who can reach each other."
 	_rebalance_btn.pressed.connect(_on_rebalance_pressed)
 	footer.add_child(_rebalance_btn)
 
@@ -667,22 +660,6 @@ func _on_item_context_menu(item_id: String, carrier_type: String,
 			valid_targets, position)
 
 
-func _on_auto_distribute_pressed() -> void:
-	var distributor := LootAutoDistributor.new(_catalog)
-	var items := _gather_distributable_items()
-	var carriers := _gather_carrier_info()
-	var plan := distributor.distribute(items, carriers, _build_context())
-
-	if plan.moves.is_empty() and plan.unassigned.is_empty():
-		EventBus.notification_requested.emit({
-			"message": "Nothing to redistribute.",
-			"type": "info",
-		})
-		return
-
-	_show_distribute_preview(plan)
-
-
 func _open_drop_dialog(item_id: String, source: Dictionary) -> void:
 	_ensure_drop_dialog()
 	_drop_dialog.open_for_item(item_id, source)
@@ -745,6 +722,9 @@ func _ensure_context_menu() -> void:
 		var char_id: String = str(item.get("character_id", ""))
 		if not char_id.is_empty():
 			_on_gold_display_clicked(char_id)
+	)
+	_context_menu.equip_rejected.connect(func(reason: String):
+		_show_toast(reason)
 	)
 	add_child(_context_menu)
 
@@ -947,7 +927,16 @@ func _compute_carrier_positions() -> Dictionary:
 				if pos != Vector3i(-1, -1, -1):
 					result[cid] = pos
 			"creature", "vehicle":
-				var owner_id: String = str(info.get("data", {}).get("owner_character_id", ""))
+				# Creature columns carry a TrainedCreatureData (RefCounted) in
+				# `data`; vehicle columns carry a Dictionary; both flow through
+				# their handler character's position. Vehicles have no direct
+				# handler field, so they fall through to the active character.
+				var data = info.get("data")
+				var owner_id: String = ""
+				if data is TrainedCreatureData:
+					owner_id = data.handler_id
+				elif data is Dictionary:
+					owner_id = str(data.get("handler_id", ""))
 				if owner_id.is_empty():
 					owner_id = GameState.active_character_id
 				if result.has(owner_id):
@@ -957,8 +946,11 @@ func _compute_carrier_positions() -> Dictionary:
 					if owner_pos != Vector3i(-1, -1, -1):
 						result[cid] = owner_pos
 			"cache":
-				var parsed := LocationCacheManager.parse_dungeon_cell_key(
-						str(info.get("data", {}).get("location_key", "")))
+				var cache_data = info.get("data")
+				var loc_key: String = ""
+				if cache_data is Dictionary:
+					loc_key = str(cache_data.get("location_key", ""))
+				var parsed := LocationCacheManager.parse_dungeon_cell_key(loc_key)
 				if not parsed.is_empty():
 					result[cid] = parsed["cell"]
 	return result
@@ -1033,15 +1025,19 @@ func _on_any_party_moved(_from_pos, _to_pos) -> void:
 # ---------------------------------------------------------------------------
 
 func _on_rebalance_pressed() -> void:
+	# Cluster = PC/henchman carriers who can reach each other. Caches, creatures,
+	# and vehicles are excluded — rebalance is a PC/henchman concept (GDD §5.6).
+	# In a dungeon the cluster is voxel-adjacent neighbors only of the active
+	# character (different cells mean different distances). Outside a dungeon
+	# (wilderness/settlement) the party operates as a single unit and there is
+	# no per-character "active" position, so the entire PC/henchman roster
+	# counts.
+	var in_dungeon: bool = not _carrier_positions.is_empty()
 	var anchor_id: String = GameState.active_character_id
-	if anchor_id.is_empty():
-		_show_toast("No active character")
+	if in_dungeon and anchor_id.is_empty():
+		_show_toast("No active character — focus a party member first")
 		return
 
-	# Cluster = active character + adjacent party/henchman carriers. Caches,
-	# creatures, and vehicles are excluded — rebalance is a PC/henchman
-	# concept (GDD §5.6). If the anchor has no neighbors, there's nothing to
-	# balance.
 	var cluster_ids: Array = []
 	for col in _columns:
 		var info: Dictionary = col.get_carrier_info()
@@ -1049,12 +1045,23 @@ func _on_rebalance_pressed() -> void:
 		var ctype: String = str(info.get("carrier_type", ""))
 		if ctype != "character":
 			continue
-		if cid == anchor_id or cid in _adjacent_carrier_ids:
+		if in_dungeon:
+			if cid == anchor_id or cid in _adjacent_carrier_ids:
+				cluster_ids.append(cid)
+		else:
 			cluster_ids.append(cid)
 
 	if cluster_ids.size() < 2:
-		_show_toast("No adjacent party members to rebalance with")
+		if in_dungeon:
+			_show_toast("No adjacent party members to rebalance with")
+		else:
+			_show_toast("Nobody else in the party to rebalance with")
 		return
+
+	# `redistribute_among_adjacent` ignores the anchor in its base algorithm;
+	# pick any cluster member as a stable seed for future preference logic.
+	if anchor_id.is_empty():
+		anchor_id = cluster_ids[0]
 
 	# Gather items and carrier metadata for the cluster.
 	var items: Array = []
@@ -1110,183 +1117,6 @@ func _on_rebalance_pressed() -> void:
 	EventBus.inventory_updated.emit("")
 	_show_toast("Rebalanced %d item%s across %d carriers" % [
 			moves.size(), "s" if moves.size() != 1 else "", cluster_ids.size()])
-
-
-# ---------------------------------------------------------------------------
-# Auto-distribute helpers
-# ---------------------------------------------------------------------------
-
-## Gathers all non-coin, non-equipped items from all carriers for redistribution.
-func _gather_distributable_items() -> Array:
-	var result: Array = []
-	var party_id: String = GameState.active_party_id
-	if party_id.is_empty():
-		party_id = GameState.party_id
-
-	var all_chars: Array = CampaignRepository.list_party_characters(party_id)
-	for c in all_chars:
-		var char_id: String = str(c.get("id", ""))
-		var char_type: String = str(c.get("character_type", "pc"))
-		var items: Array = CampaignRepository.get_inventory_items(char_id)
-		for item in items:
-			var item_key: String = str(item.get("item_key", ""))
-			# Skip coins and equipped items.
-			if Currency.is_coin(item_key):
-				continue
-			if int(item.get("is_equipped", 0)) == 1:
-				continue
-			var catalog_entry: Dictionary = _catalog.get_item(item_key)
-			result.append({
-				"item_key": item_key,
-				"item_id": str(item.get("id", "")),
-				"quantity": int(item.get("quantity", 1)),
-				"item_category": str(catalog_entry.get("item_category", item.get("item_category", "gear"))),
-				"encumbrance_units": int(catalog_entry.get("encumbrance_units", item.get("encumbrance_units", 0))),
-				"source_carrier": {"carrier_type": char_type, "carrier_id": char_id},
-			})
-	return result
-
-
-## Builds carrier info dicts for the auto-distributor.
-func _gather_carrier_info() -> Array:
-	var result: Array = []
-	var party_id: String = GameState.active_party_id
-	if party_id.is_empty():
-		party_id = GameState.party_id
-
-	var all_chars: Array = CampaignRepository.list_party_characters(party_id)
-	for c in all_chars:
-		var char_id: String = str(c.get("id", ""))
-		var char_type: String = str(c.get("character_type", "pc"))
-		var strength: int = int(c.get("strength", 10))
-		var str_mod: int = CharacterData.ability_modifier(strength)
-
-		# Compute current encumbrance.
-		var items: Array = CampaignRepository.get_inventory_items(char_id)
-		var enc: Dictionary = EncumbranceCalculator.calculate_encumbrance(items)
-
-		# Collect equipped weapon keys.
-		var equipped_weapons: Array = []
-		for item in items:
-			if int(item.get("is_equipped", 0)) == 1:
-				var cat: String = str(item.get("item_category", ""))
-				var key: String = str(item.get("item_key", ""))
-				if cat == "weapon" or key.contains("bow") or key.contains("sling") or key.contains("crossbow"):
-					equipped_weapons.append(key)
-
-		# Load preferences.
-		var prefs: Array = CampaignRepository.get_character_preferences(char_id)
-
-		result.append({
-			"carrier_id": char_id,
-			"carrier_type": char_type,
-			"current_enc_units": int(enc["total_units"]),
-			"max_enc_units": 20000 + (str_mod * 1000),
-			"preferences": prefs,
-			"equipped_weapons": equipped_weapons,
-			"strength": strength,
-		})
-	return result
-
-
-## Shows a text confirmation dialog for a proposed auto-distribute plan.
-func _show_distribute_preview(plan: Dictionary) -> void:
-	var moves: Array = plan.get("moves", [])
-	var unassigned: Array = plan.get("unassigned", [])
-	var summary: Dictionary = plan.get("summary", {})
-
-	# Build preview text.
-	var lines: Array = []
-	lines.append("Auto-distribute plan:")
-	lines.append("  %d items to move, %d unassigned" % [
-		summary.get("moved", 0), summary.get("unassigned_count", 0)])
-	lines.append("")
-
-	if not moves.is_empty():
-		lines.append("Proposed moves:")
-		# Group moves by target carrier for readability.
-		var by_target: Dictionary = {}  # carrier_id -> Array of item descriptions
-		for move in moves:
-			var target_id: String = str(move.get("to_carrier", ""))
-			if not by_target.has(target_id):
-				by_target[target_id] = []
-			var item: Dictionary = move.get("item", {})
-			var qty: int = int(item.get("quantity", 1))
-			var key: String = str(item.get("item_key", ""))
-			var reason: String = str(move.get("reason", ""))
-			by_target[target_id].append("  %dx %s (%s)" % [qty, key, reason])
-		for target_id in by_target:
-			var char_data := CampaignRepository.get_character(target_id)
-			var name: String = str(char_data.get("name", target_id))
-			lines.append("  -> %s:" % name)
-			for desc in by_target[target_id]:
-				lines.append("    %s" % desc)
-
-	if not unassigned.is_empty():
-		lines.append("")
-		lines.append("Unassigned (no valid carrier):")
-		for item in unassigned:
-			var qty: int = int(item.get("quantity", 1))
-			var key: String = str(item.get("item_key", ""))
-			lines.append("  %dx %s" % [qty, key])
-
-	# Use AcceptDialog for simple confirm/cancel.
-	var dialog := AcceptDialog.new()
-	dialog.title = "Auto-distribute Preview"
-	dialog.dialog_text = "\n".join(lines)
-	dialog.ok_button_text = "Apply"
-	dialog.add_cancel_button("Cancel")
-	dialog.confirmed.connect(func():
-		_execute_distribute_plan(plan)
-		dialog.queue_free()
-	)
-	dialog.canceled.connect(func():
-		dialog.queue_free()
-	)
-	add_child(dialog)
-	dialog.popup_centered(Vector2i(500, 400))
-
-
-## Executes a confirmed auto-distribute plan by transferring items.
-func _execute_distribute_plan(plan: Dictionary) -> void:
-	var moves: Array = plan.get("moves", [])
-	for move in moves:
-		var item: Dictionary = move.get("item", {})
-		var item_id: String = str(item.get("item_id", ""))
-		var to_carrier_id: String = str(move.get("to_carrier", ""))
-		var source: Dictionary = item.get("source_carrier", {})
-		var from_carrier_id: String = str(source.get("carrier_id", ""))
-
-		if item_id.is_empty() or to_carrier_id.is_empty():
-			continue
-		# Skip if already on target carrier.
-		if from_carrier_id == to_carrier_id:
-			continue
-
-		# Transfer via CampaignRepository — update character_id on inventory_items row.
-		CampaignRepository.db.query_with_bindings(
-			"UPDATE inventory_items SET character_id = ? WHERE id = ?",
-			[to_carrier_id, item_id])
-
-	# Emit inventory_updated for all affected characters.
-	var affected_ids: Dictionary = {}
-	for move in moves:
-		var item: Dictionary = move.get("item", {})
-		var source: Dictionary = item.get("source_carrier", {})
-		affected_ids[str(source.get("carrier_id", ""))] = true
-		affected_ids[str(move.get("to_carrier", ""))] = true
-	for char_id in affected_ids:
-		if not char_id.is_empty():
-			EventBus.inventory_updated.emit(char_id)
-
-	_refresh_all_columns()
-	_update_footer()
-
-	var moved_count: int = plan.get("summary", {}).get("moved", 0)
-	EventBus.notification_requested.emit({
-		"message": "%d item(s) redistributed." % moved_count,
-		"type": "info",
-	})
 
 
 func _find_item_data(item_id: String, source: Dictionary) -> Dictionary:
@@ -1357,6 +1187,6 @@ func _compute_valid_targets(item_data: Dictionary, source: Dictionary) -> Array:
 
 func _show_toast(message: String) -> void:
 	EventBus.notification_requested.emit({
-		"message": message,
+		"body": message,
 		"type": "warning",
 	})

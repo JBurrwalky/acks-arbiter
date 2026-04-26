@@ -326,13 +326,17 @@ func set_render_alpha(alpha: float) -> void:
 
 
 func _apply_alpha_recursive(node: Node, alpha: float) -> void:
+	var opaque := alpha >= 1.0
 	for child in node.get_children():
 		if child is MeshInstance3D:
 			var mi: MeshInstance3D = child
 			var base := mi.get_active_material(0)
 			if base is StandardMaterial3D:
 				var mat: StandardMaterial3D = base.duplicate()
-				mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+				if opaque:
+					mat.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+				else:
+					mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 				var c := mat.albedo_color
 				c.a = alpha
 				mat.albedo_color = c

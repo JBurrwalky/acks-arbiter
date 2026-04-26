@@ -313,6 +313,72 @@ func order_move_and_interact_door(
 	return true
 
 
+## Order a compound "move to target site + on arrival, schedule a timed action."
+## When [param adjacent_only] is true (the default for door/lever-side actions),
+## the actor walks to a passable cell adjacent to [param target_cell] and the
+## action fires from there. When false (search/listen/etc.), the actor walks
+## INTO the target cell first.
+##
+## If the actor is already at the action site, the action is scheduled
+## immediately and no movement is queued.
+func order_move_and_schedule_action(
+		entity_id: String,
+		target_cell,  # Vector2i or Vector3i
+		action_type: String,
+		duration_rounds: int,
+		base_movement: int,
+		controller: DungeonMapController,
+		scheduler: EventScheduler,
+		party_id: String,
+		adjacent_only: bool = true) -> bool:
+	_movement_orders.erase(entity_id)
+
+	var result: String
+	if adjacent_only:
+		result = controller.queue_move_adjacent_to(entity_id, target_cell)
+	else:
+		# On-cell flavor: pathfind into the target cell itself.
+		var ok: bool = controller.queue_move_order(entity_id, target_cell)
+		if ok:
+			result = "queued"
+		else:
+			var vmap = controller.get_voxel_map()
+			var here = vmap.get_entity_pos(entity_id) if vmap != null else null
+			var target_3d: Vector3i = target_cell if target_cell is Vector3i else \
+				Vector3i(target_cell.x, target_cell.y, controller.get_current_level())
+			result = "immediate" if here == target_3d else ""
+
+	if result == "immediate":
+		schedule_action(action_type, entity_id, target_cell, duration_rounds,
+			scheduler, party_id)
+		return true
+	if result != "queued":
+		return false
+
+	var om: RefCounted = controller.get_order_manager()
+	var order: Dictionary = om.get_order(entity_id)
+	var path: Array = order.get("path", [])
+	om.remove_order(entity_id)
+	if path.is_empty():
+		return false
+
+	_movement_orders[entity_id] = {
+		"path": path,
+		"progress": 0.0,
+		"base_movement": base_movement,
+		"on_arrival": {
+			"action": "schedule_action",
+			"action_type": action_type,
+			"target": target_cell,
+			"duration_rounds": duration_rounds,
+			"party_id": party_id,
+		},
+	}
+	_ensure_movement_tick(scheduler, party_id)
+	EventBus.order_queued.emit(party_id, "dungeon_move", 0)
+	return true
+
+
 ## Cancel movement for an entity. Returns true if it had a movement order.
 func cancel_move(entity_id: String) -> bool:
 	return _movement_orders.erase(entity_id)
@@ -367,6 +433,12 @@ func on_cell_reached(entity_id: String, cell) -> Dictionary:  # cell: Vector2i o
 
 	var order: Dictionary = _movement_orders[entity_id]
 
+	# Auto-open closed unlocked doors as the entity walks through. Locked,
+	# stuck, secret-undetected, and portcullis doors are not auto-handled —
+	# is_walkable_with_open_door() rejects them at path-planning time, so they
+	# never appear in the path.
+	_auto_open_door_if_walking_through(controller, tactical_map, cell)
+
 	# Check passability before committing the move.
 	if not tactical_map.is_passable(cell):
 		cancel_move(entity_id)
@@ -418,6 +490,13 @@ func on_cell_reached(entity_id: String, cell) -> Dictionary:  # cell: Vector2i o
 			match action:
 				"interact_door":
 					controller.interact_door(target)
+				"schedule_action":
+					var sa_type: String = on_arrival.get("action_type", "")
+					var sa_dur: int = int(on_arrival.get("duration_rounds", 1))
+					var sa_pid: String = on_arrival.get("party_id", "")
+					var sa_scheduler: EventScheduler = _runner.get_scheduler() if _runner != null else null
+					if not sa_type.is_empty() and sa_scheduler != null and not sa_pid.is_empty():
+						schedule_action(sa_type, entity_id, target, sa_dur, sa_scheduler, sa_pid)
 
 		return {
 			"path_complete": true,
@@ -425,6 +504,30 @@ func on_cell_reached(entity_id: String, cell) -> Dictionary:  # cell: Vector2i o
 		}
 
 	return {}
+
+
+## Auto-open a closed unlocked door at [param cell] when an entity walks into
+## it during exploration. Locked / stuck / portcullis / secret-undetected doors
+## are filtered out at path-planning time (is_walkable_with_open_door rejects
+## them) so they never reach this helper. The 1-round opening cost is only
+## enforced in combat — see CombatController._resolve_door_interaction.
+func _auto_open_door_if_walking_through(
+		controller: DungeonMapController,
+		tactical_map,
+		cell) -> void:
+	if controller == null or tactical_map == null:
+		return
+	if not tactical_map.is_door(cell):
+		return
+	if tactical_map.get_door_state(cell) != "closed":
+		return
+	# Spike-shut and wedged doors are tracked outside the cell state; bail if
+	# the session marks this door immobile so we don't silently override.
+	if _session_state != null and _session_state.has_method("is_spiked") \
+			and _session_state.is_spiked(cell):
+		return
+	tactical_map.set_door_state(cell, "open")
+	controller.door_state_changed.emit(cell, "closed", "open")
 
 
 ## Schedule a timed dungeon action (search, listen, door interact, etc.).
@@ -515,6 +618,8 @@ func _handle_movement_tick(event: ScheduledEvent) -> Dictionary:
 			if ci >= path.size():
 				break
 			var cell = path[ci]  # Vector2i or Vector3i
+			# Auto-open closed unlocked doors mid-traversal.
+			_auto_open_door_if_walking_through(controller, tactical_map, cell)
 			if not tactical_map.is_passable(cell):
 				completed_entities.append(entity_id)
 				stopped_early = true
@@ -552,6 +657,13 @@ func _handle_movement_tick(event: ScheduledEvent) -> Dictionary:
 			match action:
 				"interact_door":
 					controller.interact_door(target)
+				"schedule_action":
+					var sa_type: String = on_arrival.get("action_type", "")
+					var sa_dur: int = int(on_arrival.get("duration_rounds", 1))
+					var sa_pid: String = on_arrival.get("party_id", "")
+					var sa_scheduler: EventScheduler = _runner.get_scheduler() if _runner != null else null
+					if not sa_type.is_empty() and sa_scheduler != null and not sa_pid.is_empty():
+						schedule_action(sa_type, eid, target, sa_dur, sa_scheduler, sa_pid)
 
 	# Update fog of war after all movements.
 	if not completed_entities.is_empty() or _movement_orders.size() > 0:
@@ -609,7 +721,7 @@ func _handle_encounter_check(event: ScheduledEvent) -> Dictionary:
 
 	if encounter.get("triggered", false):
 		var enc: Dictionary = encounter["encounter_data"]
-		# Cancel all movement — combat interrupts.
+		# Cancel all movement — surprise pauses real-time exploration.
 		_movement_orders.clear()
 		# Auto-focus the camera on the party leader's level if the encounter
 		# happens on a non-focus level. Reuses the controller already fetched
@@ -617,13 +729,16 @@ func _handle_encounter_check(event: ScheduledEvent) -> Dictionary:
 		if enc_ctrl != null:
 			var leader_pos: Vector3i = enc_ctrl.get_party_position_3d()
 			EventBus.dungeon_auto_focus_requested.emit(leader_pos.z, "encounter")
+		# Spawn-only presentation — DungeonExploreState places the monsters as
+		# roaming entities and runs proximity ticks until they reach attack
+		# range, at which point combat starts.
 		return {
 			"auto_pause": true,
 			"pause_reason": "Wandering monster: %d x %s" % [
 				enc.get("number", 0), enc.get("monster_group", "unknown")],
 			"next_events": next_events,
 			"presentation": {
-				"type": "dungeon_encounter",
+				"type": "dungeon_encounter_spawned",
 				"encounter_data": enc,
 			},
 		}
@@ -749,7 +864,7 @@ func _handle_action_complete(event: ScheduledEvent) -> Dictionary:
 	match action_type:
 		"search":
 			return _resolve_search(entity_id, cell)
-		"listen":
+		"listen", "listen_at_door":
 			return _resolve_listen(entity_id, cell)
 		"force_door":
 			return _resolve_force_door(entity_id, cell)
@@ -795,9 +910,17 @@ func _handle_action_complete(event: ScheduledEvent) -> Dictionary:
 # Action resolution
 # ---------------------------------------------------------------------------
 
+## Search — 1d20 ≥ target succeeds (ACKS Adventures, Active Search).
+## Default is 18+. Elves throw 8+ when actively searching for secret doors
+## (their primary search-bonus category). Dwarves throw 14+ for non-magical
+## traps. The action is generic — actual feature found is determined by the
+## current cell — so we apply the better of the two racial thresholds for
+## each race. Thieves use the Find Traps skill via a separate flow (TODO);
+## here they get the default unless they're also elf/dwarf.
 func _resolve_search(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
-	var roll: RollResult = DiceSystem.roll_digital(6, 1, 0, "search")
-	var found: bool = roll.modified_total <= 1
+	var roll: RollResult = DiceSystem.roll_digital(20, 1, 0, "search")
+	var target: int = _search_target_for(entity_id)
+	var found: bool = roll.modified_total >= target
 	return {
 		"auto_pause": true,
 		"pause_reason": "Search complete" + (" — found something!" if found else " — nothing found"),
@@ -806,14 +929,21 @@ func _resolve_search(entity_id: String, cell) -> Dictionary:  # cell: Vector2i o
 			"entity_id": entity_id,
 			"cell": str(cell),
 			"roll": roll.modified_total,
+			"target": target,
 			"found": found,
 		},
 	}
 
 
+## Listen / Listen at Door — 1d20 ≥ target succeeds (ACKS Adventures,
+## Listening at Doors). Default 18+. Dwarves and elves throw 14+ ("keen
+## hearing"). Thieves should use the Hear Noises thief skill via
+## ThiefSkillResolver — TODO; for now non-elf/dwarf thieves get the default
+## throw and Hear Noises remains a follow-up.
 func _resolve_listen(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
-	var roll: RollResult = DiceSystem.roll_digital(6, 1, 0, "listen")
-	var heard: bool = roll.modified_total <= 1
+	var roll: RollResult = DiceSystem.roll_digital(20, 1, 0, "listen")
+	var target: int = _listen_target_for(entity_id)
+	var heard: bool = roll.modified_total >= target
 	return {
 		"auto_pause": true,
 		"pause_reason": "Listen complete" + (" — heard something!" if heard else " — silence"),
@@ -822,9 +952,43 @@ func _resolve_listen(entity_id: String, cell) -> Dictionary:  # cell: Vector2i o
 			"entity_id": entity_id,
 			"cell": str(cell),
 			"roll": roll.modified_total,
+			"target": target,
 			"heard": heard,
 		},
 	}
+
+
+## Returns the search target number for [param entity_id] (≥ this on 1d20
+## succeeds). 18 baseline, 8 for elves (secret doors), 14 for dwarves (traps).
+func _search_target_for(entity_id: String) -> int:
+	var cd: CharacterData = _get_character(entity_id)
+	if cd == null:
+		return 18
+	if cd.race == "elf":
+		return 8
+	if cd.race == "dwarf":
+		return 14
+	return 18
+
+
+## Returns the listen target number for [param entity_id] (≥ this on 1d20
+## succeeds). 18 baseline; elves and dwarves both throw 14+.
+func _listen_target_for(entity_id: String) -> int:
+	var cd: CharacterData = _get_character(entity_id)
+	if cd != null and (cd.race == "elf" or cd.race == "dwarf"):
+		return 14
+	return 18
+
+
+## Convenience accessor — returns the CharacterData for [param entity_id]
+## from the active party, or null if unavailable.
+func _get_character(entity_id: String) -> CharacterData:
+	if _runner == null:
+		return null
+	var party_data: PartyData = _runner.get_party_data()
+	if party_data == null:
+		return null
+	return party_data.get_member(entity_id)
 
 
 func _resolve_force_door(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i

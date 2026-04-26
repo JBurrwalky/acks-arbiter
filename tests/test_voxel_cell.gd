@@ -17,6 +17,14 @@ func run_all_tests() -> void:
 	test_not_passable_closed_door()
 	test_passable_open_door()
 	test_passable_destroyed_door()
+	test_walkable_with_open_door_closed_unlocked()
+	test_walkable_with_open_door_locked()
+	test_walkable_with_open_door_stuck()
+	test_walkable_with_open_door_open()
+	test_walkable_with_open_door_no_door()
+	test_walkable_with_open_door_undetected_secret()
+	test_walkable_with_open_door_portcullis_closed()
+	test_walkable_with_open_door_portcullis_open()
 	test_blocks_los_solid()
 	test_not_blocks_los_open()
 	test_not_blocks_los_portcullis_feature()
@@ -168,6 +176,80 @@ func test_passable_destroyed_door() -> void:
 	cell.solidity = "air"
 	cell.door_state = "destroyed"
 	check(cell.is_passable_by_walker() == true, "destroyed door should be passable")
+
+
+# ---------------------------------------------------------------------------
+# is_walkable_with_open_door (explore-mode pathfinding)
+# ---------------------------------------------------------------------------
+
+func test_walkable_with_open_door_closed_unlocked() -> void:
+	var cell := VoxelCell.new()
+	cell.solidity = "air"
+	cell.door_state = "closed"
+	cell.door_type = "unlocked"
+	check(cell.is_walkable_with_open_door() == true,
+		"closed unlocked door should be walkable in explore mode")
+
+
+func test_walkable_with_open_door_locked() -> void:
+	var cell := VoxelCell.new()
+	cell.solidity = "air"
+	cell.door_state = "locked"
+	cell.door_type = "locked"
+	check(cell.is_walkable_with_open_door() == false,
+		"locked door should not be walkable")
+
+
+func test_walkable_with_open_door_stuck() -> void:
+	var cell := VoxelCell.new()
+	cell.solidity = "air"
+	cell.door_state = "stuck"
+	cell.door_type = "unlocked"
+	check(cell.is_walkable_with_open_door() == false,
+		"stuck door should not be walkable")
+
+
+func test_walkable_with_open_door_open() -> void:
+	var cell := VoxelCell.new()
+	cell.solidity = "air"
+	cell.door_state = "open"
+	check(cell.is_walkable_with_open_door() == true,
+		"open door should be walkable")
+
+
+func test_walkable_with_open_door_no_door() -> void:
+	var cell := VoxelCell.new()
+	cell.solidity = "air"
+	check(cell.is_walkable_with_open_door() == true,
+		"plain air cell should be walkable")
+
+
+func test_walkable_with_open_door_undetected_secret() -> void:
+	var cell := VoxelCell.new()
+	cell.solidity = "air"
+	cell.door_state = "closed"
+	cell.door_type = "secret"
+	cell.door_detected = false
+	check(cell.is_walkable_with_open_door() == false,
+		"undetected secret door should not be walkable")
+
+
+func test_walkable_with_open_door_portcullis_closed() -> void:
+	var cell := VoxelCell.new()
+	cell.solidity = "air"
+	cell.door_state = "closed"
+	cell.door_type = "portcullis"
+	check(cell.is_walkable_with_open_door() == false,
+		"closed portcullis should not be walkable (needs lever)")
+
+
+func test_walkable_with_open_door_portcullis_open() -> void:
+	var cell := VoxelCell.new()
+	cell.solidity = "air"
+	cell.door_state = "open"
+	cell.door_type = "portcullis"
+	check(cell.is_walkable_with_open_door() == true,
+		"open portcullis should be walkable")
 
 
 # ---------------------------------------------------------------------------

@@ -82,9 +82,111 @@ static func build_menu(
 			combatant, target_cell_2d, controller,
 			can_move, engaged, has_defensive_decl, has_skirmishing, has_run))
 
+	# --- Door interaction (any cell with a door adjacent to active combatant) ---
+	options.append_array(_build_door_options(combatant, target_cell, controller))
+
+	# --- Lever interaction (any cell with a lever adjacent to active combatant) ---
+	options.append_array(_build_lever_options(combatant, target_cell, controller))
+
 	# --- Universal options (always present, at the end) ---
 	options.append_array(_build_universal_options())
 
+	return options
+
+
+# ---------------------------------------------------------------------------
+# Door options (terse combat variant — open/close only)
+# ---------------------------------------------------------------------------
+
+## Builds open/close-door options when the right-clicked cell is an adjacent,
+## interactive door. Force / pick lock / bash stay exploration-only to keep
+## the in-combat menu uncluttered. Adjacency is 3D Chebyshev ≤ 1 against the
+## active combatant's voxel position.
+static func _build_door_options(
+	combatant: Combatant,
+	target_cell,  # Vector2i or Vector3i
+	controller,
+) -> Array[Dictionary]:
+	var options: Array[Dictionary] = []
+	if controller == null or controller.voxel_map == null:
+		return options
+	var vmap = controller.voxel_map
+	var cell_3d: Vector3i
+	if target_cell is Vector3i:
+		cell_3d = target_cell
+	else:
+		# Combat is single-level today; use the combatant's own z.
+		var actor_pos = combatant.grid_position
+		var actor_z: int = actor_pos.z if actor_pos is Vector3i else 0
+		cell_3d = Vector3i(target_cell.x, target_cell.y, actor_z)
+	if not vmap.has_cell(cell_3d) or not vmap.is_door(cell_3d):
+		return options
+	# Only show when the actor is adjacent.
+	var actor_3d: Vector3i
+	if combatant.grid_position is Vector3i:
+		actor_3d = combatant.grid_position
+	else:
+		actor_3d = Vector3i(combatant.grid_position.x, combatant.grid_position.y, cell_3d.z)
+	if not VoxelGrid.is_adjacent(actor_3d, cell_3d):
+		return options
+	var door_state: String = vmap.get_door_state(cell_3d)
+	var door_type: String = vmap.get_door_type(cell_3d)
+	# Arches and destroyed doors take no action.
+	if door_type == "arch" or door_state == "destroyed":
+		return options
+	# Locked / stuck / portcullis / undetected secret remain exploration-only.
+	if door_state == "locked" or door_state == "stuck":
+		return options
+	if door_type == "portcullis":
+		return options
+	var cell := vmap.get_cell(cell_3d)
+	if cell != null and door_type == "secret" and not cell.door_detected:
+		return options
+	if door_state == "open":
+		options.append(_option("close_door", "Close Door", true,
+			"Close the door (1 round)", "environment",
+			{"action_type": "close_door", "cell": cell_3d}))
+	elif door_state == "closed" or door_state.is_empty():
+		options.append(_option("open_door", "Open Door", true,
+			"Open the door (1 round)", "environment",
+			{"action_type": "open_door", "cell": cell_3d}))
+	return options
+
+
+## Builds a "Use Lever" option when the right-clicked cell is an adjacent
+## lever. 1-round combat action — toggles the linked portcullis (or whatever
+## the lever's `lever_links` target is), same dispatch as exploration.
+static func _build_lever_options(
+	combatant: Combatant,
+	target_cell,  # Vector2i or Vector3i
+	controller,
+) -> Array[Dictionary]:
+	var options: Array[Dictionary] = []
+	if controller == null or controller.voxel_map == null:
+		return options
+	var vmap = controller.voxel_map
+	var cell_3d: Vector3i
+	if target_cell is Vector3i:
+		cell_3d = target_cell
+	else:
+		var actor_pos = combatant.grid_position
+		var actor_z: int = actor_pos.z if actor_pos is Vector3i else 0
+		cell_3d = Vector3i(target_cell.x, target_cell.y, actor_z)
+	if not vmap.has_cell(cell_3d):
+		return options
+	var cell := vmap.get_cell(cell_3d)
+	if cell == null or cell.feature != "lever":
+		return options
+	var actor_3d: Vector3i
+	if combatant.grid_position is Vector3i:
+		actor_3d = combatant.grid_position
+	else:
+		actor_3d = Vector3i(combatant.grid_position.x, combatant.grid_position.y, cell_3d.z)
+	if not VoxelGrid.is_adjacent(actor_3d, cell_3d):
+		return options
+	options.append(_option("use_lever", "Use Lever", true,
+		"Pull or push the lever (1 round)", "environment",
+		{"action_type": "use_lever", "cell": cell_3d}))
 	return options
 
 

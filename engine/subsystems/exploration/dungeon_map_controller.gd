@@ -200,7 +200,9 @@ func _move_party_voxel(target) -> bool:
 
 	# Use MovementResolver to validate stair-aware entry (level-diff + feature check).
 	# path_bfs_3d returns [start, target] for a 1-step reachable move, empty if blocked.
-	var validation_path: Array = _movement_resolver.path_bfs_3d(party_pos, pos_3d)
+	# Explore mode permits routing through closed unlocked doors.
+	var validation_path: Array = _movement_resolver.path_bfs_3d(
+		party_pos, pos_3d, "ground", 50, -1, "explore")
 	if validation_path.is_empty():
 		return false
 
@@ -234,7 +236,8 @@ func can_move_to(target) -> bool:
 	if not VoxelGrid.is_adjacent(party_pos, pos_3d):
 		return false
 	_ensure_managers()
-	var validation_path: Array = _movement_resolver.path_bfs_3d(party_pos, pos_3d)
+	var validation_path: Array = _movement_resolver.path_bfs_3d(
+		party_pos, pos_3d, "ground", 50, -1, "explore")
 	return not validation_path.is_empty()
 
 
@@ -333,6 +336,40 @@ func _interact_door_voxel(pos) -> bool:
 func queue_door_interaction_order(entity_id: String, door_pos) -> String:
 	_ensure_managers()
 	return _queue_door_interaction_order_voxel(entity_id, door_pos)
+
+
+## Generic version of queue_door_interaction_order — pathfinds to a passable
+## cell adjacent to [param target_pos] without requiring the target itself
+## to be a door. Used for any action that requires the actor to stand next
+## to a target cell (force_door, pick_lock, bash_door, lever, portcullis,
+## spike-shut/wedge, listen_at_door, ...).
+##
+## Returns "immediate" if the entity is already 3D-adjacent, "queued" if a
+## path was computed and added to the order manager, "" if unreachable.
+func queue_move_adjacent_to(entity_id: String, target_pos) -> String:
+	_ensure_managers()
+	if _voxel_map == null:
+		return ""
+	var target_3d: Vector3i = target_pos if target_pos is Vector3i else \
+		Vector3i(target_pos.x, target_pos.y, _current_level)
+	var entity_pos: Vector3i = _voxel_map.get_entity_pos(entity_id)
+	if entity_pos == Vector3i(-1, -1, -1):
+		return ""
+	if VoxelGrid.is_adjacent(entity_pos, target_3d):
+		return "immediate"
+	var best_path: Array = []
+	var best_path_len := 999999
+	for neighbor: Vector3i in VoxelGrid.get_neighbors_2d(target_3d):
+		if not _voxel_map.has_cell(neighbor) or not _voxel_map.is_passable(neighbor):
+			continue
+		var path: Array = _bfs_path_voxel(entity_pos, neighbor, entity_id)
+		if not path.is_empty() and path.size() < best_path_len:
+			best_path = path
+			best_path_len = path.size()
+	if best_path.is_empty():
+		return ""
+	_order_manager.add_order(entity_id, "move_adjacent", target_3d, best_path)
+	return "queued"
 
 
 ## Voxel-mode path for queue_door_interaction_order.
@@ -516,7 +553,7 @@ func _queue_move_order_voxel(entity_id: String, target_pos) -> bool:
 	if _voxel_map == null:
 		return false
 	var pos_3d: Vector3i = target_pos if target_pos is Vector3i else Vector3i(target_pos.x, target_pos.y, _current_level)
-	if not _voxel_map.has_cell(pos_3d) or not _voxel_map.is_passable(pos_3d):
+	if not _voxel_map.has_cell(pos_3d) or not _voxel_map.is_walkable_with_open_door(pos_3d):
 		return false
 	if _voxel_map.is_occupied_by_other(pos_3d, entity_id):
 		return false
@@ -529,7 +566,7 @@ func _queue_move_order_voxel(entity_id: String, target_pos) -> bool:
 	if start.z != pos_3d.z:
 		# Multi-level move — delegate to MovementResolver for stair-aware pathfinding.
 		_ensure_managers()
-		path = _movement_resolver.path_bfs_3d(start, pos_3d)
+		path = _movement_resolver.path_bfs_3d(start, pos_3d, "ground", 50, -1, "explore")
 	else:
 		# Same-level — local BFS with fallback-to-closest-unoccupied-cell semantics.
 		path = _bfs_path_voxel(start, pos_3d, entity_id)
@@ -571,7 +608,9 @@ func _bfs_path_voxel(start: Vector3i, goal: Vector3i, mover_id: String = "") -> 
 				continue
 			if not _voxel_map.has_cell(neighbor):
 				continue
-			if not _voxel_map.is_passable(neighbor) and neighbor != goal:
+			# Explore-mode passability: closed unlocked doors are walkable
+			# (executor pauses 1 round at the door cell to swing it open).
+			if not _voxel_map.is_walkable_with_open_door(neighbor) and neighbor != goal:
 				continue
 			came_from[neighbor] = current
 			frontier.append(neighbor)
@@ -623,7 +662,9 @@ func _queue_group_move_voxel(target_pos) -> bool:
 		return false
 
 	# Leader path via MovementResolver (stair/ramp-aware, multi-level-capable).
-	var leader_path: Array = _movement_resolver.path_bfs_3d(leader_pos, target_3d)
+	# Explore-mode: closed unlocked doors are walkable (auto-open en route).
+	var leader_path: Array = _movement_resolver.path_bfs_3d(
+		leader_pos, target_3d, "ground", 50, -1, "explore")
 	if leader_path.is_empty():
 		return false
 	_order_manager.add_order(leader_id, "move", target_3d, leader_path)
@@ -668,7 +709,8 @@ func _queue_group_move_voxel(target_pos) -> bool:
 			continue
 
 		claimed[member_target] = eid
-		var member_path: Array = _movement_resolver.path_bfs_3d(member_pos, member_target)
+		var member_path: Array = _movement_resolver.path_bfs_3d(
+			member_pos, member_target, "ground", 50, -1, "explore")
 		if member_path.is_empty():
 			# Unreachable — drop the claim and wait.
 			claimed.erase(member_target)

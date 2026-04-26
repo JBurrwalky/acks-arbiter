@@ -7,10 +7,10 @@
       "description": "A balanced party of six adventurers ready for glory."
     },
     {
-      "id": "falcons_crown",
-      "file": "falcons_crown.json",
-      "name": "The Falcon's Crown",
-      "description": "A balanced starting company of six sworn to the Falcon's Crown."
+      "id": "moonsworn_band",
+      "file": "moonsworn_band.json",
+      "name": "Moonsworn Band",
+      "description": "A balanced six-member company of Luna, backed by a baggage train of trained beasts and carts."
     }
   ]
 }

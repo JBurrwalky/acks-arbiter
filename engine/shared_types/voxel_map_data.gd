@@ -185,6 +185,17 @@ func is_passable(pos: Vector3i) -> bool:
 	return _cells[pos].is_passable_by_walker()
 
 
+## Returns true if exploration-mode pathfinding should treat this cell as
+## walkable — closed unlocked doors count as walkable here even though
+## is_passable() rejects them. The path executor will pause at the door for
+## one round to open it. Locked/stuck/portcullis/secret-undetected doors are
+## still rejected.
+func is_walkable_with_open_door(pos: Vector3i) -> bool:
+	if not _cells.has(pos):
+		return false
+	return _cells[pos].is_walkable_with_open_door()
+
+
 ## Returns true if the cell at [param pos] has a door (any state).
 func is_door(pos: Vector3i) -> bool:
 	return get_cell(pos).door_state != ""

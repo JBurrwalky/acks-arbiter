@@ -85,7 +85,11 @@ CREATE TABLE IF NOT EXISTS characters (
     -- Migration 009 additions
     sex TEXT NOT NULL DEFAULT 'male' CHECK(sex IN ('male', 'female')),
     -- Migration 026 additions
-    token_variant TEXT NOT NULL DEFAULT ''
+    token_variant TEXT NOT NULL DEFAULT '',
+    -- Migration 040: class-specific sub-selections (JSON dict)
+    -- e.g. {"regional_origin": "jutland"} for barbarians,
+    -- {"witch_tradition": "sylvan"} for witches.
+    class_metadata TEXT NOT NULL DEFAULT '{}'
 );
 
 CREATE TABLE IF NOT EXISTS parties (

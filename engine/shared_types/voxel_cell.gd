@@ -106,12 +106,40 @@ var pos: Vector3i:
 # Derived properties (computed on read, not stored)
 # ---------------------------------------------------------------------------
 
-## Whether a ground-walking creature can occupy this cell (ignoring support).
+## Whether a ground-walking creature can occupy this cell right now (ignoring
+## support). Strict mode — closed doors block. Used by combat and other paths
+## where door interactions must be explicit.
 ## Support checking (floor_type / solid below) is the pathfinder's job.
 func is_passable_by_walker() -> bool:
 	if solidity != "air":
 		return false
-	if door_state == "closed" or door_state == "locked" or door_state == "stuck":
+	if door_state in ["closed", "locked", "stuck"]:
+		return false
+	return true
+
+
+## Whether a door at this cell is impossible to open by simply pulling/pushing
+## (i.e. not just "closed and unlocked"). Locked, stuck, undetected secret, and
+## portcullis doors return true and block movement even when paired with the
+## explore-mode auto-open behavior.
+func is_opening_blocked() -> bool:
+	if door_state == "locked" or door_state == "stuck":
+		return true
+	if door_type == "portcullis" and door_state != "open":
+		return true
+	if door_type == "secret" and not door_detected:
+		return true
+	return false
+
+
+## Whether a ground walker can plan a path through this cell, treating closed
+## but openable doors as walkable (the path execution layer will pause for one
+## round to swing the door open). Used by exploration BFS so clicks past a
+## closed unlocked door route the party through it without a separate command.
+func is_walkable_with_open_door() -> bool:
+	if solidity != "air":
+		return false
+	if is_opening_blocked():
 		return false
 	return true
 

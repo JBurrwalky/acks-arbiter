@@ -30,6 +30,8 @@ func run_all_tests() -> void:
 	test_fog_set_creates_cell()
 	test_is_passable_delegates()
 	test_is_passable_absent_false()
+	test_is_walkable_with_open_door_delegates()
+	test_is_walkable_with_open_door_absent_false()
 	test_is_door()
 	test_door_state_set_and_get()
 	test_door_state_creates_cell()
@@ -322,6 +324,29 @@ func test_is_passable_absent_false() -> void:
 	var map := VoxelMapData.new()
 	check(map.is_passable(Vector3i(99, 99, 99)) == false,
 		"absent cell should not be passable")
+
+
+func test_is_walkable_with_open_door_delegates() -> void:
+	var map := VoxelMapData.new()
+	var pos := Vector3i(3, 3, 0)
+	var cell := VoxelCell.new()
+	cell.solidity = "air"
+	cell.door_state = "closed"
+	cell.door_type = "unlocked"
+	map.set_cell(pos, cell)
+	check(map.is_passable(pos) == false,
+		"strict is_passable rejects closed unlocked door")
+	check(map.is_walkable_with_open_door(pos) == true,
+		"explore-mode is_walkable_with_open_door permits closed unlocked door")
+	cell.door_state = "locked"
+	check(map.is_walkable_with_open_door(pos) == false,
+		"explore-mode still blocks locked door")
+
+
+func test_is_walkable_with_open_door_absent_false() -> void:
+	var map := VoxelMapData.new()
+	check(map.is_walkable_with_open_door(Vector3i(7, 7, 0)) == false,
+		"absent cell should not be walkable")
 
 
 func test_is_door() -> void:

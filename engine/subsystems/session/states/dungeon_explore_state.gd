@@ -33,6 +33,13 @@ var _finalizer := CombatFinalizer.new()
 var _spawner := DungeonEncounterSpawner.new()
 var _handlers: DungeonHandlers = null
 
+## Roaming monsters spawned by an encounter check but not yet in combat.
+## Combat starts when any of them has a clear path within attack range to a PC.
+## Shape: { encounter_id: { encounter_data: Dictionary, placements: Array } }
+## Placements use the same dict shape returned by DungeonEncounterSpawner —
+## each entry is reused verbatim when combat is finally triggered.
+var _roaming_monsters: Dictionary = {}
+
 ## Per-dungeon-visit in-memory state (control groups, idle behaviors, etc.).
 var _session_state: RefCounted = null  # DungeonSessionState
 
@@ -200,6 +207,10 @@ func exit(runner) -> void:
 	# Cancel movement animations before tearing down.
 	if _scene != null:
 		_scene.cancel_all_movement_animations()
+
+	# Drop any roaming monsters that never reached attack range — leaving the
+	# dungeon level unloads them. Their tokens go away with the scene.
+	_roaming_monsters.clear()
 
 	# Unregister dungeon event handlers and cancel dungeon events.
 	if _handlers != null:
@@ -499,74 +510,85 @@ func _on_context_action(action_data: Dictionary) -> void:
 		"move_here_confirm":
 			_issue_move_orders(selected, cell, party_data, scheduler, party_id)
 		"search_here":
-			# Move to cell, then search (1 turn = 60 rounds).
-			for eid in selected:
-				_handlers.schedule_action("search", eid, cell, DungeonHandlers.TURN_ROUNDS, scheduler, party_id)
-			_start_clock_if_paused()
+			# Move to cell, then search (1 turn = 60 rounds). Best searcher
+			# (elf/dwarf > highest DEX) does the work; the rest follow.
+			var search_actor: String = DungeonActionActorPicker.pick_for_search(
+				selected, party_data)
+			_issue_single_actor_action(
+				search_actor, selected, "search", cell, DungeonHandlers.TURN_ROUNDS,
+				party_data, scheduler, party_id, false,
+				"No one to search.", "Search")
 		"listen_here":
-			# Move to cell, then listen (1 round).
-			for eid in selected:
-				_handlers.schedule_action("listen", eid, cell, 1, scheduler, party_id)
-			_start_clock_if_paused()
+			var listen_actor: String = DungeonActionActorPicker.pick_for_listen(
+				selected, party_data)
+			_issue_single_actor_action(
+				listen_actor, selected, "listen", cell, 1,
+				party_data, scheduler, party_id, false,
+				"No one to listen.", "Listen")
 
-		# --- Door interactions (compound: move to door + interact) ---
+		# --- Door interactions (instant on-arrival door toggle) ---
 		"open_door", "close_door":
-			var any_door_ordered := false
-			for eid in selected:
-				var base_mv: int = 120
-				if party_data != null:
-					var cd: CharacterData = party_data.get_member(eid)
-					if cd != null:
-						base_mv = cd.get_effective_movement()
-				if _handlers.order_move_and_interact_door(eid, cell, base_mv, _controller, scheduler, party_id):
-					any_door_ordered = true
-					# Start continuous animation for the walk-to-door path.
-					if _scene != null and _handlers != null:
-						var cpr: float = _handlers.cells_per_round(base_mv)
-						var order: Dictionary = _handlers._movement_orders.get(eid, {})
-						var path: Array = order.get("path", [])
-						if not path.is_empty():
-							_scene.start_movement_animation(eid, path, cpr)
-							_handlers.mark_renderer_animated(eid)
-			if any_door_ordered:
-				_start_clock_if_paused()
+			var actor: String = DungeonActionActorPicker.pick_first_available(
+				selected, party_data)
+			_issue_door_toggle(actor, selected, cell, party_data, scheduler, party_id,
+				"Open Door" if action_type == "open_door" else "Close Door")
 		"force_door":
-			for eid in selected:
-				_handlers.schedule_action("force_door", eid, cell, 1, scheduler, party_id)
-			EventBus.notification_requested.emit({
-				"type": "info", "category": "environment",
-				"title": "Force Door: attempting to unstick (1 round)",
-				"duration": 2.0,
-			})
-			_start_clock_if_paused()
+			var force_actor: String = DungeonActionActorPicker.pick_for_force(
+				selected, party_data)
+			_issue_single_actor_action(
+				force_actor, selected, "force_door", cell, 1,
+				party_data, scheduler, party_id, true,
+				"No one strong enough to force this door.",
+				"Force Door (1 round)")
 		"pick_lock":
-			for eid in selected:
-				_handlers.schedule_action("pick_lock", eid, cell, DungeonHandlers.TURN_ROUNDS, scheduler, party_id)
-			EventBus.notification_requested.emit({
-				"type": "info", "category": "environment",
-				"title": "Pick Lock: rolling thief skill throw (1 turn)",
-				"duration": 2.0,
-			})
-			_start_clock_if_paused()
+			var lock_actor: String = DungeonActionActorPicker.pick_for_pick_lock(
+				selected, party_data, _session_state)
+			_issue_single_actor_action(
+				lock_actor, selected, "pick_lock", cell, DungeonHandlers.TURN_ROUNDS,
+				party_data, scheduler, party_id, true,
+				"No qualified thief in the group.",
+				"Pick Lock (1 turn)")
 		"bash_door":
 			var bash_turns: int = action_data.get("turns", 1)
-			for eid in selected:
-				_handlers.schedule_action("bash_door", eid, cell, bash_turns * DungeonHandlers.TURN_ROUNDS, scheduler, party_id)
-			EventBus.notification_requested.emit({
-				"type": "info", "category": "environment",
-				"title": "Bash Door: axe-wielder destroying door (%d turn%s)" % [bash_turns, "s" if bash_turns > 1 else ""],
-				"duration": 2.0,
-			})
-			_start_clock_if_paused()
-		"spike_shut", "wedge_open", "listen_at_door", "remove_spike", "remove_wedge":
-			var action_name: String = action_type
-			for eid in selected:
-				_handlers.schedule_action(action_name, eid, cell, 1, scheduler, party_id)
-			_start_clock_if_paused()
+			var bash_actor: String = DungeonActionActorPicker.pick_for_bash_door(
+				selected, party_data)
+			_issue_single_actor_action(
+				bash_actor, selected, "bash_door", cell,
+				bash_turns * DungeonHandlers.TURN_ROUNDS,
+				party_data, scheduler, party_id, true,
+				"No one is wielding an axe.",
+				"Bash Door (%d turn%s)" % [bash_turns, "s" if bash_turns > 1 else ""])
+		"spike_shut", "wedge_open":
+			var spike_actor: String = DungeonActionActorPicker.pick_for_spike_action(
+				selected, party_data, true)
+			_issue_single_actor_action(
+				spike_actor, selected, action_type, cell, 1,
+				party_data, scheduler, party_id, true,
+				"No one is carrying iron spikes.",
+				"Spike Shut" if action_type == "spike_shut" else "Wedge Open")
+		"remove_spike", "remove_wedge":
+			var remove_actor: String = DungeonActionActorPicker.pick_for_spike_action(
+				selected, party_data, false)
+			_issue_single_actor_action(
+				remove_actor, selected, action_type, cell, 1,
+				party_data, scheduler, party_id, true,
+				"No one available.",
+				"Remove Spike" if action_type == "remove_spike" else "Remove Wedge")
+		"listen_at_door":
+			var listen_door_actor: String = DungeonActionActorPicker.pick_for_listen(
+				selected, party_data)
+			_issue_single_actor_action(
+				listen_door_actor, selected, "listen_at_door", cell, 1,
+				party_data, scheduler, party_id, true,
+				"No one to listen.", "Listen at Door")
 		"force_portcullis":
-			for eid in selected:
-				_handlers.schedule_action("force_portcullis", eid, cell, 1, scheduler, party_id)
-			_start_clock_if_paused()
+			var portcullis_actor: String = DungeonActionActorPicker.pick_for_force(
+				selected, party_data)
+			_issue_single_actor_action(
+				portcullis_actor, selected, "force_portcullis", cell, 1,
+				party_data, scheduler, party_id, true,
+				"No one strong enough.",
+				"Force Portcullis (1 round)")
 
 		# --- Stairs ---
 		"ascend", "descend":
@@ -668,13 +690,35 @@ func _on_context_action(action_data: Dictionary) -> void:
 					_refresh_control_group_bar()
 
 		"use_lever":
+			# Only one PC actually pulls the lever — schedule the first selected
+			# character who is currently 3D-adjacent to it. Scheduling for every
+			# selected PC produced a flurry of "Too far to reach the lever"
+			# toasts when only one was adjacent.
+			var lever_actor: String = ""
+			var lever_cell_3d: Vector3i = cell if cell is Vector3i else \
+				Vector3i(cell.x, cell.y, _controller.get_current_level())
 			for eid in selected:
-				_handlers.schedule_action("use_lever", eid, cell, 1, scheduler, party_id)
-			_start_clock_if_paused()
+				var ep: Vector3i = _controller.get_entity_pos_3d(eid)
+				if ep != Vector3i(-1, -1, -1) and VoxelGrid.is_adjacent(ep, lever_cell_3d):
+					lever_actor = eid
+					break
+			if lever_actor.is_empty():
+				EventBus.notification_requested.emit({
+					"type": "warning", "category": "environment",
+					"title": "No one is close enough to pull the lever.",
+					"duration": 3.0,
+				})
+			else:
+				_handlers.schedule_action("use_lever", lever_actor, cell, 1, scheduler, party_id)
+				_start_clock_if_paused()
 		"drop_portcullis":
-			for eid in selected:
-				_handlers.schedule_action("drop_portcullis", eid, cell, 1, scheduler, party_id)
-			_start_clock_if_paused()
+			var drop_actor: String = DungeonActionActorPicker.pick_first_available(
+				selected, party_data)
+			_issue_single_actor_action(
+				drop_actor, selected, "drop_portcullis", cell, 1,
+				party_data, scheduler, party_id, true,
+				"No one is at the controls.",
+				"Drop Portcullis")
 
 		# --- Loot actions ---
 		"loot":
@@ -1045,6 +1089,148 @@ func _issue_move_orders(
 		_start_clock_if_paused()
 
 
+## Returns the effective base movement (ft/round) for [param entity_id].
+## Falls back to 120 ft when CharacterData is unavailable.
+func _get_base_movement(entity_id: String, party_data: PartyData) -> int:
+	if party_data == null:
+		return 120
+	var cd: CharacterData = party_data.get_member(entity_id)
+	if cd == null:
+		return 120
+	return cd.get_effective_movement()
+
+
+## Kick off the renderer's continuous-movement tween for [param entity_id]
+## using the path that handlers just queued. No-op when no path is queued.
+func _start_renderer_animation_for(entity_id: String, base_movement: int) -> void:
+	if _scene == null or _handlers == null:
+		return
+	var order: Dictionary = _handlers._movement_orders.get(entity_id, {})
+	var path: Array = order.get("path", [])
+	if path.is_empty():
+		return
+	var cpr: float = _handlers.cells_per_round(base_movement)
+	_scene.start_movement_animation(entity_id, path, cpr)
+	_handlers.mark_renderer_animated(entity_id)
+
+
+## Issue a single-actor compound action with the rest of the selection
+## following in formation toward the action site. Used for skill-roll and
+## item-required dungeon actions (pick_lock, force_door, bash_door, search,
+## listen, spike-shut, ...). When [param best_actor] is empty (nobody
+## qualifies), emits [param empty_warning] and does nothing.
+func _issue_single_actor_action(
+		best_actor: String,
+		selected: Array,
+		action_type: String,
+		cell,
+		duration_rounds: int,
+		party_data: PartyData,
+		scheduler: EventScheduler,
+		party_id: String,
+		adjacent_only: bool,
+		empty_warning: String,
+		action_label: String) -> void:
+	if best_actor.is_empty():
+		EventBus.notification_requested.emit({
+			"type": "warning", "category": "environment",
+			"title": empty_warning, "duration": 3.0,
+		})
+		return
+
+	var actor_mv: int = _get_base_movement(best_actor, party_data)
+	var ok: bool = _handlers.order_move_and_schedule_action(
+		best_actor, cell, action_type, duration_rounds,
+		actor_mv, _controller, scheduler, party_id, adjacent_only)
+	if not ok:
+		EventBus.notification_requested.emit({
+			"type": "warning", "category": "environment",
+			"title": "%s: cannot reach the target." % action_label,
+			"duration": 3.0,
+		})
+		return
+
+	# If a walk-to phase was queued, drive its tween animation.
+	_start_renderer_animation_for(best_actor, actor_mv)
+
+	# Followers — everyone else in the selection — group-move toward the
+	# action site so they bunch up near the actor while waiting.
+	var followers: Array = []
+	var follower_movements: Dictionary = {}
+	for eid in selected:
+		var sid: String = str(eid)
+		if sid == best_actor:
+			continue
+		followers.append(sid)
+		follower_movements[sid] = _get_base_movement(sid, party_data)
+	if not followers.is_empty():
+		var ordered: Array = _handlers.order_group_move(
+			followers, cell, follower_movements,
+			_controller, scheduler, party_id)
+		for eid in ordered:
+			_start_renderer_animation_for(eid, follower_movements.get(eid, 120))
+
+	var actor_name: String = best_actor
+	if party_data != null:
+		var cd: CharacterData = party_data.get_member(best_actor)
+		if cd != null:
+			actor_name = cd.name
+	EventBus.notification_requested.emit({
+		"type": "info", "category": "environment",
+		"title": "%s: %s" % [action_label, actor_name],
+		"duration": 2.5,
+	})
+	_start_clock_if_paused()
+
+
+## Issue an instant door open/close: best actor walks to the door cell and
+## toggles it on arrival; followers group-move to the door's vicinity in
+## formation. Mirrors _issue_single_actor_action but uses interact_door
+## (instant) instead of schedule_action (timed).
+func _issue_door_toggle(
+		best_actor: String,
+		selected: Array,
+		cell,
+		party_data: PartyData,
+		scheduler: EventScheduler,
+		party_id: String,
+		action_label: String) -> void:
+	if best_actor.is_empty():
+		EventBus.notification_requested.emit({
+			"type": "warning", "category": "environment",
+			"title": "No one available to operate the door.",
+			"duration": 3.0,
+		})
+		return
+	var actor_mv: int = _get_base_movement(best_actor, party_data)
+	var ok: bool = _handlers.order_move_and_interact_door(
+		best_actor, cell, actor_mv, _controller, scheduler, party_id)
+	if not ok:
+		EventBus.notification_requested.emit({
+			"type": "warning", "category": "environment",
+			"title": "%s: cannot reach the door." % action_label,
+			"duration": 3.0,
+		})
+		return
+	_start_renderer_animation_for(best_actor, actor_mv)
+	# Followers march toward the door.
+	var followers: Array = []
+	var follower_movements: Dictionary = {}
+	for eid in selected:
+		var sid: String = str(eid)
+		if sid == best_actor:
+			continue
+		followers.append(sid)
+		follower_movements[sid] = _get_base_movement(sid, party_data)
+	if not followers.is_empty():
+		var ordered: Array = _handlers.order_group_move(
+			followers, cell, follower_movements,
+			_controller, scheduler, party_id)
+		for eid in ordered:
+			_start_renderer_animation_for(eid, follower_movements.get(eid, 120))
+	_start_clock_if_paused()
+
+
 func _on_exit_requested() -> void:
 	if _runner != null:
 		_runner.transition_to_state("wilderness")
@@ -1228,10 +1414,10 @@ func _on_scheduler_event_resolved(event_type: String, _event_data: Dictionary) -
 		var presentation: Dictionary = result.get("presentation", {})
 		var ptype: String = presentation.get("type", "")
 
-		if ptype == "dungeon_encounter":
+		if ptype == "dungeon_encounter_spawned":
 			var enc: Dictionary = presentation.get("encounter_data", {})
 			if not enc.is_empty():
-				_start_dungeon_combat(enc)
+				_spawn_roaming_encounter(enc)
 				return
 
 		if ptype == "dungeon_character_exited":
@@ -1255,6 +1441,10 @@ func _on_scheduler_event_resolved(event_type: String, _event_data: Dictionary) -
 
 	# Advance queued exit characters toward the exit cell.
 	_check_exit_queue()
+
+	# Re-evaluate roaming-monster proximity. Combat triggers when any roaming
+	# monster has a clear path within attack range to a PC.
+	_check_roaming_proximity()
 
 	# Refresh minimap after any state change.
 	_update_minimap()
@@ -1298,7 +1488,109 @@ func _check_idle_behaviors() -> void:
 # In-place dungeon combat
 # ---------------------------------------------------------------------------
 
-func _start_dungeon_combat(encounter_data: Dictionary) -> void:
+## Spawn the encounter's monsters into the dungeon as roaming entities, but
+## do NOT enter combat. Combat starts later via _check_roaming_proximity()
+## when at least one monster has a clear path within attack range to a PC.
+func _spawn_roaming_encounter(encounter_data: Dictionary) -> void:
+	if _runner == null or _controller == null or _scene == null:
+		return
+	var tactical_map: VoxelMapData = _controller.get_voxel_map()
+	if tactical_map == null:
+		return
+
+	var party_positions: Array[Vector3i] = []
+	for eid in _controller.get_entity_ids():
+		if tactical_map.entity_positions.has(eid):
+			party_positions.append(tactical_map.entity_positions[eid])
+	if party_positions.is_empty():
+		party_positions.append(_controller.get_party_position_3d())
+
+	var monster_registry = _runner.get_monster_registry()
+	var current_level: int = _controller.get_current_level()
+	var placements: Array = _spawner.spawn_encounter(
+		tactical_map, party_positions, encounter_data, monster_registry, DiceSystem, current_level)
+	if placements.is_empty():
+		push_warning("DungeonExploreState: roaming spawn failed, skipping encounter")
+		return
+
+	# Place tokens + map entities so the renderer shows the monsters.
+	for p in placements:
+		var combatant_id: String = p["combatant_id"]
+		var gp_3d: Vector3i = p["grid_position"]
+		tactical_map.set_entity_pos(combatant_id, gp_3d)
+		var mname: String = p["monster_data"].get("name", "Monster")
+		_scene.add_entity_token(combatant_id, mname, 1, mname.substr(0, 1).to_upper())
+		_scene.move_token(combatant_id, gp_3d)
+
+	var enc_id: String = encounter_data.get("encounter_id", "")
+	if enc_id.is_empty():
+		enc_id = "enc_%d" % Time.get_ticks_msec()
+	_roaming_monsters[enc_id] = {
+		"encounter_data": encounter_data,
+		"placements": placements,
+	}
+
+	EventBus.notification_requested.emit({
+		"type": "warning", "category": "encounter",
+		"title": "Encounter: %d %s nearby!" % [
+			encounter_data.get("number", 0),
+			encounter_data.get("monster_group", "monsters")],
+		"duration": 5.0,
+	})
+
+	# Run an immediate check in case the spawn rolled close enough to trigger
+	# combat right away. Also covers the case where party is adjacent.
+	_check_roaming_proximity()
+
+
+## Returns true when any roaming monster has a path of length ≤ trigger range
+## to a PC, using explore-mode passability (closed unlocked doors permitted,
+## locked / stuck / portcullis / undetected secret blocked).
+func _check_roaming_proximity() -> void:
+	if _in_combat or _roaming_monsters.is_empty():
+		return
+	if _controller == null or _runner == null:
+		return
+	var tactical_map: VoxelMapData = _controller.get_voxel_map()
+	if tactical_map == null:
+		return
+	var party_data: PartyData = _runner.get_party_data()
+	if party_data == null:
+		return
+
+	var party_positions: Array[Vector3i] = []
+	for eid in _controller.get_entity_ids():
+		if tactical_map.entity_positions.has(eid):
+			party_positions.append(tactical_map.entity_positions[eid])
+	if party_positions.is_empty():
+		return
+
+	var resolver := MovementResolver.new()
+	resolver.set_voxel_map(tactical_map)
+
+	for enc_id in _roaming_monsters.keys():
+		var entry: Dictionary = _roaming_monsters[enc_id]
+		var placements: Array = entry.get("placements", [])
+		for p in placements:
+			var monster_id: String = p["combatant_id"]
+			if not tactical_map.entity_positions.has(monster_id):
+				continue
+			var monster_pos: Vector3i = tactical_map.entity_positions[monster_id]
+			var monster_data: Dictionary = p.get("monster_data", {})
+			var move_feet: int = int(monster_data.get("movement", 90))
+			var move_cells: int = maxi(1, move_feet / 5)
+			var trigger_range: int = move_cells + 1  # one round of approach + one cell to attack
+			for pc_pos: Vector3i in party_positions:
+				var path: Array = resolver.path_bfs_3d(
+					monster_pos, pc_pos, "ground", trigger_range, -1, "explore")
+				if not path.is_empty() and path.size() - 1 <= trigger_range:
+					_start_dungeon_combat(entry["encounter_data"], placements)
+					_roaming_monsters.erase(enc_id)
+					return
+
+
+func _start_dungeon_combat(encounter_data: Dictionary,
+		existing_placements: Array = []) -> void:
 	if _runner == null or _controller == null or _scene == null:
 		return
 	_in_combat = true
@@ -1324,11 +1616,14 @@ func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 	if party_positions.is_empty():
 		party_positions.append(_controller.get_party_position_3d())
 
-	# Spawn monsters
+	# Use pre-spawned roaming placements when supplied (deferred combat trigger);
+	# otherwise spawn fresh from the encounter data.
 	var monster_registry = _runner.get_monster_registry()
 	var current_level: int = _controller.get_current_level()
-	var placements: Array = _spawner.spawn_encounter(
-		tactical_map, party_positions, encounter_data, monster_registry, DiceSystem, current_level)
+	var placements: Array = existing_placements
+	if placements.is_empty():
+		placements = _spawner.spawn_encounter(
+			tactical_map, party_positions, encounter_data, monster_registry, DiceSystem, current_level)
 
 	if placements.is_empty():
 		push_warning("DungeonExploreState: encounter spawn failed, skipping combat")
@@ -1406,6 +1701,10 @@ func _start_dungeon_combat(encounter_data: Dictionary) -> void:
 		monster_ai, morale_resolver, cleave_resolver,
 		mortal_wounds_resolver, tactical_map)
 	_dungeon_combat_controller.encounter_id = encounter_data.get("encounter_id", "")
+	# Forward combat-side door changes to the dungeon controller so the renderer
+	# refreshes. Combat doesn't own the controller — this state owns both.
+	if _controller != null:
+		_dungeon_combat_controller.door_state_changed.connect(_controller.door_state_changed.emit)
 
 	EventBus.combat_started.emit(_dungeon_combat_controller.encounter_id)
 

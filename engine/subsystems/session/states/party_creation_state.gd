@@ -302,8 +302,10 @@ func _handle_confirm_premade_party() -> String:
 	GameState.campaign_id = _campaign_id
 	GameState.party_id = _party_id
 
-	# Import each character
+	# Import each character; remember new IDs by roster index so that
+	# trained_creatures can be linked to their handlers below.
 	var characters: Array = _selected_premade_data.get("characters", [])
+	var char_ids_by_index: Array = []
 	for entry in characters:
 		var char_dict: Dictionary = entry.get("character", {}).duplicate()
 		char_dict["campaign_id"] = _campaign_id
@@ -312,7 +314,9 @@ func _handle_confirm_premade_party() -> String:
 		var char_id: String = CampaignRepository.create_character(char_dict)
 		if char_id.is_empty():
 			push_error("PartyCreationState: failed to create premade character: %s" % char_dict.get("name", "?"))
+			char_ids_by_index.append("")
 			continue
+		char_ids_by_index.append(char_id)
 
 		CampaignRepository.add_party_member(_party_id, char_id, "middle")
 
@@ -331,6 +335,58 @@ func _handle_confirm_premade_party() -> String:
 		var inventory: Array = entry.get("inventory", [])
 		if not inventory.is_empty():
 			CampaignRepository.save_character_inventory(char_id, inventory)
+
+	# Heraldry — optional override of the default random preset that
+	# SessionLoadState would otherwise assign.
+	var heraldry_data = _selected_premade_data.get("heraldry", null)
+	if heraldry_data is Dictionary and not (heraldry_data as Dictionary).is_empty():
+		var descriptor := HeraldryDescriptor.from_dict(heraldry_data)
+		descriptor.heraldry_id = CampaignRepository.generate_id()
+		if CampaignRepository.save_heraldry(descriptor):
+			CampaignRepository.assign_heraldry_to_party(_party_id, descriptor.heraldry_id)
+		else:
+			push_error("PartyCreationState: failed to save premade heraldry")
+
+	# Trained creatures — remap handler_character_index to the newly-minted
+	# character id. Preserve the mapping from JSON index to new creature id
+	# so that draft vehicles can reference them for hitching.
+	var creatures: Array = _selected_premade_data.get("trained_creatures", [])
+	var creature_ids_by_index: Array = []
+	for creature_entry in creatures:
+		var c_dict: Dictionary = (creature_entry as Dictionary).duplicate()
+		c_dict["campaign_id"] = _campaign_id
+		c_dict["party_id"] = _party_id
+		c_dict["id"] = ""
+		var handler_idx: int = int(c_dict.get("handler_character_index", -1))
+		c_dict.erase("handler_character_index")
+		if handler_idx >= 0 and handler_idx < char_ids_by_index.size():
+			c_dict["handler_id"] = char_ids_by_index[handler_idx]
+		else:
+			c_dict["handler_id"] = ""
+		var creature_id: String = CampaignRepository.create_trained_creature(c_dict)
+		creature_ids_by_index.append(creature_id)
+		if creature_id.is_empty():
+			push_error("PartyCreationState: failed to create premade creature: %s" % c_dict.get("species_id", "?"))
+
+	# Draft vehicles — remap hitched_creature_indices to new creature ids.
+	var vehicles: Array = _selected_premade_data.get("draft_vehicles", [])
+	for vehicle_entry in vehicles:
+		var v_dict: Dictionary = (vehicle_entry as Dictionary).duplicate()
+		v_dict["campaign_id"] = _campaign_id
+		v_dict["party_id"] = _party_id
+		v_dict["id"] = ""
+		var hitched_indices: Array = v_dict.get("hitched_creature_indices", [])
+		v_dict.erase("hitched_creature_indices")
+		var hitched_ids: Array = []
+		for idx in hitched_indices:
+			var i: int = int(idx)
+			if i >= 0 and i < creature_ids_by_index.size():
+				var cid: String = creature_ids_by_index[i]
+				if not cid.is_empty():
+					hitched_ids.append(cid)
+		v_dict["hitched_creatures"] = JSON.stringify(hitched_ids)
+		if CampaignRepository.create_draft_vehicle(v_dict).is_empty():
+			push_error("PartyCreationState: failed to create premade vehicle: %s" % v_dict.get("item_key", "?"))
 
 	# Clean up detail screen
 	if _premade_detail_screen != null:

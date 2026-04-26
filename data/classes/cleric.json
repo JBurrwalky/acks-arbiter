@@ -33,7 +33,7 @@
   },
   "xp_table": [0, 1500, 3000, 6000, 12000, 24000, 50000, 100000, 200000, 300000, 400000, 500000, 600000, 700000],
   "hd_table": ["1d6", "2d6", "3d6", "4d6", "5d6", "6d6", "7d6", "8d6", "9d6", "9d6+1", "9d6+2", "9d6+3", "9d6+4", "9d6+5"],
-  "weapon_permissions": ["warhammer", "mace", "club", "quarterstaff", "sling"],
+  "weapon_permissions": ["warhammer", "mace", "morning_star", "club", "quarterstaff", "sling"],
   "weapon_restrictions": ["bladed_weapons", "piercing_weapons"],
   "armor_permissions": ["all"],
   "shield_permitted": true,

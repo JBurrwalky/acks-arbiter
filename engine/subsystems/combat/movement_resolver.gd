@@ -492,7 +492,8 @@ func _find_best_adjacent_cell_voxel(
 func path_bfs_3d(from_pos: Vector3i, to_pos: Vector3i,
 		movement_type: String = "ground",
 		max_range: int = 50,
-		mover_side: int = -1) -> Array[Vector3i]:
+		mover_side: int = -1,
+		passability_mode: String = "strict") -> Array[Vector3i]:
 	if _voxel_map == null:
 		return []
 	if from_pos == to_pos:
@@ -512,7 +513,7 @@ func path_bfs_3d(from_pos: Vector3i, to_pos: Vector3i,
 		for neighbor: Vector3i in VoxelGrid.get_neighbors_3d(current):
 			if visited.has(neighbor):
 				continue
-			if not _can_enter_3d(current, neighbor, movement_type):
+			if not _can_enter_3d(current, neighbor, movement_type, passability_mode):
 				continue
 			# ZoC cells can be a destination but not a waypoint.
 			if not enemy_zoc.is_empty() and enemy_zoc.has(neighbor) and neighbor != to_pos:
@@ -667,15 +668,23 @@ func _build_enemy_zoc_set_3d(mover_side: int) -> Dictionary:
 # ---------------------------------------------------------------------------
 
 ## Returns true if [param movement_type] allows moving from [param from_pos]
-## to [param to_pos].
+## to [param to_pos]. [param passability_mode] = "strict" (default) blocks all
+## closed doors; "explore" treats closed unlocked doors as walkable so a single
+## click can route the party through them (executor pauses 1 round to open).
 func _can_enter_3d(from_pos: Vector3i, to_pos: Vector3i,
-		movement_type: String) -> bool:
+		movement_type: String,
+		passability_mode: String = "strict") -> bool:
 	var cell := _voxel_map.get_cell(to_pos)
 	var level_diff: int = abs(to_pos.z - from_pos.z)
 
 	match movement_type:
 		"ground":
-			if not cell.is_passable_by_walker():
+			var ground_passable: bool
+			if passability_mode == "explore":
+				ground_passable = cell.is_walkable_with_open_door()
+			else:
+				ground_passable = cell.is_passable_by_walker()
+			if not ground_passable:
 				return false
 			if not FallingResolver.has_support(_voxel_map, to_pos):
 				return false

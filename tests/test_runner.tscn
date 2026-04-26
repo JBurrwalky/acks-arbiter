@@ -123,6 +123,8 @@
 [ext_resource type="Script" path="res://tests/test_character_model_registry.gd" id="119_character_model_registry_tests"]
 [ext_resource type="Script" path="res://tests/test_lever.gd" id="120_lever_tests"]
 [ext_resource type="Script" path="res://tests/test_inventory_container_transfer.gd" id="121_inventory_container_transfer_tests"]
+[ext_resource type="Script" path="res://tests/test_class_equip_restriction_validator.gd" id="122_class_equip_restriction_validator_tests"]
+[ext_resource type="Script" path="res://tests/test_dungeon_action_actor_picker.gd" id="123_dungeon_action_actor_picker_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -492,3 +494,9 @@ script = ExtResource("120_lever_tests")
 
 [node name="InventoryContainerTransferTests" type="Node" parent="."]
 script = ExtResource("121_inventory_container_transfer_tests")
+
+[node name="ClassEquipRestrictionValidatorTests" type="Node" parent="."]
+script = ExtResource("122_class_equip_restriction_validator_tests")
+
+[node name="DungeonActionActorPickerTests" type="Node" parent="."]
+script = ExtResource("123_dungeon_action_actor_picker_tests")

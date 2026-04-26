@@ -456,6 +456,21 @@ func _finalize_character() -> void:
 	# Store on character (JSON array of spec IDs).
 	character.languages = CharacterData.sanitize_languages_json(all_langs)
 
+	# Persist class-specific sub-selections (barbarian regional origin, witch
+	# tradition, voudon craft) so runtime systems like the equip-restriction
+	# validator can resolve them on saved characters.
+	var class_meta: Dictionary = {}
+	var barbarian_origin: String = creation_state.get("barbarian_origin", "")
+	if not barbarian_origin.is_empty():
+		class_meta["regional_origin"] = barbarian_origin
+	var witch_tradition: String = creation_state.get("witch_tradition", "")
+	if not witch_tradition.is_empty():
+		class_meta["witch_tradition"] = witch_tradition
+	var voudon_craft: String = creation_state.get("voudon_craft_choice", "")
+	if not voudon_craft.is_empty():
+		class_meta["voudon_craft_choice"] = voudon_craft
+	character.class_metadata = JSON.stringify(class_meta)
+
 	# Persist character record (languages now included in to_dict()).
 	CampaignRepository.create_character(character.to_dict())
 
