@@ -510,17 +510,21 @@ func _on_context_action(action_data: Dictionary) -> void:
 		"move_here_confirm":
 			_issue_move_orders(selected, cell, party_data, scheduler, party_id)
 		"search_here":
-			# Move to cell, then search (1 turn = 60 rounds). Best searcher
-			# (elf/dwarf > highest DEX) does the work; the rest follow.
+			# Move to cell, then search (1 turn = 60 rounds). Picker queries
+			# ThiefSkillResolver for each candidate's `detect_secrets` target,
+			# so the lowest target wins — high-level thief beats an elf when
+			# their thief progression is better, otherwise racial 8+ wins.
 			var search_actor: String = DungeonActionActorPicker.pick_for_search(
-				selected, party_data)
+				selected, party_data,
+				_thief_skill_resolver(), _build_bundle_callable())
 			_issue_single_actor_action(
 				search_actor, selected, "search", cell, DungeonHandlers.TURN_ROUNDS,
 				party_data, scheduler, party_id, false,
 				"No one to search.", "Search")
 		"listen_here":
 			var listen_actor: String = DungeonActionActorPicker.pick_for_listen(
-				selected, party_data)
+				selected, party_data,
+				_thief_skill_resolver(), _build_bundle_callable())
 			_issue_single_actor_action(
 				listen_actor, selected, "listen", cell, 1,
 				party_data, scheduler, party_id, false,
@@ -576,7 +580,8 @@ func _on_context_action(action_data: Dictionary) -> void:
 				"Remove Spike" if action_type == "remove_spike" else "Remove Wedge")
 		"listen_at_door":
 			var listen_door_actor: String = DungeonActionActorPicker.pick_for_listen(
-				selected, party_data)
+				selected, party_data,
+				_thief_skill_resolver(), _build_bundle_callable())
 			_issue_single_actor_action(
 				listen_door_actor, selected, "listen_at_door", cell, 1,
 				party_data, scheduler, party_id, true,
@@ -1087,6 +1092,44 @@ func _issue_move_orders(
 
 	if any_ordered:
 		_start_clock_if_paused()
+
+
+## Returns a fresh ThiefSkillResolver wired to the runner's class registry.
+## Used by the actor picker to compute true effective targets for thief and
+## adventuring skills (with class progression and proficiency equivalents).
+## Returns null when the runner / class registry is unavailable.
+func _thief_skill_resolver() -> ThiefSkillResolver:
+	if _runner == null:
+		return null
+	var class_reg: ClassRegistry = _runner.get_class_registry()
+	if class_reg == null:
+		return null
+	return ThiefSkillResolver.new(class_reg, ProficiencyRegistry.new(), PowerRegistry.new())
+
+
+## Returns a Callable(character_id) -> CharacterBundle that the picker can
+## invoke per candidate. Centralises the bundle-build pattern used by
+## skill-roll resolvers in DungeonHandlers.
+func _build_bundle_callable() -> Callable:
+	return Callable(self, "_build_bundle_for_picker")
+
+
+func _build_bundle_for_picker(character_id: String) -> CharacterBundle:
+	if _runner == null:
+		return null
+	var party_data: PartyData = _runner.get_party_data()
+	if party_data == null:
+		return null
+	var cd: CharacterData = party_data.get_member(character_id)
+	if cd == null:
+		return null
+	var bundle := CharacterBundle.new()
+	bundle.character = cd
+	bundle.proficiencies = CampaignRepository.get_character_proficiencies(character_id)
+	bundle.character.proficiencies = bundle.proficiencies
+	bundle.powers = CampaignRepository.get_character_powers(character_id)
+	bundle.inventory = CampaignRepository.get_inventory_items(character_id)
+	return bundle
 
 
 ## Returns the effective base movement (ft/round) for [param entity_id].

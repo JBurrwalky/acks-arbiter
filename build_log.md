@@ -8445,16 +8445,23 @@ The fix splits the handler so the *primary* party uses `controller.move_party` (
 - New suite `tests/test_dungeon_action_actor_picker.gd` — 13 tests covering `pick_first_available`, race-bracket logic (`pick_for_search`, `pick_for_listen`), STR-based force, null-party guards, and elf/dwarf/DEX tiebreaks. Registered in `tests/test_runner.tscn` as `DungeonActionActorPickerTests` and added to `tests/test_runner.gd`'s suite list.
 - Skipped: dedicated unit tests for `pick_for_pick_lock` / `pick_for_force` (proficiency tiebreak) / `pick_for_bash_door` / `pick_for_spike_action`. They depend on `CampaignRepository.get_character_proficiencies` / `get_inventory_items` and would need a DB fixture. Verified via the existing menu-builder eligibility tests + smoke-test path below.
 
-**Follow-on fix in same session — Search/Listen now 1d20 per ACKS RAW:**
+**Follow-on fix in same session — Search/Listen routed through ThiefSkillResolver per ACKS RAW:**
 
-- **`_resolve_search`** ([dungeon_handlers.gd](engine/subsystems/session/handlers/dungeon_handlers.gd)): rolls 1d20, success on ≥ target. Default 18+ (≈15% — matches ACKS Adventures *Active Search*). Elves throw 8+ (their secret-door bonus, primary search-bonus category). Dwarves throw 14+ (their non-magical-trap bonus). Action is generic so each race gets the better of its category-specific thresholds. Thieves with Find Traps will eventually use ThiefSkillResolver — flagged TODO.
-- **`_resolve_listen`** (and `listen_at_door` via the dispatch fix below): rolls 1d20, success on ≥ target. Default 18+. Elves AND dwarves throw 14+ ("keen hearing" per RAW). Halflings have no listen bonus per RAW.
-- New helpers `_search_target_for(entity_id)`, `_listen_target_for(entity_id)`, `_get_character(entity_id) -> CharacterData`. Presentation payload now carries `target: int` so any UI can show the threshold.
+- **`_resolve_search`** and **`_resolve_listen`** in [dungeon_handlers.gd](engine/subsystems/session/handlers/dungeon_handlers.gd) now both delegate to a new generic `_resolve_skill_action(entity_id, cell, skill_key, ...)` helper. Search uses skill key `detect_secrets`, listen uses `hear_noise`. Both are 1d20 ≥ target with target supplied by `ThiefSkillResolver.get_skill_check(bundle, skill_key)`.
+- **ThiefSkillResolver already does the right thing for every actor:** picks the best baseline among (a) RAW default 18+, (b) racial powers (elf detect_secrets 8+, dwarf stonework 14+, elf/dwarf hear_noise 14+), (c) native class powers (thief progression by level), (d) proficiency-equivalent fractional thief levels for non-thieves whose proficiencies grant them. The catalog defines which proficiencies grant which equivalents — note that the Adventuring proficiency is NOT one of them; it's a universal-by-default proficiency that exists only as ACKS's RAW justification for why classed and leveled characters can attempt these tasks at all (vs. ordinary NPCs). It confers no numerical skill bonuses. One source of truth for both thief and non-thief actors.
+- New private helpers `_resolve_skill_action(...)`, `_build_character_bundle(entity_id) -> CharacterBundle`, `_make_thief_skill_resolver() -> ThiefSkillResolver` in `dungeon_handlers.gd`. Refactored `_resolve_search` and `_resolve_listen` to one-line delegations.
 - **`listen_at_door` now routes to `_resolve_listen`.** `_handle_action_complete` match arm `"listen", "listen_at_door":` — closes the pre-existing fall-through bug.
 
-*Picker correction (was elf > halfling, RAW says elf > dwarf for listen):*
-- [dungeon_action_actor_picker.gd](engine/subsystems/exploration/dungeon_action_actor_picker.gd) `pick_for_listen` updated to prefer `["elf", "dwarf"]`. Halflings drop to highest-DEX fallback bracket.
-- Test suite updated: `test_listen_prefers_elf_over_dwarf`, `test_listen_prefers_dwarf_when_no_elf`, `test_listen_does_not_prefer_halfling` (replaces the prior halfling-preference tests). Total picker tests now 14.
+*Picker upgraded to consult the resolver:*
+- [dungeon_action_actor_picker.gd](engine/subsystems/exploration/dungeon_action_actor_picker.gd) — `pick_for_search` and `pick_for_listen` gained two optional injected dependencies: `thief_skill_resolver` and `bundle_builder` (Callable). New private `_pick_by_skill_target(selected_ids, party_data, skill_key, resolver, builder)` builds a bundle per candidate, queries the resolver, picks the actor with the LOWEST `effective_target`. DEX breaks ties.
+- Falls back to race-only `_pick_by_race_then_dex(["elf", "dwarf"])` when the resolver/bundle-builder are null — preserves existing tests and provides a sane heuristic when called outside the dispatch site.
+- [dungeon_explore_state.gd](engine/subsystems/session/states/dungeon_explore_state.gd) supplies the resolver via new `_thief_skill_resolver()` helper and a Callable via `_build_bundle_callable()` (which wraps `_build_bundle_for_picker(character_id)`). All search/listen/listen_at_door dispatch sites updated to pass them.
+
+**Net effect:** A high-level thief beats an elf when their thief progression yields a lower target. A non-thief who carries a proficiency that grants fractional thief skill levels beats a baseline 18+ candidate. The picker is now exact rather than heuristic for these two skills.
+
+*Earlier picker correction (still in effect):*
+- `pick_for_listen` race fallback prefers `["elf", "dwarf"]` (RAW), not `["elf", "halfling"]`. Halflings have no listen bonus per book.
+- Test suite: `test_listen_prefers_elf_over_dwarf`, `test_listen_prefers_dwarf_when_no_elf`, `test_listen_does_not_prefer_halfling`. Total picker tests now 14 (resolver-injected path tested via smoke test, not unit tests).
 
 **Known issues:**
 

@@ -910,74 +910,119 @@ func _handle_action_complete(event: ScheduledEvent) -> Dictionary:
 # Action resolution
 # ---------------------------------------------------------------------------
 
-## Search — 1d20 ≥ target succeeds (ACKS Adventures, Active Search).
-## Default is 18+. Elves throw 8+ when actively searching for secret doors
-## (their primary search-bonus category). Dwarves throw 14+ for non-magical
-## traps. The action is generic — actual feature found is determined by the
-## current cell — so we apply the better of the two racial thresholds for
-## each race. Thieves use the Find Traps skill via a separate flow (TODO);
-## here they get the default unless they're also elf/dwarf.
+## Search — routes through ThiefSkillResolver `detect_secrets`. The resolver
+## picks the best target from: RAW default (18+), racial powers (elf 8+,
+## dwarf stonework 14+), native class powers (thief detect_secrets
+## progression), and proficiency equivalents (whichever proficiencies in the
+## catalog grant a fractional thief skill level for non-thieves).
 func _resolve_search(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
-	var roll: RollResult = DiceSystem.roll_digital(20, 1, 0, "search")
-	var target: int = _search_target_for(entity_id)
-	var found: bool = roll.modified_total >= target
-	return {
-		"auto_pause": true,
-		"pause_reason": "Search complete" + (" — found something!" if found else " — nothing found"),
-		"presentation": {
-			"type": "dungeon_search_complete",
-			"entity_id": entity_id,
-			"cell": str(cell),
-			"roll": roll.modified_total,
-			"target": target,
-			"found": found,
-		},
-	}
+	return _resolve_skill_action(entity_id, cell,
+		"detect_secrets", "search",
+		"dungeon_search_complete", "Search",
+		"found", "found something!", "nothing found")
 
 
-## Listen / Listen at Door — 1d20 ≥ target succeeds (ACKS Adventures,
-## Listening at Doors). Default 18+. Dwarves and elves throw 14+ ("keen
-## hearing"). Thieves should use the Hear Noises thief skill via
-## ThiefSkillResolver — TODO; for now non-elf/dwarf thieves get the default
-## throw and Hear Noises remains a follow-up.
+## Listen / Listen at Door — routes through ThiefSkillResolver `hear_noise`.
+## Resolver handles the 18+/14+ default/racial split, thief class
+## progression, and proficiency-equivalent thief levels for other classes.
 func _resolve_listen(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
-	var roll: RollResult = DiceSystem.roll_digital(20, 1, 0, "listen")
-	var target: int = _listen_target_for(entity_id)
-	var heard: bool = roll.modified_total >= target
+	return _resolve_skill_action(entity_id, cell,
+		"hear_noise", "listen",
+		"dungeon_listen_complete", "Listen",
+		"heard", "heard something!", "silence")
+
+
+## Generic skill-action resolver — runs a 1d20 thief skill check on behalf
+## of [param entity_id] using ThiefSkillResolver. The resolver handles
+## class progression, racial bonuses, and proficiency-equivalent fractional
+## thief levels uniformly. Returns the standard scheduler-event payload
+## with [param result_key] indicating success.
+func _resolve_skill_action(
+		entity_id: String,
+		cell,
+		skill_key: String,
+		fallback_roll_type: String,
+		presentation_type: String,
+		action_label: String,
+		result_key: String,
+		success_msg: String,
+		fail_msg: String) -> Dictionary:
+	var bundle: CharacterBundle = _build_character_bundle(entity_id)
+	var resolver: ThiefSkillResolver = _make_thief_skill_resolver()
+
+	var roll: RollResult
+	var target_value = null
+	var success: bool = false
+
+	if bundle != null and resolver != null:
+		var skill_check: Dictionary = resolver.get_skill_check(bundle, skill_key)
+		target_value = skill_check.get("effective_target", null)
+		if bool(skill_check.get("is_available", false)):
+			roll = resolver.roll_skill_digital(bundle, skill_key)
+		else:
+			# Skill unavailable for this character — straight 1d20 vs 18+
+			# fallback so we still produce a reasonable result.
+			roll = DiceSystem.roll_digital(20, 1, 0, fallback_roll_type)
+			target_value = 18
+	else:
+		roll = DiceSystem.roll_digital(20, 1, 0, fallback_roll_type)
+		target_value = 18
+
+	if target_value != null:
+		success = roll.modified_total >= int(target_value)
+
+	var presentation: Dictionary = {
+		"type": presentation_type,
+		"entity_id": entity_id,
+		"cell": str(cell),
+		"roll": roll.modified_total,
+		"target": target_value,
+	}
+	presentation[result_key] = success
+
 	return {
 		"auto_pause": true,
-		"pause_reason": "Listen complete" + (" — heard something!" if heard else " — silence"),
-		"presentation": {
-			"type": "dungeon_listen_complete",
-			"entity_id": entity_id,
-			"cell": str(cell),
-			"roll": roll.modified_total,
-			"target": target,
-			"heard": heard,
-		},
+		"pause_reason": "%s complete — %s" % [
+			action_label,
+			success_msg if success else fail_msg,
+		],
+		"presentation": presentation,
 	}
 
 
-## Returns the search target number for [param entity_id] (≥ this on 1d20
-## succeeds). 18 baseline, 8 for elves (secret doors), 14 for dwarves (traps).
-func _search_target_for(entity_id: String) -> int:
-	var cd: CharacterData = _get_character(entity_id)
+## Build a CharacterBundle for the ThiefSkillResolver — character data,
+## proficiencies, class powers, and inventory. Returns null when any
+## prerequisite is missing.
+func _build_character_bundle(entity_id: String) -> CharacterBundle:
+	if _runner == null:
+		return null
+	var party_data: PartyData = _runner.get_party_data()
+	if party_data == null:
+		return null
+	var cd: CharacterData = party_data.get_member(entity_id)
 	if cd == null:
-		return 18
-	if cd.race == "elf":
-		return 8
-	if cd.race == "dwarf":
-		return 14
-	return 18
+		return null
+	var bundle := CharacterBundle.new()
+	bundle.character = cd
+	bundle.proficiencies = CampaignRepository.get_character_proficiencies(entity_id)
+	bundle.character.proficiencies = bundle.proficiencies
+	bundle.powers = CampaignRepository.get_character_powers(entity_id)
+	bundle.inventory = CampaignRepository.get_inventory_items(entity_id)
+	return bundle
 
 
-## Returns the listen target number for [param entity_id] (≥ this on 1d20
-## succeeds). 18 baseline; elves and dwarves both throw 14+.
-func _listen_target_for(entity_id: String) -> int:
-	var cd: CharacterData = _get_character(entity_id)
-	if cd != null and (cd.race == "elf" or cd.race == "dwarf"):
-		return 14
-	return 18
+## Constructs a ThiefSkillResolver wired to the runner's class registry plus
+## fresh proficiency/power registries. Returns null when the runner is
+## unavailable.
+func _make_thief_skill_resolver() -> ThiefSkillResolver:
+	if _runner == null:
+		return null
+	var class_reg: ClassRegistry = _runner.get_class_registry()
+	if class_reg == null:
+		return null
+	var prof_reg := ProficiencyRegistry.new()
+	var power_reg := PowerRegistry.new()
+	return ThiefSkillResolver.new(class_reg, prof_reg, power_reg)
 
 
 ## Convenience accessor — returns the CharacterData for [param entity_id]

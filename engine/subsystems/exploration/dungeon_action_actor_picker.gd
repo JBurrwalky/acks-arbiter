@@ -99,22 +99,45 @@ static func pick_for_bash_door(selected_ids: Array, party_data) -> String:
 
 
 # ---------------------------------------------------------------------------
-# Search — elf > dwarf > highest DEX. Elves get bonuses for secret doors;
-# dwarves for stonework. When neither race is present, DEX (perception
-# proxy) breaks ties. Tiebreak within the elf and dwarf brackets is also DEX.
+# Search — picks the actor with the LOWEST effective target on the
+# `detect_secrets` thief skill. ThiefSkillResolver picks the best baseline
+# for each character (RAW default 18+, elf 8+, dwarf 14+, thief class
+# progression by level, plus proficiency-equivalent fractional thief levels
+# for non-thieves whose proficiencies grant them), so this picker is exact:
+# a high-level thief beats an elf when their target is lower; otherwise the
+# racial bonus wins.
+#
+# Tiebreak by DEX. When the resolver fixture is null, falls back to
+# elf > dwarf > highest DEX (race-only heuristic).
 # ---------------------------------------------------------------------------
 
-static func pick_for_search(selected_ids: Array, party_data) -> String:
+static func pick_for_search(
+		selected_ids: Array, party_data,
+		thief_skill_resolver = null,
+		bundle_builder = null) -> String:
+	var by_skill := _pick_by_skill_target(
+		selected_ids, party_data,
+		"detect_secrets", thief_skill_resolver, bundle_builder)
+	if not by_skill.is_empty():
+		return by_skill
 	return _pick_by_race_then_dex(selected_ids, party_data, ["elf", "dwarf"])
 
 
 # ---------------------------------------------------------------------------
-# Listen / Listen at Door — elf > dwarf > highest DEX. ACKS Listening at
-# Doors: elves and dwarves throw 14+ vs the default 18+ on 1d20 due to keen
-# hearing. (Halflings have no listen bonus per RAW.)
+# Listen / Listen at Door — same logic as search but using the `hear_noise`
+# skill. Resolver covers RAW default 18+, elf/dwarf 14+, thief class
+# progression, and proficiency-equivalent fractional thief levels.
 # ---------------------------------------------------------------------------
 
-static func pick_for_listen(selected_ids: Array, party_data) -> String:
+static func pick_for_listen(
+		selected_ids: Array, party_data,
+		thief_skill_resolver = null,
+		bundle_builder = null) -> String:
+	var by_skill := _pick_by_skill_target(
+		selected_ids, party_data,
+		"hear_noise", thief_skill_resolver, bundle_builder)
+	if not by_skill.is_empty():
+		return by_skill
 	return _pick_by_race_then_dex(selected_ids, party_data, ["elf", "dwarf"])
 
 
@@ -167,6 +190,49 @@ static func pick_first_available(selected_ids: Array, party_data) -> String:
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+## Iterates [param selected_ids], builds a CharacterBundle for each via
+## [param bundle_builder] (a Callable), and queries
+## [param thief_skill_resolver].get_skill_check(bundle, [param skill_key])
+## for each. Picks the actor with the LOWEST effective_target (best
+## chance of success on 1d20 ≥ target), with DEX as tiebreak.
+##
+## Returns "" when the resolver / bundle_builder is null OR when no
+## candidate has an available skill check — caller should fall back to a
+## race-based heuristic.
+static func _pick_by_skill_target(
+		selected_ids: Array, party_data,
+		skill_key: String, thief_skill_resolver,
+		bundle_builder) -> String:
+	if party_data == null:
+		return ""
+	if thief_skill_resolver == null or bundle_builder == null:
+		return ""
+	if not (bundle_builder is Callable):
+		return ""
+	var best_id := ""
+	var best_target := 99
+	var best_dex := -1
+	for eid in selected_ids:
+		var cd: CharacterData = party_data.get_member(str(eid))
+		if cd == null:
+			continue
+		var bundle = bundle_builder.call(cd.id)
+		if bundle == null:
+			continue
+		var skill_check: Dictionary = thief_skill_resolver.get_skill_check(bundle, skill_key)
+		if not bool(skill_check.get("is_available", false)):
+			continue
+		var target = skill_check.get("effective_target", null)
+		if target == null:
+			continue
+		var t: int = int(target)
+		if t < best_target or (t == best_target and cd.dexterity > best_dex):
+			best_target = t
+			best_dex = cd.dexterity
+			best_id = cd.id
+	return best_id
+
 
 static func _pick_by_race_then_dex(
 		selected_ids: Array, party_data, preferred_races: Array) -> String:
