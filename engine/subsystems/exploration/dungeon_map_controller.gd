@@ -477,11 +477,12 @@ func teleport_party_to(target_pos: Vector3i) -> bool:
 		var new_pos: Vector3i = _voxel_map.get_entity_pos(eid)
 		entity_moved.emit(eid, old_pos, new_pos)
 
-	# Visibility + level follow + fog.
+	# Visibility + level follow + fog. D1: post-B5 the visibility-on-move
+	# helper already runs the unified fog update; calling it twice was
+	# computing 2× the LOS rays per teleport. Single call now.
 	if old_pos.z != target_pos.z:
 		level_changed.emit(old_pos.z, target_pos.z)
 	_update_visibility_on_move(old_pos, target_pos)
-	_update_fog_for_all_members()
 	party_moved.emit(old_pos, target_pos)
 	return true
 
@@ -948,46 +949,32 @@ func _update_visibility_on_move(old_pos, new_pos) -> void:
 	_update_visibility_on_move_voxel(old_pos, new_pos)
 
 
-## Voxel-mode visibility update. Marks cells of the old room as explored when
-## the party leaves it, and reveals the new room (if any) when entered.
-func _update_visibility_on_move_voxel(old_pos, new_pos) -> void:
+## B5: visibility on move now defers to the light-source fog update.
+## old_pos / new_pos are kept in the signature for back-compat with handler
+## call-sites; they're no longer needed because the engine recomputes from
+## the current party positions.
+func _update_visibility_on_move_voxel(_old_pos, _new_pos) -> void:
 	if _voxel_map == null:
 		return
-	var old_3d: Vector3i = old_pos if old_pos is Vector3i else Vector3i(old_pos.x, old_pos.y, _current_level)
-	var new_3d: Vector3i = new_pos if new_pos is Vector3i else Vector3i(new_pos.x, new_pos.y, _current_level)
-
-	var old_room := _voxel_map.get_room_at(old_3d)
-	var new_room := _voxel_map.get_room_at(new_3d)
-
-	if old_room != new_room and old_room >= 0:
-		for c: Vector3i in _voxel_map.get_room_cells(old_room):
-			if _voxel_map.get_fog(c) == "visible":
-				_voxel_map.set_fog(c, "explored")
-
-	if new_room >= 0 and new_room != old_room:
-		_reveal_room_voxel(new_room)
-	else:
-		fog_updated.emit()
+	_update_fog_for_all_members_voxel()
 
 
 # ---------------------------------------------------------------------------
 # Voxel fog reveal helpers
 # ---------------------------------------------------------------------------
 
+## B5: was the room-scoped entry reveal. Now defers to the unified
+## light-source fog update so the entry cell is lit only when a light
+## source (or darkvision) covers it; otherwise just the party's cells stay
+## visible per the v1 pitch-darkness simplification.
 func _reveal_entry_room_voxel() -> void:
-	var party_pos := get_party_position_3d()
-	var room_id := _voxel_map.get_room_at(party_pos)
-	if room_id >= 0:
-		_reveal_room_voxel(room_id)
-	else:
-		_voxel_map.set_fog(party_pos, "visible")
-		# Also reveal immediate neighbors
-		for neighbor: Vector3i in VoxelGrid.get_neighbors_2d(party_pos):
-			if _voxel_map.has_cell(neighbor):
-				_voxel_map.set_fog(neighbor, "visible")
-		fog_updated.emit()
+	_update_fog_for_all_members_voxel()
 
 
+## B5 retired: room-scoped reveal was the pre-batch-3 mechanism. Light +
+## LOS now governs visibility. The function survives for dev/debug use
+## (room data is still maintained for B6 leftover-cache placement) but is
+## NOT called from the fog update path.
 func _reveal_room_voxel(room_id: int) -> void:
 	var cells := _voxel_map.get_room_cells(room_id)
 	var boundary := _voxel_map.get_room_boundary_cells(room_id)
@@ -1003,35 +990,34 @@ func _reveal_room_voxel(room_id: int) -> void:
 	fog_updated.emit()
 
 
-## Voxel fog update for all party members.
+## Voxel fog update for all party members. B5: light-source + LOS based,
+## not room-scoped. Each member contributes a Chebyshev box of their light
+## radius (or just their own cell if no light is active). See
+## FogRevealEngine.compute_visible_cells for the contract.
 func _update_fog_for_all_members_voxel() -> void:
 	if _voxel_map == null:
 		return
 
-	# Mark all currently "visible" cells as "explored" first
+	# Demote currently "visible" cells to "explored" — they revert to dim
+	# last-known state unless re-illuminated below.
 	for cell: VoxelCell in _voxel_map.get_all_cells():
 		if cell.fog_state == "visible":
 			cell.fog_state = "explored"
 
-	# Reveal around each member's position
+	# Build {entity_id: {pos, radius}} payload for the engine.
+	var members: Dictionary = {}
 	for eid in _party_entity_ids:
-		var member_pos := _voxel_map.get_entity_pos(eid)
-		if member_pos == Vector3i(-1, -1, -1):
+		var pos := _voxel_map.get_entity_pos(eid)
+		if pos == Vector3i(-1, -1, -1):
 			continue
+		members[eid] = {
+			"pos": pos,
+			"radius": _get_entity_visible_radius(eid),
+		}
 
-		var radius := _get_entity_visible_radius(eid)
-		if radius <= 0:
-			continue
-
-		var room_id := _voxel_map.get_room_at(member_pos)
-		if room_id >= 0:
-			_reveal_room_voxel(room_id)
-		else:
-			# Corridor: reveal cells within radius on same level
-			for neighbor: Vector3i in VoxelGrid.get_neighbors_2d(member_pos):
-				if _voxel_map.has_cell(neighbor):
-					_voxel_map.set_fog(neighbor, "visible")
-			_voxel_map.set_fog(member_pos, "visible")
+	var lit: Dictionary = FogRevealEngine.compute_visible_cells(_voxel_map, members)
+	for cell_pos in lit.keys():
+		_voxel_map.set_fog(cell_pos, "visible")
 
 	fog_updated.emit()
 

@@ -31,6 +31,7 @@ extends CanvasLayer
 var _override_manager: OverrideManager = null
 var _warning_shown_this_session := false
 var _selected_character_id := ""
+var _selected_entity_kind := "character"  # "character" or "creature"
 var _selected_map_id := ""
 var _selected_hex := Vector2i.ZERO
 var _hex_controller: HexMapController = null
@@ -265,16 +266,42 @@ func _refresh_characters_tab() -> void:
 		return
 	var members := CampaignRepository.list_party_characters(GameState.party_id)
 	for m in members:
+		var ctype: String = m.get("character_type", "pc")
+		var label_suffix := ""
+		match ctype:
+			"henchman": label_suffix = "Hireling"
+			"npc":      label_suffix = "NPC"
+			_:          label_suffix = m.get("character_class", "?")
 		_char_list.add_item("%s — %s L%d" % [
 			m.get("name", "?"),
-			m.get("character_class", "?"),
+			label_suffix,
 			m.get("level", 1)
 		])
-		_char_list.set_item_metadata(_char_list.item_count - 1, m.get("id", ""))
+		_char_list.set_item_metadata(_char_list.item_count - 1, {
+			"kind": "character",
+			"id": m.get("id", ""),
+		})
+
+	var creatures := CampaignRepository.get_trained_creatures_for_party(GameState.party_id)
+	for c in creatures:
+		_char_list.add_item("%s — Animal (%s)" % [
+			c.get("name", "?"),
+			c.get("species_id", "?"),
+		])
+		_char_list.set_item_metadata(_char_list.item_count - 1, {
+			"kind": "creature",
+			"id": c.get("id", ""),
+		})
 
 
 func _on_char_selected(idx: int) -> void:
-	_selected_character_id = _char_list.get_item_metadata(idx)
+	var meta = _char_list.get_item_metadata(idx)
+	if meta is Dictionary:
+		_selected_character_id = meta.get("id", "")
+		_selected_entity_kind = meta.get("kind", "character")
+	else:
+		_selected_character_id = str(meta)
+		_selected_entity_kind = "character"
 
 
 func _on_char_stat_apply() -> void:
@@ -282,29 +309,37 @@ func _on_char_stat_apply() -> void:
 		return
 	var field: String = CHARACTER_STAT_FIELDS[_char_stat_field.selected]
 	var value: int = int(_char_stat_value.value)
-	_override_manager.override_character_stat(_selected_character_id, field, value)
+	if _selected_entity_kind == "creature":
+		if field not in OverrideManager.TRAINED_CREATURE_STAT_FIELDS:
+			push_warning("OverridePanel: field '%s' not settable on trained creatures (only %s)" % [
+				field, OverrideManager.TRAINED_CREATURE_STAT_FIELDS
+			])
+			return
+		_override_manager.override_trained_creature_stat(_selected_character_id, field, value)
+	else:
+		_override_manager.override_character_stat(_selected_character_id, field, value)
 
 
 func _on_char_xp_apply() -> void:
-	if _selected_character_id.is_empty():
+	if _selected_character_id.is_empty() or _selected_entity_kind != "character":
 		return
 	_override_manager.override_character_xp(_selected_character_id, int(_char_xp_delta.value))
 
 
 func _on_char_condition_apply() -> void:
-	if _selected_character_id.is_empty() or _char_condition_name.text.is_empty():
+	if _selected_character_id.is_empty() or _selected_entity_kind != "character" or _char_condition_name.text.is_empty():
 		return
 	_override_manager.override_character_condition(_selected_character_id, _char_condition_name.text, true)
 
 
 func _on_char_condition_remove() -> void:
-	if _selected_character_id.is_empty() or _char_condition_name.text.is_empty():
+	if _selected_character_id.is_empty() or _selected_entity_kind != "character" or _char_condition_name.text.is_empty():
 		return
 	_override_manager.override_character_condition(_selected_character_id, _char_condition_name.text, false)
 
 
 func _on_char_dead_toggled(pressed: bool) -> void:
-	if _selected_character_id.is_empty():
+	if _selected_character_id.is_empty() or _selected_entity_kind != "character":
 		return
 	_override_manager.override_character_status(_selected_character_id, pressed)
 

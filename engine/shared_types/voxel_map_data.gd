@@ -445,7 +445,8 @@ static func from_dict(data: Dictionary) -> VoxelMapData:
 	map.generation_seed = int(data.get("generation_seed", 0))
 
 	var entry_dict: Dictionary = data.get("entry", {})
-	if not entry_dict.is_empty():
+	var has_explicit_entry := not entry_dict.is_empty()
+	if has_explicit_entry:
 		map.entry_pos = Vector3i(
 			int(entry_dict.get("col", 0)),
 			int(entry_dict.get("row", 0)),
@@ -469,6 +470,15 @@ static func from_dict(data: Dictionary) -> VoxelMapData:
 		var label: String = tc.get("label", "")
 		if not label.is_empty():
 			map.transition_cell_labels[tc_pos] = label
+
+	# Backstop: when JSON declares an entry cell but omits transition_cells, the
+	# entry cell is the dungeon exit. Without this, the entrance cell renders no
+	# "E" marker and the right-click menu offers no "Exit Dungeon" — players are
+	# trapped post-voxel.
+	if has_explicit_entry and map.entry_pos not in map.transition_cells:
+		map.transition_cells.append(map.entry_pos)
+		if not map.transition_cell_labels.has(map.entry_pos):
+			map.transition_cell_labels[map.entry_pos] = "Entrance"
 
 	# Parse lever linkages. Schema: [{"lever": [c, r, l], "target": [c, r, l]}, ...].
 	var lever_array: Array = data.get("lever_links", [])

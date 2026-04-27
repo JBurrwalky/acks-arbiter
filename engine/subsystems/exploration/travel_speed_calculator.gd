@@ -75,12 +75,22 @@ static func calculate_party_speed(party: PartyData, terrain_category: String, on
 	var slowest_speed: int = 999
 	var slowest_id: String = ""
 
+	var repo = _get_campaign_repository()
 	for cd: CharacterData in party.character_data:
-		var member_speed: int = cd.get_effective_movement()
+		var modifier_speed: int = cd.get_effective_movement()
+		var encumbered_speed: int = _encumbered_speed_for(cd, repo)
+		# encumbered_speed < 0 means we couldn't query inventory (no repo, or
+		# fixture-only test). Fall back to the modifier-derived value. When we
+		# can query, the encumbered ceiling governs and 0 means overloaded.
+		var member_speed: int = modifier_speed
+		if encumbered_speed >= 0:
+			member_speed = mini(modifier_speed, encumbered_speed)
 		details.append({
 			"character_id": cd.id,
 			"name": cd.name,
 			"effective_movement": member_speed,
+			"modifier_movement": modifier_speed,
+			"encumbered_movement": encumbered_speed,
 		})
 		if member_speed < slowest_speed:
 			slowest_speed = member_speed
@@ -268,6 +278,32 @@ static func rest_penalty(party: PartyData) -> int:
 # ---------------------------------------------------------------------------
 # Internal
 # ---------------------------------------------------------------------------
+
+## Returns the encumbered exploration speed (ft/turn) for a character by
+## querying their inventory through the global CampaignRepository. Returns
+## -1 when the repository isn't reachable (unit-test fixtures), so callers
+## can fall back to modifier-only movement.
+static func _encumbered_speed_for(cd: CharacterData, repo) -> int:
+	if repo == null or cd == null or cd.id.is_empty():
+		return -1
+	if not repo.has_method("get_inventory_items"):
+		return -1
+	var items: Array = repo.get_inventory_items(cd.id)
+	var summary: Dictionary = EncumbranceCalculator.calculate_encumbrance(items)
+	return int(summary.get("exploration_speed", 0))
+
+
+## Locates the CampaignRepository autoload via the scene tree. Returns null
+## when called outside a running scene tree (most static unit tests).
+static func _get_campaign_repository():
+	var main_loop := Engine.get_main_loop()
+	if main_loop == null or not (main_loop is SceneTree):
+		return null
+	var root := (main_loop as SceneTree).root
+	if root == null:
+		return null
+	return root.get_node_or_null("CampaignRepository")
+
 
 ## Banker's rounding (round half to even) per project convention.
 static func _bankers_round(value: float) -> float:

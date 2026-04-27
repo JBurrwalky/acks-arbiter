@@ -1313,7 +1313,8 @@ func _resolve_monster_action(combatant: Combatant) -> Dictionary:
 			if adj_cell != Vector2i(-1, -1):
 				var start_pos: Vector2i = movement_resolver.get_grid_position(combatant)
 				var path: Array[Vector2i] = movement_resolver.find_path(
-					start_pos, adj_cell, true, 50, combatant.side)
+					start_pos, adj_cell, true, 50, combatant.side, 0,
+					combatant.id)
 				var move_budget := combatant.get_combat_movement_cells()
 				if not path.is_empty():
 					# move_along_path caps at move_budget; monster moves as far as it can
@@ -1980,7 +1981,7 @@ func _resolve_movement_action(
 		}
 	var start: Vector2i = movement_resolver.get_grid_position(combatant)
 	var path: Array[Vector2i] = movement_resolver.find_path(
-		start, target_pos, true, 50, combatant.side)
+		start, target_pos, true, 50, combatant.side, 0, combatant.id)
 	var max_cells := combatant.get_combat_movement_cells()
 	if path.is_empty():
 		return {
@@ -2194,16 +2195,36 @@ func _emit_combat_ended() -> Dictionary:
 		"combat_log":       combat_log.to_array(),
 	}
 
-	# Generate loot ONLY for wilderness victory.
-	# In dungeons, looting corpses is a deliberate action costing turns/torch time.
-	# Loot key absent = "not a distribution event" — consumers check outcome.has("loot").
-	var is_wilderness := GameState.exploration_context == GameState.ExplorationContext.WILDERNESS
-	if combat_result == "victory" and is_wilderness and not treasure_types.is_empty():
+	# B6: unified post-combat loot. Both wilderness AND dungeon victory now
+	# generate loot and surface the modal. The Session 4.5 corpse-cell-per-
+	# monster pattern is retired in favor of a single leftover cache (dungeon)
+	# or ground drop (wilderness), driven by LootDistributionModal Apply.
+	if combat_result == "victory" and not treasure_types.is_empty():
 		var generator := LootGenerator.new()
 		outcome["loot"] = generator.generate_from_treasure_types(treasure_types)
+		# Stash the combat-origin cell so the modal knows where to drop
+		# leftover items. Find a representative cell — defeated monster cell
+		# preferred; fall back to first PC cell.
+		outcome["combat_origin_cell"] = _compute_combat_origin_cell(roster)
+		outcome["exploration_context"] = GameState.exploration_context
 
 	EventBus.combat_ended.emit(encounter_id, outcome)
 	return outcome
+
+
+## Picks a Vector3i representative of where the combat happened, so the
+## leftover-loot cache lands somewhere sensible. Prefers the last-defeated
+## enemy's cell (B6 §step 5 fallback when no enclosing room exists);
+## otherwise falls back to the first surviving party combatant's cell.
+func _compute_combat_origin_cell(roster: CombatRoster) -> Vector3i:
+	for c: Combatant in roster.get_all():
+		if c.is_enemy_side() and not c.is_alive():
+			if c.grid_position != Vector3i(-1, -1, 0):
+				return c.grid_position
+	for c: Combatant in roster.get_alive_on_side(Combatant.Side.PARTY):
+		if c.grid_position != Vector3i(-1, -1, 0):
+			return c.grid_position
+	return Vector3i(-1, -1, -1)
 
 
 func _collect_downed_pcs() -> Array:
@@ -2288,7 +2309,7 @@ func _resolve_run_action(
 	var max_cells := combatant.get_combat_movement_cells() * 3
 	var path := movement_resolver.find_path(
 		movement_resolver.get_grid_position(combatant), target_cell, true,
-		max_cells + 1, combatant.side)
+		max_cells + 1, combatant.side, 0, combatant.id)
 	var cells_moved := movement_resolver.move_along_path(
 		combatant, path, max_cells, combatant.side)
 	combatant.has_moved_this_round = true

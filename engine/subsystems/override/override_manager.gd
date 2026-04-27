@@ -41,6 +41,11 @@ const CHARACTER_STAT_FIELDS := [
 	"loyalty_score", "wage_gp_per_month",
 ]
 
+## Valid direct-settable fields on the trained_creatures table (mounts, animals).
+const TRAINED_CREATURE_STAT_FIELDS := [
+	"name", "morale", "hp_max", "hp_current",
+]
+
 ## Gold coin item key. All GP adjustments target an inventory_item with this key.
 const GOLD_ITEM_KEY := "coins_gp"
 const GOLD_ITEM_NAME := "Gold Pieces"
@@ -151,6 +156,24 @@ func override_character_condition(character_id: String, condition_name: String, 
 		_log_override("character_condition", character_id, "condition", condition_name, "")
 		EventBus.override_applied.emit("character_condition", character_id, condition_name)
 		EventBus.condition_changed.emit(character_id, {"condition": condition_name, "applied": false})
+	return true
+
+
+## Set a single stat field on a trained creature (mount, animal, etc.).
+## [param field] must be in TRAINED_CREATURE_STAT_FIELDS.
+## Returns false if the field is not allowed or the DB write fails.
+func override_trained_creature_stat(creature_id: String, field: String, new_value) -> bool:
+	if field not in TRAINED_CREATURE_STAT_FIELDS:
+		push_error("OverrideManager.override_trained_creature_stat: disallowed field '%s'" % field)
+		return false
+	var current := CampaignRepository.get_trained_creature(creature_id)
+	if current.is_empty():
+		return false
+	var old_value = current.get(field, "")
+	if not CampaignRepository.update_trained_creature(creature_id, {field: new_value}):
+		return false
+	_log_override("trained_creature_stat", creature_id, field, str(old_value), str(new_value))
+	EventBus.override_applied.emit("trained_creature_stat", creature_id, field)
 	return true
 
 

@@ -169,15 +169,19 @@ func find_path(
 		_exclude_occupied: bool = true,
 		max_range: int = 50,
 		mover_side: int = -1,
-		level_z: int = 0) -> Array[Vector2i]:
+		level_z: int = 0,
+		mover_id: String = "") -> Array[Vector2i]:
 	## 2D projection of path_bfs_3d. Returns path INCLUDING start and goal,
 	## or empty if unreachable. When [param mover_side] >= 0, enemy ZoC cells
-	## act as routing barriers (destination allowed, not a waypoint).
+	## act as routing barriers (destination allowed, not a waypoint). Pass
+	## [param mover_id] to enable B2 occupancy checks (block actives, allow
+	## incapacitated pass-through).
 	if _voxel_map == null:
 		return []
 	var start_3d := Vector3i(start.x, start.y, level_z)
 	var goal_3d := Vector3i(goal.x, goal.y, level_z)
-	var path_3d := path_bfs_3d(start_3d, goal_3d, "ground", max_range, mover_side)
+	var path_3d := path_bfs_3d(
+		start_3d, goal_3d, "ground", max_range, mover_side, "strict", mover_id)
 	var result: Array[Vector2i] = []
 	for p in path_3d:
 		result.append(Vector2i(p.x, p.y))
@@ -188,14 +192,17 @@ func can_reach(combatant: Combatant, target_pos: Vector2i, max_cells: int,
 		mover_side: int = -1) -> bool:
 	## Returns true if combatant can reach target_pos within max_cells steps.
 	## When [param mover_side] >= 0, enemy ZoC cells act as routing barriers
-	## (destination allowed, not a waypoint).
+	## (destination allowed, not a waypoint). The combatant's own id is
+	## passed to path_bfs_3d so B2 occupancy rules apply.
 	if _voxel_map == null:
 		return true  # No grid = everything reachable
 	var start_3d: Vector3i = get_grid_position_3d(combatant)
 	if start_3d == Vector3i(-1, -1, -1):
 		return true
 	var goal_3d := Vector3i(target_pos.x, target_pos.y, start_3d.z)
-	var path_3d := path_bfs_3d(start_3d, goal_3d, "ground", max_cells + 1, mover_side)
+	var path_3d := path_bfs_3d(
+		start_3d, goal_3d, "ground", max_cells + 1, mover_side, "strict",
+		combatant.id if combatant != null else "")
 	return not path_3d.is_empty() and (path_3d.size() - 1) <= max_cells
 
 
@@ -493,7 +500,8 @@ func path_bfs_3d(from_pos: Vector3i, to_pos: Vector3i,
 		movement_type: String = "ground",
 		max_range: int = 50,
 		mover_side: int = -1,
-		passability_mode: String = "strict") -> Array[Vector3i]:
+		passability_mode: String = "strict",
+		mover_id: String = "") -> Array[Vector3i]:
 	if _voxel_map == null:
 		return []
 	if from_pos == to_pos:
@@ -513,10 +521,16 @@ func path_bfs_3d(from_pos: Vector3i, to_pos: Vector3i,
 		for neighbor: Vector3i in VoxelGrid.get_neighbors_3d(current):
 			if visited.has(neighbor):
 				continue
-			if not _can_enter_3d(current, neighbor, movement_type, passability_mode):
+			if not _can_enter_3d(current, neighbor, movement_type, passability_mode, mover_id):
 				continue
 			# ZoC cells can be a destination but not a waypoint.
 			if not enemy_zoc.is_empty() and enemy_zoc.has(neighbor) and neighbor != to_pos:
+				continue
+			# Incapacitated occupants can be walked THROUGH, but you cannot
+			# stop on a body — endpoint must be empty or contain only the
+			# mover. _can_enter_3d above already permits the pass-through.
+			if neighbor == to_pos and mover_id != "" \
+					and not _is_legal_endpoint(neighbor, mover_id):
 				continue
 
 			visited[neighbor] = current
@@ -664,6 +678,68 @@ func _build_enemy_zoc_set_3d(mover_side: int) -> Dictionary:
 
 
 # ---------------------------------------------------------------------------
+# Occupancy checks (B2 — block actives, allow incapacitated pass-through)
+# ---------------------------------------------------------------------------
+
+## True when [param pos] is occupied by an entity that should block the
+## mover's path step. The mover's own cell never blocks itself; incapacitated
+## occupants (dead, unconscious, paralyzed, sleeping) are treated as
+## obstacle-free because PCs and monsters can step over downed bodies.
+func _is_blocking_occupant(pos: Vector3i, mover_id: String) -> bool:
+	if _voxel_map == null:
+		return false
+	var occupants: Array = _voxel_map.get_entities_at(pos)
+	for eid: String in occupants:
+		if eid == mover_id:
+			continue
+		var combatant := _lookup_combatant(eid)
+		if combatant == null:
+			# Unknown occupant (e.g. a creature token without a roster
+			# entry). Treat as blocking — safer than stepping on something
+			# we can't reason about.
+			return true
+		if not _is_incapacitated(combatant):
+			return true
+	return false
+
+
+## True when [param pos] is a legal stopping cell for the mover. Empty or
+## containing only the mover qualifies; any other occupant — incapacitated
+## OR active — blocks. End-of-move occupancy is one combatant per cell
+## per ACKS RAW.
+func _is_legal_endpoint(pos: Vector3i, mover_id: String) -> bool:
+	if _voxel_map == null:
+		return true
+	var occupants: Array = _voxel_map.get_entities_at(pos)
+	for eid: String in occupants:
+		if eid != mover_id:
+			return false
+	return true
+
+
+## Looks up a combatant by id via the roster, or null if not present.
+func _lookup_combatant(entity_id: String) -> Combatant:
+	if _roster == null:
+		return null
+	return _roster.get_by_id(entity_id)
+
+
+## Per ACKS, "incapacitated" units include the dead, unconscious, paralyzed,
+## sleeping, and petrified — anything that would prevent the unit from
+## actively defending its tile. Other states (prone, stunned-1-round) leave
+## the unit able to react and therefore still block.
+static func _is_incapacitated(combatant: Combatant) -> bool:
+	if combatant == null:
+		return false
+	if not combatant.is_alive():
+		return true
+	for cond: String in ["unconscious", "paralyzed", "sleeping", "petrified"]:
+		if combatant.has_condition(cond):
+			return true
+	return false
+
+
+# ---------------------------------------------------------------------------
 # 3D movement helpers (private)
 # ---------------------------------------------------------------------------
 
@@ -671,9 +747,16 @@ func _build_enemy_zoc_set_3d(mover_side: int) -> Dictionary:
 ## to [param to_pos]. [param passability_mode] = "strict" (default) blocks all
 ## closed doors; "explore" treats closed unlocked doors as walkable so a single
 ## click can route the party through them (executor pauses 1 round to open).
+## When [param mover_id] is non-empty, cells occupied by another *active*
+## entity are treated as impassable (incapacitated entities — dead, sleeping,
+## paralyzed, unconscious — may be walked through; endpoint legality is a
+## separate check in path_bfs_3d).
 func _can_enter_3d(from_pos: Vector3i, to_pos: Vector3i,
 		movement_type: String,
-		passability_mode: String = "strict") -> bool:
+		passability_mode: String = "strict",
+		mover_id: String = "") -> bool:
+	if mover_id != "" and _is_blocking_occupant(to_pos, mover_id):
+		return false
 	var cell := _voxel_map.get_cell(to_pos)
 	var level_diff: int = abs(to_pos.z - from_pos.z)
 

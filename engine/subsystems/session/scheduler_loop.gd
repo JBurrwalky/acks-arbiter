@@ -42,6 +42,28 @@ const TIMESCALE_DUNGEON := 1.0
 const TIMESCALE_SETTLEMENT := 6.0
 const TIMESCALE_WILDERNESS := 60.0
 
+## Per-context speed multipliers. Keyed by SPEED_NORMAL/FAST/VERY_FAST.
+## C1 decoupling: dungeon Fast = 6 rounds (1 minute) per 2 real seconds, Very
+## Fast = 30 rounds (5 minutes) per 2 real seconds. Wilderness/settlement keep
+## the prior 1×/2×/5× because their TIMESCALE_* multipliers (60, 6) already
+## advance large stretches of game time at the same band — bumping the band
+## multipliers there would push wilderness Very Fast to 9000× real-time.
+const DUNGEON_SPEEDS := {
+	SPEED_NORMAL: 1,
+	SPEED_FAST: 6,
+	SPEED_VERY_FAST: 30,
+}
+const WILDERNESS_SPEEDS := {
+	SPEED_NORMAL: 1,
+	SPEED_FAST: 2,
+	SPEED_VERY_FAST: 5,
+}
+const SETTLEMENT_SPEEDS := {
+	SPEED_NORMAL: 1,
+	SPEED_FAST: 2,
+	SPEED_VERY_FAST: 5,
+}
+
 
 # ---------------------------------------------------------------------------
 # Dependencies (injected)
@@ -108,6 +130,26 @@ func set_timescale(scale: float) -> void:
 
 func get_timescale() -> float:
 	return _timescale
+
+
+## Returns the per-context multiplier for the currently-set speed band.
+## Internal tick math and external consumers (e.g. the dungeon renderer's
+## tween-speed computation) both go through this so the two stay in sync.
+func get_effective_multiplier() -> float:
+	if _speed == SPEED_PAUSED or _speed == SPEED_MAX:
+		return float(_speed)
+	var table: Dictionary = _speed_table_for_timescale()
+	return float(table.get(_speed, _speed))
+
+
+## Picks the per-context speed table by inspecting the current `_timescale`
+## (set on state enter). Falls back to wilderness for unknown values.
+func _speed_table_for_timescale() -> Dictionary:
+	if is_equal_approx(_timescale, TIMESCALE_DUNGEON):
+		return DUNGEON_SPEEDS
+	if is_equal_approx(_timescale, TIMESCALE_SETTLEMENT):
+		return SETTLEMENT_SPEEDS
+	return WILDERNESS_SPEEDS
 
 
 # ---------------------------------------------------------------------------
@@ -194,7 +236,7 @@ func tick(real_delta: float) -> int:
 
 ## Normal/fast tick: convert real delta to game rounds, advance toward events.
 func _tick_normal(real_delta: float) -> int:
-	var rounds_per_second := float(_speed) * _timescale / SECONDS_PER_ROUND
+	var rounds_per_second := get_effective_multiplier() * _timescale / SECONDS_PER_ROUND
 	_accumulated_rounds += real_delta * rounds_per_second
 
 	var events_resolved := 0

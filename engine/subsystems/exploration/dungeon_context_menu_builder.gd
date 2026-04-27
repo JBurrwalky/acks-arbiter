@@ -13,6 +13,13 @@ extends RefCounted
 
 const DungeonSessionState := preload("res://engine/subsystems/exploration/dungeon_session_state.gd")
 
+## Classes that grant the `open_locks` thief skill as a class power per ACKS
+## RAW (data/classes/*.json `class_powers`). Bards have thief combat
+## progression but do NOT have `open_locks` — they're omitted on purpose.
+## Add a class here only after verifying its JSON file contains the
+## `open_locks` power entry.
+const CLASSES_WITH_OPEN_LOCKS := ["thief"]
+
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -581,9 +588,22 @@ static func _is_party_member(entity_id: String, party_data) -> bool:
 	return party_data.get_member(entity_id) != null
 
 
-## Check if any selected entity can pick locks (thief class or Lockpicking proficiency).
+## Check if any selected entity can pick locks. Eligibility = class with the
+## `open_locks` class power (currently only `thief`) OR the Lockpicking
+## proficiency. Bards have thief combat_progression but no open_locks per
+## ACKS RAW, so progression alone is NOT sufficient.
 static func _any_selected_can_pick_lock(selected_ids: Array, party_data) -> bool:
-	return _any_selected_has_ability(selected_ids, party_data, "thief", "lockpicking")
+	if party_data == null or not party_data.has_method("get_member"):
+		return false
+	for eid in selected_ids:
+		var cd = party_data.get_member(str(eid))
+		if cd == null:
+			continue
+		if cd.character_class in CLASSES_WITH_OPEN_LOCKS:
+			return true
+		if cd.has_proficiency("lockpicking"):
+			return true
+	return false
 
 
 ## Check if ALL lock-capable selected entities have already failed a pick lock attempt.
@@ -598,8 +618,10 @@ static func _all_pickers_failed(selected_ids: Array, party_data, session_state) 
 		var cd = party_data.get_member(str(eid))
 		if cd == null:
 			continue
-		# Only check entities that CAN pick locks.
-		if cd.combat_progression != "thief" and not cd.has_proficiency("lockpicking"):
+		# Only check entities that CAN pick locks (matches the gating above).
+		var has_skill: bool = cd.character_class in CLASSES_WITH_OPEN_LOCKS \
+			or cd.has_proficiency("lockpicking")
+		if not has_skill:
 			continue
 		if not session_state.has_failed_pick_lock(str(eid), cd.level):
 			return false  # At least one capable picker hasn't failed.

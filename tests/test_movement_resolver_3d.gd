@@ -28,6 +28,11 @@ func run_all_tests() -> void:
 	test_locked_door_blocks_explore_mode()
 	test_stuck_door_blocks_explore_mode()
 	test_open_door_walkable_strict()
+	test_b2_pathfinding_walks_through_incapacitated()
+	test_b2_pathfinding_blocked_by_active_combatant()
+	test_b2_endpoint_blocked_by_incapacitated_body()
+	test_b2_endpoint_allowed_when_only_self_present()
+	test_b2_default_signature_ignores_occupancy()
 	if not has_failures():
 		print("MovementResolver3D: all tests passed.")
 
@@ -381,3 +386,111 @@ func test_open_door_walkable_strict() -> void:
 	var path := mr.path_bfs_3d(Vector3i(0, 0, 0), Vector3i(2, 0, 0))
 	check(not path.is_empty(),
 		"open door should be walkable in strict mode")
+
+
+# ---------------------------------------------------------------------------
+# B2 — Block actives, allow incapacitated pass-through
+# ---------------------------------------------------------------------------
+
+func _make_combatant(id: String, side: int, alive: bool = true) -> Combatant:
+	var c := Combatant.new()
+	c.id = id
+	c.side = side
+	c.is_character = false
+	c._monster_hp_max = 10
+	c._monster_hp_current = 10 if alive else 0
+	if not alive:
+		c.add_condition("dead")
+	return c
+
+
+func test_b2_pathfinding_walks_through_incapacitated() -> void:
+	# Map: 5×1 corridor, with an incapacitated enemy at (2,0,0).
+	# Mover at (0,0,0) wants to reach (4,0,0). The downed body at (2,0,0)
+	# is a waypoint, not the goal — must be passable.
+	var map := _make_flat_room(5, 1)
+	var mover := _make_combatant("MOVER", Combatant.Side.PARTY)
+	var corpse := _make_combatant("CORPSE", Combatant.Side.ENEMY, false)
+	var roster := CombatRoster.new()
+	roster.add_combatant(mover); roster.add_combatant(corpse)
+	var mr := MovementResolver.new(roster)
+	mr.set_voxel_map(map)
+	map.set_entity_pos("MOVER", Vector3i(0, 0, 0))
+	map.set_entity_pos("CORPSE", Vector3i(2, 0, 0))
+	var path := mr.path_bfs_3d(
+		Vector3i(0, 0, 0), Vector3i(4, 0, 0),
+		"ground", 50, -1, "strict", "MOVER")
+	check(not path.is_empty(),
+		"path through an incapacitated body should succeed")
+	# The path should actually traverse (2,0,0) — corridor leaves no detour.
+	check(Vector3i(2, 0, 0) in path,
+		"path must include the incapacitated occupant's cell")
+
+
+func test_b2_pathfinding_blocked_by_active_combatant() -> void:
+	# Same setup but the occupant is alive — pathfinding must reject the
+	# corridor and return empty (no detour available in 5×1).
+	var map := _make_flat_room(5, 1)
+	var mover := _make_combatant("MOVER", Combatant.Side.PARTY)
+	var blocker := _make_combatant("BLOCKER", Combatant.Side.ENEMY, true)
+	var roster := CombatRoster.new()
+	roster.add_combatant(mover); roster.add_combatant(blocker)
+	var mr := MovementResolver.new(roster)
+	mr.set_voxel_map(map)
+	map.set_entity_pos("MOVER", Vector3i(0, 0, 0))
+	map.set_entity_pos("BLOCKER", Vector3i(2, 0, 0))
+	var path := mr.path_bfs_3d(
+		Vector3i(0, 0, 0), Vector3i(4, 0, 0),
+		"ground", 50, -1, "strict", "MOVER")
+	check(path.is_empty(),
+		"active combatant in the corridor must block the path")
+
+
+func test_b2_endpoint_blocked_by_incapacitated_body() -> void:
+	# Path step over a body is allowed; stopping ON the body is not.
+	var map := _make_flat_room(3, 1)
+	var mover := _make_combatant("MOVER", Combatant.Side.PARTY)
+	var corpse := _make_combatant("CORPSE", Combatant.Side.ENEMY, false)
+	var roster := CombatRoster.new()
+	roster.add_combatant(mover); roster.add_combatant(corpse)
+	var mr := MovementResolver.new(roster)
+	mr.set_voxel_map(map)
+	map.set_entity_pos("MOVER", Vector3i(0, 0, 0))
+	map.set_entity_pos("CORPSE", Vector3i(2, 0, 0))
+	var path := mr.path_bfs_3d(
+		Vector3i(0, 0, 0), Vector3i(2, 0, 0),
+		"ground", 50, -1, "strict", "MOVER")
+	check(path.is_empty(),
+		"cannot end movement on an incapacitated occupant's cell")
+
+
+func test_b2_endpoint_allowed_when_only_self_present() -> void:
+	# Mover ending on a cell containing only its own token is fine (self-loop
+	# move; common after pathfinding to a destination next to where you start).
+	var map := _make_flat_room(3, 1)
+	var mover := _make_combatant("MOVER", Combatant.Side.PARTY)
+	var roster := CombatRoster.new()
+	roster.add_combatant(mover)
+	var mr := MovementResolver.new(roster)
+	mr.set_voxel_map(map)
+	map.set_entity_pos("MOVER", Vector3i(0, 0, 0))
+	var path := mr.path_bfs_3d(
+		Vector3i(0, 0, 0), Vector3i(2, 0, 0),
+		"ground", 50, -1, "strict", "MOVER")
+	check(not path.is_empty(),
+		"empty corridor with only self entity present should path freely")
+
+
+func test_b2_default_signature_ignores_occupancy() -> void:
+	# Backwards-compat: callers that don't pass mover_id (e.g. dungeon
+	# explorer) still get the old "occupancy ignored" behavior.
+	var map := _make_flat_room(3, 1)
+	var blocker := _make_combatant("BLOCKER", Combatant.Side.ENEMY, true)
+	var roster := CombatRoster.new()
+	roster.add_combatant(blocker)
+	var mr := MovementResolver.new(roster)
+	mr.set_voxel_map(map)
+	map.set_entity_pos("BLOCKER", Vector3i(1, 0, 0))
+	var path := mr.path_bfs_3d(Vector3i(0, 0, 0), Vector3i(2, 0, 0))
+	check(not path.is_empty(),
+		"default signature must ignore occupancy (no regression for dungeon explorer)")

@@ -1633,7 +1633,11 @@ func _check_roaming_proximity() -> void:
 				continue
 			var monster_pos: Vector3i = tactical_map.entity_positions[monster_id]
 			var monster_data: Dictionary = p.get("monster_data", {})
-			var move_feet: int = int(monster_data.get("movement", 90))
+			var movement: Dictionary = monster_data.get("movement", {})
+			var land: Dictionary = movement.get("land", {})
+			var move_feet: int = int(land.get("combat", 0))
+			if move_feet <= 0:
+				move_feet = int(land.get("exploration", 120)) / 3
 			var move_cells: int = maxi(1, move_feet / 5)
 			var trigger_range: int = move_cells + 1  # one round of approach + one cell to attack
 			for pc_pos: Vector3i in party_positions:

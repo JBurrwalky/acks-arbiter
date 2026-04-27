@@ -20,6 +20,10 @@ const SPIKE_HAMMER_KEYS := ["hammer_small", "warhammer"]
 const WEDGE_TOOL_KEYS := ["hammer_small", "warhammer", "mallet"]
 const CROWBAR_KEY := "crowbar"
 
+## Mirrors DungeonContextMenuBuilder.CLASSES_WITH_OPEN_LOCKS — the canonical
+## list of classes that grant the open_locks class power per ACKS RAW.
+const CLASSES_WITH_OPEN_LOCKS := ["thief"]
+
 
 # ---------------------------------------------------------------------------
 # Pick Lock — thief class first, then highest level. Skip those who already
@@ -37,16 +41,16 @@ static func pick_for_pick_lock(
 		var cd: CharacterData = party_data.get_member(str(eid))
 		if cd == null:
 			continue
-		var has_thief: bool = cd.combat_progression == "thief"
+		var has_open_locks: bool = cd.character_class in CLASSES_WITH_OPEN_LOCKS
 		var has_prof: bool = _has_proficiency(cd.id, "lockpicking")
-		if not has_thief and not has_prof:
+		if not has_open_locks and not has_prof:
 			continue
 		# Skip if this PC has already failed at their current level.
 		if session_state != null and session_state.has_method("has_failed_pick_lock") \
 				and session_state.has_failed_pick_lock(cd.id, cd.level):
 			continue
-		# Score: thief class outranks prof at equal level; level breaks ties.
-		var score := cd.level * 10 + (5 if has_thief else 0)
+		# Score: native open_locks class outranks prof at equal level; level breaks ties.
+		var score := cd.level * 10 + (5 if has_open_locks else 0)
 		if score > best_score:
 			best_score = score
 			best_id = cd.id

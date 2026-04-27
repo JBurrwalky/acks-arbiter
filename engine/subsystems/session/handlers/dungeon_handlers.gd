@@ -1245,7 +1245,7 @@ func _resolve_use_lever(entity_id: String, cell) -> Dictionary:  # cell: Vector2
 		target_pos = tmap.get_lever_target(cell)
 	else:
 		target_pos = null
-	if target_pos == null or target_pos == Vector2i(-1, -1) or target_pos == Vector3i(-1, -1, -1):
+	if target_pos == null or target_pos == Vector3i(-1, -1, -1):
 		EventBus.notification_requested.emit({
 			"type": "info",
 			"category": "environment",

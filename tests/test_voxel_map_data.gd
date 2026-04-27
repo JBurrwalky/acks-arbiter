@@ -44,6 +44,8 @@ func run_all_tests() -> void:
 	test_get_room_boundary_cells()
 	test_transition_cell_queries()
 	test_transition_cells_serialization()
+	test_entry_auto_added_as_transition_when_omitted()
+	test_entry_omitted_does_not_add_phantom_transition()
 	test_generate_open_field()
 	test_generate_open_field_all_visible()
 	if not has_failures():
@@ -530,6 +532,33 @@ func test_transition_cells_serialization() -> void:
 	check(restored.is_transition_cell(tc), "restored map should have transition cell")
 	check(restored.get_transition_cell_label(tc) == "Exit",
 		"restored label should be 'Exit'")
+
+
+func test_entry_auto_added_as_transition_when_omitted() -> void:
+	# A1 backstop: dungeons that declare an entry but omit transition_cells must
+	# still expose the entrance as a transition (otherwise no Exit Dungeon menu).
+	var json := {
+		"id": "test",
+		"name": "Test",
+		"entry": {"col": 4, "row": 5, "level": 0},
+		"cells": [],
+	}
+	var restored := VoxelMapData.from_dict(json)
+	check(restored.is_transition_cell(Vector3i(4, 5, 0)),
+		"entry cell should be auto-marked as transition")
+	check(restored.get_transition_cell_label(Vector3i(4, 5, 0)) == "Entrance",
+		"auto-added entry should label 'Entrance'")
+
+
+func test_entry_omitted_does_not_add_phantom_transition() -> void:
+	# Dungeons without an entry block should not have (0,0,0) blanket-marked
+	# as a transition.
+	var json := {"id": "t", "name": "t", "cells": []}
+	var restored := VoxelMapData.from_dict(json)
+	check(not restored.is_transition_cell(Vector3i.ZERO),
+		"absent entry must not create a (0,0,0) transition")
+	check(restored.transition_cells.is_empty(),
+		"transition_cells must be empty when neither entry nor list provided")
 
 
 # ---------------------------------------------------------------------------

@@ -50,11 +50,13 @@ func enter(runner, context: Dictionary) -> void:
 	var attack_resolver := AttackResolver.new(DiceSystem, spell_hooks)
 	var ranged_resolver := RangedAttackResolver.new(DiceSystem, spell_hooks)
 
-	# Build a fresh 25x25 single-level voxel battle map for the wilderness
-	# encounter. Context may provide a pre-built map (future battle-map generation).
+	# 500'×500' wilderness battle map per gdd-combat-map-generation.md §3.
+	# 100×100 cells at 5'/cell accommodates the full ACKS encounter-distance
+	# range (5d4 yards in heavy forest up to 5d20×10 yards in plains).
+	# Context may provide a pre-built map (future battle-map generation).
 	var voxel_map: VoxelMapData = context.get("voxel_map", null)
 	if voxel_map == null:
-		voxel_map = VoxelMapData.generate_open_field(25, 25)
+		voxel_map = VoxelMapData.generate_open_field(100, 100)
 
 	# Create Session 3 subsystems: AI, morale, cleave.
 	# MovementResolver is created early so MonsterAI can use spatial queries.
@@ -170,7 +172,8 @@ func get_controller() -> CombatController:
 func _place_combatants_on_grid(
 		roster: CombatRoster,
 		vmap: VoxelMapData) -> void:
-	## Place party near the entry position, monsters spread in the room.
+	## Place party near the entry position, monsters at the rolled ACKS
+	## encounter distance (clamped to map bounds per gdd §7.3).
 	var entry: Vector3i = vmap.entry_pos
 	var party_cells := VoxelGrid.get_cells_in_radius_3d(entry, 2)
 	var idx := 0
@@ -184,15 +187,70 @@ func _place_combatants_on_grid(
 				vmap.set_entity_pos(c.id, cell)
 				break
 
-	# Place monsters away from party (offset from entry, same level)
-	var monster_center := Vector3i(entry.x + 6, entry.y, entry.z)
-	var monster_cells := VoxelGrid.get_cells_in_radius_3d(monster_center, 3)
+	# Place monsters at the rolled encounter distance, clamped to the map.
+	var terrain_category: String = _encounter_data.get("terrain_category", "clear")
+	var distance_cells: int = _roll_encounter_distance_cells(terrain_category, DiceSystem)
+	var max_offset: int = _max_offset_from_entry(entry, vmap)
+	var clamped_offset: int = mini(distance_cells, max_offset)
+	var monster_center := Vector3i(entry.x + clamped_offset, entry.y, entry.z)
+	# Generous spread — many monsters in plains may otherwise overflow a 3-cell
+	# radius. Stays bounded by the loop's "find passable cell" probe.
+	var monster_cells := VoxelGrid.get_cells_in_radius_3d(monster_center, 5)
 	idx = 0
 	for c: Combatant in roster.get_alive_on_side(Combatant.Side.ENEMY):
 		while idx < monster_cells.size():
 			var cell: Vector3i = monster_cells[idx]
 			idx += 1
+			if not vmap.has_cell(cell):
+				continue
 			if vmap.is_passable(cell) and vmap.get_entities_at(cell).is_empty():
 				c.grid_position = cell
 				vmap.set_entity_pos(c.id, cell)
 				break
+
+
+## Rolls the ACKS wilderness encounter distance for [param terrain_category]
+## (mapped from `HexTerrainData.movement_cost_category()`) and converts to
+## battle-map cells (1 yard = 0.6 cells at 5'/cell). See
+## `acore_adventures_and_encounters.xml` §encounter_distance_table.
+static func _roll_encounter_distance_cells(terrain_category: String, dice) -> int:
+	# (dice_count, dice_sides, multiplier_yards). Multiplier is the per-die
+	# scaling — e.g. 4d6×10 yards is (4, 6, 10).
+	var spec: Array = _encounter_distance_spec(terrain_category)
+	var dc: int = spec[0]
+	var ds: int = spec[1]
+	var mult: int = spec[2]
+	var yards: int = 0
+	for _i in range(dc):
+		var roll: RollResult = dice.roll_digital(ds, 1, 0, "encounter_distance")
+		yards += roll.modified_total
+	yards *= mult
+	# 1 yard = 3 feet; 1 cell = 5 feet → cells = round(yards * 3 / 5).
+	return maxi(1, int(round(yards * 0.6)))
+
+
+## Returns [dice_count, dice_sides, multiplier_yards] for an encounter on
+## the given terrain category. Defaults to Plains (5d20×10) for unrecognised
+## categories so we err on the side of giving ranged combat enough room.
+static func _encounter_distance_spec(terrain_category: String) -> Array:
+	match terrain_category:
+		"jungle":     return [5, 4, 1]    # Forest, Heavy / Jungle
+		"woods":      return [5, 8, 1]    # Forest, Light
+		"swamp":      return [8, 10, 1]   # Marsh
+		"mountains":  return [4, 6, 10]
+		"hills":      return [4, 6, 10]   # not in RAW; share Mountains
+		"desert":     return [4, 6, 10]
+		"clear", "":  return [5, 20, 10]  # Plains
+		_:            return [5, 20, 10]
+
+
+## Returns the largest valid `entry.x + offset` that still falls inside the
+## map. Used to clamp huge encounter distances per gdd §7.3 ("place monsters
+## at the far edge of the map").
+static func _max_offset_from_entry(entry: Vector3i, vmap: VoxelMapData) -> int:
+	# VoxelMapData doesn't expose dimensions directly — probe outward from
+	# entry until we leave the map.
+	var offset := 0
+	while vmap.has_cell(Vector3i(entry.x + offset + 1, entry.y, entry.z)):
+		offset += 1
+	return maxi(1, offset - 1)  # leave a 1-cell margin so monsters fit beside the edge

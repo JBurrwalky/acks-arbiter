@@ -110,6 +110,11 @@ func run_all_tests() -> void:
 	test_speed_control_methods()
 	test_max_speed_empty_queue_pauses()
 	test_toggle_pause()
+	test_c1_dungeon_normal_multiplier()
+	test_c1_dungeon_fast_multiplier()
+	test_c1_dungeon_very_fast_multiplier()
+	test_c1_wilderness_speeds_unchanged()
+	test_c1_settlement_speeds_unchanged()
 
 	_cleanup()
 	print("  SchedulerLoop: %d checks, %d failures" % [test_count(), fail_count()])
@@ -272,3 +277,57 @@ func test_toggle_pause() -> void:
 
 	_loop.toggle_pause()
 	check(_loop.is_paused(), "toggle from running should pause")
+
+
+# ---------------------------------------------------------------------------
+# C1 — Per-context speed bands
+# ---------------------------------------------------------------------------
+
+func test_c1_dungeon_normal_multiplier() -> void:
+	_setup()
+	_loop.set_timescale(SchedulerLoop.TIMESCALE_DUNGEON)
+	_loop.set_speed(SchedulerLoop.SPEED_NORMAL)
+	check(_loop.get_effective_multiplier() == 1.0,
+		"dungeon Normal should resolve to 1×, got %.1f" % _loop.get_effective_multiplier())
+
+
+func test_c1_dungeon_fast_multiplier() -> void:
+	# Per the smoke-test prompt: dungeon Fast = 6 rounds (1 minute) per 2
+	# real seconds. With SECONDS_PER_ROUND=2 and timescale=1, that's
+	# multiplier = 6 → rounds/sec = 3.
+	_setup()
+	_loop.set_timescale(SchedulerLoop.TIMESCALE_DUNGEON)
+	_loop.set_speed(SchedulerLoop.SPEED_FAST)
+	check(_loop.get_effective_multiplier() == 6.0,
+		"dungeon Fast should resolve to 6×, got %.1f" % _loop.get_effective_multiplier())
+
+
+func test_c1_dungeon_very_fast_multiplier() -> void:
+	# Dungeon Very Fast = 30 rounds (5 minutes) per 2 real seconds.
+	_setup()
+	_loop.set_timescale(SchedulerLoop.TIMESCALE_DUNGEON)
+	_loop.set_speed(SchedulerLoop.SPEED_VERY_FAST)
+	check(_loop.get_effective_multiplier() == 30.0,
+		"dungeon Very Fast should resolve to 30×, got %.1f" % _loop.get_effective_multiplier())
+
+
+func test_c1_wilderness_speeds_unchanged() -> void:
+	# Wilderness keeps the prior 1×/2×/5× because TIMESCALE_WILDERNESS=60
+	# already amplifies the band — bumping wilderness Very Fast to 30 would
+	# push it to 9000× real time.
+	_setup()
+	_loop.set_timescale(SchedulerLoop.TIMESCALE_WILDERNESS)
+	_loop.set_speed(SchedulerLoop.SPEED_NORMAL)
+	check(_loop.get_effective_multiplier() == 1.0, "wilderness Normal = 1×")
+	_loop.set_speed(SchedulerLoop.SPEED_FAST)
+	check(_loop.get_effective_multiplier() == 2.0, "wilderness Fast = 2×")
+	_loop.set_speed(SchedulerLoop.SPEED_VERY_FAST)
+	check(_loop.get_effective_multiplier() == 5.0, "wilderness Very Fast = 5×")
+
+
+func test_c1_settlement_speeds_unchanged() -> void:
+	_setup()
+	_loop.set_timescale(SchedulerLoop.TIMESCALE_SETTLEMENT)
+	_loop.set_speed(SchedulerLoop.SPEED_FAST)
+	check(_loop.get_effective_multiplier() == 2.0,
+		"settlement Fast keeps prior 2×, got %.1f" % _loop.get_effective_multiplier())

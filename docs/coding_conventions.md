@@ -2234,3 +2234,79 @@ const INACTIVE_MODULATE := Color(0.72, 0.72, 0.78, 1.0)
 
 Click-pulse tweens scale to `current × 1.15` briefly then back to `current`, so the pulse respects active/inactive baseline without fighting steady-state styling.
 
+## 22. Combat movement legality (2026-04-27)
+
+Combat pathfinding and movement validation must distinguish two separate concepts:
+
+1. **Path-step legality (waypoints).** A unit can pass *through* a cell occupied by an incapacitated combatant — dead, unconscious, paralyzed, sleeping, or petrified — but is blocked by any active occupant. Stepping over a body is fine; squeezing past a guard isn't.
+2. **Endpoint legality (where movement stops).** End-of-move occupancy is one combatant per cell. Even a corpse blocks an *endpoint* — you can vault over a body but you cannot stop on it.
+
+`MovementResolver._is_blocking_occupant(pos, mover_id)` is the path-step predicate; `_is_legal_endpoint(pos, mover_id)` is the endpoint predicate. Pathfinding must call both at the right phases — `path_bfs_3d` rejects waypoints via `_can_enter_3d` (which calls the step predicate) and rejects endpoint cells via the endpoint predicate before yielding the path.
+
+Callers opt into occupancy checks by passing a non-empty `mover_id` to `path_bfs_3d` / `find_path` / `can_reach`. Empty `mover_id` keeps occupancy checks disabled — the dungeon explorer's group-walk pathfinding deliberately doesn't constrain on occupancy because party members can briefly co-occupy a cell during animated movement.
+
+## 23. Class-power gating for action eligibility (2026-04-27)
+
+Right-click action menus that gate on a thief skill (Pick Lock, Find Traps, Hide in Shadows, etc.) must check the **class power**, not just `cd.combat_progression == "thief"`. Bards have thief combat progression but only a subset of thief skills per ACKS RAW (Climb Walls, Hear Noise, Move Silently, Hide in Shadows, Read Languages — no Pick Lock, Find Traps, Pick Pockets, or Backstab). The wrong gating handed bards skills they shouldn't have.
+
+Convention: maintain a constant list of class IDs that grant each gated power, named `CLASSES_WITH_<POWER_ID>`, in the consumer file (e.g. `dungeon_context_menu_builder.gd`, `dungeon_action_actor_picker.gd`). Verify each entry against that class's `data/classes/*.json` `class_powers` array — only classes that explicitly list the power belong on the list.
+
+```gdscript
+const CLASSES_WITH_OPEN_LOCKS := ["thief"]
+
+# Eligibility = class with the power OR proficiency.
+if cd.character_class in CLASSES_WITH_OPEN_LOCKS:
+    return true
+if cd.has_proficiency("lockpicking"):
+    return true
+```
+
+When the same gating list lives in two files (e.g. menu builder + action picker), keep them in sync — comment each constant with a pointer to its sibling.
+
+## 24. Fog of war is light-source-driven (2026-04-27)
+
+Dungeon fog reveal is **light-source + LOS based**, not room-scoped. The pre-batch-3 mechanism (entering a room flips all its cells to Visible) was scaffolding put in place before light data was wired; it is **retired**. The `_reveal_room_voxel` helper survives for dev/debug use but no longer participates in the fog-update path.
+
+Implementation:
+- `FogRevealEngine.compute_visible_cells(map, members)` (pure static) takes the current voxel map and a `{entity_id: {pos, radius}}` payload, walks each member's Chebyshev box at their light + darkvision radius, and uses `VoxelLOS.has_los` to gate every cell.
+- `DungeonMapController._update_fog_for_all_members_voxel` is the canonical entry point — both initial party-spawn reveal and post-move updates call it. The function demotes currently-Visible cells to Explored, then writes the new lit set.
+- V1 simplification: members with radius 0 still expose their own cell so the player can see their portrait in pitch darkness. Full no-light mechanics (no movement without LOS) are deferred.
+
+Room data structures (`get_room_at`, `get_room_cells`, `get_room_boundary_cells`) remain canonical for B6 leftover-cache placement and other room-scoped concerns. Only the fog-reveal hook moves to light + LOS.
+
+## 25. Per-context scheduler speed tables (2026-04-27)
+
+The scheduler's three speed bands (`SPEED_NORMAL`, `SPEED_FAST`, `SPEED_VERY_FAST`) are **caller-facing ordinals**, not multipliers. The actual rounds-per-real-second depends on the current exploration context, looked up via three const dictionaries on `SchedulerLoop`:
+
+```gdscript
+const DUNGEON_SPEEDS    := { SPEED_NORMAL: 1, SPEED_FAST: 6,  SPEED_VERY_FAST: 30 }
+const WILDERNESS_SPEEDS := { SPEED_NORMAL: 1, SPEED_FAST: 2,  SPEED_VERY_FAST: 5 }
+const SETTLEMENT_SPEEDS := { SPEED_NORMAL: 1, SPEED_FAST: 2,  SPEED_VERY_FAST: 5 }
+```
+
+Why context-coupled: the per-context `TIMESCALE_*` already amplifies the band (wilderness = 60×, settlement = 6×). Reusing one global multiplier across contexts means dungeon Fast and wilderness Fast are wildly different in felt pace. The tables let dungeon get a tighter band (1 round = 1 round) while wilderness keeps its hour-jumping behaviour at the same UI button.
+
+Anything that needs the live multiplier should call `SchedulerLoop.get_effective_multiplier()` rather than reading `_speed` directly. The dungeon renderer's tween-speed computation is the canonical example — without going through the getter, tween playback would lag the clock at the larger dungeon bands. New consumers should follow the same pattern.
+
+Adding a new exploration context: introduce a new `TIMESCALE_<context>` constant, a matching `<CONTEXT>_SPEEDS` dictionary, and an entry in `_speed_table_for_timescale()`. Don't try to share an existing context's table — that's how the wilderness/dungeon coupling bug came about in the first place.
+
+## 26. Static-helper autoload access (2026-04-27)
+
+Static utility methods on `RefCounted` classes (`TravelSpeedCalculator`, `HenchmanLifecycleManager`, etc.) sometimes need to reach an autoload that wasn't passed in by the caller. The convention is a defensive scene-tree walk that returns `null` when the tree isn't set up:
+
+```gdscript
+static func _get_campaign_repository():
+	var main_loop := Engine.get_main_loop()
+	if main_loop == null or not (main_loop is SceneTree):
+		return null
+	var root := (main_loop as SceneTree).root
+	if root == null:
+		return null
+	return root.get_node_or_null("CampaignRepository")
+```
+
+Why this shape:
+- **No constructor injection.** Static methods can't carry instance state, and threading a repo through every public call balloons the API. The autoload is global by design — accessing it from a static helper is OK as long as the helper degrades when it's missing.
+- **Null-safe at every layer.** Unit tests construct fixtures without a running scene tree; the helper returns `null` and the caller falls back to a sensible default (e.g. modifier-only movement in `TravelSpeedCalculator`). Tests that *do* want to exercise the autoload path can register a fake under the same node name.
+- **Pattern is reused** in `HenchmanLifecycleManager._event_bus()` and `_get_party_wallet()`. New static helpers needing an autoload should copy this exact shape — do not invent variant lookups.
+

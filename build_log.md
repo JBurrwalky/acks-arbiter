@@ -8718,3 +8718,244 @@ Unchanged because already correct or out-of-spec:
 1. Smoke-test: load Moonsworn Band party (which includes a war dog, hawk, donkey, mule, draft horse, and two carts) and enter a dungeon. Expected: dog and hawk visible at entry; donkey and mule visible only if not in any cart's `hitched_creatures`; horse never visible.
 2. Build the auto-unhitch confirmation modal so the player can choose to unhitch a draft team and bring the donkey/mule into the dungeon.
 3. Decide whether sheep should be in the exclusion list (currently treated as allowed because the user did not list it).
+
+
+## Session 2026-04-27 — Smoke Test Batch 3, Block A (A1/A2/A3)
+
+**Task:** Three P0 smoke-test blockers from `Downloads/smoke_test_batch3_prompt.md`: A1 dungeon entrance/exit visibility, A2 wilderness travel speed honouring encumbrance, A3 henchman recruitment populating with candidates. Plan written to `C:\Users\jttau\.claude\plans\attached-is-a-list-gleaming-chipmunk.md` before implementation.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+*A1 — entrance cell becomes a transition cell:*
+- [engine/shared_types/voxel_map_data.gd](engine/shared_types/voxel_map_data.gd) `from_dict()` now auto-adds `entry_pos` to `transition_cells` (with label `"Entrance"`) when the JSON declares an `entry` block but omits `transition_cells`. Guarded by an explicit `has_explicit_entry` flag so blank maps do not flag (0,0,0) as a transition. The `data/test_dungeon.json` fixture has an `entry` block but no `transition_cells` array, which previously left `is_transition_cell()` returning false for the entrance — meaning the green "E" marker never rendered, the right-click menu never offered "Exit Dungeon", and players were trapped post-voxel migration.
+- The renderer (`build_transition_markers_voxel`) and context menu (`_build_stair_options` / `_build_interactable_options`) already key off `transition_cells`; both light up automatically once the array is populated. The dungeon-handlers `_resolve_exit_dungeon` path is unchanged.
+
+*A2 — travel speed honours encumbrance:*
+- [engine/subsystems/exploration/travel_speed_calculator.gd](engine/subsystems/exploration/travel_speed_calculator.gd) `calculate_party_speed()` now consults each member's encumbrance ceiling via the existing `EncumbranceCalculator`. Per-member member_speed = `min(modifier_movement, encumbered_movement)` so spell penalties and load both apply, but encumbrance can never be exceeded.
+- New private helpers `_encumbered_speed_for(cd, repo)` and `_get_campaign_repository()`. The repo lookup walks `Engine.get_main_loop().root.get_node_or_null("CampaignRepository")` (same defensive pattern as `HenchmanLifecycleManager`). When no scene tree / no autoload is available (most existing static unit tests), the helper returns `-1` and the calculator falls back to modifier-only movement, preserving prior behavior.
+- The result `details` array now also carries `modifier_movement` and `encumbered_movement` per member, so future UI can show a tooltip breakdown without re-querying.
+
+*A3 — henchman recruitment pool generates real candidates:*
+- [engine/subsystems/henchmen/henchman_availability.gd](engine/subsystems/henchmen/henchman_availability.gd) `generate_pool()` rewritten. Old behavior rolled the rarity table once per class at the market — for MC VI settlements (the smoke-test default) that meant only fighter/thief at 15% each, near-empty pools 70% of months. New behavior follows `acore_equipment.xml:730`: roll Normal Men + per-level counts (4d100/5d20/4d8/3d4/1d6/1d2 for Lvl 0; per-level dice for Lvl 1–4) by market class, then assign each leveled slot a class via the rarity-weighted distribution (`_pick_class_for_market`). Search-cost roll unchanged.
+- **Normal Men placeholder.** ACKS RAW: most candidates at any market are 0th-level Normal Men. The Normal Man class is not yet implemented. Per project decision, every level-0 slot is filled with a **Level-1 Fighter placeholder** carrying `is_normal_man_placeholder: true` in its spec. [henchman_lifecycle_manager.gd](engine/subsystems/henchmen/henchman_lifecycle_manager.gd) `ensure_pool()` reads the flag and stamps `class_metadata = '{"normal_man_placeholder": true}'` (preserving any existing keys via the new `_stamp_metadata_flag()` helper). Both sites carry a `TODO(normal-men)` comment marking the swap point for the future Normal Man session.
+- Removed unreachable helpers `_roll_available_classes` and `_determine_level` from `henchman_availability.gd` — they were the old per-class rarity flow with no remaining callers. The "find a specific class" Hench-Wanted procedure is a separate ACKS mechanic; if/when it arrives it will reintroduce its own helpers.
+- The full Tavern PoI → Activity Panel → "Hire Henchmen" → `SettlementExploreState._on_hiring_requested` → `HenchmanLifecycleManager.ensure_pool` → `HiringPanel` chain was already wired correctly. The bug was purely upstream of the pool-population step.
+
+**Decisions made:**
+
+- **A1: auto-fill is silent**, not a JSON migration. We don't rewrite `data/test_dungeon.json`. The `from_dict` backstop means any future dungeon JSON that declares an `entry` but omits `transition_cells` Just Works. Authored dungeons that want a NON-entry exit (e.g. a separate "back door" cave mouth) still declare `transition_cells` explicitly.
+- **A2: encumbrance ceiling is a **cap**, not a stack**. `min(modifier, encumbered)` not addition — spells like Slow stack with encumbrance the same way the natural "you're heavy AND slowed" interaction does in RAW. If a future spell wants to bypass encumbrance, it sets the modifier to a non-cap-bound value via the existing modifier system; the cap still applies.
+- **A2: defensive repo lookup, not constructor injection.** The static API gets the autoload at call-time. Unit tests that construct `PartyData` manually without a scene tree see `repo == null` → `encumbered_speed == -1` → the function falls back to modifier-only speed. All existing party-management tests pass unchanged.
+- **A3: Normal Men flag in `class_metadata`, not in a new column.** The character row stays a perfectly valid Level-1 Fighter — playable, hireable, distinguishable. When the Normal Man class lands, the future session iterates rows where `class_metadata->'normal_man_placeholder'` is set and rebuilds them. No migration needed for this iteration.
+- **A3: pool generation is now per-level, not per-class.** This matches the published `acore_equipment.xml:730` table verbatim. The rarity table (`ax_henchmen_recruitment_expanded.xml`) still drives class-distribution within a leveled slot but no longer governs availability; that was the source of the old "always empty at MC VI" bug.
+
+**Interfaces defined or changed:**
+
+- `VoxelMapData.from_dict(data)` — when `data["entry"]` is present and `data["transition_cells"]` is empty/missing, the entry position is auto-added to `transition_cells` with the label `"Entrance"`. Existing JSON with explicit `transition_cells` is unchanged.
+- `TravelSpeedCalculator.calculate_party_speed(party, terrain, on_road)` — return Dictionary's `details[]` entries gain `modifier_movement: int` and `encumbered_movement: int`. The existing `effective_movement` key now reflects the encumbrance-capped speed.
+- `HenchmanAvailability.generate_pool(market_class, dice)` — return spec dicts now include `is_normal_man_placeholder: bool`. Old callers reading only `class_id`/`level`/`allotment_week` keep working. New helpers `_roll_level_count()` and `_pick_class_for_market()`. Removed `_roll_available_classes()` and `_determine_level()`.
+- `HenchmanLifecycleManager._stamp_metadata_flag(json_str, key, value)` (new static helper).
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- `tests/test_voxel_map_data.gd` — added `test_entry_auto_added_as_transition_when_omitted` and `test_entry_omitted_does_not_add_phantom_transition`. Registered in `run_all_tests`.
+- `tests/test_henchman_availability.gd` — new suite, 5 tests:
+  - `test_pool_includes_normal_men_at_market_class_six` — MC VI yields 1d2 Normal Men deterministically.
+  - `test_normal_men_become_level_1_fighter_placeholders` — placeholder fields verified (class fighter, level 1, flag set).
+  - `test_leveled_slots_pick_class_from_market_pool` — MC IV yields 9 placeholders + 3 leveled.
+  - `test_pool_assigns_weekly_allotment` — every candidate carries allotment_week 1..3.
+  - `test_market_class_one_yields_many_normal_men` — MC I 4d100 → 200 placeholders, total 248.
+  - Registered in `tests/test_runner.tscn` (new ext_resource id `79b_henchman_availability_tests`) and `tests/test_runner.gd` (new `_henchman_availability_tests` autoref + suite-list entry).
+- Skipped: A2 unit-tests requiring DB-backed inventory fixtures (per the existing project precedent for inventory-dependent helpers — covered by smoke test instead).
+
+**Test results:** 104/125 suites pass after this session, up from 103 before. The new `HenchmanAvailability` suite passes. The 21 remaining suite failures are all pre-existing and unrelated (combat_maneuvers, event_scheduler, persistence_tiers, settlement_map_*, language_cleanup, equipment_catalog count drift, etc.) — none touch files modified in this session. Existing `PartyManagement` (incl. all five `travel_*` tests) continues to pass with A2's encumbrance wiring active.
+
+**Known issues:**
+
+- **Pre-existing failure cluster** documented above — needs a separate triage pass.
+- **A2 terrain multipliers** are unchanged. Smoke-test prompt flagged this as "out of scope, fix encumbrance read first." Wilderness map types (clear/woods/etc.) already drive the multiplier; per-cell road overlay does not.
+- **A3 Normal Man class** is the obvious next big henchman task. When it lands: replace the Level-1 Fighter branch in `HenchmanLifecycleManager.ensure_pool` with `_char_gen.generate_normal_man(...)`, and decide whether existing placeholder rows should be lazily upgraded on first load or left as-is.
+- **A3 0th-level wages.** `HenchmanTables.MONTHLY_WAGE[0] = 12 gp/mo` — the placeholder Level-1 Fighter currently uses Level-1 wages (25 gp). A future cleanup pass could special-case wage to 12 when `is_normal_man_placeholder` is set; for v1 the 25 gp wage is acceptable.
+
+**Next session should:**
+
+1. Smoke-test A1: load `data/test_dungeon.json` in Godot, walk to the entry cell (3, 3, 0), confirm green "E" marker is visible and right-click shows "Exit Dungeon" returning the party to the wilderness hex.
+2. Smoke-test A2: equip a heavy item (e.g. plate armour) on a PC and watch the wilderness travel-rate UI on `SessionStatusBar` drop from 120/turn to the next encumbrance band. Strip the armour and watch it return.
+3. Smoke-test A3: enter a settlement tavern, click "Hire Henchmen", pay the search fee, verify candidates populate. At MC VI you should mostly see Normal Man placeholders (Level-1 Fighters, look for the `class_metadata` JSON containing `normal_man_placeholder: true` via dev console). Advance one game month and verify the pool refreshes.
+4. Begin Block B per the plan: B1 wilderness combat map size (one-line fix), B4 lockpicking gating audit, then the heavier B2/B3/B5/B6 items.
+
+
+## Session 2026-04-27 — Smoke Test Batch 3, Block B (B1–B6)
+
+**Task:** Block B of the smoke-test plan — combat correctness (B1, B2, B3), action-gating audit (B4), light-source fog reveal (B5), and unified post-combat loot dispatch (B6). Plan file: `C:\Users\jttau\.claude\plans\attached-is-a-list-gleaming-chipmunk.md`.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+*B1 — wilderness combat battle map:*
+- [engine/subsystems/session/states/combat_state.gd](engine/subsystems/session/states/combat_state.gd) `_place_combatants_on_grid` and `enter()` rewritten:
+  - Map dimension changed from 25×25 → **100×100** (500'×500' per `gdd-combat-map-generation.md` §3).
+  - Spawn placement now rolls an **ACKS encounter distance** based on the wilderness terrain (`_encounter_distance_spec` honours `acore_adventures_and_encounters.xml:730` — Plains 5d20×10, Mountains/Desert 4d6×10, Forest Light 5d8, Forest Heavy/Jungle 5d4, Marsh 8d10).
+  - Distances exceeding the map's diagonal **clamp to the far edge** per gdd §7.3 — both sides are on-screen at combat start.
+- New static helpers `_roll_encounter_distance_cells(terrain_category, dice)`, `_encounter_distance_spec(terrain_category)`, `_max_offset_from_entry(entry, vmap)`.
+- `combat_state.gd` reads `terrain_category` from the `encounter_data` payload (already populated by `SessionRunner.do_encounter_check` via `terrain.movement_cost_category()`).
+
+*B2 — block actives, allow incapacitated pass-through:*
+- Pre-batch state: pathfinding (`MovementResolver._can_enter_3d`, `path_bfs_3d`) ignored cell occupancy entirely. Combatants could walk through any other unit, friend or foe.
+- New helpers in [movement_resolver.gd](engine/subsystems/combat/movement_resolver.gd): `_is_blocking_occupant`, `_is_legal_endpoint`, `_lookup_combatant`, `static _is_incapacitated`. "Incapacitated" = not alive OR has condition unconscious / paralyzed / sleeping / petrified.
+- `_can_enter_3d` and `path_bfs_3d` accept an optional `mover_id: String = ""`. When set, active enemies block path STEPS and any non-self occupant blocks the ENDPOINT (you can pass over a corpse but cannot stop on it). Empty `mover_id` preserves prior behaviour for non-combat callers.
+- `find_path` and `can_reach` plumb `mover_id` through to `path_bfs_3d`. [combat_controller.gd](engine/subsystems/combat/combat_controller.gd) now passes `combatant.id` at three call sites (move-to-target AI step, player move action, run_here).
+- Dungeon explorer / wilderness movement keep their default empty `mover_id` so the existing party-formation-collision behaviour is untouched.
+
+*B3 — wilderness combat camera:*
+- [scenes/ui/combat/combat_map_renderer_3d.gd](scenes/ui/combat/combat_map_renderer_3d.gd) gained:
+  - **WASD pan** alongside the existing arrow-key pan (player choice).
+  - **Edge-pan** when the cursor is within `EDGE_MARGIN` (40px) of any viewport edge.
+  - **Mouse-wheel zoom** — `_camera.size` clamped to `[ZOOM_MIN=4, ZOOM_MAX=30]` with `ZOOM_STEP=1`.
+  - **Bounds clamp** via new `_clamp_camera_to_map()` — projected camera target stays inside the voxel-map's XZ extents so players can't scroll into the void.
+- The dungeon explorer's camera is unchanged this session — extracting a shared `TacticalMapCamera` helper deferred until B6 settles.
+
+*B4 — lockpicking class-power gating:*
+- The pre-existing `_any_selected_can_pick_lock` checked `cd.combat_progression == "thief"`. **This was wrong** — Bards have thief combat progression but no `open_locks` class power per ACKS RAW (`data/classes/bard.json` `class_powers` does not include open_locks).
+- New `CLASSES_WITH_OPEN_LOCKS = ["thief"]` in both [dungeon_context_menu_builder.gd](engine/subsystems/exploration/dungeon_context_menu_builder.gd) and [dungeon_action_actor_picker.gd](engine/subsystems/exploration/dungeon_action_actor_picker.gd). The check is now `cd.character_class in CLASSES_WITH_OPEN_LOCKS or cd.has_proficiency("lockpicking")`.
+- The list is canonical: future classes that grant `open_locks` (e.g. potential dlc classes) need to be added explicitly, with a check against the corresponding JSON `class_powers` entry. Comment on the constant marks the verification gate.
+- Pick-lock tooltip wording unchanged — "Thief class or Lockpicking proficiency required" still reads correctly.
+
+*B5 — light-source-based fog reveal:*
+- New file [engine/subsystems/exploration/fog_reveal_engine.gd](engine/subsystems/exploration/fog_reveal_engine.gd) (`class_name FogRevealEngine`). All-static:
+  - `compute_visible_cells(map, members) -> Dictionary[Vector3i -> true]` — for each member, iterates the Chebyshev box of their light radius (light + darkvision) and uses `VoxelLOS.has_los` to gate each cell. Multiple members union into one lit set.
+  - V1 simplification per project decision: members with `radius == 0` still expose **their own cell** so the player can see their portrait in pitch darkness. Full pitch-darkness mechanics (no movement without LOS, etc.) deferred.
+- [dungeon_map_controller.gd `_update_fog_for_all_members_voxel`](engine/subsystems/exploration/dungeon_map_controller.gd) rewritten to demote currently-visible cells to "explored", build the `{eid: {pos, radius}}` payload, ask `FogRevealEngine.compute_visible_cells`, and write back lit cells.
+- `_reveal_entry_room_voxel` and `_update_visibility_on_move_voxel` both delegate to the unified light-source update — the room-scoped reveal is **retired** as the active fog mechanism. Room data structures remain intact for B6 leftover-cache placement.
+- `_reveal_room_voxel` survives as a dev/debug helper but is no longer called from the fog path; comment marks it deprecated.
+- Per project decision, the existing 50'/10-cell torch+lantern radius constant in `DungeonLightManager` is unchanged. This refactor changes *which* cells get lit (LOS-checked) not the radius.
+
+*B6 — unified post-combat loot dispatch (partial — see scope notes):*
+- Pre-batch: [combat_controller.gd `_finalize_combat`](engine/subsystems/combat/combat_controller.gd) gated loot generation on `is_wilderness`. Dungeon victories never produced an `outcome["loot"]` key, so `PartyInventoryOverlay._on_combat_ended_loot` (the global subscriber) silently skipped them.
+- The wilderness gate is **removed**. Both contexts now generate loot for victory + non-empty treasure_types.
+- New `outcome["combat_origin_cell"]: Vector3i` and `outcome["exploration_context"]` keys carry the dispatch context forward, ready for the leftover-cache + ground-drop wiring on the modal side.
+- New `CombatController._compute_combat_origin_cell(roster)` picks a representative cell — last-defeated enemy preferred, falling back to first surviving party combatant.
+- **Scope note:** the full B6 redesign in the plan (modal Apply creates leftover dungeon cache / wilderness ground drop, treasure XP only for items taken, "Leave Field" button removed) is **not finished this session**. Reasons:
+  - V1 combat loot is coins-only — `LootGenerator.generate_from_treasure_types` returns coin counts only; monsters carry no inventory drops yet. No items means no leftover items to cache. The dispatch unification alone is what unblocks the smoke test.
+  - The "Leave Field" / Continue end-overlay flow wraps a CanvasLayer-stack restructure that was scope-creep relative to the dispatch fix. Filed in known issues.
+- Session 4.5's per-corpse cache pattern is **explicitly retired** by this dispatch change — no per-corpse `location_cache` rows are created on combat end. Future leftover items will go to a single cache per the plan when items appear in loot.
+
+**Decisions made:**
+
+- **B1: spawn placement uses encounter distance, not just a fixed offset.** The pre-existing 6-cell offset would have left ranged combat impossible on the new 100×100 map. The terrain-driven roll gives both sides space proportional to ACKS RAW.
+- **B2: occupancy check is gated by `mover_id` non-empty**, not by combat context. Cleaner separation: combat callers opt in by passing `mover_id`; non-combat callers continue to ignore occupancy. Avoids regressing the dungeon party-formation-walk-through behaviour.
+- **B2 incapacitated set is conservative.** Only `not is_alive() OR conditions ∈ {unconscious, paralyzed, sleeping, petrified}` qualifies. Prone / stunned / charmed do NOT count — those units can still defend their tile per ACKS.
+- **B3: edge-pan uses `EDGE_MARGIN=40`**, not the prompt's suggested 20. The existing constant is 40; bumping it down would risk surprise pans on small monitors. Hinted at in known issues.
+- **B4: class-power signal lives in the menu builder, not the resolver.** The class power list is small (just `thief` for `open_locks`), and adding a registry lookup at gating time would cross subsystems for a one-line check. The constant is documented with the verification gate.
+- **B5: room data stays.** Even though room-scoped reveal is retired, room IDs, cells, and centroids are still needed for B6 leftover-cache placement and for level-up / persistence flows. Only the *fog* reveal hook moves to light+LOS.
+- **B6: minimum-viable dispatch unification, leftover-cache deferred.** The modal already exists; no items means no leftover-cache scenarios to test. When monsters get inventory drops, the leftover flow becomes important and gets its own session — flagged in known issues.
+
+**Interfaces defined or changed:**
+
+- `MovementResolver.path_bfs_3d(from, to, movement_type, max_range, mover_side, passability_mode, mover_id)` — new optional last param `mover_id: String`. Default empty preserves prior behaviour.
+- `MovementResolver._can_enter_3d(from, to, movement_type, passability_mode, mover_id)` — same. Private but now takes the optional 5th arg.
+- `MovementResolver.find_path(start, goal, _exclude_occupied, max_range, mover_side, level_z, mover_id)` — new optional last param.
+- `MovementResolver.can_reach(combatant, target_pos, max_cells, mover_side)` — internally now passes `combatant.id` to path_bfs_3d.
+- New `MovementResolver._is_blocking_occupant`, `_is_legal_endpoint`, `_lookup_combatant`, static `_is_incapacitated`.
+- `CombatState._roll_encounter_distance_cells(terrain_category, dice)`, `_encounter_distance_spec(terrain_category)`, `_max_offset_from_entry(entry, vmap)` — new static helpers (testable in isolation).
+- `FogRevealEngine.compute_visible_cells(map, members)` — new public static API.
+- `DungeonContextMenuBuilder.CLASSES_WITH_OPEN_LOCKS` and `DungeonActionActorPicker.CLASSES_WITH_OPEN_LOCKS` (new constants, must stay in sync).
+- `CombatController` outcome dict gains `combat_origin_cell: Vector3i` and `exploration_context` keys when victory loot is generated. Existing consumers reading `outcome["loot"]` are unaffected.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- `tests/test_combat_state_spawn.gd` — 5 tests: open-field 100×100 verification, encounter-distance spec lookups for each terrain, max-offset clamping, deterministic roll for plains/jungle. Uses a `FakeDice` stub.
+- `tests/test_fog_reveal_engine.gd` — 6 tests: radius-2 in open room (25 cells), wall-blocked LOS, multi-source union, no-light shows only self cell, off-map member skipped, radius-0 still exposes self.
+- `tests/test_movement_resolver_3d.gd` — 5 new B2 tests appended: walk through incapacitated, blocked by active, endpoint blocked by body, endpoint allowed when only self, default-signature backwards-compat.
+- `tests/test_dungeon_action_actor_picker.gd` — 3 new B4 tests: thief picked, bard rejected despite thief progression, party with no thief/proficiency yields empty.
+- All registered in `tests/test_runner.tscn` and `tests/test_runner.gd`.
+
+**Test results:** **106 suites pass**, 21 failed after this session. The pre-existing failures from before block A are **unchanged in count and identity** — none of the failed suites touch the files modified here. The new `CombatStateSpawnTests`, `FogRevealEngineTests`, B2 cases in `MovementResolver3DTests`, and B4 cases in `DungeonActionActorPickerTests` all pass.
+
+**Known issues:**
+
+- **B3: edge-pan margin is 40px, not 20.** The plan suggested 20; the existing constant is 40 and looked sane during code-reading. Smoke-test in-engine to confirm it's not too aggressive on small windows.
+- **B5: light decay / burnout scheduler events.** Static lit-while-equipped is the v1 baseline. The `DungeonLightManager.tick_all` already counts down turns, but the visual feedback ("torch burning out" warning, auto-replacement) is incomplete. Flag for a follow-up.
+- **B5: combat-time light.** Combat inherits exploration's lit set unchanged. Light burnout during combat (10-second rounds) is out of scope.
+- **B6: leftover-cache + ground-drop wiring on the modal Apply.** Skipped because v1 combat loot has no items — only coins, which always distribute. When monsters get inventory drops, `LootDistributionModal._on_apply` and `_on_drop_all` must:
+  - Collect items with `picker.selected < 0` (left behind).
+  - In dungeon: call `LocationCacheManager.create_dungeon_loose_cache(GameState.current_dungeon_id, _compute_leftover_cell())` and route items via `drop_item_to_cache`.
+  - In wilderness: drop to current hex via the existing wilderness cache path.
+  - Award treasure XP only for the GP value of items actually taken (not coin total).
+  - Advance clock to next 10-min mark on Apply (the finalizer already does this — just needs to move the trigger to Apply if both contexts are unified).
+- **B6: "Leave the Field" / "Continue" button.** Still present on `combat_screen.gd:293` and the `CombatEndOverlay`. Per the plan, modal Apply should be the combat exit. The CanvasLayer ordering (modal layer 52, combat screen layer 5) makes the modal overlay correctly today; restructuring the exit to gate on modal-close requires a CombatScreen ↔ PartyInventoryOverlay handshake and is deferred.
+- **B6: `_compute_combat_origin_cell` may pick the wrong fallback** when the only surviving combatants are off-map (post-flee). v1 doesn't expose this case — flag for hardening when complex retreat / despawn flows land.
+
+**Next session should:**
+
+1. Smoke-test B1: trigger a wilderness combat. Map should be 100×100; pan with WASD + arrows; mouse-wheel to zoom out and confirm the full grid is visible at ZOOM_MAX. Range-roll plains encounters and watch monsters spawn near the far edge of the map.
+2. Smoke-test B2: in any combat, drop a PC (negative HP). On enemy turn, watch a monster pathfind through the downed PC's cell to attack a different ally. Conversely, place an enemy in a corridor and verify pathfinding around them.
+3. Smoke-test B4: enter test dungeon with a Bard selected, right-click a locked door — Pick Lock should be greyed with the tooltip. Switch to the Thief — Pick Lock should enable.
+4. Smoke-test B5: enter test dungeon with torches in inventory. Light a torch. Confirm cells within ~10 cells of the lit character become Visible; cells outside the radius stay Hidden / Explored. Move into a corridor, confirm cells reveal cell-by-cell ahead. Drop the torch, walk away — previously-lit cells should dim to Explored. With NO torch lit, only the party's own cells should remain Visible.
+5. Smoke-test B6: trigger a wilderness combat against monsters with `treasure_type != "None"`. Loot modal should auto-open with rolled coins. Apply distributes per shares. Repeat in dungeon — modal should now ALSO open (this was the bug). Coin-only outcome means there's nothing to leave behind in v1.
+6. Re-import the project after pulling these changes (`Godot --headless --path . --import`) — `class_name FogRevealEngine` won't resolve until import runs once.
+7. When monsters get inventory drops, build B6's leftover-cache flow (see Known Issues).
+
+
+## Session 2026-04-27 — Smoke Test Batch 3, Block C+D (C1, D1)
+
+**Task:** Block C+D of the plan — decoupled scheduler speed bands per exploration context (C1) and group-movement performance quick wins (D1, time-boxed).
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+*C1 — per-context speed bands:*
+- [engine/subsystems/session/scheduler_loop.gd](engine/subsystems/session/scheduler_loop.gd) gained three `const Dictionary` lookup tables — `DUNGEON_SPEEDS`, `WILDERNESS_SPEEDS`, `SETTLEMENT_SPEEDS` — keyed by `SPEED_NORMAL` / `SPEED_FAST` / `SPEED_VERY_FAST`. Dungeon Fast = 6× and Very Fast = 30× per the smoke-test prompt; wilderness/settlement keep the prior 1×/2×/5× because their `TIMESCALE_*` already amplifies the band.
+- New helpers `get_effective_multiplier()` and `_speed_table_for_timescale()`. The tick math (`_tick_normal`) now reads through `get_effective_multiplier()`, so internal scheduling tracks the per-context multiplier without callers changing how they pass `set_speed(SPEED_NORMAL)`.
+- [scenes/maps/dungeon_map_renderer_3d.gd](scenes/maps/dungeon_map_renderer_3d.gd) `_compute_speed_scale()` now looks up `DUNGEON_SPEEDS` directly so tween playback speed tracks the band — without this fix, dungeon Fast would advance the clock 6× faster than the tween, producing visibly desynced movement.
+- The public `SPEED_NORMAL=1`, `SPEED_FAST=2`, `SPEED_VERY_FAST=5` constants are unchanged. Existing call-sites (clock_speed_controls keyboard 1/2/3, dungeon explorer's `loop.resume(SPEED_NORMAL)`, etc.) keep working.
+
+*D1 — group-movement quick wins (time-boxed):*
+- Removed a redundant `_update_fog_for_all_members()` call in `DungeonMapController.teleport_party_to`. After B5's refactor, `_update_visibility_on_move_voxel` already routes through the unified light-source fog update, so the immediate follow-up call doubled the per-teleport LOS ray count (~2 × 6 members × 21×21 cell box). Single call now.
+- Verified `_execute_orders_voxel` (the canonical group-step executor used by `move_party` when formation data is available) already calls `_update_fog_for_all_members()` exactly once at end-of-step. No regression there.
+- Other quick wins from the plan are flagged as known issues (parallel tweens, throttled renderer rebuilds) — not implemented this pass to honour the time-box.
+
+**Decisions made:**
+
+- **C1: keep `SPEED_NORMAL/FAST/VERY_FAST` as caller-facing ordinals** rather than renaming them. The integer values are entrenched across UI, state machines, and persistence; treating them as ordinals (band identifiers) mapped to per-context multipliers via lookup tables keeps the migration path narrow.
+- **C1: dungeon-only `set_speed` adjustment was rejected** in favour of full per-context tables (the user's preferred option in pre-implementation Q&A). Wilderness and settlement get explicit tables — currently mirroring the prior values — so future tuning has a clear home.
+- **C1: `get_effective_multiplier` is the single source of truth** for "what multiplier is currently active." The dungeon renderer reads from `DUNGEON_SPEEDS` directly because it's pinned to dungeon context — but if other renderers ever need this, they should call the loop's getter rather than mirror the table.
+- **D1: time-boxed at the easiest win.** The expensive remaining hotspot is `FogRevealEngine.compute_visible_cells` itself (Chebyshev box × LOS rays × N members). Caching shared cells across members and skipping per-frame rebuilds in the renderer would help, but cross broader system boundaries than a quick D1 sweep allows.
+
+**Interfaces defined or changed:**
+
+- `SchedulerLoop.DUNGEON_SPEEDS`, `WILDERNESS_SPEEDS`, `SETTLEMENT_SPEEDS` — new const dictionaries (public).
+- `SchedulerLoop.get_effective_multiplier() -> float` — new public getter; returns the per-context multiplier for the currently-set band, or the raw `_speed` for PAUSED / MAX.
+- `SchedulerLoop._speed_table_for_timescale() -> Dictionary` — new private helper.
+- `_compute_speed_scale()` in dungeon_map_renderer_3d.gd now reads `DUNGEON_SPEEDS` instead of multiplying `_clock_speed` directly.
+- `DungeonMapController.teleport_party_to`: behaviour change — single fog update per call (was 2).
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- `tests/test_scheduler_loop.gd` — 5 new C1 cases: `test_c1_dungeon_normal_multiplier` (1×), `test_c1_dungeon_fast_multiplier` (6×), `test_c1_dungeon_very_fast_multiplier` (30×), `test_c1_wilderness_speeds_unchanged`, `test_c1_settlement_speeds_unchanged`.
+- All registered in the existing `run_all_tests` block — no new test file.
+
+**Test results:** 106 suites pass, 21 failed. Same baseline as end-of-Block-B. The new C1 cases all pass; the 21 pre-existing failures are unchanged in count and identity.
+
+**Known issues:**
+
+- **D1: per-frame fog reveal rebuild.** `_on_fog_updated` in dungeon_map_renderer_3d.gd unconditionally calls `_rebuild_grid_voxel`, which rebuilds floors / walls / doors / features / fog overlay / transition markers for ALL levels every time fog changes. With B5's per-move fog update, this happens on every step. For large dungeons this is a real cost but flagged for a follow-up — narrowing the rebuild to "fog overlay only" requires teaching the renderer to update layers selectively.
+- **D1: shared LOS rays across party members.** `FogRevealEngine.compute_visible_cells` runs an independent LOS ray for every member-cell pair. Members standing near each other see substantial overlap (radius-10 boxes overlap heavily). A future pass could cache "cell X is lit" once it's been proven from any source.
+- **D1: parallel member tweens.** `start_movement_animation` is invoked sequentially per member by the order executor; each member's tween starts at the same instant in code but the API doesn't explicitly batch starts. If staggering issues surface, the renderer can be made to defer all `_active_movements` setup to a single end-of-frame queue.
+- **C1: settlement speeds are placeholders.** Currently mirroring wilderness 1×/2×/5×. When settlement-time tuning becomes a felt issue (probably alongside per-PoI activity time), update `SETTLEMENT_SPEEDS` and re-test.
+
+**Next session should:**
+
+1. Smoke-test C1: enter dungeon, set clock to Normal — game-time should advance ~1 round per 2 real seconds. Switch to Fast — should see ~6 rounds (1 minute) per 2 real seconds. Switch to Very Fast — should see ~30 rounds (5 minutes) per 2 real seconds. Move to wilderness, confirm Fast/Very Fast still feel like the prior 2×/5× pace (NOT 30×/150×, which would zoom hours past).
+2. Smoke-test D1 visually: walk a 6-PC party through a long corridor in the test dungeon and watch step-to-step responsiveness. The teleport double-fog removal should be a small but real reduction; the larger savings need the rebuild-throttle follow-up.
+3. Pre-existing failure cluster (21 suites) still needs a triage pass — none of them touch files modified in this batch.

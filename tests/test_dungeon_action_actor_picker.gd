@@ -24,6 +24,9 @@ func run_all_tests() -> void:
 	test_listen_does_not_prefer_halfling()
 	test_force_picks_highest_strength()
 	test_force_returns_empty_when_no_party()
+	test_pick_lock_thief_chosen()
+	test_pick_lock_bard_excluded_despite_thief_progression()
+	test_pick_lock_returns_empty_for_party_without_thief_or_proficiency()
 	if not has_failures():
 		print("DungeonActionActorPicker: all tests passed.")
 
@@ -186,3 +189,40 @@ func test_force_picks_highest_strength() -> void:
 func test_force_returns_empty_when_no_party() -> void:
 	var picked: String = DungeonActionActorPicker.pick_for_force(["A"], null)
 	check(picked == "", "null party should return ''")
+
+
+# ---------------------------------------------------------------------------
+# pick_for_pick_lock — open_locks class power, NOT raw thief progression.
+# ---------------------------------------------------------------------------
+
+func test_pick_lock_thief_chosen() -> void:
+	var thief := _make_character("THIEF", "thief", "human", 3, 10, 14)
+	var fighter := _make_character("FIGHTER", "fighter", "human", 5, 16, 12)
+	var pd := _make_party([thief, fighter])
+	var picked: String = DungeonActionActorPicker.pick_for_pick_lock(
+		["THIEF", "FIGHTER"], pd, null)
+	check(picked == "THIEF",
+		"thief class should be picked over fighter; got '%s'" % picked)
+
+
+func test_pick_lock_bard_excluded_despite_thief_progression() -> void:
+	# Bard has combat_progression=thief but no open_locks class power per
+	# ACKS RAW. Pick Lock must reject them when no proficiency is present.
+	var bard := _make_character("BARD", "bard", "human", 5, 12, 14)
+	# Sanity check: the test fixture must reflect the production progression.
+	bard.combat_progression = "thief"
+	var pd := _make_party([bard])
+	var picked: String = DungeonActionActorPicker.pick_for_pick_lock(
+		["BARD"], pd, null)
+	check(picked == "",
+		"bard alone should yield no pick_lock actor; got '%s'" % picked)
+
+
+func test_pick_lock_returns_empty_for_party_without_thief_or_proficiency() -> void:
+	var fighter := _make_character("FIGHTER", "fighter", "human", 5, 16, 12)
+	var cleric := _make_character("CLERIC", "cleric", "human", 4, 12, 10)
+	var pd := _make_party([fighter, cleric])
+	var picked: String = DungeonActionActorPicker.pick_for_pick_lock(
+		["FIGHTER", "CLERIC"], pd, null)
+	check(picked == "",
+		"party without thief/proficiency must yield ''; got '%s'" % picked)

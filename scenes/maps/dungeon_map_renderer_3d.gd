@@ -509,12 +509,17 @@ func cancel_all_movement_animations() -> void:
 		cancel_movement_animation(entity_id)
 
 
-## Compute the tween speed_scale from the current clock speed.
+## Compute the tween speed_scale from the current clock speed. C1: looks up
+## the dungeon-context multiplier directly from DUNGEON_SPEEDS so tween
+## speed tracks the per-context band (Fast=6, Very Fast=30) — otherwise
+## tweens would lag behind the clock at the new dungeon bands.
 ## Returns 0.0 when paused (tween freezes), positive for normal play.
 func _compute_speed_scale() -> float:
 	if _clock_speed <= 0:
 		return 0.0  # paused or MAX (MAX should not create tweens)
-	return float(_clock_speed) * SchedulerLoop.TIMESCALE_DUNGEON
+	var multiplier: float = float(SchedulerLoop.DUNGEON_SPEEDS.get(
+		_clock_speed, _clock_speed))
+	return multiplier * SchedulerLoop.TIMESCALE_DUNGEON
 
 
 ## Handle clock speed changes — update tween playback speed or cancel for MAX.

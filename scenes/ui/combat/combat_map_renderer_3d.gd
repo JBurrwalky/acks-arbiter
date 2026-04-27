@@ -297,44 +297,102 @@ func _rebuild_highlights() -> void:
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not (event is InputEventMouseButton) or not event.pressed:
-		return
-
 	if _camera == null or _voxel_map == null:
 		return
 
-	var cell_pos_3d := TacticalGrid3D.screen_to_cell_voxel(_camera, event.position, 0)
-	if event.button_index == MOUSE_BUTTON_LEFT:
-		var hit_eid := _entity_id_near(event.position)
-		if not hit_eid.is_empty():
-			entity_clicked.emit(hit_eid)
+	if event is InputEventMouseButton:
+		# Mouse-wheel zoom on the orthographic camera. ZOOM_MIN gives a
+		# tactical close-up; ZOOM_MAX shows the full map.
+		if event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_camera.size = clampf(_camera.size - ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
 			get_viewport().set_input_as_handled()
 			return
-		if _voxel_map.has_cell(cell_pos_3d):
-			cell_clicked.emit(cell_pos_3d)
+		if event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_camera.size = clampf(_camera.size + ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
 			get_viewport().set_input_as_handled()
-	elif event.button_index == MOUSE_BUTTON_RIGHT:
-		cell_right_clicked.emit(cell_pos_3d, event.position)
-		get_viewport().set_input_as_handled()
+			return
+		if not event.pressed:
+			return
+
+		var cell_pos_3d := TacticalGrid3D.screen_to_cell_voxel(_camera, event.position, 0)
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			var hit_eid := _entity_id_near(event.position)
+			if not hit_eid.is_empty():
+				entity_clicked.emit(hit_eid)
+				get_viewport().set_input_as_handled()
+				return
+			if _voxel_map.has_cell(cell_pos_3d):
+				cell_clicked.emit(cell_pos_3d)
+				get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			cell_right_clicked.emit(cell_pos_3d, event.position)
+			get_viewport().set_input_as_handled()
 
 
 func _process(delta: float) -> void:
-	if _camera == null:
+	if _camera == null or _voxel_map == null:
 		return
+
+	# Keyboard pan (WASD + arrow keys, both supported per the prompt — the
+	# dungeon HUD uses arrows for similar nav).
 	var screen_dir := Vector2.ZERO
-	if Input.is_action_pressed("ui_left"):
+	if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
 		screen_dir.x -= 1.0
-	if Input.is_action_pressed("ui_right"):
+	if Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
 		screen_dir.x += 1.0
-	if Input.is_action_pressed("ui_up"):
+	if Input.is_action_pressed("ui_up") or Input.is_key_pressed(KEY_W):
 		screen_dir.y += 1.0
-	if Input.is_action_pressed("ui_down"):
+	if Input.is_action_pressed("ui_down") or Input.is_key_pressed(KEY_S):
 		screen_dir.y -= 1.0
+
+	# Edge-pan: when the mouse is within EDGE_MARGIN of a viewport edge, push
+	# the camera in that direction. Skipped while the mouse is outside the
+	# window (Godot returns Vector2(-INF, -INF) in that case).
+	var viewport := get_viewport()
+	if viewport != null:
+		var vp_rect := viewport.get_visible_rect()
+		var mouse: Vector2 = viewport.get_mouse_position()
+		if vp_rect.has_point(mouse):
+			if mouse.x < vp_rect.position.x + EDGE_MARGIN:
+				screen_dir.x -= 1.0
+			elif mouse.x > vp_rect.end.x - EDGE_MARGIN:
+				screen_dir.x += 1.0
+			if mouse.y < vp_rect.position.y + EDGE_MARGIN:
+				screen_dir.y += 1.0
+			elif mouse.y > vp_rect.end.y - EDGE_MARGIN:
+				screen_dir.y -= 1.0
+
 	if screen_dir != Vector2.ZERO:
 		screen_dir = screen_dir.normalized()
 		var world_dir := CAM_RIGHT * screen_dir.x + CAM_UP * screen_dir.y
 		var speed_scale := _camera.size / 12.0
 		_camera.position += world_dir * PAN_SPEED * speed_scale * delta
+		_clamp_camera_to_map()
+
+
+## Keeps the camera target above the voxel-map's bounds so the player cannot
+## scroll into empty void. The orthographic camera's anchor is offset along
+## CAM_BACKWARD; we clamp the projected XZ origin against the cell extents.
+func _clamp_camera_to_map() -> void:
+	if _camera == null or _voxel_map == null:
+		return
+	var min_corner := Vector3.INF
+	var max_corner := -Vector3.INF
+	for pos in _voxel_map.get_all_positions():
+		if pos.z != 0:
+			continue
+		var w := VoxelGrid.cell_to_world(pos.x, pos.y, 0)
+		min_corner = min_corner.min(w)
+		max_corner = max_corner.max(w)
+	if min_corner == Vector3.INF:
+		return
+	# The camera floats above the map at +CAM_BACKWARD * 50; clamp the XZ
+	# foot-print so the camera target stays inside the cell bounds.
+	var cam_pos := _camera.position
+	var anchor := cam_pos - CAM_BACKWARD * 50.0
+	anchor.x = clampf(anchor.x, min_corner.x, max_corner.x)
+	anchor.z = clampf(anchor.z, min_corner.z, max_corner.z)
+	_camera.position = anchor + CAM_BACKWARD * 50.0
 
 
 # ---------------------------------------------------------------------------
