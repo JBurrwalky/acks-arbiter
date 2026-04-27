@@ -2029,8 +2029,8 @@
         {
           "item_key": "iron_spikes_12",
           "name": "Iron Spikes (12)",
-          "quantity": 1,
-          "encumbrance_units": 1000,
+          "quantity": 12,
+          "encumbrance_units": 83,
           "slot": "pack",
           "is_equipped": 0,
           "notes": "",

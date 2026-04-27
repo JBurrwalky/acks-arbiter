@@ -152,6 +152,11 @@ func enter(runner, context: Dictionary) -> void:
 	elif _controller.get_entity_ids().size() > 0:
 		_scene.add_entity_token("party_leader", "Party", 0, "?")
 
+	# Spawn eligible trained creatures (dogs, hawks, donkeys, mules) on the
+	# dungeon map at entry. Horses/oxen/cows/pigs/goats and any creature
+	# currently hitched to a cart stay outside.
+	_spawn_party_creatures_at_entry(party_data)
+
 	# Create UI panels and add them to the HUD.
 	_create_ui_panels()
 
@@ -562,17 +567,25 @@ func _on_context_action(action_data: Dictionary) -> void:
 				party_data, scheduler, party_id, true,
 				"No one is wielding an axe.",
 				"Bash Door (%d turn%s)" % [bash_turns, "s" if bash_turns > 1 else ""])
-		"spike_shut", "wedge_open":
-			var spike_actor: String = DungeonActionActorPicker.pick_for_spike_action(
-				selected, party_data, true)
+		"spike_shut":
+			var spike_actor: String = DungeonActionActorPicker.pick_for_spike_shut(
+				selected, party_data)
 			_issue_single_actor_action(
 				spike_actor, selected, action_type, cell, 1,
 				party_data, scheduler, party_id, true,
-				"No one is carrying iron spikes.",
-				"Spike Shut" if action_type == "spike_shut" else "Wedge Open")
+				"No one has iron spikes and a hammer.",
+				"Spike Shut")
+		"wedge_open":
+			var wedge_actor: String = DungeonActionActorPicker.pick_for_wedge_open(
+				selected, party_data)
+			_issue_single_actor_action(
+				wedge_actor, selected, action_type, cell, 1,
+				party_data, scheduler, party_id, true,
+				"No one has spikes/stakes and a hammer or mallet.",
+				"Wedge Open")
 		"remove_spike", "remove_wedge":
-			var remove_actor: String = DungeonActionActorPicker.pick_for_spike_action(
-				selected, party_data, false)
+			var remove_actor: String = DungeonActionActorPicker.pick_for_remove_spike_or_wedge(
+				selected, party_data)
 			_issue_single_actor_action(
 				remove_actor, selected, action_type, cell, 1,
 				party_data, scheduler, party_id, true,
@@ -1697,16 +1710,20 @@ func _start_dungeon_combat(encounter_data: Dictionary,
 		for c: Combatant in roster.get_alive_on_side(Combatant.Side.PARTY):
 			if c.is_character:
 				continue
-			if not tactical_map.entity_positions.has(c.id):
-				var placement := _find_creature_placement(tactical_map, party_positions)
-				if placement != Vector2i(-1, -1):
-					var placement_3d := Vector3i(placement.x, placement.y, current_level)
-					c.grid_position = placement_3d
-					tactical_map.set_entity_pos(c.id, placement_3d)
-				# Add a token for the creature on the dungeon map.
-				var cname: String = c.display_name
-				_scene.add_entity_token(c.id, cname, 1, cname.substr(0, 1).to_upper())
-				_scene.move_token(c.id, c.grid_position)
+			if tactical_map.entity_positions.has(c.id):
+				# Creature was already spawned at dungeon entry — sync the
+				# combatant's grid_position from the existing token.
+				c.grid_position = tactical_map.entity_positions[c.id]
+				continue
+			var placement := _find_creature_placement(tactical_map, party_positions)
+			if placement != Vector2i(-1, -1):
+				var placement_3d := Vector3i(placement.x, placement.y, current_level)
+				c.grid_position = placement_3d
+				tactical_map.set_entity_pos(c.id, placement_3d)
+			# Add a token for the creature on the dungeon map.
+			var cname: String = c.display_name
+			_scene.add_entity_token(c.id, cname, 0, cname.substr(0, 1).to_upper())
+			_scene.move_token(c.id, c.grid_position)
 
 	for p in placements:
 		var m_combatant := Combatant.from_monster(
@@ -1905,6 +1922,42 @@ func _on_loot_modal_completed(cache_id: String, cache_cell: Vector2i) -> void:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+## Places eligible trained creatures (per PartyData.can_creature_enter_dungeon)
+## adjacent to party members at dungeon entry. Combatant ids match the convention
+## used by CombatRoster.add_party_creatures ("creature_<id>"), so combat will
+## reuse these tokens rather than re-spawning the creature when combat begins.
+func _spawn_party_creatures_at_entry(party_data: PartyData) -> void:
+	if party_data == null or _controller == null or _scene == null:
+		return
+	var tactical_map = _controller.get_voxel_map()
+	if tactical_map == null:
+		return
+
+	var party_positions: Array = []
+	for eid in _controller.get_entity_ids():
+		var p: Vector3i = tactical_map.get_entity_pos(eid)
+		if p != Vector3i(-1, -1, -1):
+			party_positions.append(p)
+	if party_positions.is_empty():
+		return
+
+	var current_level: int = _controller.get_current_level()
+	for creature: TrainedCreatureData in party_data.creature_data:
+		if not party_data.can_creature_enter_dungeon(creature):
+			continue
+		var entity_id := "creature_" + creature.id
+		if tactical_map.entity_positions.has(entity_id):
+			continue
+		var placement := _find_creature_placement(tactical_map, party_positions)
+		if placement == Vector2i(-1, -1):
+			continue
+		var pos_3d := Vector3i(placement.x, placement.y, current_level)
+		tactical_map.set_entity_pos(entity_id, pos_3d)
+		var cname: String = creature.name if not creature.name.is_empty() else creature.species_id.capitalize()
+		_scene.add_entity_token(entity_id, cname, 0, cname.substr(0, 1).to_upper())
+		_scene.move_token(entity_id, pos_3d)
+
 
 func _find_creature_placement(
 		tactical_map,  # VoxelMapData

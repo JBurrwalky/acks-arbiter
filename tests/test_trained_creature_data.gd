@@ -9,6 +9,7 @@ extends "res://tests/test_suite_base.gd"
 func run_all_tests() -> void:
 	test_from_db_round_trip()
 	test_combat_role_detection()
+	test_can_enter_dungeon()
 	test_base_armor_class()
 	test_barding_ac_bonus()
 	test_barding_size_validation()
@@ -121,6 +122,27 @@ func test_combat_role_detection() -> void:
 	var livestock := _make_creature("cow", "L")
 	check(not livestock.has_combat_role(), "L should NOT have combat role")
 	print("  combat_role_detection: OK")
+
+
+# --- Dungeon eligibility ---
+
+func test_can_enter_dungeon() -> void:
+	# Allowed species: dogs, hawks, donkeys, mules.
+	check(_make_creature("dog_war", "G").can_enter_dungeon(), "war dog should enter dungeon")
+	check(_make_creature("dog_hunting", "H").can_enter_dungeon(), "hunting dog should enter dungeon")
+	check(_make_creature("hawk_ordinary", "H").can_enter_dungeon(), "hawk should enter dungeon")
+	check(_make_creature("donkey", "WB").can_enter_dungeon(), "donkey should enter dungeon")
+	check(_make_creature("mule", "WB").can_enter_dungeon(), "mule should enter dungeon")
+	# Excluded species: horses (any kind), oxen, cows, pigs, goats.
+	check(not _make_creature("horse_medium", "M").can_enter_dungeon(), "medium horse should NOT enter dungeon")
+	check(not _make_creature("horse_heavy_war", "WM").can_enter_dungeon(), "heavy warhorse should NOT enter dungeon")
+	check(not _make_creature("horse_light", "M").can_enter_dungeon(), "light horse should NOT enter dungeon")
+	check(not _make_creature("ox", "WB").can_enter_dungeon(), "ox should NOT enter dungeon")
+	check(not _make_creature("cow", "L").can_enter_dungeon(), "cow should NOT enter dungeon")
+	check(not _make_creature("pig", "L").can_enter_dungeon(), "pig should NOT enter dungeon")
+	check(not _make_creature("goat", "L").can_enter_dungeon(), "goat should NOT enter dungeon")
+	check(not _make_creature("sheep", "L").can_enter_dungeon(), "sheep should NOT enter dungeon")
+	print("  can_enter_dungeon: OK")
 
 
 # --- Armor class ---

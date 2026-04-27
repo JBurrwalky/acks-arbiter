@@ -15,6 +15,10 @@ extends RefCounted
 
 const AXE_ITEM_KEYS := ["hand_axe", "battle_axe", "great_axe"]
 const IRON_SPIKE_KEY := "iron_spikes_12"
+const WOODEN_STAKE_KEY := "wooden_stakes_4"
+const SPIKE_HAMMER_KEYS := ["hammer_small", "warhammer"]
+const WEDGE_TOOL_KEYS := ["hammer_small", "warhammer", "mallet"]
+const CROWBAR_KEY := "crowbar"
 
 
 # ---------------------------------------------------------------------------
@@ -142,18 +146,84 @@ static func pick_for_listen(
 
 
 # ---------------------------------------------------------------------------
-# Spike-related (spike_shut, wedge_open, remove_spike, remove_wedge) —
-# requires iron spikes for spike_shut and wedge_open. remove_spike and
-# remove_wedge don't need spikes; pass requires_spikes=false to allow
-# fallback to the first selected PC.
+# Spike Shut — needs iron spike + spike-hammer (Hammer, Small or Warhammer).
+# Tiebreak by DEX. Returns "" when no selected PC carries both.
 # ---------------------------------------------------------------------------
 
-static func pick_for_spike_action(
-		selected_ids: Array, party_data, requires_spikes: bool = true) -> String:
+static func pick_for_spike_shut(selected_ids: Array, party_data) -> String:
 	if party_data == null:
 		return ""
-	var first_with_spikes := ""
-	var first_dex := -1
+	var best_id := ""
+	var best_dex := -1
+	for eid in selected_ids:
+		var cd: CharacterData = party_data.get_member(str(eid))
+		if cd == null:
+			continue
+		if not _has_iron_spikes(cd.id):
+			continue
+		if not _has_any_item_key(cd.id, SPIKE_HAMMER_KEYS):
+			continue
+		if cd.dexterity > best_dex:
+			best_dex = cd.dexterity
+			best_id = cd.id
+	return best_id
+
+
+# ---------------------------------------------------------------------------
+# Wedge Open — accepts (iron spike + spike-hammer) OR (wooden stake +
+# wedging tool: hammer/warhammer/mallet). Per design, when both combos are
+# available the picker prefers the wooden-stake combo (iron spikes are more
+# versatile so we burn the stake first). Tiebreak DEX in each bracket.
+# ---------------------------------------------------------------------------
+
+static func pick_for_wedge_open(selected_ids: Array, party_data) -> String:
+	if party_data == null:
+		return ""
+	# First pass: stake + wedging tool.
+	var best_id := ""
+	var best_dex := -1
+	for eid in selected_ids:
+		var cd: CharacterData = party_data.get_member(str(eid))
+		if cd == null:
+			continue
+		if not _has_wooden_stakes(cd.id):
+			continue
+		if not _has_any_item_key(cd.id, WEDGE_TOOL_KEYS):
+			continue
+		if cd.dexterity > best_dex:
+			best_dex = cd.dexterity
+			best_id = cd.id
+	if not best_id.is_empty():
+		return best_id
+	# Fallback: iron spike + spike-hammer.
+	best_dex = -1
+	for eid in selected_ids:
+		var cd: CharacterData = party_data.get_member(str(eid))
+		if cd == null:
+			continue
+		if not _has_iron_spikes(cd.id):
+			continue
+		if not _has_any_item_key(cd.id, SPIKE_HAMMER_KEYS):
+			continue
+		if cd.dexterity > best_dex:
+			best_dex = cd.dexterity
+			best_id = cd.id
+	return best_id
+
+
+# ---------------------------------------------------------------------------
+# Remove Spike / Remove Wedge — always succeeds, but a Crowbar lets the
+# party recover an iron spike. Picker prefers a crowbar-carrying PC (DEX
+# tiebreak); falls back to first selected with valid CharacterData when
+# nobody carries one (the spike is destroyed in that case).
+# ---------------------------------------------------------------------------
+
+static func pick_for_remove_spike_or_wedge(
+		selected_ids: Array, party_data) -> String:
+	if party_data == null:
+		return ""
+	var best_id_with_crowbar := ""
+	var best_dex := -1
 	var fallback_first := ""
 	for eid in selected_ids:
 		var cd: CharacterData = party_data.get_member(str(eid))
@@ -161,15 +231,13 @@ static func pick_for_spike_action(
 			continue
 		if fallback_first.is_empty():
 			fallback_first = cd.id
-		if _has_iron_spikes(cd.id):
-			if cd.dexterity > first_dex:
-				first_dex = cd.dexterity
-				first_with_spikes = cd.id
-	if not first_with_spikes.is_empty():
-		return first_with_spikes
-	if not requires_spikes:
-		return fallback_first
-	return ""
+		if _has_any_item_key(cd.id, [CROWBAR_KEY]):
+			if cd.dexterity > best_dex:
+				best_dex = cd.dexterity
+				best_id_with_crowbar = cd.id
+	if not best_id_with_crowbar.is_empty():
+		return best_id_with_crowbar
+	return fallback_first
 
 
 # ---------------------------------------------------------------------------
@@ -285,5 +353,25 @@ static func _has_iron_spikes(character_id: String) -> bool:
 	for item in items:
 		if item.get("item_key", "") == IRON_SPIKE_KEY \
 				and int(item.get("quantity", 0)) > 0:
+			return true
+	return false
+
+
+static func _has_wooden_stakes(character_id: String) -> bool:
+	var items: Array = CampaignRepository.get_inventory_items(character_id)
+	for item in items:
+		if item.get("item_key", "") == WOODEN_STAKE_KEY \
+				and int(item.get("quantity", 0)) > 0:
+			return true
+	return false
+
+
+## True iff the character carries any item whose item_key is in [param keys].
+## Quantity check intentionally omitted — these checks target tools (hammer,
+## crowbar, mallet) whose presence-as-a-row is sufficient.
+static func _has_any_item_key(character_id: String, keys: Array) -> bool:
+	var items: Array = CampaignRepository.get_inventory_items(character_id)
+	for item in items:
+		if item.get("item_key", "") in keys:
 			return true
 	return false

@@ -207,6 +207,33 @@ func get_slowest_movement() -> int:
 	return slowest
 
 
+## Returns true if [param creature_id] is currently hitched to any draft vehicle.
+## Vehicle rows store hitched creatures as a JSON-encoded array of creature IDs.
+func is_creature_hitched(creature_id: String) -> bool:
+	if creature_id.is_empty():
+		return false
+	for v in vehicle_data:
+		var hitched_json := str(v.get("hitched_creatures", "[]"))
+		var hitched = JSON.parse_string(hitched_json)
+		if hitched is Array and creature_id in hitched:
+			return true
+	return false
+
+
+## Returns true if [param creature] should be brought into the dungeon with the
+## party. A creature must be alive, of a permitted species, and not currently
+## hitched to a cart. Hitched mules/donkeys default to staying outside; an
+## auto-unhitch flow is planned but not yet implemented.
+func can_creature_enter_dungeon(creature: TrainedCreatureData) -> bool:
+	if creature == null or not creature.is_alive:
+		return false
+	if not creature.can_enter_dungeon():
+		return false
+	if is_creature_hitched(creature.id):
+		return false
+	return true
+
+
 ## Returns true if any party member has the given proficiency.
 func any_member_has_proficiency(proficiency_key: String) -> bool:
 	for cd: CharacterData in character_data:

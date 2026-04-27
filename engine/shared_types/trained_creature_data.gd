@@ -41,6 +41,12 @@ const BARDING_SIZE_CATEGORIES := ["large", "huge", "gigantic", "colossal"]
 const SADDLE_ROLES := ["M", "WM", "WB"]
 const COMBAT_ROLES := ["WM", "G", "H"]
 
+## Species that are too large or otherwise unsuited to enter a dungeon with
+## the party. Hitched-to-cart status (which excludes mules/donkeys) is checked
+## separately on PartyData since it depends on vehicle relationships.
+const DUNGEON_EXCLUDED_SPECIES_EXACT := ["ox", "cow", "pig", "goat", "sheep"]
+const DUNGEON_EXCLUDED_SPECIES_PREFIXES := ["horse_", "ox_", "cow_", "pig_", "goat_", "sheep_"]
+
 
 # --- Serialization ---
 
@@ -212,15 +218,25 @@ func is_overloaded() -> bool:
 
 
 func get_load_multiplier() -> float:
-	# Full capacity with draft or pack saddle, half with rope, zero without rigging.
+	# Any saddle provides full carrying capacity — a riding/war saddle prepares
+	# the mount to carry a rider, which is valid load within the mount's rated
+	# capacity. Whether *loose cargo* may be added is a separate question; see
+	# `can_carry_loose_cargo()`.
 	var saddle_type := get_equipped_saddle_type()
-	if saddle_type in ["draft", "pack"]:
+	if saddle_type != "":
 		return 1.0
 	if _has_rope_in_inventory():
 		return 0.5
-	# Riding/war saddles carry the rider, not cargo.
-	# Saddlebags provide their own container capacity regardless.
 	return 0.0
+
+
+func can_carry_loose_cargo() -> bool:
+	# Riding/war saddles are reserved for the rider; only draft/pack saddles
+	# (or rope lashing) permit loose cargo on the mount.
+	var saddle_type := get_equipped_saddle_type()
+	if saddle_type in ["draft", "pack"]:
+		return true
+	return _has_rope_in_inventory()
 
 
 # --- Equipment queries ---
@@ -275,6 +291,19 @@ func can_equip_saddle() -> bool:
 
 func has_combat_role() -> bool:
 	return role in COMBAT_ROLES
+
+
+## Returns true if this creature's species is small enough to enter a dungeon.
+## Excludes horses, oxen, cows, pigs, goats, and sheep. Does not consider hitch
+## state — see PartyData.can_creature_enter_dungeon() for the full check.
+func can_enter_dungeon() -> bool:
+	var sid := species_id.to_lower()
+	if sid in DUNGEON_EXCLUDED_SPECIES_EXACT:
+		return false
+	for prefix in DUNGEON_EXCLUDED_SPECIES_PREFIXES:
+		if sid.begins_with(prefix):
+			return false
+	return true
 
 
 # --- Private helpers ---

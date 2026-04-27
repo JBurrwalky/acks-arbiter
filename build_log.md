@@ -8478,3 +8478,243 @@ The fix splits the handler so the *primary* party uses `controller.move_party` (
    - Right-click a closed unlocked door from far away, "Open Door" — verify only one PC walks to it and others march toward.
 3. Verify search/listen UI / log entries handle the new `target` field in the presentation payload (purely additive — old consumers ignore it).
 4. (Optional) Tune the d20 thresholds if play feels off — current numbers are rough conversions of ACKS 1-in-6 / 2-in-6 / 1-in-4 rates.
+
+
+## Session 2026-04-26 — Spike / Wedge / Stake / Mallet item-aware overhaul
+
+**Task:** Make iron-spike weight reduce proportionally as spikes are used; require a hammer to drive spikes/stakes; split `stakes_and_mallet` into separate `wooden_stakes_4` and `mallet` items; require a crowbar to *recover* iron spikes when un-spiking/un-wedging (without one the action still works but the spike is destroyed).
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+*Catalog ([data/equipment/base_equipment.json](data/equipment/base_equipment.json)):*
+- **`iron_spikes_12` fixed**: `encumbrance_units` was `1000` (which the calculator multiplies by `quantity: 12` → 12 stone for a single bundle, a pre-existing bug). Now `83` per-spike + `bundle_quantity: 12`. Total full bundle: 996 ≈ 1 stone. As spikes are consumed, weight scales proportionally. Notes updated to mention crowbar recovery.
+- **`stakes_and_mallet` deleted.**
+- **`wooden_stakes_4` added**: 1 gp, 42 enc/stake (4 × 42 = 168 ≈ 1/6 stone), `bundle_quantity: 4`. Stakes can wedge an unlocked door but cannot spike doors shut.
+- **`mallet` added**: 2 gp, 333 enc (1/3 stone). Drives wooden stakes only.
+
+*Premade party fix ([data/premade_parties/moonsworn_band.json](data/premade_parties/moonsworn_band.json)):*
+- Updated the bundled iron spikes from `quantity: 1, encumbrance_units: 1000` (1 spike weighing 1 stone) to `quantity: 12, encumbrance_units: 83` (a real bundle of 12 spikes weighing ~1 stone total). This was a stale row created before the bundle convention existed.
+
+*Session state ([engine/subsystems/exploration/dungeon_session_state.gd](engine/subsystems/exploration/dungeon_session_state.gd)):*
+- `_wedged_doors` value type changed from `bool` to `String` material (`"iron"` / `"wooden"`). `wedge_door(pos, material: String = "iron")` now accepts a material; default keeps any legacy callers working.
+- New `get_wedge_material(pos) -> String` returns `"iron"`, `"wooden"`, or `""` (not wedged).
+- `is_wedged` continues to work because `Dictionary.has()` doesn't care about the value type.
+- Spiked doors don't track material — wooden stakes can't spike, so they're always iron.
+
+*Menu eligibility ([engine/subsystems/exploration/dungeon_context_menu_builder.gd](engine/subsystems/exploration/dungeon_context_menu_builder.gd)):*
+- New static helpers: `_any_selected_has_wooden_stakes`, `_any_selected_has_spike_hammer`, `_any_selected_has_wedging_tool`, `_any_selected_has_crowbar`.
+- **Spike Shut**: enabled iff `has_iron_spikes AND has_spike_hammer` (Hammer Small or Warhammer). Tooltip explains the requirement when disabled.
+- **Wedge Open**: enabled iff `(has_iron_spikes AND has_spike_hammer) OR (has_wooden_stakes AND has_wedging_tool)` (Hammer Small / Warhammer / Mallet). Tooltip describes which path will fire.
+- **Remove Spike** / **Remove Wedge**: always enabled. Tooltip differs by crowbar presence to flag whether the spike will be recovered (with crowbar) or destroyed (without).
+
+*Resolvers ([engine/subsystems/session/handlers/dungeon_handlers.gd](engine/subsystems/session/handlers/dungeon_handlers.gd)):*
+- `_resolve_spike_shut` now defensively re-checks for an iron spike + spike-hammer before consuming; consumes 1 spike on success. Hammer not consumed.
+- `_resolve_wedge_open` rewritten with a wood-first branch: prefer (wooden stake + wedging tool); fall back to (iron spike + spike-hammer); fail with notification when neither combo is available. Calls `wedge_door(cell, "wooden")` or `wedge_door(cell, "iron")` so removal knows the material.
+- `_resolve_remove_spike` always succeeds. With crowbar → returns 1 iron spike via `_return_iron_spike`. Without → spike destroyed; notification reflects the difference.
+- `_resolve_remove_wedge` always succeeds; reads `get_wedge_material(cell)`. Iron + crowbar returns the spike; iron without crowbar destroys it; wooden material always destroys (stakes split). Presentation payload includes `material` and `recovered` flags.
+- New helpers: `_find_wooden_stake(entity_id)`, `_has_item_keys(entity_id, keys: Array)`. New constants `SPIKE_HAMMER_KEYS`, `WEDGE_TOOL_KEYS`, `CROWBAR_KEY`.
+- `_return_iron_spike` corrected to create new rows with `encumbrance_units: 83` (per-spike) instead of the legacy 1000.
+
+*Picker ([engine/subsystems/exploration/dungeon_action_actor_picker.gd](engine/subsystems/exploration/dungeon_action_actor_picker.gd)):*
+- `pick_for_spike_action(...)` removed. Replaced with three action-specific entries:
+  - `pick_for_spike_shut(selected, party_data)` — needs iron spike + spike hammer; tiebreak DEX.
+  - `pick_for_wedge_open(selected, party_data)` — first pass prefers (wooden stake + wedging tool), second pass falls back to (iron spike + spike hammer); tiebreak DEX in each bracket. Implements the user's stake-first preference.
+  - `pick_for_remove_spike_or_wedge(selected, party_data)` — prefers a crowbar-carrying PC (DEX tiebreak); falls back to first selected with valid CharacterData when nobody has a crowbar.
+- New constants `WOODEN_STAKE_KEY`, `SPIKE_HAMMER_KEYS`, `WEDGE_TOOL_KEYS`, `CROWBAR_KEY`. New helpers `_has_wooden_stakes`, `_has_any_item_key`.
+
+*Dispatch ([engine/subsystems/session/states/dungeon_explore_state.gd](engine/subsystems/session/states/dungeon_explore_state.gd)):*
+- `spike_shut` arm now calls `pick_for_spike_shut` with the empty-warning `"No one has iron spikes and a hammer."`.
+- `wedge_open` arm now calls `pick_for_wedge_open` with the empty-warning `"No one has spikes/stakes and a hammer or mallet."`.
+- `remove_spike` / `remove_wedge` arms call `pick_for_remove_spike_or_wedge` (always returns a fallback when PartyData is non-null).
+
+**Decisions made:**
+
+- **Encumbrance fix is a bug fix, not a new convention.** The calculator at [encumbrance_calculator.gd:68](engine/subsystems/characters/encumbrance_calculator.gd#L68) has always done `units * qty`. The catalog data was just wrong for `iron_spikes_12` (and would be wrong for any other "bundle" item that lacked per-unit weight). The torch precedent at line 102 already follows the correct pattern.
+- **Stakes & Mallet weights**: lightweight per user choice — mallet 1/3 stone, stakes 4 × 42 ≈ 1/6 stone. Vampire-hunters carrying just a mallet now feel that as a real-but-light burden.
+- **No legacy migration** for `stakes_and_mallet` — no live saves yet.
+- **Wooden stakes preferred over iron spikes** for wedging when both are available — iron is the more versatile resource (it can also spike-shut), so we burn the stake first.
+- **Removal always works**, but recovery requires a crowbar. This avoids the lock-out scenario (a party with no crowbar can still un-stick their own spike) while keeping the resource pressure realistic — careless parties without a crowbar steadily lose spikes.
+- **Wooden stakes always break on removal** regardless of tooling. Iron is malleable enough to pry intact with leverage; wood splits.
+- **Tools never consumed.** Hammers, warhammers, mallets, and crowbars are durable — they don't break or wear. Tool durability is out-of-scope.
+
+**Interfaces defined or changed:**
+
+- `DungeonSessionState.wedge_door(pos, material: String = "iron")` — added optional material param.
+- `DungeonSessionState.get_wedge_material(pos) -> String` (new).
+- `DungeonContextMenuBuilder._any_selected_has_wooden_stakes / _any_selected_has_spike_hammer / _any_selected_has_wedging_tool / _any_selected_has_crowbar` (new statics).
+- `DungeonHandlers._find_wooden_stake(entity_id)` / `_has_item_keys(entity_id, keys)` (new private).
+- `DungeonHandlers.SPIKE_HAMMER_KEYS / WEDGE_TOOL_KEYS / CROWBAR_KEY` (new constants).
+- `DungeonActionActorPicker.pick_for_spike_shut / pick_for_wedge_open / pick_for_remove_spike_or_wedge` (new statics; replaces `pick_for_spike_action`).
+- Equipment catalog gains optional `bundle_quantity` semantics consistent with the existing torch pattern.
+- Inventory schema unchanged; no migration.
+- Presentation payloads for `dungeon_remove_spike` / `dungeon_remove_wedge` now include `recovered: bool` and (for wedge) `material: "iron"|"wooden"`. `dungeon_wedge_door` includes `material`.
+
+**Database changes:** None.
+
+**Tests added/updated:** None for this session. The new pickers depend on `CampaignRepository.get_inventory_items` and there's no DB fixture in the test suite for inventory rows; per the prior session's pattern these picker functions are smoke-tested rather than unit-tested. Existing tests untouched.
+
+**Known issues:**
+
+- **No "best actor" tooltip in the menu.** The menu doesn't preview which PC will pull the action; users discover it by toast. Could be added by computing the picker actor in the menu builder.
+- **Picker doesn't preview spike/stake supply level.** A PC carrying 1 spike will still be picked over a PC carrying 12 stakes (depending on which combo qualifies). For now first-qualified-by-DEX wins.
+- **`mallet` is the only catalog entry that drives wooden stakes** — adding a sledgehammer or club later would be a one-line append to `WEDGE_TOOL_KEYS` (in three places: builder, handlers, picker; consider centralizing).
+- **No test fixture for inventory-dependent pickers.** Adding one would let us unit-test `pick_for_spike_shut`, `pick_for_wedge_open`, `pick_for_remove_spike_or_wedge` in isolation. Worth doing if a third inventory-dependent picker arrives.
+- **Crowbar's existing "+2 to forcing doors" note** isn't yet wired into the force_door resolver. Pre-existing gap. Could be a future small fix where `_resolve_force_door` adds a +2 modifier when the actor carries a crowbar.
+
+**Next session should:**
+
+1. Smoke test the catalog: `Iron Spikes (12)` 1 gp / 1 stone full bundle / 1/12 stone per spike; `Stakes, Wooden (4)` 1 gp / 1/6 stone full bundle; `Mallet` 2 gp / 1/3 stone; old combined item gone.
+2. Smoke test encumbrance proportionality: spike a few doors, watch total encumbrance drop ~83 enc per spike used.
+3. Smoke test gating: PC without hammer can't Spike Shut even with spikes; PC with stakes-and-mallet can Wedge Open but not Spike Shut; PC with both spikes-and-hammer + stakes-and-mallet wedges with the stake first per the picker preference.
+4. Smoke test recovery: spike a door without a crowbar in the party, remove the spike → no return. Add crowbar, repeat → spike returns. Same flow for wedge with iron material; wooden material always loses the stake.
+5. (Optional) Unit-test the picker via a tiny in-memory `CampaignRepository.get_inventory_items` fixture if you want to lock in the wood-first preference and the crowbar-first remove logic.
+6. (Optional) Wire crowbar's "+2 to forcing doors" into `_resolve_force_door` (small follow-up flagged above).
+
+
+## Session 2026-04-26 — Crowbar weapon + force-door bonus, weapon weight overhaul
+
+**Task:** Fold three small follow-ups into a single pass: (a) wire the crowbar's "+2 to force doors" into the force_door/force_portcullis resolvers; (b) make the crowbar an equippable melee weapon with Club-equivalent combat stats (the club entry stays); (c) rebalance weapon weights per the user's spec (1H 1d6 = 1/6 stone, daggers = 1/8 stone, versatile 1d6/1d8 = 1/3 stone except spears = 1/2 stone, shortbow = 1/6 stone; existing 2H melee and 1d8+-only melee stay at 1 stone).
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+*Force-door crowbar bonus ([engine/subsystems/session/handlers/dungeon_handlers.gd](engine/subsystems/session/handlers/dungeon_handlers.gd)):*
+- `_resolve_force_door` and `_resolve_force_portcullis` now check `_has_item_keys(entity_id, [CROWBAR_KEY])` after the resolver-derived `effective_target` is computed and subtract 2 from the target when a crowbar is on hand. Both throws use the same effective_target → both benefit equally. The bonus is post-resolver because ThiefSkillResolver's modifier breakdown doesn't currently expose a "crowbar" stat — adding the deduction here keeps the resolver pure and the bonus visible at the call site.
+
+*Crowbar → weapon ([data/equipment/base_equipment.json](data/equipment/base_equipment.json)):*
+- `crowbar` flipped from `item_category: "gear"` to `"weapon"`. Weapon fields populated to match `club`: `weapon_damage: "1d4"`, `weapon_tags: ["melee", "blunt"]`, `damage_type: "physical"`. Encumbrance set to 167 (1/6 stone) — encumbrance is an abstraction of size + ease of carrying, not raw weight, so a metal pry-bar tucks into a belt the same as a wooden club. Notes expanded to mention club-style use AND the spike-recovery requirement.
+- `club` weight also corrected from 1000 → 167 (same reasoning).
+- Removed `"crowbar"` from `HAND_HOLDABLE_KEYS` in [scenes/ui/character_sheet/tabs/cs_tab_equipment.gd](scenes/ui/character_sheet/tabs/cs_tab_equipment.gd) — `EQUIPPABLE_CATEGORIES` already includes "weapon", so the gear-hand-equip path is now redundant for the crowbar.
+
+*Weapon weight pass ([data/equipment/base_equipment.json](data/equipment/base_equipment.json)):*
+
+| Weapon | Old enc | New enc | Reason |
+|---|---|---|---|
+| sword (1d6/1d8 versatile) | 1000 | 333 | Versatile 1d6/1d8 → 1/3 stone |
+| short_sword (1d6 1H) | 1000 | 167 | 1H 1d6 → 1/6 stone |
+| dagger (1d4) | 167 | 125 | Dagger → 1/8 stone |
+| silver_dagger (1d4) | 167 | 125 | Dagger → 1/8 stone |
+| hand_axe (1d6 1H, thrown) | 1000 | 167 | 1H 1d6 → 1/6 stone |
+| battle_axe (1d6/1d8 versatile) | 1000 | 333 | Versatile 1d6/1d8 → 1/3 stone |
+| mace (1d6/1d8 versatile) | 1000 | 333 | Versatile 1d6/1d8 → 1/3 stone |
+| warhammer (1d6/1d8 versatile) | 1000 | 333 | Versatile 1d6/1d8 → 1/3 stone |
+| flail (1d6/1d8 versatile) | 1000 | 333 | Versatile 1d6/1d8 → 1/3 stone |
+| spear (1d6/1d8 versatile) | 1000 | 500 | Spear exception → 1/2 stone |
+| javelin (1d6 1H, thrown) | 1000 | 167 | 1H 1d6 → 1/6 stone |
+| shortbow (1d6 ranged) | 1000 | 167 | Shortbow → 1/6 stone |
+
+Unchanged because already correct or out-of-spec:
+- 2H melee 1d10 (two_handed_sword, great_axe, morning_star, pole_arm, lance, quarterstaff): 1000 ✓
+- arbalest (1d8 *ranged*, not melee): 1000 ✓ (user spec is "1d8+ *melee*")
+- longbow / composite_bow / crossbow / sling: unchanged (only shortbow was specified)
+- dart bundle (1d4 thrown ×5): 167 ✓ (already 1/6 stone for 5 darts = 1/30 each)
+- sap / whip / bola: not addressed by the spec; left at current values
+- club: 1000 → 167 (1/6 stone; encumbrance is abstract size, not raw weight)
+- crowbar (1d4 1H melee, now a weapon): 167 (matches club; small enough to belt-carry)
+
+**Decisions made:**
+
+- **Crowbar bonus applied at the resolver call site, not in ThiefSkillResolver.** The resolver already computes a clean `effective_target` from class/race/proficiency sources. Adding a "crowbar" lane there would touch a busy file for a single dungeon-tool concern. Subtracting 2 in the dungeon handlers keeps the bonus visible exactly where it matters.
+- **Crowbar shares Club's combat stats verbatim** including the 1d4 blunt damage and tag set. Crowbar is heavier (metal vs wood), which the encumbrance preserves — but in combat it behaves identically. No special damage type, no improvised weapon penalty.
+- **Weapon weight pass kept narrow** — only weapons explicitly called out by the user changed. Clubs, saps, whips, bolas, longbows, crossbows, slings retain pre-existing values to avoid scope creep.
+- **`is_heavy` left untouched** even when the row's encumbrance dropped below the heavy threshold. The flag is a tag/UI concern (e.g. "tall item" for poles, two-handed long weapons) distinct from raw weight; revisit if it produces visible inconsistencies.
+
+**Interfaces defined or changed:**
+
+- `crowbar.item_category` flipped to `"weapon"`. Old `gear`-typed crowbar rows (none expected — no live saves) would not register as equippable weapons under the new catalog.
+- No GDScript signature changes.
+
+**Database changes:** None.
+
+**Tests added/updated:** None — this is data-only + a two-line resolver delta with a clear smoke-test path.
+
+**Known issues:**
+
+- **Force-door crowbar bonus does not appear in the resolver's modifier breakdown.** `roll.modified_total` is unchanged; we lower the target instead. The roll log will show "rolled X vs Y" with Y already including the −2. Acceptable; if a future tooltip wants to show the contributing modifiers, surface the bonus through the resolver's stat container.
+- **Force-door tooltip "rolled X vs Y" hides the bonus mechanism.** Players see the lowered target but no separate "+2 (crowbar)" line. Could be added as a chat-log breakdown later.
+- **Heavy weapons that became light (e.g. shortbow at 1/6 stone)** still carry `is_heavy: true`. Anything keying off the flag (e.g. movement penalties, stowage rules) sees the same value as before; only base encumbrance changed. Verify this matches design intent during smoke test.
+
+**Next session should:**
+
+1. Smoke-test crowbar combat: equip a crowbar, attack with it — should resolve as 1d4 blunt melee like a club.
+2. Smoke-test crowbar + Force Door / Force Portcullis on stuck/closed doors with and without a crowbar in the party. Verify the "rolled X vs Y" toast shows Y two lower with crowbar.
+3. Smoke-test new encumbrance: full Moonsworn Band equipment-tab numbers should drop noticeably (most members carrying a sword + dagger lose ~2/3 stone each from the sword alone).
+4. (Optional, cosmetic) Tooltip line `+2 (crowbar)` on force-door / force-portcullis when applicable.
+5. (Optional) Audit `is_heavy` flags on weapons whose enc dropped below 1 stone.
+
+## Session 2026-04-26 — Riding saddle no longer overloads mount
+
+**Task:** Fix bug where equipping a riding saddle on a mount caused it to be flagged as over-encumbered.
+**Model used:** Opus.
+**Completed:**
+- `engine/shared_types/trained_creature_data.gd`: `get_load_multiplier()` now returns 1.0 for *any* equipped saddle (riding/war/draft/pack), 0.5 for rope-only, 0.0 for unrigged. Previously riding/war returned 0.0, which made `effective_capacity_normal == 0`, so the saddle's own 1-stone weight tripped `is_overloaded()`.
+- Added `can_carry_loose_cargo()` to `TrainedCreatureData` — true only for draft/pack saddle or rope. Riding/war saddles permit a rider but not loose cargo.
+- `engine/subsystems/characters/creature_equipment_service.gd`: `validate_cargo_on_creature()` now calls `can_carry_loose_cargo()` instead of inferring from `get_load_multiplier() <= 0.0`. The previous check conflated "no carrying capacity" with "no loose-cargo permission"; the two are now distinct.
+
+**Decisions made:**
+- **Riding/war saddle = full mount capacity, but no loose cargo.** The mount can carry a rider (within rated capacity) once a riding saddle is equipped. The "no loose cargo on a riding saddle" rule is preserved via the new `can_carry_loose_cargo()` predicate. This keeps the existing semantics that draft/pack saddles are required for cargo while fixing the spurious overload.
+- **Did not exclude tack from `get_current_load_units()`.** Equipped tack/barding still counts toward load — only the *capacity* changed. This preserves the existing test `test_saddlebag_contents_excluded_from_load` (load = 3167 units with riding saddle + saddlebags + loose cargo) and the principle that barding's weight matters for movement.
+
+**Interfaces defined or changed:**
+- New: `TrainedCreatureData.can_carry_loose_cargo() -> bool`
+- Changed semantics: `TrainedCreatureData.get_load_multiplier()` returns 1.0 for `riding` and `war` saddles (was 0.0).
+
+**Database changes:** None.
+**Tests added/updated:** None yet — existing tests (`test_load_multiplier_*`, `test_cargo_*`, `test_saddlebag_contents_excluded_from_load`) should still pass; new `can_carry_loose_cargo()` predicate is exercised through `validate_cargo_on_creature` paths.
+
+**Known issues:**
+- `party_inventory_transfer_validator.gd:244` still uses `get_load_multiplier() <= 0.0 and saddle_type.is_empty()` as a "needs rigging" gate. With the new semantics this still resolves correctly (multiplier is 0.0 only when no saddle AND no rope), but the check is now redundant with `validate_cargo_on_creature`. Cleanup deferred.
+- `cs_tab_creature_inventory.gd` shows "No rigging — cannot carry cargo" when `multiplier <= 0.0`. With the fix, riding/war mounts no longer hit that branch — they show no special note. A riding-saddle mount won't visibly explain *why* loose cargo is forbidden until the user tries to add some. UX polish deferred.
+
+**Next session should:**
+1. Smoke-test: equip riding saddle on a mount and confirm the encumbrance bar shows ~1/30 stone, not OVERLOADED.
+2. Smoke-test: try transferring loose cargo to a riding-saddled mount — should be rejected with the new "needs draft saddle, pack saddle, or rope" message.
+3. Optional UX: surface "riding saddle — cannot carry loose cargo" hint in `cs_tab_creature_inventory.gd` when a riding/war saddle is equipped.
+
+---
+
+## Session 2026-04-26 — Spawn Trained Creatures At Dungeon Entry
+
+**Task:** Animals were only spawning when combat began. They need to be on the dungeon map from the moment the party enters. Excluded species (too large): horses, oxen, cows, pigs, goats. Allowed species: dogs, hawks, donkeys, mules. Mules/donkeys hitched to a cart cannot enter and default to being left outside (auto-unhitch modal deferred).
+
+**Model used:** Opus 4.7.
+
+**Completed:**
+- `engine/shared_types/trained_creature_data.gd`: added `DUNGEON_EXCLUDED_SPECIES_EXACT = ["ox", "cow", "pig", "goat"]` and `DUNGEON_EXCLUDED_SPECIES_PREFIXES = ["horse_", "ox_", "cow_", "pig_", "goat_"]` constants and a `can_enter_dungeon()` instance method. Species-only check; hitch state is handled at the party layer.
+- `engine/shared_types/party_data.gd`: added `is_creature_hitched(creature_id)` and `can_creature_enter_dungeon(creature)`. Hitch state is read from `vehicle_data[*].hitched_creatures` (JSON-encoded array of creature ids — the existing draft-vehicle persistence shape).
+- `engine/subsystems/session/states/dungeon_explore_state.gd`:
+  - In `enter()`, after character tokens are created, calls a new `_spawn_party_creatures_at_entry(party_data)` helper. The helper iterates `party_data.creature_data`, filters via `PartyData.can_creature_enter_dungeon`, and for each eligible creature places a token adjacent to a party member using the existing `_find_creature_placement` helper. Entity ids use the `"creature_<creature.id>"` convention so that combat reuses the same token rather than re-spawning.
+  - Updated the combat-start path (`_begin_combat`) so that when a creature already has a position in `tactical_map.entity_positions` (because it was spawned at entry) the Combatant's `grid_position` is synced from the map. Previously this branch left `grid_position` at its `(-1,-1,0)` default, which would have broken combat for entry-spawned creatures.
+  - Combat-spawn fallback now uses `side = 0` (party) for trained creatures rather than the prior hardcoded `1` (enemy red). Entry-spawned tokens already use `0`, so this keeps party-side coloring consistent across both code paths.
+- `tests/test_trained_creature_data.gd`: added `test_can_enter_dungeon` covering each allowed species (dog, hawk, donkey, mule) and each excluded species (medium horse, heavy warhorse, light horse, ox, cow, pig, goat).
+
+**Decisions made:**
+- **Excluded list is literal to the user's spec.** Sheep and camels were not mentioned by the user; they are therefore allowed to enter (sheep behaves like livestock but the user listed only goat). If sheep should follow goat, add `"sheep"` to the exact list.
+- **Hitched = excluded, even if species would otherwise be allowed.** Per user direction, default to leaving hitched creatures outside; an auto-unhitch confirmation modal is a future task.
+- **Reuse the combat ID convention (`"creature_" + id`)** so that combat does not see a "new" combatant and re-place it. The combat branch that previously always placed creatures was changed to detect the pre-existing token and sync the combatant's `grid_position` instead.
+- **Side = 0 (party) for trained-creature tokens.** The prior combat code used side = 1 (enemy red). I switched both code paths to 0 so party-allied animals render as party color. This is a small behavior change in combat token coloring but it aligns the visual with the data (`Combatant.side = Side.PARTY` for these creatures).
+
+**Interfaces defined or changed:**
+- New: `TrainedCreatureData.can_enter_dungeon() -> bool`
+- New: `TrainedCreatureData.DUNGEON_EXCLUDED_SPECIES_EXACT`, `DUNGEON_EXCLUDED_SPECIES_PREFIXES` (constants).
+- New: `PartyData.is_creature_hitched(creature_id: String) -> bool`
+- New: `PartyData.can_creature_enter_dungeon(creature: TrainedCreatureData) -> bool`
+- Behavior change: `DungeonExploreState._begin_combat` (around the trained-creature placement block) now syncs `Combatant.grid_position` from `tactical_map.entity_positions` when the entity already exists. Side argument for trained-creature tokens is now `0`, not `1`.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- `test_trained_creature_data.gd`: added `test_can_enter_dungeon` (registered in `run_all_tests`).
+
+**Known issues:**
+- Hitched creatures do not yet have an auto-unhitch confirmation modal — they default to staying outside the dungeon. Tracked as deferred per the user's request.
+- Non-combat creatures (donkey, mule) placed at dungeon entry remain on the map as inert tokens. They are not in the combat roster, so monsters cannot target them; they cannot be killed during combat. If we want monsters to threaten pack animals, that's a future change.
+- Token side for combat-time creature spawn changed from 1 → 0. If any existing UI or art relied on creatures rendering as red in combat, that visual will change.
+
+**Next session should:**
+1. Smoke-test: load Moonsworn Band party (which includes a war dog, hawk, donkey, mule, draft horse, and two carts) and enter a dungeon. Expected: dog and hawk visible at entry; donkey and mule visible only if not in any cart's `hitched_creatures`; horse never visible.
+2. Build the auto-unhitch confirmation modal so the player can choose to unhitch a draft team and bring the donkey/mule into the dungeon.
+3. Decide whether sheep should be in the exclusion list (currently treated as allowed because the user did not list it).

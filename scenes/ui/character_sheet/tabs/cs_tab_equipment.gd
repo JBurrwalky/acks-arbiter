@@ -9,12 +9,13 @@ extends VBoxContainer
 const EQUIPPABLE_CATEGORIES := ["weapon", "armor", "shield", "clothing"]
 
 ## Gear item_keys that can be equipped to a hand slot.
+## (Crowbar moved to weapon category — handled by EQUIPPABLE_CATEGORIES.)
 const HAND_HOLDABLE_KEYS := [
 	"torch", "lantern",
 	"oil_flask_common", "oil_flask_military",
 	"holy_water",
 	"rope_50ft", "iron_spikes_12", "pole_wooden_10ft",
-	"grappling_hook", "hammer_small", "mirror_small", "crowbar",
+	"grappling_hook", "hammer_small", "mirror_small",
 ]
 
 ## Gear item_keys that equip to an accessory slot (worn, not held).

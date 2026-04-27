@@ -139,7 +139,7 @@ static func _build_door_options(
 		return options
 	if door_type == "portcullis":
 		return options
-	var cell := vmap.get_cell(cell_3d)
+	var cell: VoxelCell = vmap.get_cell(cell_3d)
 	if cell != null and door_type == "secret" and not cell.door_detected:
 		return options
 	if door_state == "open":
@@ -174,7 +174,7 @@ static func _build_lever_options(
 		cell_3d = Vector3i(target_cell.x, target_cell.y, actor_z)
 	if not vmap.has_cell(cell_3d):
 		return options
-	var cell := vmap.get_cell(cell_3d)
+	var cell: VoxelCell = vmap.get_cell(cell_3d)
 	if cell == null or cell.feature != "lever":
 		return options
 	var actor_3d: Vector3i

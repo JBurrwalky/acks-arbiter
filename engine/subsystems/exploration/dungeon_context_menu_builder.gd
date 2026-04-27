@@ -154,11 +154,32 @@ static func _build_door_options(
 	var is_wedged: bool = session_state != null and session_state.has_method("is_wedged") \
 		and session_state.is_wedged(target_cell)
 	var has_spikes := _any_selected_has_iron_spikes(selected_ids)
+	var has_stakes := _any_selected_has_wooden_stakes(selected_ids)
+	var has_spike_hammer := _any_selected_has_spike_hammer(selected_ids)
+	var has_wedge_tool := _any_selected_has_wedging_tool(selected_ids)
+	var has_crowbar := _any_selected_has_crowbar(selected_ids)
+	var can_spike := has_spikes and has_spike_hammer
+	var can_wedge_iron := has_spikes and has_spike_hammer
+	var can_wedge_wood := has_stakes and has_wedge_tool
+	var can_wedge := can_wedge_iron or can_wedge_wood
+	var spike_tooltip: String = "Drive an iron spike to block the door (1 round)." \
+		if can_spike else "Requires iron spikes and a hammer (small or war)."
+	var wedge_tooltip: String
+	if can_wedge_wood:
+		wedge_tooltip = "Drive a wooden stake to wedge the door (1 round)."
+	elif can_wedge_iron:
+		wedge_tooltip = "Drive an iron spike to wedge the door (1 round)."
+	else:
+		wedge_tooltip = "Requires iron spikes + hammer, or wooden stakes + hammer/mallet."
+	var remove_spike_tooltip: String = "Pry out the spike (1 round, spike recovered)." \
+		if has_crowbar else "Pry out the spike (1 round, spike destroyed — needs a crowbar to recover)."
+	var remove_wedge_tooltip: String = "Pry out the wedge (1 round; iron spike recovered, wooden stake destroyed)." \
+		if has_crowbar else "Pry out the wedge (1 round, item destroyed — needs a crowbar to recover an iron spike)."
 
 	# --- Spiked door: offer removal, block open ---
 	if is_spiked:
 		options.append(_option("remove_spike", "Remove Spike", true,
-			"Remove the iron spike (returns spike to inventory)", "environment",
+			remove_spike_tooltip, "environment",
 			{"action_type": "remove_spike", "cell": target_cell}))
 		# Listen is still available through a spiked door.
 		if tf != "portcullis":
@@ -170,7 +191,7 @@ static func _build_door_options(
 	# --- Wedged door: offer removal, block close ---
 	if is_wedged:
 		options.append(_option("remove_wedge", "Remove Wedge", true,
-			"Remove the iron spike (returns spike to inventory)", "environment",
+			remove_wedge_tooltip, "environment",
 			{"action_type": "remove_wedge", "cell": target_cell}))
 		return options
 
@@ -181,10 +202,9 @@ static func _build_door_options(
 				"Strength throw to raise (18+ with STR modifier). Drops when you act.",
 				"environment",
 				{"action_type": "force_portcullis", "cell": target_cell}))
-			# Spike shut a closed portcullis.
-			options.append(_option("spike_shut", "Spike Shut", has_spikes,
-				"Use an iron spike to block the portcullis" if has_spikes else "Requires iron spikes",
-				"environment",
+			# Spike shut a closed portcullis (iron spike + hammer).
+			options.append(_option("spike_shut", "Spike Shut", can_spike,
+				spike_tooltip, "environment",
 				{"action_type": "spike_shut", "cell": target_cell}))
 		else:
 			# Check if held open (not wedged — wedged is handled above).
@@ -194,10 +214,9 @@ static func _build_door_options(
 				options.append(_option("drop_portcullis", "Drop Portcullis", true,
 					"Lower the portcullis", "environment",
 					{"action_type": "drop_portcullis", "cell": target_cell}))
-			# Wedge open a raised portcullis.
-			options.append(_option("wedge_open", "Wedge Open", has_spikes,
-				"Use an iron spike to hold the portcullis open" if has_spikes else "Requires iron spikes",
-				"environment",
+			# Wedge open a raised portcullis (iron spike or wooden stake).
+			options.append(_option("wedge_open", "Wedge Open", can_wedge,
+				wedge_tooltip, "environment",
 				{"action_type": "wedge_open", "cell": target_cell}))
 		return options
 
@@ -205,10 +224,9 @@ static func _build_door_options(
 	if door_state == "open":
 		options.append(_option("close_door", "Close Door", true, "", "environment",
 			{"action_type": "close_door", "cell": target_cell}))
-		# Wedge open (with iron spike).
-		options.append(_option("wedge_open", "Wedge Open", has_spikes,
-			"Use an iron spike to hold the door open" if has_spikes else "Requires iron spikes",
-			"environment",
+		# Wedge open (iron spike or wooden stake + driving tool).
+		options.append(_option("wedge_open", "Wedge Open", can_wedge,
+			wedge_tooltip, "environment",
 			{"action_type": "wedge_open", "cell": target_cell}))
 		return options
 
@@ -259,11 +277,10 @@ static func _build_door_options(
 				"environment",
 				{"action_type": "bash_door", "cell": target_cell, "turns": bash_turns}))
 
-	# Spike shut — any closed door (requires iron spikes).
+	# Spike shut — any closed door (requires iron spike + hammer/warhammer).
 	if door_state in ["closed", "stuck", "locked", ""]:
-		options.append(_option("spike_shut", "Spike Shut", has_spikes,
-			"Use an iron spike to block the door" if has_spikes else "Requires iron spikes",
-			"environment",
+		options.append(_option("spike_shut", "Spike Shut", can_spike,
+			spike_tooltip, "environment",
 			{"action_type": "spike_shut", "cell": target_cell}))
 
 	# Listen at door — special variant of listen.
@@ -626,6 +643,51 @@ static func _any_selected_has_iron_spikes(selected_ids: Array) -> bool:
 		var items: Array = CampaignRepository.get_inventory_items(str(eid))
 		for item in items:
 			if item.get("item_key", "") == "iron_spikes_12" and item.get("quantity", 0) > 0:
+				return true
+	return false
+
+
+## Check if any selected entity has wooden stakes in their inventory.
+static func _any_selected_has_wooden_stakes(selected_ids: Array) -> bool:
+	for eid in selected_ids:
+		var items: Array = CampaignRepository.get_inventory_items(str(eid))
+		for item in items:
+			if item.get("item_key", "") == "wooden_stakes_4" and item.get("quantity", 0) > 0:
+				return true
+	return false
+
+
+## Check if any selected entity carries a hammer suited to driving iron
+## spikes (Hammer, Small or Warhammer).
+static func _any_selected_has_spike_hammer(selected_ids: Array) -> bool:
+	const SPIKE_HAMMER_KEYS := ["hammer_small", "warhammer"]
+	for eid in selected_ids:
+		var items: Array = CampaignRepository.get_inventory_items(str(eid))
+		for item in items:
+			if item.get("item_key", "") in SPIKE_HAMMER_KEYS:
+				return true
+	return false
+
+
+## Check if any selected entity carries a tool suited to driving wooden
+## stakes (Hammer, Small / Warhammer / Mallet).
+static func _any_selected_has_wedging_tool(selected_ids: Array) -> bool:
+	const WEDGE_TOOL_KEYS := ["hammer_small", "warhammer", "mallet"]
+	for eid in selected_ids:
+		var items: Array = CampaignRepository.get_inventory_items(str(eid))
+		for item in items:
+			if item.get("item_key", "") in WEDGE_TOOL_KEYS:
+				return true
+	return false
+
+
+## Check if any selected entity carries a Crowbar (used to recover spikes
+## intact when un-spiking or un-wedging a door).
+static func _any_selected_has_crowbar(selected_ids: Array) -> bool:
+	for eid in selected_ids:
+		var items: Array = CampaignRepository.get_inventory_items(str(eid))
+		for item in items:
+			if item.get("item_key", "") == "crowbar":
 				return true
 	return false
 

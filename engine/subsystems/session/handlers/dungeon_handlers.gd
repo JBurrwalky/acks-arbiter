@@ -31,6 +31,11 @@ const ENCOUNTER_CHECK_INTERVAL := 120
 ## One dungeon turn = 60 rounds (10 minutes).
 const TURN_ROUNDS := 60
 
+## Inventory keys for spike / wedge resolvers.
+const SPIKE_HAMMER_KEYS := ["hammer_small", "warhammer"]
+const WEDGE_TOOL_KEYS  := ["hammer_small", "warhammer", "mallet"]
+const CROWBAR_KEY      := "crowbar"
+
 ## Movement mode multipliers relative to base combat movement.
 ## Exploration = 1/3 combat, combat = full, running = 2x combat.
 const MODE_EXPLORATION := 1.0 / 3.0
@@ -1038,7 +1043,8 @@ func _get_character(entity_id: String) -> CharacterData:
 
 func _resolve_force_door(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	# Force stuck door: d20 vs target (base 18, modified by STR×4 and Dungeon Bashing).
-	# Use ThiefSkillResolver for proper modifier calculation.
+	# Use ThiefSkillResolver for proper modifier calculation. A Crowbar in the
+	# actor's inventory subtracts 2 from the target (its +2 leverage bonus).
 	var party_data: PartyData = _runner.get_party_data() if _runner != null else null
 	var char_data: CharacterData = party_data.get_member(entity_id) if party_data != null else null
 
@@ -1063,6 +1069,10 @@ func _resolve_force_door(entity_id: String, cell) -> Dictionary:  # cell: Vector
 		roll = resolver.roll_skill_digital(bundle, "force_door")
 	else:
 		roll = DiceSystem.roll_digital(20, 1, 0, "force_door")
+
+	# Crowbar grants +2 to forcing doors (lower the target by 2).
+	if _has_item_keys(entity_id, [CROWBAR_KEY]):
+		effective_target -= 2
 
 	var forced: bool = roll.modified_total >= effective_target
 
@@ -1287,6 +1297,7 @@ func _resolve_use_lever(entity_id: String, cell) -> Dictionary:  # cell: Vector2
 func _resolve_force_portcullis(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	# Same throw as force_door (base 18, STR×4, Dungeon Bashing), but on success
 	# the portcullis is held open only while the character does nothing else.
+	# Crowbar grants the same +2 leverage bonus.
 	var party_data: PartyData = _runner.get_party_data() if _runner != null else null
 	var char_data: CharacterData = party_data.get_member(entity_id) if party_data != null else null
 
@@ -1311,6 +1322,10 @@ func _resolve_force_portcullis(entity_id: String, cell) -> Dictionary:  # cell: 
 		roll = resolver.roll_skill_digital(bundle, "force_door")
 	else:
 		roll = DiceSystem.roll_digital(20, 1, 0, "force_door")
+
+	# Crowbar grants +2 to forcing doors (lower the target by 2).
+	if _has_item_keys(entity_id, [CROWBAR_KEY]):
+		effective_target -= 2
 
 	var forced: bool = roll.modified_total >= effective_target
 
@@ -1388,8 +1403,10 @@ func _resolve_drop_portcullis(_entity_id: String, cell) -> Dictionary:  # cell: 
 	}
 
 
+## Spike shut — drives an iron spike into the door using a hammer or warhammer.
+## Iron spike is consumed (1 from the bundle); hammer is not. Wooden stakes
+## CANNOT spike doors shut — only iron spikes have that role.
 func _resolve_spike_shut(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
-	# Find and consume one iron spike from the character's inventory.
 	var spike_item: Dictionary = _find_iron_spike(entity_id)
 	if spike_item.is_empty():
 		EventBus.notification_requested.emit({
@@ -1397,6 +1414,12 @@ func _resolve_spike_shut(entity_id: String, cell) -> Dictionary:  # cell: Vector
 			"title": "No iron spikes available!", "duration": 3.0,
 		})
 		return {"auto_pause": true, "pause_reason": "No iron spikes!"}
+	if not _has_item_keys(entity_id, SPIKE_HAMMER_KEYS):
+		EventBus.notification_requested.emit({
+			"type": "warning", "category": "environment",
+			"title": "Need a hammer (small or war) to drive a spike!", "duration": 3.0,
+		})
+		return {"auto_pause": true, "pause_reason": "No hammer for the spike!"}
 
 	# Consume one spike.
 	var item_id: String = spike_item.get("id", "")
@@ -1418,34 +1441,52 @@ func _resolve_spike_shut(entity_id: String, cell) -> Dictionary:  # cell: Vector
 	}
 
 
+## Wedge open — drives a wooden stake (preferred) or an iron spike to keep
+## a door from shutting. Stakes need any wedging tool (hammer/warhammer/mallet);
+## iron spikes need a true hammer. The session state remembers which material
+## was used so removal can recover an iron spike (if a crowbar is on hand).
 func _resolve_wedge_open(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
-	# Find and consume one iron spike from the character's inventory.
-	var spike_item: Dictionary = _find_iron_spike(entity_id)
-	if spike_item.is_empty():
+	var stake_item: Dictionary = _find_wooden_stake(entity_id)
+	var has_wedge_tool: bool = _has_item_keys(entity_id, WEDGE_TOOL_KEYS)
+	if not stake_item.is_empty() and has_wedge_tool:
+		var item_id: String = stake_item.get("id", "")
+		var qty: int = stake_item.get("quantity", 1)
+		CampaignRepository.update_inventory_item_quantity(item_id, qty - 1)
+		if _session_state != null and _session_state.has_method("wedge_door"):
+			_session_state.wedge_door(cell, "wooden")
 		EventBus.notification_requested.emit({
-			"type": "warning", "category": "environment",
-			"title": "No iron spikes available!", "duration": 3.0,
+			"type": "info", "category": "environment",
+			"title": "Door wedged with a wooden stake!", "duration": 3.0,
 		})
-		return {"auto_pause": true, "pause_reason": "No iron spikes!"}
+		return {
+			"auto_pause": true,
+			"pause_reason": "Door wedged open!",
+			"presentation": {"type": "dungeon_wedge_door", "cell": str(cell), "material": "wooden"},
+		}
 
-	# Consume one spike.
-	var item_id: String = spike_item.get("id", "")
-	var qty: int = spike_item.get("quantity", 1)
-	CampaignRepository.update_inventory_item_quantity(item_id, qty - 1)
-
-	# Record wedged state in session.
-	if _session_state != null and _session_state.has_method("wedge_door"):
-		_session_state.wedge_door(cell)
+	var spike_item: Dictionary = _find_iron_spike(entity_id)
+	var has_spike_hammer: bool = _has_item_keys(entity_id, SPIKE_HAMMER_KEYS)
+	if not spike_item.is_empty() and has_spike_hammer:
+		var item_id: String = spike_item.get("id", "")
+		var qty: int = spike_item.get("quantity", 1)
+		CampaignRepository.update_inventory_item_quantity(item_id, qty - 1)
+		if _session_state != null and _session_state.has_method("wedge_door"):
+			_session_state.wedge_door(cell, "iron")
+		EventBus.notification_requested.emit({
+			"type": "info", "category": "environment",
+			"title": "Door wedged with an iron spike!", "duration": 3.0,
+		})
+		return {
+			"auto_pause": true,
+			"pause_reason": "Door wedged open!",
+			"presentation": {"type": "dungeon_wedge_door", "cell": str(cell), "material": "iron"},
+		}
 
 	EventBus.notification_requested.emit({
-		"type": "info", "category": "environment",
-		"title": "Door wedged open!", "duration": 3.0,
+		"type": "warning", "category": "environment",
+		"title": "Need spikes/stakes plus a hammer or mallet!", "duration": 3.0,
 	})
-	return {
-		"auto_pause": true,
-		"pause_reason": "Door wedged open!",
-		"presentation": {"type": "dungeon_wedge_door", "cell": str(cell)},
-	}
+	return {"auto_pause": true, "pause_reason": "Cannot wedge — missing items"}
 
 
 ## Find an iron spike item in a character's inventory. Returns the item dict or {}.
@@ -1457,6 +1498,27 @@ func _find_iron_spike(entity_id: String) -> Dictionary:
 	return {}
 
 
+## Find a wooden-stake item in a character's inventory. Returns {} when none.
+func _find_wooden_stake(entity_id: String) -> Dictionary:
+	var items: Array = CampaignRepository.get_inventory_items(entity_id)
+	for item in items:
+		if item.get("item_key", "") == "wooden_stakes_4" and item.get("quantity", 0) > 0:
+			return item
+	return {}
+
+
+## True iff the character carries any item whose item_key is in [param keys].
+func _has_item_keys(entity_id: String, keys: Array) -> bool:
+	var items: Array = CampaignRepository.get_inventory_items(entity_id)
+	for item in items:
+		if item.get("item_key", "") in keys:
+			return true
+	return false
+
+
+## Remove a spiked door. Always succeeds (the spike comes loose either way),
+## but the iron spike is only recovered when the actor carries a Crowbar.
+## Without a crowbar the spike bends and is destroyed in the prying.
 func _resolve_remove_spike(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	if _session_state == null or not _session_state.has_method("is_spiked") \
 			or not _session_state.is_spiked(cell):
@@ -1464,38 +1526,70 @@ func _resolve_remove_spike(entity_id: String, cell) -> Dictionary:  # cell: Vect
 
 	_session_state.unspike_door(cell)
 
-	# Return the spike to the character's inventory.
-	_return_iron_spike(entity_id)
+	var has_crowbar: bool = _has_item_keys(entity_id, [CROWBAR_KEY])
+	var title: String
+	if has_crowbar:
+		_return_iron_spike(entity_id)
+		title = "Spike pried out cleanly (1 iron spike returned)."
+	else:
+		title = "Spike pried out — bent and broken (no crowbar)."
 
 	EventBus.notification_requested.emit({
 		"type": "info", "category": "environment",
-		"title": "Spike removed.", "duration": 3.0,
+		"title": title, "duration": 3.0,
 	})
 	return {
 		"auto_pause": true,
-		"pause_reason": "Spike removed.",
-		"presentation": {"type": "dungeon_remove_spike", "cell": str(cell)},
+		"pause_reason": title,
+		"presentation": {
+			"type": "dungeon_remove_spike",
+			"cell": str(cell),
+			"recovered": has_crowbar,
+		},
 	}
 
 
+## Remove a wedge. Always succeeds. Material is read from session state:
+## iron + crowbar → spike returned; iron without crowbar → spike destroyed;
+## wooden (with or without crowbar) → stake destroyed (wood splits).
 func _resolve_remove_wedge(entity_id: String, cell) -> Dictionary:  # cell: Vector2i or Vector3i
 	if _session_state == null or not _session_state.has_method("is_wedged") \
 			or not _session_state.is_wedged(cell):
 		return {"auto_pause": true, "pause_reason": "No wedge to remove"}
 
+	var material: String = "iron"
+	if _session_state.has_method("get_wedge_material"):
+		var read_material: String = _session_state.get_wedge_material(cell)
+		if not read_material.is_empty():
+			material = read_material
 	_session_state.unwedge_door(cell)
 
-	# Return the spike to the character's inventory.
-	_return_iron_spike(entity_id)
+	var has_crowbar: bool = _has_item_keys(entity_id, [CROWBAR_KEY])
+	var recovered: bool = false
+	var title: String
+	if material == "iron" and has_crowbar:
+		_return_iron_spike(entity_id)
+		recovered = true
+		title = "Iron spike pried out (returned)."
+	elif material == "iron":
+		title = "Iron spike pried out — bent and broken (no crowbar)."
+	else:
+		# Wooden stake — splits on removal regardless of tooling.
+		title = "Wooden stake pried out (broken)."
 
 	EventBus.notification_requested.emit({
 		"type": "info", "category": "environment",
-		"title": "Wedge removed.", "duration": 3.0,
+		"title": title, "duration": 3.0,
 	})
 	return {
 		"auto_pause": true,
-		"pause_reason": "Wedge removed.",
-		"presentation": {"type": "dungeon_remove_wedge", "cell": str(cell)},
+		"pause_reason": title,
+		"presentation": {
+			"type": "dungeon_remove_wedge",
+			"cell": str(cell),
+			"material": material,
+			"recovered": recovered,
+		},
 	}
 
 
@@ -1552,9 +1646,10 @@ func _resolve_exit_dungeon(entity_id: String, _cell) -> Dictionary:  # _cell: Ve
 	}
 
 
-## Return one iron spike to a character's inventory (after removing spike/wedge).
+## Return one iron spike to a character's inventory (after removing spike/wedge
+## with a crowbar). Encumbrance is per-spike (83 units = ~1/12 stone) so a
+## bundle's total weight scales with quantity.
 func _return_iron_spike(entity_id: String) -> void:
-	# Try to stack onto existing spike item.
 	var existing: Dictionary = _find_iron_spike(entity_id)
 	if not existing.is_empty():
 		var item_id: String = existing.get("id", "")
@@ -1567,7 +1662,7 @@ func _return_iron_spike(entity_id: String) -> void:
 			"item_key": "iron_spikes_12",
 			"name": "Iron Spikes (12)",
 			"quantity": 1,
-			"encumbrance_units": 1000,
+			"encumbrance_units": 83,
 			"item_category": "gear",
 			"slot": "pack",
 		})

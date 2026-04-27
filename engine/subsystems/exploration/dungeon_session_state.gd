@@ -269,9 +269,13 @@ func has_failed_pick_lock(entity_id: String, current_level: int) -> bool:
 # ---------------------------------------------------------------------------
 
 ## Doors spiked shut this visit. Key: Vector2i (legacy) or Vector3i (voxel) -> true.
+## Spikes always use iron (wooden stakes can't spike doors shut), so material
+## tracking isn't needed here.
 var _spiked_doors: Dictionary = {}
 
-## Doors wedged open this visit. Key: Vector2i (legacy) or Vector3i (voxel) -> true.
+## Doors wedged open this visit. Key: Vector2i/Vector3i -> "iron" or "wooden".
+## The material determines whether un-wedging with a crowbar can recover an
+## iron spike or whether the wedge was always destined to break (stakes).
 var _wedged_doors: Dictionary = {}
 
 
@@ -286,8 +290,10 @@ func unspike_door(pos) -> void:
 	_spiked_doors.erase(pos)
 
 
-func wedge_door(pos) -> void:
-	_wedged_doors[pos] = true
+## [param material] is "iron" (default) or "wooden". Determines whether
+## removing the wedge can return an iron spike to inventory.
+func wedge_door(pos, material: String = "iron") -> void:
+	_wedged_doors[pos] = material if material in ["iron", "wooden"] else "iron"
 	_spiked_doors.erase(pos)  # Can't be both.
 
 
@@ -301,6 +307,12 @@ func is_spiked(pos) -> bool:
 
 func is_wedged(pos) -> bool:
 	return _wedged_doors.has(pos)
+
+
+## Returns "iron" or "wooden" for the wedge material at [param pos], or ""
+## when the door is not wedged.
+func get_wedge_material(pos) -> String:
+	return str(_wedged_doors.get(pos, ""))
 
 
 # ---------------------------------------------------------------------------

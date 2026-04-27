@@ -65,8 +65,8 @@ static func validate_equip_on_creature(
 static func validate_cargo_on_creature(
 		creature: TrainedCreatureData,
 		item: Dictionary) -> String:
-	if creature.get_load_multiplier() <= 0.0:
-		return "Creature needs a draft saddle or rope to carry cargo."
+	if not creature.can_carry_loose_cargo():
+		return "Creature needs a draft saddle, pack saddle, or rope to carry cargo."
 	var item_units: int = int(item.get("encumbrance_units", 0)) * int(item.get("quantity", 1))
 	var current_units: int = creature.get_current_load_units()
 	var max_units: int = creature.get_effective_capacity_max() * 1000
