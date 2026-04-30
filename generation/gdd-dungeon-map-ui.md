@@ -1,572 +1,740 @@
 # GDD: Dungeon Map UI & Interaction System
 
 **Document type:** Game Design Document (project-designed, modifiable)
-**Status:** Draft — requires approval before build
-**Depends on:** `gdd-realtime-scheduler.md` (event scheduler architecture and renderer-tween dungeon movement layer), `gdd-voxel-tactical-architecture.md` (3D voxel grid spatial substrate, adjacency rules, multi-level camera), `gdd-dungeon-layout.md` (cell/room/door data model), `gdd-combat-map-generation.md` (grid geometry — superseded for spatial model by the voxel architecture), `proficiency_system_map.md` §4 (dungeon proficiency hooks), `ax_thief_skill_update.xml` (revised thief skill throws and timings), `acore_adventures_and_encounters.xml` (door rules, search rules, encounter rules)
-**Replaces:** Any existing dungeon UI stubs, hodgepodge triggers, and data wiring from prior iterations
-**Blocks:** Dungeon exploration implementation, combat transition UI, dungeon-layer session runner wiring
+**Status:** Draft v2 — Architecture refresh (2026-04-30)
+**Authority:** Subordinate to `gdd-ui-architecture.md`. Authoritative on dungeon-context interaction patterns (selection, context menus, action options, queued orders, idle behaviors, multi-level UX). NOT authoritative on the spatial substrate (voxel grid), the event scheduler, the management notebook, the unified log, or party-formation surfaces — those are owned by their respective GDDs and consumed here.
+**Depends on:**
+- `gdd-voxel-tactical-architecture.md` v1.1 — 5' cube voxel grid, `Vector3i` coordinates, 3D Chebyshev adjacency, multi-level camera/occlusion (focus level, Level Strip Widget, dither/dim/hide), fog-of-war model
+- `gdd-realtime-scheduler.md` — EventScheduler, SchedulerLoop, DungeonOrderManager order lifecycle, renderer-tween movement layer, cell-arrival signal, claim-based occupancy
+- `gdd-dungeon-layout.md` — `DungeonLayout` / `VoxelMapData` data model, `DoorData` (`door_material`, `is_evil`, `door_state`, `door_type`, `door_detected`)
+- `gdd-ui-architecture.md` v2.10 — surface taxonomy, keybind reservations, cross-surface activation
+- `gdd-management-notebook.md` v1.5 — Character tab activation seam, Inventory tab as canonical inventory surface
+- `gdd-unified-log-panel.md` v2 — replaces the standalone notification log
+- `gdd-party-tab.md` v1.4 — marching order and Formation sub-tab (Wilderness 6×12, Dungeon 2×12)
+- `gdd-combat-ui.md` — sibling under the One-Grid-Two-Modes framework
+- `acore_adventures_and_encounters.xml` — door rules, search rules, encounter rules
+- `ax_thief_skill_update.xml` — revised thief skill throws and timings
+
+**Modifiable:** Yes (project-designed)
 
 ---
 
-## 1. Purpose
+## 1. Purpose and scope
 
-Define the complete interaction model for the dungeon map layer: how the player selects entities, issues orders, interacts with dungeon features, manages groups, and receives feedback. This document is the single authority for dungeon UI behavior. Any existing code that contradicts this document should be reworked to match.
+This GDD specifies the **dungeon-context interaction surface**: how the player selects entities, opens context menus on cells, issues queued orders, configures idle behaviors, and moves the camera within the dungeon presentation layer. It is the interaction-pattern complement to the voxel architecture's spatial substrate and the realtime scheduler's event/movement model.
 
-This builds directly on `gdd-realtime-scheduler.md` §5 (Dungeon Layer). That document defines the scheduler mechanics — this document defines how the player *controls* them.
+### 1.1 What this GDD owns
+
+- Selection model (left-click, shift-click, control groups)
+- Right-click context menu structure and option vocabulary
+- Per-cell-feature option families (doors, stairs, traps, interactables, loot)
+- Per-entity-target option families (NPC, party member, downed character, self)
+- Stealth-move-vs-hide-in-place compound action
+- Default Idle Behavior system
+- Action queuing semantics (single-slot per entity, cancellation flow)
+- Dungeon-context camera controls including multi-level focus interactions
+
+### 1.2 What this GDD points to (no longer owns)
+
+The v1 draft of this GDD owned several surfaces that the current architecture has centralized elsewhere. v2 cuts them and replaces each with a one-line pointer:
+
+| Former v1 scope | Now lives in |
+|---|---|
+| Unit Info Panel (per-selection portrait/stats) | `gdd-ui-architecture.md` §3.8 (SessionStatusBar portraits) + `gdd-character-tab.md` (full sheet) |
+| Notification Log (standalone scrolling panel) | `gdd-unified-log-panel.md` v2 (HUD zone in SessionStatusBar's right column) |
+| Group Options Panel — Marching Order section | `gdd-party-tab.md` v1.4 §6 (Formation sub-tab — Wilderness 6×12, Dungeon 2×12 grids) |
+| Standalone Loot Panel (dual-pane modal) | `gdd-inventory-tab.md` (carrier-aware inventory; loot interactions surface here) |
+| Standalone Trade Panel | `gdd-inventory-tab.md` + the carriers-only adjacency rule from `gdd-voxel-tactical-architecture.md` §5 |
+| Spatial model (cells, adjacency, fog, multi-level) | `gdd-voxel-tactical-architecture.md` §6, §15, §16 |
+| Movement order lifecycle, scheduling, occupancy | `gdd-realtime-scheduler.md` §3, §6 |
+
+### 1.3 Design principles
+
+- **Diamond grid + isometric, but operating on a 3D voxel substrate.** Every cell coordinate is `Vector3i(col, row, level)`. Every adjacency check uses 3D Chebyshev ≤ 1.
+- **Right-click is the action verb.** Left-click is selection only (parity with combat-ui §4 commits this for combat too).
+- **The context menu is generated, not authored.** A pure-logic builder consumes game state and emits an option list. UI renders the list. No menu logic in scenes.
+- **Action durations come from ACKS rules.** The scheduler holds the canonical durations (`gdd-realtime-scheduler.md` §6.5).
+- **One adjacency predicate, one occupancy rule.** Both come from the voxel architecture and the scheduler — the dungeon UI does not redefine them.
 
 ---
 
-## 2. Input Model
+## 2. Spatial substrate (consumed, not redefined)
 
-### 2.1 Selection (Left Click)
+This GDD does not specify the spatial model. The relevant authorities and their predicates:
 
-**Left click on an entity (PC, henchman, NPC, monster):** Selects that entity. The entity is highlighted. Its portrait, stats, and status appear in the unit info panel. Any previous selection is cleared.
+- **Coordinates:** `Vector3i(col, row, level)` per `gdd-voxel-tactical-architecture.md` §6.2. Legacy `Vector2i` callers are deprecated and being migrated.
+- **Adjacency:** `VoxelGrid.is_adjacent(a, b)` returns true iff 3D Chebyshev distance ≤ 1 (the 26 cells surrounding any cell). Used uniformly for melee engagement, inventory transfer, door interaction, "must be next to target" gating. Voxel arch §16.9.
+- **Pathfinding:** `MovementResolver.path_bfs_3d(start, goal, "ground", max_steps, max_level_jumps, "explore")` for level-spanning paths; same-level BFS via `VoxelGrid.get_neighbors_2d` for short paths. Explore mode permits closed unlocked doors (the executor pauses one round at the door cell to swing it open).
+- **Cell occupancy:** Claim-based collision per `gdd-realtime-scheduler.md` §6.4 (settled and smoke-tested 2026-04-30). At most one entity per cell at any time. When two orders target the same cell, the second-claimer's order converts to `wait`.
+- **Fog of war:** Three states per cell — `hidden` / `explored` / `visible`. Light-source + LOS based (B5+); NOT room-scoped. Per-cell fog state stored on the `VoxelCell`. Voxel arch §15.
 
-**Left click on an empty/non-entity cell:** Clears the current selection. No entity is selected. The unit info panel shows nothing (or a default "no selection" state).
-
-**Left click on cell containing multiple entities:** Cycles through stacked entities on repeated clicks, or opens a small selection popup listing all entities in that cell.
-
-**Shift+left click on an entity:** Adds or removes that entity from the current multi-selection without clearing existing selection.
-
-**Double-left-click on an entity:** Selects all members of that entity's control group (if any).
-
-### 2.2 Control Groups (Ctrl+Number)
-
-Standard RTS control group bindings:
-
-- **Ctrl+[1–9]:** Assign the current selection to control group N. Replaces any previous assignment for that group number.
-- **[1–9]:** Select all members of control group N. Centers camera on the group's centroid if they are off-screen.
-- **Double-tap [1–9]:** Select and center camera on control group N.
-
-Control group assignments persist for the duration of the dungeon visit. They are stored per-dungeon, not globally.
-
-### 2.3 Context Menu (Right Click)
-
-**Right click on any cell** while at least one entity is selected: Opens a context menu at the click position. The menu is an in-window popup that persists until the player clicks an option or clicks elsewhere to dismiss it. The menu contents depend on the clicked cell and what it contains (§3).
-
-**Right click with no selection:** Does nothing (or optionally opens a cell-inspection tooltip showing cell contents and status).
+The dungeon UI consumes these. It does not define alternative versions.
 
 ---
 
-## 3. Context Menu System
+## 3. Input model
 
-The context menu is the primary interaction mechanism. Every right-click on a cell produces a context menu whose options are the *union* of all applicable categories: universal options (always present), environment options (based on cell features), and entity options (based on what entities occupy the target cell relative to the selected entity).
+### 3.1 Selection (left-click)
 
-### 3.1 Universal Options (Always Present)
+| Action | Behavior |
+|--------|----------|
+| Left-click on entity | Select that entity. Previous selection cleared. SessionStatusBar portrait reflects the new active entity. |
+| Left-click on empty/non-entity cell | Clear current selection. |
+| Left-click on cell with multiple stacked entities | Cycle through stacked entities on repeated clicks; if more than two, surface a small disambiguation popup. |
+| Shift+left-click on entity | Toggle that entity in the multi-selection without clearing existing selection. |
+| Double-left-click on entity | Select all members of that entity's control group (if any). |
 
-These four options appear on every context menu regardless of what was clicked:
+**Single-selection vs. multi-selection:** When a single entity is selected, the context menu's self-actions and entity-options refer to that entity. When multiple entities are selected, options that are per-entity (Hide, Light Torch, etc.) apply to all members of the selection that are individually capable; gating is "any selected has the capability" with per-entity execution at issue-time.
+
+**Cross-tab activation seam:** Left-click on an entity in the dungeon view sets the global active entity for the management notebook (via `EventBus.notebook_active_entity_requested(entity_id)` per `gdd-management-notebook.md` §8.4). It does NOT auto-open the notebook — that requires the player's explicit action (clicking a SessionStatusBar portrait, pressing C, etc.).
+
+### 3.2 Control groups
+
+Standard RTS control group bindings, scoped to dungeon and combat contexts:
+
+| Input | Action |
+|-------|--------|
+| Ctrl+[1–9] | Assign current selection to control group N. Replaces any previous assignment. |
+| [1–9] | Select all members of control group N. Centers camera on the group's centroid if off-screen. |
+| Double-tap [1–9] | Select and center camera. |
+| 0 | Reserved (currently unassigned). |
+
+**Keybind 1-4 collision with clock-speed.** Per `gdd-ui-architecture.md` §4.1, keys 1-4 are reserved for clock-speed (Pause / 1× / 2× / Max) AND 0-9 for control groups. The two are reconciled by gameplay context: in `DUNGEON_EXPLORE`, number keys are control-group recall; clock-speed in dungeon context is exposed via the SessionStatusBar speed cluster (mouse) and `Space` for toggle-pause. This is currently implemented; if usability surfaces a regression, an alternative is binding clock-speed to F1-F4 in dungeon context.
+
+Control group assignments persist for the duration of the dungeon visit only — they are stored in `DungeonSessionState`, not in the campaign repository.
+
+### 3.3 Right-click context menu
+
+Right-click on any cell while at least one entity is selected opens an in-window popup at the click position. The menu auto-pauses the scheduler on open and resumes (at the previously-set speed) when an option is selected or the menu is dismissed. Right-click with no selection is a no-op (or, optionally, opens a cell-inspection tooltip — implementation choice).
+
+The menu is generated by `DungeonContextMenuBuilder.build_menu(selected_ids, target_cell, map, party_data, session_state, light_manager)`. The builder is pure logic — no scene nodes, no signals, no side effects. It returns `Array[Dictionary]` of option entries:
+
+```
+{
+  id: String,                # stable identifier
+  label: String,             # display text
+  enabled: bool,             # greyed out when false
+  tooltip: String,           # disabled-state explanation or hint
+  category: String,          # "universal" | "environment" | "entity" | "self"
+  action_data: Dictionary    # { action_type: String, ...payload }
+}
+```
+
+The UI renders the list, dispatches the chosen option's `action_data` to the corresponding handler, and dismisses the menu. The builder is tested in isolation; the renderer carries no decision logic.
+
+---
+
+## 4. Context menu options
+
+The full menu is the union of the four categories below. Categories appear in display order: universal, then environment, then entity, then self (where applicable).
+
+### 4.1 Universal options (always present)
 
 | Option | Behavior |
 |--------|----------|
-| **Move Here** | Selected entity/group paths to the target cell. If the cell is impassable or occupied, path to the nearest reachable adjacent cell. On arrival, if destination was unreachable, log: `"<Name>: Move complete — destination unreachable."` |
-| **Search Here** | Selected entity moves to the target cell (as Move Here), then performs a Search action (1 turn duration). On completion, rolls for traps and secret doors. If the character has the Tracking proficiency, also triggers a tracking roll (placeholder until tracking system is built). |
-| **Listen Here** | Selected entity moves to the target cell, then performs a Listen check (1 round duration). Hear Noise throw per ACKS rules, modified by class abilities and proficiencies (Alertness: +4, Cat Burglary: +2). Thieves use their class hear noise throw; others use the base 18+ throw. |
-| **Cancel** | Closes the context menu without taking any action. |
+| **Move Here** | Selected entity/group paths to the target cell. Path computed in mode `"explore"`. Closed unlocked doors are walkable in this mode (the executor pauses one round at the door cell to open it). If the target is impassable or unreachable, the path resolves to the closest reachable cell; the unified log records `"<Name>: Move complete — destination unreachable."` |
+| **Search Here** | Selected entity moves to the target cell (Move Here, then) and performs a Search action (1 turn). On completion, `_resolve_search` routes through `ThiefSkillResolver` per `gdd-realtime-scheduler.md` §6.6 — best applicable target across General (18+), Elf active (8+ for hidden/secret doors), Dwarf active (14+ for stonework), thief class throw, or proficiency-equivalent. Per ACKS, each character gets ONE chance per location. |
+| **Listen Here** | Selected entity moves to the target cell and performs a Listen check (1 round). Hear Noise throw via `ThiefSkillResolver`. |
+| **Cancel** | Close the context menu without taking any action. |
 
-**Move Here to impassable cells:** If the player right-clicks a wall, solid rock, or otherwise impassable cell, Move Here still works — the entity paths as close as it can get, then stops. This prevents player frustration from "nothing happens" clicks. The system should never silently fail; always log the outcome.
+### 4.2 Environment options (cell features)
 
-### 3.2 Environment Options (Cell Features)
+Built by `_build_door_options`, `_build_stair_options`, `_build_trap_options`, `_build_interactable_options`. Suppressed when the target cell's fog state is `hidden`.
 
-These appear based on the CellData properties of the right-clicked cell:
+#### 4.2.1 Doors
 
-#### 3.2.1 Doors (cell has door_state != null)
+`DoorData` carries `door_material` ∈ {`wood_simple`, `wood_standard`, `wood_reinforced`, `iron`, `stone`} and `is_evil: bool`. `DungeonSessionState` tracks `is_spiked(cell)`, `is_wedged(cell)`, `is_held_open(cell)`, and `has_failed_pick_lock(entity_id, level)`. The full option set:
 
-Five distinct door actions exist. Each applies to specific door states only:
+| Cell state | Option | Availability | Behavior |
+|---|---|---|---|
+| Closed (unlocked) | **Open Door** | Always | Move adjacent, open. Updates passable + LOS. |
+| Open | **Close Door** | Always | Move adjacent, close. |
+| Stuck | **Force Door** | Always | Move adjacent. Strength throw to unstick (1 round per attempt). Cooperating ally adds to the throw per ACKS. Does not destroy the door. |
+| Locked | **Unlock** | Matching key in any selected entity's inventory | Move adjacent, unlock with key, open. (Currently surfaced as `enabled=false` placeholder until key inventory is wired.) |
+| Locked | **Pick Lock** | Class in `CLASSES_WITH_OPEN_LOCKS` (currently `["thief"]` only — bards are excluded despite thief progression, per ACKS RAW `class_powers`) OR Lockpicking proficiency | Move adjacent. 1 turn standard; 1 round at -10 penalty per `ax_thief_skill_update.xml`. **Failure is permanent per character per lock until they level up** — the option greys with tooltip "Already failed — must gain a level to retry" once all capable selected pickers have failed. Failure tracked in `DungeonSessionState.has_failed_pick_lock(entity_id, level)`. |
+| Any closed (wooden) | **Bash Door** | Any selected entity carries an axe (`hand_axe` / `battle_axe` / `great_axe`); door material is wooden | Move adjacent, batter down. **House rule:** all wooden doors take 1 turn to bash regardless of `door_material` (`_bash_door_turns()` returns 1 unconditionally; the per-material 1/3-turn variation in earlier drafts is not implemented). On completion, `door_state = "destroyed"`; the door cannot be closed again. |
+| Any closed (iron / stone) | **Bash Door** | *(Greyed)* | Tooltip: "This door is too strong to batter down." |
+| Any closed | **Spike Shut** | Any selected entity carries `iron_spikes_12` AND a spike-driving hammer (`hammer_small` or `warhammer`) | Move adjacent, drive a spike. 1 round. Sets `DungeonSessionState.is_spiked(cell) = true`. Spiked doors block opens until the spike is removed. |
+| Any open | **Wedge Open** | Either (`iron_spikes_12` + `hammer_small`/`warhammer`) OR (`wooden_stakes_4` + `hammer_small`/`warhammer`/`mallet`) | Move adjacent, drive a wedge. 1 round. Sets `DungeonSessionState.is_wedged(cell) = true`. Critical for evil doors (see below). |
+| Spiked (own side) | **Remove Spike** | Always | Move adjacent. 1 round. With a `crowbar` in inventory: spike returns to inventory intact. Without: spike is destroyed. |
+| Wedged | **Remove Wedge** | Always | Move adjacent. 1 round. With `crowbar`: iron spike recovers; wooden stake destroyed regardless. Without `crowbar`: item destroyed. |
+| Any closed | **Listen at Door** | Always | Move adjacent, Listen check (1 round). Same throw as Listen Here; log specifically says "listens at the door." Available even on spiked doors. |
+| Secret (undetected) | *(No door options shown — cell appears as wall)* | — | Player must Search to find. |
+| Secret (detected, closed) | **Open Secret Door** | Always | Move adjacent, open the hidden mechanism. Surfaces under "Open Door" once `door_detected = true`. |
+| Portcullis (closed) | **Force Portcullis** | Always | Move adjacent. STR throw (18+ with STR mod). Drops when the lifter releases — see Wedge Open for held-up state. |
+| Portcullis (closed) | **Spike Shut** | Iron spikes + hammer | Spike a closed portcullis. |
+| Portcullis (open, not held) | **Drop Portcullis** | Always | Move adjacent to mechanism, drop it. |
+| Portcullis (open) | **Wedge Open** | Iron spikes + hammer OR wooden stakes + tool | Wedge in raised position. |
+| Arch | *(No options — always passable)* | — | Archways are always open by definition. |
+| Destroyed | *(No options)* | — | Door is gone; cell is permanently passable. |
 
-- **Force Door** — Stuck doors only. Strength throw to unstick the door without destroying it.
-- **Pick Lock** — Locked doors only. Thief skill or Lockpicking proficiency.
-- **Unlock** — Locked doors only. Requires the matching key in inventory.
-- **Bash Door** — Any wooden door in any closed state (closed, stuck, locked). Destroys the door permanently — it cannot be closed again. Only works on wooden doors; metal and stone doors cannot be bashed.
-- **Spike Shut / Wedge Open** — Any door regardless of state. Spike Shut prevents opening from the other side. Wedge Open prevents the door from closing (critical for "evil doors" that swing shut on their own).
+**Evil doors (`is_evil = true`).** Per ACKS, evil doors auto-close every turn (60-round tick) unless they are wedged open, held by a character, bashed/destroyed, or magically held. They open freely for monsters unless spiked shut, held firm, or magically closed. The scheduler emits an `evil_door_close` event on each turn boundary (per `gdd-realtime-scheduler.md`) for every open evil door not in one of the held-open states. Wedge Open is the player's primary defense; consuming a wedge consumable per evil door visited becomes a real resource cost.
 
-**Evil doors (`is_evil = true`):** Evil doors automatically swing shut on every turn tick (every 60 rounds / 10 minutes) unless they are wedged open, spiked open, held by a character, bashed/destroyed, or magically held (Hold Portal, etc.). They also open freely for monsters unless spiked shut, held firm, or magically closed. The scheduler handles this: when the turn boundary event fires, all open evil doors that are not wedged or held revert to closed state. This makes Wedge Open essential for exploration in evil-door-heavy dungeons. The `DoorData` model needs an `is_evil: bool` field (default false); dungeon generation sets this per the ACKS evil door rules.
+#### 4.2.2 Stairs and transitions
 
-Full option table:
+`VoxelCell.feature` for stair cells encodes a direction suffix per voxel arch §10.1: `stairs_up_<DIR>` rises one level in DIR; `stairs_down_<DIR>` descends one level in DIR. Internal stairs vs. dungeon-exit transitions are distinguished by `VoxelMapData.is_transition_cell(pos)`.
 
-| Cell State | Option | Availability | Behavior |
-|------------|--------|-------------|----------|
-| Closed (unlocked) | **Open Door** | Always | Move to door cell, open it. Passable/LOS update. |
-| Open | **Close Door** | Always | Move to door cell, close it. |
-| Stuck | **Force Door** | Always | Move to door, attempt force throw (18+ modified by STR×4, cooperating ally adds +4). 1 round per attempt. Retry allowed. Does not destroy the door. |
-| Locked | **Unlock** | Proper key in inventory | Move to door, unlock with key, open. |
-| Locked | **Pick Lock** | Thief class or Lockpicking proficiency | Move to door, pick lock throw. 1 turn standard; 1 round at -10 penalty (-4 with Lockpicking prof). Per Axioms thief update: failure by 10+ or natural 1 breaks thieves' tools. |
-| Any closed (wooden) | **Bash Door** | Any character with axe | Move to door, batter it down. Simple wooden door: 1 turn. Standard/reinforced wooden door: 3 turns. Door is destroyed and cannot be closed again. Available regardless of lock/stuck state — the party is destroying it, not opening it. |
-| Any closed (metal or stone) | **Bash Door** | *(Greyed out)* | Tooltip: "This door is too strong to batter down." |
-| Any closed door | **Spike Shut** | Iron spikes in inventory | Move to door, spike it shut. Spiked doors impose a penalty on force throws from the other side. Consumes 1 iron spike. Multiple spikes can be applied. |
-| Spiked (own side) | **Remove Spike** | Always | Move to door, remove spike. Returns the spike to inventory. |
-| Any open door | **Wedge Open** | Iron spikes in inventory | Move to door, wedge it open so it cannot swing shut. Critical for evil doors. Consumes 1 iron spike. |
-| Wedged open | **Remove Wedge** | Always | Move to door, remove wedge. Returns the spike to inventory. |
-| Any closed door | **Listen at Door** | Always | Move to door, listen check (1 round). Same as Listen Here but the log specifically says "listens at the door." |
-| Secret (undetected) | *(No door options shown — cell appears as wall)* | — | Player must Search to find the door first. |
-| Secret (detected) | **Open Secret Door** | Always | Move to cell, open the hidden mechanism. |
-| Portcullis (down) | **Raise Portcullis** | STR-based throw or mechanism | Move to portcullis, attempt to raise. Throw as force door (18+ with STR modifier). Portcullises block movement but NOT line of sight. |
-| Portcullis (up) | **Drop Portcullis** | If mechanism accessible | Move to mechanism, drop the portcullis. |
+| Cell feature | Option | Behavior |
+|---|---|---|
+| `stairs_up_*`, internal | **Ascend** | Selected entity moves to the stair cell; on arrival, transitions to the destination cell on the level above per `DungeonMapController.get_stair_target(pos)` (explicit pairing or direction-suffix inference). |
+| `stairs_down_*` | **Descend** | Same, descending. |
+| `stairs_up_*` AND transition cell | **Exit Dungeon** | Queues the entity for exit. Confirmed exit returns the party to the overworld at the dungeon's hex. |
+| Non-stair transition cell (cave entrance, etc.) | **Exit Dungeon** | Same as above. |
+| Stair feature where entity is already exited or queued for exit | *(No option)* | — |
 
-#### 3.2.2 Traps
+#### 4.2.3 Traps
 
-| Cell State | Option | Availability | Behavior |
-|------------|--------|-------------|----------|
-| Trap detected (not disarmed) | **Disarm Trap** | Thief class or Find/Remove Traps proficiency | Move adjacent to trapped cell (not onto it), attempt remove traps throw. 1 turn standard; 1 round at -10 penalty. Failure by 10+ or natural 1 triggers the trap (per Axioms). |
-| Trap detected (not disarmed) | **Trigger Trap (Deliberate)** | Always | Move adjacent, use a 10-foot pole or thrown object to trigger the trap from a safe distance (if available). If no safe-trigger tool, option is greyed with tooltip "Requires a 10-foot pole or ranged method." |
+| Cell state | Option | Availability | Behavior |
+|---|---|---|---|
+| Trap detected, not disarmed | **Disarm Trap** | Thief combat_progression OR Find/Remove Traps proficiency | Move adjacent (NOT onto the trap cell). 1 turn standard; 1 round at -10 per `ax_thief_skill_update.xml`. Failure by 10+ or natural 1 triggers the trap. |
+| Trap detected, not disarmed | **Trigger Trap (Deliberate)** | Always | Move adjacent. Use a 10-foot pole or thrown object to trigger from safe distance. (Currently surfaces unconditionally; tool-availability gating is a future enhancement.) |
 
-Undetected traps have no menu options — they are invisible to the player until found by Search or passive detection.
+Undetected traps surface NO options — they are invisible to the player until found by Search or by passive detection (currently only Elf casual inspection per `gdd-realtime-scheduler.md` §6.6, not yet implemented in code).
 
-#### 3.2.3 Stairs
+#### 4.2.4 Levers, fountains, altars, statues
 
-| Cell Feature | Option | Behavior |
-|-------------|--------|----------|
-| Stairs up | **Ascend** | Move to stair cell, transition to the connected level (or to the overworld if this is the dungeon entrance on level 1). |
-| Stairs down | **Descend** | Move to stair cell, transition to the connected lower level. |
-| Dungeon entrance (level 1) | **Exit Dungeon** | Move to entrance, return party to overworld at the dungeon's hex. |
+| Feature | Option | Behavior |
+|---|---|---|
+| `lever` | **Use Lever** | Move adjacent, pull/push. Effect depends on what the lever is wired to (door, portcullis, trap, secret room). |
+| `fountain` / `altar` / `statue` | **Examine** | Move adjacent, examine. Description, event trigger, or no-op depending on stocking. |
 
-#### 3.2.4 Levers, Mechanisms, and Interactable Objects
+Locked containers are deferred until inventory-on-the-floor is wired (§4.5).
 
-| Cell Feature | Option | Behavior |
-|-------------|--------|----------|
-| Lever | **Use Lever** | Move to cell, pull/push lever. Effect depends on what the lever is wired to (door, portcullis, trap, secret room, etc.). |
-| Fountain, altar, statue, etc. | **Examine** | Move to cell, examine the object. May produce a description, trigger an event, or do nothing depending on stocking. |
-| Locked chest/container | **Lock/Unlock** | Only available if the proper key is in inventory. Toggles the lock state. |
+### 4.3 Entity options
 
-### 3.3 Entity Options (Target Cell Contains an Entity)
+Suppressed when the target cell's fog state is not `visible` (you can't see who's there).
 
-These options are *added to* the universal and environment options, never replacing them. The specific options depend on the relationship between the selected entity and the entity in the target cell.
-
-#### 3.3.1 Target Is a Non-Hostile NPC
-
-| Option | Availability | Behavior |
-|--------|-------------|----------|
-| **Talk** | Always | Move to adjacent cell, initiate dialogue. Auto-pause. Dialogue system presents NPC reaction and conversation options. |
-| **Attack** | Always | Move to adjacent cell, initiate combat with this NPC and its faction allies as hostiles. Triggers combat transition per `gdd-realtime-scheduler.md` §5.8. Warning confirmation dialog: "This will start combat with <NPC> and their allies. Proceed?" |
-| **Cast Spell** | If selected entity is a caster with prepared spells | Placeholder — opens spell selection UI (deferred until spell system is built). The selected spell determines range, targeting, and whether movement is needed. |
-| **Heal** | If selected entity has healing spells prepared or Healing proficiency | Move to adjacent cell, apply healing. If Healing proficiency: use the proficiency throw rules (non-magical, out-of-combat only). If healing spell: cast the spell targeting the NPC. |
-| **Pick Pockets** | Thief class | Move to adjacent cell, attempt pick pockets throw. Modified by level difference per ACKS rules. On failure by half or more, the NPC notices — reaction roll at -3. May trigger combat. |
-
-#### 3.3.2 Target Is a Hostile/Monster
+#### 4.3.1 NPC / monster (non-party)
 
 | Option | Availability | Behavior |
 |--------|-------------|----------|
-| **Attack** | Always | Move toward target. If in melee range, initiates combat. If combat is already active, queue attack against this target. |
-| **Cast Spell** | Caster with prepared spells | Placeholder — as above. |
-| **Talk** | Always (even hostiles) | Attempt to communicate. May trigger reaction roll if the creature hasn't already entered combat. Useless for non-intelligent creatures (greyed with tooltip "This creature cannot communicate"). |
+| **Talk** | Always (including hostile / non-intelligent — currently un-gated; intelligence gating is a future enhancement) | Move adjacent, initiate dialogue. Dialogue system itself is deferred. |
+| **Attack** | Always | Move adjacent, initiate combat. Triggers transition per `gdd-realtime-scheduler.md` §6.8. Non-hostile targets surface a confirmation modal: "This will start combat with `<NPC>` and their allies. Proceed?" |
+| **Cast Spell** | Caster with prepared spells | *(Currently `enabled=false` — spell system deferred.)* |
 
-#### 3.3.3 Target Is a Party Member (Not the Selected Entity)
+**Deferred from earlier draft:** Heal-NPC and Pick Pockets are not currently surfaced. Heal-NPC waits on the healing system; Pick Pockets waits on a thief-action surface that will land alongside the broader thief skill suite.
 
-| Option | Availability | Behavior |
-|--------|-------------|----------|
-| **Cast Spell** | Caster with prepared spells | Placeholder — target the party member with a spell. |
-| **Heal** | Healing spells or Healing proficiency | As §3.3.1 Heal, targeting party member. |
-| **Trade** | Always | Opens a dual-inventory panel showing both characters' inventories side by side. Drag and drop items between them. Encumbrance updates in real time. Both characters must be adjacent (move together first if not). |
-| **Add to Group** | Always | Adds the target character to the selected entity's control group. If the selected entity is not in a group, creates a new group containing both. |
-
-#### 3.3.5 Target Is a Downed or Incapacitated Character
-
-When the target cell contains a character at 0 HP or otherwise incapacitated (paralyzed, unconscious, dying from mortal wounds), these options appear in addition to the universal options. These apply to friendly AND hostile downed entities.
+#### 4.3.2 Party member (other than the selected entity)
 
 | Option | Availability | Behavior |
 |--------|-------------|----------|
-| **Check Status** | Always | Move to adjacent cell, examine the downed character. Displays their current mortal wounds result and condition. If the selected entity has any of the following — Healing proficiency (+ healing kit/herbs), a healing potion, or healing spells prepared — a modal dialog appears asking which resource to use for a Mortal Wounds treatment. The modal lists all available options with their effects and costs. Selecting one consumes the resource and resolves the Mortal Wounds check per ACKS rules (`ax_mortal_wounds_and_tampering.xml`). If no healing resources are available, the status is displayed but no treatment can be attempted. |
-| **Carry** | Always | Move to adjacent cell, pick up the downed character. The carried character becomes an **inventory item** on the carrying entity. Weight: **15 stone ± CON modifier of the carried character**, plus the weight of the carried character's inventory. The carrier's encumbrance updates immediately — this will likely reduce their movement rate significantly. A carried character can be transferred to another entity via Trade, including mounts and pack animals (mules, donkeys, horses) for exfiltration. Drop the carried character with **Drop Item** from the carrier's inventory to place them back on the ground in the current cell. |
-| **Loot** | Always | Move to adjacent cell. Opens the Loot Panel (same as §3.4) showing the downed character's inventory and the selected entity's inventory side by side. Items can be transferred in either direction. This works on friendly downed characters — the primary use case is stripping gear from an incapacitated ally to reduce their carry weight before picking them up with Carry. Also works on downed enemies for standard looting. |
-| **Heal** | Healing spells or Healing proficiency (with supplies) | As §3.3.1 Heal. For a downed character, this may stabilize them or restore HP depending on the healing method. Distinct from Check Status in that Heal applies healing directly, while Check Status specifically resolves the Mortal Wounds table. |
-| **Cast Spell** | Caster with prepared spells | Placeholder — target the downed character with a spell (healing or otherwise). |
-| **Attack** | Always | Coup de grâce. Move to adjacent cell, automatically hit the helpless target. Confirmation dialog: "This will kill `<name>`. Proceed?" For hostile downed creatures this is routine cleanup; for friendly characters it's a mercy kill or betrayal. |
+| **Trade** | Adjacent (3D Chebyshev ≤ 1) per voxel arch §5 | Opens the Inventory tab (notebook tab #2) scoped to the two carriers. Drag-drop transfers between the two entities' inventories. **Note:** the adjacency gate is not yet wired in the menu builder — the option currently surfaces unconditionally; gating is a Phase γ wiring task. |
+| **Heal** | Healing spells or Healing proficiency | *(Currently `enabled=false` — healing system deferred.)* |
+| **Add to Group** | Always | Adds the target to the selected entity's RTS control group (creates a new group if neither is currently in one). Distinct from party formation, which is per-party and managed in the Party tab Formation sub-tab. |
+| **Cast Spell** | Caster with prepared spells | *(Currently `enabled=false` — spell system deferred.)* |
 
-**Carried character details:** A carried character is mechanically an inventory item with special properties. It occupies no specific inventory slot (it's a "carried entity" category). While carried: the character cannot act, their light sources are extinguished, their equipment remains on them (unless looted first), and their conditions continue to tick (bleeding, poison, etc.). If the carrier enters combat, the carried character does NOT participate — they remain inert inventory. If the carrier is themselves downed, the carried character is dropped in the same cell.
+#### 4.3.3 Downed or incapacitated character
 
-#### 3.3.6 Target Is the Selected Entity Itself (Self-Actions)
-
-Right-clicking the cell occupied by the currently selected entity produces self-targeting options:
+When the target cell contains a character at 0 HP or below, paralyzed, or otherwise incapacitated. Applies to friendly AND hostile downed entities. *(Project-designed Arbiter content — preserved from v1.)*
 
 | Option | Availability | Behavior |
 |--------|-------------|----------|
-| **Hide** | Thief class, Hide in Shadows proficiency, or equivalent class ability | All selected entities (and all members of the selected entity's group) that are capable of hiding attempt a Hide in Shadows throw in their current cells. No movement occurs. Characters that succeed are hidden; those that fail believe they succeeded until an enemy reacts (per ACKS rules). Hidden characters remain hidden only while motionless. |
-| **Light Torch** | Torch AND tinderbox in inventory | Lights a torch. Creates a `light_source_expired` event in the scheduler at +6 turns. Updates light radius around entity. Consumes 1 torch from inventory (the lit torch is now tracked as "equipped light source"). |
-| **Light Lantern** | (Charged lantern + tinderbox) OR (empty lantern + oil flask + tinderbox) | Lights or refills and lights a lantern. Creates `light_source_expired` event at +24 turns per flask. If lantern was empty, consumes 1 oil flask. |
-| **Extinguish Light** | Currently carrying a lit torch or lantern | Puts out the current light source. Torch is consumed (cannot be relit). Lantern retains remaining oil for relighting. |
-| **Heal** | Healing spells prepared or Healing proficiency | Self-heal. |
-| **Cast Spell** | Caster with prepared spells and self-targeting spells available | Placeholder — self-targeted spell selection. |
-| **Use Item** | Consumable items in inventory (potions, scrolls) | Opens a quick-select list of usable items from inventory. Using an item takes 1 round (or as specified by the item). |
-| **Set Default Idle Behavior** | Always | Opens the Default Idle Behavior submenu (§4). |
-| **Drop Item** | Items in inventory | Opens inventory panel, select item(s) to drop on the current cell. Creates a loot pile if one doesn't exist. |
+| **Check Status** | Always | Move adjacent, examine. Displays current Mortal Wounds result and condition. If the selected entity has Healing proficiency (with kit/herbs), a healing potion, OR healing spells prepared, a modal opens listing available treatment resources with effects and costs. Selecting one consumes the resource and resolves the Mortal Wounds check per `ax_mortal_wounds_and_tampering.xml`. |
+| **Carry** | Always | Move adjacent, pick up. The downed character becomes an inventory item on the carrier. **Weight: 15 stone ± CON modifier of the carried character**, plus the carried character's inventory weight. Encumbrance recomputes immediately. A carried character can be transferred to another carrier (including mules and pack animals) via Trade. Drop with the carrier's **Drop Item** to place them back on the ground. |
+| **Loot** | Always | Move adjacent. Opens the Inventory tab scoped to the downed character + the looter. Items transfer in either direction. Use case: stripping gear from an incapacitated ally to reduce carry weight before Carry. |
+| **Heal** | Healing spells or Healing proficiency (with supplies) | Apply healing directly. Distinct from Check Status, which specifically resolves the Mortal Wounds table. *(Currently `enabled=false`.)* |
+| **Cast Spell** | Caster with self-targeting spells | *(Currently `enabled=false`.)* |
+| **Attack (Coup de Grâce)** | Always | Move adjacent. Automatic hit against helpless target. Confirmation modal: "This will kill `<name>`. Proceed?" |
 
-**Note:** Right-clicking a cell containing an in-group entity (a member of the selected entity's control group) also shows **Hide** at the top of the entity options. This triggers the same group-wide hide behavior — all capable group members attempt to hide in their current cells, no movement.
+**Carried character details.** A carried character is mechanically an inventory item with special properties: cannot act, light sources extinguished, equipment remains on them (unless looted first), conditions continue to tick (bleeding, poison). If the carrier enters combat, the carried character does NOT participate. If the carrier is themselves downed, the carried character drops in the same cell.
 
-### 3.5 Stealth Move and Hide
+#### 4.3.4 Self (right-click own cell)
 
-Stealth is a compound action with two forms depending on what cell is right-clicked:
-
-#### 3.5.1 Stealth Move (Right-Click Distant Cell)
-
-When the right-clicked cell is NOT the selected entity's cell and NOT occupied by an in-group member:
+Built by `_build_self_options`. Recognized by `_is_self_click` — the target cell matches any selected entity's position.
 
 | Option | Availability | Behavior |
 |--------|-------------|----------|
-| **Stealth Move** | At least one selected entity has Move Silently capability (thief class, Skulking proficiency, or equivalent) | Selected entity moves to the target cell using Move Silently (throw per ACKS rules; half combat speed = no penalty, faster = -5, running = -10). On arrival, the entity automatically attempts a Hide in Shadows throw at the destination cell. **Group behavior:** If a control group is selected, all members with Move Silently capability attempt silent movement; members without it move normally (and likely break stealth for the group). The group leader arrives at the target cell; other members occupy adjacent cells. On arrival, all capable members attempt Hide in Shadows in their respective cells. |
+| **Hide** | Thief class OR Skulking proficiency (in any selected entity) | All capable members of the selection (or selected entity's group) attempt Hide in Shadows in their current cells. No movement. Successful characters are hidden; failures believe they succeeded until an enemy reacts (per ACKS). Hidden characters remain hidden only while motionless. |
+| **Light Torch** | Torch + tinderbox in inventory | Per `DungeonLightManager`: lights or relights a torch. 6 turns burn time. `LIGHT_RADIUS_CELLS = 10` (50' total: 30' bright + 20' dim). On expiry, auto-lights next torch if available. |
+| **Light Lantern** | Lantern + tinderbox + (lantern fueled OR oil flask) | Lights or refills+lights a lantern. 24 turns per `oil_flask_common`. Auto-consumes next flask on expiry; extinguishes if none available. |
+| **Extinguish Light** | Currently carrying a lit torch or lantern | Puts out the light. Torch consumed (cannot relight). Lantern retains remaining oil. |
+| **Heal** | Healing spells or Healing proficiency | Self-heal. *(Currently `enabled=false`.)* |
+| **Cast Spell** | Caster with self-target spells | *(Currently `enabled=false`.)* |
+| **Use Item** | Consumable items in inventory | Quick-select list (potions, scrolls). 1 round (or per-item duration). |
+| **Set Default Idle Behavior** | Always | Opens the idle behavior submenu (§5). |
+| **Drop Item** | Items in inventory | Opens inventory selection; chosen item(s) drop on the current cell. Creates a loot pile if one doesn't exist. |
 
-The Move Silently throw is made at the start of movement. The character always believes they succeeded until enemies react (per ACKS rules — the result is hidden from the player). The Hide in Shadows throw at the destination is also hidden — the character believes they are hidden until proven otherwise.
+### 4.4 Stealth Move vs. Hide-in-place
 
-#### 3.5.2 Hide in Place (Right-Click Own Cell or In-Group Cell)
+A compound action with two forms based on click target:
 
-When the right-clicked cell is the selected entity's own cell or contains a member of the selected entity's control group:
-
-| Option | Availability | Behavior |
-|--------|-------------|----------|
-| **Hide** | At least one group member has Hide in Shadows capability | All members of the group that are capable of hiding attempt a Hide in Shadows throw in their current cells. No movement occurs. Non-capable members simply hold position. |
-
-This distinction — Stealth Move for distant targets, Hide for current position — keeps the context menu clean. The player never has to manually sequence "move silently then hide"; the system handles the compound action.
-
-### 3.4 Loot and Containers
-
-When the right-clicked cell contains items on the ground or an opened/unlocked container:
+#### 4.4.1 Stealth Move (right-click distant cell)
 
 | Option | Availability | Behavior |
 |--------|-------------|----------|
-| **Loot** | Always | Move to cell if not adjacent. Opens the Loot Panel: two-pane view showing the loot pile or container contents on the left and the selected character's inventory on the right. Drag and drop items between them. Encumbrance updates live. The player can also deposit character items into the container/pile. Close the panel when done. |
-| **Pick Up All** | Items on ground | Move to cell, automatically transfer all items to selected character's inventory (up to encumbrance limit). Overflow items remain on the ground with a log message: `"<Name>: Cannot carry any more."` |
+| **Stealth Move** | At least one selected entity has Move Silently capability (thief class OR Skulking proficiency) | Selected entity paths to the target cell with movement mode set to silent (Move Silently throw at start; half combat speed = no penalty, faster = -5, running = -10). On arrival, automatic Hide in Shadows attempt at the destination cell. **Group behavior:** capable members attempt silent movement; non-capable members move normally and likely break stealth for the group. |
+
+Both throws are hidden from the player per ACKS — the character believes they succeeded until enemies react.
+
+#### 4.4.2 Hide in place (right-click own cell or in-group cell)
+
+When the right-clicked cell IS the selected entity's own cell or contains a member of its control group, **Stealth Move is omitted** and **Hide** appears in the self-actions (§4.3.4).
+
+This split keeps the menu clean: the player never has to manually sequence "move silently then hide"; the system handles the compound action.
+
+### 4.5 Loot and dropped containers
+
+Loot interactions surface through the Inventory tab, NOT through a standalone Loot Panel.
+
+| Cell condition | Option | Behavior |
+|---|---|---|
+| `cell.has_ground_items == true` | **Loot** | Move adjacent. Opens the Inventory tab (notebook tab #2) scoped to the selected entity + the loot-cell carrier. Drag-drop both directions. |
+| `cell.has_ground_items == true` | **Pick Up All** | Move to cell, transfer all items to the selected entity's inventory up to encumbrance. Overflow remains; log: `"<Name>: Cannot carry any more."` |
+
+**Current build status.** `cell.has_ground_items` is hard-coded to `false` in `dungeon_context_menu_builder.gd:53` with TODO comment "wire from location cache." Loot options never surface in production until the location cache is wired through. Resolution sequence: build the floor-carrier registration when items are dropped, expose `LocationCacheManager.has_ground_items(cell) -> bool`, and replace the TODO with the live query. Tracked as **§13 Build Status item L-1**.
 
 ---
 
-## 4. Default Idle Behavior System
+## 5. Default Idle Behavior System
 
-Each entity has a configurable **default idle behavior** that determines what it does when it has no active orders and is not in combat. This significantly reduces micromanagement for parties with many members.
+Each entity has a configurable **default idle behavior** that determines what it does when it has no active orders and is not in combat. Significantly reduces micromanagement for parties with many members.
 
-### 4.1 Available Idle Behaviors
+### 5.1 Available behaviors
 
 | Behavior | Description |
-|----------|-------------|
-| **Hold Position** (default) | Stay in current cell. Do nothing. Wait for orders. |
-| **Follow Group Lead** | If in a control group, follow the unit at position 1 in the marching order. Maintain formation spacing. Match the lead unit's movement mode. If not in a group, behaves as Hold Position. |
-| **Auto-Listen at Doors** | When adjacent to a closed door (and idle), automatically perform a Listen check. Results appear in the log. Does not open the door. |
-| **Auto-Search** | When entering a new room (and idle), automatically begin a Search action on the room. Warning: this is slow (1 turn per 10'×10') and loud — not recommended for stealth-oriented play. |
-| **Guard** | Hold position. If a hostile enters the entity's awareness radius (based on light and line of sight), auto-pause and flag the threat. Does not auto-attack — just alerts. |
-| **Hide** | If the entity has Hide in Shadows capability, attempt to hide in the current position. Remain hidden and motionless until given orders or until hiding is broken. |
+|---|---|
+| **Hold Position** (default) | Stay in current cell. Wait for orders. |
+| **Follow Group Lead** | If in a control group, follow the unit at marching-order position 1. Maintain formation spacing per the Party tab Formation sub-tab grid. Match lead's movement mode. If not in a group, behaves as Hold Position. |
+| **Auto-Listen at Doors** | When idle and adjacent to a closed door, automatically Listen check. Results in the unified log. Does not open the door. |
+| **Auto-Search** | When idle on entry to a new room, automatically begin a Search action. Slow (1 turn per 10'×10') and noisy. |
+| **Guard** | Hold position. If a hostile enters the entity's awareness radius, auto-pause and flag. Does not auto-attack — alerts only. |
+| **Hide** | If the entity has Hide in Shadows capability, attempt to hide in current position. Remain hidden and motionless until orders arrive or hiding breaks. |
 
-### 4.2 Setting Idle Behavior
+### 5.2 Setting idle behavior
 
-Idle behavior is set via:
+Two access paths:
+1. **Self-action context menu → Set Default Idle Behavior** (§4.3.4) — opens a submenu listing behaviors. Some grey out per prerequisites.
+2. **Group options panel** — set idle for all group members at once. (Group options panel is now a HUD widget on the control group bar, NOT a marching-order surface; see §6.2.)
 
-1. **Context menu → Set Default Idle Behavior** (self-action, §3.3.6) — opens a submenu listing the available behaviors. Some are greyed out if the entity lacks prerequisites (e.g., Hide requires thief class or relevant proficiency).
-2. **Group options panel** (right-click the control group icon in the control bar, §5.2) — set idle behavior for all members of a group simultaneously.
+Idle behavior persists until changed. Stored per-entity in `DungeonSessionState` for the duration of the dungeon visit.
 
-Idle behavior persists until changed. It is stored per-entity for the duration of the dungeon visit.
+### 5.3 Follow Group Lead detail
 
-### 4.3 Follow Group Lead (Detail)
-
-This is the most common idle behavior for henchmen and non-PC party members. When set:
-
-- The entity follows the group's marching order position behind the entity ahead of it.
-- Movement speed matches the group's speed (slowest member, per §5.3).
-- If the lead unit stops, followers stop in column formation behind it.
-- If the lead unit enters combat, the follower's idle behavior is suspended — they enter combat and act per their combat AI or player control.
-- If the lead unit performs a non-movement action (search, listen, pick lock), followers wait in their current positions until the lead resumes moving.
+The most common idle behavior for henchmen and non-PC party members:
+- Entity follows the formation position assigned by the Party tab's Dungeon 2×12 grid (per `gdd-party-tab.md` §7).
+- Movement speed matches the group's speed (slowest member rule).
+- If the lead stops, followers stop in formation behind it.
+- If the lead enters combat, follower idle suspends; they enter combat per their AI / player control.
+- If the lead performs a non-movement action (search, listen, pick lock), followers wait in current positions.
 
 ---
 
-## 5. Control Bar and Group Management UI
+## 6. HUD widgets and group management
 
-### 5.1 Unit Info Panel
+### 6.1 SessionStatusBar handles per-entity status
 
-A panel (bottom-left or left sidebar) showing details for the currently selected entity:
+The per-selection unit info panel from v1 is removed. Its contents are now spread across:
+- **SessionStatusBar left zone** — party portraits with HP / encumbrance / marching-order indicator (read-only). Per `gdd-ui-architecture.md` §3.8.
+- **SessionStatusBar center zone** — clock, light source indicator, party encumbrance band.
+- **Character tab (notebook tab #1)** — full sheet on demand. Reached by clicking a portrait or pressing C.
 
-- Portrait (from the character portrait system: 256×256 PNG)
-- Name
-- Class and level
-- HP (current / max, with color coding: green > 50%, yellow 25-50%, red < 25%)
-- AC
-- Current action and progress (e.g., "Searching... 4/10 min" or "Moving" or "Idle")
-- Movement mode indicator (Exploration / Combat Speed / Running)
-- Active light source and remaining duration
-- Active conditions (poisoned, paralyzed, blessed, etc.)
-- Encumbrance tier indicator
+When the player needs to inspect the active selection's full state, they open the Character tab. The dungeon view does not duplicate this surface.
 
-When multiple entities are selected, show a compact multi-portrait view with HP bars only. Click any portrait to drill into that entity's full detail.
+### 6.2 Control Group Bar
 
-### 5.2 Control Group Bar
+Bottom-of-screen horizontal bar with numbered slots [1] through [9]. Each slot shows:
+- Group number
+- Compact portrait mosaic (2-4 tiny portraits or a count badge if more)
+- Movement-mode pip (green = exploration, yellow = combat speed, red = running)
+- Active vs. idle state (brightened vs. dimmed)
 
-A horizontal bar (bottom of screen) showing numbered slots [1] through [9]. Each slot shows:
+Interactions:
+- **Left-click slot** → select all group members.
+- **Double-click slot** → select and center camera.
+- **Right-click slot** → opens the Group Options Panel (below).
 
-- The group number
-- A compact portrait mosaic of group members (2-4 tiny portraits, or a count badge if more than 4)
-- A colored pip for the group's movement mode (green = exploration, yellow = combat speed, red = running)
-- A dimmed/brightened state for idle vs. active
+#### 6.2.1 Group Options Panel
 
-**Left click a group slot:** Selects all group members.
-**Double-click a group slot:** Selects and centers camera.
-**Right-click a group slot:** Opens the Group Options Panel:
+Right-click on a group slot opens a popup with:
+- **Movement Mode** — toggle Exploration / Combat Speed / Running for the entire group.
+- **Set All Idle Behavior** — apply an idle behavior to all members.
+- **Disband Group** — remove the control group assignment.
 
-- **Marching Order** — opens a drag-and-drop reorderable list of group members. Top = front, bottom = rear. Drag to rearrange. The front unit encounters traps, doors, and enemies first. Typical arrangements: thief-front (for trap detection), highest-AC-front (for combat), caster-rear.
-- **Movement Mode** — toggle between Exploration / Combat Speed / Running for the entire group.
-- **Set All Idle Behavior** — set the default idle behavior for all group members at once.
-- **Disband Group** — remove the control group assignment. Members become ungrouped individuals.
+**What is NOT here:** marching order. Marching order belongs to the Party tab's Formation sub-tab (Wilderness 6×12 + Dungeon 2×12 grids) per `gdd-party-tab.md` §7. The Group Options Panel does not duplicate it.
 
-### 5.3 Movement Speed Rules
+### 6.3 Movement speed (slowest-member rule)
 
-Group movement speed is **always set by the slowest member.** This is calculated from:
+Group speed is set by the slowest member, computed from base move rate × encumbrance × movement-mode multiplier × proficiency modifiers. The control group bar surfaces the effective group speed pip so the player sees the impact of their slowest member at a glance. The per-entity calculation lives in `EncumbranceCalculator` and is shared with `gdd-party-tab.md` §6 (Travel sub-tab).
 
-- Base movement rate (class/race dependent)
-- Encumbrance tier (per the existing EncumbranceCalculator)
-- Movement mode multiplier:
-  - Exploration: ×1/3 of combat speed
-  - Combat speed: ×1 (the base movement rate)
-  - Running: ×2 combat speed
-- Proficiency modifiers: Running proficiency adds +30' to base movement (only in combat speed or running mode)
+### 6.4 Marching order — pointer only
 
-The control group bar shows the effective group speed so the player can see the impact of their slowest member.
-
-### 5.4 Marching Order Behavior
-
-Marching order is per-group and determines:
-
-- **Column formation in corridors:** In 5'-wide corridors, units line up single-file in marching order. In 10'-wide corridors, they can travel two abreast (positions 1-2 side by side, then 3-4, etc.).
-- **First contact:** The unit at position 1 in the marching order is the first to encounter traps, doors, and enemies when the group moves into unexplored space.
-- **Split responsibility:** If the first unit has a passive detection ability (e.g., dwarf), those checks fire as the group advances. If the second unit has a different passive (e.g., elf), both passives fire for cells within their detection radius.
+Marching order is configured exclusively in the Party tab's Formation sub-tab. The dungeon UI consumes it (via `PartyData.formation` / `FormationManager.compute_dungeon_positions_3d`) but does not surface configuration UI. SessionStatusBar shows a read-only marching-order indicator on each portrait per `gdd-ui-architecture.md` §3.8.
 
 ---
 
-## 6. Fog of War and Visibility
+## 7. Multi-level UX
 
-### 6.1 Visibility States
+This section is new in v2. It documents how the dungeon UI integrates with the multi-level voxel architecture from `gdd-voxel-tactical-architecture.md` §16.
 
-Each cell has one of three visibility states:
+### 7.1 Focus level
 
-| State | Rendering | Information |
-|-------|-----------|-------------|
-| **Hidden** | Black / fully obscured | Player cannot see or interact with this cell. No context menu except the universal options (Move Here will path toward it but stop at the fog boundary). |
-| **Explored** | Dimmed / desaturated | Previously visited. Walls, doors, and room shapes visible. Entities and items NOT visible (things may have changed since last visit). |
-| **Visible** | Fully lit/rendered | Currently within a party member's line of sight AND within their light source radius (or darkvision range). Entities, items, and real-time status visible. |
+The camera always has a single **focus level** — the voxel y-layer it is centered on. Per voxel arch §16.1:
+- Default on dungeon entry: focus = party leader's level.
+- Auto-switch on selection: clicking a party member sets focus = that member's level.
+- Manual control: PgUp / PgDn cycles focus up/down.
+- Fast jump: clicking a SessionStatusBar portrait jumps focus to that member's level AND sets them as the active selection.
 
-### 6.2 Revelation Rules
+### 7.2 Per-level rendering
 
-- **Room-scoped reveal:** When any party member enters a room (crosses a door threshold or enters from a corridor), the entire room becomes Visible (per existing design from `gdd-dungeon-layout.md`). When all party members leave the room, it transitions to Explored.
-- **Corridor reveal:** Corridors reveal cell-by-cell based on line of sight and light radius. A character with a torch reveals cells within 30' (6 cells) in their LOS cone. A character with a lantern reveals within 30' (same radius, but 360° instead of directional).
-- **Darkvision:** Characters with darkvision (elves, dwarves, etc.) reveal cells within 60' (12 cells) even without a light source, rendered in a distinct grayscale/monochrome visual style to indicate darkvision rather than true light.
+`VisibilityManager` drives per-level opacity per voxel arch §16.2:
+- `level > focus + 1` — hidden (not rendered)
+- `level == focus + 1` — dithered transparency (or hard-clip fallback per voxel arch §16.3)
+- `level == focus` — fully opaque
+- `level < focus` — opaque, dimmed (×0.6 brightness)
 
-### 6.3 Context Menu Interaction with Fog
+Exceptions:
+- Party member tokens on non-focused levels render at full opacity.
+- Visible enemies on non-focused levels render at half opacity with a colored outline.
 
-- **Hidden cells:** Right-click produces only Move Here, Search Here, Listen Here, and Cancel. The entity will path toward the cell and stop at the boundary of explored/visible space.
-- **Explored cells:** Right-click shows universal options plus any environment options based on remembered cell data (doors, stairs). But entity options are suppressed — you can't see who's there, so no Talk/Attack/etc. Warning: remembered data may be stale (a door you left open might now be closed by monsters).
-- **Visible cells:** Full context menu with all applicable options.
+### 7.3 Level Strip Widget
 
----
+Right-edge HUD widget per voxel arch §16.4. One row per level containing party members, visible enemies, or revealed structure. Each row shows level number, party-member icons, enemy badge, focus indicator. Click to jump focus to that level.
 
-## 7. Notification Log
+Real and currently shipping: `LevelStripWidget` (instantiated by `DungeonMapRenderer3D`, added to DungeonHUD CanvasLayer, consumes `VisibilityManager` + `EventBus.party_member_levels_snapshot`).
 
-### 7.1 Purpose
+### 7.4 OffscreenPartyIndicators
 
-A scrolling text log (bottom-right or dedicated panel) that shows all mechanical events and outcomes during dungeon exploration. This is the player's primary feedback channel for actions that resolve in the background (while the clock is ticking).
+When a party member is on the focused level but outside the camera viewport, an arrow on the screen edge points toward them. Click the arrow to pan the camera. Real and shipping: `OffscreenPartyIndicators` consumes `DungeonMapRenderer3D.get_party_focus_tokens()`.
 
-### 7.2 Log Entry Types
+### 7.5 Auto-focus on cross-level events
 
-| Category | Example | Color/Styling |
-|----------|---------|---------------|
-| **Movement** | "Bran moves to (15, 22)." | Default/white |
-| **Action result (success)** | "Yara: Search complete — found a hidden door!" | Green |
-| **Action result (failure)** | "Bran: Force door — failed (rolled 8 vs. target 18)." | Yellow |
-| **Detection (passive)** | "Thorgrim senses a sloping passage ahead." | Cyan |
-| **Trap trigger** | "Bran triggers a pit trap! (Save vs. Blast — failed, 6 damage)" | Red |
-| **Encounter** | "Wandering monster check: 3 goblins appear 40' to the south!" | Red, bold |
-| **Resource depletion** | "Yara's torch has burned out." | Orange |
-| **Combat transition** | "Combat begins! All units enter turn-based mode." | Red, bold |
-| **Unreachable** | "Bran: Move complete — destination unreachable." | Grey |
-| **Item** | "Yara picks up: Potion of Healing." | White |
+The scheduler emits `EventBus.dungeon_auto_focus_requested(level)` when an auto-pause event fires on a non-focused level (encounter, trap trigger, secret-door reveal, torch expire, etc.). The renderer tweens camera Y to the new focus level over ~0.3s. Per voxel arch §16.5 and `gdd-realtime-scheduler.md` §7.
 
-### 7.3 Log Behavior
+### 7.6 Multi-level context menus
 
-- Auto-scrolls to newest entry.
-- Player can scroll up to review history.
-- Clicking a log entry that references a location centers the camera on that cell.
-- Log persists for the duration of the dungeon visit. Saved to the session log for post-session review.
-- Log entries with associated dice rolls show the full roll detail on hover/click (die type, raw result, modifiers with sources, final result, outcome).
+Right-clicking a cell on a non-focused level surfaces the same context menu as the focused level, but with a confirmation step: first click highlights the cell and shows a "Move here on Level N" tooltip; second click confirms. Prevents misclicks on dimmed/dithered cells per voxel arch §16.5.
+
+### 7.7 Camera horizontal pan
+
+Per voxel arch §16.6: camera horizontal pan is clamped to the bounding box of explored cells plus a 1-cell border. Free Camera mode is a dev-option toggle that disables clamping. Home key recenters on the party leader.
 
 ---
 
-## 8. Camera Controls
+## 8. Fog of war (consumed from voxel arch §15)
 
-### 8.1 Movement
+The dungeon UI consumes the three-state fog model. It does not maintain its own.
 
-- **Arrow keys / WASD:** Pan the camera across the dungeon map.
-- **Mouse-to-edge:** When the mouse cursor reaches the screen edge (within 40px margin), the camera pans in that direction (matching existing hex map behavior from the hex map renderer).
-- **Middle mouse drag:** Click and drag to pan freely.
-- **Click minimap:** Jump to the clicked location. See §8.4 for minimap rules.
+### 8.1 States
 
-### 8.2 Zoom
+| State | Rendering | Right-click menu |
+|---|---|---|
+| **Hidden** | Black / textured void (subtle noise/parchment per voxel arch §16.6 — never pure black) | Universal options only (Move Here paths toward, stops at fog boundary). No environment, entity, or self options. |
+| **Explored** | Dimmed / desaturated. Walls, doors, room shapes visible (last-seen state). Entities and items NOT shown — things may have changed. | Universal + environment options (based on remembered cell data — note that remembered data may be stale; an open door you left may now be closed by monsters). Entity options suppressed. |
+| **Visible** | Fully lit. Entities, items, real-time status. | Full menu. |
 
-- **Mouse scroll wheel:** Zoom in/out. Zoom range TBD per the diamond grid tile size, but should support close enough to see individual cell detail and far enough to see a large room or corridor complex.
-- **Home key:** Reset zoom and center on the selected entity (or the first PC if nothing is selected).
+### 8.2 Reveal model (B5+)
 
-### 8.3 Camera Follow
+Light-source + LOS based, NOT room-scoped. Each party member's light radius (computed per voxel arch §15.2 by `DungeonMapController._get_entity_visible_radius` = `light_radius + darkvision_bonus`) plus 3D LOS bounds the visible cells via `FogRevealEngine.compute_visible_cells`. Cells exit `visible` and demote to `explored` when they leave the union of all members' light + LOS coverage. Multi-level fog is supported per voxel arch §15.3 — different levels of the same room can have different fog states.
 
-An optional toggle (default: on for single-entity selection, off for multi-selection): the camera automatically pans to follow the selected entity or group as they move. The player can break follow mode by manually panning; it re-engages when a new selection is made or when the player presses the Home key.
+Default fallback when no `DungeonLightManager` is wired: `_fallback_light_radius = 10` cells (50'). Production has `DungeonLightManager` wired.
 
-### 8.4 Minimap
+### 8.3 Darkvision
 
-The minimap is a small overlay (top-right corner, toggleable with **M** key) showing a top-down schematic of the dungeon.
-
-**What the minimap always shows:** Currently visible cells (cells within LOS and light radius of any party member right now). These appear as lit floor/wall shapes on the minimap in real time.
-
-**Automapping (requires Mapping proficiency + supplies):** If at least one party member has the Mapping proficiency AND has a journal (or parchment) AND ink in their inventory, the minimap retains explored cells even after they leave LOS. The automap fills in as the party moves in **exploration movement mode only** — combat speed and running mode do not produce automap data (the mapper can't draw while sprinting). Cells explored without a mapper present, or explored while not in exploration mode, are NOT retained on the minimap once they leave LOS.
-
-**Without a mapper:** The minimap is live-only. It shows what party members can see right now and nothing else. Previously visited areas disappear from the minimap when the party moves away. The main viewport's fog of war still shows explored cells in their dimmed "Explored" state (§6.1), but the minimap does not.
-
-**Minimap interaction:** Click on the minimap to jump the main camera to that location (automapped areas only). The minimap does not show entity positions other than the player's party (no enemy tracking on the map).
+Per-entity bonus added to light radius via `DungeonMapController.set_entity_darkvision(entity_id, cells)`. Elves and dwarves have darkvision per their `acore_demihuman_classes.xml` entries; the bonus is set during character generation. Per voxel arch §15.1, flying creatures see over walls naturally because their cell is elevated — 3D LOS handles this without special cases.
 
 ---
 
-## 9. Action Queuing and Interruption
+## 9. Action queuing and cancellation
 
-### 9.1 Single Action Queue
+### 9.1 Single-slot order model
 
-Each entity has a single-slot action queue: one current action (in progress) and one pending next action. If the player issues a new order while an action is in progress:
+`DungeonOrderManager` (real, at `engine/subsystems/exploration/dungeon_order_manager.gd`) provides one pending order per entity. Order types in current code:
 
-- **Move orders:** The entity immediately redirects. Current movement is abandoned; new pathfinding begins.
-- **Non-move actions (search, pick lock, listen, etc.):** The current action is interrupted and lost (no partial credit — ACKS doesn't have partial search progress). The new action begins.
-- **Queue stacking:** Only one pending action is supported. More complex sequences (e.g., "move here, then search, then move there") are not queued — the player issues each order as the previous one completes. This keeps the system simple and predictable.
+| Order type | Meaning |
+|---|---|
+| `move` | Walk to `target_pos` along `path`. |
+| `interact_door` | Already adjacent; toggle the door. |
+| `move_and_interact_door` | Path to nearest passable cell adjacent to the door, then interact. |
+| `move_adjacent` | Generic "path to a cell adjacent to target_pos" — used by force_door, pick_lock, bash_door, lever, listen_at_door, spike/wedge actions. |
+| `search` | Search the current/target cell. |
+| `listen` | Listen at the cell. |
+| `wait` | Hold position (explicit no-op; also the conversion target for collided `move` orders). |
 
-### 9.2 Group Orders
+API: `add_order(entity_id, order_type, target_pos, path)` queues; `clear()` flushes all; `execute_orders()` resolves the batch.
+
+### 9.2 New order replaces the old
+
+If the player issues a new order while one is pending:
+- **Move orders** redirect immediately. `add_order` overwrites the entry; `renderer.cancel_movement_animation(entity_id)` fires before `start_movement_animation` for the new path (per `gdd-realtime-scheduler.md` §3.3).
+- **Non-move actions** (search, lockpick, listen) — current action interrupts, no partial credit. ACKS doesn't have partial-search progress.
+- **Queue stacking** — only one pending order is supported. The player issues each order as the previous completes. No multi-step sequencing.
+
+### 9.3 Cancellation flow
+
+| Cancel scope | Mechanism |
+|---|---|
+| One entity's pending order | `DungeonOrderManager.remove_order(entity_id)` |
+| All pending orders | `DungeonOrderManager.clear()` |
+| One entity's in-flight movement animation | `renderer.cancel_movement_animation(entity_id)` |
+| All in-flight movement animations | `renderer.cancel_all_movement_animations()` (called on combat enter per scheduler §6.8) |
+| One entity's scheduled event (search, lockpick, etc.) | `EventScheduler.cancel(event_id)` |
+| All of an entity's scheduled events | `EventScheduler.cancel_all_for_owner(owner_id, event_type)` |
+
+The dungeon UI does not advance time directly. It issues orders to the order manager + scheduler, drives the renderer movement layer, and reads back results from completion signals.
+
+### 9.4 Group orders
 
 When a control group is selected and the player issues an order:
-
-- **Move Here:** All group members path to the target area, maintaining marching order. The front unit paths to the target cell; others queue behind in formation.
-- **Search Here / Listen Here:** The front unit (position 1 in marching order) performs the action. Others hold position and wait. If the player wants a specific member to search, they must select that individual.
-- **Door interactions:** The front unit (or the most appropriate unit — thief for Pick Lock) performs the interaction. Others hold position.
-
----
-
-## 10. Data Requirements
-
-### 10.1 Data the Dungeon Map UI Consumes
-
-| Data | Source | Used For |
-|------|--------|----------|
-| `DungeonLayout` (grid, cells, rooms, doors, stairs) | `gdd-dungeon-layout.md` output | Rendering the map, determining valid context menu options |
-| `CellData.door_state` | DungeonLayout cells | Door option availability |
-| `CellData.door_detected` | DungeonLayout cells | Whether secret doors show as walls or doors |
-| `DoorData.type` and door material | DungeonLayout doors | Bash availability (wooden only), force/pick lock availability, visual style |
-| `CellData.passable` | DungeonLayout cells | Pathfinding, move validity |
-| `CellData.terrain_feature` | DungeonLayout cells | Visual rendering, action availability |
-| `CellData.blocks_los` | DungeonLayout cells | Line-of-sight and fog of war calculations |
-| Entity positions (Array of entity_id → Vector2i) | Game state | Where to draw entities, what options to show |
-| Entity data (class, level, HP, inventory, proficiencies) | CharacterData / shared types | What context menu options are available per entity |
-| Trap data (detected traps, trap type, trap location) | Dungeon stocking data | Disarm Trap option availability, trigger trap option |
-| Light sources (who has what lit, remaining duration) | Scheduler events + entity state | Visibility radius, torch/lantern menu options |
-| Control group assignments | In-memory Dictionary (group_number → Array[entity_id]) | Group bar display, group selection |
-| Marching order per group | In-memory Dictionary (group_number → Array[entity_id]) | Formation movement, first-contact determination |
-| Idle behavior per entity | In-memory Dictionary (entity_id → IdleBehavior enum) | Idle behavior execution |
-
-**Note on door material and evil doors:** The Bash Door action requires knowing whether a door is wooden, metal, or stone. The existing `DoorData.type` in `gdd-dungeon-layout.md` §11 tracks door *function* (arch, unlocked, locked, trapped, secret, portcullis) but not *material*. A `door_material` field (values: `"wood_simple"`, `"wood_standard"`, `"wood_reinforced"`, `"iron"`, `"stone"`) should be added to `DoorData` or to the cell's terrain_feature encoding. This determines: whether Bash is available, how many turns Bash takes (1 for simple wood, 3 for standard/reinforced wood, unavailable for iron/stone), and the visual style of the door. Additionally, an `is_evil: bool` field (default false) is needed on `DoorData` to drive the evil door auto-close scheduler event (§3.2.1).
-
-### 10.2 Data the Dungeon Map UI Produces / Modifies
-
-| Action | Data Change | Persisted? |
-|--------|------------|------------|
-| Move order | Inserts movement events into scheduler | Scheduler (in-memory) |
-| Open/close/force door | Modifies `CellData.door_state`, `CellData.passable`, `CellData.blocks_los` | Yes (SQLite via CampaignRepository) |
-| Search result (find secret door) | Modifies `CellData.door_detected` to true | Yes |
-| Search result (find trap) | Updates trap detection state | Yes |
-| Disarm trap | Removes or disables trap data on cell | Yes |
-| Spike door | Adds spike state to door cell | Yes |
-| Light torch/lantern | Inserts `light_source_expired` event, updates entity light state | Scheduler + entity state |
-| Control group assignment | Updates group dictionary | Per-dungeon session (not persisted to DB) |
-| Marching order change | Updates marching order dictionary | Per-dungeon session |
-| Idle behavior change | Updates idle behavior dictionary | Per-dungeon session |
-| Loot pickup/drop | Modifies entity inventory and cell item list | Yes (SQLite) |
-| Trade between characters | Modifies both entities' inventories | Yes (SQLite) |
-| Item use (potion, scroll) | Modifies inventory, applies effect | Yes (SQLite) |
-| Carry downed character | Adds carried entity as inventory item on carrier; recalculates encumbrance | Yes (SQLite) |
-| Drop carried character | Removes carried entity from carrier inventory; places entity in current cell | Yes (SQLite) |
-| Check Status / Mortal Wounds treatment | Consumes healing resource; resolves mortal wounds table; updates downed entity condition | Yes (SQLite) |
-| Bash door (destroy) | Sets door cell to permanently open/destroyed state; `passable = true`, `blocks_los = false`, door cannot be closed | Yes (SQLite) |
+- **Move Here:** `DungeonMapController.queue_group_move(target)` — leader paths via `MovementResolver.path_bfs_3d`; followers place via `FormationManager.compute_dungeon_positions_3d` against the active formation preset (collapse chain: full → double column → single column → stack on leader). Headless / no-PartyData fallback uses ring-scatter around the target.
+- **Search Here / Listen Here:** the front unit (marching-order position 1) performs the action. Others hold position. To use a specific member, the player selects that individual.
+- **Door interactions:** the most appropriate unit performs (thief for Pick Lock, axe-carrier for Bash, etc.). Others hold.
 
 ---
 
-## 11. Flagged Missing or Deferred Items
+## 10. Action durations and scheduler integration
 
-Items I've identified as potentially missing from the spec or deferred for future systems:
+The dungeon UI does not own action durations. It dispatches scheduled events with the durations specified in `gdd-realtime-scheduler.md` §6.5 and `acore_adventures_and_encounters.xml` / `ax_thief_skill_update.xml`.
 
-### 11.1 Present but Deferred
+Action lifecycle for any context-menu action that requires movement before the activity:
 
-- **Cast Spell:** Placeholder throughout. The full spell system interaction (spell selection UI, targeting, range checking, component consumption) is deferred until the spell system is built. The context menu shows the option and opens a "not yet implemented" placeholder.
-- **Tracking proficiency in Search:** Search Here includes a tracking roll trigger, but the tracking system is not yet built. Placeholder hook only.
-- **NPC Dialogue system:** Talk opens a dialogue — but the dialogue system itself is a separate GDD/build item. The context menu just triggers the entry point.
+1. **Order issued.** Player picks a context-menu option. UI dispatches via `DungeonContextMenuBuilder.build_menu` → action handler.
+2. **Path computed.** `MovementResolver.path_bfs_3d(start, near-target, "ground", max_steps, max_level_jumps, "explore")`.
+3. **Renderer animation.** `renderer.start_movement_animation(entity_id, path, cells_per_round)` begins per-cell tween chain at game-clock-scaled duration.
+4. **Per-cell arrival.** `movement_cell_reached(entity_id, cell)` fires. Handler updates `voxel_map.entity_positions`, runs occupancy/passability/encounter-proximity checks, starts next tween — or stops the chain on failure.
+5. **Final cell reached.** Handler dispatches the queued action: `EventScheduler.schedule_at(fire_time, action_event_type, entity_id, data, priority)`.
+6. **Activity resolves.** Handler returns its result; SchedulerLoop applies follow-up events, auto-pause, or state transitions per scheduler §11.2.
 
-### 11.2 Additions Worth Considering
+Per-action movement → scheduled-event mapping:
 
-- **Climb Walls (thief):** Thieves and characters with Climbing proficiency can climb walls to reach elevated areas (balconies, ledges). This requires an elevation-aware context menu option: right-click an elevated cell → "Climb Here" (thief climb walls throw, 1 round per 10' of height). Deferred until elevation gameplay is implemented in the dungeon layer. Placeholder hook recommended.
-- **Rest / Short Rest:** The party may want to rest inside the dungeon. Add a self-action **Rest** that consumes time (1 turn for a short break, or hours for actual sleep). Risk: wandering monster checks continue during rest. This is a party-level action, not individual.
-- **Formation selection per group:** Formation options (column, line, wedge, circle) for groups in open rooms are part of the intended design and should be present — not deferred. Column is the default and only option in corridors. In rooms wide enough to support it, line and wedge become available. The group options panel (§5.2) already specifies a formation submenu. If formation code exists in the codebase but isn't exposed in the UI, it needs to be wired up. If it doesn't exist yet, it should be built with the group management system.
-
-### 11.3 Edge Cases to Handle
-
-- **Selecting an entity in a Hidden cell:** Not possible — entities in hidden cells are invisible. The player can't left-click what they can't see.
-- **Right-clicking while the game is unpaused:** The context menu auto-pauses the game when it opens, and unpauses (at the current speed setting) when it closes or an action is selected. This prevents the world from ticking while the player is reading options.
-- **Multiple entities want to use the same door simultaneously:** Queue them. The first entity in the group's marching order interacts with the door; others wait in adjacent cells. Once the door is open, they pass through in order, subject to the cell occupancy rule (`gdd-realtime-scheduler.md` §6.4): at most two living non-incapacitated units may share any cell at any tick boundary, and at most one at end-of-tick. Traffic through a doorway naturally serializes — the third unit waits one tick at the cell before the door, then advances when the first has cleared. The simulator handles this automatically; no explicit "queue" data structure is needed at the UI level.
-- **Right-clicking a destination cell already occupied by two units:** The Move Here order succeeds at the order-issuance level, but the simulator may stop the moving unit at an adjacent cell rather than entering the occupied destination. The notification log reports: `"<Name>: Move complete — destination occupied, stopped adjacent."` This is the same "destination unreachable" pattern from §3.1.
-- **Entity dies during an action:** If an entity dies (HP reaches 0) while performing a queued action (e.g., disarming a trap and it triggers), the action is abandoned. The entity enters the mortal wounds flow. The action queue is cleared.
-- **Right-clicking while a context menu is already open:** Closes the old menu and opens a new one at the new click position.
-- **Bash vs. Force — distinct actions, distinct rules:** Force Door is a strength throw that unsticks a stuck door without destroying it. Bash Door destroys any wooden door regardless of its state (closed, stuck, locked) but takes longer and permanently removes the door. Both may be available on the same stuck wooden door — let the player choose. Force is faster (1 round) but may fail; Bash is guaranteed but takes 1-3 turns and is noisy. Pick Lock and Unlock are locked-door-only options and never appear on stuck or ordinary closed doors.
-
----
-
-## 12. Build Guidance for Claude Code
-
-### 12.1 What to Build
-
-1. **Context menu scene** — a Godot PopupMenu or custom PanelContainer that appears at right-click position, populated dynamically from cell and entity data. Must be its own scene for reuse.
-2. **Context menu builder** — a function that takes (selected_entity, target_cell, dungeon_data) and returns a list of menu options. Each option has: label, icon (optional), enabled/disabled state, tooltip for disabled items, and a callback or action identifier.
-3. **Selection system** — left-click selection, shift-click multi-select, control group hotkeys. Stores current selection as an Array of entity IDs.
-4. **Control group bar scene** — the horizontal bar at the bottom showing group slots.
-5. **Group options panel** — the right-click popup for group configuration (marching order, movement mode, idle behavior).
-6. **Unit info panel scene** — the detail view for the selected entity.
-7. **Loot panel scene** — dual-pane inventory view for looting and trading.
-8. **Notification log** — scrolling text panel with categorized, colored entries.
-9. **Idle behavior system** — per-entity behavior state machine that ticks each scheduler cycle when the entity has no active orders.
-
-### 12.2 What to Rework
-
-- **Any existing dungeon UI stubs:** Remove or gut them. This document is the new authority. If code exists for a different interaction model (e.g., click-to-move with no context menu, or turn-based action panels), it should be replaced.
-- **Any existing data stubs that don't match §10:** Ensure CellData has all required fields (`door_state`, `door_detected`, `passable`, `blocks_los`, `terrain_feature`). The DungeonLayout schema from `gdd-dungeon-layout.md` §11 already defines these — verify they're implemented as specified.
-- **Fog of war:** If an existing fog system exists, verify it matches §6 (three-state: Hidden/Explored/Visible, room-scoped reveal). Rework if it uses a different model.
-
-### 12.3 What Stays the Same
-
-- **Voxel grid geometry:** `gdd-voxel-tactical-architecture.md` (5' cube cells, `Vector3i(col, row, level)` coordinates, diamond horizontal basis). The UI reads positions and renders against this; it does not modify the spatial substrate.
-- **DungeonLayout / VoxelMapData data model:** `gdd-dungeon-layout.md` §11 and `gdd-voxel-tactical-architecture.md` §6–§7. No structural changes. The UI *reads* this data; it doesn't change the schema.
-- **Pathfinding:** Hand-rolled BFS on `VoxelGrid.get_neighbors_3d()` via `MovementResolver.path_bfs_3d()` for short paths; `AStar3D` for long paths (per `gdd-voxel-tactical-architecture.md` §17.2). Mode `"explore"` permits closed unlocked doors (the executor pauses to open them); mode `"combat"` rejects all doors except open. The pathfinding implementation is not this document's concern — the UI just consumes the path.
-- **EventScheduler and dungeon movement layer:** `gdd-realtime-scheduler.md`. The UI creates scheduled events for activities (via `EventScheduler.schedule()` / `schedule_at()` / `schedule_after()`) and issues movement orders through the order manager → renderer tween chain (via `renderer.start_movement_animation(entity_id, path, cells_per_round)`). Neither the scheduler nor the renderer movement layer is modified by UI work.
-- **Timekeeping autoload:** No changes. Actions that consume time (search, pick lock, etc.) call the scheduler, which advances Timekeeping.
-
-### 12.4 Integration with the Event Scheduler and Dungeon Movement Layer
-
-Every player action from the context menu produces one of two kinds of engine call: a **renderer-tween move order** (continuous visual motion on the voxel grid) and/or a **scheduled event** (discrete activity with a duration). Movement is NOT pre-scheduled per cell — it is renderer-tween state with cell-arrival signals updating logical positions (per `gdd-realtime-scheduler.md` §3).
-
-Action lifecycle for any action that requires movement before the activity:
-
-1. **Order issued.** The UI registers the player's intent with `DungeonOrderManager.add_order(entity_id, order_type, target, ...)`.
-2. **Path computed.** The dungeon explore state / handlers compute a BFS path via `MovementResolver.path_bfs_3d()` in `"explore"` mode.
-3. **Renderer animation started.** `renderer.start_movement_animation(entity_id, path, cells_per_round)` begins the per-cell tween chain at the appropriate game-clock-scaled duration.
-4. **Per-cell arrival.** As each tween finishes, `movement_cell_reached(entity_id, cell)` fires. The handler updates `voxel_map.entity_positions`, runs occupancy/encounter-proximity/passive-detection checks, and starts the next tween — or stops the chain if a check failed.
-5. **Final cell reached.** When the path completes, the handler dispatches the queued action: `EventScheduler.schedule_at(fire_time, "<action_event>", entity_id, data, priority)`.
-6. **Activity resolves at `fire_time`.** The handler returns its result; the SchedulerLoop applies follow-up events, auto-pause, or state transitions per §11.2 of `gdd-realtime-scheduler.md`.
-
-If the unit cannot reach the target (path blocked at runtime, destination became occupied, etc.), the cell-arrival handler cancels the animation via `renderer.cancel_movement_animation(entity_id)` and the queued action is dropped. The UI logs the failure per §3.1.
-
-| Player Action | Movement | Scheduled Event(s) on Arrival |
-|--------------|----------|-------------------------------|
-| Move Here | path → target cell | (none — movement is the entire action) |
+| Action | Movement | Scheduled event(s) on arrival |
+|---|---|---|
+| Move Here | path → target cell | (none — movement is the activity) |
 | Search Here | path → target cell | `dungeon_search_complete` at +1 turn |
 | Listen Here | path → target cell | `dungeon_listen_complete` at +1 round |
-| Force Door | path → cell adjacent to door | `force_door_attempt` at +1 round (repeat on failure) |
-| Pick Lock | path → cell adjacent to door | `pick_lock_complete` at +1 turn (or +1 round with rapid attempt) |
-| Unlock (key) | path → cell adjacent to door | immediate state change on arrival |
-| Bash Door | path → cell adjacent to door | `bash_door_complete` at +1 or +3 turns based on door material |
-| Spike Shut / Wedge Open | path → cell adjacent to door | `spike_complete` at +1 round |
-| Stealth Move | path → target cell, movement mode set to stealth (Move Silently throw at start) | `hide_attempt` on arrival |
-| Hide | (none — instantaneous) | `hide_attempt` immediate for all capable group members |
-| Light Torch | (none — instantaneous) | Immediate state change + `light_source_expired` at +6 turns |
-| Talk | path → cell adjacent to NPC | `dialogue_start` immediate on arrival |
-| Check Status | path → cell adjacent to downed unit | `mortal_wounds_check` immediate, opens modal if resources available |
-| Carry | path → cell adjacent to downed unit | immediate: downed entity becomes inventory item on carrier, encumbrance recalculated |
-| Loot (downed) | path → cell adjacent to downed unit | immediate: opens loot panel (same as §3.4) |
-| *(System)* Evil door auto-close | (n/a) | `evil_door_close` fires on every turn boundary (60-round tick) for all open evil doors not wedged/held |
+| Force Door | path → adjacent cell | `force_door_attempt` at +1 round (repeats on failure) |
+| Pick Lock | path → adjacent cell | `pick_lock_complete` at +1 turn (or +1 round at -10) |
+| Unlock (key) | path → adjacent cell | Immediate state change on arrival |
+| Bash Door | path → adjacent cell | `bash_door_complete` at +1 turn (house rule, all wooden doors) |
+| Spike Shut / Wedge Open / Remove Spike / Remove Wedge | path → adjacent cell | `spike_complete` / `wedge_complete` / `remove_spike_complete` / `remove_wedge_complete` at +1 round |
+| Stealth Move | path → target cell with mode "stealth" (Move Silently throw at start) | `hide_attempt` on arrival |
+| Hide (self) | (none — instantaneous) | `hide_attempt` immediate for all capable group members |
+| Light Torch / Lantern | (none) | Immediate state change + `light_source_expired` at +6 / +24 turns |
+| Extinguish Light | (none) | Immediate state change + cancel the pending `light_source_expired` |
+| Talk | path → adjacent NPC cell | `dialogue_start` immediate on arrival |
+| Check Status (downed) | path → adjacent cell | `mortal_wounds_check` immediate; opens treatment modal if resources available |
+| Carry (downed) | path → adjacent cell | Immediate: downed becomes inventory item on carrier; encumbrance recalculated |
+| Loot (downed or pile) | path → adjacent cell | Immediate: opens Inventory tab scoped to the two carriers |
+| Use Lever | path → adjacent cell | `lever_actuated` immediate; effect resolves via wiring |
+| *(System)* Evil door auto-close | (n/a — system event) | `evil_door_close` fires on each turn boundary for all open evil doors not held / wedged / spiked / destroyed |
 
-The UI never directly advances time or modifies game state — it issues movement orders to the renderer-driven movement layer and scheduled events to the EventScheduler, and reads back results from their completion signals.
+---
+
+## 11. Camera controls
+
+### 11.1 Pan and zoom
+
+| Input | Action |
+|---|---|
+| Arrow keys / WASD | Pan camera |
+| Mouse-to-edge (40px margin) | Pan in that direction |
+| Middle mouse drag | Free pan (clamped to explored bounds + 1 per §7.7) |
+| Mouse wheel | Zoom |
+| Home | Recenter on selected entity (or party leader) and reset zoom |
+
+### 11.2 Level controls (multi-level)
+
+| Input | Action |
+|---|---|
+| PgUp | Focus level + 1 |
+| PgDn | Focus level - 1 |
+| Click LevelStripWidget row | Jump focus to that level |
+| Click SessionStatusBar portrait | Set active entity AND jump focus to their level |
+| Shift+Home | Jump to next party member |
+
+### 11.3 Camera follow
+
+Optional toggle (default: on for single-entity selection, off for multi-selection). The camera tracks the selected entity. Manual pan breaks follow; Home or new selection re-engages.
+
+### 11.4 Minimap
+
+The minimap shows currently-visible cells on the focus level only — a top-down schematic of what party members can see right now. Multi-level minimap is out of scope for v1; the Level Strip Widget covers the multi-level navigation case.
+
+**Automapping (Mapping proficiency).** If at least one party member has the Mapping proficiency AND a journal/parchment AND ink in inventory, the minimap retains explored cells on the focus level after they leave LOS, but only for cells explored in **exploration movement mode** — combat speed and running don't produce automap data. Without a mapper, the minimap is live-only.
+
+**Minimap interaction.** Click jumps the main camera to that location (automapped or currently-visible cells only). Enemies are not shown on the minimap.
+
+---
+
+## 12. Cross-surface integration
+
+### 12.1 Notebook activation seam
+
+Clicking an entity in the dungeon view sets the global notebook active entity via `EventBus.notebook_active_entity_requested(entity_id)`. Notebook does not auto-open; the player invokes it explicitly (C key, SessionStatusBar portrait, etc.). When the notebook IS open while the player clicks an entity in the dungeon view (rare during dungeon exploration, since notebook pauses the world), the Character tab refreshes to the new entity.
+
+### 12.2 Inventory tab routes loot and trade
+
+Trade between adjacent party members and Loot from a downed character or floor pile open the Inventory tab (notebook tab #2) scoped to the two carriers. The Inventory tab handles the carrier-aware drag-drop UX. The dungeon UI does not host its own dual-pane modal.
+
+### 12.3 Unified Log routes notifications
+
+Every dungeon-context notification (movement complete, action result, encounter trigger, resource depletion, etc.) routes to `EventBus` signals consumed by the Unified Log per `gdd-unified-log-panel.md` v2. Entries appear in the appropriate filter tab (All / Combat / Rolls / Narration). The dungeon UI does not maintain its own scrolling text panel.
+
+Toast-class notifications (transient on-screen alerts) continue to use `NotificationDisplay` per `gdd-ui-architecture.md` §2.7.
+
+### 12.4 SessionStatusBar handles at-a-glance
+
+Portraits with HP/encumbrance, location label, time/date, clock-speed cluster, party encumbrance band, light source indicator, current notification — all live in the SessionStatusBar three-zone bar per `gdd-ui-architecture.md` §3.8. The dungeon UI does not duplicate any of these.
+
+### 12.5 Party tab handles formation
+
+Marching order, formation presets, party-state summary — all in `gdd-party-tab.md`. The dungeon UI consumes the active formation but does not surface configuration UI.
+
+---
+
+## 13. Build status and remaining work
+
+Current implementation status, derived from `engine/subsystems/exploration/*` and `current_state_ui_audit.md` (2026-04-27):
+
+### 13.1 Working
+
+- `DungeonContextMenuBuilder.build_menu` — pure-logic menu builder; matches §4 structure.
+- `DungeonOrderManager` — single-slot order queue per §9.1.
+- `DungeonMapController` — group/individual move queuing, door interaction with adjacency check, fog updates, claim-based collision in `_execute_orders_voxel`.
+- `MovementResolver.path_bfs_3d` — stair-aware level-spanning pathfinding.
+- `VoxelMapData` / `VoxelGrid` — 3D coordinate substrate, adjacency predicate.
+- `DungeonLightManager` — torch (6 turns) / lantern (24 turns) lifecycle + auto-relight + tinderbox/oil tracking.
+- `FogRevealEngine.compute_visible_cells` — light + LOS fog computation.
+- `VisibilityManager`, `LevelStripWidget`, `OffscreenPartyIndicators` — multi-level UX shipping.
+- `DungeonHUD` CanvasLayer with TooltipPanel + ContextMenuLayer.
+- Door tooling rules (axe / iron spikes / wooden stakes / hammers / mallet / crowbar) per §4.2.1.
+- Pick Lock per-character per-lock failure memory in `DungeonSessionState`.
+- Stair direction-suffix inference (`stairs_up_<DIR>` / `stairs_down_<DIR>`) and explicit `stair_target_*` overrides.
+- Transition cell distinction (`is_transition_cell`) for Exit Dungeon vs. Ascend.
+
+### 13.2 Stubbed or unwired
+
+| Item | Status | Resolution |
+|---|---|---|
+| **L-1 Loot / Pick Up All visibility** | `cell.has_ground_items` hard-coded `false` (`dungeon_context_menu_builder.gd:53`) | Wire `LocationCacheManager.has_ground_items(cell)`; replace TODO with live query. |
+| **L-2 Trade adjacency check** | Surfaces unconditionally on party-member targets | Add `VoxelGrid.is_adjacent(selected_pos, target_pos)` gate in `_build_entity_options`; tooltip when greyed: "Move adjacent to trade." |
+| **L-3 Heal (NPC / party / self / downed)** | All `enabled=false` placeholder | Wire when healing system lands (proficiency throw + spell dispatch). |
+| **L-4 Cast Spell (any context)** | All `enabled=false` placeholder | Wire when spell system lands. |
+| **L-5 Talk dialogue surface** | Option surfaces; no dialogue system to dispatch to | Wire when dialogue system lands. Until then, `dialogue_start` event resolves to a placeholder log entry. |
+| **L-6 Pick Pockets** | Not surfaced | Wire when thief skill suite expands. |
+| **L-7 Heal NPC option** | Not surfaced (was in v1) | Wire alongside L-3. |
+| **L-8 Trigger Trap (Deliberate) tool gating** | Surfaces unconditionally; should require 10-foot pole or thrown object | Add inventory check; grey when no safe-trigger tool. |
+| **L-9 Talk hostility / intelligence gating** | Surfaces unconditionally on any non-party entity | Add `entity.can_communicate` check; grey for non-intelligent creatures. |
+| **L-10 Elf casual inspection** | TODO at `dungeon_handlers.gd:642` (also flagged in `gdd-realtime-scheduler.md` §6.6) | Implement per scheduler §6.6 spec: 14+ on 1d20, exploration mode only, 3D Chebyshev ≤ 2 occlusion-bounded trigger volume, one passive check per elf per door. |
+| **L-11 Per-level wandering monster checks** | Single-check-per-party (scheduler §6.7) | Straightforward refactor of `_handle_encounter_check`. |
+| **L-12 Climb action** | Not present | Add when elevation-aware gameplay needs it: right-click an elevated cell → "Climb Here" (thief Climb Walls throw, 1 round per 10' of height). |
+| **L-13 Rest / Short Rest** | Not present | Party-level action (NOT per-entity). Consumes time; wandering monster checks continue. Defer to camp/rest GDD when written. |
+| **L-14 Formation-mode in rooms** | Implementation status uncertain | Verify whether `FormationManager` exposes per-group formation modes (column / line / wedge / circle) and wire to the Group Options Panel. |
+
+### 13.3 Phase placement
+
+Per `gdd-ui-architecture.md` §10:
+
+- **Phase α — Foundations.** UiInputController integration for context menus; Theme.tres migration for menu styling. Already mostly landed.
+- **Phase β — Notebook scaffolding.** Wire trade/loot menu options to `EventBus.notebook_open_requested(Inventory)` + `notebook_active_entity_requested(target_id)`. (L-2 wiring depends on Phase β.)
+- **Phase γ — Tab migration.** Inventory tab fully replaces standalone loot/trade modals once `gdd-inventory-tab.md` Phase γ lands.
+- **Phase H+ (gameplay).** L-3 / L-4 / L-5 / L-6 / L-7 wire as the underlying systems (healing, spells, dialogue, thief skills) ship.
+
+---
+
+## 14. Edge cases
+
+- **Selecting an entity in a Hidden cell.** Not possible — entities in hidden cells are invisible to selection.
+- **Right-clicking while game is unpaused.** Context menu auto-pauses on open; resumes at the previously-set speed on selection or dismissal.
+- **Multiple entities through a single doorway.** Resolves naturally via claim-based occupancy (scheduler §6.4): first entity claims the door cell, others convert to `wait` for one tick, then advance. No explicit queue data structure.
+- **Right-clicking a destination already occupied.** Order issuance succeeds; `_execute_orders_voxel` collision pass converts to `wait`. Log: `"<Name>: Move complete — destination occupied, stopped adjacent."`
+- **Entity dies during a queued action.** Action abandoned. Entity enters Mortal Wounds flow. Order cleared.
+- **Right-clicking while a context menu is open.** Old menu closes, new menu opens at new position.
+- **Bash vs. Force on a stuck wooden door.** Both surface. Force = 1 round STR throw, doesn't destroy. Bash = 1 turn (house rule) + axe required, destroys permanently. Player choice.
+- **Combat on a staircase.** 3D Chebyshev ≤ 1 handles cross-level engagement automatically (voxel arch §16.9). Two combatants on adjacent stair cells at different levels are engaged.
+- **Cross-floor inventory transfer.** Forbidden — adjacency rule per voxel arch §5. Transfers require carriers to be at Chebyshev ≤ 1 in 3D, including level.
+- **Carrying a downed character into combat.** Carried character does NOT participate. If carrier is also downed, carried entity drops in the same cell.
+- **Node graph keybinds in context.** During `DUNGEON_EXPLORE`, number keys 1-9 are control groups; clock-speed via SessionStatusBar buttons or Space (toggle pause). During `MAIN_MENU` / creation flows, none of these keybinds are active.
+
+---
+
+## 15. Data dependencies
+
+The dungeon UI consumes (does not produce) the following from upstream subsystems. Reproduced here for cross-reference; authoritative definitions live in the cited GDDs.
+
+| Data | Source | Used For |
+|---|---|---|
+| `VoxelMapData` cells, doors, fog, entity positions | `gdd-voxel-tactical-architecture.md` + `gdd-dungeon-layout.md` | Menu generation, rendering, pathfinding |
+| `DoorData.door_material`, `is_evil`, `door_state`, `door_type`, `door_detected` | `gdd-dungeon-layout.md` §11 | Door option availability, evil door auto-close |
+| Entity data (class, level, HP, inventory, proficiencies, darkvision) | `CharacterData` | Per-entity option gating |
+| `PartyData` (members, formation, marching order) | `gdd-party-tab.md` v1.4 | Formation-aware group movement, slowest-member speed |
+| Active light sources + remaining duration | `DungeonLightManager` | Visibility radius, torch/lantern menu options |
+| Trap data (detected, disarmed, trap type) | Dungeon stocking | Disarm/Trigger option availability |
+| Control group assignments + idle behaviors + spike/wedge state + pick-lock failure memory | `DungeonSessionState` | Group bar, idle execution, door interactions |
+
+The dungeon UI produces (writes back to upstream):
+
+| Action | Data change | Persistence |
+|---|---|---|
+| Move order | Insert `move` order in `DungeonOrderManager` → consumed on `execute_orders` | Per-tick scheduler state |
+| Door interaction (open/close/force/destroy) | `VoxelCell.door_state` | SQLite via CampaignRepository |
+| Search result (find secret door, find trap) | `door_detected = true` / trap detected flag | SQLite |
+| Disarm trap | Trap disabled flag | SQLite |
+| Spike / wedge / remove | `DungeonSessionState` | Per-dungeon-visit only |
+| Light source state | Per-entity light state in `DungeonLightManager` | SQLite (entity inventory + active source) |
+| Control group assignment | `DungeonSessionState` group dictionary | Per-dungeon-visit only |
+| Idle behavior change | `DungeonSessionState` idle dictionary | Per-dungeon-visit only |
+| Loot pickup / drop | Entity inventory + cell item list | SQLite (when loot is wired per L-1) |
+| Carry downed character | Carried entity becomes inventory item; encumbrance recalc | SQLite |
+| Drop carried character | Removes from carrier inventory; places in current cell | SQLite |
+| Bash door (destroyed state) | `door_state = "destroyed"`, `passable = true`, `blocks_los = false` permanently | SQLite |
+
+---
+
+## 16. Open questions
+
+- **O-DM-1.** ~~Where does marching order live — dungeon UI or Party tab?~~ **Resolved (v2):** Party tab Formation sub-tab exclusively. Dungeon UI consumes only.
+- **O-DM-2.** ~~Should the per-selection unit info panel duplicate Character tab content?~~ **Resolved (v2):** No. Information lives in SessionStatusBar (at-a-glance) and Character tab (full sheet). Dungeon UI does not host a duplicate panel.
+- **O-DM-3.** ~~Should Trade and Loot have their own dual-pane modal?~~ **Resolved (v2):** No. Both route through the Inventory tab (notebook tab #2) once Phase γ lands.
+- **O-DM-4.** ~~Standalone notification log vs. Unified Log?~~ **Resolved (v2):** Unified Log v2 is canonical. Dungeon UI emits EventBus signals; Unified Log subscribes.
+- **O-DM-5.** Trade-adjacency wiring (L-2). Default: gate Trade option on `VoxelGrid.is_adjacent`. Confirm behavior when the player wants to "send" an item across the party — does the Inventory tab support multi-hop transfers when carriers aren't adjacent, or does the player have to physically rearrange? Default proposal: **no multi-hop**; carriers must be adjacent. Aligns with verisimilitude goal in voxel arch §5.
+- **O-DM-6.** Loot pile carrier representation (L-1). When items drop on the floor (Drop Item, monster death loot, container open), how are they represented? Default proposal: an invisible "floor carrier" entity per cell, registered in `LocationCacheManager`, with infinite capacity. Adjacency rules apply identically to player carriers. Confirm before wiring.
+- **O-DM-7.** Trigger Trap tool gating (L-8). Default proposal: any character carrying a `pole_10ft`, `crossbow_*`, `bow_*`, or any thrown weapon (rocks, daggers) qualifies for safe-trigger. Greyed otherwise.
+- **O-DM-8.** Talk gating (L-9). Default proposal: gate on `entity.intelligence >= 3` (animal-level), with a separate gate for hostile-but-intelligent creatures requiring a Diplomacy or Intimidate proficiency to even surface the option. Confirm.
+- **O-DM-9.** Number-key collision in `DUNGEON_EXPLORE` (clock-speed vs. control groups). Current resolution: control-group recall wins; clock-speed in dungeon context via mouse + Space. Confirm this stands or specify F1-F4 fallback.
+- **O-DM-10.** Group Options Panel formation modes (L-14). Should column / line / wedge / circle be exposed here, OR is formation a per-party concern that lives in the Party tab Formation sub-tab? Default proposal: **per-party in Party tab**; Group Options Panel does not duplicate. The control group is an RTS selection, not a formation unit. Confirm.
+
+---
+
+## 17. Build guidance for Claude Code
+
+### 17.1 Already-shipped components to NOT rebuild
+
+These are the canonical implementations. New work integrates with them rather than replacing:
+- `DungeonContextMenuBuilder` (pure-logic option builder — accept it as the contract)
+- `DungeonOrderManager` (single-slot order queue)
+- `DungeonMapController` (move queuing, door interaction, fog updates, claim-based collision)
+- `MovementResolver` (pathfinding)
+- `VoxelMapData` / `VoxelGrid` / `VoxelCell` (spatial substrate)
+- `DungeonLightManager` (light source lifecycle)
+- `FogRevealEngine` (fog computation)
+- `VisibilityManager`, `LevelStripWidget`, `OffscreenPartyIndicators` (multi-level UX)
+- `DungeonSessionState` (per-visit state)
+
+### 17.2 New work for v2 alignment
+
+1. **Wire L-1 (loot visibility).** Build floor-carrier registration in `LocationCacheManager`; expose `has_ground_items(cell) -> bool`; replace the TODO at `dungeon_context_menu_builder.gd:53`.
+2. **Wire L-2 (trade adjacency).** Add `VoxelGrid.is_adjacent(selected_pos, target_pos)` gate to `_build_entity_options` Trade branch. Disabled-tooltip: "Move adjacent to trade."
+3. **Wire L-8 (Trigger Trap tool gating).** Inventory check for `pole_10ft` or thrown-weapon items.
+4. **Wire L-9 (Talk gating).** Check `entity.intelligence` and `entity.hostility` flags.
+5. **Wire context-menu trade/loot opens to Inventory tab.** When Trade or Loot is dispatched, fire `EventBus.notebook_open_requested("Inventory")` + `notebook_active_entity_requested(target_id)` per `gdd-management-notebook.md` §8.4.
+6. **Migrate notification routing.** Audit existing dungeon-context log emissions; ensure all route to `EventBus` signals consumed by Unified Log per `gdd-unified-log-panel.md` §3. Deprecate any direct writes to legacy `GameLogPanel`.
+7. **Implement L-10 (elf casual inspection).** Per `gdd-realtime-scheduler.md` §6.6 spec.
+8. **Refactor L-11 (per-level wandering checks).** Per scheduler §6.7.
+
+### 17.3 What to NOT touch
+
+- The pure-logic menu builder's input contract: `(selected_ids, target_cell, map, party_data, session_state, light_manager) -> Array[Dictionary]`. Stable API.
+- The per-visit nature of `DungeonSessionState`. Control groups, idle behaviors, spike/wedge, and pick-lock-failure memory are dungeon-visit-scoped, not campaign-persistent.
+- The renderer-tween movement layer and its `movement_cell_reached` signal — that's the single mechanical seam between visual and logical state per scheduler §3.
+
+---
+
+## 18. Revision history
+
+- **v2, 2026-04-30 — Architecture refresh.** Substantial rewrite to align with the management-notebook architecture, voxel-tactical migration, Unified Log v2, and the settled claim-based occupancy model.
+  - **Cut:** Standalone Unit Info Panel (§5.1 v1 — now SessionStatusBar + Character tab); Group Options Panel marching-order section (now Party tab Formation sub-tab); Marching Order Behavior section (same); standalone Notification Log (now Unified Log v2); standalone Loot Panel and Trade dual-pane modal (now Inventory tab).
+  - **Updated:** Spatial model from 2D (`Vector2i`) to 3D (`Vector3i`) throughout; adjacency to 3D Chebyshev ≤ 1; cell occupancy to claim-based per scheduler §6.4; door tooling to match code (axe required for bash, iron-spikes/wooden-stakes + hammer for spike/wedge, crowbar interaction with remove); bash duration to house-rule 1 turn for all wooden doors per `_bash_door_turns()`; pick-lock to per-character per-lock failure memory; open-locks classes to thief-only per `CLASSES_WITH_OPEN_LOCKS`.
+  - **Added:** Multi-level UX section (focus level, Level Strip Widget, dither/dim/hide, auto-focus on cross-level events, multi-level fog, click-confirm on non-focused levels). Cross-surface integration section (notebook/inventory/log/party-tab/SessionStatusBar handoff). Build status section enumerating shipped components and remaining wiring (L-1 through L-14). Phase α/β/γ slotting.
+  - **Reframed:** Scope explicitly narrowed to dungeon-context interaction patterns. All structural skeleton handed off to canonical owners with one-line pointers.
+  - **Stale references fixed:** `gdd-realtime-scheduler.md §5.8` → §6.8; `DungeonOrderManager` confirmed real (was queried as undefined symbol); section-numbering bugs (§3.3.5 after §3.3.3, §3.4 after §3.5) repaired in the new structure.
+- **v1, 2026-04-14 (approx).** Original draft. Owned a wider scope including unit info panel, notification log, marching order, dual-pane loot/trade modals, single-level fog and camera. Predated voxel-tactical migration, management notebook architecture, and Unified Log v2. Flagged for rewrite per `gdd-ui-architecture.md` §9.

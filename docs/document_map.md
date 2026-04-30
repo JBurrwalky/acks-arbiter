@@ -149,30 +149,89 @@ Axioms (ax_) > HFH excerpted > Player's Companion (pc_) > Lairs & Encounters (le
 
 All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints sections within each.
 
+### World, Setting & Environment Generation
+
 | File | Contents | Status | Key Dependencies |
 |------|----------|--------|------------------|
 | `gdd-setting-generation.md` | Campaign setting generation: 24-mile hex map, geography, climate, politics, demographics | Draft | `acore-setting-construction-rules`, `acore_axioms_strongholds_and_domains`, `ax_domains_of_chaos`, `gdd-terrain-system`, `gdd-dungeon-layout` |
-| `gdd-terrain-system.md` | Terrain tag layering (elevation + ground cover), wilderness hex generation/subdivision, encounter table mapping, and movement costs; supersedes the earlier `gdd-terrain-wilderness.md` label | Draft | `acore_adventures_and_encounters`, `acore-monster-stocking-rules`, `acore-setting-construction-rules` |
+| `gdd-terrain-system.md` | Terrain tag layering (elevation + ground cover), wilderness hex generation/subdivision, encounter table mapping, and movement costs | Draft | `acore_adventures_and_encounters`, `acore-monster-stocking-rules`, `acore-setting-construction-rules` |
 | `gdd-calendar-seasons.md` | Calendar seasonal layer: 4×91-day seasons, solstice/equinox dates, hemisphere inversion model, 7-day transition blending | Draft | `gdd-setting-generation` (hemisphere parameter) |
-| `gdd-weather-generation.md` | Deterministic weather simulation: 6-channel per-hex daily state (temperature, precipitation, cloud, wind, visibility, humidity), dawn/dusk calculation, DaW weather mapping | Draft | `daw_vagaries`, `acore_adventures_and_encounters`, `gdd-calendar-seasons`, `gdd-setting-generation`, `gdd-terrain-system`, `gdd-combat-map-generation` |
+| `gdd-weather-generation.md` | Deterministic weather simulation: 6-channel per-hex daily state, dawn/dusk calculation, DaW weather mapping | Draft | `daw_vagaries`, `acore_adventures_and_encounters`, `gdd-calendar-seasons`, `gdd-setting-generation`, `gdd-terrain-system`, `gdd-combat-map-generation` |
 | `gdd-poi-generation.md` | Wilderness POI generation: type taxonomy (7 archetypes), terrain affinity, placement budget, mechanical skeleton, rumor/quest hook seeding | Draft | `acore-setting-construction-rules`, `le_wilderness_lair_rules`, `acore_adventures_and_encounters`, `gdd-setting-generation`, `gdd-terrain-system`, `gdd-cultural-religious-generation`, `gdd-npc-personality`, `gdd-quest-rumor-system` |
+| `gdd-name-generation.md` | Cultural name-bank schema and prompt structure for NPCs, settlements, realms, and geography | Draft | `gdd-setting-generation`, `gdd-settlement-layout`, `gdd-npc-personality` |
+| `gdd-cultural-religious-generation.md` | Culture and religion data structures/generation — feeds NPC, settlement, domain, cleric | Draft | `acore_core_classes`, `acore-setting-construction-rules`, `acore_axioms_strongholds_and_domains`, `gdd-setting-generation`, `gdd-npc-personality`, `gdd-settlement-layout`, `gdd-name-generation` |
+
+### Settlement, Dungeon, & Stronghold Generation
+
+| File | Contents | Status | Key Dependencies |
+|------|----------|--------|------------------|
 | `gdd-settlement-layout.md` | Settlement spatial generation: streets, districts, POIs, walls by population/market class | Draft | `acore-setting-construction-rules`, `gdd-terrain-system`, `gdd-setting-generation` |
 | `gdd-settlement-stocking.md` | On-demand settlement content generation: buildings, occupants, encounters, commerce, and undercity hazards | Draft | `acore_axioms_strongholds_and_domains`, `acore_equipment`, `gdd-settlement-layout`, `gdd-npc-personality`, `gdd-cultural-religious-generation`, `gdd-name-generation`, `gdd-dungeon-factions` |
 | `gdd-dungeon-layout.md` | Dungeon map generation: rooms, corridors, doors, stairs — data structure for stocking | Draft | `acore-setting-construction-rules` |
 | `gdd-dungeon-factions.md` | Faction identification and territorial grouping in dungeons, shared alert state | Draft | `acore-setting-construction-rules`, `le_monster_characteristics_stats`, `acore_monster_catalog_*`, `gdd-dungeon-layout`, `gdd-npc-personality` |
 | `gdd-trap-generation.md` | Parametric trap generation: type, trigger, effect, detection/disarm difficulty | Draft | `acore-setting-construction-rules`, `acore_combat_and_wounds`, `acore_adventures_and_encounters`, `gdd-dungeon-layout` |
-| `gdd-stronghold-construction.md` | Stronghold design, commissioning, cost calculation, worker hiring, monthly progress | Draft | `daw_equipment_and_construction`, `acore_axioms_strongholds_and_domains`, `gdd-settlement-layout`, `gdd-dungeon-layout` |
+| `gdd-stronghold-construction.md` | Stronghold design, commissioning, cost calculation, worker hiring, monthly progress. **§13 Q5/Q6 added 2026-04-30: stronghold-type classification during build, type-conversion** (cross-doc obligation from `gdd-domain-tab.md` §7.1.1) | Draft | `daw_equipment_and_construction`, `acore_axioms_strongholds_and_domains`, `gdd-settlement-layout`, `gdd-dungeon-layout` |
 | `gdd-combat-map-generation.md` | Procedural wilderness and urban combat maps on the unified 5' diamond tactical grid | Draft | `acore_combat_and_wounds`, `acore_adventures_and_encounters`, `ax_conditions_catalog`, `gdd-terrain-system`, `gdd-dungeon-layout`, `gdd-settlement-layout`, `gdd-stronghold-construction`, `gdd_combat_behavior_tags` |
+
+### NPCs, Character Systems, & Quests
+
+| File | Contents | Status | Key Dependencies |
+|------|----------|--------|------------------|
 | `gdd-npc-personality.md` | NPC personality, motivation, and behavioral generation for narration and AI | Draft | `acore-setting-construction-rules`, `ax_henchmen_recruitment_expanded`, `acore_equipment`, `gdd-setting-generation`, `gdd-settlement-layout` |
-| `gdd-name-generation.md` | Cultural name-bank schema and prompt structure for NPCs, settlements, realms, and geography | Draft | `gdd-setting-generation`, `gdd-settlement-layout`, `gdd-npc-personality` |
 | `gdd-henchman-class-selection.md` | Deterministic class selection for 0th-level henchmen reaching 500 XP | Draft | `acore_basics_and_characters`, `acore_core_classes`, `acore_demihuman_classes`, `acore_campaign_classes`, `pc_classes_*`, `gdd-npc-personality`, `gdd-cultural-religious-generation` |
-| `gdd-cultural-religious-generation.md` | Culture and religion data structures/generation — feeds NPC, settlement, domain, cleric | Draft | `acore_core_classes`, `acore-setting-construction-rules`, `acore_axioms_strongholds_and_domains`, `gdd-setting-generation`, `gdd-npc-personality`, `gdd-settlement-layout`, `gdd-name-generation` |
-| `gdd-quest-rumor-system.md` | Quest generation, rumor distribution, reward valuation, and completion tracking | Draft | `acore-campaign-hijinks`, `ax_reactions_and_influencing`, `acore_adventures_and_encounters`, `acore_treasure_and_magic_items_rules`, `acore_axioms_strongholds_and_domains`, `gdd-poi-generation`, `gdd-setting-generation`, `gdd-npc-personality`, `gdd-dungeon-layout`, `gdd-dungeon-factions`, `gdd-terrain-system`, `gdd-settlement-layout`, `gdd-cultural-religious-generation` |
-| `gdd-combat-ui.md` | Turn-based combat UI: initiative tracker, engagement zones, combat context menus, cleave, morale, mortal wounds. "One Grid, Two Modes" — shares grid/selection/context menu framework with dungeon exploration | Draft | `acore_combat_and_wounds`, `ax_mortal_wounds_and_tampering`, `gdd-dungeon-map-ui`, `gdd-realtime-scheduler`, `gdd-combat-map-generation`, `gdd_combat_behavior_tags`, `proficiency_system_map` |
-| `gdd_combat_behavior_tags.md` | Combat AI tag system: deterministic action selection, scoring, tie-breaking per tag | Draft | Morale rules (implicit); no explicit XML dependencies listed |
 | `gdd-proficiency-specializations.md` | Closed specialization lists for open-ended proficiencies (Weapon Focus, Riding, Craft, Art, Knowledge, etc.), trained-creature entity model | Draft | `acore_proficiencies_rules_and_catalog`, `pc_proficiencies_catalog`, `le_monster_training_rules`, `gdd-setting-generation`, `gdd-cultural-religious-generation`, `proficiency_system_map.md` |
-| `gdd-realtime-scheduler.md` | Real-time-with-pause game clock and event scheduler: Paradox-style continuous clock, priority-queue event resolution, entity-level context model; replaces session runner state machine and simultaneous-declaration scheduling | Draft | Timekeeping, EventBus, CampaignRepository, DiceSystem; consumes `gdd-terrain-system`, `gdd-calendar-seasons`, `gdd-weather-generation`, `gdd-dungeon-layout`, `gdd-settlement-layout`, `gdd-combat-map-generation` |
-| `gdd-party-inventory.md` | Party inventory overlay: PartyWallet gold pooling, location caches, loot distribution, encumbrance visualization, transfer/send-to mechanics. 5-session build plan. | Draft | `acore_equipment`, Currency, CampaignRepository, `gdd-proficiency-specializations` (trained creatures) |
+| `gdd-quest-rumor-system.md` | Quest generation, rumor distribution, reward valuation, and completion tracking. Mechanics layer; surfaced by `gdd-quests-tab.md` (stub until upstream systems land) | Draft | `acore-campaign-hijinks`, `ax_reactions_and_influencing`, `acore_adventures_and_encounters`, `acore_treasure_and_magic_items_rules`, `acore_axioms_strongholds_and_domains`, `gdd-poi-generation`, `gdd-setting-generation`, `gdd-npc-personality`, `gdd-dungeon-layout`, `gdd-dungeon-factions`, `gdd-terrain-system`, `gdd-settlement-layout`, `gdd-cultural-religious-generation` |
+
+### Combat & Tactical
+
+| File | Contents | Status | Key Dependencies |
+|------|----------|--------|------------------|
+| `gdd-combat-ui.md` | Turn-based combat UI: initiative tracker, engagement zones, combat context menus, cleave, morale, mortal wounds. "One Grid, Two Modes" | Draft (flagged for rewrite per `gdd-ui-architecture.md` §9 — predates significant architectural shifts) | `acore_combat_and_wounds`, `ax_mortal_wounds_and_tampering`, `gdd-dungeon-map-ui`, `gdd-realtime-scheduler`, `gdd-combat-map-generation`, `gdd_combat_behavior_tags`, `proficiency_system_map` |
+| `gdd_combat_behavior_tags.md` | Combat AI tag system: deterministic action selection, scoring, tie-breaking per tag | Draft | Morale rules (implicit); no explicit XML dependencies |
+| `gdd-voxel-tactical-architecture.md` | Voxel tactical architecture for 3D dungeon and combat rendering — shared 5' diamond grid model with cell-based walls | Draft | `gdd-dungeon-layout`, `gdd-combat-map-generation`, `gdd-stronghold-construction` |
+
+### Realtime & Scheduling
+
+| File | Contents | Status | Key Dependencies |
+|------|----------|--------|------------------|
+| `gdd-realtime-scheduler.md` | Real-time-with-pause game clock and event scheduler: Paradox-style continuous clock, priority-queue event resolution, entity-level context model; replaces session runner state machine | Draft | Timekeeping, EventBus, CampaignRepository, DiceSystem; consumes `gdd-terrain-system`, `gdd-calendar-seasons`, `gdd-weather-generation`, `gdd-dungeon-layout`, `gdd-settlement-layout`, `gdd-combat-map-generation` |
+
+### UI Architecture & Shared Services
+
+| File | Contents | Status | Key Dependencies |
+|------|----------|--------|------------------|
+| `gdd-ui-architecture.md` | Umbrella UI architecture: layer ranges (HUD / overlay / panel / notebook / modal), surface categories, tab inventory, party-state fragmentation resolutions, henchman-lifecycle resolution, audit cleanup table, cross-surface routing | Draft v2.10 | `acks_arbiter_design_brief_v11`, `gdd-voxel-tactical-architecture`, `gdd-realtime-scheduler`, `current_state_ui_audit.md` |
+| `gdd-ui-shared-services.md` | Shared UI services: Theme.tres variants, EventBus signal catalog, UiInputController keybind registration, shared components (StatReadout, EncumbranceBar, GoldDisplay, etc.) | Draft v1.2 | `gdd-ui-architecture` |
+
+### UI Management Notebook (8 tabs + container)
+
+| File | Contents | Status | Key Dependencies |
+|------|----------|--------|------------------|
+| `gdd-management-notebook.md` | Notebook container: tab strip, page area, primary/secondary column model, lazy-load tab instantiation, multi-party scope, save-game close-on-save guarantee, Phase β build sequencing | Draft v1.5 | `gdd-ui-architecture`, `acks_arbiter_design_brief_v11` |
+| `gdd-character-tab.md` | Character tab (#1): per-entity character sheet (Biography / Status / Combat / Equipment / Proficiencies / Spells / Retainers / Creature Stats / Vehicle Detail / Inventory sub-tabs), entity strip integration, Promote-to-Full-Member, mercenary tier display | Draft v1.6 | `gdd-management-notebook`, `gdd-ui-architecture`, `gdd-ui-shared-services` |
+| `gdd-inventory-tab.md` | Inventory tab (#2): cross-carrier item view, transfer UX, auto-loot, wilderness-departure carrier-loss prompt | Draft v1.6 | `gdd-management-notebook`, `gdd-character-tab`, `gdd-ui-architecture`, `gdd-ui-shared-services` |
+| `gdd-party-tab.md` | Party tab (#3): Party Status header, Composition / Travel / Formation sub-tabs (Wilderness 6×12 + Dungeon 2×12 grids), LLC analogy for party membership, marching order, formation presets | Draft v1.4 | `gdd-management-notebook`, `gdd-ui-architecture`, `gdd-ui-shared-services`, `gdd-character-tab`, `gdd-inventory-tab` |
+| `gdd-henchmen-tab.md` | Henchmen tab (#4): henchman roster master view, loyalty trends, wages, Departure Log, animal-henchman lifecycle, Promote-to-Full-Member, hire/dismiss flows | Draft v1.3 | `gdd-management-notebook`, `gdd-ui-architecture`, `gdd-ui-shared-services`, `gdd-character-tab`, `gdd-party-tab`, `gdd-inventory-tab` |
+| `gdd-troops-tab.md` | Troops tab (#5): unit-scale roster covering all six army sources per `daw_armies_recruitment.xml` §army_sources (mercenaries, conscripts, militia, followers, slave soldiers, vassal troops). Renamed from previous "Mercenaries" tab to broaden scope | Draft v2.3 | `gdd-management-notebook`, `gdd-ui-architecture`, `gdd-ui-shared-services`, `gdd-character-tab`, `gdd-party-tab`, `gdd-henchmen-tab` |
+| `gdd-domain-tab.md` | Domain tab (#6): per-entity (PC + Humanoid Henchman) domain management. Nine sub-tabs (Overview / Stronghold / Garrison / Realm / Treasury / Activities / Class-Specific / Encounters / Departure Log) plus the activity-execution tick-tolerance architecture per Discord judge consensus | Draft v1.6 | `gdd-management-notebook`, `gdd-ui-architecture`, `gdd-ui-shared-services`, `gdd-character-tab`, `gdd-party-tab`, `gdd-henchmen-tab`, `gdd-troops-tab`, `gdd-stronghold-construction`, `gdd-realtime-scheduler` |
+| `gdd-journal-tab.md` | Journal tab (#7): narrative log, player-authored notes (with cross-tab surfacing on attached entities), bookmarks. Per-party scope. LLM-optional from start | Draft v1.1 | `gdd-management-notebook`, `gdd-ui-architecture`, `gdd-ui-shared-services`, `gdd-unified-log-panel` |
+| `gdd-quests-tab.md` | Quests tab (#8): **STUB** — reserves the slot in the notebook tab inventory; full GDD deferred until upstream NPC personality / NPC generation / quest-rumor mechanics / setting / POI / settlement / dungeon-faction systems are implemented | Draft v1 (stub) | `gdd-management-notebook`, `gdd-ui-architecture`, `gdd-quest-rumor-system` |
+
+### UI HUD & Surfaces
+
+| File | Contents | Status | Key Dependencies |
+|------|----------|--------|------------------|
+| `gdd-unified-log-panel.md` | Unified Log HUD zone: All / Combat / Rolls / Narration tabs, L-key cycling, save-game persistence (100 entries per party), tick-tolerance compatible — no in-log search (export-and-search-externally model) | Draft v2 | `gdd-ui-architecture`, `gdd-ui-shared-services`, `gdd-management-notebook` |
+| `gdd-settlement-exploration-ui.md` | Settlement Panel: menu-driven PoI navigation, travel calculator, hiring panel, shop interactions | Draft (flagged for rewrite per `gdd-ui-architecture.md` §9) | `gdd-settlement-layout`, `gdd-settlement-stocking`, `gdd-realtime-scheduler` |
+| `gdd-dungeon-map-ui.md` | Dungeon interaction UI: RTS selection, context menus, fog of war, control groups | Draft (flagged for rewrite per `gdd-ui-architecture.md` §9) | `gdd-dungeon-layout`, `gdd-realtime-scheduler`, `gdd-voxel-tactical-architecture` |
+| `gdd-party-inventory.md` | Party inventory overlay: PartyWallet gold pooling, location caches, loot distribution, encumbrance visualization, transfer mechanics. 5-session build plan | Draft | `acore_equipment`, Currency, CampaignRepository, `gdd-proficiency-specializations` |
+
+### Art & Visual Identity
+
+| File | Contents | Status | Key Dependencies |
+|------|----------|--------|------------------|
+| `gdd-art-direction.md` | Project art direction: visual style, color palette, asset standards | Draft | (project-designed) |
+| `gdd-heraldry-builder.md` | Heraldry generator: shield silhouettes, charges, layouts for PC / NPC / faction insignia | Draft | `gdd-cultural-religious-generation`, `gdd-art-direction` |
 
 ---
 
@@ -199,6 +258,15 @@ All GDDs are Layer 2 (project-designed, modifiable). Respect ACKS Constraints se
 - **Lairs & Encounters XML:** 14 files (5 monster systems + 9 monster catalogs)
 - **Axioms XML:** 11 files
 - **Total XML:** 70 files
-- **GDDs:** 21 files
+- **GDDs:** 39 files
+  - World, setting, environment generation: 7
+  - Settlement, dungeon, stronghold generation: 7
+  - NPCs, character systems, quests: 4
+  - Combat & tactical: 3
+  - Realtime & scheduling: 1
+  - UI architecture & shared services: 2
+  - UI Management Notebook (8 tabs + container): 9
+  - UI HUD & surfaces: 4
+  - Art & visual identity: 2
 - **Architecture and planning docs:** 8 files
-- **Grand total indexed:** 99 files
+- **Grand total indexed:** 117 files

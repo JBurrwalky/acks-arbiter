@@ -9229,3 +9229,188 @@ New `set_pc_list` payload key consumed by `DeclarationOverlay`:
 5. Once spell-cast declaration is wired, drop the stub on `Combatant.is_casting_spell_this_round()` and validate Combat Reflexes correctly excludes the casting round.
 6. Backfill the monster catalog with gnolls / hobgoblins / bugbears / giants / demi-human enemies, tagging them properly so Kin/Goblin-Slaying triggers without code changes.
 
+---
+
+## Session 2026-04-30 — Design Document Session: Mercenaries→Troops Cleanup, Unified Log v2, Domain Tab v1.6, Journal Tab v1.1, Quests Tab v1 (stub)
+
+**Task:** Pure design-document session (advisor / GDD-drafter role per `CLAUDE.md` — no code changes). Major scope: complete the management-notebook tab inventory by drafting the three remaining tab GDDs (Domain, Journal, Quests-stub), resolve the 8 Unified Log open questions, run a Mercenaries→Troops cleanup pass across the existing GDDs, and add cross-doc questions to the stronghold-construction GDD per a Domain-tab cross-doc obligation.
+
+**Model used:** Sonnet 4.7 (1M context).
+
+**Completed:**
+
+### A. Mercenaries → Troops cleanup pass (8 GDDs touched)
+
+Cleanup pass coordinating with the prior tab #5 rename (Mercenaries → Troops) per `gdd-troops-tab.md` v2.2 §16. Scope: remove residual stale references to the old tab name and the deprecated `gdd-mercenaries-tab.md` filename across the project's GDD corpus. Did not blind-find-and-replace — "mercenaries" the noun (referring to hired soldier-NPCs / ACKS independent-contractor hireling tier) is still valid; only the tab name and old GDD filename references were updated.
+
+- **`gdd-management-notebook.md`** v1.4 → **v1.5** — fixed §1 Phase β scope item that still said "Mercenary advancement (Veteran / Elite tier) UI scaffolding" (the v1.3 §6.4 rewrite removing the non-RAW Elite tier hadn't propagated to the front-matter scope summary)
+- **`gdd-ui-architecture.md`** v2.9 → **v2.10** — fixed eight residual stale references (sub-doc list, §2.1 surfaces list, §3.3 tab-grouping list, §5 keybind table, §6.3 lifecycle-fragmentation resolution, §7 owning-GDD list, §8 cleanup table, §9 prior-overlay mapping, §10 build sequencing)
+- **`gdd-character-tab.md`** v1.5 → **v1.6** — three pointer references to `gdd-mercenaries-tab.md` retargeted to `gdd-troops-tab.md`
+- **`gdd-inventory-tab.md`** v1.5 → **v1.6** — §4.4 carrier-ordering note retargeted
+- **`gdd-party-tab.md`** v1.3 → **v1.4** — six stale references fixed (front-matter sibling, two right-click context lines, action button copy, §10 cross-tab table, §13 deps; plus the §4 "the Mercenaries tab, not the header" line)
+- **`gdd-henchmen-tab.md`** v1.2 → **v1.3** — three stale references fixed (out-of-scope, Non-goals, §2 positional reference)
+- **`gdd-troops-tab.md`** v2.2 → **v2.3** — §16 rewritten from "follow-up punch list" to a completion log; sibling-GDD version pins in front-matter `Depends on:` line bumped
+
+Confirmed `gdd-mercenaries-tab.md` does NOT exist in the repo (Jedidiah deleted it during this session — session-handoff note describing it as "marked DEPRECATED with a redirect" was inaccurate).
+
+### B. Unified Log open questions resolved (v1 → v2)
+
+`gdd-unified-log-panel.md` v1 → **v2**. All 8 open questions O-L1 through O-L8 resolved per Jedidiah:
+
+- **O-L1** — system-category visibility in All tab: kept all visible by default (pre-release debug visibility); rejected the proposed `metadata.visibility` prominence-flag split
+- **O-L2** — filters persist within session, reset at session start
+- **O-L3** — save retention bumped 50 → 100 entries per party; rationale rewritten with combat-pacing math
+- **O-L4** — no log-persistence opt-out in v1
+- **O-L5** — no hard cap on narration length at the log surface; new `[Show full]` renderer affordance added in §5.4 for entries beyond ~250 chars
+- **O-L6** — right-click-only navigation; §5.4 click-opens-context-menu inconsistency corrected (left-click on narration is now a no-op)
+- **O-L7** — **search functionality removed entirely** from v1 (export-and-search-externally model). Eight downstream references swept (§3.2 gear menu, §9.2 Search subsection, §10.3 export-scope language, §17.1 step 8 / §17.3 exit criterion, §17.2 `log_entry_search_match` Theme dependency)
+- **O-L8** — no new Theme variant needed (label-confusion resolution)
+
+### C. Drafted `gdd-domain-tab.md` v1 → v1.6 (1,500+ lines, six iterations)
+
+The biggest deliverable of the session. Started with a thorough rules dive across `acore_axioms_strongholds_and_domains.xml`, `ax_campaign_play.xml`, `ax_domain_level_encounters.xml`, `ax_domains_of_chaos.xml`, all class XML files for per-class stronghold types, plus DaW campaigning/sieges. Then synthesis → 8 clarifying questions to Jedidiah → drafted in stages.
+
+Final v1.6 specifies:
+- **Per-entity active-entity scope** (Q1 option c) — PCs + Humanoid Henchmen only
+- **Pre-9th-level support** (Q2 option b) — own-domain content shown with disabled-follower-attraction banner
+- **Personal-domain focus + Realm aggregation** (Q3 option b)
+- **Nine sub-tabs**: Overview / Stronghold / Garrison / Realm / Treasury & Ledger / Activities / Class-Specific / Encounters & Threats / Departure Log
+- **Per-class concern matrix in §12.1** covering 25+ classes (Faith / Magical Research / Trade / Syndicate / Garrison Training buckets); Bard plays as Fighter at domain tier per O-D3 (Arbiter-specific design); Paladin is alternate fighter variant per O-D4 (no Faith block)
+- **Nobiran Wonderworker hybrid** (Q5) — sanctum + dungeon (mage-style); 1d6 cleric/mage 1-3 followers + 2d6 0th-level INT/WIS≥9 aspirants; aspirant attrition 1d6/month for 6 months, depart on 1, not cumulative
+- **Chaotic domain support from foundation** (Q6) — opt-in at establishment per `ax_domains_of_chaos.xml`
+- **Class-tailored empty-state** (Q7) with conquest path added per Jedidiah's synthesis correction
+- **Hybrid notebook + travel-shortcut + future location panels** (Q8) with the **tick-tolerance rule** for ongoing activities (per Discord judge consensus): each day performed = +1 tick; cumulative absence cannot exceed accumulated ticks (forfeit at absence_accumulated > ticks_accumulated); absence is cumulative for the activity's full lifetime (does NOT reset on return); derived clean property — a task can never take more than 2× its base duration in real elapsed time
+- **Abandon-confirmation modal** with canonical copy: *"WARNING: Taking this action will abandon `<ongoing_task_name>` and forfeit progress, proceed anyway? [Yes, forfeit progress] [No, `<ongoing_task_name>`]"*. Multi-activity variant lists each affected activity with tolerance-vs-trip comparison and uses "[No, keep activities]" plural form
+- **17 open questions O-D1 through O-D17 all resolved** in v1.5/v1.6 per Jedidiah
+
+Six version bumps in succession as Jedidiah refined the design:
+- v1.0 → v1.1 (RAW correctness fix: ongoing activities require continuous presence)
+- v1.1 → v1.2 (strict abort behavior locked in; canonical modal copy specified)
+- v1.2 → v1.3 (tick-tolerance mechanic adopted per Discord consensus, superseding strict abort)
+- v1.3 → v1.4 (cumulative absence locked in; never resets while task in progress; 2× max-duration property derived)
+- v1.4 → v1.5 (all O-D1 through O-D14 resolved; substantive content updates implementing each)
+- v1.5 → v1.6 (end-to-end review pass: 12 stale references / terminology drift items cleaned up)
+
+### D. Drafted `gdd-journal-tab.md` v1 → v1.1 (~600 lines)
+
+Notebook tab #7, secondary column, J-key. Per-party scope matching the Unified Log. **Lighter scope** as flagged in the session handoff. Three sub-tabs:
+
+- **Narrative Log** (default) — chronological prose entries, manual + LLM-auto-generated when LLM lands. Distinct from Unified Log Narration tab (per-event immediate prose) — Journal's narrative log is curated multi-paragraph campaign storytelling
+- **Notes** — free-form player-authored notes, optionally attached to entities (PC / Henchman / NPC / Location / Faction / Item / standalone). **Cross-surfacing**: notes attached to a PC appear on that PC's Character tab Status sub-tab; notes about an NPC appear in Settlement Panel NPC view; etc. Notes sub-tab is canonical store; surfaced excerpts elsewhere keep notes contextually accessible
+- **Bookmarks** — pinned references to Unified Log entries / narrative entries / notes for quick recall. Right-click target → "Bookmark in Journal"
+
+Project-designed schemas for `narrative_entries`, `notes`, `bookmarks` defined inline. Markdown-lite editor (bold / italic / lists / inline `@`-entity-links). LLM-optional from start — v1 ships fully manual.
+
+All 11 open questions O-J1 through O-J11 resolved per Jedidiah accepting the v1 default dispositions.
+
+### E. Drafted `gdd-quests-tab.md` v1 (STUB, ~280 lines)
+
+Notebook tab #8, secondary column, Q-key. Per Jedidiah: stub until upstream NPC personality / NPC generation / quest-rumor system / setting / POI / settlement / dungeon-faction systems are built. Documents the full upstream dependency chain (§3) so build order is explicit. Stub-period placeholder UI (§4) renders a static page explaining the deferred status with "Journal tab (J)" inline-link redirect. Forward-references intended sub-tab structure (Active / Available / Completed / Failed / Rumors) per §5.1 for when the full GDD is authored. Cross-tab activation forward-references in §6 give other GDDs (Unified Log, Journal, Settlement Panel) a stable target. Single stub-level open question O-Q1 (tab visible during stub period vs. hidden — defaulted to visible).
+
+Companion mechanics GDD `gdd-quest-rumor-system.md` already specifies the data model, generation pipeline, rumor distribution, and reward valuation; Quests tab will surface that system to the player when both upstream systems and the full Quests tab GDD are authored.
+
+### F. Cross-doc Q5/Q6 added to `gdd-stronghold-construction.md` §13
+
+Per cross-doc obligation from `gdd-domain-tab.md` v1.5 §7.1.1 and O-D10. Two new open questions:
+
+- **Q5** — Stronghold type classification during build. Add explicit `stronghold_type` field to StrongholdLayout + ConstructionProject; commission pipeline must validate type-vs-class per §12.1 of Domain tab GDD; conquered structures retain original type
+- **Q6** — Converting an existing stronghold from one type to another. Default proposal: stronghold_type fixed at construction; conversion requires demolition+rebuild
+
+Last-updated date bumped from 2026-03-25 to 2026-04-30.
+
+### G. `docs/document_map.md` restructured + 17 missing GDDs added
+
+GDDs section restructured into 9 sub-categories (World/Setting; Settlement/Dungeon/Stronghold; NPCs/Quests; Combat/Tactical; Realtime/Scheduling; UI Architecture; UI Notebook 8 tabs + container; UI HUD/Surfaces; Art) for scalability. Added 17 GDDs that had been missing: ui-architecture, ui-shared-services, management-notebook, character-tab, inventory-tab, party-tab, henchmen-tab, troops-tab, domain-tab, journal-tab, quests-tab, unified-log-panel, dungeon-map-ui, settlement-exploration-ui, voxel-tactical-architecture, art-direction, heraldry-builder.
+
+File counts updated: GDDs 21 → 39; grand total indexed 99 → 117.
+
+### H. `gdd-management-notebook.md` Phase γ tab inventory now complete
+
+All 8 management-notebook tabs spec'd:
+
+| # | Tab | GDD | Status |
+|---|---|---|---|
+| 1 | Character | `gdd-character-tab.md` | v1.6 |
+| 2 | Inventory | `gdd-inventory-tab.md` | v1.6 |
+| 3 | Party | `gdd-party-tab.md` | v1.4 |
+| 4 | Henchmen | `gdd-henchmen-tab.md` | v1.3 |
+| 5 | Troops | `gdd-troops-tab.md` | v2.3 |
+| 6 | Domain | `gdd-domain-tab.md` | v1.6 |
+| 7 | Journal | `gdd-journal-tab.md` | v1.1 |
+| 8 | Quests | `gdd-quests-tab.md` | v1 (stub) |
+
+Plus the Unified Log HUD zone at v2.
+
+**Decisions made:**
+
+- **Tick-tolerance mechanic** for ongoing activities (per Discord judge consensus, confirmed by Jedidiah) is the canonical RAW-aligned interpretation of `ax_campaign_play.xml` §frequency_types "performed throughout." Replaces both naive autonomous-after-start (v1.0) and strict-abort-on-leave (v1.2). Bounded pause-and-resume — character can step away for up to ticks_accumulated cumulative days; exceeding forfeits gp and progress.
+- **Cumulative absence (never resets)** ensures the 2× max-duration cap as a derived property — a 14-day research can never take more than 28 elapsed days without forfeiting.
+- **Active adventuring detection** (Domain §6.2) is heuristic-only with no manual override (O-D1): ruler must (1) leave the stronghold AND (2) have a wilderness encounter / enter dungeon-or-lair / fight battle / fight siege.
+- **Domain treasury** is conceptually distinct from ruler's personal coin wallet (Arbiter-specific design flag); held in stronghold vaults; manual transfers free at stronghold, impossible elsewhere (O-D2).
+- **Bard plays at the domain tier as Fighter does** (O-D3, project-designed — Bards lack RAW fighter_progression tag but Arbiter applies the equivalent).
+- **Paladin = alternate fighter variant** (O-D4) — Roland/Lancelot/El Cid flavor; no magic, no divine spellcasting, no Faith block.
+- **Domain succession requires successor appointment** (O-D6) within configurable grace period (default 1 game-month); cross-GDD flag for future NPC generator (non-henchman successor path).
+- **Stronghold type classification** is fixed at construction; non-conforming strongholds (inherited / conquered) attract no followers but satisfy minimum-stronghold-value gp threshold (O-D10).
+- **Senatorial domains out of scope** for v1 (O-D7).
+- **Vagaries-of-Recruitment out of scope** for v1 (O-D12).
+
+**Interfaces defined or changed:**
+
+Project-designed engine state introduced by these GDDs (for Claude Code to implement during Phase H+):
+
+- **`ongoing_activity_state`** schema (Domain tab §15.1.2): id, entity_id, activity_def_id, required_location, total_days_required, ticks_accumulated, absence_accumulated (cumulative; never resets), gp_committed, state, started_on. Daily scheduler boundary update logic spec'd. Forfeit check: `absence_accumulated > ticks_accumulated` after daily increment.
+- **`domain_treasury`** schema (Domain tab §10.1): domain_id, current_balance_gp, monthly_revenue_pending_gp, monthly_expenses_pending_gp, deferred_maintenance_gp, auto_pay_policies, ledger_entries.
+- **`LedgerEntry`** schema (Domain tab §10.1): timestamp, type, category (`tribute_in` / `tribute_out` / `investment_agriculture` / `investment_urban` / `garrison` / `liturgy` / etc.), amount_gp (signed), description, related_entity_id.
+- **`narrative_entry`** schema (Journal tab §5.1): id, party_id, timestamp_ingame, timestamp_realworld, title, body, source ("manual" / "llm_generated" / "llm_edited_by_player"), related_unified_log_entry_ids, related_entity_ids, significance ("minor" / "major" / "milestone").
+- **`note`** schema (Journal tab §6.1): id, party_id, timestamp_realworld/ingame, title, body, attached_entity_ids, attached_entity_kinds, category, pinned.
+- **`bookmark`** schema (Journal tab §7.1): id, party_id, timestamp_realworld, target_kind ("unified_log_entry" / "narrative_entry" / "note"), target_id, label, category.
+
+EventBus signals declared (for shared services to add):
+- `EventBus.activity_completed(activity_state)` — ongoing activity reached `ticks_accumulated >= total_days_required`
+- `EventBus.activity_forfeited(activity_state, cause)` — `absence_accumulated > ticks_accumulated` or voluntary abandon
+- `EventBus.activity_reachable(activity_id)` — entity arrives at a location that newly enables a previously-greyed activity
+- `EventBus.activity_slot_changed(entity_id)` — daily activity-slot consumption updated
+- `EventBus.domain_state_changed(domain_id)` — Domain tab refresh trigger
+- `EventBus.stronghold_construction_completed(stronghold_id)` — Domain tab Stronghold sub-tab refresh trigger
+- `EventBus.note_added` / `note_updated` / `note_removed(note_id, attached_entity_ids)` — Journal Notes cross-surfacing refresh trigger
+- `EventBus.left_stronghold` / `wilderness_encounter_resolved` / `dungeon_entered` / `lair_entered` / `combat_started` / `siege_started` — active-adventuring heuristic event sources (O-D1 resolution)
+
+Theme variant declarations needed (for `gdd-ui-shared-services.md` §4.3 to add):
+- `classification_civilized` / `classification_borderlands` / `classification_wilderness`
+- `morale_rebellious` through `morale_stalwart`
+- `header_chaotic_tint`
+
+Domain-tab database tables implied (project-designed; for finalization during Phase H+ schema migration):
+- `narrative_entries`, `notes`, `bookmarks` (Journal tab)
+- `domain_treasury`, `domain_treasury_ledger` (Domain tab)
+- `domain_ongoing_activities` (Domain tab tick-tolerance state)
+- Existing `domains` schema (per `gdd-ui-architecture.md` §3.4) needs migration to support the data model implied by the Domain tab GDD
+
+**Database changes:** None this session — all proposed schema is forward-design for Phase H+ build.
+
+**Tests added/updated:** None — pure design-doc session.
+
+**Known issues:**
+
+- **No code in this session** — these are forward-looking design specs. Phase H+ implementation will need to validate that the engine can deliver the spec'd behavior (especially the tick-tolerance mechanic's daily scheduler-boundary update + forfeit check, and the cumulative-absence semantics).
+- **Cross-doc obligations created (will need follow-through during Phase H+ build):**
+  - `gdd-stronghold-construction.md` §13 Q5/Q6 — stronghold-type classification + type-conversion (added this session; resolution required before Phase H+ Domain tab build)
+  - Future NPC generator subsystem — required for non-henchman vassal successor path per O-D6
+  - Future LLM narration system GDD — referenced by both Domain (for narrative-entry auto-generation triggers) and Journal (for narrative-log auto-generation per §5.4); both tabs work without LLM in v1
+  - Future Stronghold-Adjacent Panel GDD — v1.1+ ergonomic shortcut for location-gated activities (modeled on existing Settlement Panel)
+  - Future Hijink Field-Execution surface GDD — perpetration UI for syndicate hijinks
+  - Future combat-tactical surface GDD — DaW battle resolution; Domain tab feeds and consumes
+
+- **Three GDDs flagged for rewrite** per `gdd-ui-architecture.md` §9 — all predate significant architectural shifts:
+  - `gdd-combat-ui.md`
+  - `gdd-dungeon-map-ui.md`
+  - `gdd-settlement-exploration-ui.md`
+
+  Audit / rewrite of these flagged-GDDs is the next session's priority per Jedidiah.
+
+**Next session should:**
+
+1. **Audit the three older flagged-for-rewrite GDDs** (`gdd-combat-ui.md`, `gdd-dungeon-map-ui.md`, `gdd-settlement-exploration-ui.md`) — verify against the current architecture (post management-notebook + tick-tolerance + voxel-tactical migration) and update or rewrite as needed
+2. After the audit pass, consider the next major drafting target — candidates: NPC generation (gates the Quests tab), LLM narration system (gates Domain narrative auto-generation + Journal Narrative Log auto-generation), Stronghold-Adjacent Panel (v1.1+ ergonomic shortcut), or Hijink Field-Execution surface
+3. Consider running an end-to-end review pass on the other Phase γ tab GDDs (Character / Inventory / Party / Henchmen / Troops / Unified Log) similar to the v1.5 → v1.6 Domain-tab cleanup; the same kind of cross-revision drift may exist there
+
