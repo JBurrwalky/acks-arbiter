@@ -89,9 +89,10 @@ func _resolve_brawl(
 
 	var kick: bool = parameters.get("kick", false)
 	var damage_expr: String = "1d3" if not kick else "1d4"
+	# Brawl is not one of the Combat Trickery specializations (which are
+	# disarm/force_back/incapacitate/knock_down/overrun/sunder/wrestle), so
+	# CT does not reduce the brawl penalty.
 	var extra_mod: int = MANEUVER_ATTACK_PENALTY
-	if attacker.has_proficiency("combat_trickery"):
-		extra_mod += 2  # -4 → -2
 	if kick:
 		extra_mod -= 2  # Additional -2 for kicks
 
@@ -136,7 +137,7 @@ func _resolve_disarm(
 	var hit := true
 	var hit_result: Dictionary = {}
 	if not skip_attack:
-		hit_result = _maneuver_attack(attacker, target)
+		hit_result = _maneuver_attack(attacker, target, "disarm")
 		hit = hit_result.get("hit", false)
 
 	if not hit:
@@ -144,7 +145,7 @@ func _resolve_disarm(
 		hit_result["disarmed"] = false
 		return hit_result
 
-	var save_mod := _check_size_modifier(attacker, target)
+	var save_mod := _check_size_modifier(attacker, target) + _ct_save_penalty(attacker, "disarm")
 	var saved := _save_vs_paralysis(target, save_mod)
 	if saved:
 		return {
@@ -181,7 +182,7 @@ func _resolve_force_back(
 	var hit := true
 	var hit_result: Dictionary = {}
 	if not skip_attack:
-		hit_result = _maneuver_attack(attacker, target)
+		hit_result = _maneuver_attack(attacker, target, "force_back")
 		hit = hit_result.get("hit", false)
 
 	if not hit:
@@ -189,7 +190,7 @@ func _resolve_force_back(
 		hit_result["forced_back"] = false
 		return hit_result
 
-	var save_mod := _check_size_modifier(attacker, target)
+	var save_mod := _check_size_modifier(attacker, target) + _ct_save_penalty(attacker, "force_back")
 	var saved := _save_vs_paralysis(target, save_mod)
 	if saved:
 		return {
@@ -265,7 +266,7 @@ func _resolve_knock_down(
 	var hit := true
 	var hit_result: Dictionary = {}
 	if not skip_attack:
-		hit_result = _maneuver_attack(attacker, target)
+		hit_result = _maneuver_attack(attacker, target, "knock_down")
 		hit = hit_result.get("hit", false)
 
 	if not hit:
@@ -273,7 +274,7 @@ func _resolve_knock_down(
 		hit_result["knocked_down"] = false
 		return hit_result
 
-	var save_mod := _check_size_modifier(attacker, target)
+	var save_mod := _check_size_modifier(attacker, target) + _ct_save_penalty(attacker, "knock_down")
 	var saved := _save_vs_paralysis(target, save_mod)
 	if saved:
 		return {
@@ -313,13 +314,13 @@ func _resolve_overrun(
 	## Does NOT count as attacker's attack. Can be done multiple times per round.
 	## On success: attacker moves through target's position.
 	## On failure: target may choose to block; if blocking, attacker deals melee damage.
-	var hit_result := _maneuver_attack(attacker, target)
+	var hit_result := _maneuver_attack(attacker, target, "overrun")
 	if not hit_result.get("hit", false):
 		hit_result["maneuver"] = "overrun"
 		hit_result["overrun_success"] = false
 		return hit_result
 
-	var save_mod := _check_size_modifier(attacker, target)
+	var save_mod := _check_size_modifier(attacker, target) + _ct_save_penalty(attacker, "overrun")
 	var saved := _save_vs_paralysis(target, save_mod)
 
 	if saved:
@@ -388,7 +389,7 @@ func _resolve_sunder(
 		attack_penalty = SUNDER_PENALTY_FRAGILE
 	else:
 		attack_penalty = SUNDER_PENALTY_STURDY
-	if attacker.has_proficiency("combat_trickery"):
+	if attacker.has_proficiency_with_specialization("combat_trickery", "sunder"):
 		attack_penalty += 2  # Reduce penalty by 2
 
 	var hit_result := _attack_resolver.resolve_melee_attack(
@@ -422,6 +423,7 @@ func _resolve_sunder(
 	# Staffs/spears/polearms get -4
 	if target_weapon_type == "staff_spear_polearm":
 		save_mod -= 4
+	save_mod += _ct_save_penalty(attacker, "sunder")
 
 	var saved := _save_vs_paralysis(target, save_mod)
 	if saved:
@@ -455,13 +457,13 @@ func _resolve_wrestle(
 	## While held: wrestler can do brawl/force_back/disarm/knock_down without attack throw.
 	## Others get +4 to hit held target. Thieves can backstab.
 	## Held target gets save each round to escape.
-	var hit_result := _maneuver_attack(attacker, target)
+	var hit_result := _maneuver_attack(attacker, target, "wrestle")
 	if not hit_result.get("hit", false):
 		hit_result["maneuver"] = "wrestle"
 		hit_result["held"] = false
 		return hit_result
 
-	var save_mod := _check_size_modifier(attacker, target)
+	var save_mod := _check_size_modifier(attacker, target) + _ct_save_penalty(attacker, "wrestle")
 	var saved := _save_vs_paralysis(target, save_mod)
 	if saved:
 		return {
@@ -493,9 +495,9 @@ func _resolve_wrestle(
 func _resolve_incapacitate(
 		attacker: Combatant,
 		target: Combatant) -> Dictionary:
-	## Melee attack at -4 (-2 with Combat Trickery). Normal weapon damage dealt
-	## as nonlethal. No saving throw.
-	var hit_result := _maneuver_attack(attacker, target)
+	## Melee attack at -4 (-2 with Combat Trickery: Incapacitate). Normal weapon
+	## damage dealt as nonlethal. No saving throw.
+	var hit_result := _maneuver_attack(attacker, target, "incapacitate")
 	hit_result["maneuver"] = "incapacitate"
 	hit_result["nonlethal"] = hit_result.get("hit", false)
 	return hit_result
@@ -507,13 +509,29 @@ func _resolve_incapacitate(
 
 func _maneuver_attack(
 		attacker: Combatant,
-		target: Combatant) -> Dictionary:
-	## Standard melee attack at MANEUVER_ATTACK_PENALTY (-4, or -2 with Combat Trickery).
+		target: Combatant,
+		maneuver_key: String = "") -> Dictionary:
+	## Standard melee attack at MANEUVER_ATTACK_PENALTY (-4). When the attacker
+	## has Combat Trickery selected for this specific maneuver, the penalty is
+	## reduced by 2 (to -2). Pass the maneuver_key (e.g. "disarm", "knock_down")
+	## to enable the per-specialization check.
 	var penalty := MANEUVER_ATTACK_PENALTY
-	if attacker.has_proficiency("combat_trickery"):
+	if not maneuver_key.is_empty() \
+			and attacker.has_proficiency_with_specialization("combat_trickery", maneuver_key):
 		penalty += 2  # -4 → -2
 	return _attack_resolver.resolve_melee_attack(
 		attacker, target, "", penalty)
+
+
+func _ct_save_penalty(attacker: Combatant, maneuver_key: String) -> int:
+	## Returns the modifier to apply to the target's saving throw when the
+	## attacker has Combat Trickery selected for [param maneuver_key]. ACKS
+	## says the target suffers a -2 penalty to the save; in this engine,
+	## save_mod is added to the target's roll, so a negative save_mod makes
+	## the save harder.
+	if attacker.has_proficiency_with_specialization("combat_trickery", maneuver_key):
+		return -2
+	return 0
 
 
 func _save_vs_paralysis(target: Combatant, extra_modifier: int = 0) -> bool:

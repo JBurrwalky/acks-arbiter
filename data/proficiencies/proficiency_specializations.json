@@ -69,12 +69,8 @@
       { "id": "natural_history", "display_name": "Natural history", "layer": "base", "prerequisite_ids": [], "metadata": {} },
       { "id": "natural_philosophy", "display_name": "Natural philosophy", "layer": "base", "prerequisite_ids": [], "metadata": {} },
       { "id": "political_economy", "display_name": "Political economy", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "occult", "display_name": "Occult philosophy", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "trivia", "display_name": "Trivia", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "metaphysics", "display_name": "Metaphysics", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "theology_academic", "display_name": "Theology (academic)", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "law", "display_name": "Law", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "military_history", "display_name": "Military history", "layer": "base", "prerequisite_ids": [], "metadata": {} }
+      { "id": "occult", "display_name": "Occult", "layer": "base", "prerequisite_ids": [], "metadata": {} },
+      { "id": "trivia", "display_name": "Trivia", "layer": "base", "prerequisite_ids": [], "metadata": {} }
     ]
   },
   "craft": {
@@ -105,12 +101,7 @@
       { "id": "tinkering", "display_name": "Tinkering", "layer": "base", "prerequisite_ids": [], "metadata": {} },
       { "id": "weaving", "display_name": "Weaving", "layer": "base", "prerequisite_ids": [], "metadata": {} },
       { "id": "weaponsmithing", "display_name": "Weaponsmithing", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "wheelwright", "display_name": "Wheelwright", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "pottery", "display_name": "Pottery", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "glassblowing", "display_name": "Glassblowing", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "jeweling", "display_name": "Jeweling", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "tailoring", "display_name": "Tailoring", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "ropemaking", "display_name": "Ropemaking", "layer": "base", "prerequisite_ids": [], "metadata": {} }
+      { "id": "wheelwright", "display_name": "Wheelwright", "layer": "base", "prerequisite_ids": [], "metadata": {} }
     ]
   },
   "art": {
@@ -121,13 +112,7 @@
       { "id": "mosaic", "display_name": "Mosaic", "layer": "base", "prerequisite_ids": [], "metadata": {} },
       { "id": "painting", "display_name": "Painting", "layer": "base", "prerequisite_ids": [], "metadata": {} },
       { "id": "sculpture", "display_name": "Sculpture", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "stained_glass", "display_name": "Stained glass", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "pottery_art", "display_name": "Pottery (artistic)", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "woodcarving", "display_name": "Woodcarving", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "metalwork_art", "display_name": "Metalwork (artistic)", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "tapestry", "display_name": "Tapestry", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "engraving", "display_name": "Engraving", "layer": "base", "prerequisite_ids": [], "metadata": {} },
-      { "id": "fresco", "display_name": "Fresco", "layer": "base", "prerequisite_ids": [], "metadata": {} }
+      { "id": "stained_glass", "display_name": "Stained glass", "layer": "base", "prerequisite_ids": [], "metadata": {} }
     ]
   },
   "performance": {
@@ -138,8 +123,7 @@
       { "id": "epic_poetry", "display_name": "Epic poetry", "layer": "base", "prerequisite_ids": [], "metadata": { "category": "vocal_recitation", "qualifies_for_magical_music": true } },
       { "id": "playing_instruments", "display_name": "Playing instruments", "layer": "base", "prerequisite_ids": [], "metadata": { "category": "instrumental", "qualifies_for_magical_music": true } },
       { "id": "singing", "display_name": "Singing", "layer": "base", "prerequisite_ids": [], "metadata": { "category": "vocal", "qualifies_for_magical_music": true } },
-      { "id": "storytelling", "display_name": "Storytelling", "layer": "base", "prerequisite_ids": [], "metadata": { "category": "vocal_recitation", "qualifies_for_magical_music": true } },
-      { "id": "comedy", "display_name": "Comedy", "layer": "base", "prerequisite_ids": [], "metadata": { "category": "theatrical" } }
+      { "id": "storytelling", "display_name": "Storytelling", "layer": "base", "prerequisite_ids": [], "metadata": { "category": "vocal_recitation", "qualifies_for_magical_music": true } }
     ]
   },
   "profession": {

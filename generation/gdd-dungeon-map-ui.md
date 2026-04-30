@@ -2,7 +2,7 @@
 
 **Document type:** Game Design Document (project-designed, modifiable)
 **Status:** Draft — requires approval before build
-**Depends on:** `gdd-realtime-scheduler.md` (event scheduler architecture), `gdd-dungeon-layout.md` (cell/room/door data model), `gdd-combat-map-generation.md` (diamond grid geometry), `proficiency_system_map.md` §4 (dungeon proficiency hooks), `ax_thief_skill_update.xml` (revised thief skill throws and timings), `acore_adventures_and_encounters.xml` (door rules, search rules, encounter rules)
+**Depends on:** `gdd-realtime-scheduler.md` (event scheduler architecture and Movement Simulator), `gdd-voxel-tactical-architecture.md` (3D voxel grid spatial substrate, adjacency rules, multi-level camera), `gdd-dungeon-layout.md` (cell/room/door data model), `gdd-combat-map-generation.md` (grid geometry — superseded for spatial model by the voxel architecture), `proficiency_system_map.md` §4 (dungeon proficiency hooks), `ax_thief_skill_update.xml` (revised thief skill throws and timings), `acore_adventures_and_encounters.xml` (door rules, search rules, encounter rules)
 **Replaces:** Any existing dungeon UI stubs, hodgepodge triggers, and data wiring from prior iterations
 **Blocks:** Dungeon exploration implementation, combat transition UI, dungeon-layer session runner wiring
 
@@ -499,7 +499,8 @@ Items I've identified as potentially missing from the spec or deferred for futur
 
 - **Selecting an entity in a Hidden cell:** Not possible — entities in hidden cells are invisible. The player can't left-click what they can't see.
 - **Right-clicking while the game is unpaused:** The context menu auto-pauses the game when it opens, and unpauses (at the current speed setting) when it closes or an action is selected. This prevents the world from ticking while the player is reading options.
-- **Multiple entities want to use the same door simultaneously:** Queue them. The first entity in the group's marching order interacts with the door; others wait in adjacent cells. Once the door is open, they pass through in order.
+- **Multiple entities want to use the same door simultaneously:** Queue them. The first entity in the group's marching order interacts with the door; others wait in adjacent cells. Once the door is open, they pass through in order, subject to the cell occupancy rule (`gdd-realtime-scheduler.md` §6.4): at most two living non-incapacitated units may share any cell at any tick boundary, and at most one at end-of-tick. Traffic through a doorway naturally serializes — the third unit waits one tick at the cell before the door, then advances when the first has cleared. The simulator handles this automatically; no explicit "queue" data structure is needed at the UI level.
+- **Right-clicking a destination cell already occupied by two units:** The Move Here order succeeds at the order-issuance level, but the simulator may stop the moving unit at an adjacent cell rather than entering the occupied destination. The notification log reports: `"<Name>: Move complete — destination occupied, stopped adjacent."` This is the same "destination unreachable" pattern from §3.1.
 - **Entity dies during an action:** If an entity dies (HP reaches 0) while performing a queued action (e.g., disarming a trap and it triggers), the action is abandoned. The entity enters the mortal wounds flow. The action queue is cleared.
 - **Right-clicking while a context menu is already open:** Closes the old menu and opens a new one at the new click position.
 - **Bash vs. Force — distinct actions, distinct rules:** Force Door is a strength throw that unsticks a stuck door without destroying it. Bash Door destroys any wooden door regardless of its state (closed, stuck, locked) but takes longer and permanently removes the door. Both may be available on the same stuck wooden door — let the player choose. Force is faster (1 round) but may fail; Bash is guaranteed but takes 1-3 turns and is noisy. Pick Lock and Unlock are locked-door-only options and never appear on stuck or ordinary closed doors.
@@ -528,33 +529,42 @@ Items I've identified as potentially missing from the spec or deferred for futur
 
 ### 12.3 What Stays the Same
 
-- **Diamond grid geometry:** `gdd-combat-map-generation.md` §3. No changes.
-- **DungeonLayout data model:** `gdd-dungeon-layout.md` §11. No structural changes. The UI *reads* this data; it doesn't change the schema.
-- **Pathfinding:** Godot's `AStarGrid2D` or equivalent. The context menu issues pathfinding requests; the pathfinding implementation is not this document's concern.
-- **EventScheduler:** `gdd-realtime-scheduler.md`. The UI creates scheduled events by calling the scheduler API. The scheduler is not modified.
-- **Timekeeping autoload:** No changes. Actions that consume time (search, pick lock, etc.) call the scheduler, which calls Timekeeping.
+- **Voxel grid geometry:** `gdd-voxel-tactical-architecture.md` (5' cube cells, `Vector3i(col, row, level)` coordinates, diamond horizontal basis). The UI reads positions and renders against this; it does not modify the spatial substrate.
+- **DungeonLayout / VoxelMapData data model:** `gdd-dungeon-layout.md` §11 and `gdd-voxel-tactical-architecture.md` §6–§7. No structural changes. The UI *reads* this data; it doesn't change the schema.
+- **Pathfinding:** Hand-rolled BFS on `VoxelGrid.get_neighbors_3d()` for short paths; `AStar3D` for long paths (per `gdd-voxel-tactical-architecture.md` §17.2). The context menu issues pathfinding requests via the Movement Simulator; the pathfinding implementation is not this document's concern.
+- **EventScheduler and Movement Simulator:** `gdd-realtime-scheduler.md`. The UI creates scheduled events for activities (via `EventScheduler.schedule()`) and issues movement orders to the simulator (via `MovementSimulator.set_target()` / `set_group_target()`). Neither the scheduler nor the simulator is modified.
+- **Timekeeping autoload:** No changes. Actions that consume time (search, pick lock, etc.) call the scheduler, which advances Timekeeping.
 
-### 12.4 Integration with the Event Scheduler
+### 12.4 Integration with the Event Scheduler and Movement Simulator
 
-Every player action from the context menu translates to one or more scheduled events:
+Every player action from the context menu produces one of two kinds of engine call: a **simulator move order** (continuous-tick motion on the voxel grid) and/or a **scheduled event** (discrete activity with a duration). Movement is NOT pre-scheduled as `travel_step` events per cell — it is simulator state advanced per tick (per `gdd-realtime-scheduler.md` §3 and §6.4).
 
-| Player Action | Scheduler Event(s) |
-|--------------|-------------------|
-| Move Here | `travel_step` events per cell along the path |
-| Search Here | `travel_step` to destination + `search_complete` at +1 turn |
-| Listen Here | `travel_step` to destination + `listen_complete` at +1 round |
-| Force Door | `travel_step` to door + `force_door_attempt` at +1 round (repeat on failure) |
-| Pick Lock | `travel_step` to door + `pick_lock_complete` at +1 turn (or +1 round with rapid attempt) |
-| Unlock (key) | `travel_step` to door + immediate state change (no time cost beyond movement) |
-| Bash Door | `travel_step` to door + `bash_door_complete` at +1 or +3 turns based on door material |
-| Spike Shut / Wedge Open | `travel_step` to door + `spike_complete` at +1 round |
-| Stealth Move | `stealth_travel_step` events per cell (Move Silently throw at start) + `hide_attempt` on arrival |
-| Hide | `hide_attempt` immediate for all capable group members (no movement events) |
-| Light Torch | Immediate state change + `light_source_expired` at +6 turns |
-| Talk | `travel_step` to adjacent cell + `dialogue_start` (immediate on arrival) |
-| Check Status | `travel_step` to adjacent cell + `mortal_wounds_check` (immediate, opens modal if resources available) |
-| Carry | `travel_step` to adjacent cell + immediate: downed entity becomes inventory item on carrier, encumbrance recalculated |
-| Loot (downed) | `travel_step` to adjacent cell + immediate: opens loot panel (same as §3.4) |
-| *(System)* Evil door auto-close | `evil_door_close` fires on every turn boundary (60-round tick) for all open evil doors not wedged/held |
+Action lifecycle for any action that requires movement before the activity:
 
-The UI never directly advances time or modifies game state — it always goes through the scheduler.
+1. **UI calls `MovementSimulator.set_target(unit_id, target_cell)`** — the simulator computes a path and walks the unit toward the target each tick.
+2. **The simulator emits an `arrived_at_target` event** when the unit reaches its destination cell. The UI's action dispatcher listens for this event.
+3. **On arrival, UI calls `EventScheduler.schedule(activity_event)`** — the activity is now a scheduled event with a known duration.
+4. **The scheduled event resolves at its timestamp**, the result is presented to the player, and any follow-up events are scheduled.
+
+If the unit cannot reach the target (path blocked, destination occupied, etc.), the simulator emits a `move_failed` or `move_complete_unreachable` event instead, and the activity is NOT scheduled. The UI logs the failure per §3.1.
+
+| Player Action | Movement | Scheduled Event(s) on Arrival |
+|--------------|----------|-------------------------------|
+| Move Here | simulator → target cell | (none — movement is the entire action) |
+| Search Here | simulator → target cell | `search_complete` at +1 turn |
+| Listen Here | simulator → target cell | `listen_complete` at +1 round |
+| Force Door | simulator → cell adjacent to door | `force_door_attempt` at +1 round (repeat on failure) |
+| Pick Lock | simulator → cell adjacent to door | `pick_lock_complete` at +1 turn (or +1 round with rapid attempt) |
+| Unlock (key) | simulator → cell adjacent to door | immediate state change on arrival |
+| Bash Door | simulator → cell adjacent to door | `bash_door_complete` at +1 or +3 turns based on door material |
+| Spike Shut / Wedge Open | simulator → cell adjacent to door | `spike_complete` at +1 round |
+| Stealth Move | simulator → target cell, with movement mode set to stealth (Move Silently throw at start) | `hide_attempt` on arrival |
+| Hide | (none — instantaneous) | `hide_attempt` immediate for all capable group members |
+| Light Torch | (none — instantaneous) | Immediate state change + `light_source_expired` at +6 turns |
+| Talk | simulator → cell adjacent to NPC | `dialogue_start` immediate on arrival |
+| Check Status | simulator → cell adjacent to downed unit | `mortal_wounds_check` immediate, opens modal if resources available |
+| Carry | simulator → cell adjacent to downed unit | immediate: downed entity becomes inventory item on carrier, encumbrance recalculated |
+| Loot (downed) | simulator → cell adjacent to downed unit | immediate: opens loot panel (same as §3.4) |
+| *(System)* Evil door auto-close | (n/a) | `evil_door_close` fires on every turn boundary (60-round tick) for all open evil doors not wedged/held |
+
+The UI never directly advances time or modifies game state — it issues simulator move orders and scheduled events, and reads back results from their completion signals.

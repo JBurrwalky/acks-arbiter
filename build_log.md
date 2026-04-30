@@ -8959,3 +8959,273 @@ Unchanged because already correct or out-of-spec:
 1. Smoke-test C1: enter dungeon, set clock to Normal — game-time should advance ~1 round per 2 real seconds. Switch to Fast — should see ~6 rounds (1 minute) per 2 real seconds. Switch to Very Fast — should see ~30 rounds (5 minutes) per 2 real seconds. Move to wilderness, confirm Fast/Very Fast still feel like the prior 2×/5× pace (NOT 30×/150×, which would zoom hours past).
 2. Smoke-test D1 visually: walk a 6-PC party through a long corridor in the test dungeon and watch step-to-step responsiveness. The teleport double-fog removal should be a small but real reduction; the larger savings need the rebuild-throttle follow-up.
 3. Pre-existing failure cluster (21 suites) still needs a triage pass — none of them touch files modified in this batch.
+
+## Session 2026-04-27 — Current-State UI Audit
+
+Produced `current_state_ui_audit.md` at the project root — comprehensive descriptive inventory of every UI surface, data field, access pattern, fragmentation finding, stub, and gap, as input for a unified UI redesign session in Claude.ai. No code changes.
+
+---
+
+## Session 2026-04-28 — Backstab Damage Multiplier Fix + Class Generalization
+
+**Task:** Backstab option appeared in combat context menu but the combat log showed no extra damage. Apply the level-banded multiplier (×2 / ×3 / ×4 / ×5) to backstab damage and extend eligibility from Thief-only to all classes whose JSON declares the `backstab` power (Thief, Assassin, Elven Nightblade, Dwarven Delver). Add Assassin-specific armor restriction: no backstab while wearing armor ≥ 3 stone (scale mail or heavier).
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- **`engine/subsystems/combat/combat_controller.gd`** — `_resolve_backstab_action()`:
+  - Fixed the root-cause damage bug at line 2378: changed `attack_result.get("damage", 0)` → `attack_result.get("damage_total", 0)`. `AttackResolver._build_result()` returns the rolled damage under `"damage_total"`, so the prior key always returned 0 and `extra_damage = 0 * (multiplier - 1)` was always 0 — no extra damage was ever applied despite the `+4` to-hit and the menu label working.
+  - Added two eligibility guards (lines 2347–2360) mirroring the menu-builder gate: rejects with `"combatant has no backstab ability"` if `combatant.has_backstab_power()` is false, and rejects with `"assassin cannot backstab in scale mail or heavier"` if class is assassin and equipped body armor ≥ 3 stone. Defends against malformed action payloads.
+
+- **`engine/subsystems/combat/combat_context_menu_builder.gd`** — `_can_backstab()`:
+  - Replaced the `combat_progression == "thief"` test with `combatant.has_backstab_power()` (data-driven). This admits Assassin and Dwarven Delver (both fighter-progression but have the backstab power in their class JSON) in addition to Thief and Elven Nightblade.
+  - Added Assassin armor gate: returns false when `character_class == "assassin"` and `get_equipped_body_armor_stone() >= 3.0`.
+  - Existing condition (unaware/held/grappled/prone/sleeping) and flanking checks unchanged.
+
+- **`engine/subsystems/combat/combatant.gd`**:
+  - New field `_equipped_body_armor_units: int = 0` (line 154) alongside `_equipped_armor_material`.
+  - Extended the existing equipped-body-armor scan loop to also capture `encumbrance_units` from the inventory row.
+  - Added `get_equipped_body_armor_stone() -> float` returning `_equipped_body_armor_units / 1000.0` (1 stone = 1000 units per `inventory_item.gd:5–9`).
+  - Added `has_backstab_power() -> bool` that consults a static cached `ClassRegistry` and checks whether the character's class has a `power_id == "backstab"` entry in `class_powers`. Returns false for monsters (`is_character == false`).
+  - Added static `_class_registry_cache: ClassRegistry` + `_get_class_registry()` lazy initializer to avoid re-loading all class JSONs on every backstab check (ClassRegistry is not an autoload; instantiation reads ~27 JSON files).
+
+**Decisions made:**
+
+- **Data-driven backstab class detection.** Per user direction, `has_backstab_power()` reads from `class_powers` array in class JSON rather than hardcoding the class ID set. Future classes that add the `backstab` power become eligible automatically.
+- **Stone-weight armor gate, not AC-bonus.** Assassin restriction uses raw encumbrance (≥ 3000 units = 3 stone) rather than the existing AC-based `_is_wearing_leather_or_lighter()` helper in `thief_skill_resolver.gd`. Matches the user's spec verbatim and is robust against future armor types whose AC and weight don't track 1:1.
+- **Multiplier table left in place (combat_controller.gd:2369–2376).** The existing hardcoded level-banded multiplier (1–4 → 2, 5–8 → 3, 9–12 → 4, 13+ → 5) matches the progression in all four backstab classes' JSON. Naturally caps for Elven Nightblade and Dwarven Delver because those classes top out at level 11.
+- **No JSON edits.** Assassin's `armor_leather_or_lighter` `conditions` tag in `data/classes/assassin.json:86` was previously informational; the runtime gate now lives in code as a stone-weight check, which is functionally equivalent for current armor data.
+
+**Interfaces defined or changed:**
+
+New public API on Combatant:
+
+- `Combatant.has_backstab_power() -> bool` — true iff the underlying character's class JSON contains a `class_powers` entry with `power_id == "backstab"`. False for monsters.
+- `Combatant.get_equipped_body_armor_stone() -> float` — encumbrance of currently-equipped body armor in stone (0.0 if none equipped).
+
+New static cache on Combatant:
+
+- `Combatant._class_registry_cache: ClassRegistry` (static) — lazy-initialized on first call to `_get_class_registry()`.
+
+Resolver behavior change:
+
+- `combat_controller._resolve_backstab_action()` now returns one of three early-return notes when the action is rejected: `"no valid target"` (existing), `"combatant has no backstab ability"` (new), `"assassin cannot backstab in scale mail or heavier"` (new).
+
+**Database changes:** None.
+
+**Tests added/updated:** None added. The existing combat suite covers the attack/cleave flow; backstab-specific tests would be a useful follow-up.
+
+**Known issues:**
+
+- **No automated test for the multiplier.** Damage multiplication was confirmed by code inspection (the math `extra_damage = base_damage * (multiplier - 1)` plus AttackResolver having already applied `damage_total` once → total damage equals `base_damage * multiplier`). A focused `test_backstab.gd` would cover this regression class.
+- **Multiplier table duplicated.** Same level-banded table exists in `combat_controller._resolve_backstab_action()` (lines 2369–2376) and `combat_context_menu_builder._backstab_multiplier()` (lines 841–850). Currently in sync. A future cleanup could collapse to one helper.
+- **Class registry cache is process-lifetime.** Static cache means edited class JSONs require an editor restart to take effect for backstab eligibility. Acceptable for shipped builds; flag if hot-reload becomes a workflow need.
+
+**Next session should:**
+
+1. Smoke-test in editor: Thief (lvl 1, 5, 9) and Assassin (lvl 1 in leather, lvl 1 in scale mail, lvl 5 in leather) backstabbing a sleeping target. Verify combat log shows `total_damage == base × multiplier` and that the Assassin-in-scale-mail case has no Backstab option in the context menu.
+2. Smoke-test Dwarven Delver backstab (which was completely unavailable before — it has fighter combat_progression). Expect the option at level 1+ vs. eligible target, ×2 multiplier.
+3. Optional: add `tests/test_backstab.gd` with deterministic cases to lock in the multiplier behavior.
+
+
+---
+
+## Session 2026-04-28 — Fighting Style / Weapon Finesse / Weapon Focus / Swashbuckling Wired
+
+**Task:** Wire combat-mechanical effects for four ACKS proficiencies that were defined in `data/proficiencies/proficiency_catalog.json` but inert at runtime: Fighting Style (six specializations), Weapon Finesse, Weapon Focus (six specializations), and Swashbuckling. Build a stable foundation that future proficiencies can plug into without touching combat resolvers.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+Architecture: introduced a single canonical `ProficiencyCombatHooks` aggregator that evaluates the conditional half of the proficiency catalog at runtime. `ProficiencyEffectResolver` continues to handle unconditional modifiers and flags at character-load time (lines 92–96 of `proficiency_effect_resolver.gd` explicitly skip `condition`-bearing modifiers and defer to the consuming system); the new hooks file is that consumer. Adding a new proficiency that uses an existing condition is now a pure-data change to the catalog. Adding one with a new condition adds one match arm to `_evaluate_condition()` in the hooks file.
+
+- **`engine/subsystems/combat/weapon_focus_family.gd`** (new) — Static `WeaponFocusFamily` classifier mapping `item_key` → one of the six Weapon Focus families (`axes`, `maces_flails_hammers`, `swords_daggers`, `bows_crossbows`, `slings_thrown`, `spears_polearms`). Pure lookup, no game state. Returns `""` for weapons outside the families (whip, net, unarmed).
+
+- **`engine/subsystems/combat/proficiency_combat_hooks.gd`** (new) — Static `ProficiencyCombatHooks` class.
+  - `aggregate_modifier(combatant, stat_key, context) -> int` — sums conditional proficiency modifiers matching `stat_key` whose condition predicate evaluates true. Filters out unconditional modifiers (already in the modifier container). Mirrors `ProficiencyEffectResolver` selection-stacking and level-scaling logic via `ProficiencyRegistry.get_scaled_bonus()`.
+  - `has_active_enabler(combatant, action, context) -> bool` — true when any active proficiency provides a matching enabler (used by Weapon Focus's `natural_20_double_damage`).
+  - `_evaluate_condition` — the canonical place where catalog `requires:` strings resolve into combatant-state predicates. Recognizes `shield_equipped`, `pole_weapon_equipped`, `two_handed_weapon`, `single_weapon_style`, `two_weapon_style`, `missile_style_active`, `armor_leather_or_lighter_and_unencumbered`. Lazy-caches a `ProficiencyRegistry` (no autoload).
+
+- **`engine/subsystems/combat/combatant.gd`** — equipment-state capture and runtime helpers.
+  - New fields: `_equipped_body_armor_ac_bonus`, `_shield_equipped`, `_offhand_weapon_equipped`. Captured by extending the existing inventory scan loops in `wire_equipment()`.
+  - New helpers used by the hooks' condition predicates: `get_equipped_body_armor_ac_bonus()`, `has_shield_equipped()`, `is_dual_wielding()`, `is_wielding_two_handed()`, `is_wielding_one_handed_melee()`, `is_wielding_pole_weapon()` (uses `WeaponFocusFamily` for the spear/polearm test so whip's "reach" tag does not qualify), `is_wielding_missile_weapon()`, `get_weapon_focus_family()`, `can_move_freely()` (no immobilizing condition; encumbrance integration deferred).
+  - New helper `has_proficiency_with_specialization(key, spec) -> bool` wrapping `CharacterData.get_total_proficiency_rank(key, spec) > 0`.
+  - `get_effective_ac()` now adds `ProficiencyCombatHooks.aggregate_modifier(self, "armor_class", {"phase": "ac"})` on top of the base + unconditional-modifier value. This is how Weapon and Shield FS (+1 AC) and Swashbuckling (+1/+2/+3 AC by level) reach the AC.
+  - `get_initiative_modifier()` adds the same aggregation for `"initiative_modifier"`. This is how Pole Weapon FS (+1 init) reaches initiative.
+
+- **`engine/subsystems/combat/attack_resolver.gd`** — `resolve_melee_attack()` updates.
+  - **Weapon Finesse**: at the to-hit calculation, if the attacker has the `dex_for_attack_throws` flag (set unconditionally by `ProficiencyEffectResolver`) AND `is_wielding_one_handed_melee()`, swap STR mod for DEX mod on the attack throw only (not damage).
+  - **Fighting Style to-hit (single_weapon, two_weapons)**: target number is now `attack_throw + ac + ProficiencyCombatHooks.aggregate_modifier(attacker, "attack_throw", {"phase": "melee_attack"})`. The catalog stores -1 modifiers, which lower target number = effectively +1 to-hit.
+  - **Fighting Style damage (two_handed_weapon)**: damage_total now adds `ProficiencyCombatHooks.aggregate_modifier(attacker, "damage_bonus", {"phase": "melee_attack"})`.
+  - **Weapon Focus**: on `is_natural_twenty AND attacker.is_character`, look up `attacker.get_weapon_focus_family()` and ask hooks if `natural_20_double_damage` is enabled for that family. If yes, `damage_total *= 2`.
+
+- **`engine/subsystems/combat/ranged_attack_resolver.gd`** — `resolve_ranged_attack()` updates.
+  - **Fighting Style to-hit (missile)**: target number adds `aggregate_modifier(attacker, "attack_throw", {"phase": "ranged_attack"})`. The `missile_style_active` predicate is purely phase-driven, so the bonus is applied iff the character has Fighting Style: Missile selected.
+  - **Weapon Focus**: same nat-20 doubling pattern as melee.
+  - Added a `damage_bonus` aggregation hook that is currently a no-op (Missile FS doesn't grant damage) but keeps the resolver structurally consistent with the melee path for future ranged-only proficiencies.
+
+**Decisions made:**
+
+- **Catalog as source of truth.** Bonus values, conditions, and enablers are read from `proficiency_catalog.json` at runtime (via `ProficiencyRegistry`) rather than hardcoded in the resolvers. This makes adding compatible proficiencies a data-only change. The trade-off is one level of indirection, but everything is statically discoverable: search for `aggregate_modifier` or `has_active_enabler` to find every site, search for `_evaluate_condition` to find every condition predicate.
+- **Static caching of `ProficiencyRegistry` and `ClassRegistry`.** Both are non-autoload `class_name` classes whose `_init` reads ~30 JSON files from disk. Cached statically inside `ProficiencyCombatHooks` and `Combatant` respectively to avoid reloads on every combat query. Process-lifetime cache; editing the catalog requires an editor restart to take effect (acceptable trade-off for shipped builds).
+- **Weapon Finesse stays a flag check, not a hooks aggregation.** The catalog already encodes Weapon Finesse as the `dex_for_attack_throws` flag, set unconditionally. The resolver consumes the flag plus a weapon-state guard (one-handed melee) directly. Routing this through the hooks would require a custom flag-driven verb that has no other consumer.
+- **Pole-weapon detection routes through `WeaponFocusFamily`**, not a `"reach"` weapon-tag check. The reach tag includes whip, which is not a pole weapon. The Spears/Polearms family is the right granularity, and reusing it ensures the Pole Weapon FS condition and Weapon Focus (spears_polearms) agree on what counts as a pole weapon.
+- **Swashbuckling "able to move freely"** is interpreted as "no immobilizing condition" (held / grappled / restrained / paralyzed / prone / entangled / unconscious). Encumbrance-based movement reduction is deferred until that pipeline becomes more granular than `movement_rate` modifier composition.
+- **No enforcement of "one fighting style bonus per round."** ACKS rule: a character with two applicable fighting styles must pick one bonus per round. Today the implementation applies all matching styles. Rare in practice (most characters take one FS); noted as a known issue.
+
+**Interfaces defined or changed:**
+
+New public API on `Combatant`:
+- `has_shield_equipped() -> bool`
+- `is_dual_wielding() -> bool`
+- `is_wielding_two_handed() -> bool`
+- `is_wielding_one_handed_melee() -> bool`
+- `is_wielding_pole_weapon() -> bool`
+- `is_wielding_missile_weapon() -> bool`
+- `get_weapon_focus_family() -> String`
+- `get_equipped_body_armor_ac_bonus() -> int`
+- `can_move_freely() -> bool`
+- `has_proficiency_with_specialization(key: String, specialization: String) -> bool`
+
+New static API on new classes:
+- `WeaponFocusFamily.family_for(item_key: String) -> String`
+- `ProficiencyCombatHooks.aggregate_modifier(combatant, stat_key: String, context: Dictionary) -> int`
+- `ProficiencyCombatHooks.has_active_enabler(combatant, action: String, context: Dictionary) -> bool`
+
+Behavioral change on existing methods:
+- `Combatant.get_effective_ac()` now folds in conditional proficiency AC modifiers (was: base + unconditional only).
+- `Combatant.get_initiative_modifier()` now folds in conditional proficiency init modifiers.
+- `AttackResolver.resolve_melee_attack()` now applies Weapon Finesse, FS to-hit/damage, and Weapon Focus nat-20 doubling.
+- `RangedAttackResolver.resolve_ranged_attack()` now applies FS missile to-hit and Weapon Focus nat-20 doubling.
+
+**Database changes:** None.
+
+**Tests added/updated:** None added. Existing combat suite should still pass (monsters have no proficiencies, so all aggregation calls return 0 for them; characters without these proficiencies likewise see 0). Worth adding focused tests when content stabilizes.
+
+**Known issues:**
+
+- **No "pick one fighting style per round" enforcement.** Multiple matching FS bonuses currently stack. Add UI or auto-pick heuristic when this becomes player-visible.
+- **`can_move_freely()` ignores encumbrance.** Currently only checks immobilizing combat conditions. A character carrying max load wearing leather still gets the swashbuckling bonus. Revisit when encumbrance has a structured load-tier field rather than only a movement-rate delta.
+- **Weapon Focus and Pole Weapon FS depend on the hardcoded `FAMILY_BY_ITEM_KEY` dict.** Adding a new weapon requires either using a known item_key or adding the new key to `weapon_focus_family.gd`. A future cleanup could move the family ID into a `weapon_category` field on each weapon row in `data/equipment/base_equipment.json`.
+- **Auto-hit melee path** (`_resolve_auto_hit_melee`, used by spell-driven forced hits) does not apply FS damage bonus. Auto-hits skip the natural roll so Weapon Focus is correctly N/A there, but two-handed FS damage is not currently propagated. Low impact; revisit if spell hooks driving auto-hits become more common.
+- **Hooks evaluate per-call.** Each call to `aggregate_modifier` walks the character's proficiency list and runs predicate checks. Cheap (typical character has 5–15 proficiencies; predicates are O(1)) but if a profiling pass shows hot spots, cache the per-stat sum keyed by combatant equipment-state hash.
+
+**Next session should:**
+
+1. Smoke-test in editor: a fighter with Fighting Style (Weapon and Shield) wielding sword + shield should show base AC + 1 (shield) + 1 (FS) = +2 over baseline. Same fighter switching to a two-handed sword should lose both bonuses but gain +1 damage from FS (Two-Handed) if also taken.
+2. Smoke-test Weapon Focus: thief with Weapon Focus (Swords/Daggers) wielding a short sword. Force a nat-20 and verify combat log shows doubled damage.
+3. Smoke-test Weapon Finesse: thief with high DEX, low STR. Wielding a short sword (one-handed melee), to-hit should use the DEX modifier; switching to a two-handed sword reverts to STR.
+4. Smoke-test Swashbuckling at levels 1, 7, 13 in leather and in chain. Bonus should be +1/+2/+3 in leather and 0 in chain. Also verify the bonus disappears when the character is held or grappled.
+5. Optional but valuable: write `tests/test_proficiency_combat_hooks.gd` with synthetic combatants exercising each catalog condition. Lock down the contract before adding more proficiencies that ride on it.
+
+---
+
+## Session 2026-04-28 — Eight-Proficiency Wiring (Berserkergang, Combat Reflexes, Combat Trickery, Kin-Slaying, Goblin-Slaying, Sniping; verified Precise Shooting + Skirmishing)
+
+**Task:** Wire combat-mechanical effects for eight ACKS proficiencies. Six required new code (Berserkergang, Combat Reflexes, Combat Trickery gaps, Kin-Slaying, Goblin-Slaying, Sniping). Two were already correct in earlier work (Precise Shooting, Skirmishing) and were left untouched after audit confirmation.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+### Foundation
+- **`data/conditions/condition_catalog.json`** — added new `berserk_rage` condition (separate from existing `infuriated` to avoid the "must attack nearest" rule that doesn't match Berserkergang). Fields: `attack_modifier: 2`, `ac_modifier: -2`, `immune_to_fear: true`, plus a custom `prevents_defensive_declaration: true` flag that the menu/declaration code reads via `Combatant.is_berserk_raging()`.
+- **`engine/subsystems/combat/creature_family.gd`** (new) — static `CreatureFamily` classifier. `family_for(combatant)` returns a coarse family string from PC `CharacterData.race` or monster `sub_types`/`monster_types`. `is_kin()` matches {human, elf, dwarf, halfling, gnome, nobiran}. `is_goblinoid()` matches {goblinoid, giantkin, giant_humanoid} plus a sub_types backstop. Returns "" for un-tagged combatants — bonus simply doesn't trigger, future monsters become eligible by tagging the catalog.
+- **`engine/subsystems/combat/proficiency_combat_hooks.gd`** — added new condition predicates: `not_casting_spell` (calls `combatant.is_casting_spell_this_round()` — currently a stub returning false; wired through the predicate so when per-round casting tracking lands, only the helper changes), `target_is_kin` and `target_is_goblinoid` (both pull `target` from context), `firing_into_melee` and the seven `using_<maneuver>` conditions reserved as inert no-ops (Precise Shooting + Combat Trickery resolvers compute their effects directly today; the conditions are reserved for a future migration to the catalog-driven path and explicitly return false to prevent double-application).
+- **`engine/subsystems/combat/attack_resolver.gd`** + **`ranged_attack_resolver.gd`** — both now pass `target` in the hook context dict for `attack_throw` and `damage_bonus` aggregations. This is what enables `target_is_kin` / `target_is_goblinoid` to evaluate at attack time.
+- **`engine/subsystems/combat/combatant.gd`** — added `get_creature_family()` (delegates to `CreatureFamily.family_for(self)`), `is_casting_spell_this_round()` (stub returning false with TODO), `is_berserk_raging()` (checks the condition).
+
+### Combat Reflexes — initiative bonus already wired in earlier work
+- The +1 initiative modifier was already aggregated through `ProficiencyCombatHooks` in last session's hook-up (catalog modifier with condition `not_casting_spell`).
+- Added the `not_casting_spell` predicate (per above). Since the casting-this-round tracker is a stub, the bonus always applies for now. When per-round spell-cast declaration lands, only `Combatant.is_casting_spell_this_round()` changes.
+- Surprise side (`avoid_surprise_modifier`) deferred per user direction — no surprise system yet.
+
+### Combat Trickery — per-specialization gating + save penalty
+- **`engine/subsystems/combat/maneuver_resolver.gd`**:
+  - `_maneuver_attack(attacker, target, maneuver_key)` now takes the maneuver key and only reduces the -4 attack penalty when `attacker.has_proficiency_with_specialization("combat_trickery", maneuver_key)`. Previously a flat `has_proficiency("combat_trickery")` — that meant a character with CT(Disarm) wrongly got -2 on every other maneuver too.
+  - New `_ct_save_penalty(attacker, maneuver_key) -> int` returns -2 when the per-spec match holds. Wired into the `save_mod` of every save-rolling maneuver: disarm, force_back, knock_down, overrun, sunder, wrestle. (Incapacitate has no save throw.) Net effect: target's save throw is 2 lower, matching ACKS spec.
+  - Sunder's penalty-reduction check changed from `has_proficiency` → `has_proficiency_with_specialization`.
+  - Brawl no longer benefits from any Combat Trickery — brawl is not one of the seven CT specializations in the catalog. Removed the legacy boolean check.
+- **`engine/subsystems/combat/combat_context_menu_builder.gd`**: maneuver submenu now shows the per-maneuver penalty independently — each option (Disarm, Force Back, Incapacitate, Knock Down, Overrun, Sunder, Wrestle) consults the matching CT specialization separately. A character with CT(Knock Down) will see "Knock Down (-2)" but "Disarm (-4)" in the same submenu.
+
+### Kin-Slaying / Goblin-Slaying
+- Both proficiencies' catalog entries store a conditional `attack_throw` modifier with level scaling (1-6: +1, 7-12: +2, 13+: +3). With `target_is_kin` / `target_is_goblinoid` predicates now wired, the existing `ProficiencyCombatHooks.aggregate_modifier(attacker, "attack_throw", {target: ...})` call in both attack resolvers picks them up automatically. Level scaling routes through `ProficiencyRegistry.get_scaled_bonus()` exactly like Swashbuckling.
+- Coverage caveat (per user agreement): species detection reads existing tags. Goblin/Orc/Troll/Kobold tagged `goblinoid` already trigger. Ogre tagged `goblinoid+giant_humanoid` triggers. Gnolls/Hobgoblins/Bugbears/Giants/demi-human enemies aren't in the monster catalog yet — when added with appropriate tags, the bonuses auto-apply. Documented as a content gap below.
+
+### Berserkergang
+- **Self-target context menu option "Begin Rage"** added in `_build_self_options` ([combat_context_menu_builder.gd:557](engine/subsystems/combat/combat_context_menu_builder.gd#L557)). Available when `combatant.has_proficiency("berserkergang")` and not already raging.
+- **Resolver action `_resolve_begin_rage`** ([combat_controller.gd:2564](engine/subsystems/combat/combat_controller.gd#L2564)) applies the `berserk_rage` condition via `condition_manager.apply_condition(...)` (or direct `add_condition` fallback). Free action — does not consume movement or attack. Idempotent (already-raging returns a no-op note).
+- **Pre-initiative declaration overlay grey-out** ([declaration_overlay.gd](scenes/ui/combat/declaration_overlay.gd)): `set_pc_list` now reads `is_berserk_raging` per PC. Fighting Withdrawal and Full Retreat dropdown entries are disabled (`set_item_disabled(true)`) and the dropdown carries a tooltip explaining why. `combat_ui_controller._get_alive_pcs()` populates the new flag from `Combatant.is_berserk_raging()`.
+- **On-turn declaration block** ([combat_controller.gd:204](engine/subsystems/combat/combat_controller.gd#L204)): `submit_declaration` rejects fighting_withdrawal / full_retreat for any combatant currently raging — covers the Skirmishing-driven on-turn defensive declaration too. Defensive against any caller bypassing the menu UI.
+- **On-turn movement option block** ([combat_context_menu_builder.gd:284](engine/subsystems/combat/combat_context_menu_builder.gd#L284)): movement-options builder skips the entire Skirmishing-driven Fighting Withdrawal / Full Retreat block when the actor is raging.
+- **End-of-combat cleanup** ([combat_controller.gd:2178-2185](engine/subsystems/combat/combat_controller.gd#L2178-L2185)): `_emit_combat_ended` walks the roster and removes `berserk_rage` from anyone still raging, so the condition cannot persist into post-combat state. ACKS rule: "Once it has begun, a berserker rage cannot be ended until combat ends" — combat end is the only termination point.
+- **Stack-with-Charge** behaves correctly because both effects are independent modifiers on attack/AC; charge applies via the existing `charging` condition (+2 attack, -2 AC for the round) which adds to the rage's +2/-2 — net +4/-4 for a charging berserker, matching the user's spec.
+
+### Sniping (full ranged-backstab path)
+- **`_can_snipe(combatant, target, controller)`** ([combat_context_menu_builder.gd:888](engine/subsystems/combat/combat_context_menu_builder.gd#L888)): independent from `_can_backstab`. Requires Sniping proficiency, backstab class power (with the same Assassin armor restriction), a missile weapon equipped, target inside the equipped weapon's `range_short` band, and target in one of the existing eligibility states (unaware/held/grappled/prone/sleeping). Flanking is intentionally omitted because "behind target" is undefined for a ranged shot from arbitrary direction.
+- **Snipe context menu option** ([combat_context_menu_builder.gd:411](engine/subsystems/combat/combat_context_menu_builder.gd#L411)): appears when `not is_adjacent` and `_can_snipe` passes. Disjoint from the melee Backstab option (which still requires adjacency). Labeled "Snipe (xN)" so the player can tell them apart.
+- **`_resolve_ranged_backstab_action`** ([combat_controller.gd:2428](engine/subsystems/combat/combat_controller.gd#L2428)): mirrors `_resolve_backstab_action` structurally but routes through `ranged_resolver.resolve_ranged_attack` so range-band penalty, ammo consumption (`combatant.consume_ammo()`), and the precise-shooting into-melee gate all stay in force. +4 to-hit added the same way; level-banded multiplier applied to `damage_total` after the ranged hit. Returns the same `total_damage` / `backstab_multiplier` / `target_downed` keys as melee backstab so log entries are uniform.
+- Defensive eligibility guards in the resolver mirror `_can_snipe` so a malformed action payload can't bypass the menu-side checks.
+
+**Decisions made:**
+
+- **`berserk_rage` is a separate condition, not a reskin of `infuriated`.** Conditional fields on `infuriated` (`must_attack_nearest`, `ignores_morale`) wouldn't have matched the user's spec, and would have surprised future readers seeing two distinct mechanics share an entry. Both conditions can now coexist for different sources of battle rage.
+- **Combat Trickery brawl bonus removed.** Brawl is not one of the seven CT specializations in the catalog. The previous `_resolve_brawl` logic that gave any CT proficiency a -2 reduction on punches/kicks didn't match the rules. Brawl now stays at flat -4.
+- **Kin-Slaying / Goblin-Slaying are tag-driven, not hardcoded.** `CreatureFamily` reads `sub_types` and `monster_types` from the catalog entry. New goblinoid monsters become bonus-eligible by tagging them correctly in `data/monsters/monster_catalog.json`. Code-side change only needed if a brand-new family is introduced.
+- **`not_casting_spell` evaluator wired with stub helper.** The condition predicate calls `Combatant.is_casting_spell_this_round()`, which currently returns false. When per-round casting declarations are wired (probably alongside spell-prep UI work), only the helper body changes — no resolver edits.
+- **Sniping gets a full parallel resolver, not a UI-only stub.** Routing through `ranged_resolver.resolve_ranged_attack` is the right structural move: range-band penalty, ammo decrement, and the precise-shooting into-melee gate apply naturally. Slightly more code, much less special-case glue.
+- **Sniping does not require Backstab class power AND Sniping?** Yes, both. The user's spec: "If otherwise eligible to ambush or backstab his opponent..." — eligibility is the existing backstab gate (class + armor restriction + target condition). Sniping is the additive flag that lets that eligibility extend to ranged at short range.
+
+**Interfaces defined or changed:**
+
+New on `Combatant`:
+- `get_creature_family() -> String`
+- `is_casting_spell_this_round() -> bool` (stub)
+- `is_berserk_raging() -> bool`
+
+New static API:
+- `CreatureFamily.family_for(combatant) -> String`
+- `CreatureFamily.is_kin(combatant) -> bool`
+- `CreatureFamily.is_goblinoid(combatant) -> bool`
+
+New action handlers in `combat_controller`:
+- `begin_rage` action → `_resolve_begin_rage(combatant)`
+- `ranged_backstab` action → `_resolve_ranged_backstab_action(combatant, params, mod)`
+
+New helper in `combat_context_menu_builder`:
+- `_can_snipe(combatant, target, controller) -> bool` (static)
+
+Maneuver resolver signature changes:
+- `_maneuver_attack(attacker, target, maneuver_key: String = "")` — added optional maneuver_key param. Existing calls without the param still work but won't reduce the penalty (correct, since CT requires per-spec match).
+- New `_ct_save_penalty(attacker, maneuver_key) -> int` private helper.
+
+Behavioral change to `submit_declaration`:
+- Rejects `fighting_withdrawal` / `full_retreat` from any combatant currently in `berserk_rage`, regardless of phase.
+
+New `set_pc_list` payload key consumed by `DeclarationOverlay`:
+- `is_berserk_raging: bool` per PC dict — controls dropdown disable state for retreat options.
+
+**Database changes:** None.
+
+**Tests added/updated:** None. Existing combat suite should pass — monsters have no proficiencies (so all hook calls return 0 for them); characters without these new proficiencies see no changes.
+
+**Known issues:**
+
+- **Monster catalog coverage gap for Kin/Goblin-Slaying.** Only goblin/orc/troll/kobold (sub_types: goblinoid) and ogre (monster_types: giant_humanoid) currently match. Gnolls, hobgoblins, bugbears, true giants, and demi-human enemies aren't in the catalog yet. When added, tag them with the correct `sub_types` / `monster_types` and the bonuses will auto-apply.
+- **Spell-cast initiative tracking is stubbed.** `Combatant.is_casting_spell_this_round()` always returns false, so Combat Reflexes always grants its +1 initiative bonus. When per-round spell-cast declarations are wired (likely alongside spell-prep UI), update the helper.
+- **Surprise system not built.** Combat Reflexes' surprise-roll bonus and Sniping's ambush-tied use case both depend on a surprise framework that doesn't exist yet. The catalog modifiers and the proficiency flags are correct; consumers will pick them up when the framework lands.
+- **Berserkergang activation timing is per-action, not "once per encounter."** The "Begin Rage" option appears any time the rager is awaiting a free action and not already raging. ACKS doesn't restrict when rage can begin during the encounter, so this matches the rules. If a combat starts with the rager pre-raged via some other mechanism, the option correctly hides itself.
+- **`ranged_backstab` morale check** (`_check_solo_monster_morale` on miss) is folded into the new resolver but inherits the existing morale logic. If the existing morale path has bugs, the ranged backstab resolver inherits them.
+- **No "Pick one fighting style per round" enforcement** carries over from the prior session — separate from this work, still flagged.
+
+**Next session should:**
+
+1. Smoke-test Combat Trickery per-spec: take CT(Disarm) on a fighter; verify Disarm shows -2 in submenu and other maneuvers show -4. Try a Disarm against a target that would normally save — verify their save target is harder.
+2. Smoke-test Berserkergang full loop: fighter with the proficiency clicks self → "Begin Rage". Open declaration overlay (round 2): verify Fighting Withdrawal / Full Retreat are greyed out for that PC. Try the Skirmishing on-turn retreat too — should be blocked. Defeat the encounter, start a new one — rage should be gone.
+3. Smoke-test Kin/Goblin-Slaying: thief with Goblin-Slaying attacking a goblin should see the +1 to-hit on the attack roll. Same character at level 7 should see +2.
+4. Smoke-test Sniping: thief with Sniping + shortbow + stealth-hidden enemy 30ft away → "Snipe" appears in menu, hits with backstab multiplier; same setup with the enemy 80ft away → no Snipe option (out of short range).
+5. Once spell-cast declaration is wired, drop the stub on `Combatant.is_casting_spell_this_round()` and validate Combat Reflexes correctly excludes the casting round.
+6. Backfill the monster catalog with gnolls / hobgoblins / bugbears / giants / demi-human enemies, tagging them properly so Kin/Goblin-Slaying triggers without code changes.
+

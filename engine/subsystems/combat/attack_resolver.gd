@@ -41,8 +41,15 @@ func resolve_melee_attack(
 
 	# Calculate attack modifiers
 	var str_mod := attacker._get_ability_modifier("strength")
-	# STR mod + weapon magical bonus + monster to-hit bonuses + condition/external modifiers
-	var to_hit_bonus := str_mod + extra_attack_mod
+	# Weapon Finesse: substitute DEX for STR on to-hit (not damage) when the
+	# character has the proficiency flag and is wielding a one-handed melee weapon.
+	var attack_ability_mod := str_mod
+	if attacker.is_character and attacker.is_wielding_one_handed_melee():
+		var flags := attacker.get_flags()
+		if flags != null and flags.has_flag("dex_for_attack_throws"):
+			attack_ability_mod = attacker._get_ability_modifier("dexterity")
+	# STR/DEX mod + weapon magical bonus + monster to-hit bonuses + condition/external modifiers
+	var to_hit_bonus := attack_ability_mod + extra_attack_mod
 	if attacker.is_character:
 		to_hit_bonus += attacker.get_weapon_magical_bonus()
 	else:
@@ -69,7 +76,13 @@ func resolve_melee_attack(
 
 	var natural_roll: int = attack_roll.raw_total
 	var total_attack: int = natural_roll + to_hit_bonus
-	var target_number: int = attacker.get_effective_attack_throw() + target.get_effective_ac()
+	# Conditional fighting-style attack-throw modifiers (single_weapon, two_weapons, ...)
+	# are stored in the catalog as a negative attack_throw delta — i.e. lowering the
+	# target number is equivalent to a positive to-hit bonus.
+	var prof_attack_mod := ProficiencyCombatHooks.aggregate_modifier(
+		attacker, "attack_throw", {"phase": "melee_attack", "target": target})
+	var target_number: int = attacker.get_effective_attack_throw() \
+		+ target.get_effective_ac() + prof_attack_mod
 
 	# Determine hit/miss
 	var is_hit: bool
@@ -103,6 +116,9 @@ func resolve_melee_attack(
 	if is_hit:
 		var str_damage_mod := str_mod if attacker.is_character else 0
 		var mod_bonus: int = attacker.get_modifiers().get_effective_value("damage_bonus", 0)
+		# Conditional fighting-style damage bonus (two-handed weapon, ...).
+		var prof_damage_mod := ProficiencyCombatHooks.aggregate_modifier(
+			attacker, "damage_bonus", {"phase": "melee_attack", "target": target})
 
 		if _dice_system != null:
 			damage_roll = _dice_system.roll_expression(damage_expression, "damage")
@@ -112,7 +128,17 @@ func resolve_melee_attack(
 			damage_roll.modified_total = 4
 
 		var magic_dmg_bonus: int = attacker.get_weapon_magical_bonus() if attacker.is_character else 0
-		damage_total = maxi(1, damage_roll.modified_total + str_damage_mod + mod_bonus + magic_dmg_bonus)
+		damage_total = maxi(1, damage_roll.modified_total + str_damage_mod \
+			+ mod_bonus + prof_damage_mod + magic_dmg_bonus)
+
+		# Weapon Focus: unmodified natural 20 doubles damage when the character
+		# has Weapon Focus selected for the wielded weapon's family.
+		if is_natural_twenty and attacker.is_character:
+			var weapon_family := attacker.get_weapon_focus_family()
+			if weapon_family != "" and ProficiencyCombatHooks.has_active_enabler(
+					attacker, "natural_20_double_damage",
+					{"weapon_category": weapon_family}):
+				damage_total *= 2
 
 		# Apply damage through target's resistance pipeline
 		damage_result = target.apply_damage(damage_total, "physical")

@@ -172,12 +172,8 @@ For class proficiency lists that constrain specialization (e.g., Cleric gets `Kn
 | `natural_history` | Natural history | Flora, fauna, ecology — distinct from Naturalism proficiency |
 | `natural_philosophy` | Natural philosophy | Physics, chemistry, material science |
 | `political_economy` | Political economy | Trade, governance, taxation |
-| `occult` | Occult philosophy | Required for multiple codex authority topics; distinct from Black Lore |
+| `occult` | Occult | Required for multiple codex authority topics; distinct from Black Lore |
 | `trivia` | Trivia | Eclectic miscellany |
-| `metaphysics` | Metaphysics | Planar theory, cosmology |
-| `theology_academic` | Theology (academic) | Comparative religion as scholarship — distinct from Theology proficiency |
-| `law` | Law | Legal systems, precedent |
-| `military_history` | Military history | Warfare, famous battles, strategy as scholarship |
 
 **Setting-generated additions:** The setting generation pipeline may produce 1–3 additional Knowledge specializations reflecting the campaign world (e.g., "Knowledge (Draconic Lineages)" for a dragon-heavy setting, "Knowledge (Underdark Ecology)" for a subterranean campaign). These are produced by the LLM during setting generation with deterministic IDs: `knowledge_setting_{snake_case_name}`.
 
@@ -224,11 +220,6 @@ For class proficiency lists that constrain specialization (e.g., Cleric gets `Kn
 | `weaving` | Weaving |
 | `weaponsmithing` | Weaponsmithing |
 | `wheelwright` | Wheelwright |
-| `pottery` | Pottery |
-| `glassblowing` | Glassblowing |
-| `jeweling` | Jeweling |
-| `tailoring` | Tailoring |
-| `ropemaking` | Ropemaking |
 
 **Mechanical effects:** Craft rank determines monthly income and apprentice/journeyman capacity. The specialization determines what the character can produce. Income generation is identical across specializations — the specialization is a flavor/narrative constraint on *what* is produced, not *how much*.
 
@@ -255,12 +246,6 @@ For class proficiency lists that constrain specialization (e.g., Cleric gets `Kn
 | `painting` | Painting |
 | `sculpture` | Sculpture |
 | `stained_glass` | Stained glass |
-| `pottery_art` | Pottery (artistic) |
-| `woodcarving` | Woodcarving |
-| `metalwork_art` | Metalwork (artistic) |
-| `tapestry` | Tapestry |
-| `engraving` | Engraving |
-| `fresco` | Fresco |
 
 **Mechanical effects:** Identical to Craft in progression (rank → income → specialist equivalence at rank 3). Specialization determines what art objects the character produces.
 
@@ -287,11 +272,10 @@ For class proficiency lists that constrain specialization (e.g., Cleric gets `Kn
 | `playing_instruments` | Playing instruments | Instrumental |
 | `singing` | Singing | Vocal |
 | `storytelling` | Storytelling | Vocal/recitation |
-| `comedy` | Comedy | Theatrical |
 
 **Instrumental sub-specialization:** `playing_instruments` does NOT require further sub-specialization to a specific instrument. The character is proficient with instruments generally. Musical instrument quality levels from `acore_equipment.xml` (25gp / 50gp / 100gp) apply their Performance throw bonus regardless of instrument type. This is a deliberate simplification — tracking per-instrument proficiency adds complexity without meaningful mechanical payoff.
 
-**Mechanical effects:** Performance throw on 11+ to entertain, inspire, or earn income. The specialization determines which contexts the performance applies to. For Magical Music: the character must have at least one performance mode that qualifies (vocal or instrumental). All vocal and instrumental modes qualify for Magical Music; purely physical modes (dancing, juggling, acrobatics) do not unless combined with vocal accompaniment.
+**Mechanical effects:** Performance throw on 11+ to entertain, inspire, or earn income. The specialization determines which contexts the performance applies to. For Magical Music: the character must have at least one performance mode that qualifies (vocal or instrumental). All vocal and instrumental modes qualify for Magical Music; purely physical modes (dancing) do not unless combined with vocal accompaniment.
 
 **Inspire Courage (Bard/Courtier):** Works with any performance mode the character knows. The specialization is narrative flavor for the LLM to describe the performance, not a mechanical constraint on the ability.
 

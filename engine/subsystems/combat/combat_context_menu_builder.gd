@@ -277,8 +277,11 @@ static func _build_movement_options(
 					{"action_type": "charge", "cell": target_cell,
 					 "target_id": charge_target.id}))
 
-	# Fighting Withdrawal / Full Retreat (on-turn with Skirmishing, or if declared)
-	if engaged:
+	# Fighting Withdrawal / Full Retreat (on-turn with Skirmishing, or if declared).
+	# Berserkers cannot retreat from combat — defensive movement is unavailable
+	# while raging, regardless of Skirmishing or pre-init declaration.
+	var is_berserk_rage := combatant.is_berserk_raging()
+	if engaged and not is_berserk_rage:
 		if has_skirmishing and not has_defensive_decl:
 			options.append(_option("fighting_withdrawal", "Fighting Withdrawal", can_move,
 				"Skirmishing: withdraw at half movement (may attack pursuer)", "movement",
@@ -401,6 +404,18 @@ static func _build_attack_options(
 				"Backstab %s for multiplied damage" % target.display_name, "attack",
 				{"action_type": "backstab", "target_id": target.id}))
 
+	# Ranged Backstab (Sniping proficiency): backstab eligibility + ranged
+	# weapon equipped + target within short range. Disjoint from melee
+	# backstab — only offered when the attacker is NOT adjacent.
+	if not is_adjacent and can_attack and not has_run:
+		if _can_snipe(combatant, target, controller):
+			var level := combatant.get_level_or_hd()
+			var mult := _backstab_multiplier(level)
+			options.append(_option("ranged_backstab", "Snipe (x%d)" % mult, true,
+				"Sniping: ranged backstab on %s for multiplied damage" % target.display_name,
+				"attack",
+				{"action_type": "ranged_backstab", "target_id": target.id}))
+
 	# Combat Maneuver (submenu) — only if adjacent and can attack
 	if is_adjacent and can_attack and not has_run:
 		var maneuver_sub := _build_maneuver_submenu(combatant, target, controller)
@@ -433,43 +448,50 @@ static func _build_maneuver_submenu(
 	controller,
 ) -> Array[Dictionary]:
 	var options: Array[Dictionary] = []
-	var has_ct := combatant.has_proficiency("combat_trickery")
-	var penalty := -2 if has_ct else -4
-	var penalty_str := "%d" % penalty
+
+	# Combat Trickery is per-specialization: each maneuver checks for its
+	# matching CT selection independently. Penalty is -4 normally, -2 when
+	# the character has Combat Trickery for that specific maneuver.
+	var disarm_pen := -2 if combatant.has_proficiency_with_specialization("combat_trickery", "disarm") else -4
+	var force_back_pen := -2 if combatant.has_proficiency_with_specialization("combat_trickery", "force_back") else -4
+	var incap_pen := -2 if combatant.has_proficiency_with_specialization("combat_trickery", "incapacitate") else -4
+	var knock_down_pen := -2 if combatant.has_proficiency_with_specialization("combat_trickery", "knock_down") else -4
+	var overrun_pen := -2 if combatant.has_proficiency_with_specialization("combat_trickery", "overrun") else -4
+	var sunder_pen := -4 if combatant.has_proficiency_with_specialization("combat_trickery", "sunder") else -6
+	var wrestle_pen := -2 if combatant.has_proficiency_with_specialization("combat_trickery", "wrestle") else -4
 
 	# Disarm
-	options.append(_option("maneuver_disarm", "Disarm (%s)" % penalty_str, true,
+	options.append(_option("maneuver_disarm", "Disarm (%d)" % disarm_pen, true,
 		"Knock weapon from opponent's hand (save vs. Paralysis to resist)", "maneuver",
 		{"action_type": "maneuver_disarm", "target_id": target.id}))
 
 	# Force Back
-	options.append(_option("maneuver_force_back", "Force Back (%s)" % penalty_str, true,
+	options.append(_option("maneuver_force_back", "Force Back (%d)" % force_back_pen, true,
 		"Push opponent back (save vs. Paralysis to resist)", "maneuver",
 		{"action_type": "maneuver_force_back", "target_id": target.id}))
 
 	# Incapacitate
-	options.append(_option("maneuver_incapacitate", "Incapacitate (%s)" % penalty_str, true,
+	options.append(_option("maneuver_incapacitate", "Incapacitate (%d)" % incap_pen, true,
 		"Deal nonlethal damage to knock out", "maneuver",
 		{"action_type": "maneuver_incapacitate", "target_id": target.id}))
 
 	# Knock Down
-	options.append(_option("maneuver_knock_down", "Knock Down (%s)" % penalty_str, true,
+	options.append(_option("maneuver_knock_down", "Knock Down (%d)" % knock_down_pen, true,
 		"Target falls prone (+2 to hit, backstab eligible)", "maneuver",
 		{"action_type": "maneuver_knock_down", "target_id": target.id}))
 
 	# Overrun
-	options.append(_option("maneuver_overrun", "Overrun (%s)" % penalty_str, true,
+	options.append(_option("maneuver_overrun", "Overrun (%d)" % overrun_pen, true,
 		"Move through opponent's cell (save vs. Paralysis to resist)", "maneuver",
 		{"action_type": "maneuver_overrun", "target_id": target.id}))
 
 	# Sunder
-	var sunder_penalty := -4 if has_ct else -6
-	options.append(_option("maneuver_sunder", "Sunder (%d)" % sunder_penalty, true,
+	options.append(_option("maneuver_sunder", "Sunder (%d)" % sunder_pen, true,
 		"Break opponent's weapon or shield", "maneuver",
 		{"action_type": "maneuver_sunder", "target_id": target.id}))
 
 	# Wrestle
-	options.append(_option("maneuver_wrestle", "Wrestle (%s)" % penalty_str, true,
+	options.append(_option("maneuver_wrestle", "Wrestle (%d)" % wrestle_pen, true,
 		"Grab opponent (held: +4 to hit, backstab eligible)", "maneuver",
 		{"action_type": "maneuver_wrestle", "target_id": target.id}))
 
@@ -528,6 +550,15 @@ static func _build_self_options(
 		options.append(_option("stand_up", "Stand Up", true,
 			"Stand from prone (consumes movement for the round)", "self",
 			{"action_type": "stand_up", "character_id": combatant.id}))
+
+	# Begin Rage (Berserkergang) — free-action self-toggle. Available when the
+	# character has the proficiency and is not already raging. Once activated,
+	# the rage lasts until combat ends (cleaned up in _emit_combat_ended).
+	if combatant.has_proficiency("berserkergang") and not combatant.is_berserk_raging():
+		options.append(_option("begin_rage", "Begin Rage", true,
+			"Berserkergang: +2 attack, -2 AC, immune to fear, no defensive movement. Lasts until combat ends.",
+			"self",
+			{"action_type": "begin_rage", "character_id": combatant.id}))
 
 	# Drop Item
 	options.append(_option("drop_item", "Drop Item", true,
@@ -820,8 +851,13 @@ static func _has_set_weapon(combatant: Combatant) -> bool:
 
 static func _can_backstab(combatant: Combatant, target: Combatant) -> bool:
 	## Returns true if the combatant can backstab the target.
-	## Requires thief combat progression + target must be unaware/flanked/held/prone.
-	if combatant.get_combat_progression() != "thief":
+	## Requires the class to grant the backstab power + target must be unaware/flanked/held/prone.
+	## Assassins additionally cannot backstab while wearing armor of 3 stone or more
+	## (scale mail or heavier).
+	if not combatant.has_backstab_power():
+		return false
+	if combatant.get_character_class() == "assassin" \
+			and combatant.get_equipped_body_armor_stone() >= 3.0:
 		return false
 	if target.has_condition("unaware") or target.has_condition("held") \
 			or target.has_condition("grappled") or target.has_condition("prone") \
@@ -848,6 +884,43 @@ static func _backstab_multiplier(level: int) -> int:
 		return 4
 	else:
 		return 5
+
+
+static func _can_snipe(combatant: Combatant, target: Combatant, controller) -> bool:
+	## Returns true if the combatant can perform a ranged Backstab against
+	## [param target] via the Sniping proficiency. Requires:
+	## - Sniping proficiency (provides the `ranged_backstab` flag)
+	## - The class grants the backstab power (assassin armor restriction enforced)
+	## - A ranged weapon equipped
+	## - Target within short range (per the equipped weapon's range_short)
+	## - Target is otherwise eligible (unaware / held / grappled / prone / sleeping
+	##   — flanking does not apply at range, since "behind" is undefined for shots
+	##   from across the battlefield).
+	if not combatant.has_proficiency("sniping"):
+		return false
+	if not combatant.has_backstab_power():
+		return false
+	if combatant.get_character_class() == "assassin" \
+			and combatant.get_equipped_body_armor_stone() >= 3.0:
+		return false
+	if not combatant.is_wielding_missile_weapon():
+		return false
+	# Distance must be within the equipped weapon's short range band.
+	if controller == null or controller.movement_resolver == null:
+		return false
+	var dist_ft: int = controller.movement_resolver.get_distance_ft(combatant, target)
+	if dist_ft < 0:
+		return false
+	var ranges := combatant.get_weapon_ranges()
+	var short_range_ft: int = int(ranges.get("short", 0))
+	if short_range_ft <= 0 or dist_ft > short_range_ft:
+		return false
+	# Same surprise/condition gates as melee backstab. Flanking is intentionally
+	# omitted — the "behind target" check assumes adjacency and doesn't translate
+	# to a ranged shot from arbitrary direction.
+	return target.has_condition("unaware") or target.has_condition("held") \
+		or target.has_condition("grappled") or target.has_condition("prone") \
+		or target.has_condition("sleeping")
 
 
 ## Convenience constructor for an option dictionary.

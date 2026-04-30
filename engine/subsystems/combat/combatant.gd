@@ -149,6 +149,22 @@ var _equipped_ammo: Dictionary = {}
 ## Used by brawl metal armor reflection check.
 var _equipped_armor_material: String = ""
 
+## Encumbrance of equipped body armor in raw units (1000 units = 1 stone).
+## Used by Assassin backstab armor restriction (no backstab in 3+ stone armor).
+var _equipped_body_armor_units: int = 0
+
+## AC bonus of equipped body armor (0 = none, 1 = hide, 2 = leather, 3 = scale, ...).
+## Used by Swashbuckling proficiency (requires leather or lighter, i.e. <= 2).
+var _equipped_body_armor_ac_bonus: int = 0
+
+## True when a shield is equipped in the off-hand.
+## Used by Weapon and Shield fighting style.
+var _shield_equipped: bool = false
+
+## True when a weapon (not a shield) is equipped in the off-hand.
+## Used by Two Weapons fighting style.
+var _offhand_weapon_equipped: bool = false
+
 
 # ---------------------------------------------------------------------------
 # Equipped weapon API
@@ -323,6 +339,21 @@ func wire_equipment(inventory_rows: Array, catalog) -> void:
 		if row.get("item_category", "") != "armor":
 			continue
 		_equipped_armor_material = row.get("material", "")
+		_equipped_body_armor_units = int(row.get("encumbrance_units", 0))
+		_equipped_body_armor_ac_bonus = int(row.get("armor_ac_bonus", 0))
+		break
+
+	# Find equipped off-hand item (shield or second weapon).
+	for row in inventory_rows:
+		if int(row.get("is_equipped", 0)) != 1:
+			continue
+		if row.get("slot", "") != "hands_off":
+			continue
+		var off_category: String = row.get("item_category", "")
+		if off_category == "shield":
+			_shield_equipped = true
+		elif off_category == "weapon":
+			_offhand_weapon_equipped = true
 		break
 
 
@@ -418,7 +449,10 @@ func set_hp_current(value: int) -> void:
 
 func get_effective_ac() -> int:
 	if is_character:
-		return _character.get_effective_ac()
+		var base := _character.get_effective_ac()
+		# Conditional proficiency AC bonuses (Weapon and Shield FS, Swashbuckling, ...)
+		base += ProficiencyCombatHooks.aggregate_modifier(self, "armor_class", {"phase": "ac"})
+		return base
 	var base_ac: int = int(_monster_data.get("armor_class", 0))
 	return _monster_modifiers.get_effective_value("armor_class", base_ac)
 
@@ -472,6 +506,9 @@ func get_initiative_modifier() -> int:
 	var stat_mod: int
 	if is_character:
 		stat_mod = _character.modifiers.get_effective_value("initiative_modifier", 0)
+		# Conditional proficiency initiative bonuses (Pole Weapon FS, ...)
+		stat_mod += ProficiencyCombatHooks.aggregate_modifier(
+			self, "initiative_modifier", {"phase": "initiative"})
 	else:
 		stat_mod = _monster_modifiers.get_effective_value("initiative_modifier", 0)
 	return dex_mod + stat_mod
@@ -737,6 +774,113 @@ func get_equipped_armor_material() -> String:
 	return _equipped_armor_material
 
 
+func get_equipped_body_armor_stone() -> float:
+	return _equipped_body_armor_units / 1000.0
+
+
+func get_equipped_body_armor_ac_bonus() -> int:
+	return _equipped_body_armor_ac_bonus
+
+
+func has_shield_equipped() -> bool:
+	return _shield_equipped
+
+
+func is_dual_wielding() -> bool:
+	## True when both hands hold weapons (no shield), regardless of weapon hands.
+	return _offhand_weapon_equipped and not _equipped_weapon.is_empty()
+
+
+func is_wielding_two_handed() -> bool:
+	if _equipped_weapon.is_empty():
+		return false
+	return "two_handed" in get_weapon_tags()
+
+
+func is_wielding_one_handed_melee() -> bool:
+	if _equipped_weapon.is_empty():
+		return false  # unarmed is not "wielding a weapon"
+	var tags: Array = get_weapon_tags()
+	if "two_handed" in tags:
+		return false
+	return "melee" in tags
+
+
+func is_wielding_pole_weapon() -> bool:
+	## Spear / polearm / lance / pike / quarterstaff — anything in the
+	## "spears_polearms" Weapon Focus family. Whip's "reach" tag does not
+	## qualify because whip is not in that family.
+	if _equipped_weapon.is_empty():
+		return false
+	var item_key: String = _equipped_weapon.get("item_key", "")
+	return WeaponFocusFamily.family_for(item_key) == "spears_polearms"
+
+
+func is_wielding_missile_weapon() -> bool:
+	if _equipped_weapon.is_empty():
+		return false
+	var tags: Array = get_weapon_tags()
+	return "ranged" in tags or "thrown" in tags
+
+
+func get_weapon_focus_family() -> String:
+	## Returns the equipped weapon's Weapon Focus family ID, or "" if none.
+	if _equipped_weapon.is_empty():
+		return ""
+	return WeaponFocusFamily.family_for(_equipped_weapon.get("item_key", ""))
+
+
+func can_move_freely() -> bool:
+	## True when the combatant is not immobilized by a status condition.
+	## Used by Swashbuckling proficiency (requires "able to move freely").
+	## Does not currently account for encumbrance penalties — encumbrance-
+	## driven movement reductions can be added here when that pipeline is wired.
+	for cond in ["held", "grappled", "restrained", "paralyzed", "prone", "entangled", "unconscious"]:
+		if has_condition(cond):
+			return false
+	return true
+
+
+func get_creature_family() -> String:
+	## Returns the combatant's family tag for race-targeted proficiencies
+	## (Kin-Slaying, Goblin-Slaying). See CreatureFamily.family_for() for
+	## the resolution rules. Returns "" when no family applies.
+	return CreatureFamily.family_for(self)
+
+
+func is_casting_spell_this_round() -> bool:
+	## True when the combatant has declared a spell-cast for the current
+	## round. Used by Combat Reflexes (initiative bonus does not apply when
+	## casting). Per-round casting declarations are not yet wired; until
+	## then this returns false and Combat Reflexes always grants its bonus.
+	return false
+
+
+func is_berserk_raging() -> bool:
+	return has_condition("berserk_rage")
+
+
+static var _class_registry_cache: ClassRegistry = null
+
+static func _get_class_registry() -> ClassRegistry:
+	if _class_registry_cache == null:
+		_class_registry_cache = ClassRegistry.new()
+	return _class_registry_cache
+
+
+func has_backstab_power() -> bool:
+	if not is_character or _character == null:
+		return false
+	var class_id: String = _character.character_class
+	if class_id.is_empty():
+		return false
+	var powers: Array = _get_class_registry().get_class_powers(class_id)
+	for power in powers:
+		if power is Dictionary and power.get("power_id", "") == "backstab":
+			return true
+	return false
+
+
 # ---------------------------------------------------------------------------
 # Proficiency queries
 # ---------------------------------------------------------------------------
@@ -745,6 +889,14 @@ func has_proficiency(proficiency_key: String) -> bool:
 	if is_character:
 		return _character.has_proficiency(proficiency_key)
 	return false  # Monsters don't have proficiencies
+
+
+func has_proficiency_with_specialization(proficiency_key: String, specialization: String) -> bool:
+	## True when the character has [param proficiency_key] with the matching
+	## [param specialization] selected (e.g. fighting_style + "two_handed").
+	if not is_character or _character == null:
+		return false
+	return _character.get_total_proficiency_rank(proficiency_key, specialization) > 0
 
 
 func get_proficiency_rank(proficiency_key: String) -> int:

@@ -743,6 +743,9 @@ func _get_alive_pcs() -> Array:
 		result.append({
 			"combatant_id": c.id,
 			"display_name": c.display_name,
+			# Berserkers cannot declare defensive movement; the overlay
+			# greys out Fighting Withdrawal and Full Retreat for these PCs.
+			"is_berserk_raging": c.is_berserk_raging(),
 		})
 	return result
 

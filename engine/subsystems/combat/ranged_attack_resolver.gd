@@ -97,7 +97,13 @@ func resolve_ranged_attack(
 
 	var natural_roll: int = attack_roll.raw_total
 	var total_attack: int = natural_roll + to_hit_bonus
-	var target_number: int = attacker.get_effective_attack_throw() + target.get_effective_ac()
+	# Conditional fighting-style attack-throw modifiers (Missile FS, ...)
+	# are stored in the catalog as a negative attack_throw delta — i.e. lowering
+	# the target number is equivalent to a positive to-hit bonus.
+	var prof_attack_mod := ProficiencyCombatHooks.aggregate_modifier(
+		attacker, "attack_throw", {"phase": "ranged_attack", "target": target})
+	var target_number: int = attacker.get_effective_attack_throw() \
+		+ target.get_effective_ac() + prof_attack_mod
 
 	# --- Determine hit/miss ---
 	var is_natural_twenty := (natural_roll == 20 and not attack_roll.was_overridden) \
@@ -139,7 +145,21 @@ func resolve_ranged_attack(
 
 		# No STR modifier on ranged damage (ACKS rule)
 		var bonus_damage: int = attacker.get_modifiers().get_effective_value("damage_bonus", 0)
-		damage_total = maxi(1, damage_roll.modified_total + bonus_damage)
+		# Conditional fighting-style ranged damage bonuses, if any. Today this is
+		# a no-op (Missile FS only adds to-hit, not damage), but the hook keeps
+		# the resolver future-proof and consistent with the melee path.
+		var prof_damage_mod := ProficiencyCombatHooks.aggregate_modifier(
+			attacker, "damage_bonus", {"phase": "ranged_attack", "target": target})
+		damage_total = maxi(1, damage_roll.modified_total + bonus_damage + prof_damage_mod)
+
+		# Weapon Focus: unmodified natural 20 doubles damage when the character
+		# has Weapon Focus selected for the wielded weapon's family.
+		if is_natural_twenty and attacker.is_character:
+			var weapon_family := attacker.get_weapon_focus_family()
+			if weapon_family != "" and ProficiencyCombatHooks.has_active_enabler(
+					attacker, "natural_20_double_damage",
+					{"weapon_category": weapon_family}):
+				damage_total *= 2
 
 		damage_result = target.apply_damage(damage_total, "physical")
 

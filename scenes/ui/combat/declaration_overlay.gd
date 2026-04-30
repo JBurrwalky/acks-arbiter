@@ -156,12 +156,19 @@ func _rebuild() -> void:
 		row.add_child(name_label)
 
 		# Option buttons (OptionButton dropdown)
+		var is_berserk: bool = bool(pc.get("is_berserk_raging", false))
 		var dropdown := OptionButton.new()
 		dropdown.custom_minimum_size.x = 180.0
-		for opt in DECLARATION_OPTIONS:
+		for i in range(DECLARATION_OPTIONS.size()):
+			var opt: Dictionary = DECLARATION_OPTIONS[i]
 			dropdown.add_item(opt["label"])
+			# Berserkers cannot declare defensive movement.
+			if is_berserk and opt["id"] in ["fighting_withdrawal", "full_retreat"]:
+				dropdown.set_item_disabled(i, true)
 		dropdown.selected = 0
 		dropdown.item_selected.connect(_on_declaration_changed.bind(cid))
+		if is_berserk:
+			dropdown.tooltip_text = "Berserk rage — defensive declarations unavailable."
 		row.add_child(dropdown)
 
 

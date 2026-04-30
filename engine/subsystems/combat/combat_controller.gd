@@ -201,6 +201,10 @@ func submit_declaration(
 	var combatant := roster.get_by_id(combatant_id)
 	if combatant == null:
 		return
+	# Berserkergang: a raging character cannot declare defensive movement at any time.
+	if declaration_type in ["fighting_withdrawal", "full_retreat"] \
+			and combatant.is_berserk_raging():
+		return  # Berserkers cannot retreat
 	# Allow on-turn declarations for Skirmishing proficiency
 	if phase == Phase.ACTION and declaration_type in ["fighting_withdrawal", "full_retreat"]:
 		if not combatant.has_proficiency("skirmishing"):
@@ -670,6 +674,8 @@ func _resolve_combatant_action(
 			result = _resolve_run_action(combatant, parameters)
 		"backstab":
 			result = _resolve_backstab_action(combatant, parameters, condition_atk_mod)
+		"ranged_backstab":
+			result = _resolve_ranged_backstab_action(combatant, parameters, condition_atk_mod)
 		"fighting_withdrawal":
 			result = _resolve_defensive_movement(combatant, "fighting_withdrawal")
 		"full_retreat":
@@ -680,6 +686,8 @@ func _resolve_combatant_action(
 			result = _resolve_maneuver_action(combatant, parameters, brawl_action)
 		"stand_up":
 			result = _resolve_stand_up(combatant)
+		"begin_rage":
+			result = _resolve_begin_rage(combatant)
 		"use_item", "light_torch", "light_lantern", "drop_item":
 			result = _resolve_simple_self_action(combatant, action_id, parameters)
 		"check_status", "carry", "loot", "coup_de_grace":
@@ -2167,6 +2175,15 @@ func _emit_combat_ended() -> Dictionary:
 	## Processes combat end: XP tally, mortal wounds, log entry, signal emit.
 	## Returns the outcome dict so _end_round() can forward it to callers.
 
+	# Clear berserk rage from any combatants still raging — per ACKS, the rage
+	# from Berserkergang lasts only until combat ends.
+	for c: Combatant in roster.get_all():
+		if c.has_condition("berserk_rage"):
+			if condition_manager != null:
+				condition_manager.remove_condition(c, "berserk_rage")
+			else:
+				c.remove_condition("berserk_rage")
+
 	# Sum XP from all defeated enemies and collect treasure types.
 	var monster_xp_total := 0
 	var treasure_types: Array = []
@@ -2344,6 +2361,21 @@ func _resolve_backstab_action(
 			"result": {"note": "no valid target"},
 		}
 
+	# Eligibility guards (mirror context-menu gating; defends against malformed payloads).
+	if not combatant.has_backstab_power():
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "backstab",
+			"result": {"note": "combatant has no backstab ability"},
+		}
+	if combatant.get_character_class() == "assassin" \
+			and combatant.get_equipped_body_armor_stone() >= 3.0:
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "backstab",
+			"result": {"note": "assassin cannot backstab in scale mail or heavier"},
+		}
+
 	# Backstab: +4 attack bonus
 	var backstab_bonus := 4
 	var attack_result := attack_resolver.resolve_melee_attack(
@@ -2360,7 +2392,7 @@ func _resolve_backstab_action(
 		elif level >= 5:
 			multiplier = 3
 
-		var base_damage: int = attack_result.get("damage", 0)
+		var base_damage: int = attack_result.get("damage_total", 0)
 		var extra_damage := base_damage * (multiplier - 1)
 		if extra_damage > 0 and target.is_alive():
 			var extra_result := target.apply_damage(extra_damage)
@@ -2390,6 +2422,126 @@ func _resolve_backstab_action(
 
 
 # ---------------------------------------------------------------------------
+# Ranged Backstab action (Sniping proficiency, ranged weapon at short range)
+# ---------------------------------------------------------------------------
+
+func _resolve_ranged_backstab_action(
+		combatant: Combatant,
+		parameters: Dictionary,
+		extra_attack_mod: int = 0) -> Dictionary:
+	## Ranged variant of backstab driven by the Sniping proficiency. Routes
+	## the attack through ranged_resolver (so range-band penalty, ammo
+	## consumption, and the precise-shooting into-melee gate all apply),
+	## then layers the level-banded backstab multiplier on top of the rolled
+	## damage just like _resolve_backstab_action.
+	var target_id: String = parameters.get("target_id", "")
+	var target: Combatant = roster.get_by_id(target_id) if not target_id.is_empty() else null
+
+	if target == null:
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "ranged_backstab",
+			"result": {"note": "no valid target"},
+		}
+
+	# Eligibility guards (mirror _can_snipe in the menu builder).
+	if not combatant.has_proficiency("sniping"):
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "ranged_backstab",
+			"result": {"note": "combatant has no sniping proficiency"},
+		}
+	if not combatant.has_backstab_power():
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "ranged_backstab",
+			"result": {"note": "combatant has no backstab ability"},
+		}
+	if combatant.get_character_class() == "assassin" \
+			and combatant.get_equipped_body_armor_stone() >= 3.0:
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "ranged_backstab",
+			"result": {"note": "assassin cannot backstab in scale mail or heavier"},
+		}
+	if not combatant.is_wielding_missile_weapon():
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "ranged_backstab",
+			"result": {"note": "no ranged weapon equipped"},
+		}
+	if ranged_resolver == null:
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "ranged_backstab",
+			"result": {"note": "ranged resolver not available"},
+		}
+
+	# Determine distance and confirm short-range.
+	var weapon_data: Dictionary = combatant.get_equipped_weapon()
+	var distance_ft: int = 30
+	var target_in_melee := false
+	if movement_resolver != null and movement_resolver.has_grid():
+		var grid_dist: int = movement_resolver.get_distance_ft(combatant, target)
+		if grid_dist >= 0:
+			distance_ft = grid_dist
+		target_in_melee = movement_resolver.is_engaged(target)
+	var short_range_ft: int = int(weapon_data.get("range_short", 0))
+	if short_range_ft <= 0 or distance_ft > short_range_ft:
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "ranged_backstab",
+			"result": {"note": "target outside short range for sniping"},
+		}
+
+	combatant.facing = _direction_vector(combatant.grid_position, target.grid_position)
+
+	# Sniping: +4 attack bonus (same as melee backstab).
+	var backstab_bonus := 4
+	var attack_result := ranged_resolver.resolve_ranged_attack(
+		combatant, target, weapon_data, distance_ft, target_in_melee,
+		extra_attack_mod + backstab_bonus)
+
+	# Consume ammo (ranged path always spends a projectile).
+	if combatant.is_character:
+		combatant.consume_ammo()
+
+	if attack_result.get("hit", false):
+		var level := combatant.get_level_or_hd()
+		var multiplier := 2
+		if level >= 13:
+			multiplier = 5
+		elif level >= 9:
+			multiplier = 4
+		elif level >= 5:
+			multiplier = 3
+
+		var base_damage: int = attack_result.get("damage_total", 0)
+		var extra_damage := base_damage * (multiplier - 1)
+		if extra_damage > 0 and target.is_alive():
+			var extra_result := target.apply_damage(extra_damage)
+			attack_result["total_damage"] = base_damage + extra_damage
+			attack_result["backstab_multiplier"] = multiplier
+			if extra_result.get("is_downed", false):
+				attack_result["target_downed"] = true
+				roster.record_casualty(target, round_number)
+				_check_morale_after_casualty(target)
+
+		target.last_attacker_id = combatant.id
+
+	if attack_result.get("target_downed", false):
+		pass  # casualty/morale already handled above
+	else:
+		_check_solo_monster_morale(target)
+
+	return {
+		"phase": "action", "status": "action_resolved",
+		"combatant_id": combatant.id, "action": "ranged_backstab",
+		"result": attack_result,
+	}
+
+
+# ---------------------------------------------------------------------------
 # Stand Up from prone
 # ---------------------------------------------------------------------------
 
@@ -2402,6 +2554,36 @@ func _resolve_stand_up(combatant: Combatant) -> Dictionary:
 		"phase": "action", "status": "action_resolved",
 		"combatant_id": combatant.id, "action": "stand_up",
 		"result": {"note": "stood up from prone"},
+	}
+
+
+# ---------------------------------------------------------------------------
+# Begin Rage (Berserkergang) — free-action self-toggle
+# ---------------------------------------------------------------------------
+
+func _resolve_begin_rage(combatant: Combatant) -> Dictionary:
+	## Applies the berserk_rage condition to the combatant. Free action — does
+	## not consume movement or attack. Cleared in _emit_combat_ended.
+	if not combatant.has_proficiency("berserkergang"):
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "begin_rage",
+			"result": {"note": "no berserkergang proficiency"},
+		}
+	if combatant.is_berserk_raging():
+		return {
+			"phase": "action", "status": "action_resolved",
+			"combatant_id": combatant.id, "action": "begin_rage",
+			"result": {"note": "already raging"},
+		}
+	if condition_manager != null:
+		condition_manager.apply_condition(combatant, "berserk_rage", "berserkergang", -1)
+	else:
+		combatant.add_condition("berserk_rage")
+	return {
+		"phase": "action", "status": "action_resolved",
+		"combatant_id": combatant.id, "action": "begin_rage",
+		"result": {"note": "rage begun (lasts until combat ends)"},
 	}
 
 

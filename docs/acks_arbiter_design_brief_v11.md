@@ -150,9 +150,9 @@ The game world is a nested spatial hierarchy. The party exists at one level at a
 | Regional | Hex grid (flat-top) | 6-mile hex | Cell-to-cell | 2D | Wilderness (tactical) |
 | Local | Hex grid (flat-top) | 1.5-mile hex | Cell-to-cell | 2D | Wilderness / Domain |
 | Sea Voyage | Hex grid (flat-top) | 24-mile or 6-mile hex | Cell-to-cell | 2D | Sea voyage |
-| Settlement (any layer) | Irregular polygon blocks | City block | Node-to-node on street graph | 2D | Urban |
-| Dungeon / Interior | Diamond grid (isometric) | 5' × 5' cell | Cell-to-cell | 3D | Dungeon exploration |
-| Battle (temporary) | Diamond grid (isometric) | 5' × 5' cell | Cell-to-cell | 3D | Combat |
+| Settlement (any layer) | Node graph (PoIs as nodes, edges weighted by block distance) | PoI node | Edge traversal | 2D panel + overview | Urban |
+| Dungeon / Interior | 3D voxel grid (diamond horizontal, integer level vertical) | 5' cube cell | Real-time tick simulator on voxel grid | 3D | Dungeon exploration |
+| Battle (temporary) | 3D voxel grid (diamond horizontal, integer level vertical) | 5' cube cell | Turn-based on voxel grid | 3D | Combat |
 
 Hex scales are nested: a 24-mile hex contains 6-mile hexes, which contain 1.5-mile hexes. Settlements have arbitrary vertical layers (surface, upper levels, undercity levels) sharing the same coordinate system. Transition points link all layers.
 
@@ -188,11 +188,11 @@ Menu-driven PoI navigation as a 2D panel-and-overview layer. The player selects 
 
 ### 6.3 Dungeon / Interior Maps
 
-5' diamond grid (isometric) with cell-based walls, presented as a true runtime 3D tactical layer. Each party member is individually positioned on the same shared tactical grid used by combat. The map data model, room detection, and exploration rules remain unchanged; the presentation layer is a 3D scene with a fixed isometric camera rather than a pre-rendered 2D map. Full spec in `gdd-dungeon-layout.md`.
+3D voxel grid of 5' cube cells (diamond horizontal basis, integer level vertical) per `gdd-voxel-tactical-architecture.md`, presented as a true runtime 3D tactical layer with a fixed isometric camera. Each party member is individually positioned on the same shared voxel grid used by combat. Multi-level dungeons are a single coordinate space — levels are stacked in the same `VoxelMapData`, not split across separate maps. Real-time-with-pause exploration runs on the Movement Simulator (`gdd-realtime-scheduler.md` §3); turn-based combat operates on the same grid. Multi-floor camera occlusion handled by the Visibility Manager and Level Strip Widget (`gdd-voxel-tactical-architecture.md` §16). Full spec in `gdd-dungeon-layout.md` and `gdd-voxel-tactical-architecture.md`; UI in `gdd-dungeon-map-ui.md`.
 
 ### 6.4 Battle Maps
 
-When combat triggers outside a dungeon, a temporary 5' isometric diamond grid battle map is needed and is presented as a true runtime 3D tactical scene.
+When combat triggers outside a dungeon, a temporary 5' cube voxel grid battle map is generated and presented as a true runtime 3D tactical scene per `gdd-voxel-tactical-architecture.md`.
 
 - **Primary:** Procedural generation based on terrain type (forest → trees/undergrowth; city commercial → buildings/stalls/crates). Does not persist after combat.
 - **Secondary:** Pre-keyed battle maps attached to specific locations. Persists as campaign data.
@@ -234,7 +234,7 @@ Both input paths (direct UI and LLM-interpreted text) resolve into the same engi
 
 ### 8.2 Session States
 
-The session runner has three states: **CAMPAIGN_SELECT**, **SESSION_ACTIVE** (running the event scheduler), and **SESSION_END**. The previous major states — Wilderness Exploration, Urban Exploration, Dungeon Exploration, Encounter, Combat, Camp/Rest, Downtime, Domain Management, Sea Voyage — are now **entity-level contexts**, not global game states. An entity's context (wilderness, dungeon, urban, combat, etc.) is a property of that entity, and multiple entities can operate in different contexts simultaneously. Context-specific event handlers register with `EventHandlerRegistry` on context entry and unregister on exit. Each context retains its own action set and UI layout; transitions between contexts are defined in §5.2. See `gdd-realtime-scheduler.md` §8; UI specs in `gdd-dungeon-map-ui.md`, `gdd-settlement-exploration-ui.md`, and `gdd-combat-ui.md`.
+The session runner has three states: **CAMPAIGN_SELECT**, **SESSION_ACTIVE** (running the event scheduler and the Movement Simulator when the dungeon layer is active), and **SESSION_END**. The previous major states — Wilderness Exploration, Urban Exploration, Dungeon Exploration, Encounter, Combat, Camp/Rest, Downtime, Domain Management, Sea Voyage — are now **entity-level contexts**, not global game states. An entity's context (wilderness, dungeon, urban, combat, etc.) is a property of that entity, and multiple entities can operate in different contexts simultaneously. Context-specific event handlers register with `EventHandlerRegistry` on context entry and unregister on exit. Each context retains its own action set and UI layout; transitions between contexts are defined in §5.2. See `gdd-realtime-scheduler.md` §9.2; UI specs in `gdd-dungeon-map-ui.md`, `gdd-settlement-exploration-ui.md`, and `gdd-combat-ui.md`.
 
 ### 8.3 Timekeeping
 
@@ -243,7 +243,7 @@ IMPORTANT: The game is to run on a in-game calendar of 13 months with 28 days ea
 
 Dawn and dusk times are provided per-hex per-day by the weather system (`gdd-weather-generation.md` §6), which derives them from hex latitude and calendar day. Season definitions are in `gdd-calendar-seasons.md`.
 
-**Clock-driven scheduling (multi-party):** The game clock advances continuously via the EventScheduler. Each entity's orders are scheduled events in a priority queue; the clock advances to the next event and resolves it. Split parties advance independently on the shared clock. Cross-party interactions resolve naturally when entities share a spatial location at the same timestamp. See `gdd-realtime-scheduler.md` §2–3. *(Replaces the previous simultaneous-declaration day-cycle model.)*
+**Clock-driven scheduling (multi-party):** The game clock advances continuously via the EventScheduler. Each entity's orders are scheduled events in a priority queue; the clock advances to the next event and resolves it. Split parties share the master clock — their scheduled events (travel arrivals, action timers, construction, research, missions, domain ticks) progress in parallel. Cross-party interactions resolve naturally when entities share a spatial location at the same timestamp. The Movement Simulator (`gdd-realtime-scheduler.md` §3) runs underneath the scheduler when a player-controlled entity is operating in the dungeon layer, advancing voxel-grid unit positions at a fixed game-time tick rate. **Combat globally pauses the master clock** for the duration of combat with one carve-out: non-combatant scheduled events progress through the combat window and any that complete during combat resolve immediately on combat-end (`gdd-realtime-scheduler.md` §6.8). See `gdd-realtime-scheduler.md` §2–3. *(Replaces the previous simultaneous-declaration day-cycle model.)*
 
 ### 8.4 Dice System
 
@@ -349,7 +349,7 @@ One schema covers PCs, henchmen, and NPCs. Key sections: identity, attributes (3
 
 ### 10.3 Party Management
 
-Max 8 PCs. Henchmen per PC by CHA. Marching formation (point, front, middle, rear). Shared resource pool. Travel speed set by slowest member. Splitting/regrouping supported with time synchronization via day-cycle scheduling.
+Max 8 PCs. Henchmen per PC by CHA. Marching formation (point, front, middle, rear). Shared resource pool. Travel speed set by slowest member. Splitting/regrouping supported with time synchronization via the EventScheduler — split parties operate as independent entities on the shared master clock per `gdd-realtime-scheduler.md`.
 
 ### 10.4 Reputation
 
