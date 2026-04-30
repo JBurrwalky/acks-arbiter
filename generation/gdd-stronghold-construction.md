@@ -5,7 +5,7 @@
 **Depends on ACKS rules:** `daw_equipment_and_construction.xml` (structure catalog, accessories, civilian structures, construction projects, worker rates, supervision, materials, magic assistance), `acore_axioms_strongholds_and_domains.xml` (minimum stronghold value, domain classification, followers)
 **Depends on GDDs:** `gdd-settlement-layout.md` (market class for hiring workers), `gdd-dungeon-layout.md` (shared cell-based wall model, dungeon-to-stronghold claiming), `gdd-combat-map-generation.md` (unified diamond grid system, cell-based wall model definition)
 **Modifiable by Claude Code:** Sections marked PROJECT-DESIGNED — yes, suggest improvements freely. Sections marked ACKS RULES — never modify.
-**Last updated:** 2026-03-25
+**Last updated:** 2026-04-30
 
 ---
 
@@ -1051,10 +1051,29 @@ The battle map system auto-suggests defender positions based on unit capacity. E
 
 ## 13. Open Questions
 
-All open questions have been resolved.
-
 **Resolved:**
 1. ~~**Barbican as composite vs. atomic:**~~ **RESOLVED.** Barbicans are placed as a single atomic piece (one grid stamp = gatehouse + 2 towers + drawbridge), matching the ACKS listing as a single fixed-price unit. The player places one barbican piece; its internal components are not individually configurable beyond accessory defaults.
 2. ~~**Underground dungeon depth for sanctums:**~~ **RESOLVED.** The planner supports up to 2 underground levels for v1. This covers the typical sanctum (tower above, dungeon beneath) and hideout (surface concealment, 2-level underground complex). Claimed dungeons (§8.4) may display and navigate more than 2 levels if the original dungeon had them, but new PC-built underground construction is capped at 2 levels. Expansion to deeper construction is a post-v1 enhancement once the system is proven.
 3. ~~**Palisade-to-wall upgrade path:**~~ **RESOLVED in §8.5.** Demolition of the palisade followed by construction of a wall in the same position, offered as a combined "Upgrade" action. Salvage value of the palisade offsets part of the wall cost. The hex has no perimeter defense at that segment during the transition.
 4. ~~**Existing dungeon integration:**~~ **RESOLVED in §8.4.** Both systems use the same 5' diamond grid with cell-based walls. DungeonLayout is wrapped directly in a StrongholdLayout shell with no grid conversion. The dungeon's rooms, doors, corridors, and stairs become the stronghold's interior navigation map. Shortfalls in value are addressed by commissioning new construction through the planner's edit mode.
+
+**Open (added 2026-04-30 per cross-doc obligation from `gdd-domain-tab.md` v1.5 §7.1.1 and §22 O-D10):**
+
+5. **Stronghold type classification during build.** The `gdd-domain-tab.md` Class-Specific sub-tab matrix (§12.1) keys per-class follower attraction to the *type* of stronghold built (castle / sanctum / fortified church / hideout / fastness / underground vault / cloister / temple / hall / border fort / dark fortress / chieftain's hall / medicine lodge / coterie / coven / guildhouse). The Domain tab's "Non-conforming strongholds" rule (§7.1.1, per O-D10 resolution) prohibits building a stronghold whose type does not match the active entity's class — a Mage cannot build a fortress, a Fighter cannot build a sanctum, etc. — and treats inherited or conquered non-conforming strongholds as type-mismatched (no follower attraction).
+   
+   This GDD currently does not carry an explicit `stronghold_type` field on the StrongholdLayout data model (§9.1) nor in the commission pipeline (§5). The archetype selection flow (§3) is the closest existing concept, but archetypes are PROJECT-DESIGNED size/shape templates rather than RAW class-type bindings.
+   
+   **Resolution required:**
+   - Add an explicit `stronghold_type` field (or equivalent class-type binding) to the StrongholdLayout data model and the ConstructionProject data model
+   - Wire the commission pipeline (§5) to require selection of a stronghold_type and validate it against the commissioning entity's class per the §12.1 matrix in the Domain tab GDD
+   - Define how stronghold_type is set on inherited / conquered structures (default proposal: type is fixed by the structure's original construction; conquering does not change the type even if the new owner is a different class — they hold a non-conforming structure)
+   - Define how the existing Archetype Selection (§3.2) interacts with stronghold_type (default proposal: archetypes are sub-templates *within* a stronghold_type; e.g., a Castle archetype offers small-castle / medium-castle / large-castle templates, all of stronghold_type "castle")
+
+6. **Converting an existing stronghold from one type to another.** Related to (5): if a player inherits or conquers a non-conforming stronghold and wants to convert it to their class-appropriate type to gain follower attraction, is conversion supported?
+   
+   **Resolution required:**
+   - Default proposal: stronghold_type is fixed at construction. Converting from one type to another requires substantial demolition + rebuild (treated as new construction at type-appropriate cost). No partial conversion, no salvage credit beyond standard demolition rules per §8.5.
+   - Alternative: allow partial conversion at reduced cost by re-purposing existing structures (e.g., a fighter's tower can be repurposed into a mage's sanctum tower with cosmetic changes). This is more permissive but harder to spec.
+   - **Cross-doc dependency:** the Domain tab's empty-state guidance (`gdd-domain-tab.md` §19.1) and Stronghold sub-tab CTA (§7) reference "Commission new {structure-type}" assuming the commission pipeline knows the type. Resolution of (5) and (6) directly affects those flows.
+   
+   Both questions are out of scope for the Domain tab GDD itself but require resolution within this GDD before Phase H+ implementation begins.

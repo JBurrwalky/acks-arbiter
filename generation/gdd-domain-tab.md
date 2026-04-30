@@ -2,7 +2,7 @@
 
 **Document type:** Game Design Document (Project-designed, improvable)
 **Authority:** Subordinate to `gdd-management-notebook.md`. Authoritative on the Domain tab's content (Status header, sub-tab structure, per-class sub-tab matrix, activity-execution model, lifecycle interactions). Defers to `gdd-stronghold-construction.md` for stronghold-construction details (the Domain tab consumes that GDD's outputs and surfaces them; it does not redefine construction mechanics). Defers to `gdd-troops-tab.md` for troop unit lifecycle (the Domain tab references troop units assigned to a domain's garrison but does not redefine unit mechanics).
-**Status:** Draft v1.2 — pending review
+**Status:** Draft v1.6 — pending review
 **Depends on:** `gdd-management-notebook.md` v1.5+, `gdd-ui-architecture.md` v2.10+, `gdd-ui-shared-services.md` v1.2+, `gdd-character-tab.md` v1.6+, `gdd-party-tab.md` v1.4+, `gdd-henchmen-tab.md` v1.3+, `gdd-troops-tab.md` v2.3+, `gdd-stronghold-construction.md` (current draft).
 
 **Sibling / interfacing documents:**
@@ -70,7 +70,7 @@ The Domain tab is the canonical surface for managing the player's territorial an
 - **Personal Domain focus (Q3 resolution).** When the active entity is a PC or henchman, the Domain tab shows that entity's *own* personal domain. To inspect or manage a vassal domain held by a henchman, the player switches the active entity to that henchman. The Realm sub-tab provides a vassal-domain *list* and aggregate at the active entity's level, but per-vassal management requires switching active entity. This keeps the per-entity scope rule clean and matches how PCs and their henchmen are already navigated in the Character tab.
 - **Pre-9th-level support (Q2 resolution).** Per `acore_axioms_strongholds_and_domains.xml` §before_ninth_level, characters of 8th level or less do not attract followers or peasants — but they *can* still acquire an existing domain, build a stronghold, hire mercenaries, and invest gp to attract peasants. The Domain tab supports this pre-9 path: an entity who owns a domain pre-9 sees the full Domain tab content, with the auto-follower-attraction system disabled and a banner indicating *"Followers and peasants begin arriving at level 9. You may still build, invest, and hire mercenaries."* An entity who does not yet own a domain sees the empty state with class-tailored acquisition guidance.
 - **Chaotic domain support from foundation (Q6 resolution).** Per `ax_domains_of_chaos.xml`, chaotic-aligned PCs may opt into chaotic-domain mechanics at domain establishment. The Domain tab supports this branch in v1 from the start: the establish-domain flow includes the chaotic-or-normal toggle for chaotic-aligned PCs; subsequent mechanics (beastman followers, tribal warrior levy, halved investment value, +2gp garrison cost, urban revenue capped at 7gp/family, no class V via investment) apply automatically per the chaotic-domain ruleset. This is foundational because retrofitting it later would require schema migrations across population, garrison, urban, and revenue paths.
-- **Class-aware UI (Jedidiah's overarching constraint).** Each class has different domain concerns. The Domain tab respects this in three ways: (1) the empty-state acquisition guidance is tailored to the active entity's class per Q7; (2) the Class-Specific sub-tab (§11) surfaces only the high-level activities and resources relevant to the active entity's class; (3) class-gated activities elsewhere in the tab are suppressed or disabled when the active entity's class lacks the relevant capability (e.g., a mage's Garrison sub-tab does not surface `oversee_troop_training` since that activity requires fighter-progression-class).
+- **Class-aware UI (Jedidiah's overarching constraint).** Each class has different domain concerns. The Domain tab respects this in three ways: (1) the empty-state acquisition guidance is tailored to the active entity's class per Q7; (2) the Class-Specific sub-tab (§12) surfaces only the high-level activities and resources relevant to the active entity's class; (3) class-gated activities elsewhere in the tab are suppressed or disabled when the active entity's class lacks the relevant capability (e.g., a mage's Garrison sub-tab does not surface `oversee_troop_training` since that activity requires fighter-progression-class).
 - **Activity-execution hybrid (Q8 resolution).** The Domain tab is the master inspection-and-execution surface. Every class-applicable activity surfaces here with current state, parameters, and history. Activities that require physical presence at a specific structure are *configurable* in the notebook from anywhere but *executable* only when the active entity is at the required location. Greyed-out execute buttons display a tooltip explaining the location requirement and offer a "Plan travel to [location]" shortcut. v1.1+ may add location-context panels (Stronghold-Adjacent Panel, modeled on the existing Settlement Panel) as ergonomic shortcuts; the notebook remains source of truth.
 - **Cross-tab clarity, not duplication.** Stronghold construction details live in `gdd-stronghold-construction.md`. Henchman lifecycle lives in `gdd-henchmen-tab.md`. Troop unit lifecycle lives in `gdd-troops-tab.md`. Settlement-tied activities live in the Settlement Panel. The Domain tab presents *summary readouts* of those systems and offers *cross-activation* into them; it does not redefine their mechanics. This matches the established pattern of the other notebook tabs.
 - **Source-of-truth deterministic engine.** Per `CLAUDE.md` Core Principle "Build mechanically, narrate retroactively," all domain mechanics are deterministic engine state. The Domain tab is a presentation layer over that state. Monthly resolution rolls (revenue, morale, growth, encounters) are deterministic given seed + state. LLM narration is *additional* — the Unified Log's Narration tab may show prose for domain events, but the mechanical entries (combat, roll, system) are always emitted alongside.
@@ -175,7 +175,7 @@ The Domain tab has nine sub-tabs (TabBar at the top of the content area, below t
 
 The TabBar is rendered horizontally below the Domain Status header. With nine sub-tabs the strip may be wider than the page area; per `gdd-ui-shared-services.md` standard TabBar behavior, overflow is handled by horizontal scroll or wrap as appropriate.
 
-The Class-Specific sub-tab (§7) renders with its class-specific label inline (e.g., "Faith" / "Magical Research" / "Syndicate"). When the active entity's class has no class-specific sub-tab content, the sub-tab is hidden entirely — the strip renders eight sub-tabs in that case rather than rendering a placeholder.
+The Class-Specific sub-tab (strip position 7; full content spec in §12 of this GDD) renders with its class-specific label inline (e.g., "Faith" / "Magical Research" / "Syndicate"). When the active entity's class has no class-specific sub-tab content, the sub-tab is hidden entirely — the strip renders eight sub-tabs in that case rather than rendering a placeholder.
 
 ### 4.3 Default sub-tab on entity activation
 
@@ -183,15 +183,15 @@ On first activation of the Domain tab for a given entity in a session, the Overv
 
 ### 4.4 Class-Specific sub-tab visibility logic
 
-The Class-Specific sub-tab (§7 in the strip) appears for active entities whose class has at least one applicable bucket from the matrix in §12.1. The buckets are:
+The Class-Specific sub-tab (strip position 7) appears for active entities whose class has at least one applicable bucket from the matrix in §12.1. The buckets are:
 
 - **Faith** — divine casters (Cleric / Bladedancer / Priestess / Shaman / Nobiran Wonderworker)
 - **Magical Research** — arcane casters (Mage / Warlock / Witch / Elven Enchanter / Nobiran Wonderworker)
 - **Trade** — Venturer
 - **Syndicate** — Thief / Assassin / Elven Nightblade
-- **Garrison Training** — Fighter-progression classes who unlock `oversee_troop_training` per `ax_campaign_play.xml` §domain (Fighter / Paladin / Anti-Paladin / Vaultguard / Spellsword / Bladedancer / Barbarian / Explorer / Ruinguard / Dwarven Fury — confirmed by fighter_progression tag in each class's `<role_tags>` plus the level 5+ requirement)
+- **Garrison Training** — Fighter-progression classes who unlock `oversee_troop_training` per `ax_campaign_play.xml` §domain (Fighter / Paladin / Anti-Paladin / Vaultguard / Spellsword / Bladedancer / Barbarian / Explorer / Ruinguard / Dwarven Fury / Dwarven Delver / Elven Ranger — fighter_progression tag in `<role_tags>` plus level 5+). **Plus Bard per O-D3** (project-designed treatment: Bards play domain-tier as Fighter does, gaining the Garrison Training block; Bards lack the fighter_progression tag in RAW but the Arbiter applies the equivalent capability)
 
-A class falling into multiple buckets (Bladedancer = Faith + Garrison Training; Nobiran Wonderworker = Faith + Magical Research; Wonderworker is also a fighter-progression-eligible? No — `pc_classes_5.xml` shows mage_progression for Wonderworker, not fighter-progression) sees stacked content blocks within the single Class-Specific sub-tab. The sub-tab label takes the form *"Class Activities"* generically, OR is dynamically labeled per primary bucket if only one applies (e.g., a pure Mage's tab is labeled "Magical Research"; a Bladedancer's tab is labeled "Class Activities" because it has Faith + Garrison Training stacked).
+A class falling into multiple buckets (e.g., Bladedancer = Faith + Garrison Training; Nobiran Wonderworker = Faith + Magical Research) sees stacked content blocks within the single Class-Specific sub-tab. The sub-tab label takes the form *"Class Activities"* generically, OR is dynamically labeled per primary bucket if only one applies (e.g., a pure Mage's tab is labeled "Magical Research"; a Bladedancer's tab is labeled "Class Activities" because it has Faith + Garrison Training stacked).
 
 Rendering details per §12.
 
@@ -272,7 +272,7 @@ The Overview sub-tab is the default landing page on session-first activation. It
 3. **Growth section** — last-month growth roll history with explicit math breakdown:
    - Random-growth dice (2 × 1d10 per 1000 families with exploding-10 rule per §domain_growth)
    - Investment growth (1d10 per 1000gp per §investments)
-   - Active-adventuring growth (per §active_adventuring_growth — band-based bonus + race modifiers; conditional on the ruler having actively adventured at least once in the prior month, tracked via `EventBus.adventure_started` events scoped to the ruler)
+   - Active-adventuring growth (per §active_adventuring_growth — band-based bonus + race modifiers; conditional on the ruler having actively adventured at least once in the prior month per the §6.2 heuristic — left stronghold + at least one of wilderness encounter / dungeon-or-lair entry / battle / siege)
    - Net change with a "net families this month" headline
 4. **Land Value section** — per-hex 3d3 land value (per §land_value), with surveying status (assessed via Land Surveying proficiency, settled-and-revealed, or unknown). Includes any active land improvements (25,000gp per +1gp value, max +3, max 9 per §land_improvement) and their fragility status (lost gp from pillaging)
 5. **Classification advancement section** — for each next-tier threshold per §classification_advancement, show progress (e.g., "Borderlands → Civilized: every hex at 250 fam max + urban settlement with 20% of total + within 48 miles of friendly city or large town. Currently: 4/6 hexes at max, urban yes, distance qualifies. Need: 2 more hexes at max OR contiguous-expansion-blocked condition."). For wilderness → borderlands and borderlands → civilized advancement
@@ -286,7 +286,15 @@ The Overview sub-tab supports these in-place edits (project-designed UI affordan
 - **Domain name** — pencil-icon edit on the identity card; text input with character-limit validation; persists immediately on Enter or focus-blur
 - **Land Value reveal** — when a hex's land value is unknown but a Land Surveying proficiency throw is available (i.e., a character with the proficiency is present in the domain), surface a "Survey hex" button per `ax_campaign_play.xml` §survey activity (1 minor strenuous activity per hex, target 18+ base modifying with cumulative +4 per prior successful search — but Survey requires Land Surveying; the ACKS RAW differentiation is preserved)
 - **Tax / liturgy / tithe rate adjustment** — per `ax_campaign_play.xml` §issue_decree, changing tax or liturgy rate is a minor or trivial activity for the ruler in their domain. The Overview sub-tab surfaces the current rates (default 2gp / 1gp / 1gp per family) with +/− steppers to adjust. Each adjustment is logged immediately and consumes the ruler's activity slot for the day; impact appears next monthly resolution per the morale-event modifiers in §monthly_event_modifiers
-- **Active adventuring toggle** (project-designed) — automatic detection-of-adventure based on adventure-started events scoped to the ruler. The Overview sub-tab shows "Active this month: yes / no" status. No manual toggle — the system determines it from event history. (Open question O-D1: whether to allow a manual override for edge cases where the engine misses the heuristic.)
+- **Active adventuring detection** (project-designed; automatic, no manual toggle per O-D1 resolution) — for `acore_axioms_strongholds_and_domains.xml` §active_adventuring_growth purposes (the population-growth bonus per the band table) AND for `ax_campaign_play.xml` §administer_domain "+5% domain XP" purposes, the ruler is considered to have "actively adventured" in a given month if BOTH conditions are met:
+  1. The ruler physically left their stronghold (or any domain stronghold they hold) during the month, AND
+  2. At least one of the following adventuring events occurred to the ruler during the month:
+     - A wilderness encounter (per `acore_adventures_and_encounters.xml` wandering monster rules)
+     - The ruler entered a dungeon or lair (any subterranean encounter location)
+     - The ruler fought in a battle (any combat encounter — not just mass-combat per `daw_axioms_pitching_battle.xml`)
+     - The ruler participated in a siege (per `daw_sieges.xml` — either as besieger or defender)
+  
+  The Overview sub-tab shows "Active this month: yes / no" status with a tooltip listing which conditions have been met (e.g., "Left stronghold ✓ · Wilderness encounter ✓ · Dungeon visit ✓"). The detection is event-driven via `EventBus` subscriptions (left_stronghold, wilderness_encounter_resolved, dungeon_entered, lair_entered, combat_started, siege_started); no manual override per O-D1.
 
 ### 6.3 Pre-9th-level Overview content
 
@@ -342,6 +350,19 @@ The Stronghold sub-tab is a status-and-summary view over the active entity's str
 5. **Commission new construction** — cross-activation button to `gdd-stronghold-construction.md` §5 commission pipeline. Pre-fills the active entity's class for archetype-selection defaulting (e.g., a Mage opens to the Sanctum archetype)
 6. **Claim existing structure** — per `acore_axioms_strongholds_and_domains.xml` §establishing: *"If an existing suitable structure is present in the domain, it may be claimed as the stronghold."* Cross-activation to `gdd-stronghold-construction.md` §8.4 (Dungeon-Stronghold Bridge for claiming existing dungeon structures) or to a generic structure-claim flow for ruined/abandoned strongholds discovered in the domain's territory
 
+### 7.1.1 Non-conforming strongholds (per O-D10)
+
+A "non-conforming stronghold" is one whose structure type does not match the active entity's class — e.g., a Mage who has inherited a Fighter's castle instead of building a Sanctum, or a Cleric who has conquered a hideout instead of building a Fortified Church.
+
+Per O-D10 resolution:
+
+- **Building a non-conforming stronghold is NOT permitted.** The Stronghold sub-tab's "Commission new construction" button restricts the available archetypes to the active entity's class-appropriate type only. A Mage cannot build a fortress; a Fighter cannot build a sanctum; etc.
+- **Inheriting or conquering a non-conforming stronghold IS permitted.** Per `acore_axioms_strongholds_and_domains.xml` §establishing: *"If an existing suitable structure is present in the domain, it may be claimed as the stronghold."* The Stronghold sub-tab supports claiming any existing structure regardless of its type vs. the active entity's class
+- **No followers attracted by a non-conforming stronghold.** Per RAW the per-class follower attraction (per `acore_core_classes.xml` §<class>.stronghold_and_followers) is tied to the class-specific structure type. A non-conforming stronghold satisfies the minimum-stronghold-value gp threshold (i.e., satisfies the morale-penalty mitigation per §insufficient_stronghold) but does NOT trigger the class's `<followers>` table arrival
+- The Stronghold sub-tab clearly flags non-conforming strongholds with a "Non-conforming" badge and a tooltip explaining the no-followers consequence
+
+**Cross-doc obligation:** `gdd-stronghold-construction.md` will need updates to clarify (a) how stronghold type is classified during build (currently the construction GDD doesn't carry the structure-type-vs-class-binding metadata explicitly), and (b) whether converting an existing stronghold from one type to another is supported (e.g., a Fighter's castle being converted into a Mage's sanctum — likely requires substantial rebuild). These are **out of scope for this Domain tab GDD** but flagged for cross-GDD coordination during build.
+
 ### 7.2 Class-specific stronghold notes
 
 The Stronghold sub-tab content is structurally identical across classes — every class has *some* structure unlocking at level 9 — but the **type** of structure varies per the matrix in §12.1. The Stronghold sub-tab labels and visuals adapt: a Mage's tab shows a sanctum / tower icon; a Cleric's a fortified church; a Thief's a hideout; etc.
@@ -350,7 +371,7 @@ For **Explorer** specifically: the stronghold is a border fort, and per `acore_a
 
 For **Dwarven** classes (Vaultguard / Craftpriest / Delver / Fury): the stronghold is an underground vault. Per `acore_axioms_strongholds_and_domains.xml` §classification *"dwarven vaults may only be built in wilderness areas or civilized/borderlands areas of their own race."* The build flow gates accordingly.
 
-For **Elven** classes (Spellsword / Courtier / Ranger): the stronghold is a fastness which "must blend seamlessly with nature" per `acore_demihuman_classes.xml`. Same wilderness-or-own-race restriction. The fastness archetype's grid placement rules in `gdd-stronghold-construction.md` §3 should reflect this design intent (project-designed UI for archetype constraints — flag for confirmation in §25 Open Questions).
+For **Elven** classes (Spellsword / Courtier / Ranger): the stronghold is a fastness which "must blend seamlessly with nature" per `acore_demihuman_classes.xml`. Same wilderness-or-own-race restriction. The fastness archetype's grid placement rules in `gdd-stronghold-construction.md` §3 should reflect this design intent (project-designed UI for archetype constraints — cross-doc concern flagged via the `gdd-stronghold-construction.md` §13 open questions Q5 / Q6 added 2026-04-30).
 
 For **Mage** specifically: per `acore_core_classes.xml` §Mage `<acquisition_rules>`, *"If the mage builds a dungeon beneath or near the tower, monsters will start to arrive to dwell within, followed shortly by adventurers seeking to fight them."* The Stronghold sub-tab includes a Mage-specific "Build dungeon under tower" option that opens the dungeon-construction flow (per `gdd-stronghold-construction.md` §2.1 dungeon corridor structures, lines 36 of the catalog). This is a unique feature of the mage class.
 
@@ -552,7 +573,7 @@ The Treasury & Ledger sub-tab presents this data; the engine writes to it via mo
 5. **Manual transfers** — buttons to:
    - Transfer gp from active entity's personal wallet → domain treasury
    - Transfer gp from domain treasury → active entity's personal wallet
-   - Both transfers are activity-free (project-designed; treated as logistical, not requiring activity slots; flag as O-D2 if review wants this re-examined)
+   - **Per O-D2 resolution:** transfers are activity-free **but require the active entity to be physically at one of the domain's strongholds** (where the treasury is held). Greyed elsewhere with the standard wrong-location tooltip + travel shortcut. Rationale: the treasury is held in the stronghold's vaults; transfers are physical coin movement, not abstract banking
 6. **Ledger** — virtualized list of `LedgerEntry` records, default sorted reverse-chronological. Filterable by type, category, date range. Search by description text. Export per the established export pattern in `gdd-unified-log-panel.md` §10 (markdown / JSON / TXT)
 
 ### 10.3 Treasury vs. personal wallet boundary
@@ -586,7 +607,6 @@ The sub-tab page is a vertical list of activity cards, grouped by frequency type
 
 **Group 1 — Singular activities** (perform within a single game day; may repeat with available activity slots):
 
-- **Administer domain** (major ongoing per `ax_campaign_play.xml` §administer_domain) — the foundational activity. Time: 1/2 × [(6-mile hexes) + (vassals reporting) + (6 − market class of largest urban settlement in personal domain)] days. Effect: +1 morale roll bonus + 5% XP bonus that month per the activity rule. Status card displays: time-required calculation breakdown, current administration status (running this month / not).
 - **Issue decree** (minor or trivial per `ax_campaign_play.xml` §issue_decree) — opens a sub-flow with options:
   - Change tax rate (current rate displayed; +/- stepper; per-month effect on revenue + morale modifier per §monthly_event_modifiers)
   - Change liturgy rate (default 1gp; +/- stepper; per-month morale roll modifier)
@@ -598,8 +618,9 @@ The sub-tab page is a vertical list of activity cards, grouped by frequency type
 - **Inspect troops** (minor singular; level 5+ with Command proficiency) — per `ax_campaign_play.xml` §inspect_troops — opens a target-selection sub-flow listing units in the active garrison; selected unit gains +1 to first morale roll within one game day. Greyed unless ruler has Command proficiency
 - **Hire mercenaries** (minor singular; requires successful solicit) — per `ax_campaign_play.xml` §hire_mercenaries — cross-activates to Settlement Panel HiringPanel for execution
 
-**Group 2 — Ongoing activities** (require multiple days; sustained over time):
+**Group 2 — Ongoing activities** (require multiple days; sustained over time; tick-tolerance per §15.1.1):
 
+- **Administer domain** (major ongoing per `ax_campaign_play.xml` §administer_domain) — the foundational ruler activity. Time: 1/2 × [(6-mile hexes) + (vassals reporting) + (6 − market class of largest urban settlement in personal domain)] days. Effect: +1 morale roll bonus + 5% XP bonus that month per the activity rule. Status card displays: time-required calculation breakdown, current administration status (running this month / not). Tick-tolerance applies — ruler accumulates ticks each day spent administering somewhere within the personal domain
 - **Conscript troops** (minor ongoing; 1-3 weeks) — per §conscript_troops; max 1 per 10 peasant families. Card displays: current capacity, conscription progress timeline, vagaries-of-recruitment status from the monthly random-events phase
 - **Levy militia** (minor ongoing; 1-3 weeks) — per §levy_militia; max 2 per 10 peasant families. Same status display
 - **Solicit mercenaries** (minor ongoing; 1-3 time periods by realm size per §solicit_mercenaries) — opens a sub-flow specifying solicitation quantity and target mercenary types; cross-references Settlement Panel for execution
@@ -614,9 +635,7 @@ The sub-tab page is a vertical list of activity cards, grouped by frequency type
 
 - **Manage henchmen** (trivial ongoing per §manage_henchmen) — surfaces the active entity's henchmen and their current activity assignments. Per RAW: *"A character may actively manage up to four henchmen, plus one additional henchman per point of Charisma bonus and/or Leadership proficiency bonus."* Card displays current active-management capacity (current / max), each henchman's current activity assignment, and an "Assign activity" button per henchman that opens a sub-flow letting the player select an activity from the henchman's eligible list. Cross-references the Henchmen tab for henchman-level details
 
-**Group 4 — Senatorial domains:**
-
-- **Consult senate** (major singular; ruler of a senatorial domain) — per §consult_senate; surfaces only when the active entity rules a senatorial-type domain (project-designed: this is determined by the political-entity type set during setting generation per `gdd-setting-generation.md`). After consulting, decrees become trivial activities
+**Group 4 — Senatorial domains: out of scope per O-D7.** Senatorial-type domains and the `consult_senate` activity are not in scope for ACKS Arbiter v1. The Activities sub-tab does not surface this group. If senatorial-domain support is added in a future expansion, this section is the natural place for it.
 
 ### 11.2 Activity card UI (project-designed)
 
@@ -626,7 +645,7 @@ Each activity card uses a consistent layout:
 +-----------------------------------------------------------+
 | ● Administer Domain                          Major (ong.) |
 | Time: 7 days  ·  Status: Active this month  ·  +1 morale  |
-| [Stop ongoing] [Inspect math]                             |
+| [Abandon activity] [Inspect math]                         |
 +-----------------------------------------------------------+
 ```
 
@@ -674,7 +693,7 @@ The following matrix maps each class to its applicable buckets. A class may appl
 | Elven Spellsword | | ✓ | | | ✓ | fastness; both arcane caster + fighter-progression |
 | Elven Nightblade | | ✓ | | ✓ | | hideout; arcane caster + thief skills |
 | Assassin | | | | ✓ | | hideout |
-| Bard | | | | | | hall — bards are loremasters but do not unlock divine, magical-research, mercantile, or syndicate buckets per the rule corpus surveyed; their stronghold mechanics are normal-domain ruler. **Open question O-D3:** does Bard get a class-specific sub-tab block at all in v1? Default proposal: no — Bards see no §12 sub-tab. Confirm during review. |
+| Bard | | | | | ✓ | hall — Bards do not unlock divine, magical-research, mercantile, or syndicate buckets per the rule corpus surveyed. **Per O-D3 resolution: Bard's domain-tier play uses the same mechanics as Fighter** (project-designed treatment — Bards are not technically fighter-progression per RAW, but the Arbiter applies the equivalent capability for domain-tier UI purposes). Bards see the Garrison Training block in §12.6. |
 | Bladedancer | ✓ | | | | ✓ | temple; divine + fighter-progression |
 | Explorer | | | | | ✓ | border fort; fighter-progression; borderlands/wilderness only |
 | Anti-Paladin | ✓ | | | | ✓ | dark fortress; chaotic divine + fighter-progression |
@@ -684,7 +703,7 @@ The following matrix maps each class to its applicable buckets. A class may appl
 | Elven Courtier | | ✓ | | | | elven fastness; arcane caster |
 | Elven Enchanter | | ✓ | | | | sanctum; arcane caster |
 | Elven Ranger | | | | | ✓ | elven fastness; fighter-progression |
-| Paladin | ✓ | | | | ✓ | fortress; lawful divine-aligned + fighter-progression. **Open question O-D4:** does Paladin get a Faith block? Paladins per ACKS Player's Companion are lawful warriors with limited divine flavor; whether they unlock the divine activity category in `ax_campaign_play.xml` §divine is unclear from the class XML alone — the class may or may not have divine spellcasting per `pc_classes_4.xml`. Confirm during review |
+| Paladin | | | | | ✓ | fortress; lawful warrior. **Per O-D4 resolution:** ACKS Paladins are flavored on Roland / Lancelot / El Cid — they do **not** cast magic and do **not** research magic. They are alternate fighter variants. NO Faith block; only Garrison Training applies. |
 | Priestess | ✓ | | | | | cloister |
 | Shaman | ✓ | | | | | medicine lodge |
 | Warlock | | ✓ | | | | coterie |
@@ -693,7 +712,7 @@ The following matrix maps each class to its applicable buckets. A class may appl
 | Zaharan Ruinguard | ✓ | | | | ✓ | dark fortress; chaotic divine + fighter-progression |
 | Venturer | | | ✓ | | | guildhouse; mercantile-class |
 
-A class with NO checkmarks (like Bard pending O-D3 resolution) does not see the Class-Specific sub-tab at all per §4.4.
+A class with NO checkmarks in the matrix above does not see the Class-Specific sub-tab at all per §4.4. As of v1.5 every class in the matrix has at least one checkmark, so the Class-Specific sub-tab is always visible for any domain-ruling entity. (The "no checkmarks → hidden" rule remains as future-proofing in case a class is added later that legitimately has no class-specific concerns.)
 
 ### 12.2 Faith block (divine casters)
 
@@ -713,12 +732,12 @@ Surfaces the `<category name="divine">` activities from `ax_campaign_play.xml`:
 - **Religious authority** — when this caster is the ruler of a domain: per `acore_axioms_strongholds_and_domains.xml` §tithes the dominant religion of the domain is the caster's religion (cleric/bladedancer specifically). Religious-conversion mechanics surface here per §new_religion (the −4 first-month / −2 thereafter penalties; conversion via Dedicated morale or half-population convergence)
 - **Faithful followers garrison status** — cross-reference to the Garrison sub-tab's "Faithful (no wages)" indicator per `acore_axioms_strongholds_and_domains.xml` §garrison
 
-**Location-gating:** Most divine activities require the caster to be at their consecrated altar / temple / cloister. Singular activities (cast charitable spells, extract divine power, perform_blood_sacrifice, perform_ceremonial_sacrifice, dispatch missionaries) require presence only at execution time. **Ongoing activities require continuous presence per `ax_campaign_play.xml` §frequency_types:**
-- Consecrate altar (1 day per 500gp of altar) — caster must remain at altar throughout
-- Consecrate fields (1 day per 780 peasants) — caster must remain in domain throughout, moving through fields as needed
-- Consecrate ruler (single performance per year, but ongoing in spirit) — at the ruler's location during the consecration
+**Location-gating:** Most divine activities require the caster to be at their consecrated altar / temple / cloister. Singular activities (cast charitable spells, extract divine power, perform_blood_sacrifice, perform_ceremonial_sacrifice, dispatch missionaries) require presence only at execution time. **Ongoing activities follow the tick-tolerance rule per §15.1.1:**
+- Consecrate altar (1 day per 500gp of altar) — at altar; tick-tolerance window equals days already invested
+- Consecrate fields (1 day per 780 peasants) — anywhere in domain; tick-tolerance applies
+- Consecrate ruler (single performance per year, but ongoing in execution) — at the ruler's location during the consecration; tick-tolerance applies
 
-Greyed in notebook elsewhere with travel shortcut per §15.4. Departing the location during an ongoing divine activity terminates the activity and forfeits the divine power expended per §15.1.2.
+Greyed in notebook elsewhere with travel shortcut per §15.4. Stepping away within the tolerance window (≤ days already performed) is permitted; exceeding the window auto-forfeits the activity and divine power expended per §15.1.4.
 
 ### 12.3 Magical Research block (arcane casters)
 
@@ -736,7 +755,7 @@ Surfaces the `<category name="magical">` activities from `ax_campaign_play.xml`:
 - **Magic-assisted construction** — when the active entity is a stronghold-builder mage, surface the spells available for construction-rate boosts per `gdd-stronghold-construction.md` §2 (Move earth: 12,500gp/turn on ditches/moats/ramparts; Transmute rock to mud: +50% rate for 3d6 days; etc.)
 - **Mage-specific dungeon-under-tower hook** — per `acore_core_classes.xml` §Mage `<acquisition_rules>`, *"If the mage builds a dungeon beneath or near the tower, monsters will start to arrive to dwell within, followed shortly by adventurers seeking to fight them."* Dungeon-construction status surfaces here for Mages, with the resulting domain-encounter modifier (project-designed: dungeon attracts wandering monsters per `ax_domain_level_encounters.xml` §dungeons) so the Encounters & Threats sub-tab can show the increased frequency
 
-**Location-gating:** All four major magical activities (research_magic, rewrite_spell, replace_spell, scribe_spell) are **ongoing** per `ax_campaign_play.xml` §magical and require the caster to remain at the sanctum (or borrowed sanctum) **throughout** the activity's full duration per §15.1.1. A mage who begins a 30-day research project must remain at the sanctum for those 30 days; departing terminates the research and forfeits the gp committed per §15.1.2. Manage assistant (trivial restricted) accompanies a major magical activity and is consequently bound to the same location as the supervised activity. Greyed in notebook elsewhere with travel shortcut per §15.4.
+**Location-gating:** All four major magical activities (research_magic, rewrite_spell, replace_spell, scribe_spell) are **ongoing** per `ax_campaign_play.xml` §magical and require the caster at the sanctum (or borrowed sanctum) under the tick-tolerance rule per §15.1.1. A mage who has invested 12 days at the sanctum on a 30-day research project may step away for up to 12 consecutive days before forfeit; on return within the tolerance window, ticks resume. Departing for longer auto-forfeits the research and the gp committed per §15.1.4. Manage assistant (trivial restricted) accompanies a major magical activity and is bound to the same location as the supervised activity. Greyed in notebook elsewhere with travel shortcut per §15.4.
 
 ### 12.4 Trade block (Venturer)
 
@@ -748,7 +767,7 @@ Surfaces the venturer's mercantile mechanics and high-level monopoly:
 - **Mercantile ventures cross-reference** — the Settlement Panel per `gdd-settlement-exploration-ui.md` owns the actual buy/sell, solicit-merchants, persuade-merchants flows. The Trade block surfaces summary status (current trade routes active, cargo loads in transit, shipping contracts open) and cross-activates to the Settlement Panel for execution
 - **Caravan / fleet management** — when the venturer operates caravans / vessels, summary status here
 
-**Location-gating:** Most mercantile activities require the venturer to be in an urban settlement (with caravan or ship for shipping/passenger work). Singular activities (buy_sell_*, hire_hirelings, persuade_*, enter_market) require presence only at execution time. **Ongoing activities (solicit_merchants, solicit_passengers, solicit_shipping_contracts — each 1-3 weeks)** require the venturer to remain in the market through the duration per §15.1.1. Departing the market terminates the solicitation per §15.1.2. Greyed in notebook elsewhere with travel shortcut per §15.4.
+**Location-gating:** Most mercantile activities require the venturer to be in an urban settlement (with caravan or ship for shipping/passenger work). Singular activities (buy_sell_*, hire_hirelings, persuade_*, enter_market) require presence only at execution time. **Ongoing activities (solicit_merchants, solicit_passengers, solicit_shipping_contracts — each 1-3 weeks)** follow the tick-tolerance rule per §15.1.1: the venturer accumulates ticks each day in the market and may step away for up to that many days without forfeit. Greyed in notebook elsewhere with travel shortcut per §15.4.
 
 ### 12.5 Syndicate block (Thief / Assassin / Elven Nightblade)
 
@@ -765,11 +784,11 @@ Surfaces the `<category name="syndicate">` activities from `ax_campaign_play.xml
 - **Crime & Punishment status** — for any syndicate member currently caught and awaiting trial: their crime, time-languishing remaining, attorneys hired, bribes applied, expected outcome on the Crime & Punishment table
 - **Hijink revenue tracking** — accumulator showing this-month-and-last-month hijink yields per type, fed into the Treasury & Ledger sub-tab as `category: "hijink_revenue"` ledger entries per `ax_campaign_play.xml` §hijink_revenue
 
-**Location-gating:** Singular activities (order_hijink as singular major when assigning to all members at base, bribe_magistrate, hire_attorney, interplead) require presence only at execution time. **Ongoing activities require continuous presence per §15.1.1:**
-- Plan hijink (2d8+3 / 2d6+3 / 2d4+3 days by level) — perpetrator must remain at hideout throughout planning. Departing terminates planning and forfeits days invested
-- Lay low (2d8+3 days) — perpetrator must remain at base throughout. Lay-low is itself a "remain inactive at base" activity by definition; departing breaks lay-low and exposes the perpetrator to detection per `ax_campaign_play.xml` §lay_low
-- Perform hijink (1 day for plannable; 3d6+10 / 3d4+8 / 2d6+5 days for ongoing types like carousing/disinforming/slandering/spying/treasure_hunting) — perpetrator must remain at the target location throughout. Field-execution UI is the future hijink-execution surface; the Domain tab tracks status only
-- Await trial (by crime severity) — perpetrator is in jail throughout (not voluntary; involuntary location-binding)
+**Location-gating:** Singular activities (order_hijink as singular major when assigning to all members at base, bribe_magistrate, hire_attorney, interplead) require presence only at execution time. **Ongoing activities follow the tick-tolerance rule per §15.1.1:**
+- Plan hijink (2d8+3 / 2d6+3 / 2d4+3 days by level) — at hideout; tick-tolerance applies
+- Lay low (2d8+3 days) — at base; tick-tolerance applies. Lay-low is by definition a "remain at base" activity, so the absence-streak rule maps directly to the lay-low concept; exceeding tolerance breaks lay-low and exposes the perpetrator to detection per `ax_campaign_play.xml` §lay_low
+- Perform hijink (1 day for plannable; 3d6+10 / 3d4+8 / 2d6+5 days for ongoing types like carousing/disinforming/slandering/spying/treasure_hunting) — at target location; tick-tolerance applies for ongoing variants. Field-execution UI is the future hijink-execution surface; the Domain tab tracks status only
+- Await trial (by crime severity) — perpetrator is in jail throughout (not voluntary location-binding; tick-tolerance is moot since the perpetrator cannot leave anyway)
 
 Crime & Punishment activities at courthouse / settlement (singular for bribe / hire-attorney / interplead). Greyed in notebook elsewhere with travel shortcut per §15.4.
 
@@ -781,9 +800,9 @@ Surfaces the `<category name="domain"><activity name="oversee_troop_training">` 
 - **Activities** —
   - Oversee troop training (minor ongoing; one ongoing minor activity per 60 troops; level 5+; ruling a domain; +1 permanent morale on completion)
   - Train troops (major ongoing; Mannered at Arms ranks required + Riding/Weapon Focus where required; up to 60 troops; same time as oversight)
-- **Class-restricted note** — per `ax_campaign_play.xml` §oversee_troop_training: *"Fighter or other character using fighter attack progression, level 5+, who rules a domain."* The block confirms eligibility and shows the gating
+- **Class-restricted note** — per `ax_campaign_play.xml` §oversee_troop_training: *"Fighter or other character using fighter attack progression, level 5+, who rules a domain."* The block confirms eligibility and shows the gating. Bards are surfaced through this block per O-D3 even though Bards are not technically fighter-progression in RAW — flagged inline as Arbiter-specific design
 
-**Location-gating:** Both `oversee_troop_training` and `train_troops` are **ongoing** activities per `ax_campaign_play.xml` §domain. The ruler must remain where the troops are physically training (typically the stronghold) **throughout** the full training duration per §15.1.1. Training durations vary by troop type (per `daw_campaigns_troop_tables_summary.xml` and `daw_armies_recruitment.xml`); a multi-month training program requires multi-month presence. Departing aborts the training, forfeits the time invested, and the +1 permanent morale bonus / veteran promotion does not occur per §15.1.2. Greyed in notebook elsewhere with travel shortcut per §15.4.
+**Location-gating:** Both `oversee_troop_training` and `train_troops` are **ongoing** activities per `ax_campaign_play.xml` §domain. The ruler accumulates ticks each day spent at the troop training site (typically the stronghold) and may step away within the tolerance window per §15.1.1. Training durations vary by troop type (per `daw_campaigns_troop_tables_summary.xml` and `daw_armies_recruitment.xml`); a multi-month training program builds a long tolerance window over time, so brief excursions are tolerable, but prolonged absence auto-forfeits the training (the +1 permanent morale bonus / veteran promotion does not occur) per §15.1.4. Greyed in notebook elsewhere with travel shortcut per §15.4.
 
 ### 12.7 Nobiran Wonderworker hybrid block (per Q5 resolution)
 
@@ -792,7 +811,7 @@ The Nobiran Wonderworker is a unique class with no `<stronghold_and_followers>` 
 - **Stronghold:** sanctum + dungeon (mage-style)
 - **Followers:** 1d6 clerics or mages of level 1-3 + 2d6 0th-level normal-man aspirants
 - **Aspirant class determination:** each aspirant's INT and WIS scores determine cleric vs. mage path: highest of the two scores wins; mage wins on tie; both INT and WIS must be ≥9 for the aspirant to qualify (aspirants below the threshold do not arrive)
-- **Aspirant attrition:** each 0th-level aspirant has a chance per month of giving up and leaving in 1d6 months (specific % unspecified by Jedidiah; project-designed proposal: roll 1d6 each month per active aspirant, on a 1 the aspirant departs that month; track departure in the Departure Log sub-tab. Open question O-D5 to confirm this dropout rate)
+- **Aspirant attrition** (per O-D5 resolution): each 0th-level aspirant rolls 1d6 per month for the first 6 months after arrival; on a roll of 1, that aspirant leaves that month. After 6 months, no further dropout rolls — the aspirant is committed. The roll is **not cumulative** (each month is an independent 1/6 chance, ~16.67%; expected ~33.5% of aspirants commit, ~66.5% drop out within 6 months). Track each aspirant's months-since-arrival counter; track each departure in the Departure Log sub-tab
 - **Class-Specific sub-tab content:** stacks Faith block + Magical Research block, both of which are accessible since Wonderworker has both arcane and divine progression
 
 **Tag:** This is **Arbiter-specific design** — flagged in the GDD because no ACKS sourcebook publishes this rule. The follower mix is project-designed per Jedidiah's design intent for the class.
@@ -913,34 +932,99 @@ Per Q8 resolution, the Domain tab is the **master inspection-and-execution surfa
 - Provide quick-access buttons for the most-frequent class-appropriate activities at that location
 - Read state from and write to the same source of truth as the Domain tab — they are not parallel data stores
 
-### 15.1.1 The "performed throughout" rule for ongoing activities
+### 15.1.1 The "tick tolerance" rule for ongoing activities
 
-**This is a core RAW rule with major UX implications.** Per `ax_campaign_play.xml` §frequency_types: *"Ongoing activities require more than one game day and must be performed throughout the listed time period. A major ongoing activity represents full-time labor on a complex project or task. A minor ongoing activity represents intermittent daily effort sustained over a lengthy period."*
+**This is the canonical mechanic for ongoing-activity persistence in v1.** Per `ax_campaign_play.xml` §frequency_types: *"Ongoing activities require more than one game day and must be performed throughout the listed time period."*
 
-**This means an ongoing activity does NOT run autonomously once started.** The active entity must remain physically present at the activity's required location for the activity's full duration. A mage who begins research on a 30-day spell project must remain at their sanctum for those 30 days. A thief who begins planning a hijink (2d8+3 days) must remain at their hideout throughout. A cleric consecrating an altar (1 day per 500gp of altar) must remain at the altar throughout. A ruler overseeing construction must remain at the construction site throughout.
+The official Discord judge consensus (confirmed by Jedidiah) refines "performed throughout" with a **tick-tolerance** mechanic:
 
-**Location requirements during the activity:**
-- **At specific structure** (sanctum / altar / hideout / cloister / construction site / where troops are training): the entity must be physically at that structure for the activity's full duration
-- **In domain (anywhere)** (consecrate_fields, conscript_troops, levy_militia): the entity must remain somewhere within the domain for the activity's duration; movement within the domain is permitted
-- **With the army** (military_campaign): the entity must remain with the army during the campaign
+> For every ongoing activity, the requisite time must be spent on it (Major or Minor activity-slot cost depending on the activity) every day in succession until completion. **Each day that time is spent on the task earns one "tick"** toward completion (tabletop judges use literal "/" marks on a paper calendar). **The character may step away from the task** without immediately forfeiting, **BUT if cumulative absence exceeds days-spent-on-task, the progress and gp committed are forfeited** and the activity must be restarted from scratch.
 
-**Trivial ongoing activities** (manage_henchmen) are an exception per RAW — manage_henchmen specifically allows changing assignments "whenever the henchman is accessible physically or magically," so the location requirement is "henchman is reachable" rather than "ruler is at a specific spot." This is a special case and applies only to manage_henchmen and similarly-flagged trivial-ongoing activities. Each per-activity spec in §11 and §12 notes whether the throughout rule applies and at what location.
+**Crucially, absence is cumulative for the full lifetime of the activity — it never resets while the task remains in progress.** A character who steps away, returns, then steps away again carries forward all prior absence days. This produces a clean derived property: **a task can never take more than 2× its default duration in real elapsed time.** If a 14-day research project ever reaches 14 days of absence, it must already have 14 ticks — meaning it has completed; otherwise it would have forfeited at absence = 15.
 
-### 15.1.2 What happens if the entity leaves during an ongoing activity
+### 15.1.2 Tick-tolerance state model
 
-Per RAW, departing the required location terminates the activity (the activity has not been "performed throughout"). The Domain tab implements this with project-designed UX safeguards:
+Project-designed engine state per ongoing activity:
 
-**Travel attempt while ongoing activity is in progress** — when the player initiates travel (or any other action) that would take the active entity away from a required-location ongoing activity, the engine raises the **abandon-confirmation modal** per the canonical copy in §15.1.4. The player must explicitly choose to abandon and forfeit progress, or cancel the action and continue the activity.
+```
+ongoing_activity_state {
+  id: String                      # the activity instance
+  entity_id: String               # who's performing it
+  activity_def_id: String         # what activity (e.g., "research_magic")
+  required_location: LocationRef  # where it must be performed
+  total_days_required: int        # the activity's RAW completion length (= target ticks)
+  ticks_accumulated: int          # days actually performed at location (= progress)
+  absence_accumulated: int        # CUMULATIVE days not performing (never resets while in_progress)
+  gp_committed: int               # gp spent up front (forfeited on abandon)
+  state: "in_progress" | "completed" | "forfeited"
+  started_on: int                 # in-game tick
+}
+```
 
-**Forced departure** (e.g., NPC dragging the entity, magical effects, forced narrative events) — the engine aborts the activity automatically and emits a system-category log entry per `gdd-unified-log-panel.md` §12.2: *"Aldric's research on Detect Magic was interrupted by [cause]. Progress lost; 1,500gp expended is not recoverable."*
+**Daily scheduler boundary update** per active ongoing activity (evaluated at end-of-day):
 
-**Aborted ongoing activity recovery** — partial progress and partial gp expenditure are NOT recoverable per the strict RAW reading (RAW does not describe pause/resume mechanics). The activity must be restarted from scratch if the entity wants to attempt it again. Project-designed: this is the v1 behavior. Open question O-D15 (added in v1.1) flags whether play testing wants a more lenient pause/resume mechanism in v1.1+.
+- **Entity at required location AND spent the appropriate slot on this activity:** `ticks_accumulated += 1`. (`absence_accumulated` unchanged — does not reset on return.) If `ticks_accumulated >= total_days_required`, mark `state = "completed"` and emit `EventBus.activity_completed`.
+- **Entity at required location BUT did not spend the slot on this activity** (e.g., at the sanctum but used the major slot on Rest instead of Research): `absence_accumulated += 1`. Per O-D17 resolution (v1.4): present-but-not-performing counts toward absence the same as physical absence. The activity is in suspension that day.
+- **Entity NOT at required location:** `absence_accumulated += 1`.
 
-**Activity-card UI during in-progress ongoing activities** — the activity card shows "In progress: {N} days remaining" plus a prominent "Abandon activity" button (clicking the button raises the abandon-confirmation modal per §15.1.4). If the entity is somehow already away from the required location (should not normally happen since travel triggers the modal pre-departure), the card flags the activity as "Interrupted — must return within {N} days or abort" with an explicit return-or-abort prompt.
+**Forfeit check** at end of day after the daily update: if `absence_accumulated > ticks_accumulated`, mark `state = "forfeited"`, emit `EventBus.activity_forfeited` with cause "absence exceeded ticks," log via `EventBus.log_entry_added`, and forfeit gp committed.
 
-### 15.1.4 Abandon-confirmation modal (canonical copy)
+**Tolerance remaining** at any point in time: `ticks_accumulated - absence_accumulated`. This is the number of additional consecutive (or non-consecutive) days the entity may be absent before the next forfeit check fails. It can be zero or briefly negative just before forfeit; the engine evaluates strict inequality (`absence > ticks`) so absence exactly equal to ticks is still safe.
 
-Any action that would interrupt or terminate an ongoing activity raises a confirmation modal with the following canonical copy. This applies to the player initiating travel that would depart the activity location, the player clicking "Abandon activity" on an activity card, the player attempting another action that would consume slots already committed to the ongoing activity, or any other interrupting action.
+### 15.1.2.1 Worked example (per Jedidiah)
+
+A mage Abel starts a 14-day Magical Research project on Day 1.
+
+| Period | Days | Action | ticks | absence | Tolerance |
+|---|---|---|---|---|---|
+| Phase 1 | 1–5 | At sanctum, performs daily | 5 | 0 | 5 |
+| Phase 2 | 6–9 | Away for 4 days | 5 | 4 | 1 |
+| Phase 3 | 10 | Returns and performs | 6 | 4 | 2 |
+| Phase 4 | 11–14 | At sanctum, performs daily | 10 | 4 | 6 |
+| Phase 5 | 15 | Away again | 10 | 5 | 5 |
+
+At the end of Phase 5: ticks=10, absence=5. He has 4 more days of research needed (10 of 14 done). Tolerance remaining = 10 − 5 = 5 days.
+
+If an orc invasion now requires 5 days of travel:
+- Days 16–20: traveling away → absence increments daily, reaching absence=10 by end of day 20. ticks remain 10. Tolerance remaining = 10 − 10 = 0. Activity is not yet forfeited (`absence > ticks` is false; equal is safe).
+- Day 21: arrives at the conflict point but is still away from sanctum → absence = 11 > ticks = 10 → **forfeit**. The research is cancelled, gp committed is lost.
+
+Abel must therefore choose between completing the research (return to sanctum, accept lost time defending, perhaps abandoned domain) or going to fight the orcs (forfeit research). This is the design intent: high-level characters have weighty long-term commitments, and their adventuring choices have to account for them.
+
+### 15.1.3 Location requirements during the activity
+
+- **At specific structure** (sanctum / altar / hideout / cloister / construction site / where troops are training): the required location is that structure
+- **In domain (anywhere)** (consecrate_fields, conscript_troops, levy_militia): the required location is "anywhere within the domain"; movement within the domain does not increment cumulative absence
+- **With the army** (military_campaign): the required location is "with the army" — a moving location; absence is measured from the army's position
+- **Trivial ongoing exception** (manage_henchmen): per RAW, manage_henchmen explicitly allows changing assignments "whenever the henchman is accessible physically or magically." Treat manage_henchmen as having **no required location** — it never accumulates absence. This is the canonical exception.
+
+Each per-activity spec in §11 and §12 notes whether the tick-tolerance rule applies and at what location.
+
+### 15.1.4 Outcomes when the entity leaves during an ongoing activity
+
+The tick-tolerance rule means departure does not immediately terminate the activity. Three outcome paths:
+
+1. **Return before forfeit** (`absence_accumulated <= ticks_accumulated`): the entity returns to the required location. On the next day spent performing the activity, `ticks_accumulated` increments. **`absence_accumulated` does NOT reset** — it carries forward. No data is lost; no modal fires; the activity simply resumes with reduced tolerance going forward.
+2. **Exceed tolerance** (`absence_accumulated > ticks_accumulated` after a daily increment): the engine auto-forfeits the activity at the day-boundary tick when this inequality first becomes true. Progress and gp committed are lost. Logs the forfeit with cause "absence exceeded ticks." The entity may restart from scratch later. **No modal fires for auto-forfeit** — the player was already warned pre-departure if the trip was projected to exceed tolerance; auto-forfeit is the consequence of the player having chosen Yes anyway, or having extended the absence beyond original projection, or having let cumulative absence over multiple trips reach the threshold.
+3. **Voluntary explicit abandon** (player clicks "Abandon" on activity card): regardless of current absence state, the player can deliberately end the activity. Raises the abandon-confirmation modal per §15.1.6 (canonical copy). On Yes, terminates the activity and forfeits. On No, dismisses the modal and the activity continues in its current state.
+
+**Forced departure** (e.g., NPC abducts the entity, magical compulsion, forced narrative events) — the engine treats forced departure exactly like a voluntary departure: tick-tolerance applies, absence accumulates, and forfeiture occurs only if absence exceeds ticks per the same model. There is no special "involuntary forfeit" path; the system is uniform.
+
+### 15.1.5 Pre-departure warning for over-tolerance trips
+
+The engine compares projected trip duration against the **remaining tolerance window**, not just total ticks. The remaining window is `ticks_accumulated - absence_accumulated` (the number of additional absent days the activity can survive before forfeit).
+
+When the player initiates travel (or any action that would take the entity away from the required location) AND `(absence_accumulated + projected_trip_days) > ticks_accumulated`, the engine raises the abandon-confirmation modal per §15.1.6 *before* the travel begins. The modal explains that the trip will exceed remaining tolerance and gives the player the option to abandon-and-travel or cancel-the-trip.
+
+When `(absence_accumulated + projected_trip_days) <= ticks_accumulated`, the engine does **not** raise a modal — the player is free to depart and return; the engine accumulates absence as the trip unfolds.
+
+Because absence is cumulative, a player who has previously stepped away from the activity has *less* tolerance for the next trip than a player who has been continuously present. The activity card always shows the current remaining tolerance so the player can plan around it (§15.1.7).
+
+If during the trip the player extends their absence beyond what was originally projected (e.g., stays longer than planned, takes a side adventure), the activity may auto-forfeit per §15.1.4 outcome path 2. The activity card surfaces an escalating-warning UI so the player has running visibility.
+
+### 15.1.6 Abandon-confirmation modal (canonical copy)
+
+This modal raises in three cases: (1) player clicks "Abandon" on the activity card; (2) player initiates travel (or other interrupting action) that the engine projects will exceed the tolerance window; (3) player attempts another action that would consume the daily activity slot already committed to this ongoing activity. The modal does NOT raise for routine within-tolerance travel.
 
 **Single-activity case** (one ongoing activity affected):
 
@@ -953,35 +1037,80 @@ and forfeit progress, proceed anyway?
 
 The `<ongoing_task_name>` placeholder is filled with the user-facing display name of the activity (e.g., "Research: Detect Magic", "Plan hijink: Carouse at Aerendel Tavern", "Oversee Construction: Watchtower"). The "No, ..." button label includes the activity name so the player sees explicitly what they're choosing to keep doing.
 
-**Multi-activity case** (more than one ongoing activity affected by the action — e.g., entity has both research AND plan_hijink in progress at a hideout-with-attached-sanctum, and travel would abort both):
+**Multi-activity case** (more than one ongoing activity would be affected):
 
 ```
 WARNING: Taking this action will abandon the following
 ongoing activities and forfeit progress, proceed anyway?
 
-  • Research: Detect Magic (8 days remaining)
-  • Plan hijink: Carouse (4 days remaining)
+  • Research: Detect Magic (8 / 30 ticks; tolerance 8 days, trip 14 days)
+  • Plan hijink: Carouse (4 / 17 ticks; tolerance 4 days, trip 14 days)
 
   [Yes, forfeit progress]   [No, keep activities]
 ```
 
-The "No" button label uses the generic "keep activities" plural form when more than one is affected.
+The multi-activity variant lists each affected activity with its current tick count, total duration, and the tolerance-vs-trip comparison so the player sees why each one is at risk. The "No" button uses the plural "keep activities" form.
 
 **Modal behavior:**
-- Modal is non-bypassable — it always raises when an interrupting action is attempted, even if the player has a "Suppress confirmations" preference set elsewhere
-- Modal is keyboard-accessible: Enter defaults to the safe "No" choice (project-designed default; the destructive "Yes" choice should require deliberate selection); Escape closes the modal as if "No" were chosen
-- Project-designed: a small subtitle below the warning may show the gp committed and that will be forfeited if the player chooses Yes (e.g., *"Forfeiting will lose 1,500gp committed to the research"*); this is informational and not part of the canonical copy
+- Modal is non-bypassable — always raises when an over-tolerance interrupting action is attempted, even if the player has "Suppress confirmations" preferences set elsewhere
+- Modal is keyboard-accessible: Enter defaults to the safe "No" choice; Escape closes the modal as if "No" were chosen
+- Project-designed: a small subtitle below the warning may show gp-forfeited and ticks-lost (e.g., *"Forfeiting will lose 1,500gp committed and 8 ticks of research progress"*); informational, not part of the canonical copy
 
-**Voice / tone:** the modal uses the imperative "abandon" / "forfeit progress" because RAW does not describe pause-and-resume — choosing Yes is irrevocable, and the language reflects that gravity. Per Jedidiah's design intent, the modal does not mention any pause / resume / save options because none exist in v1.
+**Voice / tone:** "abandon" and "forfeit progress" are deliberately imperative because the choice is irrevocable per RAW (no pause/resume; restart from scratch).
 
-### 15.1.3 Consequence: travel must precede ongoing activities
+### 15.1.7 Activity-card UI for tick-tolerance state
 
-The implication for player flow: the player should be at the required location *before* initiating an ongoing activity. The notebook's pre-flight UI for ongoing activities makes this explicit:
+The activity card surfaces tolerance state across three visual stages:
 
-- **At the right location:** the activity card's Begin button is active. Player clicks → activity starts immediately. Entity is now committed to staying at the location for the duration.
-- **At the wrong location:** the activity card's Begin button is greyed with the standard tooltip. Player clicks the "Plan travel to {location}" link → travels there → on arrival, the Begin button becomes active → player clicks Begin to start the activity.
+**While the entity is at the required location and performing daily** (in-progress / on-track):
 
-This is the Q8 hybrid model's flow: configure-anywhere, travel-to-location, execute-and-stay-until-complete.
+```
++-----------------------------------------------------------+
+| ⚙ Research: Detect Magic        Major (ongoing)           |
+| Progress: 8 / 30 ticks (8 days at sanctum)                |
+| Estimated 22 days remaining if performance continues      |
+| 1,500 gp committed                                        |
+| [Abandon activity]  [Inspect math]                        |
++-----------------------------------------------------------+
+```
+
+**While the entity is away from the required location, within tolerance** (amber warning):
+
+```
++-----------------------------------------------------------+
+| ⚙ Research: Detect Magic        Major (ongoing)           |
+| ⚠ Currently absent — within tolerance                     |
+| Progress: 8 / 30 ticks                                    |
+| Cumulative absence: 3 days  ·  Tolerance remaining: 5 days|
+| Forfeit at: 9 days cumulative absence                     |
+| [Plan return travel]  [Abandon now]  [Inspect math]       |
++-----------------------------------------------------------+
+```
+
+**While the entity is away and tolerance is about to be exceeded** (red urgent — fires when `ticks_accumulated - absence_accumulated <= 1`):
+
+```
++-----------------------------------------------------------+
+| ⚠⚠ Research: Detect Magic        Major (ongoing)          |
+| URGENT — return within 1 day or activity will be          |
+| forfeited and 1,500 gp committed will be lost             |
+| Progress: 8 / 30 ticks                                    |
+| Cumulative absence: 8 days  ·  Tolerance remaining: 0 days|
+| [Plan return travel]  [Abandon now]  [Inspect math]       |
++-----------------------------------------------------------+
+```
+
+After auto-forfeit, the activity is moved to the Departure Log per §14 with cause "absence exceeded ticks" and removed from the active activity list.
+
+### 15.1.8 Consequence: travel may precede or interrupt ongoing activities
+
+The implication for player flow: the tick-tolerance window is the canonical mechanic for letting players step away briefly without restarting. Concrete patterns:
+
+- **Begin at the right location** — same as before. Activity starts; tick accumulation begins immediately. Each day at location performing = +1 tick.
+- **Step away briefly within tolerance** — the engine tracks absence; no modal fires; ticks pause; on return, ticks resume. Net cost: the trip days don't count toward progress, so the activity takes longer in real-time, but no progress is lost.
+- **Step away beyond tolerance** — the engine raises the §15.1.6 modal pre-departure if the projected trip exceeds tolerance. Player chooses to abandon-and-go or stay-and-continue. If the player extends the trip beyond original projection, the activity may auto-forfeit during the extended absence.
+
+This is the Q8 hybrid model's revised flow: **configure anywhere, travel to location, execute, optionally step away within tolerance, return and resume — OR abandon and restart.**
 
 ### 15.2 Location-gating decision tree per activity
 
@@ -989,15 +1118,15 @@ For each activity surfaced in the Domain tab, the location requirement is determ
 
 For **singular** activities (single game day; one execution within the day): location must be correct **at execution time**. The entity is free to depart immediately after, since the activity completes within the day.
 
-For **ongoing** activities (multiple days; performed throughout per §15.1.1): location must be correct **at execution time AND continuously throughout the activity's full duration.** Departing terminates the activity per §15.1.2.
+For **ongoing** activities (multiple days): location must be correct at the start, and the entity must accumulate ticks at the location per the **tick-tolerance** rule in §15.1.1. The entity may step away within the tolerance window (`absence_accumulated <= ticks_accumulated`) and return to resume; absences exceeding the tolerance forfeit the activity per §15.1.4.
 
 **Location categories:**
-- **In personal domain (continuous for ongoing):** administer_domain (ongoing), issue_decree (singular), conscript_troops (ongoing), levy_militia (ongoing), oversee_investment (ongoing), oversee_construction (ongoing), supervise_construction (ongoing). For ongoing variants, the ruler must remain somewhere within the personal domain throughout. Movement within the domain is permitted; departing the domain breaks the activity.
-- **At specific structure (continuous for ongoing):** research_magic / scribe / rewrite / replace (at sanctum throughout); consecrate_altar (at altar throughout); plan_hijink / order_hijink / lay_low (at hideout throughout); train_troops / oversee_troop_training / inspect_troops (at stronghold where troops are based throughout for ongoing variants; inspect_troops is singular and only requires presence at execution time)
-- **At urban settlement (singular only):** hire_mercenaries, buy_sell_*, solicit_* (entity may depart afterward; for ongoing solicit_* variants, must remain in market through duration), persuade_* (cross-references Settlement Panel)
-- **In domain (anywhere; continuous for ongoing):** consecrate_fields (cleric must remain in domain during the activity, moving through the fields as needed); military_campaign (with the army throughout)
-- **Ruler need not be present (manage_henchmen exception):** manage_henchmen is the only documented trivial-ongoing activity where presence-throughout does NOT apply per RAW — the activity description explicitly allows reassignment "whenever the henchman is accessible physically or magically." Treat this as the canonical exception
-- **At target location (not domain; field execution):** perform_hijink (executed at target by the perpetrator — handled by future hijink-execution surface; the perpetrator must be at the target location for the hijink's duration whether 1 day for plannable hijinks or 3d6+10 days for ongoing hijinks)
+- **In personal domain (tick-tolerance applies for ongoing):** administer_domain (ongoing), issue_decree (singular), conscript_troops (ongoing), levy_militia (ongoing), oversee_investment (ongoing), oversee_construction (ongoing), supervise_construction (ongoing). For ongoing variants, the ruler accumulates ticks each day they spend the appropriate slot somewhere within the personal domain. Movement within the domain is permitted; departing the domain begins accumulating absence.
+- **At specific structure (tick-tolerance applies for ongoing):** research_magic / scribe / rewrite / replace (sanctum); consecrate_altar (altar); plan_hijink / order_hijink / lay_low (hideout); train_troops / oversee_troop_training (stronghold where troops are based for ongoing variants). Singular variants like inspect_troops require presence only at execution time.
+- **At urban settlement (singular and ongoing variants):** hire_mercenaries, buy_sell_* are singular; solicit_*, persuade_* may be ongoing variants — for ongoing solicits, tick-tolerance applies (must remain in market for the duration, with tolerance window). Cross-references Settlement Panel
+- **In domain (anywhere; tick-tolerance applies for ongoing):** consecrate_fields (cleric accumulates ticks anywhere within the domain); military_campaign (with the army — a moving location; ticks accumulate while with the army)
+- **Trivial ongoing exception (manage_henchmen):** no required location per RAW — the activity description allows reassignment whenever the henchman is accessible. This activity does not accumulate absence; its tolerance is effectively unbounded.
+- **At target location (not domain; field execution):** perform_hijink — the perpetrator's location is the target site; tick-tolerance applies for ongoing hijink variants (3d6+10 / 3d4+8 / 2d6+5 days).
 
 ### 15.3 Execute button states (UI specification)
 
@@ -1010,36 +1139,41 @@ For each activity-execute button:
 | **Wrong location** | Greyed with location icon | "Available at {location_name}. Currently in {current_location}. Travel: {n} days." | Optional "Plan travel" link to the travel system |
 | **Insufficient gating** | Greyed with class/proficiency icon | "Requires {gating_description}" (e.g., "Requires Engineering proficiency"; "Requires level 5+"; "Requires fighter attack progression") | No action |
 | **Insufficient resources** | Greyed with treasury icon | "Insufficient gp ({available} / {required}gp)" or similar resource specifier | No action |
-| **Already in progress (entity at correct location)** | Standard styling, "Abandon" label instead of "Begin" | "{N} days remaining. Click to abandon. **Progress and gp committed are forfeited** per `ax_campaign_play.xml` §frequency_types: ongoing activities must be performed throughout." | Raises abandon-confirmation modal per §15.1.4; on Yes, terminates the activity and logs the abandon with cause "voluntary"; on No, dismisses the modal and the activity continues |
-| **Already in progress (entity has departed location)** | Warning styling with red alert icon, "Return or Abandon" label | "Activity interrupted — entity is at {current_location} but must be at {required_location} to continue." | Auto-abort fires per §15.1.2 / O-D16 (no grace period in v1); the activity is logged as terminated due to involuntary departure with cause "interrupted" |
+| **Already in progress (entity at required location, performing)** | Standard styling, "Abandon" label instead of "Begin" | "{ticks} / {total} ticks. Absence: {absence} days. Tolerance remaining: {ticks - absence} days. Click to abandon. **Progress and gp committed are forfeited.**" | Raises abandon-confirmation modal per §15.1.6; on Yes, terminates the activity and logs the abandon with cause "voluntary"; on No, dismisses |
+| **Already in progress (entity at location, did not perform today)** | Standard styling with absence-counted note | "{ticks} / {total} ticks. Absence: {absence} days (today counted as absence per O-D17 — slot used elsewhere). Tolerance remaining: {ticks - absence} days." | Same abandon flow; the activity does not advance and absence accumulates per O-D17 |
+| **Already in progress (entity absent, within tolerance)** | Amber warning styling, "Plan return travel" / "Abandon now" | "Currently absent {N} days cumulative. Tolerance remaining: {ticks - absence} days. Forfeit at {ticks + 1} cumulative absence." | "Plan return travel" opens travel UI; "Abandon now" raises §15.1.6 modal |
+| **Already in progress (entity absent, tolerance about to be exceeded)** | Red urgent styling | "URGENT — return within 1 day or activity forfeited. {gp_committed}gp will be lost." | Same options as amber state, with visual escalation |
+| **Forfeited via auto-forfeit (absence exceeded ticks)** | Removed from active list; entry in Departure Log | n/a — activity is terminated | n/a — restart from scratch if the entity wants to attempt again |
 
 ### 15.4 Travel shortcut behavior (pre-execution)
 
-This sub-section covers travel **before starting** an ongoing activity. Travel **during** an ongoing activity is a different concern handled by §15.1.2.
+This sub-section covers travel **before starting** an ongoing activity. Travel **during** an ongoing activity is governed by the tick-tolerance rule in §15.1 — short trips within tolerance need no warning; trips that would exceed tolerance raise the §15.1.6 modal.
 
 When a wrong-location greyed button shows a "Plan travel" link, clicking it:
 1. Opens the travel-planning UI (per `gdd-party-tab.md` §6 Travel sub-tab) pre-populated with the destination
 2. The player confirms or modifies the travel plan and dispatches the party
-3. On arrival at the destination, the same activity button reactivates automatically (state-driven; no manual re-open of the notebook required to refresh — the button uses the entity's current location signal)
-4. Optionally, the engine can emit an `EventBus.activity_reachable(activity_id)` notification when an entity arrives at a location that newly enables a previously-greyed activity, surfaced as a HUD toast
+3. On arrival at the destination, the same activity button reactivates automatically (state-driven; the button uses the entity's current location signal)
+4. The engine may emit an `EventBus.activity_reachable(activity_id)` notification when an entity arrives at a location that newly enables a previously-greyed activity, surfaced as a HUD toast
 
-This keeps the player flow tight: notebook → see greyed button → click travel → travel → arrive → notebook button is active → execute → **remain at location until activity completes** (per §15.1.1).
+Player flow: notebook → see greyed button → click travel → travel → arrive → notebook button is active → execute → remain at location to accumulate ticks (or step away within tolerance and return per §15.1.4).
 
-### 15.4.1 Travel during in-progress ongoing activity (interrupt protection)
+### 15.4.1 Travel during in-progress ongoing activity
 
-When the player initiates travel and one or more ongoing activities are in progress that would be interrupted by the travel, the engine raises the abandon-confirmation modal per §15.1.4 (the canonical-copy modal). The single-activity or multi-activity variant is selected based on how many activities are affected by the proposed travel.
+The tick-tolerance rule (§15.1.1) governs this case. The engine evaluates the projected trip duration against each in-progress ongoing activity's tolerance:
 
-If the player chooses **No** ("keep activity" / "keep activities"), the entity stays at the location and the travel attempt is cancelled.
+- **Trip duration ≤ remaining tolerance for all affected activities:** no modal fires; the player departs freely; the engine accumulates absence during the trip; on return, ticks resume (with reduced tolerance going forward, since absence carries forward).
+- **Trip duration > tolerance for one or more affected activities:** the §15.1.6 abandon-confirmation modal raises *before* travel begins, listing each affected activity and showing the tolerance-vs-trip comparison. The player chooses to abandon-and-travel (Yes, forfeit progress) or stay-and-continue (No).
+- **Mid-trip extension beyond original projection:** if the player extends an already-acceptable trip beyond what the engine originally projected (e.g., picks up a sub-quest that pushes the absence past tolerance), the activity may auto-forfeit at the day-boundary tick when absence first exceeds ticks per §15.1.4. The activity card surfaces escalating-warning UI (§15.1.7) so the player has running visibility.
 
-If the player chooses **Yes, forfeit progress**, each affected activity is terminated immediately with a system-category log entry per `gdd-unified-log-panel.md`, then travel proceeds normally. Forfeited gp and days are unrecoverable per strict RAW.
+Multi-party travel: if multiple party members are traveling together but only one of them has ongoing activities at the departure location, the modal scopes to that entity's activities. Other party members travel normally. If multiple party members each have ongoing activities affected by the trip, the engine raises one modal per affected entity (sequenced) so the player decides per-entity.
 
-If multiple party members are traveling together but only one of them has ongoing activities at the departure location, the modal scopes to that entity's activities. Other party members travel normally without interruption. If multiple party members each have ongoing activities, the engine raises one modal per affected entity (sequenced) so the player decides per-entity rather than batch-aborting.
+### 15.4.2 The tick-tolerance rule supersedes the v1.2 strict-abort behavior
 
-### 15.4.2 Pause and resume — out of scope per Jedidiah
+v1.2 specified strict abort-on-departure per a stricter reading of the RAW "performed throughout" clause. v1.3 supersedes that with the **tick-tolerance** rule per Discord judge consensus (confirmed by Jedidiah). The strict-abort behavior is no longer the v1 design.
 
-RAW does not describe a pause-and-resume mechanic for ongoing activities. Per Jedidiah's confirmation in v1.2, **strict abort-on-interrupt per RAW is the desired v1 behavior and is not slated for change in v1.1+ either.** This is a deliberate design choice: ACKS at high levels assumes the "name-tier" character settles down to research, rule, train, consecrate, etc. — the strict rule reinforces that design intent. Players who want to adventure mid-research may save before starting, abort the research, adventure, then return to restart from scratch.
+Pause-and-resume is now mechanically **bounded** rather than absent: a character can step away for up to `ticks_accumulated` consecutive days and resume on return, but exceeding that window forfeits the activity. This is the canonical RAW-aligned mechanic.
 
-Open question O-D15 is now resolved (no pause/resume in v1 or v1.1+).
+Open question O-D15 has been re-resolved with the tick-tolerance disposition (see §22).
 
 ### 15.5 Henchman-vassal activity-on-behalf
 
@@ -1107,15 +1241,23 @@ The Domain tab subscribes to scheduler boundary events for each stage. The Treas
 
 ### 16.5 Ruler death and succession
 
-When a domain-ruling PC dies:
-- The domain enters a succession state (project-designed; flag O-D6 for resolution)
-- Per `acore_axioms_strongholds_and_domains.xml` §realms_and_vassals, succession is not explicitly defined for player domains. Default proposal: the deceased PC's domain remains "in succession" (no monthly resolution) until the player either:
-  - Designates a successor PC or henchman (via in-game succession act) — domain transfers, Departure Log entry made
-  - Lets it lapse — domain is abandoned per §16.4
+Per O-D6 resolution: **a successor must be appointed** when a domain-ruling PC or henchman-vassal dies. The domain cannot simply lapse without active appointment — leaving it heirless triggers consequences per the abandonment path in §16.4.
 
-The Domain tab for the deceased PC shows "Domain in succession" status until resolved.
+**Successor appointment flow:**
 
-For henchman-vassal death, the vassal's domain similarly enters succession; the player (as overlord) can reassign to another henchman.
+1. On ruler death (PC or henchman-vassal), the domain enters a "in succession" state for a configurable grace period (project-designed; default 1 game-month). During this period:
+   - Monthly resolution is paused (no revenue collected, no expenses paid, no morale roll)
+   - Vassals' loyalty rolls take a -2 penalty if their lord is "in succession" longer than the grace period (project-designed; flag for review)
+   - The Domain tab for the deceased ruler shows "Domain in succession — appoint successor" status with a prominent CTA
+2. The player must appoint a successor before the grace period ends. Successor candidates:
+   - **Another PC** in the player's roster (transfer of rule; Departure Log entry made for the deceased ruler; new PC inherits the domain)
+   - **An existing humanoid henchman** of the deceased ruler or of another PC in the same realm (henchman becomes vassal-of-the-new-overlord, or direct ruler if no overlord chain remains)
+   - **A non-henchman NPC**: per O-D6, if no henchman is available the engine spawns a non-henchman NPC successor candidate via the future NPC generator (see Open Question carry-over below). The NPC has base loyalty -2 (or -4 outside trade range) per `acore_axioms_strongholds_and_domains.xml` §non_henchman_vassals
+3. If no successor is appointed by the end of the grace period, the domain is treated as abandoned per §16.4 — population disperses, stronghold becomes ruined or unclaimed, and a Departure Log entry is made
+
+**For henchman-vassal death:** the henchman's domain similarly enters "in succession." The overlord PC must appoint a sub-vassal successor (another henchman, a non-henchman NPC, or — unusually — absorb the domain back into their personal management if rules-allowed and structure permits).
+
+**Cross-doc dependency:** the non-henchman NPC successor path requires the future NPC generator subsystem (currently unbuilt). Until then, the engine handles non-henchman successors via a placeholder that prompts the player with a summary statline and proposed name; the full NPC generator will replace this placeholder when authored. **Flag for cross-GDD coordination during build.**
 
 ### 16.6 Construction completion and stronghold transitions
 
@@ -1214,7 +1356,7 @@ For **Venturer** (guildhouse via hideout rules):
 
 For **Bard** (hall):
 - Standard paths
-- Bard-specific: pending O-D3 confirmation, no class-specific concerns surfaced
+- Per O-D3 resolution: Bard plays at the domain tier as Fighter does. Empty-state notes: *"Like a fighter, you may train troops at your hall and oversee their morale (see Garrison Training in the Class Activities sub-tab once you've established your domain)."*
 
 For **Nobiran Wonderworker** (sanctum hybrid per Q5):
 - Mage paths plus the Wonderworker's hybrid follower note (1d6 cleric/mage 1-3 + 2d6 0th-level aspirants with INT/WIS≥9 path)
@@ -1299,22 +1441,23 @@ The Domain tab should add zero noticeable latency to gameplay outside of monthly
 
 ## 22. Open questions
 
-- **O-D1.** Manual-override toggle for "active adventuring" — should the engine allow the player to manually flag the ruler as having actively adventured this month, in case the heuristic-based detection misses an edge case (e.g., an adventure that occurred in a small dungeon close to the stronghold)? **Default proposal:** no manual override in v1; the heuristic-based detection is authoritative. v1.1+ may add an override if play testing surfaces edge cases.
-- **O-D2.** Manual transfer between personal wallet and domain treasury — is this activity-free, or should it consume an activity slot (project-designed)? **Default proposal:** activity-free in v1 (treated as logistical). Re-examine if play testing shows abuse (e.g., infinite gp shuffling between domains).
-- **O-D3.** Bard class-specific sub-tab — does Bard get any §12 block in v1? **Default proposal:** no — Bards have a hall stronghold per `acore_campaign_classes.xml` but no documented divine / arcane / mercantile / syndicate / fighter-progression bucket per the rule corpus surveyed. Bard-specific concerns (loremaster abilities, bardic music) live in their character sheet, not the Domain tab.
-- **O-D4.** Paladin Faith block — does Paladin unlock the divine activity category in `ax_campaign_play.xml` §divine? Paladins per ACKS Player's Companion are lawful warriors with limited divine flavor; the class XML in `pc_classes_4.xml` may or may not declare divine spellcasting. Confirm by checking `pc_classes_4.xml` Paladin's `<role_tags>` and `<capability_tags>` for divine_caster. **Default proposal pending review:** if Paladin has divine_caster tag, surface §12.2 Faith block; if not, no Faith block.
-- **O-D5.** Nobiran Wonderworker aspirant dropout rate — Jedidiah specified 1d6-month dropout per aspirant but did not commit a probability. **Default proposal:** roll 1d6 each month per active aspirant; on 1, that aspirant departs that month (~16.7% monthly attrition). Alternative: per-aspirant cumulative monthly chance of leaving (e.g., flat 10%/mo, or scaled by months-since-arrival). Confirm during review.
-- **O-D6.** Domain succession on PC death — what happens to a deceased PC's domain? **Default proposal:** domain enters "in succession" state (no monthly resolution) until the player either designates a successor PC/henchman or lets it lapse to abandonment. Refine if needed.
-- **O-D7.** Senatorial domain detection — how does the Domain tab know whether the active domain is senatorial (for the §11 consult_senate activity)? **Default proposal:** political-entity type set during setting generation per `gdd-setting-generation.md` carries a `senatorial: bool` flag. Confirm with setting-generation GDD.
-- **O-D8.** Tribute-flow direction in the Treasury & Ledger — when an entity is both a vassal (paying tribute up) and a lord (receiving tribute from sub-vassals), the Treasury sub-tab needs clear visual hierarchy. **Default proposal:** tribute-in (from sub-vassals) appears as Revenue category `tribute_in`; tribute-out (to lord) appears as Expense category `tribute_out`. Net tribute is implicit in the headline net-income calculation. Confirm if a more visual breakdown is wanted.
-- **O-D9.** Investment-revenue category granularity — agricultural investments produce 1d10 new families per 1000gp per `acore_axioms_strongholds_and_domains.xml` §investments; urban investments produce 1d10 new urban families per 1000gp per §growing_the_settlement. Should the Treasury & Ledger surface these as separate ledger categories or as a single "Investment" category? **Default proposal:** separate (`investment_agriculture` vs `investment_urban`) for clarity. Confirm.
-- **O-D10.** Archetype constraints in the Stronghold sub-tab build flow — `gdd-stronghold-construction.md` §3 Archetypes is the authoritative source. The Domain tab pre-fills archetype based on class but does the build-flow restrict to class-only archetypes, or allow cross-class build (e.g., a Mage building a fortress instead of a sanctum)? **Default proposal:** restrict to class-only archetypes in v1 to keep RAW alignment crisp. Cross-class construction is possible per RAW (any class can build any structure if they have the gp), but the *follower attraction* is tied to the class-specific structure type. Confirm during review.
-- **O-D11.** Land Surveyor hireling integration — `acore_axioms_strongholds_and_domains.xml` §land_surveyor specifies that land surveyors are 1st-level explorers with the Cartographer template, hired monthly, available in urban settlements. The Domain tab Overview's "Survey hex" button could either (a) require the active entity to have Land Surveying proficiency themselves, or (b) integrate with hiring a land surveyor hireling. **Default proposal:** v1 supports (a) — proficiency on active entity. v1.1+ adds (b) via the hireling system.
-- **O-D12.** Vagaries-of-Recruitment integration — `ax_campaign_play.xml` §vagaries_of_recruitment fires when a ruler is recruiting troops. The vagaries system itself is in `daw_vagaries.xml`. The Domain tab should surface vagary outcomes affecting the active domain (e.g., recruiting failure modes). Specific vagary outcomes are out of scope for this GDD; flag for the Vagaries integration GDD when authored.
-- **O-D13.** Realm graph rendering — should the Realm sub-tab include a visual hierarchy/tree view of the realm structure (overlord → vassal → sub-vassal) in addition to the flat list? **Default proposal:** flat list in v1; tree view as v1.1+ enhancement.
-- **O-D14.** Military Campaign mid-flight handoff — when a `military_campaign` activity is in progress, does the Domain tab continue to show campaign status, or is that the future combat-tactical surface's responsibility? **Default proposal:** Domain tab Activities sub-tab shows campaign status as a pinned card while active; tactical resolution is the future combat-tactical surface; outcomes flow back into Domain tab via Treasury & Ledger and Encounters & Threats.
-- **O-D15.** ~~Pause-and-resume mechanic for ongoing activities~~ **Resolved (v1.2):** **No pause-and-resume in v1 or v1.1+.** Per Jedidiah's confirmation: strict abort-on-interrupt per `ax_campaign_play.xml` §frequency_types is the desired behavior. ACKS at high levels assumes the "name-tier" character settles to research / rule / train / consecrate; the strict rule reinforces that design intent. Players who want to adventure mid-research must save before starting, abort the research, adventure, then return to restart from scratch. The abandon-confirmation modal in §15.1.4 makes the consequence visible and unmistakable.
-- **O-D16.** (Added v1.1) Grace period for "Already in progress (entity has departed location)" — when an entity departs an ongoing activity location involuntarily (e.g., forced narrative event, hex-boundary scheduler tick artifact), is there a project-designed grace period before the activity auto-aborts? **Default proposal:** zero grace — departure terminates immediately per RAW. The "Return or Abort" button state in §15.3 only appears in pathological edge cases (state-machine race) and the player should be warned but the engine doesn't postpone the abort. Confirm during review.
+- **O-D1.** ~~Manual-override toggle for "active adventuring"~~ **Resolved (v1.5):** No manual flag — heuristic only. The ruler is "active this month" if BOTH (1) they physically left their stronghold during the month AND (2) at least one of: wilderness encounter, entered a dungeon or lair, fought a battle, or fought a siege. Spec implemented in §6.2 Overview Active Adventuring detection.
+- **O-D2.** ~~Manual transfer between personal wallet and domain treasury~~ **Resolved (v1.5):** Free if the active entity is at one of the domain's strongholds; impossible otherwise. The treasury is held in the stronghold's vaults; transfers are physical coin movement. Spec implemented in §10.2 Manual transfers.
+- **O-D3.** ~~Bard class-specific sub-tab~~ **Resolved (v1.5):** Bards play at the domain tier as Fighter does (Arbiter-specific design — Bards lack the fighter_progression tag in RAW but the Arbiter applies the equivalent capability). Bards see the Garrison Training block (§12.6). Spec implemented in §12.1 matrix and §12.6 class list.
+- **O-D4.** ~~Paladin Faith block~~ **Resolved (v1.5):** ACKS Paladins are flavored on heroes like Roland, Lancelot, El Cid — they do NOT cast magic, do NOT research magic, and do NOT have divine spellcasting. They are alternate fighter variants in almost all respects. NO Faith block. Only Garrison Training applies. Spec implemented in §12.1 matrix.
+- **O-D5.** ~~Nobiran Wonderworker aspirant dropout rate~~ **Resolved (v1.5):** Roll 1d6 per month for the first 6 months after each aspirant arrives; on a roll of 1, that aspirant leaves that month. Roll is **not cumulative** — each month is an independent 1/6 chance. After 6 months, no further dropout rolls. Expected outcome: ~33.5% of aspirants commit; ~66.5% drop out within 6 months. Spec implemented in §12.7 Nobiran Wonderworker hybrid block.
+- **O-D6.** ~~Domain succession on PC death~~ **Resolved (v1.5):** A new ruler must be appointed within a configurable grace period (default 1 game-month) — even if not a henchman. Successor candidates: another PC, an existing henchman, or (when no henchman is available) a non-henchman NPC populated by the future NPC generator subsystem. If no successor is appointed by the end of the grace period, the domain is treated as abandoned. Cross-GDD coordination flag for the NPC generator. Spec implemented in §16.5 Ruler death and succession.
+- **O-D7.** ~~Senatorial domain detection~~ **Resolved (v1.5):** Senatorial-domain types are out of scope for ACKS Arbiter v1. The `consult_senate` activity is removed from §11 Activities. If senatorial-domain support is added in a future expansion, the relevant slot in §11 is reserved for it.
+- **O-D8.** ~~Tribute-flow direction~~ **Resolved (v1.5):** Confirmed default — tribute-in (from sub-vassals) is Revenue category `tribute_in`; tribute-out (to lord) is Expense category `tribute_out`. Net tribute is implicit in the headline net-income calculation. Per §10.2 Treasury data model.
+- **O-D9.** ~~Investment-revenue category granularity~~ **Resolved (v1.5):** Confirmed default — separate categories: `investment_agriculture` (1d10 new families per 1000gp per `acore_axioms_strongholds_and_domains.xml` §investments) and `investment_urban` (1d10 new urban families per 1000gp per §growing_the_settlement). Per §10.2 Treasury data model.
+- **O-D10.** ~~Archetype constraints in the Stronghold sub-tab build flow~~ **Resolved (v1.5):** **Cannot build** a non-conforming stronghold (build flow restricts to class-only archetypes). **Can inherit or take over** a non-conforming stronghold (per `acore_axioms_strongholds_and_domains.xml` §establishing: existing structures may be claimed). **No followers attracted** by a non-conforming stronghold (the per-class follower table is tied to the class-specific structure type). Cross-doc obligation flagged for `gdd-stronghold-construction.md`: clarify (a) how stronghold type is classified during build, and (b) whether converting an existing stronghold from one type to another is supported. Out of scope for this Domain tab GDD; flagged for cross-GDD coordination. Spec implemented in §7.1.1 Non-conforming strongholds.
+- **O-D11.** ~~Land Surveyor hireling integration~~ **Resolved (v1.5):** v1 supports option (a) only — the active entity must have Land Surveying proficiency themselves to use the "Survey hex" button. Land surveyor hireling integration (option b) is deferred to the expanded hireling system. Spec implemented in §6.2 Overview editable elements.
+- **O-D12.** ~~Vagaries-of-Recruitment integration~~ **Resolved (v1.5):** Confirmed out of scope for the current Domain tab GDD. The Vagaries system (`daw_vagaries.xml`) will be addressed in a future Vagaries integration GDD. The Domain tab does not currently surface vagary outcomes; recruitment activities (conscript_troops, levy_militia, hire_mercenaries, solicit_mercenaries) operate without vagary effects in v1.
+- **O-D13.** ~~Realm graph rendering — flat list vs. tree view~~ **Resolved (v1.5):** Flat list for now. Tree view deferred to a future revision if the Realm sub-tab's vassal hierarchy becomes complex enough to warrant the visual. Per §9.1 Vassal list.
+- **O-D14.** ~~Military Campaign mid-flight handoff~~ **Deferred (v1.5):** The question's framing presupposes a defined boundary between Domain tab and the future combat-tactical surface that does not yet exist. Deferred to the future DaW combat-tactical surface GDD which will define the surface boundaries. Until then, the Domain tab Activities sub-tab supports `military_campaign` as an ongoing activity within the tick-tolerance framework, surfaces basic status (campaign in progress, troops committed), and consumes outcomes back via Treasury & Ledger and Encounters & Threats. Detailed tactical UI is the combat-tactical surface's domain when authored.
+- **O-D15.** ~~Pause-and-resume mechanic for ongoing activities~~ **Re-resolved (v1.3):** **Tick-tolerance per Discord judge consensus** (confirmed by Jedidiah). Each day spent on an ongoing activity earns one tick; the character may step away for up to that many days without forfeit; exceeding the window forfeits progress and gp committed. This supersedes the v1.2 strict-abort behavior. Bounded pause-and-resume IS now part of v1, but limited by the tick-tolerance window. See §15.1.1 through §15.1.8 for the canonical mechanic.
+- **O-D16.** ~~Grace period for departed-location ongoing activities~~ **Resolved (v1.3):** Subsumed by the tick-tolerance rule per O-D15 re-resolution. The tolerance window IS the grace period — equal to days already invested. Involuntary departures (forced narrative events, magical compulsion) follow the same tick-tolerance rule as voluntary departures; there is no separate "involuntary" path.
+- **O-D17.** ~~Present-but-not-performing edge case~~ **Resolved (v1.4):** Present-but-not-performing **counts toward absence accumulation** the same as physical absence. Per Jedidiah: "Same resolution as not being present." Justification: the daily-tick mechanic measures *days of work performed on the activity*; days where the entity is at the location but does not spend the appropriate slot on the activity are not days of work, so they do not earn ticks AND they consume the same tolerance budget that physical absence consumes. Rationale matches the cumulative-absence design intent — taken together with the never-resets-while-in-progress rule, this produces the clean 2× max-duration property: a task can never take more than 2× its base duration in real elapsed time without forfeiting.
 
 ---
 
@@ -1382,6 +1525,10 @@ The Domain tab is **Phase H+** per the project's build plan. It depends on:
 
 ## 24. Revision history
 
+- **v1.6, 2026-04-30** — End-to-end review pass cleaning up stale references and terminology drift accumulated across v1.1-v1.5 successive revisions. **§1 Class-aware UI design intent:** corrected `(§11)` → `(§12)` reference. **§4.2 Sub-tab order:** ambiguous `(§7)` reference clarified to "(strip position 7; full content spec in §12 of this GDD)". **§4.4 Class-Specific visibility:** removed awkward editorial commentary about Wonderworker fighter-progression status; cleaned up to read as a list of multi-bucket-class examples. **§6.1 Growth section:** active-adventuring trigger description aligned with the §6.2 heuristic spec (left-stronghold + at least one of wilderness/dungeon/lair/battle/siege) instead of the generic `EventBus.adventure_started` placeholder. **§7.2 Elven fastness footnote:** stale `§25 Open Questions` reference corrected to point at the cross-doc `gdd-stronghold-construction.md` §13 Q5/Q6 added 2026-04-30. **§11.1 Activities grouping:** Administer Domain moved from Group 1 (Singular) to Group 2 (Ongoing) where it belongs per `ax_campaign_play.xml` §administer_domain (it's a major-ongoing, not a singular). **§11.2 Activity card UI example:** "[Stop ongoing]" button label corrected to "[Abandon activity]" per the v1.2+ terminology sweep. **§12.1 No-checkmarks footnote:** removed stale "(like Bard pending O-D3 resolution)" reference; rewrote to reflect that as of v1.5 every class in the matrix has at least one checkmark, with the no-checkmarks → hidden rule retained as future-proofing. **§15.1.2.1 Worked example table:** corrected Phase 4 to span days 11-14 (4 performing days, ticks reaches 10) and Phase 5 to day 15 (away, absence=5) so the table's end state matches the narrative's `ticks=10, absence=5` figure used in the orc-invasion math. Orc-invasion travel days renumbered 16-20; forfeit on day 21. **§15.1.7 activity card UI examples:** "Absence streak" terminology in the amber and red urgent card examples updated to "Cumulative absence" / "Tolerance remaining" to match the v1.4 cumulative-absence model. The v1.4 sweep had missed these two card examples. **§15.1.7 forfeit cause string:** "absence exceeded tolerance" corrected to "absence exceeded ticks" matching the canonical cause string in §15.1.2 line `EventBus.activity_forfeited`. **§19.1 Bard empty-state:** stale "pending O-D3 confirmation" replaced with the resolved O-D3 disposition pointing the player to the Garrison Training sub-tab. No substantive design changes — all edits were corrections of terminology drift, mis-numbered cross-references, and stale notes left over from previous revisions.
+- **v1.5, 2026-04-30** — **All open questions O-D1 through O-D14 resolved per Jedidiah.** Substantive content updates implementing each resolution: **§6.2 Active adventuring detection** rewritten with the explicit two-condition heuristic (left stronghold AND any of wilderness encounter / dungeon-or-lair entry / battle / siege) per O-D1; no manual override. **§10.2 Manual transfers** updated per O-D2 — free if at a domain stronghold, impossible otherwise (treasury is held in stronghold vaults; transfers are physical coin movement). **§11 Activities Group 4 (Senatorial)** removed per O-D7 — senatorial domains out of scope; `consult_senate` is no longer surfaced. **§12.1 Class-bucket matrix** updated for **Bard** (O-D3): Garrison Training ✓ added; Bard-domain-plays-as-Fighter flagged as Arbiter-specific design (Bards lack fighter_progression in RAW). Updated for **Paladin** (O-D4): Faith ✗ removed; only Garrison Training ✓; Paladins are lawful warriors per Roland/Lancelot/El Cid flavor, no magic or divine spellcasting. **§12.6 Garrison Training class list** expanded to include Bard with Arbiter-specific-design flag plus the additional clarifying note. **§12.7 Nobiran Wonderworker aspirant attrition** updated per O-D5 — roll 1d6 each month for 6 months, drop out on 1, not cumulative. **§7.1.1 (new) Non-conforming strongholds** per O-D10 — building blocked, inheriting/conquering allowed, no followers for non-conforming, cross-doc obligation flagged for `gdd-stronghold-construction.md`. **§16.5 Ruler death and succession** rewritten per O-D6 — successor must be appointed within configurable grace period; PC, henchman, or NPC-generator-populated non-henchman; lapse-to-abandonment if no appointment by grace period end; cross-GDD flag for NPC generator. **All §22 open-question entries** marked resolved with strikethrough-and-disposition per project convention; O-D14 deferred-pending-future-combat-tactical-surface GDD with clarifying note.
+- **v1.4, 2026-04-30** — **Absence is cumulative for the activity's full lifetime** per Jedidiah. The v1.3 model treated absence as a per-streak counter that reset to 0 on return; v1.4 corrects this to a cumulative counter that never resets while the activity is in progress. Derived clean property: a task can never take more than 2× its base duration in real elapsed time without forfeiting. **§15.1.1** updated with the cumulative-absence emphasis and the 2× max-duration property derivation. **§15.1.2** state model: `absence_streak_days` field renamed to `absence_accumulated`; daily-update logic rewritten — return to location no longer resets absence; the daily check increments either ticks (if performing) or absence (if not performing or absent). **§15.1.2.1 (new)** worked example per Jedidiah's Abel scenario showing cumulative absence behavior across multiple step-aways and culminating in an orc-invasion forfeit choice. **§15.1.4 outcomes** updated: "Return within tolerance" → "Return before forfeit" — absence carries forward rather than resetting on return. **§15.1.5 pre-departure warning** math corrected: tolerance comparison uses remaining tolerance `(ticks - absence)`, not raw ticks; trip projected over remaining tolerance triggers the modal. **§15.1.7 activity card UI** updated to show `Absence: {N} days (cumulative)` and `Tolerance remaining: {ticks - absence}` explicitly so the player always sees the running budget. **§15.3 button states** updated for the cumulative model. Terminology sweep: "absence_streak_days" renamed to "absence_accumulated" throughout; English "absence streak" phrasing replaced with "cumulative absence" or "absence accumulation" to avoid the reset-implication. **O-D17 resolved (v1.4):** present-but-not-performing counts toward absence accumulation per Jedidiah's "same resolution as not being present" — rationale: the tick mechanic measures days of work performed; non-work days at the location are not days of work and consume the same tolerance budget as physical absence.
+- **v1.3, 2026-04-30** — **Tick-tolerance mechanic adopted** per official Discord judge consensus (confirmed by Jedidiah), superseding the v1.2 strict-abort model. The new canonical rule: each day an ongoing activity is performed at its required location earns one "tick"; the entity may step away from the activity, but if absence_accumulated exceeds ticks_accumulated the activity is forfeited (progress + gp lost; restart from scratch). Comprehensive §15 rewrite: **§15.1.1 (rewritten)** establishes the tick-tolerance rule with the Discord-quoted definition; **§15.1.2 (new)** defines the per-activity engine state model (`ticks_accumulated`, `absence_accumulated`, daily scheduler boundary update logic); **§15.1.3 (renumbered/refined)** location requirements with the manage_henchmen exception; **§15.1.4 (renumbered)** outcome paths — return within tolerance / exceed tolerance / voluntary abandon / forced departure (no special path; same tick-tolerance applies); **§15.1.5 (new)** pre-departure warning behavior — modal fires only when the engine projects the trip will exceed tolerance, otherwise the player departs freely and the engine tracks the absence; **§15.1.6 (renumbered, copy retained)** abandon-confirmation modal canonical copy unchanged from v1.2 (Jedidiah's specified format); multi-activity variant updated to show tolerance-vs-trip comparison per affected activity; **§15.1.7 (new)** activity-card UI with three visual stages (in-progress on-track / amber-warning absent-within-tolerance / red-urgent absent-near-forfeit); **§15.1.8 (new)** revised player-flow consequence — "configure anywhere, travel to location, execute, optionally step away within tolerance, return and resume — OR abandon and restart." **§15.2 location-gating decision tree** updated for tick-tolerance per category. **§15.3 button states table** rewritten: replaces v1.2's two "in progress" rows with five tick-tolerance states (at-location performing / at-location not-performing / absent within-tolerance / absent near-forfeit / forfeited). **§15.4 / §15.4.1 / §15.4.2** rewritten: §15.4.2 now explicitly notes that v1.2's strict-abort model is superseded, and that bounded pause-and-resume is now the v1 mechanic. Per-class location-gating notes in **§12.2 Faith / §12.3 Magical Research / §12.4 Trade / §12.5 Syndicate / §12.6 Garrison Training** all updated to reference the tick-tolerance rule rather than strict throughout-presence. **O-D15 re-resolved** with the tick-tolerance disposition (bounded pause-and-resume IS now part of v1). **O-D16 resolved** as subsumed by the tick-tolerance rule (no separate involuntary-departure path needed). **O-D17 added (v1.3)** for the present-but-not-performing edge case (default proposal: no absence accumulation while physically at location).
 - **v1.2, 2026-04-30** — Strict-RAW behavior locked in per Jedidiah and the canonical abandon-confirmation modal copy specified. **§15.1.4 (new)** establishes the canonical modal copy for any action that would interrupt or terminate an ongoing activity: single-activity variant uses *"WARNING: Taking this action will abandon `<ongoing_task_name>` and forfeit progress, proceed anyway? [Yes, forfeit progress] [No, `<ongoing_task_name>`]"*; multi-activity variant lists each affected activity and uses *"[No, keep activities]"* as the cancel button. Modal is non-bypassable; Enter defaults to safe No; Escape closes-as-No. Optional gp-forfeiture subtitle is informational. **§15.1.2** modal description simplified to defer to §15.1.4 canonical copy. **§15.3** Execute button states for "Already in progress" rows updated to reference §15.1.4. **§15.4.1** travel interrupt-protection updated to use §15.1.4 modal; multi-party scoping clarified (one modal per affected entity, sequenced). **§15.4.2** Pause-and-resume formally **deferred-and-out-of-scope** per Jedidiah — not in v1 or v1.1+; the strict rule is the intentional design. **O-D15** resolved with the no-pause-no-resume disposition. Renamed "abort" terminology to "abandon" throughout the activity-interruption flow to align with the modal's wording.
 - **v1.1, 2026-04-30** — RAW-correctness fix per Jedidiah: ongoing activities require **continuous presence at the required location throughout the activity's full duration** per `ax_campaign_play.xml` §frequency_types (*"Ongoing activities require more than one game day and must be performed throughout the listed time period."*). v1 had implied that ongoing activities (research, plan_hijink, consecrate_altar, troop training, etc.) ran autonomously after start, allowing the entity to travel away — that was a misreading. Corrections: **§15.1.1** (new) added explicit statement of the throughout rule with category breakdown (at-structure / in-domain / with-army) and the manage_henchmen exception; **§15.1.2** (new) describes departure-aborts-the-activity behavior with the confirmation modal pattern and the strict no-pause-no-resume v1 rule; **§15.1.3** (new) adds the consequence — travel must precede ongoing activities, with the configure-anywhere → travel-to-location → execute-and-stay-until-complete flow; **§15.2** location-gating decision tree split between singular (presence at execution time only) and ongoing (continuous presence throughout); **§15.3** Execute button state table now includes "Already in progress (entity at correct location)" and "Already in progress (entity has departed location)" rows with explicit forfeiture-of-progress language; **§15.4** travel-shortcut split into pre-execution (§15.4) and during-execution interrupt protection (§15.4.1) with the confirmation modal that lists affected activities and abort consequences; **§15.4.2** (new) defers project-designed pause-and-resume to v1.1+ as O-D15. Per-class block location-gating notes in **§12.2 Faith** (consecrate_altar / consecrate_fields / consecrate_ruler), **§12.3 Magical Research** (research_magic / rewrite_spell / replace_spell / scribe_spell — all four ongoing, all four require continuous sanctum presence), **§12.4 Trade** (solicit_* ongoing variants must remain in market), **§12.5 Syndicate** (plan_hijink / lay_low / perform_hijink continuous presence; await_trial as involuntary location-binding), and **§12.6 Garrison Training** (oversee_troop_training and train_troops both ongoing, both require throughout-presence at training site) all updated to reflect the throughout rule. Added **O-D15** (v1.1+ pause-and-resume mechanic — defaulted to no) and **O-D16** (grace period for involuntary departures — defaulted to zero grace).
 - **v1, 2026-04-30** — Initial draft. Specifies Domain tab as notebook tab #6 with per-entity active-entity scope (PCs + Humanoid Henchmen only) per Q1; pre-9th-level support per Q2; personal-domain focus + Realm sub-tab aggregation per Q3; nine sub-tabs (Overview / Stronghold / Garrison / Realm / Treasury & Ledger / Activities / Class-Specific / Encounters & Threats / Departure Log) with §1+§2 merge per Q4; class-conditional Class-Specific sub-tab with stacked-block matrix covering Faith / Magical Research / Trade / Syndicate / Garrison Training buckets; Nobiran Wonderworker hybrid follower rules per Q5 (1d6 cleric/mage 1-3 + 2d6 0th-level INT/WIS≥9 aspirants with 1d6-month dropout); chaotic-domain support from foundation per Q6; class-tailored empty-state acquisition guidance per Q7 with conquest path added per Jedidiah's synthesis correction; hybrid notebook-source-of-truth + greyed location-gating + travel shortcut + future location panels deferred to v1.1+ per Q8. Establishes the Domain Status header (visible across all sub-tabs), per-sub-tab specs, lifecycle interactions (establishment / classification advancement-and-regression / monthly resolution / conquest / abandonment / ruler death and succession / construction completion), cross-tab interactions, multi-party scope, empty-state variants, migration plan (no current Domain UI; Phase H+ build), performance considerations, open questions O-D1 through O-D14, build sequencing with §23.3 Phase H+ exit criteria.

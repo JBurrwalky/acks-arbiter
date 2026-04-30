@@ -2,7 +2,7 @@
 
 **Document type:** Game Design Document (project-designed, modifiable)
 **Status:** Draft — requires approval before build
-**Depends on:** `gdd-realtime-scheduler.md` (event scheduler architecture and Movement Simulator), `gdd-voxel-tactical-architecture.md` (3D voxel grid spatial substrate, adjacency rules, multi-level camera), `gdd-dungeon-layout.md` (cell/room/door data model), `gdd-combat-map-generation.md` (grid geometry — superseded for spatial model by the voxel architecture), `proficiency_system_map.md` §4 (dungeon proficiency hooks), `ax_thief_skill_update.xml` (revised thief skill throws and timings), `acore_adventures_and_encounters.xml` (door rules, search rules, encounter rules)
+**Depends on:** `gdd-realtime-scheduler.md` (event scheduler architecture and renderer-tween dungeon movement layer), `gdd-voxel-tactical-architecture.md` (3D voxel grid spatial substrate, adjacency rules, multi-level camera), `gdd-dungeon-layout.md` (cell/room/door data model), `gdd-combat-map-generation.md` (grid geometry — superseded for spatial model by the voxel architecture), `proficiency_system_map.md` §4 (dungeon proficiency hooks), `ax_thief_skill_update.xml` (revised thief skill throws and timings), `acore_adventures_and_encounters.xml` (door rules, search rules, encounter rules)
 **Replaces:** Any existing dungeon UI stubs, hodgepodge triggers, and data wiring from prior iterations
 **Blocks:** Dungeon exploration implementation, combat transition UI, dungeon-layer session runner wiring
 
@@ -531,40 +531,42 @@ Items I've identified as potentially missing from the spec or deferred for futur
 
 - **Voxel grid geometry:** `gdd-voxel-tactical-architecture.md` (5' cube cells, `Vector3i(col, row, level)` coordinates, diamond horizontal basis). The UI reads positions and renders against this; it does not modify the spatial substrate.
 - **DungeonLayout / VoxelMapData data model:** `gdd-dungeon-layout.md` §11 and `gdd-voxel-tactical-architecture.md` §6–§7. No structural changes. The UI *reads* this data; it doesn't change the schema.
-- **Pathfinding:** Hand-rolled BFS on `VoxelGrid.get_neighbors_3d()` for short paths; `AStar3D` for long paths (per `gdd-voxel-tactical-architecture.md` §17.2). The context menu issues pathfinding requests via the Movement Simulator; the pathfinding implementation is not this document's concern.
-- **EventScheduler and Movement Simulator:** `gdd-realtime-scheduler.md`. The UI creates scheduled events for activities (via `EventScheduler.schedule()`) and issues movement orders to the simulator (via `MovementSimulator.set_target()` / `set_group_target()`). Neither the scheduler nor the simulator is modified.
+- **Pathfinding:** Hand-rolled BFS on `VoxelGrid.get_neighbors_3d()` via `MovementResolver.path_bfs_3d()` for short paths; `AStar3D` for long paths (per `gdd-voxel-tactical-architecture.md` §17.2). Mode `"explore"` permits closed unlocked doors (the executor pauses to open them); mode `"combat"` rejects all doors except open. The pathfinding implementation is not this document's concern — the UI just consumes the path.
+- **EventScheduler and dungeon movement layer:** `gdd-realtime-scheduler.md`. The UI creates scheduled events for activities (via `EventScheduler.schedule()` / `schedule_at()` / `schedule_after()`) and issues movement orders through the order manager → renderer tween chain (via `renderer.start_movement_animation(entity_id, path, cells_per_round)`). Neither the scheduler nor the renderer movement layer is modified by UI work.
 - **Timekeeping autoload:** No changes. Actions that consume time (search, pick lock, etc.) call the scheduler, which advances Timekeeping.
 
-### 12.4 Integration with the Event Scheduler and Movement Simulator
+### 12.4 Integration with the Event Scheduler and Dungeon Movement Layer
 
-Every player action from the context menu produces one of two kinds of engine call: a **simulator move order** (continuous-tick motion on the voxel grid) and/or a **scheduled event** (discrete activity with a duration). Movement is NOT pre-scheduled as `travel_step` events per cell — it is simulator state advanced per tick (per `gdd-realtime-scheduler.md` §3 and §6.4).
+Every player action from the context menu produces one of two kinds of engine call: a **renderer-tween move order** (continuous visual motion on the voxel grid) and/or a **scheduled event** (discrete activity with a duration). Movement is NOT pre-scheduled per cell — it is renderer-tween state with cell-arrival signals updating logical positions (per `gdd-realtime-scheduler.md` §3).
 
 Action lifecycle for any action that requires movement before the activity:
 
-1. **UI calls `MovementSimulator.set_target(unit_id, target_cell)`** — the simulator computes a path and walks the unit toward the target each tick.
-2. **The simulator emits an `arrived_at_target` event** when the unit reaches its destination cell. The UI's action dispatcher listens for this event.
-3. **On arrival, UI calls `EventScheduler.schedule(activity_event)`** — the activity is now a scheduled event with a known duration.
-4. **The scheduled event resolves at its timestamp**, the result is presented to the player, and any follow-up events are scheduled.
+1. **Order issued.** The UI registers the player's intent with `DungeonOrderManager.add_order(entity_id, order_type, target, ...)`.
+2. **Path computed.** The dungeon explore state / handlers compute a BFS path via `MovementResolver.path_bfs_3d()` in `"explore"` mode.
+3. **Renderer animation started.** `renderer.start_movement_animation(entity_id, path, cells_per_round)` begins the per-cell tween chain at the appropriate game-clock-scaled duration.
+4. **Per-cell arrival.** As each tween finishes, `movement_cell_reached(entity_id, cell)` fires. The handler updates `voxel_map.entity_positions`, runs occupancy/encounter-proximity/passive-detection checks, and starts the next tween — or stops the chain if a check failed.
+5. **Final cell reached.** When the path completes, the handler dispatches the queued action: `EventScheduler.schedule_at(fire_time, "<action_event>", entity_id, data, priority)`.
+6. **Activity resolves at `fire_time`.** The handler returns its result; the SchedulerLoop applies follow-up events, auto-pause, or state transitions per §11.2 of `gdd-realtime-scheduler.md`.
 
-If the unit cannot reach the target (path blocked, destination occupied, etc.), the simulator emits a `move_failed` or `move_complete_unreachable` event instead, and the activity is NOT scheduled. The UI logs the failure per §3.1.
+If the unit cannot reach the target (path blocked at runtime, destination became occupied, etc.), the cell-arrival handler cancels the animation via `renderer.cancel_movement_animation(entity_id)` and the queued action is dropped. The UI logs the failure per §3.1.
 
 | Player Action | Movement | Scheduled Event(s) on Arrival |
 |--------------|----------|-------------------------------|
-| Move Here | simulator → target cell | (none — movement is the entire action) |
-| Search Here | simulator → target cell | `search_complete` at +1 turn |
-| Listen Here | simulator → target cell | `listen_complete` at +1 round |
-| Force Door | simulator → cell adjacent to door | `force_door_attempt` at +1 round (repeat on failure) |
-| Pick Lock | simulator → cell adjacent to door | `pick_lock_complete` at +1 turn (or +1 round with rapid attempt) |
-| Unlock (key) | simulator → cell adjacent to door | immediate state change on arrival |
-| Bash Door | simulator → cell adjacent to door | `bash_door_complete` at +1 or +3 turns based on door material |
-| Spike Shut / Wedge Open | simulator → cell adjacent to door | `spike_complete` at +1 round |
-| Stealth Move | simulator → target cell, with movement mode set to stealth (Move Silently throw at start) | `hide_attempt` on arrival |
+| Move Here | path → target cell | (none — movement is the entire action) |
+| Search Here | path → target cell | `dungeon_search_complete` at +1 turn |
+| Listen Here | path → target cell | `dungeon_listen_complete` at +1 round |
+| Force Door | path → cell adjacent to door | `force_door_attempt` at +1 round (repeat on failure) |
+| Pick Lock | path → cell adjacent to door | `pick_lock_complete` at +1 turn (or +1 round with rapid attempt) |
+| Unlock (key) | path → cell adjacent to door | immediate state change on arrival |
+| Bash Door | path → cell adjacent to door | `bash_door_complete` at +1 or +3 turns based on door material |
+| Spike Shut / Wedge Open | path → cell adjacent to door | `spike_complete` at +1 round |
+| Stealth Move | path → target cell, movement mode set to stealth (Move Silently throw at start) | `hide_attempt` on arrival |
 | Hide | (none — instantaneous) | `hide_attempt` immediate for all capable group members |
 | Light Torch | (none — instantaneous) | Immediate state change + `light_source_expired` at +6 turns |
-| Talk | simulator → cell adjacent to NPC | `dialogue_start` immediate on arrival |
-| Check Status | simulator → cell adjacent to downed unit | `mortal_wounds_check` immediate, opens modal if resources available |
-| Carry | simulator → cell adjacent to downed unit | immediate: downed entity becomes inventory item on carrier, encumbrance recalculated |
-| Loot (downed) | simulator → cell adjacent to downed unit | immediate: opens loot panel (same as §3.4) |
+| Talk | path → cell adjacent to NPC | `dialogue_start` immediate on arrival |
+| Check Status | path → cell adjacent to downed unit | `mortal_wounds_check` immediate, opens modal if resources available |
+| Carry | path → cell adjacent to downed unit | immediate: downed entity becomes inventory item on carrier, encumbrance recalculated |
+| Loot (downed) | path → cell adjacent to downed unit | immediate: opens loot panel (same as §3.4) |
 | *(System)* Evil door auto-close | (n/a) | `evil_door_close` fires on every turn boundary (60-round tick) for all open evil doors not wedged/held |
 
-The UI never directly advances time or modifies game state — it issues simulator move orders and scheduled events, and reads back results from their completion signals.
+The UI never directly advances time or modifies game state — it issues movement orders to the renderer-driven movement layer and scheduled events to the EventScheduler, and reads back results from their completion signals.
