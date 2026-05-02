@@ -18,6 +18,8 @@ extends "res://scenes/ui/notebook/tab_pages/notebook_tab_page.gd"
 
 
 const PartySplitDialogScript := preload("res://scenes/ui/notebook/party/party_split_dialog.gd")
+const FormationGridCellScript := preload("res://scenes/ui/notebook/party/formation_grid_cell.gd")
+const FormationUnplacedListScript := preload("res://scenes/ui/notebook/party/formation_unplaced_list.gd")
 
 const SUBSTATE_TAB_ID := "party"
 
@@ -738,13 +740,14 @@ func _compute_on_hand_totals() -> Dictionary:
 
 
 func _accumulate_resource_items(items: Array) -> Dictionary:
-	## Heuristic categorization by item_key prefix until the catalog grows
-	## first-class food/water/fodder tags. Each `rations_*_week` item counts
-	## as 7 stone of food; each waterskin holds ~1 stone of water (1 quart);
-	## fodder items use a `fodder_` prefix when they exist.
+	## H.3 — prefer the catalog's `consumable_kind` + `consumable_person_days`
+	## tags (added per item in base_equipment.json + provisions_services.json).
+	## Falls back to the prior prefix-match heuristic for items that don't
+	## yet carry the tags so legacy data continues to count correctly.
 	var food := 0.0
 	var water := 0.0
 	var fodder := 0.0
+	var catalog: EquipmentCatalog = _ensure_equipment_catalog()
 	for item in items:
 		var key: String = ""
 		var qty: int = 1
@@ -754,14 +757,39 @@ func _accumulate_resource_items(items: Array) -> Dictionary:
 		elif item is InventoryItem:
 			key = item.item_key
 			qty = item.quantity
+		if key.is_empty():
+			continue
+		var entry: Dictionary = catalog.get_item(key) if catalog != null else {}
+		var kind: String = str(entry.get("consumable_kind", ""))
+		if not kind.is_empty():
+			var per_days: float = float(entry.get("consumable_person_days", 1))
+			match kind:
+				"food":
+					food += qty * per_days * FOOD_PER_HUMANOID_PER_DAY
+				"water":
+					water += qty * per_days
+				"fodder":
+					fodder += qty * per_days
+			continue
+		# Fallback heuristic for catalog entries that haven't been tagged yet.
 		if key.begins_with("rations_") or key == "iron_rations" or key == "standard_rations":
-			# A "1 week" rations item provides 7 person-days of food = 7 * (1/6) stone
 			food += qty * 7.0 * FOOD_PER_HUMANOID_PER_DAY
 		elif key.begins_with("waterskin"):
 			water += qty * 1.0
 		elif key.begins_with("fodder_"):
 			fodder += qty * 1.0
 	return {"food": food, "water": water, "fodder": fodder}
+
+
+# Lazy catalog cache — instantiated on first call so the tab works during
+# tests that don't populate a full scene tree.
+var _equipment_catalog: EquipmentCatalog = null
+
+
+func _ensure_equipment_catalog() -> EquipmentCatalog:
+	if _equipment_catalog == null:
+		_equipment_catalog = EquipmentCatalog.new()
+	return _equipment_catalog
 
 
 func _creature_normal_load(creature: TrainedCreatureData) -> int:
@@ -909,7 +937,7 @@ func _build_formation_page() -> Control:
 	vbox.add_child(HSeparator.new())
 
 	var hint := Label.new()
-	hint.text = "Click an unplaced character below, then click a grid cell to place. Click an occupied cell to remove."
+	hint.text = "Drag a character from the unplaced list onto a grid cell to place, or drag between cells to relocate. Click an occupied cell to remove. (Click-to-select then click-to-place still works.)"
 	hint.add_theme_font_size_override("font_size", 9)
 	hint.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_TEXT_COLOR)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -921,12 +949,16 @@ func _build_formation_page() -> Control:
 	unplaced_header.add_theme_font_size_override("font_size", 11)
 	vbox.add_child(unplaced_header)
 
-	_wilderness_unplaced_list = ItemList.new()
+	# H.3 — drag-source-aware ItemList subclasses; click-to-select behavior
+	# is preserved.
+	_wilderness_unplaced_list = FormationUnplacedListScript.new()
+	_wilderness_unplaced_list.grid_id = PartyData.GRID_WILDERNESS
 	_wilderness_unplaced_list.custom_minimum_size = Vector2(0, 100)
 	_wilderness_unplaced_list.item_selected.connect(_on_unplaced_selected.bind(PartyData.GRID_WILDERNESS))
 	vbox.add_child(_wilderness_unplaced_list)
 
-	_dungeon_unplaced_list = ItemList.new()
+	_dungeon_unplaced_list = FormationUnplacedListScript.new()
+	_dungeon_unplaced_list.grid_id = PartyData.GRID_DUNGEON
 	_dungeon_unplaced_list.custom_minimum_size = Vector2(0, 100)
 	_dungeon_unplaced_list.item_selected.connect(_on_unplaced_selected.bind(PartyData.GRID_DUNGEON))
 	vbox.add_child(_dungeon_unplaced_list)
@@ -949,7 +981,14 @@ func _build_grid(holder: Control, cols: int, rows: int, grid_id: String) -> Arra
 	for row in range(rows):
 		var row_arr: Array = []
 		for col in range(cols):
-			var cell := Button.new()
+			# H.3 — FormationGridCell adds drag-drop on top of the existing
+			# Button click flow. Cells emit `cell_drop_received` when an
+			# unplaced item or another cell's occupant is dropped on them.
+			var cell := FormationGridCellScript.new()
+			cell.col = col
+			cell.row = row
+			cell.grid_id = grid_id
+			cell.eligibility_check = _formation_drop_eligibility
 			cell.custom_minimum_size = CELL_SIZE
 			cell.position = Vector2(
 				col * (CELL_SIZE.x + CELL_MARGIN),
@@ -958,10 +997,56 @@ func _build_grid(holder: Control, cols: int, rows: int, grid_id: String) -> Arra
 			cell.add_theme_font_size_override("font_size", 8)
 			cell.clip_text = true
 			cell.pressed.connect(_on_grid_cell_pressed.bind(col, row, grid_id))
+			cell.cell_drop_received.connect(_on_formation_drop)
 			holder.add_child(cell)
 			row_arr.append(cell)
 		cells.append(row_arr)
 	return cells
+
+
+# H.3 — drag-drop eligibility predicate passed into every grid cell. Returns
+# false when the dragged entity isn't eligible for the destination grid
+# (e.g., a horse onto the dungeon grid). For the wilderness grid the only
+# constraint is that the entity exists in the unplaced or placed pool.
+func _formation_drop_eligibility(entity_id: String, dest_grid: String) -> bool:
+	if _party == null or entity_id.is_empty():
+		return false
+	if dest_grid == PartyData.GRID_DUNGEON:
+		# Reuse the same per-creature flag-or-default check as the
+		# ineligible-label rendering. PCs / henchmen are always eligible.
+		for creature: TrainedCreatureData in _party.creature_data:
+			if creature.id == entity_id and creature.monster_data is Dictionary:
+				return bool(creature.monster_data.get("dungeon_eligible", true))
+	return true
+
+
+# H.3 — handle a drop into a grid cell. Two paths:
+#   - source_col/row == -1 → drag came from the unplaced ItemList; just place.
+#   - source_col/row >= 0  → drag came from another cell on the same grid;
+#     vacate the source cell and place at the destination.
+# A drop on an occupied destination cell currently overwrites the previous
+# occupant (the displaced character returns to the unplaced pool); a
+# future polish pass could swap occupants instead.
+func _on_formation_drop(payload: Dictionary, dest_col: int, dest_row: int) -> void:
+	if _party == null:
+		return
+	var entity_id: String = str(payload.get("character_id", ""))
+	if entity_id.is_empty():
+		return
+	var src_grid: String = str(payload.get("source_grid", ""))
+	var src_col: int = int(payload.get("source_col", -1))
+	var src_row: int = int(payload.get("source_row", -1))
+	if src_col >= 0 and src_row >= 0 and src_grid == _formation_active_grid:
+		_party.unplace_character_for(entity_id, src_grid)
+	# If the destination is already occupied, the existing occupant is
+	# vacated first so set_formation_pos_for can place cleanly.
+	var existing: String = _party.get_character_at_for(dest_col, dest_row, _formation_active_grid)
+	if not existing.is_empty() and existing != entity_id:
+		_party.unplace_character_for(existing, _formation_active_grid)
+	_party.set_formation_pos_for(entity_id, dest_col, dest_row, _formation_active_grid)
+	EventBus.formation_changed.emit(GameState.active_party_id)
+	_selected_unplaced_id = ""
+	_refresh_formation_grids()
 
 
 func _on_formation_view_toggle(grid_id: String) -> void:
@@ -1025,9 +1110,13 @@ func _paint_grid(cells: Array, grid_id: String) -> void:
 			var cell: Button = cells[r][c]
 			cell.disabled = false
 			var cid: String = _party.get_character_at_for(c, r, grid_id)
+			# H.3 — store the occupant id so FormationGridCell._get_drag_data
+			# can return it without re-querying the party. Updated on every
+			# repaint so it stays consistent with the rendered cell.
+			cell.set_meta("character_id", cid)
 			if cid.is_empty():
 				cell.text = ""
-				cell.tooltip_text = "Empty — click to place selected character"
+				cell.tooltip_text = "Empty — click or drag a character to place"
 			else:
 				var cd: CharacterData = _party.get_member(cid)
 				if cd != null:
@@ -1035,7 +1124,7 @@ func _paint_grid(cells: Array, grid_id: String) -> void:
 					if short_name.length() > 7:
 						short_name = short_name.left(6) + "."
 					cell.text = short_name
-					cell.tooltip_text = "%s (L%d %s) — click to remove" % [
+					cell.tooltip_text = "%s (L%d %s) — click to remove or drag to relocate" % [
 						cd.name, cd.level, cd.character_class.capitalize()]
 				else:
 					cell.text = "???"
@@ -1059,6 +1148,9 @@ func _refresh_unplaced_lists() -> void:
 		var cd: CharacterData = _party.get_member(cid)
 		_dungeon_unplaced_list.add_item(cd.name if cd != null else cid)
 		_dungeon_unplaced_ids.append(cid)
+	# H.3 — sync the drag-source id maps with the freshly-built lists.
+	_wilderness_unplaced_list.id_for_index = _wilderness_unplaced_ids.duplicate()
+	_dungeon_unplaced_list.id_for_index = _dungeon_unplaced_ids.duplicate()
 	if not _selected_unplaced_id.is_empty():
 		var ids: Array = _wilderness_unplaced_ids if _formation_active_grid == PartyData.GRID_WILDERNESS \
 				else _dungeon_unplaced_ids
@@ -1081,17 +1173,13 @@ func _refresh_ineligible_label() -> void:
 		var vname: String = str(v.get("name", str(v.get("item_key", "vehicle"))))
 		ineligible.append("%s (vehicle — wilderness only)" % vname)
 	for creature: TrainedCreatureData in _party.creature_data:
+		# H.3 — prefer the explicit `dungeon_eligible` catalog flag (added per
+		# species in monster_catalog.json for true wilderness-only mounts:
+		# horses, camel, mule, ox, cow). Default true when absent so future
+		# catalog entries are dungeon-eligible unless they opt out.
 		var dungeon_eligible := true
-		# Per migration 043, creatures default to dungeon_eligible=true; per-species
-		# rules narrow this when catalog data lands. Read the runtime flag if
-		# the creature row exposes it.
 		if creature.monster_data is Dictionary:
-			# v1 heuristic: treat creatures with normal_load >= 30 as
-			# wilderness-only (horses, oxen, mules) until the catalog flag
-			# narrows the default per species.
-			var nl: int = int(creature.monster_data.get("normal_load", 0))
-			if nl >= 30:
-				dungeon_eligible = false
+			dungeon_eligible = bool(creature.monster_data.get("dungeon_eligible", true))
 		if not dungeon_eligible:
 			var cname: String = creature.name if not creature.name.is_empty() else creature.species_id.capitalize()
 			ineligible.append("%s (creature — dungeon-ineligible)" % cname)

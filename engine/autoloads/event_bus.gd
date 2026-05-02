@@ -500,6 +500,24 @@ signal notebook_journal_notes_filter_requested(entity_id: String)
 ## H.2 polish (item 1e).
 signal unified_log_scroll_to_id_requested(entry_id: int)
 
+## Request the Settlement HiringPanel be opened. Emitted by the Henchmen tab
+## empty-state's "Find an inn" link router and by any future "Hire Henchman"
+## button. SettlementExploreState (when active) consumes this and pushes the
+## HiringPanel into its activity area; outside settlement contexts the
+## signal fires into the void and the caller's notification fallback is the
+## player-visible behavior. H.3 (item 6).
+signal settlement_hiring_requested(employer_id: String)
+
+## LightSourceTracker state change signals — drive the LightSourceIndicator
+## HUD widget. H.3 (item 1). The state Dictionary mirrors LightSourceTracker.to_dict():
+##   source_type:     String
+##   radius_feet:     int
+##   remaining_turns: int  (-1 for permanent)
+##   carrier_id:      String
+signal light_source_activated(state: Dictionary)
+signal light_source_ticked(state: Dictionary)
+signal light_source_deactivated
+
 
 # ---------------------------------------------------------------------------
 # Unified Log signals (Phase α — embedded log lands in Phase γ.5)

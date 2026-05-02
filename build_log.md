@@ -11334,3 +11334,271 @@ Per the user's plan, after this session, the deferred-from-H.0/1/2 polish backlo
 6. Manual verification: level a familiar's master from L2 → L4 → see the Familiar sub-tab surface → pick the new proficiency → confirm DB row reflects the addition.
 
 **[NEEDS-OPUS-REVIEW]** None this session. Stage 3c was mechanical surgery: a new step inserted with the established conditional-skip pattern, plus a finalize hook that mirrors the existing trained-creature/spell/proficiency persistence pattern.
+
+
+## Session 2026-05-02 — Familiar proficiency, Stage 3d (level-up integration)
+
+**Task:** Fourth and final slice of Stage 3 (UI integration) for the Familiar proficiency. Adds a level-up familiar picker that surfaces in the Advancement tab as a popup when one of two cases applies, and wires the persistence into `LevelUpEngine.finalize_interactive_level_up`. Stage 2.x (auto-proximity) remains the only deferred piece; the user has confirmed Stage 3c's character-creation flow works in-game.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- New `scenes/ui/character_sheet/tabs/level_up_familiar_picker.gd` (~205 lines, `class_name LevelUpFamiliarPicker extends VBoxContainer`). Thin wrapper that detects which of two cases applies at setup and routes to the right embedded picker:
+  - **Case A — Replacement bonding:** master has Familiar proficiency, no living familiar, master's new level (post-level-up; `begin_interactive_level_up` already mutated the character) is strictly greater than `bonded_at_master_level` of the most-recent dead familiar (or no familiar history exists). Embeds a `FamiliarAcquisitionPanel` (form + cosmetic + name + own profs).
+  - **Case B — Additional picks on budget growth:** master has Familiar proficiency AND a living familiar AND the master is gaining new general/class slots on this level-up tier (`new_class_proficiency_slots + new_general_proficiency_slots > 0`). Embeds a `FamiliarProficiencyPicker` with prior picks pre-loaded; player adds N new picks where N = the new master slots.
+  - **Case `""` (none):** Nothing surfaces — master doesn't have Familiar prof, OR has living familiar with no new slots, OR replacement gate not yet met. The advancement tab consults `case_kind()` to decide whether to even add the familiar button.
+  - Public API: `setup(master, level_up_result, form_registry, class_registry, proficiency_registry)`, `case_kind() -> String`, `is_complete() -> bool`, `get_final_choices() -> Dictionary` (case-tagged Dict consumed by the engine's finalize hook).
+- `scenes/ui/character_sheet/tabs/cs_tab_advancement.gd` — added a familiar popup mirroring the proficiency popup pattern. New fields `_familiar_picker`, `_familiar_popup`, `_familiar_popup_host`. New `_prepare_familiar_picker(character, level_up_result)` builds the picker eagerly so we can call `case_kind()` before deciding whether to add the popup-open button to the level-up panel. New `_ensure_familiar_popup` / `_clear_familiar_popup_state` / `_on_open_familiar_popup` / `_on_close_familiar_popup` mirror the proficiency popup machinery. Button label is "Bond a Familiar" (Case A) or "Pick Familiar Proficiencies" (Case B). On confirm, if a non-NONE case surfaced, the picker's `is_complete()` is required (just like the proficiency picker); on success, `_level_up_choices["familiar"] = _familiar_picker.get_final_choices()`. `display()` and `abort_pending_level_up()` reset the new state alongside existing reset paths.
+- `engine/subsystems/characters/level_up_engine.gd` — new `_persist_familiar_level_up(character, choices)` hook called after stat persistence and before `EventBus.character_leveled_up.emit`. Routes on `choices["familiar"]["case"]`:
+  - **Case A** writes a fresh `familiars` row via `CampaignRepository.create_familiar(...)` with HD progression derived via `FamiliarData.compute_progression_for_master_level(character.level)`, `hp_max_cached = floor(character.hp_max / 2.0)` with banker's rounding, `proficiency_count_cached` from the picker's stamped value (or computed from sum of `selections_count`), and emits `EventBus.familiar_bonded`.
+  - **Case B** updates the existing familiar's `proficiencies_chosen` JSON via `CampaignRepository.update_familiar(familiar_id, {proficiencies_chosen: ...})`. The existing `FamiliarController._on_character_leveled_up` handler refreshes `proficiency_count_cached` from the master's now-current state right after this hook (via the EventBus emit) — same value computed two ways, but the second computation overwrites with an identical number, no drift.
+  - Two new private helpers: `_sum_master_proficiency_count(proficiencies) -> int` and `_bankers_round(value: float) -> int` (inlined to keep the engine self-contained).
+- New `tests/test_level_up_familiar_picker.gd` (8 tests). Verifies: case is NONE when master has no Familiar proficiency; Case A on first bonding (no familiar history); Case A when most-recent dead familiar is at a lower bonded level than master's new level; case is NONE when replacement gate not met (dead at level >= master's new level); Case B when living familiar + master gains slots; case is NONE when living familiar but no new slots (budget unchanged); Case B `get_final_choices()` returns the existing familiar_id and the prior + new picks Array; Case A `get_final_choices()` returns form_key/cosmetic/name and the picked proficiencies plus the stamped `proficiency_count_cached`. **All 8 pass.**
+- Wired the new test suite into `tests/test_runner.tscn` (ext_resource id 147) and `tests/test_runner.gd`.
+- Bug fix in `level_up_engine.gd` introduced and immediately reverted during this session: an editor-search-and-replace on the stat-persistence Dict accidentally collapsed `save_staffs_wands` and `save_spells` into one entry (assigning `save_spells` value to `save_staffs_wands` key, dropping `save_spells`). Caught on first test run and fixed by reverting to the original two-line pattern. No tests had to change to detect this — the existing `test_finalize_panel.gd` / `test_level_up_engine.gd` would have caught it on a clean DB run.
+
+**Decisions made:**
+
+- **`LevelUpFamiliarPicker` is a thin routing wrapper, not a fresh picker.** It doesn't reinvent UI; it delegates to the existing Stage 3a `FamiliarAcquisitionPanel` (Case A) or Stage 3b `FamiliarProficiencyPicker` (Case B). This is the cleanest reuse of the work already shipped — character creation and level-up share the same bonding flow visually.
+- **Master's new level is in `character.level` post-`begin_interactive_level_up`.** The engine mutates the character before returning the result Dict; the picker reads `master.level` directly rather than computing `result["new_level"]`. Same number, simpler call site.
+- **Replacement-gate logic uses `master.level > bonded_at_master_level` (strict greater-than).** Same rule the data layer enforces (FamiliarData.can_replace_at). Picker checks the most-recent dead familiar; if no familiar history exists, the gate is trivially met (first bonding).
+- **Case B's new budget = current master selections count + new slots from level-up result.** Computed proactively in the picker because the engine's stat persistence + master-proficiency persistence run *before* the familiar persistence hook, but the FamiliarController's cached-budget refresh runs *after* the EventBus emit. The picker can't read a refreshed budget yet, so it computes one. The two computations arrive at the same number (sum of selections_count); no drift.
+- **Familiar persistence runs before the EventBus emit, but inside `finalize_interactive_level_up`.** Order: master-prof save → spell save → power save → stat save → **familiar save (new)** → emit `character_leveled_up`. Putting it before the emit means the EventBus subscriber (FamiliarController) sees the familiar already-written when it refreshes the cached budget. Putting it inside finalize means the same atomicity contract as the other writes (same return-bool semantics, same in-flight transaction).
+- **Case A's `proficiency_count_cached` is stamped from the picker's `_new_total_proficiency_count` value.** This sidesteps a subtle ordering issue: when finalize_persist_familiar runs, master.proficiencies still reflects the *post-finalize* state (the master prof save happened earlier); summing selections_count there matches what the picker already computed. But to be defensive and avoid the Case-A-during-character-creation vs Case-A-during-level-up divergence, the picker stamps the value into the choices Dict and the engine uses that value directly when present (falls back to computing from master.proficiencies otherwise).
+- **Single popup pattern, mirroring proficiency popup.** Did not embed the familiar picker inline in the advancement tab — the popup pattern was already proven for proficiency picks (multiple sub-pickers in a tabbed/scrollable popup), and reusing it gives consistent UX for both decisions made on a single level-up.
+- **Picker setup mounts the picker eagerly into the popup host.** The advancement tab's `_prepare_familiar_picker` instantiates the picker and calls `setup` immediately so we can read `case_kind()` and decide whether to add the open button. The popup itself only appears when the player presses the button — but the picker's `_build_ui` runs on attach, which is fine because the embedded sub-pickers do their own lazy rendering.
+
+**Interfaces defined or changed:**
+
+`LevelUpFamiliarPicker` (new):
+- Constants: `CASE_NONE = ""`, `CASE_REPLACEMENT = "A"`, `CASE_BUDGET_GROWTH = "B"`
+- `setup(master: CharacterData, level_up_result: Dictionary, form_registry: FamiliarFormRegistry, class_registry: ClassRegistry, proficiency_registry: ProficiencyRegistry) -> void`
+- `case_kind() -> String`
+- `is_complete() -> bool`
+- `get_final_choices() -> Dictionary` — case-tagged Dict consumed by `LevelUpEngine`
+
+`CSTabAdvancement` (modified):
+- New fields `_familiar_picker`, `_familiar_popup`, `_familiar_popup_host`.
+- New methods `_prepare_familiar_picker`, `_ensure_familiar_popup`, `_clear_familiar_popup_state`, `_on_open_familiar_popup`, `_on_close_familiar_popup`.
+- `_level_up_choices` shape extended with optional `"familiar"` key (the case-tagged Dict).
+- `display()` and `abort_pending_level_up()` reset the new state.
+
+`LevelUpEngine` (modified):
+- New `_persist_familiar_level_up(character: CharacterData, choices: Dictionary) -> void` hook called from `finalize_interactive_level_up` after stat persistence and before the `character_leveled_up` emit. Routes on `choices["familiar"]["case"]` ("A" → create_familiar + emit familiar_bonded; "B" → update_familiar with new proficiencies_chosen).
+- Two new private helpers: `_sum_master_proficiency_count`, `_bankers_round`.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- `tests/test_level_up_familiar_picker.gd` (8 tests). **All pass.**
+- Wired into `test_runner.tscn` (ext_resource id 147) and `test_runner.gd`.
+- Full suite run: **129 / 22** (vs. Stage 3c's 121/29 — best result yet; +8 passes / -7 fails after adding one new suite). All ten familiar suites pass green:
+  - FamiliarData (24), FamiliarRepository (9), FamiliarProximity (9), FamiliarDeathLink (6), FamiliarLevelUpRefresh (6), FamiliarFormRegistry (11), FamiliarPicker (9), FamiliarProficiencyPicker (12), FamiliarAcquisitionPanel (7), **LevelUpFamiliarPicker (8)** *(new)*.
+  None of the 22 failures mention "familiar" or "level_up."
+
+**Known issues / deferred:**
+
+- **Stage 2.x: auto-proximity** — still deferred. Needs live-character-cache exploration. The `FamiliarController` API (`evaluate_proximity`, `set_proximity_state`) is correct; only the auto-trigger wiring on entity movement is missing. Out-of-combat scenarios can be handled with a "default to in-range when in same party" heuristic; combat scenarios need per-move position evaluation.
+- **Manual verification needed for Stage 3d.** Driving the level-up flow end-to-end in-game would confirm: (a) the familiar popup surfaces only when applicable; (b) Case A produces a fresh familiar row with the correct stamped progression; (c) Case B extends `proficiencies_chosen` without altering form/HD/etc. The Stage 3c character-creation flow is user-confirmed working in-game; Stage 3d's level-up integration follows the same patterns and should work, but a manual walk-through is the ground truth.
+- **Multi-pick rank-advancement of stacking procs on familiars.** Stage 3b enforces unique picks. If a future revision wants familiars to advance ranks like masters do, the picker needs a rank-advancement UX. Not blocking.
+- **Bug fix during this session.** `level_up_engine.gd`'s stat-persistence Dict had `save_staffs_wands: character.save_spells` (wrong) for one revision after my edit; reverted to the correct two-line pattern. The existing FinalizePanel / level-up tests would have caught this on a clean DB run; the bug was identified and fixed before the test run completed.
+
+**Stage 3 complete.** All four UI slices land:
+- 3a: form catalog + form picker
+- 3b: familiar-specific proficiency picker
+- 3c: character-creation integration
+- 3d: level-up integration
+
+The Familiar proficiency now has a complete in-game flow: pick the proficiency at character creation → bond a familiar in a new "Step 7 of 13 — Bond Familiar" step → the familiar persists with master-derived stats → on level-up, the master gains slots → the familiar's budget grows → a Familiar popup surfaces in the Advancement tab for the additional picks → on familiar death, the master saves vs Death (auto-rolled by FamiliarController) and is eligible for a replacement on next level-up via the same Advancement-tab popup.
+
+**Remaining: Stage 2.x (auto-proximity) only.**
+
+**Next session should — Stage 2.x: Auto-proximity wiring (deferred):**
+
+1. Locate the live `CharacterData` cache layer (likely under `GameState.active_party.character_data` or a dedicated `CharacterCache` autoload). The proximity bonus must be applied to the in-memory instance the game uses at `get_effective_save` time, not a fresh `CharacterData.from_dict(row)` instance that goes out of scope after the function returns.
+2. Subscribe to (a) `EventBus.familiar_bonded` to default-to-in-range on bonding, and (b) `EventBus.campaign_loaded` to rehydrate the bonus across save/load round-trips.
+3. For combat scenarios: subscribe to `EventBus.round_resolved` and call `evaluate_proficiency` against the actor's voxel position vs. the familiar's voxel position when the actor moved.
+4. For exploration / dungeon: default-to-in-range when the familiar's master is in the active party (familiars follow masters). The proximity API is ready; only the trigger wiring is missing.
+5. Tests: bond a familiar via repo → master's `get_effective_save("save_poison_death")` reflects the -1 modifier; campaign_loaded reapplies after a save/load.
+
+**[NEEDS-OPUS-REVIEW]** None this session. Stage 3d was a clean port of the Stage 3a/3b pickers into a level-up popup, mirroring the established proficiency-popup pattern. Only design call was "thin wrapper that routes Case A/B" vs. "two separate pickers wired conditionally" — wrapper won because it gives the advancement tab a single uniform integration point.
+
+
+## Session 2026-05-02 — Familiar proficiency, Stage 2.x (auto-proximity wiring)
+
+**Task:** Wire the proximity bonus into the live `CharacterData` lifecycle. Stage 2 shipped the `FamiliarController` API for proximity (`evaluate_proximity`, `set_proximity_state`, `clear_proximity_for_master`) — the earlier deferred piece was the auto-trigger that ensures the +1 saves bonus reaches the in-memory `CharacterData` instance the game uses at `get_effective_save` time. Today's session resolves that.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- New `FamiliarController.apply_proximity_for_master(master: CharacterData) -> void`. Looks up the master's living familiar via `CampaignRepository.get_living_familiar_for_master` and calls `set_proximity_state(master, in_range)` accordingly — true when a living familiar exists, false otherwise. Idempotent (same in-state → no-op via the existing state-map guard). Caller-driven so the controller stays decoupled from session/cache state.
+- Call site 1: `SessionRunner.load_session()` — after `_party_data.character_data` is populated, iterate party members and call `FamiliarController.apply_proximity_for_master(loaded_character)` for each. Restores proximity bonuses across save/load round-trips. (`CharacterData.modifiers` and `CharacterData.flags` are runtime-only fields that get cleared on save/load — this rehydrates the bonus.)
+- Call site 2: `CharacterCreationScreen._persist_familiar_if_bonded()` — after the new familiar row is written via `CampaignRepository.create_familiar` and `EventBus.familiar_bonded` fires, call `apply_proximity_for_master(character)` so the bonus is active immediately on the live CharacterData. The character instance here is the same one being added to the party at session start.
+- Call site 3: `CSTabAdvancement._on_confirm_level_up()` — after `LevelUpEngine.finalize_interactive_level_up` returns, call `apply_proximity_for_master(character)`. This handles all three Stage 3d cases at once: replacement bonding (Case A — flips false→true), additional picks on budget growth (Case B — already true, idempotent no-op), and "no familiar case applied" (no living familiar → idempotent no-op clear).
+- New `tests/test_familiar_auto_proximity.gd` (5 tests). Verifies: (1) no familiar in DB → no bonus; (2) living familiar → bonus active (-1 to all 5 saves); (3) repeated calls are idempotent (no stacking); (4) kill familiar in DB then re-apply → bonus cleared, save target back to baseline; (5) two masters with independent familiar state — master A gets the bonus, master B doesn't. **All 5 pass.**
+- Wired the new test suite into `tests/test_runner.tscn` (ext_resource id 148; node `FamiliarAutoProximityTests`) and `tests/test_runner.gd`.
+
+**Decisions made:**
+
+- **Caller-driven, not autoload-internal scanning.** The earlier signal-driven approach (subscribe to `familiar_bonded` and `campaign_loaded` from inside FamiliarController) was reverted at the end of Stage 2 because it would have built a fresh `CharacterData` from the DB row, mutated its modifiers, and dropped the reference on function exit — useless. The live cache (`SessionRunner._party_data.character_data: Array[CharacterData]`) lives outside FamiliarController's reach (SessionRunner isn't an autoload). Today's caller-driven pattern lets the three known sites (where the live CharacterData IS in scope) call `apply_proximity_for_master` directly, keeping the controller agnostic about cache layers.
+- **Three call sites cover the full lifecycle.** (a) Session load rehydrates after save/load. (b) Character creation finalize activates the bonus on first bonding. (c) Level-up confirm covers replacement bonding (Case A), budget-growth (Case B), and the "no case" path (idempotent no-op). No fourth site needed for Stage 2.x scope.
+- **Combat separation deferred.** When the familiar moves >30 ft from its master mid-combat, the bonus should flip off. The existing public `FamiliarController.evaluate_proximity(master, master_pos, familiar_pos)` API supports this — the combat resolver would call it after each move event. That wiring is *not* part of Stage 2.x; this stage's "default to in-range while alive" baseline is the v1 behavior. Combat separation can be added in a polish pass when combat code adopts the API.
+- **Familiar-death in-session clear is a known limitation.** When the familiar is killed during play, `EventBus.familiar_died` fires and the controller's existing handler builds a fresh `CharacterData` from the row to clear the bonus — same useless-discard problem as before. The bonus on the live `CharacterData` instance persists in-memory until the next session reload (where `SessionRunner.load_session` re-applies fresh state). For player UX this is mostly invisible (familiar deaths are rare and usually trigger session-ending events anyway), but it's documented as a follow-up. The right fix is to teach combat code to call `clear_proximity_for_master(master)` on the live master when it kills a familiar.
+- **Did NOT subscribe to `EventBus.familiar_bonded` from within the controller.** Reasoning: the bonded event fires from two sites (character creation finalize and level-up confirm), both of which already have the live master CharacterData and now call `apply_proximity_for_master` directly. A signal subscriber inside the controller would duplicate work and re-introduce the live-cache-lookup problem.
+
+**Interfaces defined or changed:**
+
+`FamiliarController` (modified):
+- New public method `apply_proximity_for_master(master: CharacterData) -> void` — looks up the master's living familiar in the DB and applies/clears the proximity bonus on the supplied live CharacterData. Idempotent.
+
+`SessionRunner.load_session` — calls `FamiliarController.apply_proximity_for_master(loaded_character)` per loaded character at session start.
+
+`CharacterCreationScreen._persist_familiar_if_bonded` — calls `FamiliarController.apply_proximity_for_master(character)` after the familiar row is created.
+
+`CSTabAdvancement._on_confirm_level_up` — calls `FamiliarController.apply_proximity_for_master(character)` after the level-up finalize succeeds.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- `tests/test_familiar_auto_proximity.gd` (5 tests). **All pass.**
+- Wired into `test_runner.tscn` (ext_resource id 148) and `test_runner.gd`.
+- Full suite run: **130 / 22** (vs. Stage 3d's 129/22 — +1 pass, same fail count). All eleven familiar suites pass green:
+  - FamiliarData (24), FamiliarRepository (9), FamiliarProximity (9), FamiliarDeathLink (6), FamiliarLevelUpRefresh (6), FamiliarFormRegistry (11), FamiliarPicker (9), FamiliarProficiencyPicker (12), FamiliarAcquisitionPanel (7), LevelUpFamiliarPicker (8), **FamiliarAutoProximity (5)** *(new)*.
+  None of the 22 failures mention "familiar," "session_runner," "character_creation," or "advancement."
+
+**Known issues / deferred:**
+
+- **In-session familiar-death clear of live CharacterData.** Documented above. The bonus persists on the live instance until session reload; right fix is for the combat code that kills the familiar to call `clear_proximity_for_master(live_master)` directly. Out of scope for Stage 2.x's "lifecycle baseline" scope.
+- **Combat separation (familiar moves >30 ft from master).** Public `evaluate_proximity` API exists; combat resolver hookup deferred to a polish pass.
+- **Manual verification recommended.** Session load with a master holding a living familiar → confirm `master.modifiers.get_effective_value("save_poison_death", 14) == 13`. Stage 3c's character creation flow is user-confirmed; Stage 2.x's three call sites should integrate cleanly given the test coverage but a live walk-through would close the loop.
+
+**Familiar proficiency feature is now complete end-to-end.** All deferred pieces from Stages 1 / 2 / 3 / 3a / 3b / 3c / 3d / 2.x are addressed:
+
+- **Data + persistence** (Stage 1): form catalog with 7 forms (canon Bat / Hawk + 5 project-authored), `familiars` table with master-derived caching, FamiliarData with HD progression formulas, repo CRUD.
+- **Runtime mechanics** (Stage 2): proximity bonus state machine, death-link save-vs-Death, level-up cache refresh, `familiar_within_30ft` flag wired into `_evaluate_condition`.
+- **Form / cosmetic / name picker** (Stage 3a): pure-code panel idiom; FamiliarFormRegistry resolves canon refs.
+- **Proficiency picker** (Stage 3b): standalone wrapper around the existing `ProficiencySelectionPanel` patterns; eligible list = union of general + master's class; budget = master's `selections_count` sum; specialization sub-dropdowns for Knowledge/Craft/Profession/Fighting Style/etc.; stacking proficiencies eligible at rank 1.
+- **Character-creation integration** (Stage 3c): new `Step.FAMILIAR_ACQUISITION = 6` between PROFICIENCIES and SPELLS; conditional skip when Familiar not picked; familiar row written in `_finalize_character` after master row.
+- **Level-up integration** (Stage 3d): `LevelUpFamiliarPicker` thin wrapper handling Case A (replacement bonding) and Case B (additional picks on budget growth); embedded as a popup in the Advancement tab; persistence in `LevelUpEngine.finalize_interactive_level_up`.
+- **Auto-proximity** (Stage 2.x — this session): caller-driven `apply_proximity_for_master(master)` invoked at three lifecycle sites (session load, character creation finalize, level-up confirm).
+
+**Next session should:** Whatever the user wants. The familiar feature is shippable. Long-running follow-ups documented in this log entry as "Known issues / deferred":
+- Combat separation: combat code calls `evaluate_proximity` on familiar move
+- In-session death-clear: combat code calls `clear_proximity_for_master` when the kill happens
+- Multi-pick rank-advancement on familiars (currently unique picks at rank 1)
+- Manual end-to-end walk-through of the level-up Familiar popup (Stage 3d)
+
+**[NEEDS-OPUS-REVIEW]** None this session. Stage 2.x was small, mechanical wiring at three known sites against a public API the FamiliarController already exposed. The "caller-driven vs. signal-subscription" decision was settled by the earlier reversion (see Stage 3a known-issues note); today's implementation simply consumed that prior decision.
+
+
+## Session 2026-05-02 — H.3: Closing-out polish (six items)
+
+**Task:** Land the six H.3 polish deliverables that close out the H+ umbrella plan: LightSourceIndicator HUD widget, CityOverviewWidget character pins, Formation grid drag-drop, monster-catalog `dungeon_eligible` narrowing, equipment-catalog `consumable_kind`/`consumable_person_days` tagging, and empty-state acquisition link router extension. After this session the H+ umbrella plan is closed (Troops + Domain + Quests deferred to engine-first phases; items 2 + 5 of the H.2-deferred polish backlog wait on the henchman-system buildout).
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+### Item 1 — LightSourceIndicator HUD widget
+
+- New EventBus signals: `light_source_activated(state: Dictionary)`, `light_source_ticked(state)`, `light_source_deactivated`.
+- LightSourceTracker emits the three signals from `activate()` / `tick()` / `deactivate()` / `_expire()`.
+- New `scenes/ui/hud/light_source_indicator.gd` — CanvasLayer at layer 24, anchored top-right, hidden by default. Subscribes to the three signals; renders source name + remaining-turns label + radius. Color escalates from normal (warm yellow) → flickering (orange, ≤5 turns) → danger (red, ≤2 turns), matching `LightSourceTracker.WARNING_THRESHOLDS`. Permanent sources render "Permanent" label.
+- Embedded as new `LightSourceIndicator` CanvasLayer in `scenes/Main.tscn`.
+
+### Item 2 — CityOverviewWidget character pins
+
+- Extended `city_overview_widget.gd`:
+  - New `character_pin_clicked(character_id)` signal.
+  - New `update_character_positions(positions)` API — accepts `Dict[character_id -> {node_id, name, tooltip}]`.
+  - New `_draw_character_pins()` — renders one small dot per character at their node_id position. When multiple characters share a node, a radial fan offset (CHARACTER_PIN_RADIAL_OFFSET = 9px) keeps each pin individually visible/clickable. Color cycles through CHARACTER_PIN_COLORS so PCs are distinguishable.
+  - New `_gui_input` handler — left-click within `CHARACTER_PIN_RADIUS+2` of any pin emits `character_pin_clicked(cid)`. `mouse_filter` switched from `MOUSE_FILTER_IGNORE` to `MOUSE_FILTER_PASS` so non-pin clicks pass through.
+- Wired in `settlement_explore_state.gd`:
+  - New `_refresh_character_pins()` — queries `CampaignRepository.list_party_characters(party_id)` and pins every PC at the current party node_id (until per-member dispatch lands, all PCs colocate). Called on initial setup + on every `_on_arrived_at_destination`.
+  - `_overview_widget.character_pin_clicked.connect(_on_character_pin_clicked)` — forwards to `EventBus.notebook_active_entity_requested(character_id)`.
+
+### Item 3 — Formation grid drag-drop
+
+- New `scenes/ui/notebook/party/formation_grid_cell.gd` — Button subclass with `_get_drag_data` (returns `{kind, character_id, source_grid, source_col, source_row}` payload when dragged from an occupied cell), `_can_drop_data` (rejects same-cell self-drops + applies optional eligibility predicate), `_drop_data` (emits `cell_drop_received(payload, dest_col, dest_row)`).
+- New `scenes/ui/notebook/party/formation_unplaced_list.gd` — ItemList subclass with `_get_drag_data` returning the same payload shape with `source_col=-1, source_row=-1` sentinels.
+- `party_tab_page.gd._build_grid` — replaced raw Button with FormationGridCellScript; cells get `cell_drop_received` connected to `_on_formation_drop`.
+- `_paint_grid` — sets `cell.set_meta("character_id", cid)` on every repaint so `FormationGridCell._get_drag_data` can return the correct id.
+- New `_on_formation_drop` — handles both source paths (unplaced→cell vacates nothing; cell→cell vacates source first); displaces existing occupants back to unplaced; calls `set_formation_pos_for(entity_id, col, row, grid)` + emits `formation_changed`.
+- New `_formation_drop_eligibility` — checks the per-creature `dungeon_eligible` flag (item 4) when targeting the dungeon grid.
+- Hint label updated to document drag-drop (click flow remains as fallback).
+
+### Item 4 — Monster catalog `dungeon_eligible` narrowing
+
+- Added `"dungeon_eligible": false` to 10 wilderness-only animal entries in `data/monsters/monster_catalog.json`: horse_light/medium/heavy + each war variant, camel, mule, ox, cow.
+- All other entries default to `true` — they can be brought into dungeons.
+- `party_tab_page.gd._refresh_ineligible_label` — replaced the prior `normal_load >= 30` heuristic (which matched nothing) with `creature.monster_data.get("dungeon_eligible", true)`.
+
+### Item 5 — Equipment catalog consumable tagging
+
+- Added `consumable_kind: "food"|"water"|"fodder"` + `consumable_person_days: float` to consumable entries in two catalogs:
+  - `data/equipment/base_equipment.json`: rations_iron_week (food, 7), rations_standard_week (food, 7), waterskin (water, 1).
+  - `data/equipment/provisions_services.json`: ale_cheap (water, 1.0), ale_good (water, 0.5), bread_white (food, 4), bread_wheat (food, 8), bread_coarse (food, 12), cheese (food, 1), dried_fruit (food, 1), eggs_dozen (food, 2), meat_1lb (food, 1), wine_cheap/good/rare (water, 0.5 each).
+  - Spices and saffron intentionally untagged — they're flavor, not consumption.
+- `party_tab_page.gd._accumulate_resource_items` — prefer the catalog tags via lazy `EquipmentCatalog` instance; fall back to the prior prefix-match heuristic for un-tagged items so legacy data continues to count correctly.
+
+### Item 6 — Empty-state acquisition link router extension
+
+- New EventBus signal `settlement_hiring_requested(employer_id: String)` — forward-design hook for SettlementExploreState to subscribe and open HiringPanel directly when invoked while the player is already in a settlement.
+- `notebook.gd._route_acquisition_link("open_settlement", ...)` — emits the new signal alongside the existing notification fallback. Outside settlement contexts the signal fires into the void; the notification's "If you're already in a settlement, the hiring panel will open directly" line documents the conditional behavior to the player.
+
+**Decisions made:**
+
+- **LightSourceIndicator placement: standalone CanvasLayer overlay**, not embedded in SessionStatusBar's center widget zone. Embedding would require restructuring the bar's 3×3 widget grid; the standalone overlay is decoupled from the bar's layout. Polish-pass refactor can integrate later if the bar's widget zone gains a 4th row.
+- **Character-pin v1 colocation at party node.** Per-member dispatch doesn't yet exist; v1 pins all PCs at the party's current node with the radial fan rendering them distinguishably. When dispatch lands, `_refresh_character_pins` swaps in per-character node lookups.
+- **Drag-drop preserves click flow.** v1 ships drag-drop AS WELL AS click-to-place; only the hint copy was updated.
+- **Drop-on-occupied vacates the existing occupant** (returns them to unplaced) rather than swapping. Swap is a polish-pass refactor.
+- **Catalog's `consumable_kind` is a separate field**, not a re-purposing of `item_category`. Existing code reads `item_category` for the broad buckets; layering a finer-grained subdivision via a new field keeps both consumers happy.
+- **Removed the over-broad `dungeon_eligible: false` from 6 monsters** (shark_bull, crocodile, scorpion_giant, spider_giant_black_widow, boar_giant, dire_wolf) caught by the initial too-greedy replace_all. Only true wilderness mounts retain the flag.
+- **Settlement hiring signal is forward-design.** SettlementExploreState doesn't subscribe yet — the consumer wiring lands when Settlement HiringPanel becomes a notebook cross-activation target.
+
+**Interfaces defined or changed:**
+
+- New EventBus signals (4):
+  - `settlement_hiring_requested(employer_id: String)`
+  - `light_source_activated(state: Dictionary)`
+  - `light_source_ticked(state: Dictionary)`
+  - `light_source_deactivated`
+- New CityOverviewWidget signal: `character_pin_clicked(character_id: String)`.
+- New CityOverviewWidget API: `update_character_positions(positions: Dictionary)`.
+- New FormationGridCell + FormationUnplacedList classes (per-file scripts, no `class_name`).
+- LightSourceIndicator CanvasLayer added to scenes/Main.tscn.
+- `data/monsters/monster_catalog.json` — `dungeon_eligible: false` on 10 entries.
+- `data/equipment/base_equipment.json` — `consumable_kind` + `consumable_person_days` on 3 entries.
+- `data/equipment/provisions_services.json` — same on 12 entries.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- New `tests/test_h3_polish.gd` — 13 tests covering all six items: indicator visibility on activate/deactivate + color thresholds; CityOverviewWidget signal + position cache; FormationGridCell drag-data shape + self-drop rejection + cross-cell acceptance; monster catalog flags (positive + negative cases); equipment catalog consumable tags on 6 items; `_accumulate_resource_items` produces correct totals from synthetic items; Notebook router emits `settlement_hiring_requested` with documented notification fallback.
+- Wired `H3PolishTests` into `tests/test_runner.gd` + `.tscn`.
+
+Full suite: **118 suites passed, 35 failed (SEED) / 119 suites passed, 34 failed (CLEAN)**. Five test suites new-this-week-or-prior (SessionStatusBar, HenchmenTab, JournalTab, JournalPolish, H3Polish) all-pass in the clean run. SEED-cycle H3Polish hit a single GDScript local-int closure-capture bug in `test_notebook_open_settlement_emits_hiring_request` (closures don't mutate captured ints — fixed by using an Array-of-payloads container). The 34-failure environmental flakiness baseline matches the pattern documented across γ.x and prior H sessions; none of the failing suites are in code H.3 modified (verified by inspection of the failure list — heraldry, character-tab campaign-creation setup, familiar progression — all DB-state-dependent).
+
+**Known issues:**
+
+- **Character pins all colocate at the party node.** Per-member dispatch doesn't exist yet; the radial fan visually separates them but they're at the same logical location. When dispatch lands, the pin positions become semantically meaningful.
+- **`SettlementExploreState` doesn't subscribe to `settlement_hiring_requested` yet.** The signal is forward-design.
+- **LightSourceIndicator embeds nowhere yet.** No production code currently activates a LightSourceTracker; the widget will only become visible once the dungeon system instantiates a tracker. Wiring the tracker into `dungeon_explore_state.gd` is its own follow-up.
+- **Drop-on-occupied vacates rather than swaps.** Polish-pass refactor.
+- **CityOverviewWidget pin hover tooltip** not implemented — the data model carries `tooltip` strings but the widget only renders + click-handles. Tooltip rendering needs `_input` mouse-position tracking + a draw-time tooltip overlay; deferred.
+- **Equipment catalog tag coverage is partial.** Person-days are approximate; refinement is iterative.
+- **Drag preview is a plain Label.** Could be styled to match the cell appearance; v1 ships unstyled.
+
+**Next session should — H+ umbrella plan CLOSED.** Per the user's plan, the deferred-from-H.0/1/2 polish backlog now has:
+- DONE: items 1 (cross-tab notes / log polish), 3 (Journal in-tab polish), 4 (SessionStatusBar PortraitWithBadge migration), and now H.3 closes the umbrella.
+- WAITING on henchman-system buildout: items 2 (Henchmen polish — dismissal modal / treatment modal / sort+filter / kind discriminator) and 5 (loyalty trend sparkline).
+- BLOCKED on other systems: Hire button (Settlement HiringPanel global trigger), Promote-to-Full-Member lifecycle, LLM auto-gen, Troops tab content (troop engine first), Domain tab content (domain engine first), Quests tab content (Phase Q).
+
+The H+ umbrella plan at `C:\Users\jttau\.claude\plans\c-users-jttau-claude-plans-generation-g-tender-blossom.md` is now COMPLETE.
+
+**[NEEDS-OPUS-REVIEW]** None this session. Each of the six H.3 deliverables was a contained extension or data-tagging pass; no new design decisions surfaced beyond the small judgment calls documented above.

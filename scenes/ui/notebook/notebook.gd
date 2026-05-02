@@ -307,14 +307,17 @@ func _on_acquisition_link(link_id: String, tab_id: String) -> void:
 func _route_acquisition_link(link_id: String, tab_id: String) -> Dictionary:
 	match link_id:
 		"open_settlement":
-			# Henchmen / Troops empty-states. Settlement Hiring sub-flow lands
-			# in a future phase; for now, point the player at the wilderness
-			# map so they can travel to a settlement themselves.
+			# H.3 (item 6) — emit the new request signal so an active
+			# SettlementExploreState can open the HiringPanel directly when
+			# the player is already in a settlement. Outside settlement
+			# contexts the signal fires into the void and the notification
+			# below is the player-visible behavior.
+			EventBus.settlement_hiring_requested.emit(GameState.active_party_id)
 			return {
 				"type":  "info",
 				"category": "system",
 				"title": "Find a Settlement",
-				"body":  "Travel to a settlement on the wilderness map and enter it to find an inn (henchmen) or market (troops).",
+				"body":  "Travel to a settlement on the wilderness map and enter it to find an inn (henchmen) or market (troops). If you're already in a settlement, the hiring panel will open directly.",
 			}
 		"open_stronghold_construction":
 			# Domain empty-state. The Stronghold Construction full surface is

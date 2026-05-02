@@ -151,6 +151,7 @@ extends Node
 @onready var _henchmen_tab_tests = $HenchmenTabTests
 @onready var _journal_tab_tests = $JournalTabTests
 @onready var _journal_polish_tests = $JournalPolishTests
+@onready var _h3_polish_tests = $H3PolishTests
 @onready var _familiar_proximity_tests = $FamiliarProximityTests
 @onready var _familiar_death_link_tests = $FamiliarDeathLinkTests
 @onready var _familiar_level_up_refresh_tests = $FamiliarLevelUpRefreshTests
@@ -158,6 +159,8 @@ extends Node
 @onready var _familiar_picker_tests = $FamiliarPickerTests
 @onready var _familiar_proficiency_picker_tests = $FamiliarProficiencyPickerTests
 @onready var _familiar_acquisition_panel_tests = $FamiliarAcquisitionPanelTests
+@onready var _level_up_familiar_picker_tests = $LevelUpFamiliarPickerTests
+@onready var _familiar_auto_proximity_tests = $FamiliarAutoProximityTests
 
 
 func _ready() -> void:
@@ -296,7 +299,10 @@ func run() -> void:
 			_familiar_picker_tests,
 			_familiar_proficiency_picker_tests,
 			_journal_polish_tests,
-			_familiar_acquisition_panel_tests]:
+			_familiar_acquisition_panel_tests,
+			_level_up_familiar_picker_tests,
+			_familiar_auto_proximity_tests,
+			_h3_polish_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

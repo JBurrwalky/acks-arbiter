@@ -1099,6 +1099,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1165,6 +1166,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1231,6 +1233,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 3, "modifier": 3, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1297,6 +1300,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1367,6 +1371,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1437,6 +1442,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 3, "modifier": 3, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1507,6 +1513,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1586,6 +1593,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1875,6 +1883,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1946,6 +1955,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 0 },
     "armor_class": 2,

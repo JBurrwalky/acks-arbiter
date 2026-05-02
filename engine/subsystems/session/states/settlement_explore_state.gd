@@ -156,6 +156,11 @@ func _create_settlement_hud() -> void:
 		_controller.get_party_node_id(),
 		discovered,
 	)
+	# H.3 (item 2) — character pins. Until per-member dispatch lands, every
+	# party PC pins at the party node. Click → cross-tab activate Character
+	# tab via the standard EventBus signal.
+	_refresh_character_pins()
+	_overview_widget.character_pin_clicked.connect(_on_character_pin_clicked)
 
 	# Create activity panel inside the settlement panel's activity area.
 	_activity_panel = SettlementActivityPanel.new()
@@ -469,6 +474,7 @@ func _on_arrival(data: Dictionary) -> void:
 	if _overview_widget != null:
 		_overview_widget.update_party_position(_controller.get_party_node_id())
 		_overview_widget.update_discovered_pois(discovered)
+		_refresh_character_pins()
 
 	# Show activity panel for the arrived-at POI.
 	if _activity_panel != null and not dest_poi.is_empty():
@@ -520,3 +526,37 @@ func get_location_key_for_character(_character_id: String) -> String:
 	if _settlement_id.is_empty():
 		return "unknown"
 	return "settlement:%s" % _settlement_id
+
+
+# H.3 (item 2) — character pin population on the CityOverviewWidget. v1
+# pins every party PC at the party node. When per-member dispatch lands,
+# this can be replaced with per-character node lookups.
+func _refresh_character_pins() -> void:
+	if _overview_widget == null or _controller == null:
+		return
+	var pid: String = _runner.get_party_id()
+	if pid.is_empty():
+		_overview_widget.update_character_positions({})
+		return
+	var party_node_id: int = _controller.get_party_node_id()
+	var rows: Array = CampaignRepository.list_party_characters(pid)
+	var positions: Dictionary = {}
+	for row in rows:
+		var cid: String = str(row.get("id", ""))
+		if cid.is_empty():
+			continue
+		var name: String = str(row.get("name", ""))
+		positions[cid] = {
+			"node_id": party_node_id,
+			"name":    name,
+			"tooltip": name,
+		}
+	_overview_widget.update_character_positions(positions)
+
+
+func _on_character_pin_clicked(character_id: String) -> void:
+	# Cross-tab activation per gdd-ui-architecture.md §7.2 — set the global
+	# active entity and route to the Character tab. The Notebook root
+	# handles the actual tab switch when notebook_active_entity_requested
+	# fires.
+	EventBus.notebook_active_entity_requested.emit(character_id)

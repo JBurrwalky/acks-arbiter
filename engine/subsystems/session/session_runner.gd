@@ -321,7 +321,14 @@ func load_session(campaign_id: String, party_id: String) -> void:
 		_party_data.character_data = []
 		var char_rows: Array = CampaignRepository.list_party_characters(party_id)
 		for row: Dictionary in char_rows:
-			_party_data.character_data.append(CharacterData.from_dict(row))
+			var loaded_character := CharacterData.from_dict(row)
+			_party_data.character_data.append(loaded_character)
+			# Stage 2.x — restore the Familiar proficiency proximity bonus on the
+			# live CharacterData. Modifiers + flags are runtime-only fields, so
+			# they're cleared on save/load round-trip; this rehydrates the
+			# bonus for any master with a living familiar in the DB. No-op for
+			# masters without a familiar.
+			FamiliarController.apply_proximity_for_master(loaded_character)
 		# Populate shared inventory
 		var inv_rows: Array = CampaignRepository.get_party_inventory(party_id)
 		_party_data.shared_inventory = []

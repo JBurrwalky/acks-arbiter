@@ -631,6 +631,11 @@ func _persist_familiar_if_bonded(character: CharacterData) -> void:
 	var fid: String = CampaignRepository.create_familiar(familiar_row)
 	if not fid.is_empty():
 		EventBus.familiar_bonded.emit(character.id, fid)
+		# Stage 2.x — default the master to in-range so the +1 saves bonus
+		# is active immediately on the live CharacterData. The character
+		# instance here is the one being added to the party at session
+		# start; later session loads re-apply via SessionRunner.load_session.
+		FamiliarController.apply_proximity_for_master(character)
 
 
 ## Banker's rounding (round half to even). Matches the implementation used by

@@ -151,6 +151,9 @@
 [ext_resource type="Script" path="res://tests/test_familiar_proficiency_picker.gd" id="144_familiar_proficiency_picker_tests"]
 [ext_resource type="Script" path="res://tests/test_journal_polish.gd" id="145_journal_polish_tests"]
 [ext_resource type="Script" path="res://tests/test_familiar_acquisition_panel.gd" id="146_familiar_acquisition_panel_tests"]
+[ext_resource type="Script" path="res://tests/test_level_up_familiar_picker.gd" id="147_level_up_familiar_picker_tests"]
+[ext_resource type="Script" path="res://tests/test_familiar_auto_proximity.gd" id="148_familiar_auto_proximity_tests"]
+[ext_resource type="Script" path="res://tests/test_h3_polish.gd" id="149_h3_polish_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -604,3 +607,12 @@ script = ExtResource("145_journal_polish_tests")
 
 [node name="FamiliarAcquisitionPanelTests" type="Node" parent="."]
 script = ExtResource("146_familiar_acquisition_panel_tests")
+
+[node name="LevelUpFamiliarPickerTests" type="Node" parent="."]
+script = ExtResource("147_level_up_familiar_picker_tests")
+
+[node name="FamiliarAutoProximityTests" type="Node" parent="."]
+script = ExtResource("148_familiar_auto_proximity_tests")
+
+[node name="H3PolishTests" type="Node" parent="."]
+script = ExtResource("149_h3_polish_tests")

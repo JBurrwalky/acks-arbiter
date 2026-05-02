@@ -58,6 +58,33 @@ const PARTY_PIN_RADIUS := 6.0
 const PARTY_PIN_COLOR := Color(1.0, 0.9, 0.1)
 const PARTY_PIN_OUTLINE := Color(0.2, 0.15, 0.05)
 
+# H.3 (item 2) — per-character pins. Render at the character's node_id with
+# a small radial offset by index so multiple characters at the same node
+# don't fully overlap. Click → emits `character_pin_clicked(character_id)`
+# which the host (SettlementExploreState) routes to
+# `EventBus.notebook_active_entity_requested`.
+const CHARACTER_PIN_RADIUS := 4.0
+const CHARACTER_PIN_OUTLINE := Color(0.10, 0.08, 0.04, 1.0)
+# Color cycle for per-character pins so multiple PCs at the same node render
+# distinguishably. A future polish pass can derive these from each PC's
+# portrait dominant color.
+const CHARACTER_PIN_COLORS := [
+	Color(0.30, 0.65, 0.95),  # blue
+	Color(0.85, 0.30, 0.60),  # magenta
+	Color(0.55, 0.85, 0.40),  # green
+	Color(0.95, 0.55, 0.30),  # orange
+	Color(0.75, 0.55, 0.95),  # purple
+	Color(0.95, 0.85, 0.30),  # gold
+]
+# How far each character pin is offset from the host node center, per index.
+const CHARACTER_PIN_RADIAL_OFFSET := 9.0
+
+
+## Emitted when the player clicks within the radius of a character pin. The
+## host (SettlementExploreState) consumes this and forwards to the global
+## active-entity flow.
+signal character_pin_clicked(character_id: String)
+
 const BG_COLOR := Color(0.15, 0.14, 0.12, 0.85)
 const BORDER_COLOR := Color(0.4, 0.35, 0.28)
 
@@ -72,10 +99,21 @@ var _discovered_poi_ids: Array[String] = []
 var _transform_scale: float = 1.0
 var _transform_offset: Vector2 = Vector2.ZERO
 
+## H.3 — per-character positions. character_id -> {node_id: int, name: String,
+## tooltip: String}. update_character_positions() rebuilds this; queued screen
+## positions cached for hit-testing (`_character_pin_screen_positions`).
+var _character_positions: Dictionary = {}
+var _character_pin_screen_positions: Dictionary = {}  # character_id -> Vector2
+
 
 func _ready() -> void:
 	custom_minimum_size = WIDGET_SIZE
 	size = WIDGET_SIZE
+	# H.3 — accept input so character-pin clicks fire. Default was IGNORE
+	# (the widget was view-only); MOUSE_FILTER_PASS lets clicks outside any
+	# pin pass through to whatever's behind so we don't accidentally swallow
+	# settlement panel input.
+	mouse_filter = Control.MOUSE_FILTER_PASS
 
 
 func setup(map_data: SettlementMapData, party_node_id: int, discovered_poi_ids: Array[String]) -> void:
@@ -93,6 +131,14 @@ func update_party_position(node_id: int) -> void:
 
 func update_discovered_pois(ids: Array[String]) -> void:
 	_discovered_poi_ids = ids
+	queue_redraw()
+
+
+## H.3 (item 2) — per-member pin data. [param positions] is a Dictionary of
+## character_id -> {node_id: int, name: String, tooltip: String}. Pass an
+## empty dict to clear all pins.
+func update_character_positions(positions: Dictionary) -> void:
+	_character_positions = positions.duplicate(true)
 	queue_redraw()
 
 
@@ -141,6 +187,7 @@ func _draw() -> void:
 	_draw_streets()
 	_draw_pois()
 	_draw_party_pin()
+	_draw_character_pins()
 
 
 func _draw_blocks() -> void:
@@ -236,3 +283,63 @@ func _draw_party_pin() -> void:
 	var pos := _to_widget(node.get("position", Vector2.ZERO))
 	draw_circle(pos, PARTY_PIN_RADIUS + 2, PARTY_PIN_OUTLINE)
 	draw_circle(pos, PARTY_PIN_RADIUS, PARTY_PIN_COLOR)
+
+
+# H.3 (item 2) — per-character pins. Renders one small dot per character at
+# their assigned node_id, with a small radial offset by index so multiple
+# characters at the same node render distinguishably. Hit-test cache
+# (_character_pin_screen_positions) is populated here for input handling.
+func _draw_character_pins() -> void:
+	_character_pin_screen_positions.clear()
+	if _map_data == null or _character_positions.is_empty():
+		return
+	# Group by node_id so we can apply a radial fan when multiple characters
+	# share a node.
+	var by_node: Dictionary = {}  # node_id -> Array[character_id]
+	for cid in _character_positions.keys():
+		var info: Dictionary = _character_positions[cid]
+		var node_id: int = int(info.get("node_id", -1))
+		if node_id < 0:
+			continue
+		if not by_node.has(node_id):
+			by_node[node_id] = []
+		by_node[node_id].append(cid)
+
+	var color_index: int = 0
+	for node_id in by_node.keys():
+		var node: Dictionary = _map_data.get_node_by_id(int(node_id))
+		if node.is_empty():
+			continue
+		var center := _to_widget(node.get("position", Vector2.ZERO))
+		var ids: Array = by_node[node_id]
+		# Single-occupant node: draw at center; multiple: arc around the
+		# host party pin so they're individually clickable.
+		for i in range(ids.size()):
+			var cid: String = str(ids[i])
+			var pos: Vector2 = center
+			if ids.size() > 1:
+				var theta: float = TAU * float(i) / float(ids.size())
+				pos = center + Vector2(cos(theta), sin(theta)) * CHARACTER_PIN_RADIAL_OFFSET
+			var color: Color = CHARACTER_PIN_COLORS[color_index % CHARACTER_PIN_COLORS.size()]
+			color_index += 1
+			draw_circle(pos, CHARACTER_PIN_RADIUS + 1, CHARACTER_PIN_OUTLINE)
+			draw_circle(pos, CHARACTER_PIN_RADIUS, color)
+			_character_pin_screen_positions[cid] = pos
+
+
+# H.3 (item 2) — character-pin click detection. Uses the screen-position cache
+# populated during _draw. Click outside any pin is a no-op (event passes
+# through per MOUSE_FILTER_PASS).
+func _gui_input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton):
+		return
+	var mb: InputEventMouseButton = event
+	if not mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
+		return
+	# Hit-test against the pin screen positions; first hit wins.
+	for cid in _character_pin_screen_positions.keys():
+		var pin_pos: Vector2 = _character_pin_screen_positions[cid]
+		if mb.position.distance_to(pin_pos) <= CHARACTER_PIN_RADIUS + 2:
+			character_pin_clicked.emit(str(cid))
+			accept_event()
+			return

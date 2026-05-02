@@ -124,6 +124,34 @@ func is_in_proximity(master_id: String) -> bool:
 	return _proximity_state.get(master_id, false)
 
 
+## Stage 2.x — caller-driven proximity refresh on a live CharacterData.
+##
+## Looks up the master's living familiar in the DB and applies the proximity
+## bonus to [param master] when found, or clears it when not. Idempotent.
+##
+## Call sites (caller-driven so this stays decoupled from session/cache state):
+##   1. SessionRunner.load_session() — after `_party_data.character_data` is
+##      populated, iterate party members and call this for each. Restores
+##      proximity bonuses across save/load round-trips.
+##   2. CharacterCreationScreen._persist_familiar_if_bonded() — after the new
+##      familiar row is written, default the master to in-range (familiars
+##      follow their masters).
+##   3. CSTabAdvancement._on_confirm_level_up() — after
+##      LevelUpEngine.finalize_interactive_level_up returns, refresh on the
+##      master's live CharacterData so a Stage 3d Case A replacement bonding
+##      activates the bonus immediately.
+##
+## Combat separation (familiar deliberately moves >30 ft from master) is still
+## handled via explicit `evaluate_proximity` / `set_proximity_state` calls
+## from combat code; this helper is for the "default to in-range when alive,
+## clear when dead" lifecycle baseline.
+func apply_proximity_for_master(master: CharacterData) -> void:
+	if master == null or master.id.is_empty():
+		return
+	var fam: Dictionary = CampaignRepository.get_living_familiar_for_master(master.id)
+	set_proximity_state(master, not fam.is_empty())
+
+
 ## Clear all proximity state for a master — used when their familiar dies or
 ## is replaced. Safe to call when nothing is set.
 func clear_proximity_for_master(master: CharacterData) -> void:

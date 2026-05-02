@@ -18,6 +18,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/notebook/notebook.tscn" id="22_notebook"]
 [ext_resource type="Script" path="res://scenes/ui/hud/initiative_overlay.gd" id="23_init_overlay"]
 [ext_resource type="Script" path="res://engine/subsystems/ui/hud_visibility_controller.gd" id="24_hud_visibility"]
+[ext_resource type="Script" path="res://scenes/ui/hud/light_source_indicator.gd" id="25_light_indicator"]
 
 [node name="Main" type="Node" unique_id=389479426]
 script = ExtResource("1_main_script")
@@ -61,6 +62,9 @@ script = ExtResource("23_init_overlay")
 
 [node name="HudVisibilityController" type="Node" parent="."]
 script = ExtResource("24_hud_visibility")
+
+[node name="LightSourceIndicator" type="CanvasLayer" parent="."]
+script = ExtResource("25_light_indicator")
 
 [node name="SessionRunner" type="Node" parent="."]
 script = ExtResource("12_session_runner")
