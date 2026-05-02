@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://character_sheet_overlay"]
-
-[ext_resource type="Script" path="res://scenes/ui/character_sheet/character_sheet_overlay.gd" id="1_cs_overlay"]
-
-[node name="CharacterSheetOverlay" type="CanvasLayer"]
-script = ExtResource("1_cs_overlay")

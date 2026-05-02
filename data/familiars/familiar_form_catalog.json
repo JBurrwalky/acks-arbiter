@@ -1,0 +1,244 @@
+[
+  {
+    "form_key": "bat",
+    "display_name": "Bat",
+    "source": "ACKS Core",
+    "is_project_authored": false,
+    "monster_id": "bat_ordinary",
+    "cosmetic_variants": ["Bat"],
+    "summary": "Tiny nocturnal flier; navigates by echolocation. Immune to blinding effects."
+  },
+
+  {
+    "form_key": "hawk",
+    "display_name": "Hawk",
+    "source": "ACKS Core",
+    "is_project_authored": false,
+    "monster_id": "hawk_ordinary",
+    "cosmetic_variants": ["Hawk", "Raven", "Eagle", "Falcon", "Owl"],
+    "summary": "Small bird of prey. Two talon attacks; doubles damage on a dive."
+  },
+
+  {
+    "form_key": "cat",
+    "display_name": "Cat",
+    "source": "Project (gdd-familiars.md)",
+    "is_project_authored": true,
+    "cosmetic_variants": ["Cat"],
+    "summary": "Small house cat. Silent stalker with low-light vision.",
+    "stat_block": {
+      "monster_types": ["animal"],
+      "sub_types": ["nocturnal_hunter"],
+      "alignment": "neutral",
+      "intelligence": "animal",
+      "size_category": "tiny",
+
+      "hit_dice": { "base": 0.5, "modifier": 0, "special_ability_stars": 0 },
+      "armor_class": 3,
+      "attack_routines": [
+        {
+          "routine_name": "melee",
+          "usage": "default",
+          "attacks": [
+            { "attack_type": "claw", "count": 2, "damage": "1d2", "to_hit_modifier": 0, "special_effect": null },
+            { "attack_type": "bite", "count": 1, "damage": "1",   "to_hit_modifier": 0, "special_effect": null }
+          ]
+        }
+      ],
+      "save_as": { "class": "NM", "level": 0 },
+      "morale": -1,
+      "xp": 5,
+
+      "movement": {
+        "land": { "exploration": 120, "combat": 40 }
+      },
+
+      "special_abilities": [
+        {
+          "ability_id": "silent_move",
+          "description": "Moves silently. +4 to surprise rolls when stalking.",
+          "hook_type": "flag",
+          "effect": { "flag": "silent_move", "surprise_bonus": 4 }
+        },
+        {
+          "ability_id": "low_light_vision",
+          "description": "Sees clearly in dim light at full range; in pitch dark sees 30'.",
+          "hook_type": "flag",
+          "effect": { "flag": "low_light_vision", "dark_range": 30 }
+        }
+      ]
+    }
+  },
+
+  {
+    "form_key": "rat",
+    "display_name": "Rat",
+    "source": "Project (gdd-familiars.md)",
+    "is_project_authored": true,
+    "cosmetic_variants": ["Rat"],
+    "summary": "Small rodent. Climbs walls and squeezes through narrow gaps.",
+    "stat_block": {
+      "monster_types": ["animal"],
+      "sub_types": ["vermin"],
+      "alignment": "neutral",
+      "intelligence": "animal",
+      "size_category": "tiny",
+
+      "hit_dice": { "base": 0, "modifier": 0, "special_ability_stars": 0, "printed": "1hp" },
+      "armor_class": 3,
+      "attack_routines": [
+        {
+          "routine_name": "melee",
+          "usage": "default",
+          "attacks": [
+            { "attack_type": "bite", "count": 1, "damage": "1", "to_hit_modifier": 0, "special_effect": null }
+          ]
+        }
+      ],
+      "save_as": { "class": "NM", "level": 0 },
+      "morale": -2,
+      "xp": 5,
+
+      "movement": {
+        "land":  { "exploration": 60, "combat": 20 },
+        "climb": { "exploration": 30, "combat": 10 }
+      },
+
+      "special_abilities": [
+        {
+          "ability_id": "squeeze",
+          "description": "Can squeeze through any opening at least 1 inch wide.",
+          "hook_type": "flag",
+          "effect": { "flag": "squeeze_through_narrow_gaps", "min_gap_inches": 1 }
+        }
+      ]
+    }
+  },
+
+
+
+  {
+    "form_key": "snake_small",
+    "display_name": "Snake (Small)",
+    "source": "Project (gdd-familiars.md)",
+    "is_project_authored": true,
+    "cosmetic_variants": ["Garter Snake", "Adder", "Viperling"],
+    "summary": "Small non-giant serpent. Hides easily in undergrowth.",
+    "stat_block": {
+      "monster_types": ["animal"],
+      "sub_types": ["reptile"],
+      "alignment": "neutral",
+      "intelligence": "animal",
+      "size_category": "tiny",
+
+      "hit_dice": { "base": 0.5, "modifier": 0, "special_ability_stars": 0 },
+      "armor_class": 3,
+      "attack_routines": [
+        {
+          "routine_name": "melee",
+          "usage": "default",
+          "attacks": [
+            { "attack_type": "bite", "count": 1, "damage": "1", "to_hit_modifier": 0, "special_effect": null }
+          ]
+        }
+      ],
+      "save_as": { "class": "NM", "level": 0 },
+      "morale": -2,
+      "xp": 5,
+
+      "movement": {
+        "land": { "exploration": 60, "combat": 20 }
+      },
+
+      "special_abilities": [
+        {
+          "ability_id": "hide_in_undergrowth",
+          "description": "+4 to surprise rolls when hidden in undergrowth, brush, or rocky cover.",
+          "hook_type": "flag",
+          "effect": { "flag": "undergrowth_concealment", "surprise_bonus": 4 }
+        }
+      ]
+    }
+  },
+
+  {
+    "form_key": "toad",
+    "display_name": "Toad",
+    "source": "Project (gdd-familiars.md)",
+    "is_project_authored": true,
+    "cosmetic_variants": ["Toad", "Frog"],
+    "summary": "Small amphibian. Burrows into soft ground; swims as well as it walks.",
+    "stat_block": {
+      "monster_types": ["animal"],
+      "sub_types": ["amphibian"],
+      "alignment": "neutral",
+      "intelligence": "animal",
+      "size_category": "tiny",
+
+      "hit_dice": { "base": 0, "modifier": 0, "special_ability_stars": 0, "printed": "1hp" },
+      "armor_class": 3,
+      "attack_routines": [],
+      "save_as": { "class": "NM", "level": 0 },
+      "morale": -2,
+      "xp": 5,
+
+      "movement": {
+        "land": { "exploration": 30, "combat": 10 },
+        "swim": { "exploration": 30, "combat": 10 }
+      },
+
+      "special_abilities": [
+        {
+          "ability_id": "burrow_soft_ground",
+          "description": "Burrows into soft ground (loam, mud, sand) in one round. Cannot burrow through stone or hard-packed soil.",
+          "hook_type": "flag",
+          "effect": { "flag": "burrow_soft_only", "rounds_to_burrow": 1 }
+        }
+      ]
+    }
+  },
+
+  {
+    "form_key": "weasel",
+    "display_name": "Weasel",
+    "source": "Project (gdd-familiars.md)",
+    "is_project_authored": true,
+    "cosmetic_variants": ["Weasel", "Ferret", "Stoat"],
+    "summary": "Small mustelid. Bites and clings, savaging the wound.",
+    "stat_block": {
+      "monster_types": ["animal"],
+      "sub_types": ["mustelid"],
+      "alignment": "neutral",
+      "intelligence": "animal",
+      "size_category": "tiny",
+
+      "hit_dice": { "base": 0.5, "modifier": 0, "special_ability_stars": 0 },
+      "armor_class": 3,
+      "attack_routines": [
+        {
+          "routine_name": "melee",
+          "usage": "default",
+          "attacks": [
+            { "attack_type": "bite", "count": 1, "damage": "1d2", "to_hit_modifier": 0, "special_effect": "cling_on_hit" }
+          ]
+        }
+      ],
+      "save_as": { "class": "NM", "level": 0 },
+      "morale": -1,
+      "xp": 5,
+
+      "movement": {
+        "land": { "exploration": 120, "combat": 40 }
+      },
+
+      "special_abilities": [
+        {
+          "ability_id": "cling_on_hit",
+          "description": "On a successful attack, the weasel clings to the target. Its future attacks against that target auto-hit until it is dislodged. The victim or an ally may attempt to dislodge it as a wrestling combat maneuver.",
+          "hook_type": "flag",
+          "effect": { "flag": "cling_on_hit", "dislodge_action": "wrestling_maneuver", "while_clinging": "auto_hit_subsequent_attacks" }
+        }
+      ]
+    }
+  }
+]

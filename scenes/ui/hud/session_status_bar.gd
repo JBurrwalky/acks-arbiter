@@ -1,95 +1,164 @@
 class_name SessionStatusBar
 extends CanvasLayer
 
-## Persistent bottom status bar showing party state at a glance.
+## SessionStatusBar — bottom HUD bar reorganized in γ.4 around the
+## three-zone architecture per gdd-ui-architecture.md §3.8:
 ##
-## Widgets: party indicator | location | time | day budget | adventure pool |
-##          party member chips | movement mode | light source
+##   [ portrait zone (left, fixed ~280px) ]
+##   [ 3×3 widget grid (center, EXPAND_FILL) ]
+##   [ log placeholder (right, fixed ~360px) — γ.5 fills with UnifiedLog ]
 ##
-## Hidden during MAIN_MENU and CHARACTER_CREATION states.
-## Visible during EXPLORATION, COMBAT, DOWNTIME, DOMAIN.
+## Top-edge drag handle adjusts bar height across four states (Hidden,
+## Minimal, Default, Expanded). Height persists per profile via
+## user://session_status_bar_height.txt.
+##
+## Hides while the notebook is open via EventBus.notebook_open_state_changed.
+## Hidden during MAIN_MENU and CHARACTER_CREATION.
 
-## Single-row layout. Bar height scales with viewport (capped) so the bar
-## holds a consistent ~10% of the screen at any window size — never dominates
-## a small editor window, never looks tiny on a 4K display.
-const BAR_HEIGHT_PCT := 0.10
-const BAR_HEIGHT_MIN := 60
-## Hard cap. Also the value other overlays read as `SessionStatusBar.BAR_HEIGHT`
-## for their own bottom-padding calculations — they leave room for the max
-## possible bar height; gap below them when the bar is shorter is acceptable.
-const BAR_HEIGHT_MAX := 76
-const BAR_HEIGHT := BAR_HEIGHT_MAX
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+## Bar height states per gdd-ui-architecture.md §3.8.
+const HEIGHT_HIDDEN := 8
+const HEIGHT_MINIMAL := 50
+const HEIGHT_DEFAULT := 200
+const HEIGHT_EXPANDED_PCT := 0.40  ## fraction of viewport height for max
+
+const HEIGHT_STATE_HIDDEN := "hidden"
+const HEIGHT_STATE_MINIMAL := "minimal"
+const HEIGHT_STATE_DEFAULT := "default"
+const HEIGHT_STATE_EXPANDED := "expanded"
+
+const HEIGHT_STATES := [
+	HEIGHT_STATE_HIDDEN,
+	HEIGHT_STATE_MINIMAL,
+	HEIGHT_STATE_DEFAULT,
+	HEIGHT_STATE_EXPANDED,
+]
+
+const HEIGHT_PERSIST_PATH := "user://session_status_bar_height.txt"
+
+const PORTRAIT_ZONE_WIDTH := 280
+const LOG_ZONE_WIDTH := 360
+const DRAG_HANDLE_HEIGHT := 6
+
+const PORTRAIT_SIZE := Vector2(56, 56)
+const PORTRAIT_SLOT_PADDING := 2
+
 const FONT_SIZE := 12
 const SMALL_FONT_SIZE := 10
-const PORTRAIT_SIZE := Vector2(56, 56)
-## Padding around each portrait inside its slot wrapper. Per-portrait slot is
-## PORTRAIT_SIZE + 2*PORTRAIT_SLOT_PADDING wide; clip_contents on the slot
-## guarantees the portrait can never visually overlap a neighbor.
-const PORTRAIT_SLOT_PADDING := 2
-## Viewport-width thresholds for graceful widget hiding. The bar prefers to
-## DROP widgets rather than wrap or visually compress, in priority order from
-## least essential (rations, travel speeds) to most essential (location).
-## All thresholds are upper bounds — the widget hides when viewport width is
-## strictly less than the value.
-const HIDE_SIDEPANELS_BELOW := 1300  # rations + travel speeds
-const HIDE_PAUSE_BELOW := 1100        # auto-pause reason label
-const HIDE_CLOCK_BELOW := 900         # clock speed controls
-const HIDE_TIME_BELOW := 720          # time label (very narrow only)
+
 const LABEL_COLOR := Color(0.85, 0.80, 0.70, 1.0)
 const DIM_COLOR := Color(0.55, 0.50, 0.42, 1.0)
 const BG_COLOR := Color(0.08, 0.06, 0.04, 0.95)
 const BORDER_COLOR := Color(0.46, 0.33, 0.19, 1.0)
 const SUBPANEL_BG := Color(0.13, 0.10, 0.07, 0.85)
+const HANDLE_COLOR := Color(0.46, 0.33, 0.19, 0.6)
 
-## Terrain categories shown in the travel-speed panel, in display order.
+## Back-compat: other surfaces import SessionStatusBar.BAR_HEIGHT for their
+## own bottom-padding calculations. γ.4 keeps this as the default-state
+## height; surfaces should refresh on EventBus.bar_height_changed when that
+## signal lands.
+const BAR_HEIGHT := HEIGHT_DEFAULT
+
 const TRAVEL_TERRAINS := ["clear", "woods", "hills", "desert",
 	"jungle", "swamp", "mountains"]
 
-## Short display labels for the travel-speed grid cells.
 const TERRAIN_LABELS := {
-	"clear": "Clear",
-	"woods": "Woods",
-	"hills": "Hills",
-	"desert": "Desert",
-	"jungle": "Jungle",
-	"swamp": "Swamp",
+	"clear": "Clear", "woods": "Woods", "hills": "Hills",
+	"desert": "Desert", "jungle": "Jungle", "swamp": "Swamp",
 	"mountains": "Mtns",
 }
 
+
+# ---------------------------------------------------------------------------
+# Fields — top-level layout
+# ---------------------------------------------------------------------------
+
 var _bar: PanelContainer = null
+var _drag_handle: Control = null
+var _height_state: String = HEIGHT_STATE_DEFAULT
+var _last_non_hidden_state: String = HEIGHT_STATE_DEFAULT
+var _drag_origin_y: float = 0.0
+var _drag_start_height: int = 0
+var _is_dragging: bool = false
+
+
+# ---------------------------------------------------------------------------
+# Fields — portrait zone (left)
+# ---------------------------------------------------------------------------
+
+var _portrait_zone: Control = null
+const PortraitWithBadgeScript := preload("res://scenes/ui/components/portrait_with_badge.gd")
+
+# Level-badge tinting palette per the prior γ.4 inline builder. Bright color
+# = off-focus level (draws the eye); muted = on-focus level (de-emphasised
+# because the camera is already there).
+const LEVEL_BADGE_COLOR := Color(1.0, 0.92, 0.45, 1.0)
+const LEVEL_BADGE_OUTLINE := Color(0, 0, 0, 1)
+const LEVEL_BADGE_TINT_OFF_FOCUS := Color(1.0, 0.95, 0.55, 1.0)
+const LEVEL_BADGE_TINT_ON_FOCUS := Color(0.55, 0.52, 0.40, 1.0)
+
+var _portraits_hbox: HBoxContainer = null
+## Texture cache keyed by portrait_id (not by character_id) — multiple
+## characters may share a portrait. Lifetime is the autoload session;
+## invalidated on EventBus.session_ended (γ.4 cleanup).
+static var _portrait_cache: Dictionary = {}
+var _party_levels: Dictionary = {}
+var _current_focus_level: int = -9999
+## Per-character widget cache. Replaces γ.4's `_portrait_badges` Label dict;
+## the PortraitWithBadge instance holds its own badge Label internally and
+## exposes `set_badge` / `set_badge_modulate` per the H.0 API extension.
+## Item 4 — H.2-deferred polish: SessionStatusBar PortraitWithBadge migration.
+var _portrait_widgets: Dictionary = {}
+
+
+# ---------------------------------------------------------------------------
+# Fields — center widget zone (3×3)
+# ---------------------------------------------------------------------------
+
+var _widget_zone: GridContainer = null
+
+# Row 1
 var _location_label: Label = null
 var _time_label: Label = null
 var _speed_controls: ClockSpeedControls = null
-var _pause_reason_label: Label = null
-var _camp_btn: Button = null
-var _portraits_hbox: HBoxContainer = null
+
+# Row 2
 var _rations_panel: PanelContainer = null
 var _rations_label: Label = null
 var _speeds_panel: PanelContainer = null
 var _speeds_base_label: Label = null
 var _speeds_grid: GridContainer = null
-## movement_cost_category -> Label for the miles/day value.
 var _speed_labels: Dictionary = {}
+var _encumbrance_label: Label = null
 
-## portrait_id -> Texture2D. Avoids decoding user-portrait PNGs every refresh.
-static var _portrait_cache: Dictionary = {}
+# Row 3
+var _camp_btn: Button = null
+var _notebook_btn: Button = null
+var _notification_label: Label = null
 
-## character_id -> level (int). Populated from party_member_levels_snapshot.
-## Used to show the per-portrait level badge. Empty dict ⇒ no badges shown.
-var _party_levels: Dictionary = {}
+# Pause-reason flash (re-uses existing color scheme).
+var _pause_reason_label: Label = null
 
-## Last known dungeon focus level from dungeon_focus_level_changed. Determines
-## whether each portrait's badge is muted (on focus) or bright (off focus).
-var _current_focus_level: int = -9999
 
-## character_id -> Label (the level badge node). Populated by
-## _refresh_party_portraits().
-var _portrait_badges: Dictionary = {}
+# ---------------------------------------------------------------------------
+# Fields — log zone (right)
+# ---------------------------------------------------------------------------
 
+var _log_zone: PanelContainer = null
+
+
+# ---------------------------------------------------------------------------
+# Lifecycle
+# ---------------------------------------------------------------------------
 
 func _ready() -> void:
 	layer = 80
+	_load_persisted_height()
 	_build_ui()
+	_apply_height_state()
 	_connect_signals()
 	_update_visibility()
 
@@ -101,161 +170,171 @@ func _ready() -> void:
 func _build_ui() -> void:
 	_bar = PanelContainer.new()
 	_bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	_bar.offset_top = -float(BAR_HEIGHT_MAX)
-	_bar.offset_bottom = 0
+	_bar.add_theme_stylebox_override("panel", _bar_style())
+	add_child(_bar)
 
+	var bar_vbox := VBoxContainer.new()
+	bar_vbox.add_theme_constant_override("separation", 0)
+	_bar.add_child(bar_vbox)
+
+	# Drag handle (top edge of bar).
+	_drag_handle = _build_drag_handle()
+	bar_vbox.add_child(_drag_handle)
+
+	# Three-zone HBox.
+	var zones := HBoxContainer.new()
+	zones.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	zones.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	zones.add_theme_constant_override("separation", 6)
+	bar_vbox.add_child(zones)
+
+	_portrait_zone = _build_portrait_zone()
+	zones.add_child(_portrait_zone)
+
+	_widget_zone = _build_widget_zone()
+	zones.add_child(_widget_zone)
+
+	_log_zone = _build_log_zone()
+	zones.add_child(_log_zone)
+
+
+func _bar_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = BG_COLOR
 	style.border_color = BORDER_COLOR
 	style.border_width_top = 1
-	style.content_margin_left = 12
-	style.content_margin_right = 12
-	style.content_margin_top = 4
+	style.content_margin_left = 6
+	style.content_margin_right = 6
+	style.content_margin_top = 2
 	style.content_margin_bottom = 4
-	_bar.add_theme_stylebox_override("panel", style)
-	add_child(_bar)
+	return style
 
-	# Three independently-anchored clusters in a single Control root. Each
-	# cluster is anchored to its viewport edge (left / center / right) and
-	# sized by its own contents — they cannot push or compress one another.
-	# Portraits stay centered on the viewport regardless of how heavy or light
-	# the side clusters are.
-	var content_root := Control.new()
-	content_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content_root.clip_contents = true
-	_bar.add_child(content_root)
 
-	# --- Left cluster (anchored to viewport left, grows right) ----------
-	var left_cluster := HBoxContainer.new()
-	left_cluster.add_theme_constant_override("separation", 12)
-	left_cluster.set_anchors_preset(Control.PRESET_LEFT_WIDE)
-	left_cluster.grow_horizontal = Control.GROW_DIRECTION_END
-	left_cluster.clip_contents = true
-	content_root.add_child(left_cluster)
+func _build_drag_handle() -> Control:
+	var handle := PanelContainer.new()
+	handle.custom_minimum_size = Vector2(0, DRAG_HANDLE_HEIGHT)
+	handle.mouse_default_cursor_shape = Control.CURSOR_VSIZE
+	handle.mouse_filter = Control.MOUSE_FILTER_STOP
+	var style := StyleBoxFlat.new()
+	style.bg_color = HANDLE_COLOR
+	style.corner_radius_top_left = 2
+	style.corner_radius_top_right = 2
+	handle.add_theme_stylebox_override("panel", style)
+	handle.gui_input.connect(_on_drag_handle_input)
+	return handle
 
-	_location_label = _make_label("--", LABEL_COLOR, FONT_SIZE)
-	_location_label.custom_minimum_size = Vector2(100, 0)
-	_location_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	left_cluster.add_child(_location_label)
 
-	left_cluster.add_child(_vsep())
+# ---------------------------------------------------------------------------
+# Portrait zone (left)
+# ---------------------------------------------------------------------------
 
-	_time_label = _make_label("Day 1", LABEL_COLOR, FONT_SIZE)
-	_time_label.custom_minimum_size = Vector2(220, 0)
-	_time_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	left_cluster.add_child(_time_label)
+func _build_portrait_zone() -> Control:
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(PORTRAIT_ZONE_WIDTH, 0)
+	panel.size_flags_horizontal = Control.SIZE_FILL
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", _subpanel_style())
+	panel.clip_contents = true
 
-	left_cluster.add_child(_vsep())
-
-	_speed_controls = ClockSpeedControls.new()
-	left_cluster.add_child(_speed_controls)
-
-	_pause_reason_label = _make_label("", DIM_COLOR, FONT_SIZE)
-	_pause_reason_label.custom_minimum_size = Vector2(0, 0)
-	_pause_reason_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	left_cluster.add_child(_pause_reason_label)
-
-	# --- Center cluster: party-member portrait strip --------------------
-	# CenterContainer fills the entire content area; its single child (the
-	# portraits HBox) is centered horizontally and vertically within. Because
-	# all three clusters are siblings of the same Control parent and Control
-	# doesn't enforce non-overlap, the portrait centering here is independent
-	# of how wide the side clusters render.
-	var portrait_anchor := CenterContainer.new()
-	portrait_anchor.set_anchors_preset(Control.PRESET_FULL_RECT)
-	portrait_anchor.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content_root.add_child(portrait_anchor)
-	# Render portraits above the side clusters so any visual collision (at
-	# very narrow widths between the threshold check ticks) keeps the
-	# portraits visible on top.
-	portrait_anchor.z_index = 1
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_child(scroll)
 
 	_portraits_hbox = HBoxContainer.new()
 	_portraits_hbox.add_theme_constant_override("separation", 4)
-	_portraits_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	_portraits_hbox.clip_contents = true
-	portrait_anchor.add_child(_portraits_hbox)
+	_portraits_hbox.alignment = BoxContainer.ALIGNMENT_BEGIN
+	scroll.add_child(_portraits_hbox)
+	return panel
 
-	# --- Right cluster (anchored to viewport right, grows left) ---------
-	var right_cluster := HBoxContainer.new()
-	right_cluster.add_theme_constant_override("separation", 12)
-	right_cluster.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
-	right_cluster.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	right_cluster.clip_contents = true
-	content_root.add_child(right_cluster)
 
+# ---------------------------------------------------------------------------
+# Widget zone (center 3×3)
+# ---------------------------------------------------------------------------
+
+func _build_widget_zone() -> GridContainer:
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 4)
+
+	# Row 1: Location · Time · Clock-speed controls.
+	_location_label = _make_label("--", LABEL_COLOR, FONT_SIZE)
+	_location_label.custom_minimum_size = Vector2(120, 0)
+	grid.add_child(_location_label)
+
+	_time_label = _make_label("Day 1", LABEL_COLOR, FONT_SIZE)
+	_time_label.custom_minimum_size = Vector2(220, 0)
+	grid.add_child(_time_label)
+
+	_speed_controls = ClockSpeedControls.new()
+	grid.add_child(_speed_controls)
+
+	# Row 2: Rations panel · Travel speeds panel · Encumbrance label.
 	_rations_panel = _build_rations_panel()
-	right_cluster.add_child(_rations_panel)
+	grid.add_child(_rations_panel)
 
 	_speeds_panel = _build_speeds_panel()
-	right_cluster.add_child(_speeds_panel)
+	grid.add_child(_speeds_panel)
 
+	_encumbrance_label = _make_label("Enc: --", DIM_COLOR, SMALL_FONT_SIZE)
+	_encumbrance_label.custom_minimum_size = Vector2(120, 0)
+	grid.add_child(_encumbrance_label)
+
+	# Row 3: Camp button · Notebook button · Notification surface.
 	_camp_btn = Button.new()
 	_camp_btn.text = "Camp"
 	_camp_btn.flat = true
 	_camp_btn.add_theme_font_size_override("font_size", FONT_SIZE)
 	_camp_btn.add_theme_color_override("font_color", LABEL_COLOR)
-	_camp_btn.custom_minimum_size = Vector2(50, 0)
+	_camp_btn.custom_minimum_size = Vector2(60, 0)
 	_camp_btn.pressed.connect(func(): EventBus.camp_requested.emit())
 	_camp_btn.visible = false
-	right_cluster.add_child(_camp_btn)
+	grid.add_child(_camp_btn)
 
-	# Apply the dynamic-height + narrow-viewport rules now and on every resize.
-	_apply_viewport_layout()
-	get_viewport().size_changed.connect(_apply_viewport_layout)
+	_notebook_btn = Button.new()
+	_notebook_btn.text = "Notebook"
+	_notebook_btn.flat = true
+	_notebook_btn.add_theme_font_size_override("font_size", FONT_SIZE)
+	_notebook_btn.add_theme_color_override("font_color", LABEL_COLOR)
+	_notebook_btn.custom_minimum_size = Vector2(80, 0)
+	_notebook_btn.pressed.connect(_on_notebook_btn_pressed)
+	grid.add_child(_notebook_btn)
+	_refresh_notebook_btn_tooltip()
 
+	# Notification surface holds the latest non-modal notification.
+	# Pause-reason text reuses this slot when scheduler pauses.
+	var notif_box := HBoxContainer.new()
+	notif_box.add_theme_constant_override("separation", 6)
+	_notification_label = _make_label("", LABEL_COLOR, SMALL_FONT_SIZE)
+	_notification_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	notif_box.add_child(_notification_label)
+	_pause_reason_label = _make_label("", DIM_COLOR, SMALL_FONT_SIZE)
+	_pause_reason_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	notif_box.add_child(_pause_reason_label)
+	grid.add_child(notif_box)
 
-## Resizes the bar to ~BAR_HEIGHT_PCT of viewport height (clamped to
-## [BAR_HEIGHT_MIN, BAR_HEIGHT_MAX]) and DROPS optional widgets in priority
-## order at narrow viewports so the centered portraits never compete for
-## horizontal space.
-func _apply_viewport_layout() -> void:
-	if _bar == null:
-		return
-	var vp_size: Vector2 = get_viewport().get_visible_rect().size
-	var h: int = clampi(int(vp_size.y * BAR_HEIGHT_PCT),
-		BAR_HEIGHT_MIN, BAR_HEIGHT_MAX)
-	_bar.offset_top = -float(h)
-
-	# Optional widgets: hide at narrow viewports. Side panels also have their
-	# wilderness-context visibility toggled via `_refresh_party_status` — for
-	# the panels we set the cached "narrow" flag and let `_refresh_party_status`
-	# combine it with the wilderness-context check.
-	var clock_visible: bool = vp_size.x >= HIDE_CLOCK_BELOW
-	var pause_visible: bool = vp_size.x >= HIDE_PAUSE_BELOW
-	var time_visible: bool = vp_size.x >= HIDE_TIME_BELOW
-	if _speed_controls != null:
-		_speed_controls.visible = clock_visible
-	if _pause_reason_label != null:
-		_pause_reason_label.visible = pause_visible
-	if _time_label != null:
-		_time_label.visible = time_visible
-
-	# Side panels: combine narrow gate + wilderness-context gate by always
-	# routing through `_refresh_party_status`.
-	_refresh_party_status(GameState.active_party_id)
+	return grid
 
 
 func _build_rations_panel() -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _subpanel_style())
 	panel.visible = false
-
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 0)
 	panel.add_child(vbox)
-
 	var header := _make_label("Rations", DIM_COLOR, SMALL_FONT_SIZE)
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(header)
-
 	_rations_label = _make_label("--", LABEL_COLOR, FONT_SIZE)
 	_rations_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_rations_label.custom_minimum_size = Vector2(90, 0)
+	_rations_label.custom_minimum_size = Vector2(110, 0)
 	vbox.add_child(_rations_label)
-
 	return panel
 
 
@@ -263,22 +342,17 @@ func _build_speeds_panel() -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _subpanel_style())
 	panel.visible = false
-
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 0)
 	panel.add_child(vbox)
-
 	_speeds_base_label = _make_label("Base: --", LABEL_COLOR, SMALL_FONT_SIZE)
 	_speeds_base_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(_speeds_base_label)
-
-	# 7 terrains in a 4-col grid → 2 rows (4 + 3).
 	_speeds_grid = GridContainer.new()
 	_speeds_grid.columns = 4
 	_speeds_grid.add_theme_constant_override("h_separation", 8)
 	_speeds_grid.add_theme_constant_override("v_separation", 0)
 	vbox.add_child(_speeds_grid)
-
 	_speed_labels.clear()
 	for terrain in TRAVEL_TERRAINS:
 		var cell := _make_label("%s: --" % TERRAIN_LABELS[terrain],
@@ -286,9 +360,137 @@ func _build_speeds_panel() -> PanelContainer:
 		cell.custom_minimum_size = Vector2(72, 0)
 		_speeds_grid.add_child(cell)
 		_speed_labels[terrain] = cell
-
 	return panel
 
+
+# ---------------------------------------------------------------------------
+# Log zone (right) — γ.5 embedded UnifiedLog
+# ---------------------------------------------------------------------------
+
+const UnifiedLogScript := preload("res://scenes/ui/hud/unified_log/unified_log.gd")
+
+func _build_log_zone() -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(LOG_ZONE_WIDTH, 0)
+	panel.size_flags_horizontal = Control.SIZE_FILL
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", _subpanel_style())
+	var unified_log = UnifiedLogScript.new()
+	panel.add_child(unified_log)
+	return panel
+
+
+# ---------------------------------------------------------------------------
+# Drag handle + height states
+# ---------------------------------------------------------------------------
+
+func _on_drag_handle_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.button_index != MOUSE_BUTTON_LEFT:
+			return
+		if mb.pressed:
+			_is_dragging = true
+			_drag_origin_y = mb.global_position.y
+			_drag_start_height = _bar_height_for_state(_height_state)
+		else:
+			_is_dragging = false
+			_snap_height_state()
+	elif event is InputEventMouseMotion and _is_dragging:
+		var mm: InputEventMouseMotion = event
+		var delta_y: float = _drag_origin_y - mm.global_position.y  # up = grow
+		var new_height: int = _drag_start_height + int(delta_y)
+		_apply_height_pixels(new_height)
+
+
+func _bar_height_for_state(state: String) -> int:
+	match state:
+		HEIGHT_STATE_HIDDEN:
+			return HEIGHT_HIDDEN
+		HEIGHT_STATE_MINIMAL:
+			return HEIGHT_MINIMAL
+		HEIGHT_STATE_DEFAULT:
+			return HEIGHT_DEFAULT
+		HEIGHT_STATE_EXPANDED:
+			return _expanded_height_pixels()
+	return HEIGHT_DEFAULT
+
+
+func _expanded_height_pixels() -> int:
+	var vp_h: float = get_viewport().get_visible_rect().size.y
+	return int(vp_h * HEIGHT_EXPANDED_PCT)
+
+
+func _apply_height_state() -> void:
+	if _bar == null:
+		return
+	var h: int = _bar_height_for_state(_height_state)
+	_apply_height_pixels(h)
+
+
+func _apply_height_pixels(pixels: int) -> void:
+	if _bar == null:
+		return
+	var clamped: int = clampi(pixels, HEIGHT_HIDDEN, _expanded_height_pixels())
+	_bar.offset_top = -float(clamped)
+	_bar.offset_bottom = 0
+
+
+## Snaps the current pixel height to the nearest discrete height state and
+## persists it. Called when the player releases the drag handle.
+func _snap_height_state() -> void:
+	var current_h: int = -int(_bar.offset_top)
+	var states_with_pixels: Array = [
+		[HEIGHT_STATE_HIDDEN, HEIGHT_HIDDEN],
+		[HEIGHT_STATE_MINIMAL, HEIGHT_MINIMAL],
+		[HEIGHT_STATE_DEFAULT, HEIGHT_DEFAULT],
+		[HEIGHT_STATE_EXPANDED, _expanded_height_pixels()],
+	]
+	var best_state: String = HEIGHT_STATE_DEFAULT
+	var best_dist: int = 999999
+	for entry in states_with_pixels:
+		var d: int = absi(current_h - int(entry[1]))
+		if d < best_dist:
+			best_dist = d
+			best_state = entry[0]
+	_set_height_state(best_state)
+
+
+func _set_height_state(state: String) -> void:
+	if not HEIGHT_STATES.has(state):
+		state = HEIGHT_STATE_DEFAULT
+	_height_state = state
+	if state != HEIGHT_STATE_HIDDEN:
+		_last_non_hidden_state = state
+	_apply_height_state()
+	_persist_height()
+
+
+func _load_persisted_height() -> void:
+	if not FileAccess.file_exists(HEIGHT_PERSIST_PATH):
+		return
+	var f := FileAccess.open(HEIGHT_PERSIST_PATH, FileAccess.READ)
+	if f == null:
+		return
+	var raw := f.get_as_text().strip_edges()
+	f.close()
+	if HEIGHT_STATES.has(raw):
+		_height_state = raw
+		if raw != HEIGHT_STATE_HIDDEN:
+			_last_non_hidden_state = raw
+
+
+func _persist_height() -> void:
+	var f := FileAccess.open(HEIGHT_PERSIST_PATH, FileAccess.WRITE)
+	if f == null:
+		return
+	f.store_string(_height_state)
+	f.close()
+
+
+# ---------------------------------------------------------------------------
+# Style helpers
+# ---------------------------------------------------------------------------
 
 func _subpanel_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -318,13 +520,6 @@ func _make_label(text: String, color: Color, size: int) -> Label:
 	return label
 
 
-func _vsep() -> VSeparator:
-	var sep := VSeparator.new()
-	sep.add_theme_constant_override("separation", 1)
-	sep.add_theme_color_override("separator", Color(0.35, 0.30, 0.22, 0.5))
-	return sep
-
-
 # ---------------------------------------------------------------------------
 # Signal wiring
 # ---------------------------------------------------------------------------
@@ -339,23 +534,68 @@ func _connect_signals() -> void:
 	EventBus.scheduler_paused.connect(_on_scheduler_paused)
 	EventBus.scheduler_resumed.connect(_on_scheduler_resumed)
 	EventBus.active_party_changed.connect(_on_active_party_changed)
-	# `start_session` assigns active_party_id directly without emitting
-	# active_party_changed, so we also refresh on session_started and when
-	# members join/leave the active party.
 	GameState.session_started.connect(_on_session_started)
 	EventBus.party_member_joined.connect(_on_party_membership_changed)
 	EventBus.party_member_left.connect(_on_party_membership_changed)
-	# Rations / speeds refresh triggers.
 	Timekeeping.day_changed.connect(_on_day_changed)
 	EventBus.inventory_updated.connect(_on_inventory_changed)
 	EventBus.creature_added.connect(_on_party_roster_changed)
 	EventBus.creature_removed.connect(_on_party_roster_changed)
 	EventBus.vehicle_changed.connect(_on_party_roster_changed)
-	# Session 8 level badge wiring.
 	EventBus.party_member_levels_snapshot.connect(_on_party_member_levels_snapshot)
 	EventBus.dungeon_focus_level_changed.connect(_on_dungeon_focus_level_changed)
+	GameState.session_ended.connect(_on_session_ended)
+	# γ.4 — hide while notebook is open.
+	EventBus.notebook_open_state_changed.connect(_on_notebook_open_state_changed)
+	# γ.4 — track pc-input state to disable the notebook button during enemy
+	# resolution. Combat surfaces emit when CombatUIController.active_instance
+	# transitions; we re-evaluate cheaply on every state-change tick.
+	EventBus.notification_requested.connect(_on_notification_requested)
 	_refresh_party_portraits(GameState.active_party_id)
 	_refresh_party_status(GameState.active_party_id)
+	_refresh_notebook_btn_state()
+
+
+# ---------------------------------------------------------------------------
+# Notebook visibility + combat-blocked button state (γ.4)
+# ---------------------------------------------------------------------------
+
+func _on_notebook_open_state_changed(is_open: bool) -> void:
+	if _bar == null:
+		return
+	# Hide the bar while the notebook is open. The drag-handle and height
+	# state are preserved; the bar reappears at its prior height on close.
+	_bar.visible = (not is_open) and _state_allows_visibility()
+
+
+func _refresh_notebook_btn_state() -> void:
+	if _notebook_btn == null:
+		return
+	var allowed: bool = CombatUIController.notebook_open_allowed()
+	_notebook_btn.disabled = not allowed
+	if allowed:
+		_refresh_notebook_btn_tooltip()
+	else:
+		_notebook_btn.tooltip_text = "Notebook unavailable during enemy resolution."
+
+
+func _on_notification_requested(payload: Dictionary) -> void:
+	# Show the latest non-modal notification body in the notification slot.
+	var body: String = str(payload.get("body", ""))
+	if _notification_label != null:
+		_notification_label.text = body
+
+
+# ---------------------------------------------------------------------------
+# Lifecycle handlers (ported from pre-γ.4)
+# ---------------------------------------------------------------------------
+
+func _on_session_ended() -> void:
+	_portrait_cache.clear()
+	# Item 4 — flush widget cache too. The portraits HBox is rebuilt on the
+	# next _refresh_party_portraits, but the dict reference can dangle past
+	# session boundaries if a widget queue_free races the next refresh.
+	_portrait_widgets.clear()
 
 
 func _on_active_party_changed(_prev_id: String, new_id: String) -> void:
@@ -379,8 +619,6 @@ func _on_day_changed(_d: int, _m: int, _y: int) -> void:
 
 
 func _on_inventory_changed(character_id: String) -> void:
-	# Encumbrance change could shift travel speed. Refresh unconditionally —
-	# cheap enough vs. resolving character_id → party_id.
 	if not character_id.is_empty():
 		_refresh_party_status(GameState.active_party_id)
 
@@ -390,64 +628,60 @@ func _on_party_roster_changed(party_id: String, _other_id: String) -> void:
 		_refresh_party_status(party_id)
 
 
-## EventBus.party_member_levels_snapshot handler — the dungeon renderer emits
-## this whenever party positions refresh. An empty snapshot clears badges.
 func _on_party_member_levels_snapshot(levels: Dictionary) -> void:
 	_party_levels = levels.duplicate()
 	_apply_level_badges()
 
 
-## EventBus.dungeon_focus_level_changed handler — restyles badges so the
-## member on the focus level is muted (they're already "here").
 func _on_dungeon_focus_level_changed(level: int) -> void:
 	_current_focus_level = level
 	_apply_level_badges()
 
 
-## Portrait button handler — opens the character sheet AND emits the legacy
-## party_portrait_clicked signal so the dungeon renderer can also focus the
-## entity's level (existing Session 8 behavior).
+# ---------------------------------------------------------------------------
+# Portrait click → cross-tab activation
+# ---------------------------------------------------------------------------
+
 func _on_portrait_pressed(character_id: String) -> void:
 	if character_id.is_empty():
 		return
-	EventBus.character_sheet_requested.emit(character_id)
+	EventBus.notebook_active_entity_requested.emit(character_id)
 	EventBus.party_portrait_clicked.emit(character_id)
 
 
-## Applies level text + visibility + muted/bright tint to all portrait badges
-## based on the current _party_levels snapshot and _current_focus_level.
+## Apply level badges per the cached `_party_levels` snapshot. Each portrait
+## widget either shows "L<level>" or hides the badge when no level data is
+## available. On-focus levels (i.e., the dungeon level the camera is on)
+## render the badge with a muted modulate so they don't draw the eye away
+## from the active level. Item 4 — uses the H.0 PortraitWithBadge API.
 func _apply_level_badges() -> void:
-	for character_id in _portrait_badges.keys():
-		var badge: Label = _portrait_badges[character_id]
-		if badge == null:
+	for character_id in _portrait_widgets.keys():
+		var widget: PortraitWithBadge = _portrait_widgets[character_id]
+		if widget == null or not is_instance_valid(widget):
 			continue
 		if not _party_levels.has(character_id):
-			badge.visible = false
+			widget.clear_badge()
 			continue
 		var lvl: int = int(_party_levels[character_id])
-		badge.visible = true
-		badge.text = "L%d" % lvl
+		widget.set_badge("L%d" % lvl, LEVEL_BADGE_COLOR)
 		var on_focus := (lvl == _current_focus_level)
-		badge.modulate = Color(0.55, 0.52, 0.40, 1.0) if on_focus else Color(1.0, 0.95, 0.55, 1.0)
+		widget.set_badge_modulate(LEVEL_BADGE_TINT_ON_FOCUS if on_focus
+			else LEVEL_BADGE_TINT_OFF_FOCUS)
 
 
-## Rebuilds the party-member portrait strip. Silently hides the strip if the
-## party has no members or the party id is empty (e.g. pre-session).
 func _refresh_party_portraits(party_id: String) -> void:
 	if _portraits_hbox == null:
 		return
 	for child in _portraits_hbox.get_children():
 		child.queue_free()
-	_portrait_badges.clear()
+	_portrait_widgets.clear()
 	if party_id.is_empty():
 		_portraits_hbox.visible = false
 		return
-
 	var rows: Array = CampaignRepository.list_party_characters(party_id)
 	if rows.is_empty():
 		_portraits_hbox.visible = false
 		return
-
 	_portraits_hbox.visible = true
 	for row in rows:
 		var character_id: String = str(row.get("id", ""))
@@ -455,88 +689,28 @@ func _refresh_party_portraits(party_id: String) -> void:
 		var texture: Texture2D = _resolve_portrait(portrait_id)
 		var display_name: String = str(row.get("name", ""))
 
-		# Slot wrapper: fixed-size PanelContainer that clips its contents so a
-		# portrait can never visually overlap a neighbor regardless of how
-		# tightly the bar gets squeezed.
-		var slot := PanelContainer.new()
-		var slot_size := Vector2(
-			PORTRAIT_SIZE.x + PORTRAIT_SLOT_PADDING * 2,
-			PORTRAIT_SIZE.y + PORTRAIT_SLOT_PADDING * 2)
-		slot.custom_minimum_size = slot_size
-		slot.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		slot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		slot.clip_contents = true
-		slot.add_theme_stylebox_override("panel", _portrait_slot_style())
-		slot.set_meta("character_id", character_id)
-
-		var btn := Button.new()
-		btn.flat = true
-		btn.focus_mode = Control.FOCUS_NONE
-		btn.custom_minimum_size = PORTRAIT_SIZE
-		btn.tooltip_text = display_name
+		# Item 4 — replaces the prior ~70-line inline builder
+		# (PanelContainer + Button + TextureRect + Label) with the shared
+		# component. PortraitWithBadge owns the slot chrome (border, corner
+		# radius, padding) — the loose constants here only configure the
+		# inner portrait area.
+		var widget := PortraitWithBadgeScript.new()
+		widget.set_portrait_size(PORTRAIT_SIZE)
+		widget.set_texture(texture)
+		widget.set_tooltip(display_name)
+		widget.set_entity_id(character_id)
+		# Forward the component's portrait_clicked into the existing
+		# `_on_portrait_pressed` flow so cross-tab activation +
+		# party_portrait_clicked emission continue unchanged.
+		widget.portrait_clicked.connect(_on_portrait_pressed)
+		widget.set_meta("character_id", character_id)
+		_portraits_hbox.add_child(widget)
 		if not character_id.is_empty():
-			btn.pressed.connect(_on_portrait_pressed.bind(character_id))
-		btn.set_meta("character_id", character_id)
-
-		var tr := TextureRect.new()
-		tr.custom_minimum_size = PORTRAIT_SIZE
-		tr.size = PORTRAIT_SIZE
-		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		tr.texture = texture
-		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		tr.set_anchors_preset(Control.PRESET_FULL_RECT)
-		btn.add_child(tr)
-
-		var badge := Label.new()
-		badge.name = "LevelBadge"
-		badge.text = ""
-		badge.visible = false
-		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		badge.add_theme_color_override("font_color", Color(1.0, 0.92, 0.45, 1.0))
-		badge.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-		badge.add_theme_constant_override("outline_size", 3)
-		badge.add_theme_font_size_override("font_size", SMALL_FONT_SIZE)
-		badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-		badge.offset_left = -24
-		badge.offset_right = -2
-		badge.offset_top = 1
-		badge.offset_bottom = 14
-		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		btn.add_child(badge)
-
-		slot.add_child(btn)
-		_portraits_hbox.add_child(slot)
-		if not character_id.is_empty():
-			_portrait_badges[character_id] = badge
+			_portrait_widgets[character_id] = widget
 
 	_apply_level_badges()
 
 
-## Subtle border around each portrait slot — makes the per-character zones
-## visually distinct so two portraits never read as merged at a glance.
-func _portrait_slot_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0, 0, 0, 0)  # transparent — let the bar BG show through
-	style.border_color = Color(0.46, 0.33, 0.19, 0.55)
-	style.border_width_left = 1
-	style.border_width_right = 1
-	style.border_width_top = 1
-	style.border_width_bottom = 1
-	style.corner_radius_top_left = 3
-	style.corner_radius_top_right = 3
-	style.corner_radius_bottom_left = 3
-	style.corner_radius_bottom_right = 3
-	style.content_margin_left = PORTRAIT_SLOT_PADDING
-	style.content_margin_right = PORTRAIT_SLOT_PADDING
-	style.content_margin_top = PORTRAIT_SLOT_PADDING
-	style.content_margin_bottom = PORTRAIT_SLOT_PADDING
-	return style
-
-
-## Resolves a portrait texture by id. Shipped portraits live under
-## res://assets/portraits; user-added portraits under user://portraits.
-## Returns null if neither file exists — the TextureRect simply renders blank.
 func _resolve_portrait(portrait_id: String) -> Texture2D:
 	if portrait_id.is_empty():
 		return null
@@ -557,28 +731,30 @@ func _resolve_portrait(portrait_id: String) -> Texture2D:
 	return texture
 
 
+# ---------------------------------------------------------------------------
+# State / context handlers
+# ---------------------------------------------------------------------------
+
 func _on_state_changed(_from: int, _to: int) -> void:
 	_update_visibility()
 	_update_wilderness_buttons()
-	# Covers returning to EXPLORATION from dungeon/combat where the active
-	# party may have changed while we were hidden.
 	_refresh_party_portraits(GameState.active_party_id)
 	_refresh_party_status(GameState.active_party_id)
+	_refresh_notebook_btn_state()
 
 
 func _on_exploration_context_changed(_context: int) -> void:
 	_update_wilderness_buttons()
 	_refresh_party_status(GameState.active_party_id)
-	# Clear dungeon level badges when leaving dungeon context.
 	if _context != GameState.ExplorationContext.DUNGEON:
 		_party_levels.clear()
 		_current_focus_level = -9999
 		_apply_level_badges()
 
 
-func _update_visibility() -> void:
+func _state_allows_visibility() -> bool:
 	var state: int = GameState.current_state
-	_bar.visible = state in [
+	return state in [
 		GameState.State.EXPLORATION,
 		GameState.State.COMBAT,
 		GameState.State.DOWNTIME,
@@ -587,14 +763,19 @@ func _update_visibility() -> void:
 	]
 
 
+func _update_visibility() -> void:
+	if _bar == null:
+		return
+	_bar.visible = _state_allows_visibility()
+
+
 func _update_wilderness_buttons() -> void:
 	var show_buttons: bool = (
 		GameState.current_state == GameState.State.EXPLORATION
 		and GameState.exploration_context == GameState.ExplorationContext.WILDERNESS
 	)
-	_camp_btn.visible = show_buttons
-	# Rations/speeds panel visibility is managed by `_refresh_party_status`,
-	# which runs right after this in every caller that cares.
+	if _camp_btn != null:
+		_camp_btn.visible = show_buttons
 
 
 func _on_hex_entered(hex_id: String) -> void:
@@ -622,7 +803,7 @@ func _update_time_display() -> void:
 	var day: int = Timekeeping.get_total_days() + 1
 	var hour: int = date["hour"]
 	var minute: int = date["minute"]
-	var second: int = date["round"] * 10  # each round = 10 seconds
+	var second: int = date["round"] * 10
 	var time_of_day := "Night"
 	if hour >= 6 and hour < 12:
 		time_of_day = "Morning"
@@ -636,9 +817,7 @@ func _update_time_display() -> void:
 func _on_scheduler_paused(reason: String) -> void:
 	if _pause_reason_label != null:
 		_pause_reason_label.text = reason
-		# Flash the time label to draw attention.
 		_time_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4, 1.0))
-		# Create a tween to fade back to normal after 2 seconds.
 		var tween := create_tween()
 		tween.tween_property(_time_label, "theme_override_colors/font_color",
 			LABEL_COLOR, 1.0).set_delay(1.0)
@@ -653,31 +832,25 @@ func _on_scheduler_resumed() -> void:
 # Rations / travel speed sub-panels
 # ---------------------------------------------------------------------------
 
-## Refreshes the rations and travel-speeds panels for the given party. Hides
-## the panels when there is no party loaded, the state isn't wilderness, OR
-## the viewport is too narrow to fit them alongside the centered portraits.
 func _refresh_party_status(party_id: String) -> void:
 	if _rations_panel == null or _speeds_panel == null:
 		return
-	var vp_width: float = get_viewport().get_visible_rect().size.x
-	var fits: bool = vp_width >= HIDE_SIDEPANELS_BELOW
 	var show: bool = (
-		fits
-		and GameState.current_state == GameState.State.EXPLORATION
+		GameState.current_state == GameState.State.EXPLORATION
 		and GameState.exploration_context == GameState.ExplorationContext.WILDERNESS
 	)
 	if party_id.is_empty() or not show:
 		_rations_panel.visible = false
 		_speeds_panel.visible = false
+		_encumbrance_label.text = "Enc: --"
 		return
 
 	var party_data: PartyData = CampaignRepository.load_party_data(party_id)
 	if party_data == null:
 		_rations_panel.visible = false
 		_speeds_panel.visible = false
+		_encumbrance_label.text = "Enc: --"
 		return
-	# `load_party_data` returns a bare PartyData; populate characters the way
-	# SessionRunner does so TravelSpeedCalculator sees the real roster.
 	party_data.character_data = []
 	for char_row: Dictionary in CampaignRepository.list_party_characters(party_id):
 		party_data.character_data.append(CharacterData.from_dict(char_row))
@@ -686,8 +859,7 @@ func _refresh_party_status(party_id: String) -> void:
 	var party_size: int = party_data.character_data.size()
 	var consumption: int = CampManager.compute_ration_consumption(party_size)
 	var days_left: int = party_data.rations_days_remaining
-	_rations_label.text = "%d days\n−%d/day" % [days_left, consumption]
-	# Color-warn when rations are nearly exhausted.
+	_rations_label.text = "%d days  −%d/day" % [days_left, consumption]
 	var ration_color: Color = LABEL_COLOR
 	if consumption > 0:
 		if days_left <= 1:
@@ -707,13 +879,58 @@ func _refresh_party_status(party_id: String) -> void:
 		label.text = "%s: %d mi" % [TERRAIN_LABELS[terrain], int(mpd)]
 	_speeds_panel.visible = true
 
+	# Encumbrance: report the slowest member (mirrors the Party tab header).
+	var slowest: int = party_data.get_slowest_movement()
+	_encumbrance_label.text = "Slowest: %d'/turn" % slowest
 
-## Derives the party's base exploration speed (ft/turn) by asking the travel
-## calculator with a "clear" terrain — `base_exploration_speed` is unaffected
-## by terrain multiplier, so any land terrain returns the same figure.
+
 func _compute_base_exploration_speed(party_data: PartyData) -> int:
 	var result: Dictionary = TravelSpeedCalculator.calculate_party_speed(
 		party_data, "clear", false)
 	return int(result.get("base_exploration_speed", 0))
 
 
+# ---------------------------------------------------------------------------
+# Open Notebook button
+# ---------------------------------------------------------------------------
+
+func _on_notebook_btn_pressed() -> void:
+	var pid: String = GameState.active_party_id
+	var tab_id: String = NotebookState.DEFAULT_TAB
+	if not pid.is_empty():
+		tab_id = NotebookState.get_active_tab(pid)
+	EventBus.notebook_open_requested.emit(tab_id)
+
+
+func _refresh_notebook_btn_tooltip() -> void:
+	if _notebook_btn == null:
+		return
+	var entries := [
+		["notebook_toggle_character", "Character"],
+		["notebook_toggle_inventory", "Inventory"],
+		["notebook_toggle_party", "Party"],
+		["notebook_toggle_henchmen", "Henchmen"],
+		["notebook_toggle_troops", "Troops"],
+		["notebook_toggle_domain", "Domain"],
+		["notebook_toggle_journal", "Journal"],
+		["notebook_toggle_quests", "Quests"],
+	]
+	var lines: Array[String] = ["Open Management Notebook"]
+	for entry in entries:
+		var key_label: String = _format_first_key_for_action(entry[0])
+		if key_label.is_empty():
+			continue
+		lines.append("  %s — %s" % [key_label, entry[1]])
+	_notebook_btn.tooltip_text = "\n".join(lines)
+
+
+func _format_first_key_for_action(action_name: String) -> String:
+	if not InputMap.has_action(action_name):
+		return ""
+	for ev in InputMap.action_get_events(action_name):
+		if ev is InputEventKey:
+			var ekey: InputEventKey = ev
+			var keycode: int = ekey.physical_keycode if ekey.physical_keycode != 0 else ekey.keycode
+			if keycode != 0:
+				return OS.get_keycode_string(keycode)
+	return ""

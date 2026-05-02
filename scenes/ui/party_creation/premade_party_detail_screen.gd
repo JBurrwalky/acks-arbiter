@@ -65,7 +65,7 @@ func open(party_data: Dictionary) -> void:
 		_build_ui()
 	_title_label.text = party_data.get("party_name", "Premade Party")
 	var chars: Array = party_data.get("characters", [])
-	_counter_label.text = "Party Members: %d/6" % chars.size()
+	_counter_label.text = "Party Members: %d/%d" % [chars.size(), GameState.MAX_PARTY_SIZE]
 	_rebuild_roster(chars)
 	show()
 
@@ -157,7 +157,7 @@ func _build_ui() -> void:
 	header.add_child(_title_label)
 
 	_counter_label = Label.new()
-	_counter_label.text = "Party Members: 0/6"
+	_counter_label.text = "Party Members: 0/%d" % GameState.MAX_PARTY_SIZE
 	_counter_label.add_theme_font_size_override("font_size", 16)
 	_counter_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	header.add_child(_counter_label)

@@ -222,6 +222,20 @@ static func _evaluate_condition(combatant, condition: Dictionary, context: Dicti
 			# the catalog-driven path. Returning false keeps the catalog
 			# entries inert here (no double-application against the resolver).
 			return false
+		"familiar_within_30ft":
+			# Familiar proficiency proximity bonus. The catalog's conditional
+			# save modifiers (data/proficiencies/proficiency_catalog.json:1393)
+			# are *not* delivered through this aggregator — FamiliarController
+			# pushes the -1 save modifiers directly into master.modifiers when
+			# proximity flips on, and removes them when it flips off (single
+			# source of truth, atomic add/remove via source_id prefix). This
+			# branch only matches if a future combat-stat conditional comes to
+			# reference the same flag; in that case it forwards the canonical
+			# predicate (the flag set by FamiliarController on master.flags).
+			# Saves never reach this branch in current code — they go straight
+			# through CharacterData.get_effective_save → ModifierContainer.
+			var fl: EntityFlags = combatant.get_flags() if combatant.has_method("get_flags") else null
+			return fl != null and fl.has_flag("familiar_within_30ft")
 		_:
 			push_warning("%s: unknown condition '%s'" % [_LOG_TAG, requires])
 			return false

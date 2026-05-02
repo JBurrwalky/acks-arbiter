@@ -128,6 +128,29 @@
 [ext_resource type="Script" path="res://tests/test_inventory_container_transfer.gd" id="121_inventory_container_transfer_tests"]
 [ext_resource type="Script" path="res://tests/test_class_equip_restriction_validator.gd" id="122_class_equip_restriction_validator_tests"]
 [ext_resource type="Script" path="res://tests/test_dungeon_action_actor_picker.gd" id="123_dungeon_action_actor_picker_tests"]
+[ext_resource type="Script" path="res://tests/test_stat_readout.gd" id="124_stat_readout_tests"]
+[ext_resource type="Script" path="res://tests/test_empty_state_page.gd" id="125_empty_state_page_tests"]
+[ext_resource type="Script" path="res://tests/test_acks_arbiter_theme.gd" id="126_acks_arbiter_theme_tests"]
+[ext_resource type="Script" path="res://tests/test_notebook_state.gd" id="127_notebook_state_tests"]
+[ext_resource type="Script" path="res://tests/test_notebook.gd" id="128_notebook_tests"]
+[ext_resource type="Script" path="res://tests/test_character_tab.gd" id="129_character_tab_tests"]
+[ext_resource type="Script" path="res://tests/test_inventory_tab.gd" id="130_inventory_tab_tests"]
+[ext_resource type="Script" path="res://tests/test_party_tab.gd" id="131_party_tab_tests"]
+[ext_resource type="Script" path="res://tests/test_session_status_bar.gd" id="132_session_status_bar_tests"]
+[ext_resource type="Script" path="res://tests/test_unified_log.gd" id="133_unified_log_tests"]
+[ext_resource type="Script" path="res://tests/test_familiar_data.gd" id="134_familiar_data_tests"]
+[ext_resource type="Script" path="res://tests/test_familiar_repository.gd" id="135_familiar_repository_tests"]
+[ext_resource type="Script" path="res://tests/test_h0_foundations.gd" id="136_h0_foundations_tests"]
+[ext_resource type="Script" path="res://tests/test_henchmen_tab.gd" id="137_henchmen_tab_tests"]
+[ext_resource type="Script" path="res://tests/test_familiar_proximity.gd" id="138_familiar_proximity_tests"]
+[ext_resource type="Script" path="res://tests/test_familiar_death_link.gd" id="139_familiar_death_link_tests"]
+[ext_resource type="Script" path="res://tests/test_familiar_level_up_refresh.gd" id="140_familiar_level_up_refresh_tests"]
+[ext_resource type="Script" path="res://tests/test_journal_tab.gd" id="141_journal_tab_tests"]
+[ext_resource type="Script" path="res://tests/test_familiar_form_registry.gd" id="142_familiar_form_registry_tests"]
+[ext_resource type="Script" path="res://tests/test_familiar_picker.gd" id="143_familiar_picker_tests"]
+[ext_resource type="Script" path="res://tests/test_familiar_proficiency_picker.gd" id="144_familiar_proficiency_picker_tests"]
+[ext_resource type="Script" path="res://tests/test_journal_polish.gd" id="145_journal_polish_tests"]
+[ext_resource type="Script" path="res://tests/test_familiar_acquisition_panel.gd" id="146_familiar_acquisition_panel_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -512,3 +535,72 @@ script = ExtResource("122_class_equip_restriction_validator_tests")
 
 [node name="DungeonActionActorPickerTests" type="Node" parent="."]
 script = ExtResource("123_dungeon_action_actor_picker_tests")
+
+[node name="StatReadoutTests" type="Node" parent="."]
+script = ExtResource("124_stat_readout_tests")
+
+[node name="EmptyStatePageTests" type="Node" parent="."]
+script = ExtResource("125_empty_state_page_tests")
+
+[node name="AcksArbiterThemeTests" type="Node" parent="."]
+script = ExtResource("126_acks_arbiter_theme_tests")
+
+[node name="NotebookStateTests" type="Node" parent="."]
+script = ExtResource("127_notebook_state_tests")
+
+[node name="NotebookTests" type="Node" parent="."]
+script = ExtResource("128_notebook_tests")
+
+[node name="CharacterTabTests" type="Node" parent="."]
+script = ExtResource("129_character_tab_tests")
+
+[node name="InventoryTabTests" type="Node" parent="."]
+script = ExtResource("130_inventory_tab_tests")
+
+[node name="PartyTabTests" type="Node" parent="."]
+script = ExtResource("131_party_tab_tests")
+
+[node name="SessionStatusBarTests" type="Node" parent="."]
+script = ExtResource("132_session_status_bar_tests")
+
+[node name="UnifiedLogTests" type="Node" parent="."]
+script = ExtResource("133_unified_log_tests")
+
+[node name="FamiliarDataTests" type="Node" parent="."]
+script = ExtResource("134_familiar_data_tests")
+
+[node name="FamiliarRepositoryTests" type="Node" parent="."]
+script = ExtResource("135_familiar_repository_tests")
+
+[node name="H0FoundationsTests" type="Node" parent="."]
+script = ExtResource("136_h0_foundations_tests")
+
+[node name="HenchmenTabTests" type="Node" parent="."]
+script = ExtResource("137_henchmen_tab_tests")
+
+[node name="FamiliarProximityTests" type="Node" parent="."]
+script = ExtResource("138_familiar_proximity_tests")
+
+[node name="FamiliarDeathLinkTests" type="Node" parent="."]
+script = ExtResource("139_familiar_death_link_tests")
+
+[node name="FamiliarLevelUpRefreshTests" type="Node" parent="."]
+script = ExtResource("140_familiar_level_up_refresh_tests")
+
+[node name="JournalTabTests" type="Node" parent="."]
+script = ExtResource("141_journal_tab_tests")
+
+[node name="FamiliarFormRegistryTests" type="Node" parent="."]
+script = ExtResource("142_familiar_form_registry_tests")
+
+[node name="FamiliarPickerTests" type="Node" parent="."]
+script = ExtResource("143_familiar_picker_tests")
+
+[node name="FamiliarProficiencyPickerTests" type="Node" parent="."]
+script = ExtResource("144_familiar_proficiency_picker_tests")
+
+[node name="JournalPolishTests" type="Node" parent="."]
+script = ExtResource("145_journal_polish_tests")
+
+[node name="FamiliarAcquisitionPanelTests" type="Node" parent="."]
+script = ExtResource("146_familiar_acquisition_panel_tests")

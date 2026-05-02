@@ -12,7 +12,7 @@ extends CanvasLayer
 # Constants
 # ---------------------------------------------------------------------------
 
-const MAX_PARTY_SIZE := 6
+# MAX_PARTY_SIZE moved to GameState.MAX_PARTY_SIZE per gdd-ui-architecture.md §8.
 
 const PORTRAIT_SIZE := Vector2(64, 64)
 const ROW_BG_COLOR := Color(0.94, 0.89, 0.78, 0.42)
@@ -241,7 +241,7 @@ func _rebuild_roster() -> void:
 		child.queue_free()
 	_row_panels.clear()
 
-	_counter_label.text = "Party Members: %d/%d" % [_characters.size(), MAX_PARTY_SIZE]
+	_counter_label.text = "Party Members: %d/%d" % [_characters.size(), GameState.MAX_PARTY_SIZE]
 
 	if _characters.is_empty():
 		var empty_label := Label.new()
@@ -372,7 +372,7 @@ func _select_character(char_id: String) -> void:
 
 func _update_buttons() -> void:
 	var count: int = _characters.size()
-	_add_btn.disabled = (count >= MAX_PARTY_SIZE)
+	_add_btn.disabled = (count >= GameState.MAX_PARTY_SIZE)
 	_delete_btn.disabled = _selected_character_id.is_empty()
 	_begin_btn.disabled = (count < 1)
 

@@ -4,7 +4,7 @@
 #   - LocationCacheManager (autoload): cache creation methods
 #   - Timekeeping (autoload): time display for hide-and-memorize cost
 #
-# No class_name — lazily instantiated by PartyInventoryOverlay.
+# No class_name — lazily instantiated by InventoryTabPage.
 
 extends PanelContainer
 

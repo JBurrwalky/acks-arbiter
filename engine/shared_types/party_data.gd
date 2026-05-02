@@ -9,10 +9,29 @@ extends RefCounted
 # Constants
 # ---------------------------------------------------------------------------
 
-## Formation grid dimensions (5 wide × 12 deep).
-## Row 0 is the front of the formation; col 0 is leftmost.
+## Legacy formation grid dimensions (5 wide × 12 deep). Kept for back-compat
+## with pre-γ.3 callers and tests; the Party tab's Formation sub-tab uses the
+## grid-specific constants below per gdd-party-tab.md §7.
 const GRID_COLS := 5
 const GRID_ROWS := 12
+
+## Wilderness formation grid: 6 wide × 12 deep (γ.3, gdd-party-tab.md §7.1).
+## Wider than the legacy 5-col grid to accommodate vehicles, mercenaries,
+## and large beasts of burden alongside PCs and henchmen. Existing
+## formation_col values (0..4) remain valid in the widened layout.
+const WILDERNESS_COLS := 6
+const WILDERNESS_ROWS := 12
+
+## Dungeon formation grid: 2 wide × 12 deep (γ.3, gdd-party-tab.md §7.1).
+## Mirrors the ACKS "pairs side by side" rule per
+## acore_adventures_and_encounters.xml §marching_order. Capped at 24 entities
+## to keep dungeon UI legible; mass combat scales above this go through DaW.
+const DUNGEON_COLS := 2
+const DUNGEON_ROWS := 12
+
+## Grid identifiers for the parameterized formation API.
+const GRID_WILDERNESS := "wilderness"
+const GRID_DUNGEON := "dungeon"
 
 ## Unassigned grid position sentinel.
 const UNASSIGNED := -1
@@ -184,6 +203,78 @@ func swap_positions(char_a: String, char_b: String) -> void:
 	set_formation_pos(char_b, pos_a.x, pos_a.y)
 
 
+# ---------------------------------------------------------------------------
+# γ.3 — grid-parameterized formation API. The pre-γ.3 methods above continue
+# to operate on the wilderness grid (formation_col / formation_row) for
+# back-compat. Per gdd-party-tab.md §7.1 the dungeon grid is independent.
+# ---------------------------------------------------------------------------
+
+static func _col_key(grid: String) -> String:
+	return "dungeon_formation_col" if grid == GRID_DUNGEON else "formation_col"
+
+
+static func _row_key(grid: String) -> String:
+	return "dungeon_formation_row" if grid == GRID_DUNGEON else "formation_row"
+
+
+## Returns the grid position for [param character_id] on [param grid]
+## (`"wilderness"` or `"dungeon"`), or Vector2i(UNASSIGNED, UNASSIGNED) if
+## the character is in the party but unplaced on that grid.
+func get_formation_pos_for(character_id: String, grid: String) -> Vector2i:
+	var ck := _col_key(grid)
+	var rk := _row_key(grid)
+	for m: Dictionary in members:
+		if m.get("character_id", "") == character_id:
+			return Vector2i(m.get(ck, UNASSIGNED), m.get(rk, UNASSIGNED))
+	return Vector2i(UNASSIGNED, UNASSIGNED)
+
+
+## Returns the character_id at a given grid cell on [param grid], or "".
+func get_character_at_for(col: int, row: int, grid: String) -> String:
+	var ck := _col_key(grid)
+	var rk := _row_key(grid)
+	for m: Dictionary in members:
+		if m.get(ck, UNASSIGNED) == col and m.get(rk, UNASSIGNED) == row:
+			return m.get("character_id", "")
+	return ""
+
+
+## Returns all character_ids placed on [param grid].
+func get_placed_members_for(grid: String) -> Array:
+	var ck := _col_key(grid)
+	var result: Array = []
+	for m: Dictionary in members:
+		if m.get(ck, UNASSIGNED) != UNASSIGNED:
+			result.append(m["character_id"])
+	return result
+
+
+## Returns all character_ids NOT placed on [param grid].
+func get_unplaced_members_for(grid: String) -> Array:
+	var ck := _col_key(grid)
+	var result: Array = []
+	for m: Dictionary in members:
+		if m.get(ck, UNASSIGNED) == UNASSIGNED:
+			result.append(m["character_id"])
+	return result
+
+
+## Sets the grid position for [param character_id] on [param grid] in place.
+func set_formation_pos_for(character_id: String, col: int, row: int, grid: String) -> void:
+	var ck := _col_key(grid)
+	var rk := _row_key(grid)
+	for m: Dictionary in members:
+		if m.get("character_id", "") == character_id:
+			m[ck] = col
+			m[rk] = row
+			return
+
+
+## Removes a character from [param grid] without removing them from the party.
+func unplace_character_for(character_id: String, grid: String) -> void:
+	set_formation_pos_for(character_id, UNASSIGNED, UNASSIGNED, grid)
+
+
 ## Returns the slowest effective movement rate among all party members,
 ## trained creatures, and vehicles (feet/turn).
 ## This is the base rate before terrain or forced-march modifiers.
@@ -306,6 +397,8 @@ static func from_db(party_row: Dictionary, member_rows: Array, state_row: Dictio
 			"character_id": _str(row, "character_id"),
 			"formation_col": _int(row, "formation_col", UNASSIGNED),
 			"formation_row": _int(row, "formation_row", UNASSIGNED),
+			"dungeon_formation_col": _int(row, "dungeon_formation_col", UNASSIGNED),
+			"dungeon_formation_row": _int(row, "dungeon_formation_row", UNASSIGNED),
 		})
 
 	# Party state — may not exist yet (new party)

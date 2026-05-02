@@ -1,6 +1,7 @@
 extends "res://tests/test_suite_base.gd"
 
-## Unit tests for GameLog.
+## Unit tests for GameLogStore (the RefCounted value class owned by the
+## GameLog autoload).
 ## Run via test_runner.tscn. Each test_*() method is called by run_all_tests().
 
 
@@ -15,7 +16,7 @@ func run_all_tests() -> void:
 	test_to_text_string()
 	test_to_json_string()
 	if not has_failures():
-		print("GameLog: all %d checks passed" % test_count())
+		print("GameLogStore: all %d checks passed" % test_count())
 
 
 # ---------------------------------------------------------------------------
@@ -23,7 +24,7 @@ func run_all_tests() -> void:
 # ---------------------------------------------------------------------------
 
 func test_add_and_retrieve_entries() -> void:
-	var log := GameLog.new()
+	var log := GameLogStore.new()
 	var entry := log.add_entry("exploration", "hex_entered", "Entered hex 0305",
 		"party_1", "", {"hex_id": "0305"})
 	log.add_entry("combat", "combat_started", "Combat started")
@@ -42,7 +43,7 @@ func test_add_and_retrieve_entries() -> void:
 
 
 func test_filter_by_category() -> void:
-	var log := GameLog.new()
+	var log := GameLogStore.new()
 	log.add_entry("exploration", "hex_entered", "Hex 1")
 	log.add_entry("combat", "combat_started", "Combat 1")
 	log.add_entry("exploration", "room_entered", "Room 1")
@@ -57,7 +58,7 @@ func test_filter_by_category() -> void:
 
 
 func test_filter_by_type() -> void:
-	var log := GameLog.new()
+	var log := GameLogStore.new()
 	log.add_entry("exploration", "hex_entered", "Hex 1")
 	log.add_entry("exploration", "hex_entered", "Hex 2")
 	log.add_entry("exploration", "room_entered", "Room 1")
@@ -71,7 +72,7 @@ func test_filter_by_type() -> void:
 
 
 func test_filter_by_entity() -> void:
-	var log := GameLog.new()
+	var log := GameLogStore.new()
 	log.add_entry("combat", "damage_dealt", "Damage", "attacker_1", "target_1")
 	log.add_entry("combat", "damage_dealt", "Damage", "attacker_2", "target_1")
 	log.add_entry("character", "xp_awarded", "XP", "target_1")
@@ -85,7 +86,7 @@ func test_filter_by_entity() -> void:
 
 
 func test_filter_by_time_range() -> void:
-	var log := GameLog.new()
+	var log := GameLogStore.new()
 	# Manually set game_time since Timekeeping won't be available in tests.
 	var e1 := log.add_entry("exploration", "hex_entered", "Hex 1")
 	e1["game_time"] = 100
@@ -103,7 +104,7 @@ func test_filter_by_time_range() -> void:
 
 
 func test_get_recent() -> void:
-	var log := GameLog.new()
+	var log := GameLogStore.new()
 	for i in range(10):
 		log.add_entry("dice", "dice_rolled", "Roll %d" % i)
 
@@ -117,7 +118,7 @@ func test_get_recent() -> void:
 
 
 func test_clear() -> void:
-	var log := GameLog.new()
+	var log := GameLogStore.new()
 	log.add_entry("exploration", "hex_entered", "Hex 1")
 	log.add_entry("combat", "combat_started", "Combat 1")
 	check(log.entry_count() == 2, "should have 2 entries before clear")
@@ -131,7 +132,7 @@ func test_clear() -> void:
 
 
 func test_to_text_string() -> void:
-	var log := GameLog.new()
+	var log := GameLogStore.new()
 	var e1 := log.add_entry("exploration", "hex_entered", "Entered hex 0305")
 	e1["game_time"] = 0  # Y1 M1 D1 00:00
 	var e2 := log.add_entry("combat", "combat_started", "Combat started")
@@ -145,7 +146,7 @@ func test_to_text_string() -> void:
 
 
 func test_to_json_string() -> void:
-	var log := GameLog.new()
+	var log := GameLogStore.new()
 	var e1 := log.add_entry("exploration", "hex_entered", "Entered hex 0305")
 	e1["game_time"] = 0
 

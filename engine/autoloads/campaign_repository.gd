@@ -2441,6 +2441,17 @@ func update_party_member_formation(party_id: String, character_id: String,
 	)
 
 
+## Updates a party member's dungeon-formation grid position. Migration 043
+## introduced the dungeon_formation_col / dungeon_formation_row columns so the
+## dungeon and wilderness grids persist independently per gdd-party-tab.md §7.
+func update_party_member_dungeon_formation(party_id: String, character_id: String,
+		col: int, row: int) -> bool:
+	return db.query_with_bindings(
+		"UPDATE party_members SET dungeon_formation_col = ?, dungeon_formation_row = ? WHERE party_id = ? AND character_id = ?",
+		[col, row, party_id, character_id]
+	)
+
+
 ## Loads a full PartyData with members and state from the database.
 ## Does NOT populate character_data or shared_inventory (caller does that).
 func load_party_data(party_id: String) -> PartyData:
@@ -2454,6 +2465,46 @@ func load_party_data(party_id: String) -> PartyData:
 	for member in member_rows:
 		sanitize_character_equipment(String(member.get("character_id", "")))
 	return PartyData.from_db(party_row, member_rows, state_row)
+
+
+# ---------------------------------------------------------------------------
+# Notebook state (migration 042)
+# ---------------------------------------------------------------------------
+
+## Loads the notebook_state row for [param party_id], or returns an empty
+## Dictionary if none exists. Consumers go through NotebookState autoload —
+## do not call this directly from UI code. See gdd-management-notebook.md §4.
+func get_notebook_state(party_id: String) -> Dictionary:
+	if not db.query_with_bindings(
+			"SELECT * FROM notebook_state WHERE party_id = ?", [party_id]) \
+			or db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+## Creates or updates the notebook_state row.
+##
+## [param state] keys (all required):
+##   party_id              : String
+##   last_active_tab       : String   — one of the 8 tab ids
+##   last_active_entity_id : String   — "" when no entity is active
+##   per_tab_substate      : String   — JSON-encoded dict (opaque to the repo)
+func save_notebook_state(state: Dictionary) -> bool:
+	var pid: String = state.get("party_id", "")
+	if pid.is_empty():
+		push_error("CampaignRepository.save_notebook_state: party_id is empty")
+		return false
+	return db.query_with_bindings("""
+		INSERT OR REPLACE INTO notebook_state
+			(party_id, last_active_tab, last_active_entity_id,
+			 per_tab_substate, updated_at)
+		VALUES (?, ?, ?, ?, datetime('now'))
+	""", [
+		pid,
+		state.get("last_active_tab", "character"),
+		state.get("last_active_entity_id", ""),
+		state.get("per_tab_substate", "{}"),
+	])
 
 
 # ---------------------------------------------------------------------------
@@ -3457,6 +3508,50 @@ func list_henchman_states_for_employer(employer_id: String) -> Array:
 	return db.query_result.duplicate()
 
 
+## H.1 — Henchmen tab Roster query. Returns one row per ACTIVE henchman in the
+## given party (joined to henchman_state for morale / share / loyalty fields).
+## Sort order: patron PC name, then henchman name, mirroring the GDD §5.3
+## default sort.
+func list_party_henchmen(party_id: String) -> Array:
+	if party_id.is_empty():
+		return []
+	db.query_with_bindings("""
+		SELECT c.*, hs.morale_score, hs.treasure_share_percent,
+		       hs.unpaid_months, hs.is_grudging, hs.is_fanatic,
+		       hs.hired_month, hs.hired_year,
+		       emp.name AS patron_name
+		FROM characters c
+		INNER JOIN party_members pm ON pm.character_id = c.id
+		LEFT JOIN henchman_state hs ON hs.character_id = c.id
+		LEFT JOIN characters emp ON emp.id = c.employer_id
+		WHERE pm.party_id = ? AND c.character_type = 'henchman' AND c.is_active = 1
+		ORDER BY emp.name, c.name
+	""", [party_id])
+	return db.query_result.duplicate()
+
+
+## H.1 — Henchmen tab Departure Log query. Returns departed henchmen for the
+## campaign (per-party scope is not available on the schema — per Henchmen GDD
+## v1.3 §6.2 a campaign-wide log is the v1 surface).
+##
+## A row is "departed" when its henchman_state.departure_reason is non-empty.
+## Sorted reverse chronological (most recent updated_at first).
+func list_departed_henchmen(campaign_id: String) -> Array:
+	if campaign_id.is_empty():
+		return []
+	db.query_with_bindings("""
+		SELECT c.*, hs.morale_score, hs.treasure_share_percent,
+		       hs.unpaid_months, hs.is_grudging, hs.is_fanatic,
+		       hs.hired_month, hs.hired_year,
+		       hs.departure_reason, hs.departure_settlement_id, hs.updated_at
+		FROM characters c
+		INNER JOIN henchman_state hs ON hs.character_id = c.id
+		WHERE c.campaign_id = ? AND hs.departure_reason != ''
+		ORDER BY hs.updated_at DESC, c.name
+	""", [campaign_id])
+	return db.query_result.duplicate()
+
+
 # ---------------------------------------------------------------------------
 # Scheduled Events — Migration 028
 # ---------------------------------------------------------------------------
@@ -4051,3 +4146,151 @@ func list_xp_eligible_entities(party_id: String) -> Array:
 		"AND c.character_type IN ('pc', 'henchman')",
 		[party_id])
 	return db.query_result.duplicate()
+
+
+# ============================================================================
+# Familiars (migration 044)
+# ============================================================================
+# A familiar is a magical animal companion bonded to a single master (PC) via
+# the Familiar proficiency. The unique partial index on the table enforces
+# one living familiar per master. Dead familiars are kept (post-mortem and
+# replacement-on-level-up gating). See generation/gdd-familiars.md.
+
+## Returns the master's currently living familiar, or {} if none exists.
+func get_living_familiar_for_master(master_character_id: String) -> Dictionary:
+	db.query_with_bindings(
+		"SELECT * FROM familiars WHERE master_character_id = ? AND is_alive = 1",
+		[master_character_id])
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+## Returns the master's most recent familiar (alive or dead), or {} if none.
+## Used to evaluate the replacement-on-level-up gate.
+func get_most_recent_familiar_for_master(master_character_id: String) -> Dictionary:
+	db.query_with_bindings(
+		"SELECT * FROM familiars WHERE master_character_id = ? " +
+		"ORDER BY is_alive DESC, created_at DESC LIMIT 1",
+		[master_character_id])
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+## Returns a single familiar by id, or {} if not found.
+func get_familiar(familiar_id: String) -> Dictionary:
+	db.query_with_bindings(
+		"SELECT * FROM familiars WHERE id = ?",
+		[familiar_id])
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+## Inserts a new familiar row. Returns the new id, or "" on failure.
+## The unique partial index will reject the insert if the master already has
+## a living familiar.
+func create_familiar(data: Dictionary) -> String:
+	var master_id: String = data.get("master_character_id", "")
+	if master_id.is_empty():
+		push_error("CampaignRepository.create_familiar: master_character_id is required")
+		return ""
+	var form_key: String = data.get("form_key", "")
+	if form_key.is_empty():
+		push_error("CampaignRepository.create_familiar: form_key is required")
+		return ""
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO familiars
+			(id, campaign_id, master_character_id, form_key, cosmetic_species, name,
+			 hp_current, hp_max_cached,
+			 hd_dice, hd_modifier_hp, is_half_hd,
+			 attack_save_class, attack_save_level, damage_bonus,
+			 int_cached, proficiency_count_cached, proficiencies_chosen,
+			 is_alive, bonded_at_master_level, death_save_pending,
+			 position_voxel_x, position_voxel_y, position_voxel_z)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		data.get("campaign_id", ""),
+		master_id,
+		form_key,
+		data.get("cosmetic_species", ""),
+		data.get("name", ""),
+		data.get("hp_current", 1),
+		data.get("hp_max_cached", 1),
+		data.get("hd_dice", 0),
+		data.get("hd_modifier_hp", 0),
+		1 if data.get("is_half_hd", true) else 0,
+		data.get("attack_save_class", "NM"),
+		data.get("attack_save_level", 0),
+		data.get("damage_bonus", 0),
+		data.get("int_cached", 10),
+		data.get("proficiency_count_cached", 0),
+		data.get("proficiencies_chosen", "[]"),
+		1 if data.get("is_alive", true) else 0,
+		data.get("bonded_at_master_level", 1),
+		1 if data.get("death_save_pending", false) else 0,
+		data.get("position_voxel_x", 0),
+		data.get("position_voxel_y", 0),
+		data.get("position_voxel_z", 0),
+	]):
+		push_error("CampaignRepository.create_familiar: failed. master=%s form=%s" % [master_id, form_key])
+		return ""
+	return id
+
+
+## Updates whitelisted fields on a familiar row. Returns true on success.
+func update_familiar(familiar_id: String, data: Dictionary) -> bool:
+	var allowed := [
+		"name", "cosmetic_species",
+		"hp_current", "hp_max_cached",
+		"hd_dice", "hd_modifier_hp", "is_half_hd",
+		"attack_save_class", "attack_save_level", "damage_bonus",
+		"int_cached", "proficiency_count_cached", "proficiencies_chosen",
+		"is_alive", "death_save_pending",
+		"position_voxel_x", "position_voxel_y", "position_voxel_z",
+	]
+	var sets: Array = []
+	var values: Array = []
+	for key in data:
+		if key in allowed:
+			sets.append("%s = ?" % key)
+			values.append(data[key])
+	if sets.is_empty():
+		return true
+	sets.append("updated_at = datetime('now')")
+	values.append(familiar_id)
+	var sql := "UPDATE familiars SET %s WHERE id = ?" % ", ".join(sets)
+	if not db.query_with_bindings(sql, values):
+		push_error("CampaignRepository.update_familiar: failed. id=%s" % familiar_id)
+		return false
+	return true
+
+
+## Marks the familiar as slain. Sets is_alive=0, hp_current=0, and
+## death_save_pending=1 so the master's controller knows to roll the
+## save-vs-Death (per ACKS rule).
+func kill_familiar(familiar_id: String) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE familiars SET is_alive = 0, hp_current = 0, " +
+		"death_save_pending = 1, updated_at = datetime('now') WHERE id = ?",
+		[familiar_id]):
+		push_error("CampaignRepository.kill_familiar: failed. id=%s" % familiar_id)
+		return false
+	return true
+
+
+## Records the outcome of the master's save vs Death after a familiar's death.
+## The save itself is rolled by the character subsystem; this just clears the
+## pending flag.
+func clear_familiar_death_save(familiar_id: String) -> bool:
+	if not db.query_with_bindings(
+		"UPDATE familiars SET death_save_pending = 0, updated_at = datetime('now') WHERE id = ?",
+		[familiar_id]):
+		push_error("CampaignRepository.clear_familiar_death_save: failed. id=%s" % familiar_id)
+		return false
+	return true

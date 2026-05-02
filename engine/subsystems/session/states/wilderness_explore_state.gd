@@ -320,18 +320,11 @@ func _resolve_party_hex(party_id: String, map_data: HexMapData) -> Vector2i:
 	return Vector2i(q, r)
 
 
-## Opens the party inventory overlay so the player can trade with a wilderness
-## loot cache. The overlay already auto-detects caches at the party's current
-## hex via GameState.current_location_key.
+## Opens the notebook to the Inventory tab so the player can trade with a
+## wilderness loot cache. The Inventory tab auto-detects caches at the party's
+## current hex via GameState.current_location_key.
 func _on_wilderness_cache_visit_requested(_cache_id: String, _hex: Vector2i) -> void:
-	var tree := Engine.get_main_loop() as SceneTree
-	if tree == null:
-		return
-	var overlay = tree.root.find_child("PartyInventoryOverlay", true, false)
-	if overlay == null or not overlay.has_method("open"):
-		push_warning("WildernessExploreState: PartyInventoryOverlay not found in scene tree")
-		return
-	overlay.open()
+	EventBus.notebook_open_requested.emit("inventory")
 
 
 func _on_camp_requested() -> void:

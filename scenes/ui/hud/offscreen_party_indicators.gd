@@ -23,6 +23,7 @@ var _renderer: Node = null
 
 
 func _ready() -> void:
+	add_to_group("hud_offscreen_party_indicators")  # H.0 — HudVisibilityController hides while notebook is open
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 

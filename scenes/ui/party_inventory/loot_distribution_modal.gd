@@ -10,7 +10,7 @@
 #   - Currency (preloaded): coins_to_cp, format_cost, format_wealth
 #   - EquipmentCatalog (local instance): item metadata for auto-distributor
 #
-# No class_name — lazily instantiated by PartyInventoryOverlay.
+# No class_name — lazily instantiated by InventoryTabPage.
 #
 # Design note:
 #   v1 is coins-only. The item queue will be empty after combat because monsters

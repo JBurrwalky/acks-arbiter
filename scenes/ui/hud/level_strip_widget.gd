@@ -36,6 +36,7 @@ var _row_buttons: Dictionary = {}
 
 
 func _ready() -> void:
+	add_to_group("hud_level_strip_widget")  # H.0 — HudVisibilityController hides while notebook is open
 	_build_ui()
 
 

@@ -135,6 +135,29 @@ extends Node
 @onready var _inventory_container_transfer_tests = $InventoryContainerTransferTests
 @onready var _class_equip_restriction_validator_tests = $ClassEquipRestrictionValidatorTests
 @onready var _dungeon_action_actor_picker_tests = $DungeonActionActorPickerTests
+@onready var _stat_readout_tests = $StatReadoutTests
+@onready var _empty_state_page_tests = $EmptyStatePageTests
+@onready var _acks_arbiter_theme_tests = $AcksArbiterThemeTests
+@onready var _notebook_state_tests = $NotebookStateTests
+@onready var _notebook_tests = $NotebookTests
+@onready var _character_tab_tests = $CharacterTabTests
+@onready var _inventory_tab_tests = $InventoryTabTests
+@onready var _party_tab_tests = $PartyTabTests
+@onready var _session_status_bar_tests = $SessionStatusBarTests
+@onready var _unified_log_tests = $UnifiedLogTests
+@onready var _familiar_data_tests = $FamiliarDataTests
+@onready var _familiar_repository_tests = $FamiliarRepositoryTests
+@onready var _h0_foundations_tests = $H0FoundationsTests
+@onready var _henchmen_tab_tests = $HenchmenTabTests
+@onready var _journal_tab_tests = $JournalTabTests
+@onready var _journal_polish_tests = $JournalPolishTests
+@onready var _familiar_proximity_tests = $FamiliarProximityTests
+@onready var _familiar_death_link_tests = $FamiliarDeathLinkTests
+@onready var _familiar_level_up_refresh_tests = $FamiliarLevelUpRefreshTests
+@onready var _familiar_form_registry_tests = $FamiliarFormRegistryTests
+@onready var _familiar_picker_tests = $FamiliarPickerTests
+@onready var _familiar_proficiency_picker_tests = $FamiliarProficiencyPickerTests
+@onready var _familiar_acquisition_panel_tests = $FamiliarAcquisitionPanelTests
 
 
 func _ready() -> void:
@@ -250,7 +273,30 @@ func run() -> void:
 			_lever_tests,
 			_inventory_container_transfer_tests,
 			_class_equip_restriction_validator_tests,
-			_dungeon_action_actor_picker_tests]:
+			_dungeon_action_actor_picker_tests,
+			_stat_readout_tests,
+			_empty_state_page_tests,
+			_acks_arbiter_theme_tests,
+			_notebook_state_tests,
+			_notebook_tests,
+			_character_tab_tests,
+			_inventory_tab_tests,
+			_party_tab_tests,
+			_session_status_bar_tests,
+			_unified_log_tests,
+			_familiar_data_tests,
+			_familiar_repository_tests,
+			_h0_foundations_tests,
+			_henchmen_tab_tests,
+			_familiar_proximity_tests,
+			_familiar_death_link_tests,
+			_familiar_level_up_refresh_tests,
+			_journal_tab_tests,
+			_familiar_form_registry_tests,
+			_familiar_picker_tests,
+			_familiar_proficiency_picker_tests,
+			_journal_polish_tests,
+			_familiar_acquisition_panel_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

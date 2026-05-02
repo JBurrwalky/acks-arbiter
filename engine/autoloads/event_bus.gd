@@ -430,9 +430,107 @@ signal dev_character_creation_requested
 ## Uses same context shape as player_roll_requested.
 signal dev_dice_test_requested(context: Dictionary)
 
-## Emitted to open the character sheet overlay, optionally targeting a specific character.
-## Listened to by character_sheet_overlay. Future: emitted by session status bar character chips.
-signal character_sheet_requested(character_id: String)
+# character_sheet_requested removed in γ.1 — CharacterSheetOverlay deleted.
+# Callers now emit notebook_active_entity_requested(entity_id), which routes
+# through the Notebook root to set the active entity AND switch to the
+# Character tab.
+
+
+# ---------------------------------------------------------------------------
+# Management Notebook signals (Phase β)
+# ---------------------------------------------------------------------------
+
+## Request the Management Notebook open to a specific tab.
+## [param tab_id] is one of: "character", "inventory", "party", "henchmen",
+##                  "troops", "domain", "journal", "quests".
+## Emitted by single-letter keybinds (UiInputController) and the SessionStatusBar
+## "Open Notebook" button. Listened to by the Notebook scene.
+## If the notebook is already open on [param tab_id], it closes (toggle semantics).
+signal notebook_open_requested(tab_id: String)
+
+## Request the Management Notebook close.
+signal notebook_close_requested
+
+## Notebook's active outer tab changed. Used for state persistence and any
+## HUD widgets that mirror the active-tab state.
+signal notebook_tab_changed(tab_id: String)
+
+## Notebook's active entity (Character tab) changed. Sub-tab content refreshes
+## from the new entity. [param entity_id] is empty string when no entity is
+## active (e.g. the active party has no PCs of the selected type).
+signal notebook_active_entity_changed(entity_id: String)
+
+## Any tab in the notebook (or any external surface) requests the global
+## active entity be set to [param entity_id]. The notebook root consumes this:
+## sets the active entity AND switches to the Character tab. Cross-tab
+## entity-activation pattern per gdd-ui-architecture.md §3.5.
+signal notebook_active_entity_requested(entity_id: String)
+
+## Notebook visibility changed to closed.
+signal notebook_closed
+
+## Notebook open/close state transition. γ.4 introduces this for HUD
+## visibility coordination — surfaces that should hide while the notebook is
+## open (SessionStatusBar, EntityOutliner, LevelStripWidget, etc.) subscribe
+## here. [param is_open] = true on open, false on close. Emitted alongside
+## notebook_closed (which existed in β); both fire on close so existing β
+## listeners keep working.
+signal notebook_open_state_changed(is_open: bool)
+
+## Journal tab content changed. Emitted when narrative entries / notes /
+## bookmarks are created, updated, or removed. Drives cross-tab badge
+## refresh on Henchmen tab Roster (and future Character tab Status sub-tab).
+## [param kind] is one of:
+##   "narrative_entry_added" / "narrative_entry_updated" / "narrative_entry_removed"
+##   "note_added" / "note_updated" / "note_removed"
+##   "bookmark_added" / "bookmark_removed"
+## H.2 — gdd-journal-tab.md v1.1.
+signal journal_changed(kind: String, party_id: String)
+
+## Request the Journal tab open with its Notes sub-tab pre-filtered to
+## [param entity_id]. Emitted by cross-tab Notes-badge clicks (Henchmen tab
+## Roster, Character tab Biography, etc.). Notebook root opens the Journal
+## tab; the Journal page consumes this and applies the filter.
+## H.2 polish (item 1c).
+signal notebook_journal_notes_filter_requested(entity_id: String)
+
+## Request the Unified Log scroll to a specific entry id and highlight it.
+## Emitted by Journal Bookmarks → "Open source" for unified_log_entry
+## targets, and any future cross-surface jump-to-log-entry navigation.
+## H.2 polish (item 1e).
+signal unified_log_scroll_to_id_requested(entry_id: int)
+
+
+# ---------------------------------------------------------------------------
+# Unified Log signals (Phase α — embedded log lands in Phase γ.5)
+# ---------------------------------------------------------------------------
+
+## L-key was pressed; the embedded Unified Log (Phase γ.5) cycles its active
+## tab in order All → Combat → Rolls → Narration → All. Emitted by
+## UiInputController. Until Phase γ.5 lands, this signal has no listener.
+## Per gdd-ui-architecture.md §4.1 / §3.8.
+signal unified_log_cycle_requested
+
+
+## A new entry was appended to the canonical GameLog autoload. The Unified Log
+## (and any other consumers) refresh from this. Replaces the prior
+## GameLogRecorder.entry_added (sibling-node signal).
+##
+## [param entry] keys (per gdd-unified-log-panel.md / gdd-ui-shared-services.md §5.3.5):
+##   id:        int        — monotonic sequence id within the party's log
+##   timestamp: int        — Time.get_ticks_msec() at append
+##   game_time: int        — Timekeeping._elapsed_rounds at append (0 if no Timekeeping yet)
+##   category:  String     — "combat" | "exploration" | "character" | "inventory" |
+##                            "party" | "henchman" | "magic" | "domain" | "scheduler" |
+##                            "session" | "time" | "dice" | "reputation" | "creature" |
+##                            "override" | "narration"
+##   type:      String     — narrower event-type discriminator within category
+##   summary:   String     — one-line human-readable description
+##   actor_id:  String     — entity that performed the action (empty if N/A)
+##   target_id: String     — entity that was affected (empty if N/A)
+##   data:      Dictionary — full original signal payload
+##   party_id:  String     — owning party (default = active party at append time)
+signal log_entry_added(entry: Dictionary)
 
 
 # ---------------------------------------------------------------------------
@@ -478,6 +576,27 @@ signal vehicle_changed(party_id: String, vehicle_id: String)
 
 ## A draft vehicle's hitched team was changed.
 signal vehicle_hitch_changed(vehicle_id: String)
+
+
+# ---------------------------------------------------------------------------
+# Familiar signals (Familiar proficiency — gdd-familiars.md)
+# ---------------------------------------------------------------------------
+
+## A familiar was bonded to a master (acquisition flow completed).
+## Emitted when a master takes the Familiar proficiency at character creation
+## or selects a replacement form on level-up. Listeners (HUD, narration log,
+## Notebook) refresh master/familiar relationships.
+signal familiar_bonded(master_character_id: String, familiar_id: String)
+
+## A familiar was slain. Triggers the master's save-vs-Death (per ACKS rule:
+## on fail, master takes damage equal to familiar's max HP).
+## [param max_hp_at_death] is the familiar's hp_max_cached at the moment of death.
+signal familiar_died(master_character_id: String, familiar_id: String, max_hp_at_death: int)
+
+## A familiar communicated something to its master. The familiar always
+## understands the master's languages and can speak back to the master only.
+## [param line] is LLM-narrated text; carries no mechanical effect.
+signal familiar_spoke(master_character_id: String, familiar_id: String, line: String)
 
 
 # ---------------------------------------------------------------------------

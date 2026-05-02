@@ -1,0 +1,141 @@
+[gd_resource type="Theme" format=3]
+
+; -----------------------------------------------------------------------------
+; ACKS Arbiter project theme.
+;
+; Per gdd-ui-architecture.md §5.2. Set as project default in project.godot
+; under [gui] theme/custom. Surface migration off the legacy
+; UiSurfaceStyles.apply_*() helpers is incremental — Phase α.4 expanded this
+; theme with notebook + FramedWindow variants so β/γ surfaces have a clean
+; landing target. Existing surfaces continue to use UiSurfaceStyles until
+; they are individually rebuilt or migrated.
+;
+; Variants declared:
+;   FramedWindow            — dark bordered chrome (no center fill); use for
+;                             modal-like full-screen panels that need a
+;                             vellum-content interior. Mirrors
+;                             UiSurfaceStyles.make_window_frame_style().
+;   NotebookContainer       — outer shell of the Management Notebook; deep
+;                             leather brown; β consumes this on the notebook
+;                             root PanelContainer.
+;   NotebookPage            — vellum-page background for the active tab's
+;                             page area.
+;   NotebookActiveTab       — visually merges with the page (shares vellum
+;                             color); used on the right-edge tab strip's
+;                             active entry.
+;   NotebookInactiveTab     — leather binding color; used on inactive tab
+;                             entries in the strip.
+; -----------------------------------------------------------------------------
+
+[sub_resource type="StyleBoxFlat" id="SBF_framed_window"]
+bg_color = Color(0.19, 0.13, 0.08, 0.94)
+draw_center = false
+border_color = Color(0.46, 0.33, 0.19, 1)
+border_width_left = 2
+border_width_right = 2
+border_width_top = 2
+border_width_bottom = 2
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0, 0, 0, 0.28)
+shadow_size = 8
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="SBF_notebook_container"]
+bg_color = Color(0.16, 0.10, 0.05, 1)
+border_color = Color(0.08, 0.05, 0.02, 1)
+border_width_left = 4
+border_width_right = 4
+border_width_top = 4
+border_width_bottom = 4
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 12
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="SBF_notebook_page"]
+bg_color = Color(0.90, 0.84, 0.74, 1)
+border_color = Color(0.56, 0.40, 0.22, 1)
+border_width_left = 1
+border_width_right = 1
+border_width_top = 1
+border_width_bottom = 1
+corner_radius_top_left = 4
+corner_radius_top_right = 0
+corner_radius_bottom_right = 0
+corner_radius_bottom_left = 4
+content_margin_left = 24.0
+content_margin_top = 24.0
+content_margin_right = 24.0
+content_margin_bottom = 24.0
+
+[sub_resource type="StyleBoxFlat" id="SBF_notebook_tab_active"]
+bg_color = Color(0.90, 0.84, 0.74, 1)
+border_color = Color(0.56, 0.40, 0.22, 1)
+border_width_left = 0
+border_width_right = 1
+border_width_top = 1
+border_width_bottom = 1
+corner_radius_top_left = 0
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 0
+content_margin_left = 8.0
+content_margin_right = 8.0
+content_margin_top = 12.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="SBF_notebook_tab_inactive"]
+bg_color = Color(0.30, 0.20, 0.10, 1)
+border_color = Color(0.10, 0.06, 0.03, 1)
+border_width_left = 0
+border_width_right = 1
+border_width_top = 1
+border_width_bottom = 1
+corner_radius_top_left = 0
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 0
+content_margin_left = 8.0
+content_margin_right = 8.0
+content_margin_top = 10.0
+content_margin_bottom = 10.0
+
+[resource]
+default_font_size = 14
+Button/colors/font_color = Color(0.09, 0.06, 0.03, 1)
+Button/colors/font_hover_color = Color(0.18, 0.12, 0.06, 1)
+Button/colors/font_pressed_color = Color(0.30, 0.20, 0.10, 1)
+Button/colors/font_disabled_color = Color(0.50, 0.45, 0.40, 1)
+Label/colors/font_color = Color(0.09, 0.06, 0.03, 1)
+Label/colors/font_outline_color = Color(0, 0, 0, 0)
+RichTextLabel/colors/default_color = Color(0.09, 0.06, 0.03, 1)
+ItemList/colors/font_color = Color(0.09, 0.06, 0.03, 1)
+ItemList/colors/font_hovered_color = Color(0.09, 0.06, 0.03, 1)
+ItemList/colors/font_disabled_color = Color(0.55, 0.45, 0.40, 1)
+LineEdit/colors/font_color = Color(0.09, 0.06, 0.03, 1)
+LineEdit/colors/caret_color = Color(0.09, 0.06, 0.03, 1)
+TextEdit/colors/font_color = Color(0.09, 0.06, 0.03, 1)
+OptionButton/colors/font_color = Color(0.09, 0.06, 0.03, 1)
+OptionButton/colors/font_hover_color = Color(0.18, 0.12, 0.06, 1)
+SpinBox/colors/font_color = Color(0.09, 0.06, 0.03, 1)
+Window/colors/title_color = Color(0.09, 0.06, 0.03, 1)
+TabBar/colors/font_selected_color = Color(0.09, 0.06, 0.03, 1)
+TabBar/colors/font_unselected_color = Color(0.40, 0.30, 0.18, 1)
+TabContainer/colors/font_selected_color = Color(0.09, 0.06, 0.03, 1)
+TabContainer/colors/font_unselected_color = Color(0.40, 0.30, 0.18, 1)
+FramedWindow/base_type = &"PanelContainer"
+FramedWindow/styles/panel = SubResource("SBF_framed_window")
+NotebookContainer/base_type = &"PanelContainer"
+NotebookContainer/styles/panel = SubResource("SBF_notebook_container")
+NotebookPage/base_type = &"PanelContainer"
+NotebookPage/styles/panel = SubResource("SBF_notebook_page")
+NotebookActiveTab/base_type = &"PanelContainer"
+NotebookActiveTab/styles/panel = SubResource("SBF_notebook_tab_active")
+NotebookInactiveTab/base_type = &"PanelContainer"
+NotebookInactiveTab/styles/panel = SubResource("SBF_notebook_tab_inactive")

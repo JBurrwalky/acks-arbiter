@@ -3,7 +3,7 @@
 # Dependencies:
 #   - Currency (preloaded): coin detection
 #
-# No class_name — lazily instantiated by PartyInventoryOverlay.
+# No class_name — lazily instantiated by InventoryTabPage.
 
 extends PopupMenu
 

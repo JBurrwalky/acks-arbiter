@@ -108,6 +108,39 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 			var lang_str: String = lang_id
 			_add_bullet(lang_str.replace("_", " ").capitalize())
 
+	# Journal Notes badge — H.2 polish item 1d. Surfaces the count of player
+	# notes attached to this character; click jumps to the Journal tab Notes
+	# sub-tab pre-filtered to this entity (item 1c).
+	_add_notes_badge(character.id)
+
+
+func _add_notes_badge(character_id: String) -> void:
+	if character_id.is_empty():
+		return
+	var pid: String = GameState.active_party_id
+	if pid.is_empty():
+		return
+	var journal_repo := JournalRepository.new(CampaignRepository)
+	var notes_count: int = journal_repo.count_notes_for_entity(pid, character_id)
+	add_child(HSeparator.new())
+	_add_section_header("Journal Notes")
+	if notes_count == 0:
+		var dim := Label.new()
+		dim.text = "No notes attached."
+		dim.add_theme_color_override("font_color", Color(0.55, 0.50, 0.42, 1.0))
+		dim.add_theme_font_size_override("font_size", 12)
+		add_child(dim)
+		return
+	var btn := Button.new()
+	btn.text = "📝 View %d note%s in Journal" % [
+		notes_count, ("" if notes_count == 1 else "s")]
+	btn.add_theme_font_size_override("font_size", 12)
+	btn.tooltip_text = "Open the Journal Notes sub-tab filtered to this character"
+	btn.pressed.connect(func():
+		EventBus.notebook_open_requested.emit("journal")
+		EventBus.notebook_journal_notes_filter_requested.emit(character_id))
+	add_child(btn)
+
 
 # ---------------------------------------------------------------------------
 # Portrait loading
