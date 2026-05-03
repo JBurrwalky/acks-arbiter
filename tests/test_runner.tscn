@@ -47,8 +47,8 @@
 [ext_resource type="Script" path="res://tests/test_navigation_stack.gd" id="37_navigation_stack_tests"]
 [ext_resource type="Script" path="res://tests/test_isometric_grid.gd" id="38_isometric_grid_tests"]
 [ext_resource type="Script" path="res://tests/test_proficiency_cross_slot.gd" id="41_proficiency_cross_slot_tests"]
-[ext_resource type="Script" path="res://tests/test_settlement_map_data.gd" id="42_settlement_map_data_tests"]
-[ext_resource type="Script" path="res://tests/test_settlement_map_controller.gd" id="43_settlement_map_controller_tests"]
+[ext_resource type="Script" path="res://tests/test_settlement_data.gd" id="42_settlement_data_tests"]
+[ext_resource type="Script" path="res://tests/test_settlement_context.gd" id="43_settlement_context_tests"]
 [ext_resource type="Script" path="res://tests/test_party_management.gd" id="44_party_management_tests"]
 [ext_resource type="Script" path="res://tests/test_thief_skill_resolver.gd" id="47_thief_skill_resolver_tests"]
 [ext_resource type="Script" path="res://tests/test_cs_tab_proficiencies.gd" id="48_cs_tab_proficiencies_tests"]
@@ -94,8 +94,7 @@
 [ext_resource type="Script" path="res://tests/test_shop_inventory_generator.gd" id="87_shop_inventory_generator_tests"]
 [ext_resource type="Script" path="res://tests/test_shop_service.gd" id="88_shop_service_tests"]
 [ext_resource type="Script" path="res://tests/test_dungeon_session_state.gd" id="89_dungeon_session_state_tests"]
-[ext_resource type="Script" path="res://tests/test_settlement_travel_calculator.gd" id="91_settlement_travel_calculator_tests"]
-[ext_resource type="Script" path="res://tests/test_settlement_navigation.gd" id="92_settlement_navigation_tests"]
+[ext_resource type="Script" path="res://tests/test_settlement_handlers_v2.gd" id="91_settlement_handlers_v2_tests"]
 [ext_resource type="Script" path="res://tests/test_combat_context_menu_builder.gd" id="93_combat_context_menu_builder_tests"]
 [ext_resource type="Script" path="res://tests/test_game_log.gd" id="94_game_log_tests"]
 [ext_resource type="Script" path="res://tests/test_party_wallet.gd" id="95_party_wallet_tests"]
@@ -296,11 +295,11 @@ script = ExtResource("38_isometric_grid_tests")
 [node name="ProficiencyCrossSlotTests" type="Node" parent="."]
 script = ExtResource("41_proficiency_cross_slot_tests")
 
-[node name="SettlementMapDataTests" type="Node" parent="."]
-script = ExtResource("42_settlement_map_data_tests")
+[node name="SettlementDataTests" type="Node" parent="."]
+script = ExtResource("42_settlement_data_tests")
 
-[node name="SettlementMapControllerTests" type="Node" parent="."]
-script = ExtResource("43_settlement_map_controller_tests")
+[node name="SettlementContextTests" type="Node" parent="."]
+script = ExtResource("43_settlement_context_tests")
 
 [node name="PartyManagementTests" type="Node" parent="."]
 script = ExtResource("44_party_management_tests")
@@ -437,11 +436,8 @@ script = ExtResource("88_shop_service_tests")
 [node name="DungeonSessionStateTests" type="Node" parent="."]
 script = ExtResource("89_dungeon_session_state_tests")
 
-[node name="SettlementTravelCalculatorTests" type="Node" parent="."]
-script = ExtResource("91_settlement_travel_calculator_tests")
-
-[node name="SettlementNavigationTests" type="Node" parent="."]
-script = ExtResource("92_settlement_navigation_tests")
+[node name="SettlementHandlersV2Tests" type="Node" parent="."]
+script = ExtResource("91_settlement_handlers_v2_tests")
 
 [node name="CombatContextMenuBuilderTests" type="Node" parent="."]
 script = ExtResource("93_combat_context_menu_builder_tests")

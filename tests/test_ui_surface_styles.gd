@@ -6,6 +6,9 @@ extends "res://tests/test_suite_base.gd"
 func run_all_tests() -> void:
 	test_make_vellum_style_uses_registered_texture()
 	test_apply_vellum_text_theme_sets_readable_label_colors()
+	test_vellum_text_theme_covers_button_family()
+	test_vellum_text_theme_covers_text_input()
+	test_vellum_text_theme_covers_tabs_and_popups()
 	test_apply_framed_window_chrome_adds_background_node()
 	test_apply_framed_window_chrome_accepts_confirmation_dialog()
 	test_apply_framed_window_chrome_accepts_popup_panel()
@@ -35,6 +38,66 @@ func test_apply_vellum_text_theme_sets_readable_label_colors() -> void:
 	check(root.theme.get_color("title_color", "Window") == UiSurfaceStyles.VELLUM_TEXT_COLOR,
 		"vellum text theming should also darken embedded window title text")
 	print("  apply_vellum_text_theme_sets_readable_label_colors: OK")
+
+
+func test_vellum_text_theme_covers_button_family() -> void:
+	var root := Control.new()
+	UiSurfaceStyles.apply_vellum_text_theme(root)
+	var theme: Theme = root.theme
+
+	# Engine defaults are near-white on Button etc., which are unreadable on
+	# parchment. The vellum theme must darken the interactive states for
+	# Button-family controls so all UI surfaces using apply_framed_window_chrome
+	# render readable button labels.
+	for cls in ["Button", "OptionButton", "MenuButton", "CheckBox", "CheckButton", "LinkButton"]:
+		check(theme.get_color("font_color", cls) == UiSurfaceStyles.VELLUM_TEXT_COLOR,
+			"%s.font_color should be darkened to vellum text color" % cls)
+		check(theme.get_color("font_pressed_color", cls) == UiSurfaceStyles.VELLUM_TEXT_COLOR,
+			"%s.font_pressed_color should be darkened" % cls)
+		check(theme.get_color("font_hover_color", cls) == UiSurfaceStyles.VELLUM_TEXT_COLOR,
+			"%s.font_hover_color should be darkened" % cls)
+		check(theme.get_color("font_focus_color", cls) == UiSurfaceStyles.VELLUM_TEXT_COLOR,
+			"%s.font_focus_color should be darkened" % cls)
+		# Disabled state should be visibly distinct (lighter/grayed) but still on
+		# the dark side of the parchment palette so it remains readable.
+		var disabled := theme.get_color("font_disabled_color", cls)
+		check(disabled != UiSurfaceStyles.VELLUM_TEXT_COLOR,
+			"%s.font_disabled_color should differ from active text" % cls)
+		check(disabled.r < 0.6 and disabled.g < 0.6 and disabled.b < 0.6,
+			"%s.font_disabled_color should still be on the dark side of the parchment palette" % cls)
+	print("  vellum_text_theme_covers_button_family: OK")
+
+
+func test_vellum_text_theme_covers_text_input() -> void:
+	var root := Control.new()
+	UiSurfaceStyles.apply_vellum_text_theme(root)
+	var theme: Theme = root.theme
+
+	check(theme.get_color("font_color", "LineEdit") == UiSurfaceStyles.VELLUM_TEXT_COLOR,
+		"LineEdit.font_color should be vellum text color")
+	check(theme.get_color("caret_color", "LineEdit") == UiSurfaceStyles.VELLUM_TEXT_COLOR,
+		"LineEdit.caret_color should be visible against parchment")
+	check(theme.get_color("font_color", "TextEdit") == UiSurfaceStyles.VELLUM_TEXT_COLOR,
+		"TextEdit.font_color should be vellum text color")
+	check(theme.get_color("caret_color", "TextEdit") == UiSurfaceStyles.VELLUM_TEXT_COLOR,
+		"TextEdit.caret_color should be visible against parchment")
+	print("  vellum_text_theme_covers_text_input: OK")
+
+
+func test_vellum_text_theme_covers_tabs_and_popups() -> void:
+	var root := Control.new()
+	UiSurfaceStyles.apply_vellum_text_theme(root)
+	var theme: Theme = root.theme
+
+	check(theme.get_color("font_selected_color", "TabBar") == UiSurfaceStyles.VELLUM_TEXT_COLOR,
+		"TabBar.font_selected_color should be readable on parchment")
+	check(theme.get_color("font_selected_color", "TabContainer") == UiSurfaceStyles.VELLUM_TEXT_COLOR,
+		"TabContainer.font_selected_color should be readable on parchment")
+	check(theme.get_color("font_color", "PopupMenu") == UiSurfaceStyles.VELLUM_TEXT_COLOR,
+		"PopupMenu.font_color should be readable on parchment")
+	check(theme.get_color("font_color", "Tree") == UiSurfaceStyles.VELLUM_TEXT_COLOR,
+		"Tree.font_color should be readable on parchment")
+	print("  vellum_text_theme_covers_tabs_and_popups: OK")
 
 
 func test_apply_framed_window_chrome_adds_background_node() -> void:

@@ -354,7 +354,7 @@ func _on_dungeon_entry(entrance: Dictionary, spawn_cell: Vector2i) -> void:
 	})
 
 
-func _on_settlement_entry(entrance: Dictionary, gate_node_id: int) -> void:
+func _on_settlement_entry(entrance: Dictionary, entry_poi_id: String) -> void:
 	if _runner == null:
 		return
 	var loop: SchedulerLoop = _runner.get_scheduler_loop()
@@ -362,7 +362,7 @@ func _on_settlement_entry(entrance: Dictionary, gate_node_id: int) -> void:
 		loop.pause()
 	_runner.transition_to_state("settlement", {
 		"entrance": entrance,
-		"gate_node_id": gate_node_id,
+		"entry_poi_id": entry_poi_id,
 	})
 
 

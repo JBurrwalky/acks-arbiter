@@ -2,7 +2,7 @@
 
 **Document type:** Game Design Document (Project-designed, improvable)
 **Authority:** Subordinate to `acks_arbiter_design_brief_v11.md`. Establishes the umbrella UI architecture under which all per-surface GDDs operate.
-**Status:** Draft v2.10 — pending review
+**Status:** Draft v2.11 — pending review
 **Depends on:** `acks_arbiter_design_brief_v11.md`, `gdd-voxel-tactical-architecture-v1.1.md`, `gdd-realtime-scheduler.md`, `current_state_ui_audit.md` (2026-04-27)
 **Modifiable:** Yes (project-designed)
 
@@ -19,7 +19,7 @@
 - `gdd-journal-tab.md` (Phase H+) — narrative log + character notes
 - `gdd-quests-tab.md` (Phase H+) — companion to `gdd-quest-rumor-system.md`
 
-**Older UI GDDs flagged as needing review (see §9):** `gdd-combat-ui.md`, `gdd-dungeon-map-ui.md`, `gdd-settlement-exploration-ui.md`. These predate significant architectural shifts (3D voxel presentation, PoI-list settlement navigation, removal of the day-planner / scheduler concept) and are NOT authoritative as written. Each requires a review pass.
+**Older UI GDDs flagged as needing review (see §9):** `gdd-combat-ui.md`, `gdd-dungeon-map-ui.md`. These predate the 3D voxel presentation and are NOT authoritative as written. Each requires a review pass. (`gdd-settlement-exploration-ui.md` was rewritten to v2 on 2026-05-02 — pure menu overlay; the prior streetgraph/navigation-throw design was retired.)
 
 ---
 
@@ -59,13 +59,19 @@ Persistent during gameplay; never modal; does not pause the world; does not bloc
 
 ### 2.2 Side overlay
 
-Toggleable; non-modal; does not pause; covers part of the viewport. Used only for surfaces that must remain accessible during world action and don't fit naturally in the persistent HUD. Examples after this architecture lands: OverridePanel (dev). The previous side-overlay surfaces (CharacterSheetOverlay, PartyInventoryOverlay, PartyManagementOverlay) become Management Notebook tabs; the previously-planned UnifiedLogPanel becomes a HUD element embedded in SessionStatusBar (see §3.8).
+Toggleable; non-modal by default; covers part of the viewport. Used only for surfaces that must remain accessible during world action and don't fit naturally in the persistent HUD. Examples after this architecture lands: OverridePanel (dev), `SettlementMenu` (in-settlement context only — see exception below). The previous side-overlay surfaces (CharacterSheetOverlay, PartyInventoryOverlay, PartyManagementOverlay) become Management Notebook tabs; the previously-planned UnifiedLogPanel becomes a HUD element embedded in SessionStatusBar (see §3.8).
 
 **Rules:**
-- Anchored to one viewport edge; opens via toggle key (see §4); closes via toggle key, Escape, or close button.
-- Does not block world input. World clock continues. Combat continues if active.
+- Anchored to one viewport edge; opens via toggle key (see §4) or context-specific trigger; closes via toggle key, Escape, or close button.
+- **Default behavior:** does not block world input. World clock continues. Combat continues if active.
 - Multiple side overlays may be visible simultaneously; they tile or stack rather than overlap.
-- Layer range: 50–99.
+- Layer range: 50–99 (legacy) or HUD-adjacent layer 10 for context-scoped overlays that share visibility with the hex map (e.g., `SettlementMenu`).
+
+**Pausing-overlay exception.** A small subset of side overlays auto-pause the world when opened. These are context-specific overlays scoped to a single exploration mode where the player needs to deliberate without time pressure. The exception applies to:
+
+- **`SettlementMenu`** — opens on settlement entry or on left-click of the party token while in a settlement; auto-pauses the scheduler; world (hex map + HUD chrome) remains visible behind it. Esc dismisses (per §5.1) but does NOT resume the scheduler — the player explicitly resumes via the speed controls or by committing a travel order. Layer 10. Spec: [`gdd-settlement-exploration-ui.md`](gdd-settlement-exploration-ui.md) v2.
+
+Pausing-overlay surfaces must declare their pause behavior in their own GDD and must not block input to the global HUD chrome (clock, speed controls, entity outliner, party selector tabs, unified log) — only the world-action input is gated by the auto-pause.
 
 ### 2.3 Modal
 
@@ -80,7 +86,9 @@ Blocks input to everything beneath it; pauses where applicable. Examples: Confir
 
 ### 2.4 Full-screen panel
 
-Replaces the world view; lives in NavigationStack. Examples: MainMenuScreen, CharacterCreationScreen, SettingsScreen, PauseMenuOverlay, PartyRosterScreen, CampaignSelectScreen, NewCampaignScreen, the SettlementPanel host view, CombatScreen, DowntimeScreen, EncounterScreen, CampRestScreen.
+Replaces the world view; lives in NavigationStack. Examples: MainMenuScreen, CharacterCreationScreen, SettingsScreen, PauseMenuOverlay, PartyRosterScreen, CampaignSelectScreen, NewCampaignScreen, CombatScreen, DowntimeScreen, EncounterScreen, CampRestScreen.
+
+(The settlement UI was previously listed here as "the SettlementPanel host view." It is no longer a full-screen surface; per [`gdd-settlement-exploration-ui.md`](gdd-settlement-exploration-ui.md) v2, it is a pausing side overlay — see §2.2.)
 
 **Rules:**
 - Pushed onto NavigationStack; popped on exit.
@@ -542,7 +550,7 @@ The pre-existing UI GDDs were written before significant architectural shifts (3
 
 **`gdd-dungeon-map-ui.md`** — Same situation. Predates the 3D voxel dungeon presentation. The voxel architecture GDD covers the current design. Review needed; likely outcome: retire and fold any salvageable interaction-pattern content into the voxel GDD.
 
-**`gdd-settlement-exploration-ui.md`** — Some content is current (PoI list, district sections, travel toggles per the audit's confirmation), but the document predates the management notebook and may include stale references to the removed day-planner / scheduler concept. Review needed to separate current content (PoI navigation model, settlement panel layout) from anything tied to deprecated subsystems.
+**`gdd-settlement-exploration-ui.md`** — **Rewritten 2026-05-02 (v2).** Audit complete. The v1 streetgraph/navigation-throw design was retired in favor of a pure menu overlay: same-district travel = 1 turn + 1 encounter check; cross-district travel = 1 hour + 2 encounter checks; no urban Navigation throw; no city overview widget; PoIs visible from entry; entry/exit points are PoIs flagged with `is_entry_exit: true` rather than a separate gate subsystem. Surface category reclassified from full-screen → pausing side overlay (see §2.2 exception). [`gdd-settlement-layout.md`](gdd-settlement-layout.md) was simplified in lock-step (v2): generator output strips block polygons, street graph, walls, and water features; emits districts + PoIs only.
 
 ### 9.2 Review process for each
 
@@ -587,7 +595,7 @@ This GDD does not create new build phases by itself but commits the project to s
 4. `gdd-unified-log-panel.md` (gates the embedded log work in Phase γ; covers internal tab structure, expand/collapse states, combat-mode behavior)
 5. `gdd-henchmen-tab.md`, `gdd-troops-tab.md` (Phase H+)
 6. `gdd-domain-tab.md`, `gdd-journal-tab.md`, `gdd-quests-tab.md` (Phase H+)
-7. Review-and-rewrite of `gdd-combat-ui.md`, `gdd-dungeon-map-ui.md`, `gdd-settlement-exploration-ui.md` (interleavable)
+7. Review-and-rewrite of `gdd-combat-ui.md`, `gdd-dungeon-map-ui.md` (interleavable). `gdd-settlement-exploration-ui.md` rewritten 2026-05-02 (v2 — pure menu overlay).
 
 ---
 

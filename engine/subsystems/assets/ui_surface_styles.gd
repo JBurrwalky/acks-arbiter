@@ -114,12 +114,67 @@ static func _get_vellum_text_theme() -> Theme:
 		return _vellum_text_theme
 
 	var theme := Theme.new()
+	var disabled_color := VELLUM_TEXT_COLOR.lightened(0.45)
+
+	# Passive text surfaces.
 	theme.set_color("font_color", "Label", VELLUM_TEXT_COLOR)
 	theme.set_color("default_color", "RichTextLabel", VELLUM_TEXT_COLOR)
+	theme.set_color("title_color", "Window", VELLUM_TEXT_COLOR)
+
+	# ItemList rows.
 	theme.set_color("font_color", "ItemList", VELLUM_TEXT_COLOR)
 	theme.set_color("font_hovered_color", "ItemList", VELLUM_TEXT_COLOR)
-	theme.set_color("font_disabled_color", "ItemList", VELLUM_TEXT_COLOR.darkened(0.25))
-	theme.set_color("title_color", "Window", VELLUM_TEXT_COLOR)
+	theme.set_color("font_selected_color", "ItemList", VELLUM_TEXT_COLOR)
+	theme.set_color("font_disabled_color", "ItemList", disabled_color)
+
+	# Button family. Engine defaults are near-white and unreadable on parchment;
+	# keep all interactive states at VELLUM_TEXT_COLOR and let the stylebox
+	# (panel/button background) provide affordance feedback.
+	for cls in ["Button", "OptionButton", "MenuButton", "CheckBox", "CheckButton", "LinkButton"]:
+		theme.set_color("font_color", cls, VELLUM_TEXT_COLOR)
+		theme.set_color("font_pressed_color", cls, VELLUM_TEXT_COLOR)
+		theme.set_color("font_hover_color", cls, VELLUM_TEXT_COLOR)
+		theme.set_color("font_hover_pressed_color", cls, VELLUM_TEXT_COLOR)
+		theme.set_color("font_focus_color", cls, VELLUM_TEXT_COLOR)
+		theme.set_color("font_disabled_color", cls, disabled_color)
+
+	# Text input.
+	theme.set_color("font_color", "LineEdit", VELLUM_TEXT_COLOR)
+	theme.set_color("font_uneditable_color", "LineEdit", disabled_color)
+	theme.set_color("font_placeholder_color", "LineEdit", disabled_color)
+	theme.set_color("caret_color", "LineEdit", VELLUM_TEXT_COLOR)
+	theme.set_color("font_color", "TextEdit", VELLUM_TEXT_COLOR)
+	theme.set_color("font_readonly_color", "TextEdit", disabled_color)
+	theme.set_color("font_placeholder_color", "TextEdit", disabled_color)
+	theme.set_color("caret_color", "TextEdit", VELLUM_TEXT_COLOR)
+
+	# Tree widget.
+	theme.set_color("font_color", "Tree", VELLUM_TEXT_COLOR)
+	theme.set_color("font_selected_color", "Tree", VELLUM_TEXT_COLOR)
+	theme.set_color("font_hovered_color", "Tree", VELLUM_TEXT_COLOR)
+	theme.set_color("font_disabled_color", "Tree", disabled_color)
+	theme.set_color("title_button_color", "Tree", VELLUM_TEXT_COLOR)
+
+	# Tabs (TabBar drives both TabContainer headers and standalone TabBar).
+	theme.set_color("font_selected_color", "TabBar", VELLUM_TEXT_COLOR)
+	theme.set_color("font_unselected_color", "TabBar", disabled_color)
+	theme.set_color("font_hovered_color", "TabBar", VELLUM_TEXT_COLOR)
+	theme.set_color("font_disabled_color", "TabBar", disabled_color)
+	theme.set_color("font_selected_color", "TabContainer", VELLUM_TEXT_COLOR)
+	theme.set_color("font_unselected_color", "TabContainer", disabled_color)
+	theme.set_color("font_hovered_color", "TabContainer", VELLUM_TEXT_COLOR)
+	theme.set_color("font_disabled_color", "TabContainer", disabled_color)
+
+	# Popup menus (right-click context menus, dropdown lists).
+	theme.set_color("font_color", "PopupMenu", VELLUM_TEXT_COLOR)
+	theme.set_color("font_hover_color", "PopupMenu", VELLUM_TEXT_COLOR)
+	theme.set_color("font_disabled_color", "PopupMenu", disabled_color)
+	theme.set_color("font_separator_color", "PopupMenu", disabled_color)
+	theme.set_color("font_accelerator_color", "PopupMenu", disabled_color)
+
+	# SpinBox (uses LineEdit internally but exposes its own color too).
+	theme.set_color("font_color", "SpinBox", VELLUM_TEXT_COLOR)
+
 	_vellum_text_theme = theme
 	return _vellum_text_theme
 

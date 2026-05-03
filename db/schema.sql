@@ -656,20 +656,11 @@ CREATE INDEX IF NOT EXISTS idx_commissions_character
 
 
 -- ---------------------------------------------------------------------------
--- Settlement route memory and POI discovery (Migration 030)
+-- Settlement PoI visit log (Migration 030; known_city_routes dropped by 041)
 -- ---------------------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS known_city_routes (
-    id                  TEXT    PRIMARY KEY,
-    campaign_id         TEXT    NOT NULL REFERENCES campaigns(id),
-    settlement_id       TEXT    NOT NULL,
-    origin_poi_id       TEXT    NOT NULL,
-    destination_poi_id  TEXT    NOT NULL,
-    UNIQUE(campaign_id, settlement_id, origin_poi_id, destination_poi_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_known_city_routes_lookup
-    ON known_city_routes(campaign_id, settlement_id);
+-- visited_pois retained for narrative tracking only (quest/dialogue references
+-- like "have you been to X?"); does NOT gate menu visibility in v2 settlement
+-- exploration UI.
 
 CREATE TABLE IF NOT EXISTS visited_pois (
     id                  TEXT    PRIMARY KEY,
