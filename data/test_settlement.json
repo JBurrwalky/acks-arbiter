@@ -6,184 +6,88 @@
   "terrain_context": "crossroads",
   "culture_id": "default",
   "generation_seed": 42,
-  "entry_node_id": 13,
-
-  "blocks": [
-    {
-      "id": 0,
-      "polygon": [[80,30],[470,60],[520,295],[110,340]],
-      "district_id": "village_center",
-      "block_type": "residential",
-      "alley_traversable": true,
-      "poi_ids": ["poi_tavern"],
-      "waterfront": false
-    },
-    {
-      "id": 1,
-      "polygon": [[470,60],[920,45],[890,330],[520,295]],
-      "district_id": "village_center",
-      "block_type": "residential",
-      "alley_traversable": true,
-      "poi_ids": ["poi_smith"],
-      "waterfront": false
-    },
-    {
-      "id": 2,
-      "polygon": [[110,340],[520,295],[460,640],[95,610]],
-      "district_id": "village_center",
-      "block_type": "residential",
-      "alley_traversable": true,
-      "poi_ids": ["poi_temple"],
-      "waterfront": false
-    },
-    {
-      "id": 3,
-      "polygon": [[520,295],[890,330],[910,590],[460,640]],
-      "district_id": "village_center",
-      "block_type": "plaza",
-      "alley_traversable": true,
-      "poi_ids": ["poi_store"],
-      "waterfront": false
-    },
-    {
-      "id": 4,
-      "polygon": [[95,610],[460,640],[510,890],[120,870]],
-      "district_id": "village_center",
-      "block_type": "residential",
-      "alley_traversable": true,
-      "poi_ids": ["poi_elder"],
-      "waterfront": false
-    },
-    {
-      "id": 5,
-      "polygon": [[460,640],[910,590],[900,860],[510,890]],
-      "district_id": "village_center",
-      "block_type": "residential",
-      "alley_traversable": true,
-      "poi_ids": [],
-      "waterfront": false
-    }
-  ],
-
-  "street_graph": {
-    "nodes": [
-      {"id": 0,  "position": [470, -50],  "type": "gate",          "poi_id": ""},
-      {"id": 1,  "position": [80, 30],    "type": "intersection",  "poi_id": ""},
-      {"id": 2,  "position": [470, 60],   "type": "intersection",  "poi_id": ""},
-      {"id": 3,  "position": [920, 45],   "type": "intersection",  "poi_id": ""},
-      {"id": 4,  "position": [110, 340],  "type": "intersection",  "poi_id": ""},
-      {"id": 5,  "position": [520, 295],  "type": "intersection",  "poi_id": ""},
-      {"id": 6,  "position": [890, 330],  "type": "intersection",  "poi_id": ""},
-      {"id": 7,  "position": [95, 610],   "type": "intersection",  "poi_id": ""},
-      {"id": 8,  "position": [460, 640],  "type": "intersection",  "poi_id": ""},
-      {"id": 9,  "position": [910, 590],  "type": "intersection",  "poi_id": ""},
-      {"id": 10, "position": [120, 870],  "type": "intersection",  "poi_id": ""},
-      {"id": 11, "position": [510, 890],  "type": "intersection",  "poi_id": ""},
-      {"id": 12, "position": [900, 860],  "type": "intersection",  "poi_id": ""},
-      {"id": 13, "position": [510, 990],  "type": "gate",          "poi_id": ""},
-      {"id": 14, "position": [95, 185],   "type": "poi",           "poi_id": "poi_tavern"},
-      {"id": 15, "position": [103, 475],  "type": "poi",           "poi_id": "poi_temple"},
-      {"id": 16, "position": [905, 188],  "type": "poi",           "poi_id": "poi_smith"},
-      {"id": 17, "position": [490, 468],  "type": "poi",           "poi_id": "poi_store"},
-      {"id": 18, "position": [315, 880],  "type": "poi",           "poi_id": "poi_elder"}
-    ],
-    "edges": [
-      {"id": 0,  "node_a": 0,  "node_b": 2,  "type": "main_road",  "length": 110.0, "left_block_id": -1, "right_block_id": -1},
-      {"id": 1,  "node_a": 1,  "node_b": 2,  "type": "minor",      "length": 392.0, "left_block_id": 0,  "right_block_id": -1},
-      {"id": 2,  "node_a": 2,  "node_b": 3,  "type": "minor",      "length": 450.0, "left_block_id": 1,  "right_block_id": -1},
-      {"id": 3,  "node_a": 3,  "node_b": 16, "type": "minor",      "length": 144.0, "left_block_id": 1,  "right_block_id": -1},
-      {"id": 4,  "node_a": 16, "node_b": 6,  "type": "minor",      "length": 143.0, "left_block_id": 1,  "right_block_id": -1},
-      {"id": 5,  "node_a": 6,  "node_b": 9,  "type": "minor",      "length": 262.0, "left_block_id": 3,  "right_block_id": -1},
-      {"id": 6,  "node_a": 9,  "node_b": 12, "type": "minor",      "length": 270.0, "left_block_id": 5,  "right_block_id": -1},
-      {"id": 7,  "node_a": 12, "node_b": 11, "type": "minor",      "length": 391.0, "left_block_id": 5,  "right_block_id": -1},
-      {"id": 8,  "node_a": 10, "node_b": 18, "type": "minor",      "length": 195.0, "left_block_id": 4,  "right_block_id": -1},
-      {"id": 9,  "node_a": 18, "node_b": 11, "type": "minor",      "length": 195.0, "left_block_id": 4,  "right_block_id": -1},
-      {"id": 10, "node_a": 10, "node_b": 7,  "type": "minor",      "length": 262.0, "left_block_id": 4,  "right_block_id": -1},
-      {"id": 11, "node_a": 7,  "node_b": 15, "type": "minor",      "length": 135.0, "left_block_id": 2,  "right_block_id": -1},
-      {"id": 12, "node_a": 15, "node_b": 4,  "type": "minor",      "length": 135.0, "left_block_id": 2,  "right_block_id": -1},
-      {"id": 13, "node_a": 4,  "node_b": 14, "type": "minor",      "length": 156.0, "left_block_id": 0,  "right_block_id": -1},
-      {"id": 14, "node_a": 14, "node_b": 1,  "type": "minor",      "length": 156.0, "left_block_id": 0,  "right_block_id": -1},
-
-      {"id": 15, "node_a": 2,  "node_b": 5,  "type": "main_road",  "length": 239.0, "left_block_id": 0,  "right_block_id": 1},
-      {"id": 16, "node_a": 4,  "node_b": 5,  "type": "secondary",  "length": 413.0, "left_block_id": 0,  "right_block_id": 2},
-      {"id": 17, "node_a": 5,  "node_b": 6,  "type": "secondary",  "length": 372.0, "left_block_id": 1,  "right_block_id": 3},
-      {"id": 18, "node_a": 5,  "node_b": 17, "type": "main_road",  "length": 176.0, "left_block_id": 2,  "right_block_id": 3},
-      {"id": 19, "node_a": 17, "node_b": 8,  "type": "main_road",  "length": 175.0, "left_block_id": 2,  "right_block_id": 3},
-      {"id": 20, "node_a": 7,  "node_b": 8,  "type": "secondary",  "length": 367.0, "left_block_id": 2,  "right_block_id": 4},
-      {"id": 21, "node_a": 8,  "node_b": 9,  "type": "secondary",  "length": 453.0, "left_block_id": 3,  "right_block_id": 5},
-      {"id": 22, "node_a": 8,  "node_b": 11, "type": "main_road",  "length": 255.0, "left_block_id": 4,  "right_block_id": 5},
-      {"id": 23, "node_a": 11, "node_b": 13, "type": "main_road",  "length": 100.0, "left_block_id": -1, "right_block_id": -1}
-    ]
-  },
 
   "districts": [
     {
       "id": "village_center",
       "name": "Village Center",
-      "type": "market",
-      "block_ids": [0, 1, 2, 3, 4, 5],
-      "encounter_modifier": "normal"
+      "type": "village_center",
+      "encounter_modifier": "default",
+      "pois": [
+        {
+          "id": "ashford_north_gate",
+          "name": "North Gate",
+          "type": "gate",
+          "subtype": "main",
+          "district_id": "village_center",
+          "is_entry_exit": true,
+          "importance": "major",
+          "label": null
+        },
+        {
+          "id": "ashford_south_gate",
+          "name": "South Gate",
+          "type": "gate",
+          "subtype": "main",
+          "district_id": "village_center",
+          "is_entry_exit": true,
+          "importance": "major",
+          "label": null
+        },
+        {
+          "id": "poi_tavern",
+          "name": "The Rusty Lantern",
+          "type": "tavern",
+          "subtype": "common",
+          "district_id": "village_center",
+          "is_entry_exit": false,
+          "importance": "major",
+          "label": null
+        },
+        {
+          "id": "poi_temple",
+          "name": "Chapel of the Dawn",
+          "type": "temple",
+          "subtype": "lawful",
+          "district_id": "village_center",
+          "is_entry_exit": false,
+          "importance": "major",
+          "label": null
+        },
+        {
+          "id": "poi_smith",
+          "name": "Gareth's Forge",
+          "type": "shop",
+          "subtype": "blacksmith",
+          "district_id": "village_center",
+          "is_entry_exit": false,
+          "importance": "minor",
+          "label": null
+        },
+        {
+          "id": "poi_store",
+          "name": "Ashford General Goods",
+          "type": "shop",
+          "subtype": "general_store",
+          "district_id": "village_center",
+          "is_entry_exit": false,
+          "importance": "minor",
+          "label": null
+        },
+        {
+          "id": "poi_elder",
+          "name": "Elder's Hall",
+          "type": "guild_hall",
+          "subtype": "municipal",
+          "district_id": "village_center",
+          "is_entry_exit": false,
+          "importance": "major",
+          "label": null
+        }
+      ]
     }
   ],
 
-  "walls": null,
-  "water_features": null,
-
-  "pois": [
-    {
-      "id": "poi_tavern",
-      "name": "The Rusty Lantern",
-      "type": "tavern",
-      "subtype": "",
-      "block_id": 0,
-      "street_node_ids": [14],
-      "district_id": "village_center",
-      "importance": "major",
-      "label": "Tavern"
-    },
-    {
-      "id": "poi_smith",
-      "name": "Gareth's Forge",
-      "type": "shop",
-      "subtype": "blacksmith",
-      "block_id": 1,
-      "street_node_ids": [16],
-      "district_id": "village_center",
-      "importance": "minor",
-      "label": "Smith"
-    },
-    {
-      "id": "poi_temple",
-      "name": "Chapel of the Dawn",
-      "type": "temple",
-      "subtype": "",
-      "block_id": 2,
-      "street_node_ids": [15],
-      "district_id": "village_center",
-      "importance": "major",
-      "label": "Temple"
-    },
-    {
-      "id": "poi_store",
-      "name": "Ashford General Goods",
-      "type": "shop",
-      "subtype": "general_store",
-      "block_id": 3,
-      "street_node_ids": [17],
-      "district_id": "village_center",
-      "importance": "minor",
-      "label": "General Store"
-    },
-    {
-      "id": "poi_elder",
-      "name": "Elder's Hall",
-      "type": "guild",
-      "subtype": "municipal",
-      "block_id": 4,
-      "street_node_ids": [18],
-      "district_id": "village_center",
-      "importance": "major",
-      "label": "Elder's Hall"
-    }
-  ]
+  "undercity_pois": [],
+  "transitions": []
 }

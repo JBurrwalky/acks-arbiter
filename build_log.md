@@ -9414,3 +9414,108 @@ Domain-tab database tables implied (project-designed; for finalization during Ph
 2. After the audit pass, consider the next major drafting target — candidates: NPC generation (gates the Quests tab), LLM narration system (gates Domain narrative auto-generation + Journal Narrative Log auto-generation), Stronghold-Adjacent Panel (v1.1+ ergonomic shortcut), or Hijink Field-Execution surface
 3. Consider running an end-to-end review pass on the other Phase γ tab GDDs (Character / Inventory / Party / Henchmen / Troops / Unified Log) similar to the v1.5 → v1.6 Domain-tab cleanup; the same kind of cross-revision drift may exist there
 
+
+## Session 2026-05-02 — Settlement UI v2: Pure Menu Overlay
+
+**Task:** Audit/rewrite of `gdd-settlement-exploration-ui.md` (the third flagged GDD from the 2026-04-30 design session). Drop the streetgraph/navigation-throw/per-block-encounter mechanical scaffolding and replace it with a flat menu overlay: same-district travel = 1 turn + 1 encounter check; cross-district travel = 1 hour + 2 encounter checks (origin + destination); no urban Navigation throw; no city overview widget; PoIs visible from entry; entry/exit gated by `is_entry_exit` boolean on PoIs (not by `type == "gate"`); auto-pause on menu open or settlement entry; menu reopens on left-click of the party token.
+
+**Model used:** Opus 4.7 (1M context) for plan + implementation.
+
+**Completed:**
+
+### Layer-1 ACKS-rules audit
+- Verified that the prior GDD's "ACKS Sacred" tag on §3.3 (urban movement, navigation throws, encounter check intervals) was **misattributed**. The ACKS rules XML has `acore_proficiencies_rules_and_catalog.xml:872` (Navigation +4 is **wilderness only**), `ax_campaign_play.xml:374` ("Wilderness travel requires Judge checks for getting lost" — settlement not mentioned), and `acore-monster-stocking-rules.xml:175` (City terrain encounter throw 6+, single value). No per-block movement, no urban navigation, no time-interval-based urban encounter mechanics in the rule corpus. The per-block / 11+ throw / per-route deviation system was project-designed extrapolation. Simplification is therefore legitimate.
+
+### GDD revisions
+- **`generation/gdd-settlement-exploration-ui.md` v1 → v2** — full rewrite. Pure menu overlay, no streetgraph/navigation/getting-lost/overview-widget. 1 turn intra / 1 hour cross. Entry/exit on `is_entry_exit` flag. Footnote calling out the misattributed "ACKS Sacred" tag.
+- **`generation/gdd-settlement-layout.md` v1 → v2** — full rewrite. Generator strips back to districts + PoIs only; drops block polygons, street graph, walls, water features. Vertical layers (undercity dungeons) retained.
+- **`generation/gdd-ui-architecture.md` v2.10 → v2.11** — surface taxonomy fix: §2.4 example list no longer includes "the SettlementPanel host view"; new §2.2 pausing-overlay-exception block introduces `SettlementMenu` as a side overlay that auto-pauses (HUD layer 10). §9.1 marks audit complete. §10 build sequencing updated.
+
+### Code: backend simplification
+- **`engine/shared_types/settlement_map_data.gd`** — gutted. Now slim: `id, name, market_class, population_families, terrain_context, generation_seed, culture_id, districts, pois, undercity_pois, transitions`. New API: `get_poi(id)`, `get_district(id)`, `get_pois_in_district(district_id)`, `get_entry_exit_pois()`, `same_district(a, b)`. Class name `SettlementMapData` preserved (file path stable). Dropped: `street_graph`, `blocks`, `walls`, `water_features`, `entry_node_id`, all geometry helpers and the gate-from-street-node synth.
+- **`engine/subsystems/exploration/settlement_map_controller.gd`** — replaced. Now a thin SettlementContext: tracks `_current_poi_id` / `_current_district_id`; API `load_settlement(dict, entry_poi_id)`, `set_current_poi(id)`, `get_current_poi()`, `get_current_district()`, `is_at_entry_exit()`, `same_district_as_current(id)`. Signal `current_poi_changed(poi_id)`. Class name preserved.
+- **`engine/subsystems/session/handlers/settlement_handlers.gd`** — simplified. Drops `navigation_check` and `got_lost` event handlers entirely. New `schedule_travel(settlement, current_poi_id, dest_poi_id, scheduler, party_id, campaign_id, settlement_id, is_night) -> Dictionary` emits 1 arrival + 1-or-2 encounter checks. Encounter threshold modulated by district `encounter_modifier` (default 6+, high-crime 5+, safe 7+).
+- **`engine/autoloads/campaign_repository.gd`** — dropped `record_city_route`, `has_city_route`. Renamed `get_discovered_poi_ids` → `get_visited_poi_ids` (visit log is narrative-only now; does not gate menu visibility).
+- **`db/schema.sql`** — removed `known_city_routes` CREATE + index. Kept `visited_pois`.
+- **`db/migrations/041_drop_known_city_routes.sql`** — new migration. `DROP TABLE IF EXISTS known_city_routes`.
+
+### Code: UI rewrite
+- **`scenes/ui/settlement/settlement_menu.tscn` + `.gd`** — new files. Replaces `settlement_panel.tscn` + `.gd` (deleted). Right ~40% overlay. Header with name + market class + current district + current PoI + close button. Collapsible district sections in scrollable VBox. Each PoI row shows marker + glyph + name + travel-cost tag (`10 min` / `1 hr` / `here`) + Open/Closed status. Esc dismisses. Signals: `poi_clicked(poi)`, `close_requested()`. Calls UiSurfaceStyles when available.
+- **`scenes/ui/settlement/activity_panel.gd`** — Exit Settlement now driven by `_poi.is_entry_exit` flag (independent of `type == "gate"`). `gate` removed from ACTIVITIES dict.
+
+### Code: state & integration
+- **`engine/subsystems/session/states/settlement_explore_state.gd`** — rewritten. Auto-pauses scheduler on enter, mounts SettlementMenu + SettlementActivityPanel as peer CanvasLayers (layer 10). Listens on `EventBus.party_token_clicked` to reopen menu after a travel commit closes it. Listens on `EventBus.active_party_changed` to hide menu on party switch. Travel commit closes menu and resumes scheduler at SPEED_NORMAL. Arrival surfaces activity panel but does NOT auto-reopen menu.
+- **`scenes/maps/hex_map_renderer.gd`** — `_show_gate_dialog` → `_show_entry_exit_dialog`: iterates districts/PoIs from slim settlement_data and filters where `is_entry_exit == true`. If only one such PoI exists, modal is skipped. Signal `settlement_entry_requested` payload changed from `(entrance, gate_node_id: int)` → `(entrance, entry_poi_id: String)`.
+- **`engine/subsystems/session/states/wilderness_explore_state.gd:364`** — context payload key renamed `gate_node_id` → `entry_poi_id` to match new contract.
+
+### Code: deletions
+- `engine/subsystems/exploration/settlement_navigation.gd`
+- `engine/subsystems/exploration/settlement_travel_calculator.gd`
+- `engine/subsystems/exploration/settlement_encounter_scheduler.gd`
+- `scenes/maps/settlement_map.tscn`
+- `scenes/maps/settlement_map_renderer.gd` + `.uid`
+- `scenes/ui/settlement/city_overview_widget.gd`
+- `scenes/ui/settlement/settlement_panel.tscn` + `.gd`
+- Obsolete tests: `test_settlement_map_data.gd`, `test_settlement_map_controller.gd`, `test_settlement_navigation.gd`, `test_settlement_travel_calculator.gd` (and `.uid` sidecars)
+
+### Test data
+- `data/test_settlement.json` — rewritten as Ashford Village in slim format (1 district, 5 PoIs + 2 gate PoIs marked is_entry_exit).
+- `data/test_settlement_thornwall.json` — rewritten as Thornwall in slim format (3 districts: temple_district / market_quarter / craftsmen_quarter; 12 PoIs total including 3 gates marked is_entry_exit, one per district).
+
+### Tests
+- New `tests/test_settlement_data.gd` — 7 tests covering `from_dict`, district/PoI lookups, `get_pois_in_district`, `get_entry_exit_pois`, `same_district` true/false/unknown-id, empty-settlement safety.
+- New `tests/test_settlement_context.gd` — 7 tests covering load with explicit / fallback entry PoI, `set_current_poi` change-and-emit, unknown-id rejection, `is_at_entry_exit`, `same_district_as_current`.
+- New `tests/test_settlement_handlers_v2.gd` — 6 tests covering same-district 1-turn-1-check timing, cross-district 1-hour-2-check timing with district-tagged events, invalid destination handling, cancel_travel cleanup, district encounter-modifier threshold change.
+- `tests/test_runner.gd` + `.tscn` — replaced 4 deleted suite registrations with 3 new ones.
+
+**Decisions made:**
+
+- **Cross-district travel cost is flat 1 hour + 2 checks regardless of district count.** A trip from district A to district C costs the same as A → B. No district adjacency graph is needed. Encounter checks are tagged with origin and destination districts.
+- **All PoIs visible from entry; `visited_pois` retained for narrative-tracking only.** Drops the obvious-vs-hidden-PoI distinction and the Gather-Information-reveals-PoI mechanic. The visited_pois SQLite table stays so quests/dialogue can still ask "have you been here?" — but visit state does not gate menu visibility.
+- **Mid-travel auto-pauses do NOT reopen the settlement menu.** Encounter UI surfaces independently; arrival surfaces the activity panel. Player explicitly reopens the menu via party-token left-click. Avoids modal stacking and z-ordering bugs.
+- **Settlement layout generator strips back to districts + PoIs only.** Block polygons, street graph, walls, water features no longer generated. If the future decorative-portrait enhancement needs them, the generator can re-extend at that time.
+- **Entry/exit point is a boolean PoI flag, independent of PoI type.** Any PoI (tavern, market, road junction, formal gate) can be marked `is_entry_exit: true`. Not every district must have one. Single-PoI case skips the entry-selection modal and emits `settlement_entry_requested` directly.
+- **Activity panel is a peer of the settlement menu** (sibling on the HUD CanvasLayer, not a child). This lets it surface on travel arrival even when the menu is closed.
+- **Class names `SettlementMapData` and `SettlementMapController` are preserved** rather than renamed to `SettlementData` / `SettlementContext`. The old names are retained so file paths and import statements stay stable across the rewrite; the "_map_" segment is now historical.
+
+**Interfaces defined or changed:**
+
+- `EventBus.settlement_entered(settlement_id, district_id)` — unchanged contract; still emitted by `SettlementMapController.load_settlement()`.
+- `HexMapRenderer.settlement_entry_requested(entrance: Dictionary, entry_poi_id: String)` — payload type changed from `gate_node_id: int` to `entry_poi_id: String`.
+- `SettlementHandlers.schedule_travel(settlement: SettlementMapData, current_poi_id: String, dest_poi_id: String, scheduler, party_id, campaign_id, settlement_id, is_night) -> Dictionary` — new signature. Returns `{arrival_event_id, encounter_check_ids, total_rounds, is_same_district, origin_district_id, dest_district_id}` or `{}` on failure.
+- `SettlementHandlers.cancel_travel(scheduler, party_id) -> int` — unchanged signature; returns count of cancelled events.
+- `SettlementHandlers` event registrations: `city_travel_arrival`, `city_encounter_check`, `settlement_activity`, `commission_ready`. **Removed:** `navigation_check`, `got_lost`.
+- `SettlementMapData.same_district(poi_a_id, poi_b_id) -> bool`, `get_entry_exit_pois() -> Array`, `get_poi(id) -> Dictionary`, `get_district(id) -> Dictionary`, `get_pois_in_district(district_id) -> Array` — new API.
+- `SettlementMapController.load_settlement(dict, entry_poi_id)`, `set_current_poi(id)`, `get_current_poi_id() -> String`, `get_current_district_id() -> String`, `is_at_entry_exit() -> bool`, `same_district_as_current(id) -> bool`, signal `current_poi_changed(poi_id)` — new API.
+- `SettlementMenu.poi_clicked(poi: Dictionary)`, `close_requested()` — new menu signals.
+- `CampaignRepository.get_visited_poi_ids(campaign_id, settlement_id) -> Array[String]` — renamed from `get_discovered_poi_ids`.
+- `CampaignRepository.record_city_route`, `has_city_route` — **removed**.
+- `SessionRunner.transition_to_state("settlement", {entrance, entry_poi_id})` — payload key renamed from `gate_node_id`.
+
+**Database changes:**
+
+- Migration **041** — `DROP TABLE IF EXISTS known_city_routes`. Sibling `visited_pois` table retained (role shifts to narrative tracking only).
+- Schema file (`db/schema.sql`) updated to remove the dropped table's CREATE + index.
+
+**Tests added/updated:**
+
+- Added: `test_settlement_data.gd` (7 tests), `test_settlement_context.gd` (7 tests), `test_settlement_handlers_v2.gd` (6 tests). All passing.
+- Removed: `test_settlement_map_data.gd`, `test_settlement_map_controller.gd`, `test_settlement_navigation.gd`, `test_settlement_travel_calculator.gd`.
+- `test_runner.gd` + `.tscn` updated to swap suite registrations.
+- Final test run: **107 suites passed, 19 failed** — all 19 failures are pre-existing in unrelated areas (voxel/movement, dungeon controller, encumbrance, specialization registry, charge/preset, persistence) and not introduced by this work.
+
+**Known issues:**
+
+- **GDScript lambda capture quirk** — initial test_settlement_context.gd hit a known GDScript issue where lambdas capturing local primitive vars don't propagate writes. Worked around by boxing the captured value in a single-element Array. Documented inline so future tests don't repeat the trap.
+- **Cleanup opportunity:** `engine/subsystems/exploration/settlement_map_controller.gd` retains the historical filename and class name (`SettlementMapController`) even though it is now a thin context object. Future refactor could rename to `settlement_context.gd` + `SettlementContext` for clarity, with a follow-up sweep across callsites. Not urgent; in-place comment headers explain the historical naming.
+- **`XpBankingOverlay`** triggered by settlement entry per `gdd-ui-architecture.md` §4.2 — the overlay scene exists at `scenes/ui/xp/xp_banking_overlay.gd` but does NOT appear to be wired into `wilderness_explore_state.gd`'s settlement entry path (no grep matches). This was already the case before this rewrite; not a regression. Whoever picks up XP banking integration should confirm the trigger fires in the new state-transition flow.
+- **Tick-tolerance ongoing-activity model** (per `gdd-domain-tab.md` §15.1.2) is forward-looking Phase H+ work. The current `_handle_settlement_activity` resolves activities as one-shot completion events with notifications — no `ongoing_activity_state` schema, no daily-tick accumulation, no cumulative-absence forfeit. Settlement-initiated multi-day activities (carouse @ 1 day; future longer variants) will need migration when tick-tolerance lands.
+- **No NPC view in the V1 settlement menu.** Journal Notes cross-surfacing (per `gdd-journal-tab.md` §6) into "Settlement Panel NPC view" is deferred; the menu currently surfaces activities only.
+
+**Next session should:**
+
+1. **Verify XpBankingOverlay trigger** on settlement entry — locate the existing wire-up (or document its absence) and either restore or design the integration.
+2. **Manual end-to-end smoke test in editor** — boot Main.tscn, walk party onto a settlement hex, click Enter Settlement, exercise: (a) same-district travel produces 10-min advance + 1 encounter roll; (b) cross-district travel produces 1-hr advance + 2 encounter rolls (visible in notification log even if no encounter triggers); (c) Esc closes menu without resuming scheduler; (d) party-token click reopens menu while in settlement; (e) Exit Settlement only available at PoIs flagged `is_entry_exit`.
+3. **Audit the remaining two flagged GDDs** (`gdd-combat-ui.md`, `gdd-dungeon-map-ui.md`) per the `gdd-ui-architecture.md` §9.1 review queue — both predate the 3D voxel presentation.
+4. **Optional:** consider renaming `settlement_map_controller.gd` → `settlement_context.gd` + `SettlementContext` class with a callsite sweep, now that the class is conceptually a context object. Not urgent.
+

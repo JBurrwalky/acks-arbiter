@@ -69,9 +69,6 @@ const ACTIVITIES := {
 		{"id": "hire_specialists", "label": "Hire Specialists", "major": false, "requires_open": true},
 		{"id": "guild_services", "label": "Guild Services", "major": false, "requires_open": true},
 	],
-	"gate": [
-		{"id": "exit_settlement", "label": "Exit Settlement", "major": false, "requires_open": false},
-	],
 	"market": [
 		{"id": "buy_equipment", "label": "Buy Equipment", "major": false, "requires_open": true},
 		{"id": "sell_equipment", "label": "Sell Equipment", "major": false, "requires_open": true},
@@ -129,8 +126,15 @@ func _rebuild() -> void:
 		closed_label.add_theme_color_override("font_color", Color(0.7, 0.4, 0.3))
 		add_child(closed_label)
 
+	# Exit Settlement is offered at any PoI flagged is_entry_exit: true,
+	# independent of PoI type (per gdd-settlement-exploration-ui.md v2 §4.1).
+	var activities: Array = []
+	if _poi.get("is_entry_exit", false):
+		activities.append({"id": "exit_settlement", "label": "Exit Settlement",
+			"major": false, "requires_open": false})
+
 	# Activity buttons.
-	var activities: Array = ACTIVITIES.get(poi_type, [])
+	activities.append_array(ACTIVITIES.get(poi_type, []))
 	if activities.is_empty():
 		var no_act := Label.new()
 		no_act.text = "No activities available."

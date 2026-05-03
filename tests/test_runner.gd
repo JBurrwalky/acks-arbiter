@@ -55,8 +55,8 @@ extends Node
 @onready var _character_model_registry_tests = $CharacterModelRegistryTests
 @onready var _isometric_grid_tests = $IsometricGridTests
 @onready var _proficiency_cross_slot_tests = $ProficiencyCrossSlotTests
-@onready var _settlement_map_data_tests = $SettlementMapDataTests
-@onready var _settlement_map_controller_tests = $SettlementMapControllerTests
+@onready var _settlement_data_tests = $SettlementDataTests
+@onready var _settlement_context_tests = $SettlementContextTests
 @onready var _party_management_tests = $PartyManagementTests
 @onready var _thief_skill_resolver_tests = $ThiefSkillResolverTests
 @onready var _cs_tab_proficiencies_tests = $CSTabProficienciesTests
@@ -102,8 +102,7 @@ extends Node
 @onready var _shop_inventory_generator_tests = $ShopInventoryGeneratorTests
 @onready var _shop_service_tests = $ShopServiceTests
 @onready var _dungeon_session_state_tests = $DungeonSessionStateTests
-@onready var _settlement_travel_calculator_tests = $SettlementTravelCalculatorTests
-@onready var _settlement_navigation_tests = $SettlementNavigationTests
+@onready var _settlement_handlers_v2_tests = $SettlementHandlersV2Tests
 @onready var _combat_context_menu_builder_tests = $CombatContextMenuBuilderTests
 @onready var _game_log_tests = $GameLogTests
 @onready var _party_wallet_tests = $PartyWalletTests
@@ -170,8 +169,8 @@ func run() -> void:
 			_navigation_stack_tests,
 			_isometric_grid_tests,
 			_proficiency_cross_slot_tests,
-			_settlement_map_data_tests,
-			_settlement_map_controller_tests,
+			_settlement_data_tests,
+			_settlement_context_tests,
 			_party_management_tests,
 			_thief_skill_resolver_tests,
 			_cs_tab_proficiencies_tests,
@@ -217,8 +216,7 @@ func run() -> void:
 			_shop_inventory_generator_tests,
 			_shop_service_tests,
 			_dungeon_session_state_tests,
-			_settlement_travel_calculator_tests,
-			_settlement_navigation_tests,
+			_settlement_handlers_v2_tests,
 			_combat_context_menu_builder_tests,
 			_game_log_tests,
 			_party_wallet_tests,

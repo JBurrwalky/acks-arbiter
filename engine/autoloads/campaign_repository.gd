@@ -3749,35 +3749,10 @@ func mark_commission_picked_up(commission_id: String) -> bool:
 # Settlement route memory and POI discovery (Migration 030)
 # ---------------------------------------------------------------------------
 
-## Records that the party has successfully traveled a route between two POIs.
-## Used for Navigation throw exemptions (gdd-settlement-exploration-ui.md §3.3.4).
-func record_city_route(
-	campaign_id: String, settlement_id: String,
-	origin_poi_id: String, destination_poi_id: String,
-) -> void:
-	var id := generate_id()
-	db.query_with_bindings(
-		"INSERT OR IGNORE INTO known_city_routes " +
-		"(id, campaign_id, settlement_id, origin_poi_id, destination_poi_id) " +
-		"VALUES (?, ?, ?, ?, ?)",
-		[id, campaign_id, settlement_id, origin_poi_id, destination_poi_id])
-
-
-## Returns true if the party has previously traveled a specific route.
-func has_city_route(
-	campaign_id: String, settlement_id: String,
-	origin_poi_id: String, destination_poi_id: String,
-) -> bool:
-	db.query_with_bindings(
-		"SELECT 1 FROM known_city_routes " +
-		"WHERE campaign_id = ? AND settlement_id = ? " +
-		"AND origin_poi_id = ? AND destination_poi_id = ?",
-		[campaign_id, settlement_id, origin_poi_id, destination_poi_id])
-	return db.query_result.size() > 0
-
-
-## Records that the party has discovered or visited a POI.
-## discovery_method: "visited", "obvious", "meander", or "rumor".
+## Records that the party has visited a PoI. V2 settlement UI (2026-05-02) does
+## not gate menu visibility on this; the table is retained for narrative tracking
+## (quests/dialogue can ask "have you been to PoI X?"). discovery_method is
+## kept for compatibility but always "visited" in V2 unless caller specifies.
 func record_visited_poi(
 	campaign_id: String, settlement_id: String,
 	poi_id: String, round: int, discovery_method: String = "visited",
@@ -3790,7 +3765,7 @@ func record_visited_poi(
 		[id, campaign_id, settlement_id, poi_id, round, discovery_method])
 
 
-## Returns true if the party has discovered or visited a specific POI.
+## Returns true if the party has visited a specific PoI.
 func has_visited_poi(
 	campaign_id: String, settlement_id: String, poi_id: String,
 ) -> bool:
@@ -3801,7 +3776,7 @@ func has_visited_poi(
 	return db.query_result.size() > 0
 
 
-## Returns all visited/discovered POI IDs for a settlement.
+## Returns all visited PoI rows for a settlement.
 func get_visited_pois(
 	campaign_id: String, settlement_id: String,
 ) -> Array:
@@ -3813,8 +3788,10 @@ func get_visited_pois(
 	return db.query_result.duplicate()
 
 
-## Returns just the POI ID strings for quick lookup.
-func get_discovered_poi_ids(
+## Returns just the visited PoI id strings for narrative-reference lookup.
+## (Renamed from get_discovered_poi_ids in 2026-05-02 V2 rewrite — V2 does not
+## gate menu visibility on visit state; this is for narrative use only.)
+func get_visited_poi_ids(
 	campaign_id: String, settlement_id: String,
 ) -> Array[String]:
 	db.query_with_bindings(
