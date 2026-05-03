@@ -9,18 +9,15 @@ extends RefCounted
 ## CharacterGenerator.generate_henchman(). Also assigns weekly allotment.
 
 ## Returns an Array of
-##   {class_id: String, level: int, allotment_week: int,
-##    is_normal_man_placeholder: bool}.
+##   {class_id: String, level: int, allotment_week: int}.
 ## Generates the monthly tavern pool by rolling per-level counts from the
 ## acore_equipment.xml availability table (4d100 Normal Men in Class I markets,
 ## 1d2 in Class VI, etc.), then assigning each slot a class via the rarity-
 ## weighted distribution for that market class.
 ##
-## Normal Men (level 0) are not yet implemented as a class. Per project
-## decision (smoke test batch 3): each level-0 slot is filled with a
-## Level-1 Fighter placeholder and flagged with is_normal_man_placeholder.
-## A future session will replace these stubs with the proper 0th-level
-## Normal Man class.
+## Level-0 slots are generated as the Normal Man class (data/classes/normal_man.json).
+## They advance to a chosen 1st-level class at 100 XP per
+## acore_adventures_and_encounters.xml:711-728.
 static func generate_pool(market_class: int, dice = null) -> Array:
 	var candidates: Array = []
 
@@ -31,20 +28,15 @@ static func generate_pool(market_class: int, dice = null) -> Array:
 		var count := _roll_level_count(level, market_class, dice)
 		for _i in range(count):
 			if level == 0:
-				# TODO(normal-men): replace this placeholder with a real
-				# 0th-level Normal Man character once the class is built.
-				# The is_normal_man_placeholder flag is the swap point.
 				candidates.append({
-					"class_id": "fighter",
-					"level": 1,
-					"is_normal_man_placeholder": true,
+					"class_id": "normal_man",
+					"level": 0,
 				})
 			else:
 				var class_id := _pick_class_for_market(market_class, dice)
 				candidates.append({
 					"class_id": class_id,
 					"level": level,
-					"is_normal_man_placeholder": false,
 				})
 
 	# Sacred allotment: ½ week 1, ¼ week 2, remainder week 3.

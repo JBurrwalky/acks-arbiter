@@ -43,28 +43,10 @@ func ensure_pool(settlement_id: String, market_class: int,
 			cd = _char_gen.generate_henchman(
 				spec["class_id"], spec["level"], campaign_id)
 		if cd != null:
-			# TODO(normal-men): when the 0th-level Normal Man class lands,
-			# replace this branch with direct generation of that class.
-			# The is_normal_man_placeholder flag stays as the swap point.
-			if spec.get("is_normal_man_placeholder", false):
-				cd.class_metadata = _stamp_metadata_flag(
-					cd.class_metadata, "normal_man_placeholder", true)
 			_repo.save_character(cd.to_dict())
 			_repo.add_pool_member(pool_id, cd.id, spec["allotment_week"])
 
 	return pool_id
-
-
-## Merges a single bool flag into a JSON-encoded class_metadata string.
-## Returns the new JSON string. Preserves existing keys.
-static func _stamp_metadata_flag(json_str: String, key: String, value: bool) -> String:
-	var dict: Dictionary = {}
-	if not json_str.is_empty():
-		var parsed: Variant = JSON.parse_string(json_str)
-		if parsed is Dictionary:
-			dict = parsed
-	dict[key] = value
-	return JSON.stringify(dict)
 
 
 ## Get available (not-yet-hired) henchmen for this week of the month.

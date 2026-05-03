@@ -1,7 +1,7 @@
 extends "res://tests/test_suite_base.gd"
 
 ## Tests for HenchmanAvailability.generate_pool — exercises the per-level
-## availability rolls and Normal Man → Level-1 Fighter placeholder mapping.
+## availability rolls and the level-0 Normal Man slot generation.
 
 
 ## Returns deterministic dice values from a queue. Each call to roll() pops
@@ -24,10 +24,11 @@ class QueueDice:
 
 func run_all_tests() -> void:
 	test_pool_includes_normal_men_at_market_class_six()
-	test_normal_men_become_level_1_fighter_placeholders()
+	test_level_zero_slots_use_normal_man_class()
 	test_leveled_slots_pick_class_from_market_pool()
 	test_pool_assigns_weekly_allotment()
 	test_market_class_one_yields_many_normal_men()
+	test_no_placeholder_flag_remains()
 	if not has_failures():
 		print("HenchmanAvailability: all tests passed.")
 
@@ -41,21 +42,20 @@ func test_pool_includes_normal_men_at_market_class_six() -> void:
 	check(pool.size() == 2,
 		"MC VI with Normal Men roll 2 should yield 2 candidates, got %d" % pool.size())
 	for entry: Dictionary in pool:
-		check(entry.get("is_normal_man_placeholder", false),
-			"MC VI candidates with no leveled rolls should all be placeholders")
+		check(entry["class_id"] == "normal_man",
+			"MC VI candidates with no leveled rolls should all be normal_man")
+		check(int(entry["level"]) == 0, "normal_man slots must be level 0")
 
 
-func test_normal_men_become_level_1_fighter_placeholders() -> void:
+func test_level_zero_slots_use_normal_man_class() -> void:
 	var dice := QueueDice.new([1, 99, 99, 99])  # 1 Normal Man, no leveled
 	var pool := HenchmanAvailability.generate_pool(6, dice)
 	check(pool.size() == 1, "expected 1 candidate")
 	var entry: Dictionary = pool[0]
-	check(entry["class_id"] == "fighter",
-		"Normal Man placeholder must use fighter class, got %s" % entry["class_id"])
-	check(entry["level"] == 1,
-		"Normal Man placeholder level must be 1, got %d" % int(entry["level"]))
-	check(entry["is_normal_man_placeholder"] == true,
-		"placeholder flag must be set")
+	check(entry["class_id"] == "normal_man",
+		"level-0 slot must use class_id 'normal_man', got %s" % entry["class_id"])
+	check(int(entry["level"]) == 0,
+		"normal_man slot must be level 0, got %d" % int(entry["level"]))
 
 
 func test_leveled_slots_pick_class_from_market_pool() -> void:
@@ -75,17 +75,18 @@ func test_leveled_slots_pick_class_from_market_pool() -> void:
 	check(pool.size() == 12,
 		"MC IV with these rolls should yield 12 candidates, got %d" % pool.size())
 	var leveled := 0
-	var placeholders := 0
+	var normal_men := 0
 	for entry: Dictionary in pool:
-		if entry.get("is_normal_man_placeholder", false):
-			placeholders += 1
+		if entry["class_id"] == "normal_man":
+			normal_men += 1
+			check(int(entry["level"]) == 0, "normal_man must be level 0")
 		else:
 			leveled += 1
-			check(entry["level"] >= 1, "leveled slot must have level >= 1")
+			check(int(entry["level"]) >= 1, "leveled slot must have level >= 1")
 			check(not String(entry["class_id"]).is_empty(),
 				"leveled slot must have a class")
-	check(placeholders == 9,
-		"expected 9 Normal Man placeholders, got %d" % placeholders)
+	check(normal_men == 9,
+		"expected 9 Normal Men, got %d" % normal_men)
 	check(leveled == 3, "expected 3 leveled slots, got %d" % leveled)
 
 
@@ -129,9 +130,20 @@ func test_market_class_one_yields_many_normal_men() -> void:
 	var pool := HenchmanAvailability.generate_pool(1, dice)
 	var normal_count := 0
 	for entry: Dictionary in pool:
-		if entry.get("is_normal_man_placeholder", false):
+		if entry["class_id"] == "normal_man":
 			normal_count += 1
 	check(normal_count == 200,
-		"MC I should yield 200 Normal Man placeholders, got %d" % normal_count)
+		"MC I should yield 200 Normal Men, got %d" % normal_count)
 	check(pool.size() == 248,
 		"MC I total pool should be 248, got %d" % pool.size())
+
+
+func test_no_placeholder_flag_remains() -> void:
+	# After the placeholder removal (migration 046), no entry in the generated
+	# pool should still carry is_normal_man_placeholder. Confirms the legacy
+	# flag is fully gone from the generation path.
+	var dice := QueueDice.new([3, 99, 99, 99])
+	var pool := HenchmanAvailability.generate_pool(6, dice)
+	for entry: Dictionary in pool:
+		check(not entry.has("is_normal_man_placeholder"),
+			"placeholder flag must not be present on any pool entry")

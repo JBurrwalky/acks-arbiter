@@ -43,7 +43,7 @@ func can_level_up(character: CharacterData) -> bool:
 	if character.level >= character.max_level:
 		return false
 	if character.level == 0:
-		# 0th-level: eligible at 100 XP (or 500 XP per henchman GDD).
+		# 0th-level: eligible at 100 XP per acore_adventures_and_encounters.xml:713.
 		# Returning true here; the caller should check requires_class_selection in the result.
 		return character.xp >= 100
 	return character.xp_for_next_level > 0 and character.xp >= character.xp_for_next_level
@@ -261,8 +261,92 @@ func finalize_interactive_level_up(character: CharacterData,
 		push_error("LevelUpEngine.finalize_interactive_level_up: failed to persist stat changes")
 		return false
 
+	# Stage 3d — Familiar level-up persistence (replacement bonding OR
+	# additional picks on budget growth). FamiliarController._on_character_leveled_up
+	# also fires after the EventBus emit below and refreshes cached stats from
+	# the master's now-current state — that runs *after* this write, so the
+	# controller will overwrite our `proficiency_count_cached` with the same
+	# value (computed identically from sum of selections_count).
+	_persist_familiar_level_up(character, choices)
+
 	EventBus.character_leveled_up.emit(character.id, character.level)
 	return true
+
+
+func _persist_familiar_level_up(character: CharacterData, choices: Dictionary) -> void:
+	## Stage 3d — write familiar changes from the level-up flow.
+	## See scenes/ui/character_sheet/tabs/level_up_familiar_picker.gd for the
+	## case-tagged choices Dict shape this consumes.
+	var familiar_choices: Dictionary = choices.get("familiar", {})
+	if familiar_choices.is_empty():
+		return
+	var case_kind: String = String(familiar_choices.get("case", ""))
+
+	if case_kind == "A":
+		# Replacement bonding — write a new familiar row for the master.
+		var form_key: String = String(familiar_choices.get("form_key", ""))
+		if form_key.is_empty():
+			return
+		var prog: Dictionary = FamiliarData.compute_progression_for_master_level(character.level)
+		var hp_max_familiar: int = maxi(1, _bankers_round(float(character.hp_max) / 2.0))
+		var picks: Array = familiar_choices.get("proficiencies_chosen", [])
+		var budget: int = int(familiar_choices.get(
+			"proficiency_count_cached",
+			_sum_master_proficiency_count(character.proficiencies)))
+		var fid: String = CampaignRepository.create_familiar({
+			"campaign_id": character.campaign_id,
+			"master_character_id": character.id,
+			"form_key": form_key,
+			"cosmetic_species": String(familiar_choices.get("cosmetic_species", "")),
+			"name": String(familiar_choices.get("name", "")),
+			"hp_current": hp_max_familiar,
+			"hp_max_cached": hp_max_familiar,
+			"hd_dice": int(prog["hd_dice"]),
+			"hd_modifier_hp": int(prog["hd_modifier_hp"]),
+			"is_half_hd": bool(prog["is_half_hd"]),
+			"attack_save_class": String(prog["attack_save_class"]),
+			"attack_save_level": int(prog["attack_save_level"]),
+			"damage_bonus": int(prog["damage_bonus"]),
+			"int_cached": character.intelligence,
+			"proficiency_count_cached": budget,
+			"proficiencies_chosen": JSON.stringify(picks),
+			"is_alive": true,
+			"bonded_at_master_level": character.level,
+			"death_save_pending": false,
+		})
+		if not fid.is_empty():
+			EventBus.familiar_bonded.emit(character.id, fid)
+		return
+
+	if case_kind == "B":
+		# Additional picks — update existing familiar's proficiencies_chosen.
+		var familiar_id: String = String(familiar_choices.get("familiar_id", ""))
+		if familiar_id.is_empty():
+			return
+		var new_picks: Array = familiar_choices.get("proficiencies_chosen", [])
+		CampaignRepository.update_familiar(familiar_id, {
+			"proficiencies_chosen": JSON.stringify(new_picks),
+		})
+
+
+static func _sum_master_proficiency_count(proficiencies: Array) -> int:
+	var total: int = 0
+	for p in proficiencies:
+		if p is Dictionary:
+			total += int(p.get("selections_count", 1))
+	return total
+
+
+static func _bankers_round(value: float) -> int:
+	## Banker's rounding (round half to even). Used by familiar HP halving to
+	## match the FamiliarData formula.
+	var floor_val := int(value)
+	var frac := value - floor_val
+	if is_equal_approx(frac, 0.5):
+		if floor_val % 2 == 0:
+			return floor_val
+		return floor_val + 1
+	return int(roundf(value))
 
 
 # ---------------------------------------------------------------------------

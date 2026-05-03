@@ -24,8 +24,8 @@ func run_all_tests() -> void:
 
 func test_all_classes_load() -> void:
 	var reg := ClassRegistry.new()
-	check(reg.get_class_count() == 27,
-		"ClassRegistry should load 27 classes, got %d" % reg.get_class_count())
+	check(reg.get_class_count() == 28,
+		"ClassRegistry should load 28 classes, got %d" % reg.get_class_count())
 	print("  all_classes_load: OK")
 
 

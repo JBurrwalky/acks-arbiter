@@ -55,8 +55,8 @@ extends Node
 @onready var _character_model_registry_tests = $CharacterModelRegistryTests
 @onready var _isometric_grid_tests = $IsometricGridTests
 @onready var _proficiency_cross_slot_tests = $ProficiencyCrossSlotTests
-@onready var _settlement_map_data_tests = $SettlementMapDataTests
-@onready var _settlement_map_controller_tests = $SettlementMapControllerTests
+@onready var _settlement_data_tests = $SettlementDataTests
+@onready var _settlement_context_tests = $SettlementContextTests
 @onready var _party_management_tests = $PartyManagementTests
 @onready var _thief_skill_resolver_tests = $ThiefSkillResolverTests
 @onready var _cs_tab_proficiencies_tests = $CSTabProficienciesTests
@@ -91,6 +91,7 @@ extends Node
 @onready var _henchman_loyalty_tests = $HenchmanLoyaltyTests
 @onready var _henchman_lifecycle_tests = $HenchmanLifecycleTests
 @onready var _henchman_availability_tests = $HenchmanAvailabilityTests
+@onready var _normal_man_class_tests = $NormalManClassTests
 @onready var _combat_state_spawn_tests = $CombatStateSpawnTests
 @onready var _fog_reveal_engine_tests = $FogRevealEngineTests
 @onready var _notification_manager_tests = $NotificationManagerTests
@@ -102,8 +103,7 @@ extends Node
 @onready var _shop_inventory_generator_tests = $ShopInventoryGeneratorTests
 @onready var _shop_service_tests = $ShopServiceTests
 @onready var _dungeon_session_state_tests = $DungeonSessionStateTests
-@onready var _settlement_travel_calculator_tests = $SettlementTravelCalculatorTests
-@onready var _settlement_navigation_tests = $SettlementNavigationTests
+@onready var _settlement_handlers_v2_tests = $SettlementHandlersV2Tests
 @onready var _combat_context_menu_builder_tests = $CombatContextMenuBuilderTests
 @onready var _game_log_tests = $GameLogTests
 @onready var _party_wallet_tests = $PartyWalletTests
@@ -135,6 +135,32 @@ extends Node
 @onready var _inventory_container_transfer_tests = $InventoryContainerTransferTests
 @onready var _class_equip_restriction_validator_tests = $ClassEquipRestrictionValidatorTests
 @onready var _dungeon_action_actor_picker_tests = $DungeonActionActorPickerTests
+@onready var _stat_readout_tests = $StatReadoutTests
+@onready var _empty_state_page_tests = $EmptyStatePageTests
+@onready var _acks_arbiter_theme_tests = $AcksArbiterThemeTests
+@onready var _notebook_state_tests = $NotebookStateTests
+@onready var _notebook_tests = $NotebookTests
+@onready var _character_tab_tests = $CharacterTabTests
+@onready var _inventory_tab_tests = $InventoryTabTests
+@onready var _party_tab_tests = $PartyTabTests
+@onready var _session_status_bar_tests = $SessionStatusBarTests
+@onready var _unified_log_tests = $UnifiedLogTests
+@onready var _familiar_data_tests = $FamiliarDataTests
+@onready var _familiar_repository_tests = $FamiliarRepositoryTests
+@onready var _h0_foundations_tests = $H0FoundationsTests
+@onready var _henchmen_tab_tests = $HenchmenTabTests
+@onready var _journal_tab_tests = $JournalTabTests
+@onready var _journal_polish_tests = $JournalPolishTests
+@onready var _h3_polish_tests = $H3PolishTests
+@onready var _familiar_proximity_tests = $FamiliarProximityTests
+@onready var _familiar_death_link_tests = $FamiliarDeathLinkTests
+@onready var _familiar_level_up_refresh_tests = $FamiliarLevelUpRefreshTests
+@onready var _familiar_form_registry_tests = $FamiliarFormRegistryTests
+@onready var _familiar_picker_tests = $FamiliarPickerTests
+@onready var _familiar_proficiency_picker_tests = $FamiliarProficiencyPickerTests
+@onready var _familiar_acquisition_panel_tests = $FamiliarAcquisitionPanelTests
+@onready var _level_up_familiar_picker_tests = $LevelUpFamiliarPickerTests
+@onready var _familiar_auto_proximity_tests = $FamiliarAutoProximityTests
 
 
 func _ready() -> void:
@@ -170,8 +196,8 @@ func run() -> void:
 			_navigation_stack_tests,
 			_isometric_grid_tests,
 			_proficiency_cross_slot_tests,
-			_settlement_map_data_tests,
-			_settlement_map_controller_tests,
+			_settlement_data_tests,
+			_settlement_context_tests,
 			_party_management_tests,
 			_thief_skill_resolver_tests,
 			_cs_tab_proficiencies_tests,
@@ -206,6 +232,7 @@ func run() -> void:
 			_henchman_loyalty_tests,
 			_henchman_lifecycle_tests,
 			_henchman_availability_tests,
+			_normal_man_class_tests,
 			_combat_state_spawn_tests,
 			_fog_reveal_engine_tests,
 			_notification_manager_tests,
@@ -217,8 +244,7 @@ func run() -> void:
 			_shop_inventory_generator_tests,
 			_shop_service_tests,
 			_dungeon_session_state_tests,
-			_settlement_travel_calculator_tests,
-			_settlement_navigation_tests,
+			_settlement_handlers_v2_tests,
 			_combat_context_menu_builder_tests,
 			_game_log_tests,
 			_party_wallet_tests,
@@ -250,7 +276,33 @@ func run() -> void:
 			_lever_tests,
 			_inventory_container_transfer_tests,
 			_class_equip_restriction_validator_tests,
-			_dungeon_action_actor_picker_tests]:
+			_dungeon_action_actor_picker_tests,
+			_stat_readout_tests,
+			_empty_state_page_tests,
+			_acks_arbiter_theme_tests,
+			_notebook_state_tests,
+			_notebook_tests,
+			_character_tab_tests,
+			_inventory_tab_tests,
+			_party_tab_tests,
+			_session_status_bar_tests,
+			_unified_log_tests,
+			_familiar_data_tests,
+			_familiar_repository_tests,
+			_h0_foundations_tests,
+			_henchmen_tab_tests,
+			_familiar_proximity_tests,
+			_familiar_death_link_tests,
+			_familiar_level_up_refresh_tests,
+			_journal_tab_tests,
+			_familiar_form_registry_tests,
+			_familiar_picker_tests,
+			_familiar_proficiency_picker_tests,
+			_journal_polish_tests,
+			_familiar_acquisition_panel_tests,
+			_level_up_familiar_picker_tests,
+			_familiar_auto_proximity_tests,
+			_h3_polish_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

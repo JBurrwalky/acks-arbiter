@@ -1,0 +1,39 @@
+{
+  "class_id": "normal_man",
+  "class_name": "Normal Man",
+  "source": "ACKS Core (acore_adventures_and_encounters.xml §zero_level_characters_and_adventuring_xp)",
+  "enabled": false,
+  "race": "human",
+  "prime_requisites": [],
+  "minimum_abilities": {},
+  "alignment_restriction": "",
+  "hit_die": "1d4",
+  "hp_after_max_hd": 0,
+  "max_hd_count": 1,
+  "min_level": 0,
+  "max_level": 1,
+  "combat_progression": "normal_man",
+  "base_attack_throw": 11,
+  "attack_progression": {
+    "0": 11,
+    "1": 11
+  },
+  "saving_throws": {
+    "0": {"petrification": 16, "poison_death": 14, "blast_breath": 17, "staffs_wands": 16, "spells": 18},
+    "1": {"petrification": 16, "poison_death": 14, "blast_breath": 17, "staffs_wands": 16, "spells": 18}
+  },
+  "xp_table": [0],
+  "hd_table": ["1d4"],
+  "weapon_permissions": ["all"],
+  "weapon_restrictions": [],
+  "armor_permissions": ["all"],
+  "shield_permitted": true,
+  "fighting_styles": [],
+  "class_proficiency_list": [],
+  "proficiency_progression": {
+    "class": [],
+    "general": []
+  },
+  "level_titles": ["Normal Man"],
+  "class_powers": []
+}

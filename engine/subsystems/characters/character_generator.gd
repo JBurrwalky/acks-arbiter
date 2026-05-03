@@ -173,9 +173,11 @@ func generate_npc(class_id: String, level: int, campaign_id: String,
 		push_error("CharacterGenerator.generate_npc: unknown class '%s'" % class_id)
 		return null
 
-	# Clamp level to class maximum
+	# Clamp level to class range. Most classes start at level 1; Normal Man
+	# (and any future zero-level class) opts into level 0 via "min_level": 0.
 	var max_lvl: int = cls.get("max_level", 14)
-	level = clampi(level, 1, max_lvl)
+	var min_lvl: int = int(cls.get("min_level", 1))
+	level = clampi(level, min_lvl, max_lvl)
 
 	var character := CharacterData.new()
 	character.id = CampaignRepository.generate_id()
@@ -321,15 +323,18 @@ func auto_select_proficiencies(class_id: String, level: int) -> Array:
 		if int(lvl) <= level:
 			general_slots += 1
 
-	# Auto-pick: adventuring is automatic (general), then random from class list
-	proficiencies.append({
-		"proficiency_key": "adventuring",
-		"rank": 1,
-		"slot_type": "general",
-		"selections_count": 1,
-		"specialization": "",
-	})
-	general_slots -= 1  # adventuring took one general slot
+	# Auto-pick: adventuring is automatic (general), then random from class list.
+	# Normal Men are excluded — ACKS RAW (acore_adventures_and_encounters.xml:723)
+	# specifies Adventuring is gained at 4th level *after* advancing out of NM.
+	if class_id != "normal_man":
+		proficiencies.append({
+			"proficiency_key": "adventuring",
+			"rank": 1,
+			"slot_type": "general",
+			"selections_count": 1,
+			"specialization": "",
+		})
+		general_slots -= 1  # adventuring took one general slot
 
 	# Fill class proficiency slots randomly
 	var available_class := class_prof_list.duplicate()
@@ -415,8 +420,9 @@ func _roll_hp(hit_die: String, level: int, con_modifier: int,
 	var sides := _parse_hit_die_sides(hit_die)
 	var total_hp: int = 0
 
-	# Roll hit dice (up to max_hd_count)
-	var dice_to_roll := mini(level, max_hd_count)
+	# Roll hit dice (up to max_hd_count). Level 0 (Normal Man) still rolls one
+	# die — ACKS RAW gives 0th-level characters 1d4 hp.
+	var dice_to_roll := mini(maxi(level, 1), max_hd_count)
 	for i in range(dice_to_roll):
 		var roll := DiceSystem.roll_digital(sides, 1, 0, "hit_points_L%d" % (i + 1))
 		var hp_this_die := maxi(roll.modified_total + con_modifier, 1)
