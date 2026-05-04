@@ -32,8 +32,12 @@ func test_normal_man_basics() -> void:
 	var reg := ClassRegistry.new()
 	var nm := reg.get_class_def("normal_man")
 	check(not nm.is_empty(), "normal_man class def must not be empty")
-	check(String(nm.get("combat_progression", "")) == "normal_man",
-		"combat_progression should be 'normal_man'")
+	# combat_progression is "fighter" because the schema CHECK constraint
+	# only permits the four canonical values. The character_class field
+	# ("normal_man") is the authoritative discriminator; combat_progression
+	# is a hint that aligns with the RAW default-to-fighter advancement.
+	check(String(nm.get("combat_progression", "")) == "fighter",
+		"combat_progression should be 'fighter' (RAW default-trajectory hint)")
 	check(String(nm.get("hit_die", "")) == "1d4",
 		"hit_die should be '1d4'")
 	check(int(nm.get("max_hd_count", 99)) == 1,
@@ -100,8 +104,8 @@ func test_generate_henchman_produces_normal_man() -> void:
 	check(nm.level == 0, "generated level should be 0, got %d" % nm.level)
 	check(nm.character_type == "henchman",
 		"character_type should be 'henchman', got %s" % nm.character_type)
-	check(nm.combat_progression == "normal_man",
-		"combat_progression should be 'normal_man', got %s" % nm.combat_progression)
+	check(nm.combat_progression == "fighter",
+		"combat_progression should be 'fighter' (RAW default-trajectory hint), got %s" % nm.combat_progression)
 	check(int(nm.wage_gp_per_month) == 12,
 		"NM monthly wage should be 12 gp, got %d" % nm.wage_gp_per_month)
 

@@ -12,7 +12,7 @@
   "max_hd_count": 1,
   "min_level": 0,
   "max_level": 1,
-  "combat_progression": "normal_man",
+  "combat_progression": "fighter",
   "base_attack_throw": 11,
   "attack_progression": {
     "0": 11,

@@ -229,6 +229,15 @@ signal henchman_departed(henchman_id: String, departure: Dictionary)
 ## [param result] keys from HenchmanLoyaltyResolver.resolve_loyalty_check()
 signal henchman_loyalty_checked(henchman_id: String, trigger: String, result: Dictionary)
 
+## A 0th-level henchman has been advanced into a 1st-level class via the
+## 3-layer decision rule (HenchmanClassSelector). Fired AFTER the class swap
+## is persisted; consumers (notifications, log) react to a fait accompli.
+## [param score_breakdown] per-candidate {prime_score, prof_overlap, progression_match, eliminated_at_stage}
+## [param hp_change]       difference between new and old hp_max (always >= 0; the rule is keep-higher)
+signal henchman_advanced_from_normal_man(
+	henchman_id: String, new_class: String,
+	score_breakdown: Dictionary, hp_change: int)
+
 ## Monthly wages were processed for a party.
 ## [param summary] keys: total_deducted, unpaid_henchmen (Array of ids)
 signal wages_processed(party_id: String, summary: Dictionary)

@@ -92,6 +92,8 @@ extends Node
 @onready var _henchman_lifecycle_tests = $HenchmanLifecycleTests
 @onready var _henchman_availability_tests = $HenchmanAvailabilityTests
 @onready var _normal_man_class_tests = $NormalManClassTests
+@onready var _henchman_class_selector_tests = $HenchmanClassSelectorTests
+@onready var _normal_man_advancement_tests = $NormalManAdvancementTests
 @onready var _combat_state_spawn_tests = $CombatStateSpawnTests
 @onready var _fog_reveal_engine_tests = $FogRevealEngineTests
 @onready var _notification_manager_tests = $NotificationManagerTests
@@ -233,6 +235,8 @@ func run() -> void:
 			_henchman_lifecycle_tests,
 			_henchman_availability_tests,
 			_normal_man_class_tests,
+			_henchman_class_selector_tests,
+			_normal_man_advancement_tests,
 			_combat_state_spawn_tests,
 			_fog_reveal_engine_tests,
 			_notification_manager_tests,

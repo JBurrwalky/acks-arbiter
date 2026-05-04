@@ -94,9 +94,14 @@ func apply_level_up_auto(character: CharacterData) -> Dictionary:
 			character.id, character.level, character.xp, character.xp_for_next_level])
 		return {}
 
-	# Handle 0th-level case.
+	# 0th-level (Normal Man) → 1st-level class transition.
+	# Per acore_adventures_and_encounters.xml:711-728: at 100 XP a Normal Man
+	# advances. RAW default is fighter; the project's 3-layer rule
+	# (HenchmanClassSelector) operates under the §725-727 special-circumstances
+	# carve-out for henchmen with a known patron. NPCs without a patron route
+	# through the same selector with patron=null (falls through to alphabetical).
 	if character.level == 0:
-		return {"requires_class_selection": true, "character_id": character.id}
+		return _advance_normal_man(character)
 
 	var result := _compute_level_up(character)
 	_apply_stat_changes(character, result)
@@ -165,8 +170,221 @@ func apply_level_up_auto(character: CharacterData) -> Dictionary:
 		"save_spells":        character.save_spells,
 	})
 
+	# Post-Normal-Man track: L2/L3/L4 erode one pre-existing general proficiency
+	# per acore_adventures_and_encounters.xml:720; L4 also auto-grants Adventuring
+	# per :723.
+	if character.has_class_metadata_flag("is_post_normal_man"):
+		_apply_post_normal_man_track(character)
+
 	EventBus.character_leveled_up.emit(character.id, character.level)
 	return result
+
+
+# ---------------------------------------------------------------------------
+# Normal Man → 1st-Level Class Transition
+# ---------------------------------------------------------------------------
+
+func _advance_normal_man(character: CharacterData) -> Dictionary:
+	## Performs the L0 → L1 advancement for a Normal Man.
+	## Per acore_adventures_and_encounters.xml:711-728 + the project's 3-layer
+	## class-selection rule.
+	##
+	## Flow:
+	##   1. Look up the patron PC (if henchman with employer_id).
+	##   2. Run HenchmanClassSelector.select_class_for_normal_man.
+	##   3. Set character_class, combat_progression, hit_die_type, max_level
+	##      from the selected class.
+	##   4. Re-roll HP (1d8 / 1d6 / 1d4 + CON mod, min 1) per :716.
+	##      Keep max(new_total, old_hp_max).
+	##   5. Stamp is_post_normal_man=true in class_metadata.
+	##   6. Set level=1, derive combat stats from new class, recompute xp_for_next_level.
+	##   7. Auto-select the 1st-level proficiency loadout for the new class.
+	##   8. Stamp class powers for L1.
+	##   9. Persist all stat changes + class_metadata.
+	##  10. Emit henchman_advanced_from_normal_man + character_leveled_up.
+	##
+	## Returns a result dict describing the transition.
+
+	# 1. Patron lookup.
+	var patron: CharacterData = null
+	if character.employer_id != "":
+		var patron_row: Dictionary = CampaignRepository.get_character(character.employer_id)
+		if not patron_row.is_empty():
+			patron = CharacterData.from_dict(patron_row)
+
+	# 2. Class selection.
+	var selection: Dictionary = HenchmanClassSelector.select_class_for_normal_man(
+		character, patron, _class_registry)
+	var new_class_id: String = selection["selected_class"]
+	var new_cls: Dictionary = _class_registry.get_class_def(new_class_id)
+	if new_cls.is_empty():
+		push_error("LevelUpEngine._advance_normal_man: selected class '%s' not in registry" % new_class_id)
+		return {}
+
+	# 3. Class-bound fields.
+	character.character_class = new_class_id
+	character.combat_progression = String(new_cls.get("combat_progression", "fighter"))
+	character.hit_die_type = String(new_cls.get("hit_die", "1d8"))
+	character.max_level = int(new_cls.get("max_level", 14))
+
+	# 4. HP re-roll. ACKS RAW: re-roll 1d{class_hd} + CON mod, keep higher of new vs old.
+	var old_hp_max: int = character.hp_max
+	var sides: int = _parse_hit_die_sides(character.hit_die_type)
+	var con_mod: int = CharacterData.ability_modifier(character.constitution)
+	var hp_roll: RollResult = DiceSystem.roll_digital(sides, 1, 0, "normal_man_advance_hp")
+	var new_hp_total: int = maxi(hp_roll.modified_total + con_mod, 1)
+	var hp_max_after: int = maxi(new_hp_total, old_hp_max)
+	var hp_change: int = hp_max_after - old_hp_max
+	character.hp_max = hp_max_after
+	character.hp_current = mini(character.hp_current + hp_change, hp_max_after)
+
+	# 5. Post-NM track flag — gates L2/L3/L4 erosion + L4 Adventuring grant.
+	character.set_class_metadata_flag("is_post_normal_man", true)
+
+	# 6. Level + combat stats from new class L1 progression.
+	character.level = 1
+	character.attack_throw = _class_registry.get_attack_throw(new_class_id, 1)
+	var saves: Dictionary = _class_registry.get_saving_throws(new_class_id, 1)
+	character.save_petrification = int(saves.get("petrification", 15))
+	character.save_poison_death = int(saves.get("poison_death", 14))
+	character.save_blast_breath = int(saves.get("blast_breath", 16))
+	character.save_staffs_wands = int(saves.get("staffs_wands", 16))
+	character.save_spells = int(saves.get("spells", 17))
+	character.title = _class_registry.get_level_title(new_class_id, 1)
+	if character.max_level > 1:
+		character.xp_for_next_level = _class_registry.get_xp_for_level(new_class_id, 2)
+	else:
+		character.xp_for_next_level = 0
+
+	# 7. Auto-select 1st-level proficiencies for the new class. The henchman's
+	# existing general proficiencies (if any) are preserved alongside the new
+	# class L1 picks.
+	#
+	# Adventuring is suppressed here because acore_adventures_and_encounters.xml:723
+	# specifies the post-NM track gains Adventuring specifically at 4th level,
+	# not at 1st. The L4 grant in _apply_post_normal_man_track restores it.
+	var generator := CharacterGenerator.new(_class_registry, _power_registry,
+		_proficiency_registry)
+	var existing_profs: Array = CampaignRepository.get_character_proficiencies(character.id)
+	var new_profs: Array = generator.auto_select_proficiencies(new_class_id, 1)
+	var merged: Array = existing_profs.duplicate()
+	var existing_keys: Dictionary = {}
+	for p in existing_profs:
+		existing_keys[p.get("proficiency_key", "")] = true
+	for p in new_profs:
+		var key: String = String(p.get("proficiency_key", ""))
+		if key == "adventuring":
+			continue  # post-NM track grants this at L4, not L1
+		if not existing_keys.has(key):
+			merged.append(p)
+	CampaignRepository.save_character_proficiencies(character.id, merged)
+
+	# 8. Stamp class powers for L1.
+	var power_records: Array = generator.stamp_powers(character, new_class_id)
+	# Filter to L1 unlocks only (the rest fire at later levels via the regular path).
+	var l1_powers: Array = []
+	for rec: Dictionary in power_records:
+		if int(rec.get("unlock_level", 1)) <= 1:
+			l1_powers.append(rec)
+	if not l1_powers.is_empty():
+		CampaignRepository.save_character_powers(character.id, l1_powers)
+
+	# 9. Persist core fields (class, level, HP, saves, attack throw, title, xp,
+	# class_metadata, hit_die_type, max_level, combat_progression).
+	CampaignRepository.update_character_fields(character.id, {
+		"level":              character.level,
+		"hp_max":             character.hp_max,
+		"hp_current":         character.hp_current,
+		"attack_throw":       character.attack_throw,
+		"save_petrification": character.save_petrification,
+		"save_poison_death":  character.save_poison_death,
+		"save_blast_breath":  character.save_blast_breath,
+		"save_staffs_wands":  character.save_staffs_wands,
+		"save_spells":        character.save_spells,
+		"xp_for_next_level":  character.xp_for_next_level,
+		"title":              character.title,
+	})
+	# Class-bound fields aren't on the standard whitelist — write them via the
+	# direct UPDATE path the lifecycle manager uses.
+	CampaignRepository.db.query_with_bindings(
+		"""UPDATE characters
+		   SET character_class = ?,
+		       combat_progression = ?,
+		       hit_die_type = ?,
+		       max_level = ?,
+		       class_metadata = ?
+		   WHERE id = ?""",
+		[new_class_id, character.combat_progression, character.hit_die_type,
+			character.max_level, character.class_metadata, character.id])
+
+	# 10. Emit signals.
+	EventBus.henchman_advanced_from_normal_man.emit(
+		character.id, new_class_id, selection["score_breakdown"], hp_change)
+	EventBus.character_leveled_up.emit(character.id, 1)
+
+	return {
+		"requires_class_selection": false,
+		"character_id":             character.id,
+		"old_level":                0,
+		"new_level":                1,
+		"selected_class":           new_class_id,
+		"score_breakdown":          selection["score_breakdown"],
+		"narrative_hint":           selection["narrative_hint"],
+		"hp_gained":                hp_change,
+		"new_hp_max":               hp_max_after,
+		"is_post_normal_man":       true,
+	}
+
+
+func _apply_post_normal_man_track(character: CharacterData) -> void:
+	## Applies the post-Normal-Man advancement quirks at L2, L3, and L4.
+	## Called AFTER the regular level-up has incremented character.level.
+	## Per acore_adventures_and_encounters.xml:719-723:
+	##   :720 — At each of L2/L3/L4, remove ONE pre-existing general proficiency.
+	##   :723 — At L4, grant Adventuring proficiency.
+	var lvl: int = character.level
+	if lvl < 2 or lvl > 4:
+		return
+
+	var profs: Array = CampaignRepository.get_character_proficiencies(character.id)
+	var changed: bool = false
+
+	# Erosion: remove one general proficiency. Pick the oldest non-Adventuring
+	# entry deterministically (lowest rowid via SQL ordering would be ideal;
+	# absent that we use insertion order — first-seen general entry that isn't
+	# Adventuring).
+	var erosion_idx: int = -1
+	for i in range(profs.size()):
+		var p: Dictionary = profs[i]
+		if String(p.get("slot_type", "")) != "general":
+			continue
+		if String(p.get("proficiency_key", "")) == "adventuring":
+			continue
+		erosion_idx = i
+		break
+	if erosion_idx >= 0:
+		profs.remove_at(erosion_idx)
+		changed = true
+
+	# L4 grant: Adventuring (only if not already present).
+	if lvl == 4:
+		var has_adventuring: bool = false
+		for p in profs:
+			if String(p.get("proficiency_key", "")) == "adventuring":
+				has_adventuring = true
+				break
+		if not has_adventuring:
+			profs.append({
+				"proficiency_key": "adventuring",
+				"rank": 1,
+				"slot_type": "general",
+				"selections_count": 1,
+				"specialization": "",
+			})
+			changed = true
+
+	if changed:
+		CampaignRepository.save_character_proficiencies(character.id, profs)
 
 
 # ---------------------------------------------------------------------------

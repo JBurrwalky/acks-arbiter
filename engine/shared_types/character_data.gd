@@ -140,6 +140,31 @@ func can_demote_to(target_tier: String) -> bool:
 		_:        return false
 
 
+## class_metadata flag helpers — class_metadata is a JSON-encoded dict of
+## class-specific selections (regional_origin, witch_tradition, etc.) AND
+## a few transient lifecycle flags (e.g., "is_post_normal_man" for the
+## post-NM advancement track). The helpers parse/stringify on each call so
+## callers don't need to do JSON arithmetic.
+
+func has_class_metadata_flag(key: String) -> bool:
+	if class_metadata.is_empty():
+		return false
+	var parsed: Variant = JSON.parse_string(class_metadata)
+	if not (parsed is Dictionary):
+		return false
+	return bool((parsed as Dictionary).get(key, false))
+
+
+func set_class_metadata_flag(key: String, value: bool) -> void:
+	var dict: Dictionary = {}
+	if not class_metadata.is_empty():
+		var parsed: Variant = JSON.parse_string(class_metadata)
+		if parsed is Dictionary:
+			dict = parsed
+	dict[key] = value
+	class_metadata = JSON.stringify(dict)
+
+
 ## Proficiency query methods
 
 func has_proficiency(proficiency_key: String) -> bool:
