@@ -22,8 +22,15 @@ var _parties: Array[Dictionary] = []
 var _active_party_id: String = ""
 var _split_btn: Button = null
 
+## When non-empty, party-switch interaction is disabled and every tab shows
+## this string as its hover tooltip. Per gdd-management-notebook.md §9.2 / §9.3
+## (disabled in DUNGEON_EXPLORE / COMBAT contexts) and gdd-ui-architecture.md
+## §3.9. Hosts call set_switching_disabled() on context entry/exit.
+var _switching_disabled_reason: String = ""
+
 
 func _ready() -> void:
+	add_to_group("hud_party_selector_tabs")  # H.0 — HudVisibilityController hides while notebook is open
 	add_theme_constant_override("separation", 4)
 
 
@@ -41,6 +48,19 @@ func update_parties(parties: Array[Dictionary], active_id: String) -> void:
 
 func set_active(party_id: String) -> void:
 	_active_party_id = party_id
+	_rebuild()
+
+
+## Disable party-switch click-handling and show [param reason] as the hover
+## tooltip on every tab. Empty string clears the disabled state. Idempotent.
+##
+## Used by dungeon and combat hosts to prevent the player from switching to a
+## party that isn't reachable from the current context, while still showing
+## the other parties exist (per gdd-ui-architecture.md §3.9).
+func set_switching_disabled(reason: String) -> void:
+	if _switching_disabled_reason == reason:
+		return
+	_switching_disabled_reason = reason
 	_rebuild()
 
 
@@ -126,12 +146,16 @@ func _create_tab(party: Dictionary) -> PanelContainer:
 	icon_label.add_theme_color_override("font_color", DIM_COLOR)
 	hbox.add_child(icon_label)
 
-	# Click to select.
-	if not is_active:
+	# Click to select. Suppressed when switching is disabled — show the
+	# disabled-reason tooltip instead.
+	if not is_active and _switching_disabled_reason.is_empty():
 		tab.mouse_filter = MOUSE_FILTER_STOP
 		tab.gui_input.connect(func(event: InputEvent):
 			if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 				party_selected.emit(pid)
 		)
+	elif not _switching_disabled_reason.is_empty():
+		tab.tooltip_text = _switching_disabled_reason
+		tab.modulate = Color(1, 1, 1, 0.55)
 
 	return tab

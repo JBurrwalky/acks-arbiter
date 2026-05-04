@@ -7,20 +7,18 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/override/override_panel.tscn" id="5_override_panel"]
 [ext_resource type="PackedScene" path="res://scenes/ui/dice/dice_prompt.tscn" id="6_dice_prompt"]
 [ext_resource type="PackedScene" path="res://scenes/ui/character_creation/character_creation_screen.tscn" id="7_char_creation"]
-[ext_resource type="PackedScene" path="res://scenes/ui/character_sheet/character_sheet_overlay.tscn" id="8_char_sheet"]
-[ext_resource type="PackedScene" path="res://scenes/ui/party_management/party_management_overlay.tscn" id="11_party_mgmt"]
 [ext_resource type="Script" uid="uid://duboi1ccg8c25" path="res://engine/subsystems/navigation/navigation_stack.gd" id="9_nav_stack"]
 [ext_resource type="PackedScene" path="res://scenes/ui/transitions/scene_transition.tscn" id="10_scene_transition"]
 [ext_resource type="Script" path="res://engine/subsystems/session/session_runner.gd" id="12_session_runner"]
 [ext_resource type="Script" path="res://engine/subsystems/ui/notification_manager.gd" id="13_notification_mgr"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/notification_display.tscn" id="14_notification_display"]
-[ext_resource type="PackedScene" path="res://scenes/ui/roll_log/roll_log_overlay.tscn" id="15_roll_log"]
 [ext_resource type="PackedScene" path="res://scenes/ui/level_up/level_up_overlay.tscn" id="16_level_up"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/session_status_bar.tscn" id="17_status_bar"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause/pause_menu_overlay.tscn" id="18_pause_menu"]
-[ext_resource type="Script" path="res://engine/subsystems/ui/game_log_recorder.gd" id="19_game_log_recorder"]
-[ext_resource type="PackedScene" path="res://scenes/ui/game_log/game_log_panel.tscn" id="20_game_log_panel"]
-[ext_resource type="PackedScene" path="res://scenes/ui/party_inventory/party_inventory_overlay.tscn" id="21_party_inventory"]
+[ext_resource type="PackedScene" path="res://scenes/ui/notebook/notebook.tscn" id="22_notebook"]
+[ext_resource type="Script" path="res://scenes/ui/hud/initiative_overlay.gd" id="23_init_overlay"]
+[ext_resource type="Script" path="res://engine/subsystems/ui/hud_visibility_controller.gd" id="24_hud_visibility"]
+[ext_resource type="Script" path="res://scenes/ui/hud/light_source_indicator.gd" id="25_light_indicator"]
 
 [node name="Main" type="Node" unique_id=389479426]
 script = ExtResource("1_main_script")
@@ -46,29 +44,27 @@ script = ExtResource("4_override_mgr")
 
 [node name="CharacterCreationScreen" parent="." unique_id=605577525 instance=ExtResource("7_char_creation")]
 
-[node name="CharacterSheetOverlay" parent="." unique_id=812345001 instance=ExtResource("8_char_sheet")]
-
-[node name="PartyManagementOverlay" parent="." instance=ExtResource("11_party_mgmt")]
-
-[node name="PartyInventoryOverlay" parent="." instance=ExtResource("21_party_inventory")]
-
 [node name="NotificationManager" type="Node" parent="."]
 script = ExtResource("13_notification_mgr")
 
 [node name="NotificationDisplay" parent="." instance=ExtResource("14_notification_display")]
-
-[node name="RollLogOverlay" parent="." instance=ExtResource("15_roll_log")]
-
-[node name="GameLogRecorder" type="Node" parent="."]
-script = ExtResource("19_game_log_recorder")
-
-[node name="GameLogPanel" parent="." instance=ExtResource("20_game_log_panel")]
 
 [node name="LevelUpOverlay" parent="." instance=ExtResource("16_level_up")]
 
 [node name="SessionStatusBar" parent="." instance=ExtResource("17_status_bar")]
 
 [node name="PauseMenuOverlay" parent="." instance=ExtResource("18_pause_menu")]
+
+[node name="Notebook" parent="." instance=ExtResource("22_notebook")]
+
+[node name="InitiativeOverlay" type="CanvasLayer" parent="."]
+script = ExtResource("23_init_overlay")
+
+[node name="HudVisibilityController" type="Node" parent="."]
+script = ExtResource("24_hud_visibility")
+
+[node name="LightSourceIndicator" type="CanvasLayer" parent="."]
+script = ExtResource("25_light_indicator")
 
 [node name="SessionRunner" type="Node" parent="."]
 script = ExtResource("12_session_runner")

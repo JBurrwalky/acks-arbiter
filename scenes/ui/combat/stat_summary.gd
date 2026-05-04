@@ -11,9 +11,8 @@ extends PanelContainer
 # Constants
 # ---------------------------------------------------------------------------
 
-const COLOR_HP_GOOD := Color(0.2, 0.8, 0.2)
-const COLOR_HP_HURT := Color(0.8, 0.7, 0.1)
-const COLOR_HP_LOW  := Color(0.8, 0.2, 0.2)
+# HP threshold colors removed — sourced from UiPalette via StatReadout.
+# Per gdd-ui-architecture.md §5.4 / Phase α.3.
 
 
 # ---------------------------------------------------------------------------
@@ -275,14 +274,8 @@ func _humanize_class(class_id: String) -> String:
 
 
 func _style_hp_bar(current: int, max_val: int) -> void:
-	var ratio := 0.0 if max_val <= 0 else float(current) / float(max_val)
 	var fill := StyleBoxFlat.new()
-	if ratio > 0.5:
-		fill.bg_color = COLOR_HP_GOOD
-	elif ratio > 0.25:
-		fill.bg_color = COLOR_HP_HURT
-	else:
-		fill.bg_color = COLOR_HP_LOW
+	fill.bg_color = StatReadout.hp_color_for(current, max_val)
 	fill.corner_radius_top_left = 2
 	fill.corner_radius_top_right = 2
 	fill.corner_radius_bottom_left = 2

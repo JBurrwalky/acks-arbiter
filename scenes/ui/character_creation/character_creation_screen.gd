@@ -25,27 +25,29 @@ enum Step {
 	ABILITY_TRADE        = 3,  ## Optionally trade ability points into prime reqs
 	HP_ROLL              = 4,  ## Roll hit die + CON modifier
 	PROFICIENCIES        = 5,  ## Pick class + general proficiency slots
-	SPELLS               = 6,  ## Starting spell selection (casters only; skipped otherwise)
-	EQUIPMENT            = 7,  ## Starting gold roll + equipment shop
-	PORTRAIT             = 8,  ## Choose character portrait
-	TOKEN_SELECTION      = 9,  ## Choose 3D combat token (skipped if class has no GLBs)
-	LANGUAGES            = 10, ## Language selection (skipped if INT modifier <= 0)
-	FINALIZE             = 11, ## Name, alignment, description, character sheet preview
+	FAMILIAR_ACQUISITION = 6,  ## Bond a familiar (skipped if Familiar proficiency not picked)
+	SPELLS               = 7,  ## Starting spell selection (casters only; skipped otherwise)
+	EQUIPMENT            = 8,  ## Starting gold roll + equipment shop
+	PORTRAIT             = 9,  ## Choose character portrait
+	TOKEN_SELECTION      = 10, ## Choose 3D combat token (skipped if class has no GLBs)
+	LANGUAGES            = 11, ## Language selection (skipped if INT modifier <= 0)
+	FINALIZE             = 12, ## Name, alignment, description, character sheet preview
 }
 
 const STEP_LABELS: Array[String] = [
-	"Step 1 of 12 — Ability Scores",
-	"Step 2 of 12 — Class",
-	"Step 3 of 12 — Origin / Tradition",
-	"Step 4 of 12 — Ability Trading",
-	"Step 5 of 12 — Hit Points",
-	"Step 6 of 12 — Proficiencies",
-	"Step 7 of 12 — Starting Spells",
-	"Step 8 of 12 — Equipment",
-	"Step 9 of 12 — Portrait",
-	"Step 10 of 12 — Combat Token",
-	"Step 11 of 12 — Languages",
-	"Step 12 of 12 — Finalize",
+	"Step 1 of 13 — Ability Scores",
+	"Step 2 of 13 — Class",
+	"Step 3 of 13 — Origin / Tradition",
+	"Step 4 of 13 — Ability Trading",
+	"Step 5 of 13 — Hit Points",
+	"Step 6 of 13 — Proficiencies",
+	"Step 7 of 13 — Bond Familiar",
+	"Step 8 of 13 — Starting Spells",
+	"Step 9 of 13 — Equipment",
+	"Step 10 of 13 — Portrait",
+	"Step 11 of 13 — Combat Token",
+	"Step 12 of 13 — Languages",
+	"Step 13 of 13 — Finalize",
 ]
 
 
@@ -167,6 +169,7 @@ func _reset_state() -> void:
 		"starting_age": 0,
 		"max_hp_override": false,
 		"proficiencies": [],
+		"familiar": {},
 		"spells": [],
 		"starting_gold_cp": 0,
 		"inventory": [],
@@ -200,6 +203,7 @@ func _invalidate_from(step: int) -> void:
 			creation_state["character"] = null
 			creation_state["starting_age"] = 0
 			creation_state["proficiencies"] = []
+			creation_state["familiar"] = {}
 			creation_state["spells"] = []
 			creation_state["inventory"] = []
 			creation_state["starting_gold_cp"] = 0
@@ -215,6 +219,7 @@ func _invalidate_from(step: int) -> void:
 			creation_state["traded_scores"] = {}
 			creation_state["character"] = null
 			creation_state["proficiencies"] = []
+			creation_state["familiar"] = {}
 			creation_state["spells"] = []
 			creation_state["inventory"] = []
 			creation_state["starting_gold_cp"] = 0
@@ -226,6 +231,7 @@ func _invalidate_from(step: int) -> void:
 			creation_state["traded_scores"] = {}
 			creation_state["character"] = null
 			creation_state["proficiencies"] = []
+			creation_state["familiar"] = {}
 			creation_state["spells"] = []
 			creation_state["inventory"] = []
 			creation_state["starting_gold_cp"] = 0
@@ -237,11 +243,18 @@ func _invalidate_from(step: int) -> void:
 			creation_state["max_hp_override"] = false
 		Step.PROFICIENCIES:
 			creation_state["proficiencies"] = []
+			creation_state["familiar"] = {}
 			creation_state["spells"] = []
 			creation_state["inventory"] = []
 			creation_state["starting_gold_cp"] = 0
 			creation_state["gold_remaining_cp"] = 0
 			creation_state["language_bonus_picks"] = []
+		Step.FAMILIAR_ACQUISITION:
+			creation_state["familiar"] = {}
+			creation_state["spells"] = []
+			creation_state["inventory"] = []
+			creation_state["starting_gold_cp"] = 0
+			creation_state["gold_remaining_cp"] = 0
 		Step.SPELLS:
 			creation_state["spells"] = []
 			creation_state["inventory"] = []
@@ -329,10 +342,13 @@ func _on_back_pressed() -> void:
 
 func _next_valid_step(from_step: int) -> int:
 	## Advance to the next step, skipping CLASS_CUSTOMIZATION for classes that
-	## don't need it, SPELLS for non-casters, TOKEN_SELECTION when the class
-	## has no GLBs, and LANGUAGES when no INT bonus.
+	## don't need it, FAMILIAR_ACQUISITION when the player didn't pick the
+	## Familiar proficiency, SPELLS for non-casters, TOKEN_SELECTION when the
+	## class has no GLBs, and LANGUAGES when no INT bonus.
 	var next := from_step + 1
 	if next == Step.CLASS_CUSTOMIZATION and _should_skip_customization():
+		next += 1
+	if next == Step.FAMILIAR_ACQUISITION and _should_skip_familiar_acquisition():
 		next += 1
 	if next == Step.SPELLS:
 		var class_id: String = creation_state.get("class_id", "")
@@ -346,8 +362,8 @@ func _next_valid_step(from_step: int) -> int:
 
 
 func _prev_valid_step(from_step: int) -> int:
-	## Step back, skipping CLASS_CUSTOMIZATION, SPELLS, TOKEN_SELECTION, and
-	## LANGUAGES as needed.
+	## Step back, skipping CLASS_CUSTOMIZATION, FAMILIAR_ACQUISITION, SPELLS,
+	## TOKEN_SELECTION, and LANGUAGES as needed.
 	var prev := from_step - 1
 	if prev == Step.LANGUAGES and _should_skip_languages():
 		prev -= 1
@@ -357,9 +373,20 @@ func _prev_valid_step(from_step: int) -> int:
 		var class_id: String = creation_state.get("class_id", "")
 		if not _is_caster(class_id):
 			prev -= 1
+	if prev == Step.FAMILIAR_ACQUISITION and _should_skip_familiar_acquisition():
+		prev -= 1
 	if prev == Step.CLASS_CUSTOMIZATION and _should_skip_customization():
 		prev -= 1
 	return maxi(prev, Step.ABILITY_ROLL)
+
+
+func _should_skip_familiar_acquisition() -> bool:
+	## Returns true if the FAMILIAR_ACQUISITION step should be skipped — i.e.
+	## the player did not pick the Familiar proficiency at the PROFICIENCIES step.
+	for p in creation_state.get("proficiencies", []):
+		if p is Dictionary and p.get("proficiency_key", "") == "familiar":
+			return false
+	return true
 
 
 func _is_caster(class_id: String) -> bool:
@@ -477,6 +504,12 @@ func _finalize_character() -> void:
 	# Add character to the active party so it appears in party queries.
 	CampaignRepository.add_party_member(GameState.party_id, character.id, "middle")
 
+	# Persist the familiar row, if the player picked the Familiar proficiency
+	# and bonded one in the FAMILIAR_ACQUISITION step. The master's id was
+	# assigned by `create_character()` above; the familiar row references it
+	# via `master_character_id` FK. See generation/gdd-familiars.md §3.4.
+	_persist_familiar_if_bonded(character)
+
 	# Persist powers.
 	var power_records := _generator.stamp_powers(character, character.character_class)
 	if not power_records.is_empty():
@@ -552,6 +585,70 @@ func _finalize_character() -> void:
 
 	hide()
 	character_created.emit(character.id)
+
+
+func _persist_familiar_if_bonded(character: CharacterData) -> void:
+	## Writes the familiar row to the `familiars` table if the player bonded
+	## one during the FAMILIAR_ACQUISITION step. No-op otherwise. Computes the
+	## derived stats (HD progression, hp_max from master HP halving, INT mirror,
+	## proficiency budget) at write time so the row is fully populated and the
+	## Stage 2 `FamiliarController` can refresh from it on level-up without a
+	## subsequent recompute pass.
+	var familiar_state: Dictionary = creation_state.get("familiar", {})
+	if familiar_state.is_empty():
+		return
+	var form_key: String = String(familiar_state.get("form_key", ""))
+	if form_key.is_empty():
+		return  # player navigated through the step but never picked a form
+
+	var picks: Array = familiar_state.get("proficiencies_chosen", [])
+	var budget: int = FamiliarAcquisitionPanel.compute_master_proficiency_count(
+		creation_state.get("proficiencies", []))
+	var prog: Dictionary = FamiliarData.compute_progression_for_master_level(character.level)
+	var hp_max_familiar: int = maxi(1, _bankers_round(float(character.hp_max) / 2.0))
+
+	var familiar_row := {
+		"campaign_id": _campaign_id,
+		"master_character_id": character.id,
+		"form_key": form_key,
+		"cosmetic_species": String(familiar_state.get("cosmetic_species", "")),
+		"name": String(familiar_state.get("name", "")),
+		"hp_current": hp_max_familiar,
+		"hp_max_cached": hp_max_familiar,
+		"hd_dice": int(prog["hd_dice"]),
+		"hd_modifier_hp": int(prog["hd_modifier_hp"]),
+		"is_half_hd": bool(prog["is_half_hd"]),
+		"attack_save_class": String(prog["attack_save_class"]),
+		"attack_save_level": int(prog["attack_save_level"]),
+		"damage_bonus": int(prog["damage_bonus"]),
+		"int_cached": character.intelligence,
+		"proficiency_count_cached": budget,
+		"proficiencies_chosen": JSON.stringify(picks),
+		"is_alive": true,
+		"bonded_at_master_level": character.level,
+		"death_save_pending": false,
+	}
+	var fid: String = CampaignRepository.create_familiar(familiar_row)
+	if not fid.is_empty():
+		EventBus.familiar_bonded.emit(character.id, fid)
+		# Stage 2.x — default the master to in-range so the +1 saves bonus
+		# is active immediately on the live CharacterData. The character
+		# instance here is the one being added to the party at session
+		# start; later session loads re-apply via SessionRunner.load_session.
+		FamiliarController.apply_proximity_for_master(character)
+
+
+## Banker's rounding (round half to even). Matches the implementation used by
+## FamiliarData and other ACKS systems. Inlined here to avoid a runtime import
+## dependency on a different subsystem just for this one finalize hook.
+func _bankers_round(value: float) -> int:
+	var floor_val := int(value)
+	var frac := value - floor_val
+	if is_equal_approx(frac, 0.5):
+		if floor_val % 2 == 0:
+			return floor_val
+		return floor_val + 1
+	return int(roundf(value))
 
 
 func _build_coin_items(remaining_cp: int) -> Array:
@@ -666,9 +763,9 @@ func _build_ui() -> void:
 
 
 func _build_panels() -> void:
-	## Instantiate all 12 step panels and add them to the content area.
+	## Instantiate all 13 step panels and add them to the content area.
 	## Each panel is hidden by default; _show_step() reveals the active one.
-	_panels.resize(12)
+	_panels.resize(13)
 
 	var ability_roll := AbilityRollPanel.new()
 	ability_roll.hide()
@@ -699,6 +796,11 @@ func _build_panels() -> void:
 	profs.hide()
 	_content_area.add_child(profs)
 	_panels[Step.PROFICIENCIES] = profs
+
+	var familiar_acq := FamiliarAcquisitionPanel.new()
+	familiar_acq.hide()
+	_content_area.add_child(familiar_acq)
+	_panels[Step.FAMILIAR_ACQUISITION] = familiar_acq
 
 	var spells := SpellSelectionPanel.new()
 	spells.hide()
@@ -736,7 +838,7 @@ func _build_panels() -> void:
 func _setup_panel(step: int) -> void:
 	## Call setup() on the panel for the given step, passing current state and registries.
 	## Called from _show_step() just before the panel becomes visible.
-	if _panels.size() < 12 or _panels[step] == null:
+	if _panels.size() < 13 or _panels[step] == null:
 		return
 	match step:
 		Step.ABILITY_ROLL:
@@ -755,6 +857,12 @@ func _setup_panel(step: int) -> void:
 		Step.PROFICIENCIES:
 			(_panels[Step.PROFICIENCIES] as ProficiencySelectionPanel).setup(creation_state,
 				_class_registry, _proficiency_registry)
+		Step.FAMILIAR_ACQUISITION:
+			(_panels[Step.FAMILIAR_ACQUISITION] as FamiliarAcquisitionPanel).setup(
+				creation_state,
+				FamiliarFormRegistry.new(),
+				_class_registry,
+				_proficiency_registry)
 		Step.SPELLS:
 			(_panels[Step.SPELLS] as SpellSelectionPanel).setup(creation_state,
 				_class_registry, _spell_registry, _repertoire_engine)

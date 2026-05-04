@@ -118,6 +118,26 @@ signal movement_range_display(walk_cells: Array, run_cells: Array, engagement_zo
 var _controller: CombatController = null
 var _state: int = State.IDLE
 var _current_pc_id: String = ""
+
+## Class-level reference to the most recently-instantiated controller, used by
+## the Management Notebook's openability gate (gdd-management-notebook.md §10).
+## Set in setup(); cleared when combat ends. NotebookState / Notebook check
+## CombatUIController.notebook_open_allowed() before opening during combat.
+static var active_instance: CombatUIController = null
+
+## States in which the player is in control and the notebook may safely open.
+## All non-PC-input states (IDLE, ADVANCING, ENEMY_ACTING, COMBAT_OVER) block
+## opening to avoid interrupt-related state bugs. DECLARATION_PHASE is
+## included because the player is selecting declarations during it.
+const PC_INPUT_STATES := [
+	State.DECLARATION_PHASE,
+	State.PC_AWAITING_INPUT,
+	State.PC_CONTEXT_MENU_OPEN,
+	State.PC_SELECTING_FACING,
+	State.PC_SELECTING_CLEAVE_TARGET,
+	State.PC_SELECTING_WEAPON,
+	State.PC_SELECTING_READY_CELL,
+]
 var _selected_action: String = ""
 var _has_moved_this_turn: bool = false
 var _cleave_targets: Array = []
@@ -142,9 +162,25 @@ var _initiative_display: Array = []
 func setup(controller: CombatController) -> void:
 	_controller = controller
 	_state = State.IDLE
+	active_instance = self
 	# Forward cleave events from the controller to the UI
 	if not controller.cleave_triggered.is_connected(_on_controller_cleave_triggered):
 		controller.cleave_triggered.connect(_on_controller_cleave_triggered)
+
+
+## Returns true when the player is in a state where opening the Management
+## Notebook is safe (gdd-management-notebook.md §10.1). Non-PC states
+## (enemy resolution, advancing, combat over) return false.
+func is_pc_awaiting_input() -> bool:
+	return PC_INPUT_STATES.has(_state)
+
+
+## Class-level convenience for the Notebook's gate. Returns true when there
+## is no active combat OR the active combat is awaiting player input.
+static func notebook_open_allowed() -> bool:
+	if active_instance == null:
+		return true
+	return active_instance.is_pc_awaiting_input()
 
 
 func _on_controller_cleave_triggered(combatant_id: String, target_id: String) -> void:
@@ -251,6 +287,8 @@ func advance() -> Dictionary:
 
 		"combat_over":
 			_state = State.COMBAT_OVER
+			if active_instance == self:
+				active_instance = null
 			clear_highlights_requested.emit()
 			active_token_changed.emit("")
 			# Log combat end
@@ -784,7 +822,8 @@ func _update_initiative_hp() -> void:
 
 
 func _emit_action_log(result: Dictionary) -> void:
-	## Emit log entries for the resolved action so the CombatLogPanel can display them.
+	## Emit log entries for the resolved action so the embedded UnifiedLog
+	## (γ.5) can display them via the GameLog autoload.
 	var action_str: String = result.get("action", "")
 	var actor_id: String = result.get("combatant_id", "")
 	var action_result: Dictionary = result.get("result", {})

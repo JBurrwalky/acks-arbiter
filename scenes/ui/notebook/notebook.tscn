@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/notebook/notebook.gd" id="1_script"]
+
+[node name="Notebook" type="CanvasLayer"]
+layer = 35
+visible = false
+script = ExtResource("1_script")

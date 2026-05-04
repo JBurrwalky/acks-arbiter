@@ -3,7 +3,7 @@
 # Dependencies:
 #   - CampaignRepository (autoload): get/save character preferences
 #
-# No class_name — lazily instantiated by PartyInventoryOverlay.
+# No class_name — lazily instantiated by InventoryTabPage.
 
 extends PanelContainer
 

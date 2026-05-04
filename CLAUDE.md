@@ -22,6 +22,13 @@ You are the build agent for **ACKS Arbiter**, a sandbox RPG video game that func
 - `class_name` declarations MUST NOT appear in autoload scripts (causes "hides an autoload singleton" error).
 - godot-sqlite: `query(sql)` for no-param queries (returns bool); `query_with_bindings(sql, array)` for parameterized queries (returns bool); results in `db.query_result`; path uses `"user://"` not `"res://"`. **`query()` does NOT accept a second argument.**
 
+**Godot executable (Windows):**
+- Bash path: `/c/godot/Godot_v4.6.1-stable_win64_console.exe` (use the `_console` build for headless test runs so stdout streams to the terminal).
+- Windows path: `C:\godot\Godot_v4.6.1-stable_win64_console.exe`.
+- GUI build (rare; for editor-only tasks): `/c/godot/Godot_v4.6.1-stable_win64.exe`.
+- Headless test command: `/c/godot/Godot_v4.6.1-stable_win64_console.exe --headless --path . res://tests/test_runner.tscn`.
+- After adding new `.gd` files, run `--headless --path . --import` once to generate `.uid` files and refresh `.godot/global_script_class_cache.cfg` before the test suite can preload them.
+
 ---
 
 ## Document Authority — Three Layers

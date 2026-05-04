@@ -44,6 +44,8 @@ func activate(light_type: String, p_carrier_id: String = "") -> void:
 	remaining_turns = info["duration_turns"]
 	carrier_id = p_carrier_id
 	_warned_at.clear()
+	# H.3 — broadcast state so LightSourceIndicator HUD widget can refresh.
+	EventBus.light_source_activated.emit(to_dict())
 
 
 func deactivate() -> void:
@@ -52,6 +54,7 @@ func deactivate() -> void:
 	remaining_turns = 0
 	carrier_id = ""
 	_warned_at.clear()
+	EventBus.light_source_deactivated.emit()
 
 
 func is_active() -> bool:
@@ -95,6 +98,12 @@ func tick() -> void:
 			_warned_at[threshold] = true
 			_emit_warning(threshold)
 
+	# H.3 — emit per-tick state so the HUD widget refreshes its remaining-
+	# turns label without polling. _expire() also deactivates and emits its
+	# own deactivated signal, so guard against the double-emit.
+	if remaining_turns > 0:
+		EventBus.light_source_ticked.emit(to_dict())
+
 	# Expire.
 	if remaining_turns <= 0:
 		_expire()
@@ -137,6 +146,8 @@ func _expire() -> void:
 	source_type = ""
 	radius_feet = 0
 	remaining_turns = 0
+	# H.3 — deactivated signal so the HUD widget hides on expiry.
+	EventBus.light_source_deactivated.emit()
 
 
 # ---------------------------------------------------------------------------

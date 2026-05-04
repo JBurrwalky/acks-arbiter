@@ -25,6 +25,7 @@ var _scheduler_ref: EventScheduler = null
 
 
 func _ready() -> void:
+	add_to_group("hud_entity_outliner")  # H.0 — HudVisibilityController hides while notebook is open
 	custom_minimum_size = Vector2(PANEL_WIDTH, 0)
 	size_flags_vertical = Control.SIZE_EXPAND_FILL
 

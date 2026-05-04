@@ -1,6 +1,0 @@
-[gd_scene format=3]
-
-[ext_resource type="Script" path="res://scenes/ui/settlement/settlement_panel.gd" id="1_panel"]
-
-[node name="SettlementPanel" type="PanelContainer"]
-script = ExtResource("1_panel")

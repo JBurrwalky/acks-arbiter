@@ -5,7 +5,7 @@ extends CanvasLayer
 ##
 ## Sits on CanvasLayer 10 (above the dungeon HUD at layer 1).
 ## Composes the shared combat HUD widgets: InitiativeStrip, StatSummary,
-## ActionButtonPanel, CombatLogPanel. DeclarationOverlay and CombatEndOverlay
+## ActionButtonPanel. DeclarationOverlay and CombatEndOverlay
 ## are shown/hidden as needed.
 ##
 ## Owns a CombatUIController that bridges these widgets to the CombatController.
@@ -30,10 +30,22 @@ signal combat_finished(result: Dictionary)
 # Scene references (created in _build_ui)
 # ---------------------------------------------------------------------------
 
-var _init_strip: InitiativeStrip = null
+## InitiativeStrip relocated in H.0 to top-level InitiativeOverlay (CanvasLayer
+## at layer 25, right-edge). _initiative_overlay is looked up via the
+## "initiative_overlay" group; its set_initiative_order / set_active /
+## update_hp methods are forwarded to the wrapped strip.
+var _initiative_overlay: Node = null
 var _stat_summary: StatSummary = null
 var _action_panel: ActionButtonPanel = null
-var _log_panel: CombatLogPanel = null
+
+## Pixel reserve at the right edge of the screen for the InitiativeOverlay.
+## Sourced from InitiativeOverlay so any future change to STRIP_WIDTH /
+## RIGHT_MARGIN propagates to both combat surfaces automatically. H.0 polish
+## per the umbrella plan.
+const STRIP_OVERLAY_RESERVE := preload("res://scenes/ui/hud/initiative_overlay.gd").STRIP_OVERLAY_RESERVE
+# _log_panel removed in γ.5 — embedded UnifiedLog in SessionStatusBar replaces
+# the per-screen CombatLogPanel. Combat events still flow through
+# CombatUIController → GameLog autoload signals → unified log Combat tab.
 var _decl_overlay: DeclarationOverlay = null
 var _weapon_popup: WeaponSwitchPopup = null
 var _end_overlay: CombatEndOverlay = null
@@ -96,7 +108,6 @@ func start_combat(controller: CombatController, renderer) -> void:
 	_ui_controller.pc_turn_started.connect(_on_pc_turn_started)
 	_ui_controller.action_resolved.connect(_on_action_resolved)
 	_ui_controller.combat_ended.connect(_on_combat_ended)
-	_ui_controller.log_entry.connect(_on_log_entry)
 
 	# Wire UI controller signals -> map renderer
 	_ui_controller.highlight_reachable.connect(_on_highlight_reachable)
@@ -147,12 +158,6 @@ func start_combat(controller: CombatController, renderer) -> void:
 	# Wire action panel -> UI controller
 	_action_panel.action_selected.connect(_on_action_selected)
 
-	# Build name lookup for the combat log
-	var name_lookup: Dictionary = {}
-	for c in controller.roster.get_all():
-		name_lookup[c.id] = c.display_name
-	_log_panel.set_name_lookup(name_lookup)
-
 	# Show the overlay
 	visible = true
 	_action_panel.set_panel_visible(false)
@@ -189,38 +194,28 @@ func end_combat() -> void:
 # ---------------------------------------------------------------------------
 
 func _build_ui() -> void:
-	# Right panel (VBoxContainer) — initiative strip + stat summary + actions
+	# Right panel (VBoxContainer) — stat summary + actions. InitiativeStrip
+	# relocated to the top-level InitiativeOverlay HUD (H.0); right_panel
+	# shifts left by STRIP_OVERLAY_RESERVE so the overlay sits flush right.
 	var right_panel := VBoxContainer.new()
 	right_panel.name = "RightPanel"
 	right_panel.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
-	right_panel.offset_left = -220.0
+	right_panel.offset_left = -float(220 + STRIP_OVERLAY_RESERVE)
+	right_panel.offset_right = -float(STRIP_OVERLAY_RESERVE)
 	right_panel.offset_top = 10.0
 	# Leave room for SessionStatusBar plus a small gap.
 	right_panel.offset_bottom = -float(SessionStatusBar.BAR_HEIGHT + 10)
-	right_panel.offset_right = -10.0
 	right_panel.add_theme_constant_override("separation", 6)
 	add_child(right_panel)
 
-	_init_strip = InitiativeStrip.new()
-	_init_strip.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right_panel.add_child(_init_strip)
+	_initiative_overlay = get_tree().get_first_node_in_group("initiative_overlay")
 
 	_stat_summary = StatSummary.new()
+	_stat_summary.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	right_panel.add_child(_stat_summary)
 
 	_action_panel = ActionButtonPanel.new()
 	right_panel.add_child(_action_panel)
-
-	# Bottom-left: combat log
-	_log_panel = CombatLogPanel.new()
-	_log_panel.name = "CombatLog"
-	_log_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	_log_panel.offset_left = 10.0
-	# 10px gap above the SessionStatusBar.
-	_log_panel.offset_bottom = -float(SessionStatusBar.BAR_HEIGHT + 10)
-	_log_panel.offset_top = -180.0
-	_log_panel.offset_right = 280.0
-	add_child(_log_panel)
 
 	# Bottom-center: round indicator
 	_round_label = Label.new()
@@ -302,7 +297,8 @@ func _on_show_declarations(alive_pcs: Array) -> void:
 
 
 func _on_initiative_updated(order: Array) -> void:
-	_init_strip.set_initiative_order(order)
+	if _initiative_overlay != null:
+		_initiative_overlay.set_initiative_order(order)
 
 
 func _on_pc_turn_started(combatant_id: String) -> void:
@@ -315,8 +311,9 @@ func _on_pc_turn_started(combatant_id: String) -> void:
 	var combatant = _controller.get_combatant(combatant_id)
 	_stat_summary.show_combatant(combatant)
 
-	# Update initiative strip active marker
-	_init_strip.set_active(combatant_id)
+	# Update initiative strip active marker (forwarded to InitiativeOverlay)
+	if _initiative_overlay != null:
+		_initiative_overlay.set_active(combatant_id)
 
 	# Show action buttons with available actions; hide Confirm Move and Skip Cleave
 	_action_panel.set_panel_visible(true)
@@ -344,8 +341,8 @@ func _on_action_resolved(result: Dictionary) -> void:
 	var target_id: String = action_result.get("target_id", "")
 	if not target_id.is_empty():
 		var target = _controller.get_combatant(target_id)
-		if target != null:
-			_init_strip.update_hp(target_id, target.get_hp_current(), target.get_hp_max())
+		if target != null and _initiative_overlay != null:
+			_initiative_overlay.update_hp(target_id, target.get_hp_current(), target.get_hp_max())
 
 	# Show "Leave the Field" when all enemies are down
 	_update_leave_field_visibility()
@@ -357,10 +354,6 @@ func _on_combat_ended(result: Dictionary) -> void:
 	_decl_overlay.visible = false
 	_round_label.text = "Combat Over"
 	_end_overlay.show_result(result)
-
-
-func _on_log_entry(entry: Dictionary) -> void:
-	_log_panel.append_event(entry)
 
 
 # ---------------------------------------------------------------------------

@@ -15,7 +15,14 @@ var _proficiency_popup: PopupPanel
 var _proficiency_popup_picker_host: VBoxContainer
 var _proficiency_popup_status: Label
 var _proficiency_selection_status_label: Label
-var _level_up_choices: Dictionary = {}  # { "proficiencies": [], "spells": [] }
+var _level_up_choices: Dictionary = {}  # { "proficiencies": [], "spells": [], "familiar": {...} }
+
+# Stage 3d — familiar picker popup (lazily built only when the master has the
+# Familiar proficiency AND either Case A or Case B applies; see
+# LevelUpFamiliarPicker.case_kind()).
+var _familiar_picker: LevelUpFamiliarPicker
+var _familiar_popup: PopupPanel
+var _familiar_popup_host: VBoxContainer
 
 
 func has_pending_level_up() -> bool:
@@ -30,9 +37,11 @@ func abort_pending_level_up() -> void:
 		_pending_level_up_result = {}
 		_level_up_choices = {"proficiencies": [], "spells": []}
 		_clear_proficiency_popup_state()
+		_clear_familiar_popup_state()
 		return
 
 	_clear_proficiency_popup_state()
+	_clear_familiar_popup_state()
 	var fresh: Dictionary = CampaignRepository.get_character(_bundle.character.id)
 	if fresh.is_empty():
 		push_error("CSTabAdvancement.abort_pending_level_up: failed to reload character '%s'" % _bundle.character.id)
@@ -56,6 +65,9 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 	_proficiency_popup_picker_host = null
 	_proficiency_popup_status = null
 	_proficiency_selection_status_label = null
+	_familiar_picker = null
+	_familiar_popup = null
+	_familiar_popup_host = null
 	_level_up_choices = {"proficiencies": [], "spells": []}
 	_bundle = bundle
 	_registries = registries
@@ -201,6 +213,7 @@ func _on_level_up_pressed(character: CharacterData, engine: LevelUpEngine) -> vo
 		child.queue_free()
 	_proficiency_picker = null
 	_clear_proficiency_popup_state()
+	_clear_familiar_popup_state()
 	_level_up_choices = {"proficiencies": [], "spells": []}
 
 	var result := engine.begin_interactive_level_up(character)
@@ -309,6 +322,11 @@ func _build_level_up_summary(result: Dictionary, character: CharacterData,
 		_level_up_panel.add_child(_proficiency_selection_status_label)
 		_refresh_proficiency_selection_status()
 
+	# Familiar picker (Stage 3d). Surfaces a separate popup when the master has
+	# the Familiar proficiency AND either Case A (replacement bonding) or
+	# Case B (additional picks on budget growth) applies.
+	_prepare_familiar_picker(character, result)
+
 	# Confirm button.
 	var confirm_btn := Button.new()
 	confirm_btn.text = "Confirm Level Up"
@@ -339,6 +357,18 @@ func _on_confirm_level_up(character: CharacterData, engine: LevelUpEngine) -> vo
 			var existing: Array = _level_up_choices.get("spells", [])
 			existing.append_array(apostasy_spells)
 			_level_up_choices["spells"] = existing
+
+	# Stage 3d — collect familiar choices when the picker surfaced a case.
+	if _familiar_picker != null and _familiar_picker.case_kind() != LevelUpFamiliarPicker.CASE_NONE:
+		if not _familiar_picker.is_complete():
+			var fam_err := Label.new()
+			fam_err.text = "  Complete your familiar's selections before confirming."
+			fam_err.add_theme_color_override("font_color", UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR)
+			if _level_up_panel != null:
+				_level_up_panel.add_child(fam_err)
+			return
+		_level_up_choices["familiar"] = _familiar_picker.get_final_choices()
+
 	var ok := engine.finalize_interactive_level_up(character, _pending_level_up_result,
 		_level_up_choices)
 	if not ok:
@@ -349,6 +379,12 @@ func _on_confirm_level_up(character: CharacterData, engine: LevelUpEngine) -> vo
 			_level_up_panel.add_child(err)
 		return
 	_pending_level_up_result = {}
+	# Stage 2.x — refresh proximity on the live CharacterData. After Stage 3d's
+	# Case A (replacement bonding), the master now has a new living familiar
+	# and the bonus should activate; after Case B, the master already had a
+	# living familiar so this is a no-op flip-true (idempotent). For any other
+	# level-up (no familiar case), a no-op clear if no living familiar exists.
+	FamiliarController.apply_proximity_for_master(character)
 	# Redisplay tab with fresh bundle (the character in the bundle is now updated in-memory).
 	display(_bundle, _registries)
 
@@ -589,3 +625,126 @@ func _add_text(text: String) -> void:
 	lbl.text = text
 	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(lbl)
+
+
+# ---------------------------------------------------------------------------
+# Stage 3d — Familiar picker (replacement bonding + budget-growth picks)
+# ---------------------------------------------------------------------------
+
+func _prepare_familiar_picker(character: CharacterData, level_up_result: Dictionary) -> void:
+	## Build the familiar picker for this level-up if the master has the Familiar
+	## proficiency AND a non-empty case applies. Adds a "Bond Familiar" /
+	## "Pick Familiar Proficiencies" button to the level-up panel.
+	if _level_up_panel == null:
+		return
+	_clear_familiar_popup_state()
+	_familiar_picker = LevelUpFamiliarPicker.new()
+	# Compose the picker eagerly so we can inspect `case_kind()`. The actual
+	# UI nodes are only attached when the player opens the popup.
+	var class_registry: ClassRegistry = _registries.get("class_registry")
+	var proficiency_registry: ProficiencyRegistry = _registries.get("proficiency_registry")
+	if class_registry == null or proficiency_registry == null:
+		_familiar_picker = null
+		return
+	# Picker mounts itself into a popup host — attach as orphan first so the
+	# embedded sub-pickers can run their `_build_ui` lazily inside `setup`.
+	_ensure_familiar_popup()
+	_familiar_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_familiar_picker.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_familiar_popup_host.add_child(_familiar_picker)
+	_familiar_picker.setup(
+		character, level_up_result,
+		FamiliarFormRegistry.new(),
+		class_registry, proficiency_registry)
+
+	var case_kind: String = _familiar_picker.case_kind()
+	if case_kind == LevelUpFamiliarPicker.CASE_NONE:
+		# No case applies — clean up and don't surface the button.
+		_clear_familiar_popup_state()
+		return
+
+	var btn := Button.new()
+	btn.custom_minimum_size = Vector2(220, 0)
+	if case_kind == LevelUpFamiliarPicker.CASE_REPLACEMENT:
+		btn.text = "Bond a Familiar"
+	else:
+		btn.text = "Pick Familiar Proficiencies"
+	btn.pressed.connect(_on_open_familiar_popup)
+	_level_up_panel.add_child(btn)
+
+
+func _ensure_familiar_popup() -> void:
+	if _familiar_popup != null:
+		return
+
+	_familiar_popup = PopupPanel.new()
+	_familiar_popup.name = "LevelUpFamiliarPopup"
+	_familiar_popup.exclusive = true
+	_familiar_popup.unresizable = true
+	_familiar_popup.min_size = Vector2i(880, 720)
+	UiSurfaceStyles.apply_framed_window_chrome(_familiar_popup)
+	add_child(_familiar_popup)
+
+	var root := MarginContainer.new()
+	root.add_theme_constant_override("margin_left", 16)
+	root.add_theme_constant_override("margin_top", 12)
+	root.add_theme_constant_override("margin_right", 16)
+	root.add_theme_constant_override("margin_bottom", 12)
+	root.custom_minimum_size = Vector2(880, 720)
+	_familiar_popup.add_child(root)
+
+	var vbox := VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_theme_constant_override("separation", 8)
+	root.add_child(vbox)
+
+	var header := HBoxContainer.new()
+	vbox.add_child(header)
+
+	var title := Label.new()
+	title.text = "Familiar"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_font_size_override("font_size", 14)
+	header.add_child(title)
+
+	var close_btn := Button.new()
+	close_btn.text = "X"
+	close_btn.custom_minimum_size = Vector2(28, 28)
+	close_btn.pressed.connect(_on_close_familiar_popup)
+	header.add_child(close_btn)
+
+	_familiar_popup_host = VBoxContainer.new()
+	_familiar_popup_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_familiar_popup_host.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(_familiar_popup_host)
+
+	var footer := HBoxContainer.new()
+	footer.alignment = BoxContainer.ALIGNMENT_END
+	vbox.add_child(footer)
+
+	var done_btn := Button.new()
+	done_btn.text = "Done"
+	done_btn.custom_minimum_size = Vector2(110, 0)
+	done_btn.pressed.connect(_on_close_familiar_popup)
+	footer.add_child(done_btn)
+
+
+func _clear_familiar_popup_state() -> void:
+	if _familiar_popup != null:
+		_familiar_popup.hide()
+	if _familiar_popup_host != null:
+		for child in _familiar_popup_host.get_children():
+			child.queue_free()
+	_familiar_picker = null
+
+
+func _on_open_familiar_popup() -> void:
+	if _familiar_popup == null:
+		return
+	_familiar_popup.popup_centered()
+
+
+func _on_close_familiar_popup() -> void:
+	if _familiar_popup != null:
+		_familiar_popup.hide()

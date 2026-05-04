@@ -246,8 +246,20 @@ func _attempt_influence(tone: String) -> void:
 
 
 func _confirm_attack() -> void:
-	# In a full implementation, show ConfirmationPrompt before attacking neutrals.
-	combat_requested.emit()
+	# Per gdd-ui-architecture.md §7.3: attacking neutrals carries reputation
+	# weight; gate the action behind a confirmation modal so an accidental
+	# click on Fight does not start combat with otherwise-peaceful encounter.
+	var prompt := ConfirmationPrompt.new()
+	add_child(prompt)
+	prompt.show_prompt(
+		"Attack This Encounter?",
+		"They are not hostile. Striking first will be remembered as an unprovoked attack.",
+		func() -> void:
+			prompt.queue_free()
+			combat_requested.emit(),
+		func() -> void:
+			prompt.queue_free(),
+		true)
 
 
 func _resolve_peacefully() -> void:

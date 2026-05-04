@@ -1,13 +1,17 @@
 class_name SettlementMapController
 extends Node
 
-## Manages settlement exploration: party movement on the street graph,
-## building entrance detection, and settlement exit.
+## Per-party settlement context: tracks which PoI / district the party is at.
 ##
-## Movement is node-to-node on the street graph (not cell-to-cell).
-## Party position is tracked as a street node ID.
+## V2 (2026-05-02). The prior controller managed party movement on a street
+## graph with AStar2D pathfinding. With the V2 settlement UI ([gdd-settlement-
+## exploration-ui.md] §5), travel is fixed-cost between PoI ids; spatial
+## position is no longer modeled. This class is now a thin context object.
 ##
-## This is NOT an autoload. Instantiate dynamically when entering a settlement.
+## The class name SettlementMapController is preserved for callsite stability;
+## the "_map_" segment is historical. Conceptually this is now SettlementContext.
+##
+## NOT an autoload. Instantiate dynamically when entering a settlement.
 
 
 # ---------------------------------------------------------------------------
@@ -15,9 +19,7 @@ extends Node
 # ---------------------------------------------------------------------------
 
 signal map_loaded(settlement_id: String)
-signal party_moved(from_node_id: int, to_node_id: int)
-signal building_entered(poi: Dictionary)
-signal settlement_exited(gate_node_id: int)
+signal current_poi_changed(poi_id: String)
 
 
 # ---------------------------------------------------------------------------
@@ -26,95 +28,73 @@ signal settlement_exited(gate_node_id: int)
 
 var _settlement_id: String = ""
 var _map: SettlementMapData
-var _party_node_id: int = -1
-var _astar: AStar2D
+var _current_poi_id: String = ""
 
 
 # ---------------------------------------------------------------------------
 # Core API
 # ---------------------------------------------------------------------------
 
-## Loads a settlement from a parsed dictionary. Builds the AStar2D graph
-## and positions the party at the entry node.
-func load_settlement(settlement_dict: Dictionary) -> void:
+## Loads a settlement from a parsed dictionary and positions the party at
+## [param entry_poi_id]. If entry_poi_id is empty, falls back to the first
+## entry/exit PoI; if none exist, falls back to the first PoI of the first
+## district.
+func load_settlement(settlement_dict: Dictionary, entry_poi_id: String = "") -> void:
 	_map = SettlementMapData.from_dict(settlement_dict)
 	_settlement_id = _map.id
-	_build_astar()
 
-	_party_node_id = _map.entry_node_id
+	if not entry_poi_id.is_empty() and not _map.get_poi(entry_poi_id).is_empty():
+		_current_poi_id = entry_poi_id
+	else:
+		_current_poi_id = _pick_default_entry_poi_id()
+
 	map_loaded.emit(_settlement_id)
 
-	# Notify EventBus
 	var district_id: String = ""
-	if not _map.districts.is_empty():
-		district_id = _map.districts[0].get("id", "")
+	var current_poi := _map.get_poi(_current_poi_id)
+	if not current_poi.is_empty():
+		district_id = current_poi.get("district_id", "")
 	EventBus.settlement_entered.emit(_settlement_id, district_id)
 
 
-## Attempts to move the party to [param target_node_id].
-## Returns true if the move succeeds. Emits party_moved on success.
-## Also emits building_entered if the target is a POI node.
-func move_party(target_node_id: int) -> bool:
+## Updates the party's current PoI. Emits current_poi_changed if the value
+## actually changes and the new id is valid.
+func set_current_poi(poi_id: String) -> void:
 	if _map == null:
-		return false
-
-	if not can_move_to(target_node_id):
-		return false
-
-	var from := _party_node_id
-	_party_node_id = target_node_id
-	party_moved.emit(from, target_node_id)
-
-	# Check for POI at destination
-	var poi: Dictionary = _map.get_poi_at_node(target_node_id)
-	if not poi.is_empty():
-		building_entered.emit(poi)
-
-	return true
+		return
+	if poi_id == _current_poi_id:
+		return
+	if _map.get_poi(poi_id).is_empty():
+		push_error("SettlementMapController.set_current_poi: unknown poi_id '%s'" % poi_id)
+		return
+	_current_poi_id = poi_id
+	current_poi_changed.emit(poi_id)
 
 
-## Returns true if [param target_node_id] is a valid move target
-## (i.e., directly connected to the party's current node via an edge).
-func can_move_to(target_node_id: int) -> bool:
+## Returns the party's current PoI dict, or {} if not loaded.
+func get_current_poi() -> Dictionary:
 	if _map == null:
-		return false
-	if _party_node_id < 0:
-		return false
-	var node: Dictionary = _map.get_node_by_id(target_node_id)
-	if node.is_empty():
-		return false
-	var adj: Array[int] = _map.get_adjacent_node_ids(_party_node_id)
-	return target_node_id in adj
+		return {}
+	return _map.get_poi(_current_poi_id)
 
 
-## Returns AStar2D pathfinding result from the party's current position
-## to [param target_node_id]. Returns an empty array if no path exists.
-func find_path_to(target_node_id: int) -> PackedInt64Array:
-	if _astar == null or _party_node_id < 0:
-		return PackedInt64Array()
-	if not _astar.has_point(_party_node_id) or not _astar.has_point(target_node_id):
-		return PackedInt64Array()
-	return _astar.get_id_path(_party_node_id, target_node_id)
+## Returns the party's current district dict, or {} if not loaded.
+func get_current_district() -> Dictionary:
+	var poi := get_current_poi()
+	if poi.is_empty() or _map == null:
+		return {}
+	return _map.get_district(poi.get("district_id", ""))
 
 
-## Returns all node IDs reachable from the party's current position in one step.
-func get_adjacent_nodes() -> Array[int]:
-	if _map == null or _party_node_id < 0:
-		return []
-	return _map.get_adjacent_node_ids(_party_node_id)
+## Returns the current PoI id (empty string if not loaded).
+func get_current_poi_id() -> String:
+	return _current_poi_id
 
 
-## Returns the party's current street node ID.
-func get_party_node_id() -> int:
-	return _party_node_id
-
-
-## Returns the world-space position of the party's current node.
-func get_party_position() -> Vector2:
-	if _map == null or _party_node_id < 0:
-		return Vector2.ZERO
-	var node: Dictionary = _map.get_node_by_id(_party_node_id)
-	return node.get("position", Vector2.ZERO)
+## Returns the current district id (empty string if not loaded).
+func get_current_district_id() -> String:
+	var poi := get_current_poi()
+	return poi.get("district_id", "")
 
 
 ## Returns the current SettlementMapData, or null if not loaded.
@@ -122,63 +102,34 @@ func get_map() -> SettlementMapData:
 	return _map
 
 
-## Returns the current settlement ID.
+## Returns the current settlement id.
 func get_settlement_id() -> String:
 	return _settlement_id
 
 
-## Returns true if the party is currently standing on a gate node.
-func is_on_gate() -> bool:
-	if _map == null or _party_node_id < 0:
+## Returns true if the party's current PoI is flagged is_entry_exit.
+func is_at_entry_exit() -> bool:
+	var poi := get_current_poi()
+	return poi.get("is_entry_exit", false)
+
+
+## Returns true if [param poi_id] shares a district with the current PoI.
+func same_district_as_current(poi_id: String) -> bool:
+	if _map == null or _current_poi_id.is_empty():
 		return false
-	var node: Dictionary = _map.get_node_by_id(_party_node_id)
-	return node.get("type", "") == "gate"
-
-
-## Returns the POI at the party's current position, or {} if not at a POI.
-func get_current_poi() -> Dictionary:
-	if _map == null or _party_node_id < 0:
-		return {}
-	return _map.get_poi_at_node(_party_node_id)
-
-
-## Returns all POIs grouped by district. Result: {district_id: Array[POI dict]}.
-func get_pois_by_district() -> Dictionary:
-	if _map == null:
-		return {}
-	var result := {}
-	for district in _map.districts:
-		var dist_id: String = district.get("id", "")
-		result[dist_id] = _map.get_pois_in_district(dist_id)
-	return result
-
-
-## Sets the party position to a specific node (e.g. a non-default gate on entry).
-func set_party_node(node_id: int) -> void:
-	if _map == null:
-		return
-	var node: Dictionary = _map.get_node_by_id(node_id)
-	if node.is_empty():
-		push_error("SettlementMapController.set_party_node: invalid node_id %d" % node_id)
-		return
-	_party_node_id = node_id
+	return _map.same_district(_current_poi_id, poi_id)
 
 
 # ---------------------------------------------------------------------------
 # Private
 # ---------------------------------------------------------------------------
 
-## Builds the AStar2D graph from the settlement's street graph.
-func _build_astar() -> void:
-	_astar = AStar2D.new()
-
-	for node in _map.street_graph.get("nodes", []):
-		var nid: int = node.get("id", 0)
-		var pos: Vector2 = node.get("position", Vector2.ZERO)
-		_astar.add_point(nid, pos)
-
-	for edge in _map.street_graph.get("edges", []):
-		var a: int = edge.get("node_a", 0)
-		var b: int = edge.get("node_b", 0)
-		if _astar.has_point(a) and _astar.has_point(b):
-			_astar.connect_points(a, b)
+func _pick_default_entry_poi_id() -> String:
+	if _map == null:
+		return ""
+	var entry_pois: Array = _map.get_entry_exit_pois()
+	if not entry_pois.is_empty():
+		return entry_pois[0].get("id", "")
+	if not _map.pois.is_empty():
+		return _map.pois[0].get("id", "")
+	return ""

@@ -6,7 +6,7 @@
 #   - GameState (autoload): party_id, active_character_id
 #   - EventBus (autoload): notification_requested for errors
 #
-# No class_name — lazily instantiated by PartyInventoryOverlay.
+# No class_name — lazily instantiated by InventoryTabPage.
 
 extends PanelContainer
 

@@ -2,7 +2,7 @@ extends "res://tests/test_suite_base.gd"
 
 ## Focused regression tests for the character-sheet Advancement tab lifecycle.
 
-const CHARACTER_SHEET_OVERLAY := preload("res://scenes/ui/character_sheet/character_sheet_overlay.gd")
+const CHARACTER_TAB_PAGE := preload("res://scenes/ui/notebook/tab_pages/character_tab_page.gd")
 
 var _campaign_id: String = ""
 var _class_registry: ClassRegistry = ClassRegistry.new()
@@ -184,73 +184,80 @@ func test_abort_pending_level_up_clears_popup_and_restores_character() -> void:
 
 
 func test_overlay_tab_switch_aborts_pending_level_up() -> void:
+	# Re-targeted in γ.1 to the notebook Character tab. Verifies that switching
+	# away from the Advancement section discards an in-progress level-up
+	# preview, mirroring the behavior the deleted CharacterSheetOverlay had on
+	# TabContainer.tab_changed.
 	var character_id: String = _create_fighter(1)
 	var party_id: String = _create_party([character_id])
 	GameState.campaign_id = _campaign_id
 	GameState.party_id = party_id
 
-	var overlay = CHARACTER_SHEET_OVERLAY.new()
-	add_child(overlay)
-	overlay.open(character_id)
-	var advancement_index: int = overlay._get_advancement_tab_index()
-	overlay._tab_container.current_tab = advancement_index
-	overlay._tab_advancement._on_level_up_pressed(
-		overlay._bundle.character,
-		overlay._tab_advancement._make_level_up_engine()
+	var page = CHARACTER_TAB_PAGE.new()
+	add_child(page)
+	page._on_section_selected("advancement")
+	var advancement_tab: CSTabAdvancement = page._section_pages.get("advancement")
+	check(advancement_tab != null,
+		"selecting the Advancement section should instantiate CSTabAdvancement")
+
+	advancement_tab._on_level_up_pressed(
+		page._active_bundle.character,
+		advancement_tab._make_level_up_engine()
 	)
 
-	check(overlay._tab_advancement.has_pending_level_up(),
-		"overlay should have pending state after starting level-up")
-	check(overlay._bundle.character.level == 2,
-		"overlay bundle should hold the mutated preview before switching tabs")
+	check(advancement_tab.has_pending_level_up(),
+		"page should have pending state after starting level-up")
+	check(page._active_bundle.character.level == 2,
+		"page bundle should hold the mutated preview before switching sections")
 
-	overlay._tab_container.current_tab = 0
+	page._on_section_selected("biography")
 
-	var engine: LevelUpEngine = overlay._tab_advancement._make_level_up_engine()
-	check(not overlay._tab_advancement.has_pending_level_up(),
+	var engine: LevelUpEngine = advancement_tab._make_level_up_engine()
+	check(not advancement_tab.has_pending_level_up(),
 		"switching away from Advancement should abort the pending level-up")
-	check(overlay._bundle.character.level == 1,
-		"switching tabs should restore the persisted character level")
-	check(engine.can_level_up(overlay._bundle.character),
-		"switching tabs should allow level-up to start again immediately")
-	print("  overlay_tab_switch_aborts_pending_level_up: OK")
-	overlay.free()
+	check(page._active_bundle.character.level == 1,
+		"switching sections should restore the persisted character level")
+	check(engine.can_level_up(page._active_bundle.character),
+		"switching sections should allow level-up to start again immediately")
+	print("  character_tab_section_switch_aborts_pending_level_up: OK")
+	page.queue_free()
 	GameState.campaign_id = ""
 	GameState.party_id = ""
 
 
 func test_overlay_close_aborts_pending_level_up() -> void:
+	# Re-targeted in γ.1 to the notebook Character tab. Verifies that the
+	# notebook_closed signal aborts an in-progress level-up preview, mirroring
+	# the behavior the deleted CharacterSheetOverlay had on _close().
 	var character_id: String = _create_fighter(1)
 	var party_id: String = _create_party([character_id])
 	GameState.campaign_id = _campaign_id
 	GameState.party_id = party_id
 
-	var overlay = CHARACTER_SHEET_OVERLAY.new()
-	add_child(overlay)
-	overlay.open(character_id)
-	var advancement_index: int = overlay._get_advancement_tab_index()
-	overlay._tab_container.current_tab = advancement_index
-	overlay._tab_advancement._on_level_up_pressed(
-		overlay._bundle.character,
-		overlay._tab_advancement._make_level_up_engine()
+	var page = CHARACTER_TAB_PAGE.new()
+	add_child(page)
+	page._on_section_selected("advancement")
+	var advancement_tab: CSTabAdvancement = page._section_pages.get("advancement")
+	advancement_tab._on_level_up_pressed(
+		page._active_bundle.character,
+		advancement_tab._make_level_up_engine()
 	)
 
-	check(overlay._tab_advancement.has_pending_level_up(),
-		"overlay should have pending state before close")
-	overlay._close()
+	check(advancement_tab.has_pending_level_up(),
+		"page should have pending state before notebook close")
 
-	check(not overlay.visible, "close should hide the character sheet overlay")
-	check(not overlay._tab_advancement.has_pending_level_up(),
-		"close should abort the pending level-up")
-	check(overlay._bundle.character.level == 1,
-		"close should restore the persisted character level")
+	EventBus.notebook_closed.emit()
 
-	overlay.open(character_id)
-	var engine: LevelUpEngine = overlay._tab_advancement._make_level_up_engine()
-	check(engine.can_level_up(overlay._bundle.character),
-		"reopening after close should show a clean level-up-eligible character")
-	print("  overlay_close_aborts_pending_level_up: OK")
-	overlay.free()
+	check(not advancement_tab.has_pending_level_up(),
+		"notebook_closed should abort the pending level-up")
+	check(page._active_bundle.character.level == 1,
+		"notebook_closed should restore the persisted character level")
+
+	var engine: LevelUpEngine = advancement_tab._make_level_up_engine()
+	check(engine.can_level_up(page._active_bundle.character),
+		"after abort the character should be eligible to level up again")
+	print("  character_tab_notebook_close_aborts_pending_level_up: OK")
+	page.queue_free()
 	GameState.campaign_id = ""
 	GameState.party_id = ""
 

@@ -320,18 +320,11 @@ func _resolve_party_hex(party_id: String, map_data: HexMapData) -> Vector2i:
 	return Vector2i(q, r)
 
 
-## Opens the party inventory overlay so the player can trade with a wilderness
-## loot cache. The overlay already auto-detects caches at the party's current
-## hex via GameState.current_location_key.
+## Opens the notebook to the Inventory tab so the player can trade with a
+## wilderness loot cache. The Inventory tab auto-detects caches at the party's
+## current hex via GameState.current_location_key.
 func _on_wilderness_cache_visit_requested(_cache_id: String, _hex: Vector2i) -> void:
-	var tree := Engine.get_main_loop() as SceneTree
-	if tree == null:
-		return
-	var overlay = tree.root.find_child("PartyInventoryOverlay", true, false)
-	if overlay == null or not overlay.has_method("open"):
-		push_warning("WildernessExploreState: PartyInventoryOverlay not found in scene tree")
-		return
-	overlay.open()
+	EventBus.notebook_open_requested.emit("inventory")
 
 
 func _on_camp_requested() -> void:
@@ -361,7 +354,7 @@ func _on_dungeon_entry(entrance: Dictionary, spawn_cell: Vector2i) -> void:
 	})
 
 
-func _on_settlement_entry(entrance: Dictionary, gate_node_id: int) -> void:
+func _on_settlement_entry(entrance: Dictionary, entry_poi_id: String) -> void:
 	if _runner == null:
 		return
 	var loop: SchedulerLoop = _runner.get_scheduler_loop()
@@ -369,7 +362,7 @@ func _on_settlement_entry(entrance: Dictionary, gate_node_id: int) -> void:
 		loop.pause()
 	_runner.transition_to_state("settlement", {
 		"entrance": entrance,
-		"gate_node_id": gate_node_id,
+		"entry_poi_id": entry_poi_id,
 	})
 
 

@@ -28,17 +28,11 @@ func display(bundle: CharacterBundle, _registries: Dictionary) -> void:
 	hp_key.custom_minimum_size = Vector2(120, 0)
 	hp_row.add_child(hp_key)
 	var hp_val := Label.new()
-	hp_val.text = "%d / %d" % [character.hp_current, character.hp_max]
+	hp_val.text = StatReadout.format_hp(character.hp_current, character.hp_max)
 	if character.hp_max > 0:
-		var ratio := float(character.hp_current) / float(character.hp_max)
-		if ratio <= 0.0:
-			hp_val.add_theme_color_override("font_color", Color(0.6, 0.1, 0.1))
-		elif ratio < 0.25:
-			hp_val.add_theme_color_override("font_color", Color(0.85, 0.15, 0.15))
-		elif ratio < 0.5:
-			hp_val.add_theme_color_override("font_color", Color(0.9, 0.65, 0.1))
-		else:
-			hp_val.add_theme_color_override("font_color", Color(0.2, 0.75, 0.2))
+		hp_val.add_theme_color_override(
+			"font_color",
+			StatReadout.hp_color_for(character.hp_current, character.hp_max))
 	hp_row.add_child(hp_val)
 	if character.temp_hp > 0:
 		_add_row("Temp HP:", "+%d" % character.temp_hp)

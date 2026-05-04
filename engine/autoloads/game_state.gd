@@ -46,6 +46,21 @@ enum ExplorationContext {
 
 
 # ---------------------------------------------------------------------------
+# Project-wide constants
+# ---------------------------------------------------------------------------
+
+## Maximum number of player-character members in a single party at creation
+## time. Per gdd-ui-architecture.md §8 cleanup commitment, this is the single
+## source of truth — party-creation surfaces (PartyRosterScreen,
+## PremadePartyDetailScreen) read it from here rather than redeclaring 6.
+##
+## Henchmen, mercenaries, and trained creatures do NOT count against this
+## cap; only PCs do. Dev tools may bypass; the campaign-side enforcement
+## lives in the surface that hosts the cap (currently character creation).
+const MAX_PARTY_SIZE := 6
+
+
+# ---------------------------------------------------------------------------
 # Signals
 # ---------------------------------------------------------------------------
 

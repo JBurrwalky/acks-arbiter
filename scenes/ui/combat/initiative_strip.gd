@@ -17,9 +17,8 @@ const COLOR_ENEMY   := Color(0.9, 0.2, 0.2)
 const COLOR_NEUTRAL := Color(0.9, 0.8, 0.2)
 const COLOR_DEAD    := Color(0.4, 0.4, 0.4, 0.6)
 const COLOR_ACTIVE_BG := Color(1.0, 1.0, 1.0, 0.15)
-const COLOR_HP_FULL := Color(0.2, 0.8, 0.2)
-const COLOR_HP_HURT := Color(0.8, 0.7, 0.1)
-const COLOR_HP_LOW  := Color(0.8, 0.2, 0.2)
+# HP threshold colors removed — sourced from UiPalette via StatReadout.
+# Per gdd-ui-architecture.md §5.4 / Phase α.3.
 
 
 # ---------------------------------------------------------------------------
@@ -226,14 +225,8 @@ func _create_entry_row(entry: Dictionary) -> HBoxContainer:
 
 
 func _style_hp_bar(bar: ProgressBar, current: int, max_val: int) -> void:
-	var ratio := 0.0 if max_val <= 0 else float(current) / float(max_val)
 	var fill_style := StyleBoxFlat.new()
-	if ratio > 0.5:
-		fill_style.bg_color = COLOR_HP_FULL
-	elif ratio > 0.25:
-		fill_style.bg_color = COLOR_HP_HURT
-	else:
-		fill_style.bg_color = COLOR_HP_LOW
+	fill_style.bg_color = StatReadout.hp_color_for(current, max_val)
 	fill_style.corner_radius_top_left = 2
 	fill_style.corner_radius_top_right = 2
 	fill_style.corner_radius_bottom_left = 2

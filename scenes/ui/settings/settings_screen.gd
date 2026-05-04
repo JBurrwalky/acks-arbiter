@@ -202,17 +202,30 @@ func _build_audio_section(parent: Control) -> void:
 # Key Bindings
 # ---------------------------------------------------------------------------
 
+## Mapping of input-action name → human-readable label, in display order.
+## Keys are looked up against the live InputMap so re-binds (and additions
+## like the Phase α.2 single-letter notebook toggles) reflect automatically.
+const _ACTION_LABELS: Array = [
+	# Notebook tabs (Phase β single-letter binds).
+	["notebook_toggle_character", "Notebook: Character"],
+	["notebook_toggle_inventory", "Notebook: Inventory"],
+	["notebook_toggle_party", "Notebook: Party"],
+	["notebook_toggle_henchmen", "Notebook: Henchmen"],
+	["notebook_toggle_troops", "Notebook: Troops"],
+	["notebook_toggle_domain", "Notebook: Domain"],
+	["notebook_toggle_journal", "Notebook: Journal"],
+	["notebook_toggle_quests", "Notebook: Quests"],
+	["unified_log_cycle", "Log: cycle tabs"],
+	["ui_cancel", "Pause Menu / Cancel"],
+	# Developer / debugging.
+	["override_panel_toggle", "Dev: Override Panel"],
+	["dev_char_creation", "Dev: Character Creation"],
+	["dev_dice_test", "Dev: Dice Prompt Test"],
+]
+
+
 func _build_keybindings_section(parent: Control) -> void:
 	parent.add_child(_section_heading("Key Bindings"))
-
-	var bindings := [
-		["Ctrl+Alt+O", "Override Panel"],
-		["Ctrl+Alt+S", "Character Sheet"],
-		["Ctrl+Alt+P", "Party Management"],
-		["F6", "Roll Log"],
-		["F7", "Character Sheet"],
-		["Escape", "Pause Menu"],
-	]
 
 	var grid := GridContainer.new()
 	grid.columns = 2
@@ -220,21 +233,64 @@ func _build_keybindings_section(parent: Control) -> void:
 	grid.add_theme_constant_override("v_separation", 4)
 	parent.add_child(grid)
 
-	for binding in bindings:
+	for entry in _ACTION_LABELS:
+		var action_name: String = entry[0]
+		var display_name: String = entry[1]
+		if not InputMap.has_action(action_name):
+			continue
+
+		var key_text := _format_action_keys(action_name)
+		if key_text.is_empty():
+			continue
+
 		var key_label := Label.new()
-		key_label.text = binding[0]
+		key_label.text = key_text
 		key_label.add_theme_font_size_override("font_size", LABEL_FONT_SIZE)
 		key_label.add_theme_color_override("font_color", HEADING_COLOR)
 		key_label.custom_minimum_size = Vector2(120, 0)
 		grid.add_child(key_label)
 
 		var action_label := Label.new()
-		action_label.text = binding[1]
+		action_label.text = display_name
 		action_label.add_theme_font_size_override("font_size", LABEL_FONT_SIZE)
 		action_label.add_theme_color_override("font_color", LABEL_COLOR)
 		grid.add_child(action_label)
 
 	parent.add_child(_dim_label("Custom key bindings will be available in a future update."))
+
+
+## Returns a human-readable shortcut for the first key event bound to
+## [param action_name]. Empty string if the action has no key event.
+func _format_action_keys(action_name: String) -> String:
+	for ev in InputMap.action_get_events(action_name):
+		if ev is InputEventKey:
+			return _format_key_event(ev as InputEventKey)
+	return ""
+
+
+func _format_key_event(ev: InputEventKey) -> String:
+	var parts: Array[String] = []
+	if ev.ctrl_pressed:
+		parts.append("Ctrl")
+	if ev.alt_pressed:
+		parts.append("Alt")
+	if ev.shift_pressed:
+		parts.append("Shift")
+	if ev.meta_pressed:
+		parts.append("Meta")
+
+	# Prefer the physical keycode label (independent of OS keymap); fall back
+	# to keycode then unicode.
+	var key_string := OS.get_keycode_string(ev.physical_keycode)
+	if key_string.is_empty():
+		key_string = OS.get_keycode_string(ev.keycode)
+	if key_string.is_empty() and ev.unicode != 0:
+		key_string = char(ev.unicode).to_upper()
+	if key_string.is_empty():
+		return ""
+
+	parts.append(key_string)
+	return "+".join(parts)
 
 
 # ---------------------------------------------------------------------------

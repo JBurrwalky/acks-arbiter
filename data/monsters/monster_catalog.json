@@ -1099,6 +1099,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1165,6 +1166,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1231,6 +1233,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 3, "modifier": 3, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1297,6 +1300,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1367,6 +1371,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1437,6 +1442,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 3, "modifier": 3, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1507,6 +1513,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1586,6 +1593,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1875,6 +1883,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -1946,6 +1955,7 @@
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "large",
+    "dungeon_eligible": false,
 
     "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 0 },
     "armor_class": 2,
@@ -2395,6 +2405,83 @@
       "primary_target_rule": "weakest",
       "target_tie_breaker": "nearest",
       "morale_style": "normal"
+    }
+  },
+
+  {
+    "id": "bat_ordinary",
+    "name": "Bat",
+    "variant": "Ordinary",
+    "source": "ACKS Core",
+    "monster_types": ["animal"],
+    "sub_types": ["nocturnal", "echolocator", "swarm_capable"],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "tiny",
+
+    "hit_dice": { "base": 0, "modifier": 0, "special_ability_stars": 0, "printed": "1hp" },
+    "armor_class": 3,
+    "attack_routines": [
+      {
+        "routine_name": "melee",
+        "usage": "default",
+        "attacks": [
+          { "attack_type": "bite", "count": 1, "damage": "1", "to_hit_modifier": 0, "special_effect": null }
+        ]
+      }
+    ],
+    "save_as": { "class": "NM", "level": 0 },
+    "morale": -2,
+    "xp": 5,
+
+    "movement": {
+      "land": { "exploration": 9, "combat": 3 },
+      "fly":  { "exploration": 120, "combat": 40 }
+    },
+
+    "percent_in_lair": 35,
+    "dungeon_encounter": {
+      "outside_lair": { "collective_noun": "Flock", "number": "1d10" },
+      "in_lair":      { "collective_noun": "Nest",  "number": "1 bat swarm" }
+    },
+    "wilderness_encounter": {
+      "outside_lair": { "collective_noun": "Flock", "number": "1d10" },
+      "in_lair":      { "collective_noun": "Nest",  "number": "1 bat swarm" }
+    },
+    "treasure_type": "None",
+    "terrain_affinity": ["mountains_hills", "woods", "swamp", "inhabited"],
+
+    "special_abilities": [
+      {
+        "ability_id": "echolocation",
+        "description": "Navigates by sound; immune to effects requiring normal sight (blinding, gaze attacks). Negated within a silence 15' radius.",
+        "hook_type": "flag",
+        "effect": { "flag": "echolocation", "negated_by": ["silence_15ft_radius"] }
+      },
+      {
+        "ability_id": "swarm_form_reference",
+        "description": "When a bat swarm is rolled, use swarm rules from the swarm subsystem.",
+        "hook_type": "reference",
+        "effect": { "reference": "swarm_rules" }
+      }
+    ],
+    "immunities": [],
+    "resistances": [],
+    "vulnerabilities": [],
+
+    "morale_modifiers": [
+      { "condition": "ordinary_bats_uncontrolled", "modifier": "morale_check_each_round" }
+    ],
+
+    "combat_behavior": {
+      "formation_discipline": "none",
+      "aggression_posture": "low",
+      "engagement_profile": "melee",
+      "spellcasting_timing": "none",
+      "consumable_timing": "none",
+      "primary_target_rule": "nearest",
+      "target_tie_breaker": "random",
+      "morale_style": "fragile"
     }
   }
 ]

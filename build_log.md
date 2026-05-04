@@ -11789,4 +11789,3 @@ The H+ umbrella plan at `C:\Users\jttau\.claude\plans\c-users-jttau-claude-plans
 
 **[NEEDS-OPUS-REVIEW]** None this session. Phase 1 is mechanical implementation against the agreed plan; the only design call (`min_level` JSON field vs. hardcoded class-id check) was a clean generalization of the existing pattern.
 
-

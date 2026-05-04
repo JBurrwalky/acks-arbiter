@@ -126,7 +126,7 @@ signal hex_clicked(coord: Vector2i)
 signal party_token_clicked(party_id: String, coord: Vector2i)
 signal hex_context_menu_requested(coord: Vector2i, screen_pos: Vector2)
 signal dungeon_entry_requested(entrance: Dictionary, spawn_cell: Vector2i)
-signal settlement_entry_requested(entrance: Dictionary, gate_node_id: int)
+signal settlement_entry_requested(entrance: Dictionary, entry_poi_id: String)
 
 
 # ---------------------------------------------------------------------------
@@ -451,28 +451,37 @@ func _on_enter_settlement_pressed() -> void:
 	if settlement_dict == null:
 		return
 
-	var nodes: Array = settlement_dict.get("street_graph", {}).get("nodes", [])
-	var gate_nodes: Array = []
-	for node in nodes:
-		if node.get("type", "") == "gate":
-			gate_nodes.append(node)
+	# Collect all entry/exit PoIs from the slim settlement format
+	# (gdd-settlement-layout.md v2 §6.4). Any PoI in any district may be
+	# flagged is_entry_exit; it's not tied to PoI type.
+	var entry_pois: Array = []
+	for district in settlement_dict.get("districts", []):
+		for poi in district.get("pois", []):
+			if poi.get("is_entry_exit", false):
+				entry_pois.append(poi)
 
-	if gate_nodes.is_empty():
-		# Fallback: use entry_node_id
-		var entry_id: int = settlement_dict.get("entry_node_id", -1)
-		settlement_entry_requested.emit(entrance, entry_id)
+	if entry_pois.is_empty():
+		# Fallback: pick the first PoI of the first district so the player
+		# can at least enter. (Should not happen with well-formed settlements.)
+		var districts: Array = settlement_dict.get("districts", [])
+		if districts.is_empty():
+			return
+		var first_district: Dictionary = districts[0]
+		var pois: Array = first_district.get("pois", [])
+		if pois.is_empty():
+			return
+		settlement_entry_requested.emit(entrance, str(pois[0].get("id", "")))
 		return
 
-	if gate_nodes.size() == 1:
-		# Only one gate — enter directly
-		settlement_entry_requested.emit(entrance, int(gate_nodes[0].get("id", -1)))
+	if entry_pois.size() == 1:
+		settlement_entry_requested.emit(entrance, str(entry_pois[0].get("id", "")))
 		return
 
-	_show_gate_dialog(entrance, gate_nodes)
+	_show_entry_exit_dialog(entrance, entry_pois)
 
 
-## Builds and shows a modal dialog listing gate nodes to choose from.
-func _show_gate_dialog(entrance: Dictionary, gate_nodes: Array) -> void:
+## Builds and shows a modal dialog listing entry/exit PoIs to choose from.
+func _show_entry_exit_dialog(entrance: Dictionary, entry_pois: Array) -> void:
 	if _gate_dialog != null and is_instance_valid(_gate_dialog):
 		_gate_dialog.queue_free()
 
@@ -486,19 +495,17 @@ func _show_gate_dialog(entrance: Dictionary, gate_nodes: Array) -> void:
 	dimmer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_gate_dialog.add_child(dimmer)
 
-	# Centered panel
 	var panel := PanelContainer.new()
 	panel.set_anchors_preset(Control.PRESET_CENTER)
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
-	panel.custom_minimum_size = Vector2(300, 0)
+	panel.custom_minimum_size = Vector2(320, 0)
 	_gate_dialog.add_child(panel)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 8)
 	panel.add_child(vbox)
 
-	# Title
 	var sname: String = entrance.get("name", "Settlement")
 	var title_label := Label.new()
 	title_label.text = "Enter %s" % sname
@@ -506,31 +513,23 @@ func _show_gate_dialog(entrance: Dictionary, gate_nodes: Array) -> void:
 	vbox.add_child(title_label)
 
 	var subtitle := Label.new()
-	subtitle.text = "Select an entry gate:"
+	subtitle.text = "Select an entry point:"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(subtitle)
 
-	# One button per gate node
-	for i in range(gate_nodes.size()):
-		var gate = gate_nodes[i]
-		var gate_id: int = int(gate.get("id", -1))
-		var pos = gate.get("position", [0, 0])
-		var px: float
-		var py: float
-		if pos is Array:
-			px = pos[0] if pos.size() > 0 else 0.0
-			py = pos[1] if pos.size() > 1 else 0.0
-		else:
-			px = pos.x
-			py = pos.y
-		var display := "Gate %d (%.0f, %.0f)" % [i + 1, px, py]
+	for poi in entry_pois:
+		var poi_id := str(poi.get("id", ""))
+		var poi_name := str(poi.get("name", poi_id))
+		var district_id := str(poi.get("district_id", ""))
+		var label_text := poi_name
+		if not district_id.is_empty():
+			label_text = "%s (%s)" % [poi_name, district_id]
 
 		var btn := Button.new()
-		btn.text = display
-		btn.pressed.connect(_on_gate_selected.bind(entrance, gate_id))
+		btn.text = label_text
+		btn.pressed.connect(_on_entry_poi_selected.bind(entrance, poi_id))
 		vbox.add_child(btn)
 
-	# Cancel button
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Do not enter"
 	cancel_btn.pressed.connect(_close_gate_dialog)
@@ -539,9 +538,9 @@ func _show_gate_dialog(entrance: Dictionary, gate_nodes: Array) -> void:
 	add_child(_gate_dialog)
 
 
-func _on_gate_selected(entrance: Dictionary, gate_node_id: int) -> void:
+func _on_entry_poi_selected(entrance: Dictionary, entry_poi_id: String) -> void:
 	_close_gate_dialog()
-	settlement_entry_requested.emit(entrance, gate_node_id)
+	settlement_entry_requested.emit(entrance, entry_poi_id)
 
 
 func _close_gate_dialog() -> void:

@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://party_management_overlay"]
-
-[ext_resource type="Script" path="res://scenes/ui/party_management/party_management_overlay.gd" id="1_pm_overlay"]
-
-[node name="PartyManagementOverlay" type="CanvasLayer"]
-script = ExtResource("1_pm_overlay")
