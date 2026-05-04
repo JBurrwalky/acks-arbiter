@@ -97,11 +97,14 @@ func finalize_hire(character_id: String, employer_id: String, party_id: String,
 			"UPDATE characters SET employer_id = ?, loyalty_score = ?, character_type = 'henchman' WHERE id = ?",
 			[employer_id, morale, character_id])
 
-	# Get wage from level.
-	_repo.db.query_with_bindings("SELECT level FROM characters WHERE id = ?", [character_id])
+	# Get level + class for wage lookup AND kit application.
+	_repo.db.query_with_bindings(
+		"SELECT level, character_class FROM characters WHERE id = ?", [character_id])
 	var level: int = 1
+	var class_id: String = ""
 	if not _repo.db.query_result.is_empty():
 		level = int(_repo.db.query_result[0].get("level", 1))
+		class_id = String(_repo.db.query_result[0].get("character_class", ""))
 	var wage := HenchmanTables.monthly_wage(level)
 	_repo.db.query_with_bindings(
 		"UPDATE characters SET wage_gp_per_month = ? WHERE id = ?",
@@ -117,6 +120,14 @@ func finalize_hire(character_id: String, employer_id: String, party_id: String,
 
 	# Add to party.
 	_repo.add_party_member(party_id, character_id, "middle")
+
+	# Apply class+level-appropriate equipment kit per
+	# acore_equipment.xml §general_hiring_terms ("Henchmen, mercenaries, and
+	# specialists normally have equipment appropriate to profession/class/
+	# level"). The kit applier respects ClassEquipRestrictionValidator and
+	# silently no-ops for class/level combos without authored kits.
+	if not class_id.is_empty():
+		HenchmanEquipmentKit.apply_kit_to_henchman(character_id, class_id, level, _repo)
 
 	# Emit.
 	var bus := _event_bus()

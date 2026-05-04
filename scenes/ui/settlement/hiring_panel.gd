@@ -106,7 +106,12 @@ func _update_view() -> void:
 
 
 func _add_candidate_row(candidate: Dictionary) -> void:
-	var hbox := HBoxContainer.new()
+	# Two-line vertical row: header (name/class/wage + Interview button) +
+	# loadout summary line surfaced from the kit catalog so the player can
+	# see what the candidate brings to the table before paying for the hire.
+	var vbox := VBoxContainer.new()
+
+	var header := HBoxContainer.new()
 	var label := Label.new()
 	label.text = "%s — %s Lv%d — %dgp/mo" % [
 		candidate.get("name", "Unknown"),
@@ -115,15 +120,28 @@ func _add_candidate_row(candidate: Dictionary) -> void:
 		HenchmanTables.monthly_wage(int(candidate.get("level", 1))),
 	]
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox.add_child(label)
+	header.add_child(label)
 
 	var interview_btn := Button.new()
 	interview_btn.text = "Interview"
 	var char_id: String = candidate.get("character_id", "")
-	interview_btn.pressed.connect(_on_interview.bind(char_id, hbox))
-	hbox.add_child(interview_btn)
+	interview_btn.pressed.connect(_on_interview.bind(char_id, vbox))
+	header.add_child(interview_btn)
+	vbox.add_child(header)
 
-	_candidate_list.add_child(hbox)
+	# Loadout preview from data/henchmen/equipment_kits.json. Empty for
+	# class/level combos that don't have an authored kit yet.
+	var class_id: String = String(candidate.get("character_class", ""))
+	var lvl: int = int(candidate.get("level", 1))
+	var loadout_text: String = HenchmanEquipmentKit.describe_kit(class_id, lvl)
+	if not loadout_text.is_empty():
+		var loadout := Label.new()
+		loadout.text = "  Equipment: " + loadout_text
+		loadout.modulate = Color(1, 1, 1, 0.7)  # subtle de-emphasis
+		loadout.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		vbox.add_child(loadout)
+
+	_candidate_list.add_child(vbox)
 
 
 func _on_pay_pressed() -> void:
@@ -138,7 +156,7 @@ func _on_pay_pressed() -> void:
 	_update_view()
 
 
-func _on_interview(character_id: String, row: HBoxContainer) -> void:
+func _on_interview(character_id: String, row: Container) -> void:
 	if _lifecycle == null:
 		return
 	var result := _lifecycle.attempt_hire(_employer_cha_mod, 0)

@@ -11875,3 +11875,87 @@ The H+ umbrella plan at `C:\Users\jttau\.claude\plans\c-users-jttau-claude-plans
 5. Tests: `test_henchman_equipment_kit.gd`.
 
 **[NEEDS-OPUS-REVIEW]** None this session. Phase 2 is mechanical implementation against the agreed plan; the schema-CHECK reconciliation (`combat_progression: "fighter"` for NM) was the only design call and it's well-justified by the schema constraint.
+
+
+## Session 2026-05-04 — Henchman closure Phase 3: Pre-equipped on hire (equipment kits)
+
+**Task:** Phase 3 of the henchman game-loop closure plan. Author class+level-appropriate equipment kits and have them materialize into a henchman's inventory at finalize_hire time, so henchmen arrive ready for the dungeon per `acore_equipment.xml` §general_hiring_terms ("Henchmen, mercenaries, and specialists normally have equipment appropriate to profession/class/level").
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- New `data/henchmen/equipment_kits.json` — 17 curated kits keyed by `{class_id}_L{level}`:
+  - `normal_man_L0` (peasant: tunic_serf, sandals, club, backpack, torches)
+  - `fighter_L1`-`L4` (scaling armor leather → chain → chain → plate, sword/two-handed sword/longsword + shield + ranged backup)
+  - `cleric_L1`-`L4` (blunt weapons only per restriction: mace/warhammer/morning_star + leather/chain/plate, holy_symbol always equipped)
+  - `thief_L1`-`L4` (leather only per restriction, short_sword + dagger(s) + thieves_tools, no shields, grappling hook from L2 up)
+  - `mage_L1`-`L4` (no armor per restriction, robe + quarterstaff + dagger(s) + spell_book_blank + spell_component_pouch, oils + ritual gear at higher levels)
+  - All `item_key` references validated against `data/equipment/base_equipment.json` (catalog integrity test enforces this on every CI run).
+- New `engine/subsystems/henchmen/henchman_equipment_kit.gd` (RefCounted, ~210 lines):
+  - `static load_kits()` — cached read of the JSON catalog.
+  - `static get_kit(class_id, level)` / `static has_kit(class_id, level)` — lookup helpers.
+  - `static apply_kit_to_henchman(henchman_id, class_id, level, repo, catalog)` — materializes inventory_items rows. Each item is validated against `ClassEquipRestrictionValidator.can_equip` at apply time; if a kit item violates a class restriction, the slot is **downgraded to "pack" + is_equipped=false** (item still lands, the kit's contents are preserved). Default `repo` is `CampaignRepository`; default `catalog` is a fresh `EquipmentCatalog`. Optional `add_coins_cp` call for kits with `starting_coin_cp > 0`.
+  - `static describe_kit(class_id, level)` — one-line summary of the major equipped items, used by HiringPanel. Excludes consumables (backpack, torch, tinderbox, rations, rope, holy_water, oils, etc.) so the player sees the loadout's flavour rather than its bookkeeping.
+  - `static reset_cache()` — test affordance for fresh loads.
+- Wired into `HenchmanLifecycleManager.finalize_hire`: after `add_party_member`, `apply_kit_to_henchman` runs with the henchman's level + class (read in the same SELECT that already pulled level for wage calc; added `character_class` to the projection). Empty class_id no-ops gracefully.
+- Modified `scenes/ui/settlement/hiring_panel.gd`: candidate row is now a 2-line VBox (header + loadout summary) using `describe_kit`. Empty for class/level combos without an authored kit.
+- New `tests/test_henchman_equipment_kit.gd` — 13 tests via FakeRepo:
+  - Catalog loading + lookup.
+  - NM, fighter, cleric, thief, mage L1 materialization (verifies equipped slots match expected).
+  - Cleric blunt-only restriction respected (kit author respected; kit doesn't carry edged weapons).
+  - Thief no-shield restriction respected (kit author respected; no shield in any thief kit).
+  - Mage no-armor restriction respected (no `item_category="armor"` items in any mage kit).
+  - Unknown class/level → graceful no-op.
+  - Empty henchman_id → returns false, no inventory writes.
+  - `describe_kit` excludes consumables and returns empty for unknown kits.
+  - **Catalog integrity test**: every `item_key` referenced across all 17 kits exists in `EquipmentCatalog`.
+- Wired `HenchmanEquipmentKitTests` into `tests/test_runner.gd` + `.tscn`.
+
+**Decisions made:**
+
+- **Static authored kits, not procedural budget rolls.** RAW says "appropriate to profession/class/level", not "rolled". Static authoring lets us curate combat-readiness (e.g., cleric L4 gets plate even though their wage might not strictly cover it; the curation is intentional). Procedural budget generation reserved for Phase 6+ enhancement.
+- **Slot-downgrade on restriction violation, not silent drop.** If a kit author later mistakenly puts a sword in a cleric's hand, `apply_kit_to_henchman` still materializes the sword as `slot="pack" is_equipped=false` and surfaces a `push_warning`. The henchman keeps the gear; the play can re-slot it manually. Drop-silently would have lost the item, masking the kit-authoring error.
+- **`describe_kit` skip-list curated by hand, not by `is_equipped` filter.** Some equipped items (`spell_component_pouch`, `holy_symbol`) are too small/utility to read well in the summary; some non-equipped items (`shortbow`, `crossbow`, `longbow`) are signature combat capabilities the player WANTS to see. The hand-curated skip-list separates "loadout flavour" from "bookkeeping noise."
+- **Kit application happens AFTER `add_party_member`** in `finalize_hire`, before the `henchman_hired` signal emit. Order matters because the signal carries `wage_gp_per_month` which is the pre-kit value; consumers reading the signal don't know about equipment yet (that's surfaced via `inventory_updated` from each `add_inventory_item` call).
+- **Item-keys validated by a catalog integrity test, not a JSON schema validator.** Tests are GDScript-native; adding a JSON schema dep would be heavier than warranted. The integrity test exercises every kit's items against the live `EquipmentCatalog` — the same path the runtime uses — so any divergence (typo, deprecated key) fails CI.
+- **`rope_50ft` not `rope`.** Caught by the integrity test on first run; `data/equipment/base_equipment.json:rope_50ft` is the canonical key. Fixed in-place.
+
+**Interfaces defined or changed:**
+
+- `HenchmanEquipmentKit` (new RefCounted, no autoload):
+  - `static load_kits() -> Dictionary` (cached)
+  - `static get_kit(class_id: String, level: int) -> Dictionary`
+  - `static has_kit(class_id: String, level: int) -> bool`
+  - `static apply_kit_to_henchman(henchman_id: String, class_id: String, level: int, repo = null, catalog: EquipmentCatalog = null) -> bool`
+  - `static describe_kit(class_id: String, level: int) -> String`
+  - `static reset_cache() -> void`
+- `HenchmanLifecycleManager.finalize_hire` — internally now calls `HenchmanEquipmentKit.apply_kit_to_henchman` after `add_party_member`. No public API change.
+- `HiringPanel._add_candidate_row` — internal builder now creates a VBox with a header + loadout-summary line; the `_on_interview` signature shifted from `HBoxContainer` to `Container` to accept either layout.
+
+**Database changes:** None. Kit application uses existing `inventory_items` table.
+
+**Tests added/updated:**
+
+- `tests/test_henchman_equipment_kit.gd` (13 tests, all pass).
+- Wired into `tests/test_runner.gd` + `.tscn`.
+- Full suite: **123 / 33** (was 122/33 post-Phase 2). Net +1 pass (HenchmanEquipmentKit), no new failures.
+
+**Known issues:**
+
+- **Kits are flat lists, not class-customised by personality.** The cleric L1 kit is a mace + leather + shield even if the henchman's culture is theocratic-with-a-spear-tradition. Personality-driven kit variation is a Phase 6+ enhancement.
+- **No starting coin in v1 kits.** All kits set `starting_coin_cp: 0`. The first month's wage covers the henchman's expenses; future iterations may grant kit-specific coin (e.g., a thief might arrive with 5 sp of "savings").
+- **HiringPanel loadout label uses display-cased `item_key` rather than catalog `name`.** "Leather armor" reads fine; "Item" / "Spell book blank" → "Spell Book Blank" reads OK but isn't as polished as the catalog name (e.g., the catalog's "Rope (50')"). A v1.x polish pass can swap to `EquipmentCatalog.get_item(key).name`.
+- **Henchmen who level up don't get a kit upgrade.** Per the Phase 3 plan: post-hire equipment progression is the player's job (transfer better gear from inventory or shop). Auto-upgrading on level-up reserved for v2.
+
+**Next session should — Phase 4: HiringPanel detail and dismissal modal:**
+
+1. Expand HiringPanel candidate detail row with portrait (PortraitWithBadge), ability scores (3-line block), monthly wage, equipment loadout (already added in Phase 3).
+2. Add reaction-roll outcome flavor text from a templated `data/henchmen/reaction_flavor.json` (3-5 strings per outcome × 5 outcomes ≈ 20 templated lines).
+3. Add "Adjust offer" affordance: ±1 reaction modifier with cost surfaced.
+4. Build `scenes/ui/dialogs/dismiss_henchman_dialog.gd` per `gdd-henchmen-tab.md` §7.2 (final wages, parting bonus, equipment retention).
+5. New `HenchmanLifecycleManager.dismiss_henchman(character_id, options)` API.
+6. Wire `henchmen_tab_page.gd` right-click "Dismiss…" to open the new modal.
+7. Tests: `test_dismiss_henchman.gd` covering dismissal options, equipment retention paths, parting bonus side effects.
+
+**[NEEDS-OPUS-REVIEW]** None this session. Phase 3 is mechanical implementation against the agreed plan; the only design call (slot-downgrade vs silent-drop on restriction violation) is well-justified by the principle "preserve kit contents, surface authoring errors loudly."

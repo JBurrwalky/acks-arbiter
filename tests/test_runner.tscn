@@ -84,6 +84,7 @@
 [ext_resource type="Script" path="res://tests/test_normal_man_class.gd" id="79b2_normal_man_class_tests"]
 [ext_resource type="Script" path="res://tests/test_henchman_class_selector.gd" id="79b3_henchman_class_selector_tests"]
 [ext_resource type="Script" path="res://tests/test_normal_man_advancement.gd" id="79b4_normal_man_advancement_tests"]
+[ext_resource type="Script" path="res://tests/test_henchman_equipment_kit.gd" id="79b5_henchman_equipment_kit_tests"]
 [ext_resource type="Script" path="res://tests/test_combat_state_spawn.gd" id="79c_combat_state_spawn_tests"]
 [ext_resource type="Script" path="res://tests/test_fog_reveal_engine.gd" id="79d_fog_reveal_engine_tests"]
 [ext_resource type="Script" path="res://tests/test_reputation_system.gd" id="75_reputation_system_tests"]
@@ -414,6 +415,9 @@ script = ExtResource("79b3_henchman_class_selector_tests")
 
 [node name="NormalManAdvancementTests" type="Node" parent="."]
 script = ExtResource("79b4_normal_man_advancement_tests")
+
+[node name="HenchmanEquipmentKitTests" type="Node" parent="."]
+script = ExtResource("79b5_henchman_equipment_kit_tests")
 
 [node name="CombatStateSpawnTests" type="Node" parent="."]
 script = ExtResource("79c_combat_state_spawn_tests")
