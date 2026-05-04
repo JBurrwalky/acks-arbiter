@@ -610,6 +610,8 @@ func _on_entity_clicked(entity_id: String) -> void:
 const _MENU_VIEW := 0
 const _MENU_DISMISS := 1
 const _MENU_PROMOTE := 2
+const _MENU_ADJUST_TREATMENT := 3
+const _MENU_PAY_BACK_WAGES := 4
 
 
 func _on_row_gui_input(event: InputEvent, entity_id: String, _is_dismissed: bool) -> void:
@@ -625,11 +627,19 @@ func _show_row_context_menu(entity_id: String, global_pos: Vector2) -> void:
 	var menu := PopupMenu.new()
 	menu.add_item("View character", _MENU_VIEW)
 	menu.add_separator()
+	menu.add_item("Adjust treatment…", _MENU_ADJUST_TREATMENT)
+	menu.add_item("Pay back wages…", _MENU_PAY_BACK_WAGES)
+	menu.add_separator()
 	menu.add_item("Dismiss henchman…", _MENU_DISMISS)
 	menu.add_item("Promote to Full Member…", _MENU_PROMOTE)
 	# Promote lifecycle deferred per gdd-management-notebook.md §6.5.2;
 	# button is greyed in v1.
 	menu.set_item_disabled(menu.get_item_index(_MENU_PROMOTE), true)
+	# Pay-back-wages: greyed when no back-wages owed.
+	var state: Dictionary = CampaignRepository.get_henchman_state(entity_id)
+	var unpaid: int = int(state.get("unpaid_months", 0))
+	if unpaid <= 0:
+		menu.set_item_disabled(menu.get_item_index(_MENU_PAY_BACK_WAGES), true)
 	menu.id_pressed.connect(_on_context_menu_pressed.bind(entity_id))
 	menu.popup_hide.connect(menu.queue_free)
 	add_child(menu)
@@ -648,6 +658,12 @@ func _on_context_menu_pressed(item_id: int, entity_id: String) -> void:
 			# then routes the player's choices through
 			# HenchmanLifecycleManager.dismiss_henchman.
 			_open_dismiss_dialog(entity_id)
+		_MENU_ADJUST_TREATMENT:
+			# Phase 5: open the treasure-share + bonus modal.
+			_open_adjust_treatment_dialog(entity_id)
+		_MENU_PAY_BACK_WAGES:
+			# Phase 5: confirm-and-pay flow (binary, reuses ConfirmationPrompt).
+			_open_pay_back_wages_prompt(entity_id)
 
 
 # ---------------------------------------------------------------------------
@@ -761,4 +777,107 @@ func _do_dismiss(character_id: String, options: Dictionary, dialog: Node) -> voi
 		})
 	if dialog != null and dialog.is_inside_tree():
 		dialog.queue_free()
+	_refresh()
+
+
+# ---------------------------------------------------------------------------
+# Phase 5: Adjust treatment + pay back wages flows
+# ---------------------------------------------------------------------------
+
+const AdjustTreatmentDialogScript := preload("res://scenes/ui/dialogs/adjust_treatment_dialog.gd")
+const ConfirmationPromptScene := preload("res://scenes/ui/dialogs/confirmation_dialog.tscn")
+
+
+func _open_adjust_treatment_dialog(character_id: String) -> void:
+	var char_row: Dictionary = CampaignRepository.get_character(character_id)
+	if char_row.is_empty():
+		return
+	var name_str: String = String(char_row.get("name", "henchman"))
+	var state: Dictionary = CampaignRepository.get_henchman_state(character_id)
+	var current_share: int = int(state.get("treasure_share_percent", 15))
+	var current_morale: int = int(state.get("morale_score", 0))
+
+	var dialog := AdjustTreatmentDialogScript.new()
+	add_child(dialog)
+	await get_tree().process_frame
+	dialog.show_dialog(character_id, name_str, current_share, current_morale,
+		func(opts): _do_adjust_treatment(character_id, opts, dialog),
+		func(): dialog.queue_free())
+
+
+func _do_adjust_treatment(character_id: String, options: Dictionary, dialog: Node) -> void:
+	var lifecycle := HenchmanLifecycleManager.new(CampaignRepository, null, null)
+	var result: Dictionary = lifecycle.adjust_treatment(character_id,
+		int(options.get("treasure_share_percent", 15)),
+		int(options.get("bonus_gp", 0)))
+	if result.get("ok", false):
+		EventBus.notification_requested.emit({
+			"type":  "info",
+			"category": "henchman",
+			"title": "Treatment adjusted",
+			"body":  "Treasure share updated. The Henchmen tab will reflect the change.",
+		})
+	else:
+		EventBus.notification_requested.emit({
+			"type":  "warning",
+			"category": "henchman",
+			"title": "Could not adjust treatment",
+			"body":  String(result.get("message", "")),
+		})
+	if dialog != null and dialog.is_inside_tree():
+		dialog.queue_free()
+	_refresh()
+
+
+func _open_pay_back_wages_prompt(character_id: String) -> void:
+	var char_row: Dictionary = CampaignRepository.get_character(character_id)
+	if char_row.is_empty():
+		return
+	var name_str: String = String(char_row.get("name", "henchman"))
+	var monthly_wage: int = int(char_row.get("wage_gp_per_month", 0))
+	var state: Dictionary = CampaignRepository.get_henchman_state(character_id)
+	var unpaid: int = int(state.get("unpaid_months", 0))
+	var owed_gp: int = unpaid * monthly_wage
+	if owed_gp <= 0:
+		EventBus.notification_requested.emit({
+			"type":  "info",
+			"category": "henchman",
+			"title": "No back-wages owed",
+			"body":  "%s has no unpaid wages." % name_str,
+		})
+		return
+
+	var prompt := ConfirmationPromptScene.instantiate()
+	add_child(prompt)
+	await get_tree().process_frame
+	prompt.show_prompt(
+		"Pay back wages?",
+		"%s is owed %d gp in unpaid wages (%d month%s × %d gp/mo). The amount will be deducted from the active party's wallet." % [
+			name_str, owed_gp, unpaid,
+			"" if unpaid == 1 else "s", monthly_wage,
+		],
+		func(): _do_pay_back_wages(character_id, prompt),
+		func(): prompt.queue_free(),
+		false)
+
+
+func _do_pay_back_wages(character_id: String, prompt: Node) -> void:
+	var lifecycle := HenchmanLifecycleManager.new(CampaignRepository, null, null)
+	var result: Dictionary = lifecycle.pay_back_wages(character_id)
+	if result.get("ok", false):
+		EventBus.notification_requested.emit({
+			"type":  "info",
+			"category": "henchman",
+			"title": "Wages paid",
+			"body":  "Paid %d gp in back-wages." % int(result.get("paid_gp", 0)),
+		})
+	else:
+		EventBus.notification_requested.emit({
+			"type":  "warning",
+			"category": "henchman",
+			"title": "Could not pay back wages",
+			"body":  String(result.get("message", "")),
+		})
+	if prompt != null and prompt.is_inside_tree():
+		prompt.queue_free()
 	_refresh()

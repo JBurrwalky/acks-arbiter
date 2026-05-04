@@ -34,6 +34,7 @@ GameLog="*res://engine/autoloads/game_log.gd"
 UiInputController="*res://engine/autoloads/ui_input_controller.gd"
 NotebookState="*res://engine/autoloads/notebook_state.gd"
 FamiliarController="*res://engine/autoloads/familiar_controller.gd"
+HenchmanCalamityWatcher="*res://engine/autoloads/henchman_calamity_watcher.gd"
 
 [editor_plugins]
 

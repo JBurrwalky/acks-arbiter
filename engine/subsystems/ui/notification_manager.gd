@@ -51,6 +51,10 @@ func _ready() -> void:
 	EventBus.character_leveled_up.connect(_on_character_leveled_up)
 	EventBus.henchman_departed.connect(_on_henchman_departed)
 	EventBus.loyalty_changed.connect(_on_loyalty_changed)
+	# Phase 5: surface loyalty-check outcomes (non-LOYAL) per
+	# gdd-ui-architecture.md §6.3 — async outcome surfacing routes through
+	# notifications, never a blocking modal.
+	EventBus.henchman_loyalty_checked.connect(_on_henchman_loyalty_checked)
 
 
 func setup(display) -> void:
@@ -124,6 +128,46 @@ func _on_loyalty_changed(henchman_id: String, old_score: int, new_score: int) ->
 			"body": "A henchman's loyalty has dropped dangerously low.",
 			"duration": 5.0,
 		})
+
+
+func _on_henchman_loyalty_checked(henchman_id: String, trigger: String, result: Dictionary) -> void:
+	## Surfaces non-LOYAL loyalty-check outcomes as toast notifications.
+	## LOYAL / FANATIC outcomes stay silent (the engine state already updates;
+	## a positive result doesn't need a player-facing toast).
+	## Per acore_equipment.xml §loyalty_results.
+	var outcome: String = String(result.get("result", ""))
+	if outcome == "" or outcome == "loyal" or outcome == "fanatic":
+		return
+	var name_str: String = henchman_id
+	var char_data = CampaignRepository.load_character(henchman_id)
+	if char_data is Dictionary:
+		name_str = String((char_data as Dictionary).get("name", henchman_id))
+	var trigger_label: String = trigger.replace("_", " ")
+	match outcome:
+		"hostility":
+			notify({
+				"type":     "danger",
+				"category": "henchman",
+				"title":    "Henchman departed (hostility)",
+				"body":     "%s left in hostility (%s) — they cannot be re-hired by this character." % [name_str, trigger_label],
+				"duration": 7.0,
+			})
+		"resignation":
+			notify({
+				"type":     "warning",
+				"category": "henchman",
+				"title":    "Henchman resigned",
+				"body":     "%s resigned (%s). They may be recruited again later." % [name_str, trigger_label],
+				"duration": 6.0,
+			})
+		"grudging":
+			notify({
+				"type":     "warning",
+				"category": "henchman",
+				"title":    "Grudging loyalty",
+				"body":     "%s stays reluctantly (%s). Improve their treatment before the next check." % [name_str, trigger_label],
+				"duration": 6.0,
+			})
 
 
 # ---------------------------------------------------------------------------

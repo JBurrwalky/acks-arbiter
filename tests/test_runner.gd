@@ -96,6 +96,7 @@ extends Node
 @onready var _normal_man_advancement_tests = $NormalManAdvancementTests
 @onready var _henchman_equipment_kit_tests = $HenchmanEquipmentKitTests
 @onready var _dismiss_henchman_tests = $DismissHenchmanTests
+@onready var _henchman_phase5_tests = $HenchmanPhase5Tests
 @onready var _combat_state_spawn_tests = $CombatStateSpawnTests
 @onready var _fog_reveal_engine_tests = $FogRevealEngineTests
 @onready var _notification_manager_tests = $NotificationManagerTests
@@ -241,6 +242,7 @@ func run() -> void:
 			_normal_man_advancement_tests,
 			_henchman_equipment_kit_tests,
 			_dismiss_henchman_tests,
+			_henchman_phase5_tests,
 			_combat_state_spawn_tests,
 			_fog_reveal_engine_tests,
 			_notification_manager_tests,

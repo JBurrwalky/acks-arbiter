@@ -205,6 +205,120 @@ func _increment_unpaid_months(character_id: String) -> void:
 		"hired_month": int(state.get("hired_month", 0)),
 		"hired_year": int(state.get("hired_year", 0)),
 	})
+	# Phase 5: at the second consecutive unpaid month, queue an immediate
+	# loyalty check per acore_equipment.xml §henchmen.morale (the Judge
+	# may apply -1 or -2 for cruelty / broken word; chronically unpaid
+	# wages are the canonical broken-word case). Trigger string mirrors
+	# HenchmanLoyaltyResolver's vocabulary so consumers can branch on it.
+	if months >= 2:
+		trigger_loyalty_check(character_id, "unpaid_wages")
+
+
+# ---------------------------------------------------------------------------
+# Pay-back-wages (Phase 5): clear unpaid_months without going through the
+# monthly-payday path. Used by the Notebook tab "Pay Back Wages…" affordance
+# so the player can make good on missed wages before a loyalty check fires.
+# ---------------------------------------------------------------------------
+
+func pay_back_wages(character_id: String) -> Dictionary:
+	## Pays the full unpaid_months × monthly_wage from the employer's wallet,
+	## resets unpaid_months to 0, deposits into the henchman's purse.
+	## Returns {"ok": bool, "paid_gp": int, "message": String}.
+	if character_id.is_empty():
+		return {"ok": false, "paid_gp": 0, "message": "no character"}
+	var char_row: Dictionary = _repo.get_character(character_id) if _repo.has_method("get_character") else {}
+	if char_row.is_empty():
+		return {"ok": false, "paid_gp": 0, "message": "henchman not found"}
+	var state: Dictionary = _repo.get_henchman_state(character_id)
+	var unpaid_months: int = int(state.get("unpaid_months", 0))
+	var monthly_wage: int = int(char_row.get("wage_gp_per_month", 0))
+	var owed_gp: int = unpaid_months * monthly_wage
+	if owed_gp <= 0:
+		return {"ok": true, "paid_gp": 0, "message": "no back-wages owed"}
+
+	var employer_id: String = String(char_row.get("employer_id", ""))
+	# Determine party_id via the henchman's party_members row.
+	var party_id: String = ""
+	if _repo.has_method("db") or _repo.get("db") != null:
+		_repo.db.query_with_bindings(
+			"SELECT party_id FROM party_members WHERE character_id = ? LIMIT 1",
+			[character_id])
+		if not _repo.db.query_result.is_empty():
+			party_id = String(_repo.db.query_result[0].get("party_id", ""))
+
+	var wallet = _get_party_wallet()
+	if wallet != null and party_id != "" and employer_id != "":
+		var pay_result: Dictionary = wallet.pay(owed_gp * 100, party_id, employer_id)
+		if not pay_result.get("ok", false):
+			return {"ok": false, "paid_gp": 0, "message": "insufficient funds"}
+		_repo.add_coins_cp(character_id, owed_gp * 100)
+	# Reset unpaid_months.
+	state["unpaid_months"] = 0
+	_repo.upsert_henchman_state(character_id, state)
+
+	# Emit wages_processed so the UI refreshes the wage badge.
+	var bus := _event_bus()
+	if bus != null:
+		bus.emit_signal("wages_processed", party_id, {
+			"total_deducted_gp": owed_gp,
+			"unpaid_henchmen": [],
+			"trigger": "pay_back_wages",
+		})
+	return {"ok": true, "paid_gp": owed_gp, "message": ""}
+
+
+# ---------------------------------------------------------------------------
+# Treatment adjustment (Phase 5): change a henchman's treasure share and
+# optionally pay a one-time goodwill bonus that nudges morale.
+# ---------------------------------------------------------------------------
+
+func adjust_treatment(character_id: String, treasure_share_percent: int,
+		bonus_gp: int = 0) -> Dictionary:
+	## Updates henchman_state.treasure_share_percent (clamped to [0, 100]) and
+	## optionally pays a one-time gp bonus from the employer's wallet. A bonus
+	## > 0 stamps +1 morale on the henchman_state.
+	## Returns {"ok": bool, "message": String}.
+	if character_id.is_empty():
+		return {"ok": false, "message": "no character"}
+	var char_row: Dictionary = _repo.get_character(character_id) if _repo.has_method("get_character") else {}
+	if char_row.is_empty():
+		return {"ok": false, "message": "henchman not found"}
+	var state: Dictionary = _repo.get_henchman_state(character_id)
+	var employer_id: String = String(char_row.get("employer_id", ""))
+
+	# Resolve party_id for the wallet hop.
+	var party_id: String = ""
+	if _repo.has_method("db") or _repo.get("db") != null:
+		_repo.db.query_with_bindings(
+			"SELECT party_id FROM party_members WHERE character_id = ? LIMIT 1",
+			[character_id])
+		if not _repo.db.query_result.is_empty():
+			party_id = String(_repo.db.query_result[0].get("party_id", ""))
+
+	# Pay bonus first — if it fails, the share update doesn't land either.
+	if bonus_gp > 0:
+		var wallet = _get_party_wallet()
+		if wallet != null and party_id != "" and employer_id != "":
+			var pay_result: Dictionary = wallet.pay(bonus_gp * 100, party_id, employer_id)
+			if not pay_result.get("ok", false):
+				return {"ok": false, "message": "insufficient funds"}
+			_repo.add_coins_cp(character_id, bonus_gp * 100)
+		# Bonus payment stamps +1 morale.
+		state["morale_score"] = int(state.get("morale_score", 0)) + 1
+
+	# Clamp treasure share into [0, 100].
+	state["treasure_share_percent"] = clampi(treasure_share_percent, 0, 100)
+	_repo.upsert_henchman_state(character_id, state)
+
+	# Emit signals for UI refresh.
+	var bus := _event_bus()
+	if bus != null:
+		bus.emit_signal("treatment_adjusted", character_id,
+			int(state["treasure_share_percent"]), bonus_gp)
+		if bonus_gp > 0:
+			bus.emit_signal("loyalty_changed", character_id,
+				int(state.get("morale_score", 1)) - 1, int(state["morale_score"]))
+	return {"ok": true, "message": ""}
 
 
 func _get_party_wallet():

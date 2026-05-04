@@ -12063,3 +12063,122 @@ The H+ umbrella plan at `C:\Users\jttau\.claude\plans\c-users-jttau-claude-plans
 8. Tests: `test_calamity_triggers.gd`, `test_unpaid_wages_loyalty.gd`, `test_pay_back_wages.gd`, `test_adjust_treatment.gd`, `test_loyalty_notification_routing.gd`.
 
 **[NEEDS-OPUS-REVIEW]** None this session. Phase 4 is mechanical implementation against the agreed plan; the only design call (defensive `.duplicate()` of inventory snapshot) was bug-fix prophylactic and well-scoped to the engine layer.
+
+
+## Session 2026-05-04 — Henchman closure Phase 5: Lifecycle handlers + resolvers
+
+**Task:** Phase 5 of the henchman game-loop closure plan. Wire calamity triggers, unpaid-wages → loyalty check, treasure-share adjustment modal, loyalty-check outcome notification routing, and pay-back-wages flow.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- New autoload `engine/autoloads/henchman_calamity_watcher.gd` (~95 lines, no `class_name`):
+  - Subscribes to `EventBus.combatant_downed` in `_ready()`.
+  - Filters to henchmen via `CampaignRepository.get_character` lookup.
+  - Calls `HenchmanLifecycleManager.on_henchman_calamity(character_id)` (-1 morale per RAW).
+  - Emits a notification ("Henchman calamity — morale -1") so the player sees the tick.
+  - Exposes `report_calamity(character_id, reason)` so future curse/disease/level-drain subsystems can route their own events without an EventBus signal addition.
+  - Registered as autoload in `project.godot`.
+- New EventBus signal `treatment_adjusted(character_id, treasure_share_percent, bonus_gp)`.
+- Extended `HenchmanLifecycleManager._increment_unpaid_months`: when `unpaid_months >= 2` after the increment, immediately calls `trigger_loyalty_check(character_id, "unpaid_wages")` per `acore_equipment.xml` §henchmen.morale ("the Judge may apply -1 or -2 for cruelty / broken word"; chronically unpaid wages are the canonical broken-word case).
+- New `HenchmanLifecycleManager.pay_back_wages(character_id)` API:
+  - Reads `unpaid_months × monthly_wage` from the henchman_state + character row.
+  - Charges the active employer's wallet via `PartyWallet.pay`.
+  - Deposits into the henchman's purse via `add_coins_cp`.
+  - Resets `unpaid_months = 0`.
+  - Emits `wages_processed` with `trigger: "pay_back_wages"`.
+  - Returns `{ok, paid_gp, message}`.
+  - No-op (`paid_gp = 0`) if no debt; returns `false` on insufficient funds (state NOT mutated).
+- New `HenchmanLifecycleManager.adjust_treatment(character_id, treasure_share_percent, bonus_gp)` API:
+  - Charges the wallet for the bonus first; on failure returns `false` and the share update doesn't land.
+  - On bonus > 0 stamps +1 morale on the henchman_state.
+  - Clamps `treasure_share_percent` to `[0, 100]`.
+  - Emits `treatment_adjusted` and (if bonus stamped morale) `loyalty_changed`.
+  - Returns `{ok, message}`.
+- New `scenes/ui/dialogs/adjust_treatment_dialog.gd` (~190 lines, layer 180):
+  - HSlider for treasure share (0-50%, step 5).
+  - SpinBox for one-time bonus (gp).
+  - Live "X%" readout next to the slider.
+  - Cancel / Apply buttons.
+  - `confirmed(options)` / `cancelled` signals + Callable params.
+- Extended `engine/subsystems/ui/notification_manager.gd` to subscribe to `EventBus.henchman_loyalty_checked` and surface non-LOYAL outcomes as toast notifications:
+  - LOYAL / FANATIC → silent (positive results don't need a toast).
+  - GRUDGING → warning toast "Henchman stays reluctantly — improve treatment before the next check".
+  - HOSTILITY → danger toast "Henchman left in hostility — they cannot be re-hired by this character".
+  - RESIGNATION → warning toast "Henchman resigned — they may be recruited again later".
+  - Per `gdd-ui-architecture.md` §6.3 (async outcome surfacing routes through notifications, never a blocking modal).
+- Extended `henchmen_tab_page.gd` right-click context menu with two new items:
+  - **Adjust treatment…** → opens `AdjustTreatmentDialog` → calls `adjust_treatment` → notification on success/failure → tab refresh.
+  - **Pay back wages…** → reuses `ConfirmationPrompt` (binary "Pay X gp?" prompt) → calls `pay_back_wages` → notification → tab refresh. Greyed out when no back-wages owed.
+- New `tests/test_henchman_phase5.gd` — 9 tests via FakeRepo + FakeWallet + FakeLifecycle (subclass overriding `trigger_loyalty_check` to capture without rolling):
+  - Unpaid wages triggers loyalty check at 2 months
+  - Unpaid wages does NOT trigger at 1 month
+  - pay_back_wages resets unpaid_months + charges wallet + credits henchman
+  - pay_back_wages no-op when no debt
+  - pay_back_wages fails on insufficient funds (state unchanged)
+  - adjust_treatment updates share without bonus
+  - adjust_treatment bonus > 0 stamps +1 morale + charges wallet
+  - adjust_treatment clamps share to [0, 100]
+  - adjust_treatment fails atomically on insufficient funds
+- Wired `HenchmanPhase5Tests` into `tests/test_runner.gd` + `.tscn`.
+
+**Decisions made:**
+
+- **One thin watcher autoload, not the lifecycle manager itself as autoload.** Keeps `HenchmanLifecycleManager` as the per-call RefCounted construct (matches the existing settlement-hire path and the Phase 4 dismiss path); the watcher is a 95-line listener with no other state. Avoids refactoring the existing manager constructor signature.
+- **Calamity wired only for `combatant_downed` in v1.** RAW lists energy drain / curse / magical disease / nearly killed; only the latter has a reliable EventBus signal today. The other three are deferred until those mechanics surface their own signals — adding unused signals now would be premature abstraction. The watcher's `report_calamity(character_id, reason)` API is the future hook: when a curse subsystem lands, it calls `HenchmanCalamityWatcher.report_calamity(id, "curse")` directly instead of needing a new EventBus signal.
+- **Notification-routed loyalty-check outcomes, not a blocking modal.** Per `gdd-ui-architecture.md` §6.3 audit. Avoids the wrapper-modal-around-notification anti-pattern from build_log H.0. Critical outcomes (Hostility) get higher-priority toast (danger type, longer duration); Grudging gets a warning toast.
+- **Pay-back-wages reuses ConfirmationPrompt, not a bespoke dialog.** Binary "Pay X gp?" prompt is exactly the contract ConfirmationPrompt provides. Per the Phase 4 architectural decision rule.
+- **Adjust-treatment dialog is bespoke (slider + SpinBox).** State-rich UI requires a dedicated modal; ConfirmationPrompt's title/body/buttons doesn't fit.
+- **Atomic bonus-pay-then-update.** `adjust_treatment` charges the wallet for the bonus FIRST; if the wallet rejects, neither the morale stamp nor the share update lands. Prevents the player from getting a free morale boost when the bonus payment fails.
+- **Share clamp to [0, 100], not [0, 50].** The dialog's HSlider visually caps at 50% (sane upper bound for player UX), but the engine API accepts 0-100 in case future scenarios (e.g., henchman becomes co-leader of a domain) need a higher share. Defensive clamp guards both directions.
+- **Pay-back-wages contextual greyed state.** The Notebook tab right-click menu disables `_MENU_PAY_BACK_WAGES` when `unpaid_months == 0` so the player doesn't open a "no-op" prompt. Same pattern as the greyed Promote button.
+
+**Interfaces defined or changed:**
+
+- `HenchmanCalamityWatcher` (new autoload):
+  - Subscribes to `EventBus.combatant_downed`.
+  - `report_calamity(character_id: String, reason: String) -> void` — public re-emit hook for future systems.
+- `HenchmanLifecycleManager`:
+  - `pay_back_wages(character_id: String) -> Dictionary` (new public method).
+  - `adjust_treatment(character_id: String, treasure_share_percent: int, bonus_gp: int = 0) -> Dictionary` (new public method).
+  - `_increment_unpaid_months` now calls `trigger_loyalty_check(...)` when `unpaid_months >= 2`.
+- `EventBus`:
+  - `treatment_adjusted(character_id: String, treasure_share_percent: int, bonus_gp: int)` (new signal).
+- `NotificationManager`:
+  - New `_on_henchman_loyalty_checked(henchman_id, trigger, result)` handler.
+- `AdjustTreatmentDialog` (new CanvasLayer):
+  - `show_dialog(character_id, henchman_name, current_share_percent, current_morale, on_confirm, on_cancel)`.
+  - Signals: `confirmed(options: Dictionary)`, `cancelled`.
+- `henchmen_tab_page.gd`:
+  - New `_MENU_ADJUST_TREATMENT` and `_MENU_PAY_BACK_WAGES` constants and menu items.
+  - New `_open_adjust_treatment_dialog`, `_do_adjust_treatment`, `_open_pay_back_wages_prompt`, `_do_pay_back_wages` private methods.
+- `project.godot`:
+  - New autoload entry `HenchmanCalamityWatcher`.
+
+**Database changes:** None. All Phase 5 state lives in existing `henchman_state` columns (`morale_score`, `treasure_share_percent`, `unpaid_months`).
+
+**Tests added/updated:**
+
+- `tests/test_henchman_phase5.gd` (9 tests, all pass).
+- Wired into `tests/test_runner.gd` + `.tscn`.
+- Full suite: **125 / 33** (was 124/33 post-Phase 4). Net +1 pass for HenchmanPhase5, no new failures. All 9 henchman closure suites green: HenchmanTables, HenchmanLoyaltyResolver, HenchmanLifecycle, HenchmanAvailability, NormalManClass, HenchmanClassSelector, HenchmanEquipmentKit, DismissHenchman, HenchmanPhase5.
+
+**Known issues:**
+
+- **Calamity wiring only covers `combatant_downed`.** RAW lists three other calamities (curse, magical disease, energy drain) that aren't wired because their underlying mechanics don't yet exist in the codebase. The `report_calamity` hook is in place for future work.
+- **Pay-back-wages relies on the active party context.** The `_open_pay_back_wages_prompt` flow looks up the henchman's party via a `SELECT party_id FROM party_members` query. If a henchman is somehow orphaned from any party (post-PC-death pre-transfer), the lookup returns empty and the wallet hop is skipped. Production behavior: pay_back_wages returns `{ok: true, paid_gp: 0}` because no PartyWallet was charged. A v1.x polish could surface this as a clearer "henchman has no employer" path.
+- **Loyalty-check outcome notifications fire even from background loyalty rolls.** Any `henchman_loyalty_checked` emission with non-LOYAL outcome surfaces a toast — including the unpaid-wages-triggered checks. That's correct behavior (the player should see why their henchman just left), but if multiple checks fire in the same payday it could surface a stack of notifications. The notification system handles stacking; no fix needed.
+- **Loyalty trend sparkline** not yet built. Phase 6 introduces migration `047_henchman_loyalty_log.sql` for the per-event audit trail; that consumer is deferred. (Note: this plan originally reserved 047 for Phase 5; the `henchman_loyalty_log` migration is now Phase 6's first task.)
+- **Promote-to-Full-Member finalize lifecycle still deferred.** Phase 6 work.
+
+**Next session should — Phase 6: Polish:**
+
+1. **"Hire Henchman" button on Notebook tab Roster sub-tab** — when in settlement: cross-activates HiringPanel; otherwise: notification via H.0 router. Same path used by the existing Downtime hiring card placeholder (which stops being a placeholder).
+2. **Loyalty trend sparkline** — migration `047_henchman_loyalty_log.sql` for the per-event audit trail; render inline 60×16 px micro-chart per `gdd-henchmen-tab.md` §5.5. Also wire `HenchmanLifecycleManager.trigger_loyalty_check` to insert into the log.
+3. **Promote to Full Member finalize lifecycle** per `gdd-management-notebook.md` §6.5: XP migration, item ownership transfer, party_member upgrade, then `process_departure(reason="promoted")`.
+4. **Sort/filter persistence** in `NotebookState.per_tab_substate` for the Henchmen tab.
+5. **Specific-class commissioning** per `ax_henchmen_recruitment_expanded.xml` §commissioning + §seeking_specific_class_and_level.
+6. **Patron-PC death handling** — when a PC dies, their henchmen receive a forced loyalty check with trigger="patron_death".
+
+**[NEEDS-OPUS-REVIEW]** None this session. Phase 5 is mechanical implementation against the agreed plan; the notification-vs-modal decisions were already locked in by the Phase 4 architectural audit.

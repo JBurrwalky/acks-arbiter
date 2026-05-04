@@ -242,6 +242,12 @@ signal henchman_advanced_from_normal_man(
 ## [param summary] keys: total_deducted, unpaid_henchmen (Array of ids)
 signal wages_processed(party_id: String, summary: Dictionary)
 
+## A henchman's treasure share or one-time bonus was adjusted via the
+## "Adjust Treatment…" Notebook tab affordance. Emitted by
+## HenchmanLifecycleManager.adjust_treatment.
+## [param bonus_gp] one-time gp paid alongside the share change (0 if no bonus)
+signal treatment_adjusted(character_id: String, treasure_share_percent: int, bonus_gp: int)
+
 ## A character's proficiencies changed (added, removed, or rank changed).
 ## [param change] keys:
 ##   proficiency_key: String — the proficiency affected
