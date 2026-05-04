@@ -11959,3 +11959,107 @@ The H+ umbrella plan at `C:\Users\jttau\.claude\plans\c-users-jttau-claude-plans
 7. Tests: `test_dismiss_henchman.gd` covering dismissal options, equipment retention paths, parting bonus side effects.
 
 **[NEEDS-OPUS-REVIEW]** None this session. Phase 3 is mechanical implementation against the agreed plan; the only design call (slot-downgrade vs silent-drop on restriction violation) is well-justified by the principle "preserve kit contents, surface authoring errors loudly."
+
+
+## Session 2026-05-04 — Henchman closure Phase 4: HiringPanel detail + dismissal modal
+
+**Task:** Phase 4 of the henchman game-loop closure plan. Expand the HiringPanel candidate row with portrait + ability scores + reaction flavor + adjust-offer affordance, and replace the dismissal notification stub with a real multi-checkbox modal per `gdd-henchmen-tab.md` §7.2.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- New `data/henchmen/reaction_flavor.json` — templated reaction-roll flavor (3-5 lines per outcome × 5 outcomes per `acore_equipment.xml` §reaction_to_hiring_offer). Each line uses `{name}` substitution. Random sample per interview so the player doesn't memorize the copy.
+- New `scenes/ui/dialogs/dismiss_henchman_dialog.gd` (~225 lines) — bespoke modal at layer 180 per `gdd-ui-architecture.md` §2.3:
+  - Title + body header
+  - **Final wages** SpinBox (defaults to `unpaid_months × monthly_wage`)
+  - **Parting bonus** SpinBox (+1 morale stamp on the departed-record when > 0)
+  - **Equipment retention** ButtonGroup of 3 mutually-exclusive checkboxes: keep_all (default) / take_party_gear / take_everything
+  - Cancel + Dismiss buttons (Dismiss tinted DANGER_COLOR matching ConfirmationPrompt's danger-button precedent)
+  - `confirmed(options: Dictionary)` / `cancelled` signals + Callable params for inline closures
+- New `HenchmanLifecycleManager.dismiss_henchman(character_id, options)` — engine API behind the dialog:
+  - Defaults `final_wages_gp` to `unpaid_months × monthly_wage`, `parting_bonus_gp` to 0, `equipment_retention` to "keep_all"
+  - Charges PartyWallet for `final_wages + parting_bonus` (returns false on insufficient funds, dismissal NOT advanced)
+  - Deposits the wages into the henchman's purse via `add_coins_cp`
+  - **Equipment retention paths**:
+    - `keep_all`: no inventory changes
+    - `take_party_gear`: UPDATE `inventory_items SET character_id = employer_id, slot = 'pack', is_equipped = 0` for every henchman item (preserves items, transfers ownership)
+    - `take_everything`: deletes every henchman inventory_item (angry dismissal — gear turned in/discarded)
+  - On `parting_bonus_gp > 0`: stamps +1 morale on the departed-record (improves re-recruitment odds)
+  - Routes through `process_departure(character_id, "dismissed", settlement_id, party_id)` for the standard departure-log + employer-clearance + signal pipeline
+- Wired `henchmen_tab_page.gd` right-click "Dismiss…" → opens DismissHenchmanDialog (replaces the H.1 notification stub) → calls `dismiss_henchman` on confirm. Notification surfaces success/failure.
+- **HiringPanel candidate row redesigned** as a 2-column layout:
+  - Left: `PortraitWithBadge` (56×56, level badge)
+  - Right (VBox): header line (name — class Lv# — wage), STR/INT/WIS line, DEX/CON/CHA line, equipment loadout from Phase 3, action area
+  - Action area: `[Adjust offer −1]` `[Adjust offer +1]` `[Interview]`
+- **Adjust offer affordance** — clamp to ±2, accumulates per-row (re-pressing reverses), visual hint via "(active)" suffix on active button.
+- **Reaction flavor wired into Interview** — outcome-keyed lookup into the JSON catalog → random pick → `{name}` substitution. Templated text replaces the legacy one-line copy. Fallback string preserved for the unlikely catalog-load failure.
+- Extended `CampaignRepository.get_pool_members` projection to include ability scores + portrait_id + sex (HiringPanel detail row consumes them; existing callers ignore the extra columns).
+- New `tests/test_dismiss_henchman.gd` — 8 tests via FakeRepo + FakeWallet:
+  - Empty character_id → false
+  - Default options route through process_departure (departure_reason="dismissed", departure_settlement_id propagated)
+  - Default `final_wages_gp = unpaid_months × wage` (verified wallet charge + henchman purse credit)
+  - Parting bonus stamps +1 morale + charges wallet
+  - keep_all → 0 inventory changes
+  - take_party_gear → N UPDATE statements (one per item)
+  - take_everything → 0 items left in inventory
+  - Insufficient funds → false, no `departure_reason` stamp
+- Wired `DismissHenchmanTests` into `tests/test_runner.gd` + `.tscn`.
+
+**Decisions made:**
+
+- **Bespoke dialog (not ConfirmationPrompt) for dismissal.** Per `gdd-ui-architecture.md` §6.3 audit: state-rich UI (multi-checkbox + slider) → bespoke dialog at layer 100-199. ConfirmationPrompt's title/body/buttons contract isn't a fit. The dialog still adopts the danger-button color from ConfirmationPrompt's precedent.
+- **Defensive `.duplicate()` of inventory snapshot** before iterating + removing in `dismiss_henchman`. Caught by the `take_everything` test on first run — the FakeRepo returns the live array; iterating-while-removing skipped one of three items. Production CampaignRepository already duplicates, but the defensive copy in the engine layer protects both paths and removes the bug for any future repo impl.
+- **Adjust offer clamp at ±2.** Cap matches `acore_equipment.xml` §reaction_to_hiring_offer guidance ("Judge may apply situational modifiers, usually around +/-1 for better or worse terms; similar modest adjustments are allowed"). Hard-clamp prevents the player from gaming the reaction roll into a guaranteed hire.
+- **Action area uses `set_meta("offer_modifier", N)` for state.** Per-row state stored on the HBoxContainer itself rather than in a top-level `_offer_modifiers: Dictionary[character_id]`. Avoids dict cleanup when rows free; the metadata dies with the container.
+- **Extended `get_pool_members` projection** rather than adding a separate `get_pool_member_detail(character_id)` API. Pool size is bounded by market class (4d100 max at Class I), so the small extra width per row is cheaper than N+1 fetches.
+- **Templated flavor + fallback preserved.** `_legacy_outcome_summary` keeps the old one-line copy as a fallback when the JSON catalog fails to load. Tests don't exercise the fallback explicitly (the catalog is always present in the worktree); it's defense in depth.
+- **`is_post_normal_man` flag idea NOT extended to dismissal.** Phase 2's flag carries advancement-track state on the character row; Phase 4's parting-bonus state lives on the henchman_state row (morale_score). Different lifetimes, different concerns.
+
+**Interfaces defined or changed:**
+
+- `HenchmanLifecycleManager.dismiss_henchman(character_id: String, options: Dictionary = {}) -> bool` — new public method.
+  - Options keys: `final_wages_gp`, `parting_bonus_gp`, `equipment_retention` (`"keep_all"` | `"take_party_gear"` | `"take_everything"`), `settlement_id`, `party_id`.
+- `DismissHenchmanDialog` (new CanvasLayer):
+  - `show_dialog(character_id, settlement_id, party_id, henchman_name, default_final_wages_gp, on_confirm: Callable, on_cancel: Callable)`
+  - Constants: `RETENTION_KEEP_ALL`, `RETENTION_TAKE_PARTY_GEAR`, `RETENTION_TAKE_EVERYTHING`
+  - Signals: `confirmed(options: Dictionary)`, `cancelled`
+- `HiringPanel`:
+  - Internal: `_add_candidate_row` rewrites; `_on_interview` signature now `(character_id, candidate_name, action_area)`; new `_on_adjust_offer` helper.
+  - Static helpers: `_load_flavor_table`, `_flavor_key_for_outcome`, `_pick_reaction_flavor`, `_legacy_outcome_summary`.
+- `CampaignRepository.get_pool_members` — projection widened with `strength`, `intelligence`, `wisdom`, `dexterity`, `constitution`, `charisma`, `portrait_id`, `sex`. Callers that didn't request those keys aren't affected.
+- `henchmen_tab_page.gd`:
+  - New `_open_dismiss_dialog(character_id)` and `_do_dismiss(character_id, options, dialog)` private methods.
+  - Right-click `_MENU_DISMISS` now opens the dialog instead of emitting the legacy notification stub.
+
+**Database changes:** None. The dismissal flow uses existing `henchman_state.departure_reason` / `departure_settlement_id` columns; equipment retention uses existing `inventory_items` table.
+
+**Tests added/updated:**
+
+- `tests/test_dismiss_henchman.gd` (8 tests, all pass).
+- Wired into `tests/test_runner.gd` + `.tscn`.
+- Full suite: **124 / 33** stable across run #2 after the iterate-while-removing fix (run #1 was 123/34). Net +1 pass (DismissHenchman), -1 fail (the bug fix). All six henchman closure suites green: HenchmanTables, HenchmanLoyaltyResolver, HenchmanLifecycle, HenchmanAvailability, NormalManClass, HenchmanClassSelector, HenchmanEquipmentKit, DismissHenchman.
+
+**Known issues:**
+
+- **HiringPanel portrait shows placeholder, not real portrait.** `PortraitWithBadge.set_texture` not called. The pool-member projection now includes `portrait_id`, so a follow-up can wire it to `AssetRegistry.load_portrait(portrait_id)` and surface the actual texture. Cosmetic-only; tests don't depend on it.
+- **HenchmenTabPage's `_open_dismiss_dialog` instantiates a fresh `HenchmanLifecycleManager`** rather than going through a shared instance. The notebook tab doesn't currently own one, and the existing notebook autoload graph doesn't pre-bind one. Production behavior is correct (the manager is stateless beyond its repo/rep_system constructor params); but if reputation-system integration matures, the fresh instance won't carry it. A v1.x polish pass can pull a shared instance from a future `HenchmanRegistry` autoload.
+- **Adjust-offer doesn't surface a cost.** The plan's "+1 advance pay = 25 gp" suggestion isn't implemented; v1 ships the raw modifier without a paid-bonus tie-in. ACKS RAW says "may apply situational modifiers" without mandating a cost; the cost mechanic can land alongside specific-class commissioning in Phase 6.
+- **Dialog's "take everything" is a hostile dismissal.** Currently no morale-on-dismissal-mode coupling — a "take_everything" exit doesn't auto-stamp negative morale on the departed record. Hostility/resignation outcomes are reserved for the loyalty-roll path; player-initiated dismissals always exit cleanly per the GDD.
+
+**Next session should — Phase 5: Lifecycle handlers and resolvers:**
+
+1. **Calamity trigger wiring** — subscribe `HenchmanLifecycleManager.on_henchman_calamity` to:
+   - `EventBus.character_brought_to_negative_hp(character_id)` → reason="near_death" (only for henchmen)
+   - `EventBus.character_received_curse` (audit; create signal if absent)
+   - `EventBus.character_received_disease` (audit; create signal if absent)
+   - `EventBus.character_lost_levels(character_id, levels_lost)` → reason="energy_drain"
+2. **Unpaid wages → loyalty check** — modify `process_monthly_wages` so when `unpaid_months >= 2` after the increment, immediately call `trigger_loyalty_check(character_id, "unpaid_wages")`.
+3. **Treasure-share adjustment modal** — new `scenes/ui/dialogs/adjust_treatment_dialog.gd` (slider + bonus); right-click "Adjust Treatment…" on the Notebook tab.
+4. **Loyalty-check outcome routing** — extend `engine/subsystems/ui/notification_manager.gd` to subscribe to `henchman_loyalty_checked` and emit action-callback toasts for non-LOYAL outcomes (Grudging → "Improve terms" → AdjustTreatmentDialog; Hostility/Resignation → "View departure" → Notebook tab Departure Log).
+5. **Pay-back-wages flow** — reuse ConfirmationPrompt: right-click "Pay Back Wages…" → confirm → deduct from PartyWallet, reset `unpaid_months=0`, emit `wages_processed`.
+6. New EventBus signal `treatment_adjusted(character_id, treasure_share, bonus_paid)`.
+7. Migration `047_henchman_loyalty_log.sql` for sparkline data (Phase 6 consumes it).
+8. Tests: `test_calamity_triggers.gd`, `test_unpaid_wages_loyalty.gd`, `test_pay_back_wages.gd`, `test_adjust_treatment.gd`, `test_loyalty_notification_routing.gd`.
+
+**[NEEDS-OPUS-REVIEW]** None this session. Phase 4 is mechanical implementation against the agreed plan; the only design call (defensive `.duplicate()` of inventory snapshot) was bug-fix prophylactic and well-scoped to the engine layer.

@@ -302,6 +302,103 @@ func process_departure(character_id: String, reason: String,
 
 
 # ---------------------------------------------------------------------------
+# Dismissal (player-initiated departure)
+# ---------------------------------------------------------------------------
+
+## Player-initiated dismissal of a henchman. Per gdd-henchmen-tab.md §7.2 the
+## dismissal modal lets the player choose final wages, parting bonus, and
+## equipment retention. This API consumes those choices and routes through
+## process_departure(reason="dismissed").
+##
+## [param options] keys (all optional):
+##   "final_wages_gp": int    — gp paid out at dismissal (deducted from
+##                              PartyWallet via the active employer). Defaults
+##                              to unpaid_months × monthly_wage.
+##   "parting_bonus_gp": int  — extra gp paid as a goodwill gesture; if > 0
+##                              applies +1 morale to the departed-record
+##                              (improves re-recruitment odds). Defaults to 0.
+##   "equipment_retention": String — "keep_all" (default) | "take_party_gear" |
+##                              "take_everything". "take_party_gear" returns
+##                              all henchman inventory items to the employer's
+##                              inventory. "take_everything" deletes the
+##                              henchman's inventory entirely (an angry
+##                              dismissal — equipment turned in). "keep_all"
+##                              leaves the henchman with everything.
+##   "settlement_id": String  — settlement where dismissal occurs (for the
+##                              departure log). Defaults to "".
+##   "party_id": String       — the party the henchman is leaving.
+##
+## Returns true on successful dismissal, false if the henchman couldn't be
+## resolved or the wallet can't cover final wages.
+func dismiss_henchman(character_id: String, options: Dictionary = {}) -> bool:
+	if character_id.is_empty():
+		return false
+
+	# Load character + state for defaults.
+	var char_row: Dictionary = _repo.get_character(character_id) if _repo.has_method("get_character") else {}
+	if char_row.is_empty():
+		return false
+	var employer_id: String = String(char_row.get("employer_id", ""))
+	var monthly_wage: int = int(char_row.get("wage_gp_per_month", 0))
+	var state: Dictionary = _repo.get_henchman_state(character_id)
+	var unpaid_months: int = int(state.get("unpaid_months", 0))
+
+	# Defaults.
+	var final_wages_gp: int = int(options.get("final_wages_gp", unpaid_months * monthly_wage))
+	var parting_bonus_gp: int = int(options.get("parting_bonus_gp", 0))
+	var retention: String = String(options.get("equipment_retention", "keep_all"))
+	var settlement_id: String = String(options.get("settlement_id", ""))
+	var party_id: String = String(options.get("party_id", ""))
+
+	# Pay final wages + parting bonus from the employer's wallet.
+	var total_owed_gp: int = maxi(0, final_wages_gp + parting_bonus_gp)
+	if total_owed_gp > 0:
+		var wallet = _get_party_wallet()
+		if wallet != null and party_id != "" and employer_id != "":
+			var pay_result: Dictionary = wallet.pay(total_owed_gp * 100, party_id, employer_id)
+			if not pay_result.get("ok", false):
+				return false
+			# Deposit into the henchman's purse.
+			_repo.add_coins_cp(character_id, total_owed_gp * 100)
+
+	# Equipment retention. Snapshot the inventory array before iterating —
+	# remove_inventory_item mutates the same Array some FakeRepo
+	# implementations return live (the production CampaignRepository already
+	# duplicates, but defensive copy here protects both paths).
+	if retention == "take_party_gear" or retention == "take_everything":
+		var items_raw: Array = _repo.get_inventory_items(character_id) if _repo.has_method("get_inventory_items") else []
+		var items: Array = items_raw.duplicate()
+		for item: Dictionary in items:
+			var item_id: String = String(item.get("id", ""))
+			if item_id.is_empty():
+				continue
+			if retention == "take_party_gear" and employer_id != "":
+				# Reassign ownership: henchman → employer, default slot → pack,
+				# unequip. The recipient may re-equip via the regular UI later.
+				_repo.db.query_with_bindings(
+					"""UPDATE inventory_items
+					   SET character_id = ?, slot = 'pack', is_equipped = 0
+					   WHERE id = ?""",
+					[employer_id, item_id])
+			elif retention == "take_everything":
+				# Strip the henchman bare (angry dismissal — gear turned in
+				# but discarded by the employer).
+				_repo.remove_inventory_item(item_id)
+
+	# Apply parting-bonus morale boost to the departed-record before
+	# process_departure sets reason="dismissed" — this is an audit-trail
+	# improvement so a re-recruitment of the same NPC sees the residual +1.
+	if parting_bonus_gp > 0:
+		var s2: Dictionary = _repo.get_henchman_state(character_id)
+		s2["morale_score"] = int(s2.get("morale_score", 0)) + 1
+		_repo.upsert_henchman_state(character_id, s2)
+
+	# Route through process_departure with reason="dismissed".
+	process_departure(character_id, "dismissed", settlement_id, party_id)
+	return true
+
+
+# ---------------------------------------------------------------------------
 # Morale score mutations (called by external systems)
 # ---------------------------------------------------------------------------
 

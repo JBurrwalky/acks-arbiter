@@ -1,15 +1,30 @@
 class_name HiringPanel
 extends PanelContainer
 
-## Phase G-2: Minimal henchman hiring UI, shown when the party enters a
-## tavern or inn POI. Displays available henchmen (after search fee is paid),
-## allows interview (reaction roll), and finalize hire.
+## Phase G-2 + Phase 4 of the henchman closure plan: henchman hiring UI shown
+## when the party enters a tavern or inn POI. Displays available henchmen
+## (after search fee is paid), allows interview (reaction roll), and finalize
+## hire.
+##
+## Phase 4 expansions:
+##   - Per-candidate detail row (portrait + ability scores + equipment loadout)
+##   - Reaction-roll outcome surfaces templated flavor text from
+##     data/henchmen/reaction_flavor.json
+##   - "Adjust offer" affordance: ±1 reaction modifier per
+##     acore_equipment.xml §reaction_to_hiring_offer
 ##
 ## This panel is instantiated by SettlementExploreState and pushed as a
 ## modal overlay. It does NOT use LLM — Tier 0 template text only.
 
 signal closed
 signal hire_completed(character_id: String)
+
+const PortraitWithBadgeScript := preload("res://scenes/ui/components/portrait_with_badge.gd")
+const REACTION_FLAVOR_PATH := "res://data/henchmen/reaction_flavor.json"
+
+# Cached reaction-flavor table.
+static var _flavor_table: Dictionary = {}
+static var _flavor_loaded: bool = false
 
 var _lifecycle: HenchmanLifecycleManager
 var _pool_id: String = ""
@@ -106,42 +121,117 @@ func _update_view() -> void:
 
 
 func _add_candidate_row(candidate: Dictionary) -> void:
-	# Two-line vertical row: header (name/class/wage + Interview button) +
-	# loadout summary line surfaced from the kit catalog so the player can
-	# see what the candidate brings to the table before paying for the hire.
-	var vbox := VBoxContainer.new()
-
-	var header := HBoxContainer.new()
-	var label := Label.new()
-	label.text = "%s — %s Lv%d — %dgp/mo" % [
-		candidate.get("name", "Unknown"),
-		candidate.get("character_class", "?"),
-		int(candidate.get("level", 1)),
-		HenchmanTables.monthly_wage(int(candidate.get("level", 1))),
-	]
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(label)
-
-	var interview_btn := Button.new()
-	interview_btn.text = "Interview"
-	var char_id: String = candidate.get("character_id", "")
-	interview_btn.pressed.connect(_on_interview.bind(char_id, vbox))
-	header.add_child(interview_btn)
-	vbox.add_child(header)
-
-	# Loadout preview from data/henchmen/equipment_kits.json. Empty for
-	# class/level combos that don't have an authored kit yet.
+	# Phase 4 candidate detail row:
+	#   [portrait]  Header  (name, class+level, wage)
+	#               STR/INT/WIS  DEX/CON/CHA
+	#               Equipment: ...
+	#               [Adjust offer ±1] [Interview]
+	# When Interview fires, the action area below the row is replaced with
+	# templated flavor text + (on accept) the Finalize Hire button.
 	var class_id: String = String(candidate.get("character_class", ""))
 	var lvl: int = int(candidate.get("level", 1))
+	var name: String = String(candidate.get("name", "Unknown"))
+	var character_id: String = String(candidate.get("character_id", ""))
+
+	# Outer two-column layout: portrait | detail block.
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+
+	var portrait := PortraitWithBadgeScript.new()
+	portrait.set_portrait_size(Vector2(56, 56))
+	portrait.set_entity_id(character_id)
+	portrait.set_tooltip(name)
+	if lvl > 0:
+		portrait.set_badge("L%d" % lvl)
+	row.add_child(portrait)
+
+	var detail := VBoxContainer.new()
+	detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	detail.add_theme_constant_override("separation", 2)
+	row.add_child(detail)
+
+	# Header line.
+	var header := Label.new()
+	header.text = "%s — %s Lv%d — %dgp/mo" % [
+		name,
+		class_id.capitalize() if not class_id.is_empty() else "?",
+		lvl,
+		HenchmanTables.monthly_wage(lvl),
+	]
+	detail.add_child(header)
+
+	# Ability scores (two compact lines).
+	var stats_a := Label.new()
+	stats_a.text = "  STR %d  INT %d  WIS %d" % [
+		int(candidate.get("strength", 10)),
+		int(candidate.get("intelligence", 10)),
+		int(candidate.get("wisdom", 10)),
+	]
+	stats_a.modulate = Color(1, 1, 1, 0.85)
+	detail.add_child(stats_a)
+	var stats_b := Label.new()
+	stats_b.text = "  DEX %d  CON %d  CHA %d" % [
+		int(candidate.get("dexterity", 10)),
+		int(candidate.get("constitution", 10)),
+		int(candidate.get("charisma", 10)),
+	]
+	stats_b.modulate = Color(1, 1, 1, 0.85)
+	detail.add_child(stats_b)
+
+	# Equipment loadout (from Phase 3). Empty for combos with no kit.
 	var loadout_text: String = HenchmanEquipmentKit.describe_kit(class_id, lvl)
 	if not loadout_text.is_empty():
 		var loadout := Label.new()
 		loadout.text = "  Equipment: " + loadout_text
-		loadout.modulate = Color(1, 1, 1, 0.7)  # subtle de-emphasis
+		loadout.modulate = Color(1, 1, 1, 0.7)
 		loadout.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		vbox.add_child(loadout)
+		detail.add_child(loadout)
 
-	_candidate_list.add_child(vbox)
+	# Action area: holds the Interview button (and is replaced with
+	# flavor + Finalize after a successful hire reaction).
+	var action_area := HBoxContainer.new()
+	action_area.add_theme_constant_override("separation", 6)
+	action_area.alignment = BoxContainer.ALIGNMENT_END
+	action_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# Cache the offer modifier per-row so successive interviews start fresh.
+	action_area.set_meta("offer_modifier", 0)
+
+	var adjust_minus := Button.new()
+	adjust_minus.text = "Adjust offer −1"
+	adjust_minus.tooltip_text = "Worse terms (e.g., late wages, demanding contract). Per acore_equipment.xml §reaction_to_hiring_offer."
+	adjust_minus.pressed.connect(func(): _on_adjust_offer(action_area, -1))
+	action_area.add_child(adjust_minus)
+
+	var adjust_plus := Button.new()
+	adjust_plus.text = "Adjust offer +1"
+	adjust_plus.tooltip_text = "Sweeter terms (advance pay, generous share). Per acore_equipment.xml §reaction_to_hiring_offer."
+	adjust_plus.pressed.connect(func(): _on_adjust_offer(action_area, 1))
+	action_area.add_child(adjust_plus)
+
+	var interview_btn := Button.new()
+	interview_btn.text = "Interview"
+	interview_btn.pressed.connect(_on_interview.bind(character_id, name, action_area))
+	action_area.add_child(interview_btn)
+
+	detail.add_child(action_area)
+
+	_candidate_list.add_child(row)
+
+
+func _on_adjust_offer(action_area: HBoxContainer, delta: int) -> void:
+	# Toggle / accumulate the offer modifier; clamp to [-2, +2] so the player
+	# can't game the reaction roll into a guaranteed hire.
+	var current: int = int(action_area.get_meta("offer_modifier", 0))
+	var next: int = clampi(current + delta, -2, 2)
+	action_area.set_meta("offer_modifier", next)
+	# Update visual hint on the buttons themselves.
+	for btn in action_area.get_children():
+		if btn is Button:
+			var b: Button = btn
+			if b.text.begins_with("Adjust offer −1"):
+				b.text = "Adjust offer −1" + (" (active)" if next < 0 else "")
+			elif b.text.begins_with("Adjust offer +1"):
+				b.text = "Adjust offer +1" + (" (active)" if next > 0 else "")
 
 
 func _on_pay_pressed() -> void:
@@ -156,34 +246,43 @@ func _on_pay_pressed() -> void:
 	_update_view()
 
 
-func _on_interview(character_id: String, row: Container) -> void:
+func _on_interview(character_id: String, candidate_name: String, action_area: HBoxContainer) -> void:
 	if _lifecycle == null:
 		return
-	var result := _lifecycle.attempt_hire(_employer_cha_mod, 0)
+	var offer_mod: int = int(action_area.get_meta("offer_modifier", 0))
+	var result := _lifecycle.attempt_hire(_employer_cha_mod, offer_mod)
 	var outcome: String = result.get("outcome", "refuse")
 
 	# Clear old buttons and show result.
+	var row: Container = action_area
 	for child in row.get_children():
 		if child is Button:
 			child.queue_free()
 
+	# Templated flavor text (per outcome). Falls back to a one-line summary
+	# if the JSON catalog isn't loaded for any reason.
+	var flavor: String = _pick_reaction_flavor(outcome, candidate_name)
 	var result_label := Label.new()
+	if not flavor.is_empty():
+		result_label.text = flavor
+	else:
+		result_label.text = _legacy_outcome_summary(outcome, candidate_name)
 	match outcome:
-		HenchmanTables.HIRE_REFUSE_SLANDER:
-			result_label.text = " — Insulted! (future rolls -1)"
-		HenchmanTables.HIRE_REFUSE:
-			result_label.text = " — Declined."
-		HenchmanTables.HIRE_TRY_AGAIN:
-			result_label.text = " — Wants better terms."
 		HenchmanTables.HIRE_ACCEPT, HenchmanTables.HIRE_ACCEPT_ELAN:
-			result_label.text = " — Accepted!" if outcome == HenchmanTables.HIRE_ACCEPT \
-				else " — Enthusiastically accepted! (+1 morale)"
+			# Accept outcomes: surface the Finalize button alongside the flavor.
 			var hire_btn := Button.new()
 			hire_btn.text = "Finalize Hire"
 			hire_btn.pressed.connect(_on_finalize.bind(
 				character_id, result.get("morale_bonus", 0)))
 			row.add_child(hire_btn)
+		_:
+			# Refusal / slander / try-again: flavor surfaces; no Finalize button.
+			pass
 
+	# Flavor text label wraps so longer reaction strings fit without
+	# clipping the action area.
+	result_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	result_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(result_label)
 
 
@@ -207,3 +306,61 @@ func _roman(mc: int) -> String:
 		5: return "V"
 		6: return "VI"
 	return str(mc)
+
+
+# ---------------------------------------------------------------------------
+# Reaction flavor (Phase 4)
+# ---------------------------------------------------------------------------
+
+static func _load_flavor_table() -> Dictionary:
+	if _flavor_loaded:
+		return _flavor_table
+	var f := FileAccess.open(REACTION_FLAVOR_PATH, FileAccess.READ)
+	if f == null:
+		_flavor_loaded = true
+		return {}
+	var raw := f.get_as_text()
+	f.close()
+	var parsed: Variant = JSON.parse_string(raw)
+	if not (parsed is Dictionary):
+		_flavor_loaded = true
+		return {}
+	_flavor_table = (parsed as Dictionary).get("outcomes", {})
+	_flavor_loaded = true
+	return _flavor_table
+
+
+static func _flavor_key_for_outcome(outcome: String) -> String:
+	# Map HenchmanTables.HIRE_* constants → reaction_flavor.json keys.
+	match outcome:
+		HenchmanTables.HIRE_REFUSE_SLANDER: return "refuse_slander"
+		HenchmanTables.HIRE_REFUSE:         return "refuse"
+		HenchmanTables.HIRE_TRY_AGAIN:      return "try_again"
+		HenchmanTables.HIRE_ACCEPT:         return "accept"
+		HenchmanTables.HIRE_ACCEPT_ELAN:    return "accept_elan"
+	return ""
+
+
+static func _pick_reaction_flavor(outcome: String, name: String) -> String:
+	var table := _load_flavor_table()
+	var key := _flavor_key_for_outcome(outcome)
+	if key.is_empty() or not table.has(key):
+		return ""
+	var lines: Array = table[key]
+	if lines.is_empty():
+		return ""
+	var idx: int = randi() % lines.size()
+	var template: String = String(lines[idx])
+	return template.replace("{name}", name)
+
+
+static func _legacy_outcome_summary(outcome: String, candidate_name: String) -> String:
+	# Fallback when the flavor catalog isn't loaded — preserves the legacy
+	# one-line copy from before Phase 4.
+	match outcome:
+		HenchmanTables.HIRE_REFUSE_SLANDER: return "%s — Insulted! (future rolls -1)" % candidate_name
+		HenchmanTables.HIRE_REFUSE:         return "%s — Declined." % candidate_name
+		HenchmanTables.HIRE_TRY_AGAIN:      return "%s — Wants better terms." % candidate_name
+		HenchmanTables.HIRE_ACCEPT:         return "%s — Accepted!" % candidate_name
+		HenchmanTables.HIRE_ACCEPT_ELAN:    return "%s — Enthusiastically accepted! (+1 morale)" % candidate_name
+	return ""

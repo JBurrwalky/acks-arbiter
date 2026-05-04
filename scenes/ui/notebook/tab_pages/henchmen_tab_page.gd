@@ -34,6 +34,7 @@ extends "res://scenes/ui/notebook/tab_pages/notebook_tab_page.gd"
 
 
 const PortraitWithBadgeScript := preload("res://scenes/ui/components/portrait_with_badge.gd")
+const DismissHenchmanDialogScript := preload("res://scenes/ui/dialogs/dismiss_henchman_dialog.gd")
 
 # Tab id for NotebookState substate persistence. Local name (parent class
 # already declares a `TAB_ID` constant; subclasses must use a distinct name).
@@ -641,15 +642,12 @@ func _on_context_menu_pressed(item_id: int, entity_id: String) -> void:
 		_MENU_VIEW:
 			_on_entity_clicked(entity_id)
 		_MENU_DISMISS:
-			# Dismiss confirmation modal lands as an H.1 polish — the full
-			# dialog (final wages / parting bonus / equipment retention) is
-			# its own surface per gdd-henchmen-tab.md §7.2. v1 surfaces an
-			# acknowledgement notification so the affordance is discoverable.
-			EventBus.notification_requested.emit({
-				"type":  "info",
-				"title": "Dismiss",
-				"body":  "Dismissal modal lands in an H.1 follow-up. Use the engine API directly for now.",
-			})
+			# Phase 4 of the henchman closure plan: open the dedicated
+			# dismissal dialog per gdd-henchmen-tab.md §7.2. The dialog
+			# captures final wages, parting bonus, and equipment retention,
+			# then routes the player's choices through
+			# HenchmanLifecycleManager.dismiss_henchman.
+			_open_dismiss_dialog(entity_id)
 
 
 # ---------------------------------------------------------------------------
@@ -704,4 +702,63 @@ func _on_journal_changed(_kind: String, _party_id: String) -> void:
 	# Notes badge counts may have changed for one or more roster rows. The
 	# current row construction inlines the count; refreshing the whole tab is
 	# cheap at typical roster sizes (≤ 10 henchmen).
+	_refresh()
+
+
+# ---------------------------------------------------------------------------
+# Dismissal flow
+# ---------------------------------------------------------------------------
+
+func _open_dismiss_dialog(character_id: String) -> void:
+	var char_row: Dictionary = CampaignRepository.get_character(character_id)
+	if char_row.is_empty():
+		return
+	var hench_name: String = String(char_row.get("name", "henchman"))
+	var monthly_wage: int = int(char_row.get("wage_gp_per_month", 0))
+	var state: Dictionary = CampaignRepository.get_henchman_state(character_id)
+	var unpaid_months: int = int(state.get("unpaid_months", 0))
+	var default_final_wages_gp: int = unpaid_months * monthly_wage
+
+	var party_id: String = ""
+	if has_method("get_active_party_id"):
+		party_id = call("get_active_party_id")
+	# Fallback: look up via party_members.
+	if party_id.is_empty():
+		var rows: Array = []
+		if CampaignRepository.db.query_with_bindings(
+				"SELECT party_id FROM party_members WHERE character_id = ? LIMIT 1",
+				[character_id]):
+			rows = CampaignRepository.db.query_result.duplicate()
+		if not rows.is_empty():
+			party_id = String(rows[0].get("party_id", ""))
+
+	var dialog := DismissHenchmanDialogScript.new()
+	add_child(dialog)
+	# Wait one frame so _ready builds the UI before show_dialog mutates it.
+	await get_tree().process_frame
+	dialog.show_dialog(character_id, "", party_id, hench_name,
+		default_final_wages_gp,
+		func(opts): _do_dismiss(character_id, opts, dialog),
+		func(): dialog.queue_free())
+
+
+func _do_dismiss(character_id: String, options: Dictionary, dialog: Node) -> void:
+	# The notebook tab doesn't own a HenchmanLifecycleManager instance;
+	# instantiate one bound to the live CampaignRepository for this call.
+	var lifecycle := HenchmanLifecycleManager.new(CampaignRepository, null, null)
+	var ok: bool = lifecycle.dismiss_henchman(character_id, options)
+	if ok:
+		EventBus.notification_requested.emit({
+			"type":  "info",
+			"title": "Henchman dismissed",
+			"body":  "Departure recorded. See the Departure Log sub-tab.",
+		})
+	else:
+		EventBus.notification_requested.emit({
+			"type":  "warning",
+			"title": "Dismissal failed",
+			"body":  "Could not complete the dismissal — check the party wallet for outstanding wages.",
+		})
+	if dialog != null and dialog.is_inside_tree():
+		dialog.queue_free()
 	_refresh()

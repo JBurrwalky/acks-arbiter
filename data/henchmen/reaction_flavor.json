@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "description": "Templated reaction-roll flavor lines for the HiringPanel. Source: acore_equipment.xml §reaction_to_hiring_offer. The keys mirror HenchmanLoyaltyResolver.HIRE_* outcome strings exactly. Each list is randomly sampled per interview to keep the player from memorizing fixed copy. {name} placeholder substituted per call.",
+  "outcomes": {
+    "refuse_slander": [
+      "{name} sneers at the offer and walks off, muttering about 'cheapskate adventurers' to anyone who'll listen. (Future hires in this town: -1.)",
+      "{name} laughs in your face. The whole tavern hears it. (Future hires in this town: -1.)",
+      "{name} insults your lineage and storms out. Word will travel. (Future hires in this town: -1.)"
+    ],
+    "refuse": [
+      "{name} declines politely and returns to their drink.",
+      "{name} shakes their head — 'No thank you, sirrah' — and turns away.",
+      "{name} hears you out, then says they're not interested.",
+      "{name} declines without explanation."
+    ],
+    "try_again": [
+      "{name} folds their arms. 'Make it worth my while and I might.'",
+      "{name} hesitates — they want better terms before they'll commit.",
+      "{name} squints. 'I've heard your offer. I want a sweeter one.'",
+      "{name} looks unconvinced. They'd come if the deal improved."
+    ],
+    "accept": [
+      "{name} nods. 'Aye. When do we leave?'",
+      "{name} extends a hand. 'You've got yourself a henchman.'",
+      "{name} accepts the offer with quiet professionalism.",
+      "{name} agrees. 'Pay's pay. Let's see what you're made of.'"
+    ],
+    "accept_elan": [
+      "{name}'s eyes light up. 'A real adventure! Count me in!' (+1 morale.)",
+      "{name} grins broadly. 'I've been waiting for an offer like this!' (+1 morale.)",
+      "{name} clasps your forearm. 'I'll follow you anywhere.' (+1 morale.)",
+      "{name} cheers loud enough to startle the barkeep. (+1 morale.)"
+    ]
+  }
+}

@@ -3447,8 +3447,15 @@ func add_pool_member(pool_id: String, character_id: String, week: int) -> bool:
 
 
 func get_pool_members(pool_id: String, max_week: int = 3) -> Array:
+	## Returns one row per available pool member (is_hired = 0) with the
+	## character's headline-display fields joined in. HiringPanel consumes the
+	## ability-score columns to render the candidate detail row; the simpler
+	## name/class/level columns drive the header.
 	db.query_with_bindings(
-		"""SELECT pm.*, c.name, c.character_class, c.level, c.character_type
+		"""SELECT pm.*, c.name, c.character_class, c.level, c.character_type,
+		          c.strength, c.intelligence, c.wisdom,
+		          c.dexterity, c.constitution, c.charisma,
+		          c.portrait_id, c.sex
 		   FROM henchman_pool_members pm
 		   JOIN characters c ON c.id = pm.character_id
 		   WHERE pm.pool_id = ? AND pm.allotment_week <= ? AND pm.is_hired = 0
