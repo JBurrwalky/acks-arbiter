@@ -168,6 +168,31 @@ func highlight_entity_tokens(entity_ids: Array[String]) -> void:
 			_tokens[eid].is_selected = true
 
 
+func highlight_entity_tokens_with_color(entity_ids: Array[String], color: Color) -> void:
+	## Highlights cells occupied by the given entities with the given color.
+	## Used for HD-budget band coloring (Session 2.9): green for under-budget,
+	## yellow for over-budget, red for over HD cap.
+	var cells: Array = []
+	for eid in entity_ids:
+		if _tokens.has(eid):
+			var token: Node3D = _tokens[eid]
+			# VoxelGrid.world_to_cell takes a Vector3, not 3 floats.
+			var cell := VoxelGrid.world_to_cell(token.position)
+			cells.append(cell)
+	if not cells.is_empty():
+		highlight_cells(cells, color)
+
+
+func highlight_cells_layered(layers: Array) -> void:
+	## Convenience helper: adds multiple {cells, color} highlight layers at once.
+	## Used for AoE preview ally-vs-enemy shading (Session 2.9).
+	for layer in layers:
+		var cells: Array = layer.get("cells", [])
+		var color: Color = layer.get("color", Color.WHITE)
+		if not cells.is_empty():
+			highlight_cells(cells, color)
+
+
 func clear_highlights() -> void:
 	_highlight_layers.clear()
 	for eid in _target_rings:

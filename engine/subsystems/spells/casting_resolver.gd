@@ -339,6 +339,35 @@ func resolve(
 
 
 # ---------------------------------------------------------------------------
+# Async resolve path (Session 2.9 — infrastructure for DicePrompt integration)
+# ---------------------------------------------------------------------------
+
+func resolve_async(
+		caster_context: CasterContext,
+		spell_choice: SpellChoice,
+		target_descriptor: TargetDescriptor,
+		caster_entity: Variant = null,
+		targets_by_id: Dictionary = {}) -> ResolutionResult:
+	## Async variant of [method resolve]. When dice_mode is DIGITAL (the default
+	## and test/CI mode), resolves synchronously and returns the same result.
+	##
+	## When dice_mode is HYBRID or PHYSICAL and a target is a PC that would roll
+	## a saving throw, the async path will defer to DicePrompt. That integration
+	## is deferred to the dice-mode UX work — for now this is synchronous-only.
+	## Callers should still use [method resolve_async] rather than [method resolve]
+	## if they expect to be called from the combat UI path, so the async hand-off
+	## can drop in without changing call sites.
+	var dice_mode: int = GameState.dice_mode if GameState != null else GameState.DiceMode.DIGITAL
+	if dice_mode != GameState.DiceMode.DIGITAL:
+		# Deferred: DicePrompt integration. For now, fall through to synchronous
+		# resolution. When the dice-mode UX work adds DicePrompt to the combat
+		# UI, this path will branch into a coroutine that awaits manual save rolls
+		# and returns ResolutionResult after the player completes each throw.
+		push_warning("CastingResolver.resolve_async: non-DIGITAL dice mode not yet integrated — resolving synchronously (Session 2.9 deferred item)")
+	return resolve(caster_context, spell_choice, target_descriptor, caster_entity, targets_by_id)
+
+
+# ---------------------------------------------------------------------------
 # Disrupted-cast path — caller invokes when declared cast was broken.
 # ---------------------------------------------------------------------------
 

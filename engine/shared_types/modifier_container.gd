@@ -7,7 +7,7 @@ extends RefCounted
 ##   Combat:    "armor_class", "armor_class_vs_missiles", "armor_class_vs_melee",
 ##              "attack_throw", "damage_bonus", "initiative_modifier"
 ##   Saves:     "save_petrification", "save_poison_death", "save_blast_breath",
-##              "save_staffs_wands", "save_spells"
+##              "save_staffs_wands", "save_spells", "save_vs_fear"
 ##   Abilities: "strength", "intelligence", "wisdom", "dexterity", "constitution", "charisma"
 ##   Movement:  "movement_rate"
 ##   Other:     "surprise_modifier", "morale_modifier"

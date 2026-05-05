@@ -157,6 +157,8 @@ func start_interactive() -> void:
 	if _map_renderer != null:
 		_ui_controller.highlight_reachable.connect(_on_highlight_reachable)
 		_ui_controller.highlight_targets.connect(_on_highlight_targets)
+		_ui_controller.highlight_targets_by_band.connect(_on_highlight_targets_by_band)
+		_ui_controller.highlight_cells_layered.connect(_on_highlight_cells_layered)
 		_ui_controller.clear_highlights_requested.connect(_on_clear_highlights)
 		_ui_controller.active_token_changed.connect(_on_active_token_changed)
 		# Wire renderer input -> UI controller
@@ -405,6 +407,37 @@ func _on_highlight_targets(entity_ids: Array) -> void:
 		_map_renderer.highlight_entity_tokens(typed)
 
 
+func _on_highlight_targets_by_band(bands: Dictionary) -> void:
+	## Routes per-band HD-budget highlights to the renderer (Session 2.9).
+	## Green + selected → green entity rings. Yellow → yellow cell overlay.
+	## Red → red cell overlay (over HD cap).
+	if _map_renderer == null:
+		return
+	# Green-band entities get green cell highlighting under them.
+	var green: Array = bands.get("green", [])
+	if not green.is_empty():
+		var typed_green: Array[String] = []
+		for eid in green:
+			typed_green.append(eid)
+		_map_renderer.highlight_entity_tokens(typed_green)
+	# Yellow-band entities get yellow-orange cell highlighting.
+	var yellow: Array = bands.get("yellow", [])
+	if not yellow.is_empty():
+		_map_renderer.highlight_entity_tokens_with_color(yellow, Color(0.95, 0.85, 0.15, 0.30))
+	# Red-band entities get red cell highlighting.
+	var red: Array = bands.get("red", [])
+	if not red.is_empty():
+		_map_renderer.highlight_entity_tokens_with_color(red, Color(0.92, 0.25, 0.20, 0.35))
+	# Selected entities keep green rings (already emitted via highlight_targets
+	# by _emit_hd_band_highlights).
+
+
+func _on_highlight_cells_layered(layers: Array) -> void:
+	## Routes layered cell highlights from _render_aoe_preview (Session 2.9).
+	if _map_renderer != null:
+		_map_renderer.highlight_cells_layered(layers)
+
+
 func _on_clear_highlights() -> void:
 	if _map_renderer != null:
 		_map_renderer.clear_highlights()
@@ -489,6 +522,7 @@ func _on_spell_hd_tally_updated(spell_name: String, controller) -> void:
 		add_child(_hd_tally_panel)
 		_hd_tally_panel.confirmed.connect(_on_hd_tally_confirmed)
 		_hd_tally_panel.cancelled.connect(_on_hd_tally_cancelled)
+		_hd_tally_panel.rescinded.connect(_on_hd_tally_rescinded)
 	_hd_tally_panel.setup(controller, spell_name)
 
 
@@ -502,6 +536,12 @@ func _on_hd_tally_cancelled() -> void:
 	_hd_tally_panel = null
 	if _ui_controller != null:
 		_ui_controller.on_cancel_spell_targeting()
+
+
+func _on_hd_tally_rescinded() -> void:
+	_hd_tally_panel = null
+	if _ui_controller != null:
+		_ui_controller.on_rescind_spell_targeting()
 
 
 func _on_spell_targeting_ended() -> void:

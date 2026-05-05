@@ -84,6 +84,11 @@ signal highlight_reachable(cells: Array, color: Color)
 ## Map should highlight attack targets.
 signal highlight_targets(entity_ids: Array)
 
+## Map should highlight targets by HD-budget band (Session 2.9).
+## Bands dict keys: "green" (eligible + under-budget), "yellow" (would over-spend),
+## "red" (over per-target HD cap), "selected" (already chosen).
+signal highlight_targets_by_band(bands: Dictionary)
+
 ## Map should clear all highlights.
 signal clear_highlights_requested()
 
@@ -125,6 +130,11 @@ signal spell_hd_tally_updated(spell_name: String, controller: TargetingControlle
 
 ## Emitted when the spell-targeting flow ends (commit or cancel).
 signal spell_targeting_ended()
+
+## Emitted for layered cell highlighting (Session 2.9). Each layer is {cells, color}.
+## Used for AoE ally-vs-enemy shading: enemy-occupied cells in red,
+## ally-occupied cells in red-orange, empty AoE cells in faint orange.
+signal highlight_cells_layered(layers: Array)
 
 
 # ---------------------------------------------------------------------------
@@ -174,6 +184,7 @@ var _targeting_controller: TargetingController = null
 var _targeting_spell_payload: Dictionary = {}
 var _targeting_caster_id: String = ""
 var _targeting_kind: String = ""  # "auto" | "single_entity" | "area_at_point" | "hd_budget"
+var _targeting_anchor_set: bool = false  # true after player clicks anchor for area_at_point
 
 ## Cached initiative order for the HUD.
 var _initiative_display: Array = []
@@ -676,6 +687,7 @@ func on_cell_targeted(pos: Vector3i) -> void:
 			return
 		if _targeting_controller != null:
 			_targeting_controller.set_anchor_cell(pos)
+			_targeting_anchor_set = true
 			_render_aoe_preview(pos)
 		return
 
@@ -1249,11 +1261,44 @@ func _register_candidates_for_area() -> void:
 func _refresh_targeting_highlights() -> void:
 	if _targeting_controller == null:
 		return
-	# Eligible candidates highlight green via target rings.
+	# HD-budget targeting emits per-band data for color-coded cell overlays.
+	if _targeting_kind == "hd_budget" and _targeting_controller.has_hd_budget():
+		_emit_hd_band_highlights()
+		return
+	# Default: green rings on all eligible candidates.
 	var eligible_ids: Array[String] = []
 	for cid in _targeting_controller.get_eligible_candidates():
 		eligible_ids.append(String(cid))
 	highlight_targets.emit(eligible_ids)
+
+
+func _emit_hd_band_highlights() -> void:
+	var bands := {"green": [], "yellow": [], "red": [], "selected": []}
+	var selected: Array = _targeting_controller.get_selected()
+	var budget_remaining: float = _targeting_controller.get_budget_remaining()
+	# get_eligible_candidates() only returns candidates already within the per-
+	# target HD cap (filtering happens at TargetingController.begin via
+	# CastingGeometry.is_within_hd_cap). The "red" band is reserved for over-cap
+	# candidates and stays empty until TargetingController exposes the full
+	# candidate list including ineligible ones (Session 2.9.1 polish — not
+	# blocking for the targeting flow).
+	for cid in _targeting_controller.get_eligible_candidates():
+		if cid in selected:
+			bands["selected"].append(cid)
+			continue
+		var info: Dictionary = _targeting_controller.get_candidate_info(cid)
+		var hd: float = float(info.get("counted_hd", 0.0))
+		if hd > budget_remaining:
+			bands["yellow"].append(cid)
+		else:
+			bands["green"].append(cid)
+	highlight_targets_by_band.emit(bands)
+	# Selected entities keep the green target ring.
+	var typed_selected: Array[String] = []
+	for s in selected:
+		typed_selected.append(s)
+	if not typed_selected.is_empty():
+		highlight_targets.emit(typed_selected)
 
 
 func _render_aoe_preview(anchor_cell: Vector3i) -> void:
@@ -1268,8 +1313,17 @@ func _render_aoe_preview(anchor_cell: Vector3i) -> void:
 	var spell_name := String(spell_data.get("spell_name", "Spell"))
 
 	# Build affected list + ally callout for the preview overlay.
+	# Also partition target cells by occupant: ally cells, enemy cells, empty cells.
 	var affected: Array = []
 	var ally_ids: Array = []
+	var ally_cells: Array = []
+	var enemy_cells: Array = []
+	var empty_cells: Array = []
+	var occupied_positions: Dictionary = {}
+	for c: Combatant in _controller.roster.get_alive():
+		if c.grid_position != Vector3i(-1, -1, 0):
+			occupied_positions[c.grid_position] = c
+
 	for tid in td.target_ids:
 		var c := _controller.roster.get_by_id(tid)
 		if c == null:
@@ -1277,10 +1331,34 @@ func _render_aoe_preview(anchor_cell: Vector3i) -> void:
 		affected.append({"id": tid, "name": c.display_name})
 		if c.side == caster_side:
 			ally_ids.append(tid)
+			if c.grid_position != Vector3i(-1, -1, 0):
+				ally_cells.append(c.grid_position)
+		else:
+			if c.grid_position != Vector3i(-1, -1, 0):
+				enemy_cells.append(c.grid_position)
 
-	# Highlight the cells visually too.
+	# Partition target cells into occupied vs empty for layered display.
+	var occupied_set: Dictionary = {}  # cell -> true
+	for cell in ally_cells:
+		occupied_set[cell] = true
+	for cell in enemy_cells:
+		occupied_set[cell] = true
+	for cell in td.target_cells:
+		if not occupied_set.has(cell):
+			empty_cells.append(cell)
+
+	# Emit layered highlights: ally-occupied (red-orange), enemy-occupied (red),
+	# empty AoE cells (faint orange). Use highlight_cells_layered so the renderer
+	# can distinguish them.
 	clear_highlights_requested.emit()
-	highlight_reachable.emit(td.target_cells, Color(0.92, 0.45, 0.20, 0.30))
+	var layers: Array = []
+	if not enemy_cells.is_empty():
+		layers.append({"cells": enemy_cells, "color": Color(0.92, 0.25, 0.20, 0.35)})
+	if not ally_cells.is_empty():
+		layers.append({"cells": ally_cells, "color": Color(0.95, 0.50, 0.20, 0.40)})
+	if not empty_cells.is_empty():
+		layers.append({"cells": empty_cells, "color": Color(0.92, 0.45, 0.20, 0.18)})
+	highlight_cells_layered.emit(layers)
 	spell_aoe_preview.emit(spell_name, affected, ally_ids)
 
 
@@ -1310,18 +1388,57 @@ func on_cancel_spell_targeting() -> void:
 	## through resolve_disrupted to consume the slot cleanly.
 	if _state != State.PC_SPELL_TARGETING:
 		return
+	# If the player hasn't made any selections yet and no anchor is set, Esc
+	# implicitly rescinds (returns the slot) rather than cancelling. The explicit
+	# Rescind button is the primary affordance; Esc-as-rescind is the fallback.
+	if _can_rescind():
+		on_rescind_spell_targeting()
+		return
 	# Treat as a disrupted cast — slot consumed, no effect.
 	var caster: Combatant = _controller.get_combatant(_targeting_caster_id)
 	if caster != null and _controller.casting_resolver != null:
 		var choice: SpellChoice = caster.declared_spell_choice
 		if choice != null:
-			# Build a CasterContext for resolve_disrupted via the controller's
-			# existing _resolve_pc_cast_disrupted path. We submit an EMPTY target
-			# descriptor; the controller will detect the disrupted state via the
-			# cancel signal. Simpler: mark damaged_since_declaration to route
-			# through the existing disruption path.
 			caster.damaged_since_declaration = true
 	_cancel_spell_targeting()
+
+
+func _can_rescind() -> bool:
+	## True when the player may rescind their declared spell without consuming
+	## the slot. Requires: no selection made, not auto-resolving, and (for
+	## area_at_point) no anchor set.
+	if _targeting_kind == "auto":
+		return false
+	if _targeting_controller == null:
+		return false
+	if not _targeting_controller.get_selected().is_empty():
+		return false
+	if _targeting_kind == "area_at_point" and _targeting_anchor_set:
+		return false
+	return true
+
+
+func on_rescind_spell_targeting() -> void:
+	## Host calls this when the player clicks Rescind. Returns the declared spell
+	## slot to the caster and routes the PC back to `waiting_for_pc_action` so
+	## they get their full turn back. Only callable when `_can_rescind()` is true.
+	if _state != State.PC_SPELL_TARGETING:
+		return
+	if not _can_rescind():
+		return
+	var caster: Combatant = _controller.get_combatant(_targeting_caster_id)
+	if caster != null:
+		caster.declared_spell = ""
+		caster.declared_spell_choice = null
+	_teardown_targeting_state()
+	# Route back to normal PC turn — same state transition as entering the turn.
+	_state = State.PC_AWAITING_INPUT
+	_selected_action = ""
+	_has_moved_this_turn = false
+	clear_highlights_requested.emit()
+	active_token_changed.emit(_current_pc_id)
+	pc_turn_started.emit(_current_pc_id)
+	_show_proactive_movement_overlay()
 
 
 func _commit_spell_targeting() -> void:
@@ -1368,6 +1485,7 @@ func _teardown_targeting_state() -> void:
 	_targeting_spell_payload = {}
 	_targeting_caster_id = ""
 	_targeting_kind = ""
+	_targeting_anchor_set = false
 	clear_highlights_requested.emit()
 	spell_targeting_ended.emit()
 

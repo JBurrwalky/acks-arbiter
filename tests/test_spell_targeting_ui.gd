@@ -50,6 +50,7 @@ func run_all_tests() -> void:
 	test_area_at_point_anchor_click_then_confirm()
 	test_hd_budget_multi_click_then_confirm()
 	test_cancel_targeting_consumes_slot()
+	test_rescind_with_no_selection_returns_slot()
 	test_pc_spell_targeting_state_blocks_other_clicks()
 	if not has_failures():
 		print("SpellTargetingUI: all tests passed.")
@@ -281,17 +282,43 @@ func test_hd_budget_multi_click_then_confirm() -> void:
 # Cancel test ---------------------------------------------------------------
 
 func test_cancel_targeting_consumes_slot() -> void:
-	# Per ACKS, a cancelled cast (declared then aborted) still consumes the
-	# slot. Our implementation routes cancel through the disrupted path.
-	var setup := _build_setup(_FakeDice.new())
-	var choice := SpellChoice.new("magic_missile", 1, false, -1)
+	# Session 2.9 added rescind semantics: cancel-with-no-selection acts as
+	# rescind (slot returned). To exercise the slot-consumed-on-cancel path,
+	# the player must have selected at least one target first. We use a
+	# multi-target HD-budget cast: pick one goblin then cancel.
+	var dice := _FakeDice.new()
+	dice.set_fixed("spell_hd_budget", 6)
+	var setup := _build_setup(dice)
+	setup.pc.get_character_data().level = 1
+	var goblin := _make_goblin("g_cancel", 4)
+	setup.roster.add_combatant(goblin)
+	var choice := SpellChoice.new("sleep", 1, false, 1)  # group branch
 	_drive_to_caster_tick(setup, choice)
+	# Pick one goblin so rescind becomes unavailable, then cancel.
+	setup.ui.on_entity_targeted("g_cancel")
 	setup.ui.on_cancel_spell_targeting()
 	for _i in range(5):
 		setup.ui.advance()
 	var repo: _FakeRepo = setup.repo
 	check(repo.get_expended_slots(setup.pc.id).get(1, 0) == 1,
-		"Cancelled cast: L1 slot still expended (ACKS rule)")
+		"Cancel-after-selection: L1 slot still expended (ACKS rule), got %d" % repo.get_expended_slots(setup.pc.id).get(1, 0))
+
+
+func test_rescind_with_no_selection_returns_slot() -> void:
+	# Session 2.9 rescind semantics: cancelling with no selection made acts
+	# as rescind — slot is NOT consumed.
+	var setup := _build_setup(_FakeDice.new())
+	var choice := SpellChoice.new("magic_missile", 1, false, -1)
+	_drive_to_caster_tick(setup, choice)
+	# Cancel immediately, no entity click.
+	setup.ui.on_cancel_spell_targeting()
+	for _i in range(5):
+		setup.ui.advance()
+	var repo: _FakeRepo = setup.repo
+	check(repo.get_expended_slots(setup.pc.id).get(1, 0) == 0,
+		"Rescind path: L1 slot NOT consumed when no selection made, got %d" % repo.get_expended_slots(setup.pc.id).get(1, 0))
+	check(setup.pc.declared_spell.is_empty(),
+		"Rescind path: declared_spell cleared on caster")
 
 
 # State gating test ---------------------------------------------------------

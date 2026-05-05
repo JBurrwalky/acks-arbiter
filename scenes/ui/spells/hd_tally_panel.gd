@@ -14,6 +14,8 @@ extends CanvasLayer
 signal selection_changed
 signal confirmed
 signal cancelled
+## Emitted when the player rescinds the spell declaration (returns slot).
+signal rescinded
 
 
 var _controller = null  # TargetingController
@@ -23,6 +25,7 @@ var _root_panel: PanelContainer = null
 var _budget_label: Label = null
 var _selected_list: VBoxContainer = null
 var _candidate_list: VBoxContainer = null
+var _rescind_btn: Button = null
 
 
 func _ready() -> void:
@@ -90,6 +93,13 @@ func _build_ui() -> void:
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	outer.add_child(btn_row)
 
+	var rescind_btn := Button.new()
+	rescind_btn.text = "Rescind"
+	rescind_btn.tooltip_text = "Return the spell slot and cancel casting"
+	rescind_btn.pressed.connect(_on_rescind_pressed)
+	btn_row.add_child(rescind_btn)
+	_rescind_btn = rescind_btn
+
 	var reset_btn := Button.new()
 	reset_btn.text = "Reset all"
 	reset_btn.pressed.connect(_on_reset_pressed)
@@ -125,6 +135,7 @@ func setup(controller, spell_name: String) -> void:
 func refresh() -> void:
 	if _controller == null:
 		return
+	var selection_empty: bool = _controller.get_selected().is_empty()
 	if _controller.has_hd_budget():
 		_budget_label.text = "%s — Budget: %.1f / %.1f HD" % [
 			_spell_name,
@@ -155,6 +166,10 @@ func refresh() -> void:
 		lbl.text = "  · %s (%.1f HD)" % [name_str, info.get("counted_hd", 0.0)]
 		_candidate_list.add_child(lbl)
 
+	# Rescind button only available when no selection has been made (Session 2.9).
+	if _rescind_btn != null:
+		_rescind_btn.visible = selection_empty
+
 
 func close() -> void:
 	if _controller != null and _controller.selection_changed.is_connected(refresh):
@@ -182,6 +197,11 @@ func _on_confirm_pressed() -> void:
 
 func _on_cancel_pressed() -> void:
 	emit_signal("cancelled")
+	close()
+
+
+func _on_rescind_pressed() -> void:
+	emit_signal("rescinded")
 	close()
 
 

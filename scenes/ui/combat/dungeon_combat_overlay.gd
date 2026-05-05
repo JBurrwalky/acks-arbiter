@@ -112,6 +112,8 @@ func start_combat(controller: CombatController, renderer) -> void:
 	# Wire UI controller signals -> map renderer
 	_ui_controller.highlight_reachable.connect(_on_highlight_reachable)
 	_ui_controller.highlight_targets.connect(_on_highlight_targets)
+	_ui_controller.highlight_targets_by_band.connect(_on_highlight_targets_by_band)
+	_ui_controller.highlight_cells_layered.connect(_on_highlight_cells_layered)
 	_ui_controller.clear_highlights_requested.connect(_on_clear_highlights)
 	_ui_controller.active_token_changed.connect(_on_active_token_changed)
 
@@ -371,6 +373,31 @@ func _on_highlight_targets(entity_ids: Array) -> void:
 		for eid in entity_ids:
 			typed.append(eid)
 		_renderer.highlight_entity_tokens(typed)
+
+
+func _on_highlight_targets_by_band(bands: Dictionary) -> void:
+	## Routes per-band HD-budget highlights (Session 2.9). Duck-typed for both
+	## combat_map_renderer_3d.gd and dungeon_map_renderer_3d.gd.
+	if _renderer == null:
+		return
+	var green: Array = bands.get("green", [])
+	if not green.is_empty() and _renderer.has_method("highlight_entity_tokens"):
+		var typed_green: Array[String] = []
+		for eid in green:
+			typed_green.append(eid)
+		_renderer.highlight_entity_tokens(typed_green)
+	var yellow: Array = bands.get("yellow", [])
+	if not yellow.is_empty() and _renderer.has_method("highlight_entity_tokens_with_color"):
+		_renderer.highlight_entity_tokens_with_color(yellow, Color(0.95, 0.85, 0.15, 0.30))
+	var red: Array = bands.get("red", [])
+	if not red.is_empty() and _renderer.has_method("highlight_entity_tokens_with_color"):
+		_renderer.highlight_entity_tokens_with_color(red, Color(0.92, 0.25, 0.20, 0.35))
+
+
+func _on_highlight_cells_layered(layers: Array) -> void:
+	## Routes layered cell highlights (Session 2.9). Duck-typed for both renderers.
+	if _renderer != null and _renderer.has_method("highlight_cells_layered"):
+		_renderer.highlight_cells_layered(layers)
 
 
 func _on_clear_highlights() -> void:

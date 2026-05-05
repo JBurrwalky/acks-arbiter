@@ -159,7 +159,8 @@
       "resolution": [
         {"kind": "apply_modifier", "attribute": "attack_throw", "value": 1, "stacking_group": "blessing"},
         {"kind": "apply_modifier", "attribute": "damage_bonus", "value": 1, "stacking_group": "blessing"},
-        {"kind": "apply_modifier", "attribute": "morale_modifier", "value": 1, "stacking_group": "blessing"}
+        {"kind": "apply_modifier", "attribute": "morale_modifier", "value": 1, "stacking_group": "blessing"},
+        {"kind": "apply_modifier", "attribute": "save_vs_fear", "value": 1, "stacking_group": "blessing"}
       ],
       "reverse": {
         "target_spec": {
@@ -171,10 +172,11 @@
         "resolution": [
           {"kind": "apply_modifier", "attribute": "attack_throw", "value": -1, "stacking_group": "blessing"},
           {"kind": "apply_modifier", "attribute": "damage_bonus", "value": -1, "stacking_group": "blessing"},
-          {"kind": "apply_modifier", "attribute": "morale_modifier", "value": -1, "stacking_group": "blessing"}
+          {"kind": "apply_modifier", "attribute": "morale_modifier", "value": -1, "stacking_group": "blessing"},
+          {"kind": "apply_modifier", "attribute": "save_vs_fear", "value": -1, "stacking_group": "blessing"}
         ]
       },
-      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 50' radius centered on caster; 6 turns; cannot be cast on creatures already engaged in melee. Bless's '+1 saving throws against magical fear' rider is deferred until the fear-condition system has the gating; v1 ships the +1 attack/damage/morale only."
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 50' radius centered on caster; 6 turns; cannot be cast on creatures already engaged in melee. Session 2.9 added the save_vs_fear modifier axis (write side); the read side (consulting save_vs_fear during fear-tagged saves) waits on the fear-condition system — currently a no-op."
     }
   },
   {

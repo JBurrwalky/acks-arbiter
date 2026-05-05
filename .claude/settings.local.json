@@ -67,7 +67,9 @@
       "Bash(C:/Godot/Godot_v4.6.1-stable_win64.exe --headless --script-check res://scenes/ui/combat/initiative_strip.gd)",
       "Bash(timeout 15 C:/Godot/Godot_v4.6.1-stable_win64.exe --headless --check-only)",
       "Bash(C:/Godot/Godot_v4.6.1-stable_win64.exe --headless --check-only)",
-      "Bash(tasklist //FI \"IMAGENAME eq Godot_v4.6.1-stable_win64_console.exe\")"
+      "Bash(tasklist //FI \"IMAGENAME eq Godot_v4.6.1-stable_win64_console.exe\")",
+      "Bash(Get-Content *)",
+      "Bash(/c/godot/Godot_v4.6.1-stable_win64_console.exe *)"
     ]
   }
 }
