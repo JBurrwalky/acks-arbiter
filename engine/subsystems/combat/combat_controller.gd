@@ -45,6 +45,9 @@ var cleave_resolver: CleaveResolver = null
 var movement_resolver: MovementResolver = null
 var maneuver_resolver = null  # ManeuverResolver — set after Phase 6
 var voxel_map: VoxelMapData = null
+## Optional CastingResolver — routes declared spells on the caster's tick. Null
+## leaves combat in pre-Session-2.5 behavior (declared casts produce no effect).
+var casting_resolver: CastingResolver = null
 
 ## Current state
 var round_number: int = 0
@@ -63,6 +66,10 @@ var _current_combatant_in_group: int = 0
 
 ## Pending PC action (set by submit_pc_action, consumed by advance).
 var _pending_pc_action: Dictionary = {}  # { combatant_id, action_id, parameters }
+
+## Pending PC spell target descriptor (set by submit_pc_spell_action, consumed
+## on the caster's initiative tick when their declared_spell is non-empty).
+var _pending_pc_spell_target: Dictionary = {}  # { combatant_id, target_descriptor: TargetDescriptor, targets_by_id }
 
 ## Structured combat log — replaces _round_events / all_events arrays.
 var combat_log: CombatLog = null
@@ -119,7 +126,8 @@ func _init(
 		p_morale_resolver: MoraleResolver = null,
 		p_cleave_resolver: CleaveResolver = null,
 		p_mortal_wounds_resolver: MortalWoundsResolver = null,
-		p_voxel_map: VoxelMapData = null) -> void:
+		p_voxel_map: VoxelMapData = null,
+		p_casting_resolver: CastingResolver = null) -> void:
 	roster = p_roster
 	initiative_resolver = p_initiative_resolver
 	attack_resolver = p_attack_resolver
@@ -131,6 +139,7 @@ func _init(
 	cleave_resolver = p_cleave_resolver
 	voxel_map = p_voxel_map
 	mortal_wounds_resolver = p_mortal_wounds_resolver
+	casting_resolver = p_casting_resolver
 	combat_log = CombatLog.new()
 	movement_resolver = MovementResolver.new(roster)
 	if voxel_map != null:
@@ -190,14 +199,18 @@ func submit_pc_action(combatant_id: String, action_id: String, parameters: Dicti
 	}
 
 
-## Submit a PC's pre-initiative declaration (defensive movement, set against charge).
-## Normally called during DECLARATION phase. With Skirmishing proficiency,
-## fighting_withdrawal/full_retreat may also be declared during ACTION phase
-## on the combatant's own turn.
+## Submit a PC's pre-initiative declaration (defensive movement, set against
+## charge, or spell-cast). Normally called during DECLARATION phase. With
+## Skirmishing proficiency, fighting_withdrawal/full_retreat may also be
+## declared during ACTION phase on the combatant's own turn.
+##
+## For declaration_type == "cast_spell", `parameters.spell_choice` (SpellChoice)
+## is required and stored on the combatant. The actual cast resolves on the
+## combatant's initiative tick via _resolve_pc_cast.
 func submit_declaration(
 		combatant_id: String,
 		declaration_type: String,
-		_parameters: Dictionary = {}) -> void:
+		parameters: Dictionary = {}) -> void:
 	var combatant := roster.get_by_id(combatant_id)
 	if combatant == null:
 		return
@@ -216,6 +229,26 @@ func submit_declaration(
 			combatant.declared_defensive_movement = "full_retreat"
 		"set_against_charge":
 			combatant.set_against_charge = true
+		"cast_spell":
+			var choice = parameters.get("spell_choice", null)
+			if choice is SpellChoice:
+				combatant.declared_spell = choice.spell_key
+				combatant.declared_spell_choice = choice
+				combatant.damaged_since_declaration = false
+
+
+## Submit a PC's resolved spell target descriptor (consumed on the caster's
+## initiative tick). Called by the targeting controller surface after the
+## player commits a target selection.
+func submit_pc_spell_action(
+		combatant_id: String,
+		target_descriptor: TargetDescriptor,
+		targets_by_id: Dictionary = {}) -> void:
+	_pending_pc_spell_target = {
+		"combatant_id": combatant_id,
+		"target_descriptor": target_descriptor,
+		"targets_by_id": targets_by_id,
+	}
 
 
 ## Returns the combatant ID that is currently waiting for player input.
@@ -387,10 +420,12 @@ func _resolve_declaration() -> Dictionary:
 	if spell_hooks != null:
 		spell_hooks.on_round_start(round_number, roster)
 
-	# Reset per-round state on all combatants
+	# Reset per-round state on all combatants. Note: the spell-declaration
+	# fields (declared_spell, damaged_since_declaration, declared_spell_choice)
+	# are NOT reset here — they were just set by submit_declaration during the
+	# DECLARATION phase that we are now leaving. Per-round cleanup of those
+	# fields happens in _end_round via clear_spell_declaration().
 	for c: Combatant in roster.get_all():
-		c.declared_spell = ""
-		c.damaged_since_declaration = false
 		c.declared_defensive_movement = ""
 		c.set_against_charge = false
 		c.has_moved_this_round = false
@@ -532,6 +567,28 @@ func _resolve_next_action() -> Dictionary:
 			_current_combatant_in_group += 1
 			return result
 
+	# --- PC turn: declared spell casts route through CastingResolver ---
+	if combatant.is_pc_side() and combatant.is_casting_spell_this_round():
+		# Disrupted casts resolve immediately, slot consumed.
+		if combatant.is_cast_disrupted_this_round() and casting_resolver != null:
+			var cast_result := _resolve_pc_cast_disrupted(combatant)
+			_current_combatant_in_group += 1
+			return cast_result
+		# Wait for the targeting controller to submit the target selection.
+		if _pending_pc_spell_target.is_empty() \
+				or _pending_pc_spell_target.get("combatant_id", "") != _current_combatant_id:
+			return {
+				"phase": "action",
+				"status": "waiting_for_pc_spell_target",
+				"combatant_id": _current_combatant_id,
+				"round_number": round_number,
+				"declared_spell_key": combatant.declared_spell,
+			}
+		var spell_result := _resolve_pc_cast(combatant)
+		_pending_pc_spell_target = {}
+		_current_combatant_in_group += 1
+		return spell_result
+
 	# --- PC turn: wait for player input ---
 	if combatant.is_pc_side():
 		if _pending_pc_action.is_empty() \
@@ -582,6 +639,25 @@ func _end_round() -> Dictionary:
 			if c.withdrawal_rounds_remaining <= 0:
 				c.is_withdrawing = false
 				c.is_fleeing = true
+
+	# --- Clear per-round spell declarations (Session 2.5) ---
+	for c: Combatant in roster.get_all():
+		c.clear_spell_declaration()
+
+	# --- Tick spell effect durations (Session 2.6) ---
+	# Decrements `rounds`-bucket active_effects by 1; expired effects have
+	# their modifier/flag state unwound from each target, then EventBus
+	# active_effect_expired and spell_effect_removed fire for the UI / log.
+	# Turns / hours / days durations are NOT ticked from combat — Bless's
+	# 6-turn duration outlasts a typical fight and is unwound by the
+	# exploration scheduler when time advances post-combat.
+	if casting_resolver != null:
+		var lookup := func(target_id: String) -> Variant:
+			var c := roster.get_by_id(target_id)
+			if c != null and c.is_character:
+				return c.get_character_data()
+			return null
+		casting_resolver.tick_and_cleanup("rounds", 1, lookup)
 
 	# Emit round_resolved signal
 	EventBus.round_resolved.emit(round_number, combat_log.get_round_entries(round_number))
@@ -1271,6 +1347,142 @@ func _resolve_cast_spell(
 		"action": "cast_spell",
 		"result": {"interrupted": false, "spell_key": spell_key, "spell_result": spell_result},
 	}
+
+
+func _resolve_pc_cast(combatant: Combatant) -> Dictionary:
+	## Routes a declared (and not-disrupted) PC cast through CastingResolver.
+	## Reads the resolved target from `_pending_pc_spell_target`. Caller
+	## (`_resolve_next_action`) clears the pending target and advances the
+	## combatant index after this returns.
+	var choice: SpellChoice = combatant.declared_spell_choice
+	var target_descriptor: TargetDescriptor = _pending_pc_spell_target.get("target_descriptor")
+	var targets_by_id: Dictionary = _pending_pc_spell_target.get("targets_by_id", {})
+	# If the targeting surface didn't supply an entity map, look up Combatants
+	# from the roster so the resolver can route condition / mod / damage
+	# applications through the live combat objects.
+	if targets_by_id.is_empty() and target_descriptor != null:
+		for tid in target_descriptor.target_ids:
+			var c := roster.get_by_id(tid)
+			if c != null:
+				targets_by_id[tid] = c
+
+	# Build a CasterContext snapshot from the combatant.
+	var caster_ctx: CasterContext = null
+	if combatant.is_character:
+		var cd: CharacterData = combatant.get_character_data()
+		var tradition := _detect_tradition(cd)
+		var stat_bonus := _detect_casting_stat_bonus(cd, tradition)
+		caster_ctx = CasterContext.from_character_data(cd, "combat_grid", tradition, stat_bonus)
+		caster_ctx.is_in_combat = true
+		caster_ctx.current_position = Vector3i(combatant.grid_position)
+		_populate_disruption_state(caster_ctx, combatant)
+
+	var caster_entity: Variant = combatant.get_character_data() if combatant.is_character else null
+	var result: ResolutionResult = casting_resolver.resolve(
+		caster_ctx, choice, target_descriptor, caster_entity, targets_by_id)
+
+	# Bookkeeping: clear the per-round declaration. The end-of-round handler
+	# also clears it — this just keeps the state coherent for any follow-up
+	# actions on the same round (rare, but Skirmishing could trigger it).
+	var spell_key := combatant.declared_spell
+	combatant.declared_spell = ""
+	combatant.declared_spell_choice = null
+
+	return {
+		"phase": "action",
+		"status": "action_resolved",
+		"combatant_id": combatant.id,
+		"action": "cast_spell",
+		"result": {
+			"spell_key": spell_key,
+			"is_reversed": choice.is_reversed if choice != null else false,
+			"success": result.success,
+			"slot_consumed": result.slot_consumed,
+			"effects_applied": result.effects_applied,
+			"active_effect_ids": result.active_effect_ids,
+			"failures": result.failures,
+		},
+	}
+
+
+func _resolve_pc_cast_disrupted(combatant: Combatant) -> Dictionary:
+	## Caster was damaged between declaration and tick. Slot is consumed per
+	## ACKS but no effect lands. Emits spell_interrupted via the resolver.
+	var choice: SpellChoice = combatant.declared_spell_choice
+	var spell_key := combatant.declared_spell
+	var caster_ctx: CasterContext = null
+	if combatant.is_character:
+		var cd: CharacterData = combatant.get_character_data()
+		var tradition := _detect_tradition(cd)
+		var stat_bonus := _detect_casting_stat_bonus(cd, tradition)
+		caster_ctx = CasterContext.from_character_data(cd, "combat_grid", tradition, stat_bonus)
+		caster_ctx.is_in_combat = true
+		caster_ctx.current_position = Vector3i(combatant.grid_position)
+		_populate_disruption_state(caster_ctx, combatant)
+	var result: ResolutionResult = casting_resolver.resolve_disrupted(caster_ctx, choice, "damage_before_tick")
+
+	combatant.declared_spell = ""
+	combatant.declared_spell_choice = null
+
+	return {
+		"phase": "action",
+		"status": "action_resolved",
+		"combatant_id": combatant.id,
+		"action": "cast_spell",
+		"result": {
+			"spell_key": spell_key,
+			"interrupted": true,
+			"slot_consumed": result.slot_consumed,
+			"failures": result.failures,
+		},
+	}
+
+
+func _populate_disruption_state(ctx: CasterContext, combatant: Combatant) -> void:
+	## Sets the disruption-tracking flags on CasterContext from the live
+	## Combatant's condition state. Per acore_spellcaster_rules: a caster
+	## cannot cast while gagged, hands bound, in a silence area, prone,
+	## incapacitated, etc. Combat consumers (declaration overlay, the
+	## `is_cast_disrupted_this_round` check) gate the cast with these flags.
+	ctx.is_prone = combatant.has_condition("prone")
+	ctx.can_move_hands = not (combatant.has_condition("held")
+		or combatant.has_condition("grappled")
+		or combatant.has_condition("paralyzed")
+		or combatant.has_condition("petrified"))
+	ctx.can_speak = not (combatant.has_condition("silenced")
+		or combatant.has_condition("unconscious")
+		or combatant.has_condition("dead"))
+	# Silence area is a positional check that the targeting overlay would
+	# determine; the condition `silenced` covers the per-creature case.
+	ctx.is_in_silence_area = combatant.has_condition("silenced")
+
+
+func _detect_tradition(cd: CharacterData) -> String:
+	# Pragmatic cleric/mage detection — Session 2.5 pulls from the class registry
+	# in production, but for the resolver path we just need the strings the
+	# CasterContext expects.
+	match cd.combat_progression:
+		"mage":
+			return "arcane"
+		"cleric":
+			return "divine"
+	# Fallback by class name for elven hybrids etc.
+	if cd.character_class in ["mage", "elven_spellsword", "elven_nightblade", "warlock", "witch"]:
+		return "arcane"
+	if cd.character_class in ["cleric", "bladedancer", "dwarven_craftpriest"]:
+		return "divine"
+	return ""
+
+
+func _detect_casting_stat_bonus(cd: CharacterData, tradition: String) -> int:
+	# INT bonus for arcane, WIS for divine. Uses CharacterData.ability_modifier
+	# table.
+	var score: int = 0
+	match tradition:
+		"arcane": score = cd.intelligence
+		"divine": score = cd.wisdom
+		_: return 0
+	return CharacterData.ability_modifier(score)
 
 
 func _resolve_monster_action(combatant: Combatant) -> Dictionary:

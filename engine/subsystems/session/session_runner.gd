@@ -81,6 +81,15 @@ var _active_effects: ActiveEffectTracker = null
 var _effect_ticker: EffectTicker = null
 var _monster_registry: MonsterRegistry = null
 var _class_registry: ClassRegistry = null
+# Spell-system shared instances. Constructed once in _ready and re-used across
+# combat sessions, settlement / dungeon Cast Spell surfaces, and the slot reset
+# handler. Out-of-combat surfaces (Session 3) reach for them via the public
+# accessors.
+var _spell_registry: SpellRegistry = null
+var _effect_registry: SpellEffectRegistry = null
+var _custom_resolvers: CustomResolverRegistry = null
+var _casting_resolver: CastingResolver = null
+var _spell_slot_reset_handler: SpellSlotResetHandler = null
 
 
 # ---------------------------------------------------------------------------
@@ -112,6 +121,28 @@ func _ready() -> void:
 	# Initialize effect tracking (empty until session loads)
 	_active_effects = ActiveEffectTracker.new()
 	_effect_ticker = EffectTicker.new(_active_effects)
+
+	# Initialize the spell system shared instances. Resolver is built once
+	# and consulted by both combat (CombatController) and out-of-combat
+	# surfaces (DungeonContextMenu Cast Spell, Character tab Cast button,
+	# party inventory submenus). The slot reset handler subscribes to
+	# EventBus.rest_taken via its constructor.
+	_spell_registry = SpellRegistry.new()
+	_effect_registry = SpellEffectRegistry.new(_spell_registry)
+	_custom_resolvers = CustomResolverRegistry.new()
+	var condition_catalog := ConditionCatalog.new()
+	_casting_resolver = CastingResolver.new(
+		_spell_registry,
+		_effect_registry,
+		_active_effects,
+		condition_catalog,
+		_custom_resolvers,
+		null,  # geometry — uses static class methods
+		CampaignRepository,
+		DiceSystem)
+	_spell_slot_reset_handler = SpellSlotResetHandler.new(
+		CampaignRepository,
+		Callable(self, "_lookup_party_casters"))
 
 	# Monster data for encounter generation
 	_monster_registry = MonsterRegistry.new()
@@ -273,6 +304,40 @@ func get_party_data() -> PartyData:
 
 func get_active_effects() -> ActiveEffectTracker:
 	return _active_effects
+
+
+func get_spell_registry() -> SpellRegistry:
+	return _spell_registry
+
+
+func get_effect_registry() -> SpellEffectRegistry:
+	return _effect_registry
+
+
+func get_casting_resolver() -> CastingResolver:
+	return _casting_resolver
+
+
+func get_custom_resolver_registry() -> CustomResolverRegistry:
+	return _custom_resolvers
+
+
+func _lookup_party_casters() -> Array:
+	## Callable used by SpellSlotResetHandler to fetch the active party's
+	## caster CharacterData. Returns CharacterData (or [] when no party loaded).
+	if _party_data == null or _party_data.character_data.is_empty():
+		return []
+	var casters: Array = []
+	for cd: CharacterData in _party_data.character_data:
+		# Caster heuristic — same logic as combat_ui_controller.
+		var is_caster: bool = cd.combat_progression in ["mage", "cleric"]
+		if not is_caster:
+			is_caster = cd.character_class in [
+				"mage", "elven_spellsword", "elven_nightblade", "warlock", "witch",
+				"cleric", "bladedancer", "dwarven_craftpriest"]
+		if is_caster:
+			casters.append(cd)
+	return casters
 
 func get_monster_registry() -> MonsterRegistry:
 	return _monster_registry

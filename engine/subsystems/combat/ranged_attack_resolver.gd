@@ -103,7 +103,7 @@ func resolve_ranged_attack(
 	var prof_attack_mod := ProficiencyCombatHooks.aggregate_modifier(
 		attacker, "attack_throw", {"phase": "ranged_attack", "target": target})
 	var target_number: int = attacker.get_effective_attack_throw() \
-		+ target.get_effective_ac() + prof_attack_mod
+		+ target.get_effective_ac_vs("missiles") + prof_attack_mod
 
 	# --- Determine hit/miss ---
 	var is_natural_twenty := (natural_roll == 20 and not attack_roll.was_overridden) \

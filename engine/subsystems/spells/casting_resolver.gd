@@ -21,6 +21,9 @@ extends RefCounted
 
 var _spell_registry: SpellRegistry = null
 var _effect_registry: SpellEffectRegistry = null
+## Access to the underlying tracker for combat-loop ticking. CombatController
+## reads this in _end_round to call tick_rounds(1); other surfaces (the
+## scheduler for out-of-combat turn/hour/day cadences) tick via separate calls.
 var _effect_tracker: ActiveEffectTracker = null
 var _condition_catalog = null  # ConditionCatalog
 var _custom_resolvers: CustomResolverRegistry = null
@@ -46,6 +49,134 @@ func _init(
 	_geometry = geometry
 	_campaign_repo = campaign_repo
 	_dice_system = dice_system
+
+
+func get_effect_tracker() -> ActiveEffectTracker:
+	## Public accessor for the tracker. Combat / scheduler surfaces call
+	## `tick_and_cleanup` (preferred) or tick the tracker directly.
+	return _effect_tracker
+
+
+func get_spell_registry() -> SpellRegistry:
+	## Public accessor for UI surfaces (DeclarationOverlay, SpellPickerPanel)
+	## that need to look up spell metadata.
+	return _spell_registry
+
+
+func get_effect_registry() -> SpellEffectRegistry:
+	## Public accessor for UI surfaces that need to query effect payloads
+	## (e.g., SpellPickerPanel filtering rows by target_spec.kind).
+	return _effect_registry
+
+
+func tick_and_cleanup(unit: String, n: int, target_lookup: Callable) -> Array:
+	## Tick `n` units of duration on the given bucket ("rounds" / "turns" /
+	## "hours" / "days") and unwind state on every expired effect's targets.
+	## `target_lookup(character_id) -> Variant` returns the live entity (or
+	## null) so per-target cleanup can run.
+	##
+	## Returns an Array of expired effect Dictionaries, in the order they
+	## expired. Caller can use this to emit log entries or fire UI updates.
+	if _effect_tracker == null:
+		return []
+	# Snapshot effects matching the bucket BEFORE ticking, so we can capture
+	# their modifier/flag/condition records before tick_* removes them.
+	var pre_tick: Dictionary = {}  # effect_id -> effect dict
+	for effect_dict in _effect_tracker.get_all_effects():
+		if String(effect_dict.get("duration_type", "")) == unit:
+			pre_tick[String(effect_dict.get("effect_id", ""))] = effect_dict
+	var expired_ids: Array = []
+	match unit:
+		"rounds": expired_ids = _effect_tracker.tick_rounds(n)
+		"turns":  expired_ids = _effect_tracker.tick_turns(n)
+		"hours":  expired_ids = _effect_tracker.tick_hours(n)
+		"days":   expired_ids = _effect_tracker.tick_days(n)
+	var expired_effects: Array = []
+	for eid_v in expired_ids:
+		var eid := String(eid_v)
+		var snapshot: Dictionary = pre_tick.get(eid, {})
+		if snapshot.is_empty():
+			continue
+		_unwind_effect_state(snapshot, target_lookup)
+		EventBus.spell_effect_removed.emit(eid, String(snapshot.get("spell_key", "")))
+		EventBus.active_effect_expired.emit("", eid)
+		expired_effects.append(snapshot)
+	return expired_effects
+
+
+func _unwind_effect_state(effect: Dictionary, target_lookup: Callable) -> void:
+	## Strip modifiers / flags / damage_resistances applied by `effect` from
+	## each target's runtime state. Conditions are emitted as condition_changed
+	## (applied=false) so the condition manager can untrack.
+	for mod_rec in effect.get("applied_modifiers", []):
+		var entity = _resolve_target_entity(mod_rec, target_lookup)
+		var mods := _get_modifier_container(entity)
+		if mods != null:
+			mods.remove_all_from_source(String(mod_rec.get("source_id", "")))
+	for flag_rec in effect.get("applied_flags", []):
+		var entity = _resolve_target_entity(flag_rec, target_lookup)
+		var flags := _get_flags(entity)
+		if flags != null:
+			flags.clear_flag(String(flag_rec.get("flag_key", "")), String(flag_rec.get("source_id", "")))
+	for cond_rec in effect.get("applied_conditions", []):
+		var tid: String = String(cond_rec.get("character_id", ""))
+		var ckey: String = String(cond_rec.get("condition_key", ""))
+		EventBus.condition_changed.emit(tid, {"condition": ckey, "applied": false})
+
+
+func _resolve_target_entity(record: Dictionary, target_lookup: Callable) -> Variant:
+	if not target_lookup.is_valid():
+		return null
+	var tid := String(record.get("character_id", ""))
+	if tid.is_empty():
+		return null
+	return target_lookup.call(tid)
+
+
+# ---------------------------------------------------------------------------
+# Entity-type-agnostic accessors. Spell effects target either CharacterData
+# (PCs/henchmen) or Combatant wrappers (combat-time spells include monsters).
+# Both expose ModifierContainer / EntityFlags / DamageResistance, but via
+# slightly different APIs:
+#   CharacterData has fields:    modifiers, flags, damage_resistances
+#   Combatant has methods:       get_modifiers(), get_flags(), get_damage_resistances()
+# These helpers smooth that over so the resolver dispatches uniformly.
+# ---------------------------------------------------------------------------
+
+func _get_modifier_container(entity: Variant) -> ModifierContainer:
+	if entity is CharacterData:
+		return entity.modifiers
+	if entity != null and entity.has_method("get_modifiers"):
+		return entity.get_modifiers()
+	return null
+
+
+func _get_flags(entity: Variant) -> EntityFlags:
+	if entity is CharacterData:
+		return entity.flags
+	if entity != null and entity.has_method("get_flags"):
+		return entity.get_flags()
+	return null
+
+
+func _get_damage_resistances(entity: Variant) -> DamageResistance:
+	if entity is CharacterData:
+		return entity.damage_resistances
+	if entity != null and entity.has_method("get_damage_resistances"):
+		return entity.get_damage_resistances()
+	return null
+
+
+func _entity_apply_condition(entity: Variant, condition_key: String) -> bool:
+	## Returns true if the condition was registered on the entity. CharacterData
+	## has no condition tracking; only Combatant does (which uses
+	## CombatConditionManager's apply_condition for full tracking).
+	if entity == null:
+		return false
+	if entity.has_method("add_condition"):
+		entity.add_condition(condition_key)
+		return true
+	return false
 
 
 # ---------------------------------------------------------------------------
@@ -364,7 +495,8 @@ func _apply_modifier(
 			per_target[tid] = {"applied": false, "reason": "saved"}
 			continue
 		var entity = _resolve_entity(tid, targets_by_id, caster_entity, caster_context)
-		if entity == null or not (entity is CharacterData):
+		var mods := _get_modifier_container(entity)
+		if mods == null:
 			per_target[tid] = {"applied": false, "reason": "no_target_data"}
 			continue
 		var mod := {
@@ -379,7 +511,7 @@ func _apply_modifier(
 		else:
 			mod["operation"] = "add"
 			mod["value"] = value if value != null else 0
-		entity.modifiers.add_modifier(attribute, mod)
+		mods.add_modifier(attribute, mod)
 		records.append({"character_id": tid, "stat_key": attribute, "source_id": source_id})
 		per_target[tid] = {"applied": true, "stat_key": attribute, "operation": mod["operation"], "value": mod["value"]}
 	return {"per_target": per_target, "records": records}
@@ -398,10 +530,11 @@ func _apply_flag(
 	var per_target: Dictionary = {}
 	for tid in target_descriptor.target_ids:
 		var entity = _resolve_entity(tid, targets_by_id, caster_entity, caster_context)
-		if entity == null or not (entity is CharacterData):
+		var flags := _get_flags(entity)
+		if flags == null:
 			per_target[tid] = {"applied": false, "reason": "no_target_data"}
 			continue
-		entity.flags.set_flag(flag_key, source_id, {})
+		flags.set_flag(flag_key, source_id, {})
 		records.append({"character_id": tid, "flag_key": flag_key, "source_id": source_id})
 		per_target[tid] = {"applied": true, "flag_key": flag_key}
 	return {"per_target": per_target, "records": records}
@@ -410,7 +543,7 @@ func _apply_flag(
 func _apply_condition(
 		step: Dictionary,
 		target_descriptor: TargetDescriptor,
-		_targets_by_id: Dictionary,
+		targets_by_id: Dictionary,
 		save_results: Dictionary,
 		save_spec: Dictionary) -> Dictionary:
 	var condition_key := String(step.get("condition_key", ""))
@@ -421,6 +554,10 @@ func _apply_condition(
 		if on_save_negate and bool((save_results.get(tid, {}) as Dictionary).get("succeeded", false)):
 			per_target[tid] = {"applied": false, "reason": "saved"}
 			continue
+		# Apply the condition to the entity if it supports condition tracking
+		# (Combatants do; raw CharacterData doesn't track conditions itself).
+		var entity = targets_by_id.get(tid, null)
+		_entity_apply_condition(entity, condition_key)
 		records.append({"character_id": tid, "condition_key": condition_key})
 		EventBus.condition_changed.emit(tid, {"condition": condition_key, "applied": true})
 		per_target[tid] = {"applied": true, "condition_key": condition_key}
@@ -441,16 +578,17 @@ func _apply_damage_resistance(
 	var per_target: Dictionary = {}
 	for tid in target_descriptor.target_ids:
 		var entity = _resolve_entity(tid, targets_by_id, caster_entity, caster_context)
-		if entity == null or not (entity is CharacterData):
+		var dr := _get_damage_resistances(entity)
+		if dr == null:
 			per_target[tid] = {"applied": false, "reason": "no_target_data"}
 			continue
 		match mode:
 			"immunity":
-				entity.damage_resistances.add_immunity(damage_type, source_id)
+				dr.add_immunity(damage_type, source_id)
 			"resistance":
-				entity.damage_resistances.add_resistance(damage_type, factor, source_id)
+				dr.add_resistance(damage_type, factor, source_id)
 			"vulnerability":
-				entity.damage_resistances.add_vulnerability(damage_type, source_id)
+				dr.add_vulnerability(damage_type, source_id)
 		per_target[tid] = {"applied": true, "mode": mode, "damage_type": damage_type}
 	return {"per_target": per_target}
 
@@ -490,13 +628,18 @@ func _attack_throw_vs_target(
 		targets_by_id: Dictionary,
 		attack_hit_targets: Dictionary) -> Dictionary:
 	var profile := String(step.get("attack_profile", "caster_as_fighter_of_caster_level"))
+	var auto_hit := bool(step.get("auto_hit", false))
 	var per_target: Dictionary = {}
 	for tid in target_descriptor.target_ids:
+		# `auto_hit` short-circuits the attack roll (Magic Missile-style).
+		if auto_hit:
+			attack_hit_targets[tid] = true
+			per_target[tid] = {"applied": true, "auto_hit": true, "hit": true, "profile": profile}
+			continue
 		var entity = _resolve_entity(tid, targets_by_id, null, caster_context)
-		# Simple model for Session 1: attack throw target = 19 - caster_level
-		# (fighter table baseline) + target AC. RAW gives a full table, but
-		# since the Session 2 combat code will own this fully, here we use a
-		# pragmatic approximation. We log the roll either way.
+		# Per acore_combat fighter attack progression. Profile
+		# "caster_as_fighter_of_caster_level" reads attack throw at
+		# caster_level on the fighter table; future profiles can vary class.
 		var target_ac := 0
 		if entity != null and entity.has_method("get_effective_ac"):
 			target_ac = int(entity.get_effective_ac())
@@ -631,7 +774,7 @@ func _build_active_effect(
 		modifier_records: Array,
 		flag_records: Array,
 		condition_records: Array) -> Dictionary:
-	var duration_type := _duration_kind_to_type(String(duration_model.get("kind", "fixed")))
+	var duration_type := _duration_kind_to_type(duration_model)
 	var duration_remaining: int = _resolve_duration_amount(duration_model, caster_context.caster_level)
 	var concentration_mode := String(duration_model.get("concentration_mode", "none"))
 	var requires_concentration := 1 if concentration_mode != "none" else 0
@@ -660,16 +803,21 @@ func _build_active_effect(
 	}
 
 
-func _duration_kind_to_type(kind: String) -> String:
-	# Maps DSL `duration_model.kind` to the active_effects.duration_type CHECK
+func _duration_kind_to_type(duration_model: Dictionary) -> String:
+	# Maps DSL `duration_model` to the active_effects.duration_type CHECK
 	# domain ('rounds'|'turns'|'hours'|'days'|'permanent'|'concentration').
+	# For `fixed` and `per_level` durations, the `unit` field carries the
+	# bucket: Bless `unit: "turns"` ticks on turn cadence (every 60 rounds),
+	# Magic Missile is instantaneous (caller skips this path), Fly's per_level
+	# turns is 1 turn per level. Defaults to rounds when no unit is given.
+	var kind := String(duration_model.get("kind", "fixed"))
 	match kind:
-		"per_level", "fixed":
-			return "rounds"  # overridden by unit below
 		"concentration":
 			return "concentration"
-		"special":
-			return "rounds"
+	var unit := String(duration_model.get("unit", "rounds"))
+	match unit:
+		"rounds", "turns", "hours", "days":
+			return unit
 		_:
 			return "rounds"
 
@@ -757,23 +905,31 @@ func _make_modifier_source_id(spell_key: String, caster_id: String) -> String:
 
 
 func _compute_remaining_slots(caster_id: String, level: int) -> int:
-	# Snapshot how many slots are unused at this level after the cast.
-	# Arcane casters: spells_per_day - expended.
-	# This is a best-effort accessor; if the campaign repo doesn't expose
-	# spells-per-day directly we just report -expended (negative = unknown).
+	## Returns the number of EXPENDED slots at `level` for this caster.
+	## Convention: this is the count of slots used, not the count remaining —
+	## the resolver doesn't know spells_per_day (which lives in class
+	## progression tables, not the campaign repo). UI consumers compute
+	## `total_slots_at_level - this_value` for the displayed "remaining" count.
+	## The signal payload param is named `remaining_at_level` for historical
+	## reasons (the GDD spec); v1 emits expended-count, callers interpret.
 	var expended: Dictionary = _campaign_repo.get_expended_slots(caster_id) if _campaign_repo else {}
-	var used := int(expended.get(level, 0))
-	return -used  # caller can interpret; UI can compute remaining itself
+	return int(expended.get(level, 0))
 
 
 func _approximate_fighter_attack_throw(level: int) -> int:
-	# Pragmatic approximation for Session 1 — Cause Light Wounds is the only
-	# attack-throw step in the MVP. ACKS fighter table: roll ≥ (10 - (level - 1) / 2)
-	# rounded. This is enough to make tests deterministic; Session 2 wires the
-	# real combat tables.
-	var base := 10
-	var bonus: int = int(round(float(level - 1) / 2.0))
-	return base - bonus
+	# ACKS fighter attack throw progression from data/classes/fighter.json
+	# attack_progression: 10, 9, 9, 8, 7, 7, 6, 5, 5, 4, 3, 3, 2, 1.
+	# Used by `attack_throw_vs_target` for spells with `attack_profile:
+	# "caster_as_fighter_of_caster_level"` (Cause Light Wounds, Cause Serious
+	# Wounds, etc.). Reads via Combatant.get_class_registry() on demand.
+	var class_registry: ClassRegistry = Combatant.get_class_registry()
+	var clamped_level: int = clampi(level, 1, 14)
+	var throw_value: int = class_registry.get_attack_throw("fighter", clamped_level)
+	# get_attack_throw returns 0 if class/level missing; fall back to the
+	# constant baseline for safety.
+	if throw_value <= 0:
+		return 10
+	return throw_value
 
 
 func _eval_level_formula(formula: String, level: int) -> int:

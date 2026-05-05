@@ -74,7 +74,8 @@ func enter(runner, context: Dictionary) -> void:
 		roster, init_resolver, attack_resolver,
 		spell_hooks, condition_manager, ranged_resolver,
 		monster_ai, morale_resolver, cleave_resolver,
-		mortal_wounds_resolver, voxel_map)
+		mortal_wounds_resolver, voxel_map,
+		runner.get_casting_resolver())
 	_controller.encounter_id = _encounter_id
 
 	_place_combatants_on_grid(roster, voxel_map)

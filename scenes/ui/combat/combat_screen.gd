@@ -141,6 +141,12 @@ func start_interactive() -> void:
 	# Wire context menu
 	_ui_controller.context_menu_requested.connect(_on_context_menu_requested)
 
+	# Wire spell-targeting flow (Session 2.8 — combat-cast UI integration).
+	_ui_controller.spell_targeting_started.connect(_on_spell_targeting_started)
+	_ui_controller.spell_aoe_preview.connect(_on_spell_aoe_preview)
+	_ui_controller.spell_hd_tally_updated.connect(_on_spell_hd_tally_updated)
+	_ui_controller.spell_targeting_ended.connect(_on_spell_targeting_ended)
+
 	# Wire token animation triggers (lunge on melee hit, drop on downed).
 	if not EventBus.damage_dealt.is_connected(_on_damage_for_lunge):
 		EventBus.damage_dealt.connect(_on_damage_for_lunge)
@@ -276,6 +282,16 @@ func _build_ui() -> void:
 	_decl_overlay.visible = false
 	_decl_overlay.declarations_complete.connect(_on_declarations_confirmed)
 	add_child(_decl_overlay)
+
+	# Inject spell-system dependencies so the Cast Spell option in the
+	# declaration dropdown can open SpellPickerPanel for the selected PC.
+	# The resolver is shared across combat sessions and is injected on the
+	# controller; we surface its registries to the overlay here.
+	if _controller != null and _controller.casting_resolver != null:
+		_decl_overlay.setup_spell_dependencies(
+			_controller.casting_resolver.get_spell_registry(),
+			_controller.casting_resolver.get_effect_registry(),
+			CampaignRepository)
 
 	_weapon_popup = WeaponSwitchPopup.new()
 	_weapon_popup.name = "WeaponSwitchPopup"
@@ -416,6 +432,86 @@ func _on_map_entity_clicked(entity_id: String) -> void:
 func _on_map_cell_right_clicked(cell_pos: Vector3i, screen_pos: Vector2) -> void:
 	if _ui_controller != null:
 		_ui_controller.on_cell_right_clicked(cell_pos, screen_pos)
+
+
+# ---------------------------------------------------------------------------
+# Spell-targeting handlers (Session 2.8)
+# ---------------------------------------------------------------------------
+
+const _SPELL_HD_TALLY_SCENE := preload("res://scenes/ui/spells/hd_tally_panel.tscn")
+const _SPELL_AOE_PREVIEW_SCENE := preload("res://scenes/ui/spells/aoe_preview_overlay.tscn")
+
+var _hd_tally_panel = null   # CanvasLayer — opened on demand for hd_budget casts
+var _aoe_preview_overlay = null  # CanvasLayer — opened for area_at_point casts
+
+
+func _on_spell_targeting_started(_combatant_id: String, _spell_name: String, kind: String) -> void:
+	# Auto kind commits inline; no panel needed.
+	# single_entity highlights are driven via UI controller's highlight_targets.
+	# hd_budget opens the HD-tally panel (handled in _on_spell_hd_tally_updated).
+	# area_at_point waits for an anchor click; preview opens then.
+	match kind:
+		"auto", "single_entity":
+			pass
+		"area_at_point":
+			pass
+		"hd_budget":
+			pass
+
+
+func _on_spell_aoe_preview(spell_name: String, affected: Array, ally_ids: Array) -> void:
+	# Tear down any previous instance.
+	if _aoe_preview_overlay != null:
+		_aoe_preview_overlay.queue_free()
+		_aoe_preview_overlay = null
+	_aoe_preview_overlay = _SPELL_AOE_PREVIEW_SCENE.instantiate()
+	add_child(_aoe_preview_overlay)
+	_aoe_preview_overlay.confirmed.connect(_on_aoe_preview_confirmed, CONNECT_ONE_SHOT)
+	_aoe_preview_overlay.cancelled.connect(_on_aoe_preview_cancelled, CONNECT_ONE_SHOT)
+	_aoe_preview_overlay.setup(spell_name, affected, ally_ids)
+
+
+func _on_aoe_preview_confirmed() -> void:
+	_aoe_preview_overlay = null
+	if _ui_controller != null:
+		_ui_controller.on_confirm_spell_targeting()
+
+
+func _on_aoe_preview_cancelled() -> void:
+	_aoe_preview_overlay = null
+	if _ui_controller != null:
+		_ui_controller.on_cancel_spell_targeting()
+
+
+func _on_spell_hd_tally_updated(spell_name: String, controller) -> void:
+	if _hd_tally_panel == null:
+		_hd_tally_panel = _SPELL_HD_TALLY_SCENE.instantiate()
+		add_child(_hd_tally_panel)
+		_hd_tally_panel.confirmed.connect(_on_hd_tally_confirmed)
+		_hd_tally_panel.cancelled.connect(_on_hd_tally_cancelled)
+	_hd_tally_panel.setup(controller, spell_name)
+
+
+func _on_hd_tally_confirmed() -> void:
+	_hd_tally_panel = null
+	if _ui_controller != null:
+		_ui_controller.on_confirm_spell_targeting()
+
+
+func _on_hd_tally_cancelled() -> void:
+	_hd_tally_panel = null
+	if _ui_controller != null:
+		_ui_controller.on_cancel_spell_targeting()
+
+
+func _on_spell_targeting_ended() -> void:
+	# Defensive cleanup if a panel didn't auto-close.
+	if _hd_tally_panel != null:
+		_hd_tally_panel.queue_free()
+		_hd_tally_panel = null
+	if _aoe_preview_overlay != null:
+		_aoe_preview_overlay.queue_free()
+		_aoe_preview_overlay = null
 
 
 func _on_context_menu_requested(

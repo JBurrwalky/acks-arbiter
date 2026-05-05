@@ -28,6 +28,7 @@ enum State {
 	PC_SELECTING_CLEAVE_TARGET,    ## After kill, waiting for cleave target click or Skip Cleave
 	PC_SELECTING_WEAPON,           ## PC chose Sheathe & Draw — weapon popup visible
 	PC_SELECTING_READY_CELL,       ## PC chose "Ready at cell..." — waiting for cell click
+	PC_SPELL_TARGETING,            ## PC declared a cast — targeting controller is live
 	ENEMY_ACTING,                  ## Enemy AI turn (auto-advance)
 	COMBAT_OVER,                   ## Combat ended
 }
@@ -110,6 +111,21 @@ signal context_menu_requested(combatant_id: String, target_cell: Vector3i, scree
 ## engagement_zones: enemy-adjacent cells (red).
 signal movement_range_display(walk_cells: Array, run_cells: Array, engagement_zones: Array)
 
+## Emitted when a PC's spell-targeting begins. Host can show the HdTallyPanel
+## or the AoePreviewOverlay depending on `kind`.
+##   kind: "auto" | "single_entity" | "area_at_point" | "hd_budget"
+##   spell_name: human-readable display
+signal spell_targeting_started(combatant_id: String, spell_name: String, kind: String)
+
+## Emitted when AoE-anchored area becomes available for confirmation.
+signal spell_aoe_preview(spell_name: String, affected_ids: Array, ally_ids: Array)
+
+## Emitted when HD-budget targeting state changes (selection_changed).
+signal spell_hd_tally_updated(spell_name: String, controller: TargetingController)
+
+## Emitted when the spell-targeting flow ends (commit or cancel).
+signal spell_targeting_ended()
+
 
 # ---------------------------------------------------------------------------
 # Fields
@@ -137,6 +153,7 @@ const PC_INPUT_STATES := [
 	State.PC_SELECTING_CLEAVE_TARGET,
 	State.PC_SELECTING_WEAPON,
 	State.PC_SELECTING_READY_CELL,
+	State.PC_SPELL_TARGETING,
 ]
 var _selected_action: String = ""
 var _has_moved_this_turn: bool = false
@@ -150,6 +167,13 @@ var _ready_cell_options: Array = []
 ## During PC_SELECTING_READY_CELL, "melee" or "ranged" — picks the fallback
 ## attack path at fire time.
 var _ready_cell_weapon: String = ""
+
+## Spell-targeting state. Live during PC_SPELL_TARGETING — drives the
+## TargetingController flow from waiting_for_pc_spell_target through commit.
+var _targeting_controller: TargetingController = null
+var _targeting_spell_payload: Dictionary = {}
+var _targeting_caster_id: String = ""
+var _targeting_kind: String = ""  # "auto" | "single_entity" | "area_at_point" | "hd_budget"
 
 ## Cached initiative order for the HUD.
 var _initiative_display: Array = []
@@ -259,6 +283,19 @@ func advance() -> Dictionary:
 			active_token_changed.emit(cid)
 			pc_turn_started.emit(cid)
 			_show_proactive_movement_overlay()
+			return result
+
+		"waiting_for_pc_spell_target":
+			# Caster's tick fired with a declared spell. Build a TargetingController
+			# from the spell payload, register candidates from the roster, and
+			# either auto-resolve (self / area_from_caster / caster_and_radius)
+			# or wait for player click input.
+			var cid: String = result.get("combatant_id", "")
+			_current_pc_id = cid
+			_state = State.PC_SPELL_TARGETING
+			clear_highlights_requested.emit()
+			active_token_changed.emit(cid)
+			_enter_spell_targeting(cid)
 			return result
 
 		"action_resolved":
@@ -633,6 +670,15 @@ func on_cell_targeted(pos: Vector3i) -> void:
 		advance()
 		return
 
+	if _state == State.PC_SPELL_TARGETING:
+		# Cell click during spell targeting: anchor for area_at_point spells.
+		if _targeting_kind != "area_at_point":
+			return
+		if _targeting_controller != null:
+			_targeting_controller.set_anchor_cell(pos)
+			_render_aoe_preview(pos)
+		return
+
 
 func _enter_facing_selection() -> void:
 	var combatant = _controller.get_combatant(_current_pc_id)
@@ -682,6 +728,32 @@ func on_entity_targeted(entity_id: String) -> void:
 		if combatant == null:
 			return
 		on_cell_targeted(combatant.grid_position)
+		return
+
+	if _state == State.PC_SPELL_TARGETING:
+		# Entity click during spell targeting: route to TargetingController
+		# for single-entity spells and HD-budget multi-pick spells.
+		if _targeting_controller == null:
+			return
+		if _targeting_kind == "single_entity":
+			var result := _targeting_controller.try_select(entity_id)
+			if result.accepted:
+				_commit_spell_targeting()
+			return
+		if _targeting_kind == "hd_budget":
+			var result := _targeting_controller.try_select(entity_id)
+			if not result.accepted:
+				log_entry.emit({
+					"type": 0, "round": 0,
+					"actor_id": _current_pc_id, "target_id": entity_id,
+					"data": {"hd_target_rejected": result.reason},
+					"timestamp": 0,
+				})
+				return
+			_refresh_targeting_highlights()
+			# HD-budget casts confirm via on_confirm_spell_targeting; the click
+			# alone never auto-commits.
+			return
 		return
 
 	# Left-click on entity during PC turn = selection only (no action).
@@ -778,14 +850,83 @@ func _get_alive_pcs() -> Array:
 	if _controller == null:
 		return result
 	for c in _controller.roster.get_alive_on_side(Combatant.Side.PARTY):
-		result.append({
-			"combatant_id": c.id,
-			"display_name": c.display_name,
-			# Berserkers cannot declare defensive movement; the overlay
-			# greys out Fighting Withdrawal and Full Retreat for these PCs.
-			"is_berserk_raging": c.is_berserk_raging(),
-		})
+		result.append(_build_pc_declaration_record(c))
 	return result
+
+
+func _build_pc_declaration_record(c: Combatant) -> Dictionary:
+	## Builds the per-PC record consumed by DeclarationOverlay. Includes the
+	## caster fields (`is_caster`, `can_cast_now`, `cast_disabled_reason`,
+	## `character_data`) the overlay uses to grey-out the Cast Spell option
+	## with a tooltip when casting isn't possible.
+	var record := {
+		"combatant_id": c.id,
+		"display_name": c.display_name,
+		# Berserkers cannot declare defensive movement; the overlay greys
+		# out Fighting Withdrawal and Full Retreat for these PCs.
+		"is_berserk_raging": c.is_berserk_raging(),
+		"is_caster": false,
+		"can_cast_now": false,
+		"cast_disabled_reason": "",
+		"character_data": null,
+	}
+	if not c.is_character:
+		return record
+	var cd: CharacterData = c.get_character_data()
+	record["character_data"] = cd
+
+	# Caster detection: combat_progression "mage" or "cleric", OR class is
+	# in the canonical caster set. Future cleanup: SpellRegistry.get_class_tradition.
+	var is_caster: bool = cd.combat_progression in ["mage", "cleric"]
+	if not is_caster:
+		is_caster = cd.character_class in [
+			"mage", "elven_spellsword", "elven_nightblade", "warlock", "witch",
+			"cleric", "bladedancer", "dwarven_craftpriest"]
+	record["is_caster"] = is_caster
+
+	if not is_caster:
+		record["cast_disabled_reason"] = "Not a caster"
+		return record
+
+	# Disruption checks (the conditions that block declaring a cast at all).
+	# Per acore_spellcaster_rules, a caster cannot cast while gagged, hands
+	# bound, in a silence area, prone (no hand-free posture), incapacitated,
+	# or under action-preventing conditions.
+	var blocked_conditions := ["paralyzed", "unconscious", "stunned", "held",
+		"grappled", "petrified", "silenced"]
+	for cond in blocked_conditions:
+		if c.has_condition(cond):
+			record["cast_disabled_reason"] = "Cannot cast while %s" % cond
+			return record
+
+	# Slot availability check.
+	if not _has_any_unused_spell_slot(cd):
+		record["cast_disabled_reason"] = "No spell slots available"
+		return record
+
+	record["can_cast_now"] = true
+	return record
+
+
+func _has_any_unused_spell_slot(cd: CharacterData) -> bool:
+	## True if the caster has at least one unused slot at any level. Reads the
+	## class registry's per-level spell slot table and compares against the
+	## CampaignRepository expended-count dict. A non-caster (empty slot table)
+	## returns false; a caster with slots but all levels fully expended returns
+	## false; otherwise true. Used by DeclarationOverlay to grey-out the Cast
+	## Spell option when no slots remain.
+	var class_registry: ClassRegistry = Combatant.get_class_registry()
+	var slots: Array = class_registry.get_spell_slots(cd.character_class, cd.level)
+	if slots.is_empty():
+		return false
+	var expended: Dictionary = CampaignRepository.get_expended_slots(cd.id)
+	for i in range(slots.size()):
+		var level: int = i + 1
+		var max_at_level: int = int(slots[i])
+		var used_at_level: int = int(expended.get(level, 0))
+		if used_at_level < max_at_level:
+			return true
+	return false
 
 
 func _cache_initiative_display(init_order: Array) -> void:
@@ -983,3 +1124,263 @@ func _get_switchable_weapons(combatant: Combatant) -> Array:
 			continue
 		result.append(item)
 	return result
+
+
+# ---------------------------------------------------------------------------
+# Spell targeting (Session 2.8 — combat-cast UI integration)
+# ---------------------------------------------------------------------------
+
+func _enter_spell_targeting(caster_id: String) -> void:
+	## Activates targeting mode for a declared cast. Reads the spell's effect
+	## payload, builds a TargetingController populated with valid candidates
+	## from the roster, highlights them, and either auto-resolves (self /
+	## area_from_caster / caster_and_radius — no click needed) or waits for
+	## player input on the map.
+	_targeting_caster_id = caster_id
+	var caster: Combatant = _controller.get_combatant(caster_id)
+	if caster == null or _controller.casting_resolver == null:
+		_cancel_spell_targeting()
+		return
+	var choice: SpellChoice = caster.declared_spell_choice
+	if choice == null:
+		_cancel_spell_targeting()
+		return
+
+	var effect_registry: SpellEffectRegistry = _controller.casting_resolver.get_effect_registry()
+	var spell_registry: SpellRegistry = _controller.casting_resolver.get_spell_registry()
+	var payload: Dictionary = effect_registry.get_effect_payload(
+		choice.spell_key, choice.is_reversed, choice.chosen_disjunctive_index)
+	if payload.is_empty():
+		_cancel_spell_targeting()
+		return
+
+	_targeting_spell_payload = payload
+	var target_spec: Dictionary = payload.get("target_spec", {})
+	var ts_kind := String(target_spec.get("kind", ""))
+	var spell_data: Dictionary = spell_registry.get_spell(choice.spell_key)
+	var spell_name := String(spell_data.get("spell_name", choice.spell_key))
+
+	# Build TargetingController with caster position + level. The dice system
+	# is the global autoload; we expose a property for tests.
+	var caster_level: int = 1
+	if caster.is_character:
+		caster_level = caster.get_character_data().level
+	_targeting_controller = TargetingController.new(
+		target_spec, caster.grid_position, caster_level, _get_dice_system())
+
+	# Self / area_from_caster / caster_and_radius auto-resolve without user
+	# input — the descriptor is built immediately from caster position.
+	if ts_kind in ["self", "area_from_caster", "caster_and_radius"]:
+		_targeting_kind = "auto"
+		_register_candidates_for_area()
+		_targeting_controller.begin()
+		spell_targeting_started.emit(caster_id, spell_name, "auto")
+		_commit_spell_targeting()
+		return
+
+	# Touch-creature / touch-ally / touch-enemy / single_creature → entity click.
+	if ts_kind in ["single_creature", "single_object", "touch_ally", "touch_enemy", "touch_creature"]:
+		_targeting_kind = "single_entity"
+		_register_candidates_for_entity_target(target_spec)
+		_targeting_controller.begin()
+		_refresh_targeting_highlights()
+		spell_targeting_started.emit(caster_id, spell_name, "single_entity")
+		return
+
+	# Multi-target HD budget (Sleep group, Charm Monster group).
+	if ts_kind == "multiple_creatures_hd_budget":
+		_targeting_kind = "hd_budget"
+		_register_candidates_for_entity_target(target_spec)
+		_targeting_controller.begin()
+		_refresh_targeting_highlights()
+		_targeting_controller.selection_changed.connect(_on_targeting_selection_changed)
+		spell_targeting_started.emit(caster_id, spell_name, "hd_budget")
+		spell_hd_tally_updated.emit(spell_name, _targeting_controller)
+		return
+
+	# Area at point — Fireball, Cloudkill. Player clicks an anchor cell, then
+	# the AoE preview asks for confirmation.
+	if ts_kind == "area_at_point":
+		_targeting_kind = "area_at_point"
+		_register_candidates_for_area()
+		_targeting_controller.begin()
+		spell_targeting_started.emit(caster_id, spell_name, "area_at_point")
+		return
+
+	# Unknown / unhandled target_spec — auto-cancel rather than soft-lock.
+	push_warning("CombatUIController: unsupported target_spec.kind '%s' — auto-cancelling cast" % ts_kind)
+	_cancel_spell_targeting()
+
+
+func _register_candidates_for_entity_target(target_spec: Dictionary) -> void:
+	## Registers all alive combatants (PCs + enemies) as candidates with the
+	## targeting controller. Eligibility is handled by the controller using
+	## the target_spec's creature_filter / range_feet / hd cap rules.
+	var creature_filter: Dictionary = target_spec.get("creature_filter", {})
+	var friend_or_foe := String(target_spec.get("friend_or_foe", "any"))
+	var caster: Combatant = _controller.get_combatant(_targeting_caster_id)
+	for c: Combatant in _controller.roster.get_alive():
+		# Friend/foe pre-filter: most damage spells target enemies, most buffs
+		# target allies. The targeting_spec's creature_filter doesn't model
+		# alignment side, so we apply it here.
+		if friend_or_foe == "willing_only" and c.side != caster.side:
+			continue
+		if friend_or_foe == "unwilling_only" and c.side == caster.side:
+			continue
+		var entity: Variant = c.get_character_data() if c.is_character else null
+		# Pass the Combatant itself as a fallback so monster Dictionaries get
+		# their hit_dice read for HD checks.
+		if entity == null:
+			entity = c
+		_targeting_controller.add_candidate(c.id, entity, c.grid_position)
+
+
+func _register_candidates_for_area() -> void:
+	## For area_at_point / area_from_caster / caster_and_radius — registers
+	## every alive combatant so the controller can collect hits-in-area from
+	## the resolved cell set on commit.
+	for c: Combatant in _controller.roster.get_alive():
+		var entity: Variant = c.get_character_data() if c.is_character else null
+		if entity == null:
+			entity = c
+		_targeting_controller.add_candidate(c.id, entity, c.grid_position)
+
+
+func _refresh_targeting_highlights() -> void:
+	if _targeting_controller == null:
+		return
+	# Eligible candidates highlight green via target rings.
+	var eligible_ids: Array[String] = []
+	for cid in _targeting_controller.get_eligible_candidates():
+		eligible_ids.append(String(cid))
+	highlight_targets.emit(eligible_ids)
+
+
+func _render_aoe_preview(anchor_cell: Vector3i) -> void:
+	if _targeting_controller == null:
+		return
+	# Snapshot the descriptor and resolve cells for the preview.
+	var td := _targeting_controller.commit()  # commit reads the anchor we just set
+	var caster: Combatant = _controller.get_combatant(_targeting_caster_id)
+	var caster_side: int = caster.side if caster != null else Combatant.Side.PARTY
+	var spell_data: Dictionary = _controller.casting_resolver.get_spell_registry().get_spell(
+		caster.declared_spell if caster != null else "")
+	var spell_name := String(spell_data.get("spell_name", "Spell"))
+
+	# Build affected list + ally callout for the preview overlay.
+	var affected: Array = []
+	var ally_ids: Array = []
+	for tid in td.target_ids:
+		var c := _controller.roster.get_by_id(tid)
+		if c == null:
+			continue
+		affected.append({"id": tid, "name": c.display_name})
+		if c.side == caster_side:
+			ally_ids.append(tid)
+
+	# Highlight the cells visually too.
+	clear_highlights_requested.emit()
+	highlight_reachable.emit(td.target_cells, Color(0.92, 0.45, 0.20, 0.30))
+	spell_aoe_preview.emit(spell_name, affected, ally_ids)
+
+
+func _on_targeting_selection_changed() -> void:
+	_refresh_targeting_highlights()
+	# Re-emit the HD-tally update so the panel refreshes its budget display.
+	if _targeting_kind == "hd_budget" and _targeting_controller != null:
+		var caster: Combatant = _controller.get_combatant(_targeting_caster_id)
+		var spell_data: Dictionary = _controller.casting_resolver.get_spell_registry().get_spell(
+			caster.declared_spell if caster != null else "")
+		spell_hd_tally_updated.emit(
+			String(spell_data.get("spell_name", "Spell")), _targeting_controller)
+
+
+func on_confirm_spell_targeting() -> void:
+	## Host (HdTallyPanel / AoePreviewOverlay) calls this when the player
+	## clicks Confirm.
+	if _state != State.PC_SPELL_TARGETING:
+		return
+	_commit_spell_targeting()
+
+
+func on_cancel_spell_targeting() -> void:
+	## Host calls this when the player presses Esc / clicks Cancel during a
+	## targeting flow. ACKS rules say a cancelled cast still consumes the slot
+	## (the caster declared and committed the spell-cast intent), so we route
+	## through resolve_disrupted to consume the slot cleanly.
+	if _state != State.PC_SPELL_TARGETING:
+		return
+	# Treat as a disrupted cast — slot consumed, no effect.
+	var caster: Combatant = _controller.get_combatant(_targeting_caster_id)
+	if caster != null and _controller.casting_resolver != null:
+		var choice: SpellChoice = caster.declared_spell_choice
+		if choice != null:
+			# Build a CasterContext for resolve_disrupted via the controller's
+			# existing _resolve_pc_cast_disrupted path. We submit an EMPTY target
+			# descriptor; the controller will detect the disrupted state via the
+			# cancel signal. Simpler: mark damaged_since_declaration to route
+			# through the existing disruption path.
+			caster.damaged_since_declaration = true
+	_cancel_spell_targeting()
+
+
+func _commit_spell_targeting() -> void:
+	if _targeting_controller == null:
+		_cancel_spell_targeting()
+		return
+	var td := _targeting_controller.commit()
+	var caster: Combatant = _controller.get_combatant(_targeting_caster_id)
+	# Self-targeting spells (Shield) and area_from_caster spells (Bless)
+	# return target_cells anchored on caster_pos but no target_ids — the
+	# resolver applies effects to the caster directly. Force the caster_id
+	# into target_ids so the resolver's per-target loop fires.
+	if td.kind == "self" and td.target_ids.is_empty():
+		td.target_ids = [_targeting_caster_id]
+	# Build targets_by_id from the descriptor's target_ids by reading roster.
+	var targets_by_id: Dictionary = {}
+	for tid in td.target_ids:
+		var c := _controller.roster.get_by_id(tid)
+		if c != null:
+			targets_by_id[tid] = c
+	_controller.submit_pc_spell_action(_targeting_caster_id, td, targets_by_id)
+	_teardown_targeting_state()
+	advance()
+
+
+func _cancel_spell_targeting() -> void:
+	## Tears down targeting state without submitting. Used for unsupported
+	## target kinds and for explicit cancel.
+	_teardown_targeting_state()
+	# Without submitting, the controller will keep returning
+	# waiting_for_pc_spell_target. We force a disrupted resolution by setting
+	# damaged_since_declaration on the caster and advancing — the controller's
+	# is_cast_disrupted_this_round check then routes to resolve_disrupted.
+	var caster: Combatant = _controller.get_combatant(_targeting_caster_id)
+	if caster != null and not caster.declared_spell.is_empty():
+		caster.damaged_since_declaration = true
+	advance()
+
+
+func _teardown_targeting_state() -> void:
+	if _targeting_controller != null and _targeting_controller.selection_changed.is_connected(_on_targeting_selection_changed):
+		_targeting_controller.selection_changed.disconnect(_on_targeting_selection_changed)
+	_targeting_controller = null
+	_targeting_spell_payload = {}
+	_targeting_caster_id = ""
+	_targeting_kind = ""
+	clear_highlights_requested.emit()
+	spell_targeting_ended.emit()
+
+
+func _get_dice_system():
+	## Returns the DiceSystem autoload. Lives in a helper for testability —
+	## tests can override by setting a `_dice_override` field.
+	if _dice_override != null:
+		return _dice_override
+	return DiceSystem
+
+
+## Test-only override for the dice system. Set by combat_cast integration
+## tests to inject a deterministic FakeDice.
+var _dice_override = null
+

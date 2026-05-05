@@ -182,6 +182,12 @@
 [ext_resource type="Script" path="res://tests/test_casting_geometry.gd" id="169_casting_geometry_tests"]
 [ext_resource type="Script" path="res://tests/test_casting_resolver.gd" id="170_casting_resolver_tests"]
 [ext_resource type="Script" path="res://tests/test_spell_slot_reset.gd" id="171_spell_slot_reset_tests"]
+[ext_resource type="Script" path="res://tests/test_targeting_controller.gd" id="172_targeting_controller_tests"]
+[ext_resource type="Script" path="res://tests/test_combat_disruption.gd" id="173_combat_disruption_tests"]
+[ext_resource type="Script" path="res://tests/test_combat_cast_routing.gd" id="174_combat_cast_routing_tests"]
+[ext_resource type="Script" path="res://tests/test_session_2_6_fixes.gd" id="175_session_2_6_fixes_tests"]
+[ext_resource type="Script" path="res://tests/test_session_2_7_polish.gd" id="176_session_2_7_polish_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_targeting_ui.gd" id="177_spell_targeting_ui_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -728,3 +734,21 @@ script = ExtResource("170_casting_resolver_tests")
 
 [node name="SpellSlotResetTests" type="Node" parent="."]
 script = ExtResource("171_spell_slot_reset_tests")
+
+[node name="TargetingControllerTests" type="Node" parent="."]
+script = ExtResource("172_targeting_controller_tests")
+
+[node name="CombatDisruptionTests" type="Node" parent="."]
+script = ExtResource("173_combat_disruption_tests")
+
+[node name="CombatCastRoutingTests" type="Node" parent="."]
+script = ExtResource("174_combat_cast_routing_tests")
+
+[node name="Session26FixesTests" type="Node" parent="."]
+script = ExtResource("175_session_2_6_fixes_tests")
+
+[node name="Session27PolishTests" type="Node" parent="."]
+script = ExtResource("176_session_2_7_polish_tests")
+
+[node name="SpellTargetingUITests" type="Node" parent="."]
+script = ExtResource("177_spell_targeting_ui_tests")

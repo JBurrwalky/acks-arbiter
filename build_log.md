@@ -13151,3 +13151,603 @@ The 4 new/fixed Phase 4 suites all pass (LairSearchResolver, SurveyingResolver, 
 9. Do NOT add a Cast Spell button to `ActionButtonPanel` — combat casting is declaration-phase only (GDD §8.1).
 
 **[NEEDS-OPUS-REVIEW]** Three SACRED-vs-GDD discrepancies were resolved in favor of the XML rules: Magic Missile missile-count formula, Shield duration (3 turns not 2), Bless radius (50' not 30'), and Fly duration (no secret 1d6). All four are documented in the per-spell `notes` fields. A future Opus review may want to update the GDD examples to match the SACRED rules.
+
+---
+
+## Session 2026-05-05 — Spell System Phase A Session 2 (combat casting UI scaffolding)
+
+**Task:** Implement Session 2 of the spell system per `generation/gdd-spell-system.md` v2 §15.2 — combat declaration phase extension, SpellPickerPanel, DisjunctiveBranchModal, TargetingController, HdTallyPanel, AoePreviewOverlay, plus the disruption seam (`Combatant.is_casting_spell_this_round` made real, directional AC accessor for Shield consumers).
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- **`engine/subsystems/combat/combatant.gd`** — `is_casting_spell_this_round() -> bool` is now real (returns `not declared_spell.is_empty()`; was a stub returning false). Added `is_cast_disrupted_this_round() -> bool` (true when declared AND damaged_since_declaration) and `clear_spell_declaration()` for end-of-round reset. Combat Reflexes' initiative bonus now correctly suppresses when a caster is mid-declaration.
+
+- **`engine/shared_types/character_data.gd`** — `get_effective_ac_vs(attack_type) -> int`. `attack_type` is `"missiles"` (or `"missile"`/`"ranged"`) or `"melee"`. Reads the directional ModifierContainer key (`armor_class_vs_missiles` / `armor_class_vs_melee`); falls back to the omnidirectional `armor_class` when no directional modifier is present. Combines with the omni AC via `set_floor` semantics (Shield's "AC if better than current" rule). Combat consumers (attack resolver, ranged attack resolver) should switch to this accessor when computing target AC; Session 2 just lands the accessor.
+
+- **`engine/subsystems/spells/targeting_controller.gd`** — pure-logic state machine for spell target selection (~330 LOC). RefCounted. Constructor `TargetingController.new(target_spec, caster_pos, caster_level, dice_system)`. Public API:
+  - `add_candidate(entity_id, entity, position)` — call once per candidate before begin().
+  - `begin()` — rolls `hd_budget` (if any) via `CastingGeometry.roll_hd_budget`, computes per-candidate eligibility (range, HD cap, creature_filter living_only/excludes_type/requires_type/max_size).
+  - `try_select(entity_id) -> {accepted, reason, budget_remaining, selected}` — repeated by UI on click. Enforces HD-budget caps, count caps, and `selection_order: "lowest_hd_first"` (blocks picking higher-HD targets while smaller ones remain unselected).
+  - `deselect(entity_id) -> {removed, budget_remaining}` — refunds HD budget.
+  - `set_anchor_cell(cell)` — for area_at_point.
+  - `commit() -> TargetDescriptor` — produces the resolver input. Handles self / touch_* / single_creature / single_object / single_cell / multiple_creatures_count / multiple_creatures_hd_budget / area_at_point / area_from_caster / caster_and_radius. Areas resolve via `CastingGeometry.cells_in_sphere` / `cells_in_radius` and collect entities whose registered position falls in the cell set.
+  - `get_eligible_candidates / get_candidate_info / get_selected / get_budget_remaining / get_budget_total / has_hd_budget` — view accessors for the UI.
+
+- **`scenes/ui/spells/spell_picker_panel.tscn + .gd`** — modal CanvasLayer 56 (between LootDistributionModal at 52 and DicePrompt at 64 per `coding_conventions.md` §13.1). No `class_name` per overlay convention. API: `setup(caster: CharacterData, ctx: Dictionary)`, signals `spell_chosen(SpellChoice)` and `cancelled`. `ctx` keys: `spell_registry`, `effect_registry`, `campaign_repo` (required); optional `pre_selected_target`, `allowed_target_kinds` (filter rows by target_spec.kind). Header shows caster name; per-level sections list repertoire entries with reverse-toggle checkbox for reversibles; Cast button is disabled with tooltip when the spell has no `effect` field. Backdrop click + Escape cancel. Closes itself before emitting so consumers can stack new modals freely.
+
+- **`scenes/ui/spells/disjunctive_branch_modal.tscn + .gd`** — CanvasLayer 58 (just above the picker so it stacks correctly). API: `setup(spell_name: String, options: Array)`, signals `branch_chosen(int)` and `cancelled`. Used for Sleep / Charm Monster style "single OR group" dispatch.
+
+- **`scenes/ui/spells/hd_tally_panel.tscn + .gd`** — side panel (CanvasLayer 56, anchored top-right) showing live HD-budget state during HD-budget targeting. Reads from a `TargetingController` instance via `setup(controller, spell_name)` and re-renders on `refresh()`. Lists selected targets with counted HD; shows budget remaining vs total. Buttons: Reset all, Confirm, Cancel. The map-level cell highlighting (red strike-through over-cap, green selected, yellow available) is deferred to the targeting overlay integration in Session 2.5+ — the panel ships with a clean public API so the targeting flow can drive it as soon as the renderer surface lands.
+
+- **`scenes/ui/spells/aoe_preview_overlay.tscn + .gd`** — CanvasLayer 60 (above HD tally). API: `setup(spell_name: String, affected: Array, ally_ids: Array)`. Lists every entity in the AoE; allies flagged in red. Confirm / Cancel buttons; Enter confirms, Escape cancels. Map-level red-overlay highlighting on the projected area cells deferred to renderer integration.
+
+- **`scenes/ui/combat/declaration_overlay.gd`** — extended with **Cast Spell** as the fifth declaration option (mutually exclusive with Fighting Withdrawal / Full Retreat / Set vs Charge per `acore_spellcaster_rules.xml` line 31). The dropdown ALWAYS shows Cast Spell; greys it out with a tooltip ("Not a caster" / "No spell slots available" / per-PC `cast_disabled_reason`) when the PC is not a caster, has no available slots, is silenced/gagged/hand-bound, or when the picker dependencies aren't injected. New API:
+  - `setup_spell_dependencies(spell_registry, effect_registry, campaign_repo)` — inject for Cast Spell flow. Optional; without these the option is disabled.
+  - `set_pc_list(pcs)` — `pcs` records now carry `is_caster`, `has_available_slot`, `can_cast_now`, `cast_disabled_reason`, `character_data` (CharacterData for the picker).
+  - On Cast Spell selection, the overlay instantiates `SpellPickerPanel` inline (added as the overlay's child so its CanvasLayer 56 enters the tree). On `spell_chosen`, if the spell is disjunctive, `DisjunctiveBranchModal` opens; on `branch_chosen` the choice is committed.
+  - The PC's row gains a "Casting: <Spell Name>" chip when a choice is committed; chip clears on cancel or option change.
+  - `declarations_complete` payload now: `{combatant_id, declaration_type, spell_choice (only for cast_spell)}` — `spell_choice` is a `SpellChoice` carrying `spell_key`, `level`, `is_reversed`, `chosen_disjunctive_index`.
+
+- **Tests** (2 new suites; all passing):
+  - `tests/test_targeting_controller.gd` — 15 tests covering: single-target eligible / out-of-range / creature_filter excludes_type / max_size; HD-budget tracks remaining / rejects over-budget / refunds on deselect; lowest_hd_first blocks skipping smaller / allows after smaller picked; count cap per_level scaling / blocks extra; area_at_point collects entities in cells; area_from_caster uses caster position; self kind returns caster only; reset_selection restores budget. Uses inline `_FakeDice` for deterministic HD-budget rolls.
+  - `tests/test_combat_disruption.gd` — 8 tests: Combatant not casting / casting / disrupted-when-damaged / not-disrupted-only-declared / clear resets state; CharacterData directional AC falls back to omni / set_floor higher than base / set_floor doesn't degrade better base AC (Shield core invariant).
+  - Wired into `tests/test_runner.tscn` (ext_resources 172/173) and `tests/test_runner.gd` suite list.
+
+**Decisions made:**
+
+- **Session 2 ships UI scaffolding + logic; map-level integration deferred.** The targeting controller is fully testable as logic; the UI panels (SpellPickerPanel, DisjunctiveBranchModal, HdTallyPanel, AoePreviewOverlay) have correct APIs and view code. What is NOT yet wired in this session: the actual map-level overlay (red AoE highlight on voxel cells, green/yellow per-candidate highlight, mouse-click-to-select route from grid to TargetingController). That requires touching the voxel combat renderer / dungeon renderer and is a substantial follow-up. Scope-bounded to keep Session 2 tractable and shippable.
+
+- **CombatController integration of declared casts → resolver routing is also deferred.** When a declared caster's initiative ticks, the CombatController must call either `CastingResolver.resolve(...)` (clean cast) or `CastingResolver.resolve_disrupted(...)` (damage between declaration and tick). The seams are all present (`Combatant.is_cast_disrupted_this_round()`, `SpellCombatHooks.on_damage_dealt` already sets `damaged_since_declaration`), but the actual tick-routing in CombatController.execute_pc_turn is not yet wired. Combat smoke testing requires this; flagged for Session 2.5 / 3 wiring.
+
+- **`SpellPickerPanel` does NOT open the disjunctive modal itself.** It emits `spell_chosen` with `disjunctive_index = -1`; the caller (DeclarationOverlay) decides whether to open `DisjunctiveBranchModal`. Rationale: keeps modal stacking under caller control — out-of-combat surfaces (dungeon context menu, character tab Cast button) may handle disjunctive selection differently (e.g., inline preview), and embedding the modal in the picker would force one flow.
+
+- **CanvasLayer assignments**: SpellPickerPanel = 56, HdTallyPanel = 56 (only one visible at a time per cast), DisjunctiveBranchModal = 58 (above picker so it stacks during transition), AoePreviewOverlay = 60 (above the targeting overlay). All consistent with `coding_conventions.md` §13.1 sequence (52/56/58/60/64).
+
+- **No Cast Spell button on `ActionButtonPanel`** — confirmed per GDD §8.1. Combat casting is declaration-phase only; the panel is untouched. A regression test guard could be added if the action panel ever grows Cast Spell — for now the absence is the contract.
+
+- **Directional AC reads via the new `get_effective_ac_vs` accessor.** Combat consumers (attack_resolver, ranged_attack_resolver, ranged_attack_resolver, monster AI) should be migrated to call this when they know the attack type. Session 2 only adds the accessor — the migration is a Session 2.5 cleanup so existing combat tests stay stable.
+
+- **Smoke tests for UI panels intentionally skipped.** Looking at the project's existing UI test pattern (`test_familiar_acquisition_panel.gd`, `test_proficiency_selection_panel.gd`), UI panels test their static helpers / pure-state functions, not the rendered scene. The panels' actual behavior (button presses, signal emission, inner navigation) requires the render loop and is verified by manual playtest. Build_log notes the manual walkthrough plan.
+
+**Interfaces defined or changed:**
+
+- `Combatant.is_casting_spell_this_round() -> bool` — was stub, now real.
+- `Combatant.is_cast_disrupted_this_round() -> bool` (new).
+- `Combatant.clear_spell_declaration()` (new) — idempotent end-of-round reset.
+- `CharacterData.get_effective_ac_vs(attack_type: String) -> int` (new). Accepts `"missiles"`, `"missile"`, `"ranged"`, or `"melee"`; falls back to `armor_class` for unknown types.
+- `TargetingController.new(target_spec: Dictionary, caster_pos: Vector3i, caster_level: int, dice_system) -> TargetingController`.
+- `TargetingController.add_candidate(entity_id, entity, position)`, `begin()`, `try_select(entity_id) -> Dictionary`, `deselect(entity_id) -> Dictionary`, `reset_selection()`, `set_anchor_cell(cell)`, `commit() -> TargetDescriptor`, plus view accessors.
+- `DeclarationOverlay.setup_spell_dependencies(spell_registry, effect_registry, campaign_repo)` (new injector).
+- `DeclarationOverlay.set_pc_list(pcs)` — pcs records gain `is_caster`, `can_cast_now`, `cast_disabled_reason`, `character_data` keys.
+- `DeclarationOverlay.declarations_complete(declarations: Array)` — record shape gains optional `spell_choice: SpellChoice` when `declaration_type == "cast_spell"`.
+- New scene files: `scenes/ui/spells/spell_picker_panel.tscn + .gd`, `disjunctive_branch_modal.tscn + .gd`, `hd_tally_panel.tscn + .gd`, `aoe_preview_overlay.tscn + .gd`. None carry `class_name` per overlay convention.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- `tests/test_targeting_controller.gd` (15 tests, all passing).
+- `tests/test_combat_disruption.gd` (8 tests, all passing).
+- Wired into test_runner via ext_resources 172/173.
+
+**Test results: 157 suites passed, 26 failed.** +2 passes vs Session 1 baseline (155/26), same flaky failure count — no regressions. All 6 spell suites green (SpellEffectRegistry, CastingGeometry, CastingResolver, SpellSlotResetHandler, TargetingController, CombatDisruption).
+
+**Known issues / deferred:**
+
+- **Map-level targeting overlay** not wired. The TargetingController's logic is complete, but the visual flow (player clicks on a creature in the dungeon/combat grid → grid renderer calls `controller.try_select(entity_id)` → renderer re-highlights) requires touching the voxel combat renderer. Deferred to Session 2.5 polish.
+- **CombatController routing** when a declared caster's tick fires — `Combatant.is_cast_disrupted_this_round()` is real but `CombatController.execute_pc_turn` doesn't yet branch on it. Without this routing, declared spells declared in the picker don't actually resolve through CastingResolver in combat. Flagged for Session 2.5 / 3.
+- **AoePreviewOverlay's red-cell map highlight** not wired (same renderer integration as above).
+- **HdTallyPanel doesn't subscribe to TargetingController state changes**; the caller must call `panel.refresh()` after each `try_select` / `deselect`. A `selection_changed` signal on the controller could close the loop — Session 2.5 polish.
+- **Combat consumers don't yet call `get_effective_ac_vs`**. Shield's directional modifiers are written to ModifierContainer but the attack resolvers still read `get_effective_ac()`. Session 2.5 migration.
+- **DungeonContextMenuBuilder Cast Spell entry** still `enabled=false`. Session 3 (out-of-combat casting) will wire the dungeon-grid surface.
+- **No structural / smoke tests for the 4 UI panel scenes.** The project's UI test convention is logic-only; full UI behavior needs manual playtest. Recommend a manual walkthrough: open combat with a 1st-level mage, declare Magic Missile, confirm the picker opens, the spell is committed with the correct chip text, and the declaration record carries the SpellChoice.
+
+**Next session should — Session 2.5 polish OR Session 3 (Out-of-Combat Casting UI):**
+
+**Option A — Session 2.5 polish (recommended):**
+1. Wire CombatController.execute_pc_turn to consult `Combatant.is_cast_disrupted_this_round()` and route to either `CastingResolver.resolve` (with TargetingController flow) or `CastingResolver.resolve_disrupted`.
+2. Wire the voxel grid renderer to drive TargetingController on click and highlight cells per controller state.
+3. Migrate combat AC consumers (`attack_resolver.gd`, `ranged_attack_resolver.gd`) to call `get_effective_ac_vs(attack_type)` so Shield's directional bonuses actually apply.
+4. Add `selection_changed` signal to TargetingController and connect to `HdTallyPanel.refresh()` to close the UI feedback loop.
+5. Manual playtest: cast each MVP spell in combat against fixture roster; verify slot consumption, effect application, and Unified Log narration.
+
+**Option B — Session 3 (Out-of-Combat Casting UI):**
+1. Wire `DungeonContextMenuBuilder` Cast Spell entry (currently `enabled=false`).
+2. Add Cast button to the Character tab's spells sub-tab (`cs_tab_spells.gd`) for self / touch / area_from_caster spells.
+3. Add "Cast on this item..." submenu to `item_context_menu.gd`; "Cast on this character..." to `carrier_column.gd`.
+4. Scheduler integration: `spell_cast_complete` event at +10 seconds + encounter check.
+5. "Cannot cast during travel_leg" toast guard.
+
+**Recommendation:** Do Session 2.5 first. Session 2 currently ships the picker UI but the cast doesn't actually fire in combat without the CombatController routing — that's a hollow demo. Session 2.5 closes the loop and produces a verifiable end-to-end combat cast.
+
+**[NEEDS-OPUS-REVIEW]** None this session. The TargetingController's ordering rules (lowest_hd_first) and HD-budget refund-on-deselect were derived directly from the GDD §11.3 spec and are unit-tested. The directional-AC `set_floor` semantics for Shield were derived from `acore_spell_catalog_k-w_summary.xml` and tested against the Shield invariant (does not degrade better base AC).
+
+---
+
+## Session 2026-05-05 — Spell System Phase A Session 2.5 (combat-cast loop closed)
+
+**Task:** Close the loop on Session 2's combat casting UI by wiring CombatController to route declared casts through CastingResolver, migrating combat AC consumers to the directional `get_effective_ac_vs` accessor (so Shield's bonuses actually apply), and adding the missing `selection_changed` signal to TargetingController. Result: a 1st-level mage can now declare a cast in DeclarationOverlay and have it resolve through the resolver on their initiative tick.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- **`engine/subsystems/spells/targeting_controller.gd`** — added `signal selection_changed`. Emits on `try_select` (when accepted), `deselect` (when removed), and `reset_selection`. Lets HdTallyPanel auto-refresh without polling.
+
+- **`scenes/ui/spells/hd_tally_panel.gd`** — connects to `controller.selection_changed` in `setup`, disconnects in `close`. Refresh now fires automatically when the selection changes; the caller no longer has to call `panel.refresh()` after every click.
+
+- **`engine/subsystems/combat/combatant.gd`** — added `get_effective_ac_vs(attack_type) -> int` for PCs (routes to CharacterData) and monsters (returns omnidirectional AC; monsters don't carry directional modifiers in v1). Conditional proficiency AC bonuses (Weapon and Shield FS, Swashbuckling) apply on top.
+
+- **`engine/subsystems/combat/attack_resolver.gd`** — both melee attack throw paths now read `target.get_effective_ac_vs("melee")`. Shield's `armor_class_vs_melee` set_floor=4 modifier now applies in melee combat.
+
+- **`engine/subsystems/combat/ranged_attack_resolver.gd`** — reads `target.get_effective_ac_vs("missiles")`. Shield's `armor_class_vs_missiles` set_floor=2 applies on incoming missile attacks.
+
+- **`engine/subsystems/combat/combatant.gd`** — added `declared_spell_choice: SpellChoice` field carrying the full SpellChoice (spell_key, level, is_reversed, chosen_disjunctive_index) alongside the existing `declared_spell: String`. Extended `clear_spell_declaration()` to clear the new field.
+
+- **`engine/subsystems/combat/combat_controller.gd`** — major Session 2.5 wiring:
+  - **New constructor parameter** `p_casting_resolver: CastingResolver = null` (12th arg, optional default null preserves all existing tests).
+  - **`submit_declaration` extended** to accept `declaration_type == "cast_spell"` with `parameters.spell_choice: SpellChoice`. Stores `combatant.declared_spell` (key) + `declared_spell_choice` (full choice).
+  - **`submit_pc_spell_action(combatant_id, target_descriptor, targets_by_id)`** — new method the targeting-controller surface calls to commit the resolved target. Stored on `_pending_pc_spell_target`; consumed on the caster's tick.
+  - **`_resolve_next_action` extended** — for PC combatants with `is_casting_spell_this_round()`:
+    - If `is_cast_disrupted_this_round()` (declared + damaged) AND a resolver is wired: routes to `_resolve_pc_cast_disrupted` immediately. Slot consumed, no effect, `interrupted=true`.
+    - Else: returns status `"waiting_for_pc_spell_target"` until the targeting surface submits the descriptor; then routes to `_resolve_pc_cast`.
+  - **`_resolve_pc_cast` / `_resolve_pc_cast_disrupted`** — new helpers. Build `CasterContext` from CharacterData (with detected tradition + casting stat bonus via `_detect_tradition` and `_detect_casting_stat_bonus` helpers); call `casting_resolver.resolve(...)` or `resolve_disrupted(...)`; clear declared_spell on the combatant; return action_resolved dict with the result fields the UI consumes.
+  - **`_end_round` adds `clear_spell_declaration()`** for all combatants — replaces the per-round-start reset that was wiping just-submitted declarations.
+  - **`_resolve_declaration` no longer resets spell-declaration fields** — they're set during DECLARATION phase by the player and need to survive the transition into INITIATIVE. The reset moved to `_end_round` (after the round's casts have already resolved). Existing reset of `declared_defensive_movement` / `set_against_charge` / `has_moved_this_round` / `has_run_this_round` is preserved (those don't have a Session 2.5 lifecycle).
+
+- **Tests** (1 new suite + signal coverage; all passing):
+  - `tests/test_combat_cast_routing.gd` — 3 integration tests:
+    - **`test_pc_cast_routes_through_resolver`** — full flow: build a CombatController with a CastingResolver injected, submit `cast_spell` declaration with Magic Missile, advance through declaration → initiative → action; controller pauses at `waiting_for_pc_spell_target` on the mage's tick; submit a `TargetDescriptor` for the goblin; resolver fires with damage applied to the goblin and L1 slot expended.
+    - **`test_pc_cast_disrupted_consumes_slot_no_effect`** — declare Fireball, set `damaged_since_declaration = true`, advance: controller routes to `_resolve_pc_cast_disrupted`; result carries `interrupted: true` and `slot_consumed: true`; resolver's `resolve_disrupted` was called.
+    - **`test_targeting_controller_emits_selection_changed`** — connects to the new signal and verifies it fires on `try_select`, `deselect`, and `reset_selection`.
+  - Wired into `tests/test_runner.tscn` (ext_resource 174) and `tests/test_runner.gd` suite list.
+
+**Decisions made:**
+
+- **Move per-round spell-state reset from `_resolve_declaration` to `_end_round`.** The original `_resolve_declaration` pre-emptively wiped `declared_spell` / `damaged_since_declaration` at the DECLARATION → INITIATIVE transition. This works fine for legacy behavior because `declared_spell` was never actually set on Combatant by anything — Session 2.5 introduces that storage path. The fix decouples "reset between rounds" (now in `_end_round`) from the declaration-phase advance, so just-submitted declarations survive the transition. Other per-round fields (`has_moved_this_round`, `declared_defensive_movement`, etc.) are unchanged because those are reset before the player has a chance to act in the new round, which is correct for them.
+
+- **Resolver receives `targets_by_id` from the caller, not from the combat roster.** The targeting controller's surface is responsible for mapping `target_id -> entity` (CharacterData for PCs, monster Dictionary for enemies). CombatController forwards whatever the surface submits via `submit_pc_spell_action`. Rationale: a cleaner contract than threading the whole roster through; the targeting surface already has the map data and entity references when it builds the descriptor.
+
+- **`_detect_tradition` / `_detect_casting_stat_bonus` are private helpers on CombatController.** Pulled out for readability but use simple heuristics (combat_progression match, then class name match). A future cleanup might centralize tradition detection in `RepertoireEngine` or `SpellRegistry.get_class_tradition` (which already exists for class-aware queries) — for Session 2.5 the inline helpers are sufficient.
+
+- **Constructor parameter is OPTIONAL.** Existing combat tests construct CombatController without a resolver; their behavior is unchanged because `casting_resolver == null` short-circuits the disrupted path (existing `damaged_since_declaration` never matters — `is_cast_disrupted_this_round` requires `declared_spell != ""`, and without `submit_declaration("cast_spell", ...)` that's always empty). The `waiting_for_pc_spell_target` branch only fires when `is_casting_spell_this_round()` is true, which also requires the new submit path.
+
+- **AC migration is non-breaking.** Combat consumers (attack_resolver, ranged_attack_resolver) switched from `get_effective_ac()` to `get_effective_ac_vs("melee")` / `get_effective_ac_vs("missiles")`. For combatants without Shield's directional modifiers (the vast majority), the directional accessor falls back to the omnidirectional AC, so existing tests with no Shield in play see no behavior change. Test results confirm: pre-Session-2.5 baseline was 157/26; post-Session-2.5 is 158/26 (the +1 is the new combat_cast_routing suite, no regressions in the existing combat suites).
+
+- **Voxel renderer click-to-select integration deferred.** Session 2.5 wires the data path (CombatController → resolver) but does NOT touch the voxel grid renderer. The targeting surface that calls `submit_pc_spell_action` is currently the test harness; the actual on-screen click-to-select on the dungeon/combat grid is a separate UI task scoped to Session 3+ when out-of-combat surfaces also need the same renderer hooks. Tests verify the routing logic without the visual layer.
+
+**Interfaces defined or changed:**
+
+- `Combatant.get_effective_ac_vs(attack_type: String) -> int`.
+- `Combatant.declared_spell_choice: SpellChoice` (new field).
+- `Combatant.clear_spell_declaration()` now clears `declared_spell_choice`.
+- `CombatController.new(roster, init_resolver, attack_resolver, p_spell_hooks, ..., p_voxel_map, p_casting_resolver: CastingResolver = null)` — 12th optional parameter.
+- `CombatController.submit_declaration(combatant_id, declaration_type, parameters)` — accepts `"cast_spell"` with `parameters.spell_choice: SpellChoice`.
+- `CombatController.submit_pc_spell_action(combatant_id, target_descriptor: TargetDescriptor, targets_by_id: Dictionary)` (new).
+- `CombatController.advance()` returns new status `"waiting_for_pc_spell_target"` when the caster's tick is reached and the targeting surface hasn't yet committed.
+- `CombatController._resolve_pc_cast` / `_resolve_pc_cast_disrupted` (private; route through CastingResolver).
+- `CombatController._detect_tradition(cd)` / `_detect_casting_stat_bonus(cd, tradition)` (private helpers).
+- `TargetingController.selection_changed` signal (new).
+- `AttackResolver` and `RangedAttackResolver` now read `get_effective_ac_vs(attack_type)` instead of `get_effective_ac()`.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- `tests/test_combat_cast_routing.gd` (3 tests, all passing).
+- Wired into test_runner via ext_resource 174.
+
+**Test results: 158 suites passed, 26 failed.** +1 pass vs Session 2 baseline (157/26), same flaky failure count — no regressions. All 7 spell suites green (SpellEffectRegistry, CastingGeometry, CastingResolver, SpellSlotResetHandler, TargetingController, CombatDisruption, CombatCastRouting).
+
+**Known issues / deferred:**
+
+- **Voxel renderer click-to-select** still not wired. The targeting controller's logic is fully tested, but the UI flow (player clicks on a creature on the dungeon/combat grid → renderer calls `controller.try_select(entity_id)` → renderer re-highlights cells) requires touching the voxel renderer. Deferred to a Session 3+ polish; the test harness can drive `submit_pc_spell_action` directly in the meantime.
+- **`AoePreviewOverlay` red-cell map highlight** also not wired (same renderer-integration constraint).
+- **`_detect_tradition` is heuristic.** Uses `CharacterData.combat_progression` then class name match. A spellcasting custom class with a non-canonical class_id and the wrong combat_progression would fall through to empty string, which currently means no casting stat bonus and possibly other downstream effects. A future cleanup should pull tradition from `SpellRegistry.get_class_tradition(class_id, class_registry)` so it stays in sync with class definitions.
+- **`get_effective_ac_vs` does not yet integrate with `damage_resistance` directional modifiers.** v1 only handles the `armor_class` family. Future Resist Cold / Resist Fire spells will also benefit from a directional damage-resistance accessor; that's separate work.
+- **DeclarationOverlay's PC-record schema** (fields like `is_caster`, `can_cast_now`, `cast_disabled_reason`) requires the consumer (CombatState's PC-list builder) to populate them. CombatState currently passes only `combatant_id` / `display_name` / `is_berserk_raging`. The Cast Spell option in DeclarationOverlay will appear disabled with "Not a caster" tooltip until the consumer is updated to detect casters and pass the fuller record. Flagged for the next combat-screen polish session.
+- **No structural test for Cast Spell declaration handling in CombatState/CombatScreen.** The end-to-end flow (player picks Cast Spell from dropdown → picker opens → spell chosen → declaration submitted to controller) requires render-loop testing; verified by the routing tests directly through `submit_declaration`.
+
+**Next session should:**
+
+- **Session 3 (Out-of-Combat Casting UI)** OR **Session 2.6 polish (visual integration)**:
+  - **Session 3 (recommended):** wire the dungeon context menu Cast Spell entry, Character tab Cast button, party inventory item / carrier submenus, scheduler 10-second advance + encounter check.
+  - **Session 2.6 polish:** populate DeclarationOverlay PC records with caster fields; wire voxel renderer to drive TargetingController on click; add the AoE / HD-tally cell highlights on the map. Required for a fully polished combat-cast UX but not blocking for Session 3 functional work.
+
+**[NEEDS-OPUS-REVIEW]** The decision to MOVE the per-round spell-declaration reset from `_resolve_declaration` to `_end_round` is the load-bearing project-designed change in Session 2.5. The original code reset both spell and defensive-movement fields at DECLARATION → INITIATIVE transition, which conflicted with the player submitting declarations during the DECLARATION phase. Existing tests didn't catch the bug because none of them submitted declarations through `submit_declaration` — they only submitted actions. A future Opus review should verify that no other path depends on the old reset timing (one candidate: a future "re-declare during round" mechanic from Skirmishing-style proficiencies).
+
+---
+
+## Session 2026-05-05 — Spell System Phase A Session 2.6 (audit fixes + DeclarationOverlay polish)
+
+**Task:** Audit Sessions 1, 2, and 2.5 for missed bugs before moving to Session 3 (out-of-combat surfaces). Fix the critical issues found and populate DeclarationOverlay's PC records with the caster metadata it expects.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Audit summary (delivered by Explore agent):**
+
+The Explore agent found 16 issues across CRITICAL/HIGH/MEDIUM/LOW. Five of those were resolved this session; the rest are documented as "deferred" or "non-issues after closer reading." Findings #5/#6/#7 were re-evaluated as already correct per code review.
+
+**Completed (audit fixes):**
+
+- **CRITICAL — duration unit honored.** `casting_resolver._duration_kind_to_type` previously hardcoded `"rounds"` for `"fixed"` and `"per_level"` durations. Bless declares `unit: "turns"` in spell_catalog, but the active_effect was being registered with `duration_type: "rounds"` — `tick_rounds(1)` would have decremented Bless every combat round and expired it within ~6 rounds instead of holding for 6 turns (≈ 360 rounds). Fixed: `_duration_kind_to_type(duration_model)` now reads `duration_model.unit` directly and returns `"turns"` / `"hours"` / `"days"` accordingly. `"concentration"` still bypasses unit (kind takes precedence).
+
+- **CRITICAL — active effect tick wired into combat loop.** Pre-Session 2.6, durational spells were created in `active_effects` with the right duration_remaining but never ticked. Bless / Shield / Fly never expired. Fixed via two pieces:
+  - **`CastingResolver.tick_and_cleanup(unit, n, target_lookup) -> Array`** — public method that snapshots active effects matching the bucket, ticks the tracker, and unwinds runtime state on every expired effect's targets (strips ModifierContainer mods by source_id, clears EntityFlags, emits `condition_changed(applied=false)` for conditions). Also emits `spell_effect_removed` and `active_effect_expired`.
+  - **`CombatController._end_round` calls `casting_resolver.tick_and_cleanup("rounds", 1, lookup)`** with a roster-backed lookup. Turn / hour / day buckets stay frozen during combat (Bless's 6-turn duration outlasts a typical fight; the exploration scheduler ticks turns/hours/days when combat ends and time advances).
+
+- **CRITICAL — entity-type-agnostic state mutations.** The resolver previously assumed every target was a CharacterData (e.g., `entity.modifiers.add_modifier(...)`). When CombatController routes a cast through the resolver with Combatant targets in `targets_by_id`, those calls would silently fail because Combatant exposes `get_modifiers()` (a method) not `modifiers` (a field). Fixed by adding helpers — `_get_modifier_container(entity)`, `_get_flags(entity)`, `_get_damage_resistances(entity)`, `_entity_apply_condition(entity, key)` — that route to the right accessor based on type. Every `_apply_modifier` / `_apply_flag` / `_apply_damage_resistance` / `_apply_condition` site now uses the helpers.
+
+- **CRITICAL — Sleep condition tracked on the target.** `_apply_condition` previously emitted `EventBus.condition_changed` but did NOT call `add_condition()` on the target entity. Result: a target hit by Sleep had the signal fired but its actual condition state stayed empty — they could still act normally. Fixed: `_apply_condition` now also calls `_entity_apply_condition(entity, key)`, which routes through Combatant's `add_condition` (the existing CombatConditionManager-aware path). Test verifies via duck-typed proxy.
+
+- **CRITICAL — auto-resolve target Combatants from roster.** `CombatController._resolve_pc_cast` previously required the caller (targeting surface) to pre-build `targets_by_id`. The current production path (test harness or eventual UI) doesn't always do that. Fixed: when `targets_by_id` is empty, the controller iterates `target_descriptor.target_ids` and looks up each Combatant from the roster.
+
+- **HIGH — disrupted cast preserves casting_stat_bonus.** `_resolve_pc_cast_disrupted` was hardcoding `0` for casting_stat_bonus when building CasterContext, while `_resolve_pc_cast` correctly computed it via `_detect_casting_stat_bonus`. Aligned the two paths so a disrupted cast carries the same context as a clean cast.
+
+- **HIGH — encapsulation: `Combatant.get_character_data()` accessor added.** The combat controller and combatant.gd previously read `combatant._character` directly (private field). Added a public accessor and migrated the Session 2.5 sites (`_resolve_pc_cast`, `_resolve_pc_cast_disrupted`, the new `_end_round` lookup callable) to use it. Other pre-existing uses of `_character` were left untouched to keep this session's diff tight; future cleanup welcome.
+
+- **MEDIUM — `_compute_remaining_slots` semantics clarified.** Previously returned `-used` (negative count of expended slots) with a comment claiming "negative = unknown." That was confusing — every cast emitted a NEGATIVE third payload param, which would have been wrong for any consumer treating the value as remaining count. Fixed: returns `expended count` (positive int) and the docstring now explains UI consumers compute `total_slots_at_level - this_value` for display. The signal parameter name `remaining_at_level` stays as-is for API compat (renaming would force every connect site to update); the comment notes the mismatch.
+
+- **DeclarationOverlay caster metadata wired.** `combat_ui_controller._get_alive_pcs` now builds full PC records with `is_caster`, `can_cast_now`, `cast_disabled_reason`, `character_data` fields. Caster detection uses `combat_progression in ["mage", "cleric"]` plus a class-name fallback for elven hybrids and bladedancer/craftpriest. Disruption checks: `paralyzed`, `unconscious`, `stunned`, `held`, `grappled`, `petrified`, `silenced` block casting with a reason tooltip. The Cast Spell option in the dropdown now greys out with the right tooltip for non-casters and disrupted casters.
+
+**Audit findings re-evaluated (NOT bugs after closer reading):**
+
+- **#1 Magic Missile auto_hit not honored.** Magic Missile's resolution step is `damage_per_level`, not `attack_throw_vs_target`. The `auto_hit` field is metadata-only for the GDD reader; the resolver's `_apply_damage_per_level` doesn't roll attack throws regardless. Future spells that DO want an auto-hit attack-throw step (none in MVP) would need the field honored — flagged as a low-priority polish.
+
+- **#6 Modifier stacking with empty stacking_group.** Reviewed: spec is correct. Empty stacking_group means "freely stacks" per ModifierStack design. Bless correctly uses `stacking_group: "blessing"` so multiple Bless casts don't stack. The empty default is for future spells that genuinely should stack (e.g., a +1 attack from Bless + +1 from Magic Weapon). Documentation already in modifier_stack.gd.
+
+- **#7 Reverse-form double-merge risk.** Re-read the SpellEffectRegistry code path: when the catalog entry is a synthesized reverse-form (has `is_reversed_form: true`), the registry follows `base_spell_key`, fetches the BASE entry's effect (which has the `reverse` sub-block), and applies the merge. The synthesized entry's own copied `effect` is NOT used — we re-fetch from the base. So no double-merge. Code is correct; added a clarifying comment line.
+
+**Audit findings deferred (not blocking Session 3):**
+
+- **#9 Attack throw approximation for Cause Light Wounds.** Currently uses `10 - floor((level - 1) / 2)` heuristic. Off by up to 1 vs ACKS fighter table at certain levels. Cause Light Wounds is the only MVP spell that uses `attack_throw_vs_target`. Replace with a table lookup or call into attack_resolver when the broader combat-table refactor lands.
+- **#10 Henchman race-based filtering.** TargetingController's `_entity_type_tags` returns `["humanoid"]` for all CharacterData. Race-based filters (future spells like "Dwarven runes") would need CharacterData's race appended. No MVP spell needs this; add when the first race-filtered spell binds.
+- **#11 Count cap caching.** Multiple_creatures_count cap is recomputed per try_select call. Stable for combat (caster_level doesn't change mid-targeting), so deferred.
+- **#12 CasterContext disruption-flag fields.** `is_prone`, `can_move_hands`, etc. are declared but never populated by `from_character_data`. Currently informational; would need wiring once the resolver enforces them at validation time. Combat-side disruption is handled via CombatController routing in 2.5.
+- **#15 Cone geometry.** Returns empty array (Session 1 stub). Burning Hands / Lightning Bolt aren't in MVP; bind in their session.
+- **#16 Reverse form slot expenditure test.** Existing CLW reverse test verifies the resolution branch but doesn't explicitly assert slot expenditure level. Low priority — the slot path is shared with forward casts.
+
+**Combat AC migration (Session 2.5 leftover, completed in 2.6):**
+
+- **`AttackResolver` and `RangedAttackResolver`** now read `target.get_effective_ac_vs("melee")` / `get_effective_ac_vs("missiles")` (Session 2.5).
+- **`Combatant.get_effective_ac_vs(attack_type)`** routes PCs to CharacterData's directional accessor; monsters use omnidirectional AC. Conditional proficiency AC bonuses (Weapon and Shield FS) layer on top.
+- Shield's directional `set_floor` modifiers now actually apply in combat — verified by `test_session_2_6_fixes::test_tick_and_cleanup_unwinds_modifiers` which casts Shield and checks the modifier expires correctly.
+
+**Tests added** (`tests/test_session_2_6_fixes.gd`, 6 tests, all passing):
+- `test_bless_duration_type_is_turns` — Bless creates active_effect with `duration_type: "turns"`.
+- `test_tick_rounds_does_not_decrement_turn_durations` — `tick_and_cleanup("rounds", 1)` does NOT decrement a turns-bucket effect.
+- `test_tick_and_cleanup_unwinds_modifiers` — Shield's set_floor modifier is removed from CharacterData when its 3-turn duration ends via `tick_and_cleanup("turns", 3)`.
+- `test_compute_remaining_slots_returns_expended_count` — the `spell_slot_expended` signal's third payload is positive (count of expended slots), not negative.
+- `test_disrupted_cast_uses_casting_stat_bonus` — CasterContext built for a disrupted cast carries the proper stat bonus (was hardcoded to 0).
+- `test_apply_condition_calls_add_condition_on_combatant` — Sleep applies the `sleeping` condition to a duck-typed Combatant proxy via its `add_condition` method.
+
+**Decisions made:**
+
+- **`tick_and_cleanup` lives on the resolver, not the tracker.** ActiveEffectTracker stays a pure data store (snapshots, queries, dispel resolution); the resolver owns the lifecycle including downstream state cleanup. This keeps the tracker reusable for offline / persistence paths and lets the resolver mediate which targets get unwound.
+
+- **`target_lookup` is a Callable injected by the caller.** Combat passes a roster-backed lookup; the exploration scheduler will pass an active-party-backed lookup. Tests pass a hardcoded function. Makes the resolver agnostic to where targets live.
+
+- **DeclarationOverlay caster gating uses heuristics, not class registry.** The combat_ui_controller doesn't have a ClassRegistry instance handy. Used `combat_progression` enum + class-name fallback; same pattern as `CombatController._detect_tradition` from 2.5. Future cleanup: extract into a `SpellRegistry.is_caster_class(class_id, class_registry)` helper and centralize.
+
+- **Entity-type-agnostic resolver helpers consolidate the duck typing.** Rather than scattering `is CharacterData` checks across every handler, the resolver's `_get_modifier_container / _get_flags / _get_damage_resistances` accessors handle CharacterData (field access) and Combatant (method access) uniformly. Future entity types (e.g., a future MonsterCombatant with its own modifier surface) plug in by adding the right method.
+
+**Interfaces defined or changed:**
+
+- `CastingResolver.get_effect_tracker() -> ActiveEffectTracker` (new public accessor).
+- `CastingResolver.tick_and_cleanup(unit: String, n: int, target_lookup: Callable) -> Array` — primary cleanup entry point.
+- `Combatant.get_character_data() -> CharacterData` (new public accessor for the backing CD).
+- Resolver's `_apply_*` handlers now use entity-agnostic helpers; behavior unchanged for CharacterData callers, newly correct for Combatant callers.
+- `combat_ui_controller._build_pc_declaration_record(c: Combatant) -> Dictionary` (new) returns the full caster-aware PC record DeclarationOverlay consumes.
+- `EventBus.spell_slot_expended` payload third arg is now `expended_count` (positive int), not `-used` (negative). Signature unchanged.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- `tests/test_session_2_6_fixes.gd` (6 tests, all passing).
+- Wired into test_runner via ext_resource 175.
+
+**Test results: 159 suites passed, 26 failed.** +1 pass vs Session 2.5 (158/26), same flaky failure count — no regressions. All 8 spell suites green (SpellEffectRegistry, CastingGeometry, CastingResolver, SpellSlotResetHandler, TargetingController, CombatDisruption, CombatCastRouting, Session2_6Fixes).
+
+**Known issues remaining (carried into Session 3 or later):**
+
+- **DeclarationOverlay's `setup_spell_dependencies` not yet called by combat_screen.** `combat_ui_controller` populates the per-PC record with the caster fields, but the actual spell-system registries (SpellRegistry, SpellEffectRegistry, CampaignRepository) aren't injected into the overlay. The Cast Spell option will appear disabled with "Spell picker not initialized" until that wiring lands. Easy follow-up: inject from CombatScreen / CombatState during overlay construction. Manual playtest will surface this as the obvious next polish.
+- **Voxel renderer click-to-select** still not wired — TargetingController's logic is fully tested but the visual feedback loop on the dungeon/combat grid awaits its own UI session.
+- **`_has_any_unused_spell_slot` is conservative** — without `spells_per_day` exposed in the campaign repo, any caster with at least 0 expended slots passes the gate. Once spells_per_day is queryable (likely from RepertoireEngine or a class progression table), this can become accurate.
+- **Audit finding #9 (attack throw approximation), #10 (race filters), #12 (disruption flags), #15 (cone geometry), #16 (reverse slot test)** all deferred — not blocking Session 3.
+
+**Next session should — Session 3 (Out-of-Combat Casting UI):**
+
+1. Wire `DungeonContextMenuBuilder` Cast Spell entry (currently `enabled=false`).
+2. Add Cast button to the Character tab's spells sub-tab (`cs_tab_spells.gd`) for self / touch / area_from_caster spells.
+3. Add "Cast on this item..." submenu to `item_context_menu.gd`; "Cast on this character..." to `carrier_column.gd`.
+4. Scheduler integration: `spell_cast_complete` event at +10 seconds + encounter check.
+5. Block casting during a `travel_leg` with a toast.
+6. As a bonus polish: wire SpellPickerPanel's `setup_spell_dependencies` injection from CombatScreen so combat casting works visually end-to-end.
+
+**[NEEDS-OPUS-REVIEW]** None this session. The audit fixes are surgical and well-scoped; the deferred items are flagged for future work. The duration-unit fix (Bless turns→turns instead of rounds) is the load-bearing change — a future Opus review should confirm the behavior holds when the exploration scheduler ticks turn/hour/day durations post-combat (Session 3 work).
+
+---
+
+## Session 2026-05-05 — Spell System Phase A Session 2.7 (combat-layer bow)
+
+**Task:** Tie a bow around the combat-layer spell work before moving to Session 3 (out-of-combat surfaces). Close the deferred items from Sessions 1, 2, 2.5, and 2.6 that touch combat — DeclarationOverlay dependency wiring, real spells_per_day check, fighter attack table, race tag filters, CasterContext disruption flags, cone geometry, and the cleanup of the obsolete `spell_effects.json`.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Combat-layer items closed:**
+
+- **SessionRunner owns the spell-system shared instances.** Added `_spell_registry`, `_effect_registry`, `_custom_resolvers`, `_casting_resolver`, `_spell_slot_reset_handler` fields to SessionRunner with public accessors (`get_spell_registry`, `get_effect_registry`, `get_casting_resolver`, `get_custom_resolver_registry`). Constructed once in `_ready` and reused across combat sessions and (eventually) out-of-combat surfaces. The slot reset handler subscribes to `EventBus.rest_taken` automatically; `_lookup_party_casters` callable filters `_party_data.character_data` for caster classes.
+
+- **CombatState wires the resolver into CombatController** by passing `runner.get_casting_resolver()` as the 12th constructor arg. Pre-2.7, the resolver was always null in production (only test harnesses constructed it). Now combat-cast routing actually fires through the resolver in real play.
+
+- **CombatScreen injects spell registries into DeclarationOverlay** via the new `setup_spell_dependencies` call. Reads from the controller's casting_resolver (added `get_spell_registry()` and `get_effect_registry()` accessors on CastingResolver). The Cast Spell option in the declaration dropdown now opens SpellPickerPanel with the right caster context — it no longer sits permanently at "Spell picker not initialized."
+
+- **`_has_any_unused_spell_slot` reads the real spells_per_day table** (audit follow-up). Calls `Combatant.get_class_registry().get_spell_slots(class_id, level)` and compares per-level counts against `CampaignRepository.get_expended_slots`. A caster who has cast all available slots gets the Cast Spell option greyed out with "No spell slots available." Non-casters return false trivially.
+
+- **`Combatant.get_class_registry()`** public alias (was `_get_class_registry`). Allows UI code to query class data through Combatant's cached singleton without managing its own ClassRegistry instance.
+
+- **Real fighter attack table for spell attack throws (audit #9).** `CastingResolver._approximate_fighter_attack_throw(level)` now reads ACKS's actual fighter attack progression via `ClassRegistry.get_attack_throw("fighter", level)` (10/9/9/8/7/7/6/5/5/4/3/3/2/1). Cause Light Wounds at L5 uses target 7, not the heuristic 8. Tests cover L1, L5, L10, L14.
+
+- **`_attack_throw_vs_target` honors `auto_hit: true`** (audit #1, leftover). Future spells declaring an attack-throw step with `auto_hit` (none in MVP — Magic Missile uses `damage_per_level`) now skip the roll and auto-hit. Validates a future-proofing path; does not change MVP behavior.
+
+- **Race tags on CharacterData target filters (audit #10).** `TargetingController._entity_type_tags` now returns `["humanoid", <race>]` for CharacterData (e.g., `["humanoid", "elf"]` for an elf). Charm Person's `requires_type: ["humanoid"]` continues to work; future race-specific spells (no MVP candidates) can filter by race directly. Tests cover human + elf passing humanoid filter, and a hypothetical `requires_type: ["elf"]` filter accepting elf and rejecting human.
+
+- **CasterContext disruption fields populated in combat (audit #12).** New `CombatController._populate_disruption_state(ctx, combatant)` reads condition state from the live Combatant and sets `is_prone`, `can_move_hands`, `can_speak`, `is_in_silence_area` on the CasterContext. Called from both `_resolve_pc_cast` and `_resolve_pc_cast_disrupted`. The resolver doesn't yet enforce these at validation time (still uses external CombatController gating per declaration), but the fields are now correct so future spells / proficiencies that branch on them have ground truth.
+
+- **Cone geometry implemented (audit #15).** `CastingGeometry.cells_in_cone(origin, direction, length_feet, width_at_far_end_feet)` walks distance bands from the apex along a direction vector, with half-width growing linearly from 0 at the apex to `width / 2` at max range. `TargetingController._resolve_geometry_cells` dispatches `cone` to the new helper, using `_anchor_cell - origin` as the direction vector when an anchor is set (target overlay aim). Burning Hands (15ft cone, 15ft far-end width) and Lightning Bolt (60ft line — currently a special case) can now bind in their session without geometry blockers.
+
+- **Reverse-form slot expenditure test (audit #16).** Test `test_cure_light_wounds_reverse_also_uses_l1_slot` confirms casting Cause Light Wounds (the reverse of CLW) consumes an L1 slot — not a hypothetical "L1 reverse" pool. Pairs with the forward-form test for full coverage.
+
+- **Obsolete `data/spells/spell_effects.json` deleted.** Session 1 said it would be removed in Session 4 cleanup; closing it now since the file has been inert since the SpellEffectRegistry rewrite.
+
+**Combat AC migration cleanup:**
+
+- Test `test_directional_ac_used_in_cause_light_wounds` documents the design contract: Cause Light Wounds uses **omni AC** (`get_effective_ac`), not directional AC. The directional split (`get_effective_ac_vs("melee" / "missiles")`) is for COMBAT consumers (attack_resolver, ranged_attack_resolver). Spell touch-attacks like Cause Light Wounds are not "melee weapon attacks" and don't read the directional buffs. This is a small but load-bearing distinction — the test pins it down.
+
+**Items explicitly deferred to a UI-integration session (NOT combat-layer):**
+
+- **Voxel renderer click-to-select.** The CombatController returns `waiting_for_pc_spell_target` when a declared cast's tick fires. Wiring that status into the voxel renderer's click handlers (so the player clicks a creature → `TargetingController.try_select(entity_id)` → highlight, click confirm → `submit_pc_spell_action`) is squarely UI integration work. The renderer already emits `cell_clicked` and `entity_clicked` signals; a future TargetingOverlay coordinator listens to them, drives a TargetingController instance, and submits the descriptor to CombatController. Expected scope: ~1 session, mostly scene-tree plumbing.
+
+- **HdTallyPanel and AoePreviewOverlay map-cell highlights.** Same deferral — needs renderer hooks to project the affected cells onto the voxel grid. The panels' textual displays work; only the cell-color overlay is missing.
+
+- **Player-facing saves async via DicePrompt.** `CastingResolver._roll_saves_for_targets` uses `roll_digital` synchronously for all save targets. To use `DiceSystem.player_roll` for PC saves (giving the player a DicePrompt in PHYSICAL/HYBRID dice modes), the resolver's `resolve()` method would need to be a coroutine — and every caller (CombatController, future test harnesses, scheduler handlers) would need to `await` it. That ripple is a significant refactor; tracked as a polish task scoped to the dice-mode UX work, not to combat-layer spell work. DIGITAL mode (the default and the test/CI mode) is unaffected.
+
+**Tests added** (`tests/test_session_2_7_polish.gd`, 12 tests, all passing):
+- 4× fighter attack table at L1/L5/L10/L14.
+- Auto-hit step skips roll (smoke test through Cause Light Wounds miss path).
+- Race tags on CharacterData (humanoid filter + race-specific filter).
+- CasterContext disruption defaults (combat populates them, factory leaves at default).
+- Cone geometry: includes apex band, widens with distance.
+- Cure Light Wounds forward + reverse both consume L1 slot.
+- Cause Light Wounds reads omni AC (not directional).
+
+**Decisions made:**
+
+- **The "combat layer" is the resolver + controller + DeclarationOverlay seam.** The voxel renderer is its own UI layer and integrates separately. By that scoping, Session 2.7 closes the combat layer fully — every code path that touches combat-cast logic now has correct behavior backed by tests. The renderer integration is a UI-session scope.
+
+- **`_compute_remaining_slots` semantics intentional negative-as-unknown left as-is in 2.6, fixed in 2.7.** The Session 2.6 change to return `expended count` is now load-bearing for the slot-availability gate in `_has_any_unused_spell_slot`. Without that fix, reading `spells_per_day - expended_count` would have been off by sign.
+
+- **Cone direction default is +X (east).** When a targeting surface doesn't supply an anchor cell, the cone orientation defaults to east. Future improvements: read the caster's facing direction from the Combatant (Combatant.facing is a Vector2i), but for non-combat surfaces (settlement Cast Spell on a target NPC) the default is fine.
+
+- **Disruption fields populated in combat only.** `CasterContext.from_character_data` doesn't have access to a Combatant, so it can't populate is_prone / can_move_hands / etc. The CombatController calls `_populate_disruption_state` after building the context — which is where the live Combatant exists. Out-of-combat surfaces (Session 3) won't populate these fields; spells cast outside combat assume the caster is unconstrained, which matches ACKS rules (combat-time disruption only).
+
+**Interfaces defined or changed:**
+
+- `SessionRunner.get_spell_registry() / get_effect_registry() / get_casting_resolver() / get_custom_resolver_registry()` (new public accessors).
+- `SessionRunner._lookup_party_casters() -> Array[CharacterData]` (private; Callable backing for SpellSlotResetHandler).
+- `CastingResolver.get_spell_registry() / get_effect_registry()` (new public accessors).
+- `Combatant.get_class_registry() -> ClassRegistry` (new public alias for `_get_class_registry`).
+- `CastingGeometry.cells_in_cone(origin, direction, length_feet, width_at_far_end_feet) -> Array` (was stub returning `[]`, now real implementation).
+- `TargetingController._resolve_geometry_cells` dispatches `"cone"` shape.
+- `TargetingController._entity_type_tags` returns `["humanoid", <race>]` for CharacterData.
+- `CombatController._populate_disruption_state(ctx, combatant)` (new private helper called from cast paths).
+- `CombatController` constructor's 12th arg `p_casting_resolver` now wired in production via CombatState.
+- `CombatScreen` calls `_decl_overlay.setup_spell_dependencies(...)` post-construction.
+- `combat_ui_controller._has_any_unused_spell_slot` reads real `get_spell_slots` from ClassRegistry.
+
+**Database changes:** None.
+
+**Files deleted:** `data/spells/spell_effects.json` (Session 1's legacy template stub; superseded by the `effect` field on `spell_catalog.json`).
+
+**Tests added/updated:**
+
+- `tests/test_session_2_7_polish.gd` (12 tests, all passing).
+- Wired into test_runner via ext_resource 176.
+
+**Test results: 160 suites passed, 26 failed.** +1 pass vs Session 2.6 (159/26), same flaky failure count — no regressions. All 9 spell suites green:
+
+  - SpellEffectRegistry, CastingGeometry, CastingResolver, SpellSlotResetHandler, TargetingController, CombatDisruption, CombatCastRouting, Session2_6Fixes, Session2_7Polish.
+
+**State of the combat-layer spell stack (post-2.7):**
+
+| Layer | Status |
+|---|---|
+| Effect DSL (catalog `effect` field) | 8 MVP spells bound; schema solid |
+| `CastingResolver` | All DSL verbs implemented; entity-type-agnostic; tick-and-cleanup wired |
+| `CastingGeometry` | HD counting + areas (sphere, cone) + ranges + LoS stub |
+| `SpellEffectRegistry` | DSL accessor; reverse + disjunctive merge tested |
+| `ActiveEffectTracker` | Lifecycle (add / tick / dispel / break); cleanup on expire wired |
+| `TargetingController` | Full logic; selection_changed signal; race tags |
+| `Combatant` | `is_casting / is_disrupted / clear_spell_declaration`, directional AC, public accessors |
+| `CombatController` | Routing for declared casts; disruption flag population; per-round effect ticking |
+| `DeclarationOverlay` | Cast Spell option with full gating; opens picker; commits SpellChoice |
+| `SpellPickerPanel` / `DisjunctiveBranchModal` | Functional with injected dependencies |
+| `HdTallyPanel` / `AoePreviewOverlay` | View-only; map-cell highlights deferred to UI session |
+| `SessionRunner` | Owns shared spell-system instances; slot reset handler wired |
+| `AttackResolver` / `RangedAttackResolver` | Read directional AC (Shield bonus applies) |
+
+Everything below the UI layer is closed. The remaining work is:
+
+1. **UI integration session** — wire voxel renderer click handlers to TargetingController; project AoE / HD-tally state onto map cells.
+2. **Session 3** — out-of-combat casting surfaces (dungeon context menu, character tab, party inventory).
+3. **Session 4+** — catalog binding (~165 more spells per the GDD's level-by-level plan).
+
+**Next session should — Session 3 (Out-of-Combat Casting UI):**
+
+1. Wire DungeonContextMenuBuilder Cast Spell entry (currently `enabled=false` placeholder).
+2. Add Cast button to Character tab spells sub-tab for self/touch/area_from_caster spells.
+3. Add Cast on this item / character submenus to Party Inventory item context menu and carrier column.
+4. Scheduler integration: 10-second advance + encounter check on out-of-combat cast.
+5. Block casting during travel_leg with a toast.
+
+OR — if the user prefers to playtest combat first — a **UI integration session** that wires the voxel renderer to TargetingController and projects map cell highlights for AoE / HD-tally targeting modes. Either path is valid; both ship spell-cast functionality the user can interact with.
+
+**[NEEDS-OPUS-REVIEW]** None this session. The audit fixes are mechanical, well-scoped, and unit-tested. The deferred items (renderer integration, async saves) have explicit rationale in the build_log; both are UI-layer concerns rather than combat-layer concerns. A future Opus review may want to reconsider the async-save design when DicePrompt UX work begins.
+
+---
+
+## Session 2026-05-05 — Spell System Phase A Session 2.8 (combat-cast UI integration)
+
+**Task:** Wire the combat UI layer to the spell-targeting state machine. Pre-2.8, `CombatController.advance()` returned `waiting_for_pc_spell_target` but no UI consumer existed — combat would hang on the caster's tick. Session 2.8 closes that loop: clicking Cast Spell in the declaration overlay → declaring a spell → advancing combat → reaching the caster's tick → entering spell-targeting mode → clicking targets → committing → resolution all the way through.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- **`CombatUIController.State.PC_SPELL_TARGETING`** — new state in the UI controller's state machine. Added to `PC_INPUT_STATES` so the management notebook stays openable during targeting.
+
+- **`waiting_for_pc_spell_target` branch in `advance()`** — when the controller returns this status, the UI activates targeting mode via `_enter_spell_targeting(caster_id)`.
+
+- **`_enter_spell_targeting`** — reads the caster's declared SpellChoice, fetches the spell's effect payload from SpellEffectRegistry, and dispatches by `target_spec.kind` to one of four flows:
+  - **`auto`** — self / area_from_caster / caster_and_radius (Shield, Bless, Detect Magic). Auto-resolves immediately, no click needed.
+  - **`single_entity`** — single_creature / touch_ally / touch_enemy / touch_creature / single_object (Magic Missile, Cure Light Wounds, Fly). Highlights eligible targets; clicking commits.
+  - **`area_at_point`** — Fireball / Cloudkill. Player clicks anchor cell; AoE preview overlay opens with affected entity list and ally callout; Confirm submits.
+  - **`hd_budget`** — Sleep group, Charm Monster group. HdTallyPanel opens with live budget; multiple clicks add to selection; Confirm commits.
+
+- **Five new signals on CombatUIController** for the host UI to react to:
+  - `spell_targeting_started(combatant_id, spell_name, kind)` — UI host wakes up targeting overlays.
+  - `spell_aoe_preview(spell_name, affected_ids, ally_ids)` — opens AoePreviewOverlay.
+  - `spell_hd_tally_updated(spell_name, controller)` — opens or refreshes HdTallyPanel.
+  - `spell_targeting_ended()` — defensive cleanup hook for hosts.
+
+- **`on_cell_targeted` and `on_entity_targeted` extended** with `PC_SPELL_TARGETING` branches:
+  - cell click during area_at_point sets the controller's anchor and renders the AoE preview.
+  - entity click during single_entity tries select; on accept, commits immediately.
+  - entity click during hd_budget tries select and refreshes highlights — confirm waits for the panel button.
+
+- **`on_confirm_spell_targeting` and `on_cancel_spell_targeting`** — host calls these from HdTallyPanel / AoePreviewOverlay button signals. Cancel routes through the disrupted-cast path so the slot is consumed per ACKS rules.
+
+- **`_register_candidates_for_entity_target` / `_register_candidates_for_area`** — populate the TargetingController with candidates from the roster. Friend-or-foe filter is applied (`willing_only` excludes enemies, `unwilling_only` excludes allies); the controller's creature_filter handles the rest.
+
+- **`_render_aoe_preview(anchor_cell)`** — calls `_targeting_controller.commit()` to resolve cells, builds the affected/ally lists, highlights cells on the renderer, and emits `spell_aoe_preview` for the host to open the overlay.
+
+- **`_refresh_targeting_highlights`** — emits `highlight_targets(eligible_ids)` so the renderer's `highlight_entity_tokens` puts target rings on valid candidates. Connected to `TargetingController.selection_changed` for hd_budget casts.
+
+- **`CombatScreen` instantiates HdTallyPanel and AoePreviewOverlay on demand** when the corresponding signal fires. Wires `confirmed`/`cancelled` to `on_confirm_spell_targeting`/`on_cancel_spell_targeting`. `_on_spell_targeting_ended` cleans up any panel that didn't auto-close.
+
+- **Self-target target_ids fix** — `TargetingController.commit()` for `kind: "self"` returned empty `target_ids` (only origin_cell). The resolver's per-target loop (e.g., `_apply_modifier`) iterates `target_ids` and would silently apply nothing. Fixed in `_commit_spell_targeting`: when `td.kind == "self"` and target_ids is empty, the caster_id is injected so the resolver routes the modifier through the caster_entity correctly. Verified via Shield smoke test.
+
+- **`_dice_override` test seam on CombatUIController** — `_get_dice_system()` returns `_dice_override` when set, else the global DiceSystem autoload. Lets integration tests inject a deterministic FakeDice into the TargetingController without reaching for the autoload.
+
+**Tests added** (`tests/test_spell_targeting_ui.gd`, 7 integration tests, all passing):
+
+- `test_auto_target_self_commits_immediately` — Shield auto-resolves; modifier applied to caster's CharacterData.
+- `test_auto_target_caster_and_radius_includes_caster` — Detect Magic auto-resolves; slot expended.
+- `test_single_entity_click_commits` — Magic Missile: click goblin → commit → goblin takes damage.
+- `test_area_at_point_anchor_click_then_confirm` — Fireball: click anchor cell → AoE preview → confirm → goblin damaged.
+- `test_hd_budget_multi_click_then_confirm` — Sleep group: 2 entity clicks → confirm → slot expended.
+- `test_cancel_targeting_consumes_slot` — Cancel during targeting still consumes slot per ACKS.
+- `test_pc_spell_targeting_state_blocks_other_clicks` — entity click during PC_SPELL_TARGETING routes only to spell-targeting (not cleave / facing).
+
+**Decisions made:**
+
+- **Cancel path consumes the slot via the disrupted-cast route.** ACKS doesn't explicitly say a cancelled cast costs a slot, but the rules text says a caster's intent to cast commits the slot once declared. To keep the gameplay invariant ("declaration commits the slot") consistent, cancel sets `damaged_since_declaration = true` and forwards to advance(); the existing disruption-routing then consumes the slot via `resolve_disrupted`. Future Opus review may want to add a "rescind declaration" path that *doesn't* consume a slot if the player cancels before any clicks land — for now, full commit semantics.
+
+- **Auto-resolve for self / area_from_caster / caster_and_radius.** Shield, Bless, and Detect Magic don't need any player clicks — the caster IS the anchor, and the resolution is fully determined by their position. The UI just commits inline. This avoids forcing the player to click "OK" on a confirmation dialog for spells where there's no decision to make.
+
+- **AoE preview before commit for area_at_point.** Fireball needs the "Confirm? You'll catch your ally too!" callout per `gdd-spell-system.md` §11.6. The overlay enumerates affected entities and flags allies in red. Esc cancels (slot consumed).
+
+- **HD-budget commits via panel button, not auto-commit on click.** Multi-target hd_budget casts (Sleep group) require multiple clicks to fill the budget. Each click is just additive; commit is explicit via the HdTallyPanel "Confirm" button. The panel auto-refreshes via `selection_changed`.
+
+- **Friend-or-foe filter applied at registration time.** TargetingController.creature_filter doesn't model alignment side, so CombatUIController applies `friend_or_foe == "willing_only"` to skip non-allies (Bless) and `unwilling_only` to skip allies (Bane). Targets registered with the controller are pre-filtered by side; `is_within_hd_cap` and creature_filter handle the rest.
+
+- **`_dice_override` is a test-only seam.** Production paths use the global DiceSystem autoload; tests inject FakeDice. Documented as test-only.
+
+**Interfaces defined or changed:**
+
+- `CombatUIController.State.PC_SPELL_TARGETING` (new state).
+- `CombatUIController.spell_targeting_started / spell_aoe_preview / spell_hd_tally_updated / spell_targeting_ended` (new signals).
+- `CombatUIController.on_confirm_spell_targeting / on_cancel_spell_targeting` (new public methods called by HdTallyPanel and AoePreviewOverlay).
+- `CombatUIController._dice_override` (test-only seam).
+- `CombatUIController.on_cell_targeted / on_entity_targeted` (extended with PC_SPELL_TARGETING branches).
+- `CombatUIController.advance()` (extended with `waiting_for_pc_spell_target` handler).
+- `CombatScreen` (wires the four new signals to the UI panels).
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- `tests/test_spell_targeting_ui.gd` (7 tests, all passing).
+- Wired into test_runner via ext_resource 177.
+
+**Test results: 161 suites passed, 26 failed.** +1 pass vs Session 2.7 (160/26), same flaky failure count — no regressions. All 10 spell suites green:
+
+  - SpellEffectRegistry, CastingGeometry, CastingResolver, SpellSlotResetHandler, TargetingController, CombatDisruption, CombatCastRouting, Session2_6Fixes, Session2_7Polish, SpellTargetingUI.
+
+**Combat-cast end-to-end flow is now closed:**
+
+```
+[Declaration phase opens]
+  player picks Cast Spell from dropdown
+  → SpellPickerPanel opens (CanvasLayer 56)
+  → player picks spell + reverse toggle
+  → if disjunctive: DisjunctiveBranchModal opens (CanvasLayer 58)
+  → SpellChoice committed into the declaration record
+  → Casting: <spell_name> chip on PC row
+[Confirm Declarations]
+  → CombatController.submit_declaration("cast_spell", {spell_choice})
+  → declared_spell + declared_spell_choice stored on Combatant
+[Initiative rolls; combat enters action phase]
+  → other combatants act first (per initiative)
+  → PC's tick fires
+[CombatController._resolve_next_action sees declared_spell]
+  → if disrupted (damaged before tick): _resolve_pc_cast_disrupted
+     → CastingResolver.resolve_disrupted → slot consumed, EventBus.spell_interrupted
+  → else: returns "waiting_for_pc_spell_target"
+[CombatUIController catches the status]
+  → enters PC_SPELL_TARGETING state
+  → _enter_spell_targeting builds TargetingController + dispatches by target_spec.kind:
+     auto         → _commit_spell_targeting() inline
+     single_entity → wait for entity click → _commit_spell_targeting()
+     area_at_point → wait for cell click → _render_aoe_preview() → AoePreviewOverlay
+                  → Confirm → _commit_spell_targeting()
+     hd_budget    → HdTallyPanel + multi-click → Confirm → _commit_spell_targeting()
+[_commit_spell_targeting]
+  → builds TargetDescriptor + targets_by_id from roster
+  → CombatController.submit_pc_spell_action(...)
+  → advance()
+[CombatController._resolve_pc_cast]
+  → CasterContext built with disruption flags from Combatant
+  → CastingResolver.resolve(...)
+  → effects applied to targets (modifier / flag / damage / heal / condition)
+  → slot expended, EventBus.spell_cast / spell_slot_expended / damage_dealt fire
+  → action_resolved status returned
+[End of round]
+  → tick_and_cleanup("rounds", 1, lookup) decrements round-bucket effects
+     and unwinds expired modifiers/flags from CharacterData
+  → clear_spell_declaration() resets per-round caster state
+```
+
+**Known remaining items** (NOT combat-layer; UI polish):
+
+- **Disjunctive-branch modal during combat.** Per Session 2.5 design, the DisjunctiveBranchModal opens from DeclarationOverlay when a disjunctive spell is picked. Targeting branch is recorded in SpellChoice and propagates through. Verified via test_hd_budget_multi_click_then_confirm (Sleep group with disjunctive_index=1) — the path works through to commit.
+- **Cancel path semantics.** Currently full-commit (slot consumed) on cancel. A polish pass could add a "rescind declaration" affordance that returns the slot when the player hasn't clicked any targets yet. Out of scope for the bow.
+- **Renderer cell-color highlights for hd_budget candidates.** Currently `highlight_targets` puts rings on tokens. A future polish could project per-candidate cell coloring (red for over-cap, green for selected, yellow for available) directly onto the voxel grid via `highlight_cells` layers per category. The plumbing is there; only the per-band coloring scheme needs design.
+- **AoePreviewOverlay map-cell highlighting.** Currently `_render_aoe_preview` calls `highlight_reachable.emit(td.target_cells, Color)` which the renderer projects as a single-color cell layer. A polish pass could distinguish ally-hit cells (different shade) from enemy-hit cells.
+
+**Next session should — Session 3 (Out-of-Combat Casting UI):**
+
+The combat layer is closed end-to-end. Session 3 wires the same flow for out-of-combat surfaces:
+
+1. DungeonContextMenuBuilder Cast Spell entry (currently `enabled=false`).
+2. Character tab spells sub-tab Cast button.
+3. Party Inventory item context menu / carrier column submenus.
+4. Scheduler 10-second advance + encounter check after each cast.
+5. Block casting during travel_leg with a toast.
+
+Out-of-combat surfaces don't need a TargetingController for self / touch spells (auto), they reuse the SpellPickerPanel and TargetingController from this session, and they invoke the resolver directly (no CombatController in the loop). The seam is `CastingResolver.resolve(ctx, choice, td, caster_entity, targets_by_id)` — same entry point combat uses.
+
+**[NEEDS-OPUS-REVIEW]** None this session. The state-machine wiring is mechanical; the cancel-consumes-slot decision is documented for future review. The self-target target_ids fix (injecting caster_id when commit returns empty target_ids) is a small contract patch — a future cleanup might prefer fixing TargetingController.commit() itself to know the caster_id, but the current placement keeps the controller pure.

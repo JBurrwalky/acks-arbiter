@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://hd_tally_panel"]
+
+[ext_resource type="Script" path="res://scenes/ui/spells/hd_tally_panel.gd" id="1_hd_tally"]
+
+[node name="HdTallyPanel" type="CanvasLayer"]
+layer = 56
+script = ExtResource("1_hd_tally")

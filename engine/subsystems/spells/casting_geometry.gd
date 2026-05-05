@@ -196,11 +196,52 @@ static func cells_in_radius(origin: Vector3i, radius_feet: int) -> Array:
 
 
 static func cells_in_cone(
-		_origin: Vector3i,
-		_direction: Vector3i,
-		_length_feet: int,
-		_width_at_far_end_feet: int) -> Array:
-	## Cone projection. Session 1 stub returning empty — Burning Hands and
-	## Lightning Bolt aren't in the MVP; Session 2 fleshes this out for
-	## Session 4 / Session 8 binding.
-	return []
+		origin: Vector3i,
+		direction: Vector3i,
+		length_feet: int,
+		width_at_far_end_feet: int) -> Array:
+	## Cone projection on the voxel grid. Used by Burning Hands (15 ft cone)
+	## and any future cone spell. The cone's apex is at `origin`, opens along
+	## `direction` (a unit Vector3i; sign of x/y determines compass), with a
+	## linear width that grows from 0 at the apex to `width_at_far_end_feet`
+	## at the maximum distance.
+	##
+	## Algorithm: walk distance bands 1..length_cells from the apex along the
+	## primary direction axis; at each band, compute the half-width in cells
+	## proportional to the distance ratio, and include all cells within that
+	## perpendicular distance of the cone's centerline. Z (level) is included
+	## with the same width — flying creatures within the cone are caught.
+	var out: Array = []
+	if length_feet <= 0:
+		return out
+	var length_cells: int = int(floor(float(length_feet) / float(_CELL_FEET)))
+	var max_half_width_cells: int = int(floor(float(width_at_far_end_feet) / 2.0 / float(_CELL_FEET)))
+	if length_cells <= 0:
+		return out
+	# Normalize direction to step axis (only one of x/y nonzero is supported).
+	var dx: int = signi(direction.x)
+	var dy: int = signi(direction.y)
+	var dz: int = signi(direction.z)
+	if dx == 0 and dy == 0 and dz == 0:
+		return out
+	for band in range(1, length_cells + 1):
+		# Half-width grows linearly with distance.
+		var half_width: int = int(round(
+			float(max_half_width_cells) * float(band) / float(length_cells)))
+		# Center of the band along the primary axis.
+		var center := Vector3i(
+			origin.x + dx * band,
+			origin.y + dy * band,
+			origin.z + dz * band)
+		# Sweep the perpendicular cells. For axis-aligned cones we sweep on the
+		# two perpendicular axes; for diagonal directions we sweep both x and y
+		# offsets together (slight over-estimate of the cone, acceptable on the
+		# voxel grid).
+		for ox in range(-half_width, half_width + 1):
+			for oy in range(-half_width, half_width + 1):
+				for oz in range(-half_width, half_width + 1):
+					# Skip the centerline of the swept axis to avoid double-counting.
+					var c := Vector3i(center.x + ox, center.y + oy, center.z + oz)
+					if not (c in out):
+						out.append(c)
+	return out

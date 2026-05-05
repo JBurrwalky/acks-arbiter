@@ -189,6 +189,12 @@ extends Node
 @onready var _casting_geometry_tests = $CastingGeometryTests
 @onready var _casting_resolver_tests = $CastingResolverTests
 @onready var _spell_slot_reset_tests = $SpellSlotResetTests
+@onready var _targeting_controller_tests = $TargetingControllerTests
+@onready var _combat_disruption_tests = $CombatDisruptionTests
+@onready var _combat_cast_routing_tests = $CombatCastRoutingTests
+@onready var _session_2_6_fixes_tests = $Session26FixesTests
+@onready var _session_2_7_polish_tests = $Session27PolishTests
+@onready var _spell_targeting_ui_tests = $SpellTargetingUITests
 
 
 func _ready() -> void:
@@ -358,7 +364,13 @@ func run() -> void:
 			_specialist_integration_tests,
 			_casting_geometry_tests,
 			_casting_resolver_tests,
-			_spell_slot_reset_tests]:
+			_spell_slot_reset_tests,
+			_targeting_controller_tests,
+			_combat_disruption_tests,
+			_combat_cast_routing_tests,
+			_session_2_6_fixes_tests,
+			_session_2_7_polish_tests,
+			_spell_targeting_ui_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

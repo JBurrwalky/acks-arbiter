@@ -57,6 +57,11 @@ var conditions: Array[String] = []
 ## Has this combatant declared a spell this round?
 var declared_spell: String = ""
 
+## The full SpellChoice carried alongside `declared_spell` (spell_key, level,
+## is_reversed, chosen_disjunctive_index). Set by CombatController.submit_declaration
+## when declaration_type == "cast_spell"; consumed on the caster's initiative tick.
+var declared_spell_choice: SpellChoice = null
+
 ## Has this combatant been damaged since spell declaration?
 var damaged_since_declaration: bool = false
 
@@ -457,6 +462,21 @@ func get_effective_ac() -> int:
 	return _monster_modifiers.get_effective_value("armor_class", base_ac)
 
 
+func get_effective_ac_vs(attack_type: String) -> int:
+	## Directional AC for attack_type ∈ {"missiles", "missile", "ranged", "melee"}.
+	## PCs/henchmen route through CharacterData.get_effective_ac_vs which honors
+	## directional ModifierContainer keys (Shield's `armor_class_vs_missiles` /
+	## `armor_class_vs_melee` set_floor modifiers) and falls back to the
+	## omnidirectional value when no directional modifier is set.
+	## Monsters (no Shield-style directional modifiers in v1) just return the
+	## omnidirectional value.
+	if is_character:
+		var base := _character.get_effective_ac_vs(attack_type)
+		base += ProficiencyCombatHooks.aggregate_modifier(self, "armor_class", {"phase": "ac"})
+		return base
+	return get_effective_ac()
+
+
 func get_effective_attack_throw() -> int:
 	if is_character:
 		return _character.get_effective_attack_throw()
@@ -706,6 +726,13 @@ func is_pc_side() -> bool:
 	return side == Side.PARTY
 
 
+func get_character_data() -> CharacterData:
+	## Public accessor for the backing CharacterData (PCs/henchmen). Returns
+	## null for monster-backed combatants. Used by the spell system to apply
+	## runtime mutations (modifiers, flags, damage_resistances).
+	return _character
+
+
 func is_enemy_side() -> bool:
 	return side == Side.ENEMY
 
@@ -851,9 +878,24 @@ func get_creature_family() -> String:
 func is_casting_spell_this_round() -> bool:
 	## True when the combatant has declared a spell-cast for the current
 	## round. Used by Combat Reflexes (initiative bonus does not apply when
-	## casting). Per-round casting declarations are not yet wired; until
-	## then this returns false and Combat Reflexes always grants its bonus.
-	return false
+	## casting), by the disruption check on the caster's initiative tick, and
+	## by SpellCombatHooks.on_damage_dealt when deciding whether incoming
+	## damage should disrupt a pending cast.
+	return not declared_spell.is_empty()
+
+
+func is_cast_disrupted_this_round() -> bool:
+	## True when this combatant declared a spell AND took damage / failed a
+	## save before their initiative tick. The CombatController routes the
+	## caster's tick to CastingResolver.resolve_disrupted in this case.
+	return is_casting_spell_this_round() and damaged_since_declaration
+
+
+func clear_spell_declaration() -> void:
+	## Called at end-of-round to reset per-round casting state. Idempotent.
+	declared_spell = ""
+	declared_spell_choice = null
+	damaged_since_declaration = false
 
 
 func is_berserk_raging() -> bool:
@@ -866,6 +908,13 @@ static func _get_class_registry() -> ClassRegistry:
 	if _class_registry_cache == null:
 		_class_registry_cache = ClassRegistry.new()
 	return _class_registry_cache
+
+
+static func get_class_registry() -> ClassRegistry:
+	## Public alias for the cached ClassRegistry. UI surfaces (combat_ui_controller)
+	## use this to query class_powers / spell_slots without managing their own
+	## cache. The internal `_get_class_registry` stays for legacy call sites.
+	return _get_class_registry()
 
 
 func has_backstab_power() -> bool:

@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://disjunctive_branch_modal"]
+
+[ext_resource type="Script" path="res://scenes/ui/spells/disjunctive_branch_modal.gd" id="1_disjunctive_modal"]
+
+[node name="DisjunctiveBranchModal" type="CanvasLayer"]
+layer = 58
+script = ExtResource("1_disjunctive_modal")

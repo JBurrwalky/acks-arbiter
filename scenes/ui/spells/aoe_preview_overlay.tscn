@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://aoe_preview_overlay"]
+
+[ext_resource type="Script" path="res://scenes/ui/spells/aoe_preview_overlay.gd" id="1_aoe_preview"]
+
+[node name="AoePreviewOverlay" type="CanvasLayer"]
+layer = 60
+script = ExtResource("1_aoe_preview")

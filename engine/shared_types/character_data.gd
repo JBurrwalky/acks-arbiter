@@ -257,6 +257,29 @@ func get_effective_ac() -> int:
 	return modifiers.get_effective_value("armor_class", armor_class)
 
 
+func get_effective_ac_vs(attack_type: String) -> int:
+	## Directional AC accessor for spells that distinguish missile vs melee
+	## (Shield: AC 2 vs missiles, AC 4 vs melee). attack_type: "missiles" or
+	## "melee". Falls back to plain `armor_class` when no directional modifier
+	## is set, then layers the directional modifier on top of the omnidirectional
+	## one. The directional modifier uses `set_floor` semantics for Shield.
+	var base_ac: int = get_effective_ac()
+	var key := ""
+	match attack_type:
+		"missiles", "missile", "ranged":
+			key = "armor_class_vs_missiles"
+		"melee":
+			key = "armor_class_vs_melee"
+		_:
+			return base_ac
+	if not modifiers.has_modifier_for_stat(key):
+		return base_ac
+	# `set_floor` semantics: take whichever is higher between base and the
+	# directional override. ModifierStack.calculate handles this when given
+	# the base_ac as the floor candidate.
+	return modifiers.get_effective_value(key, base_ac)
+
+
 func get_effective_attack_throw() -> int:
 	return modifiers.get_effective_value("attack_throw", attack_throw)
 

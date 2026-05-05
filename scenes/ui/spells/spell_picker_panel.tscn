@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://spell_picker_panel"]
+
+[ext_resource type="Script" path="res://scenes/ui/spells/spell_picker_panel.gd" id="1_spell_picker"]
+
+[node name="SpellPickerPanel" type="CanvasLayer"]
+layer = 56
+script = ExtResource("1_spell_picker")

@@ -82,7 +82,7 @@ func resolve_melee_attack(
 	var prof_attack_mod := ProficiencyCombatHooks.aggregate_modifier(
 		attacker, "attack_throw", {"phase": "melee_attack", "target": target})
 	var target_number: int = attacker.get_effective_attack_throw() \
-		+ target.get_effective_ac() + prof_attack_mod
+		+ target.get_effective_ac_vs("melee") + prof_attack_mod
 
 	# Determine hit/miss
 	var is_hit: bool
@@ -208,7 +208,7 @@ func resolve_monster_attack(
 
 	var natural_roll: int = attack_roll.raw_total
 	var total_attack: int = natural_roll + to_hit_mod
-	var target_number: int = attacker.get_effective_attack_throw() + target.get_effective_ac()
+	var target_number: int = attacker.get_effective_attack_throw() + target.get_effective_ac_vs("melee")
 
 	var is_natural_twenty := (natural_roll == 20 and not attack_roll.was_overridden) \
 		or attack_roll.natural_max
