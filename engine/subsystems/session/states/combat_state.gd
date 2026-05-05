@@ -189,7 +189,15 @@ func _place_combatants_on_grid(
 
 	# Place monsters at the rolled encounter distance, clamped to the map.
 	var terrain_category: String = _encounter_data.get("terrain_category", "clear")
-	var distance_cells: int = _roll_encounter_distance_cells(terrain_category, DiceSystem)
+	# Phase 2: weather visibility shrinks the rolled distance.
+	# `visibility_multiplier` is attached to encounter context by
+	# WildernessHandlers when an encounter triggers; default 1.0 keeps prior
+	# behavior for callers that don't provide it. Source:
+	# `acore_adventures_and_encounters.xml` §encounter_distance + DaW
+	# §severe_weather_effects (reconnaissance penalties).
+	var visibility: float = float(_encounter_data.get("visibility_multiplier", 1.0))
+	var distance_cells: int = _roll_encounter_distance_cells(
+		terrain_category, DiceSystem, visibility)
 	var max_offset: int = _max_offset_from_entry(entry, vmap)
 	var clamped_offset: int = mini(distance_cells, max_offset)
 	var monster_center := Vector3i(entry.x + clamped_offset, entry.y, entry.z)
@@ -213,7 +221,16 @@ func _place_combatants_on_grid(
 ## (mapped from `HexTerrainData.movement_cost_category()`) and converts to
 ## battle-map cells (1 yard = 0.6 cells at 5'/cell). See
 ## `acore_adventures_and_encounters.xml` §encounter_distance_table.
-static func _roll_encounter_distance_cells(terrain_category: String, dice) -> int:
+##
+## [param visibility_multiplier] (Phase 2) shrinks the rolled distance to
+## model weather and ambient light per gdd-weather-generation.md §4.5 and
+## §7.2. Default 1.0. Floor at 1 cell so monsters are never spawned on
+## the party's own square.
+static func _roll_encounter_distance_cells(
+	terrain_category: String,
+	dice,
+	visibility_multiplier: float = 1.0,
+) -> int:
 	# (dice_count, dice_sides, multiplier_yards). Multiplier is the per-die
 	# scaling — e.g. 4d6×10 yards is (4, 6, 10).
 	var spec: Array = _encounter_distance_spec(terrain_category)
@@ -225,8 +242,12 @@ static func _roll_encounter_distance_cells(terrain_category: String, dice) -> in
 		var roll: RollResult = dice.roll_digital(ds, 1, 0, "encounter_distance")
 		yards += roll.modified_total
 	yards *= mult
+	# Apply weather visibility scaling on yards before converting to cells —
+	# preserves the ACKS "90% reduction" example (multiplier 0.1 on 5d20×10
+	# plains drops 500-1000 yards to 50-100, matching the rule).
+	var scaled_yards: float = float(yards) * visibility_multiplier
 	# 1 yard = 3 feet; 1 cell = 5 feet → cells = round(yards * 3 / 5).
-	return maxi(1, int(round(yards * 0.6)))
+	return maxi(1, int(round(scaled_yards * 0.6)))
 
 
 ## Returns [dice_count, dice_sides, multiplier_yards] for an encounter on

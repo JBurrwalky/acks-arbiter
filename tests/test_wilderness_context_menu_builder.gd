@@ -13,7 +13,7 @@ const ACTIVE_PARTY_ID := "party_test_001"
 
 
 func run_all_tests() -> void:
-	test_returns_seven_options_including_cancel()
+	test_returns_expected_options_including_cancel()
 	test_all_expected_ids_present()
 	test_cancel_option_has_cancel_action_type()
 	test_action_data_carries_hex_coords()
@@ -52,15 +52,18 @@ func _make_map_with_terrain(coord: Vector2i, terrain: HexTerrainData) -> HexMapD
 	return m
 
 
-func test_returns_seven_options_including_cancel() -> void:
+func test_returns_expected_options_including_cancel() -> void:
+	# 8 actions (move_here, explore, build_stronghold, place_loot_cache,
+	# visit_loot_cache, survey, search_lair, hunt) + cancel = 9 entries.
 	var options := _build()
-	check(options.size() == 7, "expected 7 options (6 actions + cancel), got %d" % options.size())
+	check(options.size() == 9, "expected 9 options (8 actions + cancel), got %d" % options.size())
 
 
 func test_all_expected_ids_present() -> void:
 	var options := _build()
 	var expected := ["move_here", "explore", "build_stronghold",
-		"place_loot_cache", "visit_loot_cache", "survey", "cancel"]
+		"place_loot_cache", "visit_loot_cache", "survey", "search_lair",
+		"hunt", "cancel"]
 	var ids: Array = []
 	for opt in options:
 		ids.append(opt.get("id", ""))
@@ -146,8 +149,9 @@ func test_current_hex_menu_omits_move_here() -> void:
 		ids.append(opt.get("id", ""))
 	check(not ("move_here" in ids),
 		"move_here should be omitted on the party's current hex; got %s" % str(ids))
-	check(options.size() == 6,
-		"current-hex menu should have 6 options (5 activities + cancel), got %d" % options.size())
+	# Current-hex menu omits move_here, leaves 7 activities + cancel = 8.
+	check(options.size() == 8,
+		"current-hex menu should have 8 options (7 activities + cancel), got %d" % options.size())
 
 
 func test_current_hex_menu_includes_place_loot_cache() -> void:

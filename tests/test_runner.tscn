@@ -159,6 +159,29 @@
 [ext_resource type="Script" path="res://tests/test_level_up_familiar_picker.gd" id="147_level_up_familiar_picker_tests"]
 [ext_resource type="Script" path="res://tests/test_familiar_auto_proximity.gd" id="148_familiar_auto_proximity_tests"]
 [ext_resource type="Script" path="res://tests/test_h3_polish.gd" id="149_h3_polish_tests"]
+[ext_resource type="Script" path="res://tests/test_wilderness_day_tick.gd" id="150_wilderness_day_tick_tests"]
+[ext_resource type="Script" path="res://tests/test_weather_generator.gd" id="151_weather_generator_tests"]
+[ext_resource type="Script" path="res://tests/test_weather_effects.gd" id="152_weather_effects_tests"]
+[ext_resource type="Script" path="res://tests/test_travel_with_weather.gd" id="153_travel_with_weather_tests"]
+[ext_resource type="Script" path="res://tests/test_sustenance_resolver.gd" id="154_sustenance_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_foraging_resolver.gd" id="155_foraging_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_hunting_resolver.gd" id="156_hunting_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_wilderness_loop_starvation.gd" id="157_wilderness_loop_starvation_tests"]
+[ext_resource type="Script" path="res://tests/test_lair_search_resolver.gd" id="158_lair_search_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_surveying_resolver.gd" id="159_surveying_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_lair_discovery.gd" id="160_lair_discovery_tests"]
+[ext_resource type="Script" path="res://tests/test_tracking_resolver.gd" id="161_tracking_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_evasion_resolver.gd" id="162_evasion_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_wilderness_reaction_router.gd" id="163_wilderness_reaction_router_tests"]
+[ext_resource type="Script" path="res://tests/test_evasion_full_flow.gd" id="164_evasion_full_flow_tests"]
+[ext_resource type="Script" path="res://tests/test_encounter_decision_prompt.gd" id="164b_encounter_decision_prompt_tests"]
+[ext_resource type="Script" path="res://tests/test_specialist_catalog.gd" id="165_specialist_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_specialist_bonus_resolver.gd" id="166_specialist_bonus_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_specialist_hire_manager.gd" id="167_specialist_hire_manager_tests"]
+[ext_resource type="Script" path="res://tests/test_specialist_integration.gd" id="168_specialist_integration_tests"]
+[ext_resource type="Script" path="res://tests/test_casting_geometry.gd" id="169_casting_geometry_tests"]
+[ext_resource type="Script" path="res://tests/test_casting_resolver.gd" id="170_casting_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_slot_reset.gd" id="171_spell_slot_reset_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -636,3 +659,72 @@ script = ExtResource("148_familiar_auto_proximity_tests")
 
 [node name="H3PolishTests" type="Node" parent="."]
 script = ExtResource("149_h3_polish_tests")
+
+[node name="WildernessDayTickTests" type="Node" parent="."]
+script = ExtResource("150_wilderness_day_tick_tests")
+
+[node name="WeatherGeneratorTests" type="Node" parent="."]
+script = ExtResource("151_weather_generator_tests")
+
+[node name="WeatherEffectsTests" type="Node" parent="."]
+script = ExtResource("152_weather_effects_tests")
+
+[node name="TravelWithWeatherTests" type="Node" parent="."]
+script = ExtResource("153_travel_with_weather_tests")
+
+[node name="SustenanceResolverTests" type="Node" parent="."]
+script = ExtResource("154_sustenance_resolver_tests")
+
+[node name="ForagingResolverTests" type="Node" parent="."]
+script = ExtResource("155_foraging_resolver_tests")
+
+[node name="HuntingResolverTests" type="Node" parent="."]
+script = ExtResource("156_hunting_resolver_tests")
+
+[node name="WildernessLoopStarvationTests" type="Node" parent="."]
+script = ExtResource("157_wilderness_loop_starvation_tests")
+
+[node name="LairSearchResolverTests" type="Node" parent="."]
+script = ExtResource("158_lair_search_resolver_tests")
+
+[node name="SurveyingResolverTests" type="Node" parent="."]
+script = ExtResource("159_surveying_resolver_tests")
+
+[node name="LairDiscoveryTests" type="Node" parent="."]
+script = ExtResource("160_lair_discovery_tests")
+
+[node name="TrackingResolverTests" type="Node" parent="."]
+script = ExtResource("161_tracking_resolver_tests")
+
+[node name="EvasionResolverTests" type="Node" parent="."]
+script = ExtResource("162_evasion_resolver_tests")
+
+[node name="WildernessReactionRouterTests" type="Node" parent="."]
+script = ExtResource("163_wilderness_reaction_router_tests")
+
+[node name="EvasionFullFlowTests" type="Node" parent="."]
+script = ExtResource("164_evasion_full_flow_tests")
+
+[node name="EncounterDecisionPromptTests" type="Node" parent="."]
+script = ExtResource("164b_encounter_decision_prompt_tests")
+
+[node name="SpecialistCatalogTests" type="Node" parent="."]
+script = ExtResource("165_specialist_catalog_tests")
+
+[node name="SpecialistBonusResolverTests" type="Node" parent="."]
+script = ExtResource("166_specialist_bonus_resolver_tests")
+
+[node name="SpecialistHireManagerTests" type="Node" parent="."]
+script = ExtResource("167_specialist_hire_manager_tests")
+
+[node name="SpecialistIntegrationTests" type="Node" parent="."]
+script = ExtResource("168_specialist_integration_tests")
+
+[node name="CastingGeometryTests" type="Node" parent="."]
+script = ExtResource("169_casting_geometry_tests")
+
+[node name="CastingResolverTests" type="Node" parent="."]
+script = ExtResource("170_casting_resolver_tests")
+
+[node name="SpellSlotResetTests" type="Node" parent="."]
+script = ExtResource("171_spell_slot_reset_tests")

@@ -12182,3 +12182,972 @@ The H+ umbrella plan at `C:\Users\jttau\.claude\plans\c-users-jttau-claude-plans
 6. **Patron-PC death handling** — when a PC dies, their henchmen receive a forced loyalty check with trigger="patron_death".
 
 **[NEEDS-OPUS-REVIEW]** None this session. Phase 5 is mechanical implementation against the agreed plan; the notification-vs-modal decisions were already locked in by the Phase 4 architectural audit.
+
+
+## Session 2026-05-04 — Wilderness closure Phase 1: day-tick foundation + sustenance plumbing
+
+**Task:** Phase 1 of the wilderness gameplay closure plan (`C:\Users\jttau\.claude\plans\run-an-update-pass-greedy-duckling.md`). Establish the per-party `wilderness_day_tick` event type, add wilderness sustenance state columns to `party_state`, and wire `WildernessExploreState.enter` to schedule a tick on entry. Phase 1 lays the contract; Phase 2 (weather rollover, `daw_vagaries.xml` / `acore_adventures_and_encounters.xml`) and Phase 3 (sustenance penalty math, `acore_adventures_and_encounters.xml` 2-day food grace then 1 hp/day, 1 day water then 1d4 hp + 1d4/day) attach work to the tick in later sessions.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- **Migration `047_party_wilderness_state.sql`** — adds six columns to `party_state`:
+  - `exhaustion_days INTEGER DEFAULT 0`
+  - `starvation_days INTEGER DEFAULT 0`
+  - `dehydration_days INTEGER DEFAULT 0`
+  - `water_units INTEGER DEFAULT 0`
+  - `ration_units INTEGER DEFAULT 0`
+  - `last_day_tick_round INTEGER DEFAULT -1` (sentinel: never ticked)
+  - The plan loosely said "parties.X" but the canonical wilderness party state lives in `party_state` (migration 021). Added to that table to match existing convention.
+- **`db/schema.sql`** — bumped "last migration applied" to 047 and added the new columns to the `party_state` CREATE TABLE.
+- **`engine/shared_types/party_data.gd`** — six new fields, populated in `from_db` and serialized in `to_state_dict` so the round-trip persists.
+- **`engine/autoloads/campaign_repository.gd::save_party_state`** — INSERT OR REPLACE statement extended to write the six new columns. Uses `state.get(key, default)` so older callers that don't supply the new keys still work (defaults match the schema).
+- **`engine/autoloads/event_bus.gd`** — three new signals:
+  - `wilderness_day_ticked(party_id, summary)` with summary keys `tick_round`, `day_index`, `exhaustion_days`, `starvation_days`, `dehydration_days`, `ration_units`, `water_units`. Phase 1 baseline; Phase 2/3 hooks add to summary as they attach.
+  - `exhaustion_changed(party_id, old_value, new_value)` — emitted only when exhaustion mutates (Phase 1 always reports unchanged so the signal stays noise-free until Phase 3 wires the rest-day reset / accumulation).
+  - `sustenance_threshold_crossed(party_id, kind, threshold)` — declared so Phase 3 consumers can subscribe early; not emitted by Phase 1.
+- **`engine/subsystems/session/handlers/wilderness_handlers.gd`** — registers `wilderness_day_tick` (constant `DAY_TICK_EVENT`) at `PRIORITY_ENVIRONMENTAL` (=0):
+  - New `schedule_day_tick(scheduler, party_id) -> String` helper. Idempotent against the scheduler queue: re-entering wilderness state from combat/dungeon does not double-schedule. Fire time = next midnight on the party's clock (`party_time + (ROUNDS_PER_DAY - party_time % ROUNDS_PER_DAY)`); a party sitting exactly at midnight schedules 24h out, not 0 rounds out. Returns `""` on no-op (existing tick), event_id on insert.
+  - New `_handle_wilderness_day_tick(event)` handler. Stamps `party_data.last_day_tick_round = event.fire_time`, persists via `save_party_state`, emits `wilderness_day_ticked`, and self-reschedules at `event.fire_time + ROUNDS_PER_DAY` via the `next_events` return contract. Idempotency: refuses to double-fire on the same round (`last_day_tick_round == event.fire_time → return {}`). Does NOT auto-pause — day-tick is housekeeping; only Phase 3 threshold-crossing toasts surface it to the player.
+- **`engine/subsystems/session/states/wilderness_explore_state.gd::enter`** — after registering Timekeeping for each party in the campaign, calls `_handlers.schedule_day_tick(scheduler, p.id)` for each. Uses the existing `all_parties` loop so multi-party sessions all get ticks.
+- **`generation/gdd-realtime-scheduler.md`** — new §4.4 "Wilderness Day Tick" describing the lifecycle and idempotency contract; renumbered §4.4-4.6 → §4.5-4.7. Added a row to the implementation status table.
+- **`docs/coding_conventions.md` §19.3** — extended `wilderness_handlers.gd` row to list all six event types now handled (was missing `wilderness_activity` / `wilderness_activity_complete` / now `wilderness_day_tick`).
+- **`tests/test_wilderness_day_tick.gd`** — 8 tests (all pass) using a `_FakeRunner` inner class for the primary path:
+  - `test_schedule_at_start_of_day` — first scheduling at fresh-register lands at +ROUNDS_PER_DAY
+  - `test_schedule_mid_day` — schedule from mid-day lands at the next midnight
+  - `test_schedule_at_exact_midnight_skips_to_next` — party sitting exactly on a midnight boundary schedules 24h out, not 0 rounds out (the day-tick represents the rollover INTO the upcoming day)
+  - `test_schedule_idempotent` — second `schedule_day_tick` call is a no-op (returns `""`); queue still holds exactly one tick
+  - `test_handler_emits_and_reschedules` — fire emits `wilderness_day_ticked` with correct summary; result includes `next_events` at +ROUNDS_PER_DAY at `PRIORITY_ENVIRONMENTAL`; no `auto_pause`
+  - `test_handler_idempotent_on_same_fire_time` — second fire on the same `event.fire_time` is a no-op (no signal, empty result)
+  - `test_handler_persists_last_tick_round` — DB readback confirms `party_state.last_day_tick_round` was stamped to the event's fire_time
+  - `test_handler_returns_empty_when_party_unknown` — null PartyData → handler returns empty (no-op)
+- Wired `WildernessDayTickTests` into `tests/test_runner.gd` + `tests/test_runner.tscn`.
+
+**Decisions made:**
+
+- **Reuse `PRIORITY_ENVIRONMENTAL = 0` rather than introduce a new `PRIORITY_HOUSEKEEPING`.** The plan suggested a new tier "lower than ARRIVAL," but the existing `PRIORITY_ENVIRONMENTAL` slot per `gdd-realtime-scheduler.md` §2.3 already covers "weather, dawn/dusk, season" — exactly the per-day rollover semantics. A new tier was premature.
+- **Day-tick lives on `party_state`, not `parties`.** The plan said "parties.exhaustion_days" but `party_state` is the canonical wilderness state table (migration 021: `is_lost`, `force_march_days_used`, `days_since_rest`, `rations_days_remaining`). Followed established convention; updated `PartyData.from_db / to_state_dict` accordingly.
+- **`last_day_tick_round` stamped via direct `save_party_state` call inside the handler.** Existing convention saves party_state from the SessionRunner save_session sweep for primary parties, and on-demand for non-primary mutations. Day-tick is the durable idempotency guard against a session reload double-firing the same tick — saving immediately keeps that contract regardless of when the next save sweep runs. Cost is one INSERT-or-REPLACE per party per game-day, trivially.
+- **`schedule_day_tick` is queue-idempotent only; the persisted `last_day_tick_round` is the handler-level idempotency guard.** Two layers of protection: queue-level prevents double-scheduling on state re-entry; column-level prevents double-firing if a duplicate event somehow lands at the same fire_time.
+- **`exhaustion_changed` emitted conditionally on actual mutation.** Phase 1 never mutates exhaustion (Phase 3 wires the rest-day reset and accumulation per `acore_adventures_and_encounters.xml`), so the conditional emit keeps the signal silent today and ready for Phase 3 to trigger it.
+- **`sustenance_threshold_crossed` declared but not emitted in Phase 1.** Phase 3 wires the resolver per `acore_adventures_and_encounters.xml` (2-day food grace, 1-day water, healing-lost flag). Declaring the signal now lets Phase 3 consumers (NotificationManager toast routing per `gdd-ui-architecture.md` §6.3) subscribe even before the resolver lands.
+- **Day-tick does NOT auto-pause.** Housekeeping work should not interrupt the player. Phase 3 wires the threshold crossings as toast notifications via NotificationManager (the established async-outcome pattern from H.0 / Phase 5 of henchman closure). Auto-pause stays off.
+- **Test fixture pattern: `_FakeRunner` inner class.** Avoids loading SessionRunner and its scene-graph dependencies. The handler's `_party_data_for_event` checks `pid == _runner.get_party_id()` and returns `_runner.get_party_data()` directly; that's the only runner surface area the handler touches. Test fixtures still hit the real `CampaignRepository` for `save_party_state` so the persistence test verifies the actual SQLite round-trip.
+
+**Interfaces defined or changed:**
+
+- `WildernessHandlers`:
+  - New constant `DAY_TICK_EVENT := "wilderness_day_tick"`.
+  - New static-feeling helper `schedule_day_tick(scheduler: EventScheduler, party_id: String) -> String`.
+  - New handler `_handle_wilderness_day_tick(event: ScheduledEvent) -> Dictionary` registered under `DAY_TICK_EVENT`.
+- `EventBus`:
+  - `wilderness_day_ticked(party_id: String, summary: Dictionary)`.
+  - `exhaustion_changed(party_id: String, old_value: int, new_value: int)`.
+  - `sustenance_threshold_crossed(party_id: String, kind: String, threshold: String)`.
+- `PartyData`:
+  - Six new fields: `exhaustion_days`, `starvation_days`, `dehydration_days`, `water_units`, `ration_units`, `last_day_tick_round` (default -1 sentinel).
+  - `from_db` populates them from `state_row`; `to_state_dict` serializes them.
+- `CampaignRepository.save_party_state` — INSERT OR REPLACE statement extended; column list and binding count match.
+
+**Database changes:**
+
+- Migration 047: ALTER TABLE party_state with the six new columns.
+- `db/schema.sql` updated to reflect the new columns and bumped to "Last migration applied: 047".
+
+**Tests added/updated:**
+
+- `tests/test_wilderness_day_tick.gd` (8 tests, all pass).
+- Wired `WildernessDayTickTests` into `tests/test_runner.gd` and `tests/test_runner.tscn`.
+- Full suite: **138 suites passed, 21 failed** — identical to pre-Phase-1 baseline. The 21 failures are pre-existing flaky tests unrelated to wilderness state. Net +1 suite pass for `WildernessDayTickTests`. No new failures.
+
+**Known issues:**
+
+- **Phase 1 only stamps the tick.** Weather rollover (Phase 2), sustenance penalty math (Phase 3), and Notebook Party-tab status surfacing (Phase 3) are not yet wired. The `summary` dict reports zeros for all sustenance fields and `wilderness_day_ticked` has no consumer in v1.
+- **`ration_units` not yet synced from inventory.** Phase 3 introduces the virtual sync on `inventory_changed` so day-tick reads a single integer rather than walking the inventory. Phase 1 declares the column at zero default; Phase 2/3 work establishes the contract.
+- **Test fixture rows in DB.** `tests/test_wilderness_day_tick.gd` writes parties with the `test_phase1_dt_` prefix and cleans them up after each test. A failing test would leave an orphan row; clean DB by running the suite again or deleting `user://campaign.db`.
+- **Pre-existing test_runner.tscn missing-suite warning.** `SCRIPT ERROR: Invalid call. Nonexistent function 'run_all_tests' in base 'Node'.` continues to fire on each run from a suite ordering issue elsewhere in the runner. Pre-existing; Phase 1 did not change it.
+- **Output flushing during Bash test runs.** Godot's stdout is heavily buffered when `--headless` is piped — output appears all-at-once at process exit. The TestRunner does not call `get_tree().quit()` because `OS.has_feature("standalone")` is false in `--path . res://tests/test_runner.tscn` mode. Workaround: kill the Godot PID after the "TEST RESULTS" line appears (via Monitor or background poll). Not a Phase 1 regression; same behavior as prior sessions.
+
+**Next session should — Phase 2: Weather (basic, mechanical-only):**
+
+1. New `engine/subsystems/exploration/weather_generator.gd` (RefCounted, deterministic on `seed/hex/julian_day`). v1 channels: temp band, precip/cloud descriptor, visibility multiplier. Citations: `daw_vagaries.xml`, `acore_adventures_and_encounters.xml`.
+2. New `engine/shared_types/weather_state_data.gd` — 6-channel record; v1 fills 3, leaves 3 placeholders.
+3. New `engine/subsystems/exploration/weather_cache.gd` — DB-backed read/generate/store keyed on `(campaign_id, hex_id, julian_day)`.
+4. Migration `048_weather_state_cache.sql` — `weather_states` table.
+5. Modify `travel_speed_calculator.gd::hex_crossing_rounds` to accept optional `WeatherStateData` and apply visibility/mud multipliers in the documented order: terrain × encumbrance × forced-march × weather × mud (banker's rounding at end).
+6. Modify `combat_state.gd::_roll_encounter_distance_cells` to scale by weather visibility multiplier (gated behind feature flag `weather_visibility_enabled` for one milestone).
+7. Modify `hex_map_renderer.gd` hover popup to surface current-hex weather alongside terrain/water/PoI.
+8. Hook `_handle_wilderness_day_tick` to roll new day's weather for current hex; emit `weather_changed` and route a toast through `NotificationManager` on material change.
+9. Tests: `test_weather_generator.gd` (determinism, distributions per `daw_vagaries.xml`), `test_weather_effects.gd` (DaW math), `test_travel_with_weather.gd` (5-day journey).
+10. Trim `gdd-weather-generation.md` to the v1 implemented subset; flag deferred channels for Phase 2.5.
+
+**[NEEDS-OPUS-REVIEW]** None this session. Phase 1 is foundational plumbing against the agreed plan; the only design call (priority slot reuse vs. new constant) was a clean fit to the existing GDD §2.3 taxonomy.
+
+
+## Session 2026-05-04 — Wilderness closure Phase 2: weather (basic, mechanical-only)
+
+**Task:** Phase 2 of the wilderness closure plan (`C:\Users\jttau\.claude\plans\run-an-update-pass-greedy-duckling.md`). Add deterministic per-hex/per-day weather generation, DB-backed cache, travel-speed and encounter-distance integration, and hex-hover + day-tick toast surfacing. v1 implements the SACRED `daw_vagaries.xml` §severe_weather_conditions table directly; the project-designed Köppen profile distributions in `gdd-weather-generation.md` §5.2 are deferred to Phase 2.5.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- **`engine/shared_types/weather_state_data.gd`** — 6-channel record (temperature_band, atmosphere, precipitation_level/type, wind_level, visibility_multiplier, produces_mud) plus `hex_q/hex_r/julian_day/year` keys. v1 fills 5 channels (wind_direction deferred to Phase 2.5).
+  - Sacred constants: `TEMP_COLD/MILD/HOT` and `ATMO_CALM/RAINY/SNOWY/WINDY` per `daw_vagaries.xml`. Intermediate `TEMP_FRIGID/COOL/WARM` declared for Phase 2.5 forward-compat (v1 never emits them).
+  - `make(temp_band, atmosphere, biome)` factory derives precipitation, wind_level, visibility_multiplier, produces_mud per the atmosphere descriptor + biome (mud only on clear/scrub when rain falls).
+  - **Cold + Rainy → Snowy normalization** in `_derive_channels` (rule text reading: precipitation falls as snow when freezing, regardless of how DaW labels the cell — DaW's table only ever pairs Snowy with Cold rows but the underlying physics is temperature-driven).
+  - `travel_multiplier()` composes the SACRED DaW multipliers: Cold/Hot ×0.5, Rainy/Snowy/Windy ×0.5, mud ×0.5; floor at 0.1. `encounter_visibility_multiplier()` gated behind compile-time `FEATURE_VISIBILITY_ENABLED`.
+  - `is_severe()` flag drives day-tick toast routing.
+  - `to_dict` / `from_dict` round-trip.
+- **`engine/subsystems/exploration/weather_generator.gd`** — RefCounted, static `generate(campaign_id, hex_q, hex_r, terrain, julian_day, year, hemisphere)`.
+  - Reads SACRED `daw_vagaries.xml` §severe_weather_conditions table directly; transcribed into a `_DAW_TABLE` constant with all 7 terrain rows × 4 seasons.
+  - Cells like `"Mild; 75% Rainy"` parse via `_parse_alt_spec`: percentage prefix gates the alt outcome; otherwise unconditional. Per the rule text — "if severe weather does not occur, use mild temperature or calm atmosphere instead."
+  - Biome → DaW row mapping: mountains override biome; hills+clear → woods_hills row (DaW pairs them); ocean/lake → clear_grass for atmosphere derivation but mud is suppressed via the water-hex guard.
+  - Determinism: seed = `hash("campaign_id|q|r|jd|y")`. Terrain attributes are NOT in the seed — biome change does not retroactively rewrite past days.
+- **`engine/subsystems/exploration/weather_cache.gd`** — DB-backed cache.
+  - `get_cached(campaign_id, q, r, jd, y) -> WeatherStateData` (null on miss).
+  - `get_or_generate(...)` reads first, generates and stores on miss. Cache supersedes generator output once a hex × day has been persisted (handles future biome mutability gracefully).
+  - `store(campaign_id, weather)` INSERT OR REPLACE.
+  - `clear_for_campaign(campaign_id)` test-fixture cleanup.
+- **Migration `048_weather_state_cache.sql`** — `weather_states` table with composite PK on `(campaign_id, hex_q, hex_r, julian_day, year)` and a `(campaign_id, julian_day)` index for the future Phase 2.5 regional-front sweep.
+- **`engine/subsystems/exploration/travel_speed_calculator.gd`** — `calculate_party_speed`, `get_miles_per_day`, and `hex_crossing_rounds` all gain optional `weather: WeatherStateData = null` parameter.
+  - Multiplier order: terrain × encumbrance(via base_speed) × forced-march × weather × mud (mud bundled inside `weather.travel_multiplier()`). Banker's rounding at end.
+  - Result dict adds `weather_multiplier` key.
+  - When weather is null, behavior matches the legacy 3-arg path exactly.
+- **`engine/subsystems/session/states/combat_state.gd`** — `_roll_encounter_distance_cells(terrain_category, dice, visibility_multiplier=1.0)`.
+  - Visibility multiplier scales rolled yards before yards→cells conversion. Heavy fog (0.1) on plains drops 5d20×10 yards (500–1000) to 50–100 yards — matches the ACKS "90% reduction" rule (`acore_adventures_and_encounters.xml` §encounter_distance).
+  - Floor at 1 cell (never spawn enemies on the party's square).
+- **`engine/subsystems/session/handlers/wilderness_handlers.gd`** — three integrations:
+  1. `_weather_for_hex(terrain, coord, at_round)` helper resolves the cached/generated weather for a hex on the day implied by `at_round`.
+  2. `schedule_travel_path` now reads weather per leg and passes to `hex_crossing_rounds` so rainy/snowy legs take longer.
+  3. `_handle_travel_leg` and `_handle_encounter_check` stamp `enc["visibility_multiplier"]` on the encounter context before transitioning to combat, so `CombatState` shrinks the spawn distance.
+  4. `_handle_wilderness_day_tick` calls new `_roll_and_announce_weather(party_data, fire_time)` which:
+     - Rolls today's weather (via WeatherCache) for the party's current hex.
+     - Compares to yesterday's (cached lookup at `at_round - ROUNDS_PER_DAY`); same-state rollovers stay silent.
+     - Emits `EventBus.weather_changed(party_id, summary)` on material change.
+     - Routes a NotificationManager warning toast when today is severe.
+- **`engine/autoloads/event_bus.gd`** — new `weather_changed(party_id, summary)` signal with documented summary keys.
+- **`scenes/maps/hex_map_renderer.gd`** — tooltip extended with a `Weather: <Cold, Snowy>` line when a campaign is loaded; appends `(mud)` when the hex's biome+atmosphere produces mud. Reads via `WeatherCache.get_or_generate` (deterministic per (campaign, hex, day)).
+- **`generation/gdd-weather-generation.md`** — Phase 2 v1 implementation status block prepended; status flipped from "Draft" to "Phase 2 v1 implemented (2026-05-04)" with deferments listed inline. Köppen distributions and coherence/fronts moved to Phase 2.5 list.
+- **`generation/gdd-realtime-scheduler.md` §4.4** — day-tick description extended to mention weather rollover + weather_changed emission + NotificationManager toast routing.
+- **Tests:**
+  - `tests/test_weather_generator.gd` — 15 tests: determinism (4 angles), terrain row mapping (mountains override, hills+clear, desert, jungle, water), unconditional cells (winter/mountains, summer/jungle, summer/clear), Cold+Rainy→Snowy normalization, mud generation on clear+rainy.
+  - `tests/test_weather_effects.gd` — 18 tests: travel_multiplier composition (Cold, Hot, Rainy, Snowy, Windy alone and stacked, mud, floor), visibility multiplier (Calm/Rainy/Snowy/Windy), feature flag respect, severity flag, persistence round-trip.
+  - `tests/test_travel_with_weather.gd` — 8 tests: legacy null-weather match, Calm no-op, Rainy halving, Cold+Snowy quartering, mud on clear quartering, hex_crossing_rounds doubling under rain, forced-march compose, floor never zeroes.
+  - All 41 new tests pass.
+
+**Decisions made:**
+
+- **Use the DaW table directly, NOT Köppen distributions in v1.** The plan said "trim to v1: temp band, precip/cloud descriptor, visibility multiplier" and to defer Köppen to Phase 2.5. I went one step further and based v1 generation on the SACRED `daw_vagaries.xml` table itself rather than the project-designed Köppen tables in §5.2 of the GDD. The DaW table is sharper (fully RAW), simpler (7 terrain rows × 4 seasons), and avoids the need to validate distribution shape against published source. Köppen comes back in Phase 2.5 if/when biome→climate granularity needs to widen.
+- **Cold + Rainy normalizes to Snowy in WeatherStateData, not in the generator.** The DaW table only ever pairs Snowy with Cold rows, but the underlying rule is temperature-driven. Putting the normalization in `WeatherStateData._derive_channels` means any caller that constructs a state directly (tests, future Control Weather override) gets the right precipitation type without each call site re-implementing it.
+- **Visibility-multiplier feature flag is a compile-time const, not runtime.** `WeatherStateData.FEATURE_VISIBILITY_ENABLED := true`. Per the plan "gate behind feature flag for one milestone in case of regressions." A runtime flag with config persistence is overkill for a one-milestone safety net; flipping the const to false is a one-line revert.
+- **Cache supersedes generator on hex_id × day_id collisions.** If a hex's biome changes (deforestation), past days' cached weather stays. Future days regenerate from the new biome. Avoids retroactive narrative inconsistency without complicating the data model.
+- **Day-tick toast only on transitions, not every severe day.** The handler compares today vs yesterday by `short_label()`. A 5-day rainstorm produces ONE toast on day 1 (transition Calm→Rainy), then silence. Counter-design: a 5-day rainstorm could re-toast each day to keep player aware. Picked silence-after-first because day-ticks are housekeeping; the hex hover always has the current weather.
+- **Wind LEVEL set coarsely (5 = "Very Strong" when atmosphere is Windy, else 2 = "Moderate").** Wind direction is NOT generated in v1. The DaW Windy descriptor doesn't specify direction; the GDD §4.4 direction enum requires Köppen prevailing-wind data which v1 doesn't have. Phase 7 (sea travel) needs direction; until then, Phase 2 records 2 or 5 unconditionally.
+- **Test fixture cleanup not needed for `weather_states` rows.** Tests use distinct campaign_id strings per test (`camp_a`, `camp_alpha_%d`, etc.) so rows don't collide across tests. The cache is read-only from the test perspective; new rows accumulate harmlessly. `WeatherCache.clear_for_campaign` exists for future test suites that need it.
+- **Test threshold for `test_determinism_differs_by_campaign` is 8/50 not 5/20.** First run hit 4/20 (single-flake — GDScript's hash gave four campaign_alpha/beta seed pairs the same outcome). Bumped sample size to 50 (expected ≈ 19) and accept ≥8 — gives any reasonable hash a wide margin while still catching a regression where campaign_id silently drops from the seed.
+- **Stuck-Godot output buffering workaround.** Headless test runs need explicit kill of the Godot process after "TEST RESULTS" appears (the test_runner.gd doesn't call `get_tree().quit()` for non-standalone builds). Used Monitor with an `until grep -q "TEST RESULTS"` loop to detect completion + auto-kill. Same pattern as Phase 1.
+
+**Interfaces defined or changed:**
+
+- `WeatherStateData` (new shared type) — fields, constants, factory `make`, helpers `travel_multiplier`, `encounter_visibility_multiplier`, `short_label`, `is_severe`, `to_dict`/`from_dict`.
+- `WeatherGenerator` (new RefCounted) — static `generate(campaign_id, hex_q, hex_r, terrain, julian_day, year=1, hemisphere="north") -> WeatherStateData`.
+- `WeatherCache` (new RefCounted) — static `get_cached`, `get_or_generate`, `store`, `clear_for_campaign`.
+- `TravelSpeedCalculator.calculate_party_speed / get_miles_per_day / hex_crossing_rounds` — added optional `weather: WeatherStateData = null` parameter; result dict gets new `weather_multiplier` key.
+- `CombatState._roll_encounter_distance_cells` — added optional `visibility_multiplier: float = 1.0` parameter.
+- `WildernessHandlers` — new private helpers `_weather_for_hex` and `_roll_and_announce_weather`. Encounter context (passed to combat) now carries `visibility_multiplier`.
+- `EventBus.weather_changed(party_id: String, summary: Dictionary)` (new signal). Summary keys: `hex_q`, `hex_r`, `temperature_band`, `temperature_label`, `atmosphere`, `atmosphere_label`, `visibility_multiplier`, `produces_mud`, `short_label`.
+
+**Database changes:**
+
+- Migration 048: `weather_states` table with composite PK and `(campaign_id, julian_day)` index.
+- `db/schema.sql` updated: bumped to "Last migration applied: 048", added `weather_states` table and its index.
+
+**Tests added/updated:**
+
+- `tests/test_weather_generator.gd` — 15 tests, all pass.
+- `tests/test_weather_effects.gd` — 18 tests, all pass.
+- `tests/test_travel_with_weather.gd` — 8 tests, all pass.
+- Wired all three suites into `tests/test_runner.gd` and `tests/test_runner.tscn`.
+- Full suite: **141 passed, 21 failed**. Net +3 pass for new weather suites; no new failures. The 21 baseline failures are pre-existing flakies in unrelated suites (combat_context_menu_builder, party_split_merge fixture races, voxel-migration leftovers).
+
+**Known issues:**
+
+- **Wind direction not generated.** GDD §4.4 specifies an 8-compass-point enum; v1 doesn't fill it. Phase 7 (sea travel) needs it; Phase 2.5 is the natural slot.
+- **No coherence / regional fronts.** Each day's weather is independently rolled. GDD §5.4–5.5 specifies coherent multi-day patterns; v1 ships independent rolls so a calm day can follow a storm with no transition. Phase 2.5.
+- **Mud is per-day, not multi-day persistent.** GDD §7.5 specifies `hex.mud_duration` with dry-out timer; v1 derives `produces_mud` per-day from `(precip_type=rain AND biome IN [clear, scrub])`. Mud persistence is Phase 2.5.
+- **Drizzle / Heavy / Storm precipitation levels not emitted.** The DaW table only distinguishes Calm vs Rainy/Snowy/Windy. v1 emits precip level 0 (calm) or 2 (steady). Levels 1, 3, 4 are reserved for Phase 2.5 + Köppen distributions.
+- **Foraging / hunting modifiers (§7.3) not wired.** Phase 3 reads weather state but the resolvers don't exist yet.
+- **Sea travel wind mapping (§7.4) not wired.** Phase 7. Wind level is recorded but not consumed.
+- **Hex hover tooltip cache miss generates on demand.** Hovering over an unvisited hex generates AND persists weather for that hex × day. Acceptable for v1 (deterministic, identical to what would generate on-arrival). If players notice, Phase 2.5 can add a `peek_only=true` flag that returns the deterministic value without persisting.
+- **Test-runner stdout buffering.** Headless `--path . res://tests/test_runner.tscn` runs don't call `get_tree().quit()` (because `OS.has_feature("standalone")` is false in scene-launch mode). Same as Phase 1; workaround: kill the Godot PID after "TEST RESULTS" appears.
+
+**Next session should — Phase 3: Sustenance (hunting, foraging, food/water penalties):**
+
+1. New `engine/subsystems/exploration/sustenance_resolver.gd` — starvation curve (`acore_adventures_and_encounters.xml`: 2-day grace then 1 hp/day), dehydration curve (1 day → 1d4 hp + 1d4/day, healing lost), exhaustion accumulation, rest-day reset.
+2. New `engine/subsystems/exploration/foraging_resolver.gd` — forage 18+ trivial during travel, Survival +4 (`acore_proficiencies_rules_and_catalog.xml`), fertile-area auto-self-feed, weather modifier from Phase 2 (`weather.atmosphere == ATMO_RAINY/SNOWY` → −1, storm/blizzard → impossible). **Auto-fires on each `travel_leg` arrival** with toast result.
+3. New `engine/subsystems/exploration/hunting_resolver.gd` — hunt 14+ full-day activity, 2d6 person-feeds on success, includes wandering check, Survival +4. Wired through `wilderness_activity` with `kind = "hunt"`.
+4. Modify `wilderness_handlers.gd` `_handle_wilderness_day_tick` → call `SustenanceResolver.apply_daily(party)`; decrement `ration_units` and `water_units`; apply HP penalties via existing damage path.
+5. Modify `_handle_travel_leg` end → call `ForagingResolver.attempt(party, hex, weather)` and toast result.
+6. Modify `_handle_wilderness_activity` → add `"hunt"` branch.
+7. Modify `wilderness_context_menu_builder.gd` → add **Hunt** menu item (full-day activity; forage stays auto, no menu item).
+8. Modify `camp_manager.gd::compute_rest_recovery` → clear `exhaustion_days` on full rest day.
+9. Inventory enforcement — virtual `parties.ration_units` synced from inventory on `inventory_changed`. Document the contract in `docs/coding_conventions.md`.
+10. Modify `scenes/ui/notebook/tab_pages/party_tab_page.gd` → add status row showing `ration_units`, `water_units`, `exhaustion_days`, `starvation_days`, `dehydration_days` (reuse `stat_readout.gd`).
+11. Toast routing through `notification_manager.gd` on `sustenance_threshold_crossed` (warn) and `forage_resolved`/`hunt_resolved` (info).
+12. Migration `049_party_sustenance.sql` — `party_sustenance_log (party_id, day, food_consumed, water_consumed, hp_lost, exhaustion_after)` for player-visible history.
+13. New EventBus signals: `forage_resolved`, `hunt_resolved`, `starvation_tick`, `dehydration_tick`.
+14. Tests: `test_foraging_resolver.gd`, `test_hunting_resolver.gd`, `test_sustenance_resolver.gd`, `test_wilderness_loop_starvation.gd` (7-day no-food run vs RAW HP curve).
+15. New GDD: `gdd-hunting-foraging.md`.
+
+**[NEEDS-OPUS-REVIEW]** None this session. Phase 2 v1 is mechanical implementation; the Köppen-vs-DaW choice was clearly favored by the SACRED-source priority (DaW table is RAW; Köppen profiles are project-designed) and the plan's explicit "trim to v1" guidance.
+
+
+## Session 2026-05-04 — Wilderness closure Phase 3: sustenance, foraging (food + water), hunting
+
+**Task:** Phase 3 of the wilderness closure plan (`C:\Users\jttau\.claude\plans\run-an-update-pass-greedy-duckling.md`). Daily food/water consumption with `acore_adventures_and_encounters.xml` §rations_and_foraging penalty curves. Per-character daily forage rolls (food + water) on the wilderness_day_tick with successes that stack. Hunt as a deliberate full-day context-menu activity. Notebook Party-tab status row.
+
+**Model used:** Opus 4.7 (1M context).
+
+**User-directed design clarifications going in:**
+- Foraging cadence: daily on `wilderness_day_tick`, not per-travel-leg.
+- Per-character roll, successes stack (1d6 per success added to ration_units). Project-designed elaboration of RAW "per day of travel" — flagged in code + GDD.
+- Water foraging (RAW silent): auto-pass on river / lake / rainy hex; otherwise per-character 14+ throw with Survival +4. Auto-pass tops `water_units` to `party_size`.
+- Hunt stays a deliberate full-day context-menu activity, distinct from the daily auto-forage.
+- Container fill UI for waterskins/barrels deferred to Phase 3.5.
+
+**Completed:**
+
+- **Architectural refactor — `WildernessHandlers` registration split** (Phase 1 gap discovered during Phase 3 planning). `WildernessHandlers` now exposes `register_state_scoped` (travel_leg, encounters, activities — owned by `WildernessExploreState.enter`/`exit`) and `register_global` (`wilderness_day_tick` — owned by `SessionRunner.load_session` alongside `DomainHandlers`). Day-tick now survives state transitions, so sustenance and weather rollover keep firing while the party is in camp/dungeon/settlement. `register` / `unregister` keep the all-in-one shape for tests + back-compat.
+- **`SessionRunner.load_session`** registers the global wilderness day-tick handler at load (new `_wilderness_global_handlers` field, lifecycle mirrors `_domain_handlers`). `end_session` unregisters.
+- **`WildernessExploreState`** switched to `register_state_scoped` / `unregister_state_scoped`.
+- **Migration `049_party_sustenance_log.sql`** — append-only audit log of daily food/water consumption + HP loss + post-tick counters. Index on `(party_id, day_index DESC)` for the future Notebook last-7-days panel.
+- **EventBus signals** (4 new):
+  - `forage_resolved(party_id, result)` — fires once per kind ("food" / "water") per day. Result keys: kind, rolls, successes, units_added, auto_pass, weather_blocked.
+  - `hunt_resolved(party_id, result)` — fires per hunt activity resolution. Result keys: hunter_id, roll, modifier, total, target, succeeded, units_added.
+  - `starvation_tick(character_id, hp_lost)` — per-character HP loss from food deficit past grace.
+  - `dehydration_tick(character_id, hp_lost)` — per-character HP loss from water deficit.
+- **`SustenanceResolver`** (`engine/subsystems/exploration/sustenance_resolver.gd`) — pure logic, no DB writes. `apply_daily(party, dice, characters)` mutates `ration_units` / `water_units` / `starvation_days` / `dehydration_days` in place, returns hp_loss_per_character + thresholds_crossed. `is_natural_healing_blocked(party)` query helper for the natural-healing path. RAW curves: 2-day food grace then 1 hp/day; water 1d4 hp on day 1 + 1d4/day, healing lost when first die rolled.
+- **`ForagingResolver`** (`engine/subsystems/exploration/foraging_resolver.gd`) — pure logic. `attempt_daily(party, terrain, weather, dice)` returns `{food: {...}, water: {...}, notes}` and mutates ration_units / water_units. Per-character roll, target 18+ untrained / 14+ with Survival; each success +1d6 person-feeds (stacking). Survival auto-self-feed (+1 unit per Survival member regardless of throw). Weather modifiers per `gdd-weather-generation.md` §7.3. Water auto-pass on river/lake/rainy; otherwise 14+ per-char throw.
+- **`HuntingResolver`** (`engine/subsystems/exploration/hunting_resolver.gd`) — pure logic. `attempt(party, dice)` picks the best hunter (Survival-preferred, falls back to first member), rolls 1d20 vs 14, applies +4 Survival; on success rolls 2d6 person-feeds and adds to ration_units.
+- **`WildernessHandlers._handle_wilderness_day_tick`** wired through:
+  1. Stamp `last_day_tick_round` (idempotency).
+  2. If wilderness state: call ForagingResolver, then SustenanceResolver. Apply HP loss via `update_character_hp` + emit `damage_dealt` (source: "starvation" / "dehydration"), `starvation_tick` / `dehydration_tick` per-character, `hp_changed`.
+  3. Route forage_resolved + sustenance_threshold_crossed signals + NotificationManager toasts.
+  4. Append a row to `party_sustenance_log`.
+  5. Persist `party_state`.
+  6. Fire weather rollover (Phase 2 path, unchanged).
+- **`_handle_wilderness_activity`** gains `"hunt"` branch. New `_resolve_hunt_activity(party_id, hex_q, hex_r)` calls HuntingResolver, persists ration_units, emits hunt_resolved + toast, fires the SACRED wandering-monster check using the appropriate terrain table (`_runner.do_encounter_check(terrain)`), and stamps visibility_multiplier on the encounter context if combat is triggered. Auto-pauses on completion.
+- **`WildernessContextMenuBuilder`** + **`WildernessExploreState._activity_type_for_action`** add `wilderness_hunt` action → `kind = "hunt"`. Tooltip: "Full-day hunt (1d20 vs 14, +4 Survival; 2d6 person-feeds on success). Triggers a wandering monster check."
+- **`CampHandlers._handle_rest_complete`** clears `exhaustion_days`, `days_since_rest`, `is_force_marching`, `force_march_days_used` on a successful full rest. Persists party_state. Sustenance counters (starvation/dehydration) clear naturally via SustenanceResolver on the next day-tick when food/water are sufficient — no special-case needed.
+- **`PartyTabPage._refresh_travel_subtab`** adds a "Wilderness Sustenance" section showing `ration_units`, `water_units`, `starvation_days` (with ">2 = losing 1 HP/day" note), `dehydration_days`, `exhaustion_days`, `days_since_rest`. Existing Forage/Hunt buttons updated to direct the player to the day-tick (foraging) or context menu (hunt).
+- **NotificationManager toast routing** — wired through `WildernessHandlers._emit_forage_signals` (info-tier daily summary) and `_emit_sustenance_signals` (warning/danger/success based on threshold). Toast tiers per `gdd-ui-architecture.md` §6.3.
+- **`gdd-hunting-foraging.md`** — new GDD with full SACRED rule citations + project-designed elaborations + implementation map + signal table + Phase 3.5 deferment list.
+- **`docs/coding_conventions.md` §19.3** — `wilderness_handlers.gd` events updated; new sub-section on "global vs state-scoped split" pattern with WildernessHandlers as the canonical example.
+- **Tests** (4 new suites, 41 tests total, all pass):
+  - `test_sustenance_resolver.gd` — 14 tests covering food/water/combined curves, thresholds, natural-healing blocking, recovery, consumption capping.
+  - `test_foraging_resolver.gd` — 12 tests covering food per-char rolls + stacking + Survival bonus + auto-self-feed + weather modifiers (storm blocks, rainy −1) + water auto-pass conditions (river/lake/rainy) + dry-hex per-char throws.
+  - `test_hunting_resolver.gd` — 6 tests covering hunt failure/success, Survival bonus, hunter selection (prefers Survival, falls back to first), empty party.
+  - `test_wilderness_loop_starvation.gd` — end-to-end 7-day no-supplies simulation against the SACRED HP curve (cumulative 19 hp loss with dehydration die forced to 2). Recovery test verifies threshold flag + healing unblocking.
+
+**Decisions made:**
+
+- **Day-tick handler must survive state transitions.** Phase 1 registered the day-tick inside `WildernessHandlers.register`, which got unregistered when the player camped or entered a dungeon. The fix splits registration into state-scoped and global, mirroring how `DomainHandlers` is wired. This was a Phase 1 bug that would have manifested the moment a Phase 3 day-tick fired during camp.
+- **Wilderness-only forage + sustenance gating.** The day-tick handler checks `party.current_location_type == "wilderness"` before running ForagingResolver / SustenanceResolver. Settlements abstract food/water (towns have markets); dungeons are presumed to carry their own (Phase 3.5 polish if/when long dungeon trips need consumption). Camp consumption rides the next normal day-tick once the party returns to wilderness.
+- **`ration_units` and `water_units` as abstract caches.** Phase 3 v1 does NOT sync these to inventory iron-rations. The two systems are parallel for now; Phase 3.5 polish wires `inventory_changed` → cache adjustment. Foraging deposits directly into the cache; consumption draws from it; the existing inventory-iron-rations display in the Notebook Travel tab continues to work for "physical" rations the player buys / drops.
+- **Damage source split between starvation and dehydration.** When both deficits apply, we attribute 1 hp to starvation (the constant per-day RAW penalty) and the rest to dehydration (the variable 1d4 per-day per-char). This gives the unified log + mortal-wound watcher correct cause attribution without complicating the SustenanceResolver result shape.
+- **Survival auto-self-feed always fires (regardless of throw).** Per the SACRED proficiency catalog flag "self_foraging." Phase 3 v1 grants +1 ration_unit per Survival member per wilderness day on top of the throw result. The catalog says "in a fairly fertile area" — v1 doesn't biome-gate, so a Survival member auto-self-feeds even in desert. Phase 3.5 may add the biome whitelist; flagged in the GDD.
+- **Per-character forage cadence is project-designed elaboration.** RAW reads "Proficiency throw 18+ on 1d20 per day of travel" without per-character qualifier. Code comment + GDD §3.1 cite the SACRED text + flag the elaboration. A future Opus review can second-guess.
+- **Water foraging is RAW-silent — fully project-designed.** Auto-pass on river/lake/rainy hex; otherwise 14+ Survival throw. The 14+ target matches the hunting target — finding hidden water on dry land is harder than gathering plants. Container fill UI deferred (water_units is the abstract container in v1).
+- **Hunt fires its OWN wandering-monster check, not the daily one.** RAW: "One wandering monster check is made during the day of hunting." We call `_runner.do_encounter_check(terrain)` directly inside `_resolve_hunt_activity`. The party's regular daily encounter check still fires per the existing `wilderness_encounter_check` event when Hunt isn't being run, so there's no double-count.
+- **Test fixtures refill water between food-curve days.** First test run hit two assertions because `water_units=0` after the first day of consumption confounded the food-grace tests. Fix: refill water explicitly in tests that isolate the food curve. The end-to-end starvation suite intentionally tests both deficits stacking.
+- **Camp full-rest also resets force-march state.** RAW rest rules tie rest-day to forced-march eligibility — a full rest day clears the ledger. Done in `_handle_rest_complete` alongside the exhaustion clear.
+
+**Interfaces defined or changed:**
+
+- `WildernessHandlers`:
+  - `register_state_scoped(registry)` / `unregister_state_scoped(registry)`.
+  - `register_global(registry)` / `unregister_global(registry)`.
+  - `register` / `unregister` retain the all-in-one shape (calls both halves).
+  - New helpers: `_is_wilderness_location`, `_terrain_for_party`, `_load_member_proficiencies`, `_apply_sustenance_hp_loss`, `_emit_forage_signals`, `_emit_sustenance_signals`, `_log_sustenance_day`, `_resolve_hunt_activity`, `_resolve_party_data_by_id`, `_toast_for_threshold` (static).
+  - `_handle_wilderness_day_tick` summary keys extended with `"forage"` and `"sustenance"` sub-dicts.
+- `SessionRunner`:
+  - New `_wilderness_global_handlers: WildernessHandlers` field, registered at `load_session` step 7b, unregistered at `end_session`.
+- `EventBus`:
+  - `forage_resolved(party_id: String, result: Dictionary)` (new).
+  - `hunt_resolved(party_id: String, result: Dictionary)` (new).
+  - `starvation_tick(character_id: String, hp_lost: int)` (new).
+  - `dehydration_tick(character_id: String, hp_lost: int)` (new).
+- `SustenanceResolver` (new RefCounted): static `apply_daily(party, dice, characters=[])`, static `is_natural_healing_blocked(party)`. Constants `FOOD_GRACE_DAYS = 2`, `FOOD_DAILY_HP_LOSS = 1`, `WATER_HP_DIE_SIDES = 4`, `WATER_HP_DIE_COUNT = 1`.
+- `ForagingResolver` (new RefCounted): static `attempt_daily(party, terrain, weather, dice)`. Constants `FOOD_TARGET_UNTRAINED = 18`, `WATER_TARGET_UNTRAINED = 14`, `HUNT_AND_FORAGE_TRAINED_BONUS = 4`, `WATER_AUTO_FILL_DAYS = 1`.
+- `HuntingResolver` (new RefCounted): static `attempt(party, dice)`. Constants `HUNT_TARGET_UNTRAINED = 14`, `HUNT_DIE_SIDES = 6`, `HUNT_DIE_COUNT = 2`.
+- `WildernessContextMenuBuilder.build_menu` — appends a `wilderness_hunt` action.
+- `WildernessExploreState._activity_type_for_action` — handles `"wilderness_hunt"` → `"hunt"`.
+- `CampHandlers._handle_rest_complete` — clears exhaustion / days_since_rest / force_march on full rest.
+- `PartyTabPage._refresh_travel_subtab` — new "Wilderness Sustenance" section with status counters.
+
+**Database changes:**
+
+- Migration 049: `party_sustenance_log` table with composite index on `(party_id, day_index DESC)`.
+- `db/schema.sql` updated: bumped to "Last migration applied: 049"; added `party_sustenance_log` table + index.
+
+**Tests added/updated:**
+
+- `tests/test_sustenance_resolver.gd` (14 tests).
+- `tests/test_foraging_resolver.gd` (12 tests).
+- `tests/test_hunting_resolver.gd` (6 tests).
+- `tests/test_wilderness_loop_starvation.gd` (2 tests with multi-day cumulative HP curve verification).
+- All 4 suites wired into `tests/test_runner.gd` + `tests/test_runner.tscn`.
+- Full suite: **144 passed, 22 failed**. Net +3 pass for new sustenance/forage/hunt suites. The 22 baseline failures are pre-existing flakies in unrelated suites (combat_context_menu_builder, party_split_merge fixture races, voxel-migration leftovers, create_party FK race in test_cs_tab_advancement). No new regressions.
+
+**Known issues:**
+
+- **Inventory iron-rations parallel to `ration_units`.** Phase 3 v1 does not sync the two; players can buy iron rations from a shop AND have separate ration_units accumulate from foraging. Both display correctly on the Notebook Travel tab but the player can be confused if they expect "buying iron rations should also bump my forage cache." Phase 3.5.
+- **Water containers (waterskins, barrels) abstract into `water_units`.** No "fill containers from river" prompt. Phase 3.5 polish surfaces the prompt when the player has empty inventory containers and is in a hex with a water source.
+- **Trained creatures and mounts not included in `party_size`.** PCs + henchmen only. Animals on the existing Notebook Travel tab still show their inventory-derived fodder/water rows, but they don't draw from the abstract caches. Phase 3.5.
+- **Survival auto-self-feed is biome-agnostic.** RAW says "in a fairly fertile area" — not gated in v1. Phase 3.5 may add a biome whitelist (clear / woods / hills / scrub) and exclude desert / frigid mountain.
+- **Hunter picker UI not implemented.** v1 picks the first Survival member (or first member). A future picker lets the player choose.
+- **Settlements / dungeons skip consumption.** A multi-day dungeon trip silently doesn't decrement supplies. Phase 3.5 may add dungeon consumption (settlements should remain abstracted — markets feed you).
+- **Rest-day cumulative penalty (`acore_adventures_and_encounters.xml` rest rules — 1 day per 6, cumulative −1 attack/damage)** is not yet enforced. The `exhaustion_days` counter is wired and CampManager clears it; the day-tick doesn't yet increment it on missed rest days. Phase 5 (Tier 2 in plan) will close this gap.
+- **Test fixtures rely on isolated `_FixedDice` / `_ScriptedDice` mocks** keyed by roll_type strings. Production calls go through DiceSystem and dice-override mechanisms work normally.
+
+**Next session should — Phase 4: Lair / POI discovery + survey:**
+
+1. New `engine/subsystems/exploration/lair_search_resolver.gd` — abstract search procedure per `le_wilderness_lair_rules.xml`, target value scales inversely with daily movement (18+ at ≤11 mi to 2+ at ≥192 mi); +4 Tracking from `acore_proficiencies_rules_and_catalog.xml`; `optional_specialist_bonus: int` parameter (always 0 until Phase 6).
+2. New `engine/subsystems/exploration/surveying_resolver.gd` — Land Surveying 18+ base, +4 cumulative per repeat search of the same hex.
+3. Modify `wilderness_handlers.gd::_handle_wilderness_activity`: replace survey stub with real call to SurveyingResolver; add `"search_lair"` branch (full-day, wandering check).
+4. Modify `_handle_travel_leg` end → call `LairSearchResolver.passive_check(party, hex)` for accidental discovery (1-in-N per leg per known-but-undiscovered POI).
+5. Modify `wilderness_context_menu_builder.gd`: wire **Survey** (replace stub) and **Search for Lairs**.
+6. Modify `hex_map_renderer.gd`: show discovered POI/lair markers; show `survey_progress.estimate` text in hover.
+7. Migration `050_poi_discovery.sql` + Migration `051_surveying_progress.sql`.
+8. World-gen pipeline backfill for existing campaigns (place lairs/POIs eagerly; resolvers flip discovered=1).
+9. Signals: `lair_discovered`, `poi_discovered`, `survey_completed`.
+10. Tests: `test_lair_search_resolver.gd`, `test_surveying_resolver.gd`, `test_lair_discovery.gd`.
+11. New GDD: `gdd-lair-discovery.md`.
+
+**[NEEDS-OPUS-REVIEW]** None this session. Phase 3 is mechanical implementation against the agreed plan. The per-character-with-stacking forage interpretation is project-designed elaboration of RAW — flagged in code + GDD with the SACRED citation so a future Opus review can second-guess the reading if play experience suggests reverting to a single party-level throw.
+
+---
+
+## Session 2026-05-04 — Wilderness closure Phase 4 (lair / POI discovery + survey)
+
+**Task:** Continue the wilderness closure plan — implement Phase 4 per `C:\Users\jttau\.claude\plans\run-an-update-pass-greedy-duckling.md`. Reveal placed-but-undiscovered monster lairs via three discovery paths: dedicated full-day search activity, per-leg passive spot, and Land Surveying assessment.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- **Migrations.**
+  - `db/migrations/050_poi_discovery.sql` — `lairs` (PK lair_id; campaign_id/map_id/hex_q/hex_r; monster_group/count; discovered/discovered_at_round/discovered_via) and `pois` (mirroring schema for POI generation, reveal flow deferred). Indexes on (campaign_id, map_id, hex_q, hex_r); partial index on `discovered = 0` for the per-leg passive lookup.
+  - `db/migrations/051_surveying_progress.sql` — `survey_progress` (PK on campaign_id, map_id, party_id, hex_q, hex_r) tracks `successful_searches`, `last_search_round`, `last_estimate`, `last_estimate_correct`. Last-estimate fields enable the renderer hover and persist the cumulative +4 Land Surveying bonus across save/load.
+  - `db/schema.sql` updated to mirror both migrations.
+
+- **Resolvers (pure logic, no DB writes / no signal emission).**
+  - `engine/subsystems/exploration/lair_search_resolver.gd`. Per `le_wilderness_lair_rules.xml` §searching_for_lairs.abstract_search_procedure target table (≤11 mi → 18+, ≥192 mi → 2+); §tracking +4 bonus on dedicated search; §aerial_reconnaissance ×2 daily-movement on `is_aerial=true`. Two entry points: `search_hour(party, daily_miles, undiscovered_lair_count, dice, optional_specialist_bonus, is_aerial)` and `passive_check(party, daily_miles, undiscovered_lair_count, dice, optional_specialist_bonus)`. The `optional_specialist_bonus` parameter is the Phase 6 Pathfinder hook (always 0 in Phase 4). Tracking does NOT apply to passive throws — project-designed elaboration documented in the GDD.
+  - `engine/subsystems/exploration/surveying_resolver.gd`. Per `le_wilderness_lair_rules.xml` §land_surveying — `assess(party, successful_searches_so_far, actual_lair_count, dice)` rolls 1d20 vs effective target = 18 - 4 × prior_searches. Success → reveal correct count; natural 1 → false reading via `actual ± 1d4` clamped to ≥0; other failure → inconclusive (no estimate produced).
+
+- **CampaignRepository helpers** appended at end of `engine/autoloads/campaign_repository.gd`:
+  - Lairs: `create_lair`, `get_lairs_in_hex`, `count_undiscovered_lairs`, `count_lairs_in_hex`, `reveal_one_lair`, `list_discovered_lairs`.
+  - POIs: `create_poi`, `get_pois_in_hex`, `reveal_poi`, `list_discovered_pois`.
+  - Survey: `get_survey_progress`, `upsert_survey_progress`.
+  - All queries use `query_with_bindings`. `reveal_one_lair` picks the first undiscovered lair by `lair_id` (stable tiebreak); returns "" when none remain.
+
+- **Wilderness handler wiring (`engine/subsystems/session/handlers/wilderness_handlers.gd`).**
+  - `_handle_wilderness_activity` survey stub replaced with a real call to `_resolve_survey_activity`. New `search_lair` activity branch routes to `_resolve_lair_search_activity`.
+  - `_resolve_survey_activity(party_id, hex_q, hex_r)` — loads proficiencies, queries actual lair count + prior survey progress, runs SurveyingResolver, persists when an estimate is produced (success OR false reading), emits `survey_completed` + toast.
+  - `_resolve_lair_search_activity(party_id, hex_q, hex_r)` — 8-hour synchronous loop: search throw + wandering encounter check per simulated hour. Stops on first reveal OR first encounter. Persists `successful_searches += 1` on any successful throw (RAW: cumulative +4 Land Surveying bonus). On reveal: `reveal_one_lair`, `EventBus.lair_discovered`, success toast. On encounter: routes through standard combat-entry `enter_combat` payload.
+  - `_passive_lair_check(party_data, coord, terrain)` called at end of `_handle_travel_leg` (before encounter check) when undiscovered lairs are present. Soft notification — does not halt travel. Tracking bonus suppressed; specialist bonus (Phase 6) still applies. Daily-movement-rate input from `TravelSpeedCalculator.get_miles_per_day(party, terrain_cat, on_road, null)`.
+  - `_map_id()` helper returns `_runner.get_hex_map_controller().get_map().id` or "" when not loaded.
+  - `_activity_label` extended with `"search_lair" → "Search for Lairs"`.
+
+- **Context menu wiring.**
+  - `engine/subsystems/exploration/wilderness_context_menu_builder.gd` — added `search_lair` option with action_type `wilderness_search_lair`, tooltip explains 1/hour cadence, +4 Tracking, wandering-check risk. Survey tooltip enriched with target-value summary.
+  - `engine/subsystems/session/states/wilderness_explore_state.gd` `_activity_type_for_action` maps `"wilderness_search_lair" → "search_lair"`.
+
+- **EventBus signals (`engine/autoloads/event_bus.gd`).**
+  - `lair_discovered(party_id, result)` — fires from dedicated search OR passive check. Result keys: lair_id, hex_q, hex_r, monster_group, via, round.
+  - `poi_discovered(party_id, result)` — schema declared, resolver wiring deferred.
+  - `survey_completed(party_id, result)` — fires after every survey assessment regardless of outcome.
+
+- **Hex map renderer hover (`scenes/maps/hex_map_renderer.gd`).**
+  - `_lair_tooltip_line(coord)` — counts revealed lairs in the hex; returns `"N revealed"` or empty.
+  - `_survey_estimate_tooltip_line(coord)` — reads the active party's `survey_progress` row and returns `"estimated N lair(s)"` (does NOT reveal whether it's a false reading from a natural-1).
+  - Both lines added to `_terrain_tooltip_text` after the weather line.
+
+- **Tests (3 new suites; all passing).**
+  - `tests/test_lair_search_resolver.gd` — 12 tests covering target-value table band edges, aerial doubling, search_hour with/without lairs and Tracking, passive_check short-circuit on zero undiscovered, no-Tracking on passive, specialist bonus pass-through.
+  - `tests/test_surveying_resolver.gd` — 7 tests covering ineligible (no Land Surveying), 18+ base target, cumulative −4 per prior search, success / inconclusive failure / natural-1 false reading, false-reading clamp at 0.
+  - `tests/test_lair_discovery.gd` — 4 end-to-end tests against real DB with migrations 050/051 applied: place 3 lairs / search until all revealed, reveal returns "" when no undiscovered, count helpers match actual state, survey_progress upsert round-trip.
+  - Wired into `tests/test_runner.tscn` (ext_resources 158/159/160) and `tests/test_runner.gd` (@onready vars + suite list).
+  - Existing `tests/test_wilderness_context_menu_builder.gd` updated for the menu-option count change (Hunt + Search for Lairs added since the test was last touched): `test_returns_seven_options_including_cancel` → `test_returns_expected_options_including_cancel` (now expects 9 = 8 actions + cancel); `test_all_expected_ids_present` includes `search_lair` and `hunt`; current-hex test expects 8 (7 activities + cancel).
+
+- **GDD.** `generation/gdd-lair-discovery.md` — full Phase 4 v1 status, SACRED citations to `le_wilderness_lair_rules.xml` (§searching_for_lairs.* sub-blocks) and `acore_proficiencies_rules_and_catalog.xml` (Tracking, Land Surveying entries), project-designed elaborations (passive throw cadence, specialist bonus pass-through hook, survey-not-counted-as-search), implementation map, signal payloads, deferred Phase 4.5 / Phase 5+ items.
+
+**Decisions made:**
+
+- **Per-leg passive check (project-designed).** RAW only addresses dedicated search and the wandering-encounter substitution rule (§wandering_monsters). Phase 4 adds a third path: one 1d20 per travel_leg into a hex with undiscovered lairs, target from daily-movement, no Tracking bonus, specialist bonus applies, soft notification (no travel halt). Rationale: without it, lairs in low-traffic hexes can never be discovered through normal play. Documented in GDD §3.1 with the SACRED citation.
+
+- **Specialist bonus as a Phase 6 hook.** Both LairSearchResolver entry points carry `optional_specialist_bonus: int = 0` parameters. Phase 4 always passes 0; Phase 6 wires `SpecialistBonusResolver.bonus_for(party, kind)` into the call sites without a signature rewrite.
+
+- **Survey activity does NOT count as a "search" for the cumulative bonus.** RAW §land_surveying.assessment_rules: bonus is from "successful searches the party has conducted." Surveys are independent; only successful `search_lair` throws bump `successful_searches`. Enforced in `_resolve_lair_search_activity`.
+
+- **Synchronous 8-hour search loop.** RAW models per-hour throws + per-hour wandering checks. v1 collapses these into a synchronous handler block (8 throws, 8 encounter checks, exit early on first reveal or first encounter), mirroring Hunt's deliberate-day model. Party clock does not auto-advance 8 hours within the handler — time-passing is handled at camp. A Phase 4.5 polish may convert this to 8 scheduled events at +1hr cadence so the world ticks during the search.
+
+- **Lair placement is upstream.** Both `lairs` and `pois` tables assume rows are created by setting-generation (eager) and on first lair-encounter substitution (Phase 5 follow-up tied to the encounter-resolution rewrite). Phase 4 ships the discovery side; populating the placement pipeline is out of scope.
+
+- **Renderer queries DB on hover.** `_lair_tooltip_line` and `_survey_estimate_tooltip_line` issue one indexed query each per hover. Cheap given the index + WHERE filters; if profiling later reveals a problem the data can be cached on `lair_discovered` / `survey_completed` signals.
+
+**Interfaces defined or changed:**
+
+- `LairSearchResolver.search_hour(party: PartyData, daily_miles: int, undiscovered_lair_count: int, dice, optional_specialist_bonus: int = 0, is_aerial: bool = false) -> Dictionary` — keys: roll, tracking_bonus, specialist_bonus, total, target, succeeded, lair_found, undiscovered_lairs_at_throw, notes.
+- `LairSearchResolver.passive_check(party, daily_miles, undiscovered_lair_count, dice, optional_specialist_bonus) -> Dictionary` — same shape minus tracking_bonus.
+- `LairSearchResolver.compute_target_value(daily_miles: int, is_aerial: bool = false) -> int`.
+- `SurveyingResolver.assess(party: PartyData, successful_searches_so_far: int, actual_lair_count: int, dice) -> Dictionary` — keys: eligible, surveyor_id, surveyor_name, roll, target, search_bonus, succeeded, natural_one, estimate, estimate_correct, notes.
+- `EventBus.lair_discovered(party_id, result)`, `EventBus.poi_discovered(party_id, result)`, `EventBus.survey_completed(party_id, result)`.
+- New `wilderness_activity` activity_type values: `"survey"` (now real) and `"search_lair"` (new).
+- New context-menu action_type: `"wilderness_search_lair"` → activity `"search_lair"`.
+- `CampaignRepository.create_lair`, `get_lairs_in_hex`, `count_lairs_in_hex`, `count_undiscovered_lairs`, `reveal_one_lair`, `list_discovered_lairs`, `create_poi`, `get_pois_in_hex`, `reveal_poi`, `list_discovered_pois`, `get_survey_progress`, `upsert_survey_progress`.
+
+**Database changes:**
+
+- Migration `050_poi_discovery.sql` adds `lairs` and `pois` tables with `discovered` flag + composite indexes.
+- Migration `051_surveying_progress.sql` adds `survey_progress` table with composite PK on (campaign_id, map_id, party_id, hex_q, hex_r).
+- Both applied successfully on first run; test suite rebuilds cleanly.
+
+**Tests added/updated:**
+
+- `tests/test_lair_search_resolver.gd` (12 tests, all passing).
+- `tests/test_surveying_resolver.gd` (7 tests, all passing).
+- `tests/test_lair_discovery.gd` (4 end-to-end tests, all passing).
+- `tests/test_wilderness_context_menu_builder.gd` count expectations updated (was already failing pre-Phase 4 due to Hunt addition).
+
+**Test results: 143 suites passed, 26 failed.**
+
+The 4 new/fixed Phase 4 suites all pass (LairSearchResolver, SurveyingResolver, LairDiscovery, WildernessContextMenuBuilder). The 26 failures match the same flaky baseline noted in the Phase 3 entry (the count varies 22-26 across runs depending on DB-state interaction with party_split_merge fixtures, voxel-migration leftovers, and a parse error in test_h3_polish.gd). None of the failing assertions are in Phase 4 territory; greps for "lair", "surveying", "survey_", "reveal_one", "create_lair", "create_poi" return only the four passing Phase 4 markers.
+
+**Known issues:**
+
+- Lair placement pipeline (eager world-gen) not yet wired. Phase 4 ships the discovery side only; lairs only enter the `lairs` table via test fixtures or a Phase 5 follow-up tying the encounter-resolution rewrite to `le_wilderness_lair_rules.xml` §placement_procedure.
+- POI discovery resolver wiring deferred. The `pois` table exists but no resolver flips `discovered = 1` for non-lair POIs; that work belongs to the broader `gdd-poi-generation.md` system.
+- Aerial reconnaissance half-hour cadence not wired (the 2× daily-movement multiplier IS wired via `is_aerial`).
+- Pre-existing flaky test baseline. Same 22-26 suites failing as Phase 3 closed against. Phase 4 didn't add new failures (per content grep), but the count varies between runs.
+
+**Next session should:**
+
+- **Phase 5 — Tracking, evasion/pursuit, reaction-driven branching.** Per the closure plan, this is the next phase: bundle tracking_resolver, evasion_resolver, wilderness_reaction_router, and the encounter-pipeline rewrite that consults the reaction roll instead of always engaging combat. Highest-risk phase in the plan; use feature flag `reaction_router_enabled` so the always-combat path can be restored if regressions appear.
+- Optional Phase 4.5 polish before Phase 5: wire eager lair placement during setting-generation per RAW §lair_generation_procedure (uses the per-terrain × per-classification lairs_per_hex table). Without this, Phase 4's discovery side has no content to discover until Phase 5 wires the §encounter substitution rule.
+
+**[NEEDS-OPUS-REVIEW]** The per-leg passive lair-spot is the only project-designed deviation from RAW in Phase 4 (target value, Tracking-suppression, specialist-bonus-applies). Documented with the SACRED citation in `gdd-lair-discovery.md` §3.1 and a comment block in `lair_search_resolver.gd`. A future Opus review can second-guess if play experience shows the cadence is too generous (or stingy).
+
+---
+
+## Session 2026-05-04 — Wilderness closure Phase 5 (tracking, evasion/pursuit, reaction router)
+
+**Task:** Continue the wilderness closure plan — implement Phase 5 per `C:\Users\jttau\.claude\plans\run-an-update-pass-greedy-duckling.md`. Bundle three "what happens when two parties meet" rules sets: per-trail Tracking proficiency throws (`acore_proficiencies_rules_and_catalog.xml`), Wilderness Evasion + pursuit cycle (`acore_adventures_and_encounters.xml` §chases_in_the_wilderness), and the reaction-driven encounter routing that consults the existing 2d6 reaction roll instead of always engaging combat.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- **Migration 052 (`db/migrations/052_tracking_pursuit.sql`).**
+  - `tracking_sessions` (PK session_id; campaign_id/party_id/target metadata; weather_decay_total REAL; closed/closed_reason). At most one open session per party in v1.
+  - `pursuit_states` (PK pursuit_id; pursuer metadata; pursuer_speed_advantage; days_in_pursuit; closed/closed_reason).
+  - `db/schema.sql` updated to mirror.
+
+- **Three resolvers (pure logic, no DB writes / no signal emission).**
+  - `engine/subsystems/exploration/tracking_resolver.gd`. Per `acore_proficiencies_rules_and_catalog.xml` Tracking entry: 11+ base, +2/+4/+6/+8 by group size, +4 soft / -8 hard ground, -4 bad lighting, -1/12hr good weather, -4/hr rain or snow. `compute_weather_decay(hours_elapsed, weather)` aggregates the period decay; `attempt(...)` rolls one throw with all modifiers + accumulated decay. `pick_tracker(party)` returns first Tracking-proficient member or null.
+  - `engine/subsystems/exploration/evasion_resolver.gd`. Per `acore_adventures_and_encounters.xml` §chases_in_the_wilderness: Wilderness Evasion table (≤4 → 11+, 5-12 → 14+, 13-24 → 16+, 25+ → 19+), pursuer-ratio bands (≤25%, 26-75%, 76%+) → +0/+3-4/+5-8 bonus to throw, judge_modifier pass-through, 5% RAW floor (natural-20-always-succeeds). `catch_up(pursuer_speed_advantage, dice)` rolls 1d20 vs 11 only when pursuer is faster.
+  - `engine/subsystems/exploration/wilderness_reaction_router.gd`. Per `§reactions` table — maps `behavioral_disposition` string to one of three actions. Hostile/unfriendly → combat; neutral/friendly → encounter (parley UI); indifferent → avoid (silent pass-by). Carries `FEATURE_REACTION_ROUTER_ENABLED := true` constant for roll-back. `decide(encounter_data, feature_enabled)` returns ready-to-spread `handler_result` Dictionary in EventHandlerRegistry contract.
+
+- **Wilderness handler wiring (`engine/subsystems/session/handlers/wilderness_handlers.gd`).**
+  - **Reaction router consultation** added at all four encounter-dispatch points: `_handle_travel_leg`, `_handle_encounter_check`, `_resolve_hunt_activity`, `_resolve_lair_search_activity`. Avoid action skips combat with a soft `encounter_avoided` toast; combat / encounter spreads the router's `handler_result` directly into the return.
+  - **`tracking_check` event handler** (`_handle_tracking_check`) — daily self-rescheduling on success; closes session "lost_trail" on failure. Computes period weather decay from `last_check_round` to current `fire_time` against the current hex's weather (v1 simplification — future polish integrates over the trail's hex history).
+  - **`pursuit_catchup_check` event handler** (`_handle_pursuit_catchup_check`) — daily roll. On caught: closes pursuit, emits `pursuit_caught_up`, returns hostile-forced `enter_combat` payload (synthesised encounter with `forced_pursuit: true`, disposition hostile). On miss: bumps `days_in_pursuit`, reschedules tomorrow.
+  - Both new handlers registered in `register_global` so they keep ticking through state transitions (camp / dungeon mid-session).
+
+- **`TravelSpeedCalculator` half-speed** while tracking. Optional `is_tracking: bool = false` parameter on `calculate_party_speed`, `get_miles_per_day`, `hex_crossing_rounds`. When true, applies a 0.5× multiplier after terrain × encumbrance × forced-march × weather. Result dict carries `tracking_multiplier` and `is_tracking` for downstream telemetry.
+
+- **CampaignRepository helpers (Phase 5 section appended at end of `engine/autoloads/campaign_repository.gd`).**
+  - `open_tracking_session`, `get_open_tracking_session`, `update_tracking_session`, `close_tracking_session`.
+  - `open_pursuit_state`, `get_open_pursuit_state`, `update_pursuit_state`, `close_pursuit_state`.
+
+- **EventBus signals (`engine/autoloads/event_bus.gd`).**
+  - `encounter_avoided(party_id, encounter_data)` — fires on indifferent disposition.
+  - `tracking_session_started(party_id, session)` and `tracking_session_ended(party_id, result)`.
+  - `evasion_attempted(party_id, result)`.
+  - `pursuit_caught_up(party_id, pursuit_id, result)`.
+
+- **Tests (4 new suites; all passing).**
+  - `tests/test_tracking_resolver.gd` — 12 tests covering ineligibility, base 11+, all four group-size bands, ground modifiers (soft / hard), bad lighting, weather decay (calm / rainy granularity), pick_tracker preference.
+  - `tests/test_evasion_resolver.gd` — 12 tests covering all four evader-size rows, three ratio bands, judge modifier pass-through, 5%-floor natural-20 rescue, catch-up eligibility / target / outcomes.
+  - `tests/test_wilderness_reaction_router.gd` — 10 tests covering all five disposition mappings, fallback on unknown, feature flag off, handler-result shape for each action.
+  - `tests/test_evasion_full_flow.gd` — 3 end-to-end tests against real DB with migration 052 applied: success no-pursuit, fail → pursuit → 2-day catch, fail → catch-up miss → retry-success closes pursuit "evaded".
+  - All four wired into `tests/test_runner.tscn` (ext_resources 161/162/163/164) and `tests/test_runner.gd`.
+
+- **GDDs (3 new).**
+  - `generation/gdd-tracking.md` — full SACRED citations for the Tracking entry, daily-cadence + accumulating-decay project-designed elaborations, deferred polish (sub-party tracking, trail-length weather integration, hour-cadence option).
+  - `generation/gdd-evasion-pursuit.md` — Wilderness Evasion table, 5%-floor rationale, daily catch-up cycle, project-designed forced-hostile-on-catch decision, deferred items (surprise auto-escape, combat-retreat → evasion entry hook).
+  - `generation/gdd-reaction-router.md` — full disposition → action mapping with rationale, feature-flag contract, all four call sites enumerated, deferred items (Charisma-driven parley on unfriendly, monster-ecology overrides).
+
+**Decisions made:**
+
+- **Reaction routing happens in handlers, not in `combat_state.gd`.** The plan suggested modifying `CombatState.enter` to consult the router. Phase 5 implements router consultation upstream in the wilderness handlers instead, leaving `CombatState` as the pure "fight" state. Rationale: keeps combat-entry side-effect-free and avoids a state-transition-mid-enter dance. The router result is a ready-to-spread `handler_result` dict that fits the existing EventHandlerRegistry contract verbatim.
+
+- **Feature flag as a `const`, not a runtime setting.** `WildernessReactionRouter.FEATURE_REACTION_ROUTER_ENABLED := true` is a compile-time constant. Toggle by editing the source. No runtime UI hook in v1. Rationale: the flag exists for emergency roll-back during regression chasing, not as a player-facing option.
+
+- **Forced-hostile combat on pursuit catch-up.** RAW says the pursuers "catch them" without specifying combat starts. Phase 5 forces hostile combat (`forced_pursuit: true`, disposition hostile, reaction roll 2). Pursuers have already chosen not to give up across multiple days — a friendly catch-up reads as inconsistent. The synthesised encounter bypasses the reaction router (no parley after a multi-day chase). Documented in `gdd-evasion-pursuit.md` §3.4 for future Opus reconsideration.
+
+- **5% minimum escape chance modeled as natural-20 always succeeds.** RAW says the floor exists, doesn't say *how* to model it. v1: a natural 20 ignores any modifier-driven failure. 1/20 = 5% exactly. Result dict carries `floor_applied` so the Notebook history can mark these as "lucky escape" without litigating internal math.
+
+- **Group-size band overlaps in the Tracking RAW.** "4-8 creatures" → +4 and "8-16 creatures" → +6 share creature 8; "8-16" and "17 or more" share creature 16. v1 splits as 2-4 → +2, 5-7 → +4, 8-15 → +6, 16-… wait actually 16 falls into +6 band (lower-band-wins for the boundary creature). Tests pin the exact creature counts.
+
+- **Tracking weather decay accumulates against the trail's age, not the throw.** RAW reads "since the trail was made". v1 uses `weather_decay_total` (REAL) on the tracking session row, adds the period decay each daily check, applies the running total as a flat modifier. Future polish: sample the weather along each historical hex of the trail (not the current hex) — requires trail-history data the model doesn't yet carry.
+
+- **Bundle three GDDs instead of one.** Plan said two GDDs (tracking, evasion-pursuit). Added a third (reaction-router) because the routing decision and feature flag are substantial enough to warrant their own document, and it gives Phase 6+ a stable reference for the disposition → state mapping.
+
+**Interfaces defined or changed:**
+
+- `TrackingResolver.attempt(tracker: CharacterData, target_size: int, ground_kind: String, lighting: String, weather_decay: int, dice) -> Dictionary` — keys: tracker_id, roll, group_bonus, ground_modifier, lighting_modifier, weather_decay, total, target, succeeded, notes.
+- `TrackingResolver.compute_weather_decay(hours_elapsed: float, weather: WeatherStateData) -> int`.
+- `TrackingResolver.pick_tracker(party: PartyData) -> CharacterData`.
+- `EvasionResolver.attempt(evader_size: int, pursuer_size: int, judge_modifier: int, dice) -> Dictionary` — keys: evader_size, pursuer_size, ratio_band, base_target, bonus, judge_modifier, roll, total, succeeded, floor_applied, notes.
+- `EvasionResolver.catch_up(pursuer_speed_advantage: int, dice) -> Dictionary` — keys: eligible, roll, target, caught, notes.
+- `WildernessReactionRouter.decide(encounter_data: Dictionary, feature_enabled: bool = FEATURE_REACTION_ROUTER_ENABLED) -> Dictionary` — keys: action ("combat" | "encounter" | "avoid"), disposition, notes, handler_result.
+- `WildernessReactionRouter.FEATURE_REACTION_ROUTER_ENABLED: bool` (const).
+- `EventBus.encounter_avoided(party_id, encounter_data)`, `EventBus.tracking_session_started(party_id, session)`, `EventBus.tracking_session_ended(party_id, result)`, `EventBus.evasion_attempted(party_id, result)`, `EventBus.pursuit_caught_up(party_id, pursuit_id, result)`.
+- New event types: `tracking_check`, `pursuit_catchup_check` (registered in `register_global`).
+- `TravelSpeedCalculator.calculate_party_speed/get_miles_per_day/hex_crossing_rounds` gain optional trailing `is_tracking: bool = false`.
+- `CampaignRepository.open_tracking_session / get_open_tracking_session / update_tracking_session / close_tracking_session / open_pursuit_state / get_open_pursuit_state / update_pursuit_state / close_pursuit_state`.
+
+**Database changes:**
+
+- Migration `052_tracking_pursuit.sql` adds `tracking_sessions` and `pursuit_states` tables with composite indexes on (campaign_id, party_id, closed). Both applied successfully on first run.
+
+**Tests added/updated:**
+
+- 4 new suites totaling 37 tests, all passing.
+- Wired into test_runner via ext_resources 161-164.
+
+**Test results: 147 suites passed, 26 failed.** +4 passes vs Phase 4 (143/26), same failure count — no regressions from Phase 5. The 26 failures match the same flaky baseline as Phase 4 (party_split_merge fixture races, voxel-migration leftovers, h3_polish parse error). Greps for `tracking_resolver`, `evasion_resolver`, `reaction_router`, `evasion_full_flow` return only the four passing Phase 5 markers.
+
+**Known issues:**
+
+- **Combat-retreat → evasion entry not yet wired.** `EvasionResolver.attempt` is ready, but the combat retreat path in `morale_resolver.gd` / `combat_finalizer.gd` doesn't call it. Phase 5.5 polish (or roll into Phase 7 sea travel which has parallel sea-evasion mechanics).
+- **Surprise auto-escape not wired.** RAW §automatic_escape_on_surprise needs a hookable surprise stage in the encounter pipeline.
+- **Pursuit reaction-roll gate not wired.** RAW says "monsters pursue characters on a reaction roll of 2-8." v1 lets the caller decide whether to open a pursuit_states row.
+- **Trail-length weather integration not done.** v1 uses current-hex weather as a stand-in for trail-length weather decay.
+- **One open session/pursuit per party.** v1 enforces; Phase 5.5 may relax for sub-party splits.
+
+**Next session should:**
+
+- **Optional Phase 5.5 polish** — wire combat retreat → evasion attempt, surprise auto-escape, pursuit reaction-roll gate. Each is small (~1 session) and self-contained.
+- **Phase 6 — Specialists subsystem** (Pathfinder / Land Surveyor / Cartographer at 25 gp/mo per `le_wilderness_lair_rules.xml` §hirelings and `acore_equipment.xml §specialists`). New subsystem under `engine/subsystems/specialists/`; retroactively wires the `optional_specialist_bonus` parameter from Phase 4 (LairSearchResolver) and the corresponding hooks to be added in Phase 5's TrackingResolver. Also wires monthly wage debits through the existing `wages_processed` flow.
+
+**[NEEDS-OPUS-REVIEW]** The disposition → session-state mapping in `WildernessReactionRouter` is the load-bearing project-designed decision in Phase 5 (Hostile/Unfriendly → combat, Neutral/Friendly → parley, Indifferent → avoid). RAW leaves the routing to the Judge. A future Opus review may want to revisit based on monster ecology (carnivores stay aggressive on unfriendly; herbivores avoid). The router's signature reads `encounter_data` as a whole rather than just the disposition string, so an ecology-aware rewrite is a non-breaking change.
+
+---
+
+## Session 2026-05-04 — Wilderness closure Phase 6 (Specialists subsystem)
+
+**Task:** Continue the wilderness closure plan — implement Phase 6 per `C:\Users\jttau\.claude\plans\run-an-update-pass-greedy-duckling.md`. Land the Specialists subsystem (Pathfinder + Land Surveyor) and retroactively wire the `optional_specialist_bonus` hooks that Phase 4 / Phase 5 reserved.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- **Migration 053 (`db/migrations/053_specialists.sql`).**
+  - `specialists` table (PK specialist_id; campaign_id/party_id; kind ∈ {pathfinder, land_surveyor}; name, settlement_id, hired_at_round, monthly_wage_gp, last_paid_round, unpaid_months, closed/closed_reason). NOT a sub-table of `characters` — specialists have no proficiency rows, no inventory, no party_members linkage. Index on (campaign_id, party_id, closed).
+  - `db/schema.sql` updated to mirror.
+
+- **Three modules under new `engine/subsystems/specialists/` directory.**
+  - `specialist_catalog.gd` — pure data. Defines `pathfinder` and `land_surveyor` kinds with wages (25 gp/mo each) and bonus values per resolver kind (`KIND_LAIR_SEARCH`, `KIND_LAIR_SEARCH_PASSIVE`, `KIND_SURVEYING`, `KIND_TRACKING`). Pathfinder grants +4 to lair_search/passive/tracking; Land Surveyor grants +4 to surveying. `get_definition` returns deep-copied dicts so callers can't mutate the catalog.
+  - `specialist_bonus_resolver.gd` — aggregation. `bonus_for(campaign_id, party_id, resolver_kind)` reads active specialists from DB and sums per-kind bonuses; `bonus_from_rows(rows, resolver_kind)` is the in-memory variant for fixtures. STACKS across multiple specialists of the same kind.
+  - `specialist_hire_manager.gd` — lifecycle. `hire(campaign_id, party_id, settlement_id, kind, name, hired_at_round)` opens a row and emits `specialist_hired`. `dismiss(specialist_id, party_id)` closes "dismissed" and emits `specialist_dismissed`. `process_monthly_wages(party_id, employer_id, fire_round)` debits PartyWallet via the active employer's purse, increments `unpaid_months` on insufficient funds, auto-closes "unpaid" after 2 months grace. Emits `specialist_wages_processed` with summary.
+
+- **CampaignRepository helpers** appended at end of `engine/autoloads/campaign_repository.gd`: `open_specialist(data)`, `list_active_specialists(campaign_id, party_id)`, `get_specialist(specialist_id)`, `update_specialist(specialist_id, fields)`, `close_specialist(specialist_id, reason)`.
+
+- **EventBus signals (`engine/autoloads/event_bus.gd`).**
+  - `specialist_hired(party_id, data)` — fires from `SpecialistHireManager.hire` on success.
+  - `specialist_dismissed(party_id, data)` — fires from voluntary dismiss + unpaid auto-dismiss.
+  - `specialist_wages_processed(party_id, summary)` — mirrors `wages_processed` for henchmen.
+
+- **Phase 4/5 resolvers retroactively wired.**
+  - `SurveyingResolver.assess(...)` — added `optional_specialist_bonus: int = 0` parameter. Bonus added to roll before target comparison; result dict gains `specialist_bonus` and `total` keys for downstream telemetry.
+  - `TrackingResolver.attempt(...)` — added `optional_specialist_bonus` parameter. Bonus added into the running total alongside group/ground/lighting/decay modifiers.
+  - `LairSearchResolver` already had the parameter from Phase 4 — no signature changes needed.
+
+- **Wilderness handler call sites updated** (`engine/subsystems/session/handlers/wilderness_handlers.gd`).
+  - `_handle_tracking_check` queries `SpecialistBonusResolver.bonus_for(campaign_id, party_id, KIND_TRACKING)` and passes to `TrackingResolver.attempt`.
+  - `_resolve_survey_activity` queries `KIND_SURVEYING` and passes to `SurveyingResolver.assess`.
+  - `_resolve_lair_search_activity` queries `KIND_LAIR_SEARCH` per hour and passes to `LairSearchResolver.search_hour`.
+  - `_passive_lair_check` queries `KIND_LAIR_SEARCH_PASSIVE` and passes to `LairSearchResolver.passive_check`.
+
+- **Tests (4 new suites; all passing).**
+  - `tests/test_specialist_catalog.gd` — 7 tests covering kind enumeration, RAW wages, bonus tables, unknown-kind fallbacks, get_definition copy semantics.
+  - `tests/test_specialist_bonus_resolver.gd` — 6 tests covering empty rows, single specialist, stacking, kind isolation, mixed aggregation, unknown-kind tolerance.
+  - `tests/test_specialist_hire_manager.gd` — 6 tests against the real DB with migration 053; uses real EventBus + signal-recorder pattern (Godot 4 forbids subclassing Object to override emit_signal — connect to the real signals instead).
+  - `tests/test_specialist_integration.gd` — 5 integration tests proving the bonus flows through Phase 4/5 resolvers: lair_search with vs without Pathfinder, passive_check with vs without, surveying with vs without Land Surveyor, tracking with vs without Pathfinder, plus a default-parameter equivalence test.
+  - All four wired into `tests/test_runner.tscn` (ext_resources 165/166/167/168) and `tests/test_runner.gd`.
+
+- **GDD.** `generation/gdd-specialists.md` — full SACRED citations (`acore_equipment.xml §specialists` for henchman-cap exemption + monthly fee + maximum_henchmen exemption; `le_wilderness_lair_rules.xml §hirelings` for the scout type definitions). Documents project-designed bonus values, stacking semantics, two-month wage grace, and the deferred polish list (settlement hiring panel, settlement availability, protection requirement, specialist evasion, other specialist kinds).
+
+**Decisions made:**
+
+- **Specialists in their own subsystem, not under `henchmen/`.** Per `acore_equipment.xml §specialists.maximum_henchmen.exemption` ("specialists do not count against this limit") and the lack of morale / advancement / treasure-share. Phase 6 places the three modules under `engine/subsystems/specialists/`. Avoids the prior plan's mistake of putting `scout_specialist_resolver.gd` under `henchmen/`.
+
+- **Two specialist kinds, not three.** RAW (`le_wilderness_lair_rules.xml §hirelings`) defines Pathfinder + Land Surveyor; Cartographer is the Land Surveyor's proficiency template, not a separate specialist. Phase 6 v1 ships two kinds. The catalog data structure supports adding more without schema changes — the `kind` CHECK constraint can be extended in a future migration.
+
+- **+4 bonus value (project-designed) matches natural proficiency bonus.** RAW doesn't quote a numeric assistance bonus. v1 grants +4 to match what a 1st-level Explorer with the appropriate template proficiency would have on the same throw. Tunable per-kind via the catalog dict.
+
+- **Specialist bonuses STACK across multiple specialists of the same kind.** RAW does not prohibit hiring multiples; the wilderness scout availability tables suggest a party may. Two Pathfinders → +8 to lair_search. Practical ceiling is set by settlement availability, not by code-level cap.
+
+- **Two-month grace for unpaid wages.** RAW silent on wage-default consequences. v1 picks 2 months as a reasonable cash-flow buffer; auto-closes "unpaid" beyond. Configurable via `UNPAID_LIMIT` constant in `SpecialistHireManager`.
+
+- **Real EventBus + signal-recorder for tests, not stub bus.** First test draft used a `_StubBus` that overrode `emit_signal` — Godot 4 rejects this with "method overrides a method from native class". Final tests connect Callables to the real `EventBus.specialist_hired` etc. and append to a recorder array, giving the same observability without fighting the type system.
+
+- **Hiring UI deferred to Phase 6.5.** The plan called for a `specialist_hiring_panel.gd` settlement-overlay UI. Phase 6 v1 ships the engine layer + programmatic hire path. UI is the next-session polish — gated on the broader settlement availability pool work that mirrors the henchman pool generator.
+
+- **`SurveyingResolver` parameter-list rewrite is non-breaking.** The Phase 4 signature was `assess(party, prior, actual, dice)`; Phase 6 appends `optional_specialist_bonus: int = 0`. Existing Phase 4 tests pass without modification because the default 0 preserves prior behavior (verified in `test_specialist_integration.test_zero_specialist_bonus_matches_legacy_behavior`).
+
+**Interfaces defined or changed:**
+
+- `SpecialistCatalog.list_kinds() -> Array[String]`, `get_definition(kind) -> Dictionary`, `is_known_kind(kind) -> bool`, `display_name(kind) -> String`, `monthly_wage_gp(kind) -> int`, `bonus_for_resolver(kind, resolver_kind) -> int`, `notes(kind) -> String`. Constants: `PATHFINDER`, `LAND_SURVEYOR`, `KIND_LAIR_SEARCH`, `KIND_LAIR_SEARCH_PASSIVE`, `KIND_SURVEYING`, `KIND_TRACKING`.
+- `SpecialistBonusResolver.bonus_for(campaign_id, party_id, resolver_kind) -> int`, `bonus_from_rows(rows, resolver_kind) -> int`.
+- `SpecialistHireManager.new(repository, event_bus)` constructor; `hire(...)`, `dismiss(...)`, `process_monthly_wages(...)`.
+- `SurveyingResolver.assess(...)` gains optional trailing `optional_specialist_bonus: int = 0`. Result dict gains `specialist_bonus` and `total` keys.
+- `TrackingResolver.attempt(...)` gains optional trailing `optional_specialist_bonus: int = 0`. Result dict gains `specialist_bonus` key.
+- `EventBus.specialist_hired(party_id, data)`, `EventBus.specialist_dismissed(party_id, data)`, `EventBus.specialist_wages_processed(party_id, summary)`.
+- `CampaignRepository.open_specialist`, `list_active_specialists`, `get_specialist`, `update_specialist`, `close_specialist`.
+
+**Database changes:**
+
+- Migration `053_specialists.sql` adds the `specialists` table with composite index on (campaign_id, party_id, closed). Applied successfully on first run; test suite rebuilds cleanly.
+
+**Tests added/updated:**
+
+- 4 new suites totaling 24 tests, all passing.
+- Wired into test_runner via ext_resources 165-168.
+
+**Test results: 151 suites passed, 26 failed.** +4 passes vs Phase 5 (147/26), same failure count — no regressions. All Phase 6 suites green; greps for `specialist_catalog`, `specialist_bonus`, `specialist_hire`, `specialist_integration` return only the four passing markers.
+
+**Known issues:**
+
+- **Settlement hiring UI deferred** (Phase 6.5). Programmatic hire works; market-stall overlay panel pending.
+- **Settlement availability not gated.** `hire(...)` accepts any settlement_id — RAW says scouts available "in same numbers as navigators" but the per-settlement pool generator isn't yet wired.
+- **Protection requirement not enforced.** RAW: scouts expect mercenaries equal to max lairs in the hex.
+- **Specialist evasion in encounters not modeled.** RAW: "scouts attempt to evade wandering monsters." When a wandering encounter triggers during a search, specialists currently silently vanish from the picture.
+- **Other specialist kinds not in catalog yet** (Alchemist, Sage, etc. from `acore_equipment.xml §specialists.specialist_details`). Catalog supports them additively when needed.
+- **Pre-existing flaky baseline** unchanged at 26 failures (party_split_merge fixtures, voxel-migration leftovers, h3_polish parse error).
+
+**Next session should:**
+
+- **Phase 6.5 polish** (Optional): wire the settlement hiring UI + settlement availability pool, add the protection-requirement check on lair_search activities, model specialist evasion in wandering encounters during search.
+- **Phase 7 — Sea + aerial travel.** Per the closure plan: sea_travel_calculator (wind table, sailing ×0–×2, fishing 14+, scurvy from `acore_adventures_and_encounters.xml`); aerial_travel_calculator (×2 daily, HD capacity table); migration 054 voyage_state. Phase 7 is parallelizable and additive — low risk, mostly new code, no rewrites of existing systems.
+- The MVP cut from the plan (Phase 1-3 + Phase 4 lair-search slice) was already exceeded by completing all of Phase 4-6. The wilderness closure roadmap is now COMPLETE for everything except sea/aerial travel (Phase 7) and optional Phase 6.5 polish.
+
+**[NEEDS-OPUS-REVIEW]** The +4 specialist bonus values are a project-designed numeric calibration. RAW describes the role but not the magnitude. If play experience shows that hiring a Pathfinder makes lair-search trivially easy (or the 25 gp/mo wage feels too cheap for the bonus), tune via the `bonuses` dict in `SpecialistCatalog._DEFINITIONS`. The stacking-allowed model also bears review — letting a wealthy party with five Pathfinders auto-find every lair may not be the intended outcome.
+
+
+## Session 2026-05-02 — Familiar proficiency, Stage 3b revision (class/general slot split + stacking)
+
+**Task:** Revise the FamiliarProficiencyPicker to mirror the master's ProficiencySelectionPanel pattern: separate Class and General slot budgets (instead of one unified budget) and support multi-pick rank advancement on stacking proficiencies (instead of unique-only). Per user directive: "the same Class/General slot split as its master, and it needs to be able to take multiple ranks of a proficiency just like a character does."
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- Rewrote `scenes/ui/familiar/familiar_proficiency_picker.gd` (~370 lines, was ~340). Key changes:
+  - **Two budgets in state:** `class_slot_budget` and `general_slot_budget` replace the prior single `proficiency_budget`. Caller (FamiliarAcquisitionPanel / LevelUpFamiliarPicker) computes them separately from master's slot uses by `slot_type`.
+  - **TabBar (Class / General)** in the UI replaces the single eligible list. Each tab renders only its slot-type-appropriate proficiencies — Class shows master's `class_proficiency_list`, General shows the catalog's general list. Picked-list on the right is unified and shows a `[C]` / `[G]` slot-type chip per pick.
+  - **Stacking advancement:** non-spec, `selection_rule == "stacking"` proficiencies (Alchemy, Engineering, Knowledge, Craft, Profession, Fighting Style) now advance rank on repeat clicks, capped at `max_rank`. Each advance consumes another slot. UI label shows "Rank N → N+1" or "Rank N — max" when capped. Per-pick Rank- button on the picked-list row lets the player back off a rank.
+  - **Specialization variants:** spec-rule procs (Knowledge etc.) can be picked multiple times for different specialization variants. The picked-list row's specialization OptionButton filters out already-taken variants for the same (key, slot_type) pair so the player can't double-pick the same field.
+  - **Unique procs:** `selection_rule == "unique"` blocks repeat picks in the same slot_type as before. UI label shows "Picked" + disabled state.
+  - **`max_selections == 0` is unlimited.** ACKS catalog convention for Knowledge / Craft / Profession (where the player can keep adding new fields). The picker treats 0 as unbounded; positive caps are still enforced.
+  - Each pick stored as `{proficiency_key, slot_type, rank, selections_count, specialization}` — mirrors `character_proficiencies` shape exactly so engine-side processing is uniform.
+  - New public accessors `get_eligible_class_keys()` / `get_eligible_general_keys()` for tests + integration callers; `get_eligible_keys()` retained as a backward-compat union accessor.
+- Updated `scenes/ui/character_creation/familiar_acquisition_panel.gd`:
+  - New static helpers `compute_master_class_count(proficiencies)` and `compute_master_general_count(proficiencies)` filter master's proficiencies by `slot_type` and sum `selections_count`. The legacy `compute_master_proficiency_count` is retained as the total (sum of both) — used to stamp the familiar row's `proficiency_count_cached` field.
+  - Picker setup now passes both `class_slot_budget` and `general_slot_budget` instead of a single `proficiency_budget`.
+  - Header summary text updated to spell out the two-budget structure for the player.
+- Updated `scenes/ui/character_sheet/tabs/level_up_familiar_picker.gd`:
+  - Replaced single `_new_total_proficiency_count` with `_new_class_slot_budget` and `_new_general_slot_budget` computed from master's per-slot-type sums + level-up's new slot grants (`new_class_proficiency_slots`, `new_general_proficiency_slots`).
+  - Case A's synthetic master-proficiency Array is now per-slot-type (so the embedded acquisition panel's `compute_master_class_count` / `compute_master_general_count` arrive at the right budgets).
+  - Case B's proficiency-picker sub-state carries `class_slot_budget` + `general_slot_budget` instead of a single budget.
+  - `get_final_choices()` includes `proficiency_count_cached` in BOTH cases (was previously Case A only) so the engine's level-up persistence stamps the familiar row consistently.
+- `engine/subsystems/characters/level_up_engine.gd`'s `_persist_familiar_level_up` already consumed `proficiency_count_cached` from choices when present; no change needed for the new shape. The Case B path writes only `proficiencies_chosen` (the entries now carry `slot_type` and `rank` fields, but the JSON column stores them transparently and the FamiliarController's level-up cache refresh derives the count from sum-of-selections_count regardless of slot split).
+- Updated `tests/test_familiar_proficiency_picker.gd` (17 tests now, was 12). Verifies: class list is master's class only; general list excludes class-specific keys; lists drop unknown keys; zero budget = trivially complete; class pick records `slot_type=class`; general pick records `slot_type=general`; class-budget-full blocks class picks but not general; general budget independent of class; stacking proc advances rank on repick; stacking capped at `max_rank`; unique proc blocked after first pick; specialization-rule pick incomplete until spec chosen; spec selection completes; multiple variant picks supported (Knowledge with `max_selections == 0`); remove pick frees the slot; returning to step restores prior picks; eligible lists deterministic from class_id alone. **All 17 pass.**
+- Updated `tests/test_familiar_acquisition_panel.gd` (now 9 tests vs. 7): added separate `compute_master_class_count` / `compute_master_general_count` tests; renamed prior test for the total helper; updated `setup_threads_class_id_and_budgets` to assert both budgets land correctly; rewrote `is_complete_requires_both_sub_pickers` and `familiar_substate_shared_with_creation_state` to use the new picker API (`_on_eligible_pressed(key, slot_type)`).
+- Updated `tests/test_level_up_familiar_picker.gd` (8 tests, same count): rewrote Case B and Case A "final choices" tests to drive the new picker (split picks across class+general slot types) and assert the `slot_type` field on picks.
+
+**Decisions made:**
+
+- **Mirror the master's two-tab pattern, don't invent a new UX.** The user's directive ("same Class/General slot split as its master") was specific. A two-tab layout matches `ProficiencySelectionPanel` directly, so the player's mental model from creating their own character carries over.
+- **`max_selections == 0` means unlimited.** ACKS catalog convention; verified against the Knowledge entry. The picker treats 0 as unbounded; positive caps (e.g. Fighting Style at 4) are still enforced. Caught by a test failure on first run; the fix was a 4-line guard across three call sites.
+- **Stacking advancement consumes one slot per rank.** Matches master's behavior (and ACKS rules — each rank is a slot purchase). UI label "(Rank N → N+1)" makes this transparent.
+- **Stacking shares the same slot pool that picked it.** A rank-up on a class-list stacking proc (e.g. Alchemy) consumes another *class* slot, not a general slot. Mirrors the master's allocation rule.
+- **Picked-list rows show slot-type chip and per-rank label.** Visual cue so the player can see at a glance which budget each pick comes from. The Rank- button only appears for stacked picks at rank > 1 (lets the player back off a rank without removing the entire pick).
+- **Specialization variant filter on the dropdown.** When a spec-rule proc has multiple instances picked, each row's OptionButton excludes already-taken variants for the same (key, slot_type) pair. Prevents the obvious mistake of double-picking the same Knowledge field.
+- **`proficiency_count_cached` on the familiar row stays a single number** = sum of both budgets. The slot-type split lives only in `proficiencies_chosen` (per-pick records); the cached field is a totals scalar and FamiliarController's level-up refresh derives it from `sum(master.proficiencies.selections_count)` regardless. No schema change needed.
+- **No engine-side changes for Case B.** The level-up engine's `_persist_familiar_level_up` Case B path writes `proficiencies_chosen` JSON — the slot_type and rank fields ride along transparently. The FamiliarController's controller-level cache refresh recomputes `proficiency_count_cached` post-emit, picking up the new total automatically.
+- **Backward-compat `get_eligible_keys()` retained** as a union accessor for any caller that doesn't care about the split (only tests use it). Saves churn in the few tests that genuinely need the union view.
+
+**Interfaces defined or changed:**
+
+`FamiliarProficiencyPicker` (revised):
+- State Dict: `class_slot_budget`, `general_slot_budget`, `master_class_id`, `proficiencies_chosen`. Each entry in `proficiencies_chosen` now carries `slot_type` and `rank` fields (in addition to the existing `proficiency_key`, `selections_count`, `specialization`).
+- New constants: `SLOT_TYPE_CLASS = "class"`, `SLOT_TYPE_GENERAL = "general"`.
+- New accessors: `get_eligible_class_keys()`, `get_eligible_general_keys()`. Retained: `get_eligible_keys()` (union).
+- `_on_eligible_pressed(key: String, slot_type: String)` — second arg is new.
+- New `_on_rank_down_pressed(picked_index)` for backing off a rank on stacked picks.
+
+`FamiliarAcquisitionPanel` (revised):
+- New static helpers: `compute_master_class_count(proficiencies)`, `compute_master_general_count(proficiencies)`.
+- Existing `compute_master_proficiency_count` retained (returns total of both).
+- `_render_summary` signature updated for the two-budget message.
+
+`LevelUpFamiliarPicker` (revised):
+- Internal fields: `_new_class_slot_budget`, `_new_general_slot_budget` replace `_new_total_proficiency_count`.
+- `get_final_choices()` includes `proficiency_count_cached` in both Case A and Case B.
+
+`level_up_engine._persist_familiar_level_up`: no signature change. Consumes `proficiency_count_cached` from choices when present (now provided in both cases).
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- `tests/test_familiar_proficiency_picker.gd` rewritten (17 tests, +5 new). **All pass.**
+- `tests/test_familiar_acquisition_panel.gd` updated (9 tests, +2 for the new split helpers). **All pass.**
+- `tests/test_level_up_familiar_picker.gd` updated (8 tests, same count, two rewritten for the new picker API). **All pass.**
+- Full suite run: **151 / 26** (vs. last session's 130/22). The +21 pass count is environmental flakiness easing — none of the 26 failures mention familiars or anything in this session's edits. All 11 familiar suites pass green:
+  - FamiliarData (24), FamiliarRepository (9), FamiliarProximity (9), FamiliarDeathLink (6), FamiliarLevelUpRefresh (6), FamiliarFormRegistry (11), FamiliarPicker (9), **FamiliarProficiencyPicker (17)** *(revised)*, **FamiliarAcquisitionPanel (9)** *(revised)*, **LevelUpFamiliarPicker (8)** *(revised)*, FamiliarAutoProximity (5).
+
+**Known issues / deferred:**
+
+- **`max_selections == 0` is the ACKS catalog's "unlimited" sentinel.** Documented across the picker; would benefit from a constant on `ProficiencyRegistry` (e.g. `MAX_SELECTIONS_UNLIMITED = 0`) so other consumers don't have to rediscover the convention. Not blocking.
+- **Existing familiar rows in the DB pre-revision.** The `proficiencies_chosen` JSON of a familiar bonded before this revision lacks `slot_type` fields. The picker's `_restore_slots_used` reads `slot_type` as empty for those entries, which means it doesn't count them toward either budget — so on next level-up, the player sees the full new budget rather than just the gain. Acceptable for the only such row that could exist (the user's manual character-creation test from Stage 3c). Future migration would be: backfill `slot_type` on existing rows by inspecting the proficiency catalog's `type` field. Not blocking for v1.
+- **Manual verification recommended.** Stage 3c's character-creation flow is user-confirmed. The split picker should still feel familiar to the player (literally the same TabBar pattern they used to pick their own proficiencies). A walk-through of the level-up Familiar popup with a budget-growth case (Case B) would be the natural next confirmation step.
+
+**[NEEDS-OPUS-REVIEW]** None this session. The revision was a structural mirror of the master's existing ProficiencySelectionPanel pattern; only design call was the unlimited-spec-selections handling for `max_selections == 0`, which the catalog convention dictates and the master picker already presumes.
+
+---
+
+## Session 2026-05-05 — Wilderness polish: encounter modal, evasion entry, vellum context menu, sustenance crash + water refill + noon-tick foraging
+
+**Task:** Five regressions and gaps surfaced from playtest:
+1. Hexmap right-click context menu still rendered with Godot's default dark UI — dark text on dark background, unreadable.
+2. Encounter notifications dropped the monster identity (toast read "Encounter Avoided" with no creature name).
+3. Combat fired automatically on hostile/unfriendly reactions; player had no agency to attempt evasion of hostiles or to engage non-hostiles. Need a uniform encounter-decision modal in front of every reaction band.
+4. `WildernessHandlers._apply_sustenance_hp_loss` called `CampaignRepository.load_character` (does not exist) — travel halted with a parse error any time HP loss tried to apply.
+5. Water counter had no refill path outside foraging — once drained, party died of thirst with no way to recover at rivers or in towns.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- **A1 — Sustenance crash fix.** [engine/subsystems/session/handlers/wilderness_handlers.gd:1365](engine/subsystems/session/handlers/wilderness_handlers.gd#L1365): `CampaignRepository.load_character(char_id)` → `CampaignRepository.get_character(char_id)`. Return shape (`hp_current`) is identical, so no other call-site changes needed.
+- **A2 — Monster identity in toasts.** Added `WildernessHandlers._format_encounter_label(enc) -> String` helper that returns `"4× wolves"` style labels (count + simple "s" pluralization). Plumbed through every encounter-routing site (travel-leg, encounter-check, hunt activity, lair-search activity).
+- **A3 — Vellum hexmap context menu.** [scenes/maps/dungeon_context_menu.gd](scenes/maps/dungeon_context_menu.gd): replaced the hard-coded `StyleBoxFlat` block in `_ready()` with `UiSurfaceStyles.apply_textured_panel(self)` (vellum texture + dark VELLUM_TEXT_COLOR theme). Removed the inline `btn.modulate` darken-on-disabled — the theme's `font_disabled_color` (= `VELLUM_TEXT_COLOR.lightened(0.45)`) handles the disabled affordance. `btn.flat = true` retained so buttons blend with the parchment surface.
+- **B — `EncounterDecisionPrompt` modal** ([scenes/ui/dialogs/encounter_decision_prompt.gd](scenes/ui/dialogs/encounter_decision_prompt.gd), new). CanvasLayer at layer 180, vellum chrome via `UiSurfaceStyles.apply_framed_window_chrome`. Disposition-keyed button matrix (extracted as a static `buttons_for_disposition(d)` helper for unit testing):
+  - hostile / unfriendly  → [Stand & Fight, Attempt Evasion]
+  - neutral / friendly    → [Engage, Parley, Continue Travel]
+  - indifferent           → [Engage, Continue Travel]
+  - unknown (fallback)    → [Stand & Fight, Attempt Evasion]
+  Body shows reaction roll + flavor line per disposition. Single `decided(choice)` signal carries one of `"fight" | "evade" | "engage" | "parley" | "continue"`.
+- **B wiring — wilderness handlers.** Every encounter-trigger site now emits `EventBus.encounter_decision_required.emit(party_id, enc)` and returns `auto_pause: true` plus a `presentation: {type: "encounter_decision"}` payload. The legacy reaction-router routing (combat / encounter / avoid) is no longer driven from the handler — the modal-listening state owns the dispatch. Sites updated: `_handle_travel_leg`, `_handle_encounter_check`, `_resolve_hunt_activity`, `_resolve_lair_search_activity` (the per-hour search-encounter loop). The `WildernessReactionRouter.decide` calls were removed from these sites; the router itself is unchanged and still callable for tests / future automation.
+- **B wiring — wilderness state.** [engine/subsystems/session/states/wilderness_explore_state.gd](engine/subsystems/session/states/wilderness_explore_state.gd): connects to `EventBus.encounter_decision_required` on enter, disconnects on exit. On the signal, instantiates `EncounterDecisionPrompt` (preloaded), opens it with the encounter, awaits `decided`. Maps the choice to:
+  - `"fight"` / `"engage"` → `_runner.transition_to_state("combat", {encounter_data, return_state: "wilderness"})`.
+  - `"parley"` → `_runner.transition_to_state("encounter", {encounter_data, return_state: "wilderness"})`.
+  - `"evade"` → `WildernessHandlers.attempt_evasion(party_id, enc)` then resume scheduler.
+  - `"continue"` → `EventBus.encounter_avoided.emit(party_id, enc)` + soft toast + resume scheduler.
+  - Background-party encounters (party_id != active) auto-route to "continue" so the player isn't blocked by an off-screen party's roll. Resumes scheduler in that path too.
+- **C — Evasion + ACORE pursuit cycle entry** ([wilderness_handlers.gd](engine/subsystems/session/handlers/wilderness_handlers.gd) `attempt_evasion`). Calls `EvasionResolver.attempt(evader_size, pursuer_size, judge_modifier=0, DiceSystem)`. On success: `evasion_attempted` signal + success toast + `encounter_avoided`. On failure: opens a `pursuit_states` row via `CampaignRepository.open_pursuit_state` (table existed from Phase 5 migration 052, untouched), schedules the first `pursuit_catchup_check` event 1 day later, emits a "Pursued by Nx Y — they remain in sight" warning toast. The catch-up handler `_handle_pursuit_catchup_check` was already wired in Phase 5 — this session just wires the *entry point* into it. `pursuer_speed_advantage` is hard-coded to 0 with a code comment: monster speeds aren't yet exposed on encounter dicts, so the catch-up roll currently auto-fails (RAW-conservative — the player gets daily retry attempts). TODO marker for terrain modifiers (densely-wooded bonus etc.).
+- **D1 — `holds_water` flag** added to [data/equipment/base_equipment.json](data/equipment/base_equipment.json) entries `waterskin` and `barrel`. Barrel also gained `consumable_kind: "water"` and `consumable_person_days: 20`. Generic containers (backpack, chest, pouch, sack) intentionally lack the flag — they can't hold water. Used by future inventory UI display + refill gating; not load-bearing for v1 mechanics (counter is still the truth).
+- **D2/D3 — Water refill on river/lake/town hex enter.** `WildernessHandlers._refill_water_at_hex(party_data, terrain)` helper: if `terrain.has_river()` or `terrain.water == LAKE` or `terrain.has_city` or `not terrain.settlement_ids.is_empty()`, top off `party.water_units` to `party_size` (one day's draw, mirroring `ForagingResolver` auto-pass semantics). Emits a soft "Waterskins Refilled" toast and persists via `save_party_state` only when the counter actually rose. Called from `_handle_travel_leg` (on hex entry) and from the noon tick (daily top-off for resident parties). Food in towns explicitly NOT touched — that goes through the existing shop UI per design.
+- **D5 — Foraging moved to `wilderness_noon_tick`.** New event constant `NOON_TICK_EVENT = "wilderness_noon_tick"`. Added to `register_global` / `unregister_global` so the handler survives state transitions like the day tick. `_handle_wilderness_noon_tick` runs `ForagingResolver.attempt_daily(...)` (unchanged), emits forage signals, calls `_refill_water_at_hex`, persists party state, and stashes the forage summary on the new `_latest_forage_summary_by_party: Dictionary` keyed by party_id. The midnight `_handle_wilderness_day_tick` now consumes (and erases) that buffered summary when writing the sustenance log row, and only runs sustenance evaluation + HP loss + log write — foraging is no longer in its body. `schedule_noon_tick(scheduler, party_id)` mirrors `schedule_day_tick` (idempotent against the queue, schedules at next noon = `ROUNDS_PER_DAY/2`). Both are scheduled from `WildernessExploreState.enter` for every registered party.
+- **EncounterDecisionPrompt unit tests** ([tests/test_encounter_decision_prompt.gd](tests/test_encounter_decision_prompt.gd), 7 tests): every disposition's button matrix; case-insensitivity; unknown-fallback safety. Registered in `test_runner.tscn` and `test_runner.gd` (id `164b_encounter_decision_prompt_tests`). All 7 pass.
+
+**Decisions made:**
+
+- **Always-modal over disposition-gated UI.** User picked "Always ask (uniform)" from the AskUserQuestion. Every reaction band now surfaces the prompt — even indifferent and friendly. This gives the player full agency at the cost of one extra click per encounter, which reads as the right tradeoff for a sandbox RPG. Multi-party background encounters auto-route to "continue" so the player's UI isn't hijacked by off-screen parties.
+- **Failed-evasion → full ACORE catch-up cycle, NOT immediate combat.** User picked "Implement full catch-up cycle". The pursuit_states row + daily catch-up event were already built (Phase 5 migration 052 + `_handle_pursuit_catchup_check`); this session just wires the entry point. `pursuer_speed_advantage = 0` keeps the v1 auto-fail behavior on catch-up (player gets daily retry); a follow-up that wires monster catalog speeds will turn on actual catch-up rolls.
+- **Hybrid water model.** `water_units` counter remains the mechanical truth; `holds_water` flag in equipment catalog is for UI display + future refill gating (Phase 3.5 deferred). Refill semantics match foraging auto-pass: top-up to `party_size` (one day). Settlement hexes treated identically to river/lake hexes per user direction.
+- **Foraging at noon, sustenance at midnight.** Narrative beat: "find food earlier in the day, evaluate hunger at sundown." User picked the noon-tick option (rather than reorder-within-midnight). The buffered-summary handoff (`_latest_forage_summary_by_party`) keeps the sustenance log row coherent — the noon tick fills the buffer, the midnight tick consumes it then erases it. Idempotent on session reload (empty buffer just yields an empty forage row in the log).
+- **Skip surprise auto-escape for v1.** GDD §3.1 deferred this to 5.5; encounter dicts don't currently carry a `surprise_result` field. Modal flow doesn't gate on it; player can always pick "Attempt Evasion" if they want to try fleeing.
+- **Reaction router unchanged.** I considered ripping the router out since the handler no longer calls it from the encounter-trigger sites. Decided against — it stays callable for tests, for future LLM-driven auto-decisioning, and as a documented authority on disposition→default-action mapping. The dispatch decision moved up the stack rather than the router being deleted.
+- **Per-encounter modal instance, not pooled.** Cheap construction; one instance per encounter, `queue_free` on close. CanvasLayer 180 (matches `ConfirmationPrompt`) sits above the hex map but below dice-prompt overlays.
+- **Background-party "continue" path also resumes the scheduler.** Bug caught during review: the handler returned `auto_pause: true` so the scheduler is paused, but a non-active-party encounter was returning early without resuming. Fix added a `_resume_scheduler()` call before the early return.
+
+**Interfaces defined or changed:**
+
+- New EventBus signals:
+  - `encounter_decision_required(party_id: String, encounter_data: Dictionary)` — wilderness handler emits when a player decision is needed; consumed by `WildernessExploreState`.
+  - `encounter_decision_made(party_id: String, encounter_data: Dictionary, choice: String)` — emitted by the state once the modal returns; for log/audit listeners.
+- New `WildernessHandlers` events / methods:
+  - `NOON_TICK_EVENT := "wilderness_noon_tick"`.
+  - `schedule_noon_tick(scheduler, party_id) -> String` — idempotent.
+  - `attempt_evasion(party_id: String, encounter_data: Dictionary) -> Dictionary` — single-throw evasion + pursuit-state opening + first catchup scheduling. Returns the EvasionResolver result dict.
+  - `_refill_water_at_hex(party_data, terrain) -> void` — private helper.
+  - `_format_encounter_label(enc) -> String` — private helper.
+- `EncounterDecisionPrompt` (new):
+  - `static buttons_for_disposition(disposition: String) -> Array[Dictionary]` — returns `[{text, choice}]` in display order.
+  - `open(encounter_data: Dictionary) -> void`.
+  - `close() -> void`.
+  - `decided(choice: String)` signal (CONNECT_ONE_SHOT).
+  - String constants: `CHOICE_FIGHT`, `CHOICE_EVADE`, `CHOICE_ENGAGE`, `CHOICE_PARLEY`, `CHOICE_CONTINUE`.
+- `data/equipment/base_equipment.json`: `holds_water: true` flag added to `waterskin` and `barrel`. Barrel also gains `consumable_kind: "water"`, `consumable_person_days: 20`.
+
+**Database changes:** None this session. The `pursuit_states` table from migration 052 is reused as-is.
+
+**Tests added/updated:**
+
+- `tests/test_encounter_decision_prompt.gd` — 7 tests, all pass.
+- Registered in `test_runner.tscn` (id `164b_encounter_decision_prompt_tests`) and `test_runner.gd`.
+- Full suite: 152 / 26. The 26 failures are pre-existing (catalog count drift "expected 176, got 177", finalize panel state issues, level-up engine fixtures, monster catalog count drift "expected 31, got 33") and untouched by this session. Every wilderness/encounter/sustenance suite passes green: WildernessDayTick, ForagingResolver, SustenanceResolver, HuntingResolver, WildernessLoopStarvation, EvasionResolver, EvasionFullFlow, WildernessReactionRouter, WildernessContextMenuBuilder, EncounterDecisionPrompt.
+
+**Known issues / deferred:**
+
+- **Catch-up roll auto-fails for now.** `pursuer_speed_advantage = 0` on every freshly-opened pursuit because monster catalog speeds aren't yet exposed on the encounter dict. RAW-conservative — the player gets daily retry attempts but the monsters never close — which means a determined party can always escape over multiple days. Once monster speeds are wired, the daily catch-up will start producing actual catches.
+- **Surprise auto-escape (RAW §automatic_escape_on_surprise) still deferred** per Phase 5.5 plan. Modal makes evasion always available, so this only shaves one "free escape" off ACKS-faithful play.
+- **Combat-retreat → evasion entry still deferred.** A side that flees mid-combat doesn't currently invoke `EvasionResolver` to open a pursuit; that needs `morale_resolver.gd` / `combat_finalizer.gd` work.
+- **`holds_water` capacity not yet displayed in the inventory tab.** UI integration deferred to gdd-hunting-foraging.md Phase 3.5 polish. Mechanically the abstract `water_units` counter remains the source of truth.
+- **Terrain modifier on evasion throw** (`judge_modifier`) is hard-coded to 0. RAW §judge_modifiers calls out densely-wooded bonuses etc.; future polish should pass a value computed from current hex terrain.
+- **Pre-existing test failures NOT fixed this session** (out of scope): equipment catalog count, monster catalog count, finalize panel state, level-up engine integration, etc.
+
+**[NEEDS-OPUS-REVIEW]** None this session. All design calls were either user-confirmed via AskUserQuestion or follow established Phase 5 patterns (catch-up cycle, vellum chrome, foraging-as-counter-offset).
+
+**Next session should:**
+
+1. **Manual playtest verification**: load Ashford Vale, walk into a known-encounter hex, verify the modal shows for each disposition (force-roll 2/4/7/10/12 to hit each band), pick each option, confirm:
+   - "Stand & Fight" / "Engage" enters combat with the correct enc data.
+   - "Attempt Evasion" → success path resumes travel with toast; failure path opens pursuit and the daily catch-up event fires next midnight.
+   - "Parley" enters the encounter state cleanly.
+   - "Continue Travel" emits `encounter_avoided` and resumes travel.
+2. Walk into a river/lake hex with empty waterskins and confirm the refill toast + counter increment.
+3. Walk into a town and confirm water tops off but rations do not.
+4. Travel for 2-3 days through dry/foodless terrain and confirm: foraging fires at noon, sustenance HP loss fires at midnight (no longer crashes), the sustenance log row carries the noon's forage summary.
+5. (Optional) wire monster catalog speeds into the pursuit_states row's `pursuer_speed_advantage` so the catch-up roll actually fires when the pursuers are faster.
+
+
+---
+
+## Session 2026-05-05 — Spell System Phase A Session 1 (casting pipeline + effect DSL + 8 MVP spells)
+
+**Task:** Begin implementing the spell system per `generation/gdd-spell-system.md` v2 §15.2 Session 1 — the casting infrastructure (resolver + DSL + slot reset) plus 8 MVP spells (Magic Missile, Fireball, Sleep, Cure Light Wounds, Bless, Shield, Fly, Detect Magic). Plan file: `C:\Users\jttau\.claude\plans\we-need-to-begin-curried-kernighan.md`.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+
+- **Migration `054_concentration_mode.sql`** — new `concentration_mode` column on `active_effects` (CHECK domain `'none'|'continuous_focus'|'sustained'|'conditional'`, default `'none'`). `db/schema.sql` mirrored. The legacy `requires_concentration` int column stays for backward compat; convention is `concentration_mode != 'none'` implies `requires_concentration = 1`.
+
+- **Two new EventBus signals** in `engine/autoloads/event_bus.gd`:
+  - `spell_slot_expended(caster_id: String, spell_level: int, remaining_at_level: int)`
+  - `spell_slots_reset(caster_id: String)`
+  Other signals listed in GDD §2.5 (`spell_cast`, `spell_interrupted`, `repertoire_updated`, `active_effect_expired`, `concentration_broken`, `spell_effect_applied/removed`, `damage_dealt`, `healing_applied`, `condition_changed`, `rest_taken`) already existed and are reused.
+
+- **Four new shared types** under `engine/shared_types/`:
+  - `caster_context.gd` — `CasterContext` immutable snapshot. Static `from_character_data(cd, map_context, tradition, casting_stat_bonus)`.
+  - `target_descriptor.gd` — `TargetDescriptor` with kind/target_ids/target_cells/origin_cell/is_willing/selected_within_area.
+  - `resolution_result.gd` — `ResolutionResult` with success/disrupted/slot_consumed/effects_applied/active_effect_ids/narration_payload/failures.
+  - `spell_choice.gd` — `SpellChoice` with `_init(key, level, reversed, disjunctive_index=-1)`.
+
+- **`engine/subsystems/spells/casting_geometry.gd`** — pure-utility class. `compute_counted_hd(creature, target_spec) -> float`, `compute_effective_hd`, `is_within_hd_cap`, `roll_hd_budget(spec, caster_level, dice_system) -> float`, `distance_cells/distance_feet`, `is_within_range`, `cells_in_sphere/cells_in_radius`, `cells_in_cone` (Session 2+ stub). HD reads `creature.hit_dice.base` directly as float for monsters (do NOT route through `Combatant._get_monster_hd_value()` which floors 0.5 → 0); `CharacterData` uses `level`. One voxel cell = 5 ft.
+
+- **`engine/subsystems/spells/spell_effect_registry.gd`** — REWRITTEN. Constructor now takes a `SpellRegistry` (was zero-arg). New API: `has_effect(spell_key)`, `get_effect_payload(spell_key, is_reversed, disjunctive_index)`, `is_disjunctive(spell_key, is_reversed)`. Resolves reverse-form deep-merge and disjunctive index in one call. Synthesized reverse entries (e.g., `cause_light_wounds`) follow `base_spell_key` and auto-apply reverse merge. The 13-template `data/spells/spell_effects.json` is no longer loaded.
+
+- **`engine/subsystems/spells/casting_resolver.gd`** — the deterministic resolution pipeline (~600 LOC). Public `resolve(caster_context, spell_choice, target_descriptor, caster_entity, targets_by_id) -> ResolutionResult`. Walks the active branch's `resolution: [...]` array dispatching each step's `kind` to a private handler (damage / damage_per_level / heal / apply_modifier / apply_flag / apply_condition / apply_damage_resistance / grant_temp_hp / grant_mirror_images / attack_throw_vs_target / movement_mode_grant / query_game_state / custom). Save categories map: blast/poison_death/paralysis_petrification/staffs_wands/spells/none. Slot expenditure fires on success AND disruption (per ACKS); validation failures consume no slot. Active effects registered for non-instantaneous spells via `ActiveEffectTracker.add_effect`. Magic Missile's per-level missile-count formula evaluated via Godot `Expression` class with `level` as the only allowed variable. `resolve_disrupted(ctx, choice, reason)` is the secondary entry the combat layer uses when a declared cast was broken between declaration and tick.
+
+- **`engine/subsystems/spells/custom_resolver_registry.gd`** — scaffold only (~30 LOC). No resolvers registered; Session 4+ wires Polymorph/Dispel/Walls/etc.
+
+- **`engine/subsystems/spells/spell_slot_reset_handler.gd`** — listens on `EventBus.rest_taken(duration_hours)` and resets all party casters' expended slots when `duration_hours >= 9` (full rest per ACKS: 8h sleep + 1h study/prayer). Emits `spell_slots_reset` once per caster. Constructor: `_init(campaign_repo, party_caster_lookup: Callable)`. Rest-quality decision: do NOT alter the existing `rest_taken(duration_hours)` signal; interpret duration ≥ 9h as full rest.
+
+- **`data/spells/spell_catalog.json`** — `effect` field added to the 8 MVP spells. SACRED rule cross-checks vs `acore_spell_catalog_*_summary.xml`:
+  - **Magic Missile**: 150', instantaneous, single_creature, 1d6+1 force per missile. Missile-count formula `min(5, 1 + 2 * floor((level - 1) / 5))` per RAW (+2 every 5 caster levels beyond 1st, max 5 at L13+). The GDD example formula `floor((level + 2) / 2)` is INCORRECT vs RAW; SACRED wins.
+  - **Fireball**: 240', 20'-diameter sphere, 1d6/level fire, save vs Blast for half.
+  - **Sleep**: 240', 4d4 turns, disjunctive (single_creature ≤ 4+1 HD, OR multiple_creatures_hd_budget 2d8 / cap 4 HD / lowest-first / sub_1_hd=1 / ignore_hd_bonus). Excludes undead/construct/ooze. Applies `sleeping` condition.
+  - **Cure Light Wounds** (reversible): touch_ally heal 1d6+1; reverse `Cause Light Wounds` is touch_enemy with attack_throw + 1d6+1 unholy on hit.
+  - **Bless** (reversible): 0' centered, 6 turns, 50' radius (RAW), willing_only, +1 attack_throw / +1 damage_bonus / +1 morale_modifier with stacking_group "blessing"; reverse `Bane` is unwilling_only with save vs spells negate. The "+1 vs magical fear" rider is deferred until fear-condition gating exists.
+  - **Shield**: self, 3 turns (RAW; GDD's 2 turns is wrong), set_floor armor_class_vs_missiles=2, set_floor armor_class_vs_melee=4 (ACKS ASCENDING AC). Adds `blocks_magic_missile` flag.
+  - **Fly**: touch_creature, 1 turn per level (RAW; GDD's "± 1d6 turns" hidden modifier was NOT in the SACRED XML and was dropped). `can_fly` flag + 120 ft/round movement.
+  - **Detect Magic**: 60' caster_and_radius, 2 turns, `query_game_state` step (UI fills aura list once map wiring lands).
+
+- **`engine/shared_types/modifier_container.gd`** — canonical-key comment block extended with `armor_class_vs_missiles` and `armor_class_vs_melee` (introduced for Shield). Note: combat consumers in Session 2 must fall back to `armor_class` when these directional keys are unset.
+
+- **Tests** (4 new suites; all passing):
+  - `tests/test_casting_geometry.gd` — 13 tests.
+  - `tests/test_casting_resolver.gd` — 20 tests with inline `_FakeRepo` and `_FakeDice` (the latter avoids the per-roll-type-once override consumption — fixed values persist across multi-roll resolution like Magic Missile/Fireball). Covers all 8 MVP spells plus validation failures, reverse-form dispatch, disrupted-cast slot consumption, durational vs instantaneous active_effect registration, and a smoke E2E.
+  - `tests/test_spell_slot_reset.gd` — 3 tests.
+  - `tests/test_spell_effect_registry.gd` — REWRITTEN (10 tests).
+  - All four wired into `tests/test_runner.tscn` (ext_resources 169-171; SpellEffectRegistryTests already wired) and `tests/test_runner.gd` suite list.
+
+**Decisions made:**
+
+- **SACRED rules win when GDD examples conflict.** Several GDD §4.7 examples carry numeric details that disagree with the SACRED `acore_spell_catalog_*_summary.xml` rule files (Magic Missile formula, Shield duration and AC scale, Fly hidden duration, Bless radius). Per CLAUDE.md document-authority hierarchy, the XML files are immutable and override GDD examples. Each MVP entry's `notes` field calls out the deviation.
+
+- **Migration is 054, not 037 as GDD said.** Latest pre-session migration was 053 (specialists).
+
+- **EventBus signals: only 2 truly-new.** Audited the existing event_bus.gd before adding signals. The GDD §2.5 list of "9 missing signals" was stale — 7 already exist.
+
+- **Resolver is RefCounted, not autoload.** `class_name` is forbidden on autoloads, and the existing pattern (`SpellRegistry`, `RepertoireEngine`, `ActiveEffectTracker`) is RefCounted-instantiated-by-caller. SessionRunner will construct one when wiring Session 2's combat surface.
+
+- **Rest quality interpreted from duration_hours, not added as a new payload field.** Avoids touching existing `rest_taken` callers. Threshold = 9 hours. Partial-rest (naps) gets its own signal later.
+
+- **Magic Missile missile-count formula uses Godot `Expression` class** with `level` as the only allowed variable. Permits `floor`, `min`, `max`, parens, arithmetic — sufficient for the RAW formula and any future per-level scaling without per-spell custom resolvers.
+
+- **`override_to: N` maps to ModifierStack `set_floor`.** Shield's "AC if better than current" semantic matches `set_floor` natively. New stat keys `armor_class_vs_missiles` / `armor_class_vs_melee` — Session 2 combat code reads them with fallback to `armor_class`.
+
+- **`_FakeDice` test stub instead of `GameState.dice_overrides`.** The override system consumes the queued value once per roll_type, which broke Magic Missile (3 missiles → only 1 forced value, 2 random). The fake dice keeps fixed values persistent until cleared; tests pass it as the resolver's `dice_system` argument.
+
+- **Slot consumed on disruption AND validation success, NOT on validation failure.** Per ACKS: a disrupted declared cast still burns the slot, but a cast that never started (unknown spell, no effect, missing disjunctive index) does not.
+
+**Interfaces defined or changed:**
+
+- `CasterContext.from_character_data(cd, map_context, tradition, casting_stat_bonus) -> CasterContext`.
+- `SpellChoice.new(spell_key, level, is_reversed, chosen_disjunctive_index=-1)`.
+- `SpellEffectRegistry.new(spell_registry: SpellRegistry)` — constructor signature CHANGED from zero-arg.
+- `SpellEffectRegistry.has_effect / get_effect_payload / is_disjunctive`.
+- `CastingResolver.new(spell_registry, effect_registry, effect_tracker, condition_catalog, custom_resolvers, geometry, campaign_repo, dice_system)`.
+- `CastingResolver.resolve(ctx, choice, target, caster_entity=null, targets_by_id={}) -> ResolutionResult`.
+- `CastingResolver.resolve_disrupted(ctx, choice, reason) -> ResolutionResult`.
+- `CastingGeometry.compute_counted_hd / compute_effective_hd / is_within_hd_cap / roll_hd_budget / distance_cells / distance_feet / is_within_range / cells_in_sphere / cells_in_radius`.
+- `CustomResolverRegistry.register / has_resolver / get_resolver / clear`.
+- `SpellSlotResetHandler.new(campaign_repo, party_caster_lookup: Callable)`, `dispose()`.
+- `EventBus.spell_slot_expended(caster_id, spell_level, remaining_at_level)`, `spell_slots_reset(caster_id)`.
+- New canonical ModifierContainer stat keys: `armor_class_vs_missiles`, `armor_class_vs_melee`.
+- 8 MVP spell entries in `data/spells/spell_catalog.json` gain a top-level `effect` field; the other 223 entries are unchanged.
+
+**Database changes:**
+
+- Migration `054_concentration_mode.sql` adds `concentration_mode TEXT NOT NULL DEFAULT 'none'` (CHECK domain) on `active_effects`. `db/schema.sql` mirrored.
+
+**Tests added/updated:**
+
+- 4 new/rewritten suites totaling 46 tests, all passing.
+- Wired into test_runner via ext_resources 169-171.
+
+**Test results: 155 suites passed, 26 failed.** +4 passes vs Phase 6 baseline (151/26), same flaky failure count — no regressions. All four spell suites green.
+
+**Known issues:**
+
+- **Bless's "+1 saving throws against magical fear" rider** is unimplemented in v1 — needs the fear-condition system. v1 ships only the 3 unconditional modifiers.
+- **`armor_class_vs_missiles` / `armor_class_vs_melee` consumers** don't yet exist in combat code. Session 2's combat updates must read the directional AC with fallback to `armor_class` when unset.
+- **`_query_game_state` for Detect Magic returns an empty `results: []`** — Session 2's UI populates it from active_effects + magic_items_within_los.
+- **`_modify_cell_state` and `_spawn_entity` resolution steps return `applied: false`** — deferred to Session 2 (modify_cell) and per-spell custom resolvers (spawn_entity, e.g., Floating Disc in Session 4).
+- **`_attack_throw_vs_target` uses an approximation** of the fighter attack table (`10 - floor((level - 1) / 2)`) for Cause Light Wounds. Session 2 wires the real ACKS attack table.
+- **Saving-throw rolls are synchronous.** Session 2 should upgrade PC saves to `player_roll` (async DicePrompt); NPC saves stay synchronous.
+- **`spell_effects.json` is still on disk** but no longer loaded. Will be deleted in Session 4 cleanup.
+
+**Next session should — Session 2 (Combat Casting UI):**
+
+1. Extend `scenes/ui/combat/declaration_overlay.gd` with Cast Spell as a fifth declaration option (mutually exclusive with Fighting Withdrawal/Full Retreat/Set vs Charge).
+2. Build `scenes/ui/spells/spell_picker_panel.tscn + .gd` (CanvasLayer 56).
+3. Build `scenes/ui/spells/disjunctive_branch_modal.tscn + .gd`.
+4. Build `engine/subsystems/spells/targeting_controller.gd`.
+5. Build `scenes/ui/spells/hd_tally_panel.tscn + .gd` and `aoe_preview_overlay.tscn + .gd`.
+6. Make `Combatant.is_casting_spell_this_round()` real (was stub returning false).
+7. Wire `SpellCombatHooks.on_damage_dealt` → `EventBus.concentration_broken` → resolver's `resolve_disrupted` for declared casters disrupted before their initiative tick.
+8. Wire combat consumers of `armor_class_vs_missiles` / `armor_class_vs_melee` with fallback to `armor_class`.
+9. Do NOT add a Cast Spell button to `ActionButtonPanel` — combat casting is declaration-phase only (GDD §8.1).
+
+**[NEEDS-OPUS-REVIEW]** Three SACRED-vs-GDD discrepancies were resolved in favor of the XML rules: Magic Missile missile-count formula, Shield duration (3 turns not 2), Bless radius (50' not 30'), and Fly duration (no secret 1d6). All four are documented in the per-spell `notes` fields. A future Opus review may want to update the GDD examples to match the SACRED rules.

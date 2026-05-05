@@ -48,14 +48,11 @@ var _current_screen_pos: Vector2 = Vector2.ZERO  ## Saved position for redisplay
 
 func _ready() -> void:
 	visible = false
-	# Dark semi-transparent background matching project style.
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.08, 0.12, 0.92)
-	style.border_color = Color(0.4, 0.4, 0.5, 0.8)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(4)
-	style.set_content_margin_all(4)
-	add_theme_stylebox_override("panel", style)
+	# Vellum surface — matches notebook/dialog chrome via UiSurfaceStyles.
+	# Apply the textured panel + vellum text theme so dark text is readable
+	# against the parchment background. Plain StyleBoxFlat fallback (warm
+	# cream) handled inside `make_vellum_style` when the texture is missing.
+	UiSurfaceStyles.apply_textured_panel(self)
 	# Minimum width for readability.
 	custom_minimum_size.x = 180
 
@@ -125,10 +122,11 @@ func _show_options(options: Array, screen_pos: Vector2) -> void:
 		if not tip.is_empty():
 			btn.tooltip_text = tip
 
-		# Style: flat buttons, dim disabled ones.
+		# Style: flat buttons let the vellum panel show through; the vellum
+		# text theme drives font_color (dark) and font_disabled_color
+		# (VELLUM_TEXT_COLOR.lightened(0.45)), so no explicit modulate is
+		# needed for the disabled affordance.
 		btn.flat = true
-		if btn.disabled:
-			btn.modulate = Color(0.5, 0.5, 0.5, 0.7)
 
 		var action_data: Dictionary = opt.get("action_data", {})
 		var submenu: Array = opt.get("submenu_options", [])

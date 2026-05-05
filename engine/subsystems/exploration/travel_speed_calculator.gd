@@ -62,15 +62,35 @@ const TRAVEL_HOURS_PER_DAY := 8
 ## [param party] — PartyData with character_data populated.
 ## [param terrain_category] — result of HexTerrainData.movement_cost_category().
 ## [param on_road] — true if party is following a road or clear trail.
+## [param weather] — optional WeatherStateData. When supplied, applies the DaW
+##                   speed multiplier (Cold/Hot/Rainy/Snowy/Windy ×0.5, mud
+##                   ×0.5 again on clear/scrub). When null, weather is
+##                   ignored — preserves existing behavior for tests and
+##                   any caller that hasn't yet adopted the weather layer.
+##
+## Multiplier order per `gdd-weather-generation.md` §7.1:
+##   terrain × encumbrance(via base_speed) × forced-march × weather × mud
+## (mud is bundled inside `weather.travel_multiplier()`).
 ##
 ## Returns Dictionary:
 ##   base_exploration_speed: int  — slowest member's exploration speed (ft/turn)
 ##   terrain_multiplier: float    — from terrain category
+##   weather_multiplier: float    — from WeatherStateData (1.0 if no weather)
 ##   miles_per_day: float         — final miles/day after all modifiers
 ##   is_forced_march: bool        — from party state
 ##   slowest_member_id: String    — character_id of the bottleneck
 ##   details: Array[Dictionary]   — per-member breakdown
-static func calculate_party_speed(party: PartyData, terrain_category: String, on_road: bool = false) -> Dictionary:
+## [param is_tracking] — when true (Phase 5), apply the half-speed penalty
+## per `acore_proficiencies_rules_and_catalog.xml` Tracking entry:
+## "Characters move at half speed while tracking." Multiplied at the end so
+## it composes with terrain × weather × forced-march cleanly.
+static func calculate_party_speed(
+	party: PartyData,
+	terrain_category: String,
+	on_road: bool = false,
+	weather: WeatherStateData = null,
+	is_tracking: bool = false,
+) -> Dictionary:
 	var details: Array = []
 	var slowest_speed: int = 999
 	var slowest_id: String = ""
@@ -133,14 +153,31 @@ static func calculate_party_speed(party: PartyData, terrain_category: String, on
 	if party.is_force_marching:
 		miles_per_day *= FORCED_MARCH_MULTIPLIER
 
+	# Weather (Phase 2). Bundles temperature/atmosphere/mud per
+	# daw_vagaries.xml §severe_weather_effects. When weather is null (legacy
+	# callers, tests without weather) the multiplier is implicitly 1.0.
+	var weather_mult: float = 1.0
+	if weather != null:
+		weather_mult = weather.travel_multiplier()
+		miles_per_day *= weather_mult
+
+	# Tracking half-speed (Phase 5).
+	var tracking_mult: float = 1.0
+	if is_tracking:
+		tracking_mult = 0.5
+		miles_per_day *= tracking_mult
+
 	# Banker's rounding to nearest mile
 	miles_per_day = _bankers_round(miles_per_day)
 
 	return {
 		"base_exploration_speed": base_speed,
 		"terrain_multiplier": terrain_mult,
+		"weather_multiplier": weather_mult,
+		"tracking_multiplier": tracking_mult,
 		"miles_per_day": miles_per_day,
 		"is_forced_march": party.is_force_marching,
+		"is_tracking": is_tracking,
 		"on_road": on_road,
 		"slowest_member_id": slowest_id,
 		"details": details,
@@ -148,8 +185,15 @@ static func calculate_party_speed(party: PartyData, terrain_category: String, on
 
 
 ## Convenience: returns just the miles-per-day value for quick checks.
-static func get_miles_per_day(party: PartyData, terrain_category: String, on_road: bool = false) -> float:
-	var result: Dictionary = calculate_party_speed(party, terrain_category, on_road)
+static func get_miles_per_day(
+	party: PartyData,
+	terrain_category: String,
+	on_road: bool = false,
+	weather: WeatherStateData = null,
+	is_tracking: bool = false,
+) -> float:
+	var result: Dictionary = calculate_party_speed(
+		party, terrain_category, on_road, weather, is_tracking)
 	return result["miles_per_day"]
 
 
@@ -157,11 +201,20 @@ static func get_miles_per_day(party: PartyData, terrain_category: String, on_roa
 ## speed in the given terrain. Used by the event scheduler to set travel_leg
 ## fire times.
 ##
+## [param weather] — optional WeatherStateData; same contract as
+## calculate_party_speed. Pass null to skip weather (legacy / fixtures).
+##
 ## Derivation: 8-hour travel day = 2880 rounds. At X miles/day the party
 ## covers X/6 hexes per day. So rounds_per_hex = 2880 / (miles_per_day / 6).
 ## Minimum 1 round (degenerate case protection).
-static func hex_crossing_rounds(party: PartyData, terrain_category: String, on_road: bool = false) -> int:
-	var mpd: float = get_miles_per_day(party, terrain_category, on_road)
+static func hex_crossing_rounds(
+	party: PartyData,
+	terrain_category: String,
+	on_road: bool = false,
+	weather: WeatherStateData = null,
+	is_tracking: bool = false,
+) -> int:
+	var mpd: float = get_miles_per_day(party, terrain_category, on_road, weather, is_tracking)
 	if mpd <= 0.0:
 		return Timekeeping.ROUNDS_PER_HOUR * 8  # fallback: full travel day per hex
 	var hexes_per_day: float = mpd / MILES_PER_HEX

@@ -1,11 +1,11 @@
 # GDD: Art Direction and Shader Stack
 
 **Authority:** PROJECT-DESIGNED — all visual identity decisions, shader architecture, color palette, outline technique, and asset acceptance criteria are engineering decisions. The art direction reference (MythForce / Filmation 80s Saturday-morning-cartoon lineage) is a creative anchor, not a sacred constraint, and may be revised by the project director.
-**Status:** Draft v1.1 — adds illustrated-vellum UI specification (§8) and hex map cartographic specification (§9.1), resolves open question 15.4. Pending shader prototype validation against test assets.
+**Status:** Draft v1.2 — register shift from 1980s Filmation to early-1990s American action animation (TMNT, Spider-Man:TAS, X-Men:TAS lineage); shader specifications updated for three-tone shading and 50+ figure performance budget. Pending shader prototype validation against test assets.
 **Depends on ACKS rules:** None. ACKS 1e does not specify visual presentation.
 **Depends on project GDDs:** `gdd-voxel-tactical-architecture-v1_1.md` (defines the 3D layers this shader stack renders), `gdd-combat-ui.md`, `gdd-dungeon-map-ui.md`, `gdd-settlement-exploration-ui.md` (UI layers that overlay the rendered scene), `gdd-heraldry-builder.md` (a 2D system that must coexist visually).
-**Modifiable by Claude Code:** Yes — all shader parameters, color values, outline thicknesses, asset acceptance thresholds, and acquisition guidelines are engineering decisions. The aesthetic anchor (MythForce / Filmation) and the dual-register architecture (§4) are project-direction decisions that require approval to change.
-**Last updated:** 2026-04-28
+**Modifiable by Claude Code:** Yes — all shader parameters, color values, outline thicknesses, asset acceptance thresholds, and acquisition guidelines are engineering decisions. The aesthetic anchor (early-1990s American action animation) and the dual-register architecture (§4) are project-direction decisions that require approval to change.
+**Last updated:** 2026-05-04
 
 ---
 
@@ -24,19 +24,23 @@ It does not specify individual asset designs, animation content, UI widget layou
 
 ## 2. Aesthetic Anchor
 
-The visual target is the **MythForce / Filmation 80s Saturday-morning-cartoon** register, with Battle Chasers: Nightwar as a secondary reference for character proportions in 3D. The lineage:
+The visual target is the **early-1990s American action animation** register — the production tradition of Marvel/Saban/Fox Kids action cartoons. The lineage:
 
 | Reference | Relevance |
 |---|---|
-| He-Man / Masters of the Universe (Filmation, 1983) | Character proportion language, color palette baseline, animation hold-frame style |
-| Thundercats (Rankin/Bass, 1985) | Heroic-stylized creature/monster design |
-| Dungeons & Dragons (Marvel/Sunbow, 1983) | Adventuring-party tonal target |
-| MythForce (Beamdog, 2023) | The 3D execution of this aesthetic — the closest existing video game to the target |
-| Battle Chasers: Nightwar (Airship Syndicate, 2017) | 3D heroic proportions + hand-painted texture register |
+| X-Men: The Animated Series (Marvel/Saban, 1992) | Primary anchor — character proportion language, three-tone shading, varied-weight linework, action-pose dynamism |
+| Spider-Man: The Animated Series (Marvel/Fox Kids, 1994) | Secondary anchor — color palette saturation range, costume detail handling |
+| Teenage Mutant Ninja Turtles (Murakami-Wolf-Swenson, 1987 series running through early 90s) | Action staging, weapon integration, monster design |
+| Conan the Adventurer (Sunbow, 1992) | Heroic-fantasy archetype rendering in this register; closest direct genre parallel |
+| Gargoyles (Disney TV Animation, 1994) | Slightly more rendered upper bound of the register; useful reference for ambient mood and color |
+| Battle Chasers: Nightwar (Airship Syndicate, 2017) | 3D execution of stylistic descendants of this animation register |
+| Hades (Supergiant Games, 2020) | 2D execution proving the register's commercial viability for indie RPGs |
 
-What this is **not**: not Synty cubist low-poly, not Roblox/Minecraft-tier abstraction, not photorealism, not anime cel-shading (Borderlands/Wildstar saturation is too high; Cuphead is too rubber-hose; Genshin Impact is too anime). The specific register is *Western Saturday-morning cartoon translated to 3D* — bold, slightly muted, hand-drawn-feeling, with characters that look like figures the camera focuses on rather than people in a world.
+What this is **not**: not 1980s Filmation flat-cel (too schematic, two-tone, muted-color register — was the v1.0/v1.1 anchor; explicitly retired in v1.2); not anime cel-shading (Borderlands/Wildstar saturation is too high; Cuphead is too rubber-hose; Genshin Impact is too anime); not Synty cubist low-poly; not Roblox/Minecraft-tier abstraction; not photorealism. The specific register is *Western Saturday-morning action cartoon translated to 3D* — bold, vibrant-saturated, hand-drawn-feeling, with characters in dynamic poses and rendered with enough form modeling to feel three-dimensional but flat-shaded enough to read as drawn.
 
-The reference image at `assets/style_refs/anchor_warrior.jpg` (uploaded 2026-04-25) is the canonical character anchor. Five additional anchor images of varying archetypes will be curated before the shader prototype phase begins.
+The register shift from v1.0/v1.1 (Filmation 1983) to v1.2 (1990s action animation) was made because (a) the 90s register supports dynamic combat poses that the Filmation register handled poorly, (b) color expression range is broader, supporting faction differentiation and magic effects, (c) the register has stronger commercial precedent in modern stylized indie games, and (d) modern player audiences read the 90s register more naturally. The trade-off is reduced retro distinctiveness — the 90s register is more common in contemporary indie games than the Filmation register would have been.
+
+The reference image cluster is the curated set of 90s-register character generations stored at `assets/style_refs/lora_training_set/` (the 25-image LoRA training set per §13). Any single anchor image should be replaced with the full training set as the canonical visual anchor.
 
 ---
 
@@ -48,11 +52,11 @@ Five non-negotiable principles that distinguish this aesthetic from adjacent sty
 
 **3.2 Outlines are uniform-weight and screen-space-pinned.** Outline thickness does not scale with distance from camera. A character at the edge of the play area has the same outline weight as a character in the center. This is the Beamdog technique that makes MythForce read as "drawn"; distance-scaled outlines read as "engine effect."
 
-**3.3 Color is muted-saturated, not fully saturated.** Saturation reduced ~10-15% from full pop. This is the single most counterintuitive specification in this GDD. Full saturation reads as Borderlands / Fortnite / mobile-game; muted-saturation reads as analog-animation-cel. Highlights warm slightly (toward yellow/cream); shadows cool slightly (toward navy/violet). Pure black and pure white do not appear in any albedo — substitutes are deep umber and warm cream.
+**3.3 Color is vibrant-saturated, not muted.** Saturation operates at near-full pop for figures and intermediate-saturation for environments. This is a deliberate v1.2 shift from v1.1's "muted-saturated" rule — the 1990s register depends on bold color expression for character readability and faction differentiation. Highlights warm slightly (toward yellow/cream); shadows cool slightly (toward navy/violet). Pure black and pure white still do not appear in any albedo (§5.3) — substitutes are deep umber and warm cream — but the rest of the palette runs hotter than v1.1 specified.
 
-**3.4 Two-step toon ramp on figures, flat-shading on environment.** The cel ramp is binary (lit/shadow) for characters and monsters. Environments get an even simpler treatment — closer to flat-shading with painted shadows in the texture, no toon ramp at all. This is the dual-register approach (§4) and is what allows asset-source variety in the environment layer without breaking visual coherence.
+**3.4 Three-step toon ramp on figures, flat-shading on environment.** The cel ramp is three-band (lit / mid / shadow) for characters and monsters, with hard transitions between bands (no smoothstep). Environments get the simpler treatment — closer to flat-shading with painted shadows in the texture, no toon ramp at all. This dual-register approach (§4) is what allows asset-source variety in the environment layer without breaking visual coherence. The three-band figure ramp replaces v1.0/v1.1's two-band specification; three-band is what the 1990s reference cluster actually used and is required for the action-pose dynamism the new register depends on.
 
-**3.5 Animation holds, then snaps.** Movement reads as if rendered at ~12fps even when the engine runs at 60. Easing is reduced. Key poses hold for 2-4 frames before transitioning. This affects animation curation: some Mixamo and AccuRig animations are too smooth and need re-timing in Blender; others (typically combat moves with deliberate wind-ups and recoveries) work as-shipped.
+**3.5 Animation supports dynamic action.** The 1980s "hold-and-snap at 12fps" rule from v1.0/v1.1 is relaxed in v1.2. The 1990s register interpolated animation more smoothly, sustained dynamic action poses for longer durations, and used more easing in transitions. Animations should still feel deliberately staged — key poses readable, transitions purposeful — but do not need to be re-timed to fake 12fps. Mixamo and ActorCore animations work as-shipped more often under the v1.2 register than they did under v1.1.
 
 ---
 
@@ -83,17 +87,19 @@ The boundary between registers is *attentional*. Anything the camera deliberatel
 
 ### 5.1 Saturation Range
 
-All albedo colors fall in a restricted saturation band:
+All albedo colors fall in the 1990s-action-cartoon saturation band. Saturation values revised upward in v1.2 from the v1.1 muted-earth-tone specification:
 
 | Element | HSL Saturation | Notes |
 |---|---|---|
-| Character skin (humans) | 30-50% | Tanned, warm; never pasty |
-| Character clothing (heroic) | 50-70% | Bold but not neon |
-| Monster skin (vibrant — dragons, demons) | 60-75% | Highest saturation register; reserved for "dramatic" creatures |
-| Monster skin (mundane — wolves, bears) | 25-45% | Naturalistic |
-| Environment (interior stone, wood) | 15-35% | Earth tones dominate |
-| Environment (exterior — vegetation, sky) | 30-50% | Slightly more saturated than interior |
-| Metal (weapons, armor) | 5-25% | Mostly value-driven, not hue-driven |
+| Character skin (humans) | 40-60% | Tanned, warm; richer than v1.1's 30-50% |
+| Character clothing (heroic) | 65-85% | Bold and vibrant; up from v1.1's 50-70% |
+| Character clothing (villain antagonists) | 70-90% | Antagonists run hotter; reds, purples, sickly greens dominate |
+| Monster skin (vibrant — dragons, demons) | 75-90% | Highest saturation register |
+| Monster skin (mundane — wolves, bears) | 35-55% | Naturalistic but more saturated than v1.1 |
+| Environment (interior stone, wood) | 25-45% | Earth tones, slightly more present than v1.1 |
+| Environment (exterior — vegetation, sky) | 40-60% | Saturation pushed up to support outdoor scenes |
+| Metal (weapons, armor) | 10-30% | Mostly value-driven, but with more chromatic warmth than v1.1 |
+| Magic effects, glowing items | 80-95% | Spell auras and enchanted items run at near-full saturation for visual pop |
 
 ### 5.2 Shadow and Highlight Tinting
 
@@ -116,43 +122,39 @@ A single 256-color reference palette will be authored and stored at `assets/styl
 
 ## 6. Character/Figure Cel Shader Specification
 
-The shader applied to all characters, monsters, and figure-class objects. Implemented in Godot 4 as a custom `ShaderMaterial`.
+The shader applied to all characters, monsters, and figure-class objects. Implemented in Godot 4 as a custom `ShaderMaterial`. Specification revised in v1.2 for three-tone shading and 50+ concurrent figure budget.
 
 ### 6.1 Component Stack
 
-| Component | Purpose | Performance cost |
+| Component | Purpose | Performance cost (per figure) |
 |---|---|---|
 | 1. Albedo sample with painted shading | Form definition | Minimal |
-| 2. Two-step toon ramp on diffuse | Cel signature | Low |
+| 2. Three-step toon ramp on diffuse | Cel signature with form modeling | Low (3 branches in fragment shader) |
 | 3. Rim light pass | Edge separation from background | Low |
 | 4. Hard-cutoff specular | Metal/crystal pop | Low |
-| 5. Inverted-hull outline pass | Drawn-line signature | Moderate (second draw per object) |
+| 5. Inverted-hull outline pass (silhouette only) | Drawn-line signature | Moderate (second draw per figure) |
+| 6. Painted-in interior linework | Detail lines (seams, wrinkles, muscle definition) | Zero (baked in albedo) |
+
+The component stack is unchanged in count from v1.0/v1.1, but components 2 (toon ramp), 5 (outline approach), and 6 (interior linework) are revised. Components 1, 3, 4 are parameter-tuned but architecturally unchanged.
 
 ### 6.2 Toon Ramp
 
-Two steps. Hard transition. The shadow boundary is computed from `dot(N, L)`:
+Three steps. Hard transitions between bands. The shadow boundaries are computed from `dot(N, L)` against two threshold values:
 
 ```
-shadow_threshold = 0.5  // adjustable per-character if needed
-if (dot(N, L) > shadow_threshold) {
+NdotL = dot(N, L)
+if (NdotL > shadow_threshold_1) {
     color = albedo * lit_color
+} else if (NdotL > shadow_threshold_2) {
+    color = albedo * mid_color
 } else {
     color = albedo * shadow_color
 }
 ```
 
-No smoothstep. No three-step ramp by default — three-step (shadow / mid / lit) is reserved for hero portraits and cinematic close-ups, not gameplay characters. The hard transition is what reads as "cel" rather than "stylized lighting."
+Default values: `shadow_threshold_1 = 0.5`, `shadow_threshold_2 = 0.0`. The mid_color is the lit_color shifted toward shadow_color by 40-60% in HSL space. No smoothstep — the hard transition is what reads as cel rather than as smooth lighting. The third band adds form modeling without breaking the cel signature.
 
-### 6.3 Rim Light
-
-Applied additively over the toon ramp:
-
-```
-rim = pow(1.0 - dot(N, V), rim_power)
-rim_contribution = rim_color * rim * rim_intensity
-```
-
-Default values: `rim_power = 3.0`, `rim_intensity = 0.4`. Rim color is a per-character parameter defaulting to warm cream (§5.2). Tuned per scene — dungeon scenes use a slightly cool rim to suggest torchlight bouncing off armor; daylight scenes use warm rim.
+This three-step ramp is the v1.2 default for ALL figure-class objects, not just portraits. The v1.0/v1.1 specification reserved three-step for portraits only and ran two-step on gameplay figures; v1.2 elevates three-step to gameplay-default. Performance cost of the additional band is negligible (one extra branch per pixel).
 
 ### 6.4 Specular
 
@@ -164,26 +166,81 @@ if (specular_term > spec_threshold) {
 }
 ```
 
-No smooth falloff. Default `spec_threshold = 0.85`. This produces the snap-on / snap-off highlights on metals, jewel-set pommels, and creature eyes. Specular maps gate where the effect appears — character skin gets minimal spec, weapons get aggressive spec, eyes get binary (full or none).
+No smooth falloff. Default `spec_threshold = 0.92` (raised in v1.2 from v1.1's 0.85). The higher threshold produces tighter, more deliberate metal highlights — the signature 1990s "snap-on metal pop" rather than the broader gleam of v1.1. Specular maps gate where the effect appears — character skin gets minimal spec, weapons get aggressive spec, eyes get binary (full or none). Default `spec_color = #f5ebd6` (warm cream per §5.3); raised intensity slightly to compensate for tighter threshold.
 
-### 6.5 Outline Pass
+### 6.5 Outline Pass — Silhouette Only
 
-**Technique: inverted hull.** The mesh is rendered twice: once normally, once as a slightly larger duplicate with normals flipped, front-face culled, depth-tested, and shaded with a flat outline color. This is cheaper and more reliable in Godot 4 than screen-space post-process outlines, and handles per-mesh thickness control naturally.
+**Technique: inverted hull, silhouette-emphasized.** The mesh is rendered twice: once normally, once as a slightly larger duplicate with normals flipped, front-face culled, depth-tested, and shaded with a flat outline color. This produces an exterior-silhouette outline only.
 
 | Parameter | Value | Notes |
 |---|---|---|
-| Outline thickness | 0.015-0.020 in object-space | Tuned per character to maintain ~1.5-2 screen pixels at default isometric distance |
+| Outline thickness | 0.018-0.025 in object-space | Slightly thicker than v1.1 to support the heavier 1990s silhouette emphasis |
 | Outline color | `#0d0a08` (warm umber-black) | Per §5.3 — never pure black |
 | Distance scaling | None | Critical — see §3.2 |
-| Vertex normal source | Recalculated smooth normals | Hard edges produce broken outlines; pre-process meshes with smoothed normals reserved for outline pass |
+| Vertex normal source | Recalculated smooth normals | Hard edges produce broken outlines |
+
+**Interior linework is NOT engine-generated in v1.2.** Detail lines (costume seams, muscle definition, hair strand suggestions, wrinkles, weapon engravings) are **painted into the albedo texture** by the LoRA-driven generation pipeline (§13). This matches the actual technique of 1990s cel animation — animators drew interior detail lines on the cel surface; the camera did not generate them. The painted-in approach has three advantages over engine-generated multi-weight outlines: (a) zero runtime cost, (b) artistically controllable per-asset, (c) does not break under deformation animation the way engine-generated interior lines often do.
 
 **Known issue:** characters with very thin geometry (capes, banners, hair locks) produce broken outlines under inverted hull. Two mitigations: (a) thicken vertex positions on outline-pass meshes via a vertex shader displacement, or (b) accept broken outlines on these features and visually compensate with painted detail. Choice deferred to shader prototype phase.
 
 ### 6.6 Rejected Alternatives
 
+**Engine-generated multi-weight outline** (Sobel-style edge detection or geometry-shader expansion to render interior lines at variable thickness). Considered for v1.2 register support. Rejected because: (a) performance cost scales linearly with figure count and would consume budget needed for the 50+ figure target (§6.7); (b) interior-line approach via painted-in albedo (§6.5) achieves the same visual result for free; (c) screen-space approaches break the uniform-screen-space-thickness rule (§3.2); (d) Godot 4 GDScript shaders do not support geometry shader stages, requiring expensive compute-shader workarounds.
+
 **Screen-space post-process outline (Sobel filter on normal/depth buffers).** Considered. Rejected because: (a) thickness scales with screen resolution rather than camera distance, breaking the uniform-weight rule; (b) requires render pipeline modifications that complicate Godot 4 forward-plus rendering; (c) produces edge artifacts on transparent and semi-transparent surfaces.
 
-**Geometry shader outline.** Considered. Rejected because Godot 4 GDScript shaders do not support geometry shader stages; would require compute shader workaround that's overkill for this use case.
+### 6.7 Performance Budget — 50+ Concurrent Figures
+
+**Hard requirement: the figure shader stack must sustain 60fps with 50+ concurrent visible figures at 1080p on mid-range hardware** (target spec: GTX 1060 / RTX 3050 Ti class). This is a project-direction constraint reflecting the upper bound of large engagement scenarios per `gdd-voxel-tactical-architecture-v1_1.md`. Not the common case — most encounters will involve far fewer figures — but the rendering architecture must accommodate it without per-encounter performance gates.
+
+The 50+ figure target shapes several specific implementation decisions:
+
+#### 6.7.1 Outline Pass Cost Is the Critical Constraint
+
+The inverted-hull outline pass is the single most expensive component per figure (it's a second draw call per figure, doubling vertex throughput for the figure layer). At 50+ figures, naive implementation would consume an unacceptable share of the frame budget.
+
+**Required mitigations** Claude Code must implement:
+
+- **Distance-based outline LOD.** Figures beyond a per-scene threshold distance receive no outline pass at all. Threshold chosen so that the camera's typical view distance keeps ~10-15 figures with full outlines and the rest without. The visual impact is acceptable because distant figures are small enough on screen that the outline is barely visible anyway.
+- **Aggressive frustum and occlusion culling on the outline pass specifically.** Outline-pass meshes must use the same culling as primary meshes; off-screen and occluded figures cost zero.
+- **Single-pass outline rendering via material variants** rather than per-figure outline material instantiation. All outline-pass meshes share one material with per-figure parameter overrides.
+- **Outline-pass mesh simplification.** The inverted-hull outline geometry should be a simplified version of the primary mesh (50-70% of the primary's polycount) since it only needs to render the silhouette. Generated automatically at asset import time by Claude Code's import pipeline.
+
+#### 6.7.2 Three-Step Ramp Is Effectively Free
+
+The three-step toon ramp (§6.2) costs negligibly more than two-step in fragment shader execution (one extra branch per pixel, well-predicted on modern GPUs). It does not constrain the 50+ figure target.
+
+#### 6.7.3 Rim Light and Specular Are Cheap But Tunable
+
+Rim light (§6.3) and specular (§6.4) are per-pixel calculations that scale with screen-space figure coverage rather than figure count. If profiling shows them consuming budget at 50+ figures, both can be disabled on figures beyond a distance threshold (similar to outline LOD). Default behavior: keep both enabled at all distances; LOD only if profiling demands it.
+
+#### 6.7.4 Painted-In Interior Linework Costs Zero
+
+Per §6.5, interior detail lines are baked into the albedo. This is the single biggest performance gain in v1.2 over a hypothetical "match 90s register with engine-generated multi-weight outlines" implementation. Engine-generated interior outlines would not have fit in the 50+ figure budget; the painted-in approach makes the register affordable.
+
+#### 6.7.5 Skinning Cost Dominates at 50+ Figures
+
+GPU skinning (vertex shader bone matrix application) becomes a meaningful budget item at 50+ animated figures. Mitigations Claude Code must implement:
+
+- **Bone count per character capped at 60** (sufficient for humanoid + facial rig + minor accessories; humanoid-only characters can run 30-40 bones). Reduces per-vertex skinning matrix work.
+- **MultiMeshInstance3D for monster hordes.** Identical creatures (waves of orc grunts, swarms of skeletons) share a single MultiMesh with per-instance bone state. Godot 4 supports skinned MultiMesh as of recent versions; verify capability against current Godot version at implementation time.
+- **Skinning LOD.** Distant figures use simplified skeletons (15-20 bones, key joints only) for vertex skinning. Skeleton swap happens at the same distance threshold as outline LOD for visual consistency.
+- **Animation update rate LOD.** Distant figures update animation curves at 15Hz instead of 60Hz. Imperceptible at distance, ~75% reduction in animation tree evaluation cost.
+
+#### 6.7.6 Profiling Gate
+
+Before any production asset wave (per §14 Phase 6), a stress test scene with 60 placeholder humanoid figures running representative animations must hit 60fps on the target spec hardware. If the test fails, the failure is engine-architecture, not asset-content, and must be fixed before assets are produced. The profiling gate prevents the project from generating hundreds of assets that the renderer cannot display.
+
+#### 6.7.7 Figure-Count Budget by Scenario
+
+| Scenario | Typical figures | Maximum design figures | Notes |
+|---|---|---|---|
+| Solo exploration (single PC + 0-2 henchmen) | 1-3 | 5 | Trivially within budget |
+| Standard combat (party vs small group) | 5-12 | 20 | Comfortable budget headroom |
+| Large engagement (party vs warband or multiple groups) | 15-30 | 40 | Approaching budget; outline LOD active |
+| Maximum engagement (siege scenarios, mass battles) | 40-50 | 60 | Full LOD stack engaged; skinning LOD on distant figures; this is the design target |
+
+The 50+ figure case is rare but architecturally non-negotiable. The pipeline does not require per-scenario performance gates because the shader stack with full LOD applied accommodates the maximum case at 60fps.
 
 ---
 
@@ -341,35 +398,43 @@ Same as dungeon. Combat maps in wilderness exteriors use exterior environment tr
 
 ### 9.5 Character Portraits (UI Layer)
 
-Character portraits in the UI use a slightly enhanced figure shader — three-step toon ramp instead of two-step (shadow / mid / lit), more aggressive rim light, and slightly higher saturation than gameplay-render characters. This is the "hero close-up" treatment, used only in dialog/character-sheet contexts where the camera is functionally zoomed in. Does not apply to in-world character rendering.
+Character portraits in the UI use the same three-step toon ramp as gameplay characters (per v1.2 §6.2 elevating three-step to gameplay-default), with two differences: (a) more aggressive rim light to enhance the close-up presentation, (b) a higher-resolution albedo texture rendered specifically for portrait use. Portraits do not need a fundamentally different shader as v1.0/v1.1 specified — that distinction was an artifact of the Filmation register's two-step gameplay default. In v1.2 the gameplay shader is portrait-quality already; portraits just get richer source textures and tighter close-up framing.
+
+The portrait-specific albedo texture should be generated through the LoRA pipeline at higher resolution (2048² instead of the gameplay-character 1024²) with explicit close-up framing. This is a content optimization, not a shader optimization.
 
 ---
 
 ## 10. Animation Style
 
-### 10.1 Hold-and-Snap Timing
+### 10.1 Smooth Action With Deliberate Staging
 
-Animations in the figure layer should read as ~12fps even when interpolated at 60fps render. Implementation: animation curves are authored or post-processed to include hold frames at key poses. Easing curves on rotations and translations are reduced (closer to step than to smooth bezier).
+The v1.2 1990s register supports smooth interpolated animation at full engine framerate (60fps), unlike the v1.0/v1.1 Filmation register's "hold-and-snap at 12fps" rule. The 1990s reference cluster (X-Men:TAS, TMNT, Spider-Man:TAS) used proper inbetween animation with reasonable easing curves. Animation should still feel deliberately staged — key poses readable, transitions purposeful, no extraneous secondary motion — but does not need to be re-timed to fake low frame rates.
+
+**Practical implication:** Mixamo and ActorCore animations work as-shipped much more often under v1.2 than under v1.1. The animation library curation pass (per `gdd-character-creation-pipeline.md`, forthcoming) is significantly less labor-intensive in v1.2. Most filtered-out animations from the v1.1 era can be reconsidered for v1.2 inclusion.
 
 ### 10.2 Curation Implications for Animation Library
 
-The Mixamo and AccuRig/ActorCore libraries (per `gdd-character-creation-pipeline.md`, forthcoming) must be filtered against this style. Some animations work as-shipped; many do not.
+Updated for v1.2 register:
 
 | Animation type | Typical fit | Notes |
 |---|---|---|
-| Combat strikes (sword, axe, polearm) | Good | Already use deliberate wind-up + snap |
-| Idle stances (heroic, alert) | Good | Hold-frame-friendly |
-| Walk cycles | Mixed | Mixamo walks are too smooth; need re-timing |
-| Run cycles | Mixed | Same as walks |
-| Spellcasting | Variable | Heavily-gestured spell animations work; subtle ones do not |
-| Death animations | Good | Already have dramatic key poses |
-| Dialog gestures | Poor | Most are too naturalistic; AI-generated animation may serve better |
+| Combat strikes (sword, axe, polearm) | Good | Dynamic action poses are the v1.2 sweet spot |
+| Idle stances (heroic, alert) | Good | 1990s heroes had recognizable confident idle poses |
+| Walk cycles | Good | No re-timing needed in v1.2 |
+| Run cycles | Good | Same — works as shipped |
+| Spellcasting | Good | The dynamic gestures match the register |
+| Death animations | Good | Dramatic key poses fit |
+| Dialog gestures | Acceptable | Naturalistic gesture is acceptable in v1.2 register |
 
-Re-timing is implementable in Blender as a batch process via the Auto-Rig Pro Remap module. An MCP-driven batch workflow (per the Blender MCP discussion in design notes) is a candidate accelerator for this.
+The "Mixed" and "Poor" ratings from v1.1 are largely upgraded to "Good" in v1.2. Re-timing in Blender via Auto-Rig Pro Remap is no longer a required pipeline step for most animations; it remains available for cases where specific animations need stylization.
 
 ### 10.3 Procedural Animation Layers
 
-Subtle procedural overlays — breathing, weight shift, head tracking — are permitted on top of authored animations but must be tuned to *not* smooth out the hold-and-snap quality. Procedural systems that interpolate continuously will fight the aesthetic. Tunable per character; default off, enabled per-archetype as needed.
+Subtle procedural overlays — breathing, weight shift, head tracking — are fully welcome in v1.2 (v1.1 cautioned against them). The 1990s register tolerates and benefits from continuous secondary motion. Tunable per character; reasonable defaults: breathing on for all idle states, weight shift on for combat-ready stances, head tracking on for NPCs the player approaches.
+
+### 10.4 Animation Update Rate LOD (Performance)
+
+Per §6.7.5, distant figures update animation curves at 15Hz instead of 60Hz to reduce animation tree evaluation cost at 50+ figures. The visual difference is imperceptible at distance and the budget impact is significant. Claude Code must implement this LOD as part of the animation system.
 
 ---
 
@@ -494,15 +559,21 @@ Apply the locked pipeline to the first production wave of assets — 4 hero arch
 
 **15.1 Outline thickness on capes, hair, banners.** Inverted-hull breaks on thin geometry (§6.5). Decision deferred to shader prototype phase. Two candidate solutions (vertex displacement on outline pass, or accept broken outlines and compensate with painted detail) — pick after seeing both in test.
 
-**15.2 Three-step ramp threshold for portraits.** §9.5 specifies portraits get three-step ramps. The shadow/mid/lit threshold values are placeholders. Tune in shader prototype phase against actual portrait camera framing.
+**15.2 Three-step ramp threshold tuning. PARTIALLY RESOLVED in v1.2.** Three-step ramp is now the gameplay default (§6.2) with placeholder thresholds (0.5, 0.0). Tune in shader prototype phase against actual gameplay camera framing and the LoRA training set's painted-shading register.
 
-**15.3 Master palette authorship.** §5.4 requires a 256-color master palette. Authorship approach: (a) hand-author from MythForce screenshots, (b) extract from anchor warrior + 5 additional anchors via k-means clustering, (c) hybrid. Decision deferred to Phase 1.
+**15.3 Master palette authorship.** §5.4 requires a 256-color master palette. Authorship approach: (a) hand-author from 1990s reference cluster screenshots, (b) extract from LoRA training set via k-means clustering, (c) hybrid. Decision deferred to Phase 1. Note: v1.2 saturation ranges are higher than v1.1 (§5.1), so any v1.1-era palette work is invalidated.
 
-**15.4 2D hex map style integration. RESOLVED in v1.1.** §9.1 now specifies the hex map cartographic register (illustrated 80s fantasy maps; iconic terrain symbols; hand-drawn quill borders; LoRA-produced tiles and icons). Open sub-question for the hex map GDD when that work begins: hex tile pixel dimensions and detail density at the project's target zoom levels. That is a layout/UI question, not an art-direction question.
+**15.4 2D hex map style integration. RESOLVED in v1.1.** §9.1 specifies the hex map cartographic register. Open sub-question for the hex map GDD when that work begins: hex tile pixel dimensions and detail density at the project's target zoom levels.
 
-**15.5 Animation re-timing automation.** §10.2 calls for re-timing many animations. Whether to do this manually per-animation, batch-process via Auto-Rig Pro Remap with a global timing curve, or develop an MCP-driven Blender workflow is an engineering decision that affects animation library size feasibility. Decision deferred until Phase 5.
+**15.5 Animation re-timing automation. CLOSED in v1.2.** §10.1 removed the "fake 12fps" rule that necessitated re-timing. Most animations work as-shipped under v1.2. Re-timing remains available as a per-animation tool but is no longer a required pipeline step.
 
-**15.6 Performance budget validation.** The figure cel shader (§6.1) is moderate cost. With many figures on screen during large combats (per `gdd-voxel-tactical-architecture-v1_1.md` engagement scenarios), performance must be validated. Target: 60fps with 30+ figures on screen at 1080p on mid-range hardware. Validation deferred to Phase 1 stress testing.
+**15.6 Performance budget validation. UPDATED in v1.2.** §6.7 now specifies a hard requirement of 60fps with 50+ concurrent figures at 1080p on mid-range hardware (GTX 1060 / RTX 3050 Ti class), with full LOD stack engaged. §6.7.6 requires a 60-figure stress test before any production asset wave. This validation is now blocking, not deferred — Claude Code must build the stress test scene during shader prototype phase and confirm passing performance before assets are produced at scale.
+
+**15.7 LoRA training set re-generation under v1.2 register. NEW in v1.2.** The v1.0/v1.1 Filmation-register training set images (if any were generated and saved before the v1.2 register shift) are not usable for v1.2 LoRA training. The training set must be re-generated using v1.2-aligned prompts before LoRA training begins. Project director has confirmed (2026-05-04) that no production assets have been generated under the v1.0/v1.1 register, so the cost of the register shift is contained to the LoRA training set itself and one additional credit cycle for re-generation.
+
+**15.8 MultiMeshInstance3D skinned support verification. NEW in v1.2.** §6.7.5 specifies MultiMeshInstance3D for monster hordes as a performance optimization. Godot 4 support for skinned MultiMesh has improved across recent versions but should be verified against the project's current Godot version (4.6 per project memory). If skinned MultiMesh support is incomplete, fallback is per-instance MeshInstance3D with shared materials and aggressive culling. Verification deferred to shader prototype phase.
+
+**15.9 Distance thresholds for outline LOD, rim/spec LOD, skinning LOD, and animation rate LOD. NEW in v1.2.** §6.7 specifies distance-based LOD across four shader and animation systems. The actual distance threshold values are placeholders pending profiling on the target hardware spec at typical isometric camera distances. All four LOD systems should ideally share a common "near/mid/far" classification so a figure either gets the full treatment or the simplified treatment consistently across all four systems, rather than having outline-LOD-near but skinning-LOD-far on the same figure. Decision deferred to shader prototype phase.
 
 ---
 
@@ -512,3 +583,4 @@ Apply the locked pipeline to the first production wave of assets — 4 hero arch
 |---|---|---|
 | 1.0 | 2026-04-25 | Initial specification. Anchored on MythForce + Battle Chasers references identified during pre-build design conversation. Dual-register architecture and shader component stacks defined. Six open questions noted for shader prototype phase. |
 | 1.1 | 2026-04-28 | §8 expanded from boundary-setting reference into full illustrated-vellum specification: distinguishes illustrated-vellum from photoreal-vellum, lists acceptable surface elements and banned PBR-realism signals, specifies decal-composition implementation, marks legacy `bg_vellum_base.png` and `bg_vellum_subtle.png` deprecated. §9.1 expanded into full hex map cartographic specification: 80s fantasy cartography reference cluster (Fonstad, AD&D hardcovers, Endless Quest), per-terrain icon treatments, POI iconography table, hand-drawn quill border specification, LoRA production approach. §15.4 resolved. Both new sections specify the trained art-direction LoRA as canonical production tool. |
+| 1.2 | 2026-05-04 | **Major register shift** from 1980s Filmation to early-1990s American action animation (X-Men:TAS, Spider-Man:TAS, TMNT, Conan the Adventurer lineage). §2 aesthetic anchor replaced; §3.3 saturation rule shifted from muted to vibrant; §3.4 toon ramp shifted from two-step to three-step as gameplay default; §3.5 animation timing rule relaxed from "fake 12fps" to smooth-with-staging; §5.1 saturation table revised upward across all categories; §6 figure shader specification revised: three-step toon ramp as gameplay default, raised specular threshold to 0.92, silhouette-only outline with painted-in interior linework approach, expanded outline thickness range. **NEW §6.7 Performance Budget — 50+ Concurrent Figures:** project-direction hard requirement of 60fps with 50+ figures at 1080p on mid-range hardware (GTX 1060 / RTX 3050 Ti class). Specifies distance-based outline LOD, frustum/occlusion culling, single-pass outline material variants, outline-pass mesh simplification, bone count caps, MultiMeshInstance3D for monster hordes, skinning LOD, animation update rate LOD, blocking 60-figure stress test before any production asset wave, and figure-count budget table by scenario. §9.5 portraits revised to inherit gameplay shader rather than have a separate spec. §10 animation style revised: smooth interpolated animation now welcome, most Mixamo/ActorCore animations work as-shipped, re-timing no longer required pipeline step. §15.5 closed; §15.6 updated and made blocking; §15.7 (LoRA training set re-generation), §15.8 (skinned MultiMesh verification), §15.9 (LOD distance threshold tuning) added. Register shift cost contained because no v1.1 production assets had been generated; only the LoRA training set itself needs re-generation under v1.2 prompts. |

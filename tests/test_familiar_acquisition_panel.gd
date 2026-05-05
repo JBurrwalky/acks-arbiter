@@ -9,9 +9,11 @@ extends "res://tests/test_suite_base.gd"
 
 
 func run_all_tests() -> void:
-	test_compute_master_proficiency_count_sums_selections()
+	test_compute_class_count_sums_class_slot_selections()
+	test_compute_general_count_sums_general_slot_selections()
+	test_compute_master_proficiency_count_sums_all_selections()
 	test_setup_initializes_familiar_substate()
-	test_setup_threads_class_id_and_budget_into_proficiency_picker()
+	test_setup_threads_class_id_and_budgets_into_proficiency_picker()
 	test_is_complete_requires_both_sub_pickers()
 	test_is_complete_with_zero_budget_master()
 	test_returning_to_step_restores_prior_picks()
@@ -25,6 +27,8 @@ func run_all_tests() -> void:
 
 ## Pass `master_picks = null` to use the default 2-pick set (familiar + adventuring).
 ## Pass an explicit Array (including `[]` for a zero-budget master) to override.
+## Pass `master_picks = null` to use the default 2-pick set (familiar + adventuring,
+## one class slot + one general slot). Pass an explicit Array to override.
 func _make_state(class_id: String = "mage", master_picks: Variant = null) -> Dictionary:
 	var picks: Array
 	if master_picks == null:
@@ -48,16 +52,36 @@ func _make_panel(state: Dictionary) -> FamiliarAcquisitionPanel:
 
 # --- Tests ---
 
-func test_compute_master_proficiency_count_sums_selections() -> void:
-	# Mix of unique (selections_count=1) and stacked (selections_count > 1) picks.
+func test_compute_class_count_sums_class_slot_selections() -> void:
 	var picks: Array = [
-		{"proficiency_key": "familiar", "selections_count": 1},
-		{"proficiency_key": "alchemy", "selections_count": 2},     # stacked rank-2
-		{"proficiency_key": "adventuring", "selections_count": 1},
-		{"proficiency_key": "engineering", "selections_count": 3}, # stacked rank-3
+		{"proficiency_key": "familiar", "slot_type": "class", "selections_count": 1},
+		{"proficiency_key": "alchemy", "slot_type": "class", "selections_count": 2},
+		{"proficiency_key": "adventuring", "slot_type": "general", "selections_count": 1},
+	]
+	var n := FamiliarAcquisitionPanel.compute_master_class_count(picks)
+	check(n == 3, "class slot sum: 1 + 2 = 3, got %d" % n)
+
+
+func test_compute_general_count_sums_general_slot_selections() -> void:
+	var picks: Array = [
+		{"proficiency_key": "familiar", "slot_type": "class", "selections_count": 1},
+		{"proficiency_key": "adventuring", "slot_type": "general", "selections_count": 1},
+		{"proficiency_key": "endurance", "slot_type": "general", "selections_count": 1},
+	]
+	var n := FamiliarAcquisitionPanel.compute_master_general_count(picks)
+	check(n == 2, "general slot sum: 1 + 1 = 2, got %d" % n)
+
+
+func test_compute_master_proficiency_count_sums_all_selections() -> void:
+	# Mix of unique and stacked picks across both slot types — total = sum of all.
+	var picks: Array = [
+		{"proficiency_key": "familiar", "slot_type": "class", "selections_count": 1},
+		{"proficiency_key": "alchemy", "slot_type": "class", "selections_count": 2},
+		{"proficiency_key": "adventuring", "slot_type": "general", "selections_count": 1},
+		{"proficiency_key": "engineering", "slot_type": "general", "selections_count": 3},
 	]
 	var n := FamiliarAcquisitionPanel.compute_master_proficiency_count(picks)
-	check(n == 7, "1 + 2 + 1 + 3 = 7, got %d" % n)
+	check(n == 7, "total: 1 + 2 + 1 + 3 = 7, got %d" % n)
 
 
 func test_setup_initializes_familiar_substate() -> void:
@@ -74,18 +98,23 @@ func test_setup_initializes_familiar_substate() -> void:
 	check((fam["proficiencies_chosen"] as Array).is_empty(), "proficiencies_chosen starts empty")
 
 
-func test_setup_threads_class_id_and_budget_into_proficiency_picker() -> void:
+func test_setup_threads_class_id_and_budgets_into_proficiency_picker() -> void:
 	var state := _make_state("mage", [
-		{"proficiency_key": "familiar", "selections_count": 1},
-		{"proficiency_key": "adventuring", "selections_count": 1},
-		{"proficiency_key": "alchemy", "selections_count": 2},
+		{"proficiency_key": "familiar", "slot_type": "class", "selections_count": 1},
+		{"proficiency_key": "alchemy", "slot_type": "class", "selections_count": 2},
+		{"proficiency_key": "adventuring", "slot_type": "general", "selections_count": 1},
 	])
 	var p := _make_panel(state)
-	# Eligible list should include class proficiencies for mage (e.g. alchemy)
-	# AND general proficiencies (e.g. adventuring) — confirms class_id was threaded.
-	var eligible: Array[String] = p._proficiency_picker.get_eligible_keys()
-	check("alchemy" in eligible, "mage class proficiency 'alchemy' is eligible")
-	check("adventuring" in eligible, "general proficiency 'adventuring' is eligible")
+	# Picker's class list = master's class list; general list = general catalog.
+	var class_keys: Array[String] = p._proficiency_picker.get_eligible_class_keys()
+	var general_keys: Array[String] = p._proficiency_picker.get_eligible_general_keys()
+	check("alchemy" in class_keys, "mage class proficiency 'alchemy' is in class list")
+	check("adventuring" in general_keys, "'adventuring' is in general list")
+	# Budgets came through correctly.
+	check(p._proficiency_picker._state["class_slot_budget"] == 3,
+		"class budget = sum of class slot uses (1+2=3)")
+	check(p._proficiency_picker._state["general_slot_budget"] == 1,
+		"general budget = sum of general slot uses (1)")
 
 
 func test_is_complete_requires_both_sub_pickers() -> void:
@@ -102,21 +131,21 @@ func test_is_complete_requires_both_sub_pickers() -> void:
 	check(p._form_picker.is_complete() == true, "form picker complete")
 	check(p.is_complete() == false, "still not complete — proficiency picker empty")
 
-	# Pick proficiencies up to budget. Budget = 1 (familiar) + 1 (adventuring) = 2.
-	# Pick two non-spec procs.
-	# (Eligible list is sorted by display name; pick keys that exist for mage.)
-	var eligible: Array[String] = p._proficiency_picker.get_eligible_keys()
-	var picked := 0
-	for k in eligible:
-		if picked >= 2:
+	# Default master picks: 1 class slot ('familiar') + 1 general slot ('adventuring').
+	# Familiar's budgets thus = class:1, general:1. Pick one class + one general.
+	var picker: FamiliarProficiencyPicker = p._proficiency_picker
+	for k in picker.get_eligible_class_keys():
+		if not picker._proficiency_registry.is_specialization(k) \
+				and picker._proficiency_registry.get_selection_rule(k) != "stacking":
+			picker._on_eligible_pressed(k, "class")
 			break
-		# Skip spec procs — they need a spec choice to count as complete.
-		if p._proficiency_picker._proficiency_registry.is_specialization(k):
-			continue
-		p._proficiency_picker._on_eligible_pressed(k)
-		picked += 1
-	check(p._proficiency_picker.is_complete() == true,
-		"proficiency picker complete after 2 picks")
+	for k in picker.get_eligible_general_keys():
+		if not picker._proficiency_registry.is_specialization(k) \
+				and picker._proficiency_registry.get_selection_rule(k) != "stacking":
+			picker._on_eligible_pressed(k, "general")
+			break
+	check(picker.is_complete() == true,
+		"proficiency picker complete after 1 class + 1 general pick")
 	check(p.is_complete() == true, "panel complete when both sub-pickers complete")
 
 
@@ -157,23 +186,25 @@ func test_returning_to_step_restores_prior_picks() -> void:
 
 func test_familiar_substate_shared_with_creation_state() -> void:
 	# `creation_state["familiar"]["proficiencies_chosen"]` must be the SAME
-	# Array reference the proficiency picker mutates in-place. Otherwise
-	# `_finalize_character()` reads stale picks. Verify by clicking a proficiency
-	# and confirming the array on `state["familiar"]` reflects the addition.
+	# Array reference the proficiency picker mutates in-place. Verify by
+	# clicking a proficiency and confirming the array on `state["familiar"]`
+	# reflects the addition.
 	var state := _make_state()
 	var p := _make_panel(state)
-	var eligible: Array[String] = p._proficiency_picker.get_eligible_keys()
-	# Pick a non-spec proficiency — first non-spec key in the eligible list.
+	var picker: FamiliarProficiencyPicker = p._proficiency_picker
 	var first_non_spec := ""
-	for k in eligible:
-		if not p._proficiency_picker._proficiency_registry.is_specialization(k):
+	for k in picker.get_eligible_general_keys():
+		if not picker._proficiency_registry.is_specialization(k) \
+				and picker._proficiency_registry.get_selection_rule(k) != "stacking":
 			first_non_spec = k
 			break
-	check(not first_non_spec.is_empty(), "found at least one non-spec eligible proficiency")
-	p._proficiency_picker._on_eligible_pressed(first_non_spec)
+	check(not first_non_spec.is_empty(), "found at least one non-spec eligible general proficiency")
+	picker._on_eligible_pressed(first_non_spec, "general")
 
 	var fam_picks: Array = state["familiar"]["proficiencies_chosen"]
 	check(fam_picks.size() == 1,
 		"creation_state['familiar']['proficiencies_chosen'] reflects the click — got %d" % fam_picks.size())
 	check(fam_picks[0]["proficiency_key"] == first_non_spec,
 		"the picked key surfaces on the shared substate")
+	check(String(fam_picks[0]["slot_type"]) == "general",
+		"slot_type recorded on the shared substate")

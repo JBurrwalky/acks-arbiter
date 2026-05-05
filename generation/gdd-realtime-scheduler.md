@@ -204,15 +204,25 @@ If travel extends past the normal daily window, a forced march event fires. CON 
 
 The player orders a party to camp. `camp_handlers.gd` schedules a sequence of `camp_watch` events (typically 3 watches of ~4 hours each, configurable). Each watch boundary fires an encounter check. Dawn and dusk signals from Timekeeping interact naturally — the party wakes at dawn if they started resting at dusk.
 
-### 4.4 Domain Ticks
+### 4.4 Wilderness Day Tick
+
+Per-party midnight rollover housekeeping event (`wilderness_day_tick`, `priority = PRIORITY_ENVIRONMENTAL`). Established in Phase 1 of the wilderness closure roadmap (2026-05-04). Centralizes work that fires once per game-day per party — weather rollover (Phase 2, live), sustenance penalty math (Phase 3, per `acore_adventures_and_encounters.xml`: 2-day food grace then 1 hp/day, 1 day water then 1d4 hp + 1d4/day), and exhaustion accumulation.
+
+**Lifecycle:**
+
+- `WildernessExploreState.enter` calls `WildernessHandlers.schedule_day_tick(scheduler, party_id)` for every party in the campaign. The helper is queue-idempotent — re-entering the wilderness state from combat/dungeon does not double-schedule. Fire time is the next midnight on the party's clock (`party_time + (ROUNDS_PER_DAY - party_time % ROUNDS_PER_DAY)`); a party sitting exactly at midnight schedules 24h out, not 0 rounds out.
+- `_handle_wilderness_day_tick` stamps `party_state.last_day_tick_round` (durable idempotency guard against a session reload double-firing the same tick), persists, emits `EventBus.wilderness_day_ticked(party_id, summary)`, **rolls today's weather for the party's hex via `WeatherCache.get_or_generate` and fires `EventBus.weather_changed` + a NotificationManager toast on severe transitions** (Phase 2), and self-reschedules at `event.fire_time + ROUNDS_PER_DAY` via the `next_events` return contract.
+- The handler does NOT auto-pause — day-tick is housekeeping. Phase 3 routes threshold-crossing toasts (`sustenance_threshold_crossed`) through `NotificationManager`; only the toast system surfaces it to the player.
+
+### 4.5 Domain Ticks
 
 Domain monthly resolution is a scheduled event at each month boundary (`domain_handlers.gd`). When it fires, it resolves revenue, population, morale, construction progress, garrison costs, and domain encounters per ACKS rules. The result is presented to the player (auto-pause), then the clock resumes.
 
-### 4.5 Armies and Long-Duration Activities
+### 4.6 Armies and Long-Duration Activities
 
 Armies on the march use the same `travel_leg` event pattern as parties. Construction projects have a `construction_complete` event at their calculated completion date. Henchmen on missions have `mission_complete` events. Magic research has `research_complete` events. All entries in the same scheduler queue.
 
-### 4.6 Cross-Entity Interaction
+### 4.7 Cross-Entity Interaction
 
 If a party enters a hex containing a hostile army, or two armies converge, the scheduler detects the spatial collision at `travel_leg` resolution time and triggers an encounter. No special logic — the event resolver checks for entities sharing a hex after each arrival.
 
@@ -435,6 +445,7 @@ This section summarizes the implementation status of design items in this GDD. U
 | Per-party Timekeeping clocks | Implemented | `Timekeeping.advance_party_rounds(party_id, n)` |
 | Renderer-tween dungeon movement (§3) | Implemented | `dungeon_map_renderer_3d.gd:402-498` |
 | Wilderness `travel_leg` events + per-hex encounter checks | Implemented | `wilderness_handlers.gd` |
+| Wilderness `wilderness_day_tick` (per-party midnight rollover) | Implemented (Phase 1, 2026-05-04) | `wilderness_handlers.gd::_handle_wilderness_day_tick`. Self-rescheduling +24hr at `PRIORITY_ENVIRONMENTAL`. Idempotency via `party_state.last_day_tick_round`; queue-level idempotency via `WildernessHandlers.schedule_day_tick`. Phase 2 hooks weather rollover here; Phase 3 hooks SustenanceResolver per `acore_adventures_and_encounters.xml`. |
 | Settlement node-graph travel + city encounter checks | Implemented | `settlement_handlers.gd` |
 | Dungeon active search/listen via ThiefSkillResolver | Implemented | `dungeon_handlers.gd:923-937` |
 | Combat global-pause on entry, advance Timekeeping on exit | Implemented | `combat_state.gd:83-86`, `combat_finalizer.gd:50` |

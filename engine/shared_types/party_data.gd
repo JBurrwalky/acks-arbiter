@@ -76,6 +76,18 @@ var force_march_days_used: int = 0
 var days_since_rest: int = 0
 var rations_days_remaining: int = 0
 
+# Wilderness sustenance counters (migration 047). Penalty mechanics from
+# acore_adventures_and_encounters.xml are applied by the Phase 3
+# SustenanceResolver; Phase 1 only tracks the state.
+var exhaustion_days: int = 0
+var starvation_days: int = 0
+var dehydration_days: int = 0
+var water_units: int = 0
+var ration_units: int = 0
+## Absolute game round when wilderness_day_tick last fired for this party.
+## -1 sentinel = never ticked (next midnight schedules the first tick).
+var last_day_tick_round: int = -1
+
 # ---------------------------------------------------------------------------
 # Runtime-only (not persisted — populated from loaded characters)
 # ---------------------------------------------------------------------------
@@ -408,6 +420,12 @@ static func from_db(party_row: Dictionary, member_rows: Array, state_row: Dictio
 		pd.force_march_days_used = _int(state_row, "force_march_days_used")
 		pd.days_since_rest = _int(state_row, "days_since_rest")
 		pd.rations_days_remaining = _int(state_row, "rations_days_remaining")
+		pd.exhaustion_days = _int(state_row, "exhaustion_days")
+		pd.starvation_days = _int(state_row, "starvation_days")
+		pd.dehydration_days = _int(state_row, "dehydration_days")
+		pd.water_units = _int(state_row, "water_units")
+		pd.ration_units = _int(state_row, "ration_units")
+		pd.last_day_tick_round = _int(state_row, "last_day_tick_round", -1)
 
 	return pd
 
@@ -423,6 +441,12 @@ func to_state_dict() -> Dictionary:
 		"days_since_rest": days_since_rest,
 		"rations_days_remaining": rations_days_remaining,
 		"current_mount_type": "",  # legacy field — mounts now per-character equipment
+		"exhaustion_days": exhaustion_days,
+		"starvation_days": starvation_days,
+		"dehydration_days": dehydration_days,
+		"water_units": water_units,
+		"ration_units": ration_units,
+		"last_day_tick_round": last_day_tick_round,
 	}
 
 

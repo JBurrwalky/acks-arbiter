@@ -2392,8 +2392,11 @@ func save_party_state(state: Dictionary) -> bool:
 		INSERT OR REPLACE INTO party_state
 			(party_id, marching_order, is_lost, is_force_marching,
 			 force_march_days_used, days_since_rest, rations_days_remaining,
-			 current_mount_type, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+			 current_mount_type,
+			 exhaustion_days, starvation_days, dehydration_days,
+			 water_units, ration_units, last_day_tick_round,
+			 updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
 	""", [
 		pid,
 		state.get("marching_order", "[]"),
@@ -2403,6 +2406,12 @@ func save_party_state(state: Dictionary) -> bool:
 		state.get("days_since_rest", 0),
 		state.get("rations_days_remaining", 0),
 		state.get("current_mount_type", ""),
+		state.get("exhaustion_days", 0),
+		state.get("starvation_days", 0),
+		state.get("dehydration_days", 0),
+		state.get("water_units", 0),
+		state.get("ration_units", 0),
+		state.get("last_day_tick_round", -1),
 	])
 
 
@@ -4278,3 +4287,450 @@ func clear_familiar_death_save(familiar_id: String) -> bool:
 		push_error("CampaignRepository.clear_familiar_death_save: failed. id=%s" % familiar_id)
 		return false
 	return true
+
+
+# ---------------------------------------------------------------------------
+# Wilderness POI / Lair discovery (migrations 050 / 051) — Phase 4
+# ---------------------------------------------------------------------------
+# Per le_wilderness_lair_rules.xml. Lairs and POIs are placed eagerly during
+# world-gen (or on first lair-encounter substitution) and revealed lazily via
+# the abstract search procedure. The renderer / Notebook / quest hooks read
+# rows where `discovered = 1` and treat the rest as fog-of-war content.
+
+## Insert a lair record. Returns the lair_id passed in (or generated).
+func create_lair(data: Dictionary) -> String:
+	var lid: String = str(data.get("lair_id", ""))
+	if lid.is_empty():
+		lid = generate_id()
+	var ok: bool = db.query_with_bindings("""
+		INSERT INTO lairs
+			(lair_id, campaign_id, map_id, hex_q, hex_r,
+			 monster_group, monster_count, discovered,
+			 discovered_at_round, discovered_via)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		lid,
+		str(data.get("campaign_id", "")),
+		str(data.get("map_id", "")),
+		int(data.get("hex_q", 0)),
+		int(data.get("hex_r", 0)),
+		str(data.get("monster_group", "")),
+		int(data.get("monster_count", 0)),
+		1 if bool(data.get("discovered", false)) else 0,
+		int(data.get("discovered_at_round", 0)),
+		str(data.get("discovered_via", "")),
+	])
+	if not ok:
+		push_error("CampaignRepository.create_lair: insert failed for id=%s" % lid)
+		return ""
+	return lid
+
+
+## Returns all lair rows in [param map_id] at hex (q,r). Caller filters by
+## `discovered`. Result rows have keys lair_id, monster_group, monster_count,
+## discovered, discovered_at_round, discovered_via.
+func get_lairs_in_hex(campaign_id: String, map_id: String, q: int, r: int) -> Array:
+	db.query_with_bindings("""
+		SELECT lair_id, monster_group, monster_count,
+		       discovered, discovered_at_round, discovered_via
+		FROM lairs
+		WHERE campaign_id = ? AND map_id = ? AND hex_q = ? AND hex_r = ?
+	""", [campaign_id, map_id, q, r])
+	return db.query_result.duplicate()
+
+
+## Returns just the count of placed-but-undiscovered lairs in a hex. Single
+## index lookup — used per travel_leg for the passive-check gate.
+func count_undiscovered_lairs(campaign_id: String, map_id: String, q: int, r: int) -> int:
+	db.query_with_bindings("""
+		SELECT COUNT(*) AS n FROM lairs
+		WHERE campaign_id = ? AND map_id = ? AND hex_q = ? AND hex_r = ?
+		  AND discovered = 0
+	""", [campaign_id, map_id, q, r])
+	if db.query_result.is_empty():
+		return 0
+	return int(db.query_result[0].get("n", 0))
+
+
+## Returns total lair count in a hex (discovered + undiscovered). Used by
+## SurveyingResolver as the truth value for an assessment.
+func count_lairs_in_hex(campaign_id: String, map_id: String, q: int, r: int) -> int:
+	db.query_with_bindings("""
+		SELECT COUNT(*) AS n FROM lairs
+		WHERE campaign_id = ? AND map_id = ? AND hex_q = ? AND hex_r = ?
+	""", [campaign_id, map_id, q, r])
+	if db.query_result.is_empty():
+		return 0
+	return int(db.query_result[0].get("n", 0))
+
+
+## Reveal one undiscovered lair in [param hex]. Picks the first by lair_id
+## (stable tiebreak). [param at_round] is stamped onto discovered_at_round;
+## [param via] is one of "search" / "passive" / "encounter" / "aerial".
+## Returns the revealed lair_id, or "" when no undiscovered lairs remained.
+func reveal_one_lair(
+	campaign_id: String, map_id: String, q: int, r: int,
+	at_round: int, via: String,
+) -> String:
+	db.query_with_bindings("""
+		SELECT lair_id FROM lairs
+		WHERE campaign_id = ? AND map_id = ? AND hex_q = ? AND hex_r = ?
+		  AND discovered = 0
+		ORDER BY lair_id
+		LIMIT 1
+	""", [campaign_id, map_id, q, r])
+	if db.query_result.is_empty():
+		return ""
+	var lid: String = str(db.query_result[0].get("lair_id", ""))
+	if lid.is_empty():
+		return ""
+	if not db.query_with_bindings("""
+		UPDATE lairs SET discovered = 1, discovered_at_round = ?, discovered_via = ?
+		WHERE lair_id = ?
+	""", [at_round, via, lid]):
+		push_error("CampaignRepository.reveal_one_lair: update failed for %s" % lid)
+		return ""
+	return lid
+
+
+## List discovered lairs across a whole map. Used by the renderer to draw
+## markers for revealed lairs.
+func list_discovered_lairs(campaign_id: String, map_id: String) -> Array:
+	db.query_with_bindings("""
+		SELECT lair_id, hex_q, hex_r, monster_group, monster_count,
+		       discovered_at_round, discovered_via
+		FROM lairs
+		WHERE campaign_id = ? AND map_id = ? AND discovered = 1
+	""", [campaign_id, map_id])
+	return db.query_result.duplicate()
+
+
+# --- POIs --------------------------------------------------------------------
+
+func create_poi(data: Dictionary) -> String:
+	var pid: String = str(data.get("poi_id", ""))
+	if pid.is_empty():
+		pid = generate_id()
+	var ok: bool = db.query_with_bindings("""
+		INSERT INTO pois
+			(poi_id, campaign_id, map_id, hex_q, hex_r,
+			 poi_type, name, discovered, discovered_at_round,
+			 faction_id, seed)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		pid,
+		str(data.get("campaign_id", "")),
+		str(data.get("map_id", "")),
+		int(data.get("hex_q", 0)),
+		int(data.get("hex_r", 0)),
+		str(data.get("poi_type", "unknown")),
+		str(data.get("name", "")),
+		1 if bool(data.get("discovered", false)) else 0,
+		int(data.get("discovered_at_round", 0)),
+		str(data.get("faction_id", "")),
+		int(data.get("seed", 0)),
+	])
+	if not ok:
+		push_error("CampaignRepository.create_poi: insert failed for id=%s" % pid)
+		return ""
+	return pid
+
+
+func get_pois_in_hex(campaign_id: String, map_id: String, q: int, r: int) -> Array:
+	db.query_with_bindings("""
+		SELECT poi_id, poi_type, name, discovered,
+		       discovered_at_round, faction_id, seed
+		FROM pois
+		WHERE campaign_id = ? AND map_id = ? AND hex_q = ? AND hex_r = ?
+	""", [campaign_id, map_id, q, r])
+	return db.query_result.duplicate()
+
+
+func reveal_poi(poi_id: String, at_round: int) -> bool:
+	if not db.query_with_bindings("""
+		UPDATE pois SET discovered = 1, discovered_at_round = ?
+		WHERE poi_id = ?
+	""", [at_round, poi_id]):
+		push_error("CampaignRepository.reveal_poi: update failed for %s" % poi_id)
+		return false
+	return true
+
+
+func list_discovered_pois(campaign_id: String, map_id: String) -> Array:
+	db.query_with_bindings("""
+		SELECT poi_id, hex_q, hex_r, poi_type, name, discovered_at_round
+		FROM pois
+		WHERE campaign_id = ? AND map_id = ? AND discovered = 1
+	""", [campaign_id, map_id])
+	return db.query_result.duplicate()
+
+
+# ---------------------------------------------------------------------------
+# Tracking sessions / pursuit states (migration 052) — Phase 5
+# ---------------------------------------------------------------------------
+# Per acore_proficiencies_rules_and_catalog.xml Tracking entry and
+# acore_adventures_and_encounters.xml §chases_in_the_wilderness.
+
+## Open a tracking session. Returns the new session_id.
+func open_tracking_session(data: Dictionary) -> String:
+	var sid: String = str(data.get("session_id", ""))
+	if sid.is_empty():
+		sid = generate_id()
+	var ok: bool = db.query_with_bindings("""
+		INSERT INTO tracking_sessions
+			(session_id, campaign_id, party_id, target_kind, target_label,
+			 target_size, started_at_round, started_terrain,
+			 weather_decay_total, last_check_round, closed, closed_reason)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, '')
+	""", [
+		sid,
+		str(data.get("campaign_id", "")),
+		str(data.get("party_id", "")),
+		str(data.get("target_kind", "creature_group")),
+		str(data.get("target_label", "")),
+		int(data.get("target_size", 1)),
+		int(data.get("started_at_round", 0)),
+		str(data.get("started_terrain", "clear")),
+		float(data.get("weather_decay_total", 0.0)),
+		int(data.get("last_check_round", -1)),
+	])
+	if not ok:
+		push_error("CampaignRepository.open_tracking_session: insert failed for %s" % sid)
+		return ""
+	return sid
+
+
+## Returns the open tracking session for [param party_id], or empty dict.
+## Phase 5 v1: at most one open session per party.
+func get_open_tracking_session(campaign_id: String, party_id: String) -> Dictionary:
+	db.query_with_bindings("""
+		SELECT session_id, target_kind, target_label, target_size,
+		       started_at_round, started_terrain, weather_decay_total,
+		       last_check_round
+		FROM tracking_sessions
+		WHERE campaign_id = ? AND party_id = ? AND closed = 0
+		ORDER BY started_at_round DESC
+		LIMIT 1
+	""", [campaign_id, party_id])
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+## Update a tracking session's accumulating fields (decay, last check).
+func update_tracking_session(session_id: String, fields: Dictionary) -> bool:
+	if fields.is_empty():
+		return true
+	var clauses: Array = []
+	var vals: Array = []
+	for k in fields:
+		clauses.append("%s = ?" % k)
+		vals.append(fields[k])
+	vals.append(session_id)
+	return db.query_with_bindings(
+		"UPDATE tracking_sessions SET %s WHERE session_id = ?" % ", ".join(clauses),
+		vals)
+
+
+## Close a tracking session with [param reason] in {success, lost_trail,
+## abandoned, caught_up, engaged}.
+func close_tracking_session(session_id: String, reason: String) -> bool:
+	return db.query_with_bindings("""
+		UPDATE tracking_sessions
+		SET closed = 1, closed_reason = ?
+		WHERE session_id = ?
+	""", [reason, session_id])
+
+
+# --- Pursuit states ----------------------------------------------------------
+
+func open_pursuit_state(data: Dictionary) -> String:
+	var pid: String = str(data.get("pursuit_id", ""))
+	if pid.is_empty():
+		pid = generate_id()
+	var ok: bool = db.query_with_bindings("""
+		INSERT INTO pursuit_states
+			(pursuit_id, campaign_id, party_id, pursuer_label, pursuer_size,
+			 pursuer_speed_advantage, started_at_round, last_check_round,
+			 days_in_pursuit, closed, closed_reason)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, '')
+	""", [
+		pid,
+		str(data.get("campaign_id", "")),
+		str(data.get("party_id", "")),
+		str(data.get("pursuer_label", "")),
+		int(data.get("pursuer_size", 1)),
+		int(data.get("pursuer_speed_advantage", 0)),
+		int(data.get("started_at_round", 0)),
+		int(data.get("last_check_round", -1)),
+	])
+	if not ok:
+		push_error("CampaignRepository.open_pursuit_state: insert failed for %s" % pid)
+		return ""
+	return pid
+
+
+func get_open_pursuit_state(campaign_id: String, party_id: String) -> Dictionary:
+	db.query_with_bindings("""
+		SELECT pursuit_id, pursuer_label, pursuer_size,
+		       pursuer_speed_advantage, started_at_round, last_check_round,
+		       days_in_pursuit
+		FROM pursuit_states
+		WHERE campaign_id = ? AND party_id = ? AND closed = 0
+		ORDER BY started_at_round DESC
+		LIMIT 1
+	""", [campaign_id, party_id])
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+func update_pursuit_state(pursuit_id: String, fields: Dictionary) -> bool:
+	if fields.is_empty():
+		return true
+	var clauses: Array = []
+	var vals: Array = []
+	for k in fields:
+		clauses.append("%s = ?" % k)
+		vals.append(fields[k])
+	vals.append(pursuit_id)
+	return db.query_with_bindings(
+		"UPDATE pursuit_states SET %s WHERE pursuit_id = ?" % ", ".join(clauses),
+		vals)
+
+
+func close_pursuit_state(pursuit_id: String, reason: String) -> bool:
+	return db.query_with_bindings("""
+		UPDATE pursuit_states
+		SET closed = 1, closed_reason = ?
+		WHERE pursuit_id = ?
+	""", [reason, pursuit_id])
+
+
+# ---------------------------------------------------------------------------
+# Specialists (migration 053) — Phase 6
+# ---------------------------------------------------------------------------
+# Per acore_equipment.xml §specialists and le_wilderness_lair_rules.xml §hirelings.
+# Specialists are non-adventuring monthly hires — exempt from henchman cap,
+# stored in their own table (no class progression / proficiencies / inventory).
+
+## Open a specialist row. Returns the new specialist_id.
+func open_specialist(data: Dictionary) -> String:
+	var sid: String = str(data.get("specialist_id", ""))
+	if sid.is_empty():
+		sid = generate_id()
+	var ok: bool = db.query_with_bindings("""
+		INSERT INTO specialists
+			(specialist_id, campaign_id, party_id, kind, name, settlement_id,
+			 hired_at_round, monthly_wage_gp, last_paid_round, unpaid_months,
+			 closed, closed_reason)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, '')
+	""", [
+		sid,
+		str(data.get("campaign_id", "")),
+		str(data.get("party_id", "")),
+		str(data.get("kind", "pathfinder")),
+		str(data.get("name", "")),
+		str(data.get("settlement_id", "")),
+		int(data.get("hired_at_round", 0)),
+		int(data.get("monthly_wage_gp", 25)),
+		int(data.get("last_paid_round", -1)),
+	])
+	if not ok:
+		push_error("CampaignRepository.open_specialist: insert failed for %s" % sid)
+		return ""
+	return sid
+
+
+## Returns all active (closed = 0) specialists for [param party_id].
+## Result rows have keys specialist_id, kind, name, settlement_id,
+## hired_at_round, monthly_wage_gp, last_paid_round, unpaid_months.
+func list_active_specialists(campaign_id: String, party_id: String) -> Array:
+	db.query_with_bindings("""
+		SELECT specialist_id, kind, name, settlement_id,
+		       hired_at_round, monthly_wage_gp, last_paid_round, unpaid_months
+		FROM specialists
+		WHERE campaign_id = ? AND party_id = ? AND closed = 0
+		ORDER BY hired_at_round
+	""", [campaign_id, party_id])
+	return db.query_result.duplicate()
+
+
+func get_specialist(specialist_id: String) -> Dictionary:
+	db.query_with_bindings("""
+		SELECT specialist_id, campaign_id, party_id, kind, name, settlement_id,
+		       hired_at_round, monthly_wage_gp, last_paid_round, unpaid_months,
+		       closed, closed_reason
+		FROM specialists WHERE specialist_id = ?
+	""", [specialist_id])
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+## Update mutable fields on a specialist row. [param fields] keys must match
+## column names; values are bound directly. Used for last_paid_round /
+## unpaid_months ticks.
+func update_specialist(specialist_id: String, fields: Dictionary) -> bool:
+	if fields.is_empty():
+		return true
+	var clauses: Array = []
+	var vals: Array = []
+	for k in fields:
+		clauses.append("%s = ?" % k)
+		vals.append(fields[k])
+	vals.append(specialist_id)
+	return db.query_with_bindings(
+		"UPDATE specialists SET %s WHERE specialist_id = ?" % ", ".join(clauses),
+		vals)
+
+
+## Close a specialist row with [param reason] in {dismissed, unpaid, departed}.
+func close_specialist(specialist_id: String, reason: String) -> bool:
+	return db.query_with_bindings("""
+		UPDATE specialists
+		SET closed = 1, closed_reason = ?
+		WHERE specialist_id = ?
+	""", [reason, specialist_id])
+
+
+# --- Survey progress ---------------------------------------------------------
+
+## Get the survey-progress row for (party, map, hex). Returns empty dict when
+## no row exists yet (party hasn't searched or surveyed this hex). Caller
+## should treat empty as `successful_searches = 0`, `last_estimate = -1`.
+func get_survey_progress(
+	campaign_id: String, map_id: String, party_id: String, q: int, r: int,
+) -> Dictionary:
+	db.query_with_bindings("""
+		SELECT successful_searches, last_search_round,
+		       last_estimate, last_estimate_correct
+		FROM survey_progress
+		WHERE campaign_id = ? AND map_id = ? AND party_id = ?
+		  AND hex_q = ? AND hex_r = ?
+	""", [campaign_id, map_id, party_id, q, r])
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+## Upsert a survey-progress row. SQLite does NOT support `ON CONFLICT (...)
+## DO UPDATE` reliably across all builds, so we use INSERT OR REPLACE.
+func upsert_survey_progress(data: Dictionary) -> bool:
+	return db.query_with_bindings("""
+		INSERT OR REPLACE INTO survey_progress
+			(campaign_id, map_id, party_id, hex_q, hex_r,
+			 successful_searches, last_search_round,
+			 last_estimate, last_estimate_correct)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		str(data.get("campaign_id", "")),
+		str(data.get("map_id", "")),
+		str(data.get("party_id", "")),
+		int(data.get("hex_q", 0)),
+		int(data.get("hex_r", 0)),
+		int(data.get("successful_searches", 0)),
+		int(data.get("last_search_round", -1)),
+		int(data.get("last_estimate", -1)),
+		1 if bool(data.get("last_estimate_correct", true)) else 0,
+	])

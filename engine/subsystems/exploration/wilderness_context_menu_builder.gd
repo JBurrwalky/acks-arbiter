@@ -113,13 +113,42 @@ static func build_menu(
 		"category": "universal",
 		"action_data": _action(base_data, "wilderness_visit_cache"),
 	})
+	# Survey — Land Surveying assessment per le_wilderness_lair_rules.xml
+	# §land_surveying. Estimates the total lair count in the hex (18+ base,
+	# +4 cumulative per successful prior search). Quick action, no
+	# wandering-encounter risk.
 	options.append({
 		"id": "survey",
 		"label": "Survey",
 		"enabled": activity_enabled,
-		"tooltip": "",
+		"tooltip": "Land Surveying assessment (18+ on 1d20, +4 per prior successful search). Estimates total lairs in this hex.",
 		"category": "universal",
 		"action_data": _action(base_data, "wilderness_survey"),
+	})
+	# Search for Lairs — full-day deliberate search per
+	# le_wilderness_lair_rules.xml §searching_for_lairs. 1 throw per hour for
+	# 8 hours, target derived from daily wilderness movement (18+ at slow
+	# speed); +4 with Tracking. One wandering-monster check per hour while
+	# searching. Stops on first reveal or first encounter.
+	options.append({
+		"id": "search_lair",
+		"label": "Search for Lairs",
+		"enabled": activity_enabled,
+		"tooltip": "Spend a day searching this hex for lairs. +4 with Tracking. One wandering check per hour.",
+		"category": "universal",
+		"action_data": _action(base_data, "wilderness_search_lair"),
+	})
+	# Hunt — full-day deliberate activity per acore_adventures_and_encounters.xml
+	# §rations_and_foraging.hunting. Daily auto-forage is independent and runs
+	# on the wilderness_day_tick; players choose Hunt to commit a full day to
+	# meat with the wandering-encounter risk in exchange for 2d6 person-feeds.
+	options.append({
+		"id": "hunt",
+		"label": "Hunt",
+		"enabled": activity_enabled,
+		"tooltip": "Full-day hunt (1d20 vs 14, +4 Survival; 2d6 person-feeds on success). Triggers a wandering monster check.",
+		"category": "universal",
+		"action_data": _action(base_data, "wilderness_hunt"),
 	})
 
 	options.append({

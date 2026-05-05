@@ -202,38 +202,58 @@ func test_case_none_when_living_familiar_but_no_new_slots() -> void:
 
 func test_case_b_returns_familiar_id_and_picks_in_final_choices() -> void:
 	_setup_db()
-	_seed_living_familiar(2, [
-		{"proficiency_key": "adventuring", "specialization": ""},
-	])
+	# Living familiar, no prior picks. Master had 1 class + 1 general before
+	# this level-up; gains 1 class slot now → budgets become class:2, general:1.
+	_seed_living_familiar(2, [])
 	var master := _make_master(4, true)
 	var p := _make_picker(master, {"new_class_proficiency_slots": 1, "new_general_proficiency_slots": 0})
 	check(p.case_kind() == LevelUpFamiliarPicker.CASE_BUDGET_GROWTH, "case is B")
-	# Drive the embedded proficiency picker — pick a non-spec proficiency.
+
 	var picker: FamiliarProficiencyPicker = p._proficiency_picker
-	for k in picker.get_eligible_keys():
-		if not picker._proficiency_registry.is_specialization(k) and not picker._picked_keys_set().has(k):
-			picker._on_eligible_pressed(k)
+	# Spend 2 class slots + 1 general slot — total 3 picks for is_complete.
+	var picked_class := 0
+	for k in picker.get_eligible_class_keys():
+		if picked_class >= 2:
 			break
-	# is_complete should be true once the new pick is made (budget = 3, picks = 2 prior + 1 new = 2 + ?)
-	# Actually budget = master.proficiencies.selections_count (2) + new_slots (1) = 3.
-	# Prior picks = 1. Need 2 more to be complete.
-	# Pick another non-spec.
-	for k in picker.get_eligible_keys():
-		if not picker._proficiency_registry.is_specialization(k) and not picker._picked_keys_set().has(k):
-			picker._on_eligible_pressed(k)
-			break
-	check(p.is_complete() == true, "Case B complete after filling budget")
+		if picker._proficiency_registry.is_specialization(k):
+			continue
+		if picker._proficiency_registry.get_selection_rule(k) == "stacking":
+			continue
+		picker._on_eligible_pressed(k, "class")
+		picked_class += 1
+	for k in picker.get_eligible_general_keys():
+		if picker._proficiency_registry.is_specialization(k):
+			continue
+		if picker._proficiency_registry.get_selection_rule(k) == "stacking":
+			continue
+		picker._on_eligible_pressed(k, "general")
+		break
+
+	check(p.is_complete() == true, "Case B complete after 2 class + 1 general picks")
 	var choices: Dictionary = p.get_final_choices()
 	check(String(choices.get("case", "")) == "B", "choices['case'] == 'B'")
 	check(String(choices.get("familiar_id", "")) == TEST_LIVING_FAMILIAR_ID,
 		"choices carries the existing familiar_id")
 	var picks: Array = choices.get("proficiencies_chosen", [])
-	check(picks.size() == 3, "choices includes prior + new picks (3 total), got %d" % picks.size())
+	check(picks.size() == 3, "choices['proficiencies_chosen'] has 3 picks, got %d" % picks.size())
+	# Each pick records its slot_type — needed downstream for the master
+	# proficiency-count refresh on the level-up emit.
+	var class_count := 0
+	var general_count := 0
+	for pick in picks:
+		if String(pick.get("slot_type", "")) == "class":
+			class_count += 1
+		elif String(pick.get("slot_type", "")) == "general":
+			general_count += 1
+	check(class_count == 2 and general_count == 1,
+		"slot_type split: 2 class + 1 general, got %d/%d" % [class_count, general_count])
 
 
 func test_case_a_returns_form_and_proficiencies_in_final_choices() -> void:
 	_setup_db()
-	# No prior familiar — first bonding case.
+	# First bonding (no living, no dead). Master has 1 class + 1 general
+	# proficiency selections from prior allocation; gains 0 new on this level.
+	# Familiar's budget = class:1, general:1.
 	var master := _make_master(4, true)
 	var p := _make_picker(master, {"new_class_proficiency_slots": 0, "new_general_proficiency_slots": 0})
 	check(p.case_kind() == LevelUpFamiliarPicker.CASE_REPLACEMENT, "Case A")
@@ -242,17 +262,21 @@ func test_case_a_returns_form_and_proficiencies_in_final_choices() -> void:
 	var acq: FamiliarAcquisitionPanel = p._acquisition_panel
 	acq._form_picker._on_form_pressed("hawk")
 	acq._form_picker._on_name_changed("Skyfeather")
-	# Proficiency budget = master.proficiencies (2) + new_slots (0) = 2.
-	# Pick two non-spec procs to satisfy is_complete.
-	var picked := 0
-	for k in acq._proficiency_picker.get_eligible_keys():
-		if picked >= 2:
-			break
-		if not acq._proficiency_picker._proficiency_registry.is_specialization(k):
-			acq._proficiency_picker._on_eligible_pressed(k)
-			picked += 1
 
-	check(p.is_complete() == true, "Case A complete after form + name + 2 picks")
+	# Pick 1 class + 1 general non-spec, non-stacking key.
+	var picker: FamiliarProficiencyPicker = acq._proficiency_picker
+	for k in picker.get_eligible_class_keys():
+		if not picker._proficiency_registry.is_specialization(k) \
+				and picker._proficiency_registry.get_selection_rule(k) != "stacking":
+			picker._on_eligible_pressed(k, "class")
+			break
+	for k in picker.get_eligible_general_keys():
+		if not picker._proficiency_registry.is_specialization(k) \
+				and picker._proficiency_registry.get_selection_rule(k) != "stacking":
+			picker._on_eligible_pressed(k, "general")
+			break
+
+	check(p.is_complete() == true, "Case A complete after form + name + 1 class + 1 general pick")
 	var choices: Dictionary = p.get_final_choices()
 	check(String(choices.get("case", "")) == "A", "choices['case'] == 'A'")
 	check(String(choices.get("form_key", "")) == "hawk", "form_key 'hawk' captured")
@@ -260,4 +284,4 @@ func test_case_a_returns_form_and_proficiencies_in_final_choices() -> void:
 	check((choices.get("proficiencies_chosen", []) as Array).size() == 2,
 		"choices['proficiencies_chosen'] has 2 picks")
 	check(int(choices.get("proficiency_count_cached", -1)) == 2,
-		"proficiency_count_cached stamped to budget (2)")
+		"proficiency_count_cached stamped to total budget (1 class + 1 general = 2)")

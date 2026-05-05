@@ -1025,7 +1025,96 @@ func _terrain_tooltip_text(coord: Vector2i, terrain: HexTerrainData) -> String:
 			for e in terrain.overlay.road_edges:
 				road_names.append(HexOverlayData.edge_name(e))
 			text += "\nRoad: %s" % " - ".join(road_names)
+	# Phase 2: weather hover line. Reads WeatherCache for the current
+	# campaign day at this hex. Mid-day cache misses on a hex the player
+	# hovers but has not yet visited resolve via WeatherCache.get_or_generate
+	# (deterministic per (campaign_id, hex, julian_day, year)).
+	var weather_line: String = _weather_tooltip_line(coord, terrain)
+	if not weather_line.is_empty():
+		text += "\nWeather: %s" % weather_line
+	# Phase 4: lair / survey hover lines. Show the count of revealed lairs
+	# in this hex (independent of party — every player sees them once
+	# discovered) and the active party's most recent Land Surveying estimate.
+	var lair_line: String = _lair_tooltip_line(coord)
+	if not lair_line.is_empty():
+		text += "\nLairs: %s" % lair_line
+	var estimate_line: String = _survey_estimate_tooltip_line(coord)
+	if not estimate_line.is_empty():
+		text += "\nSurvey: %s" % estimate_line
 	return text
+
+
+## Phase 4 helper: returns "N revealed" when at least one lair on this hex
+## has been discovered, else empty string. Counts only `discovered = 1`
+## rows — undiscovered lairs are fog-of-war.
+func _lair_tooltip_line(coord: Vector2i) -> String:
+	if _map_data == null or _map_data.id.is_empty():
+		return ""
+	var campaign_id: String = ""
+	if typeof(GameState) != TYPE_NIL:
+		campaign_id = GameState.campaign_id
+	if campaign_id.is_empty():
+		return ""
+	var rows: Array = CampaignRepository.get_lairs_in_hex(
+		campaign_id, _map_data.id, coord.x, coord.y)
+	var revealed: int = 0
+	for row: Dictionary in rows:
+		if int(row.get("discovered", 0)) == 1:
+			revealed += 1
+	if revealed <= 0:
+		return ""
+	return "%d revealed" % revealed
+
+
+## Phase 4 helper: returns a short string describing the active party's
+## most recent Land Surveying estimate for this hex. Empty when no estimate
+## has ever been made or no active party is present.
+func _survey_estimate_tooltip_line(coord: Vector2i) -> String:
+	if _map_data == null or _map_data.id.is_empty():
+		return ""
+	var campaign_id: String = ""
+	var party_id: String = ""
+	if typeof(GameState) != TYPE_NIL:
+		campaign_id = GameState.campaign_id
+		party_id = GameState.active_party_id
+	if campaign_id.is_empty() or party_id.is_empty():
+		return ""
+	var row: Dictionary = CampaignRepository.get_survey_progress(
+		campaign_id, _map_data.id, party_id, coord.x, coord.y)
+	if row.is_empty():
+		return ""
+	var estimate: int = int(row.get("last_estimate", -1))
+	if estimate < 0:
+		return ""
+	# Show the estimate; never reveal whether it was a false reading from a
+	# natural-1 (player only finds out after additional searches).
+	return "estimated %d lair(s)" % estimate
+
+
+## Phase 2 helper: formats the current day's weather for a hex into a short
+## hover-line. Returns an empty string when no campaign / repository is
+## available (e.g., test fixtures, pre-load state).
+func _weather_tooltip_line(coord: Vector2i, terrain: HexTerrainData) -> String:
+	if terrain == null:
+		return ""
+	var campaign_id: String = ""
+	if Engine.has_singleton("GameState"):
+		campaign_id = GameState.campaign_id
+	elif typeof(GameState) != TYPE_NIL:
+		campaign_id = GameState.campaign_id
+	if campaign_id.is_empty():
+		return ""
+	var julian_day: int = Timekeeping.get_day_of_year()
+	@warning_ignore("integer_division")
+	var year: int = (Timekeeping.get_total_days() / Timekeeping.DAYS_PER_YEAR) + 1
+	var weather: WeatherStateData = WeatherCache.get_or_generate(
+		campaign_id, coord.x, coord.y, terrain, julian_day, year)
+	if weather == null:
+		return ""
+	var line: String = weather.short_label()
+	if weather.produces_mud:
+		line += " (mud)"
+	return line
 
 
 # ---------------------------------------------------------------------------

@@ -171,6 +171,19 @@ func _handle_rest_complete(event: ScheduledEvent) -> Dictionary:
 
 	EventBus.rest_taken.emit(CampManager.TOTAL_REST_HOURS)
 
+	# Phase 3 (2026-05-04): a full rest day clears exhaustion and resets the
+	# days_since_rest counter (per `acore_adventures_and_encounters.xml`
+	# §rest rules — 1 day rest per 6 of travel needed to avoid penalties).
+	# Sustenance counters (starvation/dehydration) are cleared by the next
+	# wilderness_day_tick when food/water are sufficient — they ride the
+	# normal SustenanceResolver path and do not need a special-case here.
+	if party_data != null and not failed_rest_ids.size() >= party_members.size():
+		party_data.exhaustion_days = 0
+		party_data.days_since_rest = 0
+		party_data.is_force_marching = false
+		party_data.force_march_days_used = 0
+		CampaignRepository.save_party_state(party_data.to_state_dict())
+
 	return {
 		"auto_pause": true,
 		"pause_reason": "Rest complete",

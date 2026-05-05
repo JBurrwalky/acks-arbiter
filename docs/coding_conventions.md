@@ -2048,13 +2048,15 @@ Each exploration context has a handler class in `engine/subsystems/session/handl
 
 | File | Events handled |
 |---|---|
-| `wilderness_handlers.gd` | `travel_leg`, `wilderness_encounter_check`, `getting_lost_check`, `forced_march_check` |
+| `wilderness_handlers.gd` | state-scoped: `travel_leg`, `wilderness_encounter_check`, `getting_lost_check`, `forced_march_check`, `wilderness_activity`, `wilderness_activity_complete`. global: `wilderness_day_tick`. |
 | `dungeon_handlers.gd` | `dungeon_movement_tick`, `dungeon_encounter_check`, `dungeon_light_tick`, `dungeon_action_complete` |
 | `settlement_handlers.gd` | `settlement_move`, `settlement_activity`, `settlement_encounter` |
 | `camp_handlers.gd` | `camp_watch`, `camp_rest_complete` |
 | `domain_handlers.gd` | `domain_monthly_tick` |
 
 Handler classes are `RefCounted`, take a `runner` (SessionRunner) in `_init()`, and expose `register(registry)` / `unregister(registry)` methods. State objects create and own their handler instance.
+
+**Global vs state-scoped split (Phase 3, 2026-05-04):** When a handler class owns BOTH state-scoped events (only valid in one exploration state) AND global events (must fire across state transitions, like daily housekeeping), split the registration into `register_state_scoped` / `register_global` methods. `register` / `unregister` keep the all-in-one shape for tests and small handlers; `WildernessHandlers` is the canonical example — `wilderness_day_tick` is registered globally by `SessionRunner.load_session` (alongside `DomainHandlers`) so sustenance and weather rollover survive a transition to camp/dungeon/settlement, while `travel_leg`/`wilderness_encounter_check`/etc. remain state-scoped under `WildernessExploreState.enter`/`exit`.
 
 ### 19.4 Priority Tiebreaker Rules
 
@@ -2315,4 +2317,36 @@ Why this shape:
 - **No constructor injection.** Static methods can't carry instance state, and threading a repo through every public call balloons the API. The autoload is global by design — accessing it from a static helper is OK as long as the helper degrades when it's missing.
 - **Null-safe at every layer.** Unit tests construct fixtures without a running scene tree; the helper returns `null` and the caller falls back to a sensible default (e.g. modifier-only movement in `TravelSpeedCalculator`). Tests that *do* want to exercise the autoload path can register a fake under the same node name.
 - **Pattern is reused** in `HenchmanLifecycleManager._event_bus()` and `_get_party_wallet()`. New static helpers needing an autoload should copy this exact shape — do not invent variant lookups.
+
+## 27. Player-decision modals from scheduler handlers (2026-05-05)
+
+Scheduler-driven event handlers (anything called by `EventHandlerRegistry.resolve` from `scheduler_loop.tick`) **must not block on UI**. They run inline in the loop's tick step, return a result Dictionary synchronously, and the loop interprets the result. Any "the player needs to decide something" path therefore splits across three tiers:
+
+1. **Handler tier** — emits a request signal on `EventBus` and returns `{auto_pause: true, pause_reason: …, presentation: {type: …, …}}`. Never `await` in the handler; never call into UI nodes from it.
+2. **State tier** — listens for the request signal in `enter()`, disconnects in `exit()`. Owns the UI lifecycle: instantiate the modal, hand it the request payload, connect to its single resolve signal with `CONNECT_ONE_SHOT`, dispatch on the choice (state transition / scheduler resume / a back-into-handler call).
+3. **Modal tier** — pure UI. One signal out (`decided(choice)`, `confirmed`, etc.). No EventBus emission, no DB calls, no scheduler manipulation. Static helpers for any pure data the modal exposes (button matrices, label formatters) so unit tests don't need a SceneTree.
+
+The canonical example is the wilderness encounter decision flow:
+
+- Handler: `WildernessHandlers._handle_travel_leg` emits `EventBus.encounter_decision_required(party_id, enc)` and returns `auto_pause: true` with a presentation payload.
+- State: `WildernessExploreState._on_encounter_decision_required` opens `EncounterDecisionPrompt`, on `decided` dispatches to combat / encounter / evasion / continue.
+- Modal: `EncounterDecisionPrompt` exposes `static buttons_for_disposition(d) -> Array` so the button matrix is testable with no scene tree.
+
+Always emit the signal on EventBus (not on the handler instance). Handlers are RefCounted and don't survive state transitions; the state-tier listener subscribes once and stays alive across re-entries.
+
+When the player picks a "do nothing" option (continue travel, dismiss notification), the state must call `_resume_scheduler()` because the handler returned `auto_pause: true`. Forgetting this leaves the world clock paused.
+
+For background entities that triggered the same handler path but shouldn't surface a modal (e.g. multi-party play where a non-active party rolled an encounter), the state tier should auto-dispatch the safest default and resume the scheduler in the early-return — same as the active-party "continue" path.
+
+## 28. Forage / sustenance counter offset model (2026-05-05)
+
+The wilderness sustenance system models food and water as **abstract integer counters on `PartyData`** (`ration_units`, `water_units`), not as inventory items:
+
+- `ForagingResolver.attempt_daily` mutates the counters directly. No items are created.
+- `SustenanceResolver.apply_daily` decrements them by `party_size` and rolls HP loss when the counters underflow into deficit days.
+- River/lake/town hexes top off the water counter (mirroring foraging auto-pass) — the helper is `WildernessHandlers._refill_water_at_hex`. The cap is `party_size` (one day's draw).
+- Foraging fires on `wilderness_noon_tick`; sustenance fires on `wilderness_day_tick` (midnight). The noon → midnight ordering means food found earlier in the day offsets that day's consumption. The noon handler stashes the forage summary in an in-memory buffer (`WildernessHandlers._latest_forage_summary_by_party`); the midnight handler consumes and erases it when writing the sustenance log row.
+- The equipment catalog's `holds_water: true` flag (on `waterskin`, `barrel`, future jugs/jars) is for **inventory UI display and refill gating only** — it is not load-bearing for the counter mechanics. Generic containers (backpack, chest, pouch, sack) intentionally lack the flag.
+
+When adding new sustenance hooks: mutate the counters, persist with `CampaignRepository.save_party_state(party_data.to_state_dict())`, and let the existing day-tick log row capture the change. **Do not introduce food items** as a parallel system — the counter is the source of truth, and the inventory layer (when it lands) is purely descriptive.
 

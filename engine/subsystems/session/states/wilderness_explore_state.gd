@@ -9,10 +9,14 @@ extends SessionState
 ## On dungeon/settlement entry: transition to dungeon/settlement state.
 
 const ContextMenuScene := preload("res://scenes/maps/dungeon_context_menu.gd")
+const EncounterDecisionScene := preload("res://scenes/ui/dialogs/encounter_decision_prompt.gd")
 
 var _runner = null  # stored reference to avoid closure issues
 var _handlers: WildernessHandlers = null
 var _context_menu = null  # instance of ContextMenuScene (shared with dungeon UI)
+var _encounter_prompt: EncounterDecisionPrompt = null
+var _pending_encounter: Dictionary = {}
+var _pending_encounter_party: String = ""
 
 
 func enter(runner, context: Dictionary) -> void:
@@ -44,14 +48,29 @@ func enter(runner, context: Dictionary) -> void:
 	if not EventBus.wilderness_cache_visit_requested.is_connected(_on_wilderness_cache_visit_requested):
 		EventBus.wilderness_cache_visit_requested.connect(_on_wilderness_cache_visit_requested)
 
+	# Encounter-decision modal — handler emits, we show the prompt.
+	if not EventBus.encounter_decision_required.is_connected(_on_encounter_decision_required):
+		EventBus.encounter_decision_required.connect(_on_encounter_decision_required)
+
 	# Ensure all parties in the campaign are registered with Timekeeping
 	var all_parties := CampaignRepository.list_parties_for_campaign(GameState.campaign_id)
 	for p in all_parties:
 		Timekeeping.register_party(p.id)
 
-	# Register wilderness event handlers with the scheduler
+	# Register state-scoped wilderness handlers (travel, encounters, activities).
+	# The day-tick handler is registered globally by SessionRunner.load_session
+	# so it survives transitions to camp/dungeon/settlement (Phase 3, 2026-05-04).
 	_handlers = WildernessHandlers.new(runner)
-	_handlers.register(runner.get_handler_registry())
+	_handlers.register_state_scoped(runner.get_handler_registry())
+
+	# Ensure each registered party has a pending wilderness_day_tick. Idempotent
+	# against the scheduler queue — schedule_day_tick no-ops when one is already
+	# pending, so re-entering wilderness from combat/dungeon does not double-fire.
+	# Phase 5 polish (2026-05-05): also schedule the noon tick (foraging).
+	var scheduler: EventScheduler = runner.get_scheduler()
+	for p in all_parties:
+		_handlers.schedule_day_tick(scheduler, p.id)
+		_handlers.schedule_noon_tick(scheduler, p.id)
 
 	# Set wilderness time scale — 1x feels like watching the day advance.
 	runner.get_scheduler_loop().set_timescale(SchedulerLoop.TIMESCALE_WILDERNESS)
@@ -81,12 +100,17 @@ func exit(runner) -> void:
 		EventBus.active_party_changed.disconnect(_on_active_party_changed)
 	if EventBus.wilderness_cache_visit_requested.is_connected(_on_wilderness_cache_visit_requested):
 		EventBus.wilderness_cache_visit_requested.disconnect(_on_wilderness_cache_visit_requested)
+	if EventBus.encounter_decision_required.is_connected(_on_encounter_decision_required):
+		EventBus.encounter_decision_required.disconnect(_on_encounter_decision_required)
 
 	_close_context_menu()
+	_close_encounter_prompt()
 
-	# Unregister wilderness event handlers
+	# Unregister state-scoped handlers only — the day-tick handler stays
+	# globally registered by SessionRunner so sustenance/weather still tick
+	# while the party is in camp/dungeon/settlement.
 	if _handlers != null:
-		_handlers.unregister(runner.get_handler_registry())
+		_handlers.unregister_state_scoped(runner.get_handler_registry())
 		_handlers = null
 
 	# Hide hex map (only needed when transitioning to dungeon/settlement,
@@ -285,6 +309,8 @@ func _activity_type_for_action(action_type: String) -> String:
 		"wilderness_place_cache":      return "place_loot_cache"
 		"wilderness_visit_cache":      return "visit_loot_cache"
 		"wilderness_survey":           return "survey"
+		"wilderness_hunt":             return "hunt"
+		"wilderness_search_lair":      return "search_lair"
 		_:                              return ""
 
 
@@ -409,3 +435,93 @@ func _on_active_party_changed(_prev_id: String, _new_id: String) -> void:
 		var q: int = party.get("current_hex_q", 0) if party.get("current_hex_q") != null else 0
 		var r: int = party.get("current_hex_r", 0) if party.get("current_hex_r") != null else 0
 		renderer.center_on_hex(Vector2i(q, r))
+
+
+# ---------------------------------------------------------------------------
+# Encounter decision modal (Phase 5 polish, 2026-05-05)
+# ---------------------------------------------------------------------------
+
+## Wilderness handler emits `encounter_decision_required` after rolling an
+## encounter; we show the modal and route the player's choice. The handler
+## already paused the scheduler with `auto_pause`, so the world clock is
+## halted while the player decides.
+func _on_encounter_decision_required(party_id: String, encounter_data: Dictionary) -> void:
+	if _runner == null:
+		return
+	# Only the active party's encounters surface a modal — background-party
+	# encounters in multi-party play default to "continue" so they don't
+	# interrupt the player's UI. (Future polish: queue decisions per party.)
+	if party_id != GameState.active_party_id:
+		EventBus.encounter_avoided.emit(party_id, encounter_data)
+		_resume_scheduler()
+		return
+
+	_pending_encounter = encounter_data
+	_pending_encounter_party = party_id
+
+	_close_encounter_prompt()
+	_encounter_prompt = EncounterDecisionScene.new()
+	# The prompt's CanvasLayer (180) sits above the hex map; add it under the
+	# renderer so its lifetime is tied to the wilderness scene tree.
+	_runner.get_hex_map_renderer().add_child(_encounter_prompt)
+	_encounter_prompt.decided.connect(_on_encounter_decided, CONNECT_ONE_SHOT)
+	_encounter_prompt.open(encounter_data)
+
+
+func _on_encounter_decided(choice: String) -> void:
+	var party_id: String = _pending_encounter_party
+	var enc: Dictionary = _pending_encounter.duplicate()
+	_pending_encounter = {}
+	_pending_encounter_party = ""
+
+	EventBus.encounter_decision_made.emit(party_id, enc, choice)
+	_close_encounter_prompt()
+
+	if _runner == null:
+		return
+
+	match choice:
+		EncounterDecisionPrompt.CHOICE_FIGHT, EncounterDecisionPrompt.CHOICE_ENGAGE:
+			_runner.transition_to_state("combat", {
+				"encounter_data": enc,
+				"return_state": "wilderness",
+			})
+		EncounterDecisionPrompt.CHOICE_PARLEY:
+			_runner.transition_to_state("encounter", {
+				"encounter_data": enc,
+				"return_state": "wilderness",
+			})
+		EncounterDecisionPrompt.CHOICE_EVADE:
+			if _handlers != null:
+				_handlers.attempt_evasion(party_id, enc)
+			# Resume the scheduler so travel can continue (or so the daily
+			# pursuit catch-up event can fire on schedule).
+			_resume_scheduler()
+		EncounterDecisionPrompt.CHOICE_CONTINUE:
+			EventBus.encounter_avoided.emit(party_id, enc)
+			EventBus.notification_requested.emit({
+				"type": "info",
+				"category": "exploration",
+				"title": "Travel Resumed",
+				"body": "You let them pass.",
+				"duration": 2.5,
+			})
+			_resume_scheduler()
+		_:
+			# Unknown choice — fail safe to "continue" so the player isn't
+			# stuck with the scheduler paused.
+			_resume_scheduler()
+
+
+func _close_encounter_prompt() -> void:
+	if _encounter_prompt != null:
+		_encounter_prompt.queue_free()
+		_encounter_prompt = null
+
+
+func _resume_scheduler() -> void:
+	if _runner == null:
+		return
+	var loop: SchedulerLoop = _runner.get_scheduler_loop()
+	if loop != null and loop.is_paused():
+		loop.resume()

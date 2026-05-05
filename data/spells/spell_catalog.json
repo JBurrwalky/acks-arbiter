@@ -143,7 +143,39 @@
     ],
     "range": "0'",
     "duration": "6 turns",
-    "summary": "Grants the caster and allies +1 on attack throws, damage rolls, morale rolls, and saving throws against magical fear."
+    "summary": "Grants the caster and allies +1 on attack throws, damage rolls, morale rolls, and saving throws against magical fear.",
+    "effect": {
+      "range_feet": 0,
+      "duration_model": {"kind": "fixed", "amount": 6, "unit": "turns"},
+      "target_spec": {
+        "kind": "area_from_caster",
+        "geometry": {"shape": "sphere", "radius_feet": 50},
+        "friend_or_foe": "willing_only",
+        "creature_filter": {
+          "exclude_engaged_in_melee": true
+        }
+      },
+      "save_spec": {"category": "none"},
+      "resolution": [
+        {"kind": "apply_modifier", "attribute": "attack_throw", "value": 1, "stacking_group": "blessing"},
+        {"kind": "apply_modifier", "attribute": "damage_bonus", "value": 1, "stacking_group": "blessing"},
+        {"kind": "apply_modifier", "attribute": "morale_modifier", "value": 1, "stacking_group": "blessing"}
+      ],
+      "reverse": {
+        "target_spec": {
+          "kind": "area_from_caster",
+          "geometry": {"shape": "sphere", "radius_feet": 50},
+          "friend_or_foe": "unwilling_only"
+        },
+        "save_spec": {"category": "spells", "on_success": "negate", "per_target": true},
+        "resolution": [
+          {"kind": "apply_modifier", "attribute": "attack_throw", "value": -1, "stacking_group": "blessing"},
+          {"kind": "apply_modifier", "attribute": "damage_bonus", "value": -1, "stacking_group": "blessing"},
+          {"kind": "apply_modifier", "attribute": "morale_modifier", "value": -1, "stacking_group": "blessing"}
+        ]
+      },
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml: 50' radius centered on caster; 6 turns; cannot be cast on creatures already engaged in melee. Bless's '+1 saving throws against magical fear' rider is deferred until the fear-condition system has the gating; v1 ships the +1 attack/damage/morale only."
+    }
   },
   {
     "spell_key": "burning_hands",
@@ -819,7 +851,32 @@
     ],
     "range": "touch",
     "duration": "instantaneous",
-    "summary": "Restores 1d6+1 hit points by touch, or cures paralysis instead."
+    "summary": "Restores 1d6+1 hit points by touch, or cures paralysis instead.",
+    "effect": {
+      "range_feet": "touch",
+      "duration_model": {"kind": "instantaneous"},
+      "target_spec": {"kind": "touch_ally"},
+      "save_spec": {"category": "none"},
+      "resolution": [
+        {"kind": "heal", "dice": "1d6+1"}
+      ],
+      "reverse": {
+        "target_spec": {"kind": "touch_enemy"},
+        "save_spec": {"category": "none"},
+        "resolution": [
+          {
+            "kind": "attack_throw_vs_target",
+            "attack_profile": "caster_as_fighter_of_caster_level"
+          },
+          {
+            "kind": "damage",
+            "dice": "1d6+1",
+            "damage_type": "unholy",
+            "on_hit_only": true
+          }
+        ]
+      }
+    }
   },
   {
     "spell_key": "cure_major_wounds",
@@ -1110,7 +1167,21 @@
     ],
     "range": "60'",
     "duration": "2 turns",
-    "summary": "Lets the caster see enchanted or enspelled objects and creatures as pale glowing yellow light."
+    "summary": "Lets the caster see enchanted or enspelled objects and creatures as pale glowing yellow light.",
+    "effect": {
+      "range_feet": 60,
+      "duration_model": {"kind": "fixed", "amount": 2, "unit": "turns"},
+      "target_spec": {"kind": "caster_and_radius", "geometry": {"shape": "sphere", "radius_feet": 60}},
+      "save_spec": {"category": "none"},
+      "resolution": [
+        {
+          "kind": "query_game_state",
+          "query_kind": "detect_magical_auras",
+          "response_format": "highlight_on_map",
+          "reveals": ["active_effects_within_range", "magic_items_within_los", "permanent_enchantments"]
+        }
+      ]
+    }
   },
   {
     "spell_key": "detect_poison",
@@ -1594,7 +1665,19 @@
     ],
     "range": "240'",
     "duration": "instantaneous",
-    "summary": "Creates an explosion of flame dealing 1d6 fire damage per caster level to every creature in the area."
+    "summary": "Creates an explosion of flame dealing 1d6 fire damage per caster level to every creature in the area.",
+    "effect": {
+      "range_feet": 240,
+      "duration_model": {"kind": "instantaneous"},
+      "target_spec": {
+        "kind": "area_at_point",
+        "geometry": {"shape": "sphere", "diameter_feet": 20}
+      },
+      "save_spec": {"category": "blast", "on_success": "half_damage"},
+      "resolution": [
+        {"kind": "damage_per_level", "dice_per_level": "1d6", "damage_type": "fire"}
+      ]
+    }
   },
   {
     "spell_key": "flame_strike",
@@ -1667,7 +1750,18 @@
     ],
     "range": "touch",
     "duration": "1 turn per level",
-    "summary": "Allows the subject to fly freely at up to 120' per round in any direction."
+    "summary": "Allows the subject to fly freely at up to 120' per round in any direction.",
+    "effect": {
+      "range_feet": "touch",
+      "duration_model": {"kind": "per_level", "amount": 1, "unit": "turns"},
+      "target_spec": {"kind": "touch_creature"},
+      "save_spec": {"category": "none"},
+      "resolution": [
+        {"kind": "apply_flag", "flag_key": "can_fly", "value": true},
+        {"kind": "movement_mode_grant", "mode_flag": "can_fly", "rate_feet": 120, "rate_unit": "per_round"}
+      ],
+      "notes": "ACKS RAW (acore_spell_catalog_a-i_summary.xml): touch, 1 turn per caster level, 120' per round movement. The XML rule does NOT specify the secret '+/-1d6 turns' duration the GDD §4.7 example mentions; v1 follows the SACRED RAW exactly (deterministic per-level duration, no hidden modifier)."
+    }
   },
   {
     "spell_key": "forbiddance",
@@ -2351,7 +2445,23 @@
     ],
     "range": "150'",
     "duration": "instantaneous",
-    "summary": "Creates unerring missiles of magical energy that automatically hit their target, dealing 1d6+1 damage each."
+    "summary": "Creates unerring missiles of magical energy that automatically hit their target, dealing 1d6+1 damage each.",
+    "effect": {
+      "range_feet": 150,
+      "duration_model": {"kind": "instantaneous"},
+      "target_spec": {"kind": "single_creature", "count": 1},
+      "save_spec": {"category": "none"},
+      "resolution": [
+        {
+          "kind": "damage_per_level",
+          "dice_per_level": "1d6+1",
+          "damage_type": "force",
+          "caster_level_to_missile_count": {"formula": "min(5, 1 + 2 * floor((level - 1) / 5))"},
+          "auto_hit": true,
+          "notes": "ACKS RAW: 1 missile at L1, +2 per 5 caster levels beyond 1st, max 5 at L13+. (acore_spell_catalog_k-w_summary.xml). Each missile auto-hits unless target has total cover or total concealment."
+        }
+      ]
+    }
   },
   {
     "spell_key": "magic_mouth",
@@ -3203,7 +3313,19 @@
     ],
     "range": "self",
     "duration": "3 turns",
-    "summary": "Creates a mobile invisible force shield providing AC 2 against missiles and AC 4 against melee attacks."
+    "summary": "Creates a mobile invisible force shield providing AC 2 against missiles and AC 4 against melee attacks.",
+    "effect": {
+      "range_feet": "self",
+      "duration_model": {"kind": "fixed", "amount": 3, "unit": "turns"},
+      "target_spec": {"kind": "self"},
+      "save_spec": {"category": "none"},
+      "resolution": [
+        {"kind": "apply_modifier", "attribute": "armor_class_vs_missiles", "override_to": 2, "stacking_group": "shield"},
+        {"kind": "apply_modifier", "attribute": "armor_class_vs_melee", "override_to": 4, "stacking_group": "shield"},
+        {"kind": "apply_flag", "flag_key": "blocks_magic_missile", "value": true}
+      ],
+      "notes": "ACKS RAW (acore_spell_catalog_k-w_summary.xml): self, 3 turns, AC bonuses do not apply against attacks from behind, magic missiles blocked from all directions. AC values are ASCENDING (codebase convention; 0 = unarmored). override_to maps to ModifierStack 'set_floor' — acts as 'set this stat to at least N if not already higher.' Session 2's combat code must look up armor_class_vs_missiles/_vs_melee with fallback to armor_class when unset."
+    }
   },
   {
     "spell_key": "shimmer",
@@ -3303,7 +3425,46 @@
     ],
     "range": "240'",
     "duration": "4d4 turns",
-    "summary": "Puts eligible creatures of low HD into magical slumber; affects a total Hit Dice based on the table."
+    "summary": "Puts eligible creatures of low HD into magical slumber; affects a total Hit Dice based on the table.",
+    "effect": {
+      "range_feet": 240,
+      "duration_model": {"kind": "fixed", "amount_formula": "4d4", "unit": "turns"},
+      "target_spec": {
+        "kind": "disjunctive",
+        "options": [
+          {
+            "label": "One creature of 4+1 HD or less",
+            "kind": "single_creature",
+            "count": 1,
+            "creature_filter": {
+              "max_hd": 5,
+              "hd_cap_inclusive_of_bonus": true,
+              "living_only": true,
+              "excludes_type": ["undead", "construct", "ooze"]
+            }
+          },
+          {
+            "label": "Group totaling up to 2d8 HD of 4-HD-or-less creatures",
+            "kind": "multiple_creatures_hd_budget",
+            "hd_budget": {"formula": "2d8", "spent_on_lowest_hd_first": true},
+            "hd_cap_per_target": 4,
+            "ignore_hd_bonus_in_count": true,
+            "sub_1_hd_counts_as": 1,
+            "selection_order": "lowest_hd_first",
+            "creature_filter": {
+              "max_hd": 4,
+              "living_only": true,
+              "excludes_type": ["undead", "construct", "ooze"]
+            },
+            "out_of_budget_handling": "wasted_remaining_hd"
+          }
+        ]
+      },
+      "save_spec": {"category": "none"},
+      "resolution": [
+        {"kind": "apply_condition", "condition_key": "sleeping", "save_ref": "use_spell_save"}
+      ]
+    }
   },
   {
     "spell_key": "slipperiness",

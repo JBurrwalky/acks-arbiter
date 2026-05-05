@@ -4,12 +4,19 @@ extends RefCounted
 ## Per-entity facade that manages ModifierStacks for all modifiable stats.
 ##
 ## Canonical stat keys:
-##   Combat:    "armor_class", "attack_throw", "damage_bonus", "initiative_modifier"
+##   Combat:    "armor_class", "armor_class_vs_missiles", "armor_class_vs_melee",
+##              "attack_throw", "damage_bonus", "initiative_modifier"
 ##   Saves:     "save_petrification", "save_poison_death", "save_blast_breath",
 ##              "save_staffs_wands", "save_spells"
 ##   Abilities: "strength", "intelligence", "wisdom", "dexterity", "constitution", "charisma"
 ##   Movement:  "movement_rate"
 ##   Other:     "surprise_modifier", "morale_modifier"
+##
+## NOTE: armor_class_vs_missiles and armor_class_vs_melee are directional AC
+## modifiers introduced for Shield (and similar spells). When unset, combat
+## consumers fall back to "armor_class". Session 1 of the spell system writes
+## them via Shield's set_floor; Session 2's combat code reads them with the
+## fallback. See gdd-spell-system.md §4.7 (Shield example).
 
 var _stacks: Dictionary = {}  # stat_key -> ModifierStack
 

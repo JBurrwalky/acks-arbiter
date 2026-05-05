@@ -623,6 +623,33 @@ func _refresh_travel_subtab() -> void:
 
 	_travel_info_vbox.add_child(HSeparator.new())
 
+	# Phase 3 (2026-05-04): wilderness sustenance cache. Tracks abstract
+	# party-level food / water reserves that the wilderness_day_tick fills
+	# (auto-forage) and consumes. Distinct from the inventory iron-rations
+	# above — Phase 3.5 polish wires the inventory↔cache sync.
+	var sustenance_header := Label.new()
+	sustenance_header.text = "Wilderness Sustenance"
+	sustenance_header.add_theme_font_size_override("font_size", 12)
+	_travel_info_vbox.add_child(sustenance_header)
+
+	_add_info_row("Ration Units", "%d (person-days)" % _party.ration_units)
+	_add_info_row("Water Units", "%d (person-days)" % _party.water_units)
+
+	if _party.starvation_days > 0:
+		var label := "Day %d" % _party.starvation_days
+		if _party.starvation_days > 2:
+			label += " — losing 1 HP/day"
+		_add_info_row("Starvation", label)
+	if _party.dehydration_days > 0:
+		_add_info_row("Dehydration",
+			"Day %d — losing 1d4 HP/day" % _party.dehydration_days)
+	if _party.exhaustion_days > 0:
+		_add_info_row("Exhaustion", "%d days unrested" % _party.exhaustion_days)
+	if _party.days_since_rest > 0:
+		_add_info_row("Days Since Rest", "%d" % _party.days_since_rest)
+
+	_travel_info_vbox.add_child(HSeparator.new())
+
 	# Active proficiencies.
 	var profs_header := Label.new()
 	profs_header.text = "Travel-Relevant Proficiencies"
@@ -1382,21 +1409,28 @@ func _on_transfer_member(index: int, character_id: String) -> void:
 
 
 func _on_forage_pressed() -> void:
-	# γ.3 stub. Phase H+ wires this into the wilderness exploration system.
+	# Phase 3 (2026-05-04): foraging is automatic on the wilderness_day_tick
+	# (food + water rolls per character, with the auto-pass conditions for
+	# rivers/lakes/rain). Surface that fact instead of running a manual roll.
 	EventBus.notification_requested.emit({
 		"type": "info",
-		"category": "system",
-		"title": "Forage",
-		"body": "Foraging triggers will land alongside the wilderness exploration system.",
+		"category": "exploration",
+		"title": "Foraging",
+		"body": "Foraging now happens automatically each day at midnight (per acore_adventures_and_encounters.xml §rations_and_foraging.foraging). Watch the daily-foraging toast for results.",
+		"duration": 5.0,
 	})
 
 
 func _on_hunt_pressed() -> void:
+	# Phase 3 (2026-05-04): Hunt is a deliberate full-day activity surfaced
+	# via the wilderness map's right-click context menu. Direct the player
+	# there.
 	EventBus.notification_requested.emit({
 		"type": "info",
-		"category": "system",
+		"category": "exploration",
 		"title": "Hunt",
-		"body": "Hunting triggers will land alongside the wilderness exploration system.",
+		"body": "Right-click the party's current hex on the wilderness map and choose Hunt to commit a full day to hunting (1d20 vs 14, +4 with Survival; 2d6 person-feeds on success).",
+		"duration": 5.0,
 	})
 
 

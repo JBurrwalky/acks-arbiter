@@ -166,6 +166,29 @@ extends Node
 @onready var _familiar_acquisition_panel_tests = $FamiliarAcquisitionPanelTests
 @onready var _level_up_familiar_picker_tests = $LevelUpFamiliarPickerTests
 @onready var _familiar_auto_proximity_tests = $FamiliarAutoProximityTests
+@onready var _wilderness_day_tick_tests = $WildernessDayTickTests
+@onready var _weather_generator_tests = $WeatherGeneratorTests
+@onready var _weather_effects_tests = $WeatherEffectsTests
+@onready var _travel_with_weather_tests = $TravelWithWeatherTests
+@onready var _sustenance_resolver_tests = $SustenanceResolverTests
+@onready var _foraging_resolver_tests = $ForagingResolverTests
+@onready var _hunting_resolver_tests = $HuntingResolverTests
+@onready var _wilderness_loop_starvation_tests = $WildernessLoopStarvationTests
+@onready var _lair_search_resolver_tests = $LairSearchResolverTests
+@onready var _surveying_resolver_tests = $SurveyingResolverTests
+@onready var _lair_discovery_tests = $LairDiscoveryTests
+@onready var _tracking_resolver_tests = $TrackingResolverTests
+@onready var _evasion_resolver_tests = $EvasionResolverTests
+@onready var _wilderness_reaction_router_tests = $WildernessReactionRouterTests
+@onready var _evasion_full_flow_tests = $EvasionFullFlowTests
+@onready var _encounter_decision_prompt_tests = $EncounterDecisionPromptTests
+@onready var _specialist_catalog_tests = $SpecialistCatalogTests
+@onready var _specialist_bonus_resolver_tests = $SpecialistBonusResolverTests
+@onready var _specialist_hire_manager_tests = $SpecialistHireManagerTests
+@onready var _specialist_integration_tests = $SpecialistIntegrationTests
+@onready var _casting_geometry_tests = $CastingGeometryTests
+@onready var _casting_resolver_tests = $CastingResolverTests
+@onready var _spell_slot_reset_tests = $SpellSlotResetTests
 
 
 func _ready() -> void:
@@ -312,7 +335,30 @@ func run() -> void:
 			_familiar_acquisition_panel_tests,
 			_level_up_familiar_picker_tests,
 			_familiar_auto_proximity_tests,
-			_h3_polish_tests]:
+			_h3_polish_tests,
+			_wilderness_day_tick_tests,
+			_weather_generator_tests,
+			_weather_effects_tests,
+			_travel_with_weather_tests,
+			_sustenance_resolver_tests,
+			_foraging_resolver_tests,
+			_hunting_resolver_tests,
+			_wilderness_loop_starvation_tests,
+			_lair_search_resolver_tests,
+			_surveying_resolver_tests,
+			_lair_discovery_tests,
+			_tracking_resolver_tests,
+			_evasion_resolver_tests,
+			_wilderness_reaction_router_tests,
+			_evasion_full_flow_tests,
+			_encounter_decision_prompt_tests,
+			_specialist_catalog_tests,
+			_specialist_bonus_resolver_tests,
+			_specialist_hire_manager_tests,
+			_specialist_integration_tests,
+			_casting_geometry_tests,
+			_casting_resolver_tests,
+			_spell_slot_reset_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

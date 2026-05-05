@@ -134,6 +134,172 @@ signal getting_lost_checked(result: Dictionary)
 ##   succeeded:    bool   — true if character endured
 signal forced_march_checked(result: Dictionary)
 
+## A wilderness day-tick fired for a party (midnight rollover, per-party clock).
+## Phase 1 establishes the contract; Phase 2 (weather) and Phase 3 (sustenance)
+## attach work to the tick. Self-rescheduling +24hr per
+## gdd-realtime-scheduler.md §day-tick.
+## [param summary] keys (Phase 1 minimum):
+##   tick_round:        int — absolute round when the tick fired
+##   day_index:         int — Timekeeping day index after the tick
+##   exhaustion_days:   int — counter after the tick
+##   starvation_days:   int — counter after the tick
+##   dehydration_days:  int — counter after the tick
+##   ration_units:      int — counter after the tick
+##   water_units:       int — counter after the tick
+signal wilderness_day_ticked(party_id: String, summary: Dictionary)
+
+## A party's exhaustion counter changed. Emitted alongside wilderness_day_ticked
+## whenever exhaustion_days mutates (Phase 1 only flags; Phase 3 wires the
+## actual penalty math from acore_adventures_and_encounters.xml rest rules).
+signal exhaustion_changed(party_id: String, old_value: int, new_value: int)
+
+## A sustenance penalty threshold was crossed (e.g., 2-day food grace expired).
+## Phase 3 wires the resolver and toast routing per gdd-hunting-foraging.md;
+## Phase 1 declares the signal so day-tick consumers can subscribe early.
+## [param kind]      one of "starvation", "dehydration", "exhaustion"
+## [param threshold] human-readable threshold name (e.g. "grace_expired",
+##                   "first_hp_loss", "healing_lost")
+signal sustenance_threshold_crossed(party_id: String, kind: String, threshold: String)
+
+## Daily forage check resolved on the wilderness_day_tick (Phase 3, 2026-05-04).
+## Per-character rolls; successes stack. Fired once per kind ("food" or
+## "water") per party per day. Listeners: NotificationManager (toast),
+## party_sustenance_log audit insert, future hunting/foraging UI panel.
+## [param result] keys:
+##   kind:           String — "food" | "water"
+##   rolls:          int    — total characters who rolled (excludes auto-pass)
+##   successes:      int    — total successes
+##   units_added:    int    — person-day-equivalents added to ration/water_units
+##   auto_pass:      bool   — true when river/lake/rainy gave a free fill
+##   weather_blocked: bool  — true when storm made foraging impossible
+signal forage_resolved(party_id: String, result: Dictionary)
+
+## Hunt activity resolved (Phase 3, 2026-05-04). Fired once per hunt
+## resolution. Listeners: NotificationManager, party_sustenance_log.
+## [param result] keys:
+##   hunter_id:    String — character who rolled the throw
+##   roll:         int    — d20 result
+##   target:       int    — 14 (untrained) / 14 (Survival applies +4 implicitly)
+##   modifier:     int    — Survival bonus applied (0 or +4)
+##   succeeded:    bool
+##   units_added:  int    — 2d6 person-feeds when succeeded; 0 otherwise
+signal hunt_resolved(party_id: String, result: Dictionary)
+
+## A character lost HP this day-tick from starvation. Fires per character on
+## days where the party is in food deficit beyond the 2-day grace per
+## acore_adventures_and_encounters.xml §rations_and_foraging.lack_of_food.
+signal starvation_tick(character_id: String, hp_lost: int)
+
+## A character lost HP this day-tick from dehydration. Fires per character
+## per acore_adventures_and_encounters.xml §rations_and_foraging.lack_of_water:
+## 1d4 first day, +1d4/day thereafter; natural healing lost when first die
+## of damage is rolled.
+signal dehydration_tick(character_id: String, hp_lost: int)
+
+## A wilderness lair was discovered (Phase 4, 2026-05-04). Per
+## le_wilderness_lair_rules.xml — fires when an undiscovered lair record's
+## `discovered` flag flips to 1, regardless of the discovery method
+## (deliberate search, passive travel-leg spotting, or aerial recon).
+## [param result] keys:
+##   lair_id:      String
+##   hex_q, hex_r: int
+##   monster_group: String
+##   via:           String — "search" | "passive" | "encounter" | "aerial"
+##   round:         int    — game-round of discovery
+signal lair_discovered(party_id: String, result: Dictionary)
+
+## A wilderness POI was discovered (Phase 4 schema; resolver wiring in a
+## later phase that integrates gdd-poi-generation.md). Listeners: hex map
+## renderer (marker), Notebook (history), NotificationManager (toast).
+signal poi_discovered(party_id: String, result: Dictionary)
+
+## A Land Surveying assessment was resolved (Phase 4, 2026-05-04). Fires
+## whether the assessment succeeded, failed, or returned a false reading
+## from a natural 1.
+## [param result] keys:
+##   surveyor_id, surveyor_name: String
+##   roll, target, search_bonus: int
+##   succeeded, natural_one:     bool
+##   estimate, estimate_correct: int / bool — `-1` when no estimate produced
+signal survey_completed(party_id: String, result: Dictionary)
+
+## A wilderness encounter triggered and is awaiting a player decision
+## (Phase 5 polish, 2026-05-05). Replaces the auto-route through the reaction
+## router for player parties: every band now surfaces a modal so the player
+## can engage non-hostiles, attempt evasion of hostiles, etc. Listeners:
+## WildernessExploreState (opens the EncounterDecisionPrompt modal).
+signal encounter_decision_required(party_id: String, encounter_data: Dictionary)
+
+## The player picked a response from the EncounterDecisionPrompt modal.
+## [param choice] is one of "fight" | "evade" | "engage" | "parley" |
+## "continue". Listeners: SessionStatusBar / history panel for audit logging.
+signal encounter_decision_made(party_id: String, encounter_data: Dictionary, choice: String)
+
+## A wilderness encounter was avoided via the reaction router (Phase 5,
+## 2026-05-04). Per acore_adventures_and_encounters.xml §reaction_results
+## the indifferent disposition (9-11 on 2d6) lets the encounter pass by;
+## travel resumes uninterrupted. Listeners: NotificationManager toast,
+## future Notebook history panel.
+signal encounter_avoided(party_id: String, encounter_data: Dictionary)
+
+## A tracking session opened (Phase 5, 2026-05-04). Per
+## acore_proficiencies_rules_and_catalog.xml Tracking entry — half speed
+## while tracking, weather decay accumulates.
+## [param session] keys: session_id, target_kind, target_label, target_size,
+## started_at_round, started_terrain.
+signal tracking_session_started(party_id: String, session: Dictionary)
+
+## A tracking session closed (Phase 5).
+## [param result] keys: session_id, reason ("success" | "lost_trail" |
+## "abandoned" | "caught_up" | "engaged"), throws (Array of per-throw dicts).
+signal tracking_session_ended(party_id: String, result: Dictionary)
+
+## A wilderness evasion attempt was rolled (Phase 5). Per
+## acore_adventures_and_encounters.xml §chases_in_the_wilderness.
+## [param result] keys mirror EvasionResolver.attempt return.
+signal evasion_attempted(party_id: String, result: Dictionary)
+
+## Pursuers caught up to a fleeing party (Phase 5). Per RAW catch-up roll:
+## "If the pursuers have greater movement, they have a 50% chance (11+ on
+## d20) to catch up close." Listeners: combat-entry router (forces
+## hostile encounter), NotificationManager (danger toast).
+signal pursuit_caught_up(party_id: String, pursuit_id: String, result: Dictionary)
+
+## A wilderness specialist was hired (Phase 6, 2026-05-04). Per
+## acore_equipment.xml §specialists and le_wilderness_lair_rules.xml
+## §hirelings — non-adventuring monthly hires, exempt from henchman cap.
+## [param data] keys: specialist_id, kind ("pathfinder" | "land_surveyor"),
+## name, settlement_id, monthly_wage_gp, hired_at_round.
+signal specialist_hired(party_id: String, data: Dictionary)
+
+## A wilderness specialist closed — voluntary dismissal OR auto-dismissal
+## from unpaid wages. [param data] keys: specialist_id, reason
+## ("dismissed" | "unpaid" | "departed").
+signal specialist_dismissed(party_id: String, data: Dictionary)
+
+## Specialist monthly wages were processed (Phase 6). Mirrors the existing
+## `wages_processed` flow for henchmen.
+## [param summary] keys: total_deducted_gp, unpaid_specialists,
+## dismissed_specialists.
+signal specialist_wages_processed(party_id: String, summary: Dictionary)
+
+## Weather rolled over on the wilderness_day_tick for [param party_id]'s
+## current hex. Phase 2 of the wilderness closure roadmap.
+## Listeners: hex_map_renderer (refresh tooltip), notification_manager
+## (toast on severe transitions). The signal fires only when the new
+## weather differs materially from yesterday's (atmosphere or extreme
+## temperature change) — calm-day-to-calm-day rollovers are silent.
+## [param summary] keys mirror WeatherStateData.short_label() inputs:
+##   hex_q, hex_r:           int
+##   temperature_band:       int (0-5; see WeatherStateData)
+##   temperature_label:      String ("Mild", "Cold", "Hot", etc.)
+##   atmosphere:             String ("calm" | "rainy" | "snowy" | "windy")
+##   atmosphere_label:       String ("Calm", "Rainy", ...)
+##   visibility_multiplier:  float (0.0–1.0)
+##   produces_mud:           bool
+##   short_label:            String (joined "Cold, Snowy" form)
+signal weather_changed(party_id: String, summary: Dictionary)
+
 
 # ---------------------------------------------------------------------------
 # Character signals
@@ -336,6 +502,14 @@ signal spell_effect_applied(effect_id: String, spell_key: String, target_ids: Ar
 
 ## A spell effect was removed (dispelled, duration expired, or caster dismissed).
 signal spell_effect_removed(effect_id: String, spell_key: String)
+
+## A spell slot was expended for a caster at the given level. Fires for both
+## successful and disrupted casts (per ACKS — disruption still consumes the slot).
+## [param remaining_at_level] is the count of unused slots remaining at that level.
+signal spell_slot_expended(caster_id: String, spell_level: int, remaining_at_level: int)
+
+## A caster's daily spell slots were reset (full rest completed).
+signal spell_slots_reset(caster_id: String)
 
 
 # ---------------------------------------------------------------------------

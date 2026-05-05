@@ -65,17 +65,20 @@ func setup(state: Dictionary,
 	if not _familiar_state.has("proficiencies_chosen") or not (_familiar_state["proficiencies_chosen"] is Array):
 		_familiar_state["proficiencies_chosen"] = []
 
-	# Compute the proficiency budget from the master's actual slot uses.
-	# Each entry in master's proficiencies array carries selections_count; sum
-	# them to get the total slots used. The familiar's budget matches.
+	# Compute the per-slot budgets from the master's actual slot uses,
+	# split by slot_type. Each entry in master's proficiencies array carries
+	# `slot_type` ("class" / "general") and `selections_count`; sum within
+	# each slot_type. The familiar's budgets match the master's allocation.
 	var master_class_id: String = String(_state.get("class_id", ""))
-	var budget: int = _compute_master_proficiency_count(_state.get("proficiencies", []))
+	var class_budget: int = compute_master_class_count(_state.get("proficiencies", []))
+	var general_budget: int = compute_master_general_count(_state.get("proficiencies", []))
 
-	# Sub-state Dict shape consumed by FamiliarProficiencyPicker.
-	# It mutates `proficiencies_chosen` in-place — same Array we expose to the
+	# Sub-state Dict consumed by FamiliarProficiencyPicker. It mutates
+	# `proficiencies_chosen` in-place — same Array reference we expose to the
 	# finalize step via `_state["familiar"]["proficiencies_chosen"]`.
 	var prof_picker_state := {
-		"proficiency_budget": budget,
+		"class_slot_budget": class_budget,
+		"general_slot_budget": general_budget,
 		"master_class_id": master_class_id,
 		"proficiencies_chosen": _familiar_state["proficiencies_chosen"],
 	}
@@ -85,7 +88,7 @@ func setup(state: Dictionary,
 
 	_form_picker.setup(_familiar_state, _form_registry)
 	_proficiency_picker.setup(prof_picker_state, _class_registry, _proficiency_registry)
-	_render_summary(master_class_id, budget)
+	_render_summary(master_class_id, class_budget, general_budget)
 
 
 func is_complete() -> bool:
@@ -124,24 +127,35 @@ func _build_ui() -> void:
 	add_child(_proficiency_picker)
 
 
-func _render_summary(master_class_id: String, budget: int) -> void:
+func _render_summary(master_class_id: String, class_budget: int, general_budget: int) -> void:
 	var class_name_lbl: String = master_class_id.capitalize() if not master_class_id.is_empty() else "?"
-	var prof_word := "proficiencies" if budget != 1 else "proficiency"
 	_summary_label.text = (
 		"Bond a familiar — your magical animal companion. "
 		+ "It takes the body of a real animal (its AC, movement, attacks, and special abilities) but its "
 		+ "HD, HP, INT, save category, and proficiency count derive from you (see gdd-familiars.md §3.3). "
-		+ "Pick %d %s for it from your %s class list and the general list — its picks are independent of yours."
-	) % [budget, prof_word, class_name_lbl]
+		+ "Pick %d class proficiency slot(s) from your %s class list and %d general proficiency slot(s) "
+		+ "from the general list — its picks are independent of yours, and stacking proficiencies can "
+		+ "be ranked-up like you would."
+	) % [class_budget, class_name_lbl, general_budget]
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-## Sums `selections_count` across the master's proficiencies array. Each entry
-## represents one slot use (rank-stacking entries advance their selections_count
-## as the player picks the same proficiency multiple times).
+## Sums `selections_count` across master proficiency entries with slot_type=="class".
+static func compute_master_class_count(proficiencies: Array) -> int:
+	return _sum_selections_for_slot_type(proficiencies, "class")
+
+
+## Sums `selections_count` across master proficiency entries with slot_type=="general".
+static func compute_master_general_count(proficiencies: Array) -> int:
+	return _sum_selections_for_slot_type(proficiencies, "general")
+
+
+## Total master proficiency selections (both slot types). Used for the
+## familiar's `proficiency_count_cached` field, which doesn't distinguish
+## class vs general — that distinction lives only in `proficiencies_chosen`.
 static func compute_master_proficiency_count(proficiencies: Array) -> int:
 	var total: int = 0
 	for p in proficiencies:
@@ -150,6 +164,9 @@ static func compute_master_proficiency_count(proficiencies: Array) -> int:
 	return total
 
 
-# Instance alias used by setup() for slightly cleaner readability.
-func _compute_master_proficiency_count(proficiencies: Array) -> int:
-	return FamiliarAcquisitionPanel.compute_master_proficiency_count(proficiencies)
+static func _sum_selections_for_slot_type(proficiencies: Array, slot_type: String) -> int:
+	var total: int = 0
+	for p in proficiencies:
+		if p is Dictionary and String(p.get("slot_type", "")) == slot_type:
+			total += int(p.get("selections_count", 1))
+	return total

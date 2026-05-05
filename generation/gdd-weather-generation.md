@@ -1,11 +1,40 @@
 # GDD: Weather Generation
 
 **Authority:** HYBRID — DaW Vagaries weather effects and ACKS movement/visibility rules are SACRED (sourced from XML). All generation algorithms, climate modeling, and dawn/dusk calculations are PROJECT-DESIGNED.
-**Status:** Draft
+**Status:** Phase 2 v1 implemented (2026-05-04). Phase 2.5 / 7 deferments noted inline.
 **Depends on ACKS rules:** `daw_vagaries.xml` (severe weather conditions table, weather effect rules), `acore_adventures_and_encounters.xml` (wilderness encounter distance by terrain, visibility rules, terrain movement multipliers, wind conditions for sea travel, foraging/hunting modifiers), `acks_core_spell_catalog_a-i_summary.xml` (Control Weather spell effects)
 **Depends on project GDDs:** `gdd-calendar-seasons.md` (season definitions, solstice/equinox dates, hemisphere model, transition blending), `gdd-setting-generation.md` (Layer 2 climate pipeline — Köppen codes, temperature, precipitation, effective latitude per hex), `gdd-terrain-system.md` (terrain tags, biome definitions, encounter table selection), `gdd-combat-map-generation.md` (weather effects on battle maps §13.2–13.3)
 **Modifiable by Claude Code:** Yes — all generation algorithms, parameter tables, and scheduling logic are engineering decisions. ACKS-sourced weather effects and movement rules are not modifiable.
-**Last updated:** 2026-03-28
+**Last updated:** 2026-05-04
+
+---
+
+## Phase 2 v1 Implementation Status (2026-05-04)
+
+The Wilderness closure Phase 2 ships a trimmed subset of this GDD. Sections below describe the long-term shape; what's wired today is summarized here. Everything not listed is deferred.
+
+**Implemented (Phase 2 v1):**
+- 6-channel `WeatherStateData` record (`engine/shared_types/weather_state_data.gd`).
+- `WeatherGenerator` reads the SACRED `daw_vagaries.xml` §severe_weather_conditions table directly — terrain row × season → temperature + atmosphere with percentage gating per the rule text. **Köppen profile tables (§5.2) are NOT used in v1**; they remain documented for Phase 2.5. The DaW table gives sharper, fully-RAW weather and avoids the project-designed-distribution risk.
+- `WeatherCache` (DB-backed, migration 048) keyed on `(campaign_id, hex_q, hex_r, julian_day, year)`. Lazy: read first, generate-and-store on miss.
+- `TravelSpeedCalculator.hex_crossing_rounds` accepts optional `WeatherStateData`. Multiplier order: `terrain × encumbrance × forced-march × weather × mud` (mud bundled inside `weather.travel_multiplier()`). Floor at ×0.1.
+- `CombatState._roll_encounter_distance_cells` scales the rolled distance by `visibility_multiplier` (gated behind `WeatherStateData.FEATURE_VISIBILITY_ENABLED`, default true).
+- `WildernessHandlers._handle_wilderness_day_tick` rolls weather for the party's current hex on each day-tick, fires `EventBus.weather_changed`, and routes a `NotificationManager` toast on severe transitions (warning tier). Same-state rollovers stay silent.
+- `hex_map_renderer.gd` hover tooltip surfaces a `Weather: <Cold, Snowy>` line per current hex.
+
+**NOT yet implemented (deferred):**
+- Köppen-driven probability distributions (§5.2). DaW table is sharper; Köppen is Phase 2.5 polish if/when biome → climate granularity needs to widen.
+- Coherence / regional fronts (§5.4–§5.5). Each day rolls independently in v1.
+- Wind direction (§4.4 direction enum). Wind LEVEL is set coarsely by the Windy descriptor; direction is Phase 7 (sea travel).
+- Fog channel as a distinct flag (§4.3). Visibility multiplier handles the visible mechanical case in v1.
+- Storm / Heavy / Drizzle precipitation levels (§4.2 levels 1, 3, 4). v1 emits 0 (calm) and 2 (steady rain/snow) only.
+- Mud as a multi-day persistent hex flag (§7.5 dry-out timer). v1 derives `produces_mud` per-day from `(precipitation_type=rain AND biome IN [clear, scrub])`.
+- Foraging / hunting modifiers (§7.3). Phase 3 reads weather state but the resolvers don't exist yet.
+- Sea travel wind mapping (§7.4). Phase 7.
+- Control Weather spell override (§8.1). Out of scope; design retained.
+- Dawn / dusk calculation (§6). Out of scope for Phase 2; design retained.
+
+The cache schema (migration 048) reserves columns for fog, wind direction, and storm levels via the existing channels — adding them in Phase 2.5 is a generator change, not a migration.
 
 ---
 

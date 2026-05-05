@@ -53,6 +53,11 @@ var _scheduler: EventScheduler = null
 var _handler_registry: EventHandlerRegistry = null
 var _scheduler_loop: SchedulerLoop = null
 var _domain_handlers: DomainHandlers = null
+## Long-lived WildernessHandlers instance owning the global day-tick handler
+## (Phase 3, 2026-05-04). State-scoped registration still lives in
+## WildernessExploreState.enter; this instance only holds the cross-state
+## day-tick.
+var _wilderness_global_handlers: WildernessHandlers = null
 var _entity_outliner: EntityOutliner = null
 
 ## State keys where the scheduler loop should tick.
@@ -387,6 +392,16 @@ func load_session(campaign_id: String, party_id: String) -> void:
 		if not has_domain_tick:
 			_domain_handlers.seed_monthly_tick(_scheduler, party_id)
 
+	# 7b. Register the global wilderness day-tick handler (Phase 3, 2026-05-04).
+	#     Same pattern as domain handlers: registered at session load, owned
+	#     by SessionRunner, survives state transitions. Sustenance and weather
+	#     rollover keep firing while the party is in camp/dungeon/settlement.
+	if _wilderness_global_handlers != null:
+		_wilderness_global_handlers.unregister_global(_handler_registry)
+		_wilderness_global_handlers = null
+	_wilderness_global_handlers = WildernessHandlers.new(self)
+	_wilderness_global_handlers.register_global(_handler_registry)
+
 	# 8. Create the entity outliner and give it the scheduler reference.
 	if _entity_outliner == null:
 		_entity_outliner = EntityOutliner.new()
@@ -443,6 +458,9 @@ func end_session() -> void:
 	if _domain_handlers != null:
 		_domain_handlers.unregister(_handler_registry)
 		_domain_handlers = null
+	if _wilderness_global_handlers != null:
+		_wilderness_global_handlers.unregister_global(_handler_registry)
+		_wilderness_global_handlers = null
 	if _entity_outliner != null:
 		_entity_outliner.visible = false
 	_scheduler.clear()

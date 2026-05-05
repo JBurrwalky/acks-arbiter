@@ -47,8 +47,9 @@ const CASE_BUDGET_GROWTH := "B"
 var _case: String = CASE_NONE
 var _master: CharacterData
 var _master_class_id: String = ""
-var _new_total_proficiency_count: int = 0   # master's prof count after this level-up
-var _existing_familiar_id: String = ""      # Case B only
+var _new_class_slot_budget: int = 0      # master's class slot count after this level-up
+var _new_general_slot_budget: int = 0    # master's general slot count after this level-up
+var _existing_familiar_id: String = ""   # Case B only
 
 # Embedded sub-pickers (one is null depending on case).
 var _acquisition_panel: FamiliarAcquisitionPanel
@@ -56,7 +57,7 @@ var _proficiency_picker: FamiliarProficiencyPicker
 
 # Sub-state mutated by the embedded pickers.
 var _familiar_state: Dictionary = {}        # Case A: {form_key, cosmetic, name, proficiencies_chosen}
-var _proficiency_state: Dictionary = {}     # Case B: {proficiency_budget, master_class_id, proficiencies_chosen}
+var _proficiency_state: Dictionary = {}     # Case B: {class_slot_budget, general_slot_budget, master_class_id, proficiencies_chosen}
 
 
 # ---------------------------------------------------------------------------
@@ -77,15 +78,12 @@ func setup(master: CharacterData,
 	_master = master
 	_master_class_id = master.character_class
 
-	var new_slots: int = (
-		int(level_up_result.get("new_class_proficiency_slots", 0))
-		+ int(level_up_result.get("new_general_proficiency_slots", 0))
-	)
-	# After this level-up, master's total selections_count grows by `new_slots`.
-	# (Each new slot pick consumes one selections_count; stacking-rank picks
-	# also consume one per rank.)
-	var current_master_count: int = _sum_master_selections_count(master.proficiencies)
-	_new_total_proficiency_count = current_master_count + new_slots
+	var new_class_slots: int = int(level_up_result.get("new_class_proficiency_slots", 0))
+	var new_general_slots: int = int(level_up_result.get("new_general_proficiency_slots", 0))
+	# After this level-up, master's per-slot-type selections grow by these amounts.
+	_new_class_slot_budget = _sum_master_selections_for_slot(master.proficiencies, "class") + new_class_slots
+	_new_general_slot_budget = _sum_master_selections_for_slot(master.proficiencies, "general") + new_general_slots
+	var new_slots: int = new_class_slots + new_general_slots
 
 	# Master must have the Familiar proficiency to surface either case.
 	if not _master_has_familiar_proficiency(master):
@@ -146,14 +144,16 @@ func get_final_choices() -> Dictionary:
 				"cosmetic_species": String(_familiar_state.get("cosmetic_species", "")),
 				"name": String(_familiar_state.get("name", "")),
 				"proficiencies_chosen": _familiar_state.get("proficiencies_chosen", []),
-				# Computed budget the engine should stamp on the new familiar row.
-				"proficiency_count_cached": _new_total_proficiency_count,
+				# Computed budget the engine stamps on the new familiar row.
+				"proficiency_count_cached": _new_class_slot_budget + _new_general_slot_budget,
 			}
 		CASE_BUDGET_GROWTH:
 			return {
 				"case": CASE_BUDGET_GROWTH,
 				"familiar_id": _existing_familiar_id,
 				"proficiencies_chosen": _proficiency_state.get("proficiencies_chosen", []),
+				# New total budget for the master's controller cache to align with.
+				"proficiency_count_cached": _new_class_slot_budget + _new_general_slot_budget,
 			}
 		_:
 			return {}
@@ -167,12 +167,15 @@ func _build_case_a_ui(form_registry: FamiliarFormRegistry,
 		class_registry: ClassRegistry,
 		proficiency_registry: ProficiencyRegistry) -> void:
 	# Compose a creation-state-shaped Dict so FamiliarAcquisitionPanel works as-is.
-	# Pass synthetic master proficiency list of size `_new_total_proficiency_count`
-	# (zero-filled with no real keys) to drive the budget. The acquisition panel's
-	# `compute_master_proficiency_count` only sums `selections_count`.
+	# Synthesize the master's proficiency array from the per-slot budgets so the
+	# panel's `compute_master_class_count` / `compute_master_general_count`
+	# helpers add up to our computed budgets. (The picker only consumes the
+	# slot-type sums, not the actual proficiency keys.)
 	var synthetic_profs: Array = []
-	for i in range(_new_total_proficiency_count):
-		synthetic_profs.append({"proficiency_key": "_synthetic", "selections_count": 1})
+	for i in range(_new_class_slot_budget):
+		synthetic_profs.append({"proficiency_key": "_synthetic_class", "slot_type": "class", "selections_count": 1})
+	for i in range(_new_general_slot_budget):
+		synthetic_profs.append({"proficiency_key": "_synthetic_general", "slot_type": "general", "selections_count": 1})
 	var creation_state := {
 		"class_id": _master_class_id,
 		"proficiencies": synthetic_profs,
@@ -208,7 +211,8 @@ func _build_case_b_ui(living_familiar_row: Dictionary,
 		prior_picks = prior_picks_raw
 
 	_proficiency_state = {
-		"proficiency_budget": _new_total_proficiency_count,
+		"class_slot_budget": _new_class_slot_budget,
+		"general_slot_budget": _new_general_slot_budget,
 		"master_class_id": _master_class_id,
 		"proficiencies_chosen": prior_picks,
 	}
@@ -251,5 +255,13 @@ static func _sum_master_selections_count(proficiencies: Array) -> int:
 	var total: int = 0
 	for p in proficiencies:
 		if p is Dictionary:
+			total += int(p.get("selections_count", 1))
+	return total
+
+
+static func _sum_master_selections_for_slot(proficiencies: Array, slot_type: String) -> int:
+	var total: int = 0
+	for p in proficiencies:
+		if p is Dictionary and String(p.get("slot_type", "")) == slot_type:
 			total += int(p.get("selections_count", 1))
 	return total
