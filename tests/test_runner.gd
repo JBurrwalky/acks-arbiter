@@ -195,6 +195,7 @@ extends Node
 @onready var _session_2_6_fixes_tests = $Session26FixesTests
 @onready var _session_2_7_polish_tests = $Session27PolishTests
 @onready var _spell_targeting_ui_tests = $SpellTargetingUITests
+@onready var _session_2_9_1_polish_tests = $Session291PolishTests
 
 
 func _ready() -> void:
@@ -370,7 +371,8 @@ func run() -> void:
 			_combat_cast_routing_tests,
 			_session_2_6_fixes_tests,
 			_session_2_7_polish_tests,
-			_spell_targeting_ui_tests]:
+			_spell_targeting_ui_tests,
+			_session_2_9_1_polish_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

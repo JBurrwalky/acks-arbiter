@@ -286,7 +286,11 @@ func get_effective_attack_throw() -> int:
 
 func get_effective_save(save_key: String) -> int:
 	## save_key: "save_petrification" | "save_poison_death" | "save_blast_breath" |
-	##           "save_staffs_wands" | "save_spells"
+	##           "save_staffs_wands" | "save_spells" | "save_vs_fear"
+	## save_vs_fear is a directional modifier axis with no base value — it
+	## stacks ON TOP of whatever save category the fear-tagged spell uses
+	## (typically save_spells). The resolver reads it via get_effective_value
+	## with base 0 and adds the result to the rolled save total.
 	var base_value: int
 	match save_key:
 		"save_petrification": base_value = save_petrification
@@ -294,6 +298,7 @@ func get_effective_save(save_key: String) -> int:
 		"save_blast_breath":  base_value = save_blast_breath
 		"save_staffs_wands":  base_value = save_staffs_wands
 		"save_spells":        base_value = save_spells
+		"save_vs_fear":       base_value = 0  # modifier-only axis
 		_:
 			push_error("CharacterData.get_effective_save: unknown save_key '%s'" % save_key)
 			return 20

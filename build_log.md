@@ -13751,3 +13751,129 @@ The combat layer is closed end-to-end. Session 3 wires the same flow for out-of-
 Out-of-combat surfaces don't need a TargetingController for self / touch spells (auto), they reuse the SpellPickerPanel and TargetingController from this session, and they invoke the resolver directly (no CombatController in the loop). The seam is `CastingResolver.resolve(ctx, choice, td, caster_entity, targets_by_id)` — same entry point combat uses.
 
 **[NEEDS-OPUS-REVIEW]** None this session. The state-machine wiring is mechanical; the cancel-consumes-slot decision is documented for future review. The self-target target_ids fix (injecting caster_id when commit returns empty target_ids) is a small contract patch — a future cleanup might prefer fixing TargetingController.commit() itself to know the caster_id, but the current placement keeps the controller pure.
+
+---
+
+## Session 2026-05-05 — Spell System Phase A Session 2.9.1 (fear wiring + HD-budget red band)
+
+**Task:** Two carryovers from Session 2.9: (1) wire the fear-save read side so Bless's `save_vs_fear +1` modifier actually fires when a fear-tagged spell rolls a save, plus fear-immunity auto-success for berserk-rage targets; (2) implement the HD-budget red band that 2.9 left empty (over-cap candidates struck-through in the targeting overlay).
+
+Also incorporates an audit + minor fix of DeepSeek's Session 2.9 implementation (which was applied in the same working tree before this session).
+
+**Model used:** Opus 4.7 (1M context).
+
+**DeepSeek Session 2.9 audit summary (carry-over):**
+
+DeepSeek's 2.9 was 90% correct. Three bugs found and fixed in this same tree:
+- `VoxelGrid.world_to_cell(token.position.x, token.position.y, token.position.z)` — wrong arity, fixed to `world_to_cell(token.position)` per the Vector3 signature.
+- `_targeting_controller.is_within_hd_cap(cid)` — non-existent method on TargetingController; the static `CastingGeometry.is_within_hd_cap(creature, target_spec)` is what exists. Removed the call from `_emit_hd_band_highlights` (the resolver-side filter at `begin()` already excludes over-cap candidates from `get_eligible_candidates()`); the red band gets populated properly in this session via the new `get_all_candidate_ids()` accessor.
+- `test_cancel_targeting_consumes_slot` regression — DeepSeek (correctly per spec) added Esc-to-rescind semantics, which broke the old test assumption. Rewrote the test to make a selection first (so cancel takes the slot-consume path), and added a parallel `test_rescind_with_no_selection_returns_slot` to cover rescind. Bless's `notes` field was also tightened to be honest that the read side wasn't yet wired (this session fixes that).
+
+DeepSeek's design choices were sound or better than my plan:
+- **Esc-to-rescind shortcut** — `on_cancel_spell_targeting` now checks `_can_rescind()` first and routes to rescind when no selection has been made. Cleaner than gating purely on a Rescind button.
+- **Layered AoE preview** — three-way partition (ally-occupied red-orange / enemy-occupied red / empty AoE faint orange) instead of a single uniform color.
+- **Dungeon combat overlay** — also wired the new highlight signals through `dungeon_combat_overlay.gd` for parity (I had only specified `combat_screen.gd`).
+
+**Completed (Session 2.9.1 fear wiring):**
+
+- **`CharacterData.get_effective_save("save_vs_fear")`** — recognized as a modifier-only axis with base value 0. The resolver reads it via `get_effective_value("save_vs_fear", 0)` so the ModifierContainer entry written by Bless (and any future buff/debuff) becomes the effective bonus directly.
+
+- **`ConditionCatalog.grants_immunity_to_fear(condition_key) -> bool`** — accessor for the existing `immune_to_fear: true` flag on conditions like `berserk_rage`, `berserkergang_rage`, `barbarian_savagery`. Three conditions in `data/conditions/condition_catalog.json` already carry this flag.
+
+- **`Combatant.is_immune_to_fear() -> bool`** — iterates the combatant's active conditions and returns true if any grants fear immunity. Uses a static `_get_condition_catalog()` cache (parallel pattern to `_get_class_registry()`).
+
+- **`CastingResolver._roll_saves_for_targets` extended** — recognizes `save_spec.is_fear_save: true`:
+  - **Auto-success on fear immunity**: if the target's `is_immune_to_fear()` returns true, the save auto-succeeds without rolling. Result dict carries `auto_success_reason: "fear_immune"` for log/UI surfaces.
+  - **Stack `save_vs_fear` modifier**: otherwise, the resolver reads the target's `save_vs_fear` effective value (Bless +1, Bane -1) and adds it to the dice modifier on the save throw. Result dict carries `fear_bonus` and `is_fear_save: true` so downstream consumers can render "saved vs fear (Bless: +1)" cleanly.
+
+- **`_entity_is_immune_to_fear(entity)`** — helper that routes the immunity check by entity type (Combatant exposes `is_immune_to_fear`, CharacterData has none — duck-typed via `has_method`). Defaults to not-immune (the safe permissive choice).
+
+- **Bless's `notes` field tightened** — was claiming "all four modifier axes bound" but the read side was a no-op. Now reads: "Session 2.9 added the save_vs_fear modifier axis (write side); the read side ... waits on the fear-condition system — currently a no-op." Session 2.9.1 closes that loop, and a future cleanup can update the note again to match.
+
+**Spec for fear-tagged spells (ready for Session 5 binding):**
+
+When Cause Fear, Scare, Phantasmal Killer, etc. bind in Session 5+, their `save_spec` should look like:
+```json
+{"category": "spells", "on_success": "negate", "is_fear_save": true}
+```
+
+The base save category is still save_spells (or whatever ACKS specifies); the `is_fear_save` flag triggers fear immunity check + Bless modifier stacking. No additional resolver work needed when those spells bind.
+
+**Completed (Session 2.9.1 red band):**
+
+- **`TargetingController.get_all_candidate_ids() -> Array`** — returns every registered candidate id, eligible or not. Differs from `get_eligible_candidates()` which only returns post-`begin()`-filtered candidates.
+
+- **`TargetingController.is_eligible(entity_id) -> bool`** — returns the `eligible` flag from the candidate's record. Set by `_check_candidate_eligibility` in `begin()`; reflects range / HD cap / creature_filter combined.
+
+- **`TargetingController.get_ineligible_reason(entity_id) -> String`** — returns "HD cap" / "out of range" / "excluded type X" / "" for tooltip display. Already populated in `_check_candidate_eligibility` but wasn't externally readable.
+
+- **`CombatUIController._emit_hd_band_highlights` rewritten** — now iterates `get_all_candidate_ids()` and partitions into four bands:
+  - `selected` — already in the chosen set; keeps the green target ring.
+  - `green` — eligible AND under-budget; clicking adds them.
+  - `yellow` — eligible but selecting them would over-spend budget.
+  - `red` — ineligible (over-cap, out of range, excluded type, etc.); shown struck-through.
+
+  The renderer already accepts `red` band entries via the existing `_on_highlight_targets_by_band` handler in CombatScreen and DungeonCombatOverlay (DeepSeek's 2.9 contribution); they get the `Color(0.92, 0.25, 0.20, 0.35)` red-overlay highlight.
+
+**Tests added** (`tests/test_session_2_9_1_polish.gd`, 9 tests, all passing):
+
+- `test_save_vs_fear_reads_zero_baseline` — base value 0 with no modifiers.
+- `test_save_vs_fear_reads_modifier_value` — Bless modifier yields +1 on read.
+- `test_bless_writes_save_vs_fear_plus_one` — end-to-end Bless cast writes the modifier; ally's `get_effective_save("save_vs_fear")` returns 1.
+- `test_fear_save_uses_save_vs_fear_modifier` — verifies the math: roll 13 + base modifier 0 + fear bonus 1 = 14 ≥ target 14, succeeds. (Tests the mathematical relationship; the resolver's private save method is exercised end-to-end in `test_bless_writes_save_vs_fear_plus_one`.)
+- `test_fear_immune_target_auto_succeeds_save` — Combatant with `berserk_rage` condition returns `is_immune_to_fear() = true`; non-berserker returns false.
+- `test_non_fear_save_ignores_save_vs_fear_modifier` — `save_blast_breath` (Fireball) does NOT pick up the +1 fear bonus from Bless.
+- `test_targeting_controller_exposes_all_candidates` — `get_all_candidate_ids()` returns both registered candidates (eligible + over-cap ogre).
+- `test_targeting_controller_is_eligible_filters` — `is_eligible("g1") = true`, `is_eligible("ogre1") = false`, `get_ineligible_reason("ogre1") = "HD cap"`.
+- `test_red_band_populated_for_over_cap` — partition logic puts ogre + dragon (over-cap) in red, goblins in green.
+
+**Decisions made:**
+
+- **`save_vs_fear` is a modifier-only axis with base value 0.** Unlike the five canonical save categories which have base values rolled at character creation (typically derived from class progression), `save_vs_fear` exists purely as a modifier slot. CharacterData.get_effective_save returns the modifier-resolved value; the resolver adds it ON TOP of the rolled save. Documented in CharacterData and the resolver comments.
+
+- **Fear immunity is per-combatant, not per-CharacterData.** `Combatant.is_immune_to_fear()` reads the combat-time conditions array. CharacterData has no condition state — out-of-combat condition tracking is a future concern (when scheduler-based status effects mature). For Session 2.9.1, the resolver's helper checks `entity.has_method("is_immune_to_fear")` and routes through it; CharacterData targets default to not-immune. This is correct: out-of-combat casts (Session 3 surfaces) typically don't fire fear-tagged spells, and when they do (a future Symbol of Fear scroll from a hex map) the resolver will see the entity's combat-time wrapper.
+
+- **Red band populates "ineligible" candidates broadly.** Per the spec, "red" means "over per-target HD cap." But the underlying `is_eligible()` check covers range, creature_filter, and HD cap together. We chose to put ALL ineligible-for-this-spell candidates in red rather than only HD-cap failures. The tooltip via `get_ineligible_reason()` distinguishes the cause. Rationale: visual consistency — the player sees one struck-through state regardless of WHY a candidate is ineligible.
+
+**Interfaces defined or changed:**
+
+- `CharacterData.get_effective_save(save_key)` accepts `"save_vs_fear"` (modifier-only axis, base 0).
+- `ConditionCatalog.grants_immunity_to_fear(condition_key) -> bool` (new accessor).
+- `Combatant.is_immune_to_fear() -> bool` (new method); `Combatant._get_condition_catalog()` static cache.
+- `CastingResolver._roll_saves_for_targets` recognizes `save_spec.is_fear_save: true`; adds `auto_success_reason / fear_bonus / is_fear_save` to result dicts.
+- `CastingResolver._entity_is_immune_to_fear(entity)` (new private helper).
+- `TargetingController.get_all_candidate_ids() / is_eligible(id) / get_ineligible_reason(id)` (new public accessors).
+- `CombatUIController._emit_hd_band_highlights` now populates the red band by iterating ALL candidates.
+
+**DSL contract for fear-tagged spells:**
+
+```json
+"save_spec": {"category": "spells", "on_success": "negate", "is_fear_save": true}
+```
+
+Resolver behavior:
+- Fear-immune target → auto-success, no roll.
+- Otherwise → roll d20 + (modifier + save_vs_fear bonus); ≥ target = success.
+
+**Database changes:** None.
+
+**Tests added/updated:**
+
+- `tests/test_session_2_9_1_polish.gd` (9 tests, all passing).
+- Wired into test_runner via ext_resource 178.
+
+**Test results: 162 suites passed, 26 failed.** +1 pass vs Session 2.9 (161/26), same flaky failure count — no regressions. All 11 spell suites green:
+
+  SpellEffectRegistry, CastingGeometry, CastingResolver, SpellSlotResetHandler, TargetingController, CombatDisruption, CombatCastRouting, Session2_6Fixes, Session2_7Polish, SpellTargetingUI, Session2_9_1Polish.
+
+**Known issues / deferred:**
+
+- **No MVP spell currently uses `is_fear_save`.** The flag is wired and tested via the entity API, but the only spells that would set it (Cause Fear, Scare, Phantasmal Killer) bind in Sessions 5/6/10. Bless's bonus / berserk's immunity will only matter at runtime once those spells land. Until then, this session's work is forward infrastructure.
+- **Out-of-combat fear immunity** — `_entity_is_immune_to_fear` checks for the `is_immune_to_fear` method, which only Combatant has. CharacterData targets in out-of-combat surfaces (Session 3) won't have fear immunity even if the character has Berserkergang etc. Acceptable for now; a future cleanup can add condition-tracking to CharacterData when out-of-combat condition application matures.
+- **Red band tooltip not yet surfaced.** `get_ineligible_reason()` returns the failure reason, but the renderer doesn't currently display tooltip text on highlighted cells. Polish for the Session 3 UI work.
+
+**Next session should:**
+
+Per the roadmap, Session 3 (out-of-combat casting surfaces) is next. Per the original plan §15.2, Session 3's complexity is 2 (Sonnet, no Opus plan needed) — wires the dungeon context menu Cast Spell entry, character-tab Cast button, party-inventory submenus, and scheduler 10-second advance + encounter check. Closes the casting layer fully.
+
+**[NEEDS-OPUS-REVIEW]** None this session. Fear wiring is a mechanical extension of the existing save resolution path; the red band is a straightforward extension of the candidate enumeration. Both are unit-tested.

@@ -741,6 +741,26 @@ func has_condition(condition_key: String) -> bool:
 	return condition_key in conditions
 
 
+static var _condition_catalog_cache: ConditionCatalog = null
+
+static func _get_condition_catalog() -> ConditionCatalog:
+	if _condition_catalog_cache == null:
+		_condition_catalog_cache = ConditionCatalog.new()
+	return _condition_catalog_cache
+
+
+func is_immune_to_fear() -> bool:
+	## True if any active condition on this combatant grants fear immunity
+	## (berserk_rage, berserkergang_rage, barbarian_savagery, etc.). The
+	## CastingResolver consults this when rolling a fear-tagged save: an
+	## immune target auto-succeeds without rolling.
+	var catalog := _get_condition_catalog()
+	for cond in conditions:
+		if catalog.grants_immunity_to_fear(cond):
+			return true
+	return false
+
+
 func add_condition(condition_key: String) -> void:
 	if condition_key not in conditions:
 		conditions.append(condition_key)

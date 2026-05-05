@@ -214,6 +214,34 @@ func get_eligible_candidates() -> Array:
 	return out
 
 
+func get_all_candidate_ids() -> Array:
+	## Returns every registered candidate id, eligible or not. UI surfaces
+	## use this to render the red "over-cap" band alongside the green/yellow
+	## eligible bands.
+	var out: Array = []
+	for cid in _candidates.keys():
+		out.append(cid)
+	return out
+
+
+func is_eligible(entity_id: String) -> bool:
+	## True if begin() determined the candidate passes the spell's range / HD
+	## cap / creature_filter rules. UI surfaces partition candidates by this
+	## flag for color-coded display.
+	if not _candidates.has(entity_id):
+		return false
+	return bool(_candidates[entity_id]["eligible"])
+
+
+func get_ineligible_reason(entity_id: String) -> String:
+	## Returns the reason a candidate failed eligibility ("HD cap",
+	## "out of range", "excluded type x", etc.) for tooltip display. Empty
+	## string for eligible or unknown candidates.
+	if not _candidates.has(entity_id):
+		return ""
+	return String(_candidates[entity_id].get("ineligible_reason", ""))
+
+
 func get_candidate_info(entity_id: String) -> Dictionary:
 	## Returns the public info dict for UI display:
 	##   {entity, counted_hd, effective_hd, eligible, ineligible_reason, selected}

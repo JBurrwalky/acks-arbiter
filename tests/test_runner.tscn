@@ -188,6 +188,7 @@
 [ext_resource type="Script" path="res://tests/test_session_2_6_fixes.gd" id="175_session_2_6_fixes_tests"]
 [ext_resource type="Script" path="res://tests/test_session_2_7_polish.gd" id="176_session_2_7_polish_tests"]
 [ext_resource type="Script" path="res://tests/test_spell_targeting_ui.gd" id="177_spell_targeting_ui_tests"]
+[ext_resource type="Script" path="res://tests/test_session_2_9_1_polish.gd" id="178_session_2_9_1_polish_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -752,3 +753,6 @@ script = ExtResource("176_session_2_7_polish_tests")
 
 [node name="SpellTargetingUITests" type="Node" parent="."]
 script = ExtResource("177_spell_targeting_ui_tests")
+
+[node name="Session291PolishTests" type="Node" parent="."]
+script = ExtResource("178_session_2_9_1_polish_tests")

@@ -760,18 +760,51 @@ func _roll_saves_for_targets(
 	if save_key.is_empty():
 		return {}
 	var modifier := int(save_spec.get("modifier", 0))
+	# Fear-tagged saves: ACKS rule is +1 vs magical fear from Bless and other
+	# anti-fear effects, plus auto-success for fear-immune creatures
+	# (berserk_rage, berserkergang, barbarian_savagery — see ConditionCatalog
+	# `immune_to_fear` flag). Spells set `is_fear_save: true` on save_spec
+	# (Cause Fear, Scare, Phantasmal Killer, etc.). The save category itself
+	# is usually save_spells; the fear modifier stacks on top.
+	var is_fear_save := bool(save_spec.get("is_fear_save", false))
 	var out: Dictionary = {}
 	for tid in target_descriptor.target_ids:
 		var entity = targets_by_id.get(tid, null)
+		# Auto-success: fear-immune target on a fear-tagged save.
+		if is_fear_save and _entity_is_immune_to_fear(entity):
+			out[tid] = {
+				"rolled": 0, "target": 0, "succeeded": true,
+				"category": category, "auto_success_reason": "fear_immune"}
+			continue
 		var target_value := 17  # safe default for entities without saves
 		if entity != null and entity.has_method("get_effective_save"):
 			target_value = int(entity.get_effective_save(save_key))
-		var roll = _dice_system.roll_digital(20, 1, modifier, "spell_save_" + category)
+		# Stack save_vs_fear modifier on the rolled total when this is a
+		# fear-tagged save. (Bless writes save_vs_fear +1; Bane writes -1.)
+		var fear_bonus := 0
+		if is_fear_save and entity != null and entity.has_method("get_effective_save"):
+			fear_bonus = int(entity.get_effective_save("save_vs_fear"))
+		var roll = _dice_system.roll_digital(20, 1, modifier + fear_bonus, "spell_save_" + category)
 		var roll_total := int(roll.modified_total) if roll != null else 0
 		# ACKS save rules: roll d20 + modifier ≥ save target → success.
 		var succeeded := roll_total >= target_value
-		out[tid] = {"rolled": roll_total, "target": target_value, "succeeded": succeeded, "category": category}
+		out[tid] = {
+			"rolled": roll_total, "target": target_value, "succeeded": succeeded,
+			"category": category, "fear_bonus": fear_bonus, "is_fear_save": is_fear_save}
 	return out
+
+
+func _entity_is_immune_to_fear(entity: Variant) -> bool:
+	## Routes the immunity check by entity type. Combatants expose
+	## `is_immune_to_fear()` directly; CharacterData has no condition state of
+	## its own (conditions live on the Combatant wrapper at combat time and
+	## on a future condition tracker for out-of-combat). Unknown entities
+	## default to not-immune (the safe permissive choice).
+	if entity == null:
+		return false
+	if entity.has_method("is_immune_to_fear"):
+		return entity.is_immune_to_fear()
+	return false
 
 
 func _save_category_to_key(category: String) -> String:

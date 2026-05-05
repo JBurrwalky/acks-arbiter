@@ -1273,18 +1273,24 @@ func _refresh_targeting_highlights() -> void:
 
 
 func _emit_hd_band_highlights() -> void:
+	## Partitions registered candidates into HD-budget bands for the renderer:
+	##   selected — already in the chosen set; keeps the green target ring.
+	##   green    — eligible AND under-budget; clicking adds them.
+	##   yellow   — eligible but selecting them would over-spend the budget.
+	##   red      — ineligible (over per-target HD cap, out of range, or
+	##              filtered out by creature_filter); shown struck-through
+	##              with a tooltip indicating the failure reason.
+	## Iterates ALL registered candidates (Session 2.9.1) so red-band
+	## ineligibles render alongside the eligible green/yellow bands.
 	var bands := {"green": [], "yellow": [], "red": [], "selected": []}
 	var selected: Array = _targeting_controller.get_selected()
 	var budget_remaining: float = _targeting_controller.get_budget_remaining()
-	# get_eligible_candidates() only returns candidates already within the per-
-	# target HD cap (filtering happens at TargetingController.begin via
-	# CastingGeometry.is_within_hd_cap). The "red" band is reserved for over-cap
-	# candidates and stays empty until TargetingController exposes the full
-	# candidate list including ineligible ones (Session 2.9.1 polish — not
-	# blocking for the targeting flow).
-	for cid in _targeting_controller.get_eligible_candidates():
+	for cid in _targeting_controller.get_all_candidate_ids():
 		if cid in selected:
 			bands["selected"].append(cid)
+			continue
+		if not _targeting_controller.is_eligible(cid):
+			bands["red"].append(cid)
 			continue
 		var info: Dictionary = _targeting_controller.get_candidate_info(cid)
 		var hd: float = float(info.get("counted_hd", 0.0))

@@ -93,6 +93,14 @@ func grants_auto_hit_melee(condition_key: String) -> bool:
 	return get_condition(condition_key).get("grants_auto_hit_melee", false)
 
 
+func grants_immunity_to_fear(condition_key: String) -> bool:
+	## True if this condition makes its host immune to fear-tagged saves
+	## (berserk_rage, berserkergang_rage, barbarian_savagery). Spells that
+	## apply the `frightened` condition or fire an `is_fear_save: true` save
+	## auto-succeed against creatures with any active fear-immunity condition.
+	return get_condition(condition_key).get("immune_to_fear", false)
+
+
 func get_attacker_bonus_vs(condition_key: String, attack_type: String = "ranged") -> int:
 	## Returns the to-hit bonus attackers receive against this condition.
 	## attack_type: "melee" or "ranged" (default).
