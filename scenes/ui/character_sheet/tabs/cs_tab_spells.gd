@@ -3,6 +3,23 @@ extends VBoxContainer
 
 ## Spells tab — spell slots, known spells, memorization status.
 ## Shows "not a caster" message for non-spellcasting classes.
+##
+## A Cast button on every active-repertoire row opens the
+## OutOfCombatCastFlow on the active scheduler-driven exploration state's HUD
+## (Session 3). The button is disabled when the character is mid-combat, when
+## no scheduler-driven state is active, or when the caster has no slots
+## remaining for the spell's level.
+
+const OutOfCombatCastFlowScript := preload(
+	"res://engine/subsystems/spells/out_of_combat_cast_flow.gd")
+
+## target_spec.kind values that resolve cleanly without a click-to-target step
+## from the character tab (the tab has no map). Spells with broader target
+## specs require the dungeon context menu Cast Spell flow instead — the button
+## still opens the picker but a notification will route the player there.
+const TAB_AUTO_TARGET_KINDS := [
+	"self", "caster_and_radius", "area_from_caster", "touch_creature", "touch_ally",
+]
 
 
 func display(bundle: CharacterBundle, registries: Dictionary) -> void:
@@ -100,10 +117,8 @@ func display(bundle: CharacterBundle, registries: Dictionary) -> void:
 			var spell_name := spell_key.replace("_", " ").capitalize()
 			if spell_registry != null and spell_registry.has_spell(spell_key):
 				spell_name = spell_registry.get_spell(spell_key).get("spell_name", spell_name)
-			var slbl := Label.new()
-			slbl.text = "  \u2022 " + spell_name
-			slbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			add_child(slbl)
+			_add_repertoire_row(character, spell_key, spell_name, lvl,
+				slots_avail, expended)
 
 	# Arcane casters: show known-but-not-in-active-repertoire spells.
 	if not known_not_active.is_empty():
@@ -151,3 +166,114 @@ func _add_text(text: String) -> void:
 	lbl.text = text
 	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(lbl)
+
+
+# ---------------------------------------------------------------------------
+# Repertoire row + Cast button (Session 3)
+# ---------------------------------------------------------------------------
+
+func _add_repertoire_row(character: CharacterData, spell_key: String,
+		spell_name: String, level: int, slots_avail: int, expended: int) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	add_child(row)
+
+	var name_lbl := Label.new()
+	name_lbl.text = "  • " + spell_name
+	name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(name_lbl)
+
+	var btn := Button.new()
+	btn.text = "Cast"
+	btn.custom_minimum_size = Vector2(60, 24)
+
+	# Gating: slots remaining + scheduler-driven exploration state active.
+	var slots_left: int = maxi(0, slots_avail - expended)
+	var runner = _find_session_runner()
+	if slots_left <= 0:
+		btn.disabled = true
+		btn.tooltip_text = "No level %d slots remaining today" % level
+	elif runner == null:
+		btn.disabled = true
+		btn.tooltip_text = "Casting only available during exploration"
+	elif not _runner_in_castable_state(runner):
+		btn.disabled = true
+		btn.tooltip_text = "Casting only available outside combat / menus"
+	else:
+		btn.tooltip_text = "Cast %s (consumes a level %d slot)" % [spell_name, level]
+
+	btn.pressed.connect(_on_cast_pressed.bind(character, spell_key, level))
+	row.add_child(btn)
+
+
+func _on_cast_pressed(character: CharacterData, spell_key: String, level: int) -> void:
+	var runner = _find_session_runner()
+	if runner == null:
+		return
+	var ui_layer: Node = _find_ui_parent()
+	if ui_layer == null:
+		ui_layer = get_tree().current_scene
+	var flow = OutOfCombatCastFlowScript.new(runner)
+	flow.set_ui_parent(ui_layer)
+	# Pre-build a SpellChoice for this row so we skip the picker — the player
+	# already chose the spell via the row's Cast button.
+	var choice := SpellChoice.new(spell_key, level, false, -1)
+	var effect_reg = runner.get_effect_registry()
+	if effect_reg == null or not effect_reg.has_effect(spell_key):
+		EventBus.notification_requested.emit({
+			"type": "info", "category": "ui",
+			"title": "Spell not yet implemented",
+			"body": "%s has no resolution path yet." % spell_key,
+			"duration": 3.0,
+		})
+		return
+	var payload: Dictionary = effect_reg.get_effect_payload(spell_key, false, -1)
+	var target_spec: Dictionary = payload.get("target_spec", {})
+	var kind: String = target_spec.get("kind", "")
+	if not (kind in TAB_AUTO_TARGET_KINDS):
+		EventBus.notification_requested.emit({
+			"type": "info", "category": "ui",
+			"title": "Targeting required",
+			"body": "Cast %s from the dungeon map context menu — click a target first." % spell_key,
+			"duration": 3.0,
+		})
+		return
+	# Auto-target descriptor for self / caster_and_radius / area_from_caster.
+	# touch_creature / touch_ally short-circuits to the caster as the target —
+	# the player can use the dungeon context menu to target a different ally.
+	var td := TargetDescriptor.new()
+	td.kind = kind
+	td.target_ids = [character.id]
+	flow.commit_with_descriptor(character, choice, td, {character.id: character})
+
+
+func _find_session_runner() -> Node:
+	var node: Node = self
+	while node != null:
+		var sibling: Node = node.get_node_or_null("SessionRunner")
+		if sibling != null and sibling.has_method("get_casting_resolver"):
+			return sibling
+		var parent_runner: Node = node.get_parent().get_node_or_null("SessionRunner") \
+			if node.get_parent() != null else null
+		if parent_runner != null and parent_runner.has_method("get_casting_resolver"):
+			return parent_runner
+		node = node.get_parent()
+	return null
+
+
+func _find_ui_parent() -> Node:
+	# Prefer the active scene's HUD for modal stacking.
+	var main: Node = get_tree().current_scene
+	if main == null:
+		return null
+	var hud: Node = main.get_node_or_null("DungeonHUD")
+	if hud != null:
+		return hud
+	return main
+
+
+func _runner_in_castable_state(runner) -> bool:
+	if runner == null or not runner.has_method("get_current_state_key"):
+		return false
+	return runner.get_current_state_key() in ["wilderness", "dungeon", "settlement", "camp"]

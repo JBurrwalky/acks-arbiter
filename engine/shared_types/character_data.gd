@@ -285,12 +285,22 @@ func get_effective_attack_throw() -> int:
 
 
 func get_effective_save(save_key: String) -> int:
-	## save_key: "save_petrification" | "save_poison_death" | "save_blast_breath" |
-	##           "save_staffs_wands" | "save_spells" | "save_vs_fear"
-	## save_vs_fear is a directional modifier axis with no base value — it
-	## stacks ON TOP of whatever save category the fear-tagged spell uses
-	## (typically save_spells). The resolver reads it via get_effective_value
-	## with base 0 and adds the result to the rolled save total.
+	## save_key: one of the five canonical ACKS save categories OR a tagged-save
+	## modifier-only axis. The five categories have base values rolled at
+	## character creation. Tagged-save axes (save_vs_*) have base 0 and exist
+	## only as modifier slots; the resolver consults them on top of the rolled
+	## category save when the spell's save_spec carries the matching tag
+	## (is_fear_save / damage_type / attacker_alignment).
+	##
+	## Five canonical categories:  save_petrification, save_poison_death,
+	##                             save_blast_breath, save_staffs_wands, save_spells
+	## Tagged-save axes (modifier-only, base 0):
+	##   save_vs_fear      — Bless / Bane (Session 2.9.1)
+	##   save_vs_fire      — Resist Fire (Session 7)
+	##   save_vs_cold      — Resist Cold (Session 5)
+	##   save_vs_electricity — future Resist Electricity
+	##   save_vs_chaotic   — Protection from Evil / Sustained (Sessions 5, 8)
+	##   save_vs_lawful    — Protection from Good / Sustained (reverse forms)
 	var base_value: int
 	match save_key:
 		"save_petrification": base_value = save_petrification
@@ -298,7 +308,9 @@ func get_effective_save(save_key: String) -> int:
 		"save_blast_breath":  base_value = save_blast_breath
 		"save_staffs_wands":  base_value = save_staffs_wands
 		"save_spells":        base_value = save_spells
-		"save_vs_fear":       base_value = 0  # modifier-only axis
+		"save_vs_fear", "save_vs_fire", "save_vs_cold", "save_vs_electricity", \
+		"save_vs_chaotic", "save_vs_lawful":
+			base_value = 0  # modifier-only axes
 		_:
 			push_error("CharacterData.get_effective_save: unknown save_key '%s'" % save_key)
 			return 20

@@ -1282,7 +1282,14 @@ func _emit_hd_band_highlights() -> void:
 	##              with a tooltip indicating the failure reason.
 	## Iterates ALL registered candidates (Session 2.9.1) so red-band
 	## ineligibles render alongside the eligible green/yellow bands.
-	var bands := {"green": [], "yellow": [], "red": [], "selected": []}
+	var bands := {
+		"green": [], "yellow": [], "red": [], "selected": [],
+		# red_reasons: Dictionary mapping ineligible cid → human-readable reason
+		# string for tooltip display ("HD cap" / "out of range" / "excluded type
+		# X" / etc.). Populated alongside the red band so the renderer can show
+		# WHY each struck-through candidate is ineligible (Session 9.6 polish).
+		"red_reasons": {},
+	}
 	var selected: Array = _targeting_controller.get_selected()
 	var budget_remaining: float = _targeting_controller.get_budget_remaining()
 	for cid in _targeting_controller.get_all_candidate_ids():
@@ -1291,6 +1298,7 @@ func _emit_hd_band_highlights() -> void:
 			continue
 		if not _targeting_controller.is_eligible(cid):
 			bands["red"].append(cid)
+			bands["red_reasons"][cid] = _targeting_controller.get_ineligible_reason(cid)
 			continue
 		var info: Dictionary = _targeting_controller.get_candidate_info(cid)
 		var hd: float = float(info.get("counted_hd", 0.0))

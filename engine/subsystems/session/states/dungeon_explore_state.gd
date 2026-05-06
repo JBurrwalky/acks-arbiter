@@ -770,8 +770,12 @@ func _on_context_action(action_data: Dictionary) -> void:
 					ScheduledEvent.PRIORITY_ARRIVAL)
 				_start_clock_if_paused()
 
+		# --- Cast Spell — Session 3 out-of-combat surface ---
+		"cast_spell":
+			_open_out_of_combat_cast_flow(action_data, party_data)
+
 		# --- Deferred / placeholder ---
-		"talk", "heal", "heal_self", "cast_spell", "cast_spell_self", \
+		"talk", "heal", "heal_self", "cast_spell_self", \
 		"use_item", "drop_item", "hide", "check_status", "carry", \
 		"disarm_trap", "trigger_trap", "examine", \
 		"pick_pockets", "unlock_door":
@@ -799,6 +803,34 @@ func _on_context_action(action_data: Dictionary) -> void:
 
 func _on_context_cancelled() -> void:
 	_close_context_menu()
+
+
+# ---------------------------------------------------------------------------
+# Cast Spell flow (Session 3) — opens OutOfCombatCastFlow on the dungeon HUD
+# ---------------------------------------------------------------------------
+
+const OutOfCombatCastFlowScript := preload(
+	"res://engine/subsystems/spells/out_of_combat_cast_flow.gd")
+
+
+func _open_out_of_combat_cast_flow(
+		action_data: Dictionary, party_data: PartyData) -> void:
+	if party_data == null or _runner == null:
+		return
+	var caster_id: String = action_data.get("caster_id", action_data.get("character_id", ""))
+	if caster_id.is_empty():
+		return
+	var caster: CharacterData = party_data.get_member(caster_id)
+	if caster == null:
+		return
+	var ui_layer: Node = _scene.get_node_or_null("DungeonHUD") if _scene != null else null
+	if ui_layer == null:
+		ui_layer = _scene
+	var flow = OutOfCombatCastFlowScript.new(_runner)
+	flow.set_ui_parent(ui_layer)
+	flow.begin(caster, {
+		"allowed_target_kinds": action_data.get("allowed_target_kinds", []),
+	})
 
 
 ## Returns true if [param cell] is a Vector3i targeting a level other than the

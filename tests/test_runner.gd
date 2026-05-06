@@ -196,6 +196,25 @@ extends Node
 @onready var _session_2_7_polish_tests = $Session27PolishTests
 @onready var _spell_targeting_ui_tests = $SpellTargetingUITests
 @onready var _session_2_9_1_polish_tests = $Session291PolishTests
+@onready var _out_of_combat_casting_tests = $OutOfCombatCastingTests
+@onready var _l1_arcane_catalog_tests = $L1ArcaneCatalogTests
+@onready var _l1_divine_catalog_tests = $L1DivineCatalogTests
+@onready var _l2_arcane_catalog_tests = $L2ArcaneCatalogTests
+@onready var _l2_divine_catalog_tests = $L2DivineCatalogTests
+@onready var _l3_arcane_catalog_tests = $L3ArcaneCatalogTests
+@onready var _l3_divine_catalog_tests = $L3DivineCatalogTests
+@onready var _l4_arcane_catalog_tests = $L4ArcaneCatalogTests
+@onready var _l4_divine_catalog_tests = $L4DivineCatalogTests
+@onready var _l5_arcane_catalog_tests = $L5ArcaneCatalogTests
+@onready var _l5_divine_catalog_tests = $L5DivineCatalogTests
+@onready var _l6_arcane_catalog_tests = $L6ArcaneCatalogTests
+@onready var _session_9_5_polish_tests = $Session95PolishTests
+@onready var _session_9_6_polish_tests = $Session96PolishTests
+@onready var _session_9_7_polish_tests = $Session97PolishTests
+@onready var _session_p1_movement_infra_tests = $SessionP1MovementInfraTests
+@onready var _session_p2_walls_tests = $SessionP2WallsTests
+@onready var _session_p3_spawn_roster_tests = $SessionP3SpawnRosterTests
+@onready var _session_p4_clouds_swarms_tests = $SessionP4CloudsSwarmsTests
 
 
 func _ready() -> void:
@@ -372,7 +391,26 @@ func run() -> void:
 			_session_2_6_fixes_tests,
 			_session_2_7_polish_tests,
 			_spell_targeting_ui_tests,
-			_session_2_9_1_polish_tests]:
+			_session_2_9_1_polish_tests,
+			_out_of_combat_casting_tests,
+			_l1_arcane_catalog_tests,
+			_l1_divine_catalog_tests,
+			_l2_arcane_catalog_tests,
+			_l2_divine_catalog_tests,
+			_l3_arcane_catalog_tests,
+			_l3_divine_catalog_tests,
+			_l4_arcane_catalog_tests,
+			_l4_divine_catalog_tests,
+			_l5_arcane_catalog_tests,
+			_l5_divine_catalog_tests,
+			_l6_arcane_catalog_tests,
+			_session_9_5_polish_tests,
+			_session_9_6_polish_tests,
+			_session_9_7_polish_tests,
+			_session_p1_movement_infra_tests,
+			_session_p2_walls_tests,
+			_session_p3_spawn_roster_tests,
+			_session_p4_clouds_swarms_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

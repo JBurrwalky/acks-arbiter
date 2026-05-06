@@ -100,10 +100,18 @@ func get_grid_position_3d(combatant: Combatant) -> Vector3i:
 
 
 ## Updates the combatant's 3D grid position.
+##
+## Emits EventBus.combatant_moved with a single-cell path (the destination)
+## when the position actually changes — covers teleports, forced movement,
+## and any other non-path-walking placement. No emission on no-op (pos
+## already equals current grid_position).
 func set_grid_position_3d(combatant: Combatant, pos: Vector3i) -> void:
+	var from_pos: Vector3i = combatant.grid_position
 	combatant.grid_position = pos
 	if _voxel_map != null:
 		_voxel_map.set_entity_pos(combatant.id, pos)
+	if from_pos != pos:
+		EventBus.combatant_moved.emit(combatant.id, from_pos, pos, [pos])
 
 
 # ---------------------------------------------------------------------------
@@ -218,8 +226,15 @@ func move_along_path(
 	## Move combatant along the given path up to max_cells steps.
 	## Returns the number of cells actually moved. When [param mover_side] >= 0,
 	## movement stops immediately after entering an enemy ZoC cell (engagement).
+	##
+	## Appends each entered cell to combatant.cells_traversed_this_round (P1)
+	## and emits EventBus.combatant_moved at end of move with the walked
+	## path_cells. No signal on a 0-cell move.
 	if path.is_empty() or _voxel_map == null:
 		return 0
+	var from_cell: Vector3i = combatant.grid_position
+	var z: int = from_cell.z if from_cell.z >= 0 else 0
+	var walked_cells: Array[Vector3i] = [from_cell]
 	var enemy_zoc: Dictionary = _build_enemy_zoc_set_3d(mover_side) if mover_side >= 0 else {}
 	var cells_moved := 0
 	for i in range(1, path.size()):
@@ -227,12 +242,17 @@ func move_along_path(
 			break
 		set_grid_position(combatant, path[i])
 		cells_moved += 1
+		var entered := Vector3i(path[i].x, path[i].y, combatant.grid_position.z)
+		combatant.cells_traversed_this_round.append(entered)
+		walked_cells.append(entered)
 		if not enemy_zoc.is_empty():
 			# ZoC set is keyed by Vector3i; project current cell using the
 			# combatant's z (set_grid_position preserved it from the prior step).
-			var z: int = combatant.grid_position.z
-			if enemy_zoc.has(Vector3i(path[i].x, path[i].y, z)):
+			if enemy_zoc.has(Vector3i(path[i].x, path[i].y, combatant.grid_position.z)):
 				break
+	if cells_moved > 0:
+		EventBus.combatant_moved.emit(
+			combatant.id, from_cell, combatant.grid_position, walked_cells)
 	return cells_moved
 
 

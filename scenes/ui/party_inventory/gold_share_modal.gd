@@ -61,14 +61,7 @@ func _build_ui() -> void:
 	_panel.anchor_top = 0.15
 	_panel.anchor_bottom = 0.85
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.15, 0.12, 0.08, 0.95)
-	style.border_color = Color(0.46, 0.33, 0.19, 0.9)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(4)
-	style.set_content_margin_all(12)
-	_panel.add_theme_stylebox_override("panel", style)
+	UiSurfaceStyles.apply_framed_window_chrome(_panel)
 	add_child(_panel)
 
 	var vbox := VBoxContainer.new()
@@ -79,7 +72,6 @@ func _build_ui() -> void:
 	var title := Label.new()
 	title.text = "Edit Gold Shares"
 	title.add_theme_font_size_override("font_size", 15)
-	title.add_theme_color_override("font_color", Color(0.95, 0.88, 0.7))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
@@ -89,7 +81,6 @@ func _build_ui() -> void:
 	var hint := Label.new()
 	hint.text = "Set share weights. PCs default to 1.0, henchmen to 0.5 (half-share)."
 	hint.add_theme_font_size_override("font_size", 11)
-	hint.add_theme_color_override("font_color", Color(0.7, 0.65, 0.55))
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD
 	vbox.add_child(hint)
 
@@ -113,7 +104,6 @@ func _build_ui() -> void:
 	_preview_label = Label.new()
 	_preview_label.text = ""
 	_preview_label.add_theme_font_size_override("font_size", 11)
-	_preview_label.add_theme_color_override("font_color", Color(0.7, 0.65, 0.55))
 	_preview_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	vbox.add_child(_preview_label)
 

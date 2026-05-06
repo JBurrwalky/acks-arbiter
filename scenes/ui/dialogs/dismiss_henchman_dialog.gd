@@ -18,8 +18,10 @@ signal confirmed(options: Dictionary)
 signal cancelled
 
 const PANEL_WIDTH := 540
-const HEADING_COLOR := Color(0.95, 0.90, 0.78, 1.0)
-const BODY_COLOR := Color(0.85, 0.80, 0.70, 1.0)
+## Vellum chrome installs a dark text theme; these constants reference the
+## shared parchment-readable color so existing per-label overrides stay valid.
+const HEADING_COLOR := UiSurfaceStyles.VELLUM_TEXT_COLOR
+const BODY_COLOR := UiSurfaceStyles.VELLUM_TEXT_COLOR
 const DANGER_COLOR := Color(0.75, 0.22, 0.18, 1.0)
 
 const RETENTION_KEEP_ALL := "keep_all"
@@ -102,6 +104,7 @@ func _build_ui() -> void:
 	_panel.set_anchors_preset(Control.PRESET_CENTER)
 	_panel.custom_minimum_size = Vector2(PANEL_WIDTH, 0)
 	_panel.position = Vector2(-PANEL_WIDTH / 2.0, -180)
+	UiSurfaceStyles.apply_framed_window_chrome(_panel)
 	add_child(_panel)
 
 	var margin := MarginContainer.new()

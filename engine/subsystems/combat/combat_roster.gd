@@ -95,8 +95,17 @@ func add_party_creatures(party_data: PartyData, monster_registry: MonsterRegistr
 # Combatant management
 # ---------------------------------------------------------------------------
 
-func add_combatant(combatant: Combatant) -> void:
+func add_combatant(combatant: Combatant) -> bool:
+	## Adds [param combatant] to the roster. Returns true on success, false if
+	## the id was already registered (defensive guard for mid-combat re-summon
+	## of the same caster's elemental, etc.). Existing callers ignore the
+	## return; the SpawnRosterIntegrator (P3) consumes it.
+	if combatant == null or combatant.id.is_empty():
+		return false
+	if _combatants.has(combatant.id):
+		return false
 	_combatants[combatant.id] = combatant
+	return true
 
 
 func get_by_id(combatant_id: String) -> Combatant:

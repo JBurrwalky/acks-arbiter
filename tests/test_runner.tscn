@@ -189,6 +189,25 @@
 [ext_resource type="Script" path="res://tests/test_session_2_7_polish.gd" id="176_session_2_7_polish_tests"]
 [ext_resource type="Script" path="res://tests/test_spell_targeting_ui.gd" id="177_spell_targeting_ui_tests"]
 [ext_resource type="Script" path="res://tests/test_session_2_9_1_polish.gd" id="178_session_2_9_1_polish_tests"]
+[ext_resource type="Script" path="res://tests/test_out_of_combat_casting.gd" id="179_out_of_combat_casting_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_catalog_l1_arcane.gd" id="180_l1_arcane_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_catalog_l1_divine.gd" id="181_l1_divine_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_catalog_l2_arcane.gd" id="182_l2_arcane_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_catalog_l2_divine.gd" id="183_l2_divine_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_catalog_l3_arcane.gd" id="184_l3_arcane_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_catalog_l3_divine.gd" id="185_l3_divine_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_session_9_5_polish.gd" id="186_session_9_5_polish_tests"]
+[ext_resource type="Script" path="res://tests/test_session_9_6_polish.gd" id="187_session_9_6_polish_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_catalog_l4_arcane.gd" id="188_l4_arcane_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_catalog_l4_divine.gd" id="189_l4_divine_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_catalog_l5_arcane.gd" id="190_l5_arcane_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_catalog_l5_divine.gd" id="191_l5_divine_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_spell_catalog_l6_arcane.gd" id="192_l6_arcane_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_session_9_7_polish.gd" id="193_session_9_7_polish_tests"]
+[ext_resource type="Script" path="res://tests/test_session_p1_movement_infra.gd" id="194_session_p1_movement_infra_tests"]
+[ext_resource type="Script" path="res://tests/test_session_p2_walls.gd" id="195_session_p2_walls_tests"]
+[ext_resource type="Script" path="res://tests/test_session_p3_spawn_roster.gd" id="196_session_p3_spawn_roster_tests"]
+[ext_resource type="Script" path="res://tests/test_session_p4_clouds_swarms.gd" id="197_session_p4_clouds_swarms_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -756,3 +775,60 @@ script = ExtResource("177_spell_targeting_ui_tests")
 
 [node name="Session291PolishTests" type="Node" parent="."]
 script = ExtResource("178_session_2_9_1_polish_tests")
+
+[node name="OutOfCombatCastingTests" type="Node" parent="."]
+script = ExtResource("179_out_of_combat_casting_tests")
+
+[node name="L1ArcaneCatalogTests" type="Node" parent="."]
+script = ExtResource("180_l1_arcane_catalog_tests")
+
+[node name="L1DivineCatalogTests" type="Node" parent="."]
+script = ExtResource("181_l1_divine_catalog_tests")
+
+[node name="L2ArcaneCatalogTests" type="Node" parent="."]
+script = ExtResource("182_l2_arcane_catalog_tests")
+
+[node name="L2DivineCatalogTests" type="Node" parent="."]
+script = ExtResource("183_l2_divine_catalog_tests")
+
+[node name="L3ArcaneCatalogTests" type="Node" parent="."]
+script = ExtResource("184_l3_arcane_catalog_tests")
+
+[node name="L3DivineCatalogTests" type="Node" parent="."]
+script = ExtResource("185_l3_divine_catalog_tests")
+
+[node name="Session95PolishTests" type="Node" parent="."]
+script = ExtResource("186_session_9_5_polish_tests")
+
+[node name="Session96PolishTests" type="Node" parent="."]
+script = ExtResource("187_session_9_6_polish_tests")
+
+[node name="L4ArcaneCatalogTests" type="Node" parent="."]
+script = ExtResource("188_l4_arcane_catalog_tests")
+
+[node name="L4DivineCatalogTests" type="Node" parent="."]
+script = ExtResource("189_l4_divine_catalog_tests")
+
+[node name="L5ArcaneCatalogTests" type="Node" parent="."]
+script = ExtResource("190_l5_arcane_catalog_tests")
+
+[node name="L5DivineCatalogTests" type="Node" parent="."]
+script = ExtResource("191_l5_divine_catalog_tests")
+
+[node name="L6ArcaneCatalogTests" type="Node" parent="."]
+script = ExtResource("192_l6_arcane_catalog_tests")
+
+[node name="Session97PolishTests" type="Node" parent="."]
+script = ExtResource("193_session_9_7_polish_tests")
+
+[node name="SessionP1MovementInfraTests" type="Node" parent="."]
+script = ExtResource("194_session_p1_movement_infra_tests")
+
+[node name="SessionP2WallsTests" type="Node" parent="."]
+script = ExtResource("195_session_p2_walls_tests")
+
+[node name="SessionP3SpawnRosterTests" type="Node" parent="."]
+script = ExtResource("196_session_p3_spawn_roster_tests")
+
+[node name="SessionP4CloudsSwarmsTests" type="Node" parent="."]
+script = ExtResource("197_session_p4_clouds_swarms_tests")

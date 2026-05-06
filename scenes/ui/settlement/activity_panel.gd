@@ -160,6 +160,19 @@ func _rebuild() -> void:
 		btn.pressed.connect(_on_activity_pressed.bind(activity["id"]))
 		add_child(btn)
 
+	# Always offer a way back out of the activity panel without committing to
+	# an activity. Hides the panel; the settlement menu (with the full PoI
+	# list) remains visible behind so the player can pick a new destination.
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 6)
+	add_child(spacer)
+
+	var leave_btn := Button.new()
+	leave_btn.text = "Leave"
+	leave_btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	leave_btn.pressed.connect(hide_panel)
+	add_child(leave_btn)
+
 
 func _on_activity_pressed(activity_id: String) -> void:
 	match activity_id:

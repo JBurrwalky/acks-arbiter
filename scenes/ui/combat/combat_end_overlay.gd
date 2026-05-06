@@ -41,23 +41,7 @@ var _continue_btn: Button = null
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(420, 280)
-
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.1, 0.13, 0.95)
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 16.0
-	style.content_margin_right = 16.0
-	style.content_margin_top = 14.0
-	style.content_margin_bottom = 14.0
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.border_color = Color(0.5, 0.5, 0.6)
-	add_theme_stylebox_override("panel", style)
+	UiSurfaceStyles.apply_framed_window_chrome(self)
 
 	var outer := VBoxContainer.new()
 	outer.add_theme_constant_override("separation", 8)
@@ -77,12 +61,10 @@ func _ready() -> void:
 
 	_rounds_label = Label.new()
 	_rounds_label.add_theme_font_size_override("font_size", 12)
-	_rounds_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	summary_row.add_child(_rounds_label)
 
 	_xp_label = Label.new()
 	_xp_label.add_theme_font_size_override("font_size", 12)
-	_xp_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.4))
 	summary_row.add_child(_xp_label)
 
 	var sep := HSeparator.new()
@@ -150,7 +132,6 @@ func show_result(result: Dictionary) -> void:
 		var msg := Label.new()
 		msg.text = "No casualties."
 		msg.add_theme_font_size_override("font_size", 12)
-		msg.add_theme_color_override("font_color", Color(0.6, 0.8, 0.6))
 		_details_container.add_child(msg)
 	else:
 		for pc_entry in downed_pcs:
@@ -189,7 +170,6 @@ func _add_downed_pc_entry(pc_entry: Dictionary) -> void:
 		var wound_label := Label.new()
 		wound_label.text = "  %s" % wound_desc
 		wound_label.add_theme_font_size_override("font_size", 10)
-		wound_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
 		wound_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		row.add_child(wound_label)
 
@@ -201,7 +181,6 @@ func _add_downed_pc_entry(pc_entry: Dictionary) -> void:
 		var rec_label := Label.new()
 		rec_label.text = "  Recovery: %d %s" % [rec_val, rec_unit]
 		rec_label.add_theme_font_size_override("font_size", 10)
-		rec_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 		row.add_child(rec_label)
 
 	# Separator between PCs

@@ -83,7 +83,17 @@ func get_effect_payload(
 	if target_spec is Dictionary and target_spec.get("kind", "") == "disjunctive":
 		var options: Array = target_spec.get("options", [])
 		if disjunctive_index >= 0 and disjunctive_index < options.size():
-			payload["target_spec"] = (options[disjunctive_index] as Dictionary).duplicate(true)
+			var chosen: Dictionary = (options[disjunctive_index] as Dictionary).duplicate(true)
+			payload["target_spec"] = chosen
+			# Per-branch save_modifier propagation (Hold Person single-target gets
+			# -2, group branch gets 0). The branch records save_modifier on its
+			# target_spec; we lift it onto the save_spec so the resolver's
+			# `_roll_saves_for_targets` reads it via the existing modifier path.
+			# Branch-pinned save_modifier wins over the spell-default save_spec.modifier.
+			if chosen.has("save_modifier"):
+				var base_save_spec: Dictionary = payload.get("save_spec", {"category": "none"}).duplicate(true)
+				base_save_spec["modifier"] = int(chosen["save_modifier"])
+				payload["save_spec"] = base_save_spec
 		# When index is out of range we leave the disjunctive structure intact;
 		# the resolver detects it and returns a validation failure.
 

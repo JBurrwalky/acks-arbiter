@@ -45,13 +45,7 @@ func _build_ui() -> void:
 	anchor_top = 0.25
 	anchor_bottom = 0.75
 
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.15, 0.12, 0.08, 0.95)
-	style.border_color = Color(0.46, 0.33, 0.19, 0.9)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(4)
-	style.set_content_margin_all(12)
-	add_theme_stylebox_override("panel", style)
+	UiSurfaceStyles.apply_framed_window_chrome(self)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 8)
@@ -61,7 +55,6 @@ func _build_ui() -> void:
 	_item_name_label = Label.new()
 	_item_name_label.text = "Drop item?"
 	_item_name_label.add_theme_font_size_override("font_size", 15)
-	_item_name_label.add_theme_color_override("font_color", Color(0.95, 0.88, 0.7))
 	_item_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(_item_name_label)
 
@@ -81,7 +74,6 @@ func _build_ui() -> void:
 	var loose_desc := Label.new()
 	loose_desc.text = "  Items decay over 1d4 weeks.\n  After that, lost forever."
 	loose_desc.add_theme_font_size_override("font_size", 11)
-	loose_desc.add_theme_color_override("font_color", Color(0.6, 0.55, 0.45))
 	vbox.add_child(loose_desc)
 
 	# Spacer
@@ -97,7 +89,6 @@ func _build_ui() -> void:
 	var hidden_desc := Label.new()
 	hidden_desc.text = "  Stash is permanent, but monthly\n  risk of raid.\n  Current raid risk: 0% (new)"
 	hidden_desc.add_theme_font_size_override("font_size", 11)
-	hidden_desc.add_theme_color_override("font_color", Color(0.6, 0.55, 0.45))
 	vbox.add_child(hidden_desc)
 
 	vbox.add_child(HSeparator.new())

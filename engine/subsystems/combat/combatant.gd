@@ -83,6 +83,17 @@ var last_attacker_id: String = ""
 ## Grid position on VoxelMapData (Vector3i(-1,-1,0) = not placed on grid).
 var grid_position: Vector3i = Vector3i(-1, -1, 0)
 
+## Snapshot of grid_position at the start of the current round, captured by
+## SpellCombatHooks.on_round_start. Consumers (P2 wall ticks, P4 cloud drift)
+## read this to compute per-round movement deltas without rescanning the
+## per-cell traversal log. Resets to grid_position on every on_round_start.
+var previous_grid_position: Vector3i = Vector3i(-1, -1, 0)
+
+## Cells the combatant entered during the current round, in walk order. Each
+## MovementResolver.move_along_path step appends; SpellCombatHooks.on_round_start
+## clears at round start. Used by wall path-crossing detection (P2).
+var cells_traversed_this_round: Array[Vector3i] = []
+
 ## Facing direction (unit vector in grid coordinates). Default east.
 ## Drives the CombatantToken beak rotation.
 var facing: Vector2i = Vector2i(1, 0)

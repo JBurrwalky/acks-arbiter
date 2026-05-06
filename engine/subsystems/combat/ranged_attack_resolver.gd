@@ -150,7 +150,14 @@ func resolve_ranged_attack(
 		# the resolver future-proof and consistent with the melee path.
 		var prof_damage_mod := ProficiencyCombatHooks.aggregate_modifier(
 			attacker, "damage_bonus", {"phase": "ranged_attack", "target": target})
-		damage_total = maxi(1, damage_roll.modified_total + bonus_damage + prof_damage_mod)
+		# Striking spell (Session 9): if the wielded weapon is enchanted with
+		# Striking, apply +1d6 (or whatever damage_bonus_dice it carries). Same
+		# plumbing as the melee path (attack_resolver.gd:140 region).
+		var item_bonus: Dictionary = {}
+		if _spell_hooks != null and _spell_hooks.has_method("get_item_attack_bonuses"):
+			item_bonus = _spell_hooks.get_item_attack_bonuses(attacker)
+		var striking_bonus: int = int(item_bonus.get("bonus_damage", 0))
+		damage_total = maxi(1, damage_roll.modified_total + bonus_damage + prof_damage_mod + striking_bonus)
 
 		# Weapon Focus: unmodified natural 20 doubles damage when the character
 		# has Weapon Focus selected for the wielded weapon's family.

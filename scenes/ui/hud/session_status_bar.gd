@@ -39,7 +39,8 @@ const HEIGHT_STATES := [
 
 const HEIGHT_PERSIST_PATH := "user://session_status_bar_height.txt"
 
-const PORTRAIT_ZONE_WIDTH := 280
+const PORTRAIT_ZONE_WIDTH := 540
+const SPEEDS_ZONE_WIDTH := 200
 const LOG_ZONE_WIDTH := 360
 const DRAG_HANDLE_HEIGHT := 6
 
@@ -128,16 +129,23 @@ var _speed_controls: ClockSpeedControls = null
 # Row 2
 var _rations_panel: PanelContainer = null
 var _rations_label: Label = null
-var _speeds_panel: PanelContainer = null
-var _speeds_base_label: Label = null
-var _speeds_grid: GridContainer = null
-var _speed_labels: Dictionary = {}
-var _encumbrance_label: Label = null
+var _water_label: Label = null
+var _hex_info_panel: PanelContainer = null
+var _hex_info_label: Label = null
 
 # Row 3
 var _camp_btn: Button = null
 var _notebook_btn: Button = null
 var _notification_label: Label = null
+
+# Travel speeds zone (right of widget zone, left of log zone).
+var _speeds_zone: PanelContainer = null
+var _speeds_base_label: Label = null
+var _speeds_grid: GridContainer = null
+var _speed_labels: Dictionary = {}
+
+# Cached map data for the party's current hex; key = map_id.
+var _hex_map_cache: Dictionary = {}
 
 # Pause-reason flash (re-uses existing color scheme).
 var _pause_reason_label: Label = null
@@ -194,6 +202,9 @@ func _build_ui() -> void:
 	_widget_zone = _build_widget_zone()
 	zones.add_child(_widget_zone)
 
+	_speeds_zone = _build_speeds_zone()
+	zones.add_child(_speeds_zone)
+
 	_log_zone = _build_log_zone()
 	zones.add_child(_log_zone)
 
@@ -236,17 +247,12 @@ func _build_portrait_zone() -> Control:
 	panel.add_theme_stylebox_override("panel", _subpanel_style())
 	panel.clip_contents = true
 
-	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_child(scroll)
-
 	_portraits_hbox = HBoxContainer.new()
 	_portraits_hbox.add_theme_constant_override("separation", 4)
 	_portraits_hbox.alignment = BoxContainer.ALIGNMENT_BEGIN
-	scroll.add_child(_portraits_hbox)
+	_portraits_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_portraits_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_child(_portraits_hbox)
 	return panel
 
 
@@ -274,16 +280,16 @@ func _build_widget_zone() -> GridContainer:
 	_speed_controls = ClockSpeedControls.new()
 	grid.add_child(_speed_controls)
 
-	# Row 2: Rations panel · Travel speeds panel · Encumbrance label.
+	# Row 2: Rations panel · Hex-info panel · spacer (notification flows in row 3).
 	_rations_panel = _build_rations_panel()
 	grid.add_child(_rations_panel)
 
-	_speeds_panel = _build_speeds_panel()
-	grid.add_child(_speeds_panel)
+	_hex_info_panel = _build_hex_info_panel()
+	grid.add_child(_hex_info_panel)
 
-	_encumbrance_label = _make_label("Enc: --", DIM_COLOR, SMALL_FONT_SIZE)
-	_encumbrance_label.custom_minimum_size = Vector2(120, 0)
-	grid.add_child(_encumbrance_label)
+	var row2_spacer := Control.new()
+	row2_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_child(row2_spacer)
 
 	# Row 3: Camp button · Notebook button · Notification surface.
 	_camp_btn = Button.new()
@@ -325,39 +331,63 @@ func _build_rations_panel() -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _subpanel_style())
 	panel.visible = false
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 0)
-	panel.add_child(vbox)
-	var header := _make_label("Rations", DIM_COLOR, SMALL_FONT_SIZE)
-	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(header)
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 0)
+	panel.add_child(grid)
+
+	var rations_header := _make_label("Rations:", DIM_COLOR, SMALL_FONT_SIZE)
+	grid.add_child(rations_header)
 	_rations_label = _make_label("--", LABEL_COLOR, FONT_SIZE)
-	_rations_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_rations_label.custom_minimum_size = Vector2(110, 0)
-	vbox.add_child(_rations_label)
+	grid.add_child(_rations_label)
+
+	var water_header := _make_label("Water:", DIM_COLOR, SMALL_FONT_SIZE)
+	grid.add_child(water_header)
+	_water_label = _make_label("--", LABEL_COLOR, FONT_SIZE)
+	_water_label.custom_minimum_size = Vector2(110, 0)
+	grid.add_child(_water_label)
 	return panel
 
 
-func _build_speeds_panel() -> PanelContainer:
+func _build_hex_info_panel() -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _subpanel_style())
 	panel.visible = false
+	_hex_info_label = _make_label("--", LABEL_COLOR, SMALL_FONT_SIZE)
+	_hex_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_hex_info_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	_hex_info_label.custom_minimum_size = Vector2(160, 0)
+	panel.add_child(_hex_info_label)
+	return panel
+
+
+func _build_speeds_zone() -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(SPEEDS_ZONE_WIDTH, 0)
+	panel.size_flags_horizontal = Control.SIZE_FILL
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", _subpanel_style())
+	panel.visible = false
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 0)
+	vbox.add_theme_constant_override("separation", 2)
 	panel.add_child(vbox)
-	_speeds_base_label = _make_label("Base: --", LABEL_COLOR, SMALL_FONT_SIZE)
+	_speeds_base_label = _make_label("Base: --", LABEL_COLOR, FONT_SIZE)
 	_speeds_base_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_speeds_base_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vbox.add_child(_speeds_base_label)
 	_speeds_grid = GridContainer.new()
-	_speeds_grid.columns = 4
-	_speeds_grid.add_theme_constant_override("h_separation", 8)
+	_speeds_grid.columns = 2
+	_speeds_grid.add_theme_constant_override("h_separation", 10)
 	_speeds_grid.add_theme_constant_override("v_separation", 0)
+	_speeds_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vbox.add_child(_speeds_grid)
 	_speed_labels.clear()
 	for terrain in TRAVEL_TERRAINS:
 		var cell := _make_label("%s: --" % TERRAIN_LABELS[terrain],
 			LABEL_COLOR, SMALL_FONT_SIZE)
-		cell.custom_minimum_size = Vector2(72, 0)
+		cell.custom_minimum_size = Vector2(80, 0)
 		_speeds_grid.add_child(cell)
 		_speed_labels[terrain] = cell
 	return panel
@@ -596,6 +626,7 @@ func _on_session_ended() -> void:
 	# next _refresh_party_portraits, but the dict reference can dangle past
 	# session boundaries if a widget queue_free races the next refresh.
 	_portrait_widgets.clear()
+	_hex_map_cache.clear()
 
 
 func _on_active_party_changed(_prev_id: String, new_id: String) -> void:
@@ -780,6 +811,7 @@ func _update_wilderness_buttons() -> void:
 
 func _on_hex_entered(hex_id: String) -> void:
 	_location_label.text = "Hex %s" % hex_id
+	_refresh_party_status(GameState.active_party_id)
 
 
 func _on_room_entered(room_id: String) -> void:
@@ -833,7 +865,7 @@ func _on_scheduler_resumed() -> void:
 # ---------------------------------------------------------------------------
 
 func _refresh_party_status(party_id: String) -> void:
-	if _rations_panel == null or _speeds_panel == null:
+	if _rations_panel == null or _speeds_zone == null:
 		return
 	var show: bool = (
 		GameState.current_state == GameState.State.EXPLORATION
@@ -841,32 +873,36 @@ func _refresh_party_status(party_id: String) -> void:
 	)
 	if party_id.is_empty() or not show:
 		_rations_panel.visible = false
-		_speeds_panel.visible = false
-		_encumbrance_label.text = "Enc: --"
+		_speeds_zone.visible = false
+		_hex_info_panel.visible = false
 		return
 
 	var party_data: PartyData = CampaignRepository.load_party_data(party_id)
 	if party_data == null:
 		_rations_panel.visible = false
-		_speeds_panel.visible = false
-		_encumbrance_label.text = "Enc: --"
+		_speeds_zone.visible = false
+		_hex_info_panel.visible = false
 		return
 	party_data.character_data = []
 	for char_row: Dictionary in CampaignRepository.list_party_characters(party_id):
 		party_data.character_data.append(CharacterData.from_dict(char_row))
 
-	# Rations.
+	# Rations + Water (1 unit/character/day for each per ACKS).
 	var party_size: int = party_data.character_data.size()
-	var consumption: int = CampManager.compute_ration_consumption(party_size)
-	var days_left: int = party_data.rations_days_remaining
-	_rations_label.text = "%d days  −%d/day" % [days_left, consumption]
-	var ration_color: Color = LABEL_COLOR
-	if consumption > 0:
-		if days_left <= 1:
-			ration_color = Color(0.90, 0.35, 0.30, 1.0)
-		elif days_left <= 3:
-			ration_color = Color(0.90, 0.75, 0.30, 1.0)
-	_rations_label.add_theme_color_override("font_color", ration_color)
+	var ration_consumption: int = CampManager.compute_ration_consumption(party_size)
+	var rations_days: int = party_data.rations_days_remaining
+	_rations_label.text = "%d days  −%d/day" % [rations_days, ration_consumption]
+	_rations_label.add_theme_color_override("font_color",
+		_sustenance_color(rations_days, ration_consumption))
+
+	var water_consumption: int = party_size
+	var water_days: int = (
+		party_data.water_units / water_consumption
+		if water_consumption > 0 else 0
+	)
+	_water_label.text = "%d days  −%d/day" % [water_days, water_consumption]
+	_water_label.add_theme_color_override("font_color",
+		_sustenance_color(water_days, water_consumption))
 	_rations_panel.visible = true
 
 	# Travel speeds.
@@ -877,11 +913,63 @@ func _refresh_party_status(party_id: String) -> void:
 			party_data, terrain, false)
 		var label: Label = _speed_labels[terrain]
 		label.text = "%s: %d mi" % [TERRAIN_LABELS[terrain], int(mpd)]
-	_speeds_panel.visible = true
+	_speeds_zone.visible = true
 
-	# Encumbrance: report the slowest member (mirrors the Party tab header).
-	var slowest: int = party_data.get_slowest_movement()
-	_encumbrance_label.text = "Slowest: %d'/turn" % slowest
+	# Hex info — current party hex, mirrors the hexmap hover tooltip.
+	_refresh_hex_info(party_data)
+
+
+func _sustenance_color(days_left: int, per_day: int) -> Color:
+	if per_day <= 0:
+		return LABEL_COLOR
+	if days_left <= 1:
+		return Color(0.90, 0.35, 0.30, 1.0)
+	if days_left <= 3:
+		return Color(0.90, 0.75, 0.30, 1.0)
+	return LABEL_COLOR
+
+
+func _refresh_hex_info(party_data: PartyData) -> void:
+	if _hex_info_panel == null or _hex_info_label == null:
+		return
+	var map_id: String = party_data.current_map_id
+	if map_id.is_empty():
+		_hex_info_panel.visible = false
+		return
+	var map_data: HexMapData = _hex_map_cache.get(map_id, null)
+	if map_data == null:
+		map_data = CampaignRepository.load_hex_map(map_id)
+		if map_data != null:
+			_hex_map_cache[map_id] = map_data
+	if map_data == null:
+		_hex_info_panel.visible = false
+		return
+	var coord := Vector2i(party_data.current_hex_q, party_data.current_hex_r)
+	var terrain: HexTerrainData = map_data.get_hex(coord)
+	if terrain == null:
+		_hex_info_panel.visible = false
+		return
+	_hex_info_label.text = _format_hex_info(coord, terrain)
+	_hex_info_panel.visible = true
+
+
+func _format_hex_info(coord: Vector2i, terrain: HexTerrainData) -> String:
+	var water_str := terrain.water if not terrain.water.is_empty() else "none"
+	var has_settlement := terrain.has_city
+	var lines := PackedStringArray([
+		"Hex (%d, %d)" % [coord.x, coord.y],
+		"Elevation: %s" % terrain.elevation,
+		"Biome: %s" % terrain.biome,
+		"Water: %s" % water_str,
+		"Territory: %s" % terrain.civilization,
+		"City: %s" % ("yes" if has_settlement else "no"),
+	])
+	if terrain.overlay != null:
+		if terrain.overlay.has_river():
+			lines.append("River: yes")
+		if terrain.overlay.has_road():
+			lines.append("Road: yes")
+	return "\n".join(lines)
 
 
 func _compute_base_exploration_speed(party_data: PartyData) -> int:

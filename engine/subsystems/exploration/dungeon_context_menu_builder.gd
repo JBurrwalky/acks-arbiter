@@ -20,6 +20,15 @@ const DungeonSessionState := preload("res://engine/subsystems/exploration/dungeo
 ## `open_locks` power entry.
 const CLASSES_WITH_OPEN_LOCKS := ["thief"]
 
+## Classes whose entries in data/classes/*.json carry a `casting_power` block.
+## Used to gate Cast Spell context-menu entries: a non-caster never sees the
+## option (matches the character tab Cast button which only appears for
+## casters).
+const CLASSES_THAT_CAST := [
+	"mage", "elven_spellsword", "elven_nightblade", "warlock", "witch",
+	"cleric", "bladedancer", "dwarven_craftpriest"
+]
+
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -474,10 +483,21 @@ static func _build_entity_options(
 		options.append(_option("add_to_group", "Add to Group", true,
 			"Add to the selected entity's control group", "entity",
 			{"action_type": "add_to_group", "cell": target_cell, "target_id": target_id}))
-		# Cast Spell (deferred).
-		options.append(_option("cast_spell", "Cast Spell", false,
-			"Spell system not yet implemented", "entity",
-			{"action_type": "cast_spell", "cell": target_cell, "target_id": target_id}))
+		# Cast Spell — enabled when at least one selected entity is a caster.
+		# Pre-filter the picker to ally-targeted spells (touch_ally /
+		# touch_creature / single_creature) since we right-clicked a friendly.
+		var ally_caster_id: String = _first_caster(selected_ids, party_data)
+		options.append(_option("cast_spell", "Cast Spell", not ally_caster_id.is_empty(),
+			"No spellcaster in selection" if ally_caster_id.is_empty() \
+				else "Cast a spell on this ally",
+			"entity",
+			{
+				"action_type": "cast_spell",
+				"cell": target_cell,
+				"target_id": target_id,
+				"caster_id": ally_caster_id,
+				"allowed_target_kinds": ["touch_ally", "touch_creature", "single_creature"],
+			}))
 	else:
 		# Target is NPC or monster — show both talk and attack.
 		options.append(_option("talk", "Talk", true,
@@ -486,9 +506,18 @@ static func _build_entity_options(
 		options.append(_option("attack", "Attack", true,
 			"Engage in combat", "entity",
 			{"action_type": "attack", "cell": target_cell, "target_id": target_id}))
-		options.append(_option("cast_spell", "Cast Spell", false,
-			"Spell system not yet implemented", "entity",
-			{"action_type": "cast_spell", "cell": target_cell, "target_id": target_id}))
+		var enemy_caster_id: String = _first_caster(selected_ids, party_data)
+		options.append(_option("cast_spell", "Cast Spell", not enemy_caster_id.is_empty(),
+			"No spellcaster in selection" if enemy_caster_id.is_empty() \
+				else "Cast a spell on this enemy",
+			"entity",
+			{
+				"action_type": "cast_spell",
+				"cell": target_cell,
+				"target_id": target_id,
+				"caster_id": enemy_caster_id,
+				"allowed_target_kinds": ["touch_enemy", "single_creature", "attack_throw_vs_target"],
+			}))
 
 	return options
 
@@ -542,10 +571,21 @@ static func _build_self_options(
 		"Healing spells or Healing proficiency required", "self",
 		{"action_type": "heal", "character_id": first_id}))
 
-	# Cast Spell (deferred).
-	options.append(_option("cast_spell_self", "Cast Spell", false,
-		"Spell system not yet implemented", "self",
-		{"action_type": "cast_spell", "character_id": first_id}))
+	# Cast Spell on self — only enabled if the first selected entity is a caster.
+	# Self-click pre-filters to spells whose target_spec accepts the caster
+	# (self / caster_and_radius / area_from_caster / touch_creature).
+	var self_is_caster: bool = _is_caster_id(first_id, party_data)
+	options.append(_option("cast_spell_self", "Cast Spell", self_is_caster,
+		"Not a spellcaster" if not self_is_caster else "Cast a spell on yourself",
+		"self",
+		{
+			"action_type": "cast_spell",
+			"character_id": first_id,
+			"caster_id": first_id,
+			"allowed_target_kinds": [
+				"self", "caster_and_radius", "area_from_caster", "touch_creature",
+			],
+		}))
 
 	# Use Item.
 	options.append(_option("use_item", "Use Item", true,
@@ -657,6 +697,29 @@ static func _any_selected_has_ability(
 		if cd.has_proficiency(proficiency_key):
 			return true
 	return false
+
+
+## Returns the first selected entity_id that is a spellcaster, or "" if none.
+## A caster is any party member whose class_key is in CLASSES_THAT_CAST OR
+## whose combat_progression is "mage" / "cleric" (covers homebrew classes that
+## hybridize a casting progression with a different class_key).
+static func _first_caster(selected_ids: Array, party_data) -> String:
+	for eid in selected_ids:
+		if _is_caster_id(str(eid), party_data):
+			return str(eid)
+	return ""
+
+
+## True if [param entity_id] resolves to a caster CharacterData via party_data.
+static func _is_caster_id(entity_id: String, party_data) -> bool:
+	if party_data == null or not party_data.has_method("get_member"):
+		return false
+	var cd = party_data.get_member(entity_id)
+	if cd == null:
+		return false
+	if cd.combat_progression in ["mage", "cleric"]:
+		return true
+	return cd.character_class in CLASSES_THAT_CAST
 
 
 ## Check if any selected entity has iron spikes in their inventory.

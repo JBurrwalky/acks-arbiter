@@ -39,23 +39,7 @@ var _has_shield: bool = false
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(340, 180)
-
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.12, 0.12, 0.15, 0.95)
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
-	style.content_margin_left = 12.0
-	style.content_margin_right = 12.0
-	style.content_margin_top = 10.0
-	style.content_margin_bottom = 10.0
-	style.border_width_left = 1
-	style.border_width_right = 1
-	style.border_width_top = 1
-	style.border_width_bottom = 1
-	style.border_color = Color(0.4, 0.4, 0.5)
-	add_theme_stylebox_override("panel", style)
+	UiSurfaceStyles.apply_framed_window_chrome(self)
 
 	var outer := VBoxContainer.new()
 	outer.add_theme_constant_override("separation", 6)
@@ -66,7 +50,6 @@ func _ready() -> void:
 	title.text = "Sheathe & Draw"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 15)
-	title.add_theme_color_override("font_color", Color(1.0, 0.9, 0.6))
 	outer.add_child(title)
 
 	# Subtitle (shows cost)
@@ -74,7 +57,6 @@ func _ready() -> void:
 	_subtitle_label.text = ""
 	_subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_subtitle_label.add_theme_font_size_override("font_size", 11)
-	_subtitle_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	outer.add_child(_subtitle_label)
 
 	var sep := HSeparator.new()
@@ -165,7 +147,6 @@ func set_weapons(weapons: Array, has_moved: bool, is_armed: bool, has_shield: bo
 		stow_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		stow_btn.custom_minimum_size.y = 30.0
 		stow_btn.add_theme_font_size_override("font_size", 12)
-		stow_btn.add_theme_color_override("font_color", Color(0.8, 0.7, 0.5))
 		stow_btn.pressed.connect(func(): weapon_selected.emit({"stow_only": true}))
 		_list_container.add_child(stow_btn)
 
@@ -174,5 +155,4 @@ func set_weapons(weapons: Array, has_moved: bool, is_armed: bool, has_shield: bo
 		var lbl := Label.new()
 		lbl.text = "No weapons available."
 		lbl.add_theme_font_size_override("font_size", 11)
-		lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
 		_list_container.add_child(lbl)

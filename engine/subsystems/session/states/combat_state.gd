@@ -44,7 +44,7 @@ func enter(runner, context: Dictionary) -> void:
 	var active_effects: ActiveEffectTracker = runner.get_active_effects()
 	var condition_catalog := ConditionCatalog.new()
 	var condition_manager := CombatConditionManager.new(condition_catalog)
-	var spell_hooks := SpellCombatHooks.new(active_effects)
+	var spell_hooks := SpellCombatHooks.new(active_effects, DiceSystem)
 
 	var init_resolver := InitiativeResolver.new(DiceSystem)
 	var attack_resolver := AttackResolver.new(DiceSystem, spell_hooks)
@@ -77,6 +77,12 @@ func enter(runner, context: Dictionary) -> void:
 		mortal_wounds_resolver, voxel_map,
 		runner.get_casting_resolver())
 	_controller.encounter_id = _encounter_id
+
+	# P3: Spawn-roster integrator wires Animate Dead / Sticks to Snakes /
+	# Conjure Elemental / Invisible Stalker / Insect Plague spawns into the
+	# live roster. Connected on combat start, disconnected on combat end.
+	_controller.spawn_roster_integrator = SpawnRosterIntegrator.new(
+		roster, movement_resolver, active_effects, monster_registry, DiceSystem)
 
 	_place_combatants_on_grid(roster, voxel_map)
 

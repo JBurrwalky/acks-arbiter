@@ -245,3 +245,59 @@ static func cells_in_cone(
 					if not (c in out):
 						out.append(c)
 	return out
+
+
+## Cells_in_line — Lightning Bolt geometry (Session 8).
+##
+## ACKS RAW (acore_spell_catalog_k-w_summary.xml: Lightning Bolt 60' long,
+## treated as 5' wide). The bolt walks one step at a time from `origin` along
+## `direction` for up to `length_feet`. If `walls` (Dictionary keyed by
+## Vector3i) marks a cell as solid, the bolt stops there — and per RAW may
+## reflect ("If it cannot continue, it may reflect toward the caster or in a
+## random direction at the Judge's option"). Reflection is opt-in: pass
+## `reflect_on_wall: true` to bounce the residual length back toward the
+## caster. Creatures already affected do not take damage again from
+## reflection of the same bolt — caller is responsible for de-duping.
+##
+## Returns Array[Vector3i] of cells the bolt traverses (in order). Width is
+## fixed at 5 ft (one cell wide).
+static func cells_in_line(
+		origin: Vector3i,
+		direction: Vector3i,
+		length_feet: int,
+		walls: Dictionary = {},
+		reflect_on_wall: bool = false) -> Array:
+	var out: Array = []
+	if length_feet <= 0:
+		return out
+	var length_cells: int = int(floor(float(length_feet) / float(_CELL_FEET)))
+	if length_cells <= 0:
+		return out
+	# Normalize direction to step axis. Only one of x/y/z should be non-zero
+	# for a clean bolt — diagonals work but step on the dominant axis.
+	var dx: int = signi(direction.x)
+	var dy: int = signi(direction.y)
+	var dz: int = signi(direction.z)
+	if dx == 0 and dy == 0 and dz == 0:
+		return out
+
+	var current := origin
+	var remaining := length_cells
+	var step := Vector3i(dx, dy, dz)
+	while remaining > 0:
+		var next_cell := current + step
+		# Stop if the next cell is a wall.
+		if walls.get(next_cell, false):
+			if reflect_on_wall and remaining > 0:
+				# Bounce: invert direction and continue with remaining length.
+				step = Vector3i(-step.x, -step.y, -step.z)
+				next_cell = current + step
+				if walls.get(next_cell, false):
+					break  # Bounded by walls on both sides — stop.
+			else:
+				break
+		current = next_cell
+		if not (current in out):
+			out.append(current)
+		remaining -= 1
+	return out

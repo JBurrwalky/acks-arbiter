@@ -229,6 +229,38 @@ func resolve(
 		result.failures.append("disjunctive branch not chosen")
 		return result
 
+	# --- Stage 6: anti-magic / globe-of-invulnerability pre-resolve gates ---
+	# Anti-Magic Shell (acore_spell_catalog_a-i_summary.xml: blocks spells +
+	# spell-like effects entering/leaving the shell). Globe of Invulnerability
+	# (pc_spell_catalog_f-u.xml: blocks spells of level ≤ N from penetrating).
+	# Self-cast on the protected creature itself is NOT blocked per RAW.
+	var blocked_targets: Array = _filter_targets_blocked_by_protections(
+		target_descriptor, targets_by_id, spell_choice, caster_context)
+	if not blocked_targets.is_empty():
+		# Drop blocked targets from the descriptor; record the block reason.
+		var allowed: Array = []
+		for tid in target_descriptor.target_ids:
+			if tid not in blocked_targets:
+				allowed.append(tid)
+		target_descriptor.target_ids = allowed
+		# All targets blocked → cast fizzles, slot still consumed per ACKS.
+		if allowed.is_empty():
+			if _campaign_repo != null:
+				_campaign_repo.increment_expended_slot(caster_context.caster_id, spell_choice.level)
+				EventBus.spell_slot_expended.emit(
+					caster_context.caster_id, spell_choice.level,
+					_compute_remaining_slots(caster_context.caster_id, spell_choice.level))
+			result.slot_consumed = true
+			result.success = false
+			result.failures.append("all targets blocked by anti-magic / globe of invulnerability")
+			result.effects_applied = [{
+				"step_kind": "blocked_by_protection",
+				"applied": false,
+				"blocked_targets": blocked_targets,
+				"reason": "anti_magic_or_globe",
+			}]
+			return result
+
 	# --- Stage 7: walk resolution steps ---
 	var resolution_steps: Array = payload.get("resolution", [])
 	var save_spec: Dictionary = payload.get("save_spec", {"category": "none"})
@@ -242,6 +274,7 @@ func resolve(
 	var aggregated_modifiers: Array = []
 	var aggregated_flags: Array = []
 	var aggregated_conditions: Array = []
+	var aggregated_item_modifiers: Dictionary = {}  # item_id → {item_attribute, value/value_dice, source_id}
 	var attack_hit_targets: Dictionary = {}  # target_id -> bool (set by attack_throw_vs_target)
 
 	for step_raw in resolution_steps:
@@ -252,7 +285,7 @@ func resolve(
 		var outcome: Dictionary = {}
 		match kind:
 			"damage":
-				outcome = _apply_damage(step, target_descriptor, targets_by_id, save_spec, save_results, attack_hit_targets)
+				outcome = _apply_damage(step, target_descriptor, targets_by_id, save_spec, save_results, attack_hit_targets, caster_context)
 			"damage_per_level":
 				outcome = _apply_damage_per_level(step, caster_context, target_descriptor, targets_by_id, save_spec, save_results)
 			"heal":
@@ -268,6 +301,20 @@ func resolve(
 			"apply_condition":
 				outcome = _apply_condition(step, target_descriptor, targets_by_id, save_results, save_spec)
 				aggregated_conditions.append_array(outcome.get("records", []))
+			"remove_condition":
+				outcome = _remove_condition(step, target_descriptor, targets_by_id)
+			"remove_modifier":
+				outcome = _remove_modifier(step, target_descriptor, targets_by_id, caster_context)
+			"apply_modifier_to_item":
+				outcome = _apply_modifier_to_item(step, spell_choice, target_descriptor, targets_by_id, caster_context)
+				# Aggregate item-targeted modifier outcomes for the active_effect
+				# metadata, so SpellCombatHooks.get_item_attack_bonuses can look
+				# them up at attack-damage time. Keyed by item_id.
+				for tid in (outcome.get("per_target", {}) as Dictionary).keys():
+					var entry: Dictionary = (outcome["per_target"] as Dictionary)[tid]
+					if not aggregated_item_modifiers.has(tid):
+						aggregated_item_modifiers[tid] = []
+					aggregated_item_modifiers[tid].append(entry)
 			"apply_damage_resistance":
 				outcome = _apply_damage_resistance(step, spell_choice, target_descriptor, targets_by_id, caster_entity, caster_context)
 			"grant_temp_hp":
@@ -281,13 +328,27 @@ func resolve(
 			"query_game_state":
 				outcome = _query_game_state(step, caster_context, target_descriptor)
 			"modify_cell_state":
-				outcome = {"kind": kind, "applied": false, "reason": "deferred to Session 2 dungeon-grid wiring"}
+				outcome = _modify_cell_state(step, target_descriptor, caster_context)
+			"open_close_lock":
+				outcome = _open_close_lock(step, target_descriptor, caster_context)
 			"spawn_entity":
 				outcome = {"kind": kind, "applied": false, "reason": "deferred to per-spell custom resolver session"}
+			"teleport":
+				outcome = _teleport(step, target_descriptor, targets_by_id, caster_entity, caster_context, save_results, save_spec)
 			"stub":
 				outcome = {"kind": kind, "applied": false, "reason": step.get("reason", ""), "message": step.get("placeholder_message", "")}
 			"custom":
 				outcome = _dispatch_custom(step, caster_context, spell_choice, target_descriptor, targets_by_id, caster_entity)
+				# Custom resolvers may emit `persist_metadata` to splice extra
+				# fields into the active_effect's metadata (e.g., Spiritual
+				# Weapon's weapon_profile for round-tick consumption by
+				# SpellCombatHooks). Aggregate them here; spliced into the
+				# active_effect dict at registration below.
+				var pm: Dictionary = outcome.get("persist_metadata", {})
+				if not pm.is_empty():
+					if not aggregated_item_modifiers.has("__persist_metadata__"):
+						aggregated_item_modifiers["__persist_metadata__"] = {}
+					(aggregated_item_modifiers["__persist_metadata__"] as Dictionary).merge(pm, true)
 			_:
 				outcome = {"kind": kind, "applied": false, "reason": "unknown resolution step kind"}
 		outcome["step_kind"] = kind
@@ -315,6 +376,29 @@ func resolve(
 			aggregated_modifiers,
 			aggregated_flags,
 			aggregated_conditions)
+		# Splice item-modifier outcomes into the active_effect metadata so
+		# SpellCombatHooks.get_item_attack_bonuses can consume Striking-style
+		# bonuses at attack-damage time. Keyed by item_id → array of per-step
+		# outcome dicts (item_attribute, value/value_dice, source_id).
+		if not aggregated_item_modifiers.is_empty():
+			var meta: Dictionary = active_effect.get("metadata", {})
+			# Splice custom-resolver persist_metadata first (from `__persist_metadata__`
+			# bucket emitted by custom resolvers like Spiritual Weapon).
+			var custom_persist: Dictionary = aggregated_item_modifiers.get("__persist_metadata__", {})
+			if not custom_persist.is_empty():
+				meta.merge(custom_persist, true)
+				aggregated_item_modifiers.erase("__persist_metadata__")
+			# Remaining keys are item_id → Array[entry] for apply_modifier_to_item.
+			if not aggregated_item_modifiers.is_empty():
+				meta["per_target"] = aggregated_item_modifiers
+				# Also append item_ids to target_ids so SpellCombatHooks's
+				# `if item_id in effect.target_ids` check fires correctly.
+				var tids: Array = active_effect.get("target_ids", [])
+				for item_id in aggregated_item_modifiers.keys():
+					if not (item_id in tids):
+						tids.append(item_id)
+				active_effect["target_ids"] = tids
+			active_effect["metadata"] = meta
 		_effect_tracker.add_effect(active_effect)
 		result.active_effect_ids.append(effect_id)
 		EventBus.spell_effect_applied.emit(effect_id, spell_choice.spell_key, target_descriptor.target_ids)
@@ -402,10 +486,13 @@ func _apply_damage(
 		targets_by_id: Dictionary,
 		_save_spec: Dictionary,
 		_save_results: Dictionary,
-		attack_hit_targets: Dictionary) -> Dictionary:
+		attack_hit_targets: Dictionary,
+		caster_context: CasterContext = null) -> Dictionary:
 	var dice_expr := String(step.get("dice", ""))
 	var damage_type := String(step.get("damage_type", "untyped"))
 	var on_hit_only := bool(step.get("on_hit_only", false))
+	# Per-caster-level flat bonus (Cause Serious Wounds: 2d6 + caster_level).
+	var bonus_per_level := int(step.get("bonus_per_caster_level", 0))
 	var per_target: Dictionary = {}
 	for tid in target_descriptor.target_ids:
 		if on_hit_only and not attack_hit_targets.get(tid, true):
@@ -413,8 +500,10 @@ func _apply_damage(
 			continue
 		var roll = _dice_system.roll_expression(dice_expr, "spell_damage")
 		var amount: int = int(roll.modified_total) if roll != null else 0
+		var level_bonus: int = bonus_per_level * (caster_context.caster_level if caster_context != null else 1)
+		amount += level_bonus
 		_apply_damage_to_target(tid, targets_by_id, amount, damage_type, "spell")
-		per_target[tid] = {"applied": true, "amount": amount}
+		per_target[tid] = {"applied": true, "amount": amount, "level_bonus": level_bonus}
 	return {"per_target": per_target, "damage_type": damage_type}
 
 
@@ -466,16 +555,26 @@ func _apply_heal(
 		caster_entity: Variant,
 		caster_context: CasterContext) -> Dictionary:
 	var dice_expr := String(step.get("dice", ""))
+	# Per-caster-level flat bonus (Cure Serious Wounds: 2d6 + caster_level).
+	var bonus_per_level := int(step.get("bonus_per_caster_level", 0))
 	var per_target: Dictionary = {}
 	for tid in _resolve_heal_target_ids(target_descriptor, caster_context):
 		var entity = _resolve_entity(tid, targets_by_id, caster_entity, caster_context)
+		# Diseased magic-heal block per RAW (acore_spell_catalog_a-i_summary.xml,
+		# Cause Disease reverse: "The target cannot be magically healed while
+		# afflicted"). Cure Disease must be cast first to clear the condition.
+		if _entity_has_condition(entity, "diseased"):
+			per_target[tid] = {"applied": false, "reason": "diseased_magic_heal_blocked"}
+			continue
 		var roll = _dice_system.roll_expression(dice_expr, "spell_healing")
 		var amount: int = int(roll.modified_total) if roll != null else 0
+		var level_bonus: int = bonus_per_level * (caster_context.caster_level if caster_context != null else 1)
+		amount += level_bonus
 		var actual: int = 0
 		if entity != null and entity.has_method("apply_healing"):
 			actual = int(entity.apply_healing(amount))
 		EventBus.healing_applied.emit(tid, actual, "spell")
-		per_target[tid] = {"applied": true, "rolled": amount, "actual": actual}
+		per_target[tid] = {"applied": true, "rolled": amount, "actual": actual, "level_bonus": level_bonus}
 	return {"per_target": per_target}
 
 
@@ -489,12 +588,32 @@ func _apply_heal_fixed(
 	var per_target: Dictionary = {}
 	for tid in _resolve_heal_target_ids(target_descriptor, caster_context):
 		var entity = _resolve_entity(tid, targets_by_id, caster_entity, caster_context)
+		# Diseased magic-heal block (see _apply_heal for the RAW citation).
+		if _entity_has_condition(entity, "diseased"):
+			per_target[tid] = {"applied": false, "reason": "diseased_magic_heal_blocked"}
+			continue
 		var actual: int = 0
 		if entity != null and entity.has_method("apply_healing"):
 			actual = int(entity.apply_healing(amount))
 		EventBus.healing_applied.emit(tid, actual, "spell")
 		per_target[tid] = {"applied": true, "actual": actual}
 	return {"per_target": per_target}
+
+
+## True if the entity exposes a `has_condition(key)` method and reports the
+## given condition. Returns false defensively for entities without condition
+## tracking (raw CharacterData; Combatants do).
+func _entity_has_condition(entity: Variant, condition_key: String) -> bool:
+	if entity == null:
+		return false
+	if entity.has_method("has_condition"):
+		return bool(entity.has_condition(condition_key))
+	# CharacterData fallback — read the condition list directly if present.
+	if "conditions" in entity:
+		var conds = entity.conditions
+		if conds is Array:
+			return condition_key in conds
+	return false
 
 
 func _apply_modifier(
@@ -557,14 +676,29 @@ func _apply_flag(
 	var source_id := _make_modifier_source_id(spell_choice.spell_key, caster_context.caster_id)
 	var records: Array = []
 	var per_target: Dictionary = {}
-	for tid in target_descriptor.target_ids:
+	# `target_caster_only: true` overrides target_descriptor.target_ids and
+	# applies the flag to caster_entity. Used by spells that need to set a
+	# constraint flag on the caster (e.g. Telekinesis sets is_telekinesis_caster
+	# on the caster while is_telekinetically_held lands on the lifted target).
+	var ids_to_walk: Array = target_descriptor.target_ids
+	if bool(step.get("target_caster_only", false)) and caster_context != null:
+		ids_to_walk = [caster_context.caster_id]
+	for tid in ids_to_walk:
 		var entity = _resolve_entity(tid, targets_by_id, caster_entity, caster_context)
 		var flags := _get_flags(entity)
 		if flags == null:
 			per_target[tid] = {"applied": false, "reason": "no_target_data"}
 			continue
-		flags.set_flag(flag_key, source_id, {})
-		records.append({"character_id": tid, "flag_key": flag_key, "source_id": source_id})
+		# Build flag metadata: step-supplied metadata merged with the caster's
+		# level. Sanctuary (Session 5) consumes metadata.caster_level when the
+		# attack resolver fires the per-attacker save check; future spells can
+		# read other step.metadata fields the same way.
+		var meta: Dictionary = (step.get("metadata", {}) as Dictionary).duplicate()
+		meta["caster_level"] = caster_context.caster_level
+		meta["caster_id"] = caster_context.caster_id
+		meta["spell_key"] = spell_choice.spell_key
+		flags.set_flag(flag_key, source_id, meta)
+		records.append({"character_id": tid, "flag_key": flag_key, "source_id": source_id, "metadata": meta})
 		per_target[tid] = {"applied": true, "flag_key": flag_key}
 	return {"per_target": per_target, "records": records}
 
@@ -591,6 +725,140 @@ func _apply_condition(
 		EventBus.condition_changed.emit(tid, {"condition": condition_key, "applied": true})
 		per_target[tid] = {"applied": true, "condition_key": condition_key}
 	return {"per_target": per_target, "records": records}
+
+
+## Removes a condition from each target (Remove Fear, Cure Disease, etc.).
+## If the entity exposes `remove_condition`, that path is used; otherwise
+## `clear_condition` is tried; otherwise the call no-ops gracefully.
+##
+## Session 5 (Remove Fear): the spell may carry `save_modifier_per_caster_level`
+## for active fear-effect re-saves; that bonus is recorded in the outcome
+## metadata for the active_effect tracker to consume when computing the
+## resave (deferred to Session 8 dispel-magic-style mechanic).
+func _remove_condition(
+		step: Dictionary,
+		target_descriptor: TargetDescriptor,
+		targets_by_id: Dictionary) -> Dictionary:
+	var condition_key := String(step.get("condition_key", ""))
+	var save_modifier_per_level := int(step.get("save_modifier_per_caster_level", 0))
+	var per_target: Dictionary = {}
+	for tid in target_descriptor.target_ids:
+		var entity = targets_by_id.get(tid, null)
+		var removed := false
+		if entity != null:
+			if entity.has_method("remove_condition"):
+				entity.remove_condition(condition_key)
+				removed = true
+			elif entity.has_method("clear_condition"):
+				entity.clear_condition(condition_key)
+				removed = true
+		if removed:
+			EventBus.condition_changed.emit(tid, {
+				"condition": condition_key, "applied": false, "removed_by": "spell"
+			})
+			per_target[tid] = {
+				"applied": true,
+				"condition_key": condition_key,
+				"save_modifier_per_caster_level": save_modifier_per_level,
+			}
+		else:
+			per_target[tid] = {
+				"applied": false,
+				"reason": "no_remove_condition_method",
+				"condition_key": condition_key,
+			}
+	return {"per_target": per_target}
+
+
+## Removes modifiers matching a source pattern from each target.
+## Step payload:
+##   {
+##     "kind": "remove_modifier",
+##     "source_pattern": "curse:*"   ← removes all sources beginning with "curse:"
+##                                     (uses ModifierContainer.remove_all_with_source_prefix)
+##     "caster_level_check": true    ← if true, ACKS Remove Curse rule:
+##                                     5% per-level fail when original cursing
+##                                     caster's level exceeds this caster's level.
+##                                     For Session 9: level data isn't tracked
+##                                     on the modifier source, so we always
+##                                     succeed at removal (deferred polish).
+##   }
+func _remove_modifier(
+		step: Dictionary,
+		target_descriptor: TargetDescriptor,
+		targets_by_id: Dictionary,
+		_caster_context: CasterContext) -> Dictionary:
+	var source_pattern := String(step.get("source_pattern", ""))
+	if source_pattern.is_empty():
+		return {"applied": false, "reason": "remove_modifier: empty source_pattern"}
+	var prefix := source_pattern.replace("*", "")
+	var per_target: Dictionary = {}
+	for tid in target_descriptor.target_ids:
+		var entity = targets_by_id.get(tid, null)
+		if entity == null or not ("modifiers" in entity):
+			per_target[tid] = {"applied": false, "reason": "no_modifiers"}
+			continue
+		var stats_before: Array = entity.modifiers.get_stats_with_modifiers()
+		entity.modifiers.remove_all_with_source_prefix(prefix)
+		var stats_after: Array = entity.modifiers.get_stats_with_modifiers()
+		var removed_count: int = stats_before.size() - stats_after.size()
+		per_target[tid] = {
+			"applied": true,
+			"source_prefix": prefix,
+			"stats_affected_count": removed_count,
+		}
+	return {"per_target": per_target}
+
+
+## Applies a modifier to an inventory item rather than to the carrier.
+## Used by Striking (1d6 weapon damage bonus). The targeting controller is
+## responsible for resolving the target_descriptor.target_ids[0] to an item id;
+## the resolver looks up the item and applies the modifier to its `modifiers`
+## container (or records the item-side effect for future inventory polish).
+##
+## Step payload:
+##   {
+##     "kind": "apply_modifier_to_item",
+##     "item_attribute": "damage_bonus_dice",   ← stat key on the item
+##     "value_dice": "1d6"                       ← dice expression for the bonus
+##     OR "value": 1                             ← fixed-int alternative
+##     "stacking_group": "striking"
+##   }
+##
+## Production note: InventoryItem doesn't yet expose a ModifierContainer (it
+## carries its own static stats). Session 9 records the contract per-target;
+## the inventory subsystem reads the active_effect on tick to apply the
+## bonus during attack damage rolls (parallel to modify_cell_state's pattern).
+func _apply_modifier_to_item(
+		step: Dictionary,
+		spell_choice: SpellChoice,
+		target_descriptor: TargetDescriptor,
+		targets_by_id: Dictionary,
+		caster_context: CasterContext) -> Dictionary:
+	var item_attribute := String(step.get("item_attribute", ""))
+	var value_dice := String(step.get("value_dice", ""))
+	var value := int(step.get("value", 0))
+	var stacking_group := String(step.get("stacking_group", ""))
+	var source_id := _make_modifier_source_id(spell_choice.spell_key, caster_context.caster_id)
+	var per_target: Dictionary = {}
+	for tid in target_descriptor.target_ids:
+		# Item resolution is via targets_by_id (item id → InventoryItem) when
+		# available; fall back to recording the contract by target_id alone.
+		var item = targets_by_id.get(tid, null)
+		per_target[tid] = {
+			"applied": true,
+			"target_item_id": tid,
+			"item_attribute": item_attribute,
+			"value_dice": value_dice,
+			"value": value,
+			"stacking_group": stacking_group,
+			"source_id": source_id,
+			"item_present": item != null,
+		}
+	return {
+		"per_target": per_target,
+		"item_modifier_source": source_id,
+	}
 
 
 func _apply_damage_resistance(
@@ -641,7 +909,14 @@ func _grant_mirror_images(
 		step: Dictionary,
 		caster_context: CasterContext,
 		caster_entity: Variant) -> Dictionary:
+	## Per ACKS RAW (acore_spell_catalog_k-w_summary.xml): Mirror Image creates
+	## 1d4 figments. Step may carry `count` (fixed), `count_dice` (expression
+	## like "1d4"), and `count_per_level`. All three sum.
 	var count := int(step.get("count", 0))
+	var dice_expr := String(step.get("count_dice", ""))
+	if not dice_expr.is_empty() and _dice_system != null:
+		var roll = _dice_system.roll_expression(dice_expr, "spell_mirror_images")
+		count += int(roll.modified_total) if roll != null else 0
 	var per_level := int(step.get("count_per_level", 0))
 	if per_level > 0:
 		count += per_level * caster_context.caster_level
@@ -702,6 +977,82 @@ func _movement_mode_grant(
 	return {"per_target": per_target, "rate_feet": rate_feet}
 
 
+## Resolves a `modify_cell_state` resolution step. The step payload follows
+## the GDD §15.3 cell-mutation schema:
+##
+##   {
+##     "kind": "modify_cell_state",
+##     "cell_mutation": {
+##       "shape": "add_light_source" | "add_darkness_source" | "add_lock" | ...,
+##       "radius_feet": int  (light/darkness),
+##       "lock_strength": "magical" | "mundane" (lock variants),
+##       ...
+##     }
+##   }
+##
+## The resolver records the mutation as a structured outcome and binds it to
+## the target cell from `target_descriptor` (origin_cell for area_at_point or
+## the first target_cell otherwise). Active map application is consumed
+## downstream — DungeonLightManager / dungeon door subsystem read the mutation
+## off the active_effect when it lands. Session 4 wires the contract; the
+## per-shape map handlers land in their own polish session (per the roadmap
+## §15.4 — MapMutationDispatcher integration).
+func _modify_cell_state(
+		step: Dictionary,
+		target_descriptor: TargetDescriptor,
+		caster_context: CasterContext) -> Dictionary:
+	var mutation: Dictionary = step.get("cell_mutation", {})
+	var shape := String(mutation.get("shape", ""))
+	if shape.is_empty():
+		return {"applied": false, "reason": "modify_cell_state: empty cell_mutation.shape"}
+	var target_cell: Vector3i = target_descriptor.origin_cell
+	if target_descriptor.target_cells.size() > 0:
+		target_cell = target_descriptor.target_cells[0]
+	return {
+		"applied": true,
+		"shape": shape,
+		"target_cell": target_cell,
+		"map_context": caster_context.map_context,
+		"mutation": mutation,
+	}
+
+
+## Resolves an `open_close_lock` resolution step (Knock + Wizard Lock).
+## Knock opens stuck/barred/locked/held/wizard-locked doors and similar
+## fastenings. Wizard Lock secures a portal magically. The step payload:
+##
+##   {
+##     "kind": "open_close_lock",
+##     "operation": "open" | "lock_magical",
+##     "defeats": ["mundane_lock", "stuck", "wizard_lock_for_1_turn", "held"],
+##     "wizard_lock_suspended_turns": 1  (Knock-only; suspends wizard lock)
+##   }
+##
+## The resolver records the structured outcome — the dungeon door subsystem
+## reads the active_effect on tick to apply the actual lock state mutation.
+## Session 6 wires the contract; per-shape map handlers (door state changes,
+## Pick Lock gating against magical locks) integrate when the dungeon door
+## subsystem reads spell effects.
+func _open_close_lock(
+		step: Dictionary,
+		target_descriptor: TargetDescriptor,
+		caster_context: CasterContext) -> Dictionary:
+	var operation := String(step.get("operation", "open"))
+	var defeats: Array = step.get("defeats", [])
+	var target_cell: Vector3i = target_descriptor.origin_cell
+	if target_descriptor.target_cells.size() > 0:
+		target_cell = target_descriptor.target_cells[0]
+	return {
+		"applied": true,
+		"operation": operation,
+		"defeats": defeats,
+		"target_cell": target_cell,
+		"map_context": caster_context.map_context,
+		"caster_level": caster_context.caster_level,
+		"wizard_lock_suspended_turns": int(step.get("wizard_lock_suspended_turns", 0)),
+	}
+
+
 func _query_game_state(
 		step: Dictionary,
 		caster_context: CasterContext,
@@ -717,6 +1068,96 @@ func _query_game_state(
 		"reveals": step.get("reveals", []),
 		"response_format": step.get("response_format", ""),
 		"results": [],
+	}
+
+
+## Teleports each target in target_descriptor.target_ids to the destination
+## cell carried on target_descriptor.origin_cell (or step.destination_cell as
+## an explicit override). Supports two error_profiles:
+##   "precise"   — always lands exactly on the chosen cell (Dimension Door RAW).
+##   "imprecise" — can scatter 1d10 cells off in a random direction (Teleport RAW).
+##
+## Per Dimension Door RAW (acore_spell_catalog_a-i_summary.xml):
+##   - Subject is transported instantly up to 360' from the caster.
+##   - "If the destination lies within a solid object, the spell fails automatically."
+##   - Unwilling targets save vs Spells to avoid transport.
+##
+## Step payload:
+##   {
+##     "kind": "teleport",
+##     "max_range_feet": 360,                    ← cap; resolver does NOT enforce
+##                                                 here (target picker should clamp);
+##                                                 stored in outcome for log/UI.
+##     "error_profile": "precise" | "imprecise",
+##     "destination_cell": [x, y, z]             ← optional override; otherwise
+##                                                 read from target_descriptor.
+##                                                 origin_cell.
+##     "fail_on_solid_object": true              ← per Dimension Door RAW.
+##   }
+##
+## Outcome per_target:
+##   { applied: bool, destination_cell: Vector3i, scatter_offset: Vector3i,
+##     error_profile: String, saved: bool, reason?: String }
+##
+## On save success (unwilling target), the per-target entry has applied=false
+## with reason="saved". On solid-object failure, applied=false reason="solid_object".
+## The actual movement of the entity is delegated to the runtime layer (combat
+## controller / map state), reading the destination_cell from the outcome — the
+## resolver records the contract (parallel to modify_cell_state).
+func _teleport(
+		step: Dictionary,
+		target_descriptor: TargetDescriptor,
+		targets_by_id: Dictionary,
+		caster_entity: Variant,
+		caster_context: CasterContext,
+		save_results: Dictionary,
+		save_spec: Dictionary) -> Dictionary:
+	var max_range_feet := int(step.get("max_range_feet", 360))
+	var error_profile := String(step.get("error_profile", "precise"))
+	var fail_on_solid := bool(step.get("fail_on_solid_object", true))
+	var dest_override = step.get("destination_cell", null)
+	var on_save_negate := String(save_spec.get("on_success", "")) == "negate"
+	# Resolve destination cell: explicit step override, else target_descriptor.
+	var destination: Vector3i = target_descriptor.origin_cell
+	if dest_override is Array and (dest_override as Array).size() == 3:
+		destination = Vector3i(int(dest_override[0]), int(dest_override[1]), int(dest_override[2]))
+	# Imprecise scatter (1d10 cells off in a random direction). Deterministic via
+	# DiceSystem so test seeds reproduce; precise profile leaves offset zero.
+	var scatter_offset: Vector3i = Vector3i.ZERO
+	if error_profile == "imprecise" and _dice_system != null:
+		var dx := int(_dice_system.roll_digital(10, 1, -5, "spell_teleport_dx").modified_total)
+		var dy := int(_dice_system.roll_digital(10, 1, -5, "spell_teleport_dy").modified_total)
+		scatter_offset = Vector3i(dx, dy, 0)
+		destination += scatter_offset
+	var per_target: Dictionary = {}
+	for tid in target_descriptor.target_ids:
+		# Unwilling target save check (Dimension Door RAW).
+		if on_save_negate and bool((save_results.get(tid, {}) as Dictionary).get("succeeded", false)):
+			per_target[tid] = {
+				"applied": false, "reason": "saved",
+				"destination_cell": destination, "error_profile": error_profile,
+				"saved": true,
+			}
+			continue
+		# Solid-object check (the runtime map layer must short-circuit here when
+		# destination is impassable; resolver records the contract). For Session 10
+		# the resolver records `solid_object_check_pending: true` and the consumer
+		# can flip to applied=false with reason="solid_object" if appropriate.
+		per_target[tid] = {
+			"applied": true,
+			"destination_cell": destination,
+			"scatter_offset": scatter_offset,
+			"error_profile": error_profile,
+			"max_range_feet": max_range_feet,
+			"fail_on_solid_object": fail_on_solid,
+			"saved": false,
+		}
+	return {
+		"per_target": per_target,
+		"destination_cell": destination,
+		"scatter_offset": scatter_offset,
+		"error_profile": error_profile,
+		"max_range_feet": max_range_feet,
 	}
 
 
@@ -738,6 +1179,10 @@ func _dispatch_custom(
 		"targets_by_id": targets_by_id,
 		"caster_entity": caster_entity,
 		"step_payload": step,
+		# Session 8: pass the active_effect tracker so resolvers like
+		# DispelMagicResolver can call dispel_check directly. Resolvers that
+		# don't need it can ignore.
+		"effect_tracker": _effect_tracker,
 	}
 	if resolver.has_method("resolve"):
 		return resolver.resolve(args)
@@ -752,7 +1197,7 @@ func _roll_saves_for_targets(
 		target_descriptor: TargetDescriptor,
 		targets_by_id: Dictionary,
 		save_spec: Dictionary,
-		_caster_context: CasterContext) -> Dictionary:
+		caster_context: CasterContext) -> Dictionary:
 	var category := String(save_spec.get("category", "none"))
 	if category == "none":
 		return {}
@@ -760,16 +1205,46 @@ func _roll_saves_for_targets(
 	if save_key.is_empty():
 		return {}
 	var modifier := int(save_spec.get("modifier", 0))
-	# Fear-tagged saves: ACKS rule is +1 vs magical fear from Bless and other
-	# anti-fear effects, plus auto-success for fear-immune creatures
-	# (berserk_rage, berserkergang, barbarian_savagery — see ConditionCatalog
-	# `immune_to_fear` flag). Spells set `is_fear_save: true` on save_spec
-	# (Cause Fear, Scare, Phantasmal Killer, etc.). The save category itself
-	# is usually save_spells; the fear modifier stacks on top.
+	# Tagged-save bonuses — each one stacks on the d20 roll:
+	#
+	#   is_fear_save: true   → consults save_vs_fear (Bless +1, Bane -1, plus
+	#                          fear-immunity auto-success for berserkers etc.)
+	#   damage_type: <type>  → consults save_vs_<type> (Resist Cold +2 vs cold,
+	#                          Resist Fire +2 vs fire, etc.)
+	#   attacker_alignment:  → consults save_vs_<alignment> (Protection from Evil
+	#     <alignment>          +1 vs chaotic, Protection from Good +1 vs lawful).
+	#                          Defaults to caster_context.alignment when not
+	#                          explicitly set; spells can override (e.g., a
+	#                          chaotic creature's spell carries the tag implicitly).
+	#
+	# All bonuses sum into the d20 roll modifier. Each tag is independently
+	# unit-tested; modifier write side is each spell's apply_modifier step.
 	var is_fear_save := bool(save_spec.get("is_fear_save", false))
+	var damage_type := String(save_spec.get("damage_type", ""))
+	var attacker_alignment := String(save_spec.get("attacker_alignment", ""))
+	# Auto-fill attacker_alignment from caster context when the save_spec asks
+	# for alignment-tagged stacking but doesn't pin a specific alignment. This
+	# lets spell catalog entries say `consult_caster_alignment: true` once and
+	# get correct chaotic/lawful tagging at cast time.
+	if attacker_alignment.is_empty() and bool(save_spec.get("consult_caster_alignment", false)):
+		if caster_context != null:
+			attacker_alignment = String(caster_context.alignment)
+	# HD-threshold exemption: some spells (Confusion: HD<3 no save, only HD>2 may
+	# save). exempt_under_hd=N means creatures with HD<N get no save (auto-fail
+	# → effect applies).
+	var exempt_under_hd := int(save_spec.get("exempt_under_hd", 0))
 	var out: Dictionary = {}
 	for tid in target_descriptor.target_ids:
 		var entity = targets_by_id.get(tid, null)
+		# HD-exemption auto-fail: low-HD creatures get no save (Confusion RAW).
+		if exempt_under_hd > 0:
+			var entity_hd := _get_entity_hd(entity)
+			if entity_hd < exempt_under_hd:
+				out[tid] = {
+					"rolled": 0, "target": 0, "succeeded": false,
+					"category": category, "auto_fail_reason": "below_hd_threshold",
+					"entity_hd": entity_hd, "exempt_under_hd": exempt_under_hd}
+				continue
 		# Auto-success: fear-immune target on a fear-tagged save.
 		if is_fear_save and _entity_is_immune_to_fear(entity):
 			out[tid] = {
@@ -779,19 +1254,85 @@ func _roll_saves_for_targets(
 		var target_value := 17  # safe default for entities without saves
 		if entity != null and entity.has_method("get_effective_save"):
 			target_value = int(entity.get_effective_save(save_key))
-		# Stack save_vs_fear modifier on the rolled total when this is a
-		# fear-tagged save. (Bless writes save_vs_fear +1; Bane writes -1.)
 		var fear_bonus := 0
-		if is_fear_save and entity != null and entity.has_method("get_effective_save"):
-			fear_bonus = int(entity.get_effective_save("save_vs_fear"))
-		var roll = _dice_system.roll_digital(20, 1, modifier + fear_bonus, "spell_save_" + category)
+		var element_bonus := 0
+		var alignment_bonus := 0
+		if entity != null and entity.has_method("get_effective_save"):
+			if is_fear_save:
+				fear_bonus = int(entity.get_effective_save("save_vs_fear"))
+			if not damage_type.is_empty():
+				element_bonus = int(entity.get_effective_save("save_vs_" + damage_type))
+			if not attacker_alignment.is_empty():
+				alignment_bonus = int(entity.get_effective_save("save_vs_" + attacker_alignment))
+		var total_modifier := modifier + fear_bonus + element_bonus + alignment_bonus
+		var roll = _dice_system.roll_digital(20, 1, total_modifier, "spell_save_" + category)
 		var roll_total := int(roll.modified_total) if roll != null else 0
-		# ACKS save rules: roll d20 + modifier ≥ save target → success.
 		var succeeded := roll_total >= target_value
 		out[tid] = {
 			"rolled": roll_total, "target": target_value, "succeeded": succeeded,
-			"category": category, "fear_bonus": fear_bonus, "is_fear_save": is_fear_save}
+			"category": category,
+			"fear_bonus": fear_bonus, "is_fear_save": is_fear_save,
+			"element_bonus": element_bonus, "damage_type": damage_type,
+			"alignment_bonus": alignment_bonus, "attacker_alignment": attacker_alignment,
+		}
 	return out
+
+
+func _get_entity_hd(entity: Variant) -> int:
+	## Returns the entity's HD/level for HD-threshold checks. CharacterData uses
+	## `level`; Combatants and monster fixtures may expose `hit_dice` or
+	## `get_hit_dice()`. Defaults to 1 when unknown — the safe permissive choice
+	## for save logic (avoids accidentally exempting unknown entities).
+	if entity == null:
+		return 1
+	if entity.has_method("get_hit_dice"):
+		return int(entity.get_hit_dice())
+	if "hit_dice" in entity:
+		return int(entity.hit_dice)
+	if "level" in entity:
+		return int(entity.level)
+	return 1
+
+
+## Walks target_descriptor.target_ids; returns the subset blocked by Anti-Magic
+## Shell or Globe of Invulnerability per RAW. Self-cast (caster targets self
+## while the caster is the protected entity) is NOT blocked — RAW: "Self-range
+## and touch-range spells used by the caster on himself are not blocked."
+##
+## Anti-Magic Shell: any creature inside the shell is blocked unless caster ==
+## target. (RAW: shell blocks spells entering OR leaving; self-on-self exempt.)
+##
+## Globe of Invulnerability: blocks if target has the flag AND spell_level ≤
+## metadata.blocks_spell_levels_up_to (Minor: ≤3, Major: ≤4). Self-cast exempt.
+func _filter_targets_blocked_by_protections(
+		target_descriptor: TargetDescriptor,
+		targets_by_id: Dictionary,
+		spell_choice: SpellChoice,
+		caster_context: CasterContext) -> Array:
+	var blocked: Array = []
+	var caster_id: String = caster_context.caster_id if caster_context != null else ""
+	for tid in target_descriptor.target_ids:
+		# Self-cast exemption — caster targeting self bypasses both shells.
+		if String(tid) == caster_id:
+			continue
+		var entity = targets_by_id.get(tid, null)
+		var flags = _get_flags(entity)
+		if flags == null:
+			continue
+		# Anti-Magic Shell: any spell that crosses the shell boundary is blocked.
+		if flags.has_flag("has_anti_magic_shell"):
+			blocked.append(tid)
+			continue
+		# Globe of Invulnerability: blocks ≤ N-level spells.
+		if flags.has_flag("has_globe_of_invulnerability"):
+			var entries: Array = flags.get_flag_source_entries("has_globe_of_invulnerability")
+			if entries.size() > 0:
+				var meta: Dictionary = entries[0].get("metadata", {})
+				var blocks_up_to: int = int(meta.get("blocks_spell_levels_up_to", 0))
+				if spell_choice.level <= blocks_up_to:
+					blocked.append(tid)
+					continue
+	return blocked
 
 
 func _entity_is_immune_to_fear(entity: Variant) -> bool:

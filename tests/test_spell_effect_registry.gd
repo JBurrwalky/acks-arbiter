@@ -41,9 +41,12 @@ func test_has_effect_for_mvp_spells() -> void:
 
 func test_no_effect_for_unbound_spells() -> void:
 	var reg := _make_registry()
-	# burning_hands is in the catalog but not bound in Session 1.
-	check(not reg.has_effect("burning_hands"),
-		"SpellEffectRegistry: burning_hands should not have effect (not bound this session)")
+	# Pick a spell that's still unbound at the current session boundary.
+	# After Sessions 4-14 (L6 arcane / L5 divine bound), `adaptation` (L5
+	# arcane environmental-survival shell) remains unbound — a true
+	# late-tier spell awaiting its dedicated session.
+	check(not reg.has_effect("adaptation"),
+		"SpellEffectRegistry: adaptation should not have effect (not yet bound)")
 
 
 func test_get_effect_payload_returns_target_spec() -> void:

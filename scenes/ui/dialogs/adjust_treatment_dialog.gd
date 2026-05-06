@@ -20,9 +20,12 @@ signal confirmed(options: Dictionary)
 signal cancelled
 
 const PANEL_WIDTH := 480
-const HEADING_COLOR := Color(0.95, 0.90, 0.78, 1.0)
-const BODY_COLOR := Color(0.85, 0.80, 0.70, 1.0)
-const ACCENT_COLOR := Color(0.55, 0.80, 0.55, 1.0)
+## Vellum chrome installs a dark text theme; the per-label color overrides
+## below are no-ops by default (left in place so a future palette tweak can
+## restore semantic accents without re-threading every call site).
+const HEADING_COLOR := UiSurfaceStyles.VELLUM_TEXT_COLOR
+const BODY_COLOR := UiSurfaceStyles.VELLUM_TEXT_COLOR
+const ACCENT_COLOR := Color(0.20, 0.45, 0.20, 1.0)
 
 var _backdrop: ColorRect = null
 var _panel: PanelContainer = null
@@ -83,6 +86,7 @@ func _build_ui() -> void:
 	_panel.set_anchors_preset(Control.PRESET_CENTER)
 	_panel.custom_minimum_size = Vector2(PANEL_WIDTH, 0)
 	_panel.position = Vector2(-PANEL_WIDTH / 2.0, -160)
+	UiSurfaceStyles.apply_framed_window_chrome(_panel)
 	add_child(_panel)
 
 	var margin := MarginContainer.new()

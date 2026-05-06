@@ -152,11 +152,13 @@ func test_unknown_spell_key_fails_no_slot() -> void:
 
 func test_spell_without_effect_fails_no_slot() -> void:
 	_build_resolver()
-	# Pick a spell that's in the catalog but has no `effect` field yet
-	# (e.g., burning_hands — not in MVP).
+	# Pick a spell that's in the catalog but has no `effect` field yet.
+	# After Sessions 4-14 bind through L6 arcane / L5 divine, `adaptation`
+	# (L5 arcane environmental-survival shell) remains unbound — a true
+	# late-tier spell awaiting its dedicated session.
 	var caster := _make_caster("c2", 5)
 	var ctx := _make_caster_context(caster)
-	var choice := SpellChoice.new("burning_hands", 1)
+	var choice := SpellChoice.new("adaptation", 5)
 	var target := TargetDescriptor.new()
 	var result := _resolver.resolve(ctx, choice, target, caster, {})
 	check(not result.success, "Unimplemented spell: success false")

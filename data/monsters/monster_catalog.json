@@ -2483,5 +2483,333 @@
       "target_tie_breaker": "random",
       "morale_style": "fragile"
     }
+  },
+
+  {
+    "id": "skeleton",
+    "name": "Skeleton",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["undead"],
+    "sub_types": [],
+    "alignment": "chaotic",
+    "intelligence": "non",
+    "size_category": "medium",
+    "hit_dice": { "base": 1, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 2,
+    "attack_routines": [
+      { "routine_name": "melee", "usage": "default",
+        "attacks": [ { "attack_type": "weapon", "count": 1, "damage": "1d6", "to_hit_modifier": 0, "special_effect": null } ] }
+    ],
+    "save_as": { "class": "F", "level": 1 },
+    "morale": 4,
+    "xp": 10,
+    "movement": { "land": { "exploration": 60, "combat": 20 } },
+    "terrain_affinity": [],
+    "special_abilities": [],
+    "immunities": ["sleep", "charm", "hold", "fear", "mind_affecting"],
+    "resistances": [],
+    "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "loose", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "zombie",
+    "name": "Zombie",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["undead"],
+    "sub_types": [],
+    "alignment": "chaotic",
+    "intelligence": "non",
+    "size_category": "medium",
+    "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 1,
+    "attack_routines": [
+      { "routine_name": "melee", "usage": "default",
+        "attacks": [ { "attack_type": "weapon", "count": 1, "damage": "1d8", "to_hit_modifier": 0, "special_effect": null } ] }
+    ],
+    "save_as": { "class": "F", "level": 1 },
+    "morale": 4,
+    "xp": 20,
+    "movement": { "land": { "exploration": 40, "combat": 15 } },
+    "terrain_affinity": [],
+    "special_abilities": [
+      { "ability_id": "always_acts_last", "description": "Zombies always act last in initiative.", "hook_type": "flag", "effect": { "flag": "always_acts_last" } }
+    ],
+    "immunities": ["sleep", "charm", "hold", "fear", "mind_affecting"],
+    "resistances": [],
+    "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "loose", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "snake_normal",
+    "name": "Snake (Normal)",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["beast"],
+    "sub_types": ["reptile"],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "small",
+    "hit_dice": { "base": 1, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 1,
+    "attack_routines": [
+      { "routine_name": "melee", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "1d3", "to_hit_modifier": 0, "special_effect": null } ] }
+    ],
+    "save_as": { "class": "F", "level": 1 },
+    "morale": 7,
+    "xp": 10,
+    "movement": { "land": { "exploration": 60, "combat": 20 } },
+    "terrain_affinity": [],
+    "special_abilities": [],
+    "immunities": [], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "medium",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fragile"
+    }
+  },
+
+  {
+    "id": "snake_poisonous",
+    "name": "Snake (Poisonous)",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["beast"],
+    "sub_types": ["reptile"],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "small",
+    "hit_dice": { "base": 1, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 1,
+    "attack_routines": [
+      { "routine_name": "melee", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "1d4", "to_hit_modifier": 0, "special_effect": "poison_save_or_die" } ] }
+    ],
+    "save_as": { "class": "F", "level": 1 },
+    "morale": 7,
+    "xp": 13,
+    "movement": { "land": { "exploration": 60, "combat": 20 } },
+    "terrain_affinity": [],
+    "special_abilities": [],
+    "immunities": [], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "medium",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fragile"
+    }
+  },
+
+  {
+    "id": "elemental_air",
+    "name": "Elemental, Air",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["elemental"],
+    "sub_types": ["air"],
+    "alignment": "neutral",
+    "intelligence": "average",
+    "size_category": "large",
+    "hit_dice": { "base": 8, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 5,
+    "attack_routines": [
+      { "routine_name": "melee", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "2d8", "to_hit_modifier": 0, "special_effect": null } ] }
+    ],
+    "save_as": { "class": "F", "level": 8 },
+    "morale": 12,
+    "xp": 1300,
+    "movement": { "land": { "exploration": 0, "combat": 0 }, "fly": { "exploration": 360, "combat": 120 } },
+    "terrain_affinity": [],
+    "special_abilities": [],
+    "immunities": ["non_magical_weapons"], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "elemental_earth",
+    "name": "Elemental, Earth",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["elemental"],
+    "sub_types": ["earth"],
+    "alignment": "neutral",
+    "intelligence": "average",
+    "size_category": "large",
+    "hit_dice": { "base": 8, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 7,
+    "attack_routines": [
+      { "routine_name": "melee", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "3d6", "to_hit_modifier": 0, "special_effect": null } ] }
+    ],
+    "save_as": { "class": "F", "level": 8 },
+    "morale": 12,
+    "xp": 1300,
+    "movement": { "land": { "exploration": 60, "combat": 20 } },
+    "terrain_affinity": [],
+    "special_abilities": [],
+    "immunities": ["non_magical_weapons"], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "elemental_fire",
+    "name": "Elemental, Fire",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["elemental"],
+    "sub_types": ["fire"],
+    "alignment": "neutral",
+    "intelligence": "average",
+    "size_category": "large",
+    "hit_dice": { "base": 8, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 6,
+    "attack_routines": [
+      { "routine_name": "melee", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "1d8", "to_hit_modifier": 0, "special_effect": "ignite" } ] }
+    ],
+    "save_as": { "class": "F", "level": 8 },
+    "morale": 12,
+    "xp": 1300,
+    "movement": { "land": { "exploration": 120, "combat": 40 } },
+    "terrain_affinity": [],
+    "special_abilities": [],
+    "immunities": ["non_magical_weapons", "fire"], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "elemental_water",
+    "name": "Elemental, Water",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["elemental"],
+    "sub_types": ["water"],
+    "alignment": "neutral",
+    "intelligence": "average",
+    "size_category": "large",
+    "hit_dice": { "base": 8, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 5,
+    "attack_routines": [
+      { "routine_name": "melee", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "2d8", "to_hit_modifier": 0, "special_effect": null } ] }
+    ],
+    "save_as": { "class": "F", "level": 8 },
+    "morale": 12,
+    "xp": 1300,
+    "movement": { "land": { "exploration": 30, "combat": 10 }, "swim": { "exploration": 240, "combat": 80 } },
+    "terrain_affinity": [],
+    "special_abilities": [],
+    "immunities": ["non_magical_weapons"], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "invisible_stalker",
+    "name": "Invisible Stalker",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["elemental"],
+    "sub_types": ["air"],
+    "alignment": "neutral",
+    "intelligence": "average",
+    "size_category": "large",
+    "hit_dice": { "base": 8, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 7,
+    "attack_routines": [
+      { "routine_name": "melee", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "4d4", "to_hit_modifier": 0, "special_effect": null } ] }
+    ],
+    "save_as": { "class": "F", "level": 8 },
+    "morale": 12,
+    "xp": 1700,
+    "movement": { "land": { "exploration": 0, "combat": 0 }, "fly": { "exploration": 360, "combat": 120 } },
+    "terrain_affinity": [],
+    "special_abilities": [
+      { "ability_id": "permanent_invisibility", "description": "Always invisible.", "hook_type": "flag", "effect": { "flag": "is_invisible" } }
+    ],
+    "immunities": ["non_magical_weapons"], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "insect_swarm_4hd",
+    "name": "Insect Swarm",
+    "variant": null,
+    "source": "ACKS Core",
+    "monster_types": ["beast"],
+    "sub_types": ["swarm", "vermin"],
+    "alignment": "neutral",
+    "intelligence": "non",
+    "size_category": "large",
+    "hit_dice": { "base": 4, "modifier": 0, "special_ability_stars": 0 },
+    "armor_class": 0,
+    "attack_routines": [
+      { "routine_name": "melee", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "1d4", "to_hit_modifier": 0, "special_effect": "auto_drive_off_under_3hd" } ] }
+    ],
+    "save_as": { "class": "F", "level": 4 },
+    "morale": 12,
+    "xp": 80,
+    "movement": { "land": { "exploration": 30, "combat": 10 }, "fly": { "exploration": 60, "combat": 20 } },
+    "terrain_affinity": [],
+    "special_abilities": [],
+    "immunities": ["sleep", "charm", "hold"], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
   }
 ]

@@ -65,13 +65,20 @@ func _build_ui() -> void:
 		size_flags_vertical = Control.SIZE_EXPAND_FILL
 		custom_minimum_size = Vector2(0, 350)
 	else:
-		set_anchors_preset(Control.PRESET_CENTER)
+		# Anchor all four corners at viewport center, then push the offsets
+		# out symmetrically so the rect is centered (700×500 around midpoint).
+		anchor_left = 0.5
+		anchor_right = 0.5
+		anchor_top = 0.5
+		anchor_bottom = 0.5
+		offset_left = -350
+		offset_right = 350
+		offset_top = -250
+		offset_bottom = 250
 		custom_minimum_size = Vector2(700, 500)
-		size = Vector2(700, 500)
-		offset_left -= 50
-		offset_top -= 50
-		offset_right -= 50
-		offset_bottom -= 50
+		# Vellum chrome to match SettlementMenu and other modals
+		# (per docs/coding_conventions.md §13.5).
+		UiSurfaceStyles.apply_framed_window_chrome(self)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 16)

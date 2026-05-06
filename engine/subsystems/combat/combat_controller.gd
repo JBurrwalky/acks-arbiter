@@ -49,6 +49,13 @@ var voxel_map: VoxelMapData = null
 ## leaves combat in pre-Session-2.5 behavior (declared casts produce no effect).
 var casting_resolver: CastingResolver = null
 
+## Optional SpawnRosterIntegrator (P3) — adds Combatants to the roster mid-
+## combat for spawn-producing spells (Animate Dead, Sticks to Snakes, Conjure
+## Elemental, Invisible Stalker, Insect Plague). Connected on combat start,
+## disconnected on combat end. Null leaves spawn-spell active_effects intact
+## but with no runtime roster integration (pre-P3 behavior).
+var spawn_roster_integrator: SpawnRosterIntegrator = null
+
 ## Current state
 var round_number: int = 0
 var phase: int = Phase.NOT_STARTED
@@ -299,7 +306,29 @@ func get_available_actions(combatant_id: String) -> Array[String]:
 			actions.append("fighting_withdrawal")
 			actions.append("full_retreat")
 
-	if can_attack:
+	# Sanctuary RAW (acore_spell_catalog_k-w_summary.xml): "The warded creature
+	# may not take offensive actions while sanctuary lasts. The warded creature
+	# may cast non-offensive spells to aid companions." When the combatant
+	# carries the cannot_be_targeted_by_attacks flag, melee/ranged attacks are
+	# blocked. Spell casting stays available — the spell-side gate (refusing to
+	# offer offensive spells in the picker) is a UI-layer polish; mechanically
+	# the resolver knows whether a spell is offensive via its target_spec's
+	# friend_or_foe / damage steps.
+	var sanctuary_blocks_offense: bool = false
+	var telekinesis_blocks_offense: bool = false
+	if c.has_method("get_flags"):
+		var flags := c.get_flags()
+		if flags != null and flags.has_flag("cannot_be_targeted_by_attacks"):
+			sanctuary_blocks_offense = true
+		# Telekinesis RAW (acore_spell_catalog_k-w_summary.xml): "While
+		# concentrating, the caster may move no more than half speed. While
+		# concentrating, the caster may make no attacks and cast no spells."
+		# When the combatant is the caster of an active telekinesis effect,
+		# attack + spell options are dropped and movement is capped.
+		if flags != null and flags.has_flag("is_telekinesis_caster"):
+			telekinesis_blocks_offense = true
+
+	if can_attack and not sanctuary_blocks_offense and not telekinesis_blocks_offense:
 		if c.is_character:
 			# Check weapon type for PCs
 			if c.has_melee_capability():
@@ -312,7 +341,12 @@ func get_available_actions(combatant_id: String) -> Array[String]:
 			actions.append("attack_melee")
 			if ranged_resolver != null:
 				actions.append("attack_ranged")
-		# Spell casting shown but disabled until F-3; include for button visibility
+	if can_attack and not telekinesis_blocks_offense:
+		# Spell casting stays available even under Sanctuary — RAW allows
+		# non-offensive spells. The picker-side filter for offensive vs aid
+		# spells is a UI polish; the resolver is the authoritative gate.
+		# Under Telekinesis: ALL spellcasting blocked (RAW: "may cast no spells"
+		# while concentrating).
 		actions.append("cast_spell")
 
 	# Sheathe & Draw: available when either move or attack is available (PC only).
@@ -402,6 +436,10 @@ func _start_combat() -> Dictionary:
 	# --- Spell hooks: on_combat_start ---
 	if spell_hooks != null:
 		spell_hooks.on_combat_start(roster)
+
+	# --- P3: SpawnRosterIntegrator subscribes to spell_effect_applied ---
+	if spawn_roster_integrator != null:
+		spawn_roster_integrator.connect_signals()
 
 	return {
 		"phase": "not_started",
@@ -2436,6 +2474,10 @@ func _emit_combat_ended() -> Dictionary:
 		# preferred; fall back to first PC cell.
 		outcome["combat_origin_cell"] = _compute_combat_origin_cell(roster)
 		outcome["exploration_context"] = GameState.exploration_context
+
+	# --- P3: SpawnRosterIntegrator unsubscribes so spawns don't leak across encounters ---
+	if spawn_roster_integrator != null:
+		spawn_roster_integrator.disconnect_signals()
 
 	EventBus.combat_ended.emit(encounter_id, outcome)
 	return outcome

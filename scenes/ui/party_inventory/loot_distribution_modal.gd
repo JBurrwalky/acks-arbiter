@@ -122,14 +122,7 @@ func _build_ui() -> void:
 	_panel.anchor_top = 0.1
 	_panel.anchor_bottom = 0.9
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.15, 0.12, 0.08, 0.95)
-	style.border_color = Color(0.46, 0.33, 0.19, 0.9)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(4)
-	style.set_content_margin_all(16)
-	_panel.add_theme_stylebox_override("panel", style)
+	UiSurfaceStyles.apply_framed_window_chrome(_panel)
 	add_child(_panel)
 
 	var vbox := VBoxContainer.new()
@@ -143,7 +136,6 @@ func _build_ui() -> void:
 	_title_label = Label.new()
 	_title_label.text = "LOOT FOUND"
 	_title_label.add_theme_font_size_override("font_size", 16)
-	_title_label.add_theme_color_override("font_color", Color(0.95, 0.88, 0.7))
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_row.add_child(_title_label)
 
@@ -159,13 +151,11 @@ func _build_ui() -> void:
 	var gold_header := Label.new()
 	gold_header.text = "Gold"
 	gold_header.add_theme_font_size_override("font_size", 14)
-	gold_header.add_theme_color_override("font_color", Color(0.9, 0.82, 0.6))
 	vbox.add_child(gold_header)
 
 	_gold_summary_label = Label.new()
 	_gold_summary_label.text = ""
 	_gold_summary_label.add_theme_font_size_override("font_size", 12)
-	_gold_summary_label.add_theme_color_override("font_color", Color(0.85, 0.75, 0.5))
 	_gold_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	vbox.add_child(_gold_summary_label)
 
@@ -173,7 +163,6 @@ func _build_ui() -> void:
 	_share_preview_label = Label.new()
 	_share_preview_label.text = ""
 	_share_preview_label.add_theme_font_size_override("font_size", 11)
-	_share_preview_label.add_theme_color_override("font_color", Color(0.7, 0.65, 0.55))
 	_share_preview_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	vbox.add_child(_share_preview_label)
 
@@ -183,7 +172,6 @@ func _build_ui() -> void:
 	var items_header := Label.new()
 	items_header.text = "Items"
 	items_header.add_theme_font_size_override("font_size", 14)
-	items_header.add_theme_color_override("font_color", Color(0.9, 0.82, 0.6))
 	vbox.add_child(items_header)
 
 	var items_scroll := ScrollContainer.new()
@@ -200,7 +188,6 @@ func _build_ui() -> void:
 	_items_empty_label = Label.new()
 	_items_empty_label.text = "No items to distribute."
 	_items_empty_label.add_theme_font_size_override("font_size", 11)
-	_items_empty_label.add_theme_color_override("font_color", Color(0.6, 0.55, 0.45))
 	_items_container.add_child(_items_empty_label)
 
 	# Spacer
@@ -292,7 +279,6 @@ func _rebuild_item_rows() -> void:
 		_items_empty_label = Label.new()
 		_items_empty_label.text = "No items to distribute."
 		_items_empty_label.add_theme_font_size_override("font_size", 11)
-		_items_empty_label.add_theme_color_override("font_color", Color(0.6, 0.55, 0.45))
 		_items_container.add_child(_items_empty_label)
 		return
 
@@ -301,7 +287,8 @@ func _rebuild_item_rows() -> void:
 		var warn := Label.new()
 		warn.text = "No party members in range of this cache."
 		warn.add_theme_font_size_override("font_size", 11)
-		warn.add_theme_color_override("font_color", Color(0.95, 0.6, 0.5))
+		warn.add_theme_color_override("font_color",
+			UiSurfaceStyles.VELLUM_WARNING_TEXT_COLOR)
 		_items_container.add_child(warn)
 		_apply_btn.disabled = true
 		return

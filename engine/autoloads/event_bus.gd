@@ -54,6 +54,17 @@ signal mortal_wound_rolled(character_id: String, result: Dictionary)
 ## A combatant successfully fled the combat.
 signal combatant_fled(combatant_id: String)
 
+## A combatant moved (path-walked or teleported). Emitted by MovementResolver
+## from move_along_path (path-cells walked) and set_grid_position_3d (single-
+## cell teleport / forced movement). Subscribers (SpellCombatHooks wall
+## ticks, etc.) read path_cells to detect crossings of persistent area
+## effects. Per-tick subsystem only: not persisted in the combat log.
+##   from_cell:   Vector3i — combatant's position before the move
+##   to_cell:     Vector3i — combatant's position after the move
+##   path_cells:  Array    — cells walked in order, INCLUDING from_cell at index 0
+##                            and to_cell as the final element
+signal combatant_moved(combatant_id: String, from_cell: Vector3i, to_cell: Vector3i, path_cells: Array)
+
 ## A morale check was rolled and resolved.
 ## [param check] keys:
 ##   group_id:  String — monster group or NPC faction being checked
@@ -495,6 +506,12 @@ signal active_effect_expired(character_id: String, effect_id: String)
 
 ## A caster's concentration was broken (damage, failed save, attack, or excessive movement).
 signal concentration_broken(caster_id: String, spell_key: String)
+
+## A summoned elemental's control was lost (caster's concentration broke).
+## Per ACKS RAW: control is PERMANENTLY lost — elemental becomes hostile to
+## conjurer and all in its path. Runtime layer (combat_controller / monster_ai)
+## consumes this signal to flip the elemental's allegiance and re-roster it.
+signal elemental_uncontrolled(elemental_id: String, elemental_type: String, former_caster_id: String)
 
 ## A spell effect was applied to one or more targets.
 ## [param target_ids] is an Array[String] of affected character IDs.

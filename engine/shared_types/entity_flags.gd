@@ -9,15 +9,42 @@ extends RefCounted
 ## case where two separate spells both grant Fly.
 ##
 ## Canonical flag keys:
-##   Movement:   "can_fly", "can_levitate", "can_water_walk", "can_spider_climb",
-##               "can_breathe_water", "is_hasted", "is_slowed"
+##   Movement:   "can_fly", "can_levitate",
+##               "can_water_walk" (Water Walking — 6+1/level turns; ends if subject swims/submerges),
+##               "can_spider_climb",
+##               "can_breathe_water" (Water Breathing — 1 day),
+##               "is_hasted" (Haste — 2x movement + attacks),
+##               "is_slowed" (Slow — 0.5x movement + attacks)
+##               "is_invisible_aura" (Invisibility 10' Radius — center moves with recipient)
 ##   Visibility: "is_invisible", "is_improved_invisible", "is_faerie_fired",
 ##               "has_spell_infravision"
 ##   Protection: "protected_from_normal_missiles", "protected_from_normal_weapons",
-##               "has_death_ward", "has_anti_magic_shell", "is_nondetectable",
+##               "has_death_ward", "has_anti_magic_shell" (L6 — blocks save_spec
+##                  categories spells/staffs_wands; cannot itself be dispelled),
+##               "has_globe_of_invulnerability" (L6 — blocks ≤4th level spells;
+##                  Minor variant L4 blocks ≤3rd),
+##               "is_nondetectable",
 ##               "protected_from_enchanted_melee"
-##   Form:       "is_gaseous", "is_polymorphed", "is_petrified", "is_temporal_stasis"
+##   Form:       "is_gaseous", "is_polymorphed", "is_polymorphed_self" (Polymorph Self),
+##               "is_polymorphed_other" (Polymorph Other — permanent),
+##               "is_petrified", "is_temporal_stasis",
+##               "appears_as_terrain" (Massmorph; willing humanoids as natural terrain)
+##   Scrying:    "wizard_eye_active" (Wizard Eye — concentration, 240' tether)
 ##   Social:     "is_charmed", "is_commanded", "is_geased"
+##   Knowledge:  "can_read_unknown_languages" (Read Languages, 2 turns),
+##               "can_see_invisible" (Detect Invisible),
+##               "has_infravision" (Infravision spell, 1 day, 60' dark sight),
+##               "has_true_seeing" (True Seeing — 120' radius, sees through illusions/invisibility/polymorph/disguise/darkness)
+##   Holding:    "is_telekinetically_held" (Telekinesis — moved by caster concentration),
+##               "is_telekinesis_caster" (Telekinesis — caster-side constraint flag,
+##                  blocks attacks + spells while concentrating)
+##   Repulsion:  "fleeing_dispel_evil" (Dispel Evil — undead/enchanted fleeing the area)
+##   Protection (cont.): "protected_from_normal_weapons" (Protection from Normal Weapons L5)
+##   Warding:    "cannot_be_targeted_by_attacks" (Sanctuary; per-attacker save vs Spells, cached per source_id)
+##   Outsider:   "blocks_enchanted_creature_melee" (Protection from Evil)
+##   Defense:    "is_mirror_image_protected" (Mirror Image; figments absorb attacks)
+##   Communication: "can_speak_with_animals" (Speak with Animals)
+##   Auras:      "has_silence_aura" (Silence 15' Radius; mobile if anchored on a creature)
 
 # _flags: flag_key -> Array of { source_id, metadata }
 var _flags: Dictionary = {}
@@ -84,6 +111,15 @@ func get_flag_sources(flag_key: String) -> Array[String]:
 	for entry in _flags[flag_key]:
 		sources.append(entry["source_id"])
 	return sources
+
+
+## Returns the full source entries (source_id + metadata) for [param flag_key].
+## Used by Sanctuary's attacker-save hook to read the spell's caster_level off
+## metadata and resolve per-attacker saves per RAW.
+func get_flag_source_entries(flag_key: String) -> Array:
+	if not _flags.has(flag_key):
+		return []
+	return _flags[flag_key].duplicate()
 
 
 func get_flag_metadata(flag_key: String) -> Dictionary:

@@ -62,13 +62,7 @@ func _build_ui() -> void:
 	anchor_top = 0.2
 	anchor_bottom = 0.8
 
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.15, 0.12, 0.08, 0.95)
-	style.border_color = Color(0.46, 0.33, 0.19, 0.9)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(4)
-	style.set_content_margin_all(12)
-	add_theme_stylebox_override("panel", style)
+	UiSurfaceStyles.apply_framed_window_chrome(self)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 6)
@@ -78,7 +72,6 @@ func _build_ui() -> void:
 	_char_name_label = Label.new()
 	_char_name_label.text = "Preferences"
 	_char_name_label.add_theme_font_size_override("font_size", 15)
-	_char_name_label.add_theme_color_override("font_color", Color(0.95, 0.88, 0.7))
 	_char_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(_char_name_label)
 
@@ -88,7 +81,6 @@ func _build_ui() -> void:
 	var desc := Label.new()
 	desc.text = "Select item categories this character prefers to carry.\nUsed by Auto-distribute."
 	desc.add_theme_font_size_override("font_size", 11)
-	desc.add_theme_color_override("font_color", Color(0.65, 0.6, 0.5))
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD
 	vbox.add_child(desc)
 

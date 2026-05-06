@@ -128,8 +128,18 @@ func resolve_melee_attack(
 			damage_roll.modified_total = 4
 
 		var magic_dmg_bonus: int = attacker.get_weapon_magical_bonus() if attacker.is_character else 0
+		# Striking custom resolver (Session 9) writes damage_bonus_dice="1d6"
+		# and strikes_as_magical to the wielded weapon item via
+		# apply_modifier_to_item. Session 9.6 polish: consume those item-side
+		# bonuses here. Roll the bonus dice fresh each strike per RAW
+		# (acore_spell_catalog_k-w_summary.xml: "Each successful attack with
+		# the weapon deals +1d6 damage").
+		var item_bonus: Dictionary = {}
+		if _spell_hooks != null and _spell_hooks.has_method("get_item_attack_bonuses"):
+			item_bonus = _spell_hooks.get_item_attack_bonuses(attacker)
+		var striking_bonus: int = int(item_bonus.get("bonus_damage", 0))
 		damage_total = maxi(1, damage_roll.modified_total + str_damage_mod \
-			+ mod_bonus + prof_damage_mod + magic_dmg_bonus)
+			+ mod_bonus + prof_damage_mod + magic_dmg_bonus + striking_bonus)
 
 		# Weapon Focus: unmodified natural 20 doubles damage when the character
 		# has Weapon Focus selected for the wielded weapon's family.

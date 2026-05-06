@@ -62,12 +62,15 @@ func test_bar_builds_three_zones_and_drag_handle() -> void:
 	check(bar._drag_handle != null, "drag handle is constructed")
 	check(bar._portrait_zone != null, "portrait zone is constructed")
 	check(bar._widget_zone != null, "widget zone is constructed")
+	check(bar._speeds_zone != null, "speeds zone is constructed")
 	check(bar._log_zone != null, "log zone (placeholder) is constructed")
 	check(bar._widget_zone.columns == 3,
 		"widget zone is a 3-column grid; got %d" % bar._widget_zone.columns)
 	# 9 cells in the 3×3 grid (3 rows × 3 cols).
 	check(bar._widget_zone.get_child_count() == 9,
 		"widget zone has 9 cells (3×3); got %d" % bar._widget_zone.get_child_count())
+	check(bar._hex_info_panel != null, "hex info panel is constructed")
+	check(bar._water_label != null, "water label is constructed")
 
 	bar.queue_free()
 	print("  bar_builds_three_zones_and_drag_handle: OK")

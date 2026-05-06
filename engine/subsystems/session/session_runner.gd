@@ -58,6 +58,9 @@ var _domain_handlers: DomainHandlers = null
 ## WildernessExploreState.enter; this instance only holds the cross-state
 ## day-tick.
 var _wilderness_global_handlers: WildernessHandlers = null
+## Global SpellHandlers — registers spell_cast_complete and
+## spell_cast_encounter_check handlers used by OutOfCombatCastFlow (Session 3).
+var _spell_handlers: SpellHandlers = null
 var _entity_outliner: EntityOutliner = null
 
 ## State keys where the scheduler loop should tick.
@@ -130,6 +133,64 @@ func _ready() -> void:
 	_spell_registry = SpellRegistry.new()
 	_effect_registry = SpellEffectRegistry.new(_spell_registry)
 	_custom_resolvers = CustomResolverRegistry.new()
+	# Register Session 6 L2-arcane custom resolvers. Future sessions append
+	# their own resolvers below as they bind.
+	_custom_resolvers.register("web",
+		preload("res://engine/subsystems/spells/custom_resolvers/web_resolver.gd").new())
+	_custom_resolvers.register("phantasmal_force",
+		preload("res://engine/subsystems/spells/custom_resolvers/phantasmal_force_resolver.gd").new())
+	# Session 7 (Divine L2):
+	_custom_resolvers.register("spiritual_weapon",
+		preload("res://engine/subsystems/spells/custom_resolvers/spiritual_weapon_resolver.gd").new())
+	# Session 8 (Arcane L3):
+	_custom_resolvers.register("dispel_magic",
+		preload("res://engine/subsystems/spells/custom_resolvers/dispel_magic_resolver.gd").new())
+	_custom_resolvers.register("haste",
+		preload("res://engine/subsystems/spells/custom_resolvers/haste_resolver.gd").new())
+	# Session 9.6 polish (Floating Disc — replaces the Session 4 stub):
+	_custom_resolvers.register("floating_disc",
+		preload("res://engine/subsystems/spells/custom_resolvers/floating_disc_resolver.gd").new())
+	# Session 10 (Arcane L4):
+	_custom_resolvers.register("hallucinatory_terrain",
+		preload("res://engine/subsystems/spells/custom_resolvers/hallucinatory_terrain_resolver.gd").new())
+	_custom_resolvers.register("polymorph_self",
+		preload("res://engine/subsystems/spells/custom_resolvers/polymorph_self_resolver.gd").new())
+	_custom_resolvers.register("polymorph_other",
+		preload("res://engine/subsystems/spells/custom_resolvers/polymorph_other_resolver.gd").new())
+	_custom_resolvers.register("wall_of_fire",
+		preload("res://engine/subsystems/spells/custom_resolvers/wall_of_fire_resolver.gd").new())
+	_custom_resolvers.register("wall_of_ice",
+		preload("res://engine/subsystems/spells/custom_resolvers/wall_of_ice_resolver.gd").new())
+	# Session 11 (Divine L4):
+	_custom_resolvers.register("animate_dead",
+		preload("res://engine/subsystems/spells/custom_resolvers/animate_dead_resolver.gd").new())
+	_custom_resolvers.register("sticks_to_snakes",
+		preload("res://engine/subsystems/spells/custom_resolvers/sticks_to_snakes_resolver.gd").new())
+	# Session 12 (Arcane L5):
+	_custom_resolvers.register("cloudkill",
+		preload("res://engine/subsystems/spells/custom_resolvers/cloudkill_resolver.gd").new())
+	_custom_resolvers.register("conjure_elemental",
+		preload("res://engine/subsystems/spells/custom_resolvers/conjure_elemental_resolver.gd").new())
+	_custom_resolvers.register("teleport",
+		preload("res://engine/subsystems/spells/custom_resolvers/teleport_resolver.gd").new())
+	_custom_resolvers.register("wall_of_stone",
+		preload("res://engine/subsystems/spells/custom_resolvers/wall_of_stone_resolver.gd").new())
+	# Session 13 (Divine L5):
+	_custom_resolvers.register("dispel_evil",
+		preload("res://engine/subsystems/spells/custom_resolvers/dispel_evil_resolver.gd").new())
+	_custom_resolvers.register("insect_plague",
+		preload("res://engine/subsystems/spells/custom_resolvers/insect_plague_resolver.gd").new())
+	# Session 14 (Arcane L6):
+	_custom_resolvers.register("death_spell",
+		preload("res://engine/subsystems/spells/custom_resolvers/death_spell_resolver.gd").new())
+	_custom_resolvers.register("invisible_stalker",
+		preload("res://engine/subsystems/spells/custom_resolvers/invisible_stalker_resolver.gd").new())
+	_custom_resolvers.register("projected_image",
+		preload("res://engine/subsystems/spells/custom_resolvers/projected_image_resolver.gd").new())
+	_custom_resolvers.register("reincarnate",
+		preload("res://engine/subsystems/spells/custom_resolvers/reincarnate_resolver.gd").new())
+	_custom_resolvers.register("wall_of_iron",
+		preload("res://engine/subsystems/spells/custom_resolvers/wall_of_iron_resolver.gd").new())
 	var condition_catalog := ConditionCatalog.new()
 	_casting_resolver = CastingResolver.new(
 		_spell_registry,
@@ -467,6 +528,15 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	_wilderness_global_handlers = WildernessHandlers.new(self)
 	_wilderness_global_handlers.register_global(_handler_registry)
 
+	# 7c. Register global spell handlers (Session 3, 2026-05-05). Owns the
+	#     spell_cast_complete sentinel and spell_cast_encounter_check one-off
+	#     scheduled by OutOfCombatCastFlow after every successful cast.
+	if _spell_handlers != null:
+		_spell_handlers.unregister(_handler_registry)
+		_spell_handlers = null
+	_spell_handlers = SpellHandlers.new(self)
+	_spell_handlers.register(_handler_registry)
+
 	# 8. Create the entity outliner and give it the scheduler reference.
 	if _entity_outliner == null:
 		_entity_outliner = EntityOutliner.new()
@@ -526,6 +596,9 @@ func end_session() -> void:
 	if _wilderness_global_handlers != null:
 		_wilderness_global_handlers.unregister_global(_handler_registry)
 		_wilderness_global_handlers = null
+	if _spell_handlers != null:
+		_spell_handlers.unregister(_handler_registry)
+		_spell_handlers = null
 	if _entity_outliner != null:
 		_entity_outliner.visible = false
 	_scheduler.clear()

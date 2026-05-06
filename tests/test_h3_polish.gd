@@ -2,9 +2,9 @@ extends "res://tests/test_suite_base.gd"
 
 ## H.3 — closing-out polish smoke tests.
 ##
-## Covers six deliverables:
+## Covers five deliverables (Item 2 retired with the settlement v2 rewrite,
+## which deleted CityOverviewWidget in favor of the menu-driven SettlementMenu):
 ##   - Item 1: LightSourceIndicator visibility on activate / deactivate signals
-##   - Item 2: CityOverviewWidget character_pin_clicked signal + position cache
 ##   - Item 3: FormationGridCell drag-data shape + drop eligibility
 ##   - Item 4: monster_catalog `dungeon_eligible` flag on horse / ox / cow,
 ##             absent (default true) on dog_war / spider_giant
@@ -15,7 +15,6 @@ extends "res://tests/test_suite_base.gd"
 
 
 const LightSourceIndicatorScript := preload("res://scenes/ui/hud/light_source_indicator.gd")
-const CityOverviewWidgetScript := preload("res://scenes/ui/settlement/city_overview_widget.gd")
 const FormationGridCellScript := preload("res://scenes/ui/notebook/party/formation_grid_cell.gd")
 const FormationUnplacedListScript := preload("res://scenes/ui/notebook/party/formation_unplaced_list.gd")
 const PartyTabPageScript := preload("res://scenes/ui/notebook/tab_pages/party_tab_page.gd")
@@ -28,9 +27,6 @@ func run_all_tests() -> void:
 	test_light_indicator_shows_on_activate()
 	test_light_indicator_hides_on_deactivate()
 	test_light_indicator_color_escalates_below_thresholds()
-	# Item 2
-	test_city_overview_character_pin_signal()
-	test_city_overview_position_cache_after_draw()
 	# Item 3
 	test_formation_unplaced_list_drag_data_shape()
 	test_formation_grid_cell_rejects_self_drop()
@@ -102,39 +98,6 @@ func test_light_indicator_color_escalates_below_thresholds() -> void:
 	check(ind._color_for_remaining(1) == LightSourceIndicatorScript.COLOR_DANGER,
 		"1 turn → danger color")
 	ind.queue_free()
-
-
-# ---------------------------------------------------------------------------
-# Item 2 — CityOverviewWidget character pins
-# ---------------------------------------------------------------------------
-
-func test_city_overview_character_pin_signal() -> void:
-	var w := CityOverviewWidgetScript.new()
-	add_child(w)
-	# Has signal declared.
-	check(w.has_signal("character_pin_clicked"),
-		"CityOverviewWidget exposes character_pin_clicked signal")
-	# update_character_positions accepts and stores.
-	w.update_character_positions({
-		"pc_a": {"node_id": 1, "name": "Aldric", "tooltip": "Aldric"},
-	})
-	check("pc_a" in w._character_positions,
-		"update_character_positions stores entry under character_id key")
-	w.queue_free()
-
-
-func test_city_overview_position_cache_after_draw() -> void:
-	# The screen-position cache is populated in _draw, which only runs after
-	# queue_redraw + a frame tick. We exercise _draw_character_pins directly
-	# with a stub _to_widget result by setting transform fields.
-	var w := CityOverviewWidgetScript.new()
-	add_child(w)
-	# Empty positions → cache is empty.
-	w.update_character_positions({})
-	w._draw_character_pins()
-	check(w._character_pin_screen_positions.is_empty(),
-		"Empty positions → empty pin screen-position cache")
-	w.queue_free()
 
 
 # ---------------------------------------------------------------------------
