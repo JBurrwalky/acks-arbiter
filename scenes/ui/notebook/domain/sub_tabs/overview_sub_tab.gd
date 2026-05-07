@@ -285,7 +285,7 @@ func _build_decree_card() -> void:
 	apply_btn.pressed.connect(_on_decree_issue_pressed)
 	_decree_card.add_child(apply_btn)
 	var hint := Label.new()
-	hint.text = "Each adjustment is logged immediately and consumes the ruler's activity slot for the day."
+	hint.text = "Each adjustment is logged immediately and dispatched as an issue_decree activity (Singular Minor) per gdd-realtime-scheduler.md §4.8."
 	hint.modulate = Color(0.7, 0.7, 0.7)
 	_decree_card.add_child(hint)
 

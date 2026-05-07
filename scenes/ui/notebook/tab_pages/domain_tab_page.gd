@@ -7,8 +7,8 @@ extends "res://scenes/ui/notebook/tab_pages/notebook_tab_page.gd"
 ##      §6.1 + gdd-domain-tab §3)
 ##   2. Status header — slim summary visible across all sub-tabs (§5)
 ##   3. Sub-tab strip — nine entries: Overview / Stronghold / Garrison /
-##      Realm / Treasury / Activities / Class-Specific / Encounters /
-##      Departure Log (§4)
+##      Realm / Treasury / Decrees & Remote Orders / Class-Specific /
+##      Encounters / Departure Log (§4)
 ##   4. Active sub-tab content
 ##
 ## Phase 2 implements full content for Overview, Stronghold (placeholder
@@ -60,9 +60,9 @@ const SUB_TABS := [
 		"phase": "Phase 6 — Realm Sub-Tab + Vassalage + Tribute",
 		"description": "Vassal table, tribute flows + efficiency factor, favors/duties tracker, realm aggregates, current title display."},
 	{"id": "treasury",      "label": "Treasury",       "phase_2": true,  "script": "treasury"},
-	{"id": "activities",    "label": "Activities",     "phase_2": false, "script": "placeholder",
-		"phase": "Phase 3 — Daily Activity Slots + Activities Sub-Tab",
-		"description": "Universal and proficiency-gated domain category activities (administer_domain, issue_decree, conscript_troops, levy_militia, hire_mercenaries, manage_henchmen, oversee_investment, oversee_construction, supervise_construction, military_campaign, …)."},
+	{"id": "decrees_and_remote_orders", "label": "Decrees & Remote Orders", "phase_2": false, "script": "placeholder",
+		"phase": "Phase 3 — Activity Time-Cost Executor + Decrees & Remote Orders + Per-Location Launch Wiring",
+		"description": "Small set of remote-capable domain activities (administer_domain, issue_decree, manage_henchmen, conscript_troops, levy_militia, solicit_mercenaries, call_to_arms, oversee_investment) dispatched via the activity time-cost executor per gdd-domain-tab.md §11 and gdd-realtime-scheduler.md §4.8. Non-remote activities launch from their location-of-execution UI surfaces."},
 	{"id": "class_specific","label": "Class Activities","phase_2": false, "script": "placeholder",
 		"phase": "Phase 9 — Class-Specific Sub-Tab",
 		"description": "Faith / Magical Research / Trade / Syndicate / Garrison Training blocks for the active entity's class."},

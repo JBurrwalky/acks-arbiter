@@ -991,6 +991,39 @@ signal order_queued(entity_id: String, event_type: String, fire_time: int)
 
 
 # ---------------------------------------------------------------------------
+# Activity scheduler signals (Phase 3 — gdd-realtime-scheduler.md §4.8)
+# ---------------------------------------------------------------------------
+
+## An Ongoing-frequency activity successfully banked a daily tick. Emitted by
+## ActivityTimeCostExecutor on uninterrupted ongoing_session_complete per
+## gdd-realtime-scheduler.md §4.8.3. Listeners: Active Projects sub-tab
+## (gdd-character-tab.md §3.8), unified log, NotificationManager.
+## [param ticks_accumulated] is the post-increment count.
+signal activity_tick_earned(activity_state_id: String, character_id: String, ticks_accumulated: int)
+
+## An activity (Singular, Restricted, or Ongoing) reached its terminal outcome.
+## Singular/Restricted: success=false on interruption (no partial credit per
+## ax_campaign_play.xml §frequency_types.singular L152-155). Ongoing: emitted
+## when the activity finishes its required tick total or is permanently
+## abandoned by the player.
+## [param outcome] keys (minimum):
+##   activity_def_id: String — registry id from activity_catalog.gd
+##   success:         bool   — true on completion, false on atomic failure
+##   summary:         String — handler-supplied human-readable result
+signal activity_completed(activity_state_id: String, character_id: String, outcome: Dictionary)
+
+## An Ongoing-frequency activity session was cancelled before fire_time and
+## the day produced no tick (prior accumulated ticks are preserved per
+## gdd-realtime-scheduler.md §4.8.3). Singular and Restricted activities do
+## NOT emit this — they fail atomically via activity_completed with
+## success=false. Cause string matches the abandonment-cause label per
+## gdd-domain-tab.md §15.1.7.
+## [param reason] one of: "interrupted_combat" | "interrupted_location_loss" |
+##                        "player_cancel" | "absence_exceeded_ticks".
+signal activity_forfeited(activity_state_id: String, character_id: String, reason: String)
+
+
+# ---------------------------------------------------------------------------
 # Voxel presentation signals (Session 8 UX layer)
 # ---------------------------------------------------------------------------
 
