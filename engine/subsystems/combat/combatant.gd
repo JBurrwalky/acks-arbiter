@@ -147,6 +147,19 @@ var killing_blow_damage_type: String = "slashing"
 ## Tracked separately for the Mortal Wounds d20 bonus (+1 per point).
 var nonlethal_damage_taken: int = 0
 
+## True when the combatant was lost in transit (Teleport "lost" outcome per
+## ACKS RAW — the subject does not reappear). Removes the combatant from
+## the alive list / map without calling record_casualty. Recovery is a
+## downstream campaign concern. Set by P5 TeleportRuntimeConsumer.
+var is_lost: bool = false
+
+## Per-round target-IDs the AI should NOT pick when selecting a target.
+## Populated by SpellCombatHooks.on_pre_attack when a Sanctuary save
+## fails — per RAW the attacker "will not attack the warded creature and
+## attacks another creature instead". MonsterAI consults this set inside
+## select_target. SpellCombatHooks.on_round_end clears it.
+var sanctuary_blocked_targets: Array[String] = []
+
 ## Equipped weapon data (merged inventory + catalog fields). Set at combat start.
 ## Keys: name, item_key, item_id, item_category, weapon_damage, magical_bonus,
 ##        weapon_tags, range_short, range_medium, range_long, damage_type,
@@ -407,7 +420,23 @@ static func from_monster(
 	c._monster_modifiers = ModifierContainer.new()
 	c._monster_flags = EntityFlags.new()
 	c._monster_damage_resistances = DamageResistance.new()
+	_apply_monster_catalog_flags(c, monster_data)
 	return c
+
+
+## Reads three optional boolean fields from a monster catalog entry and sets
+## the corresponding presence-based flags on the combatant's _monster_flags.
+## All three are absent on most entries; swarms (insect / rat / bat) set them
+## true so movement_resolver lets characters walk through swarm cells and
+## skips ZoC emission/obedience for the swarm itself.
+static func _apply_monster_catalog_flags(c: Combatant, monster_data: Dictionary) -> void:
+	var source_id: String = "monster:%s" % String(monster_data.get("id", "unknown"))
+	if bool(monster_data.get("ignores_cell_occupancy", false)):
+		c._monster_flags.set_flag("ignores_cell_occupancy", source_id)
+	if bool(monster_data.get("no_zoc_emission", false)):
+		c._monster_flags.set_flag("no_zoc_emission", source_id)
+	if bool(monster_data.get("no_zoc_obedience", false)):
+		c._monster_flags.set_flag("no_zoc_obedience", source_id)
 
 
 ## Create a Combatant from a TrainedCreatureData on the party's side.
@@ -427,6 +456,7 @@ static func from_trained_creature(
 	c._monster_modifiers = ModifierContainer.new()
 	c._monster_flags = EntityFlags.new()
 	c._monster_damage_resistances = DamageResistance.new()
+	_apply_monster_catalog_flags(c, creature.monster_data)
 	# Apply barding AC bonus if equipped.
 	var barding_ac: int = creature.get_equipped_barding_ac()
 	if barding_ac > 0:
@@ -696,6 +726,17 @@ func get_morale_modifiers() -> Array:
 	return _monster_data.get("morale_modifiers", [])
 
 
+## True if this combatant's monster catalog entry classifies it as a swarm.
+## Read by attack_resolver / ranged_attack_resolver to apply the warding-
+## attack damage clamp (RAW: any non-fire/non-cold attack against a swarm
+## deals 1d4 instead of the weapon's normal die).
+func is_swarm() -> bool:
+	if is_character:
+		return false
+	var sub_types: Array = _monster_data.get("sub_types", [])
+	return "swarm" in sub_types
+
+
 func get_special_abilities() -> Array:
 	## Returns the special_abilities array from monster data.
 	if is_character:
@@ -730,7 +771,10 @@ func get_damage_resistances() -> DamageResistance:
 # ---------------------------------------------------------------------------
 
 func is_alive() -> bool:
-	return get_hp_current() > 0 and not has_condition("dead")
+	# is_lost combatants are off the map (Teleport RAW: they do not reappear)
+	# but kept in the roster so the party knows who's gone. Treat as not-alive
+	# for the alive-list / morale / combat-end checks.
+	return get_hp_current() > 0 and not has_condition("dead") and not is_lost
 
 
 func is_pc_side() -> bool:

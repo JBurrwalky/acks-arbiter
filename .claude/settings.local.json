@@ -69,7 +69,12 @@
       "Bash(C:/Godot/Godot_v4.6.1-stable_win64.exe --headless --check-only)",
       "Bash(tasklist //FI \"IMAGENAME eq Godot_v4.6.1-stable_win64_console.exe\")",
       "Bash(Get-Content *)",
-      "Bash(/c/godot/Godot_v4.6.1-stable_win64_console.exe *)"
+      "Bash(/c/godot/Godot_v4.6.1-stable_win64_console.exe *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\jttau\\\\acks-arbiter\" -Directory)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(Get-ChildItem *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\jttau\\\\acks-arbiter\" -Recurse -Force)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }

@@ -213,6 +213,11 @@ func test_poison_reverse_apply_condition_on_hit() -> void:
 # ---------------------------------------------------------------------------
 
 func test_smite_undead_forward_stub() -> void:
+	# P9 — Smite Undead now binds to destroy_undead_by_hd_budget (stub
+	# replaced). The step records hd_budget = caster_level and the standard
+	# RAW exempt list (skeleton + zombie skip the save). The full destruction
+	# behavior is unit-tested in tests/test_session_p9_smite_undead.gd; this
+	# catalog test just pins the binding.
 	var harness := _make_harness()
 	var caster := _make_caster_cleric()
 	caster.level = 8
@@ -222,8 +227,13 @@ func test_smite_undead_forward_stub() -> void:
 	td.kind = "area_at_point"; td.origin_cell = Vector3i(0, 0, 0)
 	var result = harness.resolver.resolve(ctx, choice, td, caster, {})
 	var step: Dictionary = result.effects_applied[0]
-	check(step.get("step_kind", "") == "stub",
-		"Smite Undead forward is stub this session (HD-budget destroy routine deferred)")
+	check(step.get("step_kind", "") == "destroy_undead_by_hd_budget",
+		"Smite Undead forward is the HD-budget destruction step (P9), got '%s'"
+		% String(step.get("step_kind", "")))
+	check(int(step.get("hd_budget", 0)) == 8,
+		"hd_budget = caster level (8), got %d" % int(step.get("hd_budget", 0)))
+	check(int(step.get("hd_immunity_threshold", 0)) == 8,
+		"hd_immunity_threshold = 8 per RAW")
 
 
 func test_smite_undead_reverse_uses_animate_dead() -> void:

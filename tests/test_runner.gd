@@ -215,6 +215,27 @@ extends Node
 @onready var _session_p2_walls_tests = $SessionP2WallsTests
 @onready var _session_p3_spawn_roster_tests = $SessionP3SpawnRosterTests
 @onready var _session_p4_clouds_swarms_tests = $SessionP4CloudsSwarmsTests
+@onready var _session_p5_teleport_snap_tests = $SessionP5TeleportSnapTests
+@onready var _session_p6_cleanup_unification_tests = $SessionP6CleanupUnificationTests
+@onready var _session_p7_revert_callbacks_tests = $SessionP7RevertCallbacksTests
+@onready var _session_p8_ai_polish_tests = $SessionP8AIPolishTests
+@onready var _session_p9_smite_undead_tests = $SessionP9SmiteUndeadTests
+@onready var _swarm_conditions_tests = $SwarmConditionsTests
+@onready var _domain_revenue_calculator_tests = $DomainRevenueCalculatorTests
+@onready var _domain_expense_calculator_tests = $DomainExpenseCalculatorTests
+@onready var _domain_morale_resolver_tests = $DomainMoraleResolverTests
+@onready var _domain_growth_resolver_tests = $DomainGrowthResolverTests
+@onready var _classification_advancement_tests = $ClassificationAdvancementTests
+@onready var _land_improvement_tests = $LandImprovementTests
+@onready var _repression_tests = $RepressionTests
+@onready var _insufficient_stronghold_morale_tests = $InsufficientStrongholdMoraleTests
+@onready var _income_gate_below_sufficiency_tests = $IncomeGateBelowSufficiencyTests
+@onready var _domain_monthly_tick_raw_tests = $DomainMonthlyTickRawTests
+@onready var _stronghold_cost_calculator_tests = $StrongholdCostCalculatorTests
+@onready var _commission_pipeline_tests = $CommissionPipelineTests
+@onready var _claiming_resolver_tests = $ClaimingResolverTests
+@onready var _stronghold_repository_sufficiency_tests = $StrongholdRepositorySufficiencyTests
+@onready var _stronghold_phase_1_integration_tests = $StrongholdPhase1IntegrationTests
 
 
 func _ready() -> void:
@@ -410,7 +431,28 @@ func run() -> void:
 			_session_p1_movement_infra_tests,
 			_session_p2_walls_tests,
 			_session_p3_spawn_roster_tests,
-			_session_p4_clouds_swarms_tests]:
+			_session_p4_clouds_swarms_tests,
+			_session_p5_teleport_snap_tests,
+			_session_p6_cleanup_unification_tests,
+			_session_p7_revert_callbacks_tests,
+			_session_p8_ai_polish_tests,
+			_session_p9_smite_undead_tests,
+			_swarm_conditions_tests,
+			_domain_revenue_calculator_tests,
+			_domain_expense_calculator_tests,
+			_domain_morale_resolver_tests,
+			_domain_growth_resolver_tests,
+			_classification_advancement_tests,
+			_land_improvement_tests,
+			_repression_tests,
+			_insufficient_stronghold_morale_tests,
+			_income_gate_below_sufficiency_tests,
+			_domain_monthly_tick_raw_tests,
+			_stronghold_cost_calculator_tests,
+			_commission_pipeline_tests,
+			_claiming_resolver_tests,
+			_stronghold_repository_sufficiency_tests,
+			_stronghold_phase_1_integration_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

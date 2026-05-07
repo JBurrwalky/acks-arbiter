@@ -56,6 +56,13 @@ var casting_resolver: CastingResolver = null
 ## but with no runtime roster integration (pre-P3 behavior).
 var spawn_roster_integrator: SpawnRosterIntegrator = null
 
+## Optional TeleportRuntimeConsumer (P5) — snaps combatants to destination
+## cells for Dimension Door + Teleport, applying solid-matter / falling /
+## lost outcomes per ACKS RAW. Connected on combat start, disconnected on
+## combat end. Null leaves teleport step outcomes recorded on the cast
+## result but no runtime entity movement.
+var teleport_runtime_consumer: TeleportRuntimeConsumer = null
+
 ## Current state
 var round_number: int = 0
 var phase: int = Phase.NOT_STARTED
@@ -436,10 +443,22 @@ func _start_combat() -> Dictionary:
 	# --- Spell hooks: on_combat_start ---
 	if spell_hooks != null:
 		spell_hooks.on_combat_start(roster)
+		# Subscribe SpellCombatHooks to EventBus.combatant_moved so the swarm
+		# cell-entry hook applies `swarmed_*` to combatants that walk into a
+		# swarm cell mid-round. Disconnected on combat end.
+		spell_hooks.connect_signals()
 
 	# --- P3: SpawnRosterIntegrator subscribes to spell_effect_applied ---
 	if spawn_roster_integrator != null:
 		spawn_roster_integrator.connect_signals()
+
+	# --- P5: TeleportRuntimeConsumer subscribes to teleport_resolved ---
+	if teleport_runtime_consumer != null:
+		teleport_runtime_consumer.connect_signals()
+
+	# --- P8: MonsterAI subscribes to elemental_uncontrolled for hostility flip ---
+	if monster_ai != null:
+		monster_ai.connect_signals()
 
 	return {
 		"phase": "not_started",
@@ -2478,6 +2497,18 @@ func _emit_combat_ended() -> Dictionary:
 	# --- P3: SpawnRosterIntegrator unsubscribes so spawns don't leak across encounters ---
 	if spawn_roster_integrator != null:
 		spawn_roster_integrator.disconnect_signals()
+
+	# --- P5: TeleportRuntimeConsumer unsubscribes for the same reason ---
+	if teleport_runtime_consumer != null:
+		teleport_runtime_consumer.disconnect_signals()
+
+	# --- P8: MonsterAI unsubscribes ---
+	if monster_ai != null:
+		monster_ai.disconnect_signals()
+
+	# Disconnect SpellCombatHooks from EventBus.combatant_moved.
+	if spell_hooks != null:
+		spell_hooks.disconnect_signals()
 
 	EventBus.combat_ended.emit(encounter_id, outcome)
 	return outcome

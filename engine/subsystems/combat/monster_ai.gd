@@ -18,15 +18,72 @@ var _roster: CombatRoster
 var _dice_system = null
 var _movement_resolver: MovementResolver = null
 
+## Optional ActiveEffectTracker (P8). When wired, [method select_target]
+## consults active charm effects (charm_person / charm_monster / charm_plants)
+## and excludes the casters of those effects from the target list. Without
+## a tracker the gate is a no-op (pre-P8 behavior).
+var _active_effects: ActiveEffectTracker = null
+
+## Tracks whether we've connected EventBus.elemental_uncontrolled. Combat
+## controller calls connect_signals / disconnect_signals at combat start /
+## end so the elemental-hostility-flip subscriber doesn't leak.
+var _signals_connected: bool = false
+
+const _CHARM_SPELL_KEYS: Array = ["charm_person", "charm_monster", "charm_plants"]
+
 
 # ---------------------------------------------------------------------------
 # Constructor
 # ---------------------------------------------------------------------------
 
-func _init(roster: CombatRoster, dice_system = null, movement_resolver: MovementResolver = null) -> void:
+func _init(
+		roster: CombatRoster, dice_system = null,
+		movement_resolver: MovementResolver = null,
+		active_effects: ActiveEffectTracker = null) -> void:
 	_roster = roster
 	_dice_system = dice_system
 	_movement_resolver = movement_resolver
+	_active_effects = active_effects
+
+
+## Sets the ActiveEffectTracker reference post-construction. Combat layers
+## that build the AI before the tracker is available can call this to wire
+## the charm gate later.
+func set_active_effect_tracker(tracker: ActiveEffectTracker) -> void:
+	_active_effects = tracker
+
+
+## Subscribes to EventBus.elemental_uncontrolled so the controlling caster
+## losing concentration flips the elemental's side to ENEMY. CombatController
+## calls this at combat start. Idempotent.
+func connect_signals() -> void:
+	if _signals_connected:
+		return
+	if not EventBus.elemental_uncontrolled.is_connected(_on_elemental_uncontrolled):
+		EventBus.elemental_uncontrolled.connect(_on_elemental_uncontrolled)
+	_signals_connected = true
+
+
+func disconnect_signals() -> void:
+	if not _signals_connected:
+		return
+	if EventBus.elemental_uncontrolled.is_connected(_on_elemental_uncontrolled):
+		EventBus.elemental_uncontrolled.disconnect(_on_elemental_uncontrolled)
+	_signals_connected = false
+
+
+## Handler for EventBus.elemental_uncontrolled (P8). Re-rosters the
+## elemental into the ENEMY faction; subsequent select_target calls on
+## either side now treat the elemental as a regular enemy combatant for
+## the original caster's side and as a regular ally for the actual enemy
+## side. Per ACKS RAW the elemental becomes hostile to the conjurer and
+## all in its path; for v1 we just flip allegiance (PARTY → ENEMY).
+func _on_elemental_uncontrolled(
+		elemental_id: String, _elemental_type: String,
+		_former_caster_id: String) -> void:
+	if _roster == null:
+		return
+	_roster.move_to_side(elemental_id, Combatant.Side.ENEMY)
 
 
 # ---------------------------------------------------------------------------
@@ -56,6 +113,16 @@ func select_action(combatant: Combatant) -> Dictionary:
 
 ## Select the best target for this combatant based on behavior tags.
 ## Exposed as public for testing.
+##
+## P8 — applies two AI gates before scoring:
+##   1. Charm gate: any active charm_person / charm_monster / charm_plants
+##      effect targeting `combatant` excludes its caster_id from candidates.
+##      Per RAW: charmed creature regards caster as friend; will not attack.
+##   2. Sanctuary redirect: combatant.sanctuary_blocked_targets (populated
+##      by SpellCombatHooks.on_pre_attack on a failed save) lists target ids
+##      the AI must skip this round.
+## When the gates filter every candidate out, the AI falls back to passing
+## (returns null), per the same path used when the opposing side is empty.
 func select_target(combatant: Combatant, behavior: Dictionary) -> Combatant:
 	var target_side: int
 	if combatant.is_pc_side():
@@ -64,6 +131,9 @@ func select_target(combatant: Combatant, behavior: Dictionary) -> Combatant:
 		target_side = Combatant.Side.PARTY
 
 	var candidates := _roster.get_alive_on_side(target_side)
+	if candidates.is_empty():
+		return null
+	candidates = _apply_ai_gates(combatant, candidates)
 	if candidates.is_empty():
 		return null
 	if candidates.size() == 1:
@@ -98,6 +168,38 @@ func select_target(combatant: Combatant, behavior: Dictionary) -> Combatant:
 
 	# Resolve ties
 	return _resolve_tie_breaker(tied, tie_breaker, combatant)
+
+
+# ---------------------------------------------------------------------------
+# AI gates (P8) — charm + Sanctuary redirect
+# ---------------------------------------------------------------------------
+
+## Filters [param candidates] through the P8 AI gates. Returns a new array
+## with the gate-rejected candidates removed; preserves order otherwise.
+func _apply_ai_gates(
+		combatant: Combatant,
+		candidates: Array[Combatant]) -> Array[Combatant]:
+	var blocked: Dictionary = {}
+	# Charm gate — caster_ids of active charm effects on `combatant`.
+	if _active_effects != null:
+		for eff in _active_effects.get_effects_on_target(combatant.id):
+			var spell_key: String = String(eff.get("spell_key", ""))
+			if spell_key in _CHARM_SPELL_KEYS:
+				var caster_id: String = String(eff.get("caster_id", ""))
+				if not caster_id.is_empty():
+					blocked[caster_id] = true
+	# Sanctuary redirect — per-round ids the attacker must skip.
+	if "sanctuary_blocked_targets" in combatant:
+		for tid in combatant.sanctuary_blocked_targets:
+			blocked[String(tid)] = true
+	if blocked.is_empty():
+		return candidates
+	var filtered: Array[Combatant] = []
+	for c: Combatant in candidates:
+		if blocked.has(c.id):
+			continue
+		filtered.append(c)
+	return filtered
 
 
 # ---------------------------------------------------------------------------

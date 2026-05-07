@@ -63,6 +63,13 @@ func resolve(args: Dictionary) -> Dictionary:
 			"received": swarm_cells.size(),
 		}
 
+	# Swarm type drives which `swarmed_<type>` condition the runtime applies
+	# (insect / rat / bat). Insect Plague always summons insect swarms, but
+	# resolver_args may override (e.g. for future swarm-summoning spells).
+	var swarm_type := String(resolver_args.get("swarm_type", "insect")).to_lower()
+	if swarm_type not in ["insect", "rat", "bat"]:
+		swarm_type = "insect"
+
 	var swarms: Array = []
 	for i in range(NUM_SWARMS):
 		swarms.append({
@@ -71,6 +78,7 @@ func resolve(args: Dictionary) -> Dictionary:
 			"swarm_cell": swarm_cells[i],
 			"swarm_hd": SWARM_HD,
 			"area_feet": SWARM_AREA_FEET,
+			"swarm_type": swarm_type,
 		})
 
 	var plague_profile: Dictionary = {
@@ -78,6 +86,7 @@ func resolve(args: Dictionary) -> Dictionary:
 		"caster_id": caster_context.caster_id,
 		"caster_level": caster_context.caster_level,
 		"swarms": swarms,
+		"swarm_type": swarm_type,
 		"contiguous_layout": true,
 		"control_state": "controlled",
 		"auto_drive_off_hd_threshold": AUTO_DRIVE_OFF_HD_THRESHOLD,
@@ -87,6 +96,7 @@ func resolve(args: Dictionary) -> Dictionary:
 		"loses_control_on_caster_attacked": true,
 		"loses_control_on_leaving_spell_range": true,
 		"spell_range_feet": 480,
+		"swarm_persistence": {},
 	}
 
 	return {

@@ -61,6 +61,11 @@ var _wilderness_global_handlers: WildernessHandlers = null
 ## Global SpellHandlers — registers spell_cast_complete and
 ## spell_cast_encounter_check handlers used by OutOfCombatCastFlow (Session 3).
 var _spell_handlers: SpellHandlers = null
+## Global CommissionPipeline — registers stronghold_construction_daily_tick
+## and seeds the daily tick that advances all in-progress commissions
+## (Domain Phase 1, 2026-05-06). Daily granularity is required by the PDF
+## "1 day per 500 gp" rule.
+var _commission_pipeline: CommissionPipeline = null
 var _entity_outliner: EntityOutliner = null
 
 ## State keys where the scheduler loop should tick.
@@ -191,6 +196,28 @@ func _ready() -> void:
 		preload("res://engine/subsystems/spells/custom_resolvers/reincarnate_resolver.gd").new())
 	_custom_resolvers.register("wall_of_iron",
 		preload("res://engine/subsystems/spells/custom_resolvers/wall_of_iron_resolver.gd").new())
+
+	# P7 — per-spell expiration callbacks. Each fires on every cleanup cause
+	# (duration_expired / concentration_broken / dispelled). Animate Dead is
+	# intentionally NOT registered: skeletons/zombies persist past expiration
+	# per RAW ("until destroyed or turned").
+	_custom_resolvers.register_expiration_callback("polymorph_self",
+		Callable(PolymorphSelfResolver, "on_expiration"))
+	_custom_resolvers.register_expiration_callback("polymorph_other",
+		Callable(PolymorphOtherResolver, "on_expiration"))
+	_custom_resolvers.register_expiration_callback("sticks_to_snakes",
+		Callable(SticksToSnakesResolver, "on_expiration"))
+	_custom_resolvers.register_expiration_callback("conjure_elemental",
+		Callable(ConjureElementalResolver, "on_expiration"))
+	_custom_resolvers.register_expiration_callback("wall_of_fire",
+		Callable(WallOfFireResolver, "on_expiration"))
+	_custom_resolvers.register_expiration_callback("wall_of_ice",
+		Callable(WallOfIceResolver, "on_expiration"))
+	_custom_resolvers.register_expiration_callback("wall_of_stone",
+		Callable(WallOfStoneResolver, "on_expiration"))
+	_custom_resolvers.register_expiration_callback("wall_of_iron",
+		Callable(WallOfIronResolver, "on_expiration"))
+
 	var condition_catalog := ConditionCatalog.new()
 	_casting_resolver = CastingResolver.new(
 		_spell_registry,
@@ -537,6 +564,24 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	_spell_handlers = SpellHandlers.new(self)
 	_spell_handlers.register(_handler_registry)
 
+	# 7d. Register the stronghold construction daily-tick handler (Domain
+	#     Phase 1, 2026-05-06). Daily ticks advance all in-progress commissions
+	#     by the per-day rate (1 day per 500 gp base, faster at +50%/+100%
+	#     speed tiers per acore_stronghold_construction_costs.pdf).
+	if _commission_pipeline != null:
+		_commission_pipeline.unregister(_handler_registry)
+		_commission_pipeline = null
+	_commission_pipeline = CommissionPipeline.new(self)
+	_commission_pipeline.register(_handler_registry)
+	# Seed the daily tick if one isn't already in the restored queue.
+	var has_construction_tick := false
+	for ev in _scheduler.get_all_events():
+		if ev.event_type == "stronghold_construction_daily_tick":
+			has_construction_tick = true
+			break
+	if not has_construction_tick:
+		_commission_pipeline.seed_construction_tick(_scheduler, party_id)
+
 	# 8. Create the entity outliner and give it the scheduler reference.
 	if _entity_outliner == null:
 		_entity_outliner = EntityOutliner.new()
@@ -599,6 +644,9 @@ func end_session() -> void:
 	if _spell_handlers != null:
 		_spell_handlers.unregister(_handler_registry)
 		_spell_handlers = null
+	if _commission_pipeline != null:
+		_commission_pipeline.unregister(_handler_registry)
+		_commission_pipeline = null
 	if _entity_outliner != null:
 		_entity_outliner.visible = false
 	_scheduler.clear()

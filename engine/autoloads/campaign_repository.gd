@@ -1113,6 +1113,418 @@ func list_campaign_domains(campaign_id: String) -> Array:
 
 
 # ---------------------------------------------------------------------------
+# Domain monthly state (Domain Phase 0)
+# ---------------------------------------------------------------------------
+
+const _DOMAIN_MONTHLY_FIELDS := [
+	"morale", "peasant_families", "urban_families",
+	"treasury_gp", "revenue_gp", "expenses_gp", "net_income_gp",
+	"domain_xp_this_month", "classification_progress_families",
+	"territory_type", "realm_title",
+	"is_active_adventuring_this_month",
+	"is_repressed_this_month", "repression_gp_per_family_this_month",
+	"tribute_out_owed",
+]
+
+## Update a whitelisted set of monthly-tick fields on a single domain.
+## Replaces the inline UPDATE that used to live in `domain_handlers._save_domain`.
+func update_domain_monthly_state(domain_id: String, fields: Dictionary) -> bool:
+	if domain_id.is_empty():
+		return false
+	var set_clauses: Array[String] = []
+	var values: Array = []
+	for key in fields:
+		if not _DOMAIN_MONTHLY_FIELDS.has(key):
+			push_error("CampaignRepository.update_domain_monthly_state: rejected non-whitelisted field '%s'" % key)
+			continue
+		set_clauses.append("%s = ?" % key)
+		values.append(fields[key])
+	if set_clauses.is_empty():
+		return false
+	set_clauses.append("updated_at = datetime('now')")
+	values.append(domain_id)
+	var sql := "UPDATE domains SET %s WHERE id = ?" % ", ".join(set_clauses)
+	if not db.query_with_bindings(sql, values):
+		push_error("CampaignRepository.update_domain_monthly_state: failed. id=%s" % domain_id)
+		return false
+	return true
+
+
+# ---------------------------------------------------------------------------
+# Domain hexes (migration 055)
+# ---------------------------------------------------------------------------
+
+func get_domain_hexes(domain_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM domain_hexes WHERE domain_id = ? ORDER BY hex_q, hex_r",
+		[domain_id]
+	)
+	return db.query_result.duplicate()
+
+
+func add_domain_hex(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO domain_hexes
+			(id, domain_id, hex_q, hex_r, land_value, surveyed_by, is_littoral, land_improvement_gp)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		data.get("domain_id", ""),
+		int(data.get("hex_q", 0)),
+		int(data.get("hex_r", 0)),
+		int(data.get("land_value", 5)),
+		data.get("surveyed_by", null),
+		1 if data.get("is_littoral", false) else 0,
+		int(data.get("land_improvement_gp", 0)),
+	]):
+		push_error("CampaignRepository.add_domain_hex: failed. domain=%s q=%s r=%s" % [
+			data.get("domain_id", "?"), data.get("hex_q", "?"), data.get("hex_r", "?"),
+		])
+		return ""
+	return id
+
+
+## Set the cumulative land_improvement_gp for a hex. Caller is responsible for
+## the +3 cap and the final-land-value-≤9 check (see `LandImprovement`).
+func update_domain_hex_land_improvement(domain_id: String, hex_q: int, hex_r: int, new_improvement: int) -> bool:
+	if not db.query_with_bindings("""
+		UPDATE domain_hexes
+		SET land_improvement_gp = ?
+		WHERE domain_id = ? AND hex_q = ? AND hex_r = ?
+	""", [new_improvement, domain_id, hex_q, hex_r]):
+		push_error("CampaignRepository.update_domain_hex_land_improvement: failed. domain=%s q=%d r=%d" % [
+			domain_id, hex_q, hex_r,
+		])
+		return false
+	return true
+
+
+# ---------------------------------------------------------------------------
+# Ledger entries (migration 058)
+# ---------------------------------------------------------------------------
+
+func add_ledger_entry(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO ledger_entries
+			(id, domain_id, calendar_day, category, subcategory, gp_amount,
+			 description, source_event_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		data.get("domain_id", ""),
+		int(data.get("calendar_day", 0)),
+		data.get("category", "other"),
+		data.get("subcategory", ""),
+		int(data.get("gp_amount", 0)),
+		data.get("description", ""),
+		data.get("source_event_id", null),
+	]):
+		push_error("CampaignRepository.add_ledger_entry: failed. domain=%s sub=%s" % [
+			data.get("domain_id", "?"), data.get("subcategory", "?"),
+		])
+		return ""
+	return id
+
+
+func list_ledger_entries(domain_id: String, since_calendar_day: int = -1) -> Array:
+	if since_calendar_day >= 0:
+		db.query_with_bindings("""
+			SELECT * FROM ledger_entries
+			WHERE domain_id = ? AND calendar_day >= ?
+			ORDER BY calendar_day, created_at
+		""", [domain_id, since_calendar_day])
+	else:
+		db.query_with_bindings("""
+			SELECT * FROM ledger_entries
+			WHERE domain_id = ?
+			ORDER BY calendar_day, created_at
+		""", [domain_id])
+	return db.query_result.duplicate()
+
+
+# ---------------------------------------------------------------------------
+# Domain followers + arrivals (migrations 057, 059)
+# ---------------------------------------------------------------------------
+
+func list_domain_followers(domain_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM domain_followers WHERE domain_id = ? ORDER BY follower_class",
+		[domain_id]
+	)
+	return db.query_result.duplicate()
+
+
+func add_follower_arrival(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO follower_arrivals
+			(id, domain_id, calendar_day, wave_pct, follower_count_total, equipment_kit)
+		VALUES (?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		data.get("domain_id", ""),
+		int(data.get("calendar_day", 0)),
+		int(data.get("wave_pct", 50)),
+		int(data.get("follower_count_total", 0)),
+		data.get("equipment_kit", ""),
+	]):
+		push_error("CampaignRepository.add_follower_arrival: failed. domain=%s wave=%s" % [
+			data.get("domain_id", "?"), data.get("wave_pct", "?"),
+		])
+		return ""
+	return id
+
+
+# ---------------------------------------------------------------------------
+# Strongholds (migration 060)
+# ---------------------------------------------------------------------------
+
+const _STRONGHOLD_UPDATE_FIELDS := [
+	"domain_id", "owner_character_id", "archetype", "archetype_power_id",
+	"structure_type", "gp_value", "shp", "ac", "garrison_capacity",
+	"completion_pct", "is_conforming_to_class", "is_claimed",
+	"claimed_from_source", "location_map_id", "location_hex_q", "location_hex_r",
+	"status",
+]
+
+
+func create_stronghold(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO strongholds
+			(id, domain_id, owner_character_id, archetype, archetype_power_id,
+			 structure_type, gp_value, shp, ac, garrison_capacity,
+			 completion_pct, is_conforming_to_class, is_claimed,
+			 claimed_from_source, location_map_id, location_hex_q, location_hex_r,
+			 status)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		data.get("domain_id", null),
+		data.get("owner_character_id", null),
+		data.get("archetype", "fortress"),
+		data.get("archetype_power_id", ""),
+		data.get("structure_type", "keep"),
+		int(data.get("gp_value", 0)),
+		int(data.get("shp", 0)),
+		int(data.get("ac", 6)),
+		int(data.get("garrison_capacity", 0)),
+		int(data.get("completion_pct", 0)),
+		1 if data.get("is_conforming_to_class", true) else 0,
+		1 if data.get("is_claimed", false) else 0,
+		data.get("claimed_from_source", ""),
+		data.get("location_map_id", null),
+		data.get("location_hex_q", null),
+		data.get("location_hex_r", null),
+		data.get("status", "in_progress"),
+	]):
+		push_error("CampaignRepository.create_stronghold: failed. archetype=%s domain=%s" % [
+			data.get("archetype", "?"), data.get("domain_id", "?"),
+		])
+		return ""
+	return id
+
+
+func get_stronghold(id: String) -> Dictionary:
+	if not db.query_with_bindings("SELECT * FROM strongholds WHERE id = ?", [id]) \
+			or db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+func update_stronghold(id: String, fields: Dictionary) -> bool:
+	if id.is_empty():
+		return false
+	var set_clauses: Array[String] = []
+	var values: Array = []
+	for key in fields:
+		if not _STRONGHOLD_UPDATE_FIELDS.has(key):
+			push_error("CampaignRepository.update_stronghold: rejected non-whitelisted field '%s'" % key)
+			continue
+		set_clauses.append("%s = ?" % key)
+		values.append(fields[key])
+	if set_clauses.is_empty():
+		return false
+	set_clauses.append("updated_at = datetime('now')")
+	values.append(id)
+	var sql := "UPDATE strongholds SET %s WHERE id = ?" % ", ".join(set_clauses)
+	if not db.query_with_bindings(sql, values):
+		push_error("CampaignRepository.update_stronghold: failed. id=%s" % id)
+		return false
+	return true
+
+
+func list_domain_strongholds(domain_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM strongholds WHERE domain_id = ? ORDER BY created_at",
+		[domain_id]
+	)
+	return db.query_result.duplicate()
+
+
+func list_strongholds_by_owner(character_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM strongholds WHERE owner_character_id = ? ORDER BY created_at",
+		[character_id]
+	)
+	return db.query_result.duplicate()
+
+
+func list_strongholds_at_hex(map_id: String, hex_q: int, hex_r: int) -> Array:
+	db.query_with_bindings("""
+		SELECT * FROM strongholds
+		WHERE location_map_id = ? AND location_hex_q = ? AND location_hex_r = ?
+	""", [map_id, hex_q, hex_r])
+	return db.query_result.duplicate()
+
+
+# ---------------------------------------------------------------------------
+# Stronghold commissions (migration 061)
+# ---------------------------------------------------------------------------
+
+const _COMMISSION_UPDATE_FIELDS := [
+	"gp_committed", "daily_construction_rate_gp", "speed_tier_pct",
+	"engineers_required", "engineers_assigned", "engineer_monthly_wage_gp",
+	"supervisor_character_id", "magic_rate_modifier_pct",
+	"materials_strategy", "class_cost_reduction_pct",
+	"gp_progressed", "halfway_signal_fired",
+	"completed_calendar_day", "status",
+]
+
+
+func create_commission(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO stronghold_commissions
+			(id, stronghold_id, gp_committed, daily_construction_rate_gp,
+			 speed_tier_pct, engineers_required, engineers_assigned,
+			 engineer_monthly_wage_gp, supervisor_character_id,
+			 magic_rate_modifier_pct, materials_strategy,
+			 class_cost_reduction_pct,
+			 started_calendar_day, expected_halfway_day, expected_completion_day,
+			 gp_progressed, halfway_signal_fired, status)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		data.get("stronghold_id", ""),
+		int(data.get("gp_committed", 0)),
+		int(data.get("daily_construction_rate_gp", 500)),
+		int(data.get("speed_tier_pct", 100)),
+		int(data.get("engineers_required", 1)),
+		int(data.get("engineers_assigned", 1)),
+		int(data.get("engineer_monthly_wage_gp", 250)),
+		data.get("supervisor_character_id", null),
+		int(data.get("magic_rate_modifier_pct", 100)),
+		data.get("materials_strategy", "local"),
+		int(data.get("class_cost_reduction_pct", 0)),
+		int(data.get("started_calendar_day", 0)),
+		int(data.get("expected_halfway_day", 0)),
+		int(data.get("expected_completion_day", 0)),
+		int(data.get("gp_progressed", 0)),
+		1 if data.get("halfway_signal_fired", false) else 0,
+		data.get("status", "in_progress"),
+	]):
+		push_error("CampaignRepository.create_commission: failed. stronghold=%s" % data.get("stronghold_id", "?"))
+		return ""
+	return id
+
+
+func get_commission(id: String) -> Dictionary:
+	if not db.query_with_bindings("SELECT * FROM stronghold_commissions WHERE id = ?", [id]) \
+			or db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+## Returns the active (status='in_progress' OR any 'paused_*') commission for a
+## stronghold. There should be at most one per stronghold at a time.
+func get_commission_for_stronghold(stronghold_id: String) -> Dictionary:
+	if not db.query_with_bindings("""
+		SELECT * FROM stronghold_commissions
+		WHERE stronghold_id = ? AND status NOT IN ('completed', 'cancelled')
+		ORDER BY created_at DESC LIMIT 1
+	""", [stronghold_id]) or db.query_result.is_empty():
+		return {}
+	return db.query_result[0]
+
+
+func list_active_commissions() -> Array:
+	db.query("""
+		SELECT * FROM stronghold_commissions
+		WHERE status = 'in_progress'
+		ORDER BY expected_completion_day
+	""")
+	return db.query_result.duplicate()
+
+
+func update_commission(id: String, fields: Dictionary) -> bool:
+	if id.is_empty():
+		return false
+	var set_clauses: Array[String] = []
+	var values: Array = []
+	for key in fields:
+		if not _COMMISSION_UPDATE_FIELDS.has(key):
+			push_error("CampaignRepository.update_commission: rejected non-whitelisted field '%s'" % key)
+			continue
+		set_clauses.append("%s = ?" % key)
+		values.append(fields[key])
+	if set_clauses.is_empty():
+		return false
+	values.append(id)
+	var sql := "UPDATE stronghold_commissions SET %s WHERE id = ?" % ", ".join(set_clauses)
+	if not db.query_with_bindings(sql, values):
+		push_error("CampaignRepository.update_commission: failed. id=%s" % id)
+		return false
+	return true
+
+
+# ---------------------------------------------------------------------------
+# Stronghold accessories (migration 062)
+# ---------------------------------------------------------------------------
+
+func create_accessory(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO stronghold_accessories
+			(id, stronghold_id, accessory_type, gp_value, status)
+		VALUES (?, ?, ?, ?, ?)
+	""", [
+		id,
+		data.get("stronghold_id", ""),
+		data.get("accessory_type", ""),
+		int(data.get("gp_value", 0)),
+		data.get("status", "planned"),
+	]):
+		push_error("CampaignRepository.create_accessory: failed. stronghold=%s type=%s" % [
+			data.get("stronghold_id", "?"), data.get("accessory_type", "?"),
+		])
+		return ""
+	return id
+
+
+func list_accessories(stronghold_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM stronghold_accessories WHERE stronghold_id = ? ORDER BY created_at",
+		[stronghold_id]
+	)
+	return db.query_result.duplicate()
+
+
+# ---------------------------------------------------------------------------
 # Inventory CRUD (used by OverrideManager and future inventory subsystem)
 # ---------------------------------------------------------------------------
 

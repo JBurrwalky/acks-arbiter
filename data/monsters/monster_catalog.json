@@ -2489,14 +2489,14 @@
     "id": "skeleton",
     "name": "Skeleton",
     "variant": null,
-    "source": "ACKS Core",
+    "source": "LE Monster Catalog 2 (summary; stat block from project design — book skeleton stat block is not transcribed)",
     "monster_types": ["undead"],
     "sub_types": [],
     "alignment": "chaotic",
     "intelligence": "non",
     "size_category": "medium",
     "hit_dice": { "base": 1, "modifier": 0, "special_ability_stars": 0 },
-    "armor_class": 2,
+    "armor_class": 1,
     "attack_routines": [
       { "routine_name": "melee", "usage": "default",
         "attacks": [ { "attack_type": "weapon", "count": 1, "damage": "1d6", "to_hit_modifier": 0, "special_effect": null } ] }
@@ -2506,7 +2506,10 @@
     "xp": 10,
     "movement": { "land": { "exploration": 60, "combat": 20 } },
     "terrain_affinity": [],
-    "special_abilities": [],
+    "special_abilities": [
+      { "ability_id": "mindless_obedience", "description": "Obeys simple orders from its creator only; cannot draw conclusions or take initiative.", "hook_type": "behavior", "effect": { "tag": "mindless" } },
+      { "ability_id": "turnable_undead", "description": "Subject to Turn Undead at the skeleton tier.", "hook_type": "category", "effect": { "turn_category": "skeleton" } }
+    ],
     "immunities": ["sleep", "charm", "hold", "fear", "mind_affecting"],
     "resistances": [],
     "vulnerabilities": [],
@@ -2523,13 +2526,13 @@
     "id": "zombie",
     "name": "Zombie",
     "variant": null,
-    "source": "ACKS Core",
+    "source": "ACKS Core (acore_monster_catalog_tri-wol.xml)",
     "monster_types": ["undead"],
     "sub_types": [],
     "alignment": "chaotic",
     "intelligence": "non",
     "size_category": "medium",
-    "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 0 },
+    "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 1 },
     "armor_class": 1,
     "attack_routines": [
       { "routine_name": "melee", "usage": "default",
@@ -2537,13 +2540,16 @@
     ],
     "save_as": { "class": "F", "level": 1 },
     "morale": 4,
-    "xp": 20,
-    "movement": { "land": { "exploration": 40, "combat": 15 } },
+    "xp": 29,
+    "movement": { "land": { "exploration": 60, "combat": 20 } },
+    "percent_in_lair": 35,
     "terrain_affinity": [],
     "special_abilities": [
-      { "ability_id": "always_acts_last", "description": "Zombies always act last in initiative.", "hook_type": "flag", "effect": { "flag": "always_acts_last" } }
+      { "ability_id": "always_acts_last", "description": "Zombies attack last each round because of clumsy decomposing limbs.", "hook_type": "flag", "effect": { "flag": "always_acts_last" } },
+      { "ability_id": "mindless_obedience", "description": "Obeys simple orders from its creator only; cannot draw conclusions or take initiative.", "hook_type": "behavior", "effect": { "tag": "mindless" } },
+      { "ability_id": "turnable_undead", "description": "Subject to Turn Undead at the zombie tier.", "hook_type": "category", "effect": { "turn_category": "zombie" } }
     ],
-    "immunities": ["sleep", "charm", "hold", "fear", "mind_affecting"],
+    "immunities": ["sleep", "charm", "hold", "poison"],
     "resistances": [],
     "vulnerabilities": [],
     "morale_modifiers": [],
@@ -2556,59 +2562,32 @@
   },
 
   {
-    "id": "snake_normal",
-    "name": "Snake (Normal)",
-    "variant": null,
-    "source": "ACKS Core",
+    "id": "snake_spitting_cobra",
+    "name": "Snake, Spitting Cobra",
+    "variant": "spitting_cobra",
+    "source": "ACKS Core (acore_monster_catalog_sea-tre.xml)",
     "monster_types": ["beast"],
-    "sub_types": ["reptile"],
-    "alignment": "neutral",
-    "intelligence": "animal",
-    "size_category": "small",
-    "hit_dice": { "base": 1, "modifier": 0, "special_ability_stars": 0 },
-    "armor_class": 1,
-    "attack_routines": [
-      { "routine_name": "melee", "usage": "default",
-        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "1d3", "to_hit_modifier": 0, "special_effect": null } ] }
-    ],
-    "save_as": { "class": "F", "level": 1 },
-    "morale": 7,
-    "xp": 10,
-    "movement": { "land": { "exploration": 60, "combat": 20 } },
-    "terrain_affinity": [],
-    "special_abilities": [],
-    "immunities": [], "resistances": [], "vulnerabilities": [],
-    "morale_modifiers": [],
-    "combat_behavior": {
-      "formation_discipline": "none", "aggression_posture": "medium",
-      "engagement_profile": "melee", "spellcasting_timing": "none",
-      "consumable_timing": "none", "primary_target_rule": "nearest",
-      "target_tie_breaker": "random", "morale_style": "fragile"
-    }
-  },
-
-  {
-    "id": "snake_poisonous",
-    "name": "Snake (Poisonous)",
-    "variant": null,
-    "source": "ACKS Core",
-    "monster_types": ["beast"],
-    "sub_types": ["reptile"],
+    "sub_types": ["reptile", "snake"],
     "alignment": "neutral",
     "intelligence": "animal",
     "size_category": "small",
     "hit_dice": { "base": 1, "modifier": 0, "special_ability_stars": 1 },
-    "armor_class": 1,
+    "armor_class": 2,
     "attack_routines": [
-      { "routine_name": "melee", "usage": "default",
-        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "1d4", "to_hit_modifier": 0, "special_effect": "poison_save_or_die" } ] }
+      { "routine_name": "bite", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "1d3", "to_hit_modifier": 0, "special_effect": "poison_save_or_die" } ] },
+      { "routine_name": "spit", "usage": "ranged",
+        "attacks": [ { "attack_type": "ranged", "count": 1, "damage": "0", "to_hit_modifier": 0, "range_feet": 60, "special_effect": "poison_save_or_blindness_curable_by_cure_blindness" } ] }
     ],
     "save_as": { "class": "F", "level": 1 },
     "morale": 7,
     "xp": 13,
-    "movement": { "land": { "exploration": 60, "combat": 20 } },
+    "movement": { "land": { "exploration": 90, "combat": 30 } },
     "terrain_affinity": [],
-    "special_abilities": [],
+    "special_abilities": [
+      { "ability_id": "poison_bite_save_or_die", "description": "Victim must save versus Poison or be killed immediately.", "hook_type": "save_or_effect", "effect": { "save_type": "Poison", "on_failure": "instant_death" } },
+      { "ability_id": "poison_spit_blindness", "description": "Spit attack at 60'; victim must save versus Poison or be permanently blinded (curable by cure_blindness).", "hook_type": "save_or_effect", "effect": { "save_type": "Poison", "on_failure": "permanent_blindness", "curable_by": "cure_blindness", "range_feet": 60 } }
+    ],
     "immunities": [], "resistances": [], "vulnerabilities": [],
     "morale_modifiers": [],
     "combat_behavior": {
@@ -2620,27 +2599,67 @@
   },
 
   {
-    "id": "elemental_air",
-    "name": "Elemental, Air",
-    "variant": null,
-    "source": "ACKS Core",
+    "id": "snake_pit_viper",
+    "name": "Snake, Pit Viper",
+    "variant": "pit_viper",
+    "source": "ACKS Core (acore_monster_catalog_sea-tre.xml)",
+    "monster_types": ["beast"],
+    "sub_types": ["reptile", "snake"],
+    "alignment": "neutral",
+    "intelligence": "animal",
+    "size_category": "small",
+    "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 2 },
+    "armor_class": 3,
+    "attack_routines": [
+      { "routine_name": "bite", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "1d4", "to_hit_modifier": 0, "special_effect": "poison_save_or_delayed_death_1d4_plus_2_turns" } ] }
+    ],
+    "save_as": { "class": "F", "level": 1 },
+    "morale": 7,
+    "xp": 38,
+    "movement": { "land": { "exploration": 90, "combat": 30 } },
+    "terrain_affinity": [],
+    "special_abilities": [
+      { "ability_id": "heat_sense_60ft", "description": "Senses heat to 60 feet — picks out warm-blooded targets through obstacles.", "hook_type": "perception", "effect": { "range_feet": 60 } },
+      { "ability_id": "always_wins_initiative", "description": "Automatically has initiative every round.", "hook_type": "flag", "effect": { "flag": "always_wins_initiative" } },
+      { "ability_id": "poison_bite_delayed_death", "description": "Victim must save versus Poison or die after 1d4+2 turns.", "hook_type": "save_or_effect", "effect": { "save_type": "Poison", "on_failure": "delayed_death", "delay_turns": "1d4+2" } }
+    ],
+    "immunities": [], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "medium",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fragile"
+    }
+  },
+
+  {
+    "id": "elemental_air_8hd",
+    "name": "Air Elemental (Staff Tier)",
+    "variant": "staff",
+    "source": "ACKS Core (acore_monster_catalog_drag-gno.xml)",
     "monster_types": ["elemental"],
     "sub_types": ["air"],
     "alignment": "neutral",
     "intelligence": "average",
     "size_category": "large",
     "hit_dice": { "base": 8, "modifier": 0, "special_ability_stars": 1 },
-    "armor_class": 5,
+    "armor_class": 7,
     "attack_routines": [
-      { "routine_name": "melee", "usage": "default",
-        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "2d8", "to_hit_modifier": 0, "special_effect": null } ] }
+      { "routine_name": "slam", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "1d8", "to_hit_modifier": 0, "special_effect": "extra_1d8_vs_flying" } ] }
     ],
     "save_as": { "class": "F", "level": 8 },
     "morale": 12,
-    "xp": 1300,
+    "xp": 1100,
     "movement": { "land": { "exploration": 0, "combat": 0 }, "fly": { "exploration": 360, "combat": 120 } },
     "terrain_affinity": [],
-    "special_abilities": [],
+    "special_abilities": [
+      { "ability_id": "carry_away_sub_2hd", "description": "Sub-2-HD beings caught in the twirling mass save vs. Death or are carried away helpless.", "hook_type": "save_or_effect", "effect": { "save_type": "Death", "on_failure": "carried_away_helpless" } },
+      { "ability_id": "summoning_concentration_required", "description": "Summoner must fully concentrate; loss of concentration → uncontrolled (attacks summoner and intervening creatures).", "hook_type": "summoning", "effect": { "control_via": "concentration" } },
+      { "ability_id": "dispel_magic_returns_to_plane", "description": "Dispel Magic banishes the elemental to its home plane.", "hook_type": "spell_interaction", "effect": { "trigger": "dispel_magic", "result": "banished_to_plane" } }
+    ],
     "immunities": ["non_magical_weapons"], "resistances": [], "vulnerabilities": [],
     "morale_modifiers": [],
     "combat_behavior": {
@@ -2652,10 +2671,82 @@
   },
 
   {
-    "id": "elemental_earth",
-    "name": "Elemental, Earth",
-    "variant": null,
-    "source": "ACKS Core",
+    "id": "elemental_air_12hd",
+    "name": "Air Elemental (Item Tier)",
+    "variant": "item",
+    "source": "ACKS Core (acore_monster_catalog_drag-gno.xml)",
+    "monster_types": ["elemental"],
+    "sub_types": ["air"],
+    "alignment": "neutral",
+    "intelligence": "average",
+    "size_category": "large",
+    "hit_dice": { "base": 12, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 9,
+    "attack_routines": [
+      { "routine_name": "slam", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "2d8", "to_hit_modifier": 0, "special_effect": "extra_1d8_vs_flying" } ] }
+    ],
+    "save_as": { "class": "F", "level": 12 },
+    "morale": 12,
+    "xp": 2100,
+    "movement": { "land": { "exploration": 0, "combat": 0 }, "fly": { "exploration": 360, "combat": 120 } },
+    "terrain_affinity": [],
+    "special_abilities": [
+      { "ability_id": "carry_away_sub_2hd", "description": "Sub-2-HD beings caught in the twirling mass save vs. Death or are carried away helpless.", "hook_type": "save_or_effect", "effect": { "save_type": "Death", "on_failure": "carried_away_helpless" } },
+      { "ability_id": "summoning_concentration_required", "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.", "hook_type": "summoning", "effect": { "control_via": "concentration" } },
+      { "ability_id": "dispel_magic_returns_to_plane", "description": "Dispel Magic banishes the elemental to its home plane.", "hook_type": "spell_interaction", "effect": { "trigger": "dispel_magic", "result": "banished_to_plane" } }
+    ],
+    "immunities": ["non_magical_weapons"], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "elemental_air_16hd",
+    "name": "Air Elemental (Spell Tier)",
+    "variant": "spell",
+    "source": "ACKS Core (acore_monster_catalog_drag-gno.xml)",
+    "monster_types": ["elemental"],
+    "sub_types": ["air"],
+    "alignment": "neutral",
+    "intelligence": "average",
+    "size_category": "large",
+    "hit_dice": { "base": 16, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 11,
+    "attack_routines": [
+      { "routine_name": "slam", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "3d8", "to_hit_modifier": 0, "special_effect": "extra_1d8_vs_flying" } ] }
+    ],
+    "save_as": { "class": "F", "level": 16 },
+    "morale": 12,
+    "xp": 3300,
+    "movement": { "land": { "exploration": 0, "combat": 0 }, "fly": { "exploration": 360, "combat": 120 } },
+    "terrain_affinity": [],
+    "special_abilities": [
+      { "ability_id": "carry_away_sub_2hd", "description": "Sub-2-HD beings caught in the twirling mass save vs. Death or are carried away helpless.", "hook_type": "save_or_effect", "effect": { "save_type": "Death", "on_failure": "carried_away_helpless" } },
+      { "ability_id": "summoning_concentration_required", "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.", "hook_type": "summoning", "effect": { "control_via": "concentration" } },
+      { "ability_id": "dispel_magic_returns_to_plane", "description": "Dispel Magic banishes the elemental to its home plane.", "hook_type": "spell_interaction", "effect": { "trigger": "dispel_magic", "result": "banished_to_plane" } }
+    ],
+    "immunities": ["non_magical_weapons"], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "elemental_earth_8hd",
+    "name": "Earth Elemental (Staff Tier)",
+    "variant": "staff",
+    "source": "ACKS Core (acore_monster_catalog_drag-gno.xml)",
     "monster_types": ["elemental"],
     "sub_types": ["earth"],
     "alignment": "neutral",
@@ -2664,15 +2755,19 @@
     "hit_dice": { "base": 8, "modifier": 0, "special_ability_stars": 1 },
     "armor_class": 7,
     "attack_routines": [
-      { "routine_name": "melee", "usage": "default",
-        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "3d6", "to_hit_modifier": 0, "special_effect": null } ] }
+      { "routine_name": "slam", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "1d8", "to_hit_modifier": 0, "special_effect": "extra_1d8_vs_grounded" } ] }
     ],
     "save_as": { "class": "F", "level": 8 },
     "morale": 12,
-    "xp": 1300,
+    "xp": 1100,
     "movement": { "land": { "exploration": 60, "combat": 20 } },
     "terrain_affinity": [],
-    "special_abilities": [],
+    "special_abilities": [
+      { "ability_id": "cannot_cross_water_wider_than_height", "description": "Cannot move through water wider than the elemental's height.", "hook_type": "movement", "effect": { "constraint": "water_width_lt_height" } },
+      { "ability_id": "summoning_concentration_required", "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.", "hook_type": "summoning", "effect": { "control_via": "concentration" } },
+      { "ability_id": "dispel_magic_returns_to_plane", "description": "Dispel Magic banishes the elemental to its home plane.", "hook_type": "spell_interaction", "effect": { "trigger": "dispel_magic", "result": "banished_to_plane" } }
+    ],
     "immunities": ["non_magical_weapons"], "resistances": [], "vulnerabilities": [],
     "morale_modifiers": [],
     "combat_behavior": {
@@ -2684,27 +2779,104 @@
   },
 
   {
-    "id": "elemental_fire",
-    "name": "Elemental, Fire",
-    "variant": null,
-    "source": "ACKS Core",
+    "id": "elemental_earth_12hd",
+    "name": "Earth Elemental (Item Tier)",
+    "variant": "item",
+    "source": "ACKS Core (acore_monster_catalog_drag-gno.xml)",
+    "monster_types": ["elemental"],
+    "sub_types": ["earth"],
+    "alignment": "neutral",
+    "intelligence": "average",
+    "size_category": "large",
+    "hit_dice": { "base": 12, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 9,
+    "attack_routines": [
+      { "routine_name": "slam", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "2d8", "to_hit_modifier": 0, "special_effect": "extra_1d8_vs_grounded" } ] }
+    ],
+    "save_as": { "class": "F", "level": 12 },
+    "morale": 12,
+    "xp": 2100,
+    "movement": { "land": { "exploration": 60, "combat": 20 } },
+    "terrain_affinity": [],
+    "special_abilities": [
+      { "ability_id": "cannot_cross_water_wider_than_height", "description": "Cannot move through water wider than the elemental's height.", "hook_type": "movement", "effect": { "constraint": "water_width_lt_height" } },
+      { "ability_id": "summoning_concentration_required", "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.", "hook_type": "summoning", "effect": { "control_via": "concentration" } },
+      { "ability_id": "dispel_magic_returns_to_plane", "description": "Dispel Magic banishes the elemental to its home plane.", "hook_type": "spell_interaction", "effect": { "trigger": "dispel_magic", "result": "banished_to_plane" } }
+    ],
+    "immunities": ["non_magical_weapons"], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "elemental_earth_16hd",
+    "name": "Earth Elemental (Spell Tier)",
+    "variant": "spell",
+    "source": "ACKS Core (acore_monster_catalog_drag-gno.xml)",
+    "monster_types": ["elemental"],
+    "sub_types": ["earth"],
+    "alignment": "neutral",
+    "intelligence": "average",
+    "size_category": "large",
+    "hit_dice": { "base": 16, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 11,
+    "attack_routines": [
+      { "routine_name": "slam", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "3d8", "to_hit_modifier": 0, "special_effect": "extra_1d8_vs_grounded" } ] }
+    ],
+    "save_as": { "class": "F", "level": 16 },
+    "morale": 12,
+    "xp": 3300,
+    "movement": { "land": { "exploration": 60, "combat": 20 } },
+    "terrain_affinity": [],
+    "special_abilities": [
+      { "ability_id": "cannot_cross_water_wider_than_height", "description": "Cannot move through water wider than the elemental's height.", "hook_type": "movement", "effect": { "constraint": "water_width_lt_height" } },
+      { "ability_id": "summoning_concentration_required", "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.", "hook_type": "summoning", "effect": { "control_via": "concentration" } },
+      { "ability_id": "dispel_magic_returns_to_plane", "description": "Dispel Magic banishes the elemental to its home plane.", "hook_type": "spell_interaction", "effect": { "trigger": "dispel_magic", "result": "banished_to_plane" } }
+    ],
+    "immunities": ["non_magical_weapons"], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "elemental_fire_8hd",
+    "name": "Fire Elemental (Staff Tier)",
+    "variant": "staff",
+    "source": "ACKS Core (acore_monster_catalog_drag-gno.xml)",
     "monster_types": ["elemental"],
     "sub_types": ["fire"],
     "alignment": "neutral",
     "intelligence": "average",
     "size_category": "large",
     "hit_dice": { "base": 8, "modifier": 0, "special_ability_stars": 1 },
-    "armor_class": 6,
+    "armor_class": 7,
     "attack_routines": [
-      { "routine_name": "melee", "usage": "default",
+      { "routine_name": "slam", "usage": "default",
         "attacks": [ { "attack_type": "natural", "count": 1, "damage": "1d8", "to_hit_modifier": 0, "special_effect": "ignite" } ] }
     ],
     "save_as": { "class": "F", "level": 8 },
     "morale": 12,
-    "xp": 1300,
+    "xp": 1100,
     "movement": { "land": { "exploration": 120, "combat": 40 } },
     "terrain_affinity": [],
-    "special_abilities": [],
+    "special_abilities": [
+      { "ability_id": "extra_damage_vs_cold_attackers", "description": "+1d8 damage on a hit against opponents using cold-based attacks.", "hook_type": "damage_modifier", "effect": { "trigger": "target_uses_cold_attacks", "extra_damage": "1d8" } },
+      { "ability_id": "cannot_cross_water_wider_than_diameter", "description": "Cannot move through water wider than the elemental's diameter.", "hook_type": "movement", "effect": { "constraint": "water_width_lt_diameter" } },
+      { "ability_id": "summoning_concentration_required", "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.", "hook_type": "summoning", "effect": { "control_via": "concentration" } },
+      { "ability_id": "dispel_magic_returns_to_plane", "description": "Dispel Magic banishes the elemental to its home plane.", "hook_type": "spell_interaction", "effect": { "trigger": "dispel_magic", "result": "banished_to_plane" } }
+    ],
     "immunities": ["non_magical_weapons", "fire"], "resistances": [], "vulnerabilities": [],
     "morale_modifiers": [],
     "combat_behavior": {
@@ -2716,27 +2888,177 @@
   },
 
   {
-    "id": "elemental_water",
-    "name": "Elemental, Water",
-    "variant": null,
-    "source": "ACKS Core",
+    "id": "elemental_fire_12hd",
+    "name": "Fire Elemental (Item Tier)",
+    "variant": "item",
+    "source": "ACKS Core (acore_monster_catalog_drag-gno.xml)",
+    "monster_types": ["elemental"],
+    "sub_types": ["fire"],
+    "alignment": "neutral",
+    "intelligence": "average",
+    "size_category": "large",
+    "hit_dice": { "base": 12, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 9,
+    "attack_routines": [
+      { "routine_name": "slam", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "2d8", "to_hit_modifier": 0, "special_effect": "ignite" } ] }
+    ],
+    "save_as": { "class": "F", "level": 12 },
+    "morale": 12,
+    "xp": 2100,
+    "movement": { "land": { "exploration": 120, "combat": 40 } },
+    "terrain_affinity": [],
+    "special_abilities": [
+      { "ability_id": "extra_damage_vs_cold_attackers", "description": "+1d8 damage on a hit against opponents using cold-based attacks.", "hook_type": "damage_modifier", "effect": { "trigger": "target_uses_cold_attacks", "extra_damage": "1d8" } },
+      { "ability_id": "cannot_cross_water_wider_than_diameter", "description": "Cannot move through water wider than the elemental's diameter.", "hook_type": "movement", "effect": { "constraint": "water_width_lt_diameter" } },
+      { "ability_id": "summoning_concentration_required", "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.", "hook_type": "summoning", "effect": { "control_via": "concentration" } },
+      { "ability_id": "dispel_magic_returns_to_plane", "description": "Dispel Magic banishes the elemental to its home plane.", "hook_type": "spell_interaction", "effect": { "trigger": "dispel_magic", "result": "banished_to_plane" } }
+    ],
+    "immunities": ["non_magical_weapons", "fire"], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "elemental_fire_16hd",
+    "name": "Fire Elemental (Spell Tier)",
+    "variant": "spell",
+    "source": "ACKS Core (acore_monster_catalog_drag-gno.xml)",
+    "monster_types": ["elemental"],
+    "sub_types": ["fire"],
+    "alignment": "neutral",
+    "intelligence": "average",
+    "size_category": "large",
+    "hit_dice": { "base": 16, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 11,
+    "attack_routines": [
+      { "routine_name": "slam", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "3d8", "to_hit_modifier": 0, "special_effect": "ignite" } ] }
+    ],
+    "save_as": { "class": "F", "level": 16 },
+    "morale": 12,
+    "xp": 3300,
+    "movement": { "land": { "exploration": 120, "combat": 40 } },
+    "terrain_affinity": [],
+    "special_abilities": [
+      { "ability_id": "extra_damage_vs_cold_attackers", "description": "+1d8 damage on a hit against opponents using cold-based attacks.", "hook_type": "damage_modifier", "effect": { "trigger": "target_uses_cold_attacks", "extra_damage": "1d8" } },
+      { "ability_id": "cannot_cross_water_wider_than_diameter", "description": "Cannot move through water wider than the elemental's diameter.", "hook_type": "movement", "effect": { "constraint": "water_width_lt_diameter" } },
+      { "ability_id": "summoning_concentration_required", "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.", "hook_type": "summoning", "effect": { "control_via": "concentration" } },
+      { "ability_id": "dispel_magic_returns_to_plane", "description": "Dispel Magic banishes the elemental to its home plane.", "hook_type": "spell_interaction", "effect": { "trigger": "dispel_magic", "result": "banished_to_plane" } }
+    ],
+    "immunities": ["non_magical_weapons", "fire"], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "elemental_water_8hd",
+    "name": "Water Elemental (Staff Tier)",
+    "variant": "staff",
+    "source": "ACKS Core (acore_monster_catalog_drag-gno.xml)",
     "monster_types": ["elemental"],
     "sub_types": ["water"],
     "alignment": "neutral",
     "intelligence": "average",
     "size_category": "large",
     "hit_dice": { "base": 8, "modifier": 0, "special_ability_stars": 1 },
-    "armor_class": 5,
+    "armor_class": 7,
     "attack_routines": [
-      { "routine_name": "melee", "usage": "default",
-        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "2d8", "to_hit_modifier": 0, "special_effect": null } ] }
+      { "routine_name": "slam", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "1d8", "to_hit_modifier": 0, "special_effect": "extra_1d8_vs_in_water" } ] }
     ],
     "save_as": { "class": "F", "level": 8 },
     "morale": 12,
-    "xp": 1300,
-    "movement": { "land": { "exploration": 30, "combat": 10 }, "swim": { "exploration": 240, "combat": 80 } },
+    "xp": 1100,
+    "movement": { "land": { "exploration": 60, "combat": 20 }, "swim": { "exploration": 180, "combat": 60 } },
     "terrain_affinity": [],
-    "special_abilities": [],
+    "special_abilities": [
+      { "ability_id": "must_remain_within_60ft_of_water", "description": "Cannot operate further than 60 feet from a source of water.", "hook_type": "movement", "effect": { "constraint": "water_source_within_60ft" } },
+      { "ability_id": "summoning_concentration_required", "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.", "hook_type": "summoning", "effect": { "control_via": "concentration" } },
+      { "ability_id": "dispel_magic_returns_to_plane", "description": "Dispel Magic banishes the elemental to its home plane.", "hook_type": "spell_interaction", "effect": { "trigger": "dispel_magic", "result": "banished_to_plane" } }
+    ],
+    "immunities": ["non_magical_weapons"], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "elemental_water_12hd",
+    "name": "Water Elemental (Item Tier)",
+    "variant": "item",
+    "source": "ACKS Core (acore_monster_catalog_drag-gno.xml)",
+    "monster_types": ["elemental"],
+    "sub_types": ["water"],
+    "alignment": "neutral",
+    "intelligence": "average",
+    "size_category": "large",
+    "hit_dice": { "base": 12, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 9,
+    "attack_routines": [
+      { "routine_name": "slam", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "2d8", "to_hit_modifier": 0, "special_effect": "extra_1d8_vs_in_water" } ] }
+    ],
+    "save_as": { "class": "F", "level": 12 },
+    "morale": 12,
+    "xp": 2100,
+    "movement": { "land": { "exploration": 60, "combat": 20 }, "swim": { "exploration": 180, "combat": 60 } },
+    "terrain_affinity": [],
+    "special_abilities": [
+      { "ability_id": "must_remain_within_60ft_of_water", "description": "Cannot operate further than 60 feet from a source of water.", "hook_type": "movement", "effect": { "constraint": "water_source_within_60ft" } },
+      { "ability_id": "summoning_concentration_required", "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.", "hook_type": "summoning", "effect": { "control_via": "concentration" } },
+      { "ability_id": "dispel_magic_returns_to_plane", "description": "Dispel Magic banishes the elemental to its home plane.", "hook_type": "spell_interaction", "effect": { "trigger": "dispel_magic", "result": "banished_to_plane" } }
+    ],
+    "immunities": ["non_magical_weapons"], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "elemental_water_16hd",
+    "name": "Water Elemental (Spell Tier)",
+    "variant": "spell",
+    "source": "ACKS Core (acore_monster_catalog_drag-gno.xml)",
+    "monster_types": ["elemental"],
+    "sub_types": ["water"],
+    "alignment": "neutral",
+    "intelligence": "average",
+    "size_category": "large",
+    "hit_dice": { "base": 16, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 11,
+    "attack_routines": [
+      { "routine_name": "slam", "usage": "default",
+        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "3d8", "to_hit_modifier": 0, "special_effect": "extra_1d8_vs_in_water" } ] }
+    ],
+    "save_as": { "class": "F", "level": 16 },
+    "morale": 12,
+    "xp": 3300,
+    "movement": { "land": { "exploration": 60, "combat": 20 }, "swim": { "exploration": 180, "combat": 60 } },
+    "terrain_affinity": [],
+    "special_abilities": [
+      { "ability_id": "must_remain_within_60ft_of_water", "description": "Cannot operate further than 60 feet from a source of water.", "hook_type": "movement", "effect": { "constraint": "water_source_within_60ft" } },
+      { "ability_id": "summoning_concentration_required", "description": "Summoner must fully concentrate; loss of concentration → uncontrolled.", "hook_type": "summoning", "effect": { "control_via": "concentration" } },
+      { "ability_id": "dispel_magic_returns_to_plane", "description": "Dispel Magic banishes the elemental to its home plane.", "hook_type": "spell_interaction", "effect": { "trigger": "dispel_magic", "result": "banished_to_plane" } }
+    ],
     "immunities": ["non_magical_weapons"], "resistances": [], "vulnerabilities": [],
     "morale_modifiers": [],
     "combat_behavior": {
@@ -2751,25 +3073,29 @@
     "id": "invisible_stalker",
     "name": "Invisible Stalker",
     "variant": null,
-    "source": "ACKS Core",
-    "monster_types": ["elemental"],
-    "sub_types": ["air"],
+    "source": "ACKS Core (acore_monster_catalog_gol-lee.xml)",
+    "monster_types": ["summoned_creature"],
+    "sub_types": ["air", "planar"],
     "alignment": "neutral",
     "intelligence": "average",
     "size_category": "large",
     "hit_dice": { "base": 8, "modifier": 0, "special_ability_stars": 1 },
-    "armor_class": 7,
+    "armor_class": 6,
     "attack_routines": [
-      { "routine_name": "melee", "usage": "default",
+      { "routine_name": "fist", "usage": "default",
         "attacks": [ { "attack_type": "natural", "count": 1, "damage": "4d4", "to_hit_modifier": 0, "special_effect": null } ] }
     ],
     "save_as": { "class": "F", "level": 8 },
     "morale": 12,
-    "xp": 1700,
-    "movement": { "land": { "exploration": 0, "combat": 0 }, "fly": { "exploration": 360, "combat": 120 } },
+    "xp": 1100,
+    "movement": { "land": { "exploration": 120, "combat": 40 } },
     "terrain_affinity": [],
     "special_abilities": [
-      { "ability_id": "permanent_invisibility", "description": "Always invisible.", "hook_type": "flag", "effect": { "flag": "is_invisible" } }
+      { "ability_id": "permanent_invisibility", "description": "Always invisible.", "hook_type": "flag", "effect": { "flag": "is_invisible" } },
+      { "ability_id": "surprise_modifier_minus_3", "description": "Foes unable to detect invisibility suffer −3 to avoid being surprised by the stalker.", "hook_type": "surprise_modifier", "effect": { "modifier": -3, "applies_when_target": "cannot_see_invisible" } },
+      { "ability_id": "seeks_to_pervert_long_missions", "description": "On protracted or complex missions, seeks to pervert its instructions.", "hook_type": "behavior", "effect": { "trigger": "long_or_complex_mission" } },
+      { "ability_id": "obeys_summoner_only", "description": "Performs only the specific task commanded by the summoner; obeys no other.", "hook_type": "behavior", "effect": { "obedience": "summoner_only" } },
+      { "ability_id": "dispel_magic_returns_to_plane", "description": "Dispel Magic returns the stalker to its home plane.", "hook_type": "spell_interaction", "effect": { "trigger": "dispel_magic", "result": "banished_to_plane" } }
     ],
     "immunities": ["non_magical_weapons"], "resistances": [], "vulnerabilities": [],
     "morale_modifiers": [],
@@ -2782,27 +3108,112 @@
   },
 
   {
-    "id": "insect_swarm_4hd",
-    "name": "Insect Swarm",
-    "variant": null,
-    "source": "ACKS Core",
+    "id": "insect_swarm_2hd",
+    "name": "Insect Swarm (2 HD)",
+    "variant": "2hd",
+    "source": "LE Monster Catalog 2 (le_monster_catalog_2_summary.xml)",
     "monster_types": ["beast"],
-    "sub_types": ["swarm", "vermin"],
+    "sub_types": ["swarm", "vermin", "insect"],
     "alignment": "neutral",
     "intelligence": "non",
     "size_category": "large",
-    "hit_dice": { "base": 4, "modifier": 0, "special_ability_stars": 0 },
-    "armor_class": 0,
+    "hit_dice": { "base": 2, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 2,
     "attack_routines": [
-      { "routine_name": "melee", "usage": "default",
-        "attacks": [ { "attack_type": "natural", "count": 1, "damage": "1d4", "to_hit_modifier": 0, "special_effect": "auto_drive_off_under_3hd" } ] }
+      { "routine_name": "swarm", "usage": "default",
+        "attacks": [ { "attack_type": "swarm_aura_application", "count": 1, "damage": "0", "to_hit_modifier": 0, "special_effect": "applies_swarmed_insect" } ] }
     ],
-    "save_as": { "class": "F", "level": 4 },
-    "morale": 12,
-    "xp": 80,
+    "save_as": { "class": "normal_man", "level": 0 },
+    "morale": 9,
+    "xp": 29,
     "movement": { "land": { "exploration": 30, "combat": 10 }, "fly": { "exploration": 60, "combat": 20 } },
     "terrain_affinity": [],
-    "special_abilities": [],
+    "ignores_cell_occupancy": true,
+    "no_zoc_emission": true,
+    "no_zoc_obedience": true,
+    "special_abilities": [
+      { "ability_id": "swarm_auto_hit_2pts", "description": "Auto-hit 2 pts/round on the swarm's initiative tick (no attack roll). Doubles vs. unarmored / AC ≤ 3. Halved while warding/fleeing.", "hook_type": "swarm_tick_damage", "effect": { "tick_damage": 2, "double_vs_ac_at_or_below": 3, "halve_if_warding_or_fleeing": true } },
+      { "ability_id": "swarm_fire_cold_vulnerable", "description": "Fire-based and cold-based attacks deal full damage; ordinary weapons clamp to 1d4 against a swarm.", "hook_type": "damage_clamp", "effect": { "clamp_die": "1d4", "exempt_damage_types": ["fire", "cold"] } },
+      { "ability_id": "swarm_sleep_dormant", "description": "Sleep spell makes the swarm dormant for the spell's duration.", "hook_type": "spell_interaction", "effect": { "trigger": "sleep_spell", "result": "dormant_for_duration" } }
+    ],
+    "immunities": ["sleep", "charm", "hold"], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "insect_swarm_3hd",
+    "name": "Insect Swarm (3 HD)",
+    "variant": "3hd",
+    "source": "LE Monster Catalog 2 (le_monster_catalog_2_summary.xml)",
+    "monster_types": ["beast"],
+    "sub_types": ["swarm", "vermin", "insect"],
+    "alignment": "neutral",
+    "intelligence": "non",
+    "size_category": "large",
+    "hit_dice": { "base": 3, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 2,
+    "attack_routines": [
+      { "routine_name": "swarm", "usage": "default",
+        "attacks": [ { "attack_type": "swarm_aura_application", "count": 1, "damage": "0", "to_hit_modifier": 0, "special_effect": "applies_swarmed_insect" } ] }
+    ],
+    "save_as": { "class": "normal_man", "level": 0 },
+    "morale": 9,
+    "xp": 65,
+    "movement": { "land": { "exploration": 30, "combat": 10 }, "fly": { "exploration": 60, "combat": 20 } },
+    "terrain_affinity": [],
+    "ignores_cell_occupancy": true,
+    "no_zoc_emission": true,
+    "no_zoc_obedience": true,
+    "special_abilities": [
+      { "ability_id": "swarm_auto_hit_2pts", "description": "Auto-hit 2 pts/round on the swarm's initiative tick (no attack roll). Doubles vs. unarmored / AC ≤ 3. Halved while warding/fleeing.", "hook_type": "swarm_tick_damage", "effect": { "tick_damage": 2, "double_vs_ac_at_or_below": 3, "halve_if_warding_or_fleeing": true } },
+      { "ability_id": "swarm_fire_cold_vulnerable", "description": "Fire-based and cold-based attacks deal full damage; ordinary weapons clamp to 1d4 against a swarm.", "hook_type": "damage_clamp", "effect": { "clamp_die": "1d4", "exempt_damage_types": ["fire", "cold"] } },
+      { "ability_id": "swarm_sleep_dormant", "description": "Sleep spell makes the swarm dormant for the spell's duration.", "hook_type": "spell_interaction", "effect": { "trigger": "sleep_spell", "result": "dormant_for_duration" } }
+    ],
+    "immunities": ["sleep", "charm", "hold"], "resistances": [], "vulnerabilities": [],
+    "morale_modifiers": [],
+    "combat_behavior": {
+      "formation_discipline": "none", "aggression_posture": "high",
+      "engagement_profile": "melee", "spellcasting_timing": "none",
+      "consumable_timing": "none", "primary_target_rule": "nearest",
+      "target_tie_breaker": "random", "morale_style": "fearless"
+    }
+  },
+
+  {
+    "id": "insect_swarm_4hd",
+    "name": "Insect Swarm (4 HD)",
+    "variant": "4hd",
+    "source": "LE Monster Catalog 2 (le_monster_catalog_2_summary.xml)",
+    "monster_types": ["beast"],
+    "sub_types": ["swarm", "vermin", "insect"],
+    "alignment": "neutral",
+    "intelligence": "non",
+    "size_category": "large",
+    "hit_dice": { "base": 4, "modifier": 0, "special_ability_stars": 1 },
+    "armor_class": 2,
+    "attack_routines": [
+      { "routine_name": "swarm", "usage": "default",
+        "attacks": [ { "attack_type": "swarm_aura_application", "count": 1, "damage": "0", "to_hit_modifier": 0, "special_effect": "applies_swarmed_insect" } ] }
+    ],
+    "save_as": { "class": "normal_man", "level": 0 },
+    "morale": 9,
+    "xp": 135,
+    "movement": { "land": { "exploration": 30, "combat": 10 }, "fly": { "exploration": 60, "combat": 20 } },
+    "terrain_affinity": [],
+    "ignores_cell_occupancy": true,
+    "no_zoc_emission": true,
+    "no_zoc_obedience": true,
+    "special_abilities": [
+      { "ability_id": "swarm_auto_hit_2pts", "description": "Auto-hit 2 pts/round on the swarm's initiative tick (no attack roll). Doubles vs. unarmored / AC ≤ 3. Halved while warding/fleeing.", "hook_type": "swarm_tick_damage", "effect": { "tick_damage": 2, "double_vs_ac_at_or_below": 3, "halve_if_warding_or_fleeing": true } },
+      { "ability_id": "swarm_fire_cold_vulnerable", "description": "Fire-based and cold-based attacks deal full damage; ordinary weapons clamp to 1d4 against a swarm.", "hook_type": "damage_clamp", "effect": { "clamp_die": "1d4", "exempt_damage_types": ["fire", "cold"] } },
+      { "ability_id": "swarm_sleep_dormant", "description": "Sleep spell makes the swarm dormant for the spell's duration.", "hook_type": "spell_interaction", "effect": { "trigger": "sleep_spell", "result": "dormant_for_duration" } }
+    ],
     "immunities": ["sleep", "charm", "hold"], "resistances": [], "vulnerabilities": [],
     "morale_modifiers": [],
     "combat_behavior": {

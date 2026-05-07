@@ -107,9 +107,48 @@ func resolve(args: Dictionary) -> Dictionary:
 			"snapshot": snapshot,
 		}
 
+	# P7 — accumulate per-target snapshots into persist_metadata so the
+	# expiration callback can revert each target without depending on the
+	# (already-cleared) flag metadata.
+	var per_target_snapshots: Dictionary = {}
+	for tid in per_target.keys():
+		var entry: Dictionary = per_target[tid]
+		if bool(entry.get("applied", false)) and entry.has("snapshot"):
+			per_target_snapshots[tid] = entry["snapshot"]
+
 	return {
 		"applied": true,
 		"per_target": per_target,
 		"caster_id": caster_context.caster_id,
 		"spell_key": spell_choice.spell_key if spell_choice != null else "polymorph_other",
+		"persist_metadata": {
+			"polymorph_other_per_target_snapshots": per_target_snapshots,
+		},
 	}
+
+
+## P7 — expiration callback. Restores each polymorphed target's physical
+## stats (and alignment) from the per-target snapshot stored in metadata.
+## Invoked on every cleanup path (duration_expired / concentration_broken /
+## dispelled). The flag's been auto-cleared by the standard unwind path
+## already; this callback handles the snapshot revert + signal emit so
+## downstream subscribers (UI, log) can react.
+static func on_expiration(
+		effect: Dictionary, cause: String, target_lookup: Callable) -> void:
+	var spell_key := String(effect.get("spell_key", "polymorph_other"))
+	var snapshots: Dictionary = effect.get("metadata", {}).get(
+		"polymorph_other_per_target_snapshots", {})
+	for tid in snapshots.keys():
+		var snapshot: Dictionary = snapshots[tid]
+		if target_lookup.is_valid():
+			var entity = target_lookup.call(tid)
+			if entity != null:
+				if "armor_class" in entity and snapshot.has("armor_class"):
+					entity.armor_class = int(snapshot["armor_class"])
+				if "attack_throw" in entity and snapshot.has("attack_throw"):
+					entity.attack_throw = int(snapshot["attack_throw"])
+				if "base_movement" in entity and snapshot.has("base_movement"):
+					entity.base_movement = int(snapshot["base_movement"])
+				if "alignment" in entity and snapshot.has("alignment"):
+					entity.alignment = String(snapshot["alignment"])
+		EventBus.polymorph_reverted.emit(String(tid), spell_key, snapshot, cause)

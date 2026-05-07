@@ -150,6 +150,21 @@ func resolve_melee_attack(
 					{"weapon_category": weapon_family}):
 				damage_total *= 2
 
+		# Warding-attack clamp: ordinary weapon attacks against a swarm replace
+		# their damage roll with a fresh 1d4, per RAW (le_monster_catalog_2_summary.xml
+		# swarm_attack_resolution: "Warding off a swarm with a torch or weapon
+		# inflicts 1d4 damage to the swarm. Fire-based and cold-based attacks
+		# damage a swarm."). Magical-rider damage discrimination (Striking flame
+		# sword retaining its fire die) is deferred until damage-type per-bonus
+		# accounting lands; for now, only spells that pre-set the damage_type
+		# to fire/cold bypass the clamp.
+		if target.is_swarm():
+			var clamped: int = 4
+			if _dice_system != null:
+				var d = _dice_system.roll_expression("1d4", "swarm_warding_attack")
+				clamped = int(d.modified_total) if d != null else 4
+			damage_total = maxi(1, clamped)
+
 		# Apply damage through target's resistance pipeline
 		damage_result = target.apply_damage(damage_total, "physical")
 

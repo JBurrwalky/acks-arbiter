@@ -23,6 +23,27 @@ extends RefCounted
 ##     to the caster persists through the active_effect tracker.
 ##
 ## ~95 LOC.
+##
+## DEFERRED: dynamic HD scaling per source corpse. RAW says human and
+## demi-human skeletons always have 1 HD regardless of the deceased
+## character's level, while zombies have HD equal to (creature-in-life +1).
+## For non-humanoid sources, both skeleton and zombie scale with the source
+## corpse's HD. Today this resolver passes hd_cost through to the integrator
+## but the spawned combatant uses the catalog's static skeleton (1 HD) /
+## zombie (2 HD = humanoid case) template. Three options sketched in the
+## plan:
+##   A — per-corpse generation: resolver looks up the source corpse's HD,
+##       computes new HD, and overrides HP / save_as.level / attack_throw
+##       on the spawned combatant via a new
+##       Combatant.from_monster_with_overrides path. Catalog stays small.
+##   B — multi-entry catalog: skeleton_1hd, skeleton_2hd, ..., zombie_2hd,
+##       zombie_3hd, .... Resolver picks by HD. Bloats catalog; matches the
+##       elemental-tier multi-entry pattern.
+##   C — template + scaling rule: catalog gains a `scaling: { drives:
+##       ["hit_dice","save_as","attack_throw"], from: "source_hd" }` field;
+##       Combatant.from_monster reads the rule and adjusts at spawn time.
+## Recommend revisit after the elemental tier multi-entry pattern (option
+## B equivalent) ships in production.
 
 
 const HD_PER_CASTER_LEVEL: int = 2

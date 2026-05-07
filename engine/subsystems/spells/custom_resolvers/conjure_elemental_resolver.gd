@@ -26,6 +26,12 @@ extends RefCounted
 ## ~95 LOC.
 
 const VALID_ELEMENTAL_TYPES: Array = ["air", "earth", "fire", "water"]
+## ACKS Core gives elementals three power tiers keyed to summoning method:
+## staff (8 HD), miscellaneous magic item (12 HD), spell (16 HD). Conjure
+## Elemental is a 5th-level magic-user spell so it summons spell-tier (16 HD)
+## by default. Future non-spell summoning paths can override via resolver_args.
+const VALID_TIERS: Array = ["8hd", "12hd", "16hd"]
+const DEFAULT_TIER: String = "16hd"
 
 
 func resolve(args: Dictionary) -> Dictionary:
@@ -47,9 +53,19 @@ func resolve(args: Dictionary) -> Dictionary:
 			"valid": VALID_ELEMENTAL_TYPES,
 		}
 
+	var tier := String(resolver_args.get("tier", DEFAULT_TIER)).to_lower()
+	if tier not in VALID_TIERS:
+		return {
+			"applied": false,
+			"reason": "invalid_tier",
+			"requested": tier,
+			"valid": VALID_TIERS,
+		}
+
 	var spawn_profile: Dictionary = {
-		"elemental_id": "elemental_%s:%s" % [elemental_type, caster_context.caster_id],
+		"elemental_id": "elemental_%s_%s:%s" % [elemental_type, tier, caster_context.caster_id],
 		"elemental_type": elemental_type,
+		"tier": tier,
 		"caster_id": caster_context.caster_id,
 		"caster_level": caster_context.caster_level,
 		"summon_cell": target_descriptor.origin_cell if target_descriptor != null else Vector3i.ZERO,
@@ -62,6 +78,7 @@ func resolve(args: Dictionary) -> Dictionary:
 	return {
 		"applied": true,
 		"elemental_type": elemental_type,
+		"tier": tier,
 		"spawn_profile": spawn_profile,
 		"caster_id": caster_context.caster_id,
 		"spell_key": spell_choice.spell_key if spell_choice != null else "conjure_elemental",
@@ -69,3 +86,24 @@ func resolve(args: Dictionary) -> Dictionary:
 			"conjure_elemental_spawn_profile": spawn_profile,
 		},
 	}
+
+
+## P7 — expiration callback. Dismisses the summoned elemental back to its
+## native plane on every cleanup cause EXCEPT concentration_broken (which
+## flips control to hostile per RAW; the elemental remains on the roster
+## as an enemy via the elemental_uncontrolled path in SpellCombatHooks).
+## record_casualty is NOT called per RAW.
+static func on_expiration(
+		effect: Dictionary, cause: String, _target_lookup: Callable) -> void:
+	var meta: Dictionary = effect.get("metadata", {})
+	var profile: Dictionary = meta.get("conjure_elemental_spawn_profile", {})
+	if profile.is_empty():
+		return
+	# Concentration loss → uncontrolled-hostile path, not dismissal.
+	if cause == "concentration_broken":
+		return
+	var elemental_id := String(profile.get("elemental_id", ""))
+	var elemental_type := String(profile.get("elemental_type", "earth"))
+	if elemental_id.is_empty():
+		return
+	EventBus.combatant_dismissed_to_native_plane.emit(elemental_id, elemental_type, cause)

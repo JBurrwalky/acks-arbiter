@@ -45,6 +45,14 @@ extends RefCounted
 ##   Defense:    "is_mirror_image_protected" (Mirror Image; figments absorb attacks)
 ##   Communication: "can_speak_with_animals" (Speak with Animals)
 ##   Auras:      "has_silence_aura" (Silence 15' Radius; mobile if anchored on a creature)
+##   Spatial:    "ignores_cell_occupancy" (set on swarms; movement_resolver._is_blocking_occupant
+##                  short-circuits past them so other creatures may walk through),
+##               "no_zoc_emission" (set on swarms; consulted in
+##                  movement_resolver._build_enemy_zoc_set_3d to skip ZoC emission;
+##                  presence-based — absence means ZoC is emitted normally),
+##               "no_zoc_obedience" (set on swarms; consulted in
+##                  movement_resolver.move_along_path to skip the ZoC-stop break;
+##                  presence-based — absence means ZoC is respected normally)
 
 # _flags: flag_key -> Array of { source_id, metadata }
 var _flags: Dictionary = {}

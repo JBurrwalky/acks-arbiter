@@ -26,6 +26,7 @@ Axioms (ax_) > HFH excerpted > Player's Companion (pc_) > Lairs & Encounters (le
 | `acore_adventures_and_encounters.xml` | Dungeon/wilderness/sea adventure procedures, encounter tables | exploration, encounters, dungeon, wilderness, sea |
 | `acore_treasure_and_magic_items_rules.xml` | Treasure generation, treasure types, magic item tables, XP from treasure | treasure, magic items, gems, XP |
 | `acore_axioms_strongholds_and_domains.xml` | Domain acquisition, stronghold construction, realm management, territory | domains, strongholds, population, territory |
+| `acore_stronghold_construction_costs.pdf` | Stronghold structure costs, civilian structure costs, accessory costs, per-class follower table, engineer requirement (250 gp/month per 100,000 gp), construction rate (1 day per 500 gp + speed tiers) | stronghold costs, construction time, engineers, followers (per class) |
 | `acore-setting-construction-rules.xml` | Campaign map, region, and dungeon construction procedures and tables | setting, map, region, dungeon design |
 | `acore-campaign-general-and-magic-research.xml` | Magic research, spell research, item creation, ritual casting, constructs | research, crafting, rituals, constructs |
 | `acore-campaign-hijinks.xml` | Hideouts for assassins/nightblades/thieves, syndicate management | hijinks, thieves, assassins, syndicates |

@@ -96,3 +96,20 @@ func resolve(args: Dictionary) -> Dictionary:
 			"wall_profile": wall_profile,
 		},
 	}
+
+
+## P7 — expiration callback. Emits wall_dispersed so renderers / log
+## subscribers can clear segment visuals. Walls of fire/ice are 2-turn
+## duration spells so they typically end via duration_expired. Walls of
+## stone/iron are permanent — they fire only on dispelled (or future
+## tipping-event hooks). The signal carries cause so subscribers can
+## render differently per cause.
+static func on_expiration(
+		effect: Dictionary, cause: String, _target_lookup: Callable) -> void:
+	var meta: Dictionary = effect.get("metadata", {})
+	var profile: Dictionary = meta.get("wall_profile", {})
+	var wall_id := String(profile.get("wall_id", String(effect.get("effect_id", ""))))
+	var spell_key := String(effect.get("spell_key", "wall_of_iron"))
+	if wall_id.is_empty():
+		return
+	EventBus.wall_dispersed.emit(wall_id, spell_key, cause)

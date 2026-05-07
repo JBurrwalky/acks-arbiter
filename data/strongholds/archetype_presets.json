@@ -1,0 +1,223 @@
+{
+  "_source": "acore_stronghold_construction_costs.pdf p.126 (Strongholds by Class table). Lightblessed Wonderworker entry per pc_classes_5.xml §stronghold_sanctum L127-134 (renamed from 'Nobiran Wonderworker' per [RESOLVED 2026-05-06] in domain-roadmap-corrected.md). Beastman clanhold per ax_domains_of_chaos.xml §stronghold.",
+  "_notes": "Each preset is keyed by power_id (matches data/powers/power_catalog.json and data/classes/*.json class_powers entries). The default_structures and default_gp_value fields suggest a starting build that meets the per-classification minimum stronghold value; the player can customize during the commission wizard flow. Class location restrictions are enforced by StrongholdCostCalculator.validate_class_location.",
+  "presets": [
+    {
+      "power_id": "stronghold_castle",
+      "archetype": "fortress",
+      "display_name": "Fighter's Castle",
+      "class_ids": ["fighter"],
+      "stronghold_label": "Castle",
+      "follower_formula": {
+        "mercenaries_dice": "1d4+1",
+        "mercenary_multiplier": 10,
+        "mercenary_level": 0,
+        "leaders_dice": "1d6",
+        "leader_class_id": "fighter",
+        "leader_level_min": 1,
+        "leader_level_max": 3
+      },
+      "class_cost_reduction_pct": 0,
+      "followers_check_morale": true,
+      "location_restrictions": [],
+      "default_structures": ["keep_square_80x60", "tower_medium_round", "tower_medium_round", "wall_stone_30h", "gatehouse"],
+      "notes": "RAW: acore_stronghold_construction_costs.pdf p.126"
+    },
+    {
+      "power_id": "stronghold_church",
+      "archetype": "fortress",
+      "display_name": "Cleric's Fortified Church",
+      "class_ids": ["cleric"],
+      "stronghold_label": "Fortified Church",
+      "follower_formula": {
+        "mercenaries_dice": "5d6",
+        "mercenary_multiplier": 10,
+        "mercenary_level": 0,
+        "leaders_dice": "1d6",
+        "leader_class_id": "cleric",
+        "leader_level_min": 1,
+        "leader_level_max": 3
+      },
+      "class_cost_reduction_pct": 50,
+      "followers_check_morale": false,
+      "location_restrictions": [],
+      "default_structures": ["keep_square_80x60", "tower_medium_round", "tower_medium_round", "wall_stone_30h", "gatehouse"],
+      "notes": "RAW: acore_stronghold_construction_costs.pdf p.126 — cost reduced 50%, followers never check morale."
+    },
+    {
+      "power_id": "stronghold_temple",
+      "archetype": "fortress",
+      "display_name": "Bladedancer's Temple",
+      "class_ids": ["bladedancer"],
+      "stronghold_label": "Temple",
+      "follower_formula": {
+        "mercenaries_dice": "5d6",
+        "mercenary_multiplier": 10,
+        "mercenary_level": 0,
+        "leaders_dice": "1d6",
+        "leader_class_id": "bladedancer",
+        "leader_level_min": 1,
+        "leader_level_max": 3
+      },
+      "class_cost_reduction_pct": 50,
+      "followers_check_morale": false,
+      "location_restrictions": [],
+      "default_structures": ["keep_square_80x60", "tower_medium_round", "tower_medium_round", "wall_stone_30h", "gatehouse"],
+      "notes": "RAW: acore_stronghold_construction_costs.pdf p.126 — cost reduced 50%, followers never check morale."
+    },
+    {
+      "power_id": "stronghold_sanctum",
+      "archetype": "sanctum",
+      "display_name": "Mage's Sanctum",
+      "class_ids": ["mage"],
+      "stronghold_label": "Sanctum",
+      "follower_formula": {
+        "apprentices_dice": "2d6",
+        "apprentice_level": 0,
+        "leaders_dice": "1d6",
+        "leader_class_id": "mage",
+        "leader_level_min": 1,
+        "leader_level_max": 1
+      },
+      "class_cost_reduction_pct": 0,
+      "followers_check_morale": true,
+      "location_restrictions": [],
+      "default_structures": ["tower_huge_round", "wall_stone_30h", "gatehouse"],
+      "notes": "RAW: acore_stronghold_construction_costs.pdf p.126 (see Sanctums and Dungeons section p.141)."
+    },
+    {
+      "power_id": "stronghold_hideout",
+      "archetype": "hideout",
+      "display_name": "Thief's / Assassin's / Nightblade's Hideout",
+      "class_ids": ["thief", "assassin", "elf_nightblade"],
+      "stronghold_label": "Hideout",
+      "follower_formula": {
+        "members_dice": "2d6",
+        "member_level": 1,
+        "member_class_id_per_class": {
+          "thief": "thief",
+          "assassin": "assassin",
+          "elf_nightblade": "elf_nightblade"
+        }
+      },
+      "class_cost_reduction_pct": 0,
+      "followers_check_morale": true,
+      "location_restrictions": [],
+      "default_structures": ["building_stone", "corridor_dungeon", "corridor_dungeon"],
+      "notes": "RAW: acore_stronghold_construction_costs.pdf p.126 (see Hideouts and Hijinks section p.135)."
+    },
+    {
+      "power_id": "stronghold_hall",
+      "archetype": "fortress",
+      "display_name": "Bard's Hall",
+      "class_ids": ["bard"],
+      "stronghold_label": "Hall",
+      "follower_formula": {
+        "mercenaries_dice": "1d4+1",
+        "mercenary_multiplier": 10,
+        "mercenary_level": 0,
+        "leaders_dice": "1d6",
+        "leader_class_id": "bard",
+        "leader_level_min": 1,
+        "leader_level_max": 3
+      },
+      "class_cost_reduction_pct": 0,
+      "followers_check_morale": true,
+      "location_restrictions": [],
+      "default_structures": ["keep_square_80x60", "tower_medium_round", "wall_stone_30h", "gatehouse"],
+      "notes": "RAW: acore_stronghold_construction_costs.pdf p.126"
+    },
+    {
+      "power_id": "stronghold_border_fort",
+      "archetype": "fortress",
+      "display_name": "Explorer's Border Fort",
+      "class_ids": ["explorer"],
+      "stronghold_label": "Border Fort",
+      "follower_formula": {
+        "mercenaries_dice": "1d4+1",
+        "mercenary_multiplier": 10,
+        "mercenary_level": 0,
+        "leaders_dice": "1d6",
+        "leader_class_id": "explorer",
+        "leader_level_min": 1,
+        "leader_level_max": 3
+      },
+      "class_cost_reduction_pct": 0,
+      "followers_check_morale": true,
+      "location_restrictions": ["explorer_borderlands_or_wilderness_only"],
+      "default_structures": ["tower_medium_round", "tower_medium_round", "wall_stone_30h", "gatehouse"],
+      "notes": "RAW: acore_stronghold_construction_costs.pdf p.126 — must be in borderlands or wilderness."
+    },
+    {
+      "power_id": "stronghold_vault",
+      "archetype": "vault",
+      "display_name": "Dwarven Vault",
+      "class_ids": ["dwarven_craftpriest", "dwarven_vaultguard"],
+      "stronghold_label": "Vault",
+      "follower_formula": {
+        "dwarves_dice": "3d6",
+        "dwarf_multiplier": 10,
+        "dwarf_level": 1
+      },
+      "class_cost_reduction_pct": 0,
+      "followers_check_morale": true,
+      "location_restrictions": ["dwarven_must_be_underground", "dwarven_no_human_or_elven_civilized_or_borderlands"],
+      "default_structures": ["keep_square_80x60", "corridor_dungeon", "corridor_dungeon", "corridor_dungeon"],
+      "notes": "RAW: acore_stronghold_construction_costs.pdf p.126 — must be underground; not in human or elven civilized/borderlands."
+    },
+    {
+      "power_id": "stronghold_fastness",
+      "archetype": "fastness",
+      "display_name": "Elven Spellsword's Fastness",
+      "class_ids": ["elf_spellsword"],
+      "stronghold_label": "Fastness",
+      "follower_formula": {
+        "elves_dice": "3d6",
+        "elf_multiplier": 10,
+        "elf_level": 1
+      },
+      "class_cost_reduction_pct": 0,
+      "followers_check_morale": true,
+      "location_restrictions": ["elf_spellsword_no_human_or_dwarven_civilized_or_borderlands"],
+      "default_structures": ["tower_huge_round", "tower_medium_round", "wall_stone_30h", "gatehouse"],
+      "perks": ["animals_within_3_miles_friendly"],
+      "notes": "RAW: acore_stronghold_construction_costs.pdf p.126 — not in human or dwarven civilized/borderlands; all animals within 3 miles become friendly."
+    },
+    {
+      "power_id": "stronghold_clanhold",
+      "archetype": "clanhold",
+      "display_name": "Beastman Clanhold (chaotic)",
+      "class_ids": ["beastman"],
+      "stronghold_label": "Clanhold",
+      "follower_formula": {
+        "warriors_dice": "ax_domains_of_chaos.xml §clanhold_followers"
+      },
+      "class_cost_reduction_pct": 0,
+      "followers_check_morale": true,
+      "location_restrictions": [],
+      "default_structures": ["palisade_wood", "palisade_wood", "palisade_wood", "palisade_wood", "longhouse_wood"],
+      "notes": "Chaotic-domain modifiers per ax_domains_of_chaos.xml. Phase 10 wires the chaotic-branch resolver."
+    },
+    {
+      "power_id": "stronghold_sanctum_lw",
+      "archetype": "sanctum",
+      "display_name": "Lightblessed Wonderworker's Sanctum",
+      "class_ids": ["lightblessed_wonderworker"],
+      "stronghold_label": "Sanctum",
+      "follower_formula": {
+        "apprentices_dice": "1d6",
+        "apprentice_level_min": 1,
+        "apprentice_level_max": 3,
+        "apprentice_split": "50/50 mage/cleric (player-rebalances at sanctum founding)",
+        "aspirants_dice": "2d6",
+        "aspirant_level": 0,
+        "aspirant_split": "matches apprentice split"
+      },
+      "class_cost_reduction_pct": 0,
+      "followers_check_morale": true,
+      "location_restrictions": [],
+      "default_structures": ["tower_huge_round", "tower_large_round", "wall_stone_30h", "gatehouse"],
+      "notes": "RAW: pc_classes_5.xml §stronghold_sanctum L127-134. Class renamed from 'Nobiran Wonderworker' for IP per [RESOLVED 2026-05-06]; mechanics unchanged. Apprentices need food and lodging but no wages (L132)."
+    }
+  ]
+}

@@ -101,8 +101,11 @@ When working on system X:
 - **Depended on by:** Wilderness & Hex Exploration (travel legs, encounter checks, camping), Urban & Settlement (node-graph travel, activity scheduling), Dungeon Exploration (real-time movement, action queuing, wandering monster scheduling), Combat Maps & Tactical Terrain (combat entry/exit transitions), Domain Play (monthly resolution scheduling, construction completion, army movement), Campaign Play (long-duration activity scheduling), UI & Presentation (clock display, speed controls, entity outliner, notification feed)
 
 ### Domain Play (Strongholds, Realms, Population)
-- **Rule files:** `acore_axioms_strongholds_and_domains`, `daw_equipment_and_construction`, `ax_campaign_play`, `ax_domain_level_encounters`, `ax_domains_of_chaos`
-- **GDDs:** `gdd-stronghold-construction`, `gdd-setting-generation` (demographics)
+- **Rule files:** `acore_axioms_strongholds_and_domains`, `acore_stronghold_construction_costs.pdf` (cost / timeline / per-class follower table — added 2026-05-06), `daw_equipment_and_construction`, `ax_campaign_play`, `ax_domain_level_encounters`, `ax_domains_of_chaos`
+- **GDDs:** `gdd-domain-tab`, `gdd-stronghold-construction`, `gdd-setting-generation` (demographics)
+- **Implementation roadmap:** `docs/domain-roadmap-corrected.md` (10-phase build sequence; Phase 0 RAW-correctness landed 2026-05-06; Phase 1 stronghold construction landed 2026-05-06).
+- **Phase 0 engine code:** `engine/subsystems/domains/` (revenue / expense / morale / growth / classification / land-improvement resolvers); rewrite of `engine/subsystems/session/handlers/domain_handlers.gd`; migrations 055-059 (`domain_hexes`, `domains` extensions, `domain_followers`, `ledger_entries`, `follower_arrivals`).
+- **Phase 1 engine code:** `engine/subsystems/strongholds/` (`stronghold_cost_calculator`, `commission_pipeline`, `stronghold_repository`, `claiming_resolver`); migrations 060-062 (`strongholds`, `stronghold_commissions`, `stronghold_accessories`); data files `data/strongholds/structure_catalog.json` and `archetype_presets.json`; UI scaffolds `scenes/ui/strongholds/commission_wizard.tscn` and `claim_modal.tscn`. New event type `stronghold_construction_daily_tick` registered in `session_runner.gd`.
 - **Depends on:** Characters (domain owner level/class), Wilderness (territory classification), Urban (settlements)
 - **Depended on by:** Armies & Warfare, Campaign Play (monthly cycle)
 

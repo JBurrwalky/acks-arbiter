@@ -236,6 +236,9 @@ func move_along_path(
 	var z: int = from_cell.z if from_cell.z >= 0 else 0
 	var walked_cells: Array[Vector3i] = [from_cell]
 	var enemy_zoc: Dictionary = _build_enemy_zoc_set_3d(mover_side) if mover_side >= 0 else {}
+	# Swarms ignore ZoC stops — they march through enemy threatened cells freely.
+	var mover_flags := combatant.get_flags()
+	var ignore_zoc_stops: bool = mover_flags != null and mover_flags.has_flag("no_zoc_obedience")
 	var cells_moved := 0
 	for i in range(1, path.size()):
 		if cells_moved >= max_cells:
@@ -245,7 +248,7 @@ func move_along_path(
 		var entered := Vector3i(path[i].x, path[i].y, combatant.grid_position.z)
 		combatant.cells_traversed_this_round.append(entered)
 		walked_cells.append(entered)
-		if not enemy_zoc.is_empty():
+		if not enemy_zoc.is_empty() and not ignore_zoc_stops:
 			# ZoC set is keyed by Vector3i; project current cell using the
 			# combatant's z (set_grid_position preserved it from the prior step).
 			if enemy_zoc.has(Vector3i(path[i].x, path[i].y, combatant.grid_position.z)):
@@ -692,6 +695,11 @@ func _build_enemy_zoc_set_3d(mover_side: int) -> Dictionary:
 		var c_pos: Vector3i = get_grid_position_3d(c)
 		if c_pos == Vector3i(-1, -1, -1):
 			continue
+		# Swarms and other entities flagged no_zoc_emission don't threaten
+		# adjacent cells. Their cell-occupancy block is also waived (above).
+		var flags := c.get_flags()
+		if flags != null and flags.has_flag("no_zoc_emission"):
+			continue
 		for neighbor: Vector3i in VoxelGrid.get_neighbors_2d(c_pos):
 			zoc[neighbor] = true
 	return zoc
@@ -718,8 +726,14 @@ func _is_blocking_occupant(pos: Vector3i, mover_id: String) -> bool:
 			# entry). Treat as blocking — safer than stepping on something
 			# we can't reason about.
 			return true
-		if not _is_incapacitated(combatant):
-			return true
+		if _is_incapacitated(combatant):
+			continue
+		# Swarms (insect / rat / bat) flag ignores_cell_occupancy so other
+		# creatures may walk through the cells they occupy.
+		var flags := combatant.get_flags()
+		if flags != null and flags.has_flag("ignores_cell_occupancy"):
+			continue
+		return true
 	return false
 
 

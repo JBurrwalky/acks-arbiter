@@ -168,6 +168,16 @@ func resolve_ranged_attack(
 					{"weapon_category": weapon_family}):
 				damage_total *= 2
 
+		# Warding-attack clamp: ordinary missiles against a swarm replace their
+		# damage with a fresh 1d4 (mirror of attack_resolver.gd; same RAW —
+		# le_monster_catalog_2_summary.xml swarm_attack_resolution).
+		if target.is_swarm():
+			var clamped: int = 4
+			if _dice_system != null:
+				var d = _dice_system.roll_expression("1d4", "swarm_warding_attack")
+				clamped = int(d.modified_total) if d != null else 4
+			damage_total = maxi(1, clamped)
+
 		damage_result = target.apply_damage(damage_total, "physical")
 
 		EventBus.damage_dealt.emit(

@@ -6130,9 +6130,10 @@
       },
       "resolution": [
         {
-          "kind": "stub",
-          "reason": "requires_undead_destruction_resolver",
-          "placeholder_message": "Smite Undead destroys eligible undead — full HD-budget destruction routine deferred."
+          "kind": "destroy_undead_by_hd_budget",
+          "hd_budget_formula": "caster_level",
+          "hd_immunity_threshold": 8,
+          "exempt_creature_keys": ["skeleton", "zombie"]
         }
       ],
       "reverse": {

@@ -83,8 +83,8 @@ func test_catalog_loads() -> void:
 
 
 func test_monster_count() -> void:
-	check(_reg.get_monster_count() == 32,
-		"catalog should have exactly 31 monsters, got %d" % _reg.get_monster_count())
+	check(_reg.get_monster_count() == 53,
+		"catalog should have exactly 53 monsters, got %d" % _reg.get_monster_count())
 
 
 # --- Core lookup ---
@@ -104,7 +104,7 @@ func test_get_monster_not_empty() -> void:
 
 func test_get_all_monster_ids() -> void:
 	var ids := _reg.get_all_monster_ids()
-	check(ids.size() == 32, "get_all_monster_ids should return 31, got %d" % ids.size())
+	check(ids.size() == 53, "get_all_monster_ids should return 53, got %d" % ids.size())
 	# Verify sorted
 	if ids.size() >= 2:
 		check(ids[0] <= ids[1], "ids should be sorted, first two: '%s', '%s'" % [ids[0], ids[1]])

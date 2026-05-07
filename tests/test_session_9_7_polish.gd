@@ -59,6 +59,10 @@ class _MockRoster extends RefCounted:
 	var combatants: Array = []
 	func get_all_alive() -> Array:
 		return combatants.filter(func(c): return c.is_alive())
+	# Production code uses `get_alive()`; alias preserved for the round-tick
+	# consumers (Cloudkill / destruction sweep) that iterate the live list.
+	func get_alive() -> Array:
+		return get_all_alive()
 	func get_by_id(id: String):
 		for c in combatants:
 			if c.id == id: return c

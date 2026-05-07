@@ -31,6 +31,12 @@ var _geometry = null  # CastingGeometry — passed for testability; uses statics
 var _campaign_repo = null  # CampaignRepository
 var _dice_system = null  # DiceSystem autoload
 
+## P6 — default target lookup used by the cleanup_callback path
+## (concentration break + dispel). Combat layer / session runner sets this
+## to a roster-based lookup before triggering the relevant signals. Falls
+## back to a campaign_repo-based character lookup if unset.
+var _default_target_lookup: Callable = Callable()
+
 
 func _init(
 		spell_registry: SpellRegistry,
@@ -49,6 +55,53 @@ func _init(
 	_geometry = geometry
 	_campaign_repo = campaign_repo
 	_dice_system = dice_system
+	# P6 — register as the tracker's cleanup callback so concentration break +
+	# dispel paths route modifier/flag/condition unwinding through the same
+	# code path as duration-tick expiry, plus emit spell_effect_removed and
+	# invoke any per-spell expiration callback.
+	if _effect_tracker != null:
+		_effect_tracker.set_cleanup_callback(_on_tracker_removed_effect)
+
+
+## Sets the default target lookup used by the tracker cleanup path. Combat
+## controllers wire a roster-based lookup at combat start; out-of-combat
+## consumers can install a campaign-repo lookup. Idempotent.
+func set_default_target_lookup(lookup: Callable) -> void:
+	_default_target_lookup = lookup
+
+
+## ActiveEffectTracker cleanup callback. Invoked from the break_concentration
+## and dispel_check paths BEFORE erasure with cause ∈
+## {"concentration_broken", "dispelled"}. Unwinds modifier/flag/condition
+## state via the standard `_unwind_effect_state` helper, fires
+## spell_effect_removed, and invokes any per-spell expiration callback.
+##
+## Note: `active_effect_expired` is reserved for duration-tick expiry only,
+## per the semantic distinction the design brief preserves. Subscribers
+## treat spell_effect_removed as the universal "this effect ended" channel.
+func _on_tracker_removed_effect(effect: Dictionary, cause: String) -> void:
+	if effect.is_empty():
+		return
+	var lookup: Callable = _default_target_lookup if _default_target_lookup.is_valid() \
+			else _build_fallback_target_lookup()
+	_unwind_effect_state(effect, lookup)
+	var eid := String(effect.get("effect_id", ""))
+	var spell_key := String(effect.get("spell_key", ""))
+	EventBus.spell_effect_removed.emit(eid, spell_key)
+	if _custom_resolvers != null and _custom_resolvers.has_expiration_callback(spell_key):
+		_custom_resolvers.invoke_expiration_callback(spell_key, effect, cause, lookup)
+
+
+## Builds a Callable that resolves character_id → CharacterData via the
+## campaign_repo. Used when no explicit lookup is set on the resolver
+## (out-of-combat / scheduler contexts).
+func _build_fallback_target_lookup() -> Callable:
+	return func(tid: String) -> Variant:
+		if _campaign_repo == null:
+			return null
+		if _campaign_repo.has_method("get_character"):
+			return _campaign_repo.get_character(tid)
+		return null
 
 
 func get_effect_tracker() -> ActiveEffectTracker:
@@ -98,8 +151,13 @@ func tick_and_cleanup(unit: String, n: int, target_lookup: Callable) -> Array:
 		if snapshot.is_empty():
 			continue
 		_unwind_effect_state(snapshot, target_lookup)
-		EventBus.spell_effect_removed.emit(eid, String(snapshot.get("spell_key", "")))
+		var spell_key := String(snapshot.get("spell_key", ""))
+		EventBus.spell_effect_removed.emit(eid, spell_key)
 		EventBus.active_effect_expired.emit("", eid)
+		# P6 — per-spell expiration callback (cause="duration_expired"). Concentration
+		# break + dispel route through the tracker cleanup_callback above.
+		if _custom_resolvers != null and _custom_resolvers.has_expiration_callback(spell_key):
+			_custom_resolvers.invoke_expiration_callback(spell_key, snapshot, "duration_expired", target_lookup)
 		expired_effects.append(snapshot)
 	return expired_effects
 
@@ -335,6 +393,11 @@ func resolve(
 				outcome = {"kind": kind, "applied": false, "reason": "deferred to per-spell custom resolver session"}
 			"teleport":
 				outcome = _teleport(step, target_descriptor, targets_by_id, caster_entity, caster_context, save_results, save_spec)
+			"destroy_undead_by_hd_budget":
+				outcome = _destroy_undead_by_hd_budget(
+					step, target_descriptor, targets_by_id, save_spec,
+					save_results, caster_context)
+				aggregated_conditions.append_array(outcome.get("records", []))
 			"stub":
 				outcome = {"kind": kind, "applied": false, "reason": step.get("reason", ""), "message": step.get("placeholder_message", "")}
 			"custom":
@@ -408,6 +471,25 @@ func resolve(
 		caster_context.caster_id,
 		spell_choice.spell_key,
 		target_descriptor.target_ids)
+
+	# P5 — teleport family emits a per-target dispatch signal so the
+	# TeleportRuntimeConsumer can snap the targets, validate destinations,
+	# and apply solid-matter / falling / lost outcomes. Consolidates outcomes
+	# from any "teleport" step kind OR a custom resolver returning per_target
+	# entries with a `destination_cell` field.
+	if spell_choice.spell_key == "dimension_door" or spell_choice.spell_key == "teleport":
+		var combined_per_target: Dictionary = {}
+		for outcome_dict in step_outcomes:
+			var pt: Dictionary = outcome_dict.get("per_target", {})
+			for tid in pt.keys():
+				var entry = pt[tid]
+				if entry is Dictionary and (entry as Dictionary).has("destination_cell"):
+					combined_per_target[tid] = entry
+		if not combined_per_target.is_empty():
+			EventBus.teleport_resolved.emit(
+				caster_context.caster_id,
+				spell_choice.spell_key,
+				combined_per_target)
 
 	result.success = true
 	result.disrupted = false
@@ -1159,6 +1241,129 @@ func _teleport(
 		"error_profile": error_profile,
 		"max_range_feet": max_range_feet,
 	}
+
+
+## Smite Undead destruction routine (P9).
+##
+## Step payload:
+##   {
+##     "kind": "destroy_undead_by_hd_budget",
+##     "hd_budget_formula": "<caster_level>",   # currently only "caster_level" supported
+##     "hd_immunity_threshold": 8,              # 8+ HD undead are immune (vampire untouched)
+##     "exempt_creature_keys": ["skeleton", "zombie"],  # skip the save (auto-fail)
+##   }
+##
+## Walks target_descriptor.target_ids in HD-ascending order (weakest first
+## per RAW), pre-rolled saves consulted from `save_results`. For exempt
+## creature keys, the save is treated as auto-failed (per RAW skeletons /
+## zombies have no save vs Smite Undead). Failed save → spend the target's
+## HD from the budget; if budget allows, mark `dispel_destroyed` so
+## SpellCombatHooks._sweep_destroyed_entities drops hp at end of round
+## (parallel to Death Spell / Disintegrate from S9.7).
+##
+## Outcome per_target:
+##   { destroyed: bool, hd_cost: int, saved: bool, exempt: bool, reason?: String }
+## Outcome top-level:
+##   { hd_budget: int, hd_spent: int, hd_immunity_threshold: int }
+func _destroy_undead_by_hd_budget(
+		step: Dictionary,
+		target_descriptor: TargetDescriptor,
+		targets_by_id: Dictionary,
+		_save_spec: Dictionary,
+		save_results: Dictionary,
+		caster_context: CasterContext) -> Dictionary:
+	var hd_budget: int = caster_context.caster_level if caster_context != null else 1
+	if step.has("hd_budget_override"):
+		hd_budget = int(step["hd_budget_override"])
+	var hd_immunity_threshold: int = int(step.get("hd_immunity_threshold", 8))
+	var exempt_keys: Array = step.get("exempt_creature_keys", [])
+	# Build (target_id, entity, hd) tuples and sort weakest first.
+	var ranked: Array = []
+	for tid in target_descriptor.target_ids:
+		var entity = targets_by_id.get(tid, null)
+		var hd: int = _get_entity_hd(entity)
+		ranked.append({"tid": tid, "entity": entity, "hd": hd})
+	ranked.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a.hd) < int(b.hd))
+	var per_target: Dictionary = {}
+	var condition_records: Array = []
+	var hd_spent: int = 0
+	for entry in ranked:
+		var tid: String = String(entry.tid)
+		var entity = entry.entity
+		var hd: int = int(entry.hd)
+		# 8+ HD immune per RAW.
+		if hd >= hd_immunity_threshold:
+			per_target[tid] = {
+				"destroyed": false, "hd_cost": hd, "saved": false,
+				"exempt": false, "reason": "hd_immunity",
+			}
+			continue
+		# Skeleton / zombie skip the save (auto-fail).
+		var creature_key: String = _entity_creature_key(entity)
+		var skips_save: bool = creature_key in exempt_keys
+		var saved: bool = false
+		if not skips_save:
+			saved = bool((save_results.get(tid, {}) as Dictionary).get("succeeded", false))
+		if saved:
+			per_target[tid] = {
+				"destroyed": false, "hd_cost": hd, "saved": true,
+				"exempt": false, "reason": "save_succeeded",
+			}
+			continue
+		# Failed save (or no-save creature) — spend the budget if affordable.
+		if hd_spent + hd > hd_budget:
+			per_target[tid] = {
+				"destroyed": false, "hd_cost": hd, "saved": false,
+				"exempt": skips_save, "reason": "budget_exhausted",
+			}
+			continue
+		hd_spent += hd
+		per_target[tid] = {
+			"destroyed": true, "hd_cost": hd, "saved": false,
+			"exempt": skips_save,
+		}
+		# Apply dispel_destroyed condition; the destruction sweep at end of
+		# round drops hp to 0 (parallel to Death Spell + Disintegrate).
+		if entity != null and entity.has_method("add_condition"):
+			entity.add_condition("dispel_destroyed")
+		condition_records.append({
+			"character_id": tid, "condition_key": "dispel_destroyed",
+		})
+		EventBus.condition_changed.emit(tid, {
+			"condition": "dispel_destroyed", "applied": true,
+			"source": "smite_undead",
+		})
+	return {
+		"per_target": per_target,
+		"records": condition_records,
+		"hd_budget": hd_budget,
+		"hd_spent": hd_spent,
+		"hd_immunity_threshold": hd_immunity_threshold,
+	}
+
+
+## Returns the catalog creature key for [param entity] when known, else "".
+## Used by Smite Undead to apply the skeleton/zombie no-save exemption.
+func _entity_creature_key(entity: Variant) -> String:
+	if entity == null:
+		return ""
+	# Combatant exposes monster_group_id matching the catalog id.
+	if "monster_group_id" in entity:
+		var mgid: String = String(entity.monster_group_id)
+		if not mgid.is_empty():
+			return mgid
+	# Combatant._monster_data.id (legacy / direct access).
+	if "_monster_data" in entity:
+		var md = entity._monster_data
+		if md is Dictionary:
+			var mid: String = String((md as Dictionary).get("id", ""))
+			if not mid.is_empty():
+				return mid
+	# Test fixture: bare `creature_key` field.
+	if "creature_key" in entity:
+		return String(entity.creature_key)
+	return ""
 
 
 func _dispatch_custom(

@@ -1,0 +1,426 @@
+{
+  "_source": "acore_stronghold_construction_costs.pdf p.126-127 (Stronghold Structure Costs, Civilian Structure Costs, Structure Accessories Costs). SHP and AC values are sourced from daw_equipment_and_construction.xml §structures L583-606 where available; entries not in the DaW table use placeholder zeros and Phase 8 (sieges) will populate them.",
+  "_notes": "Costs match the PDF verbatim. SHP/AC are Phase 8 concerns; Phase 1 only consumes gp_cost for the cost calculator and sufficiency math.",
+  "fortifications": [
+    {
+      "id": "barbican",
+      "category": "fortification",
+      "subcategory": "gatehouse",
+      "display_name": "Barbican (gatehouse, 2 small towers, drawbridge)",
+      "gp_cost": 38000,
+      "shp": 2500,
+      "ac": 6,
+      "garrison_capacity_units": 4,
+      "magic_assist_eligible": true,
+      "dimensions_alterable": false
+    },
+    {
+      "id": "battlement_100ft",
+      "category": "fortification",
+      "subcategory": "battlement",
+      "display_name": "Battlement (100' long, crenellated parapets)",
+      "gp_cost": 500,
+      "shp": 100,
+      "ac": 6,
+      "garrison_capacity_units": 0,
+      "magic_assist_eligible": false,
+      "dimensions_alterable": false
+    },
+    {
+      "id": "keep_square_80x60",
+      "category": "fortification",
+      "subcategory": "keep",
+      "display_name": "Keep, square (80' high, 60' square, wood doors, floors, stairs)",
+      "gp_cost": 75000,
+      "shp": 15000,
+      "ac": 6,
+      "garrison_capacity_units": 12,
+      "magic_assist_eligible": true,
+      "dimensions_alterable": true
+    },
+    {
+      "id": "tower_small_round",
+      "category": "fortification",
+      "subcategory": "tower",
+      "display_name": "Tower, small round (30' high, 20' diameter, wood doors, floors, stairs)",
+      "gp_cost": 15000,
+      "shp": 750,
+      "ac": 7,
+      "garrison_capacity_units": 1,
+      "magic_assist_eligible": true,
+      "dimensions_alterable": false
+    },
+    {
+      "id": "tower_medium_round",
+      "category": "fortification",
+      "subcategory": "tower",
+      "display_name": "Tower, medium round (40' high, 20' diameter, wood doors, floors, stairs)",
+      "gp_cost": 22500,
+      "shp": 1000,
+      "ac": 7,
+      "garrison_capacity_units": 1,
+      "magic_assist_eligible": true,
+      "dimensions_alterable": false
+    },
+    {
+      "id": "tower_large_round",
+      "category": "fortification",
+      "subcategory": "tower",
+      "display_name": "Tower, large round (40' high, 30' diameter, wood doors, floors, roof, stairs)",
+      "gp_cost": 30000,
+      "shp": 1600,
+      "ac": 7,
+      "garrison_capacity_units": 2,
+      "magic_assist_eligible": true,
+      "dimensions_alterable": false
+    },
+    {
+      "id": "tower_huge_round",
+      "category": "fortification",
+      "subcategory": "tower",
+      "display_name": "Tower, huge round (60' high, 30' diameter, wood doors, floors, roof, stairs)",
+      "gp_cost": 54000,
+      "shp": 2400,
+      "ac": 7,
+      "garrison_capacity_units": 5,
+      "magic_assist_eligible": true,
+      "dimensions_alterable": false
+    },
+    {
+      "id": "wall_stone_20h",
+      "category": "fortification",
+      "subcategory": "wall",
+      "display_name": "Wall, stone castle (20' high, 100' long, 10' thick)",
+      "gp_cost": 5000,
+      "shp": 1500,
+      "ac": 6,
+      "garrison_capacity_units": 1,
+      "magic_assist_eligible": true,
+      "dimensions_alterable": false
+    },
+    {
+      "id": "wall_stone_30h",
+      "category": "fortification",
+      "subcategory": "wall",
+      "display_name": "Wall, stone castle (30' high, 100' long, 10' thick)",
+      "gp_cost": 7500,
+      "shp": 2250,
+      "ac": 6,
+      "garrison_capacity_units": 1,
+      "magic_assist_eligible": true,
+      "dimensions_alterable": false
+    },
+    {
+      "id": "wall_stone_40h",
+      "category": "fortification",
+      "subcategory": "wall",
+      "display_name": "Wall, stone castle (40' high, 100' long, 10' thick)",
+      "gp_cost": 12500,
+      "shp": 3000,
+      "ac": 6,
+      "garrison_capacity_units": 1,
+      "magic_assist_eligible": true,
+      "dimensions_alterable": false
+    },
+    {
+      "id": "wall_stone_50h",
+      "category": "fortification",
+      "subcategory": "wall",
+      "display_name": "Wall, stone castle (50' high, 100' long, 10' thick)",
+      "gp_cost": 17500,
+      "shp": 3750,
+      "ac": 6,
+      "garrison_capacity_units": 1,
+      "magic_assist_eligible": true,
+      "dimensions_alterable": false
+    },
+    {
+      "id": "wall_stone_60h",
+      "category": "fortification",
+      "subcategory": "wall",
+      "display_name": "Wall, stone castle (60' high, 100' long, 10' thick)",
+      "gp_cost": 22500,
+      "shp": 4500,
+      "ac": 6,
+      "garrison_capacity_units": 1,
+      "magic_assist_eligible": true,
+      "dimensions_alterable": false
+    },
+    {
+      "id": "gatehouse",
+      "category": "fortification",
+      "subcategory": "gatehouse",
+      "display_name": "Gatehouse (20' high, 30'×20', metal portcullis, wood doors, floors, stairs)",
+      "gp_cost": 6500,
+      "shp": 1000,
+      "ac": 6,
+      "garrison_capacity_units": 2,
+      "magic_assist_eligible": true,
+      "dimensions_alterable": false
+    },
+    {
+      "id": "drawbridge_wood",
+      "category": "fortification",
+      "subcategory": "drawbridge",
+      "display_name": "Drawbridge, wood (10'×20')",
+      "gp_cost": 250,
+      "shp": 50,
+      "ac": 5,
+      "garrison_capacity_units": 0,
+      "magic_assist_eligible": false,
+      "dimensions_alterable": false
+    },
+    {
+      "id": "moat_unfilled",
+      "category": "fortification",
+      "subcategory": "moat",
+      "display_name": "Moat, unfilled (100'×20'×10' deep)",
+      "gp_cost": 400,
+      "shp": 0,
+      "ac": 0,
+      "garrison_capacity_units": 0,
+      "magic_assist_eligible": true,
+      "dimensions_alterable": true
+    },
+    {
+      "id": "moat_filled",
+      "category": "fortification",
+      "subcategory": "moat",
+      "display_name": "Moat, filled (100'×20'×10' deep)",
+      "gp_cost": 800,
+      "shp": 0,
+      "ac": 0,
+      "garrison_capacity_units": 0,
+      "magic_assist_eligible": true,
+      "dimensions_alterable": true
+    },
+    {
+      "id": "palisade_wood",
+      "category": "fortification",
+      "subcategory": "wall",
+      "display_name": "Palisade, wood (10' high, 100' long, 1' thick)",
+      "gp_cost": 125,
+      "shp": 200,
+      "ac": 4,
+      "garrison_capacity_units": 1,
+      "magic_assist_eligible": false,
+      "dimensions_alterable": false
+    },
+    {
+      "id": "rampart_earthen",
+      "category": "fortification",
+      "subcategory": "wall",
+      "display_name": "Rampart, earthen (10' high, 100' long, 15' thick)",
+      "gp_cost": 2500,
+      "shp": 800,
+      "ac": 4,
+      "garrison_capacity_units": 1,
+      "magic_assist_eligible": true,
+      "dimensions_alterable": false
+    }
+  ],
+  "buildings": [
+    {
+      "id": "building_stone",
+      "category": "building",
+      "subcategory": "stone",
+      "display_name": "Building, stone (20' high, 30' square, wood doors, floors, roof, stairs)",
+      "gp_cost": 3000,
+      "shp": 500,
+      "ac": 5,
+      "garrison_capacity_units": 0,
+      "magic_assist_eligible": false,
+      "dimensions_alterable": true
+    },
+    {
+      "id": "building_wood",
+      "category": "building",
+      "subcategory": "wood",
+      "display_name": "Building, wood (20' high, 30' square, wood doors, floors, roof, stairs)",
+      "gp_cost": 1500,
+      "shp": 200,
+      "ac": 4,
+      "garrison_capacity_units": 0,
+      "magic_assist_eligible": false,
+      "dimensions_alterable": true
+    },
+    {
+      "id": "corridor_dungeon",
+      "category": "building",
+      "subcategory": "dungeon",
+      "display_name": "Corridor, dungeon (10'×10'×10', hewn stone walls, flagstone floor)",
+      "gp_cost": 500,
+      "shp": 0,
+      "ac": 0,
+      "garrison_capacity_units": 0,
+      "magic_assist_eligible": true,
+      "dimensions_alterable": false
+    }
+  ],
+  "civilian": [
+    {
+      "id": "cottage_wood",
+      "category": "civilian",
+      "subcategory": "cottage",
+      "display_name": "Cottage, wood (20' high, 30' square, thatched roof, wood stairs, earthen floor)",
+      "gp_cost": 300,
+      "shp": 0,
+      "ac": 0,
+      "garrison_capacity_units": 0,
+      "magic_assist_eligible": false,
+      "dimensions_alterable": true
+    },
+    {
+      "id": "hut_pit",
+      "category": "civilian",
+      "subcategory": "hut",
+      "display_name": "Hut, pit (8' high, 8' square, thatched roof, sunken earthen floor)",
+      "gp_cost": 15,
+      "shp": 0,
+      "ac": 0,
+      "garrison_capacity_units": 0,
+      "magic_assist_eligible": false,
+      "dimensions_alterable": true
+    },
+    {
+      "id": "hut_sod_wattle",
+      "category": "civilian",
+      "subcategory": "hut",
+      "display_name": "Hut, sod or wattle (10' high, 10' square, thatched roof, earthen floor)",
+      "gp_cost": 25,
+      "shp": 0,
+      "ac": 0,
+      "garrison_capacity_units": 0,
+      "magic_assist_eligible": false,
+      "dimensions_alterable": true
+    },
+    {
+      "id": "hut_mudbrick_wood",
+      "category": "civilian",
+      "subcategory": "hut",
+      "display_name": "Hut, mudbrick or wood (10' high, 10' square, thatched roof, earthen floor)",
+      "gp_cost": 50,
+      "shp": 0,
+      "ac": 0,
+      "garrison_capacity_units": 0,
+      "magic_assist_eligible": false,
+      "dimensions_alterable": true
+    },
+    {
+      "id": "longhouse_wood",
+      "category": "civilian",
+      "subcategory": "longhouse",
+      "display_name": "Longhouse, wood (15' high, 30' long, 15' wide, thatched roof, earthen floor)",
+      "gp_cost": 300,
+      "shp": 0,
+      "ac": 0,
+      "garrison_capacity_units": 0,
+      "magic_assist_eligible": false,
+      "dimensions_alterable": true
+    },
+    {
+      "id": "roundhouse_wood",
+      "category": "civilian",
+      "subcategory": "roundhouse",
+      "display_name": "Roundhouse, wood (15' high, 15' diameter, thatched roof, earthen floor)",
+      "gp_cost": 125,
+      "shp": 0,
+      "ac": 0,
+      "garrison_capacity_units": 0,
+      "magic_assist_eligible": false,
+      "dimensions_alterable": true
+    },
+    {
+      "id": "townhouse_stone",
+      "category": "civilian",
+      "subcategory": "townhouse",
+      "display_name": "Townhouse, stone (20' high, 30' square, thatched roof, wood floor and stairs)",
+      "gp_cost": 1200,
+      "shp": 0,
+      "ac": 0,
+      "garrison_capacity_units": 0,
+      "magic_assist_eligible": false,
+      "dimensions_alterable": true
+    }
+  ],
+  "accessories": [
+    {
+      "id": "arrow_slit",
+      "category": "accessory",
+      "display_name": "Arrow Slit / Window",
+      "gp_cost": 10,
+      "upgrade_at_construction_pct": 25
+    },
+    {
+      "id": "door_wood",
+      "category": "accessory",
+      "display_name": "Door, wood (3'×7')",
+      "gp_cost": 10,
+      "upgrade_at_construction_pct": 25
+    },
+    {
+      "id": "door_reinforced_wood",
+      "category": "accessory",
+      "display_name": "Door, reinforced wood (3'×7')",
+      "gp_cost": 20,
+      "upgrade_at_construction_pct": 25
+    },
+    {
+      "id": "door_iron_stone",
+      "category": "accessory",
+      "display_name": "Door, iron / stone (3'×7')",
+      "gp_cost": 50,
+      "upgrade_at_construction_pct": 25
+    },
+    {
+      "id": "door_secret",
+      "category": "accessory",
+      "display_name": "Door, secret (3'×7')",
+      "gp_cost": 0,
+      "gp_cost_formula": "base_material_cost x 5",
+      "upgrade_at_construction_pct": 25
+    },
+    {
+      "id": "floor_flagstone_or_tile",
+      "category": "accessory",
+      "display_name": "Floor / Roof, flagstone or tile (10'×10')",
+      "gp_cost": 40,
+      "upgrade_at_construction_pct": 25
+    },
+    {
+      "id": "floor_wood",
+      "category": "accessory",
+      "display_name": "Floor / Roof, wood (10'×10')",
+      "gp_cost": 10,
+      "upgrade_at_construction_pct": 25
+    },
+    {
+      "id": "shutters",
+      "category": "accessory",
+      "display_name": "Shutters (window)",
+      "gp_cost": 5,
+      "upgrade_at_construction_pct": 25
+    },
+    {
+      "id": "shifting_wall",
+      "category": "accessory",
+      "display_name": "Shifting Wall (10'×10')",
+      "gp_cost": 1000,
+      "upgrade_at_construction_pct": 25
+    },
+    {
+      "id": "stairs_wood",
+      "category": "accessory",
+      "display_name": "Stairs, wood (one flight, 3'×10')",
+      "gp_cost": 20,
+      "upgrade_at_construction_pct": 25
+    },
+    {
+      "id": "stairs_stone",
+      "category": "accessory",
+      "display_name": "Stairs, stone (one flight, 3'×10')",
+      "gp_cost": 60,
+      "upgrade_at_construction_pct": 25
+    }
+  ]
+}

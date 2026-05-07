@@ -135,6 +135,22 @@ func get_alive_on_side(target_side: int) -> Array[Combatant]:
 	return result
 
 
+## Reassigns the combatant identified by [param combatant_id] to
+## [param new_side] (Combatant.Side.PARTY or Combatant.Side.ENEMY). Used by
+## P8 to flip an elemental's allegiance after concentration loss
+## (`elemental_uncontrolled`) and by the Invisible Stalker reliability path
+## when the stalker turns on its caster. No-op when the id is missing or the
+## side already matches. Returns true on a successful flip.
+func move_to_side(combatant_id: String, new_side: int) -> bool:
+	var c: Combatant = _combatants.get(combatant_id, null)
+	if c == null:
+		return false
+	if c.side == new_side:
+		return false
+	c.side = new_side
+	return true
+
+
 func get_party_combatants() -> Array[Combatant]:
 	return get_alive_on_side(Combatant.Side.PARTY)
 

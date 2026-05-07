@@ -62,7 +62,7 @@ func enter(runner, context: Dictionary) -> void:
 	# MovementResolver is created early so MonsterAI can use spatial queries.
 	var movement_resolver := MovementResolver.new(roster)
 	movement_resolver.set_voxel_map(voxel_map)
-	var monster_ai := MonsterAI.new(roster, DiceSystem, movement_resolver)
+	var monster_ai := MonsterAI.new(roster, DiceSystem, movement_resolver, active_effects)
 	var morale_resolver := MoraleResolver.new(DiceSystem)
 	var cleave_resolver := CleaveResolver.new()
 
@@ -83,6 +83,12 @@ func enter(runner, context: Dictionary) -> void:
 	# live roster. Connected on combat start, disconnected on combat end.
 	_controller.spawn_roster_integrator = SpawnRosterIntegrator.new(
 		roster, movement_resolver, active_effects, monster_registry, DiceSystem)
+
+	# P5: TeleportRuntimeConsumer snaps Dimension Door / Teleport targets to
+	# their destination cells, applying solid-matter / falling / lost
+	# outcomes per ACKS RAW. Same connect/disconnect lifecycle as P3.
+	_controller.teleport_runtime_consumer = TeleportRuntimeConsumer.new(
+		roster, movement_resolver, voxel_map, DiceSystem)
 
 	_place_combatants_on_grid(roster, voxel_map)
 

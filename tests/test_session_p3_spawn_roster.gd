@@ -14,8 +14,10 @@ extends "res://tests/test_suite_base.gd"
 
 func run_all_tests() -> void:
 	test_animate_dead_spawns_undead_on_party_side()
-	test_sticks_to_snakes_spawns_mix_of_snake_types()
+	test_sticks_to_snakes_spawns_chosen_species()
+	test_sticks_to_snakes_pit_viper_species()
 	test_conjure_elemental_single_party_spawn()
+	test_conjure_elemental_staff_tier()
 	test_invisible_stalker_spawn_marks_invisible()
 	test_insect_plague_spawns_four_swarms()
 	test_spawned_ids_recorded_on_effect_metadata()
@@ -114,15 +116,21 @@ func test_animate_dead_spawns_undead_on_party_side() -> void:
 # Sticks to Snakes
 # ---------------------------------------------------------------------------
 
-func test_sticks_to_snakes_spawns_mix_of_snake_types() -> void:
+func test_sticks_to_snakes_spawns_chosen_species() -> void:
+	# Caster picks one species per cast (cobra or pit viper). Per-snake
+	# poison_disabled coin is metadata, not a species selector.
 	var env := _make_environment()
 	var profile: Dictionary = {
 		"caster_id": "caster_p3", "caster_level": 4,
 		"brackets": 1, "snake_count": 3,
+		"snake_species": "spitting_cobra",
+		"spawn_anchor": "item_owner",
+		"act_immediately_after_caster": true,
+		"allegiance": "blue",
 		"snakes": [
-			{"snake_id": "snake_a", "poisonous": true, "obeys_caster_id": "caster_p3"},
-			{"snake_id": "snake_b", "poisonous": false, "obeys_caster_id": "caster_p3"},
-			{"snake_id": "snake_c", "poisonous": true, "obeys_caster_id": "caster_p3"},
+			{"snake_id": "snake_a", "snake_species": "spitting_cobra", "poison_disabled": false, "obeys_caster_id": "caster_p3"},
+			{"snake_id": "snake_b", "snake_species": "spitting_cobra", "poison_disabled": true, "obeys_caster_id": "caster_p3"},
+			{"snake_id": "snake_c", "snake_species": "spitting_cobra", "poison_disabled": false, "obeys_caster_id": "caster_p3"},
 		],
 	}
 	var effect: Dictionary = {
@@ -137,19 +145,54 @@ func test_sticks_to_snakes_spawns_mix_of_snake_types() -> void:
 	env.tracker.add_effect(effect)
 	var spawned: Array[String] = env.integrator.process_effect(effect, "sticks_to_snakes")
 	check(spawned.size() == 3, "3 snakes on roster, got %d" % spawned.size())
-	# At least one each of the two stat-block templates spawned.
-	var has_poisonous := false
-	var has_normal := false
+	# All snakes are the chosen species (spitting cobra). Poison_disabled
+	# meta carried per-snake; verify at least one of each disabled state present.
+	var has_disabled := false
+	var has_active := false
 	for cid in spawned:
 		var c: Combatant = env.roster.get_by_id(cid)
 		if c == null:
 			continue
-		if c.monster_group_id == "snake_poisonous":
-			has_poisonous = true
-		elif c.monster_group_id == "snake_normal":
-			has_normal = true
-	check(has_poisonous, "at least one poisonous snake spawned")
-	check(has_normal, "at least one normal snake spawned")
+		check(c.monster_group_id == "snake_spitting_cobra",
+			"all snakes spawn as chosen species; got %s" % c.monster_group_id)
+		check(c.side == Combatant.Side.PARTY, "snakes spawn blue (PARTY)")
+		if c.has_meta("poison_disabled") and bool(c.get_meta("poison_disabled")):
+			has_disabled = true
+		else:
+			has_active = true
+	check(has_disabled, "at least one snake has poison disabled")
+	check(has_active, "at least one snake has poison active")
+
+
+func test_sticks_to_snakes_pit_viper_species() -> void:
+	# Default species when resolver_args.snake_species is unspecified is
+	# pit_viper; resolver/integrator should still spawn cobras/vipers cleanly.
+	var env := _make_environment()
+	var profile: Dictionary = {
+		"caster_id": "caster_p3", "caster_level": 4,
+		"brackets": 1, "snake_count": 1,
+		"snake_species": "pit_viper",
+		"spawn_anchor": "item_owner",
+		"snakes": [
+			{"snake_id": "viper_a", "snake_species": "pit_viper", "poison_disabled": false, "obeys_caster_id": "caster_p3"},
+		],
+	}
+	var effect: Dictionary = {
+		"effect_id": "fx_viper", "spell_key": "sticks_to_snakes",
+		"caster_id": "caster_p3", "target_ids": [], "effect_type": "entity",
+		"applied_modifiers": [], "applied_conditions": [], "applied_flags": [],
+		"duration_type": "turns", "duration_remaining": 6,
+		"requires_concentration": 0, "is_active": 1,
+		"metadata": {"sticks_to_snakes_spawn_profile": profile},
+		"created_at_round": 0,
+	}
+	env.tracker.add_effect(effect)
+	var spawned: Array[String] = env.integrator.process_effect(effect, "sticks_to_snakes")
+	check(spawned.size() == 1, "1 viper spawned, got %d" % spawned.size())
+	if spawned.size() == 1:
+		var c: Combatant = env.roster.get_by_id(spawned[0])
+		check(c.monster_group_id == "snake_pit_viper",
+			"pit viper spawned, got %s" % c.monster_group_id)
 
 
 # ---------------------------------------------------------------------------
@@ -157,10 +200,13 @@ func test_sticks_to_snakes_spawns_mix_of_snake_types() -> void:
 # ---------------------------------------------------------------------------
 
 func test_conjure_elemental_single_party_spawn() -> void:
+	# Conjure Elemental defaults to spell tier (16 HD). The integrator
+	# resolves the tier-suffixed catalog id `elemental_fire_16hd`.
 	var env := _make_environment()
 	var profile: Dictionary = {
-		"elemental_id": "elemental_fire:caster_p3",
+		"elemental_id": "elemental_fire_16hd:caster_p3",
 		"elemental_type": "fire",
+		"tier": "16hd",
 		"caster_id": "caster_p3", "caster_level": 9,
 		"summon_cell": Vector3i(12, 10, 0),
 		"loyalty": "controlled_via_concentration",
@@ -180,9 +226,38 @@ func test_conjure_elemental_single_party_spawn() -> void:
 	if spawned.size() == 1:
 		var c: Combatant = env.roster.get_by_id(spawned[0])
 		check(c.side == Combatant.Side.PARTY, "controlled elemental on PARTY side")
-		check(c.monster_group_id == "elemental_fire", "monster_group_id = elemental_fire")
+		check(c.monster_group_id == "elemental_fire_16hd",
+			"monster_group_id = elemental_fire_16hd, got %s" % c.monster_group_id)
 		check(c.grid_position == Vector3i(12, 10, 0),
 			"placed at summon_cell, got %s" % str(c.grid_position))
+
+
+func test_conjure_elemental_staff_tier() -> void:
+	# Non-spell summons (staff item) override tier to "8hd".
+	var env := _make_environment()
+	var profile: Dictionary = {
+		"elemental_id": "elemental_air_8hd:caster_p3",
+		"elemental_type": "air",
+		"tier": "8hd",
+		"caster_id": "caster_p3", "caster_level": 9,
+		"summon_cell": Vector3i(8, 8, 0),
+	}
+	var effect: Dictionary = {
+		"effect_id": "fx_elemental_staff", "spell_key": "conjure_elemental",
+		"caster_id": "caster_p3", "target_ids": [], "effect_type": "entity",
+		"applied_modifiers": [], "applied_conditions": [], "applied_flags": [],
+		"duration_type": "concentration", "duration_remaining": -1,
+		"requires_concentration": 1, "is_active": 1,
+		"metadata": {"conjure_elemental_spawn_profile": profile},
+		"created_at_round": 0,
+	}
+	env.tracker.add_effect(effect)
+	var spawned: Array[String] = env.integrator.process_effect(effect, "conjure_elemental")
+	check(spawned.size() == 1, "8hd tier spawns; got %d" % spawned.size())
+	if spawned.size() == 1:
+		var c: Combatant = env.roster.get_by_id(spawned[0])
+		check(c.monster_group_id == "elemental_air_8hd",
+			"staff-tier picks 8hd entry, got %s" % c.monster_group_id)
 
 
 # ---------------------------------------------------------------------------

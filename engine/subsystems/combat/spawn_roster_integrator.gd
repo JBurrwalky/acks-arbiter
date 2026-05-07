@@ -139,18 +139,40 @@ func _spawn_sticks_to_snakes(effect: Dictionary) -> Array[String]:
 	if profile.is_empty():
 		return spawned
 	var caster_id: String = String(profile.get("caster_id", effect.get("caster_id", "")))
-	var origin: Vector3i = _resolve_origin_cell(caster_id)
+	var snake_species := String(profile.get("snake_species", "pit_viper")).to_lower()
+	var monster_id := "snake_%s" % snake_species
+	if not _monster_registry.has_monster(monster_id):
+		# Catalog mismatch — fall back to pit viper, which is always present.
+		monster_id = "snake_pit_viper"
+	# Spawn anchor: per-stick item-owner cell when the picker supplied selected
+	# stick item ids; otherwise fall back to the caster cell. Inventory removal
+	# (sticks vanish when transformed) is deferred — selected_stick_item_ids
+	# is persisted for the future inventory-picker session.
+	var spawn_anchor := String(profile.get("spawn_anchor", "caster"))
+	var caster_cell: Vector3i = _resolve_origin_cell(caster_id)
+	var stick_owner_cells: Array[Vector3i] = []
+	if spawn_anchor == "item_owner":
+		# Owner-cell resolution requires inventory + character lookup. Until
+		# the picker UI lands, the integrator falls back to the caster cell
+		# for every snake. Surface the deferred state in the spawned-effect
+		# metadata so the UI can flag it.
+		stick_owner_cells = []
 	for entry_raw in profile.get("snakes", []):
 		if not (entry_raw is Dictionary):
 			continue
 		var entry: Dictionary = entry_raw
-		var monster_id: String = "snake_poisonous" if bool(entry.get("poisonous", false)) else "snake_normal"
 		var combatant := _build_combatant(
 			monster_id, String(entry.get("snake_id", "")), Combatant.Side.PARTY)
 		if combatant == null:
 			continue
+		# Carry the per-snake poison-disabled flag onto the combatant so the
+		# attack hooks can suppress poison effects (bite + cobra spit).
+		combatant.set_meta("poison_disabled", bool(entry.get("poison_disabled", false)))
 		if _roster.add_combatant(combatant):
-			_place_combatant(combatant, origin)
+			var place_cell: Vector3i = caster_cell
+			if not stick_owner_cells.is_empty():
+				place_cell = stick_owner_cells[spawned.size() % stick_owner_cells.size()]
+			_place_combatant(combatant, place_cell)
 			spawned.append(combatant.id)
 	return spawned
 
@@ -161,9 +183,21 @@ func _spawn_conjure_elemental(effect: Dictionary) -> Array[String]:
 	if profile.is_empty():
 		return spawned
 	var elemental_type := String(profile.get("elemental_type", "earth")).to_lower()
-	var monster_id := "elemental_%s" % elemental_type
+	# Tier dispatch (8hd staff / 12hd item / 16hd spell). Conjure Elemental
+	# always summons spell tier (16hd) by default; future non-spell paths
+	# may override via the resolver's tier param.
+	var tier := String(profile.get("tier", "16hd")).to_lower()
+	var monster_id := "elemental_%s_%s" % [elemental_type, tier]
 	if not _monster_registry.has_monster(monster_id):
-		return spawned
+		# Defensive fallback: try the spell tier, then the legacy single-tier
+		# id. Either case logs a warning so misconfiguration is visible.
+		var fallback: String = "elemental_%s_16hd" % elemental_type
+		if _monster_registry.has_monster(fallback):
+			monster_id = fallback
+		elif _monster_registry.has_monster("elemental_%s" % elemental_type):
+			monster_id = "elemental_%s" % elemental_type
+		else:
+			return spawned
 	var combatant := _build_combatant(
 		monster_id, String(profile.get("elemental_id", "")), Combatant.Side.PARTY)
 	if combatant == null:
@@ -182,22 +216,61 @@ func _spawn_invisible_stalker(effect: Dictionary) -> Array[String]:
 	var profile: Dictionary = effect.get("metadata", {}).get("invisible_stalker_spawn_profile", {})
 	if profile.is_empty():
 		return spawned
+	var caster_id := String(profile.get("caster_id", effect.get("caster_id", "")))
 	var stalker_id := String(profile.get("stalker_id", ""))
 	if stalker_id.is_empty():
-		stalker_id = "invisible_stalker:%s" % String(profile.get("caster_id", effect.get("caster_id", "")))
-	var combatant := _build_combatant(
-		"invisible_stalker", stalker_id, Combatant.Side.PARTY)
+		stalker_id = "invisible_stalker:%s" % caster_id
+	# P8 — reliability check. Per RAW the stalker "may not always be a
+	# reliable servant". Modeled here as a 2d6 reaction-roll-style throw
+	# vs caster Charisma modifier:
+	#   2d6 + caster_charisma_modifier ≥ 6 → loyal (PARTY-side servant)
+	#   below threshold                  → unreliable / hostile-to-caster
+	#                                        (ENEMY side, is_hostile_to_caster
+	#                                        flag, plus elemental_uncontrolled
+	#                                        signal for downstream re-routers)
+	var loyal: bool = _stalker_reliability_check(profile)
+	var side: int = Combatant.Side.PARTY if loyal else Combatant.Side.ENEMY
+	var combatant := _build_combatant("invisible_stalker", stalker_id, side)
 	if combatant == null:
 		return spawned
-	# Mark as invisible per RAW (always invisible).
+	# Always invisible per RAW.
 	var flags := combatant.get_flags()
 	if flags != null:
 		flags.set_flag("is_invisible", "spell:invisible_stalker", {})
+		if not loyal:
+			flags.set_flag("is_hostile_to_caster", "spell:invisible_stalker",
+				{"former_caster_id": caster_id})
 	if _roster.add_combatant(combatant):
-		var origin := _resolve_origin_cell(String(profile.get("caster_id", "")))
+		var origin := _resolve_origin_cell(caster_id)
 		_place_combatant(combatant, origin)
 		spawned.append(combatant.id)
+		if not loyal:
+			# Re-use the elemental_uncontrolled signal — same downstream
+			# semantics (was-PARTY-now-ENEMY summon) and MonsterAI's
+			# subscriber already does the move_to_side flip safely.
+			EventBus.elemental_uncontrolled.emit(stalker_id, "stalker", caster_id)
 	return spawned
+
+
+## Rolls the per-spawn reliability check for the stalker. Profile fields:
+##   caster_charisma_modifier:  int — defaults to 0; CHA mod from caster.
+##   reliability_threshold:     int — defaults to 6; 2d6+mod must meet this.
+##   reliability_override:      Variant — when present, skips the dice roll
+##                                        and uses the bool value directly
+##                                        (test fixture path).
+## Returns true on success (stalker loyal); false on failure.
+func _stalker_reliability_check(profile: Dictionary) -> bool:
+	var override = profile.get("reliability_override", null)
+	if override != null:
+		return bool(override)
+	var threshold: int = int(profile.get("reliability_threshold", 6))
+	var cha_mod: int = int(profile.get("caster_charisma_modifier", 0))
+	var roll_total: int = 7 + cha_mod  # 2d6 average
+	if _dice_system != null:
+		var r = _dice_system.roll_digital(6, 2, cha_mod, "invisible_stalker_reliability")
+		if r != null:
+			roll_total = int(r.modified_total)
+	return roll_total >= threshold
 
 
 func _spawn_insect_plague(effect: Dictionary) -> Array[String]:
@@ -205,12 +278,21 @@ func _spawn_insect_plague(effect: Dictionary) -> Array[String]:
 	var profile: Dictionary = effect.get("metadata", {}).get("plague_profile", {})
 	if profile.is_empty():
 		return spawned
+	# Catalog id is per-swarm-type and per-HD. Insect Plague summons HD 4
+	# insect swarms; rat / bat swarm summon spells (future content) would
+	# override via swarm_type on the plague_profile.
+	var swarm_type := String(profile.get("swarm_type", "insect")).to_lower()
 	for entry_raw in profile.get("swarms", []):
 		if not (entry_raw is Dictionary):
 			continue
 		var entry: Dictionary = entry_raw
+		var swarm_hd: int = int(entry.get("swarm_hd", 4))
+		var monster_id: String = "%s_swarm_%dhd" % [swarm_type, swarm_hd]
+		if not _monster_registry.has_monster(monster_id):
+			# Fall back to the 4-HD insect entry for the spell-spawn path.
+			monster_id = "insect_swarm_4hd"
 		var combatant := _build_combatant(
-			"insect_swarm_4hd", String(entry.get("swarm_id", "")), Combatant.Side.PARTY)
+			monster_id, String(entry.get("swarm_id", "")), Combatant.Side.PARTY)
 		if combatant == null:
 			continue
 		if _roster.add_combatant(combatant):

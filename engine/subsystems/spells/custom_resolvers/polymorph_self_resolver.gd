@@ -94,6 +94,32 @@ func resolve(args: Dictionary) -> Dictionary:
 		"spell_key": spell_choice.spell_key if spell_choice != null else "polymorph_self",
 		"persist_metadata": {
 			"polymorph_self_snapshot": snapshot,
+			"polymorph_self_caster_id": caster_context.caster_id,
 			"form_profile": form_profile,
 		},
 	}
+
+
+## P7 — expiration callback. Restores caster's physical stats from the
+## metadata snapshot on every cleanup path. Per RAW the spell can also end
+## via the caster's own choice or on death; both eventually route through a
+## tracker erase (concentration break or explicit removal) and fire this
+## callback.
+static func on_expiration(
+		effect: Dictionary, cause: String, target_lookup: Callable) -> void:
+	var meta: Dictionary = effect.get("metadata", {})
+	var snapshot: Dictionary = meta.get("polymorph_self_snapshot", {})
+	var caster_id := String(meta.get("polymorph_self_caster_id",
+		effect.get("caster_id", "")))
+	if snapshot.is_empty() or caster_id.is_empty():
+		return
+	if target_lookup.is_valid():
+		var entity = target_lookup.call(caster_id)
+		if entity != null:
+			if "armor_class" in entity and snapshot.has("armor_class"):
+				entity.armor_class = int(snapshot["armor_class"])
+			if "attack_throw" in entity and snapshot.has("attack_throw"):
+				entity.attack_throw = int(snapshot["attack_throw"])
+			if "base_movement" in entity and snapshot.has("base_movement"):
+				entity.base_movement = int(snapshot["base_movement"])
+	EventBus.polymorph_reverted.emit(caster_id, "polymorph_self", snapshot, cause)

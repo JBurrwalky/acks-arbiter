@@ -65,7 +65,7 @@ func run_all_tests() -> void:
 	test_combatant_outside_drifted_cells_no_damage()
 	test_insect_plague_attacks_creature_in_swarm_cell()
 	test_insect_plague_low_hd_auto_drive_off()
-	test_insect_plague_high_hd_normal_attack_roll()
+	test_insect_plague_high_hd_gets_swarmed_and_frightened()
 	test_insect_plague_caster_damage_flips_to_stationary()
 	test_insect_plague_stationary_persists_once_flipped()
 	test_insect_plague_multiple_swarms_attack_independently()
@@ -225,9 +225,10 @@ func test_combatant_outside_drifted_cells_no_damage() -> void:
 # ---------------------------------------------------------------------------
 
 func test_insect_plague_attacks_creature_in_swarm_cell() -> void:
+	# Post-refactor: damage delivery moved off the attack-roll model onto the
+	# `swarmed_<type>` condition. Mock target's get_effective_ac() returns 0,
+	# which triggers the unarmored doubling (AC ≤ 3) → 2×2 = 4 hp/round.
 	var dice := _FakeDice.new()
-	dice.fixed["insect_plague_attack"] = 20  # auto-hit
-	dice.fixed["insect_plague_damage"] = 3
 	var tracker := ActiveEffectTracker.new()
 	var hooks := SpellCombatHooks.new(tracker, dice)
 	var caster := _make_caster("caster_p4", Vector3i(0, 0, 0))
@@ -239,15 +240,18 @@ func test_insect_plague_attacks_creature_in_swarm_cell() -> void:
 	var roster := _MockRoster.new()
 	roster.combatants = [caster, ogre]
 	hooks.on_round_end(1, roster)
-	check(ogre.hp_current == 17,
-		"ogre in swarm cell takes 3 swarm damage, hp 20 → 17, got %d" %
+	check(ogre.has_condition("swarmed_insect"),
+		"ogre in swarm cell gets swarmed_insect condition applied")
+	check(ogre.hp_current == 16,
+		"ogre takes doubled tick (AC 0 ≤ 3 → 2×2 = 4), hp 20 → 16, got %d" %
 			ogre.hp_current)
 
 
 func test_insect_plague_low_hd_auto_drive_off() -> void:
+	# Sub-3-HD creatures still get `frightened` (auto-drive-off, no save) but
+	# also take swarm tick damage per RAW ("character may continue to suffer
+	# the swarm's effects" while fleeing).
 	var dice := _FakeDice.new()
-	dice.fixed["insect_plague_attack"] = 20
-	dice.fixed["insect_plague_damage"] = 4
 	var tracker := ActiveEffectTracker.new()
 	var hooks := SpellCombatHooks.new(tracker, dice)
 	var caster := _make_caster("caster_p4", Vector3i(0, 0, 0))
@@ -261,31 +265,32 @@ func test_insect_plague_low_hd_auto_drive_off() -> void:
 	hooks.on_round_end(1, roster)
 	check(goblin.has_condition("frightened"),
 		"<3 HD goblin in swarm cell is auto-driven-off (frightened)")
-	check(goblin.hp_current == 6,
-		"<3 HD auto-drive-off skips the attack roll (no damage), got %d" %
-			goblin.hp_current)
+	check(goblin.has_condition("swarmed_insect"),
+		"<3 HD goblin also takes swarm tick damage (continues to suffer effects)")
 
 
-func test_insect_plague_high_hd_normal_attack_roll() -> void:
+func test_insect_plague_high_hd_gets_swarmed_and_frightened() -> void:
+	# Post-refactor: HD > 3 layered on the user's design literal — both
+	# `swarmed_<type>` (damage) AND `frightened` apply via the same on-cell
+	# logic. No attack roll; tick damage is auto.
 	var dice := _FakeDice.new()
-	# Deliberately miss — d20 of 3, +0 mods, target throw 7 → fails.
-	dice.fixed["insect_plague_attack"] = 3
 	var tracker := ActiveEffectTracker.new()
 	var hooks := SpellCombatHooks.new(tracker, dice)
 	var caster := _make_caster("caster_p4", Vector3i(0, 0, 0))
 	var effect := _make_plague_effect("caster_p4", [Vector3i(10, 10, 0)])
 	tracker.add_effect(effect)
 	var ogre := _MockCombatant.new()
-	ogre.id = "ogre_miss"; ogre.hp_max = 20; ogre.hp_current = 20; ogre.hit_dice = 5
+	ogre.id = "ogre_swarmed"; ogre.hp_max = 20; ogre.hp_current = 20; ogre.hit_dice = 5
 	ogre.grid_position = Vector3i(10, 10, 0)
 	var roster := _MockRoster.new()
 	roster.combatants = [caster, ogre]
 	hooks.on_round_end(1, roster)
-	check(ogre.hp_current == 20,
-		">=3 HD creature gets attack roll (here a miss), no damage, got %d" %
-			ogre.hp_current)
-	check(not ogre.has_condition("frightened"),
-		">=3 HD creature is NOT auto-driven-off")
+	check(ogre.has_condition("swarmed_insect"),
+		"HD>3 ogre gets swarmed_insect condition")
+	check(ogre.has_condition("frightened"),
+		"HD>3 ogre also gets frightened (per design literal)")
+	check(ogre.hp_current < 20,
+		"HD>3 ogre takes auto-hit tick damage, got hp=%d" % ogre.hp_current)
 
 
 func test_insect_plague_caster_damage_flips_to_stationary() -> void:
@@ -329,9 +334,9 @@ func test_insect_plague_stationary_persists_once_flipped() -> void:
 
 
 func test_insect_plague_multiple_swarms_attack_independently() -> void:
+	# Post-refactor: each swarm cell delivers its tick to the occupying
+	# target. Mock AC 0 ≤ 3 → tick doubles to 4.
 	var dice := _FakeDice.new()
-	dice.fixed["insect_plague_attack"] = 20
-	dice.fixed["insect_plague_damage"] = 2
 	var tracker := ActiveEffectTracker.new()
 	var hooks := SpellCombatHooks.new(tracker, dice)
 	var caster := _make_caster("caster_p4", Vector3i(0, 0, 0))
@@ -350,6 +355,8 @@ func test_insect_plague_multiple_swarms_attack_independently() -> void:
 	roster.combatants = [caster] + ogres
 	hooks.on_round_end(1, roster)
 	for o in ogres:
-		check(o.hp_current == 18,
-			"each ogre takes 2 swarm damage independently, hp 20 → 18, got %d" %
+		check(o.has_condition("swarmed_insect"),
+			"each ogre in its own swarm cell gets swarmed_insect")
+		check(o.hp_current == 16,
+			"each ogre takes doubled tick (AC 0 → 4 hp), hp 20 → 16, got %d" %
 				o.hp_current)

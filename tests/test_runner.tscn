@@ -208,6 +208,27 @@
 [ext_resource type="Script" path="res://tests/test_session_p2_walls.gd" id="195_session_p2_walls_tests"]
 [ext_resource type="Script" path="res://tests/test_session_p3_spawn_roster.gd" id="196_session_p3_spawn_roster_tests"]
 [ext_resource type="Script" path="res://tests/test_session_p4_clouds_swarms.gd" id="197_session_p4_clouds_swarms_tests"]
+[ext_resource type="Script" path="res://tests/test_session_p5_teleport_snap.gd" id="198_session_p5_teleport_snap_tests"]
+[ext_resource type="Script" path="res://tests/test_session_p6_cleanup_unification.gd" id="199_session_p6_cleanup_unification_tests"]
+[ext_resource type="Script" path="res://tests/test_session_p7_revert_callbacks.gd" id="200_session_p7_revert_callbacks_tests"]
+[ext_resource type="Script" path="res://tests/test_session_p8_ai_polish.gd" id="201_session_p8_ai_polish_tests"]
+[ext_resource type="Script" path="res://tests/test_session_p9_smite_undead.gd" id="202_session_p9_smite_undead_tests"]
+[ext_resource type="Script" path="res://tests/test_swarm_conditions.gd" id="198_swarm_conditions_tests"]
+[ext_resource type="Script" path="res://tests/test_domain_revenue_calculator.gd" id="203_domain_revenue_calculator_tests"]
+[ext_resource type="Script" path="res://tests/test_domain_expense_calculator.gd" id="204_domain_expense_calculator_tests"]
+[ext_resource type="Script" path="res://tests/test_domain_morale_resolver.gd" id="205_domain_morale_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_domain_growth_resolver.gd" id="206_domain_growth_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_classification_advancement.gd" id="207_classification_advancement_tests"]
+[ext_resource type="Script" path="res://tests/test_land_improvement.gd" id="208_land_improvement_tests"]
+[ext_resource type="Script" path="res://tests/test_repression.gd" id="209_repression_tests"]
+[ext_resource type="Script" path="res://tests/test_insufficient_stronghold_morale.gd" id="210_insufficient_stronghold_morale_tests"]
+[ext_resource type="Script" path="res://tests/test_income_gate_below_sufficiency.gd" id="211_income_gate_below_sufficiency_tests"]
+[ext_resource type="Script" path="res://tests/test_domain_monthly_tick_raw.gd" id="212_domain_monthly_tick_raw_tests"]
+[ext_resource type="Script" path="res://tests/test_stronghold_cost_calculator.gd" id="213_stronghold_cost_calculator_tests"]
+[ext_resource type="Script" path="res://tests/test_commission_pipeline.gd" id="214_commission_pipeline_tests"]
+[ext_resource type="Script" path="res://tests/test_claiming_resolver.gd" id="215_claiming_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_stronghold_repository_sufficiency.gd" id="216_stronghold_repository_sufficiency_tests"]
+[ext_resource type="Script" path="res://tests/test_stronghold_phase_1_integration.gd" id="217_stronghold_phase_1_integration_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -832,3 +853,66 @@ script = ExtResource("196_session_p3_spawn_roster_tests")
 
 [node name="SessionP4CloudsSwarmsTests" type="Node" parent="."]
 script = ExtResource("197_session_p4_clouds_swarms_tests")
+
+[node name="SessionP5TeleportSnapTests" type="Node" parent="."]
+script = ExtResource("198_session_p5_teleport_snap_tests")
+
+[node name="SessionP6CleanupUnificationTests" type="Node" parent="."]
+script = ExtResource("199_session_p6_cleanup_unification_tests")
+
+[node name="SessionP7RevertCallbacksTests" type="Node" parent="."]
+script = ExtResource("200_session_p7_revert_callbacks_tests")
+
+[node name="SessionP8AIPolishTests" type="Node" parent="."]
+script = ExtResource("201_session_p8_ai_polish_tests")
+
+[node name="SessionP9SmiteUndeadTests" type="Node" parent="."]
+script = ExtResource("202_session_p9_smite_undead_tests")
+
+[node name="SwarmConditionsTests" type="Node" parent="."]
+script = ExtResource("198_swarm_conditions_tests")
+
+[node name="DomainRevenueCalculatorTests" type="Node" parent="."]
+script = ExtResource("203_domain_revenue_calculator_tests")
+
+[node name="DomainExpenseCalculatorTests" type="Node" parent="."]
+script = ExtResource("204_domain_expense_calculator_tests")
+
+[node name="DomainMoraleResolverTests" type="Node" parent="."]
+script = ExtResource("205_domain_morale_resolver_tests")
+
+[node name="DomainGrowthResolverTests" type="Node" parent="."]
+script = ExtResource("206_domain_growth_resolver_tests")
+
+[node name="ClassificationAdvancementTests" type="Node" parent="."]
+script = ExtResource("207_classification_advancement_tests")
+
+[node name="LandImprovementTests" type="Node" parent="."]
+script = ExtResource("208_land_improvement_tests")
+
+[node name="RepressionTests" type="Node" parent="."]
+script = ExtResource("209_repression_tests")
+
+[node name="InsufficientStrongholdMoraleTests" type="Node" parent="."]
+script = ExtResource("210_insufficient_stronghold_morale_tests")
+
+[node name="IncomeGateBelowSufficiencyTests" type="Node" parent="."]
+script = ExtResource("211_income_gate_below_sufficiency_tests")
+
+[node name="DomainMonthlyTickRawTests" type="Node" parent="."]
+script = ExtResource("212_domain_monthly_tick_raw_tests")
+
+[node name="StrongholdCostCalculatorTests" type="Node" parent="."]
+script = ExtResource("213_stronghold_cost_calculator_tests")
+
+[node name="CommissionPipelineTests" type="Node" parent="."]
+script = ExtResource("214_commission_pipeline_tests")
+
+[node name="ClaimingResolverTests" type="Node" parent="."]
+script = ExtResource("215_claiming_resolver_tests")
+
+[node name="StrongholdRepositorySufficiencyTests" type="Node" parent="."]
+script = ExtResource("216_stronghold_repository_sufficiency_tests")
+
+[node name="StrongholdPhase1IntegrationTests" type="Node" parent="."]
+script = ExtResource("217_stronghold_phase_1_integration_tests")

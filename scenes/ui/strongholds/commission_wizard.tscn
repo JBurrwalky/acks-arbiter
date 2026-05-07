@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://stronghold_commission_wizard"]
+
+[ext_resource type="Script" path="res://scenes/ui/strongholds/commission_wizard.gd" id="1_commission_wizard_script"]
+
+[node name="CommissionWizard" type="PanelContainer"]
+script = ExtResource("1_commission_wizard_script")

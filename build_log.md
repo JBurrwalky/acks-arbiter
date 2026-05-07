@@ -15386,3 +15386,752 @@ func _tick_insect_plague(profile: Dictionary, roster: Variant) -> void
 **Next session should:** P5 — Teleport Runtime Snap-to-Destination. Adds `TeleportRuntimeConsumer` subscribing to `EventBus.spell_cast` for Dimension Door + Teleport spells; calls `MovementResolver.set_grid_position_3d` (P1's signal-emitting path) to actually move the target to the destination cell. Adds `EventBus.combatant_lost` signal + `Combatant.is_lost` field. Validates solid-matter destination → instant kill, above-ground → falling damage, lost outcome → combatant_lost emit. ~10 tests. P5 closes Dimension Door (S10) + Teleport (S12) per-RAW. Manual playtest gate triggers after P5.
 
 
+
+---
+
+## Session 2026-05-06 — P3 Polish: Swarm Condition System + Snake Species + Elemental Tiers + Stat-Block RAW Alignment
+
+**Task:** Build out the ten P3 spell-spawn monster catalog stubs into full per-RAW entries while replacing the attack-roll Insect Plague tick with the auto-hit `swarmed_<type>` condition system the user originally specified. Layer species selection / eligible-stick / spawn-anchor / immediate-action onto Sticks to Snakes; expand the four single-tier elementals into twelve tier-suffixed entries with resolver tier dispatch; preserve all P4 control-loss + obscures-vision logic.
+
+**Plan:** [.claude/plans/ten-stat-blocks-were-playful-origami.md](.claude/plans/ten-stat-blocks-were-playful-origami.md) — includes the audit of commit `6c77b5d` documenting which mechanics diverged from the design we settled on.
+
+**Model used:** Opus 4.7 (1M context).
+
+**Completed — Catalog data:**
+
+- [data/monsters/monster_catalog.json](data/monsters/monster_catalog.json) replacement of 10 stubs with 20 full entries (net +10):
+  - **Skeleton** AC 1, RAW abilities (mindless_obedience, turnable_undead) added; immunities preserved.
+  - **Zombie** XP 20→29, movement land 40/15→60/20, immunities aligned to RAW (poison/charm/hold/sleep), abilities + always_acts_last + mindless_obedience + turnable_undead.
+  - **Snake species** — replaced `snake_normal`/`snake_poisonous` with `snake_spitting_cobra` (HD 1*, AC 2, 1d3 + poison_save_or_die + spit poison_or_blindness, F1, M 7, XP 13, Move 90/30) and `snake_pit_viper` (HD 2**, AC 3, 1d4 + poison_save_or_delayed_death, F1, M 7, XP 38, Move 90/30, heat_sense_60ft + always_wins_initiative). Both verbatim from `acore_monster_catalog_sea-tre.xml`.
+  - **Elementals** — replaced 4 single-tier with 12 entries (4 types × 3 tiers): `elemental_<air|earth|fire|water>_<8hd|12hd|16hd>`. Per-tier numbers match `acore_monster_catalog_drag-gno.xml`: AC 7/9/11, HD 8/12/16, damage 1d8/2d8/3d8 (slam), saves F8/F12/F16, XP 1100/2100/3300. Type-specific abilities — air carry_away_sub_2hd, earth cannot_cross_water_wider_than_height, fire extra_damage_vs_cold_attackers + ignite + cannot_cross_water_wider_than_diameter, water must_remain_within_60ft_of_water. All carry summoning_concentration_required + dispel_magic_returns_to_plane.
+  - **Invisible Stalker** AC 7→6, XP 1700→1100, Movement fly→land 120/40, abilities expanded (permanent_invisibility + surprise_modifier_minus_3 + seeks_to_pervert_long_missions + obeys_summoner_only + dispel_magic_returns_to_plane). Reclassified `monster_types: ["summoned_creature"]`. All numbers verbatim from `acore_monster_catalog_gol-lee.xml`.
+  - **Insect Swarms** — added `insect_swarm_2hd` (XP 29) and `insect_swarm_3hd` (XP 65); existing `insect_swarm_4hd` polished — AC 0→2, attack routine changed from `1d4` melee to `swarm_aura_application` placeholder (damage now lives on the `swarmed_insect` condition); abilities documented (swarm_auto_hit_2pts, swarm_fire_cold_vulnerable, swarm_sleep_dormant); `ignores_cell_occupancy: true`, `no_zoc_emission: true`, `no_zoc_obedience: true` added as new top-level catalog booleans.
+  - Final monster count: **53** (was 43).
+
+**Completed — Conditions:**
+
+- [data/conditions/condition_catalog.json](data/conditions/condition_catalog.json) gained three new entries (`swarmed_insect`, `swarmed_rat`, `swarmed_bat`) with new optional fields: `tick_damage_per_round`, `tick_doubles_if_target_ac_at_or_below`, `tick_halves_if_warding_or_fleeing`, `persists_rounds_after_leaving_swarm`, `clears_on_water_cell`, `swarm_type`. Schema extension is additive — existing consumers ignore unknown fields. The bat variant uses `tick_damage_per_round: 0` because RAW says bat swarms inflict Confusion (as the spell), not direct damage; the per-round confusion application hook is deferred until a non-Insect-Plague spell summons bat swarms.
+
+**Completed — Combatant flag plumbing:**
+
+- [engine/shared_types/entity_flags.gd](engine/shared_types/entity_flags.gd) canonical-key block extended with three Spatial flags: `ignores_cell_occupancy`, `no_zoc_emission`, `no_zoc_obedience` (all presence-based — absence means default behavior). Documented use sites.
+- [engine/subsystems/combat/combatant.gd](engine/subsystems/combat/combatant.gd) gained `_apply_monster_catalog_flags(c, monster_data)` static helper called from both `from_monster` and `from_trained_creature`. Reads three optional booleans off the monster catalog entry and writes them onto `_monster_flags` with `source_id = "monster:<id>"`. Also added `is_swarm() -> bool` (reads `sub_types` for "swarm") consumed by attack/ranged-attack resolvers.
+- [engine/subsystems/combat/movement_resolver.gd](engine/subsystems/combat/movement_resolver.gd):
+  - `_is_blocking_occupant`: occupants flagged `ignores_cell_occupancy` are walked through after the existing incapacitated short-circuit.
+  - `_build_enemy_zoc_set_3d`: combatants flagged `no_zoc_emission` are skipped when emitting threatened-cell sets.
+  - `move_along_path`: movers flagged `no_zoc_obedience` skip the ZoC-stop break, marching past enemy threatened cells without engaging.
+
+**Completed — Insect Plague tick refactor:**
+
+- [engine/subsystems/combat/spell_combat_hooks.gd](engine/subsystems/combat/spell_combat_hooks.gd) `_tick_insect_plague` rewritten end-to-end. Damage is no longer rolled per-swarm via attack throw; the swarm now applies a `swarmed_<type>` condition to anyone occupying its cell, then ticks the catalog-defined `tick_damage_per_round` (default 2) on the swarm's initiative, doubling vs. AC ≤ `tick_doubles_if_target_ac_at_or_below` (default 3) per RAW (le_monster_catalog_2_summary.xml swarm_attack_resolution).
+- New helpers `_apply_swarm_condition_to(target, condition_key, drive_off_threshold, profile)` and `_tick_swarm_damage_for(target, condition_key, profile)`. The application path also adds `frightened` to creatures with HD < threshold (preserves auto-drive-off RAW) AND HD > threshold (per the user's design literal — every engulfed combatant becomes frightened, just via different paths). The HD == threshold case is left unmarked, awaiting confirmation.
+- New constant `SWARM_PERSIST_ROUNDS_AFTER_LEAVE: int = 3` and per-plague `swarm_persistence: { combatant_id: rounds_outside }` map. Once a target leaves all of a plague's swarm cells, the counter increments each round-end; when `> 3`, the swarmed and frightened conditions are cleared and the entry dropped. Re-entering any swarm cell resets the counter to 0 (damage continues).
+- `connect_signals()` / `disconnect_signals()` lifecycle methods added so `EventBus.combatant_moved` is subscribed at combat start (CombatController._start_combat) and unsubscribed at combat end (CombatController._emit_combat_ended). Mirrors the SpawnRosterIntegrator pattern; prevents stale-callback crashes across encounter boundaries.
+- New `_on_combatant_moved(combatant_id, from, to, path_cells)` subscriber: scans active Insect Plague effects, registers persistence=0 for any combatant whose walked cells intersect a swarm cell. Defense-in-depth application also runs in `_tick_insect_plague` for combatants that were already in a swarm cell when the plague was placed.
+- Control-loss + obscures-vision logic preserved unchanged.
+
+**Completed — Warding-attack damage clamp:**
+
+- [engine/subsystems/combat/attack_resolver.gd](engine/subsystems/combat/attack_resolver.gd) and [ranged_attack_resolver.gd](engine/subsystems/combat/ranged_attack_resolver.gd) — when `target.is_swarm()` returns true, the resolved damage is replaced by a fresh `1d4` roll instead of clamped (RAW: "Warding off a swarm with a torch or weapon inflicts 1d4 damage to the swarm. Fire-based and cold-based attacks damage a swarm."). Magical-weapon rider damage discrimination (e.g. flame sword retaining its fire die) is deferred — for now only spells that pre-set `damage_type` to fire/cold bypass the clamp, since the resolvers always emit `"physical"` for melee/ranged base damage.
+
+**Completed — Resolver layering:**
+
+- [engine/subsystems/spells/custom_resolvers/insect_plague_resolver.gd](engine/subsystems/spells/custom_resolvers/insect_plague_resolver.gd) — `swarm_type` (`insect`/`rat`/`bat`, default `insect`) persisted on each swarm entry + on the plague_profile. `swarm_persistence: {}` initialized empty.
+- [engine/subsystems/spells/custom_resolvers/sticks_to_snakes_resolver.gd](engine/subsystems/spells/custom_resolvers/sticks_to_snakes_resolver.gd) — added `snake_species` validation against `["spitting_cobra", "pit_viper"]`, persisted on spawn_profile + per-snake. The 50%-coin renamed from `poisonous: bool` to `poison_disabled: bool` (semantic flip — now suppresses poison instead of enabling it). New persisted fields: `eligible_stick_types: [long_bow, short_bow, composite_bow, quarterstaff, spear, polearm, 10ft_pole, javelin]`, `selected_stick_item_ids: []` (UI-populated), `spawn_anchor: "item_owner"`, `act_immediately_after_caster: true`, `allegiance: "blue"`. **Interface change** — the persisted flag renamed from `poisonous` to `poison_disabled`.
+- [engine/subsystems/spells/custom_resolvers/conjure_elemental_resolver.gd](engine/subsystems/spells/custom_resolvers/conjure_elemental_resolver.gd) — added `tier` validation against `["8hd", "12hd", "16hd"]`, default `"16hd"` (Conjure Elemental's spell tier per RAW). Spawn_profile.elemental_id is now `"elemental_<type>_<tier>:<caster_id>"` (was `"elemental_<type>:<caster_id>"`).
+- [engine/subsystems/spells/custom_resolvers/animate_dead_resolver.gd](engine/subsystems/spells/custom_resolvers/animate_dead_resolver.gd) — comment-only header documenting deferred dynamic-HD-scaling design (three options sketched: per-corpse generation, multi-entry catalog, template + scaling rule). No behavior change.
+
+**Completed — Integrator dispatch:**
+
+- [engine/subsystems/combat/spawn_roster_integrator.gd](engine/subsystems/combat/spawn_roster_integrator.gd):
+  - `_spawn_sticks_to_snakes` keys catalog by `snake_<species>` instead of poisonous-boolean. Falls back to `snake_pit_viper` if catalog lookup fails. Carries `poison_disabled` onto the combatant via `set_meta` so attack hooks can suppress poison effects when it fires. Spawn anchor reads from `spawn_profile.spawn_anchor` (item_owner planned; falls back to caster cell pending stick-picker UI).
+  - `_spawn_conjure_elemental` builds id as `"elemental_<type>_<tier>"` with defensive fallback to spell tier (16hd) then to legacy single-tier id.
+  - `_spawn_insect_plague` reads `swarm_type` and `swarm_hd` to construct `"<swarm_type>_swarm_<hd>hd"`; falls back to `insect_swarm_4hd`.
+
+**Completed — Test updates:**
+
+- [tests/test_monster_registry.gd](tests/test_monster_registry.gd) count assertion updated 32 → 53; message string corrected.
+- [tests/test_session_p3_spawn_roster.gd](tests/test_session_p3_spawn_roster.gd) — `test_sticks_to_snakes_spawns_mix_of_snake_types` rewritten as `test_sticks_to_snakes_spawns_chosen_species` (asserts species dispatch + poison_disabled meta + PARTY allegiance). Added `test_sticks_to_snakes_pit_viper_species` and `test_conjure_elemental_staff_tier`. Existing fire-elemental test updated to use `elemental_fire_16hd` id.
+- [tests/test_session_p4_clouds_swarms.gd](tests/test_session_p4_clouds_swarms.gd) — three swarm tests rewritten for the condition-based model: `test_insect_plague_attacks_creature_in_swarm_cell` (asserts swarmed_insect applied + 4 hp tick on AC 0), `test_insect_plague_low_hd_auto_drive_off` (frightened still applied + condition still applied per "continues to suffer effects" RAW), `test_insect_plague_high_hd_gets_swarmed_and_frightened` (renamed; asserts both swarmed_insect AND frightened on HD>3), `test_insect_plague_multiple_swarms_attack_independently` (4 ogres × 4 hp doubled tick). Caster-damage / control-loss tests unchanged.
+- New: [tests/test_swarm_conditions.gd](tests/test_swarm_conditions.gd) — 11 tests covering cell-occupancy exemption, ZoC emit/obey exemptions, on-cell-entry application via `_tick_insect_plague` defense-in-depth, HD>3 frightened layering, HD<3 auto-drive-off, 3-round persistence countdown after leaving (clears at `> 3` rounds outside), countdown reset on re-entry, AC ≤ 3 doubling, and the `is_swarm()` gate on Combatant.
+- Wired into [tests/test_runner.gd](tests/test_runner.gd) and [tests/test_runner.tscn](tests/test_runner.tscn) as `SwarmConditionsTests` (ext_resource id 198).
+
+**Decisions made:**
+
+- **`frightened` applied to BOTH HD<3 and HD>3 targets, not HD==3.** The user wrote "swarms inflict frightened condition on >3 HD enemies with same target logic as swarmed_* effect" — a literal reading. Combined with the existing built sub-3-HD auto-drive-off path, this means every engulfed creature becomes frightened, just via different paths. The HD==threshold (==3) case is currently NOT marked frightened. Flagged for user review in plan; one operator change if intent was `>=3` or "all targets."
+- **Catalog entries gained three top-level booleans** (`ignores_cell_occupancy`, `no_zoc_emission`, `no_zoc_obedience`) instead of nesting them under `special_abilities`. The flags are presence-based per the EntityFlags convention; treating them as catalog-level booleans matches the existing `armor_class` / `morale` style and avoids pushing flag detection through ability-iteration code.
+- **Snake species replacement is a clean cut, not aliased.** Old ids `snake_normal`/`snake_poisonous` are removed; tests + integrator updated. Backward-compat aliases would have masked the species-design migration in resolver code.
+- **Elemental tiers are first-class catalog entries (multi-entry pattern).** Conjure Elemental defaults to spell tier (16hd); future non-spell summon paths override via `resolver_args.tier`. The single-tier ids are removed, not aliased.
+- **Warding-attack damage REPLACES the weapon roll with a fresh 1d4.** The plan originally proposed `mini(damage_total, _roll_d4())` (clamp). The user's wording — "deals 1d4 instead of its usual weapon-specific die roll" — is replacement. Magical-weapon rider damage discrimination (e.g. flame sword retaining its fire die against a swarm) is deferred until per-bonus damage_type accounting lands; for now only spells that pre-set `damage_type` to fire/cold bypass the clamp.
+- **`is_swarm()` reads `sub_types` for "swarm"** (not a dedicated catalog flag). Reuses the existing `sub_types` taxonomy; new swarm entries opt in by listing "swarm" alongside "vermin"/"insect".
+- **Static `Combatant._get_condition_catalog()` is invoked from outside Combatant.** GDScript's underscore prefix is a convention only — calling the cached static accessor from `SpellCombatHooks._tick_swarm_damage_for` is intentional. Avoids constructing a fresh ConditionCatalog per damage tick and matches the existing fear-immunity check pattern.
+
+**Interfaces defined or changed:**
+
+```
+# Combatant (NEW static helper + method):
+static func _apply_monster_catalog_flags(c: Combatant, monster_data: Dictionary) -> void
+func is_swarm() -> bool
+
+# SpellCombatHooks (NEW lifecycle + helpers):
+func connect_signals() -> void                       # subscribe to EventBus.combatant_moved
+func disconnect_signals() -> void                    # unsubscribe; called at combat end
+func _on_combatant_moved(id, from, to, path_cells)   # cell-entry hook
+func _apply_swarm_condition_to(target, condition_key, drive_off_threshold, profile) -> void
+func _tick_swarm_damage_for(target, condition_key, profile) -> void
+const SWARM_PERSIST_ROUNDS_AFTER_LEAVE: int = 3
+
+# Insect plague_profile keys (CHANGED):
+#   swarm_type:         String       — "insect" | "rat" | "bat" (default "insect")
+#   swarm_persistence:  Dictionary   — { combatant_id: rounds_outside_since_inside }
+# Old keys removed:
+#   swarm_attack_throw  — no longer consulted
+#   attack_damage_dice  — no longer consulted
+
+# Sticks-to-Snakes spawn_profile (CHANGED):
+#   snake_species:                "spitting_cobra" | "pit_viper" (validated)
+#   eligible_stick_types:         Array[String]
+#   selected_stick_item_ids:      Array[String]   — picker-populated, can be empty
+#   spawn_anchor:                 "caster" | "item_owner"
+#   act_immediately_after_caster: bool
+#   allegiance:                   "blue" (3rd-party migration deferred)
+#   snakes[].poison_disabled:     bool             — RENAMED from `poisonous`
+# Old key removed:
+#   snakes[].poisonous            — replaced by poison_disabled (inverted semantic)
+
+# Conjure Elemental spawn_profile (CHANGED):
+#   tier:           "8hd" | "12hd" | "16hd"  (default "16hd" — spell tier)
+#   elemental_id:   "elemental_<type>_<tier>:<caster_id>"  (was "elemental_<type>:<caster_id>")
+
+# Monster catalog entries (NEW top-level booleans, all optional, default false):
+#   ignores_cell_occupancy: bool
+#   no_zoc_emission:        bool
+#   no_zoc_obedience:       bool
+
+# CombatController (CHANGED — was already calling spell_hooks.on_combat_start):
+# _start_combat now also calls spell_hooks.connect_signals()
+# _emit_combat_ended now also calls spell_hooks.disconnect_signals()
+```
+
+**Database changes:** None. Migration counter unchanged.
+
+**Tests added/updated:**
+
+- [tests/test_swarm_conditions.gd](tests/test_swarm_conditions.gd) — 11 tests (NEW).
+- [tests/test_session_p3_spawn_roster.gd](tests/test_session_p3_spawn_roster.gd) — 14 tests (was 12; added species dispatch + tier dispatch).
+- [tests/test_session_p4_clouds_swarms.gd](tests/test_session_p4_clouds_swarms.gd) — 10 tests (3 rewritten for condition-based tick model; cloud tests untouched).
+- [tests/test_monster_registry.gd](tests/test_monster_registry.gd) — count assertion updated to 53.
+- Wired into [tests/test_runner.gd](tests/test_runner.gd) + [tests/test_runner.tscn](tests/test_runner.tscn).
+
+**Verification:**
+
+- Headless suite: `Godot_v4.6.1-stable_win64_console.exe --headless --path . res://tests/test_runner.tscn`
+- Result: **182 suites passed, 26 failed.** Pre-session baseline was 180/26. **Net delta: +2 suites passing (SessionP3SpawnRoster, SwarmConditions). Baseline failures unchanged.**
+
+**Known issues:**
+
+- The 26 baseline failures (LightSourceTracker, EventScheduler insertion-order ties, scheduler-loop fractional-round accumulation, level-up flow / heraldry / journal / character-tab fixtures, etc.) are unchanged from the 6c77b5d commit.
+- The HD==threshold (==3) edge case for swarm `frightened` is currently UNMARKED (only HD<3 and HD>3 trigger). User should confirm whether their wording "on >3 HD enemies" was strict (current behavior) or inclusive (`>=3`). One-line operator change.
+- The warding-attack clamp does not yet honor magical-weapon fire/cold riders (Striking flame sword against a swarm currently clamps to 1d4 because the resolver's `damage_type` is `"physical"`). Per-bonus damage_type accounting is the path to fix; flagged in the plan as deferred.
+- The Sticks-to-Snakes `selected_stick_item_ids` is plumbed through resolver + integrator but the inventory-picker UI that populates it is deferred. Snakes currently spawn at the caster cell; once the picker lands, switch the integrator's fallback to honor the per-stick owner-cell list.
+- Insect Plague persistence map state (`swarm_persistence`) is an in-memory Dictionary on the active_effect metadata. ActiveEffectTracker persists active_effect dicts to the campaign DB at session save points, so the countdown survives pause/resume; if not, this is an issue for cross-session save/load and would need a serialization audit.
+- The bat-swarm `swarmed_bat` condition has `tick_damage_per_round: 0` and the per-round Confusion application is not yet wired. No content currently summons bat swarms; flagged for when it does.
+- The `_apply_monster_catalog_flags` helper writes flags only at construction time. If a monster catalog entry is mutated mid-combat (e.g. by a transformation effect), the flags will not refresh. No such transform exists today; flagged in case it becomes relevant.
+- Animated-dead dynamic HD scaling is documented (3 design options sketched in `animate_dead_resolver.gd` header) but unimplemented. Skeleton/zombie templates remain static.
+
+**Next session should:** Either (a) the deferred Sticks-to-Snakes inventory picker UI (resolver already accepts the eligible-stick list — needs UI to populate selected_stick_item_ids and the integrator's per-stick-owner-cell placement), OR (b) the animated-dead dynamic HD scaling design conversation the user explicitly deferred, OR (c) continue the curried-Kernighan polish roadmap with P5 (Teleport Runtime Snap-to-Destination — the same plan that drove P1-P4). Recommendation: (c) maintains roadmap momentum; (a) and (b) can be handled when the user prompts for them.
+
+---
+
+## Session 2026-05-06 — Spell Polish Roadmap P5 (Teleport Runtime Snap-to-Destination)
+
+**Task:** Continue the curried-Kernighan polish roadmap with P5: Dimension Door + Teleport runtime entity movement. Closes the deferred contract where the `_teleport` step kind / `teleport_resolver.gd` recorded a destination cell on the per-target outcome but no runtime moved the target. Adds solid-matter / falling / lost outcome handling per ACKS RAW.
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+- New [`teleport_resolved(caster_id, spell_key, per_target)`](engine/autoloads/event_bus.gd) signal — narrow-purpose, distinct from the generic `spell_cast`. Emitted by [CastingResolver](engine/subsystems/spells/casting_resolver.gd) after a successful cast when `spell_key in [dimension_door, teleport]`, consolidating per-target destination outcomes from any `teleport` step kind OR a custom resolver outcome carrying `destination_cell`.
+- New [`combatant_lost(combatant_id)`](engine/autoloads/event_bus.gd) signal for Teleport "lost" outcomes (subject does not reappear per RAW).
+- New [Combatant.is_lost](engine/subsystems/combat/combatant.gd) field. `is_alive()` now also gates on `not is_lost` so a lost combatant is removed from the alive list and from get_alive_on_side queries without invoking record_casualty.
+- New [TeleportRuntimeConsumer](engine/subsystems/combat/teleport_runtime_consumer.gd) (~165 LOC, RefCounted): subscribes to `teleport_resolved`, validates each per-target destination, snaps the combatant via `MovementResolver.set_grid_position_3d` (which fires P1's `combatant_moved` signal for downstream observers), and applies outcome consequences:
+  - **Lost (Teleport)** → `combatant.is_lost = true`, emit `combatant_lost`.
+  - **Saved / not applied (Dimension Door)** → no movement.
+  - **Solid matter, Teleport** → instant kill (apply hp_max damage, emit combatant_downed).
+  - **Solid matter, Dimension Door** → spell fails safely (no movement, no kill — RAW).
+  - **Above-ground destination (no support)** → snap, then `FallingResolver.resolve_fall` computes landing cell + d6/10 ft fall damage; combatant relocated to landing_pos and damage applied.
+- Wired into [CombatController](engine/subsystems/combat/combat_controller.gd) with optional `teleport_runtime_consumer` field; `_start_combat` calls `connect_signals()`, `_emit_combat_ended` calls `disconnect_signals()` so teleport effects don't bleed across encounters.
+- Wired into [CombatState.enter](engine/subsystems/session/states/combat_state.gd): instantiates `TeleportRuntimeConsumer.new(roster, movement_resolver, voxel_map, DiceSystem)` per combat.
+- **Test fixture fix:** [tests/test_session_9_7_polish.gd](tests/test_session_9_7_polish.gd) `_MockRoster` had only `get_all_alive()` while production code uses `get_alive()`. Added a `get_alive()` alias delegating to `get_all_alive()`. Five 9.7 cloudkill / destruction-sweep tests had been silently no-op'ing under parse-error masking; the alias lets them actually exercise the production code path.
+
+**Decisions made:**
+- **Signal vs direct injection:** Plan §P5 specified subscribing to `EventBus.spell_cast`, but that signal carries only `(caster_id, spell_key, target_ids)` — no per-target destination data. Adding a purpose-built `teleport_resolved(per_target)` signal keeps the consumer purely event-driven (consistent with P3's SpawnRosterIntegrator) without polluting `spell_cast` with rich payload. Test-friendly `process_target(spell_key, target_id, entry)` direct entry point bypasses the round-trip for unit testing.
+- **Lost-outcome ordering:** the teleport custom resolver records `applied=false` for both `outcome_kind="lost"` AND `outcome_kind="saved"`; the discriminator is `outcome_kind`. The consumer checks `outcome_kind == "lost"` BEFORE the saved/applied gate so lost outcomes correctly fire `combatant_lost` instead of being short-circuited into the no-op saved branch.
+- **Dimension Door vs Teleport solid-matter split:** Dimension Door RAW says "the spell fails automatically" — no instant kill — when destination is solid. Teleport RAW says off-target into solid → "subject INSTANTLY KILLED". Branched on `spell_key`: Dimension Door no-ops with reason=`solid_matter_fail`; Teleport applies hp_max damage + emits combatant_downed.
+- **Falling damage uses FallingResolver:** existing helper handles support-detection and damage_dice computation (floor(distance_feet/10) × d6). Spike damage is ignored for P5 (deferred); the consumer reads `damage_dice` only.
+- **`is_lost` gates `is_alive`:** plan said is_lost combatants are "not on map but still counted in roster (deferred behavior: is_alive() returns false, but record_casualty not called per RAW)". Implemented by adding `not is_lost` to the conjunction in `Combatant.is_alive()`. record_casualty is called from elsewhere on hp drop; lost combatants never lose hp, so record_casualty is never triggered for them.
+
+**Interfaces defined or changed:**
+
+```
+# EventBus signals (NEW):
+signal teleport_resolved(caster_id: String, spell_key: String, per_target: Dictionary)
+signal combatant_lost(combatant_id: String)
+
+# Combatant field (NEW):
+var is_lost: bool = false
+# is_alive() now: hp_current > 0 and not has_condition("dead") and not is_lost
+
+# CombatController field (NEW, optional):
+var teleport_runtime_consumer: TeleportRuntimeConsumer = null
+
+# TeleportRuntimeConsumer API (NEW class):
+func _init(
+    roster: CombatRoster, movement_resolver: MovementResolver,
+    voxel_map: VoxelMapData = null, dice_system = null) -> void
+func connect_signals() -> void
+func disconnect_signals() -> void
+func process_target(spell_key: String, target_id: String, entry: Dictionary) -> Dictionary
+# entry shape: {applied, outcome_kind, destination_cell, saved, fail_on_solid_object, ...}
+# returns: {action: "snapped"|"saved"|"instant_kill"|"lost"|"noop", ...}
+```
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- [tests/test_session_p5_teleport_snap.gd](tests/test_session_p5_teleport_snap.gd) — 10 tests covering: Dimension Door precise snap; Dimension Door into solid → no movement (spell fails); Dimension Door save → no movement; Teleport on_target snap; Teleport off_target into solid → instant kill + combatant_downed; Teleport lost → combatant_lost emitted + is_lost=true + is_alive()=false; Teleport off_target above ground → falling damage applied; combatant_moved signal fires from snap (P1 hookup); multiple targets snap independently; full signal round-trip through `EventBus.teleport_resolved`.
+- [tests/test_session_9_7_polish.gd](tests/test_session_9_7_polish.gd) — added `_MockRoster.get_alive()` alias so the cloudkill/destruction-sweep tests actually exercise the production code path. Tests previously masked by parse errors (`Invalid call. Nonexistent function 'new' in base 'GDScript'`) now run real assertions and pass.
+- Wired both into `tests/test_runner.gd` and `tests/test_runner.tscn` as `SessionP5TeleportSnapTests` (ext_resource id 198).
+
+**Verification:**
+- Headless suite: **184 suites passed / 25 failed.** Pre-P5 baseline (after the user's swarm-mechanics commit) was 181/26 (with five 9.7 tests silently no-op'ing under parse-error masking). Post-P5: SessionP5TeleportSnap added (+1), 9.7 silent-no-ops now exercise real code (+0 surface, but real coverage gained), and one previously-flaky baseline test stabilized (-1 failure). Net mechanical delta: **+1 suite (P5)**, broader real coverage for 9.7.
+
+**Known issues:**
+- The TeleportRuntimeConsumer subscribes globally to `EventBus.teleport_resolved`. Out-of-combat ritual casts (campaign-activities phase) will need their own consumer or shared-instance lifecycle to avoid cross-context spell-result leakage. P5 connects only inside CombatController; ritual phase consumers will instantiate their own.
+- Spike damage from FallingResolver is ignored — only `damage_dice` is consumed. Add `spike_dice` accumulation when traps integrate with the teleport path.
+- `fail_on_solid_object=true` is forced for `dimension_door`. Per-resolver override is honored when the entry carries `fail_on_solid_object=false` (custom DSL step), but the plain Dimension Door catalog binding has no opt-out.
+- The `test_teleport_off_target_into_solid_instant_kills` test triggers a `HenchmanCalamityWatcher.combatant_downed` autoload subscriber that pushes a `CampaignRepository.get_character: not found` error to stderr. The error is benign (autoload running outside a campaign context); cleanup of the autoload's null-tolerance is a separate task.
+
+**Next session should:** P6 — ActiveEffectTracker Cleanup Unification. Foundation for P7. Concentration break + dispel currently leave orphaned modifiers/flags/conditions; unify them onto the duration-tick cleanup path. Adds `_cleanup_callback: Callable` to ActiveEffectTracker, wires CastingResolver as the callback at boot, adds a `CustomResolverRegistry.register_expiration_callback(spell_key, callable)` registry. ~12 tests in `tests/test_session_p6_cleanup_unification.gd`. After P6, P7 (Polymorph revert + Massmorph cleanup + Sticks revert) becomes implementable.
+
+---
+
+## Session 2026-05-06 — Spell Polish Roadmap P6 (ActiveEffectTracker Cleanup Unification)
+
+**Task:** Continue the curried-Kernighan polish roadmap with P6: route concentration break + dispel paths through the same modifier/flag/condition cleanup machinery as duration-tick expiry. Foundation for P7 (Polymorph revert / Massmorph cleanup / Sticks-to-Snakes revert), which needs per-spell expiration callbacks to fire on every effect-removal cause.
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+- [ActiveEffectTracker](engine/subsystems/spells/active_effect_tracker.gd) — added optional `_cleanup_callback: Callable` field with `set_cleanup_callback()` / `clear_cleanup_callback()` accessors. Refactored `break_concentration` and `dispel_check`: each captures snapshots of effects to be ended, invokes the cleanup callback (if registered) with `cause` ∈ {`"concentration_broken"`, `"dispelled"`} BEFORE erasing, then performs erasure. Falls back to direct erase when no callback is registered (preserves legacy behavior + null-tolerant tests).
+- [CustomResolverRegistry](engine/subsystems/spells/custom_resolver_registry.gd) — added a per-spell expiration callback registry (`_expiration_callbacks: Dictionary[String -> Callable]`). API: `register_expiration_callback(spell_key, callback)`, `has_expiration_callback(spell_key)`, `invoke_expiration_callback(spell_key, effect, cause)`. `clear()` now drops both resolver and expiration-callback registrations.
+- [CastingResolver](engine/subsystems/spells/casting_resolver.gd) — registers itself as the tracker's cleanup callback in `_init`. New `set_default_target_lookup(callable)` lets the combat layer / session runner inject a roster-based lookup before triggering breaks; `_build_fallback_target_lookup()` provides a campaign_repo character lookup for out-of-combat contexts. `_on_tracker_removed_effect(effect, cause)` does the unwind, emits `EventBus.spell_effect_removed`, and invokes any per-spell expiration callback. `tick_and_cleanup` now also invokes the per-spell expiration callback (cause=`"duration_expired"`) so all three end paths fire registered callbacks.
+
+**Decisions made:**
+- **Two callback layers, not one:** the tracker's cleanup_callback is generic — wired once by CastingResolver at boot — and handles modifier/flag/condition unwind. The per-spell expiration_callback registry is a finer-grained hook keyed by `spell_key` so resolvers (Polymorph, Animate Dead, Conjure Elemental) can react to *their* effect ending without needing access to internal cleanup machinery. Both are passed `cause` so each per-spell callback can decide what to do per-cause (Animate Dead might no-op on `duration_expired` so spawned undead persist, but react to `dispelled`).
+- **Default target lookup vs per-call lookup:** `tick_and_cleanup` accepts an explicit `target_lookup` param because it has rich caller context (combat controller / scheduler). The tracker-driven cleanup path (concentration break / dispel) does NOT — those paths are triggered from places like `on_damage_dealt` that don't carry a roster handle. Solution: `_default_target_lookup` is a field the combat / session layer sets at context-entry time; the cleanup callback uses it. Falls back to a campaign_repo-based character lookup if nothing is wired.
+- **Cause label convention:** chose `"duration_expired"` / `"concentration_broken"` / `"dispelled"` as the three cause labels. Plan §P6 said "callbacks fire on ALL three end paths"; per-spell logic decides per-cause behavior (e.g. Polymorph reverts on every cause, Animate Dead skips `duration_expired`).
+- **`active_effect_expired` stays duration-only:** preserves the semantic distinction the design brief documents — `spell_effect_removed` is the universal "this effect ended" signal, `active_effect_expired` is the narrower "duration ran out" signal. UI surfaces that show "duration expired" toasts can subscribe to the narrower one.
+- **Replacement, not append, semantics for expiration callbacks:** `register_expiration_callback(spell_key, cb)` replaces any existing callback for that key. Multiple resolvers wanting to react to the same spell would have to compose into one Callable. P7 will register one callback per spell — composition isn't needed yet.
+- **Test fixture pattern:** each test instantiates a CastingResolver shell with mostly-null deps (`CastingResolver.new(null, null, tracker, null, custom, null, null, null)`). Only the tracker + custom registry are wired since tests exercise only the unwind/cleanup path, not the full resolve() pipeline. This is a recurring pattern; if more cleanup-related tests need it, factor into `_make_resolver()` in a test helper.
+
+**Interfaces defined or changed:**
+
+```
+# ActiveEffectTracker (CHANGED):
+func set_cleanup_callback(cb: Callable) -> void
+func clear_cleanup_callback() -> void
+# break_concentration + dispel_check now route through cleanup_callback
+# with cause ∈ {"concentration_broken", "dispelled"} before erasure.
+
+# CustomResolverRegistry (NEW methods):
+func register_expiration_callback(spell_key: String, callback: Callable) -> void
+func has_expiration_callback(spell_key: String) -> bool
+func invoke_expiration_callback(spell_key: String, effect: Dictionary, cause: String) -> void
+# clear() now also drops expiration callbacks.
+
+# CastingResolver (NEW):
+func set_default_target_lookup(lookup: Callable) -> void
+# Internal: _on_tracker_removed_effect(effect, cause) — registered as
+# tracker cleanup callback in _init. tick_and_cleanup now also invokes
+# per-spell expiration callbacks with cause="duration_expired".
+
+# Cause convention (cross-cutting):
+#   "duration_expired"      — duration tick reached 0
+#   "concentration_broken"  — caster lost concentration (damage / movement)
+#   "dispelled"             — Dispel Magic / Dispel Evil succeeded
+```
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- [tests/test_session_p6_cleanup_unification.gd](tests/test_session_p6_cleanup_unification.gd) — 12 tests covering: concentration break unwinds modifiers; concentration break unwinds flags; dispel check unwinds modifiers; dispel check unwinds conditions (emits `condition_changed(applied=false)`); `spell_effect_removed` fires on all three end paths; `active_effect_expired` fires only on duration-tick path (semantic distinction preserved); per-spell expiration callback fires on duration end with cause=`"duration_expired"`; same on concentration break (`"concentration_broken"`); same on dispel (`"dispelled"`); tracker without callback registered falls back to direct erase (backward compat); `CustomResolverRegistry.clear()` drops both resolvers and expiration callbacks; per-spell callback registration replaces (not appends).
+- Wired into `tests/test_runner.gd` and `tests/test_runner.tscn` as `SessionP6CleanupUnificationTests` (ext_resource id 199).
+
+**Verification:**
+- Headless suite: **185 suites passed / 25 failed.** Pre-P6 baseline was 184/25. Net delta: **+1 suite (P6)**, all 25 baseline failures unchanged.
+
+**Known issues:**
+- The cleanup callback path uses `_default_target_lookup` as a field, which means **only one** active context's lookup is in effect at a time. If two parallel CastingResolver consumers existed (combat + scheduler), they'd contend. Today only combat installs a roster lookup; out-of-combat resolves via the campaign_repo fallback. Document this as a single-context invariant; a future multi-context design would need lookup composition.
+- `register_expiration_callback` replaces existing registrations silently. Tests verify this. If multi-resolver composition becomes desirable later (e.g. a generic "fire combat log entry" callback alongside per-spell semantic callbacks), introduce a `register_expiration_observer` + array internally.
+
+**Next session should:** P7 — Polymorph Revert + Massmorph Cleanup. Builds on P6's expiration_callback registry. Polymorph Self / Other store stat snapshots in metadata; on every end path the per-spell callback restores AC / attack throw / movement / alignment from the snapshot. Sticks to Snakes per-spell callback removes spawned snakes from the roster (and emits `combatant_reverted_to_object` per RAW). Animate Dead callback does nothing on `duration_expired` (skeletons persist) but cleans up on `dispelled`. Conjure Elemental callback dismisses the elemental on every cause (record_casualty NOT called per RAW). Wall spells emit `wall_dispersed` on duration end. ~10 tests in `tests/test_session_p7_revert_callbacks.gd`. Also requires P3's `spawned_combatant_ids` metadata write-back for the spawn-spell teardown to find what to remove.
+
+---
+
+## Session 2026-05-06 — Spell Polish Roadmap P7 (Polymorph Revert + Massmorph Cleanup + Spawn-Spell Teardown)
+
+**Task:** Continue the curried-Kernighan polish roadmap with P7: per-spell expiration callbacks for Polymorph Self/Other (snapshot revert), Sticks to Snakes (per-snake revert-to-stick), Conjure Elemental (dismissal-to-native-plane), and the four Wall spells (dispersal signal). Builds on P6's `CustomResolverRegistry.register_expiration_callback` mechanism.
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+- **API extension:** the expiration callback signature gained a 3rd arg `target_lookup: Callable` so resolvers can resolve target IDs to live entities for snapshot reverts. Updated [`CustomResolverRegistry.invoke_expiration_callback`](engine/subsystems/spells/custom_resolver_registry.gd) and both call sites in [CastingResolver](engine/subsystems/spells/casting_resolver.gd) (`tick_and_cleanup` passes its existing `target_lookup`; `_on_tracker_removed_effect` passes the `lookup` it computes from `_default_target_lookup` or the campaign_repo fallback).
+- New EventBus signals (P7):
+  - [`combatant_reverted_to_object(combatant_id, object_kind)`](engine/autoloads/event_bus.gd) — Sticks to Snakes per-snake teardown.
+  - [`combatant_dismissed_to_native_plane(elemental_id, elemental_type, cause)`](engine/autoloads/event_bus.gd) — Conjure Elemental dismissal.
+  - [`wall_dispersed(wall_id, spell_key, cause)`](engine/autoloads/event_bus.gd) — Wall spells dispersal.
+  - [`polymorph_reverted(target_id, spell_key, snapshot, cause)`](engine/autoloads/event_bus.gd) — Polymorph Self/Other snapshot revert (subscribers apply runtime entity-state changes).
+- [PolymorphSelfResolver](engine/subsystems/spells/custom_resolvers/polymorph_self_resolver.gd) — added `static on_expiration(effect, cause, target_lookup)`. Reads `metadata.polymorph_self_snapshot` + `polymorph_self_caster_id`, resolves the caster via `target_lookup`, restores `armor_class` / `attack_throw` / `base_movement`. Emits `polymorph_reverted`.
+- [PolymorphOtherResolver](engine/subsystems/spells/custom_resolvers/polymorph_other_resolver.gd) — `resolve()` now persists `polymorph_other_per_target_snapshots: {tid: snapshot}` in `persist_metadata` (was previously only on the per-target flag). Added `static on_expiration` that iterates the per-target snapshots, resolves each target via `target_lookup`, and restores AC / attack_throw / base_movement / alignment. Emits `polymorph_reverted` once per target.
+- [SticksToSnakesResolver](engine/subsystems/spells/custom_resolvers/sticks_to_snakes_resolver.gd) — added `static on_expiration` that emits `combatant_reverted_to_object(snake_id, "stick")` for each spawned snake. Source priority: P3 SpawnRosterIntegrator's `metadata.spawned_combatant_ids` first, then `metadata.sticks_to_snakes_spawn_profile.snakes` fallback. Dedupes across both keys.
+- [ConjureElementalResolver](engine/subsystems/spells/custom_resolvers/conjure_elemental_resolver.gd) — added `static on_expiration` that emits `combatant_dismissed_to_native_plane`. Skips dismissal when `cause == "concentration_broken"` because the S9.7 `elemental_uncontrolled` path has already flipped the elemental to enemy side and re-rostered it (the elemental is no longer the caster's to dismiss).
+- [WallOfFireResolver / WallOfIceResolver / WallOfStoneResolver / WallOfIronResolver](engine/subsystems/spells/custom_resolvers/) — appended `static on_expiration` that emits `wall_dispersed`. All four use the same shape; cause gets propagated.
+- [SessionRunner._init](engine/subsystems/session/session_runner.gd) — registered expiration callbacks for all seven spells (Polymorph Self/Other, Sticks to Snakes, Conjure Elemental, four Walls). **Animate Dead is intentionally NOT registered:** skeletons / zombies persist past expiration per RAW ("until destroyed or turned").
+
+**Decisions made:**
+- **Static methods, not instance methods:** all `on_expiration` callbacks are declared `static`. Registered as `Callable(<ResolverClass>, "on_expiration")`. Eliminates the need to keep a stored resolver instance reference and avoids accidental state coupling.
+- **Polymorph Other snapshot persistence layered:** snapshot lives in two places — the per-target flag's metadata (set by `resolve()`'s flag-set path) AND `persist_metadata.polymorph_other_per_target_snapshots` on the active_effect. By the time `on_expiration` fires, the flag has been auto-cleared by `_unwind_effect_state`, so it reads from the active_effect metadata. Cleaner than re-ordering unwind/callback.
+- **Conjure Elemental concentration-broken short-circuit:** the resolver `on_expiration` short-circuits when cause is `concentration_broken`. The S9.7-introduced `elemental_uncontrolled` signal in `SpellCombatHooks.on_damage_dealt` fires BEFORE `break_concentration` runs (it captures the spawn_profile and emits with caster_id), so by the time P7's callback runs the elemental is already re-rostered as hostile. Dismissal would erase a now-enemy combatant the player still has to fight.
+- **Sticks to Snakes signal-only teardown:** the callback only emits `combatant_reverted_to_object`; actual roster removal is a downstream subscriber concern. P8 will likely wire this. For now the signal is the contract; tests verify emission.
+- **Wall callbacks are stub-shaped:** there's no wall-segment-tracking layer yet (renderer reads `wall_profile.wall_segments` from active_effects directly), so the callback is effectively a future-proof signal emission. When a wall renderer / tracker layer lands, it subscribes to `wall_dispersed` to clear visuals.
+- **P6 test fixture update:** the `_ExpirationCapture.make_callback` lambda used the old 2-arg signature; updated to 3-arg to match the API extension. Single-line lambda update; tests still verify the same semantics.
+
+**Interfaces defined or changed:**
+
+```
+# CustomResolverRegistry (CHANGED):
+func invoke_expiration_callback(spell_key, effect, cause,
+                                target_lookup: Callable = Callable())
+# Callable signature is now func(effect, cause, target_lookup).
+
+# EventBus signals (NEW):
+signal combatant_reverted_to_object(combatant_id: String, object_kind: String)
+signal combatant_dismissed_to_native_plane(elemental_id: String, elemental_type: String, cause: String)
+signal wall_dispersed(wall_id: String, spell_key: String, cause: String)
+signal polymorph_reverted(target_id: String, spell_key: String, snapshot: Dictionary, cause: String)
+
+# Resolver static methods (NEW):
+PolymorphSelfResolver.on_expiration(effect, cause, target_lookup)
+PolymorphOtherResolver.on_expiration(effect, cause, target_lookup)
+SticksToSnakesResolver.on_expiration(effect, cause, target_lookup)
+ConjureElementalResolver.on_expiration(effect, cause, target_lookup)
+WallOfFireResolver.on_expiration / WallOfIceResolver.on_expiration /
+WallOfStoneResolver.on_expiration / WallOfIronResolver.on_expiration
+
+# Polymorph Other persist_metadata (NEW key):
+persist_metadata.polymorph_other_per_target_snapshots:
+    Dictionary[target_id -> {armor_class, attack_throw, base_movement, alignment}]
+```
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- [tests/test_session_p7_revert_callbacks.gd](tests/test_session_p7_revert_callbacks.gd) — 11 tests: Polymorph Self expires/dispelled → caster stats restored + signal emitted; Polymorph Other expires → per-target stats + alignment restored, signal per target; Polymorph Other resolver source declares persist_metadata key; Sticks to Snakes expires → per-snake `combatant_reverted_to_object` (dedupe across spawn_profile + spawned_combatant_ids); Conjure Elemental dismisses on duration end; Conjure Elemental does NOT dismiss on concentration break (uncontrolled-hostile path takes over); Wall of Fire expires → `wall_dispersed`; Wall of Stone dispelled → `wall_dispersed`; Animate Dead has no expiration callback (file + session_runner verified by source-text inspection); Polymorph callback idempotent on double invocation.
+- [tests/test_session_p6_cleanup_unification.gd](tests/test_session_p6_cleanup_unification.gd) — `_ExpirationCapture.make_callback` lambda updated to 3-arg signature for the API extension.
+- Wired into `tests/test_runner.gd` and `tests/test_runner.tscn` as `SessionP7RevertCallbacksTests` (ext_resource id 200).
+
+**Verification:**
+- Headless suite: **186 suites passed / 25 failed.** Pre-P7 baseline was 185/25. Net delta: **+1 suite (P7)**, all 25 baseline failures unchanged.
+
+**Known issues:**
+- The `combatant_reverted_to_object` / `combatant_dismissed_to_native_plane` / `wall_dispersed` signals have no production subscribers yet. The roster removal for Sticks-to-Snakes spawned snakes is a downstream P8 concern (or a SpawnRosterIntegrator extension). Until then, expired Sticks-to-Snakes effects emit signals but the snake combatants remain on the roster. Same for dismissed elementals.
+- The `polymorph_reverted` signal is fired but no UI / log subscribes; the snapshot revert mutates entity stats directly via `target_lookup`, so the runtime state is correct. UI refresh paths will subscribe in a future UI session.
+- The corpse-revert RAW path for Polymorph Other on slain target (mentioned in the plan) is **not** wired here. P5's TeleportRuntimeConsumer doesn't read polymorph flags; the corpse-revert hook is a `combatant_downed` observer that would read `is_polymorphed_other` flag metadata before the flag is cleared. Deferred to a separate session — flagged in the resolver's notes.
+
+**Next session should:** P8 — AI Subsystem Polish. Largest behavioral session of the polish roadmap (complexity 3). Touches MonsterAI deeply: charm-AI gate (charmed creature filters caster from target list), `elemental_uncontrolled` subscriber (re-rosters elemental to enemy side via new `CombatRoster.move_to_side(combatant_id, new_side)`), Sanctuary AI redirect (cancelled-target adds to attacker's `sanctuary_blocked_targets`), Invisible Stalker reliability check on spawn (reaction roll, fail → hostile-to-caster). Adds `Combatant.sanctuary_blocked_targets: Array[String]`. ~15 tests in `tests/test_session_p8_ai_polish.gd`. After P8, manual playtest gate per plan §verification.
+
+---
+
+## Session 2026-05-06 — Spell Polish Roadmap P8 (AI Subsystem Polish)
+
+**Task:** Continue the curried-Kernighan polish roadmap with P8: layer four AI behaviors onto MonsterAI / CombatRoster / SpellCombatHooks / SpawnRosterIntegrator. Largest behavioral session of the roadmap (complexity 3).
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+- [`CombatRoster.move_to_side(combatant_id, new_side)`](engine/subsystems/combat/combat_roster.gd) — new method. Updates `combatant.side`. Returns false on missing id or no-op (already on the new side). No re-indexing needed since roster queries iterate `_combatants.values()` each call.
+- [`Combatant.sanctuary_blocked_targets: Array[String]`](engine/subsystems/combat/combatant.gd) — new field. Populated by `SpellCombatHooks.on_pre_attack` when a Sanctuary save fails (per RAW: "attacker will not attack the warded creature and attacks another creature instead"). MonsterAI consults it inside `select_target`. Cleared at round end.
+- [`SpellCombatHooks.on_pre_attack`](engine/subsystems/combat/spell_combat_hooks.gd) — Sanctuary failed-save branch now appends the target id to `attacker.sanctuary_blocked_targets` before returning the cancel.
+- [`SpellCombatHooks.on_round_end`](engine/subsystems/combat/spell_combat_hooks.gd) — clears each alive combatant's `sanctuary_blocked_targets` at the top of the function (before the `_active_effects == null` guard) so the per-round redirect resets uniformly. Active-effect tracker is no longer required for the clear path.
+- [MonsterAI](engine/subsystems/combat/monster_ai.gd):
+  - Optional `_active_effects: ActiveEffectTracker` field (constructor + `set_active_effect_tracker` setter for late binding).
+  - `_apply_ai_gates(combatant, candidates)` — filters candidates through (a) the **charm gate** (excludes caster_id of any active `charm_person` / `charm_monster` / `charm_plants` effect targeting this combatant) and (b) the **Sanctuary redirect** (excludes ids in `combatant.sanctuary_blocked_targets`). When the gates filter every candidate out, `select_target` returns null and `select_action` falls back to `pass`.
+  - `connect_signals` / `disconnect_signals` lifecycle. Subscribes to `EventBus.elemental_uncontrolled`; `_on_elemental_uncontrolled` calls `roster.move_to_side(elemental_id, ENEMY)` so the next AI tick targets the elemental as a regular enemy combatant for both sides.
+- [CombatController](engine/subsystems/combat/combat_controller.gd) — `_start_combat` calls `monster_ai.connect_signals()`; `_emit_combat_ended` calls `disconnect_signals()`. Same lifecycle pattern as P3 / P5 / P6.
+- [CombatState.enter](engine/subsystems/session/states/combat_state.gd) — passes `active_effects` as the new 4th arg to `MonsterAI.new(...)` so the charm gate is wired in production.
+- [SpawnRosterIntegrator._spawn_invisible_stalker](engine/subsystems/combat/spawn_roster_integrator.gd) — added a per-spawn reliability check. New helper `_stalker_reliability_check(profile)` rolls 2d6 + caster_charisma_modifier and compares against `reliability_threshold` (default 6). Profile may pass `reliability_override: bool` to bypass dice (test fixture path). On failure: stalker spawns on **ENEMY** side with `is_hostile_to_caster` flag, AND the integrator emits `EventBus.elemental_uncontrolled` so the existing P8 MonsterAI subscriber (and any future re-router) handles the hostility flip uniformly.
+
+**Decisions made:**
+- **Two-tier charm-gate wiring:** plan §P8 said "MonsterAI consults active_effects directly". Implemented as a constructor param + setter, both optional. Tests exercising AI without a tracker reference (legacy paths) keep working — gate is a no-op without it. CombatState wires production cases through the `active_effects` param.
+- **on_round_end early-return moved:** the clear-sanctuary-blocks loop moved to the top of `on_round_end`, before the `_active_effects == null` guard. Otherwise mock-roster tests that pass `null` for the tracker can't exercise the clear path, and the linter's existing tracker-gated tests would forever skip Sanctuary clearing in unit-test contexts. Operational impact: production runs always have a tracker, so the move is invisible there.
+- **Typed Array assignment:** `var sanctuary_blocked_targets: Array[String]` rejects raw `[]` literals. Use `.clear()` instead of reassignment to satisfy the typed-array contract; gated by an `is_empty()` check to skip work when there's nothing to clear.
+- **Reuse of `elemental_uncontrolled` for stalker failure:** rather than introducing a `stalker_uncontrolled` signal, the integrator emits the existing `elemental_uncontrolled` with `etype="stalker"`. The MonsterAI subscriber already calls `roster.move_to_side(...)` on the id; the elemental-vs-stalker discriminator is the etype field in case a future subscriber wants to distinguish (none does today). This keeps the signal surface narrow.
+- **Reliability override for tests:** the `_stalker_reliability_check` honors `profile.reliability_override` first to short-circuit dice rolls in unit tests. Production casts never set this field; the runtime path always rolls.
+- **`is_hostile_to_caster` flag is informational:** the side flip (PARTY → ENEMY) is the mechanically-binding change. The flag lets narration / UI / log systems detect the case ("the stalker has turned on you!") without inferring from elemental_uncontrolled events alone.
+
+**Interfaces defined or changed:**
+
+```
+# CombatRoster (NEW method):
+func move_to_side(combatant_id: String, new_side: int) -> bool
+
+# Combatant (NEW field):
+var sanctuary_blocked_targets: Array[String] = []
+
+# MonsterAI (CHANGED):
+func _init(roster, dice_system = null, movement_resolver = null,
+           active_effects: ActiveEffectTracker = null)
+func set_active_effect_tracker(tracker: ActiveEffectTracker)
+func connect_signals() / disconnect_signals()
+# select_target now applies charm + Sanctuary gates before scoring.
+
+# SpellCombatHooks (CHANGED):
+# on_pre_attack: Sanctuary cancel branch appends target.id to attacker.sanctuary_blocked_targets
+# on_round_end:  clear-loop runs before the active_effects null-guard
+
+# SpawnRosterIntegrator (CHANGED):
+# _spawn_invisible_stalker now does a reliability check per RAW.
+# Profile fields (NEW): caster_charisma_modifier, reliability_threshold,
+#                        reliability_override (test bypass)
+
+# CombatController (CHANGED):
+# _start_combat / _emit_combat_ended now toggle monster_ai.connect_signals()
+```
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- [tests/test_session_p8_ai_polish.gd](tests/test_session_p8_ai_polish.gd) — 15 tests covering: charmed creature does not target caster; charmed creature targets other enemies normally; charm effect removed lifts filter; multiple charm effects exclude all casters; charm gate no-op without tracker; `elemental_uncontrolled` flips side to ENEMY; re-rostered elemental targets former-caster side; `roster.move_to_side` flips and no-ops on no change / missing id; Sanctuary cancel marks attacker blocked; Sanctuary-blocked attacker skips warded target; `sanctuary_blocked_targets` clears at round end; Invisible Stalker reliability success → loyal PARTY-side servant; reliability failure → ENEMY side + `is_hostile_to_caster` flag; failure emits `elemental_uncontrolled` signal; AI fallback to null when all candidates filtered.
+- Wired into `tests/test_runner.gd` and `tests/test_runner.tscn` as `SessionP8AIPolishTests` (ext_resource id 201).
+
+**Verification:**
+- Headless suite: **187 suites passed / 25 failed.** Pre-P8 baseline was 186/25. Net delta: **+1 suite (P8)**, all 25 baseline failures unchanged.
+- Manual playtest gate per plan §verification triggers after P8 — needs in-engine verification of (a) Charm Person on a goblin in mixed encounter (goblin should turn against allies), and (b) the elemental hostility-flip flow end-to-end. Headless suite covers the unit-level contracts; the playtest verifies the chained behavior under the live combat loop. Deferred to the user's discretion.
+
+**Known issues:**
+- The Invisible Stalker reliability check fires on **spawn**, not per-task (plan §P8 says "per-task reaction roll when the stalker is given a new task"). Per-task rolls require a task-assignment subsystem that doesn't exist yet; spawn-time check is the closest sensible model. Re-evaluate when a task subsystem lands.
+- `is_hostile_to_caster` flag is set but no AI behavior layer reads it explicitly today. The side flip carries the mechanical effect; the flag is for narration / UI hooks that haven't been wired.
+- The MonsterAI charm gate filters by `caster_id`. If a charmed creature has a charm effect with an empty `caster_id`, no filtering happens. This shouldn't occur in production (resolvers always set caster_id) but is silent if it does.
+- Sanctuary's per-(attacker, source_id) save cache (S5) and the new `sanctuary_blocked_targets` list are independent. A Sanctuary that was passed (attacker saved) does NOT block the target — the cache short-circuits the save check, and `sanctuary_blocked_targets` is only populated on the failed-save branch. Verified by the cancel-branch test.
+
+**Next session should:** P9 — Smite Undead destruction routine. Final mechanical sweep-up of the polish roadmap (complexity 1). Adds a new `_destroy_undead_by_hd_budget` step kind to CastingResolver: HD-budget allocation from caster_level, area filter (60 ft default), HD-immunity threshold (8 HD; vampires immune), weakest-first sort, save vs Death (skeleton + zombie skip per RAW), reuse S9.7's `_sweep_destroyed_entities` to drop hp at end of round. ~6 tests in `tests/test_session_p9_smite_undead.gd`. After P9, polish-bundle roadmap is mechanically complete (Magic Mouth + Speak with Dead remain as LLM-deferred per the original roadmap).
+
+---
+
+## Session 2026-05-06 — Spell Polish Roadmap P9 (Smite Undead Destruction Routine)
+
+**Task:** Final mechanical sweep-up of the curried-Kernighan polish roadmap. Replace the Smite Undead stub with a real `destroy_undead_by_hd_budget` step kind that walks the area weakest-first, applies the HD budget per RAW, and tags destroyed undead with `dispel_destroyed` for the existing combat-removal sweep.
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+- New [`_destroy_undead_by_hd_budget`](engine/subsystems/spells/casting_resolver.gd) step handler in CastingResolver. Reads step payload `{hd_budget_formula, hd_immunity_threshold, exempt_creature_keys}`, derives HD budget from `caster_context.caster_level` (with optional `hd_budget_override` for tests), sorts target_ids in HD-ascending order (weakest first per RAW), and walks the list with these rules:
+  - **HD ≥ immunity threshold** (default 8): mark `reason="hd_immunity"`, no destruction.
+  - **Skeleton / zombie**: skip the save (RAW: no save). Treated as auto-fail.
+  - **Other undead**: consult pre-rolled `save_results[tid].succeeded`. On success: `reason="save_succeeded"`, no destruction.
+  - **Failed save (or no-save)**: spend `hd` from budget if affordable. If budget can't afford, `reason="budget_exhausted"`, no destruction. Excess HD over the last destroyed target is wasted.
+  - **Destroyed**: apply `dispel_destroyed` condition + emit `EventBus.condition_changed(applied=true, source="smite_undead")`. Combat-end-of-round sweep (`SpellCombatHooks._sweep_destroyed_entities`, S9.7) drops hp to 0 for any combatant with this condition.
+- Added `_entity_creature_key(entity)` helper. Reads `monster_group_id` (Combatant), `_monster_data.id` (legacy), or `creature_key` (test fixture). Used to identify skeleton/zombie for the no-save exemption.
+- [data/spells/spell_catalog.json](data/spells/spell_catalog.json) — Smite Undead binding swapped from `kind: "stub"` to `kind: "destroy_undead_by_hd_budget"` with `hd_budget_formula: "caster_level"`, `hd_immunity_threshold: 8`, `exempt_creature_keys: ["skeleton", "zombie"]`.
+- [tests/test_spell_catalog_l4_divine.gd](tests/test_spell_catalog_l4_divine.gd) — `test_smite_undead_forward_stub` now pins the binding to the real step kind (was pinning `step_kind == "stub"`). Asserts hd_budget == caster_level and hd_immunity_threshold == 8.
+
+**Decisions made:**
+- **Weakest-first sort:** RAW says spell destroys "up to caster_level HD of undead" without specifying tie-break. Sorting ascending lets a budget destroy more weak undead before exhausting on a stronger one — the player-friendly read of the rule. Tested explicitly with mixed 1HD + 4HD targets.
+- **HD-budget gate in step, not save_spec:** the existing `save_spec.exempt_creature_keys` field is consulted by `_roll_saves_for_targets`, but the resolver's design rolls every save up front. Rather than special-casing the save loop to skip skeletons/zombies, the step handler treats them as auto-fail at consumption time. Keeps save resolution generic.
+- **Reuse `_sweep_destroyed_entities` instead of immediate hp drop:** the S9.7 sweep already handles Death Spell + Disintegrate via the same `dispel_destroyed` condition. Smite Undead joining that channel means a single end-of-round drop point — uniform with the rest of the destruction-class spells.
+- **Animate Dead reverse already wired:** the spell's reverse_form `animate_dead` was already custom-resolver-wired (Session 11). P9 only touches the forward form; the reverse remains intact.
+
+**Interfaces defined or changed:**
+
+```
+# CastingResolver step kinds (NEW):
+"destroy_undead_by_hd_budget" — payload:
+    {
+        kind, hd_budget_formula: "caster_level",
+        hd_immunity_threshold: 8,
+        exempt_creature_keys: [skeleton, zombie],
+        # optional test override:
+        hd_budget_override: int
+    }
+# Outcome shape:
+#   {
+#     per_target: {tid: {destroyed, hd_cost, saved, exempt, reason?}},
+#     records:    Array of {character_id, condition_key=dispel_destroyed},
+#     hd_budget:  int,
+#     hd_spent:   int,
+#     hd_immunity_threshold: int,
+#   }
+
+# CastingResolver helper (NEW):
+func _entity_creature_key(entity: Variant) -> String
+```
+
+**Database changes:** None.
+
+**Tests added/updated:**
+- [tests/test_session_p9_smite_undead.gd](tests/test_session_p9_smite_undead.gd) — 7 tests: L8 cleric destroys 4 zombies via no-save exemption; 8-HD vampire immune; 7-HD wraith save success / failure pair; skeleton + zombie skip save; weakest-first ordering with mixed HD (2 skeletons destroyed before a 4-HD ghoul exhausts budget); excess HD wasted safely; dispel_destroyed condition applied + `EventBus.condition_changed` emitted.
+- Wired into `tests/test_runner.gd` and `tests/test_runner.tscn` as `SessionP9SmiteUndeadTests` (ext_resource id 202).
+- `tests/test_spell_catalog_l4_divine.gd::test_smite_undead_forward_stub` retitled-in-spirit (still named `_stub` for git history continuity) to pin the new step kind.
+
+**Verification:**
+- Headless suite: **188 suites passed / 25 failed.** Pre-P9 baseline was 187/25. Net delta: **+1 suite (P9)**, all 25 baseline failures unchanged. Polish roadmap P1–P9 mechanically complete.
+
+**Polish roadmap P1–P9 summary:**
+| Session | Suites passed (before → after) | Closes |
+|---|---|---|
+| P1 — Movement infrastructure | 177 → 178 | combatant_moved signal + traversal log |
+| P2 — Wall path-crossing damage | 178 → 179 | Wall of Fire / Ice damage |
+| P3 — Spawn-roster integration | 179 → 180 | Animate Dead / Sticks / Conjure / Stalker / Plague rostering |
+| P4 — Cloud drift + Insect Plague tick | 180 → 181 | Cloudkill drift + swarm attacks |
+| P5 — Teleport runtime snap | 181 → 184 | Dimension Door / Teleport entity movement (+9.7 silent-mask fix) |
+| P6 — ActiveEffectTracker cleanup unification | 184 → 185 | concentration / dispel paths route through `_unwind_effect_state` |
+| P7 — Polymorph revert + spawn-spell teardown | 185 → 186 | Polymorph snapshot revert; Sticks/Elemental/Wall dispersal |
+| P8 — AI subsystem polish | 186 → 187 | charm AI gate; Sanctuary redirect; elemental hostility flip; Stalker reliability |
+| P9 — Smite Undead destruction routine | 187 → 188 | HD-budget destruction step kind + Smite Undead binding |
+
+**Known issues:**
+- The destruction sweep relies on the `dispel_destroyed` condition surviving until end-of-round. If a combatant is healed mid-round AFTER getting marked, the heal does NOT clear the condition — the sweep still drops them at end-of-round. RAW: undead destroyed by Smite Undead are unambiguously gone; the heal-revives-condemned-undead corner case is uncovered. Acceptable per RAW intent.
+- `hd_budget_formula` currently only honors `"caster_level"`. Future spells with different budget formulas would need either a formula evaluator or new step kinds. Not needed for any current spell.
+- The `area_diameter_feet` from the catalog is documented in the spell entry but not consulted by the step handler — area filtering is the picker / `target_descriptor.target_ids` layer's job. The handler trusts the input list.
+
+**Next session should:** With the polish roadmap mechanically complete, options open up:
+  - **(a) Manual playtest gate:** plan §verification calls for in-engine verification of Wall of Fire + Cloudkill + Dimension Door (after P5) and Charm Person redirect (after P8). The headless suite covers unit-level contracts; the playtest verifies chained behavior.
+  - **(b) Subscriber wiring for the P7 signals:** `combatant_reverted_to_object` (Sticks-to-Snakes roster removal), `combatant_dismissed_to_native_plane` (Conjure Elemental roster removal), `wall_dispersed` (renderer / log) currently fire but have no production consumers. A small CombatSignalRouter or extension to SpawnRosterIntegrator could close these in ~50 LOC.
+  - **(c) LLM/narration phase** — Quest/Geas penalty cascade, Magic Jar soul-state, Reincarnate identity rebuild, Hallucinatory Terrain disbelief. The polish roadmap deferred these explicitly; they belong in a dedicated LLM-phase plan.
+  - **(d) Ritual magic phase** — Arcane L7+ and Divine L6+ (Limited Wish, Wish, Symbol, Astral Spell, Gate, Aerial Servant, Animate Object, Blade Barrier, Find the Path, Heal, Speak with Monsters, etc.).
+
+Recommendation: (a) first — short, validates the roadmap end-to-end. Then user picks among (b)/(c)/(d).
+
+---
+
+## Session 2026-05-06 — Domain Roadmap Phase 0 (Engine RAW-Correctness + Schema Backbone)
+
+**Task:** Phase 0 of `docs/domain-roadmap-corrected.md` — replace the simplified `_resolve_domain_month` (flat 6 gp/peasant + 9 gp/urban revenue, 12 gp/troop garrison) with rules-correct revenue / expense / morale / growth / classification / land-improvement resolvers, and lay the schema backbone (`domain_hexes`, `domains` extensions, `domain_followers`, `ledger_entries`, `follower_arrivals`) every later phase depends on. No UI changes — math proven headlessly via tests.
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+- **Schema (5 migrations 055-059):**
+  - `055_domain_hex_land_values.sql` — `domain_hexes(id, domain_id, hex_q, hex_r, land_value [3-9], surveyed_by, is_littoral, land_improvement_gp [0-3])`. Per `acore_axioms` §land_value L43-82 + §land_improvement L207-215.
+  - `056_domain_economy_extensions.sql` — 14 ALTER TABLE ADD COLUMN on `domains`: `religion`, `alignment`, `tax_rate_gp_per_family` (default 2), `liturgy_rate_gp_per_family` (1), `tithe_rate_gp_per_family` (1), `tribute_out_owed`, `is_chaotic_domain`, `is_active_adventuring_this_month`, `classification_progress_families`, `liege_domain_id`, `realm_title` (default 'Baron'), `is_repressed_this_month`, `repression_gp_per_family_this_month`, `treasury_gp`. The roadmap originally numbered these 050-054 but those numbers were already taken (highest existing migration was `054_concentration_mode.sql`); shifted to 055-059.
+  - `057_domain_followers.sql` — `domain_followers(id, domain_id, follower_class, count, equipped_kit_id, arrival_phase ∈ {pending, half_built, completed, post_completion}, morale_modifier)`. Phase 5 ships the resolver that writes here.
+  - `058_ledger_entries.sql` — append-only `ledger_entries(id, domain_id, calendar_day, category ∈ {revenue, expense, tribute_in, tribute_out, investment, other}, subcategory, gp_amount, description, source_event_id)`. Indexed on `domain_id` and `calendar_day`.
+  - `059_followers_arrival_state.sql` — `follower_arrivals(id, domain_id, calendar_day, wave_pct ∈ {50, 25, 25}, follower_count_total, equipment_kit)`. Audit log for the ceil(N×0.5) / ceil(N×0.25) / remainder follower wave schedule.
+  - `db/schema.sql` regenerated to reflect migrations; "Last migration applied" comment bumped from 049 (orphaned) to 059.
+- **EventBus signals** (8 new in `engine/autoloads/event_bus.gd` Domain block, after L486): `domain_followers_arrived`, `classification_advanced`, `classification_regressed`, `domain_treasury_changed`, `bandit_spawned`, `domain_event_resolved`, `stronghold_sufficiency_changed`, `land_value_improved`. Past-tense names; payloads documented in signal comments.
+- **CampaignRepository methods** (8 new, after L1112): `update_domain_monthly_state(domain_id, fields)` with whitelisted `_DOMAIN_MONTHLY_FIELDS` constant; `get_domain_hexes(domain_id)`, `add_domain_hex`, `update_domain_hex_land_improvement`; `add_ledger_entry`, `list_ledger_entries(domain_id, since_calendar_day)`; `list_domain_followers`, `add_follower_arrival`. All follow the existing pattern (`db.query_with_bindings`, return `db.query_result.duplicate()` for lists, `push_error` with context on failure).
+- **6 resolvers** in new `engine/subsystems/domains/` directory (all `class_name FooResolver extends RefCounted`, static-only):
+  - `domain_revenue_calculator.gd` — service (4gp/fam) + tax (configurable, default 2gp/fam) + per-hex land × peasants + tribute_in. Income gate per `acore_axioms` §peasants_and_followers L108-109: when `stronghold_value < classification_minimum`, returns `{total: 0, …, income_gate_active: true}`.
+  - `domain_expense_calculator.gd` — garrison `max(actual_paid, 2gp/family universal min)` per §garrison L218 L226; liturgy / maintenance / tithe / tribute_out / repression. Income-gate keeps garrison, zeros the rest.
+  - `domain_morale_resolver.gd` — `resolve_base_morale(domain, ruler, monthly_revenue, stronghold_value, stronghold_minimum, additional_garrison_gp_per_family)` returning the deterministic floor; `resolve_current_morale(domain, base, event_modifiers, repression_bonus, is_repressed, roll_2d6)` returning `{current_morale, capped_by_repression, …}`. Encodes the 14×15 personal_authority table (§L433-449), the insufficient-stronghold tiered penalty (-1 / -2 / -3 at half / quarter / below-quarter per §L452-456), classification penalty (Borderlands -1 / Wilderness -2 per §L457-460), additional troops bonus (Borderlands +1 / Wilderness +1/+2 per §L461-464), alignment-match (-1 / -2 per §L466-471), 2d6 monthly roll with drift toward base, natural-2 / natural-12 forced ±2, clamp to [-4, +4], and the repression cap (current ≤ 0 while repressed per §L515). Public `morale_tier(score)` maps to Rebellious / Defiant / Turbulent / Demoralized / Apathetic / Loyal / Dedicated / Steadfast / Stalwart per §effects_of_morale L538-549.
+  - `domain_growth_resolver.gd` — random change as TWO independent exploding 1d10s per 1,000 families (rounded up), one increase one decrease, NET = increase − decrease per §domain_growth.monthly_change L126-131 (NOT 2d10 added — that was the simplified handler's bug). Active-adventuring bonus from a 6-band population table (§L138-149: 1-100 → 5d20, …, 500+ → 1d10). Investment bonus 1d10 per 1,000 gp invested, capped at `max(monthly_revenue, 1000gp)` per §investments L132-135. Morale-tier modifier (Loyal +1d10/1000 … Stalwart +4d10/1000; Demoralized -1d10/1000 … Defiant -3d10/1000). Rebellious halts random growth. Income-gate zeros random + tier; active-adventuring + investment unaffected. Dice are injected via `Callable` parameter; default uses `DiceSystem.roll_digital`.
+  - `classification_advancement.gd` — `check_classification_change(domain, hex_count, has_urban, urban_pct, distance_miles, contiguous_blocked)` returns `{advanced, regressed, new_classification, reason}`. Family caps 125/250/780 per 6-mile hex; advancement requires saturation + 16-hex domain OR saturation + blocked + urban with ≥20% ratio, plus distance ≤72mi (Borderlands) or ≤48mi (Civilized). Regression demotes one step when justifying conditions lapse.
+  - `land_improvement.gd` — `attempt_improvement(hex, gp_committed)` returning `{accepted, reason ∈ {ok, insufficient_gp, improvement_capped, land_value_capped}, new_improvement, new_land_value, gp_spent}`. Hard caps: 25,000 gp per +1, max +3 per hex, final land_value ≤ 9 per §land_improvement L207-215.
+- **`domain_handlers.gd` rewrite:** replaced `_resolve_domain_month` (was L124-185) and `_save_domain` (was L189-211) to delegate to the resolvers in dependency order (revenue → expenses → base morale → current morale → growth → classification), write per-subcategory ledger entries, update domain row via `CampaignRepository.update_domain_monthly_state`, and emit the new EventBus signals. Public methods (`_init`, `register`, `unregister`, `seed_monthly_tick`, `_handle_monthly_tick`) preserved — only the inner resolution flow changed. Stub helpers `_stub_stronghold_value` (returns 0 in Phase 0; Phase 1 swaps to a strongholds query), `_classification_minimum_gp(territory_type, hex_count)` (15k civilized / 22.5k borderlands / 32k wilderness × hex_count per §L88-94), `_build_ruler_context` (CHA mod via ACKS table, level, leadership-prof query, alignment), `_event_modifiers_sum` (tax / liturgy deltas vs. baseline + garrison underpayment).
+- **10 test files** in `tests/`, all registered in `tests/test_runner.gd` and `tests/test_runner.tscn` (ext_resource ids 203-212):
+  - `test_domain_revenue_calculator.gd`, `test_domain_expense_calculator.gd`, `test_domain_morale_resolver.gd`, `test_domain_growth_resolver.gd`, `test_classification_advancement.gd`, `test_land_improvement.gd`, `test_repression.gd`, `test_insufficient_stronghold_morale.gd`, `test_income_gate_below_sufficiency.gd`, `test_domain_monthly_tick_raw.gd`.
+  - The integration test (`test_domain_monthly_tick_raw.gd`) exercises the deterministic resolver pipeline against the §domain_income L259-263 benchmarks: Wilderness 5 gp/fam net (revenue 12k − expenses 7k at 4 gp/fam garrison), Borderlands 6 gp/fam (12k − 6k at 3 gp/fam garrison), Civilized 7 gp/fam (12k − 5k at 2 gp/fam universal-min garrison). Land value fixed at 6 (median 3d3) so benchmarks land on integer-exact values. 12-iteration stability loop verifies no per-month drift in the deterministic pipeline.
+- **Documentation:** added §29 Domain Subsystem Conventions to `docs/coding_conventions.md` (resolver pattern, income-gate first-position check, `XPAwardCalculator.bankers_round` usage, stub-helper convention, ledger append-only rule, dice-via-lambda Callable rule, EventBus signal list, repository whitelist pattern). Updated `docs/rule_system_map.md` Domain Play section to reference `gdd-domain-tab` GDD and `docs/domain-roadmap-corrected.md`.
+
+**Decisions made:**
+- **Migration renumbering 050→055.** The roadmap text references migrations 050-054, but those numbers are already taken (`050_poi_discovery`, `051_surveying_progress`, `052_tracking_pursuit`, `053_specialists`, `054_concentration_mode`). Shifted Phase 0's migrations to 055-059 monotonically. Roadmap text references in code comments cite the new numbers.
+- **Stronghold value injection via parameter, not column.** Phase 0's morale / revenue / growth resolvers all need `stronghold_value_gp` and `classification_minimum_gp`. Rather than storing a denormalized `current_stronghold_value_gp` column on `domains`, the resolvers take both as method parameters; the handler computes them via `_stub_stronghold_value(domain_id)` (returns 0) and `_classification_minimum_gp(territory_type, hex_count)`. Phase 1's stronghold subsystem replaces only the stub body — the resolver interface stays unchanged.
+- **Dice injection via lambdas, not inner-class methods.** The growth resolver takes a `dice_roller: Callable`. Initial draft used `Callable(_ConstDice.new(), "roll")` in tests, but the resolver's `is_valid()` check rejected those and silently fell through to real DiceSystem rolls. Tests now use lambda form `func(faces, count, exploding) -> int: return count * per_die_value`, which round-trips cleanly. The resolver's fallback also uses a lambda wrapping the static `_dice_system_default` for the same reason. Documented in coding_conventions §29.
+- **Income gate keeps garrison, zeros the rest.** Per `acore_axioms` §peasants_and_followers L108-109, "the domain does not generate money and does not grow" — but garrison is a separate rule (§garrison L226: ruler must always pay 2 gp/family). My implementation: `DomainExpenseCalculator` keeps the universal 2gp/family minimum even under the gate but zeros liturgy / maintenance / tithe / tribute_out / repression (RAW doesn't say these literally drop to 0, but the practical reading is the ruler defers nonessential spend when there's no revenue).
+- **Active-adventuring + investment unaffected by income gate.** RAW reads adventuring growth (§active_adventuring_growth L137) and investment-driven growth (§investments L132-135) as independent of stronghold sufficiency — adventuring grows population through ruler reputation, investments specifically attract peasants per §before_ninth_level L121 ("the character may still make investments to attract peasants"). Implementation zeros the random change and morale-tier modifier under the gate but keeps adventuring + investment.
+- **Public banker's rounding via `XPAwardCalculator.bankers_round`.** Six private `_bankers_round` copies exist in the codebase (familiar_data, shop_inventory_generator, trained_creature_data, level_up_engine, travel_speed_calculator, etc.). Phase 0 calls the public `XPAwardCalculator.bankers_round` directly rather than introducing a seventh copy. Future cleanup pass should consolidate, but that's out of scope for Phase 0.
+
+**Interfaces defined or changed:**
+
+```
+# Resolver public methods (engine/subsystems/domains/):
+DomainRevenueCalculator.calculate_monthly_revenue(domain, hexes, stronghold_value_gp, stronghold_minimum_gp, tribute_in=0)
+    -> {total, service, tax, land, tribute_in, income_gate_active}
+DomainExpenseCalculator.calculate_monthly_expenses(domain, actual_garrison_paid_gp, income_gate_active)
+    -> {total, garrison, liturgy, maintenance, tithe, tribute_out, repression}
+DomainMoraleResolver.resolve_base_morale(domain, ruler, monthly_revenue_gp, stronghold_value_gp, stronghold_minimum_gp, additional_garrison_gp_per_family) -> int
+DomainMoraleResolver.resolve_current_morale(domain, base_morale, event_modifiers_sum, repression_bonus, is_repressed, roll_2d6)
+    -> {roll_2d6, adjusted_roll, prior_current_morale, base_morale, current_morale, morale_change, capped_by_repression}
+DomainMoraleResolver.morale_tier(current_morale) -> String  # 9 RAW tier names
+DomainGrowthResolver.resolve_growth(domain, monthly_revenue_gp, investment_gp, morale_tier, is_active_adventuring, income_gate_active, dice_roller=Callable())
+    -> {net_change, random_increase, random_decrease, active_adventuring_bonus, investment_bonus, morale_tier_modifier, growth_halted_by_morale, income_gate_active}
+ClassificationAdvancement.check_classification_change(domain, hex_count, has_urban, urban_pct, distance_miles, contiguous_blocked)
+    -> {advanced, regressed, new_classification, reason}
+LandImprovement.attempt_improvement(hex, gp_committed)
+    -> {accepted, reason, new_improvement, new_land_value, gp_spent}
+
+# CampaignRepository (engine/autoloads/campaign_repository.gd):
+update_domain_monthly_state(domain_id, fields_dict) -> bool      # whitelisted UPDATE
+get_domain_hexes(domain_id) -> Array
+add_domain_hex(data) -> String
+update_domain_hex_land_improvement(domain_id, hex_q, hex_r, new_improvement) -> bool
+add_ledger_entry(data) -> String
+list_ledger_entries(domain_id, since_calendar_day=-1) -> Array
+list_domain_followers(domain_id) -> Array
+add_follower_arrival(data) -> String
+
+# EventBus signals (Domain block in engine/autoloads/event_bus.gd, after L486):
+domain_followers_arrived(domain_id, count, follower_class, wave)        # wave ∈ {50, 25, 25}
+classification_advanced(domain_id, old_classification, new_classification)
+classification_regressed(domain_id, old_classification, new_classification)
+domain_treasury_changed(domain_id, old_gp, new_gp)
+bandit_spawned(domain_id, bandit_count)
+domain_event_resolved(domain_id, event_id, outcome)                     # outcome keys: result, morale_delta, gp_delta, description
+stronghold_sufficiency_changed(domain_id, is_sufficient, value_gp, minimum_gp)  # Phase 1 emits
+land_value_improved(domain_id, hex_q, hex_r, new_value, improvement_count)
+```
+
+**Database changes:** Migrations 055-059 listed above.
+
+**Tests added/updated:**
+- 9 unit tests covering each resolver and the cross-cutting behaviors (repression / insufficient-stronghold morale tier / income gate).
+- 1 integration test (`test_domain_monthly_tick_raw.gd`) verifying RAW benchmarks hit, income gate behavior, and 12-month stability of the deterministic pipeline.
+
+**Known issues:**
+- Six private `_bankers_round` copies remain in other subsystems. Phase 0 uses `XPAwardCalculator.bankers_round` (the public canonical version) but doesn't consolidate the copies. Future cleanup pass.
+- Active-adventuring detection is Phase 2 work (`active_adventuring_detector.gd`); Phase 0 only adds the `is_active_adventuring_this_month` column. The handler currently reads the column but no system writes to it yet — every Phase 0 monthly tick treats `is_active_adventuring=false`.
+- Stronghold sufficiency is hardcoded to false in Phase 0 (the `_stub_stronghold_value` returns 0). Every Phase 0 domain runs under the income gate. This is RAW-correct (no stronghold ⇒ no revenue), but means the §domain_income L259-263 benchmarks can only be exercised by tests that pass a real `stronghold_value_gp` directly into the resolvers (which `test_domain_monthly_tick_raw.gd` does). Phase 1 will populate the strongholds table and let live monthly ticks hit the benchmarks.
+- The simplified 1-in-6 random event roll from the prior `_resolve_domain_month` is preserved in the new handler (`_maybe_generate_event`). Phase 8 (`gdd-domain-encounters`) replaces it with the full RAW encounter table from `ax_domain_level_encounters.xml`.
+- 25 pre-existing test failures unrelated to domain work remain (coin_gp / location_key / language proficiency / equipment count / specialization registry / create_campaign). Same baseline as Session 2026-05-06 P9.
+
+**Verification:**
+- Headless suite: **198 suites passed / 25 failed.** Pre-Phase-0 baseline was 188/25 (after P9). Net delta: **+10 suites (Phase 0)**, all 25 baseline failures unchanged.
+- All 10 new domain test suites print `<Suite>: all tests passed.` `test_domain_monthly_tick_raw.gd` confirms RAW-correct numbers for all three classifications.
+
+**Next session should:** Phase 1 — Stronghold Construction. Per `docs/domain-roadmap-corrected.md` Phase 1: schema migrations 060+ (`strongholds`, `stronghold_commissions`, `stronghold_accessories`); `engine/subsystems/strongholds/` (cost calculator, commission pipeline, repository, claiming resolver); UI shell at `scenes/ui/strongholds/` (commission wizard, claim modal). Critical for closing the income gate that's currently locked across every domain. Phase 1's `stronghold_repository.get_stronghold_value_for_domain` replaces Phase 0's `_stub_stronghold_value` stub; it should also emit `EventBus.stronghold_sufficiency_changed` (declared in Phase 0) on every change so the morale resolver re-bases.
+
+---
+
+## Session 2026-05-06 — Domain Roadmap Phase 1 (Stronghold Construction)
+
+**Task:** Phase 1 of `docs/domain-roadmap-corrected.md` — build the stronghold subsystem that replaces Phase 0's `_stub_stronghold_value` (returns 0) with a real query summing completed strongholds in a domain. Mid-task, the user added `rules/acore_stronghold_construction_costs.pdf` to provide the canonical cost / timeline rules absent from `acore_axioms_strongholds_and_domains.xml` and corrected the roadmap text from "monthly progress tick" to a daily tick (1 day per 500 gp).
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+- **Schema (3 migrations 060-062):**
+  - `060_strongholds.sql` — summary-level data model with `archetype` ∈ {fortress / sanctum / hideout / fastness / vault / clanhold}, `archetype_power_id` linking to `data/powers/power_catalog.json`, `gp_value` driving sufficiency, `shp` / `ac` / `garrison_capacity` (Phase 8 sieges consume), `completion_pct` denormalized cache, `is_conforming_to_class` (display-only per [RESOLVED 2026-05-06]), `is_claimed` + `claimed_from_source` ∈ {dungeon / ruin / conquest / inheritance / purchase / grant}, location columns, `status` ∈ {in_progress / completed / paused / destroyed / claimed}. The voxel-grid layout system from `gdd-stronghold-construction.md` §9.1 is **deferred**.
+  - `061_stronghold_commissions.sql` — `gp_committed`, `daily_construction_rate_gp` (default 500), `speed_tier_pct` ∈ {100, 150, 200} per the PDF, `engineers_required` / `engineers_assigned` / `engineer_monthly_wage_gp`, `magic_rate_modifier_pct`, `class_cost_reduction_pct` ∈ {0, 50}, `started_calendar_day` / `expected_halfway_day` / `expected_completion_day` / `gp_progressed` / `halfway_signal_fired` / `completed_calendar_day`, granular `status` ∈ {in_progress / completed / paused_engineers / paused_funds / paused_user / cancelled}.
+  - `062_stronghold_accessories.sql` — upgrade items table (Phase 4 sub-tab will surface the picker).
+  - `db/schema.sql` regenerated; "Last migration applied" bumped from 059 to 062.
+- **EventBus signals** (4 new in `engine/autoloads/event_bus.gd` Domain block, after L528): `stronghold_commission_started(stronghold_id, domain_id, gp_committed, expected_completion_day)`, `stronghold_construction_progressed(stronghold_id, completion_pct, milestone)` where milestone ∈ {"halfway", "completed"}, `stronghold_claimed(stronghold_id, source, gp_value)`, `stronghold_destroyed(stronghold_id, cause)`. Phase 0's `stronghold_completed` and `stronghold_sufficiency_changed` are now wired (the latter via `StrongholdRepository.recompute_sufficiency_after_change`).
+- **CampaignRepository methods** (~12 new, after the Phase 0 follower-arrival block at L1283): `create_stronghold` / `get_stronghold` / `update_stronghold` (whitelisted via `_STRONGHOLD_UPDATE_FIELDS` const) / `list_domain_strongholds` / `list_strongholds_by_owner` / `list_strongholds_at_hex` / `create_commission` / `get_commission` / `get_commission_for_stronghold` / `list_active_commissions` / `update_commission` (whitelisted via `_COMMISSION_UPDATE_FIELDS`) / `create_accessory` / `list_accessories`.
+- **Data files** (new directory `data/strongholds/`):
+  - `structure_catalog.json` — 22 entries (17 fortifications + 7 civilian + 11 accessories) transcribed from PDF p.126-127 with cost. SHP / AC values cross-sourced from `daw_equipment_and_construction.xml` §structures L583-606 where available; civilian structures and accessories have placeholder zeros (Phase 8 sieges will populate).
+  - `archetype_presets.json` — 12 archetypes keyed by `power_id` from PDF p.126 "Strongholds by Class" table: fighter castle, cleric fortified church (50% off, no morale checks), bladedancer temple (50% off, no morale checks), mage sanctum, thief/assassin/elf-nightblade hideout, bard hall, explorer border fort (borderlands/wilderness only), dwarven craftpriest/vaultguard vault (underground / no human-or-elven civilized), elf spellsword fastness (no human-or-dwarven civilized; animals friendly within 3 mi), beastman clanhold (chaotic), Lightblessed Wonderworker sanctum (renamed from "Nobiran Wonderworker" per [RESOLVED 2026-05-06]; 1d6 1-3rd-level mage/cleric apprentices + 2d6 normal-men aspirants per `pc_classes_5.xml` §stronghold_sanctum L127-134).
+- **4 resolvers** in `engine/subsystems/strongholds/`:
+  - `stronghold_cost_calculator.gd` — `calculate_total_cost(archetype_preset, structures, accessories, speed_tier_pct, magic_rate_modifier_pct)` returning `{base_structure_cost, accessory_cost, class_cost_reduction_pct, discounted_base_cost, speed_tier_pct, speed_premium_gp, gp_committed, daily_construction_rate_gp, magic_rate_modifier_pct, engineers_required, engineer_monthly_wage_gp, estimated_duration_days}`. Encodes PDF rules: 500 gp/day base; speed tiers 100→500/150→666/200→1000; engineer per 100k gp at 250 gp/month; cleric/bladedancer 50% off; accessory 25% upgrade discount. Plus `validate_class_location` and `validate_engineer_requirement` returning Array[String] error codes.
+  - `commission_pipeline.gd` — owns the daily-tick handler. `start_commission(stronghold_data, cost_breakdown, started_calendar_day, territory_type, race, is_underground)` validates engineers + class location, INSERTs strongholds + commissions rows, emits `stronghold_commission_started`, returns `{stronghold_id, commission_id, expected_halfway_day, expected_completion_day, errors}`. `advance_commissions(today)` is the per-day worker — single-write-per-iteration (combines `gp_progressed` / `halfway_signal_fired` / `completed_calendar_day` / `status` into one update_commission call), emits `stronghold_construction_progressed("halfway")` and `stronghold_construction_progressed("completed")` + `stronghold_completed` + recomputes sufficiency on completion. `recheck_engineer_requirement(commission_id)` flips status to `paused_engineers` when assigned drops below required. Tick handler `_handle_daily_tick` reschedules every `Timekeeping.ROUNDS_PER_DAY` rounds with `owner_id="stronghold_global"`.
+  - `stronghold_repository.gd` — single source of truth for sufficiency reads. `get_stronghold_value_for_domain(domain_id)` SUMs `gp_value` of completed strongholds (in-progress contribute 0 per RAW). `is_sufficient_for_domain(domain_id)` checks against per-classification minimum × hex_count (15k civilized / 22.5k borderlands / 32k wilderness per `acore_axioms` §minimum_stronghold_value L88-94). `recompute_sufficiency_after_change(domain_id)` uses an in-memory `_sufficiency_cache: Dictionary` to detect flips — emits `stronghold_sufficiency_changed` only when the boolean transitions, not on every recompute. Test-only helpers `_set_sufficiency_cache_for_test` / `_clear_sufficiency_cache_for_test` for fixture control. Phase 1 simplification: SUMs gp_value across all completed strongholds in the domain regardless of contiguity (`§noncontiguous_domains` L95-98 enforcement deferred to Phase 2+).
+  - `claiming_resolver.gd` — `claim_existing(domain_id, owner, archetype, power_id, appraised_gp_value, source, hex_q, hex_r, map_id, ruler_class_id)` inserts a fully-completed stronghold (`status='completed'`, `completion_pct=100`, `is_claimed=1`), emits `stronghold_claimed`, recomputes sufficiency, returns `{stronghold_id, sufficiency_changed, errors}`. Phase 1 takes appraised value from the caller; Phase 4+ adds dungeon-layout auto-appraisal per GDD §8.4. `is_archetype_conforming_to_class` returns the display-only flag mapping archetypes to conforming classes.
+- **Session integration:** `engine/subsystems/session/session_runner.gd:64` declares `_commission_pipeline: CommissionPipeline`; section 7d (after the existing 7c global spell handlers) instantiates, registers, and seeds the daily tick (mirroring section 7's domain handler pattern); `end_session` unregisters. `domain_handlers._stub_stronghold_value(domain_id)` now calls `StrongholdRepository.get_stronghold_value_for_domain(domain_id)` (Phase 0's stub is wired).
+- **5 test files** in `tests/`, registered in `test_runner.gd` and `test_runner.tscn` (ext_resource ids 213-217):
+  - `test_stronghold_cost_calculator.gd` — 16 unit tests covering base cost summation, accessory 25% discount, cleric/bladedancer 50% discount, speed tiers 100/150/200, engineer requirement scaling, estimated duration, and the class-location validation matrix.
+  - `test_commission_pipeline.gd` — 8 tests covering start_commission validation (engineer shortage, explorer-in-civilized rejection), insertion/signal emission, daily-tick advancement (gp_progressed accumulation, halfway crossing, completed crossing, idempotency on subsequent ticks), and `recheck_engineer_requirement` pause logic. Uses signal-listener filtering by `stronghold_id` to avoid pollution from prior tests' leftover commissions in the shared DB.
+  - `test_claiming_resolver.gd` — 11 tests covering claim insertion, signal emission, rejection paths (zero/negative value, invalid source, unknown archetype), and the `is_archetype_conforming_to_class` matrix (fighter→castle = true, fighter→sanctum = false, mage→sanctum = true, thief→hideout = true, dwarven→vault = true, empty class → true).
+  - `test_stronghold_repository_sufficiency.gd` — 11 tests covering empty domains, classification minimums, single/multiple stronghold sums, in-progress exclusion, and `recompute_sufficiency_after_change` flip-detection (signal fires only on boolean transitions).
+  - `test_stronghold_phase_1_integration.gd` — 4 end-to-end tests: full 64-day construction lifecycle of a 32k gp wilderness stronghold (verifies halfway at day 32, completed at day 64, sufficiency flips at completion); cleric 50% discount path (30k gp → 15k committed → 30 days); speed tier 200 path (30k gp → 60k committed → 1000 gp/day → 60 days); claim path (immediate sufficiency on a 22.5k gp ruin in borderlands). Listeners filter by `stronghold_id` / `domain_id`.
+- **UI scaffolds** (Phase 4 binds them to the Stronghold sub-tab):
+  - `scenes/ui/strongholds/commission_wizard.tscn` + `.gd` — `CommissionWizard extends PanelContainer` with five-step procedural UI: archetype → structures → engineers+speed → magic → confirm. Reads catalogs from `data/strongholds/`. Calls `CommissionPipeline.start_commission` on confirm; emits `commission_placed(stronghold_id, commission_id)` or `cancelled`. Stays open on validation failure so the player can adjust.
+  - `scenes/ui/strongholds/claim_modal.tscn` + `.gd` — `ClaimStrongholdModal extends CanvasLayer` mirroring `ConfirmationPrompt`'s danger-mode pattern (2-second confirm-button delay before clickable). Calls `ClaimingResolver.claim_existing` on confirm; emits `claimed(stronghold_id)` or `cancelled`.
+- **Documentation:** added §30 Stronghold Subsystem Conventions to `docs/coding_conventions.md`; updated `docs/rule_system_map.md` Domain Play section to cite the new PDF and Phase 1 engine code; added `acore_stronghold_construction_costs.pdf` to `docs/document_map.md` ACKS Core section.
+
+**Decisions made:**
+- **Migration renumbering 055→060.** The roadmap text references 055-057 for Phase 1; Phase 0 already used 055-059, so Phase 1 shifts to 060-062.
+- **Daily tick, not monthly.** The roadmap originally said "monthly progress tick" for `commission_pipeline.gd`. Mid-task the user clarified that strongholds need **daily** ticks because the PDF rules construction at 1 day per 500 gp; a monthly tick would lose 27 days of resolution. The implementation uses `stronghold_construction_daily_tick` with `owner_id="stronghold_global"` (not per-party) since strongholds advance independent of party context — one PC may commission while another adventures.
+- **Signal emission moved into `advance_commissions` (the static method), not the tick handler.** Initial draft had the handler iterate over the returned milestones and emit; tests calling `advance_commissions` directly didn't see signals. Moving the emit into the static method makes the function the single source of truth for emission and lets tests bypass the handler.
+- **Single-write-per-iteration in `advance_commissions`.** First implementation had separate update_commission writes per milestone branch, which led to a subtle bug: between halfway and completion crossings, the `elif not halfway_fired` branch short-circuited the gp_progressed write. Refactored into a single update per iteration that combines all field changes; verified by the 64-day integration test.
+- **Voxel-grid layout system deferred.** GDD §9.1 describes a per-cell layout system with interior auto-generation. Phase 1 ships only summary-level columns (gp_value, shp, ac, garrison_capacity); the voxel layout is a Phase 2.5+ UI surface that needs a visual editor.
+- **Class location restrictions are caller-validated, not schema-enforced.** The dwarven-underground / elf-no-human-or-dwarven / explorer-borderlands-only restrictions depend on territory + race + underground state, which can't cleanly be a schema CHECK. `StrongholdCostCalculator.validate_class_location` returns Array[String] error codes; `start_commission` fails with non-empty errors before any DB write.
+- **In-progress strongholds contribute zero to sufficiency.** Per `acore_axioms` §insufficient_stronghold L452-456, sufficiency operates on completed gp_value; the morale tier's half / quarter / below-quarter penalty does the partial-sufficiency math at the domain level. Phase 1 sticks to this: `get_stronghold_value_for_domain` filters `WHERE status = 'completed'`.
+- **Test isolation via `randomize()` in `_setup_campaign`.** The campaign.db persists across test runs in `user://`; `generate_id()` uses GDScript's default RNG which seeds the same way each run, so tests that create campaigns hit `UNIQUE constraint failed: campaigns.id` collisions on the second run. Adding `randomize()` to test setup dodges this. Documented in coding_conventions §30.
+- **Test signal-listener filtering by `stronghold_id` / `domain_id`** to avoid pollution from leftover commissions in the shared DB. Documented in coding_conventions §30.
+
+**Interfaces defined or changed:**
+
+```
+# Resolver public methods (engine/subsystems/strongholds/):
+StrongholdCostCalculator.calculate_total_cost(archetype_preset, structures, accessories, speed_tier_pct, magic_rate_modifier_pct=100)
+    -> {base_structure_cost, accessory_cost, class_cost_reduction_pct, discounted_base_cost,
+        speed_tier_pct, speed_premium_gp, gp_committed, daily_construction_rate_gp,
+        magic_rate_modifier_pct, engineers_required, engineer_monthly_wage_gp, estimated_duration_days}
+StrongholdCostCalculator.validate_class_location(power_id, territory_type, race, is_underground) -> Array[String]
+StrongholdCostCalculator.validate_engineer_requirement(gp_committed, engineers_assigned) -> bool
+
+CommissionPipeline.start_commission(stronghold_data, cost_breakdown, started_calendar_day, territory_type="wilderness", race="human", is_underground=false)
+    -> {stronghold_id, commission_id, expected_halfway_day, expected_completion_day, errors: Array[String]}
+CommissionPipeline.advance_commissions(today_calendar_day) -> Array[Dictionary]
+    # Each milestone entry: {commission_id, stronghold_id, milestone, completion_pct, domain_id}
+    # Side effects: emits stronghold_construction_progressed + stronghold_completed +
+    # calls StrongholdRepository.recompute_sufficiency_after_change.
+CommissionPipeline.recheck_engineer_requirement(commission_id) -> bool
+CommissionPipeline.new(runner).register(registry)/unregister(registry)/seed_construction_tick(scheduler, party_id)
+
+StrongholdRepository.get_stronghold_value_for_domain(domain_id) -> int  # SUM of completed gp_value
+StrongholdRepository.per_hex_minimum_for(territory_type) -> int  # 15k/22.5k/32k
+StrongholdRepository.classification_minimum_gp(territory_type, hex_count) -> int
+StrongholdRepository.is_sufficient_for_domain(domain_id) -> bool
+StrongholdRepository.recompute_sufficiency_after_change(domain_id) -> void  # emits signal on flip
+
+ClaimingResolver.claim_existing(domain_id, owner_character_id, archetype, archetype_power_id,
+    appraised_gp_value, source, hex_q, hex_r, map_id, ruler_class_id="")
+    -> {stronghold_id, sufficiency_changed, errors: Array[String]}
+ClaimingResolver.is_archetype_conforming_to_class(archetype, archetype_power_id, ruler_class_id) -> bool
+
+# CampaignRepository (engine/autoloads/campaign_repository.gd, after L1283):
+create_stronghold(data) -> String
+get_stronghold(id) -> Dictionary
+update_stronghold(id, fields_dict) -> bool      # whitelisted UPDATE
+list_domain_strongholds(domain_id) -> Array
+list_strongholds_by_owner(character_id) -> Array
+list_strongholds_at_hex(map_id, hex_q, hex_r) -> Array
+create_commission(data) -> String
+get_commission(id) -> Dictionary
+get_commission_for_stronghold(stronghold_id) -> Dictionary  # most-recent non-terminal
+list_active_commissions() -> Array              # status='in_progress' only
+update_commission(id, fields_dict) -> bool      # whitelisted
+create_accessory(data) -> String
+list_accessories(stronghold_id) -> Array
+
+# EventBus signals (Domain block in engine/autoloads/event_bus.gd, after L528):
+stronghold_commission_started(stronghold_id, domain_id, gp_committed, expected_completion_day)
+stronghold_construction_progressed(stronghold_id, completion_pct, milestone)
+    # milestone ∈ {"halfway", "completed"}
+stronghold_claimed(stronghold_id, source, gp_value)
+stronghold_destroyed(stronghold_id, cause)
+
+# Phase 0 signals now WIRED:
+stronghold_completed(stronghold_id)                    # emitted by CommissionPipeline.advance_commissions
+stronghold_sufficiency_changed(domain_id, is_sufficient, value_gp, minimum_gp)
+                                                       # emitted by StrongholdRepository.recompute_sufficiency_after_change
+
+# New event type (engine/subsystems/session/session_runner.gd:7d):
+stronghold_construction_daily_tick — owner_id="stronghold_global", reschedule every ROUNDS_PER_DAY
+```
+
+**Database changes:** Migrations 060-062 listed above.
+
+**Tests added/updated:**
+- 5 test files (16 + 8 + 11 + 11 + 4 = 50 individual tests). All pass.
+- Signal-listener filtering pattern (filter by stronghold_id/domain_id) added to integration test and idempotent commission test.
+- `randomize()` reseed pattern added to all 4 test suites that create campaigns.
+
+**Known issues:**
+- Phase 1's `is_sufficient_for_domain` doesn't enforce contiguity per `acore_axioms` §noncontiguous_domains L95-98. Phase 2+ adds it when per-hex peasant allocation lands.
+- The followers-never-check-morale flag (cleric / bladedancer per PDF p.126) is in the archetype preset JSON but no schema column on `strongholds` consumes it yet. Phase 5's morale system will read it.
+- Construction interruption mechanics (siege damages, worker dispersal) deferred to Phase 8.
+- `data/strongholds/structure_catalog.json` civilian buildings and accessories have placeholder zero shp/ac. Phase 8 sieges fills these.
+- `data/strongholds/npc_generation_templates.json` (referenced in roadmap) NOT created — no Phase 1 consumer; deferred to Phase 8 / 10 setting-gen integration.
+- 25 pre-existing test failures unrelated to stronghold work remain (coin_gp / location_key / language proficiency / equipment count / specialization registry / create_campaign collisions). Same baseline as Phase 0.
+
+**Verification:**
+- Headless suite: **203 suites passed / 25 failed.** Pre-Phase-1 baseline was 198/25 (Phase 0 close). Net delta: **+5 suites (Phase 1)**, all 25 baseline failures unchanged.
+- All 5 new stronghold test suites print `<Suite>: all tests passed.` `test_stronghold_phase_1_integration.gd` confirms the full lifecycle: 32k gp wilderness stronghold built over 64 days, halfway/completed signals fire on schedule, sufficiency_changed flips on completion, completion_pct = 100 in DB, status = 'completed' in DB.
+
+**Next session should:** Phase 2 — Domain Tab Shell + Overview + Treasury + Establish-Domain. Per `docs/domain-roadmap-corrected.md` Phase 2: build the player-facing Domain tab (replacing the empty-state placeholder at `scenes/ui/notebook/tab_pages/domain_tab_page.gd`); implement `engine/subsystems/domains/establish_domain_flow.gd` (branches by classification + class + chaotic toggle); implement `engine/subsystems/domains/treasury.gd` (with the personal-coin-vs-domain-treasury rule per [RESOLVED 2026-05-06]); implement `engine/subsystems/domains/active_adventuring_detector.gd` (writes `domains.is_active_adventuring_this_month` based on EventBus signals from combat / hex-clearing / lair-entry / treasure-return). Phase 1 unblocked the income gate; Phase 2 surfaces what Phase 0 + Phase 1 produce in player-facing UI. Phase 4's Stronghold sub-tab (also Phase 2 territory) is what binds Phase 1's `commission_wizard.tscn` and `claim_modal.tscn` into the Domain tab.
+
+
+

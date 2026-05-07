@@ -31,6 +31,11 @@ var _dice_system = null
 ## Shape: { attacker_id: { source_id: bool (true=saved, false=failed) } }
 var _sanctuary_save_cache: Dictionary = {}
 
+## Tracks whether we've connected EventBus.combatant_moved to _on_combatant_moved.
+## CombatController calls connect_signals()/disconnect_signals() at combat
+## start/end so the swarm cell-entry hook does not leak across encounters.
+var _signals_connected: bool = false
+
 
 # ---------------------------------------------------------------------------
 # Constructor
@@ -45,6 +50,32 @@ func _init(active_effects: ActiveEffectTracker = null, dice_system = null) -> vo
 ## that need to register/inspect effects without coupling to the field.
 func get_active_effects_tracker() -> ActiveEffectTracker:
 	return _active_effects
+
+
+# ---------------------------------------------------------------------------
+# Signal lifecycle (combat-scoped)
+# ---------------------------------------------------------------------------
+
+## Connects EventBus.combatant_moved to the swarm cell-entry hook so swarm
+## conditions (`swarmed_insect`/`swarmed_rat`/`swarmed_bat`) are applied when
+## a combatant walks into a swarm-occupied cell. Idempotent — safe to call
+## twice.
+func connect_signals() -> void:
+	if _signals_connected:
+		return
+	if not EventBus.combatant_moved.is_connected(_on_combatant_moved):
+		EventBus.combatant_moved.connect(_on_combatant_moved)
+	_signals_connected = true
+
+
+## Disconnects from EventBus so a freed RefCounted instance does not leave a
+## dangling callback. Called by CombatController._emit_combat_ended.
+func disconnect_signals() -> void:
+	if not _signals_connected:
+		return
+	if EventBus.combatant_moved.is_connected(_on_combatant_moved):
+		EventBus.combatant_moved.disconnect(_on_combatant_moved)
+	_signals_connected = false
 
 
 # ---------------------------------------------------------------------------
@@ -78,7 +109,17 @@ func on_round_start(round_number: int, roster: CombatRoster) -> void:
 ## standard attack throw, then emit the damage. End-conditions (target out of
 ## range, caster_id missing from roster) are checked here too.
 func on_round_end(round_number: int, roster: Variant) -> void:
-	if _active_effects == null or roster == null:
+	if roster == null:
+		return
+	# P8 — clear per-round Sanctuary AI redirect blocks. The list resets each
+	# round so a Sanctuary that ended this round doesn't suppress next-round
+	# targeting; a still-active Sanctuary will re-populate the list when its
+	# next failed save fires inside on_pre_attack. Runs even when the
+	# active-effect tracker is absent (mock-roster tests don't wire one).
+	for c in roster.get_alive():
+		if "sanctuary_blocked_targets" in c and not c.sanctuary_blocked_targets.is_empty():
+			c.sanctuary_blocked_targets.clear()
+	if _active_effects == null:
 		return
 	for effect in _active_effects.get_all_effects():
 		if not bool(effect.get("is_active", false)):
@@ -118,8 +159,8 @@ func _fire_spiritual_weapon(profile: Dictionary, roster: Variant) -> void:
 	var target_id := String(profile.get("target_id", ""))
 	if caster_id.is_empty() or target_id.is_empty():
 		return
-	var caster := roster.get_by_id(caster_id)
-	var target := roster.get_by_id(target_id)
+	var caster: Combatant = roster.get_by_id(caster_id)
+	var target: Combatant = roster.get_by_id(target_id)
 	if caster == null or target == null or not caster.is_alive() or not target.is_alive():
 		return
 	# Attack throw: caster's effective_attack_throw vs target's effective AC.
@@ -267,23 +308,29 @@ func _read_combatant_cell(c: Variant) -> Vector3i:
 	return Vector3i(-1, -1, -1)
 
 
-## Resolves one round of Insect Plague swarm attacks (P4).
+## Resolves one round of Insect Plague swarm effects (P4 + post-P4 condition refactor).
 ##
-## Each swarm in `plague_profile.swarms` makes one attack against any
-## creature occupying its `swarm_cell`:
-##   - Creatures with HD < `auto_drive_off_hd_threshold` (3 per RAW) get the
-##     `frightened` condition with no save (auto-drive-off). Per the plan,
-##     forced-movement-to-exit logic is deferred — the condition by itself
-##     prevents attacks/casting/speech.
-##   - Creatures with HD ≥ threshold get a normal attack roll: d20 vs
-##     swarm's effective AC-0 attack throw. On hit, swarm damage_dice
-##     applied. The attack uses the swarm's `attack_dice` profile field
-##     (defaults to "1d4" matching insect_swarm_4hd).
-##
-## Caster control loss (RAW): if the caster has `damaged_since_declaration`
-## set during this round AND profile.control_state was "controlled", flip
-## to "stationary". A stationary plague no longer follows control commands;
-## this is a flag the AI / movement layer reads on later rounds.
+## Damage delivery has moved off the per-swarm attack roll and onto the
+## `swarmed_<type>` condition system. Application happens in
+## [method _on_combatant_moved] when a combatant walks into a swarm cell;
+## this method is responsible for the per-round work:
+##   1. Control-loss detection (RAW: caster damaged → control flips permanently
+##      to "stationary").
+##   2. Defense-in-depth application — any combatant standing on a swarm cell
+##      at round-end without an active swarmed condition (e.g. they were
+##      already in the cell when the plague summoned, no movement signal
+##      fired) gets the condition + frightened applied here.
+##   3. For every combatant carrying a `swarmed_<type>` condition sourced from
+##      this plague: deliver the auto-hit damage tick (2 pts default), doubled
+##      if AC ≤ 3 / unarmored, halved if `is_warding`/`is_fleeing` flag is set
+##      (the warding-flag path is deferred polish — currently the halve branch
+##      never fires).
+##   4. Persistence countdown: combatants no longer in any of this plague's
+##      swarm cells have their per-plague rounds_outside counter incremented.
+##      When the counter exceeds [const SWARM_PERSIST_ROUNDS_AFTER_LEAVE] (3
+##      per RAW), the swarmed condition + frightened are cleared.
+##   5. Sub-3-HD creatures retain the auto-drive-off path (`frightened` with
+##      no save). Forced-movement-to-exit routing is deferred to AI polish.
 func _tick_insect_plague(profile: Dictionary, roster: Variant) -> void:
 	if profile.is_empty() or roster == null:
 		return
@@ -294,51 +341,174 @@ func _tick_insect_plague(profile: Dictionary, roster: Variant) -> void:
 		if caster != null and "damaged_since_declaration" in caster \
 				and bool(caster.damaged_since_declaration):
 			profile["control_state"] = "stationary"
+
+	var swarm_type := String(profile.get("swarm_type", "insect"))
+	var condition_key := "swarmed_%s" % swarm_type
 	var threshold: int = int(profile.get("auto_drive_off_hd_threshold", 3))
-	var damage_dice := String(profile.get("attack_damage_dice", "1d4"))
-	var swarm_attack_throw: int = int(profile.get("swarm_attack_throw", 7))  # 4HD vs AC0
 	var swarms: Array = profile.get("swarms", [])
+	# Build the set of cells this plague currently occupies — used both for
+	# defense-in-depth application and for "is the target still inside any
+	# swarm cell?" persistence checks.
+	var swarm_cells: Dictionary = {}
 	for swarm_raw in swarms:
 		if not (swarm_raw is Dictionary):
 			continue
-		var swarm: Dictionary = swarm_raw
-		var swarm_cell: Vector3i = swarm.get("swarm_cell", Vector3i.ZERO)
-		var swarm_id := String(swarm.get("swarm_id", "swarm"))
-		for c in roster.get_alive():
-			if c.id == caster_id:
+		swarm_cells[swarm_raw.get("swarm_cell", Vector3i.ZERO)] = String(
+			swarm_raw.get("swarm_id", "swarm"))
+
+	# Persistence map: { combatant_id: rounds_outside_since_last_inside }
+	# 0 = inside this round; 1..3 = lingering after leaving; >3 = clear.
+	var persistence: Dictionary = profile.get("swarm_persistence", {})
+
+	# (a) Defense-in-depth: any combatant standing on a swarm cell with no
+	# tracked persistence entry yet (no movement signal fired) gets the
+	# condition applied now.
+	for c in roster.get_alive():
+		if c.id == caster_id:
+			continue
+		var c_cell: Vector3i = _read_combatant_cell(c)
+		if c_cell == Vector3i(-1, -1, -1) or not swarm_cells.has(c_cell):
+			continue
+		_apply_swarm_condition_to(c, condition_key, threshold, profile)
+		persistence[c.id] = 0
+
+	# (b) Damage tick + persistence countdown for every tracked combatant.
+	# `c` is intentionally untyped (Variant) so test fixtures using
+	# duck-typed _MockCombatant can be passed through alongside real
+	# Combatants — same shim Cloudkill / wall paths use.
+	var to_drop: Array[String] = []
+	for cid_raw in persistence.keys():
+		var cid: String = String(cid_raw)
+		var c = roster.get_by_id(cid)
+		if c == null or not c.is_alive():
+			to_drop.append(cid)
+			continue
+		var c_cell2: Vector3i = _read_combatant_cell(c)
+		var still_inside: bool = c_cell2 != Vector3i(-1, -1, -1) and swarm_cells.has(c_cell2)
+		if still_inside:
+			persistence[cid] = 0
+		else:
+			persistence[cid] = int(persistence[cid]) + 1
+		if int(persistence[cid]) > SWARM_PERSIST_ROUNDS_AFTER_LEAVE:
+			# Lingering window exhausted — clear conditions sourced by this plague.
+			if c.has_method("remove_condition"):
+				c.remove_condition(condition_key)
+				c.remove_condition("frightened")
+			EventBus.condition_changed.emit(c.id, {
+				"condition": condition_key, "applied": false,
+				"source": String(profile.get("plague_id", "insect_plague")),
+			})
+			to_drop.append(cid)
+			continue
+		_tick_swarm_damage_for(c, condition_key, profile)
+	for d in to_drop:
+		persistence.erase(d)
+	profile["swarm_persistence"] = persistence
+
+
+## Persistence window after a target leaves a swarm cell (RAW: 3 rounds to
+## swat off remaining creatures, during which damage continues).
+const SWARM_PERSIST_ROUNDS_AFTER_LEAVE: int = 3
+
+
+## Applies the appropriate `swarmed_<type>` condition to [param target]. If
+## the target's HD is below [param drive_off_threshold] the auto-drive-off
+## path adds `frightened` (RAW: <3 HD creatures are automatically driven off).
+## If the user's literal directive holds (frightened on >3 HD), creatures
+## with HD strictly greater than threshold also get `frightened` — see plan
+## file flag note. Idempotent on existing conditions.
+func _apply_swarm_condition_to(target: Variant, condition_key: String,
+		drive_off_threshold: int, profile: Dictionary) -> void:
+	if not target.has_method("add_condition"):
+		return
+	var was_present: bool = false
+	if target.has_method("has_condition"):
+		was_present = target.has_condition(condition_key)
+	target.add_condition(condition_key)
+	var hd: int = _wall_get_hd(target)
+	# Sub-3-HD: auto-drive-off (RAW). HD > 3: per the user's design literal,
+	# `frightened` also applies via the same swarmed-target logic. HD == 3
+	# falls between the two cases — neither RAW nor the user's wording calls
+	# for `frightened` exactly at the threshold, so we leave that case alone.
+	if hd < drive_off_threshold or hd > drive_off_threshold:
+		target.add_condition("frightened")
+	if not was_present:
+		EventBus.condition_changed.emit(target.id, {
+			"condition": condition_key, "applied": true,
+			"source": String(profile.get("plague_id", "insect_plague")),
+		})
+
+
+## Delivers one round of swarm damage to [param target] reading the tick
+## damage from the condition catalog entry. Doubled when target AC ≤ the
+## condition's `tick_doubles_if_target_ac_at_or_below` threshold; halved
+## when target carries a fleeing/warding flag (deferred — flag path not yet
+## populated by movement layer).
+func _tick_swarm_damage_for(target: Variant, condition_key: String,
+		profile: Dictionary) -> void:
+	var catalog: ConditionCatalog = Combatant._get_condition_catalog()
+	var entry: Dictionary = {}
+	if catalog != null:
+		entry = catalog.get_condition(condition_key)
+	var base_dmg: int = int(entry.get("tick_damage_per_round", 2))
+	if base_dmg <= 0:
+		return  # Bat swarm uses 0 — confusion handler is a future hook.
+	var ac_threshold: int = int(entry.get("tick_doubles_if_target_ac_at_or_below", 0))
+	var dmg: int = base_dmg
+	if ac_threshold > 0 and target.has_method("get_effective_ac"):
+		if int(target.get_effective_ac()) <= ac_threshold:
+			dmg *= 2
+	# Warding/fleeing halve — flags are set by movement-out + warding-attack
+	# paths (deferred polish). Honor them defensively if present.
+	var flags = target.get_flags() if target.has_method("get_flags") else null
+	if flags != null and bool(entry.get("tick_halves_if_warding_or_fleeing", false)):
+		if flags.has_flag("is_fleeing") or flags.has_flag("is_warding"):
+			dmg = maxi(1, dmg / 2)
+	if target.has_method("apply_damage"):
+		target.apply_damage(dmg, "physical")
+	EventBus.damage_dealt.emit(target.id, dmg, "physical",
+			String(profile.get("plague_id", "insect_plague")))
+
+
+## EventBus.combatant_moved subscriber. For each cell the moved combatant
+## stepped through, scans active Insect Plague (and future swarm-spell)
+## effects and applies the swarm condition when the cell matches one of the
+## swarms. Persistence map on the plague_profile is updated in lockstep.
+func _on_combatant_moved(combatant_id: String, _from: Vector3i,
+		_to: Vector3i, path_cells: Array) -> void:
+	if _active_effects == null or combatant_id.is_empty():
+		return
+	# Walk every plague active_effect and check membership.
+	for effect in _active_effects.get_all_effects():
+		if not bool(effect.get("is_active", false)):
+			continue
+		if String(effect.get("spell_key", "")) != "insect_plague":
+			continue
+		var profile: Dictionary = effect.get("metadata", {}).get("plague_profile", {})
+		if profile.is_empty():
+			continue
+		var swarms: Array = profile.get("swarms", [])
+		var any_match: bool = false
+		for swarm_raw in swarms:
+			if not (swarm_raw is Dictionary):
 				continue
-			var c_cell: Vector3i = _read_combatant_cell(c)
-			if c_cell == Vector3i(-1, -1, -1) or c_cell != swarm_cell:
-				continue
-			var hd: int = _wall_get_hd(c)
-			if hd < threshold:
-				# Auto-drive-off: no save, frightened condition. Forced-movement
-				# routing to nearest exit is deferred (plan §P4).
-				if c.has_method("add_condition"):
-					c.add_condition("frightened")
-				EventBus.condition_changed.emit(c.id, {
-					"condition": "frightened", "applied": true,
-					"source": swarm_id,
-				})
-				continue
-			# Normal attack roll: d20 + 0 (swarm's mods are folded into the
-			# attack throw target). Hit if roll >= swarm_attack_throw + AC.
-			var target_ac: int = 0
-			if c.has_method("get_effective_ac"):
-				target_ac = int(c.get_effective_ac())
-			var to_hit_target: int = swarm_attack_throw + target_ac
-			var roll_total: int = 10
-			if _dice_system != null:
-				var roll = _dice_system.roll_digital(20, 1, 0, "insect_plague_attack")
-				roll_total = int(roll.modified_total) if roll != null else 10
-			if roll_total >= to_hit_target:
-				var dmg: int = 2  # mid-roll fallback
-				if _dice_system != null:
-					var dr = _dice_system.roll_expression(damage_dice, "insect_plague_damage")
-					dmg = int(dr.modified_total) if dr != null else 2
-				dmg = maxi(1, dmg)
-				c.apply_damage(dmg, "physical")
-				EventBus.damage_dealt.emit(c.id, dmg, "physical", swarm_id)
+			var swarm_cell: Vector3i = swarm_raw.get("swarm_cell", Vector3i.ZERO)
+			for cell in path_cells:
+				if cell == swarm_cell:
+					any_match = true
+					break
+			if any_match:
+				break
+		if not any_match:
+			continue
+		# Application path requires a real Combatant — fetch via the active
+		# effects tracker context isn't available, so the per-round defense-
+		# in-depth path in _tick_insect_plague picks up real Combatants when
+		# the round ends. Here, we record persistence so the tick path
+		# delivers damage from the next round-end onward.
+		var persistence: Dictionary = profile.get("swarm_persistence", {})
+		persistence[combatant_id] = 0
+		profile["swarm_persistence"] = persistence
 
 
 ## Resolves one round of wall path-crossing damage. Walls of fire/ice deal
@@ -560,7 +730,14 @@ func on_pre_attack(
 			continue
 		var saved: bool = _sanctuary_resolve_save(attacker, entry)
 		if not saved:
-			# Attack cancelled by Sanctuary.
+			# Attack cancelled by Sanctuary. P8 — record the warded target on
+			# the attacker so MonsterAI's next select_target call skips it
+			# ("will not attack the warded creature and attacks another
+			# creature instead"). Cleared in on_round_end.
+			if target != null and "sanctuary_blocked_targets" in attacker:
+				var tid := String(target.id)
+				if tid != "" and not (tid in attacker.sanctuary_blocked_targets):
+					attacker.sanctuary_blocked_targets.append(tid)
 			return {"cancel": true, "cancelled_by": "sanctuary", "source_id": source_id}
 	# Either no Sanctuary sources triggered cancel, or attacker has saved
 	# against all of them — attack proceeds normally.

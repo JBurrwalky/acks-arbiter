@@ -484,6 +484,65 @@ signal stronghold_completed(stronghold_id: String)
 ## A domain's population morale changed.
 signal domain_morale_changed(domain_id: String, old_morale: int, new_morale: int)
 
+## L9+ followers arrived in a domain (one of three waves).
+## [param wave] is one of 50, 25, 25 per `acore_axioms` §followers_arrival L111-116
+## (ceil(N×0.5) at half-built, ceil(N×0.25) at completion, remainder one month after).
+signal domain_followers_arrived(domain_id: String, count: int, follower_class: String, wave: int)
+
+## A domain advanced its territory classification (Wilderness → Borderlands → Civilized).
+## Per §classification_advancement L165-175.
+signal classification_advanced(domain_id: String, old_classification: String, new_classification: String)
+
+## A domain regressed its territory classification (justifying conditions ended).
+## Per §optional_rules.regression L178.
+signal classification_regressed(domain_id: String, old_classification: String, new_classification: String)
+
+## A domain's treasury balance changed.
+signal domain_treasury_changed(domain_id: String, old_gp: int, new_gp: int)
+
+## Bandits spawned in a domain due to morale collapse.
+## Per `acore_axioms` §bandits L611-630 and §effects_of_morale L538-609.
+signal bandit_spawned(domain_id: String, bandit_count: int)
+
+## A domain encounter resolved with a known outcome.
+## [param outcome] keys: result (String), morale_delta (int), gp_delta (int), description (String).
+signal domain_event_resolved(domain_id: String, event_id: String, outcome: Dictionary)
+
+## A domain's stronghold sufficiency status changed (value crossed the
+## per-hex classification minimum threshold per §minimum_stronghold_value L88-94).
+## Phase 0 declares this; Phase 1 emits it from the stronghold subsystem.
+signal stronghold_sufficiency_changed(domain_id: String, is_sufficient: bool, value_gp: int, minimum_gp: int)
+
+## A hex's land value was improved via 25,000 gp investment per §land_improvement L207-215.
+## [param improvement_count] is the new cumulative improvement (1-3); [param new_value]
+## is the resulting land_value (capped at 9).
+signal land_value_improved(domain_id: String, hex_q: int, hex_r: int, new_value: int, improvement_count: int)
+
+## A stronghold construction commission was placed (Domain Phase 1).
+## Per `acore_stronghold_construction_costs.pdf`: 1 day per 500 gp at base
+## rate. [param expected_completion_day] is the absolute calendar day on
+## which the daily tick will mark this commission complete (assuming no
+## interruptions); the half-built signal will fire roughly halfway between
+## start and completion.
+signal stronghold_commission_started(stronghold_id: String, domain_id: String, gp_committed: int, expected_completion_day: int)
+
+## A stronghold's construction crossed a milestone — half-built (50%) or
+## completed (100%). Phase 5 consumes the "halfway" milestone for follower
+## wave 1 arrival per `acore_axioms` §followers_arrival L111-116. The
+## "completed" milestone fires alongside `stronghold_completed` (legacy
+## signal). [param milestone] is one of "halfway" or "completed".
+signal stronghold_construction_progressed(stronghold_id: String, completion_pct: int, milestone: String)
+
+## An existing structure was claimed as a stronghold (ruin / dungeon /
+## conquest / inheritance / purchase / grant). [param source] matches
+## `strongholds.claimed_from_source`. Claimed strongholds are immediately
+## treated as fully constructed (status='completed', completion_pct=100).
+signal stronghold_claimed(stronghold_id: String, source: String, gp_value: int)
+
+## A stronghold was destroyed (siege / pillage / abandonment). Cause matches
+## the destruction event type (Phase 8 sieges fire this).
+signal stronghold_destroyed(stronghold_id: String, cause: String)
+
 
 # ---------------------------------------------------------------------------
 # Magic signals
@@ -519,6 +578,60 @@ signal spell_effect_applied(effect_id: String, spell_key: String, target_ids: Ar
 
 ## A spell effect was removed (dispelled, duration expired, or caster dismissed).
 signal spell_effect_removed(effect_id: String, spell_key: String)
+
+## A teleport-class spell resolved with per-target destinations.
+## Emitted by CastingResolver after Stage 9 for [param spell_key] in
+## [dimension_door, teleport] when at least one target carries a teleport
+## outcome. [param per_target] keys are target_ids, values are the step
+## outcome dicts produced by `_teleport` / `teleport_resolver.gd`:
+##   destination_cell:  Vector3i — where the target should snap
+##   outcome_kind:      String   — "on_target" | "off_target" | "lost"
+##                                  ("on_target" implicit for Dimension Door)
+##   applied:           bool     — false if the target saved (unwilling)
+##   saved:             bool     — true on save-negate
+##   fail_on_solid_object: bool  — Dimension Door RAW gate
+## Subscribers (P5 TeleportRuntimeConsumer) validate destination and snap
+## the target via MovementResolver.
+signal teleport_resolved(caster_id: String, spell_key: String, per_target: Dictionary)
+
+## A combatant was lost in transit (Teleport "lost" outcome per ACKS RAW —
+## the subject does not reappear). The combatant remains in the roster so
+## the party knows who is gone, but is_lost=true takes them off the map and
+## off the alive-list. No record_casualty is called per RAW; recovery is a
+## downstream campaign concern.
+signal combatant_lost(combatant_id: String)
+
+## A spawned combatant reverted to its source object (P7 — Sticks to Snakes
+## per RAW: "When snakes are slain, dispelled, or the spell expires, they
+## revert to their original stick form."). object_kind ∈ {"stick", ...} —
+## just "stick" today; future spells with similar mechanics use this same
+## channel with their own object_kind. Subscribers (combat roster integrator,
+## inventory subsystem) remove the combatant + recreate the object item.
+signal combatant_reverted_to_object(combatant_id: String, object_kind: String)
+
+## A summoned elemental was dismissed back to its native plane (P7 — Conjure
+## Elemental per RAW: caster's intentional dismissal at any initiative tick,
+## or duration end). record_casualty is NOT called per RAW. elemental_type ∈
+## {"air", "earth", "fire", "water"}; cause is the cleanup-callback cause
+## label ("duration_expired" | "concentration_broken" | "dispelled" |
+## "caster_dismissed").
+signal combatant_dismissed_to_native_plane(elemental_id: String, elemental_type: String, cause: String)
+
+## A persistent wall spell dispersed (P7 — Wall of Fire/Ice on duration end,
+## Wall of Stone/Iron only on dispel since they are permanent). wall_id is
+## the resolver-generated id (e.g. "wall_of_fire:caster_x"). spell_key is
+## the underlying wall spell. cause matches the callback-cause convention.
+signal wall_dispersed(wall_id: String, spell_key: String, cause: String)
+
+## A polymorph effect ended and the target should revert to its original
+## physical stats (P7). Emitted by Polymorph Self/Other expiration callbacks
+## with the snapshot dict (armor_class, attack_throw, base_movement, plus
+## alignment for Polymorph Other). target_id is the affected combatant.
+## Subscribers (CombatController / CharacterData runtime) apply the snapshot.
+## Per RAW: if target was slain, the corpse-revert path overlaps with this
+## signal — handled by combatant_downed observers reading the same flag's
+## snapshot metadata.
+signal polymorph_reverted(target_id: String, spell_key: String, snapshot: Dictionary, cause: String)
 
 ## A spell slot was expended for a caster at the given level. Fires for both
 ## successful and disrupted casts (per ACKS — disruption still consumes the slot).

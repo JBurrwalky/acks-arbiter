@@ -33,6 +33,27 @@ extends RefCounted
 # _effects: effect_id -> Dictionary
 var _effects: Dictionary = {}
 
+## Optional cleanup callback invoked before erasure on the
+## break_concentration / dispel_check end paths (P6). Signature:
+##   func(effect: Dictionary, cause: String) -> void
+## Where cause is one of "concentration_broken" | "dispelled".
+## CastingResolver registers itself as this callback at boot so the
+## modifier / flag / condition state is unwound in lockstep with removal.
+## Falls back to direct erase when no callback is registered.
+var _cleanup_callback: Callable = Callable()
+
+
+## Registers (or replaces) the cleanup callback. CastingResolver._init wires
+## itself; tests can override to capture invocations.
+func set_cleanup_callback(cb: Callable) -> void:
+	_cleanup_callback = cb
+
+
+## Clears the cleanup callback. Used in test teardown so the static
+## ActiveEffectTracker (in autoload contexts) doesn't keep a stale reference.
+func clear_cleanup_callback() -> void:
+	_cleanup_callback = Callable()
+
 
 func add_effect(effect: Dictionary) -> String:
 	## Registers a new active effect. Caller must supply effect_id.
@@ -115,12 +136,23 @@ func tick_days(n: int) -> Array[String]:
 
 func break_concentration(caster_id: String) -> Array[String]:
 	## Ends all concentration effects held by caster_id.
-	## Returns the effect_ids of the ended effects (caller should clean up).
+	## Returns the effect_ids of the ended effects.
+	##
+	## P6: when a cleanup_callback is registered (CastingResolver), each ended
+	## effect is passed to it BEFORE erasure with cause="concentration_broken"
+	## so the resolver can unwind modifier / flag / condition state and emit
+	## EventBus.spell_effect_removed. Without a callback, falls back to direct
+	## erase (legacy behavior).
 	var ended: Array[String] = []
+	var snapshots: Array[Dictionary] = []
 	for effect_id in _effects.keys():
 		var effect: Dictionary = _effects[effect_id]
 		if effect.get("caster_id", "") == caster_id and effect.get("requires_concentration", false):
 			ended.append(effect_id)
+			snapshots.append(effect)
+	for snapshot in snapshots:
+		if _cleanup_callback.is_valid():
+			_cleanup_callback.call(snapshot, "concentration_broken")
 	for eid in ended:
 		_effects.erase(eid)
 	return ended
@@ -131,7 +163,13 @@ func dispel_check(target_id: String, dispeller_level: int) -> Array[Dictionary]:
 	## ACKS rule: auto-succeed if dispeller_level >= effect's caster_level.
 	## If caster_level > dispeller_level: 5% cumulative fail per level difference.
 	## Returns Array of { "effect_id", "spell_key", "dispelled": bool, "roll": int }.
+	##
+	## P6: dispelled effects route through cleanup_callback (cause="dispelled")
+	## before erasure so modifiers / flags / conditions are unwound. Without a
+	## callback, falls back to direct erase.
 	var results: Array[Dictionary] = []
+	var to_erase: Array[String] = []
+	var snapshots: Array[Dictionary] = []
 	for effect_id in _effects.keys():
 		var effect: Dictionary = _effects[effect_id]
 		if target_id not in effect.get("target_ids", []):
@@ -154,7 +192,13 @@ func dispel_check(target_id: String, dispeller_level: int) -> Array[Dictionary]:
 			"roll": roll,
 		})
 		if dispelled:
-			_effects.erase(effect_id)
+			to_erase.append(effect_id)
+			snapshots.append(effect)
+	for snapshot in snapshots:
+		if _cleanup_callback.is_valid():
+			_cleanup_callback.call(snapshot, "dispelled")
+	for eid in to_erase:
+		_effects.erase(eid)
 	return results
 
 
