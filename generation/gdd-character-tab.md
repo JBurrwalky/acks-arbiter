@@ -66,9 +66,9 @@ Per `gdd-management-notebook.md` §6.3.1 (reproduced for reference):
 
 | Entity type | Visible sub-tabs |
 |-------------|------------------|
-| PCs | Biography · Status · Combat · Equipment · Proficiencies · Spells (if caster) · Retainers |
+| PCs | Biography · Status · Combat · Equipment · Proficiencies · Spells (if caster) · Retainers · Active Projects |
 | Henchmen | Same as PCs (Status includes Promote to Full Member) |
-| Mercenary officers | Biography · Status (with Veteran/Elite advancement) · Combat · Equipment · Spells (if caster). NO Retainers. |
+| Mercenary officers | Biography · Status (with Veteran/Elite advancement) · Combat · Equipment · Spells (if caster). NO Retainers. NO Active Projects. |
 | Trained Animals | Biography · Status · Creature Stats · Equipment (only if barding/saddle equippable) |
 | Vehicles | Status · Vehicle Detail · Inventory. NO Biography. |
 
@@ -444,7 +444,84 @@ No class in ACKS First Edition modifies maximum henchmen as a class power; the a
 
 When at max, hire flow elsewhere will gate.
 
-### 3.8 Creature Stats
+### 3.8 Active Projects
+
+Visible for: PCs, Henchmen.
+
+NOT visible for Mercenary officers, Trained Animals, or Vehicles.
+
+> **Added 2026-05-06:** This sub-tab replaces the (deprecated) centralized "Activities" sub-tab on the Domain tab. Per `gdd-realtime-scheduler.md` §4.8 the engine no longer enforces daily activity-slot quotas as a UI constraint, and per `gdd-domain-tab.md` §11 there is no centralized activity picker. Activities are launched from their location-of-execution surfaces. This sub-tab provides the per-character read-mostly view of what ongoing activities the character currently has running and how close each is to completion or forfeit.
+
+#### 3.8.1 Purpose
+
+Shows every Ongoing-frequency activity the character currently has in progress, regardless of where it was launched from. The player uses this view to:
+
+- See at a glance what long-running commitments the character has
+- Plan travel against tick-tolerance per `gdd-domain-tab.md` §15.1
+- Abandon any activity deliberately (raises the canonical abandon-confirmation modal per §15.1.6)
+- Inspect math (the same RAW citation + mod-by-mod modal used elsewhere)
+
+This is **not** an activity launcher. Singular and Restricted activities never appear here — they execute atomically and don't persist between days. Only Ongoing activities accumulate state worth viewing.
+
+#### 3.8.2 Layout
+
+Vertical list of project cards, sorted by ascending tolerance remaining (most-urgent at top). Each card mirrors the activity card schema from `gdd-domain-tab.md` §15.1.7:
+
+```
++-----------------------------------------------------------------+
+| Magical Research: Detect Magic                Major (ongoing)   |
+| Location: Sanctum (Eastmarch Keep) — currently HERE             |
+| Progress: 12 / 45 ticks · Absence: 0 days · Tolerance: 12 days  |
+| Status: ON TRACK                                                |
+| [Inspect math]   [Abandon project]                              |
++-----------------------------------------------------------------+
+
++-----------------------------------------------------------------+
+| Plan hijink: Carouse at Aerendel Tavern        Minor (ongoing)  |
+| Location: Aerendel Tavern (Capital Settlement) — character AWAY |
+| Progress: 4 / 17 ticks · Absence: 5 days · Tolerance: -1 day    |
+| Status: WILL FORFEIT AT END OF NEXT DAY OF ABSENCE              |
+| [Inspect math]   [Abandon project]                              |
++-----------------------------------------------------------------+
+
++-----------------------------------------------------------------+
+| Administer Domain: Eastmarch (this month)      Major (ongoing)  |
+| Location: anywhere (remote-capable per Decrees & Remote Orders) |
+| Progress: 12 / 18 days banked this month · Effect: +1 morale    |
+| Status: ON TRACK                                                |
+| [Inspect math]   [Cancel month's effort]                        |
++-----------------------------------------------------------------+
+```
+
+Each card surfaces:
+- **Project name** with the originating activity definition and (where relevant) the project's specific target (spell name being researched, hijink type and target settlement, henchman being managed, etc.)
+- **Location requirement** with current entity-presence indicator: "currently HERE", "AWAY (1 day)", "AWAY (4 days)", "anywhere (remote-capable)" for activities like administer_domain and manage_henchmen that have no location requirement
+- **Progress line** — ticks accumulated / ticks required, cumulative absence, derived tolerance remaining (`ticks - absence`)
+- **Status banner** — color-coded per the activity-card states in `gdd-domain-tab.md` §15.1.7: green ON TRACK, amber AWAY-WITHIN-TOLERANCE, red WILL-FORFEIT or AT-RISK
+- **Inspect math** — modal with the full RAW citation and mod-by-mod calculation
+- **Abandon / Cancel** — raises the canonical abandon-confirmation modal per `gdd-domain-tab.md` §15.1.6
+
+#### 3.8.3 Empty state
+
+If the character has no ongoing activities running, the sub-tab shows a brief empty-state explanation and a hint pointing to where activities are launched from:
+
+```
+No active projects.
+
+Ongoing activities are launched from their location of execution:
+ · Magical research at a settlement library or your sanctum
+ · Hijinks at the syndicate hideout or target location
+ · Construction supervision at the construction site
+ · Domain administration via the Decrees & Remote Orders sub-tab on the Domain tab
+ · Faith activities at your consecrated altar or temple
+ · Troop training at your stronghold
+```
+
+#### 3.8.4 Cross-references
+
+This sub-tab is read-mostly. The state it displays is owned by the activity executor per `gdd-realtime-scheduler.md` §4.8.3; this view subscribes to `EventBus.activity_tick_earned`, `EventBus.activity_completed`, `EventBus.activity_forfeited`, and the entity-presence events that drive the location-status field. No per-tab persistence is needed beyond the entity_id selector.
+
+### 3.9 Creature Stats
 
 Visible for: Trained Animals only.
 
@@ -461,7 +538,7 @@ The full creature stat block per `acore_monster_catalog_*.xml` and `le_monster_c
 - Treasure type (read-only; mostly relevant for wild creatures, less so for trained animals)
 - XP value (relevant if this creature is killed by enemies; also for trained animal handler proficiency interactions)
 
-### 3.9 Vehicle Detail
+### 3.10 Vehicle Detail
 
 Visible for: Vehicles only.
 
@@ -477,9 +554,9 @@ Per `gdd-party-inventory.md` and the vehicle entries in `acore_equipment.xml`, `
 - Cost (gp)
 - Notes
 
-The vehicle's *contents* (the items it's carrying) live in the Inventory sub-tab (§3.10) for vehicles, not in Vehicle Detail.
+The vehicle's *contents* (the items it's carrying) live in the Inventory sub-tab (§3.11) for vehicles, not in Vehicle Detail.
 
-### 3.10 Inventory (Vehicle-only)
+### 3.11 Inventory (Vehicle-only)
 
 Visible for: Vehicles only.
 

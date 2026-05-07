@@ -226,6 +226,62 @@ Armies on the march use the same `travel_leg` event pattern as parties. Construc
 
 If a party enters a hex containing a hostile army, or two armies converge, the scheduler detects the spatial collision at `travel_leg` resolution time and triggers an encounter. No special logic — the event resolver checks for entities sharing a hex after each arrival.
 
+### 4.8 Activity Time Costs and Frequency Semantics
+
+This subsection documents how the activity framework in `ax_campaign_play.xml` §activity_framework (L133-192) is realized in the real-time-with-pause engine. **It applies cross-context** — the same model governs activities started in wilderness, dungeon, settlement, and stronghold contexts.
+
+**Last updated:** 2026-05-06 — replaces the deprecated "daily activity-slot picker" UX previously described in `gdd-domain-tab.md` §11.3 (now superseded by `gdd-domain-tab.md` §11 "Decrees & Remote Orders sub-tab" plus the per-location activity-launch pattern in §15).
+
+#### 4.8.1 Time-cost model (vs. slot quotas)
+
+RAW activity slots (1 major + 2 minor or 8 minor per day, plus unlimited trivial; per `ax_campaign_play.xml` §daily_capacity L146-150) are a tabletop simplification that compresses a day's time budget into integer counters. In the engine we do not enforce slot quotas as a UI constraint — we track precise time costs and let the slot rules emerge from cumulative time consumption against a finite daily active-work budget.
+
+Each activity carries a `time_cost_rounds` derived from its RAW frequency tag:
+
+| RAW frequency | Game-time | Engine encoding |
+|---|---|---|
+| Major | 5–7 hours per `ax_campaign_play.xml` §activity_levels.major L135-137 | `time_cost_rounds ≈ 6 game-hours` (default; per-activity overrides per RAW where stated) |
+| Minor | ~1 hour / 6 turns per §activity_levels.minor L138-140 | `time_cost_rounds = 1 game-hour` |
+| Trivial | "Virtually no time" per §activity_levels.trivial L141-143 | `time_cost_rounds = 0` (resolves on click; no clock advancement) |
+| Rest | Singular unstrenuous major per §rest L277-291 | `time_cost_rounds = 12 game-hours`, broken into 3 watches of 4 hours (per §4.3 Camping and Watches) — covers mage memorization, cleric prayer, ration consumption abstractly |
+
+The day's active-work budget is **8 hours of useful effort**, which naturally accommodates either path (1 major ≈ 6h + 2 minor × 1h = 8h; OR 8 minor × 1h = 8h). Trivial activities are free and do not consume budget. Overtime per `ax_campaign_play.xml` §overtime_rules L173-186 is allowed past the 8-hour budget and accrues strenuous-day penalties as background accounting (see §4.8.5 below).
+
+#### 4.8.2 Frequency type semantics
+
+`ax_campaign_play.xml` §frequency_types L152-164 distinguishes three frequency types. The engine treats each as a different state machine:
+
+- **Singular** (L152-155): atomic. Engine schedules a single `activity_complete` event at `fire_time = now + time_cost_rounds`. If interrupted before fire (combat triggers, player cancels, location lost), the activity **fails entirely and must be restarted from scratch** — no partial credit, no progress preserved. The day's time spent on the failed attempt is gone.
+- **Restricted** (L156-158): same atomic behavior as Singular within a day, plus a per-period cooldown the engine tracks via `last_completed_round` and `restricted_period_rounds`.
+- **Ongoing** (L159-163): multi-day. Each day the activity is performed for its required time-cost is "banked" as a `daily_tick`. Engine schedules a daily `ongoing_session_complete` event at `fire_time = day_start + time_cost_rounds`. If the session fires uninterrupted while the entity is at the required location, `ticks_accumulated += 1`. After the session fires the entity is free to use the day's remaining active hours for anything else without affecting the banked tick. If the session is interrupted before its fire_time, the day produces no tick (but accumulated ticks from prior days are preserved). Tick-tolerance / absence-accumulation / abandon-and-resume semantics apply only to this frequency type — per `gdd-domain-tab.md` §15.1.
+
+**This distinction is load-bearing.** Singular and Restricted activities are NOT abandonable mid-execution with partial credit; only Ongoing activities have the daily-tick / absence-accumulation model.
+
+#### 4.8.3 Engine encoding
+
+The activity executor (`engine/subsystems/activities/activity_time_cost_executor.gd`) wraps each launched activity as a `ScheduledEvent` per the `EventScheduler` interface in §2:
+
+- **Singular launch:** `schedule_after(now, time_cost_rounds, "activity_complete", entity_id, {activity_def_id, ...})`. Cancellation via `cancel(event_id)` is the abandonment path; it produces a clean failure with no partial credit.
+- **Restricted launch:** same as Singular plus a write to `restricted_cooldowns[entity_id][activity_def_id] = now + restricted_period_rounds` on completion.
+- **Ongoing daily session launch:** at the start of each day on the activity, `schedule_after(day_start, session_time_cost_rounds, "ongoing_session_complete", entity_id, {activity_state_id})`. On fire (uninterrupted), `ticks_accumulated += 1` and `EventBus.activity_tick_earned` emits. If interrupted (combat, location-loss, player-cancel), the session is cancelled and no tick is banked. The activity_state record itself persists across sessions; absence accumulation runs per the daily-boundary update in `gdd-domain-tab.md` §15.1.2.
+
+Auto-pause flags are set by the activity completion handlers when the result requires player attention (e.g., research outcome, hijink resolution, troop training complete). Routine within-tolerance ticks do not auto-pause.
+
+#### 4.8.4 No centralized "Activities" picker UI
+
+Activities are launched from their **location-of-execution** UI, not from a centralized picker. The Settlement Panel surfaces hire-mercenaries, gambling, library research, etc. The stronghold UI surfaces oversee-construction, train-troops, inspect-troops. Wilderness hex commands surface hunt, forage, search, survey. Dungeon UI surfaces dungeon-delve, harvest-parts. The only centralized surface is `gdd-domain-tab.md` §11 "Decrees & Remote Orders" sub-tab, which houses the small set of activities a ruler can perform without being physically present (administer_domain, issue_decree, manage_henchmen, conscript_troops, levy_militia, oversee_investment-from-distance, etc.).
+
+For visibility into an entity's currently-running ongoing activities, see the per-character "Active Projects" sub-tab in `gdd-character-tab.md`. This is read-only status display, not a launcher.
+
+#### 4.8.5 Strenuous-day and overtime accounting
+
+These are tracked as background state on `character_activity_state(character_id, strenuous_days_in_streak, overtime_days_in_streak, last_rest_day)`. They do not gate activity execution; they apply mechanical penalties per RAW:
+
+- **Strenuous-day rest requirement** per `ax_campaign_play.xml` §effort_rules L168-171: after 6 consecutive game-days of strenuous activity (whether one strenuous activity per day or multiple), the character must rest as the day's primary effort or accumulate −1 cumulative penalty per day to attack throws, damage, and proficiency throws. The engine increments `strenuous_days_in_streak` whenever a strenuous-tagged activity resolves on a day; resets to 0 on a Rest day. Penalties apply automatically once the streak exceeds 6.
+- **Overtime** per §overtime_rules L173-186: allowing more activities in a day than the standard budget (e.g., 2 major + 2 minor instead of 1 major + 2 minor) is permitted but counts the day as multiple strenuous-equivalent days for the rest-requirement counter (1×, 2×, 3×, or 6× per the RAW table). The engine tracks `overtime_days_in_streak` and applies the multiplier when incrementing `strenuous_days_in_streak`.
+
+These are calculated and surfaced silently; the player sees the cumulative penalty applied to their throws but is never blocked from "trying to do more" by a quota popup.
+
 ---
 
 ## 5. City Layer (Settlement as Node Graph)

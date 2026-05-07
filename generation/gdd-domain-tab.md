@@ -597,80 +597,77 @@ When any expense category has unpaid gp accumulated (deferred maintenance, misse
 
 ---
 
-## 11. Activities sub-tab
+## 11. Decrees & Remote Orders sub-tab
 
-The Activities sub-tab surfaces the **universal** and **proficiency-gated** activities from `ax_campaign_play.xml` `<category name="domain">` that are available to any domain ruler regardless of class. Class-specific activities (Faith / Magical Research / Trade / Syndicate / Garrison Training) live in §12, not here.
+> **Revision (2026-05-06):** This sub-tab replaces the prior "Activities" sub-tab. The earlier design centralized all domain-and-domain-adjacent activities behind a notebook picker with explicit slot-quota tracking (1 major + 2 minor or 8 minor / day enforced as a UI counter). That design conflicted with the real-time-with-pause architecture established in `gdd-realtime-scheduler.md` and made the game feel like spreadsheet menu-picking. The replacement model is described in `gdd-realtime-scheduler.md` §4.8 "Activity Time Costs and Frequency Semantics": activities are launched from the location of execution (settlements, strongholds, dungeons, wilderness hexes), not from a centralized picker. Tick-tolerance / absence / abandon-and-resume mechanics apply ONLY to Ongoing-frequency activities per §15.1; Singular and Restricted activities are atomic and must be restarted if interrupted. For per-character status visibility into running ongoing activities, see `gdd-character-tab.md` "Active Projects" sub-tab.
 
-### 11.1 Layout
+This sub-tab surfaces the **small set** of domain activities a ruler can initiate without being physically present at the affected location, on the RAW-supported fiction that the ruler's seneschal, steward, marshal, or chancellor carries out written orders while the ruler is adventuring. All other activities are launched from the location-specific UI surfaces per the per-location activity-launch pattern in `gdd-realtime-scheduler.md` §4.8.4.
 
-The sub-tab page is a vertical list of activity cards, grouped by frequency type. Each card shows the activity's current state, parameters, and an execute button (greyed-and-tooltip-explained when location-gated and the entity is not in the right location, per Q8 hybrid execution model in §15).
+### 11.1 Activities surfaced here
 
-**Group 1 — Singular activities** (perform within a single game day; may repeat with available activity slots):
+Each entry below is RAW-justified as performable without the ruler being at the target location. The list is intentionally short — most domain activities require physical presence (oversee construction at the construction site; train troops at the stronghold; consecrate altar at the altar) and live in their location surfaces, not here.
 
-- **Issue decree** (minor or trivial per `ax_campaign_play.xml` §issue_decree) — opens a sub-flow with options:
-  - Change tax rate (current rate displayed; +/- stepper; per-month effect on revenue + morale modifier per §monthly_event_modifiers)
-  - Change liturgy rate (default 1gp; +/- stepper; per-month morale roll modifier)
-  - Grant a favor to a vassal (cross-references the Realm sub-tab Favors-and-Duties tracker)
-  - Demand a duty of a vassal (same; immediate Henchman Loyalty roll if the vassal already has unsafe duties)
+- **Administer domain** (major ongoing per `ax_campaign_play.xml` §administer_domain). Project interpretation per Jedidiah (2026-05-06): the +1 morale modifier in `acore_axioms_strongholds_and_domains.xml` §administration L499, L526-529 abstracts the work of a seneschal carrying out the ruler's standing orders; therefore administer_domain is RAW-legal as a remote ongoing activity. The ruler need not be physically in the domain on a given day for the activity to bank a tick, provided the ruler has dispatched current orders. Time per day per RAW: ½ × [(6-mile hexes) + (vassals reporting) + (6 − market class of largest urban settlement in personal domain)] days banked toward the month's modifier. Status card displays the formula breakdown and current month's progress.
+- **Issue decree** (minor or trivial singular per `ax_campaign_play.xml` §issue_decree). A written order dispatched to the seneschal — does not require physical presence. Sub-flow options:
+  - Change tax rate (current rate displayed; +/− stepper; per-month effect on revenue + morale modifier per `acore_axioms_strongholds_and_domains.xml` §monthly_event_modifiers L494-495)
+  - Change liturgy rate (default 1gp; +/− stepper; per-month morale roll modifier per §monthly_event_modifiers L492-493)
+  - Change tithe rate / declare tithe paid or unpaid (per §tithes L243-249 and §monthly_event_modifiers L496)
+  - Grant a favor to a vassal (cross-references §6 Realm sub-tab Favors-and-Duties tracker)
+  - Demand a duty of a vassal (same; immediate Henchman Loyalty roll if vassal already has unsafe duties)
   - Free a perpetrator caught committing a crime (project-designed UI hook to the Crime & Punishment system in §12.5 Syndicate; relevant when the ruler chooses to interfere)
-  - Order construction of a new stronghold (cross-activate to `gdd-stronghold-construction.md` commission flow)
-  - Order agricultural or urban investment (gp input + investment-type selector; flows into next-month revenue + 1d10/1000gp population growth per §investments)
-- **Inspect troops** (minor singular; level 5+ with Command proficiency) — per `ax_campaign_play.xml` §inspect_troops — opens a target-selection sub-flow listing units in the active garrison; selected unit gains +1 to first morale roll within one game day. Greyed unless ruler has Command proficiency
-- **Hire mercenaries** (minor singular; requires successful solicit) — per `ax_campaign_play.xml` §hire_mercenaries — cross-activates to Settlement Panel HiringPanel for execution
+  - Order construction of a new stronghold (cross-activate to `gdd-stronghold-construction.md` commission flow; the ruler does not need to be at the construction site to issue the commission, only to oversee or supervise it once underway — those are separate activities at the stronghold UI)
+  - Order agricultural or urban investment (gp input + investment-type selector; flows into next-month revenue + 1d10/1000gp population growth per §investments L132-135)
+  - Set repression policy (assign N gp/family of additional troops to repression per `acore_axioms_strongholds_and_domains.xml` §repression L510-516; militia troops greyed as ineligible; warning that current morale cannot exceed 0 while active)
+- **Manage henchmen** (trivial ongoing per `ax_campaign_play.xml` §manage_henchmen). Per RAW the canonical remote-capable activity — explicitly allowed "whenever the henchman is accessible physically or magically." Card surfaces the active entity's henchmen and their current assignments, with reassignment controls; cross-references the Henchmen tab for henchman-level details. Per `gdd-domain-tab.md` §15.1.3, manage_henchmen has no required location and never accumulates absence.
+- **Conscript troops** (minor ongoing; 1-3 weeks per `ax_campaign_play.xml` §conscript_troops). Order issued to the seneschal; recruitment runs in the domain regardless of ruler location. Max 1 per 10 peasant families. Card displays current capacity, conscription progress, and vagaries-of-recruitment status from the monthly random-events phase. Greyed when domain morale is Turbulent / Defiant / Rebellious per `acore_axioms_strongholds_and_domains.xml` §effects_of_morale L555-577.
+- **Levy militia** (minor ongoing; 1-3 weeks per §levy_militia). Order issued to the seneschal; same remote-execution fiction as Conscript. Max 2 per 10 peasant families. Same status display. Same morale-band restrictions.
+- **Solicit mercenaries** (minor ongoing per §solicit_mercenaries). The ruler's request for mercenary applicants — handled by recruiters and the marshal. The ruler need not be in any specific settlement; the activity is the act of putting out the word.
+- **Call to arms** (minor ongoing; ruler of a realm only, per §call_to_arms). Muster vassals for war; arrival schedule per the muster-delay table from `acore_axioms_strongholds_and_domains.xml` §muster_delay L373-382.
+- **Oversee investment** (minor ongoing; 1 day per 500gp per `ax_campaign_play.xml` §oversee_investment). Project decision (2026-05-06): "oversee" here is interpreted as the ruler reviewing books and progress reports; remote-capable. The investment attracts 1d10+1 new families instead of the usual 1d10 per 1,000 gp.
 
-**Group 2 — Ongoing activities** (require multiple days; sustained over time; tick-tolerance per §15.1.1):
+**Out of scope here (live in their location surfaces, NOT in this sub-tab):**
 
-- **Administer domain** (major ongoing per `ax_campaign_play.xml` §administer_domain) — the foundational ruler activity. Time: 1/2 × [(6-mile hexes) + (vassals reporting) + (6 − market class of largest urban settlement in personal domain)] days. Effect: +1 morale roll bonus + 5% XP bonus that month per the activity rule. Status card displays: time-required calculation breakdown, current administration status (running this month / not). Tick-tolerance applies — ruler accumulates ticks each day spent administering somewhere within the personal domain
-- **Conscript troops** (minor ongoing; 1-3 weeks) — per §conscript_troops; max 1 per 10 peasant families. Card displays: current capacity, conscription progress timeline, vagaries-of-recruitment status from the monthly random-events phase
-- **Levy militia** (minor ongoing; 1-3 weeks) — per §levy_militia; max 2 per 10 peasant families. Same status display
-- **Solicit mercenaries** (minor ongoing; 1-3 time periods by realm size per §solicit_mercenaries) — opens a sub-flow specifying solicitation quantity and target mercenary types; cross-references Settlement Panel for execution
-- **Call to arms** (minor ongoing; 1-3 time periods by realm size; ruler of a realm only) — per §call_to_arms; muster vassals for war; arrival schedule per the muster-delay table from §muster_delay
-- **Oversee construction** (minor ongoing; 1 day per 500gp of construction; ruler in domain overseeing construction there) — per §oversee_construction; +5% rate, +10% if ruler also supervising. Card displays: current construction projects in domain (cross-referencing Stronghold sub-tab) with "Oversee" buttons per project
-- **Supervise construction** (major ongoing; 1 day per 500gp; requires sufficient Engineering or Siege Engineering ranks) — per §supervise_construction. Same per-project display
-- **Oversee investment** (minor ongoing; 1 day per 500gp of investment; ruler in domain overseeing investment ordered there) — per §oversee_investment; the investment attracts 1d10+1 new families instead of usual 1d10 per 1000gp. Card lists active investments in domain with "Oversee" buttons
-- **Train troops** (major ongoing; sufficient Mannered at Arms ranks + Riding/Weapon Focus where required) — per §train_troops; up to 60 troops; time depends on troop type. Generic to all classes with the proficiency (the **fighter-progression** version with the `oversee_troop_training` activity lives in §12.6 Garrison Training block — that's the class-gated version)
-- **Military campaign** (major ongoing; per §military_campaign) — opens campaign-launch sub-flow when ruler has an army. Cross-references future combat-tactical surface for tactical resolution. Domain tab handles the strategic-stance / regional-movement / supply / occupation summary per `daw_campaigning_armies.xml` weekly procedure once the campaign is active
+- **Oversee construction** (in the stronghold UI / construction site UI per `gdd-stronghold-construction.md`)
+- **Supervise construction** (same — requires Engineering presence)
+- **Train troops** / **oversee troop training** / **inspect troops** (in the Garrison sub-tab and stronghold UI; require ruler at the stronghold)
+- **Hire mercenaries** (in the Settlement Panel HiringPanel per `gdd-settlement-exploration-ui.md`; requires ruler at the settlement)
+- **Military campaign** (launches into the field-combat surface when initiated; cross-cuts; not a Domain-tab decree)
 
-**Group 3 — Henchman delegation:**
+**Senatorial domains** are out of scope per O-D7 — `consult_senate` and senatorial-type rule are not in v1.
 
-- **Manage henchmen** (trivial ongoing per §manage_henchmen) — surfaces the active entity's henchmen and their current activity assignments. Per RAW: *"A character may actively manage up to four henchmen, plus one additional henchman per point of Charisma bonus and/or Leadership proficiency bonus."* Card displays current active-management capacity (current / max), each henchman's current activity assignment, and an "Assign activity" button per henchman that opens a sub-flow letting the player select an activity from the henchman's eligible list. Cross-references the Henchmen tab for henchman-level details
+### 11.2 Decree card UI
 
-**Group 4 — Senatorial domains: out of scope per O-D7.** Senatorial-type domains and the `consult_senate` activity are not in scope for ACKS Arbiter v1. The Activities sub-tab does not surface this group. If senatorial-domain support is added in a future expansion, this section is the natural place for it.
-
-### 11.2 Activity card UI (project-designed)
-
-Each activity card uses a consistent layout:
+Each card uses a compact layout focused on the order's parameters and dispatch state, not on slot accounting:
 
 ```
 +-----------------------------------------------------------+
-| ● Administer Domain                          Major (ong.) |
-| Time: 7 days  ·  Status: Active this month  ·  +1 morale  |
-| [Abandon activity] [Inspect math]                         |
+| Issue Decree: Tax rate                       Minor (sing.)|
+| Current: 2 gp / family   →   New: [3] gp / family         |
+| Effect next month: +1 gp/family revenue · -1 morale roll  |
+| [Issue decree]   [Inspect math]                           |
 +-----------------------------------------------------------+
 ```
 
-- Activity name + frequency tag (Major / Minor / Trivial × Singular / Restricted / Ongoing)
-- Time / cost / effect summary line
-- Action button(s):
-  - **Active execute** when location and gating conditions met
-  - **Greyed with tooltip** when location-gated (e.g., "Available when in Eastmarch — Travel: 4 days") with optional travel shortcut
-  - **Greyed with tooltip** when proficiency / class / level gated (e.g., "Requires Engineering proficiency")
-  - **Greyed with tooltip** when activity-slot exhausted for the day (e.g., "No major activity slots remaining today")
-- Inline "Inspect math" button opens a modal showing the full RAW citation + mod-by-mod calculation for the activity's effect numbers (per the project's transparency principle from `CLAUDE.md` Core Principles)
+```
++-----------------------------------------------------------+
+| Administer Domain                            Major (ong.) |
+| Time today: 6 hours · Banked this month: 12 / 18 days     |
+| Effect: +1 morale roll · +5% domain XP                    |
+| [Bank today's session]   [Cancel month's effort] (modal)  |
++-----------------------------------------------------------+
+```
 
-### 11.3 Daily activity-slot tracking
+- Card shows: name, frequency tag, parameter inputs (where applicable), effect summary, RAW-cited "Inspect math" link.
+- Singular decrees execute on click and emit a `decree_issued` notification with the resulting effect.
+- Ongoing remote activities (administer_domain, manage_henchmen, conscript/levy, solicit, call to arms, oversee_investment) show today's session status (banked / not yet / in progress) and lifetime ticks accumulated. The "Cancel month's effort" affordance for administer_domain raises the standard abandon-confirmation modal per §15.1.6.
 
-The Activities sub-tab respects the daily activity capacity per `ax_campaign_play.xml` §daily_capacity: 1 major + 2 minor, OR up to 8 minor, plus unlimited trivial. Strenuous-activity-rest tracking per §effort_rules (rest required after 6 days of strenuous activity) is surfaced with a small status bar at the top of the sub-tab showing the active entity's current daily-slot consumption and overtime-stress (if any).
+### 11.3 Pre-9th-level rulers
 
-This shared state is consumed by all activity-execution surfaces — the Activities sub-tab, the Class-Specific sub-tab, and (when implemented) future location panels. Project-designed: the engine's activity-tracking subsystem owns this state and emits `EventBus.activity_slot_changed` for UI refresh.
+Pre-9th-level rulers still have access to all decrees in this sub-tab. Per `acore_axioms_strongholds_and_domains.xml` §before_ninth_level L121 they may still make investments, hire mercenaries, and otherwise direct the domain — they simply do not auto-attract followers or peasants.
 
-### 11.4 Activities sub-tab and pre-9th-level entities
+### 11.4 Empty / no-domain state
 
-A pre-9th-level domain ruler still has access to activities. The activities visible are those whose RAW gating allows pre-9 access (most of them). Activities specifically gated to higher levels (e.g., consecrate ruler at level 9+ in Faith block; manage assistant at level 9+ in Magical Research block) appear greyed with the level requirement noted.
-
-### 11.5 Activities sub-tab empty / no-domain state
-
-For an active entity who does not rule a domain at all, the Activities sub-tab is hidden from the strip — no activities are applicable without a domain. (The other class-conditional sub-tab §12 may still appear if the class has bucket-applicable activities that work outside a domain, e.g., a mage's research activities that can be performed in a borrowed sanctum without ruling a domain — those surface in §12.3 Magical Research with the relevant location-gating rather than being suppressed entirely.)
+For an active entity who does not rule a domain, the Decrees & Remote Orders sub-tab is hidden from the strip — there is nothing to decree without a domain. Class-specific activities (Faith / Magical Research / Trade / Syndicate / Garrison Training) live in §12 and may still appear for an entity without a domain when the activity is location-bound elsewhere (e.g., a mage's research at a borrowed sanctum).
 
 ---
 
@@ -936,11 +933,15 @@ Per Q8 resolution, the Domain tab is the **master inspection-and-execution surfa
 
 **This is the canonical mechanic for ongoing-activity persistence in v1.** Per `ax_campaign_play.xml` §frequency_types: *"Ongoing activities require more than one game day and must be performed throughout the listed time period."*
 
-The official Discord judge consensus (confirmed by Jedidiah) refines "performed throughout" with a **tick-tolerance** mechanic:
+> **Scope clarification (2026-05-06):** Tick-tolerance, daily-tick accumulation, and the abandon-and-resume model **apply ONLY to activities with `frequency = "ongoing"`** per `ax_campaign_play.xml` §frequency_types L159-163. Activities with `frequency = "singular"` (L152-155) and `frequency = "restricted"` (L156-158) are **atomic** — if interrupted before their full time-cost elapses, they fail entirely and must be restarted from scratch. There is no partial credit for a Singular or Restricted activity. The engine enforces this distinction by using different state machines for the two frequency families per `gdd-realtime-scheduler.md` §4.8.2. The "abandon" affordance shown on activity cards in §11 and §12 is therefore meaningful only for Ongoing activities.
 
-> For every ongoing activity, the requisite time must be spent on it (Major or Minor activity-slot cost depending on the activity) every day in succession until completion. **Each day that time is spent on the task earns one "tick"** toward completion (tabletop judges use literal "/" marks on a paper calendar). **The character may step away from the task** without immediately forfeiting, **BUT if cumulative absence exceeds days-spent-on-task, the progress and gp committed are forfeited** and the activity must be restarted from scratch.
+The official Discord judge consensus (confirmed by Jedidiah) refines "performed throughout" for Ongoing activities with a **tick-tolerance** mechanic:
+
+> For every ongoing activity, the requisite time must be spent on it (Major or Minor time-cost depending on the activity) for the day to count. **Each day on which the entity is at the required location and the daily session fires uninterrupted earns one "tick"** toward completion (tabletop judges use literal "/" marks on a paper calendar). After the daily session is banked the entity is free to use the day's remaining active hours however they like without affecting that day's tick. **The character may step away from the task** across days without immediately forfeiting, **BUT if cumulative absence exceeds days-spent-on-task, the progress and gp committed are forfeited** and the activity must be restarted from scratch.
 
 **Crucially, absence is cumulative for the full lifetime of the activity — it never resets while the task remains in progress.** A character who steps away, returns, then steps away again carries forward all prior absence days. This produces a clean derived property: **a task can never take more than 2× its default duration in real elapsed time.** If a 14-day research project ever reaches 14 days of absence, it must already have 14 ticks — meaning it has completed; otherwise it would have forfeited at absence = 15.
+
+**Worked example: magical research.** A mage at L11 starts a 45-day research project on Day 1. On Day 1 they select Magical Research as their primary activity for the day. The engine schedules a 6-hour `ongoing_session_complete` event at fire_time = day_start + 6 hours. Nothing interrupts; the event fires, `daily_ticks_accumulated = 1`, and the mage is now free to spend the rest of the day's active hours camping, training a henchman, or whatever. On Day 2 they're called away at hour 4 to defend the stronghold from raiders; the day's session is interrupted before the 6-hour fire_time, no tick is banked for Day 2, but the 1 tick from Day 1 is preserved. `absence_accumulated` increments by 1. The research continues; the mage just needs to make up the lost day before cumulative absence catches up to ticks.
 
 ### 15.1.2 Tick-tolerance state model
 
@@ -1356,7 +1357,7 @@ For **Venturer** (guildhouse via hideout rules):
 
 For **Bard** (hall):
 - Standard paths
-- Per O-D3 resolution: Bard plays at the domain tier as Fighter does. Empty-state notes: *"Like a fighter, you may train troops at your hall and oversee their morale (see Garrison Training in the Class Activities sub-tab once you've established your domain)."*
+- Per O-D3 resolution: Bard plays at the domain tier as Fighter does. Empty-state notes: *"Like a fighter, you may train troops at your hall and oversee their morale (see Garrison Training in the Class-Specific sub-tab once you've established your domain)."*
 
 For **Nobiran Wonderworker** (sanctum hybrid per Q5):
 - Mage paths plus the Wonderworker's hybrid follower note (1d6 cleric/mage 1-3 + 2d6 0th-level aspirants with INT/WIS≥9 path)
@@ -1432,7 +1433,7 @@ The Domain tab is deeply cross-cutting — Phase H+ build per the project's buil
 - **Realm aggregate computation:** When a high-tier ruler has many vassals (>50), realm aggregates (total population, total income, vassal-domain morale roll-up) are computed via aggregated SQL queries rather than per-vassal in-memory iteration. Cache aggregates with invalidation on domain-state-change events
 - **Monthly resolution simulation:** When the scheduler ticks the end-of-month phase, the engine processes all domains (PC and named-NPC) per `ax_campaign_play.xml` §monthly_cycle. For 100+ domains in a generated realm, processing must be batched and parallelized where deterministic-ordering allows. The Domain tab's UI updates on `EventBus.domain_state_changed` per affected domain rather than blocking on full simulation
 - **Encounter table consultation:** Domain encounters require lookup against terrain × classification → encounter sub-table. Cache the lookup tables in memory at session start; the table data is part of the rule-data corpus and does not change at runtime
-- **Activity catalog rendering:** The Activities sub-tab renders ~20 activity cards. Class-Specific stacks 1-2 buckets with ~5-10 cards each. Negligible render cost; no virtualization needed
+- **Decree card rendering:** The Decrees & Remote Orders sub-tab renders ~8 cards (the small remote-capable activity set per §11.1). Class-Specific stacks 1-2 buckets with ~5-10 cards each. The Active Projects sub-tab on the Character tab renders only the entity's currently-running ongoing activities, typically ≤5. Negligible render cost across all three; no virtualization needed.
 - **Realm sub-tab vassal table:** virtualize when vassal count > 30; otherwise render directly
 
 The Domain tab should add zero noticeable latency to gameplay outside of monthly resolution. Monthly resolution is itself a known scheduler-tick boundary event with its own performance budget per `gdd-realtime-scheduler.md`.
@@ -1480,7 +1481,7 @@ The Domain tab is **Phase H+** per the project's build plan. It depends on:
 7. Implement the Garrison sub-tab per §8 (consumes Troops tab data)
 8. Implement the Realm sub-tab per §9
 9. Implement the Treasury & Ledger sub-tab per §10 (with the project-designed treasury data model)
-10. Implement the Activities sub-tab per §11 (universal/proficiency-gated activities)
+10. Implement the Decrees & Remote Orders sub-tab per §11 (the small remote-capable activity set; replaces the deprecated centralized Activities picker)
 11. Implement the Class-Specific sub-tab matrix per §12
 12. Implement the Encounters & Threats sub-tab per §13
 13. Implement the Departure Log sub-tab per §14
@@ -1525,6 +1526,7 @@ The Domain tab is **Phase H+** per the project's build plan. It depends on:
 
 ## 24. Revision history
 
+- **v1.7, 2026-05-06** — **Architecture realignment with the real-time-with-pause scheduler GDD.** §11 "Activities sub-tab" rewritten as **§11 "Decrees & Remote Orders sub-tab"** — the prior centralized activity-picker design (with explicit daily-slot quota tracking and an `EventBus.activity_slot_changed` UI counter) conflicted with the canonical real-time-with-pause architecture in `gdd-realtime-scheduler.md` (last updated 2026-04-30). The replacement model is documented in the new `gdd-realtime-scheduler.md` §4.8 "Activity Time Costs and Frequency Semantics": activities carry RAW-derived time costs and execute through the `EventScheduler`; the day's slot quotas (1 major + 2 minor / 8 minor) emerge naturally from a finite ~8-hour active-work budget rather than being enforced as UI constraints; activities launch from their location of execution (settlement panel, stronghold UI, dungeon UI, wilderness commands), not from a centralized picker. The Domain notebook's 6th sub-tab is repurposed to surface only the small set of remote-capable activities (administer_domain, issue_decree, manage_henchmen, conscript_troops, levy_militia, solicit_mercenaries, call_to_arms, oversee_investment) that the ruler can dispatch via seneschal without being physically present at the affected location. **§15.1.1** received a scope clarification: tick-tolerance, daily-tick accumulation, and the abandon-and-resume model apply ONLY to Ongoing-frequency activities — Singular and Restricted activities are atomic and must be restarted from scratch if interrupted. **§3.8 Active Projects** is added on the Character tab (per `gdd-character-tab.md` §3.8) for per-character read-only visibility into running ongoing activities. **§21 Performance considerations** updated to reflect the new sub-tab card counts. **§23 Implementation order** §10 updated to reference the new sub-tab name. No changes to §15.1.2 onward (state model, worked example, departure-warning logic, abandon modal copy) — those mechanics are correct under the new model and apply unchanged to the Ongoing-only scope. Concurrent updates: `gdd-realtime-scheduler.md` §4.8 (new), `gdd-character-tab.md` §3.8 (new), `docs/domain-roadmap-corrected.md` Phase 3 rewrite. Driver: Jedidiah's review of Phase 3 in the corrected domain roadmap, which surfaced the regression risk.
 - **v1.6, 2026-04-30** — End-to-end review pass cleaning up stale references and terminology drift accumulated across v1.1-v1.5 successive revisions. **§1 Class-aware UI design intent:** corrected `(§11)` → `(§12)` reference. **§4.2 Sub-tab order:** ambiguous `(§7)` reference clarified to "(strip position 7; full content spec in §12 of this GDD)". **§4.4 Class-Specific visibility:** removed awkward editorial commentary about Wonderworker fighter-progression status; cleaned up to read as a list of multi-bucket-class examples. **§6.1 Growth section:** active-adventuring trigger description aligned with the §6.2 heuristic spec (left-stronghold + at least one of wilderness/dungeon/lair/battle/siege) instead of the generic `EventBus.adventure_started` placeholder. **§7.2 Elven fastness footnote:** stale `§25 Open Questions` reference corrected to point at the cross-doc `gdd-stronghold-construction.md` §13 Q5/Q6 added 2026-04-30. **§11.1 Activities grouping:** Administer Domain moved from Group 1 (Singular) to Group 2 (Ongoing) where it belongs per `ax_campaign_play.xml` §administer_domain (it's a major-ongoing, not a singular). **§11.2 Activity card UI example:** "[Stop ongoing]" button label corrected to "[Abandon activity]" per the v1.2+ terminology sweep. **§12.1 No-checkmarks footnote:** removed stale "(like Bard pending O-D3 resolution)" reference; rewrote to reflect that as of v1.5 every class in the matrix has at least one checkmark, with the no-checkmarks → hidden rule retained as future-proofing. **§15.1.2.1 Worked example table:** corrected Phase 4 to span days 11-14 (4 performing days, ticks reaches 10) and Phase 5 to day 15 (away, absence=5) so the table's end state matches the narrative's `ticks=10, absence=5` figure used in the orc-invasion math. Orc-invasion travel days renumbered 16-20; forfeit on day 21. **§15.1.7 activity card UI examples:** "Absence streak" terminology in the amber and red urgent card examples updated to "Cumulative absence" / "Tolerance remaining" to match the v1.4 cumulative-absence model. The v1.4 sweep had missed these two card examples. **§15.1.7 forfeit cause string:** "absence exceeded tolerance" corrected to "absence exceeded ticks" matching the canonical cause string in §15.1.2 line `EventBus.activity_forfeited`. **§19.1 Bard empty-state:** stale "pending O-D3 confirmation" replaced with the resolved O-D3 disposition pointing the player to the Garrison Training sub-tab. No substantive design changes — all edits were corrections of terminology drift, mis-numbered cross-references, and stale notes left over from previous revisions.
 - **v1.5, 2026-04-30** — **All open questions O-D1 through O-D14 resolved per Jedidiah.** Substantive content updates implementing each resolution: **§6.2 Active adventuring detection** rewritten with the explicit two-condition heuristic (left stronghold AND any of wilderness encounter / dungeon-or-lair entry / battle / siege) per O-D1; no manual override. **§10.2 Manual transfers** updated per O-D2 — free if at a domain stronghold, impossible otherwise (treasury is held in stronghold vaults; transfers are physical coin movement). **§11 Activities Group 4 (Senatorial)** removed per O-D7 — senatorial domains out of scope; `consult_senate` is no longer surfaced. **§12.1 Class-bucket matrix** updated for **Bard** (O-D3): Garrison Training ✓ added; Bard-domain-plays-as-Fighter flagged as Arbiter-specific design (Bards lack fighter_progression in RAW). Updated for **Paladin** (O-D4): Faith ✗ removed; only Garrison Training ✓; Paladins are lawful warriors per Roland/Lancelot/El Cid flavor, no magic or divine spellcasting. **§12.6 Garrison Training class list** expanded to include Bard with Arbiter-specific-design flag plus the additional clarifying note. **§12.7 Nobiran Wonderworker aspirant attrition** updated per O-D5 — roll 1d6 each month for 6 months, drop out on 1, not cumulative. **§7.1.1 (new) Non-conforming strongholds** per O-D10 — building blocked, inheriting/conquering allowed, no followers for non-conforming, cross-doc obligation flagged for `gdd-stronghold-construction.md`. **§16.5 Ruler death and succession** rewritten per O-D6 — successor must be appointed within configurable grace period; PC, henchman, or NPC-generator-populated non-henchman; lapse-to-abandonment if no appointment by grace period end; cross-GDD flag for NPC generator. **All §22 open-question entries** marked resolved with strikethrough-and-disposition per project convention; O-D14 deferred-pending-future-combat-tactical-surface GDD with clarifying note.
 - **v1.4, 2026-04-30** — **Absence is cumulative for the activity's full lifetime** per Jedidiah. The v1.3 model treated absence as a per-streak counter that reset to 0 on return; v1.4 corrects this to a cumulative counter that never resets while the activity is in progress. Derived clean property: a task can never take more than 2× its base duration in real elapsed time without forfeiting. **§15.1.1** updated with the cumulative-absence emphasis and the 2× max-duration property derivation. **§15.1.2** state model: `absence_streak_days` field renamed to `absence_accumulated`; daily-update logic rewritten — return to location no longer resets absence; the daily check increments either ticks (if performing) or absence (if not performing or absent). **§15.1.2.1 (new)** worked example per Jedidiah's Abel scenario showing cumulative absence behavior across multiple step-aways and culminating in an orc-invasion forfeit choice. **§15.1.4 outcomes** updated: "Return within tolerance" → "Return before forfeit" — absence carries forward rather than resetting on return. **§15.1.5 pre-departure warning** math corrected: tolerance comparison uses remaining tolerance `(ticks - absence)`, not raw ticks; trip projected over remaining tolerance triggers the modal. **§15.1.7 activity card UI** updated to show `Absence: {N} days (cumulative)` and `Tolerance remaining: {ticks - absence}` explicitly so the player always sees the running budget. **§15.3 button states** updated for the cumulative model. Terminology sweep: "absence_streak_days" renamed to "absence_accumulated" throughout; English "absence streak" phrasing replaced with "cumulative absence" or "absence accumulation" to avoid the reset-implication. **O-D17 resolved (v1.4):** present-but-not-performing counts toward absence accumulation per Jedidiah's "same resolution as not being present" — rationale: the tick mechanic measures days of work performed; non-work days at the location are not days of work and consume the same tolerance budget as physical absence.
