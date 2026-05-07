@@ -229,6 +229,9 @@
 [ext_resource type="Script" path="res://tests/test_claiming_resolver.gd" id="215_claiming_resolver_tests"]
 [ext_resource type="Script" path="res://tests/test_stronghold_repository_sufficiency.gd" id="216_stronghold_repository_sufficiency_tests"]
 [ext_resource type="Script" path="res://tests/test_stronghold_phase_1_integration.gd" id="217_stronghold_phase_1_integration_tests"]
+[ext_resource type="Script" path="res://tests/test_active_adventuring_detector.gd" id="218_active_adventuring_detector_tests"]
+[ext_resource type="Script" path="res://tests/test_establish_domain_flow.gd" id="219_establish_domain_flow_tests"]
+[ext_resource type="Script" path="res://tests/test_treasury.gd" id="220_treasury_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -916,3 +919,12 @@ script = ExtResource("216_stronghold_repository_sufficiency_tests")
 
 [node name="StrongholdPhase1IntegrationTests" type="Node" parent="."]
 script = ExtResource("217_stronghold_phase_1_integration_tests")
+
+[node name="ActiveAdventuringDetectorTests" type="Node" parent="."]
+script = ExtResource("218_active_adventuring_detector_tests")
+
+[node name="EstablishDomainFlowTests" type="Node" parent="."]
+script = ExtResource("219_establish_domain_flow_tests")
+
+[node name="TreasuryTests" type="Node" parent="."]
+script = ExtResource("220_treasury_tests")

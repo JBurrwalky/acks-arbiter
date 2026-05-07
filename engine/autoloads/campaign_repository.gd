@@ -1082,14 +1082,21 @@ func create_domain(data: Dictionary) -> String:
 	if not db.query_with_bindings("""
 		INSERT INTO domains
 			(id, campaign_id, name, owner_character_id,
-			 location_map_id, location_hex_q, location_hex_r, territory_type)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+			 location_map_id, location_hex_q, location_hex_r, territory_type,
+			 alignment, religion, is_chaotic_domain,
+			 establishment_method, established_calendar_day)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	""", [
 		data["id"], data.get("campaign_id", ""), data.get("name", ""),
 		data.get("owner_character_id", null),
 		data.get("location_map_id", null),
 		data.get("location_hex_q", null), data.get("location_hex_r", null),
 		data.get("territory_type", "wilderness"),
+		data.get("alignment", "neutral"),
+		data.get("religion", ""),
+		1 if data.get("is_chaotic_domain", false) else 0,
+		data.get("establishment_method", ""),
+		int(data.get("established_calendar_day", 0)),
 	]):
 		push_error("CampaignRepository.create_domain: failed. name=%s" % data.get("name", "?"))
 		return ""
@@ -1124,6 +1131,19 @@ const _DOMAIN_MONTHLY_FIELDS := [
 	"is_active_adventuring_this_month",
 	"is_repressed_this_month", "repression_gp_per_family_this_month",
 	"tribute_out_owed",
+]
+
+## Player-mutable settings whitelist (Domain Phase 2). Surfaced via the Domain
+## tab Overview / Treasury sub-tabs and the Establish-Domain dialog. Distinct
+## from the monthly-tick whitelist so a runaway UI handler cannot smash the
+## monthly resolution columns by accident.
+const _DOMAIN_SETTINGS_FIELDS := [
+	"name", "alignment", "religion",
+	"tax_rate_gp_per_family", "liturgy_rate_gp_per_family", "tithe_rate_gp_per_family",
+	"auto_pay_policies", "deferred_maintenance_gp",
+	"is_chaotic_domain", "establishment_method", "established_calendar_day",
+	"owner_character_id", "location_map_id", "location_hex_q", "location_hex_r",
+	"territory_type",
 ]
 
 ## Update a whitelisted set of monthly-tick fields on a single domain.
@@ -1185,6 +1205,86 @@ func add_domain_hex(data: Dictionary) -> String:
 		])
 		return ""
 	return id
+
+
+## Update a whitelisted set of player-mutable settings on a single domain
+## (Domain Phase 2). Distinct from update_domain_monthly_state so the player's
+## decree / rename / opt-in actions cannot accidentally clobber monthly
+## resolution columns. Returns true on success.
+func update_domain_settings(domain_id: String, fields: Dictionary) -> bool:
+	if domain_id.is_empty():
+		return false
+	var set_clauses: Array[String] = []
+	var values: Array = []
+	for key in fields:
+		if not _DOMAIN_SETTINGS_FIELDS.has(key):
+			push_error("CampaignRepository.update_domain_settings: rejected non-whitelisted field '%s'" % key)
+			continue
+		set_clauses.append("%s = ?" % key)
+		var v: Variant = fields[key]
+		if key == "is_chaotic_domain":
+			v = 1 if bool(v) else 0
+		values.append(v)
+	if set_clauses.is_empty():
+		return false
+	set_clauses.append("updated_at = datetime('now')")
+	values.append(domain_id)
+	var sql := "UPDATE domains SET %s WHERE id = ?" % ", ".join(set_clauses)
+	if not db.query_with_bindings(sql, values):
+		push_error("CampaignRepository.update_domain_settings: failed. id=%s" % domain_id)
+		return false
+	return true
+
+
+## Adjust a domain's treasury balance by a signed delta and return the new
+## balance. Atomic single UPDATE so a concurrent monthly-tick write does not
+## interleave. Caller is responsible for writing the matching ledger entry.
+func adjust_domain_treasury(domain_id: String, delta_gp: int) -> int:
+	if domain_id.is_empty():
+		return 0
+	if not db.query_with_bindings(
+		"UPDATE domains SET treasury_gp = treasury_gp + ?, updated_at = datetime('now') WHERE id = ?",
+		[delta_gp, domain_id]
+	):
+		push_error("CampaignRepository.adjust_domain_treasury: failed. id=%s delta=%d" % [domain_id, delta_gp])
+		return 0
+	if not db.query_with_bindings(
+		"SELECT treasury_gp FROM domains WHERE id = ?", [domain_id]
+	) or db.query_result.is_empty():
+		return 0
+	return int(db.query_result[0].get("treasury_gp", 0))
+
+
+## Append a row to active_adventuring_log. Phase 2's
+## `ActiveAdventuringDetector.apply_monthly_state` writes here on each monthly
+## boundary. Rows are append-only (audit trail).
+func add_active_adventuring_log(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO active_adventuring_log
+			(id, domain_id, calendar_day, is_active, triggers_json)
+		VALUES (?, ?, ?, ?, ?)
+	""", [
+		id,
+		data.get("domain_id", ""),
+		int(data.get("calendar_day", 0)),
+		1 if data.get("is_active", false) else 0,
+		String(data.get("triggers_json", "{}")),
+	]):
+		push_error("CampaignRepository.add_active_adventuring_log: failed. domain=%s" % data.get("domain_id", "?"))
+		return ""
+	return id
+
+
+## List active-adventuring log rows for a domain ordered by calendar day.
+func list_active_adventuring_log(domain_id: String) -> Array:
+	db.query_with_bindings(
+		"SELECT * FROM active_adventuring_log WHERE domain_id = ? ORDER BY calendar_day, created_at",
+		[domain_id]
+	)
+	return db.query_result.duplicate()
 
 
 ## Set the cumulative land_improvement_gp for a hex. Caller is responsible for

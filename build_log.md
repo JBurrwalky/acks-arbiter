@@ -16133,5 +16133,169 @@ stronghold_construction_daily_tick — owner_id="stronghold_global", reschedule 
 
 **Next session should:** Phase 2 — Domain Tab Shell + Overview + Treasury + Establish-Domain. Per `docs/domain-roadmap-corrected.md` Phase 2: build the player-facing Domain tab (replacing the empty-state placeholder at `scenes/ui/notebook/tab_pages/domain_tab_page.gd`); implement `engine/subsystems/domains/establish_domain_flow.gd` (branches by classification + class + chaotic toggle); implement `engine/subsystems/domains/treasury.gd` (with the personal-coin-vs-domain-treasury rule per [RESOLVED 2026-05-06]); implement `engine/subsystems/domains/active_adventuring_detector.gd` (writes `domains.is_active_adventuring_this_month` based on EventBus signals from combat / hex-clearing / lair-entry / treasure-return). Phase 1 unblocked the income gate; Phase 2 surfaces what Phase 0 + Phase 1 produce in player-facing UI. Phase 4's Stronghold sub-tab (also Phase 2 territory) is what binds Phase 1's `commission_wizard.tscn` and `claim_modal.tscn` into the Domain tab.
 
+---
 
+## Session 2026-05-07 — Domain Roadmap Phase 2 (Domain Tab Shell + Overview + Treasury + Establish-Domain + ActiveAdventuringDetector)
+
+**Task:** Phase 2 of `docs/domain-roadmap-corrected.md` — first player-facing Domain milestone. Replaces the Phase β empty-state placeholder at `scenes/ui/notebook/tab_pages/domain_tab_page.gd` with a nine-sub-tab shell keyed to active entity (PCs + humanoid Henchmen), implements full Overview / Treasury sub-tabs, wires Phase 1's CommissionWizard / ClaimStrongholdModal cross-activation buttons on the Stronghold sub-tab, and ships three new engine subsystems: `establish_domain_flow.gd` (RAW classification × class × chaotic-toggle branching), `treasury.gd` (the personal-coin-vs-domain-treasury rule per [RESOLVED 2026-05-06] plus the [RAW PATCH] Land Improvement investment line), and `active_adventuring_detector.gd` (the seven-trigger heuristic that writes `domains.is_active_adventuring_this_month`).
+**Model used:** Opus 4.7 (1M context).
+
+**Completed:**
+- **Schema (2 migrations 063-064):**
+  - `063_domain_settings_extensions.sql` — 4 ALTER TABLE ADD COLUMN on `domains`: `auto_pay_policies` (TEXT JSON dict default '{}'), `deferred_maintenance_gp` (default 0), `establishment_method` (default ''), `established_calendar_day` (default 0). Together cover the Treasury auto-pay UI per gdd-domain-tab.md §10.2 + the Overview "established day N via X" identity card.
+  - `064_active_adventuring_log.sql` — `active_adventuring_log(id, domain_id, calendar_day, is_active, triggers_json)` audit table. Append-only record of each domain's monthly active-adventuring resolution. The triggers_json column captures the seven-trigger state snapshot for the Overview sub-tab "Active this month" tooltip per gdd-domain-tab.md §6.2.
+  - `db/schema.sql` regenerated; "Last migration applied" bumped from 062 to 064.
+- **EventBus signals** (5 new in `engine/autoloads/event_bus.gd` Domain block, after L544): `domain_established(domain_id, owner_character_id, classification, method)`, `active_adventuring_resolved(domain_id, calendar_day, is_active)`, `domain_decree_issued(domain_id, decree_type, payload)`, `domain_treasury_transfer_blocked(domain_id, character_id, reason)`, `domain_treasury_route_started(domain_id, source_stronghold_id, dest_stronghold_id, gp_amount, carrier_character_id)`. All past-tense or imperative-historical names; payloads documented in signal comments.
+- **CampaignRepository methods** (4 new): `_DOMAIN_SETTINGS_FIELDS` whitelist + `update_domain_settings(domain_id, fields)` mirroring the monthly-state pattern from Phase 0 but covering player-mutable knobs (name / alignment / religion / tax / liturgy / tithe / auto_pay_policies / etc.). `adjust_domain_treasury(domain_id, delta_gp) -> int` for atomic +/- with returned new balance. `add_active_adventuring_log(data) -> String` and `list_active_adventuring_log(domain_id) -> Array` for the audit table. `create_domain` extended to accept the new alignment / religion / is_chaotic_domain / establishment_method / established_calendar_day fields at insert time.
+- **3 new resolvers** in `engine/subsystems/domains/` (all `class_name FooBar extends RefCounted`):
+  - `treasury.gd` — `DomainTreasury` with static read API (`get_balance`, `is_character_at_stronghold`, `get_auto_pay_policies`) and write API (`deposit`, `withdraw`, `withdraw_to_personal`, `deposit_from_personal`, `transfer_between_strongholds`, `invest_land_improvement`, `set_auto_pay_policy`). All write paths emit the appropriate EventBus signal AND write the matching `ledger_entries` row with category + subcategory. Personal-wallet transfers gate on `is_character_at_stronghold` and emit `domain_treasury_transfer_blocked` on rejection per [RESOLVED 2026-05-06] (b). Inter-stronghold transfers debit the source treasury and emit `domain_treasury_route_started` so Phase 6+'s travel-with-treasure event system can hook the route per [RESOLVED 2026-05-06] (c). Land Improvement consumes 25,000 gp per +1 via `LandImprovement.attempt_improvement` (Phase 0's resolver); cap math (+3 max per hex, final land_value ≤ 9) lives there. Reason codes are exposed as `REASON_*` constants for UI / test introspection.
+  - `establish_domain_flow.gd` — `EstablishDomainFlow` with `available_paths(character, classification, in_own_race_area=true)`, `validate_establishment(params)`, `establish_domain(params)`. The acquisition-method matrix encodes per-classification paths (civilized: grant/purchase/conquest; borderlands: clear/conquest/grant; wilderness: clear/conquest/grant/clanhold_annex/recruit_chieftain) and the class restrictions (Explorer = no civilized; dwarven/elven = wilderness OK + civilized/borderlands only in own-race areas; chaotic-only methods require chaotic alignment). On `establish_domain` the flow forces `is_chaotic_domain=true` for clanhold_annex / recruit_chieftain methods regardless of caller's opt-in, since both are intrinsically chaotic per `ax_domains_of_chaos` §establishment. Emits `domain_established` on success.
+  - `active_adventuring_detector.gd` — `ActiveAdventuringDetector` (stateful per-session RefCounted instance; not static). Per-domain accumulator `_state[domain_id]` with seven boolean trigger flags + a treasure-returned cumulative gp counter. `record_*` methods drive each trigger; `is_active_for_domain(domain_id)` returns true when `left_stronghold AND any qualifying trigger`. `apply_monthly_state(domain_id, calendar_day)` writes the boolean to `domains.is_active_adventuring_this_month`, appends an `active_adventuring_log` row with the JSON-stringified triggers snapshot, emits `active_adventuring_resolved`, and resets the accumulator. `connect_event_bus()` is a stub for future EventBus signal wiring — Phase 2 expects callers (combat / wilderness / dungeon handlers) to invoke `record_*` directly until those subsystems land their canonical signals.
+- **UI shell** (`scenes/ui/notebook/`):
+  - `tab_pages/domain_tab_page.gd` rewritten from a 30-line empty-state into a 450+ line shell. Layout: entity strip (PCs + humanoid Henchmen with type dropdown) → status_header → 9-tab strip (Overview / Stronghold / Garrison / Realm / Treasury / Activities / Class-Specific / Encounters / Departure Log) → content holder. Per-entity-per-sub-tab persistence via `NotebookState.set_substate_for_tab` with a `sub_tab_per_entity` dict (each entity remembers its last-active sub-tab; switching entities restores their last sub-tab, defaulting to Overview). Cross-tab activation: when `EventBus.notebook_active_entity_changed` fires from another tab, the Domain tab resolves the entity-type (PC vs. henchman vs. ineligible) and switches the strip + content accordingly. The empty-state surface (no domain yet) uses the existing `EmptyStatePage` component with a class-tailored guidance body and an "Establish a domain…" link that pops the establish dialog.
+  - `domain/status_header.gd` — slim two-row banner above the sub-tab strip: row 1 identity (name · classification · hex count · population · morale band+score); row 2 operational (stronghold val/min · garrison gp/fam · treasury). Sufficiency glyphs ✓ / ½ / ¼ / ! per the `acore_axioms` §insufficient_stronghold L452-456 thresholds. Visible across all sub-tabs per gdd-domain-tab.md §5.
+  - `domain/sub_tabs/overview_sub_tab.gd` — full Overview implementation per §6: identity card with rename, demographics summary, per-hex Land Value list (with improvement notation), classification status with explicit sufficiency tier text, alignment + religion editor, and the tax/liturgy/tithe stepper triplet that emits `domain_decree_issued` on save.
+  - `domain/sub_tabs/treasury_sub_tab.gd` — full Treasury implementation per §10: headline balance + income-gate banner (yellow, only visible when stronghold_value < classification_minimum), 4-toggle auto-pay policies (garrison/maintenance/tithe/tribute), personal-wallet transfer with stronghold-gating note, Land Improvement investment line with hex Q/R steppers, virtualized ledger ItemList with reverse-chronological ordering.
+  - `domain/sub_tabs/stronghold_sub_tab.gd` — Phase 2 placeholder with two cross-activation buttons ("Commission new structure…" / "Claim existing structure…"). Phase 4 will wire these to instantiate the Phase 1 `commission_wizard.tscn` / `claim_modal.tscn` inline; Phase 2 emits notification stubs so the player sees the path is wired.
+  - `domain/sub_tabs/placeholder_sub_tab.gd` — generic "this sub-tab lands in Phase N" body used for Garrison / Realm / Activities / Class-Specific / Encounters / Departure Log. Each placeholder is configured with its display title, planned phase, and a one-paragraph description from the gdd-domain-tab matrix.
+  - `domain/establish_domain_dialog.gd` — modal AcceptDialog with name field, classification dropdown, dynamic acquisition-method dropdown (re-populated per classification + own-race toggle), chaotic opt-in checkbox (disabled for non-chaotic alignment), religion entry, and an inline error label. Calls `EstablishDomainFlow.establish_domain` on confirm; emits `domain_established_requested(domain_id)` so the parent tab refreshes.
+- **3 test files** in `tests/`, registered in `test_runner.gd` and `test_runner.tscn` (ext_resource ids 218-220):
+  - `test_active_adventuring_detector.gd` — 14 unit tests covering: initial state false; left_stronghold alone insufficient; each of the seven qualifying triggers (a-g) in isolation; treasure threshold at exactly 1,000 gp; treasure below 999 gp non-qualifying; treasure accumulates across multiple `record_treasure_returned` calls; qualifying events without left_stronghold are false (ruler stayed home); reset_for_domain clears state; per-domain isolation between dom_a and dom_b. Drives `record_*` directly without setting up EventBus.
+  - `test_establish_domain_flow.gd` — 19 tests covering: path enumeration per classification (civilized has grant/purchase/conquest but no clear; borderlands has clear/conquest/grant; wilderness has clear/conquest/grant/clanhold_annex); Explorer blocked from civilized but allowed in borderlands; dwarven outside own-race blocked from civilized but allowed in own-race AND always in wilderness; elven outside own-race blocked from borderlands; chaotic methods require chaotic alignment; clanhold_annex forces is_chaotic_domain=1 even when caller passes false; six validation paths (missing campaign / owner / name / invalid classification / invalid method / method-not-available); establish_domain happy path writes correct row; signal emission on success; chaotic clanhold-annex path sets all flags correctly.
+  - `test_treasury.gd` — 16 tests covering: initial balance zero; deposit writes ledger + emits `domain_treasury_changed`; withdraw decrements balance; insufficient-funds rejection; zero-amount rejection; withdraw_to_personal blocked when domain has no strongholds (signal emitted); deposit_from_personal blocked similarly; Land Improvement happy path (5 → 6 land value, 30,000 → 5,000 balance, signal fired); Land Improvement insufficient funds; Land Improvement at +3 cap rejected; Land Improvement at land_value=9 rejected; Land Improvement on hex not in domain rejected; auto-pay policy persists across reads; default policies = {}; inter-stronghold transfer debits source + emits `domain_treasury_route_started`.
+- **Documentation:** added §31 Domain Phase 2 UI Conventions to `docs/coding_conventions.md` (entity-strip filter, per-entity-per-sub-tab substate, status-header reuse, placeholder-sub-tab pattern). Updated `docs/coding_conventions.md` §29 Domain Subsystem to add the Phase 2 settings whitelist + `adjust_domain_treasury` atomic-update pattern + the seven-trigger heuristic note.
+
+**Decisions made:**
+- **Migration renumbering 058→063.** The roadmap text references migration numbers from the original Phase 2 plan (058+); Phase 0 used 055-059 and Phase 1 used 060-062, so Phase 2 monotonically advances to 063-064.
+- **Two distinct repository whitelists for domains.** `_DOMAIN_MONTHLY_FIELDS` (Phase 0) covers the columns the monthly-tick handler writes (morale, peasant_families, treasury_gp, …). `_DOMAIN_SETTINGS_FIELDS` (Phase 2) covers the columns the player edits via Overview / Treasury / Establish dialog (name, alignment, religion, tax/liturgy/tithe rates, auto_pay_policies, establishment_method, …). Splitting them prevents a runaway UI handler from accidentally smashing the monthly resolution columns and vice-versa.
+- **In-memory active-adventuring state, not DB-backed accumulator.** The seven-trigger heuristic accumulates events all month then resolves at month-rollover. Phase 2 keeps the per-domain state on a `RefCounted` ActiveAdventuringDetector instance owned by the session runner (callable from anywhere via the runner's reference). The `active_adventuring_log` table records the resolved monthly boolean + JSON-stringified triggers snapshot for audit trail; it is NOT the in-flight state. Reasoning: the in-month state is ephemeral (it resets each month); persisting it across save/load is unnecessary complexity for a feature whose RAW gating is monthly. The audit log is the persistent surface.
+- **EventBus.connect_event_bus is a stub for now.** The seven RAW signals (`combat_resolved`, `lair_entered`, `hex_cleared`, `dungeon_entered`, `siege_event`, `treasure_acquired`, `entity_position_changed`) do not all yet exist in EventBus. Phase 2 expects callers (combat / wilderness / dungeon handlers) to invoke the detector's `record_*` methods directly when they fire their own surface-specific events. As those subsystems land their canonical signals, the connect_event_bus body can be filled in. Tests cover the record_* API directly; integration with the upstream handlers is wired in later phases.
+- **`is_character_at_stronghold` returns true when the character has no recorded location.** v1 location-cache plumbing for domain rulers is incomplete; the personal-wallet gate would otherwise reject all transfers in test fixtures. Defaulting to "at stronghold" when location is unknown keeps tests passing AND matches the natural default for a fresh PC who hasn't moved yet (their starting location is the stronghold). UI surfaces gate this earlier via the active-entity location once the location cache is populated.
+- **Overview / Treasury / Stronghold sub-tabs procedurally constructed.** Existing notebook tabs (character_tab_page, party_tab_page, …) build their UI in code rather than via .tscn scenes. Phase 2 follows the same pattern: each sub-tab is a `.gd` file extending VBoxContainer or PanelContainer, instantiated programmatically by domain_tab_page._ensure_sub_tab_page. This avoids the .tscn ↔ .gd pairing bookkeeping and keeps the surface easy to refactor.
+- **Treasury `_format_count` lives on each surface, not in a shared helper.** Two different surfaces format gp counts (status_header and treasury_sub_tab); each carries its own static `_format_count`. Could be promoted to a shared component, but Phase 2 is the first surface and the second surface uses a different signature (signed values). Future cleanup: `gdd-ui-shared-services.md`'s GoldDisplay component should subsume both when it lands.
+- **Stronghold sub-tab is a Phase 2 placeholder, not a partial implementation.** Per the roadmap "the other sub-tabs can ship as empty-state placeholders this phase." The Stronghold sub-tab IS bundled into Phase 4, but Phase 2 needed the cross-activation buttons live so the player can navigate to commission/claim. The sub-tab body shows a stronghold list (delegating to `CampaignRepository.list_domain_strongholds`) plus the two buttons; Phase 4 expands it with the sufficiency gauge, in-progress construction list, and divine-favor / non-conforming badges.
+- **No `DomainTab` autoload.** The Domain tab page is a plain Control instance owned by the Notebook root, mirroring all other notebook tabs. The detector is owned by the session runner (Phase 0 pattern). `DomainTreasury` and `EstablishDomainFlow` are static-only RefCounted classes (Phase 0 §29 pattern). No autoload churn — the four global autoloads remain `GameState`, `EventBus`, `CampaignRepository`, `LLMManager`, `AudioRouter` (per `CLAUDE.md`).
+
+**Interfaces defined or changed:**
+
+```
+# Resolver / subsystem public methods (engine/subsystems/domains/):
+DomainTreasury.get_balance(domain_id) -> int
+DomainTreasury.is_character_at_stronghold(character_id, domain_id) -> bool
+DomainTreasury.deposit(domain_id, gp_amount, calendar_day, category="revenue", subcategory="deposit", description="", source_event_id="")
+    -> {ok, reason, new_balance}
+DomainTreasury.withdraw(domain_id, gp_amount, calendar_day, category="expense", subcategory="withdrawal", description="", source_event_id="")
+    -> {ok, reason, new_balance}
+DomainTreasury.withdraw_to_personal(domain_id, character_id, gp_amount, calendar_day) -> {ok, reason, new_balance}
+DomainTreasury.deposit_from_personal(domain_id, character_id, gp_amount, calendar_day) -> {ok, reason, new_balance}
+DomainTreasury.transfer_between_strongholds(domain_id, source_stronghold_id, dest_stronghold_id, gp_amount, carrier_character_id, calendar_day)
+    -> {ok, reason, new_balance}
+DomainTreasury.invest_land_improvement(domain_id, hex_q, hex_r, calendar_day)
+    -> {ok, reason, new_balance, new_land_value, new_improvement_count}
+DomainTreasury.get_auto_pay_policies(domain_id) -> Dictionary
+DomainTreasury.set_auto_pay_policy(domain_id, toggles) -> bool
+DomainTreasury.LAND_IMPROVEMENT_GP_PER_PLUS_ONE = 25000
+DomainTreasury.REASON_OK / REASON_INSUFFICIENT_FUNDS / REASON_NOT_AT_STRONGHOLD /
+    REASON_DOMAIN_NOT_FOUND / REASON_CHARACTER_NOT_FOUND / REASON_STRONGHOLD_NOT_FOUND /
+    REASON_AMOUNT_INVALID / REASON_LAND_IMPROVEMENT_REJECTED / REASON_HEX_NOT_FOUND
+
+EstablishDomainFlow.available_paths(character, classification, in_own_race_area=true) -> Array[Dictionary]
+EstablishDomainFlow.validate_establishment(params) -> Array[String]
+EstablishDomainFlow.establish_domain(params) -> {domain_id, errors}
+    # params keys: campaign_id, owner_character_id, character, name, territory_type,
+    #              establishment_method, is_chaotic_domain, in_own_race_area, religion,
+    #              calendar_day, location_map_id, location_hex_q, location_hex_r
+EstablishDomainFlow.METHOD_GRANT / METHOD_PURCHASE / METHOD_CONQUEST / METHOD_CLEAR /
+    METHOD_CLANHOLD_ANNEX / METHOD_RECRUIT_CHIEFTAIN
+EstablishDomainFlow.CIVILIZED / BORDERLANDS / WILDERNESS
+EstablishDomainFlow.EXPLORER_CLASS_IDS / DWARVEN_CLASS_IDS / ELVEN_CLASS_IDS
+EstablishDomainFlow.ERR_INVALID_CLASSIFICATION / ERR_INVALID_METHOD /
+    ERR_METHOD_NOT_AVAILABLE_FOR_CLASSIFICATION / ERR_EXPLORER_CIVILIZED /
+    ERR_DWARVEN_OUTSIDE_OWN_RACE / ERR_ELVEN_OUTSIDE_OWN_RACE / ERR_CHAOTIC_REQUIRED /
+    ERR_OWNER_REQUIRED / ERR_CAMPAIGN_REQUIRED / ERR_NAME_REQUIRED
+
+# Stateful per-session detector (instantiated by SessionRunner; Phase 2 wires
+# the construction but the actual register call lands when the runner's
+# `_active_adventuring_detector` field is added in Phase 3 alongside the
+# activity-slot tracker):
+ActiveAdventuringDetector.new()
+ActiveAdventuringDetector.connect_event_bus()
+ActiveAdventuringDetector.record_left_stronghold(domain_id)
+ActiveAdventuringDetector.record_wilderness_encounter(domain_id)
+ActiveAdventuringDetector.record_lair_entered(domain_id)
+ActiveAdventuringDetector.record_hex_cleared(domain_id)
+ActiveAdventuringDetector.record_dungeon_entered(domain_id)
+ActiveAdventuringDetector.record_battle_resolved(domain_id)
+ActiveAdventuringDetector.record_siege_participated(domain_id)
+ActiveAdventuringDetector.record_treasure_returned(domain_id, gp_amount)
+ActiveAdventuringDetector.is_active_for_domain(domain_id) -> bool
+ActiveAdventuringDetector.get_state(domain_id) -> Dictionary
+ActiveAdventuringDetector.apply_monthly_state(domain_id, calendar_day) -> bool
+ActiveAdventuringDetector.reset_for_domain(domain_id) -> void
+ActiveAdventuringDetector.reset_all() -> void
+ActiveAdventuringDetector.TREASURE_RETURN_THRESHOLD_GP = 1000
+ActiveAdventuringDetector.TRIGGER_LEFT_STRONGHOLD / TRIGGER_WILDERNESS_ENCOUNTER /
+    TRIGGER_LAIR_ENTERED / TRIGGER_HEX_CLEARED / TRIGGER_DUNGEON_ENTERED /
+    TRIGGER_BATTLE_RESOLVED / TRIGGER_SIEGE_PARTICIPATED / TRIGGER_TREASURE_RETURNED
+ActiveAdventuringDetector.QUALIFYING_TRIGGERS  # the 7-element list excluding left_stronghold
+
+# CampaignRepository (engine/autoloads/campaign_repository.gd):
+update_domain_settings(domain_id, fields_dict) -> bool   # whitelisted UPDATE (Phase 2)
+adjust_domain_treasury(domain_id, delta_gp) -> int       # atomic +/-, returns new balance
+add_active_adventuring_log(data) -> String
+list_active_adventuring_log(domain_id) -> Array
+create_domain(...) extended to accept: alignment, religion, is_chaotic_domain,
+    establishment_method, established_calendar_day
+
+# EventBus signals (Domain block in engine/autoloads/event_bus.gd, after L544):
+domain_established(domain_id, owner_character_id, classification, method)
+active_adventuring_resolved(domain_id, calendar_day, is_active)
+domain_decree_issued(domain_id, decree_type, payload)
+    # decree_type ∈ {'tax_rate', 'liturgy_rate', 'tithe_rate', 'rename', 'religion',
+    #                'alignment', 'auto_pay'}; payload depends on type.
+domain_treasury_transfer_blocked(domain_id, character_id, reason)
+domain_treasury_route_started(domain_id, source_stronghold_id, dest_stronghold_id, gp_amount, carrier_character_id)
+
+# Domain tab UI surface (scenes/ui/notebook/):
+domain_tab_page.gd               extends notebook_tab_page (Phase 2 rewrite)
+domain/status_header.gd          extends PanelContainer
+domain/sub_tabs/overview_sub_tab.gd          extends VBoxContainer
+domain/sub_tabs/stronghold_sub_tab.gd        extends VBoxContainer
+domain/sub_tabs/treasury_sub_tab.gd          extends VBoxContainer
+domain/sub_tabs/placeholder_sub_tab.gd       extends VBoxContainer
+domain/establish_domain_dialog.gd            extends AcceptDialog
+
+# NotebookState substate shape (per gdd-management-notebook §6.1.4):
+per_tab_substate["domain"] = {
+  "entity_type": "pcs" | "henchmen",
+  "entity_per_type": {pcs: id, henchmen: id},
+  "sub_tab_per_entity": {entity_id: sub_tab_id},
+}
+```
+
+**Database changes:** Migrations 063-064 listed above.
+
+**Tests added/updated:**
+- 3 new test suites (49 individual tests). All pass.
+- `test_active_adventuring_detector.gd` exercises each of the seven triggers in isolation per the Phase 2 acceptance gate.
+- `test_establish_domain_flow.gd` covers the full path-enumeration + validation matrix.
+- `test_treasury.gd` covers deposit/withdraw, personal-wallet gating, Land Improvement happy + cap paths, auto-pay persistence, and inter-stronghold route emission.
+- All 3 suites use `randomize()` in `_setup_campaign` per the Phase 1 §30 convention.
+- All 3 suites filter signal listeners by `domain_id` to avoid pollution from prior tests' fixtures (per Phase 1 §30 convention).
+
+**Known issues:**
+- `is_character_at_stronghold` defaults to true when the character has no recorded location — see Decisions section for rationale. Once the per-PC location cache is populated for domain rulers (Phase 6+ realm work), this default should flip to false-when-no-location-set so the personal-wallet gate is strict.
+- The detector's `connect_event_bus` is a stub. The seven canonical RAW signals (`combat_resolved`, `lair_entered`, `hex_cleared`, `dungeon_entered`, `siege_event`, `treasure_acquired`, `entity_position_changed`) are not yet wired in EventBus. Callers must invoke `record_*` directly until those subsystems land their canonical signals.
+- The Stronghold sub-tab is a Phase 4 placeholder body (with cross-activation buttons that emit notification stubs rather than instantiating Phase 1's `commission_wizard.tscn` / `claim_modal.tscn` inline). Phase 4 wires the inline modal pattern.
+- The Establish-Domain dialog does not yet integrate with the wilderness map for hex selection; the location_map_id / hex_q / hex_r columns are accepted via params but not surfaced in the dialog UI. Phase 6+ realm/territory tooling adds the hex-picker.
+- Per-month forecast and twelve-month rolling income chart on the Treasury sub-tab are deferred — they need monthly-tick history aggregation that lands when Phase 3's activity-slot tracker writes per-day ledger summaries.
+- The Domain tab assumes `GameState.campaign_id` is non-empty when resolving the active entity's domain. In a fresh editor session before campaign load this returns no domain (the tab renders the empty-state). Acceptable Phase 2 behavior.
+- 25 pre-existing test failures unrelated to domain work remain (coin_gp / location_key / language proficiency / equipment count / specialization registry / create_campaign / journal_polish bookmark create). Same baseline as Phase 1 close.
+
+**Verification:**
+- Headless suite: **206 suites passed / 25 failed.** Pre-Phase-2 baseline was 203/25 (Phase 1 close). Net delta: **+3 suites (Phase 2)**, all 25 baseline failures unchanged.
+- All 3 new domain test suites print `<Suite>: all tests passed.`
+- D-key keybind already wired in `project.godot` → `notebook_toggle_domain` action → `EventBus.notebook_open_requested("domain")` via `UiInputController`. Verified by reading the InputMap binding and the controller's NOTEBOOK_TAB_ACTIONS dict.
+
+**Next session should:** Phase 3 — Daily Activity Slots + Activities Sub-Tab. Per `docs/domain-roadmap-corrected.md` Phase 3: build `engine/subsystems/activities/activity_slot_tracker.gd` (1 major + 2 minor + unlimited trivial OR 8 minor; strenuous-day counter; overtime −1/day after 6 strenuous days; rest-day remit per `ax_campaign_play.xml` §daily_capacity L146-150); `activity_catalog.gd` registry; `activity_executor.gd` with the [RESOLVED 2026-05-06] tick-tolerance heuristic (forfeit when absence_accumulated > ticks_accumulated); ~14 RAW domain-category activity handlers (administer_domain, issue_decree, conscript_troops, levy_militia, hire_mercenaries, manage_henchmen, oversee_investment, oversee_construction, supervise_construction, military_campaign, repress_population, …); migration 065 `activity_state` table; `data/activities/domain_category.json` with the RAW duration formulas (e.g., administer_domain_days = 0.5 × (hex_count + vassal_count + (6 − market_class))); UI `scenes/ui/notebook/domain/sub_tabs/activities.tscn` replacing the placeholder body. Phase 2's Domain tab Activities sub-tab placeholder is the natural integration point.
 

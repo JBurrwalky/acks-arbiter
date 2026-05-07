@@ -543,6 +543,34 @@ signal stronghold_claimed(stronghold_id: String, source: String, gp_value: int)
 ## the destruction event type (Phase 8 sieges fire this).
 signal stronghold_destroyed(stronghold_id: String, cause: String)
 
+## A new domain was established by a PC or henchman ruler (Domain Phase 2).
+## [param method] is one of 'grant' / 'purchase' / 'conquest' / 'clear' /
+## 'clanhold_annex' / 'recruit_chieftain' per `acore_axioms_strongholds_and_domains.xml`
+## §domain_acquisition + `ax_domains_of_chaos.xml` §establishment.
+signal domain_established(domain_id: String, owner_character_id: String, classification: String, method: String)
+
+## A domain's monthly active-adventuring state was resolved per the project's
+## seven-trigger heuristic (gdd-domain-tab.md §6.2). Fired at the start-of-month
+## tick after the detector applies its accumulated state.
+signal active_adventuring_resolved(domain_id: String, calendar_day: int, is_active: bool)
+
+## A ruler issued a domain decree (tax / liturgy / tithe rate change, grant
+## favor, etc.). [param decree_type] ∈ {'tax_rate', 'liturgy_rate',
+## 'tithe_rate', 'rename', 'religion', 'alignment', 'auto_pay'}.
+## [param payload] keys depend on decree_type (e.g., {old: int, new: int}).
+signal domain_decree_issued(domain_id: String, decree_type: String, payload: Dictionary)
+
+## A treasury withdraw-to-personal or deposit-from-personal transfer was
+## requested but blocked because the active character is not at one of the
+## domain's strongholds. UI consumes this to surface the wrong-location tooltip
+## per gdd-domain-tab.md §10.2 manual transfers.
+signal domain_treasury_transfer_blocked(domain_id: String, character_id: String, reason: String)
+
+## Inter-stronghold treasury transfer initiated (Domain Phase 2). Phase 6+
+## wires the actual travel-with-treasure event; Phase 2 emits the signal so
+## the future encounter system can hook the route.
+signal domain_treasury_route_started(domain_id: String, source_stronghold_id: String, dest_stronghold_id: String, gp_amount: int, carrier_character_id: String)
+
 
 # ---------------------------------------------------------------------------
 # Magic signals

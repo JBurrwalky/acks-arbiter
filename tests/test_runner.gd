@@ -236,6 +236,9 @@ extends Node
 @onready var _claiming_resolver_tests = $ClaimingResolverTests
 @onready var _stronghold_repository_sufficiency_tests = $StrongholdRepositorySufficiencyTests
 @onready var _stronghold_phase_1_integration_tests = $StrongholdPhase1IntegrationTests
+@onready var _active_adventuring_detector_tests = $ActiveAdventuringDetectorTests
+@onready var _establish_domain_flow_tests = $EstablishDomainFlowTests
+@onready var _treasury_tests = $TreasuryTests
 
 
 func _ready() -> void:
@@ -452,7 +455,10 @@ func run() -> void:
 			_commission_pipeline_tests,
 			_claiming_resolver_tests,
 			_stronghold_repository_sufficiency_tests,
-			_stronghold_phase_1_integration_tests]:
+			_stronghold_phase_1_integration_tests,
+			_active_adventuring_detector_tests,
+			_establish_domain_flow_tests,
+			_treasury_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1
@@ -465,9 +471,7 @@ func run() -> void:
 
 	print("=== TEST RESULTS: %d suites passed, %d failed ===" % [passed, failed])
 
-	if OS.has_feature("standalone"):
-		# Headless mode — exit with appropriate code for CI
-		get_tree().quit(1 if failed > 0 else 0)
+	get_tree().quit(1 if failed > 0 else 0)
 
 
 ## Calls run_all_tests() on [param suite] and returns true if no checks failed.

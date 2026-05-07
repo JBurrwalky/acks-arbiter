@@ -45,6 +45,12 @@ const COLUMN_WIDTH := 64
 const TAB_HEIGHT := 120
 const TAB_LABEL_FONT_SIZE := 14
 
+## Label color for inactive tabs (off-white, readable against the dark leather
+## binding background SBF_notebook_tab_inactive).
+const INACTIVE_LABEL_COLOR := Color(0.95, 0.92, 0.84, 1.0)
+## Label color for the active tab (dark ink on the vellum page background).
+const ACTIVE_LABEL_COLOR := Color(0.09, 0.06, 0.03, 1.0)
+
 
 # ---------------------------------------------------------------------------
 # Fields
@@ -151,6 +157,12 @@ func _make_tab_button(tab_id: String, label_text: String) -> Button:
 
 func _apply_tab_style(btn: Button, is_active: bool) -> void:
 	btn.theme_type_variation = "NotebookActiveTab" if is_active else "NotebookInactiveTab"
+	for child in btn.get_children():
+		if child is Label:
+			child.add_theme_color_override(
+				"font_color",
+				ACTIVE_LABEL_COLOR if is_active else INACTIVE_LABEL_COLOR,
+			)
 
 
 # ---------------------------------------------------------------------------
