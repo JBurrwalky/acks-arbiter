@@ -66,6 +66,24 @@ var _spell_handlers: SpellHandlers = null
 ## (Domain Phase 1, 2026-05-06). Daily granularity is required by the PDF
 ## "1 day per 500 gp" rule.
 var _commission_pipeline: CommissionPipeline = null
+## Global SiegeHandlers — registers siege_daily_tick / siege_weekly_tick /
+## siege_simplified_concluded handlers (Phase 9B, 2026-05-09). Sieges may
+## continue across travel/dungeon/settlement state transitions; the registry
+## entries survive any state change.
+var _siege_handlers: SiegeHandlers = null
+## Global ActivityCatalog + ActivityTimeCostExecutor + StrenuousAccountant
+## (Domain Phase 3, 2026-05-07). Owns activity_complete and
+## ongoing_session_complete handlers per gdd-realtime-scheduler.md §4.8.
+var _activity_catalog: ActivityCatalog = null
+var _activity_handler_registry: ActivityHandlerRegistry = null
+var _activity_executor: ActivityTimeCostExecutor = null
+var _strenuous_accountant: StrenuousAccountant = null
+## Global FollowerArrivalResolver (Domain Phase 5, 2026-05-07). Subscribes to
+## EventBus.stronghold_construction_progressed for halfway / completed
+## milestones; registers a `follower_post_completion_arrival` scheduler event
+## for wave 3 (one game-month after completion) per acore_axioms
+## §followers_arrival L111-116.
+var _follower_arrival_resolver: FollowerArrivalResolver = null
 var _entity_outliner: EntityOutliner = null
 
 ## State keys where the scheduler loop should tick.
@@ -448,6 +466,17 @@ func get_scheduler_loop() -> SchedulerLoop:
 	return _scheduler_loop
 
 
+## Activity Time-Cost Executor (Domain Phase 3). UI launchers (Decrees & Remote
+## Orders sub-tab, Settlement HiringPanel, etc.) use this to schedule RAW
+## activities through the canonical ScheduledEvent pipeline.
+func get_activity_executor() -> ActivityTimeCostExecutor:
+	return _activity_executor
+
+
+func get_activity_catalog() -> ActivityCatalog:
+	return _activity_catalog
+
+
 ## Returns the location key for a character by delegating to the current state.
 ## Falls back to GameState.current_location_key for overlay states that return "unknown".
 func get_location_key_for_character(character_id: String) -> String:
@@ -582,6 +611,64 @@ func load_session(campaign_id: String, party_id: String) -> void:
 	if not has_construction_tick:
 		_commission_pipeline.seed_construction_tick(_scheduler, party_id)
 
+	# 7d-2. Register siege handlers (Phase 9B, 2026-05-09). Owns
+	#       siege_daily_tick / siege_weekly_tick / siege_simplified_concluded.
+	#       Tick events are seeded by SiegeResolver.start_full_siege /
+	#       SiegeResolverSimplified.start_simplified_siege when a siege begins.
+	if _siege_handlers != null:
+		_siege_handlers.unregister(_handler_registry)
+		_siege_handlers = null
+	_siege_handlers = SiegeHandlers.new(self)
+	_siege_handlers.register(_handler_registry)
+
+	# Phase 9C polish 2026-05-09: reconcile disease cure ticks on session load.
+	# When a campaign is loaded mid-disease, troop_units rows have is_diseased=1
+	# but the disease_cure_weekly_tick events live only in-memory on the
+	# scheduler. Re-seed one tick per army with diseased units (idempotent
+	# via _schedule_cure_tick_if_absent's get_events_for_owner check).
+	var _today_date: Dictionary = Timekeeping.get_date()
+	var _today_day: int = int(_today_date.get("year", 0)) * Timekeeping.DAYS_PER_YEAR \
+		+ int(_today_date.get("month", 0)) * Timekeeping.DAYS_PER_MONTH \
+		+ int(_today_date.get("day", 0))
+	DiseaseResolver.reconcile_cure_ticks_on_session_load(_scheduler, _today_day)
+
+	# 7e. Register activity executor + strenuous accountant (Domain Phase 3,
+	#     2026-05-07). Owns "activity_complete" and "ongoing_session_complete"
+	#     event handlers per gdd-realtime-scheduler.md §4.8. The registry is
+	#     populated with all 16 RAW domain-category handlers (Phase 5/9 will
+	#     add troops / faith / magical / mercantile / syndicate categories).
+	if _activity_executor != null:
+		_activity_executor.unregister(_handler_registry)
+		_activity_executor = null
+	if _strenuous_accountant != null:
+		_strenuous_accountant.unsubscribe()
+		_strenuous_accountant = null
+	_activity_catalog = ActivityCatalog.new()
+	_activity_handler_registry = ActivityHandlerRegistry.new()
+	DomainActivityHandlersRegistration.register_all(_activity_handler_registry)
+	# Phase 10A.2: faith-category activity handlers (8 divine activities).
+	FaithActivityHandlersRegistration.register_all(_activity_handler_registry)
+	# Phase 10A.3: bardic-category activity handlers (solicit_followers).
+	BardicActivityHandlersRegistration.register_all(_activity_handler_registry)
+	# Phase 10B.1a: magical_research-category handlers (shell — no handlers in
+	# 10B.1a; populated in 10B.1b-f).
+	MagicalResearchActivityHandlersRegistration.register_all(_activity_handler_registry)
+	_activity_executor = ActivityTimeCostExecutor.new(
+		self, _activity_catalog, _activity_handler_registry)
+	_activity_executor.register(_handler_registry)
+	_strenuous_accountant = StrenuousAccountant.new(self, _activity_catalog)
+	_strenuous_accountant.subscribe()
+
+	# 7f. Register FollowerArrivalResolver (Domain Phase 5, 2026-05-07).
+	#     Listens for halfway / completed stronghold milestones to spawn
+	#     class-attracted follower troop_units; schedules wave 3 via the
+	#     scheduler for the post-completion-month arrival.
+	if _follower_arrival_resolver != null:
+		_follower_arrival_resolver.unsubscribe()
+		_follower_arrival_resolver = null
+	_follower_arrival_resolver = FollowerArrivalResolver.new()
+	_follower_arrival_resolver.setup(_scheduler, _handler_registry)
+
 	# 8. Create the entity outliner and give it the scheduler reference.
 	if _entity_outliner == null:
 		_entity_outliner = EntityOutliner.new()
@@ -647,6 +734,20 @@ func end_session() -> void:
 	if _commission_pipeline != null:
 		_commission_pipeline.unregister(_handler_registry)
 		_commission_pipeline = null
+	if _siege_handlers != null:
+		_siege_handlers.unregister(_handler_registry)
+		_siege_handlers = null
+	if _activity_executor != null:
+		_activity_executor.unregister(_handler_registry)
+		_activity_executor = null
+	if _strenuous_accountant != null:
+		_strenuous_accountant.unsubscribe()
+		_strenuous_accountant = null
+	if _follower_arrival_resolver != null:
+		_follower_arrival_resolver.unsubscribe()
+		_follower_arrival_resolver = null
+	_activity_catalog = null
+	_activity_handler_registry = null
 	if _entity_outliner != null:
 		_entity_outliner.visible = false
 	_scheduler.clear()

@@ -1,0 +1,172 @@
+{
+  "_doc": [
+    "Per-class follower attractor tables. At 9th level, a PC's stronghold",
+    "begins attracting class-specific followers per acore_axioms_strongholds_and_domains.xml",
+    "§followers_arrival L111-116 (half rounded up at half-built; quarter rounded up",
+    "at completion; remainder during the first month after completion).",
+    "Counts are extracted verbatim from the class XML §stronghold_and_followers blocks.",
+    "Each entry's `unit_template_id` references data/troops/unit_templates.json — the",
+    "follower wave is materialized as one or more troop_units rows of that template.",
+    "0th-level / apprentice / leader entries are followers of the named-class type per",
+    "pc_followers_tables_rules.xml §general_rules; v1 lumps them into the soldier-",
+    "tier mercenary equivalents until the equipment-table roll subsystem lands.",
+    "race='matches_ruler' means the follower race matches the ruling character's race",
+    "per acore_axioms §peasants_and_followers L107 (\"Families are of the same race",
+    "as the adventurer\")."
+  ],
+  "_version": 1,
+  "tables": {
+    "fighter": {
+      "structure_type": "castle",
+      "unlock_level": 9,
+      "raw_citation": "acore_core_classes.xml §fighter.stronghold_and_followers",
+      "soldier_attractor": {
+        "die": "1d4+1",
+        "multiplier": 100,
+        "label": "0th-level mercenaries",
+        "unit_template_id": "human_heavy_infantry_a",
+        "tier": "average",
+        "equipment_kit": "pole arm, sword, shield, banded plate"
+      },
+      "lieutenants": {
+        "die": "1d6",
+        "multiplier": 1,
+        "label": "1st-3rd level fighters",
+        "as_henchmen": true
+      },
+      "wages_required": true,
+      "morale_bonus": 0
+    },
+    "cleric": {
+      "structure_type": "fortified_church",
+      "unlock_level": 9,
+      "raw_citation": "acore_core_classes.xml §cleric.stronghold_and_followers",
+      "soldier_attractor": {
+        "die": "5d6",
+        "multiplier": 10,
+        "label": "0-level soldiers (faithful)",
+        "unit_template_id": "human_heavy_infantry_a",
+        "tier": "average",
+        "equipment_kit": "pole arm, sword, shield, banded plate (faithful)"
+      },
+      "lieutenants": {
+        "die": "1d6",
+        "multiplier": 1,
+        "label": "1st-3rd level clerics (same religion)",
+        "as_henchmen": true
+      },
+      "wages_required": false,
+      "morale_bonus": 4,
+      "morale_note": "Faithful never check morale per acore §cleric L1318"
+    },
+    "mage": {
+      "structure_type": "sanctum",
+      "unlock_level": 9,
+      "raw_citation": "acore_core_classes.xml §mage.stronghold_and_followers",
+      "soldier_attractor": null,
+      "apprentices": {
+        "die": "1d6",
+        "multiplier": 1,
+        "label": "1st-3rd level apprentices",
+        "as_henchmen": true
+      },
+      "seekers": {
+        "die": "2d6",
+        "multiplier": 1,
+        "label": "Normal men seeking to become mages",
+        "as_henchmen": true,
+        "discouragement_die": "1d6 months"
+      },
+      "wages_required": false
+    },
+    "thief": {
+      "structure_type": "hideout",
+      "unlock_level": 9,
+      "raw_citation": "acore_core_classes.xml §thief.stronghold_and_followers",
+      "soldier_attractor": null,
+      "apprentices": {
+        "die": "2d6",
+        "multiplier": 1,
+        "label": "1st-level thief apprentices",
+        "as_henchmen": true
+      },
+      "wages_required": true,
+      "morale_bonus": 0
+    },
+    "bladedancer": {
+      "structure_type": "temple",
+      "unlock_level": 9,
+      "raw_citation": "acore_campaign_classes.xml §bladedancer.stronghold_and_followers",
+      "soldier_attractor": {
+        "die": "5d6",
+        "multiplier": 10,
+        "label": "0-level soldiers (faithful)",
+        "unit_template_id": "human_heavy_infantry_a",
+        "tier": "average",
+        "equipment_kit": "pole arm, sword, shield, banded plate (faithful)"
+      },
+      "lieutenants": {
+        "die": "1d6",
+        "multiplier": 1,
+        "label": "1st-3rd level bladedancers",
+        "as_henchmen": true
+      },
+      "wages_required": false,
+      "morale_bonus": 4
+    },
+    "bard": {
+      "structure_type": "stronghold",
+      "unlock_level": 9,
+      "raw_citation": "acore_campaign_classes.xml §bard.stronghold_and_followers",
+      "soldier_attractor": {
+        "die": "1d4+1",
+        "multiplier": 10,
+        "label": "0th-level mercenaries",
+        "unit_template_id": "human_light_infantry_a",
+        "tier": "average",
+        "equipment_kit": "spear, dagger, leather, shield"
+      },
+      "lieutenants": {
+        "die": "1d6",
+        "multiplier": 1,
+        "label": "1st-3rd level bards",
+        "as_henchmen": true
+      },
+      "wages_required": true
+    },
+    "explorer": {
+      "structure_type": "fortified_outpost",
+      "unlock_level": 9,
+      "raw_citation": "acore_campaign_classes.xml §explorer.stronghold_and_followers",
+      "soldier_attractor": {
+        "die": "1d4+1",
+        "multiplier": 10,
+        "label": "0th-level mercenaries",
+        "unit_template_id": "human_light_cavalry_a",
+        "tier": "average",
+        "equipment_kit": "3 javelins, sword, shield, leather, light warhorse"
+      },
+      "lieutenants": {
+        "die": "1d6",
+        "multiplier": 1,
+        "label": "1st-3rd level explorers",
+        "as_henchmen": true
+      },
+      "wages_required": true
+    },
+    "assassin": {
+      "structure_type": "hideout",
+      "unlock_level": 9,
+      "raw_citation": "acore_campaign_classes.xml §assassin.stronghold_and_followers",
+      "soldier_attractor": null,
+      "apprentices": {
+        "die": "2d6",
+        "multiplier": 1,
+        "label": "1st-level assassin apprentices",
+        "as_henchmen": true,
+        "infiltrator_note": "At least one is an infiltrator from local rivals."
+      },
+      "wages_required": true
+    }
+  }
+}

@@ -77,7 +77,7 @@ The Domain tab is the canonical surface for managing the player's territorial an
 
 **Non-goals:**
 
-- The Domain tab does NOT redefine any ACKS rule. Every domain-mechanical claim cites a specific XML file in `rules/`. Project-designed elements (sub-tab structure, activity-execution model, empty-state copy, the Nobiran Wonderworker stronghold rules per Q5) are explicitly tagged "Arbiter-specific design" in their respective sections.
+- The Domain tab does NOT redefine any ACKS rule. Every domain-mechanical claim cites a specific XML file in `rules/`. Project-designed elements (sub-tab structure, activity-execution model, empty-state copy, the Lightblessed Wonderworker stronghold rules per Q5) are explicitly tagged "Arbiter-specific design" in their respective sections.
 - The Domain tab does NOT host the stronghold construction commission pipeline. That is owned by `gdd-stronghold-construction.md` §5. The Domain tab's Stronghold sub-tab includes a "Commission new structure" button that cross-activates the construction commission flow.
 - The Domain tab does NOT host the DaW mass-combat tactical resolution surface. The future combat-tactical surface owns that. The Domain tab feeds units INTO it via the Garrison sub-tab and consumes outcomes back via Encounters & Threats and Treasury & Ledger.
 - The Domain tab does NOT auto-resolve any monthly cycle activity without player consent. Monthly resolution is a scheduled scheduler-tick event; the player may pre-set automatic policies (e.g., "always pay garrison from treasury on payday") but the engine never silently makes domain-affecting decisions for the player. Pre-set policies are explicit, visible in the Treasury & Ledger sub-tab, and toggleable per monthly resolution.
@@ -167,7 +167,7 @@ The Domain tab has nine sub-tabs (TabBar at the top of the content area, below t
 4. **Realm** — vassal domain list, tribute flows in/out, favors/duties tracker (per `acore_axioms_strongholds_and_domains.xml` §favors_and_duties), realm aggregates, current title display, tribute efficiency calculator
 5. **Treasury & Ledger** — monthly revenue and expense detail, unpaid-expenses alerts, last-12-months income history, monthly auto-pay policies, gp accumulators (e.g., construction commitments, investments)
 6. **Activities** — universal and proficiency-gated domain category activities per `ax_campaign_play.xml` §domain (administer_domain, issue_decree, conscript_troops, levy_militia, hire_mercenaries, manage_henchmen, oversee_investment, oversee_construction, supervise_construction, military_campaign, etc.). Class-specific domain activities are NOT surfaced here — they live in §12.
-7. **Class-Specific** (label varies by class — e.g., "Faith" for divine casters, "Magical Research" for arcane casters, "Trade" for venturers, "Syndicate" for thief/assassin/nightblade, "Garrison Training" for fighter-progression classes) — class-conditional content surfacing only the high-level activities that are gated to the active entity's class. A class with multiple applicable buckets (e.g., Bladedancer = divine + fighter-progression; Nobiran Wonderworker = divine + arcane) sees stacked content blocks within this single sub-tab. The sub-tab does NOT appear at all if the active entity's class has no class-specific high-level activities (e.g., a base 0th-level commoner would not see this sub-tab — though commoners do not rule domains).
+7. **Class-Specific** (label varies by class — e.g., "Faith" for divine casters, "Magical Research" for arcane casters, "Trade" for venturers, "Syndicate" for thief/assassin/nightblade, "Garrison Training" for fighter-progression classes, "Bardic Patronage" for bards) — class-conditional content surfacing only the high-level activities that are gated to the active entity's class. A class with multiple applicable buckets (e.g., Bladedancer = divine + fighter-progression; Lightblessed Wonderworker = arcane + divine) sees stacked content blocks within this single sub-tab. The sub-tab does NOT appear at all if the active entity's class has no class-specific high-level activities (e.g., a base 0th-level commoner would not see this sub-tab — though commoners do not rule domains).
 8. **Encounters & Threats** — domain encounter log per `ax_domain_level_encounters.xml`, dungeon-monster morale impact (per §dungeons), dangerous-borders configuration, bandit alerts (when current morale ≤ −2), siege state when applicable per `daw_sieges.xml`, invasion / occupation / pillage status
 9. **Departure Log** — chronological history of the domain's significant events of loss: classification regression, lost holdings, defeats, abandonment, ruler change, conquest by another power. Permanent record analogous to the Henchmen tab Departure Log
 
@@ -185,13 +185,15 @@ On first activation of the Domain tab for a given entity in a session, the Overv
 
 The Class-Specific sub-tab (strip position 7) appears for active entities whose class has at least one applicable bucket from the matrix in §12.1. The buckets are:
 
-- **Faith** — divine casters (Cleric / Bladedancer / Priestess / Shaman / Nobiran Wonderworker)
-- **Magical Research** — arcane casters (Mage / Warlock / Witch / Elven Enchanter / Nobiran Wonderworker)
-- **Trade** — Venturer
-- **Syndicate** — Thief / Assassin / Elven Nightblade
-- **Garrison Training** — Fighter-progression classes who unlock `oversee_troop_training` per `ax_campaign_play.xml` §domain (Fighter / Paladin / Anti-Paladin / Vaultguard / Spellsword / Bladedancer / Barbarian / Explorer / Ruinguard / Dwarven Fury / Dwarven Delver / Elven Ranger — fighter_progression tag in `<role_tags>` plus level 5+). **Plus Bard per O-D3** (project-designed treatment: Bards play domain-tier as Fighter does, gaining the Garrison Training block; Bards lack the fighter_progression tag in RAW but the Arbiter applies the equivalent capability)
+- **Faith** — divine casters (Cleric / Priestess / Shaman / Dwarven Craftpriest / Witch / Bladedancer / Lightblessed Wonderworker). Detection: class_powers contains `divine_casting` OR `spell_research_and_minor_item_creation`.
+- **Magical Research** — arcane casters AND divine casters with full research (Mage / Warlock / Elven Courtier / Elven Enchanter / Elven Spellsword / Elven Nightblade / Darkblood Ruinguard / Lightblessed Wonderworker / Cleric / Priestess / Shaman / Dwarven Craftpriest / Witch). Detection: class_powers contains `arcane_casting` OR `arcane_casting_in_armor` OR `spell_research`. Per Q11 [RESOLVED 2026-05-10].
+- **Trade** — Venturer. Detection: class_powers contains `stronghold_guildhouse`.
+- **Syndicate** — Thief / Assassin / Elven Nightblade (RAW class-id allowlist matching `acore-campaign-hijinks.xml` §hijinks-eligibility per Q14 [RESOLVED 2026-05-11]). Bards explicitly excluded by RAW. Detection: class_id in `{thief, assassin, elven_nightblade}`.
+- **Bardic Patronage** — Bard only (per Q14 [RESOLVED 2026-05-11]). Surfaces the two Bard-specific class powers: Chronicles of Battle aura (`hireling_inspiration` L5+) and Solicit Followers (`hall` L9+). Detection: class_id == "bard".
 
-A class falling into multiple buckets (e.g., Bladedancer = Faith + Garrison Training; Nobiran Wonderworker = Faith + Magical Research) sees stacked content blocks within the single Class-Specific sub-tab. The sub-tab label takes the form *"Class Activities"* generically, OR is dynamically labeled per primary bucket if only one applies (e.g., a pure Mage's tab is labeled "Magical Research"; a Bladedancer's tab is labeled "Class Activities" because it has Faith + Garrison Training stacked).
+**Per Q14 [RESOLVED 2026-05-11], the prior "Garrison Training" bucket is REMOVED.** Troop training (`train_troops`, `oversee_troop_training`, `inspect_troops`) is proficiency-gated on **Manual of Arms** (per ACKS Core proficiency list; ranks 1-2 enable light/heavy infantry, combined with Riding enables light/heavy cavalry, combined with Weapon Focus (bows & crossbows) enables crossbowmen / bowmen / longbowmen, all together enables horse archers / cataphract cavalry) or an equivalent class power, NOT on class membership. Many classes — including Cleric and Bladedancer — can take Manual of Arms and train troops. These activities now surface in the **Garrison sub-tab (§8)** with proficiency-based eligibility checks. Fighter-flavored classes that previously appeared under Garrison Training (Fighter, Paladin, Anti-Paladin, Barbarian, Explorer, Vaultguard, Delver, Fury, Elven Ranger) have NO Class-Specific bucket — the tab is hidden for them entirely (they manage troops via the Garrison sub-tab).
+
+A class falling into multiple buckets (e.g., Cleric = Faith + Magical Research; Lightblessed Wonderworker = Faith + Magical Research) sees stacked content blocks within the single Class-Specific sub-tab. The sub-tab label takes the form *"Class Activities"* generically, OR is dynamically labeled per primary bucket if only one applies (e.g., a pure Mage's tab is labeled "Magical Research"; a Cleric's tab is labeled "Class Activities" because it has Faith + Magical Research stacked; a Bard's tab is labeled "Bardic Patronage").
 
 Rendering details per §12.
 
@@ -434,11 +436,29 @@ The Garrison sub-tab is a per-domain view of the troop units assigned to defend 
 6. **Hire mercenaries** — `ax_campaign_play.xml` §hire_mercenaries activity. Cross-activation to the Settlement Panel's HiringPanel (which lives in `gdd-settlement-exploration-ui.md`) per the established cross-surface pattern. Dispatched as `hire_mercenaries` via the activity time-cost executor per `gdd-realtime-scheduler.md` §4.8; vagaries-of-recruitment roll triggered per RAW on session completion
 7. **Mercenary officer assignments** — per `daw_campaigns_troop_tables_summary.xml`, Lieutenants / Captains / Colonels / Generals are separately-hired specialists. The Garrison sub-tab surfaces officer-to-unit assignments inline so the player can see which units have officers and their rank. Cross-activation to the Troops tab handles officer-management details
 
-### 8.2 Class-conditional content
+### 8.2 Troop training (proficiency-gated, per Q14 [RESOLVED 2026-05-11])
 
-- **Fighter-progression classes** (Fighter / Paladin / Anti-Paladin / Vaultguard / Spellsword / Bladedancer / Barbarian / Explorer / Ruinguard / Dwarven Fury): an extra "Train troops" sub-section per `ax_campaign_play.xml` §oversee_troop_training. Surfaced as a button: "Oversee training of {Unit}" with the level-5+ + ruling-a-domain gate, +1 permanent morale bonus to overseen troops, veteran-promotion if ruler also trains
-- **Cleric / Bladedancer / Priestess / Shaman**: faithful-follower count is highlighted in the composition list with a special "Faithful (no wages)" badge. The +4 morale and complete loyalty per `acore_core_classes.xml` §Cleric `<loyalty_or_morale_rules>` is surfaced inline
-- **Dwarven classes**: composition list flags "Dwarven soldiers" status — per `acore_demihuman_classes.xml` §Vaultguard `<loyalty_or_morale_rules>`: *"The character is expected to employ only soldiers of dwarven descent. Members of other races may be hired for non-soldier tasks."* Non-dwarven soldier units show a warning indicator; non-dwarven non-soldier hirelings are fine
+Per Q14 [RESOLVED 2026-05-11], troop training is **proficiency-gated**, not class-gated. Manual of Arms (with combinable Riding and Weapon Focus enabling different troop types) is the canonical mechanism. Any class can take the Manual of Arms proficiency — Fighter is the most common but Clerics, Bladedancers, and other non-fighter-progression characters may have it too. An equivalent class power also satisfies the gate (see §8.2.1).
+
+A **"Training" sub-section** appears in the Garrison sub-tab body when the active entity has Manual of Arms proficiency (rank 1+) or an equivalent class power. The sub-section contains:
+
+- **Training queue** — list of in-progress / pending troop-training projects. Each entry shows: unit name, troop type being trained (light infantry / heavy infantry / light cavalry / heavy cavalry / crossbowmen / bowmen / longbowmen / horse archers / cataphract cavalry), training-time-remaining, eligibility-check result (proficiency rank + companion proficiencies vs. troop-type requirements per Manual of Arms RAW).
+- **Training activity launchers** (each gated on proficiency/eligibility):
+  - **Train troops** (`train_troops` activity per `ax_campaign_play.xml`) — major ongoing. Eligibility: Manual of Arms proficiency rank 1+ (light infantry; 1 month / 30gp per month earnings) or rank 2 (heavy infantry; 1 month / 60gp per month). Combinable: rank 1 + Riding = light cavalry (3 months); rank 1 + Weapon Focus (bows & crossbows) = crossbowmen (1 month) / bowmen (2 months) / longbowmen (3 months); rank 1 + Riding + Weapon Focus = horse archers (6 months); rank 2 + Riding = heavy cavalry (6 months); rank 2 + Riding + Weapon Focus = cataphract cavalry (12 months). Maximum 60 soldiers per training period.
+  - **Oversee troop training** (`oversee_troop_training` activity) — minor ongoing. The activity's RAW eligibility text reads *"Fighter or other character using fighter attack progression, level 5+, who rules a domain"* but per Q14 the principle is broader: the activity surfaces here for the ruler of the domain (the noble-overseer angle, not the trainer). Provides +1 permanent morale bonus to overseen troops on completion.
+  - **Inspect troops** (`inspect_troops` activity) — minor singular. Available to the ruler of the domain. Provides +1 morale on the next combat roll.
+- **Eligibility readouts** — per-troop-type table showing which troop types the active entity is currently authorized to train (based on their proficiency rank + companion proficiencies + any equivalent class powers).
+
+**[FOLLOW-UP — Q14a PENDING]** Which specific `class_powers` from the project's class JSON files count as "Manual of Arms equivalent"? Candidates surveyed:
+- `battlefield_leadership` (Fighter) — possibly equivalent? Or a different ability entirely?
+- `fighter_damage_bonus` (Fighter / Bladedancer / Paladin / Anti-Paladin / Barbarian / etc.) — does NOT seem to grant training capability per RAW; it's a damage modifier.
+
+Pending Jedidiah's Q14a ruling on the specific class-power allowlist. Implementation default until resolved: ONLY Manual of Arms proficiency rank 1+ grants training eligibility; no class powers granting it automatically. Fighter and similar classes must take Manual of Arms via the proficiency progression to train troops, just like any other class.
+
+### 8.2.1 Class-specific roster annotations
+
+- **Cleric / Bladedancer / Priestess / Shaman**: faithful-follower count is highlighted in the composition list with a special "Faithful (no wages)" badge. The +4 morale and complete loyalty per `acore_core_classes.xml` §Cleric `<loyalty_or_morale_rules>` is surfaced inline.
+- **Dwarven classes**: composition list flags "Dwarven soldiers" status — per `acore_demihuman_classes.xml` §Vaultguard `<loyalty_or_morale_rules>`: *"The character is expected to employ only soldiers of dwarven descent. Members of other races may be hired for non-soldier tasks."* Non-dwarven soldier units show a warning indicator; non-dwarven non-soldier hirelings are fine.
 
 ### 8.3 Multi-domain garrison context
 
@@ -679,37 +699,41 @@ The Class-Specific sub-tab is the central location for high-level activities gat
 
 The following matrix maps each class to its applicable buckets. A class may apply to multiple buckets, in which case the sub-tab content stacks blocks for each.
 
-| Class | Faith | Magical Research | Trade | Syndicate | Garrison Training | Notes |
+**Per Q14 [RESOLVED 2026-05-11], "Garrison Training" is NO LONGER a class-bucket column.** Troop training (train_troops / oversee_troop_training / inspect_troops) is **proficiency-gated** on Manual of Arms (with combinable Riding / Weapon Focus for cavalry, archers, etc.) or an equivalent class power, NOT class-gated. Those activities now live in the **Garrison sub-tab (§8)** with proficiency-based eligibility. Fighter and other "fighter-flavored" classes that previously appeared here under Garrison Training no longer have a class-bucket entry unless they have another applicable class power.
+
+The Bardic Patronage column replaces the old Garrison Training column and surfaces only for Bards — its content is the two Bard-specific class powers (Chronicles of Battle aura, Solicit Followers).
+
+| Class | Faith | Magical Research | Trade | Syndicate | Bardic Patronage | Notes |
 |---|:---:|:---:|:---:|:---:|:---:|---|
-| Fighter | | | | | ✓ | castle |
+| Fighter | | | | | | castle. No class buckets — troop training surfaces in the Garrison sub-tab if Fighter has Manual of Arms proficiency. |
 | Mage | | ✓ | | | | sanctum |
-| Cleric | ✓ | | | | | fortified church |
+| Cleric | ✓ | ✓ | | | | fortified church. Per Q11 [RESOLVED 2026-05-10]: divine casters with full `spell_research` ALSO get Magical Research. Cleric stacks Faith (consecrate / sacrifice / divine power) + Magical Research (research divine spells, scribe scrolls, create divine items). |
 | Thief | | | | ✓ | | hideout |
-| Dwarven Vaultguard | | | | | ✓ | underground vault; dwarven-soldier-only |
-| Dwarven Craftpriest | ✓ | | | | | underground vault; cleric-equivalent for divine |
-| Elven Spellsword | | ✓ | | | ✓ | fastness; both arcane caster + fighter-progression |
-| Elven Nightblade | | ✓ | | ✓ | | hideout; arcane caster + thief skills |
-| Assassin | | | | ✓ | | hideout |
-| Bard | | | | | ✓ | hall — Bards do not unlock divine, magical-research, mercantile, or syndicate buckets per the rule corpus surveyed. **Per O-D3 resolution: Bard's domain-tier play uses the same mechanics as Fighter** (project-designed treatment — Bards are not technically fighter-progression per RAW, but the Arbiter applies the equivalent capability for domain-tier UI purposes). Bards see the Garrison Training block in §12.6. |
-| Bladedancer | ✓ | | | | ✓ | temple; divine + fighter-progression |
-| Explorer | | | | | ✓ | border fort; fighter-progression; borderlands/wilderness only |
-| Anti-Paladin | ✓ | | | | ✓ | dark fortress; chaotic divine + fighter-progression |
-| Barbarian | | | | | ✓ | chieftain's hall |
-| Dwarven Delver | | | | | ✓ | underground vault; fighter-progression |
-| Dwarven Fury | | | | | ✓ | underground vault; fighter-progression |
-| Elven Courtier | | ✓ | | | | elven fastness; arcane caster |
-| Elven Enchanter | | ✓ | | | | sanctum; arcane caster |
-| Elven Ranger | | | | | ✓ | elven fastness; fighter-progression |
-| Paladin | | | | | ✓ | fortress; lawful warrior. **Per O-D4 resolution:** ACKS Paladins are flavored on Roland / Lancelot / El Cid — they do **not** cast magic and do **not** research magic. They are alternate fighter variants. NO Faith block; only Garrison Training applies. |
-| Priestess | ✓ | | | | | cloister |
-| Shaman | ✓ | | | | | medicine lodge |
+| Dwarven Vaultguard | | | | | | underground vault. No class buckets — troop training surfaces in the Garrison sub-tab via Manual of Arms. |
+| Dwarven Craftpriest | ✓ | ✓ | | | | underground vault; cleric-equivalent for divine. Per Q11: divine + spell_research → stacks Faith + Magical Research. |
+| Elven Spellsword | | ✓ | | | | fastness; arcane caster. Troop training via Manual of Arms in the Garrison sub-tab. |
+| Elven Nightblade | ✓⁻ | ✓ | | ✓ | | hideout; arcane caster + thief class (✓ Syndicate per RAW class-id allowlist). Per Q11: also has spell_research → Magical Research. |
+| Assassin | | | | ✓ | | hideout. Per Q14 [RESOLVED 2026-05-11]: Syndicate detection is now a class-id allowlist matching RAW `acore-campaign-hijinks.xml` §hijinks-eligibility (thief, assassin, elven_nightblade). Assassin's fighter combat-progression no longer excludes them. |
+| Bard | | | | | ✓ | hall. **Bardic Patronage** is its own bucket per Q14, replacing the prior "Bardic Patronage variant of Garrison Training" model. Content: Chronicles of Battle aura (RAW `acore_campaign_classes.xml` §hireling_inspiration L569-575, L5+) + Solicit Followers (RAW §hall L577-584, L9+). Bards are NOT hijink-eligible. Bards CAN train troops if they take Manual of Arms proficiency — that surfaces in the Garrison sub-tab, NOT here. |
+| Bladedancer | ✓ | | | | | temple; divine + martial-flavor. Per Q11+Q14: Bladedancer has `spell_research_and_minor_item_creation` (Faith bucket, restricted research stays inside Faith) — NOT the full `spell_research` keyed for Magical Research. Per Q14: no Garrison Training bucket (troop training is in Garrison sub-tab if Bladedancer takes Manual of Arms). |
+| Explorer | | | | | | border fort; borderlands/wilderness only. No class buckets — troop training via Manual of Arms in Garrison sub-tab. |
+| Anti-Paladin | | | | | | dark fortress; lawful-evil/chaotic warrior. Per O-D4 (mirror of Paladin), Anti-Paladin does NOT cast divine magic and has no Faith block — `data/classes/anti_paladin.json` confirms (no `divine_casting` power). Per Q14: no Garrison Training bucket. Tab hidden for Anti-Paladin unless they take a proficiency / class power that grants a bucket. |
+| Barbarian | | | | | | chieftain's hall. No class buckets. |
+| Dwarven Delver | | | | | | underground vault. Per Q14: no class buckets — Delver has thief combat-progression and stronghold_underground_vault (NOT stronghold_hideout), so not on the syndicate allowlist; no casting; troop training (if any) lives in the Garrison sub-tab. Tab hidden. |
+| Dwarven Fury | | | | | | underground vault. No class buckets. |
+| Elven Courtier | | ✓ | | | | elven fastness; arcane caster (arcane_casting_in_armor). |
+| Elven Enchanter | | ✓ | | | | sanctum; arcane caster. |
+| Elven Ranger | | | | | | elven fastness. No class buckets. |
+| Paladin | | | | | | fortress; lawful warrior. **Per O-D4 resolution:** ACKS Paladins are flavored on Roland / Lancelot / El Cid — they do **not** cast magic and do **not** research magic. Per Q14: also no Garrison Training bucket. Tab hidden. |
+| Priestess | ✓ | ✓ | | | | cloister. Per Q11: divine + spell_research → stacks Faith + Magical Research. |
+| Shaman | ✓ | ✓ | | | | medicine lodge. Per Q11: divine + spell_research → stacks Faith + Magical Research. |
 | Warlock | | ✓ | | | | coterie |
-| Witch | | ✓ | | | | coven |
-| Nobiran Wonderworker | ✓ | ✓ | | | | sanctum (per Q5 resolution); divine + arcane (project-designed hybrid follower rules per §12.7) |
-| Zaharan Ruinguard | ✓ | | | | ✓ | dark fortress; chaotic divine + fighter-progression |
+| Witch | ✓ | ✓ | | | | coven. Per Q11 [RESOLVED 2026-05-10]: Witch is a divine caster (per `data/classes/witch.json` which has `divine_casting`) but builds coven strongholds and may build dungeons just as mages do. Stacks Faith + Magical Research. |
+| Lightblessed Wonderworker | ✓ | ✓ | | | | sanctum (per Q5 resolution); arcane primary + divine secondary (Mage at root for domain purposes per `domain-roadmap-corrected.md` §10 [RESOLVED 2026-05-06]; stacked-block model — Magical Research expanded, Faith collapsed). Aspirant follower rules per §12.7 (50/50 mage/cleric split per Q2; standard sanctum 1d6-month-then-throw rule per Q13 [RESOLVED 2026-05-10] — INT-modified for mage aspirants, WIS-modified for cleric aspirants). |
+| Darkblood Ruinguard | | ✓ | | | | dark fortress (renamed from "Zaharan Ruinguard" for IP reasons; mechanics unchanged). Per Q12 [RESOLVED 2026-05-10]: Darkblood is an arcane caster (`data/classes/darkblood_ruinguard.json` has `arcane_casting_in_armor`, NOT `divine_casting`) with very limited research at L10+. Stronghold is identical to a Fighter's stronghold. Per Q14: no Garrison Training bucket. |
 | Venturer | | | ✓ | | | guildhouse; mercantile-class |
 
-A class with NO checkmarks in the matrix above does not see the Class-Specific sub-tab at all per §4.4. As of v1.5 every class in the matrix has at least one checkmark, so the Class-Specific sub-tab is always visible for any domain-ruling entity. (The "no checkmarks → hidden" rule remains as future-proofing in case a class is added later that legitimately has no class-specific concerns.)
+A class with NO checkmarks in the matrix above does not see the Class-Specific sub-tab at all per §4.4. **Per Q14, many fighter-flavored classes (Fighter, Paladin, Anti-Paladin, Barbarian, Explorer, Dwarven Vaultguard, Dwarven Delver, Dwarven Fury, Elven Ranger) have NO checkmarks and the Class-Specific tab is correctly hidden for them.** This is the architecturally-correct outcome — they have no class-specific high-level activities; their Domain-tab interaction lives in Overview / Stronghold / Garrison / Realm / Treasury / Decrees / Encounters / Departure Log.
 
 ### 12.2 Faith block (divine casters)
 
@@ -789,29 +813,48 @@ Surfaces the `<category name="syndicate">` activities from `ax_campaign_play.xml
 
 Crime & Punishment activities at courthouse / settlement (singular for bribe / hire-attorney / interplead). Greyed in notebook elsewhere with travel shortcut per §15.4.
 
-### 12.6 Garrison Training block (fighter-progression classes)
+### 12.6 Bardic Patronage block (Bard only)
 
-Surfaces the `<category name="domain"><activity name="oversee_troop_training">` activity per `ax_campaign_play.xml`:
+Per Q14 [RESOLVED 2026-05-11], Bardic Patronage is its own class-bucket — replacing the prior "Bardic Patronage variant of Garrison Training" model. Troop training is no longer a class-bucket concern; it lives in the Garrison sub-tab (§8) with proficiency-based eligibility.
 
-- **Training queue** — list of troop units scheduled for training-overseen-by-ruler. Each unit shows training-time-remaining (depends on troop type), the +1 permanent morale bonus pending on completion, and "veteran-promotion" if ruler is also training
-- **Activities** —
-  - Oversee troop training (minor ongoing; one ongoing minor activity per 60 troops; level 5+; ruling a domain; +1 permanent morale on completion)
-  - Train troops (major ongoing; Mannered at Arms ranks required + Riding/Weapon Focus where required; up to 60 troops; same time as oversight)
-- **Class-restricted note** — per `ax_campaign_play.xml` §oversee_troop_training: *"Fighter or other character using fighter attack progression, level 5+, who rules a domain."* The block confirms eligibility and shows the gating. Bards are surfaced through this block per O-D3 even though Bards are not technically fighter-progression in RAW — flagged inline as Arbiter-specific design
+This block surfaces two Bard-specific class powers from `acore_campaign_classes.xml`:
 
-**Location-gating:** Both `oversee_troop_training` and `train_troops` are **ongoing** activities per `ax_campaign_play.xml` §domain. The ruler accumulates ticks each day spent at the troop training site (typically the stronghold) and may step away within the tolerance window per §15.1.1. Training durations vary by troop type (per `daw_campaigns_troop_tables_summary.xml` and `daw_armies_recruitment.xml`); a multi-month training program builds a long tolerance window over time, so brief excursions are tolerable, but prolonged absence auto-forfeits the training (the +1 permanent morale bonus / veteran promotion does not occur) per §15.1.4. Greyed in notebook elsewhere with travel shortcut per §15.4.
+- **Chronicles of Battle aura status** — passive ability per `acore_campaign_classes.xml` §hireling_inspiration L569-575 ("Any henchmen and mercenaries hired by the bard gain +1 morale if the bard is present to witness and record their deeds. This bonus stacks with modifiers from Charisma or proficiencies."). The block displays the active aura status (which hirelings/mercenaries currently benefit, the +1 morale stacking applied) and the bard's current location relative to those units. This is **NOT a launchable activity** — it applies passively when the bard is in the same hex/army as eligible units. The block shows the aura as a status indicator only.
+- **Solicit Followers** — Ongoing 1-3 weeks per `acore_campaign_classes.xml` §hall L577-584 (unlocked at Bard L9 when the bard establishes a hall). On completion, recruits 1d4+1×10 0th-level mercenaries plus 1d6 1st-3rd-level bards into the ruler's service. Hire requires standard mercenary wages.
+- **Recruitment history** — last solicitation outcomes (this month + last month), current hireling/mercenary roster summary cross-linked to the Garrison sub-tab.
 
-### 12.7 Nobiran Wonderworker hybrid block (per Q5 resolution)
+**Class-restricted note** — Bardic Patronage is restricted to the Bard class. Bards are NOT hijink-eligible per `acore-campaign-hijinks.xml` §hijinks-eligibility (which restricts hijinks to assassins, elven nightblades, and thieves), so the Syndicate block is unavailable to Bards regardless of their thief combat-progression family. Bards CAN train troops if they take the Manual of Arms proficiency — that surfaces in the **Garrison sub-tab (§8)**, not here.
 
-The Nobiran Wonderworker is a unique class with no `<stronghold_and_followers>` section in `pc_classes_5.xml`. Per Jedidiah's Q5 resolution, the project-designed hybrid is:
+**Location-gating:** Solicit Followers is **ongoing** per the 1-3 week duration. The bard accumulates ticks each day spent at the recruitment location (typically the bard's hall, in the urban settlement nearest the bard's domain) and may step away within the tick-tolerance window per §15.1.1. The Chronicles of Battle aura applies passively wherever the bard is — no location-gating on that.
 
-- **Stronghold:** sanctum + dungeon (mage-style)
-- **Followers:** 1d6 clerics or mages of level 1-3 + 2d6 0th-level normal-man aspirants
-- **Aspirant class determination:** each aspirant's INT and WIS scores determine cleric vs. mage path: highest of the two scores wins; mage wins on tie; both INT and WIS must be ≥9 for the aspirant to qualify (aspirants below the threshold do not arrive)
-- **Aspirant attrition** (per O-D5 resolution): each 0th-level aspirant rolls 1d6 per month for the first 6 months after arrival; on a roll of 1, that aspirant leaves that month. After 6 months, no further dropout rolls — the aspirant is committed. The roll is **not cumulative** (each month is an independent 1/6 chance, ~16.67%; expected ~33.5% of aspirants commit, ~66.5% drop out within 6 months). Track each aspirant's months-since-arrival counter; track each departure in the Departure Log sub-tab
-- **Class-Specific sub-tab content:** stacks Faith block + Magical Research block, both of which are accessible since Wonderworker has both arcane and divine progression
+### 12.6.1 [REMOVED — troop training is no longer a class-bucket activity]
 
-**Tag:** This is **Arbiter-specific design** — flagged in the GDD because no ACKS sourcebook publishes this rule. The follower mix is project-designed per Jedidiah's design intent for the class.
+The original §12.6 "Garrison Training block (fighter-progression classes)" has been moved to **§8 (Garrison sub-tab)** per Q14 [RESOLVED 2026-05-11]. Troop training is **proficiency-gated** on Manual of Arms (with combinable Riding / Weapon Focus enabling different troop types) or an equivalent class power, not class-gated. Fighter, Paladin, Anti-Paladin, Barbarian, Explorer, Dwarven Vaultguard / Delver / Fury, Elven Ranger, Bladedancer — and Cleric, and any other character who takes Manual of Arms — train troops via the Garrison sub-tab's proficiency-gated launchers. The activities themselves (`train_troops`, `oversee_troop_training`, `inspect_troops`) are unchanged; only their UI surface has moved.
+
+See §8 for the relocated content (training queue, eligibility checks, launcher cards).
+
+### 12.7 Lightblessed Wonderworker hybrid block (per Q20 [RESOLVED 2026-05-11])
+
+The Lightblessed Wonderworker (renamed from "Nobiran Wonderworker" for IP reasons; mechanics unchanged from `pc_classes_5.xml`) is a unique class with no `<stronghold_and_followers>` section in `pc_classes_5.xml`. Per Q20 [RESOLVED 2026-05-11] the project-designed hybrid is:
+
+- **Stronghold:** sanctum + dungeon (mage-style; mage-rooted progression for domain purposes)
+- **Followers:** 1d6 1st-3rd-level apprentices + 2d6 0th-level normal-man aspirants per `pc_classes_5.xml` §stronghold_sanctum L127-134
+- **Apprentice / aspirant class split:** the 1d6 apprentices and 2d6 aspirants are split **50/50 mage/cleric by default** (player may rebalance the split at sanctum founding to reflect their leanings; the rebalance is captured as a `wonderworker_split_pct` value on the stronghold record at completion). The 50/50 baseline aligns with the RAW phrase "1d6 mages or clerics" and is the project-canonical resolution.
+- **Aspirant creation (Q20):** every 0-level aspirant is created as a 0-level Normal Man. The split is assigned at creation:
+  - 50% are **Mage aspirants** — if rolled INT is less than 9, INT is boosted to 9 (the project-designed minimum so the aspirant has a realistic chance at promotion).
+  - 50% are **Cleric aspirants** — if rolled WIS is less than 9, WIS is boosted to 9 (same rationale, WIS-flavor).
+- **Aspirant promotion (Q20):** after **4 months** of joining the Wonderworker (universal fixed timer, equal to the average of the standard sanctum's 1d6-month variability), each aspirant rolls a single d20 + ability modifier:
+  - **Mage aspirants** roll **d20 + INT mod**. 14+ promotes to 1st-level Mage. 13 or less leaves the sanctum.
+  - **Cleric aspirants** roll **d20 + WIS mod**. 14+ promotes to 1st-level Cleric. 13 or less leaves the sanctum.
+- **There is no monthly attrition.** The prior 1d6/month-for-6-months mechanic (from O-D5) is fully scrapped. The promotion throw at month 4 is the sole attrition check.
+- Each year the Wonderworker dwells in the sanctum, an additional 1d6 0-level aspirants arrive (split 50/50 again per the founding rebalance), up to a maximum of 6 apprentices and 12 normal men studying at any one time per the standard sanctum cap.
+- Aspirant lifecycle tracking lives in the `followers` table with `source_kind='aspirant'`, `character_class='normal_man'`, `level=0`, `intended_class='mage'` or `'cleric'`, and `promotion_eligible_day = joined_calendar_day + 120` (4 × 30 days). Promotion outcomes (success → become 1st-level; failure → leave sanctum) flow into the Departure Log sub-tab.
+
+**Standard Mage / Witch / Warlock / Elven Enchanter sanctums follow the same Q20 mechanic** with single-class intent (e.g., a Mage's 2d6 aspirants are all `intended_class='mage'`). The 4-month fixed timer and d20+ability_mod 14+ throw applies universally; the Lightblessed-specific bits are the 50/50 mage/cleric split, the cleric branch using WIS, and the ability-floor-of-9 at creation.
+
+- **Class-Specific sub-tab content:** stacks Magical Research block (primary, expanded by default) + Faith block (secondary, collapsed by default). Lightblessed plays as a Mage at root for domain purposes (mage progression family per `pc_classes_5.xml` L46) but unlocks the Faith block via its cleric-list divine casting per `pc_classes_5.xml` §divine_casting L87-93 and split apprentice set. Research-project list in the Magical Research block accepts targets on EITHER the arcane spell list OR the cleric divine spell list per `pc_classes_5.xml` §spell_research L121-123 + §arcane_casting + §divine_casting; at level 11+ the dual-list access extends to ritual spells per §ritual_magic_and_advanced_creation L135-137.
+
+**Tag:** The aspirant promotion mechanic at month 4 with a single d20 + ability-mod 14+ throw is **Arbiter-specific simplification** of the RAW 1d6-month-variability standard sanctum rule (`acore-campaign-hijinks.xml` §sanctums L534-538) — fixed-4-months is the expected-value collapse so the timing is deterministic and consistent across all sanctum classes. The 50/50 mage/cleric Wonderworker split and the cleric-aspirant WIS-modified throw are also Arbiter-specific (no ACKS sourcebook publishes the Wonderworker split or WIS-vs-INT differentiation). The class itself is RAW per `pc_classes_5.xml` (with the IP-driven name change).
 
 ### 12.8 Class-Specific sub-tab tab strip rendering
 
@@ -858,7 +901,10 @@ The Encounters & Threats sub-tab surfaces external threats to the domain: wander
    - Bandits (when current morale ≤ −2 per `acore_axioms_strongholds_and_domains.xml` §bandits): current bandit count, projected damage, NPC challenger status (cumulative chance per month per morale level — Rebellious 10%/mo, Defiant 5%/mo, Turbulent 1%/mo)
    - Occupation: enemy army occupying domain (turns counter; cumulative −1/month morale penalty up to −4 per §invasion_and_occupation)
    - Pillage: enemy army pillaging domain (one-time −4 morale penalty, alternative to occupation; per §pillage)
-   - Active siege: per `daw_sieges.xml` definitions (blockade / reduction / assault); siege state breakdown — besieging-army composition, defender garrison, current SHP / max SHP, breaches from reduction, supplies remaining, expected resolution timeline
+   - **Active siege (v1: abstract resolution; mapped tactical sieges per Domains at War: Battles are out of project scope).** Two RAW-supported abstract resolution paths surface differently on the card depending on who's involved (per the dispatcher in `docs/domain-roadmap-corrected.md` Phase 8 siege subsystem):
+     - **Player-involved sieges** use the full DaW: Campaigns rules per `daw_sieges.xml` §blockade L65-193, §reduction L195-463, §assault L465-499. The siege card surfaces: current phase (blockade / reduction / assault), besieging-army composition, defender garrison, current SHP / max SHP (with damage delta), breach count from reduction (1 per 1,000 shp damage per §siege_mechanics.breaches L42-46), unit_capacity derived per the no-map formula at `daw_sieges.xml` §siege_mechanics.unit_capacity L37-41 (`ceil(shp / 1000)`; the future grid-builder per `gdd-stronghold-construction.md` §4 will replace this with the per-structure sum in v1.1+), supplies remaining (default 600 gp/point of unit_capacity ≈ 10 weeks at full garrison; ±un-blockaded prep additions per §effects_of_blockade L116-136), required encirclement units, and expected resolution timeline.
+     - **NPC-vs-NPC sieges** use the Sieges Simplified table per `daw_sieges.xml` §sieges_simplified L813-846+. The siege card surfaces a more compact off-camera view: besieging-army size, defending-army size, unit_advantage delta, projected days-to-capture from the duration table, current elapsed days, and proportional shp remaining derived from elapsed-time per §off_camera_and_intervention_guidance L838-844. If a PC subsequently arrives at the besieged stronghold, the engine escalates the siege to the full DaW rules (state reconstructed proportionally) and the card swaps to the player-involved layout.
+     - In both cases the card cites the relevant `daw_sieges.xml` section in an Inspect-math link so the player can see the procedure being applied.
    - Lingering monsters: monsters that lingered after a domain encounter and are now part of the domain's terrain (potentially in a dungeon); morale penalty per §monsters-settle
 7. **Reconnaissance status** — per `ax_domain_level_encounters.xml` §reconnaissance:
    - Current intelligence on monsters / armies in or near the domain
@@ -1357,12 +1403,12 @@ For **Venturer** (guildhouse via hideout rules):
 
 For **Bard** (hall):
 - Standard paths
-- Per O-D3 resolution: Bard plays at the domain tier as Fighter does. Empty-state notes: *"Like a fighter, you may train troops at your hall and oversee their morale (see Garrison Training in the Class-Specific sub-tab once you've established your domain)."*
+- Per the [RESOLVED 2026-05-06] addendum to `domain-roadmap-corrected.md` §10: Bard does NOT train troops as a fighter does (RAW gates `oversee_troop_training`/`train_troops` to fighter-progression). Empty-state notes: *"Your hall attracts mercenaries and bardic followers. Your presence in battle inspires hired troops (+1 morale aura). Use the Bardic Patronage block in the Class-Specific sub-tab to solicit followers and track your aura."*
 
-For **Nobiran Wonderworker** (sanctum hybrid per Q5):
-- Mage paths plus the Wonderworker's hybrid follower note (1d6 cleric/mage 1-3 + 2d6 0th-level aspirants with INT/WIS≥9 path)
+For **Lightblessed Wonderworker** (sanctum hybrid per Q5):
+- Mage paths plus the Wonderworker's hybrid follower note (1d6 1st-3rd-level apprentices split 50/50 mage/cleric + 2d6 0th-level aspirants likewise split, with 1d6/month-for-6-months attrition; player may rebalance the split at sanctum founding)
 
-For **Zaharan Ruinguard** (dark fortress):
+For **Darkblood Ruinguard** (dark fortress):
 - Same as fighter; chaotic flavor
 
 The card is rendered as a pre-filled form because Jedidiah confirmed *"Its just a pre-filled form keyed to class, simple enough."* in Q7 resolution — meaning the empty-state is a class-keyed instructional UI, not a generic handwave.
@@ -1446,7 +1492,7 @@ The Domain tab should add zero noticeable latency to gameplay outside of monthly
 - **O-D2.** ~~Manual transfer between personal wallet and domain treasury~~ **Resolved (v1.5):** Free if the active entity is at one of the domain's strongholds; impossible otherwise. The treasury is held in the stronghold's vaults; transfers are physical coin movement. Spec implemented in §10.2 Manual transfers.
 - **O-D3.** ~~Bard class-specific sub-tab~~ **Resolved (v1.5):** Bards play at the domain tier as Fighter does (Arbiter-specific design — Bards lack the fighter_progression tag in RAW but the Arbiter applies the equivalent capability). Bards see the Garrison Training block (§12.6). Spec implemented in §12.1 matrix and §12.6 class list.
 - **O-D4.** ~~Paladin Faith block~~ **Resolved (v1.5):** ACKS Paladins are flavored on heroes like Roland, Lancelot, El Cid — they do NOT cast magic, do NOT research magic, and do NOT have divine spellcasting. They are alternate fighter variants in almost all respects. NO Faith block. Only Garrison Training applies. Spec implemented in §12.1 matrix.
-- **O-D5.** ~~Nobiran Wonderworker aspirant dropout rate~~ **Resolved (v1.5):** Roll 1d6 per month for the first 6 months after each aspirant arrives; on a roll of 1, that aspirant leaves that month. Roll is **not cumulative** — each month is an independent 1/6 chance. After 6 months, no further dropout rolls. Expected outcome: ~33.5% of aspirants commit; ~66.5% drop out within 6 months. Spec implemented in §12.7 Nobiran Wonderworker hybrid block.
+- **O-D5.** ~~Nobiran Wonderworker aspirant dropout rate~~ **Resolved (v1.5, superseded 2026-05-06 and 2026-05-10):** Original O-D5 specified a 1d6/month-for-6-months attrition rate AND an INT-vs-WIS dynamic class-assignment system. **Both are now superseded.** Per Q11/Q12/Q13 [RESOLVED 2026-05-10]: (a) class is renamed to **Lightblessed Wonderworker** for IP reasons; (b) apprentices/aspirants are split **50/50 mage/cleric by default** (player may rebalance at sanctum founding — replaces the INT-vs-WIS dynamic determination); (c) **the standard sanctum 1d6-month-then-14+-throw rule applies** per `acore-campaign-hijinks.xml` §sanctums L534-538 (replaces the 1d6/month-for-6-months mechanic) — mage aspirants throw INT-modified, cleric aspirants throw WIS-modified, success → 1st-level mage or cleric, failure → leave. Spec implemented in §12.7 Lightblessed Wonderworker hybrid block.
 - **O-D6.** ~~Domain succession on PC death~~ **Resolved (v1.5):** A new ruler must be appointed within a configurable grace period (default 1 game-month) — even if not a henchman. Successor candidates: another PC, an existing henchman, or (when no henchman is available) a non-henchman NPC populated by the future NPC generator subsystem. If no successor is appointed by the end of the grace period, the domain is treated as abandoned. Cross-GDD coordination flag for the NPC generator. Spec implemented in §16.5 Ruler death and succession.
 - **O-D7.** ~~Senatorial domain detection~~ **Resolved (v1.5):** Senatorial-domain types are out of scope for ACKS Arbiter v1. The `consult_senate` activity is removed from §11 Activities. If senatorial-domain support is added in a future expansion, the relevant slot in §11 is reserved for it.
 - **O-D8.** ~~Tribute-flow direction~~ **Resolved (v1.5):** Confirmed default — tribute-in (from sub-vassals) is Revenue category `tribute_in`; tribute-out (to lord) is Expense category `tribute_out`. Net tribute is implicit in the headline net-income calculation. Per §10.2 Treasury data model.

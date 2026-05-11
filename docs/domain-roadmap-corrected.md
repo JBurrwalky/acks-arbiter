@@ -9,6 +9,10 @@
 > **Revision note (2026-05-06, third addendum):** Final open clarification item (O-D5) resolved. **Lightblessed Wonderworker** is the project's name for the class published in ACKS Player's Companion as "Nobiran Wonderworker" (renamed for IP reasons; mechanics are unchanged). At root the class plays as a Mage for domain purposes (mage progression family, arcane repertoire, magic-item creation at L9), with three additions: a split mage-and-cleric follower set on stronghold completion, magical research access to both arcane and divine spell lists, and ritual-spell access to both lists at level 11+. The class is implemented as the Magical Research bucket extended with a Faith block, not as a separate hybrid bucket. All references to "Nobiran" in this document have been updated to "Lightblessed". Changes are marked with **`[RESOLVED 2026-05-06]`**.
 >
 > **Revision note (2026-05-06, fourth addendum — architecture realignment):** Phase 3 was importing a daily-activity-slot-tracker model from the (now stale) `gdd-domain-tab.md` §11.3, which conflicted with the canonical real-time-with-pause architecture in `gdd-realtime-scheduler.md`. Phase 3 has been rewritten to align with the time-cost executor model. Specifically: (a) activities are launched from their location of execution, not from a centralized picker tab; (b) the "Activities" sub-tab on the Domain notebook is renamed and repurposed as **"Decrees & Remote Orders"** for the small set of remote-capable domain activities (administer_domain, issue_decree, manage_henchmen, conscript_troops, levy_militia, solicit_mercenaries, call_to_arms, oversee_investment); (c) tick-tolerance / absence / abandon-and-resume mechanics apply only to Ongoing-frequency activities — Singular and Restricted activities are atomic and must be restarted if interrupted; (d) per-character ongoing-activity status is surfaced via a new "Active Projects" sub-tab on the Character tab. Concurrent updates: `gdd-realtime-scheduler.md` §4.8 (new), `gdd-domain-tab.md` §11 (rewritten) and §15.1.1 (clarified ongoing-only), `gdd-character-tab.md` §3.8 (new). Changes marked with **`[ARCH 2026-05-06]`**.
+>
+> **Revision note (2026-05-06, sixth addendum — DaW Army Warfare layer inserted):** Following review, sieges and bandits cannot be implemented without an underlying army-warfare layer (army composition, command hierarchy, marching, supply, recruitment vagaries, abstract field-battle resolution). RAW for that layer exists across `daw_armies_recruitment.xml`, `daw_campaigns_troop_tables_summary.xml`, `daw_campaigning_armies.xml`, `daw_axioms_pitching_battle.xml`, and `daw_vagaries.xml`. **A new Phase 6 has been inserted, split into Phase 6A (army composition + marching + supply + recruitment vagaries) and Phase 6B (abstract field-battle resolver + casualties + pursuit + heroic forays).** All subsequent phases renumber: prior Phase 6 (Realm/Vassalage/Tribute) → 7; prior Phase 7 (Favors & Duties) → 8; prior Phase 8 (Encounters/Bandits/Sieges) → 9; prior Phase 9 (Class-Specific) → 10; prior Phase 10 (Departure Log/Polish) → 11. Total phases now 12 (0 through 11). Field-battle resolution uses the no-map abstract procedure per `daw_axioms_pitching_battle.xml` §battle_resolution L233-386 (three-phase missile / skirmish / melee with BR-vs-BR attack throws, BPC-driven phase transitions, terrain advantage, heroic forays, redeployment within Leadership Ability, advance/hold/withdraw choices). Mapped tactical battles per Domains at War: Battles remain out of project scope. The army UI surface extends `gdd-troops-tab.md` rather than adding a new Armies tab. A scaffold for the new `gdd-army-warfare.md` exists for a dedicated drafting session before Phase 6A build begins. Changes marked with **`[ARMY 2026-05-06]`**.
+
+> **Revision note (2026-05-06, fifth addendum — siege resolution scoping):** Phase 8's siege subsystem was previously scoped as a state flag *"consumed by future combat-tactical surface."* That deferral is removed. **Sieges are in v1 scope and resolve abstractly — no battle map required.** Two RAW-supported abstract siege systems are folded in: (i) the **default DaW: Campaigns siege rules** (`daw_sieges.xml` §blockade L65-193, §reduction L195-463, §assault L465-499), used for **player-involved sieges** — the no-map unit_capacity formula at L37-41 (`ceil(shp / 1000)`) replaces per-structure unit_capacity until the grid builder ships in v1.1+; and (ii) the **Sieges Simplified** table (`daw_sieges.xml` §sieges_simplified L813+), used for **NPC-vs-NPC sieges** running off-camera in the world simulation. PCs intervening in an in-progress simplified siege escalate it to the full DaW rules; current stronghold state is reconstructed from elapsed time per `daw_sieges.xml` §off_camera_and_intervention_guidance L838-844 (full duration elapsed → 0 shp; half elapsed → 50% shp). The grid-placement planner specified in `gdd-stronghold-construction.md` §4 is explicitly deferred to v1.1+; v1 strongholds are abstract value-only records with shp, gp_value, and derived unit_capacity. All army-level combat is abstract in v1; mapped tactical battles per Domains at War: Battles are out of project scope. Concurrent updates: `gdd-domain-tab.md` §13 (clarified siege state surfacing for both abstract systems), `gdd-stronghold-construction.md` §1 (v1.1+ deferral note for the grid planner). Changes marked with **`[SIEGE 2026-05-06]`**.
 
 ## Context
 
@@ -32,11 +36,13 @@ The GDD's published build sequence (`gdd-domain-tab.md` §23.2, sub-tab order Ov
 | **3** | Activity time-cost executor + Decrees & Remote Orders sub-tab + per-location launch wiring + Active Projects HUD | Player can launch RAW activities from location surfaces and dispatch remote orders from the Domain tab |
 | **4** | Stronghold sub-tab + sufficiency feedback | Stronghold value drives morale; non-conforming flagged |
 | **5** | Troops tab + Garrison sub-tab + followers arrival at L9 | Garrison expenditure meter live; troop recruitment activities resolve |
-| **6** | Realm sub-tab + vassalage + tribute | Henchmen become vassal rulers; tribute flows monthly |
-| **7** | Favors & Duties monthly system | Monthly d20 vassal favor/duty rolls with loyalty consequences |
-| **8** | Domain encounters + bandits + threats | `ax_domain_level_encounters.xml` events fire; player responds |
-| **9** | Class-Specific sub-tab (5 blocks) | Class-applicable high-level activities (faith / research / trade / syndicate / training) |
-| **10** | Departure Log + lifecycle polish + chaotic-domain branch + tests | End-to-end establish→succession scenarios pass |
+| **6A** | **`[ARMY 2026-05-06]`** DaW Army Warfare Layer: composition + marching + supply + recruitment vagaries | Armies exist as aggregates of troop units with command hierarchy; armies march on the wilderness map with supply consumption and foraging; recruitment vagaries fire on muster |
+| **6B** | **`[ARMY 2026-05-06]`** DaW Army Warfare Layer: abstract field-battle resolver + casualties + pursuit + heroic forays | Player-involved and NPC-vs-NPC field battles resolve via the no-map procedure per `daw_axioms_pitching_battle.xml`; PCs may make heroic forays; casualties propagate to unit rosters |
+| **7** | Realm sub-tab + vassalage + tribute *(was Phase 6)* | Henchmen become vassal rulers; tribute flows monthly; vassal armies are real entities |
+| **8** | Favors & Duties monthly system *(was Phase 7)* | Monthly d20 vassal favor/duty rolls with loyalty consequences; Call to Arms produces a real army |
+| **9** | Domain encounters + bandits + sieges *(was Phase 8)* | `ax_domain_level_encounters.xml` events fire; bandits resolve as small armies via Phase 6B; sieges resolve via the dual-path abstract resolvers consuming Phase 6's army layer |
+| **10** | Class-Specific sub-tab (5 blocks) *(was Phase 9)* | Class-applicable high-level activities (faith / research / trade / syndicate / training) |
+| **11** | Departure Log + lifecycle polish + chaotic-domain branch + tests *(was Phase 10)* | End-to-end establish→succession scenarios pass |
 
 Phases 1 (stronghold), 5 (troops), and 8 (encounters) each build sibling systems with their own tables/UI; phases 2–10 progressively populate the Domain tab. Phases 1, 5, and 9 are partially parallelizable with their consuming Domain-tab phases once interfaces are nailed down.
 
@@ -197,11 +203,132 @@ Parallelizable with Phase 4. Driven by `gdd-troops-tab.md` v2.3+.
 - `scenes/ui/notebook/tab_pages/troops_tab_page.gd` — full troops tab roster per `gdd-troops-tab.md` (cross-cuts beyond domain).
 - `scenes/ui/notebook/domain/sub_tabs/garrison.tscn` — assigned units, **`[RAW PATCH]`** expenditure meter showing two reference lines: solid line at 2gp/fam minimum (red below), dashed line at the morale-incentive threshold for the current classification (green at or above), recruitment buttons (Call to Arms / Conscript / Levy Militia / Hire Mercenaries — all cross-activate Phase 3 activity executor), **`[RAW PATCH]`** "Repress" toggle (assigns N gp/family above minimum to repression; militia troops greyed out as ineligible per `acore_axioms` §repression L511; warning that current morale cannot exceed 0 while active).
 
-**Verification:** complete a fighter castle at L9, verify follower waves arrive on schedule, verify garrison expenditure reduces dungeon-incursion encounter penalty per `ax_domain_level_encounters.xml` (becomes Phase 8's hook). **`[RAW PATCH]`** `tests/test_follower_arrival_rounding.gd` verifying the ceil(N×0.5) / ceil(N×0.25) / remainder math, including the edge case where ceil(N×0.5) + ceil(N×0.25) > N×0.75.
+**Verification:** complete a fighter castle at L9, verify follower waves arrive on schedule, verify garrison expenditure reduces dungeon-incursion encounter penalty per `ax_domain_level_encounters.xml` (becomes Phase 9's hook). **`[RAW PATCH]`** `tests/test_follower_arrival_rounding.gd` verifying the ceil(N×0.5) / ceil(N×0.25) / remainder math, including the edge case where ceil(N×0.5) + ceil(N×0.25) > N×0.75.
 
 ---
 
-## Phase 6 — Realm Sub-Tab + Vassalage + Tribute
+## Phase 6A — DaW Army Warfare Layer: Composition + Marching + Supply + Vagaries
+
+**`[ARMY 2026-05-06]`** First half of the new Phase 6. Builds armies as aggregates of troop_units (from Phase 5), with command hierarchy, marching across the wilderness map, supply consumption, foraging, and recruitment vagaries. **No battle resolution yet** — that's Phase 6B. The split lets bandits-without-sieges potentially be playable in Phase 9 if Phase 6B slips, since bandit "armies" can exist (and march and consume supply) before they have to fight.
+
+Drafting authority: this phase's design lives in the new `gdd-army-warfare.md` (scaffold checked in; needs a dedicated drafting session before build starts). All RAW citations route through `daw_armies_recruitment.xml`, `daw_campaigns_troop_tables_summary.xml`, `daw_campaigning_armies.xml`, and `daw_vagaries.xml`.
+
+**Schema migrations:**
+
+- `065_armies.sql` — `armies(id, campaign_id, owner_character_id, command_character_id, army_name, current_hex_q, current_hex_r, current_map_id, current_state, formed_calendar_day, disbanded_calendar_day)`. `current_state ∈ {assembling, encamped, marching, foraging, besieging, battling, withdrawing, disbanded}`. Owner is the political owner (PC ruler or NPC); command_character_id is the leading officer (often the same, but vassals may command on behalf of their liege).
+- `066_army_unit_assignments.sql` — `army_unit_assignments(id, army_id, troop_unit_id, assigned_calendar_day, command_role)`. `command_role ∈ {line, reserve, baggage, scout}`. A troop_unit can be in at most one army at a time; enforced by unique constraint on `troop_unit_id` where `army_id IS NOT NULL`.
+- `067_army_officer_assignments.sql` — `army_officer_assignments(id, army_id, officer_character_id, rank, commands_units_csv)` per the four-tier hierarchy in `daw_campaigns_troop_tables_summary.xml`: Lieutenants (≤3 units), Captains (≤3 lieutenants), Colonels (≤3 captains), Generals (≤3 colonels). Each rank has a market-class availability + monthly wage from the troop tables. `commands_units_csv` is the list of troop_unit_ids or sub-officer_ids this officer commands.
+- `068_army_supply_state.sql` — `army_supply_state(army_id PRIMARY KEY, current_supply_gp, daily_consumption_gp, supply_line_status, last_resupply_day, foraged_gp_this_week)`. `supply_line_status ∈ {intact, threatened, cut}`.
+- `069_army_movement_log.sql` — `army_movement_log(id, army_id, calendar_day, from_hex_q, from_hex_r, to_hex_q, to_hex_r, distance_miles, encounter_rolled, foraging_rolled, weather)` for after-action review.
+
+**Engine subsystems:**
+
+- `engine/subsystems/armies/army_repository.gd` — CRUD; query "all armies in hex H," "armies belonging to character C," "armies under command of officer O."
+- `engine/subsystems/armies/army_composer.gd` — form army from selected troop_units; add/remove units; assign officers to ranks; validate command-hierarchy completeness (every unit must be commanded by a Lieutenant; every Lieutenant by a Captain; etc.); compute `aggregate_battle_rating` and `Leadership Ability` (caps redeploy units per turn) and `Strategic Ability` (initiative bonus) from the commanding officer's profile per `daw_campaigns_troop_tables_summary.xml` officer ability tables.
+- `engine/subsystems/armies/army_marcher.gd` — extends the `travel_leg` event pattern from `gdd-realtime-scheduler.md` §4.1 for armies. Per-leg fire_time = travel time at army speed (= slowest unit's speed). On each leg arrival: army-encounter check (different table than party encounters per `daw_campaigning_armies.xml`), army-army collision check (if hex contains another army, trigger battle dispatcher), supply consumption, foraging opportunity. Weather effects per `daw_campaigning_armies.xml`. Forced marches per the same.
+- `engine/subsystems/armies/army_supply_tracker.gd` — daily supply_gp consumption from current_supply_gp; per-day foraging roll if commanded to forage (yields 1d6 × army-size-tier gp food per `daw_campaigning_armies.xml`); supply-line status calculation (intact = within X miles of friendly settlement / waterway / supply train; threatened/cut induce attrition per the campaigning RAW); resupply on entering a friendly settlement.
+- `engine/subsystems/armies/army_collision_detector.gd` — when two armies share a hex, emits `EventBus.armies_collided`; consumed by Phase 6B's battle dispatcher to start a field battle.
+- `engine/subsystems/armies/recruitment_vagaries_resolver.gd` — recruitment vagaries per `daw_vagaries.xml`. Triggered on Conscript / Levy Militia / Hire Mercenaries / Solicit Mercenaries / Call to Arms. Outcomes per the vagaries tables (delays, deserters, surge availability, leader applicants, etc.). Hooks the existing `EventBus.vagaries_of_recruitment` signal already fired in the campaign-activities phase per `ax_campaign_play.xml` §random_events.vagaries_of_recruitment.
+- `engine/subsystems/armies/army_disbander.gd` — disband army on owner command, on commander death without designated successor, or on supply-attrition collapse. Returns mercenary units to the pool (less casualties); discharges conscripts/militia (return to peasant population); followers persist as faithful followers per `acore_axioms` §garrison L228-230.
+
+**EventBus signals (additions):**
+
+- `army_formed(army_id, owner_id, command_officer_id)`
+- `army_disbanded(army_id, reason)`
+- `army_arrived_at_hex(army_id, hex_q, hex_r, map_id)`
+- `armies_collided(army_a_id, army_b_id, hex_q, hex_r)` — consumed by Phase 6B
+- `army_supply_consumed(army_id, gp, remaining_gp)`
+- `army_supply_threatened(army_id, cause)`
+- `army_supply_cut(army_id, cause)`
+- `recruitment_vagary_resolved(activity_id, outcome_type, payload)`
+
+**Activity handlers (extend Phase 3's `handlers/`):**
+
+- Update `engine/subsystems/activities/handlers/conscript_troops.gd`, `levy_militia.gd`, `hire_mercenaries.gd`, `solicit_mercenaries.gd`, `call_to_arms.gd` to fire through `recruitment_vagaries_resolver.gd` and to optionally form / supplement an army on completion if the player elects.
+- New `engine/subsystems/activities/handlers/form_army.gd` — Singular activity (1 game-hour) that takes a list of troop_units and an officer assignment plan, validates, creates the army record. Launched from the extended Troops tab Armies section.
+- New `engine/subsystems/activities/handlers/march_army.gd` — Ongoing activity. Player issues a destination order; the army_marcher schedules per-leg events; the Ongoing-frequency state on the activity is "until destination reached or commander cancels." Heavy reuse of existing `travel_leg` infrastructure.
+
+**UI (extend Troops tab; no new tab):**
+
+- `gdd-troops-tab.md` extension — add an "Armies" section to the Troops tab. Vertical list of armies the active entity owns or commands; each card shows: name, command officer + rank, unit composition summary (e.g., "12 units · 850 BR"), current state (assembling / marching / etc.), current location, supply remaining (% bar with daily-burn projection). Click → expands into army detail panel with full unit roster, officer hierarchy tree, supply log, movement log.
+- New `scenes/ui/troops/army_form_dialog.tscn` — pick troop_units from the unaligned pool, assign officers to fill the command hierarchy, name the army, confirm.
+- New `scenes/ui/troops/army_march_overlay.tscn` — when an army is marching, the wilderness hex map renders the army token with a path overlay (similar to the existing party-token movement renderer). Right-click on a hex with the army selected → "March here" / "March cautiously here (slower, +foraging)" / "Forced march here (faster, fatigue)" / "Encamp here" / "Foreage at current hex."
+
+**Verification:**
+
+- `tests/test_army_composer.gd` — form army, validate command-hierarchy completeness, compute aggregate BR.
+- `tests/test_army_marcher.gd` — march an army across 5 hexes, verify supply consumption, encounter checks, weather effects.
+- `tests/test_army_supply_tracker.gd` — supply-line status transitions, foraging yields, attrition under "cut" status.
+- `tests/test_army_collision_detector.gd` — two armies arrive in the same hex on the same scheduler tick → `armies_collided` fires once with deterministic ordering.
+- `tests/test_recruitment_vagaries_raw.gd` — verify each vagaries-table outcome from `daw_vagaries.xml` fires with correct payload.
+- Manual: PC at L9 hires 5 mercenary units, forms an army with a Lieutenant + Captain, marches it 4 hexes through wilderness, verify supply dwindles, foraging supplements, weather slows on a rainy day, and the army arrives at the destination hex with the expected remaining supply.
+
+---
+
+## Phase 6B — DaW Army Warfare Layer: Abstract Field-Battle Resolver + Casualties + Pursuit + Heroic Forays
+
+**`[ARMY 2026-05-06]`** Second half of the new Phase 6. Builds the abstract field-battle resolver per `daw_axioms_pitching_battle.xml` §battle_resolution L233-386 (no map; three-phase missile / skirmish / melee with BPC-driven transitions and BR-vs-BR attack throws). This unblocks Phase 9's bandits (small armies that fight) and the assault phase of sieges (army-on-army within the siege-resolver's assault step).
+
+Drafting authority: design lives in `gdd-army-warfare.md` §6 (per the scaffold).
+
+**Schema migrations:**
+
+- `070_field_battles.sql` — `field_battles(id, attacker_army_id, defender_army_id, hex_q, hex_r, terrain, battle_phase, bpc_current, started_calendar_day, ended_calendar_day, end_state, end_state_details_json)`. `battle_phase ∈ {missile, skirmish, melee, ended}`. `end_state ∈ {attacker_routed, defender_routed, voluntary_withdrawal, mutual_withdrawal, draw}`.
+- `071_battle_unit_states.sql` — `battle_unit_states(id, battle_id, troop_unit_id, current_zone, casualties_taken, morale_state)` per-unit per-battle state. `current_zone ∈ {missile, skirmish, melee, reserve}`. `morale_state ∈ {steady, shaken, broken, fled, destroyed}`.
+- `072_battle_log.sql` — `battle_log(id, battle_id, sequence, phase, event_type, actor_id, target_id, payload_json)` for after-action review and replay.
+
+**Engine subsystems:**
+
+- `engine/subsystems/armies/battle_dispatcher.gd` — when `EventBus.armies_collided` fires (or when a siege assault step is triggered), the dispatcher routes to the field-battle resolver. If any participant army is owned/commanded by a PC or PC's henchman, route to the **interactive** path (auto-pause, present field-battle UI for player decisions); otherwise resolve **silently** (engine plays both sides, logs results to world log, emits notifications).
+- `engine/subsystems/armies/field_battle_resolver.gd` — implements the procedure per `daw_axioms_pitching_battle.xml` §battle_resolution L233-386:
+  - **Setup**: each side assigns units to zones (missile / skirmish / melee / reserve); set BPC starting count from terrain per §battlefield_phase_count_starting_values; resolve surprise per §surprise.
+  - **Per-phase loop** (missile → skirmish → melee, transitioning when BPC ≤ 0):
+    1. Determine participating units per phase (zone-bound).
+    2. Each side totals participating BR.
+    3. Heroic forays: PCs and named NPCs may declare; resolved simultaneously per §heroic_forays.
+    4. Each side rolls `attack_throws = remaining_BR`; targets per-phase (missile 18+, skirmish 16+, melee 14+ per the table at L208-224); each success = 1 hit.
+    5. Apply hits simultaneously; defender removes participating units with combined BR ≥ hits; overflow hits cascade to next zone (skirmish → melee → reserve).
+    6. Morale check per phase end; broken/fled units leave the battle.
+    7. Redeployment: each side may move units between zones up to Leadership Ability units per turn (officer-derived).
+    8. Each side secretly chooses advance / hold / withdraw; reveal simultaneously; resolve BPC adjustment per L255-285.
+    9. If BPC transitions cross threshold, advance to next phase or end battle.
+  - **End states**: capture (defender army routed), liberation/withdrawal (attacker army routed), voluntary withdrawal (per §post_choice_outcomes), mutual withdrawal → draw.
+- `engine/subsystems/armies/heroic_foray_resolver.gd` — PCs and named NPCs can declare heroic forays each phase per `daw_axioms_pitching_battle.xml` §heroic_forays. Player-controlled heroes get a decision modal; NPC heroes use behavior-tag heuristics per `gdd_combat_behavior_tags.md`. Resolves attack vs. target unit; success can route the target unit single-handedly; failure can wound or kill the hero.
+- `engine/subsystems/armies/army_morale_resolver.gd` — army-level morale per `daw_axioms_pitching_battle.xml` §morale (distinct from individual combat morale; uses commander's Leadership + per-unit morale + battle situation). Triggers at end of each phase; cascading panic if multiple units route in one phase.
+- `engine/subsystems/armies/army_casualty_resolver.gd` — apply unit losses to underlying troop_units (decrement count, mark veteran-status changes, mark destroyed if reduced below operational threshold per `daw_armies_recruitment.xml`). Persistent: the battle outcome modifies the source troop_unit records permanently.
+- `engine/subsystems/armies/pursuit_resolver.gd` — winning side may pursue per the end-state rules at `daw_axioms_pitching_battle.xml` §pursuit. Pursuit is itself a brief mini-battle (attacker uses missile/skirmish targets; defender attempts to disengage); converts withdrawals into routs if pursuer wins.
+- `engine/subsystems/armies/terrain_advantage_resolver.gd` — initial terrain assignment (advantageous / highly advantageous / neutral) per `daw_axioms_pitching_battle.xml` §advantageous_terrain L226-231 plus the terrain table; lost terrain advantage cannot be regained per the same.
+
+**EventBus signals (additions):**
+
+- `field_battle_started(battle_id, attacker_id, defender_id, hex_q, hex_r, terrain, is_player_involved)`
+- `field_battle_phase_started(battle_id, phase, bpc)`
+- `field_battle_phase_ended(battle_id, phase, hits_dealt_attacker, hits_dealt_defender, casualties_attacker, casualties_defender)`
+- `field_battle_heroic_foray_resolved(battle_id, hero_id, target_unit_id, outcome)`
+- `field_battle_ended(battle_id, end_state, surviving_units_attacker, surviving_units_defender)`
+- `army_unit_destroyed(army_id, troop_unit_id, casualty_count)`
+
+**UI:**
+
+- New `scenes/ui/battle/field_battle_panel.tscn` — interactive field-battle UI for player-involved battles. Auto-pauses the scheduler. Shows: zone-by-zone unit display for both armies, BPC counter, current phase, heroic-foray hero list (with declare-foray buttons for PC heroes), redeployment dropdowns (within Leadership Ability cap), advance/hold/withdraw secret-choice control. Resolves one phase at a time on player Confirm.
+- World log entries for NPC-vs-NPC battles per `gdd-unified-log-panel.md`. Notification toast on PC's allies' battles even when not directly involved (per `gdd-ui-architecture.md` §2.7).
+- Troops tab Armies section adds post-battle review: most recent battle outcome card on each army row; click → opens `battle_log` viewer.
+
+**Verification:**
+
+- `tests/test_field_battle_resolver_missile_phase.gd` — set up a battle with both armies in missile zone; verify BR-vs-BR attack throws at 18+; correct hit application and casualty math; correct BPC transitions for each advance/hold/withdraw outcome combination per `daw_axioms_pitching_battle.xml` §post_choice_outcomes L255-285.
+- `tests/test_field_battle_resolver_phase_transitions.gd` — verify missile → skirmish triggered when BPC ≤ 0 from "both advance" outcomes; verify withdraw-out-of-skirmish back to missile per §post_choice_outcomes L304-310.
+- `tests/test_field_battle_resolver_terrain_advantage.gd` — army in advantageous terrain; verify forced "hold or lose advantage"; verify advantage is lost permanently if the army moves.
+- `tests/test_field_battle_resolver_heroic_foray.gd` — PC hero declares foray on enemy unit; verify simultaneous resolution with other forays; verify successful foray can single-handedly route a unit per §heroic_forays.
+- `tests/test_field_battle_resolver_morale_cascade.gd` — multiple units route in one phase; verify cascading morale check per §morale.
+- `tests/test_field_battle_dispatcher_routing.gd` — PC-involved battle → interactive path with auto-pause; NPC-vs-NPC → silent resolve with world-log entry.
+- `tests/test_pursuit_resolver.gd` — voluntary withdrawal → pursuer rolls; if pursuer wins, withdrawal becomes rout.
+- `tests/test_army_casualty_persistence.gd` — battle ends; verify source troop_units' counts are decremented; verify destroyed-below-threshold units are marked destroyed.
+- Manual: PC's L11 fighter army (10 units, 600 BR) attacks a wilderness bandit horde (15 units, 450 BR); battle resolves through all three phases; PC declares a heroic foray during melee and routes a bandit unit; battle ends in defender rout; pursuit converts the rout into a 50% casualty inflict; surviving bandits flee the hex.
+
+---
+
+## Phase 7 — Realm Sub-Tab + Vassalage + Tribute *(was Phase 6)*
 
 **Schema:**
 - `061_vassal_assignments.sql` — `vassal_assignments(id, liege_character_id, vassal_character_id, vassal_domain_id, assigned_calendar_day, status, is_henchman_vassal)` (vassal_character_id is a humanoid henchman per O-D resolution; **`[RAW PATCH]`** `is_henchman_vassal` distinguishes henchman vassals from non-henchman vassals, who have base loyalty −2 normally and −4 if outside the trade range of the ruler's largest urban settlement, per `acore_axioms` §non_henchman_vassals L392-397).
@@ -221,7 +348,7 @@ Parallelizable with Phase 4. Driven by `gdd-troops-tab.md` v2.3+.
 
 ---
 
-## Phase 7 — Favors & Duties Monthly System
+## Phase 8 — Favors & Duties Monthly System *(was Phase 7)*
 
 **Schema:**
 - `062_vassal_favors_duties.sql` — `vassal_obligations(id, vassal_assignment_id, kind, type, magnitude, issued_calendar_day, due_calendar_day, status, loyalty_modifier, gp_value)`; `kind ∈ {favor, duty}`; types per `acore_axioms` §favors_and_duties L352-372 (Charter of Monopoly / Gift / Office / Troops / Grant of Land for favors; Construction / Scutage / Call to Council / Call to Arms / Loan for duties).
@@ -231,13 +358,13 @@ Parallelizable with Phase 4. Driven by `gdd-troops-tab.md` v2.3+.
 - Wires into existing `henchman_loyalty_resolver.gd` for cascading loyalty rolls when duty exceeds threshold or scutage payment fails.
 
 **UI:**
-- Embed in `realm.tscn` (Phase 6): per-vassal Favors/Duties card showing this month's roll + recent history; player can Approve/Veto/Modify on monthly tick.
+- Embed in `realm.tscn` (Phase 7): per-vassal Favors/Duties card showing this month's roll + recent history; player can Approve/Veto/Modify on monthly tick.
 
 **Verification:** stack four duties on a vassal, verify cumulative −4 loyalty modifier, verify failed loyalty roll triggers vassal departure / revolt path.
 
 ---
 
-## Phase 8 — Domain Encounters + Bandits + Threats
+## Phase 9 — Domain Encounters + Bandits + Sieges *(was Phase 8)*
 
 **Data:**
 - `data/domain_events/encounter_table.json` — extract every encounter row from `ax_domain_level_encounters.xml` (dangerous-border raid, dungeon-monster incursion, harvest failure, brigand wave, plague, religious strife, political intrigue, revolt, conquest threat) with hex/classification/season filters, severity, response options, mechanical consequences.
@@ -248,16 +375,40 @@ Parallelizable with Phase 4. Driven by `gdd-troops-tab.md` v2.3+.
 - `engine/subsystems/domains/domain_encounter_resolver.gd` — **`[RAW PATCH]`** Encounter throws follow `ax_domain_level_encounters` §classification_rules L13-29: **civilized = monthly throws, borderlands = weekly throws, wilderness = daily throws** (NOT a flat probability per classification). The throw die and target value for each throw come from the territory-size × terrain table loaded from `encounter_frequency_table.json`; civilized domains use the "city/grass/scrub/settled" terrain column with the "inhabited" wilderness encounter sub-table; borderlands and wilderness use the column matching their predominant terrain. On a passing throw, roll on the wilderness encounters by terrain table per L42-120, then resolve reaction (hostile / unfriendly / neutral / mercantilist / friendly).
 - `engine/subsystems/domains/bandit_spawner.gd` — domain morale ≤ −2 → spawn bandits as enemy "army" per `acore_axioms` §bandits L611-630; counts scale by morale tier from `bandit_scaling.json`; defeating restores +1 morale and reduces population by bandits killed (prisoners returned to work return as families per L617-620, but if morale still below −1 when freed, the appropriate proportion reverts to banditry next month per L620); raising morale instead of fighting removes bandits without population loss per L622-625.
 - `engine/subsystems/domains/npc_challenger_emergence.gd` — cumulative monthly chance from bandits per morale tier (Rebellious 10%, Defiant 5%, Turbulent 1% per `acore_axioms` §effects_of_morale L559, L569, L577); on emergence, the challenger has experience level sufficient for personal authority +0 per L560; if the ruler refuses battle, the NPC begins pillaging, imposing −4 on morale rolls per L627-630.
-- `engine/subsystems/domains/siege_state.gd` — domain `is_besieged` flag, blockade / reduction / assault per `daw_sieges.xml`; consumed by future combat-tactical surface.
+- **`[SIEGE 2026-05-06]`** Siege resolution subsystem — **fully abstract, in v1 scope, no battle map required**. Two RAW-supported resolution paths, dispatched by who's involved:
+
+  - `engine/subsystems/domains/siege_state.gd` — domain `is_besieged` flag, current siege phase (blockade / reduction / assault), besieging-army composition, defender garrison, current shp / max shp, breach count, supplies remaining, `siege_started_calendar_day`, `expected_resolution_date`. Source of truth for the Encounters & Threats sub-tab's siege card per `gdd-domain-tab.md` §13.
+  - `engine/subsystems/domains/unit_capacity_calculator.gd` — single source of truth for stronghold unit_capacity. v1 implementation uses the no-map formula per `daw_sieges.xml` §siege_mechanics.unit_capacity L37-41: `unit_capacity = ceil(shp / 1000)`. Exposes a stable interface so the grid-builder swap-in for v1.1+ ("If mapped, calculate unit capacity by summing the unit capacity of all structures") is a one-method replacement, not a cross-cutting change.
+  - `engine/subsystems/domains/siege_resolver.gd` — **full DaW: Campaigns siege rules** for **player-involved sieges** (PC besieger, PC defender, or PC henchman commanding either army). Implements the three-phase procedure per `daw_sieges.xml`:
+    - **Blockade** (§blockade L65-193): encirclement units required = 2 per unit_capacity (minimum 20); circumvallation reduces requirement by 2 per 250'; naval blockade required if water-facing; un-blockaded prep adds 600 gp/point/week to stored supplies (cap 3,000 gp/point per L121-127); blockaded defenders lose supply line.
+    - **Reduction** (§reduction L195-463): siege engines + magic + siege-mining + hijinks deal shp damage; each 1,000 shp = 1 breach (per §siege_mechanics.breaches L42-46); siege-mining excludes solid-rock or moat-girdled strongholds (L418-420); defender repair per L455-461 (wood: 5 shp per gp construction rate, stone: 1 shp per gp; cap at 50% of damage taken during siege).
+    - **Assault** (§assault L465-499): the 24-step procedure resolves via attack throws and battle-rating math; max assaulting units = 1 per unit_capacity + 1 per breach; max defending units = 1 per unit_capacity; assault attack throws at −2 (artillery / siege equipment / flyers / breach-assaulters exempt); defender +2; defending infantry +1 BR for stronghold protection; assaulting cavalry not using a breach drop to BR/4. End states: defenders defeated → captured; assaulters defeated → liberated; voluntary surrender → captured; otherwise besieger may renew or call off.
+  - `engine/subsystems/domains/siege_resolver_simplified.gd` — **Sieges Simplified table** per `daw_sieges.xml` §sieges_simplified L813-846+. Used for **NPC-vs-NPC sieges** that resolve off-camera in the world simulation. Procedure: cross-reference stronghold shp × `unit_advantage = besieging_units − defending_units` (with artillery/siege engines as bonus units per L823-825) on the duration table at L847+; result is days-to-capture (0 = no fight, "−" = besieger too weak to capture and limited to starvation blockade). Site duration modifiers per L827-829.
+  - `engine/subsystems/domains/siege_intervention_handler.gd` — when a PC arrives at an in-progress simplified siege, **escalate to full DaW rules**. Per `daw_sieges.xml` §off_camera_and_intervention_guidance L838-844: reconstruct current stronghold shp proportionally from elapsed time (full duration elapsed → 0 shp; half elapsed → 50% shp; etc.). Recompute breaches from the reconstructed shp delta. Hand off `siege_state` to `siege_resolver.gd` for the rest.
+  - `engine/subsystems/domains/siege_supply_tracker.gd` — stored supplies tracking per `daw_sieges.xml` §effects_of_blockade L116-136: default 600 gp/point of unit_capacity (≈10 weeks at full garrison); consumed at full-garrison rate during blockade; +600/point/week for un-blockaded preparation time, capped at 3,000/point.
+  - `engine/subsystems/domains/siege_dispatcher.gd` — routes a new siege event to the right resolver based on participants. If any participant is a PC, a PC's henchman, or a PC's named NPC vassal commanding an army, route to `siege_resolver.gd` (full rules). Otherwise route to `siege_resolver_simplified.gd`. Promotes a simplified siege to the full resolver via `siege_intervention_handler.gd` whenever a PC subsequently joins.
+  - **`[ARCH 2026-05-06]`** All siege-resolution actions launch through the `ActivityLauncher` API per `gdd-realtime-scheduler.md` §4.8.3, with siege turns scheduled as `ScheduledEvent`s on the master scheduler.
+
+**Note on grid placement:** Per `gdd-stronghold-construction.md` §4 the project specifies a future grid-placement planner that would compute per-structure unit_capacity (more accurate than the no-map ceil(shp / 1000) formula). That planner is **deferred to v1.1+**. v1 strongholds are abstract value-only records with shp, gp_value, and derived unit_capacity. All army-level combat in v1 is abstract; mapped tactical battles per Domains at War: Battles are out of project scope.
 
 **UI:**
 - `scenes/ui/notebook/domain/sub_tabs/encounters_threats.tscn` — threat list (type / source-hex / creature / severity), garrison-mitigation budget, monthly encounter-throw summary, bandit count + repress/defeat options, occupation/pillage status, active-siege card. Action buttons: Deploy Garrison / Repress / Defend / Negotiate / Retreat. HUD toast on high-severity events with cross-activation per GDD §17.
 
-**Verification:** drive morale to −3 via taxation spike, verify bandits spawn at correct count (one per two families per `acore_axioms` §effects_of_morale.Defiant L568), verify resolving them via garrison action restores morale by +1; **`[RAW PATCH]`** `tests/test_encounter_throw_frequency_by_territory_size.gd` verifying that a 1-hex civilized domain throws monthly with 100+ on 1d100 (i.e., effectively never absent special modifiers), while a 6-hex wilderness domain throws daily with 18+ on 1d20 in harsh terrain.
+**Verification:** drive morale to −3 via taxation spike, verify bandits spawn at correct count (one per two families per `acore_axioms` §effects_of_morale.Defiant L568), verify resolving them via garrison action restores morale by +1; **`[RAW PATCH]`** `tests/test_encounter_throw_frequency_by_territory_size.gd` verifying that a 1-hex civilized domain throws monthly with 100+ on 1d100 (i.e., effectively never absent special modifiers), while a 6-hex wilderness domain throws daily with 18+ on 1d20 in harsh terrain. **`[SIEGE 2026-05-06]`** Siege verification:
+
+- `tests/test_unit_capacity_no_map_formula.gd` — verify `unit_capacity = ceil(shp / 1000)` per `daw_sieges.xml` L37-41 across boundary cases (1 shp → 1, 999 shp → 1, 1000 shp → 1, 1001 shp → 2, 32000 shp wilderness minimum → 32).
+- `tests/test_siege_dispatcher_routing.gd` — PC-defended stronghold besieged by NPC army → routes to full `siege_resolver.gd`; NPC vs NPC siege → routes to `siege_resolver_simplified.gd`; PC arrives mid-simplified → escalates to full resolver via `siege_intervention_handler.gd`.
+- `tests/test_siege_resolver_full_blockade.gd` — verify required encirclement units (2 per unit_capacity, min 20), circumvallation reduction (−2 per 250'), naval-blockade requirement when water-facing, supply consumption rate (default 600 gp/point ≈ 10 weeks at full garrison).
+- `tests/test_siege_resolver_full_reduction.gd` — verify shp damage from artillery / siege-mining / magic / hijinks; breach generation at 1,000 shp intervals; defender repair (wood 5 shp/gp, stone 1 shp/gp; capped at 50% of damage taken).
+- `tests/test_siege_resolver_full_assault.gd` — 24-step assault procedure end-to-end; max assaulting units = unit_capacity + breaches; max defending units = unit_capacity; assault −2 / defender +2 attack throw modifiers; defending infantry +1 BR; cavalry-not-using-breach BR/4; capture / liberation / surrender end states.
+- `tests/test_siege_resolver_simplified.gd` — duration table lookup for stronghold shp × unit_advantage; "−" result when besieger too weak; site duration modifiers; NPC-vs-NPC end-to-end with deterministic outcome based on inputs.
+- `tests/test_siege_intervention_proportional_state.gd` — PC arrives at day 5 of a 10-day simplified siege → reconstructed state has 50% remaining shp (per `daw_sieges.xml` §off_camera_and_intervention_guidance L838-844); breach count derived from shp delta; supplies at 50%; full-resolver picks up cleanly from this state.
+- `tests/test_siege_supply_tracker.gd` — un-blockaded prep adds 600 gp/point/week to stored supplies, capped at 3,000 gp/point; consumption rate matches rated weeks at full garrison.
+- Manual end-to-end: PC's L9 fighter defends a 32,000-gp wilderness stronghold (32 unit_capacity) against an NPC bandit army; verify full-rules path fires, blockade requires 64 enemy units (or 20 minimum), reduction over multiple weeks creates breaches, assault resolves with the 24-step procedure, and the Encounters & Threats sub-tab surfaces the active siege card with phase / breaches / supplies / expected resolution.
 
 ---
 
-## Phase 9 — Class-Specific Sub-Tab (Faith / Magical Research / Trade / Syndicate / Garrison Training)
+## Phase 10 — Class-Specific Sub-Tab (Faith / Magical Research / Trade / Syndicate / Garrison Training) *(was Phase 9)*
 
 Five blocks, stacked for multi-bucket classes (e.g., Bladedancer = Faith + Garrison Training; **`[RESOLVED 2026-05-06]`** Lightblessed Wonderworker = Magical Research + Faith stacked, per the O-D5 resolution: the class plays as a Mage at root for domain purposes, with the Faith block layered on for its cleric-list divine casting and split follower set; not a separate hybrid bucket).
 
@@ -285,7 +436,7 @@ Five blocks, stacked for multi-bucket classes (e.g., Bladedancer = Faith + Garri
 
 ---
 
-## Phase 10 — Departure Log + Lifecycle Polish + Chaotic Branch + End-to-End Tests
+## Phase 11 — Departure Log + Lifecycle Polish + Chaotic Branch + End-to-End Tests *(was Phase 10)*
 
 **Schema:**
 - `064_departure_log.sql` — `domain_departure_log(id, domain_id, calendar_day, event_type, summary, full_details_json)` for permanent loss record.
@@ -336,8 +487,8 @@ Five blocks, stacked for multi-bucket classes (e.g., Bladedancer = Faith + Garri
 **Reused (existing, do not duplicate):**
 - `engine/autoloads/timekeeping.gd` — `month_changed`, `day_changed`, `advance_*`
 - `engine/subsystems/session/scheduler/event_scheduler.gd` — monthly tick scheduling
-- `engine/subsystems/henchmen/henchman_loyalty_resolver.gd` — vassal loyalty cascade in Phase 6, 7
-- `engine/subsystems/henchmen/henchman_lifecycle_manager.gd` — vassal succession path in Phase 10
+- `engine/subsystems/henchmen/henchman_loyalty_resolver.gd` — vassal loyalty cascade in Phase 7, 8
+- `engine/subsystems/henchmen/henchman_lifecycle_manager.gd` — vassal succession path in Phase 11
 - `engine/subsystems/combat/morale_resolver.gd` — combat-side morale already implemented
 - `engine/subsystems/reputation/*` — `reputation_entries.scope_type='domain'` already defined; cascade math from `build_log.md` line 4430+
 - Existing `data/henchmen/equipment_kits.json` — follower equipment in Phase 5
@@ -346,12 +497,13 @@ Five blocks, stacked for multi-bucket classes (e.g., Bladedancer = Faith + Garri
 
 ## End-to-End Verification Strategy
 
-Per phase, run focused tests + integration test. Per major milestone (after Phase 2, Phase 5, Phase 7, Phase 10), run a full scenario suite:
+Per phase, run focused tests + integration test. Per major milestone (after Phase 2, Phase 5, Phase 6B, Phase 8, Phase 11), run a full scenario suite:
 
 1. After Phase 2: launch game, establish a domain by grant, advance a month, read full Overview + Treasury data, ledger entries match hand-computed numbers; **`[RAW PATCH]`** verify income-gate banner displays when stronghold below sufficiency.
 2. After Phase 5: complete fighter castle commission at L9, follower waves arrive on schedule using the RAW-correct ceil-rounded math, garrison expenditure meter live with both reference lines visible, recruitment activities resolve.
-3. After Phase 7: assign vassals, run 3 monthly cycles, verify tribute + favors/duties + loyalty rolls + cascades work end-to-end with RAW-correct efficiency tiers.
-4. After Phase 10: run all `tests/scenarios/` end-to-end scenarios headlessly; visual smoke-test all nine sub-tabs across PC + humanoid-henchman entity types and across all classes in the §12.1 matrix.
+3. After Phase 6B: hire mercenary units, form an army with officers, march to a target hex, encounter and defeat an NPC bandit horde via the field-battle resolver; verify RAW-correct phase transitions, casualties, and pursuit.
+4. After Phase 8: assign vassals, run 3 monthly cycles, verify tribute + favors/duties + loyalty rolls + cascades work end-to-end with RAW-correct efficiency tiers.
+5. After Phase 11: run all `tests/scenarios/` end-to-end scenarios headlessly; visual smoke-test all nine sub-tabs across PC + humanoid-henchman entity types and across all classes in the §12.1 matrix.
 
 **Headless test command** (from `CLAUDE.md`):
 ```
@@ -373,12 +525,13 @@ Per phase, run focused tests + integration test. Per major milestone (after Phas
 - Phases 0 + 1 are the heaviest engine work and should not be parallelized (Phase 1's morale-feedback hook depends on Phase 0's resolver shapes).
 - Phases 2 + 3 can overlap once Phase 0 schema is settled; Phase 2 builds the shell, Phase 3 lands the activity time-cost executor + the Decrees & Remote Orders sub-tab + per-location launch contracts + the Active Projects sub-tab on the Character tab.
 - Phase 5 (Troops tab + Garrison) can start as soon as Phase 4 closes the stronghold-followers-attraction prerequisite.
-- Phases 6 + 7 are tightly coupled (Realm before Favors/Duties) and best done back-to-back.
-- Phase 8 (Encounters) can start any time after Phase 0's morale resolver lands; UI slot-in waits for Phase 2 shell.
-- Phase 9 is a long tail — five class blocks × multiple activities each. Consider shipping faith + training first (covers most classes) and mercantile + syndicate + magical-research second.
-- Phase 10 is end-to-end polish; do not start until Phases 0–9 functional acceptance passes.
+- **`[ARMY 2026-05-06]`** Phases 6A and 6B are sequential — Phase 6B's field-battle resolver consumes Phase 6A's army composition, marching, and supply state. Both depend on Phase 5 troop_units. Drafting `gdd-army-warfare.md` is a prerequisite for the Phase 6A build (scaffold lives in the GDD; flesh out in a dedicated drafting session).
+- Phases 7 + 8 are tightly coupled (Realm before Favors/Duties) and best done back-to-back. Phase 8's Call to Arms duty produces an army via the Phase 6 layer.
+- Phase 9 (Encounters / Bandits / Sieges) is unblocked once Phase 6B lands. Bandits resolve as small armies via the field-battle resolver; sieges resolve via the dual-path siege resolvers, with the assault step calling into the field-battle resolver. UI slot-in waits for Phase 2 shell.
+- Phase 10 is a long tail — five class blocks × multiple activities each. Consider shipping faith + training first (covers most classes) and mercantile + syndicate + magical-research second.
+- Phase 11 is end-to-end polish; do not start until Phases 0–10 functional acceptance passes.
 
-If the roadmap needs to be cut, a defensible v1-shippable subset is **Phases 0, 1, 2, 3, 4, 5, 8, 10** (defer Realm/Vassalage/Favors/Class-Specific to v1.1). But per user direction, the target is the full ruler-with-vassals loop, so all ten phases are in scope.
+If the roadmap needs to be cut, a defensible v1-shippable subset is **Phases 0, 1, 2, 3, 4, 5, 6A, 6B, 9, 11** (defer Realm/Vassalage/Favors/Class-Specific to v1.1). But per user direction, the target is the full ruler-with-vassals loop, so all twelve phases are in scope.
 
 ---
 
@@ -387,17 +540,17 @@ If the roadmap needs to be cut, a defensible v1-shippable subset is **Phases 0, 
 | # | Location | Original | Corrected | RAW source |
 |---|---|---|---|---|
 | 1 | Phase 0 growth resolver | "2d10 exploding per 1000 families" | "Two independent 1d10s per 1,000 families (rounded up): one increase, one decrease, both exploding on 10s; net = increase − decrease" | `acore_axioms` §domain_growth.monthly_change L126-131; `ax_campaign_play` §random_growth L15-17 |
-| 2 | Phase 6 tribute calculator | "37–80: 33%, 81–176: 16%, 177–384: 8%, 385–832: 4%, 833+: 1%" | "64-216: 33%, 217-1024: 20%, 1025-4095: 10%, 4096-16384: 5%, 16384+: 1%" | `acore_axioms` §tribute_inefficiency L398-409 |
-| 3 | Phase 8 encounter resolver | "civilized 1-in-12, borderlands 1-in-8, wilderness 1-in-6 per `acore_axioms` §encounters" | "Civilized = monthly throws, borderlands = weekly throws, wilderness = daily throws; throw die scales by territory size and terrain per the RAW frequency table" | `ax_domain_level_encounters` §classification_rules L13-29; §domain_encounter_frequency_by_territory_size_and_terrain L70-120 |
-| 4 | Phase 10 chaotic branch | "no class-V-via-investment" | "Chaotic urban CAN reach market class V at 50,000 gp investment, but per-family urban revenue stays capped at 7 gp regardless" | `ax_domains_of_chaos` §exceptions_from_clanholds L84-85 |
+| 2 | Phase 7 tribute calculator *(was Phase 6)* | "37–80: 33%, 81–176: 16%, 177–384: 8%, 385–832: 4%, 833+: 1%" | "64-216: 33%, 217-1024: 20%, 1025-4095: 10%, 4096-16384: 5%, 16384+: 1%" | `acore_axioms` §tribute_inefficiency L398-409 |
+| 3 | Phase 9 encounter resolver *(was Phase 8)* | "civilized 1-in-12, borderlands 1-in-8, wilderness 1-in-6 per `acore_axioms` §encounters" | "Civilized = monthly throws, borderlands = weekly throws, wilderness = daily throws; throw die scales by territory size and terrain per the RAW frequency table" | `ax_domain_level_encounters` §classification_rules L13-29; §domain_encounter_frequency_by_territory_size_and_terrain L70-120 |
+| 4 | Phase 11 chaotic branch *(was Phase 10)* | "no class-V-via-investment" | "Chaotic urban CAN reach market class V at 50,000 gp investment, but per-family urban revenue stays capped at 7 gp regardless" | `ax_domains_of_chaos` §exceptions_from_clanholds L84-85 |
 | 5 | Phase 0 expense calculator + Phase 5 garrison | "garrison min (2gp/fam civilized, 3gp borderlands, 4gp wilderness)" presented as a hard floor | "2 gp/family universal minimum; the 3 gp (borderlands) and 4 gp (wilderness) values are morale incentives via the additional-troops table, not hard expense floors. Wilderness specifically must reach 4 gp or take a base morale reduction." | `acore_axioms` §garrison L218, L226-234; §additional_troops L461-464 |
 | A1 | Phase 0 morale resolver | omitted | Insufficient-stronghold tiered morale: −1 if ≥½ minimum, −2 if ≥¼, −3 if <¼ | `acore_axioms` §insufficient_stronghold L452-456 |
-| A2 | Phase 0 + Phase 2 + Phase 10 | omitted | Land improvement: 25,000 gp per +1 land value, capped +3 / max 9; lost 1gp value per gp pillaged; treated as wooden in siege | `acore_axioms` §land_improvement L207-215 |
+| A2 | Phase 0 + Phase 2 + Phase 11 | omitted | Land improvement: 25,000 gp per +1 land value, capped +3 / max 9; lost 1gp value per gp pillaged; treated as wooden in siege | `acore_axioms` §land_improvement L207-215 |
 | A3 | Phase 0 morale + Phase 3 activities + Phase 5 garrison | omitted | Repression engine: militia ineligible; +1 morale roll per gp/family additional repressing troops; current morale capped at 0 while repressed | `acore_axioms` §repression L488-491, L510-516 |
 | A4 | Phase 0 revenue calculator + Phase 4 sufficiency | omitted | Income-and-growth gate: domain generates no revenue and does not grow until stronghold value meets classification minimum | `acore_axioms` §peasants_and_followers L108-109 |
 | A5 | Phase 5 followers arrival | "50%/25%/25%" simplified | "ceil(N×0.5) at half-built, ceil(N×0.25) at completion, remainder at +1 month" | `acore_axioms` §followers_arrival L111-116 |
-| A6 | Phase 6 vassals | omitted | Non-henchman vassal base loyalty −2, or −4 if outside trade range; only one duty per favor (no free duty) | `acore_axioms` §non_henchman_vassals L392-397 |
-| A7 | Phase 9 faith handlers | "2d6 × 10 congregants per month" / "congregants / 10 divine power" (from earlier plans) | Congregant growth: 1d10 + CHA per 1,000gp proselytized; 1gp/congregant upkeep; 1d10/1,000gp unpaid depart. Divine power: 10gp per 50 congregants per weekly extraction (= congregants/5) | `ax_campaign_play` §congregant_growth L20-22, §end_of_month.congregants L109-112, §extract_divine_power L460-472 |
+| A6 | Phase 7 vassals *(was Phase 6)* | omitted | Non-henchman vassal base loyalty −2, or −4 if outside trade range; only one duty per favor (no free duty) | `acore_axioms` §non_henchman_vassals L392-397 |
+| A7 | Phase 10 faith handlers *(was Phase 9)* | "2d6 × 10 congregants per month" / "congregants / 10 divine power" (from earlier plans) | Congregant growth: 1d10 + CHA per 1,000gp proselytized; 1gp/congregant upkeep; 1d10/1,000gp unpaid depart. Divine power: 10gp per 50 congregants per weekly extraction (= congregants/5) | `ax_campaign_play` §congregant_growth L20-22, §end_of_month.congregants L109-112, §extract_divine_power L460-472 |
 | A8 | Phase 9 syndicate handlers | (no specific formula in original Plan D — corrected by exclusion) | Confirmation that hijink revenue is per-hijink-type from RAW resolution tables, NOT a flat per-urban-family d6; one hijink per syndicate member per month; size capped by market class | `acore-campaign-hijinks.xml` §hijinks L48-58, §syndicate_size_rules L24-28 |
 | A9 | Phase 9 mercantile | omitted | Venturer monopoly (level 12+): 1gp/month per urban family in the urban settlement, in addition to domain revenue if ruler | `ax_venturer_class.xml` §monopoly_power L203-211 |
 

@@ -30,6 +30,7 @@ const SECTION_DEFS := {
 	"spells":             {"script": preload("res://scenes/ui/character_sheet/tabs/cs_tab_spells.gd"),             "kind": "character"},
 	"advancement":        {"script": preload("res://scenes/ui/character_sheet/tabs/cs_tab_advancement.gd"),        "kind": "character"},
 	"effects":            {"script": preload("res://scenes/ui/character_sheet/tabs/cs_tab_effects.gd"),            "kind": "character"},
+	"active_projects":    {"script": preload("res://scenes/ui/character_sheet/tabs/cs_tab_active_projects.gd"),    "kind": "character"},
 	"creature_stats":     {"script": preload("res://scenes/ui/character_sheet/tabs/cs_tab_creature_stats.gd"),     "kind": "creature"},
 	"creature_inventory": {"script": preload("res://scenes/ui/character_sheet/tabs/cs_tab_creature_inventory.gd"), "kind": "creature"},
 	"vehicle_detail":     {"script": preload("res://scenes/ui/character_sheet/tabs/cs_vehicle_detail_panel.gd"),   "kind": "vehicle"},

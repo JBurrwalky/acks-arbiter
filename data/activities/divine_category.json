@@ -1,0 +1,147 @@
+{
+  "_meta": {
+    "category": "divine",
+    "source": "rules/ax_campaign_play.xml §divine L380-500",
+    "schema_version": 1,
+    "phase": "10A.2",
+    "notes": "All eight RAW divine activities surfaced via the Faith block. restricted_period_rounds values: daily = 8640, weekly = 60480, monthly = 241920, yearly = 3144960 (ROUNDS_PER_DAY × N). Per Q11 [RESOLVED 2026-05-10], divine casters with full spell_research also get the Magical Research bucket — magical research/scribing/etc. are NOT surfaced here; they live in the Magical Research block (Phase 10B.1) for these classes."
+  },
+  "activities": [
+    {
+      "id": "dispatch_missionaries",
+      "category": "divine",
+      "frequency": "restricted",
+      "activity_level": "minor",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "minor_activity",
+      "restricted_period_rounds": 241920,
+      "location_kind": "anywhere",
+      "prerequisites": ["divine_caster"],
+      "param_schema": {
+        "gp_committed": "int (wages spent on missionary hirelings this month; accrues into next-month congregant growth)"
+      },
+      "effect_summary": "Dispatch hirelings to perform evangelical deeds. gp committed accrues into next month's congregant growth roll (1d10 + Cha mod per 1,000 gp).",
+      "raw_citation": "ax_campaign_play.xml §dispatch_missionaries L383-394"
+    },
+    {
+      "id": "cast_charitable_spells",
+      "category": "divine",
+      "frequency": "singular",
+      "activity_level": "minor",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "minor_activity",
+      "location_kind": "in_domain_or_settlement",
+      "prerequisites": ["divine_caster"],
+      "param_schema": {
+        "spell_keys": "Array[String] — keys of spells cast charitably this session",
+        "gp_value_total": "int (sum of spell-cost gp values, accrues into next-month congregant growth)"
+      },
+      "effect_summary": "Cast daily spells for charitable purposes. gp value of cast spells accrues into next month's congregant growth.",
+      "raw_citation": "ax_campaign_play.xml §cast_charitable_spells L396-406"
+    },
+    {
+      "id": "consecrate_altar",
+      "category": "divine",
+      "frequency": "ongoing",
+      "activity_level": "major",
+      "strenuous": false,
+      "duration_formula": "ceil(gp_invested / 500)",
+      "default_ticks_required": 0,
+      "session_time_cost_rounds": "major_activity",
+      "location_kind": "at_altar_site",
+      "prerequisites": ["divine_caster", "level_5_plus"],
+      "param_schema": {
+        "gp_invested": "int (gp value of the altar; 1 day per 500 gp)",
+        "dp_substituted_gp": "int (optional; gp substituted from divine_power per RAW §consecrate_altar L419 'humbler-looking altar')",
+        "alignment": "lawful | neutral | chaotic (must match caster's deity)",
+        "location_kind": "stronghold | settlement_poi | wilderness_hex | dungeon_room",
+        "location_ref": "id of the location"
+      },
+      "effect_summary": "Consecrates an altar. Aura size = 100 sq ft per 100 gp invested. Lawful altars create a pinnacle of good; chaotic create a sinkhole of evil. Aura persists until dispelled or altar is physically broken and blessed.",
+      "raw_citation": "ax_campaign_play.xml §consecrate_altar L408-421"
+    },
+    {
+      "id": "consecrate_fields",
+      "category": "divine",
+      "frequency": "ongoing",
+      "activity_level": "major",
+      "strenuous": false,
+      "duration_formula": "ceil(peasant_families / 780)",
+      "default_ticks_required": 0,
+      "session_time_cost_rounds": "major_activity",
+      "location_kind": "in_domain",
+      "prerequisites": ["divine_caster", "level_5_plus", "ruler_or_advisor"],
+      "effect_summary": "Consecrates the fields. On completion: spend 2 gp DP per family, make magic-research throw. Success → +1 gp/family land value during next month's revenue. Natural 1 → -1 gp/family.",
+      "raw_citation": "ax_campaign_play.xml §consecrate_fields L423-439"
+    },
+    {
+      "id": "consecrate_ruler",
+      "category": "divine",
+      "frequency": "restricted",
+      "activity_level": "major",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "major_activity",
+      "restricted_period_rounds": 3144960,
+      "location_kind": "at_ruler",
+      "prerequisites": ["divine_caster", "level_9_plus", "spiritual_advisor_of_ruler"],
+      "param_schema": {
+        "ruler_character_id": "String (the domain ruler being consecrated)"
+      },
+      "effect_summary": "Spend DP equal to ruler's monthly domain revenue. Magic-research throw. Success: +1 base morale, +1 vassal loyalty, best-of-two vagary rolls for 12 game months. Natural 1: -1 base morale, -1 vassal loyalty, worst-of-two vagary rolls.",
+      "raw_citation": "ax_campaign_play.xml §consecrate_ruler L441-458"
+    },
+    {
+      "id": "extract_divine_power",
+      "category": "divine",
+      "frequency": "restricted",
+      "activity_level": "minor",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "minor_activity",
+      "restricted_period_rounds": 60480,
+      "location_kind": "anywhere",
+      "prerequisites": ["divine_caster", "min_congregants_50"],
+      "effect_summary": "Extract 10 gp DP per 50 congregants (= congregants ÷ 5). If caster is ruler/spiritual_advisor of a domain, additionally roll 0..8 gp per 10 families. DP is NOT auto-accumulated; activity must be taken weekly per RAW §extract_divine_power L472.",
+      "raw_citation": "ax_campaign_play.xml §extract_divine_power L460-473"
+    },
+    {
+      "id": "perform_blood_sacrifice",
+      "category": "divine",
+      "frequency": "restricted",
+      "activity_level": "minor",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "minor_activity",
+      "restricted_period_rounds": 8640,
+      "location_kind": "at_altar_chaotic",
+      "alignment_restriction": "chaotic",
+      "prerequisites": ["divine_caster", "alignment_chaotic"],
+      "param_schema": {
+        "sacrifice_target_ids": "Array[String] (creatures sacrificed; up to class_level per session)"
+      },
+      "effect_summary": "Conduct one blood sacrifice per class level per session. Each sacrifice generates DP equal to the XP value of the sacrificed creature.",
+      "raw_citation": "ax_campaign_play.xml §perform_blood_sacrifice L475-487"
+    },
+    {
+      "id": "perform_ceremonial_sacrifice",
+      "category": "divine",
+      "frequency": "restricted",
+      "activity_level": "minor",
+      "strenuous": false,
+      "default_ticks_required": 1,
+      "session_time_cost_rounds": "minor_activity",
+      "restricted_period_rounds": 8640,
+      "location_kind": "in_domain_or_settlement",
+      "alignment_restriction": "lawful",
+      "prerequisites": ["divine_caster", "alignment_lawful"],
+      "param_schema": {
+        "gp_value_total": "int (gp value of ceremonial offerings; accrues into next-month congregant growth)"
+      },
+      "effect_summary": "Perform ceremonial sacrifices. gp value of offerings accrues into next month's congregant growth.",
+      "raw_citation": "ax_campaign_play.xml §perform_ceremonial_sacrifice L489-499"
+    }
+  ]
+}

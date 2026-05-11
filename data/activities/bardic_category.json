@@ -1,0 +1,39 @@
+{
+  "_meta": {
+    "category": "bardic",
+    "source": "rules/acore_campaign_classes.xml §hireling_inspiration L569-575 + §hall L577-584",
+    "schema_version": 1,
+    "phase": "10A.3",
+    "notes": "Bardic Patronage class-bucket (Bard-only). Contains the Bard-specific class-power activities: passive Chronicles of Battle aura (hireling_inspiration L5+) and active Solicit Followers (hall L9+). Per Q14 [RESOLVED 2026-05-11], the prior 'Bardic variant of Garrison Training' model is replaced by this standalone class-bucket. Bard troop-training capability (if they take Manual of Arms proficiency) flows through the Garrison sub-tab — NOT here."
+  },
+  "activities": [
+    {
+      "id": "solicit_followers",
+      "category": "bardic",
+      "frequency": "ongoing",
+      "activity_level": "minor",
+      "strenuous": false,
+      "duration_formula": "(1d4 + 1) * 7 days (1-3 weeks of recruitment activity)",
+      "default_ticks_required": 14,
+      "session_time_cost_rounds": "minor_activity",
+      "location_kind": "at_bardic_hall",
+      "prerequisites": ["bard_class", "level_9_plus", "has_bardic_hall"],
+      "param_schema": {
+        "wage_offered_gp": "int (optional; default standard mercenary wages per troop type)"
+      },
+      "effect_summary": "Recruits 1d4+1 × 10 0-level mercenaries + 1d6 1st-3rd-level bards into the ruler's service. Hire requires standard mercenary wages.",
+      "raw_citation": "acore_campaign_classes.xml §hall L577-584"
+    },
+    {
+      "id": "chronicles_of_battle",
+      "category": "bardic",
+      "frequency": "passive",
+      "activity_level": "trivial",
+      "is_launchable": false,
+      "strenuous": false,
+      "prerequisites": ["bard_class", "level_5_plus"],
+      "effect_summary": "Passive ability: bard's presence grants +1 morale to hired henchmen and mercenaries when the bard is in the same hex/army. Stacks with Charisma + proficiency morale bonuses. NOT a launchable activity — applies automatically when the bard is co-located with eligible units.",
+      "raw_citation": "acore_campaign_classes.xml §hireling_inspiration L569-575"
+    }
+  ]
+}

@@ -4,7 +4,7 @@
 **Status:** Draft
 **Depends on ACKS rules:** `acore_adventures_and_encounters.xml` (movement costs by terrain), `acore-monster-stocking-rules.xml` (wilderness encounter tables by terrain), `acore-setting-construction-rules.xml` (territory classification, population density), gdd-weather-generation.md
 **Modifiable by Claude Code:** Yes — the tag system, generation algorithms, and weighting formulas are all engineering decisions.
-**Last updated:** 2026-03-19
+**Last updated:** 2026-05-11
 
 ---
 
@@ -76,12 +76,15 @@ Each hex carries tags from two independent layers:
 | `swamp` | Swamp | Wetland, marsh, bog, fen |
 | `desert` | Barren, Desert | Arid wasteland, sand desert, rocky barren |
 
-**Layer C — Water Features** (derived from hydrology):
+**Layer C — Water** (derived from hydrology). Ocean and lake are **full-hex** water tiles, mutually exclusive with all land biomes/elevations — they override the land cascade entirely. Rivers are **not** a water-axis value; they live on the per-edge `HexOverlayData` overlay and coexist with any land biome.
 
 | Tag | Encounter Column | Description |
 |-----|-----------------|-------------|
-| `river` | River | Hex contains a significant river or lake |
-| `ocean` | Ocean | Coastal hex or open sea |
+| `""` (none) | — | No water tile; land hex. May still carry a river overlay. |
+| `ocean` | Ocean | Open sea or coastal-water hex |
+| `lake` | Lake (placeholder column) | Inland water body filling the whole hex |
+
+Small islands inside an ocean or lake hex are modeled as Points of Interest, not as a terrain combination. River and road edges are stored on `HexOverlayData` (see §3.3).
 
 **Layer D — Civilization** (derived from domain data):
 
@@ -92,16 +95,17 @@ Each hex carries tags from two independent layers:
 
 ### 3.2 How Tags Combine
 
-Every hex has exactly **one** elevation tag and exactly **one** biome tag. It may optionally have a water tag and/or a civilization tag.
+A land hex carries exactly **one** elevation tag, exactly **one** biome tag, exactly one civilization tag, and optionally a biome subtype (§3.4) and/or a river/road overlay. A water hex (`water = ocean | lake`) ignores the elevation/biome/subtype axes for resolver purposes.
 
 Examples:
-- Open plains: `[flat, clear]`
-- Forested hills: `[hills, woods]`
-- Desert mountains: `[mountains, desert]`
-- Swampy lowlands with river: `[flat, swamp, river]`
-- Settled farmland near a city: `[flat, clear, inhabited]`
-- Jungle highlands: `[hills, jungle]`
-- Coastal mountains: `[mountains, clear, ocean]`
+- Open plains: `elevation=flat, biome=clear`
+- Forested hills: `elevation=hills, biome=woods`
+- Desert mountains: `elevation=mountains, biome=desert`
+- Swampy lowlands with river overlay: `elevation=flat, biome=swamp, overlay.river`
+- Boreal forest: `elevation=flat, biome=woods, subtype=forest_taiga`
+- Tropical volcano: `elevation=mountains, biome=jungle, subtype=mountains_volcanic`
+- Broken desert: `elevation=flat, biome=desert, subtype=desert_badlands`
+- Coastal water tile: `water=ocean` (biome/elevation/subtype ignored)
 
 ### 3.3 Tag Storage
 
@@ -109,13 +113,52 @@ Examples:
 HexTerrainData:
   elevation: string          # "flat" | "hills" | "mountains"
   biome: string              # "clear" | "woods" | "jungle" | "swamp" | "desert"
-  water: string or null      # "river" | "ocean" | null
+  biome_subtype: string      # "" (parent default) | see §3.4 for full list
+  water: string              # "" (none) | "ocean" | "lake"
   civilization: string       # "civilized" | "borderlands" | "wilderness"
-  territory_classification: string  # Same as civilization (ACKS term)
   has_city: bool             # True if hex contains a city
   original_biome: string     # Pre-deforestation/forestation biome (preserved for reversal)
   settlement_ids: Array      # Settlements in this hex, if any
+  overlay: HexOverlayData    # River/road edges; null = no overlays
 ```
+
+### 3.4 Biome Subtypes
+
+A biome subtype is an optional refinement of the parent biome (or, for elevation-rooted subtypes, the parent elevation). Subtypes never invent new RAW encounter columns — they remap a hex to an existing column and modify ancillary values (movement cost, navigation TN, encounter distance, lair density column, creature-type tilt). An empty subtype (`""`) preserves the §4–§5 default cascade and is the value for every hex by default.
+
+**Why subtypes:** RAW vocabularies for terrain are descriptive and overlap inconsistently across the encounter-frequency, encounter-distance, navigation, movement, and lair-density tables (see §4 intro). The biome+elevation+water axes alone cannot encode "Badlands" (RAW encounter-distance) or "Forest, Heavy" (RAW encounter-distance) or the GDD-design distinction between Tundra/Savanna/Grassland (all Köppen-mapped to `clear` in §7.1). The subtype axis is the minimum-additional-data layer needed to keep RAW fidelity without inventing new columns.
+
+#### Table 3.4.1 — Subtype Specification
+
+| Subtype | Parent | Allowed elevation | Allowed biome | Enc. column | Movement bucket | Nav TN | Enc. distance | Lair column |
+|---|---|---|---|---|---|---|---|---|
+| `forest_dense` | woods | any | woods | Woods | x1/2 (jungle-tier) | 7+ | 5d4 yd | mtn/woods |
+| `forest_taiga` | woods | any | woods | Woods | x2/3 (woods) | 7+ | 5d8 yd | mtn/woods |
+| `mountains_volcanic` | mountains (elev-rooted) | mountains | clear, woods, jungle, desert | Mtn/Hills | x1/2 | 7+ | 4d6×10 yd | mtn/woods |
+| `mountains_glacial` | mountains (elev-rooted) | mountains | clear, desert | Mtn/Hills | x1/2 | 7+ | 4d6×10 yd | mtn/woods |
+| `clear_tundra` | clear | flat, hills | clear | Clear/Grass/Scrub | x1 | 4+ | 5d20×10 yd | clear/grass |
+| `clear_savanna` | clear | flat, hills | clear | Clear/Grass/Scrub | x1 | 4+ | 5d20×10 yd | clear/grass |
+| `clear_grassland` | clear | any | clear | Clear/Grass/Scrub | x1 | 4+ | 5d20×10 yd | clear/grass |
+| `desert_badlands` | desert | flat, hills | desert | Barren/Desert | x2/3 (hills-tier even on flat) | 7+ | 2d6×10 yd | barren/desert |
+
+Rivers (overlay) and roads (overlay) are allowed on **all** land subtypes. Water tags (`ocean`, `lake`) are mutually exclusive with any subtype — a water hex never has a subtype.
+
+#### Table 3.4.2 — Creature-Type Tilt
+
+When a subtype produces a creature-type tilt, the resolver multiplies the RAW d8 creature-type weights for the resolved column by the multipliers below. Multipliers <1.0 reduce the chance of that type; >1.0 increase it. Unmentioned types use 1.0. An empty tilt (default) uses the RAW column straight.
+
+| Subtype | Tilt |
+|---|---|
+| `forest_dense` | — (parent woods) |
+| `forest_taiga` | Animal ×1.5, Humanoid ×0.75 |
+| `mountains_volcanic` | Dragon ×1.5, Unusual ×1.5, Animal ×0.75 |
+| `mountains_glacial` | Humanoid ×1.25, Dragon ×1.25, Unusual ×1.25, Insect ×0.25 |
+| `clear_tundra` | Animal ×1.5, Humanoid ×0.5, Insect ×0.5 |
+| `clear_savanna` | Animal ×1.5, Humanoid ×1.25 |
+| `clear_grassland` | — (RAW baseline) |
+| `desert_badlands` | — (column itself is Barrens, which already carries the tilt) |
+
+Specific-monster selection within a creature type (the sub-table roll for Men / Animals / Humanoids / Flyers / Swimmers) is the encounter spawner's responsibility and is not modulated by subtype at this layer — the column choice plus creature-type tilt is enough to bias the result toward the desired creature population.
 
 ---
 
@@ -126,21 +169,39 @@ When the engine rolls a wilderness encounter, it must select which of the 10 ACK
 ### 4.1 Priority Cascade
 
 ```
-1. IF hex has_city → use CITY table (100%)
-2. ELSE IF hex is civilized → use INHABITED table (100%)
-3. ELSE IF hex is borderlands → 50% INHABITED table, 50% natural terrain
-4. ELSE (wilderness) → use natural terrain (100%)
+1. IF water = ocean → use OCEAN table (100%)
+2. ELSE IF water = lake → use LAKE table (100%; placeholder column)
+3. ELSE IF hex has_city → use CITY table (100%)
+4. ELSE IF hex is civilized → use INHABITED table (100%)
+5. ELSE IF hex is borderlands → 50% INHABITED table, 50% natural terrain
+6. ELSE (wilderness) → use natural terrain (100%)
 ```
+
+Ocean and lake short-circuit before territory because they are full-hex water tiles (§3.1).
 
 ### 4.2 Natural Terrain Selection
 
-When natural terrain is selected (step 3-4 above), the hex may have multiple applicable tables. The selection logic:
+When natural terrain is selected (steps 5–6 above), the hex may have multiple applicable tables. The selection logic:
 
 ```
-1. IF hex has water tag AND encounter involves water context:
-   - River: use RIVER table
-   - Ocean: use OCEAN table
-   (Water context = party is traveling by boat, crossing a river, on the coast)
+0. IF biome_subtype is set:
+   - forest_dense, forest_taiga → Woods column at the same 60/40 split as
+     parent `woods` (60% Woods / 40% Mtn/Hills if elevation is hills or
+     mountains; 100% Woods if flat).
+   - mountains_volcanic, mountains_glacial → 100% Mountains/Hills column.
+   - clear_tundra, clear_savanna, clear_grassland → Clear column at the
+     parent-clear split (40% Clear / 60% Mtn/Hills if elevation is hills or
+     mountains; 100% Clear if flat).
+   - desert_badlands → 100% Barren/Desert column. (Note: this differs from
+     plain desert+hills/mountains, which is 60/40 Barren/Mtn — badlands
+     uses the column without elevation weighting because the subtype itself
+     supplies the broken-terrain encounter character.)
+   In all subtype cases, the creature-type tilt (Table 3.4.2) is applied
+   to the resolved column's d8 weights before the creature-type roll.
+
+1. ELSE IF hex has a river overlay AND encounter involves water context:
+   - Use RIVER table.
+   (Water context = party is traveling by boat, crossing a river, fishing.)
 
 2. ELSE IF hex has ONLY a biome tag relevant to encounters (elevation is flat):
    - Use the biome's encounter column (100%)
@@ -181,9 +242,9 @@ When a borderlands hex rolls to use natural terrain (the 50% failure case), the 
 The River column is used when:
 - The party is actively crossing a river in this hex, OR
 - The party is traveling along a river in this hex, OR
-- The hex's primary feature is a river/lake (water tag present) and a random check determines the encounter involves the water
+- The hex carries a river overlay and a random check determines the encounter involves the water
 
-For hexes with a river tag where the party is traveling overland (not interacting with the river), use the normal biome/elevation selection. The river tag doesn't automatically replace the biome table — it's contextual.
+For hexes with a river overlay where the party is traveling overland (not interacting with the river), use the normal biome/subtype/elevation selection. The river overlay doesn't automatically replace the biome table — it's contextual.
 
 ---
 
@@ -204,6 +265,13 @@ So `[mountains, woods]` uses the Mountains movement cost. `[hills, swamp]` uses 
 Exact movement point costs per terrain are defined in the ACKS rules in `acore_adventures_and_encounters.xml` and are NOT defined in this GDD.
 
 Roads override terrain cost — a road through mountains still provides road movement speed.
+
+**Subtype overrides** (per Table 3.4.1) replace the biome+elevation calculation:
+- `forest_dense` uses x1/2 (jungle-tier), reflecting the RAW Forest Heavy / Jungle pairing.
+- `desert_badlands` uses x2/3 (hills-tier) even when elevation is flat, reflecting eroded terrain.
+- All other subtypes inherit their parent biome's movement bucket.
+
+When a subtype override and the elevation cascade disagree, the costlier of the two wins (e.g. forest_dense on mountains stays at mountains x1/2).
 
 ---
 
@@ -259,23 +327,28 @@ Deforestation/forestation is applied:
 
 ### 7.1 Köppen-to-Biome Mapping
 
+When the generator assigns a biome from Köppen climate, it may also assign a subtype refinement (§3.4). The "default subtype" column gives the most common subtype the generator should produce for that Köppen group; alternatives can override during local variation.
+
+
 The setting generation pipeline (§14A.2) assigns a Köppen climate code to each hex based on latitude, elevation, and proximity to water. This GDD defines how those codes map to biome tags:
 
-| Köppen Group | Codes | Default Biome | Notes |
-|---|---|---|---|
-| **Af** — Tropical rainforest | Af | `jungle` | Hot, wet year-round |
-| **Am** — Tropical monsoon | Am | `jungle` | Seasonal heavy rain |
-| **Aw** — Tropical savanna | Aw | `clear` | Dry winters, wet summers; grassland/savanna |
-| **BWh/BWk** — Hot/cold desert | BWh, BWk | `desert` | Arid, minimal vegetation |
-| **BSh/BSk** — Hot/cold steppe | BSh, BSk | `clear` | Semi-arid grassland/scrubland |
-| **Cfa/Cfb/Cfc** — Temperate oceanic/humid | Cfa, Cfb, Cfc | `woods` | Temperate forest default |
-| **Csa/Csb** — Mediterranean | Csa, Csb | `clear` | Dry summers; scrubland/open woodland |
-| **Cwa/Cwb** — Subtropical highland | Cwa, Cwb | `woods` | Monsoon-influenced forest |
-| **Dfa/Dfb** — Humid continental | Dfa, Dfb | `woods` | Deciduous/mixed forest |
-| **Dfc/Dfd** — Subarctic/boreal | Dfc, Dfd | `woods` | Taiga/boreal forest |
-| **Dwa/Dwb/Dwc/Dwd** — Monsoon continental | Dwa-Dwd | `woods` | Cold monsoon forest |
-| **ET** — Tundra | ET | `clear` | Tundra scrub; treated as clear for encounters |
-| **EF** — Ice cap | EF | `desert` | Permanent ice; treated as barren for encounters |
+| Köppen Group | Codes | Default Biome | Default Subtype | Notes |
+|---|---|---|---|---|
+| **Af** — Tropical rainforest | Af | `jungle` | — | Hot, wet year-round |
+| **Am** — Tropical monsoon | Am | `jungle` | — | Seasonal heavy rain |
+| **Aw** — Tropical savanna | Aw | `clear` | `clear_savanna` | Dry winters, wet summers |
+| **BWh/BWk** — Hot/cold desert | BWh, BWk | `desert` | — | Arid; `desert_badlands` for eroded regions |
+| **BSh/BSk** — Hot/cold steppe | BSh, BSk | `clear` | `clear_grassland` | Semi-arid grassland/scrubland |
+| **Cfa/Cfb/Cfc** — Temperate oceanic/humid | Cfa, Cfb, Cfc | `woods` | `clear_grassland` if open, else — | Temperate forest default |
+| **Csa/Csb** — Mediterranean | Csa, Csb | `clear` | `clear_grassland` | Dry summers; scrubland/open woodland |
+| **Cwa/Cwb** — Subtropical highland | Cwa, Cwb | `woods` | — | Monsoon-influenced forest |
+| **Dfa/Dfb** — Humid continental | Dfa, Dfb | `woods` | `forest_dense` in deep interior | Deciduous/mixed forest |
+| **Dfc/Dfd** — Subarctic/boreal | Dfc, Dfd | `woods` | `forest_taiga` | Boreal forest |
+| **Dwa/Dwb/Dwc/Dwd** — Monsoon continental | Dwa-Dwd | `woods` | — | Cold monsoon forest |
+| **ET** — Tundra | ET | `clear` | `clear_tundra` | Cold treeless plains |
+| **EF** — Ice cap | EF | `desert` | — | Permanent ice (or use `mountains_glacial` if elevation=mountains) |
+
+Volcanic and glacial mountain subtypes are assigned by the geological-feature pass during world generation, not by Köppen climate — they require additional inputs (tectonic activity, latitude/elevation combination) that climate alone does not provide.
 
 ### 7.2 Biome Variation
 
@@ -388,12 +461,14 @@ Placeholder rendering can use simple colored hexes with text labels during devel
 
 ## 12. Open Questions
 
-- **Tundra encounters:** Tundra (`ET`) is mapped to `clear` for encounter purposes, but tundra encounters should feel different from temperate grassland. Consider a separate tundra sub-table or weighted creature type modification (more animals, fewer men). Low priority — can be handled as a regional encounter table modifier.
 - **Coastal vs. inland ocean:** Should coastal hexes (land hex adjacent to ocean) use a different encounter distribution than open-ocean hexes? ACKS uses one Ocean column for both. Probably fine for v1.
 - **Elevation encounter weighting:** The 60/40 biome/elevation split is an initial estimate. Playtesting may reveal that certain combinations feel wrong (swampy mountains might want different weights than forested mountains). These are tunable parameters.
+- **Creature-type tilt magnitudes:** The multipliers in Table 3.4.2 are first-pass estimates. Playtest may indicate that taiga's Humanoid ×0.75 is too soft (boreal forest is famously human-sparse) or that volcanic Dragon ×1.5 is too aggressive. All tilt values are tunable.
+- **Lake encounter column:** Currently a placeholder ("lake" column). Probably wants to share most of the River column with extra weighting toward Swimmers, but RAW doesn't define this — defer until lake content is needed.
 
 ---
 
 ## 13. Revision History
 
+- **2026-05-11:** Added biome subtype axis (§3.4) with eight subtypes — forest_dense, forest_taiga, mountains_volcanic, mountains_glacial, clear_tundra, clear_savanna, clear_grassland, desert_badlands. Each subtype carries explicit overrides for encounter column, movement bucket, navigation TN, encounter distance, lair density column, and creature-type tilt. Resolved the §12 Tundra open question. Corrected stale §3.1 Layer C — lake is a full-hex water tag like ocean (not a river-tag value); rivers are overlay data, not a water-axis value. Updated §4.1 cascade to show ocean/lake short-circuiting before territory. Updated §4.2 to apply subtype overrides before the biome/elevation cascade. Updated §5 to note subtype movement overrides. Updated §7.1 to assign default subtypes per Köppen group.
 - **2026-03-19:** Initial draft. Terrain tag layering system designed. Encounter table selection logic defined from ACKS 1e Wilderness Encounters table. Deforestation/forestation rules defined. Köppen-to-biome mapping established.

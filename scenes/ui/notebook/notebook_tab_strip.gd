@@ -133,20 +133,19 @@ func _make_tab_button(tab_id: String, label_text: String) -> Button:
 	label.add_theme_font_size_override("font_size", TAB_LABEL_FONT_SIZE)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.set_anchors_preset(Control.PRESET_CENTER)
-	label.position = Vector2(COLUMN_WIDTH * 0.5, TAB_HEIGHT * 0.5)
-	# 90° clockwise (positive in Godot screen-space rotation) so the text
-	# reads top-to-bottom — natural for a right-edge notebook tab.
-	label.rotation = PI * 0.5
-	label.pivot_offset = Vector2.ZERO
-	# Center the rotated label by translating it. After rotating around its
-	# own origin, the label's logical width becomes its rendered height; we
-	# offset back so the visible glyph cluster sits in the button center.
-	# The Label's set_anchors_preset(CENTER) plus position above already
-	# anchors it. The pivot at (0,0) and our position (COLUMN_WIDTH/2, ...)
-	# place the rotation origin centered; minimal further offset is needed
-	# because we autosize the label.
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Pre-rotation the label is laid out as a "tall, thin" rect that matches
+	# the button's transposed bounds (TAB_HEIGHT wide × COLUMN_WIDTH tall).
+	# Pivoting around its own center and rotating +PI/2 (clockwise in Godot's
+	# screen-space) makes the text read top-to-bottom and the rotated bbox
+	# coincide exactly with the button's rect.
+	label.size = Vector2(TAB_HEIGHT, COLUMN_WIDTH)
+	label.pivot_offset = label.size * 0.5
+	label.rotation = PI * 0.5
+	label.position = Vector2(
+		(COLUMN_WIDTH - TAB_HEIGHT) * 0.5,
+		(TAB_HEIGHT - COLUMN_WIDTH) * 0.5,
+	)
 	btn.add_child(label)
 
 	btn.pressed.connect(_on_tab_pressed.bind(tab_id))

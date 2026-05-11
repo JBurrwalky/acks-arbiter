@@ -1,0 +1,22 @@
+{
+  "_source": "rules/daw_sieges.xml §sieges_simplified.bonus_units_from_artillery_and_siege_equipment L1139-1199",
+  "_format": "key = equipment id matching artillery_table.json; value = bonus units PER GROUP described in 'per' field",
+  "_note": "Some entries in RAW are bundles (e.g., 'ballista_light_3' = 3 light ballistas → 1 bonus unit). 'per' captures the group size; resolver divides count by per to get bonus-unit groups.",
+  "entries": {
+    "light_ballista":           {"per": 3, "bonus_units_per_group": 1},
+    "medium_ballista":          {"per": 2, "bonus_units_per_group": 1},
+    "heavy_ballista":           {"per": 1, "bonus_units_per_group": 1},
+    "battering_ram_20":         {"per": 6, "bonus_units_per_group": 1, "_alt_keys": ["battering_rams_or_screws_6"]},
+    "screw_20":                 {"per": 6, "bonus_units_per_group": 1, "_alt_keys": ["battering_rams_or_screws_6"]},
+    "light_catapult":           {"per": 1, "bonus_units_per_group": 1},
+    "medium_catapult":          {"per": 1, "bonus_units_per_group": 2},
+    "heavy_catapult":           {"per": 1, "bonus_units_per_group": 3},
+    "hoist":                    {"per": 10, "bonus_units_per_group": 1},
+    "siege_tower_standard":     {"per": 1, "bonus_units_per_group": 1},
+    "siege_tower_large":        {"per": 1, "bonus_units_per_group": 2},
+    "siege_tower_huge":         {"per": 1, "bonus_units_per_group": 8},
+    "light_trebuchet":          {"per": 1, "bonus_units_per_group": 8},
+    "medium_trebuchet":         {"per": 1, "bonus_units_per_group": 10},
+    "heavy_trebuchet":          {"per": 1, "bonus_units_per_group": 12}
+  }
+}

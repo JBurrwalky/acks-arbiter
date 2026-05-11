@@ -84,6 +84,9 @@ var _overlay_layer: Node2D
 ## Tracks Label nodes placed for dungeon entrance markers (cleaned up on reload).
 var _dungeon_markers: Array = []
 
+## Phase 9C — settlement + stronghold landmark icons overlay.
+var _landmark_icons: HexMapLandmarkIcons = null
+
 ## "Enter Dungeon" button shown when party is on a dungeon entrance hex.
 var _enter_dungeon_btn: Button
 ## Active transition cell selection dialog (CanvasLayer), or null.
@@ -155,6 +158,12 @@ func _ready() -> void:
 	# primary party, so this catches the rest.
 	EventBus.party_hex_changed.connect(_on_party_hex_changed)
 	EventBus.heraldry_changed.connect(_on_heraldry_changed)
+
+	# Phase 9C polish: live-refresh landmark icons when a stronghold is
+	# completed (status flips to 'completed') or destroyed (status flips to
+	# 'destroyed'). Both signals are pre-existing.
+	EventBus.stronghold_completed.connect(_on_stronghold_landmark_changed)
+	EventBus.stronghold_destroyed.connect(_on_stronghold_landmark_changed_destroyed)
 
 	# "Enter Dungeon" button — child of HexHUD (CanvasLayer) so it stays on screen.
 	_enter_dungeon_btn = Button.new()
@@ -265,6 +274,7 @@ func _on_map_loaded(_map_id: String) -> void:
 	_update_enter_dungeon_button()
 	_cache_settlement_entrances()
 	_update_enter_settlement_button()
+	_refresh_landmark_icons()
 
 
 func _on_visibility_updated() -> void:
@@ -834,6 +844,39 @@ func _refresh_dungeon_markers() -> void:
 		lbl.position = screen_pos - Vector2(8.0, 12.0)
 		add_child(lbl)
 		_dungeon_markers.append(lbl)
+
+
+## Phase 9C polish — refresh landmarks when a stronghold's status changes.
+## Connected to EventBus.stronghold_completed (Phase 1) and
+## EventBus.stronghold_destroyed (Phase 9B).
+func _on_stronghold_landmark_changed(_stronghold_id: String) -> void:
+	_refresh_landmark_icons()
+
+
+func _on_stronghold_landmark_changed_destroyed(_stronghold_id: String, _cause: String) -> void:
+	_refresh_landmark_icons()
+
+
+## Phase 9C — refresh settlement + stronghold landmark icons on the hex map.
+## Reads settlement_entrances + completed/claimed strongholds and places
+## 24×24 SVG icons centered on each hex (or side-by-side when both present).
+func _refresh_landmark_icons() -> void:
+	if _map_data == null or _terrain_layer == null:
+		return
+	if _landmark_icons == null:
+		_landmark_icons = HexMapLandmarkIcons.new()
+		# Add as a child of the renderer so icons inherit camera transforms.
+		# Insert after the terrain layer so they render above tiles, below party tokens.
+		add_child(_landmark_icons)
+	var terrain_layer := _terrain_layer
+	var hex_to_pixel := func(coord: Vector2i) -> Vector2:
+		var godot_coord := HexMapController.axial_to_godot_map(coord)
+		return terrain_layer.map_to_local(godot_coord)
+	var fog_check := func(coord: Vector2i) -> bool:
+		if _map_data == null:
+			return false
+		return _map_data.get_fog_state(coord) == HexMapData.FogState.HIDDEN
+	_landmark_icons.refresh(_map_data.id, hex_to_pixel, fog_check)
 
 
 ## Repaints a single terrain tile after an in-memory terrain update.

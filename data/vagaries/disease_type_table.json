@@ -1,0 +1,50 @@
+{
+  "_source": "rules/daw_vagaries.xml §disease.disease_type L315-365",
+  "_format": "1d100 → disease_type with save_bonus, duration, death_if_failed_by",
+  "_death_threshold_natural_1_only": "999 in death_if_failed_by means ONLY natural 1 kills (RAW: 'natural 1' for bloody_flux)",
+  "_natural_1_always_dies": "Per RAW L301: a natural 1 always kills regardless of the failed_by threshold.",
+  "rows": [
+    {
+      "die_min": 1, "die_max": 5,
+      "type": "plague",
+      "save_bonus": 0,
+      "duration_dice": "1d8", "duration_unit": "days",
+      "death_if_failed_by": 6
+    },
+    {
+      "die_min": 6, "die_max": 15,
+      "type": "putrid_fever",
+      "save_bonus": 0,
+      "duration_dice": "2", "duration_unit": "weeks",
+      "death_if_failed_by": 7
+    },
+    {
+      "die_min": 16, "die_max": 30,
+      "type": "spotted_pox",
+      "save_bonus": 1,
+      "duration_dice": "3", "duration_unit": "weeks",
+      "death_if_failed_by": 8
+    },
+    {
+      "die_min": 31, "die_max": 50,
+      "type": "bilious_fever",
+      "save_bonus": 2,
+      "duration_dice": "4", "duration_unit": "weeks",
+      "death_if_failed_by": 8
+    },
+    {
+      "die_min": 51, "die_max": 75,
+      "type": "ague",
+      "save_bonus": 3,
+      "duration_dice": "1d4", "duration_unit": "weeks",
+      "death_if_failed_by": 10
+    },
+    {
+      "die_min": 76, "die_max": 100,
+      "type": "bloody_flux",
+      "save_bonus": 4,
+      "duration_dice": "1", "duration_unit": "weeks",
+      "death_if_failed_by": 999
+    }
+  ]
+}

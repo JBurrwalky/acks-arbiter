@@ -294,7 +294,41 @@ func _on_finalize(character_id: String, morale_bonus: int) -> void:
 		morale_base, morale_bonus, _settlement_id, 1, 1)
 	_lifecycle._repo.mark_pool_member_hired(_pool_id, character_id)
 	hire_completed.emit(character_id)
+	# Domain Phase 3: canonical per-location launcher example.
+	# Dispatch the hire_mercenaries activity through the activity executor so
+	# the hiring offer is recorded as a Singular activity in activity_state and
+	# emits the standard activity_completed signal pipeline. Existing
+	# finalize_hire path continues to drive the henchman lifecycle; the
+	# executor wrapper is additive (no-op if not in a session).
+	_dispatch_hire_via_activity_executor(character_id)
 	_update_view()
+
+
+## Routes the hire offer through ActivityTimeCostExecutor as the canonical
+## example of per-location activity launch wiring per
+## gdd-realtime-scheduler.md §4.8.4. No-op if no SessionRunner is mounted
+## (e.g., unit tests that exercise HiringPanel in isolation).
+func _dispatch_hire_via_activity_executor(_offered_to_character_id: String) -> void:
+	var session_runner = get_tree().root.get_node_or_null("SessionRunner") if get_tree() else null
+	if session_runner == null:
+		return
+	if not session_runner.has_method("get_activity_executor"):
+		return
+	var executor = session_runner.get_activity_executor()
+	if executor == null:
+		return
+	var scheduler = session_runner.get_scheduler() if session_runner.has_method("get_scheduler") else null
+	if scheduler == null:
+		return
+	executor.launch(
+		_employer_id,
+		"hire_mercenaries",
+		"at_settlement",
+		"settlement:%s" % _settlement_id,
+		{},
+		scheduler,
+		_party_id,
+	)
 
 
 func _roman(mc: int) -> String:

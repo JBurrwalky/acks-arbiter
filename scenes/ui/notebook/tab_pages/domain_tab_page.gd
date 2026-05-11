@@ -29,6 +29,11 @@ const StatusHeaderScript := preload("res://scenes/ui/notebook/domain/status_head
 const OverviewSubTabScript := preload("res://scenes/ui/notebook/domain/sub_tabs/overview_sub_tab.gd")
 const StrongholdSubTabScript := preload("res://scenes/ui/notebook/domain/sub_tabs/stronghold_sub_tab.gd")
 const TreasurySubTabScript := preload("res://scenes/ui/notebook/domain/sub_tabs/treasury_sub_tab.gd")
+const DecreesAndRemoteOrdersSubTabScript := preload("res://scenes/ui/notebook/domain/sub_tabs/decrees_and_remote_orders_sub_tab.gd")
+const GarrisonSubTabScript := preload("res://scenes/ui/notebook/domain/sub_tabs/garrison_sub_tab.gd")
+const RealmSubTabScript := preload("res://scenes/ui/notebook/domain/sub_tabs/realm_sub_tab.gd")
+const EncountersThreatsSubTabScript := preload("res://scenes/ui/notebook/domain/sub_tabs/encounters_threats_sub_tab.gd")
+const ClassSpecificSubTabScript := preload("res://scenes/ui/notebook/domain/sub_tabs/class_specific_sub_tab.gd")
 const PlaceholderSubTabScript := preload("res://scenes/ui/notebook/domain/sub_tabs/placeholder_sub_tab.gd")
 const EstablishDomainDialogScript := preload("res://scenes/ui/notebook/domain/establish_domain_dialog.gd")
 const _DomainEmptyStatePageScript := preload("res://scenes/ui/components/empty_state_page.gd")
@@ -53,22 +58,18 @@ const TYPE_ORDER := [TYPE_PCS, TYPE_HENCHMEN]
 const SUB_TABS := [
 	{"id": "overview",      "label": "Overview",       "phase_2": true,  "script": "overview"},
 	{"id": "stronghold",    "label": "Stronghold",     "phase_2": true,  "script": "stronghold"},
-	{"id": "garrison",      "label": "Garrison",       "phase_2": false, "script": "placeholder",
-		"phase": "Phase 5 — Troops Tab + Garrison Sub-Tab + L9 Follower Arrival",
-		"description": "Surfaces troop_units assigned to this domain, faithful followers, militia/conscript rosters, garrison-cost compliance, additional-troops bonus, and repression toggles per gdd-domain-tab.md §8."},
-	{"id": "realm",         "label": "Realm",          "phase_2": false, "script": "placeholder",
-		"phase": "Phase 6 — Realm Sub-Tab + Vassalage + Tribute",
-		"description": "Vassal table, tribute flows + efficiency factor, favors/duties tracker, realm aggregates, current title display."},
+	{"id": "garrison",      "label": "Garrison",       "phase_2": true,  "script": "garrison"},
+	{"id": "realm",         "label": "Realm",          "phase_2": true,  "script": "realm"},
 	{"id": "treasury",      "label": "Treasury",       "phase_2": true,  "script": "treasury"},
-	{"id": "decrees_and_remote_orders", "label": "Decrees & Remote Orders", "phase_2": false, "script": "placeholder",
-		"phase": "Phase 3 — Activity Time-Cost Executor + Decrees & Remote Orders + Per-Location Launch Wiring",
-		"description": "Small set of remote-capable domain activities (administer_domain, issue_decree, manage_henchmen, conscript_troops, levy_militia, solicit_mercenaries, call_to_arms, oversee_investment) dispatched via the activity time-cost executor per gdd-domain-tab.md §11 and gdd-realtime-scheduler.md §4.8. Non-remote activities launch from their location-of-execution UI surfaces."},
-	{"id": "class_specific","label": "Class Activities","phase_2": false, "script": "placeholder",
-		"phase": "Phase 9 — Class-Specific Sub-Tab",
-		"description": "Faith / Magical Research / Trade / Syndicate / Garrison Training blocks for the active entity's class."},
-	{"id": "encounters",    "label": "Encounters & Threats", "phase_2": false, "script": "placeholder",
-		"phase": "Phase 8 — Domain Encounters + Bandits + Threats",
-		"description": "Domain encounter throws (monthly civilized / weekly borderlands / daily wilderness), bandit count by morale tier, NPC challenger emergence, siege state."},
+	{"id": "decrees_and_remote_orders", "label": "Decrees & Remote Orders", "phase_2": true, "script": "decrees_and_remote_orders"},
+	# Phase 10A.1: Class-Specific shell ships; per-block content lands in
+	# 10A.2 (Faith), 10A.3 (Garrison Training + Bardic Patronage), 10B.1
+	# (Magical Research), 10B.2 (Trade), 10B.3 (Syndicate). The label here
+	# is a fallback; the actual label comes from
+	# ClassBucketResolver.sub_tab_label_for(active_entity_id) and is set
+	# dynamically via _refresh_class_specific_tab().
+	{"id": "class_specific","label": "Class Activities","phase_2": true, "script": "class_specific"},
+	{"id": "encounters",    "label": "Encounters & Threats", "phase_2": true,  "script": "encounters_threats"},
 	{"id": "departure_log", "label": "Departure Log",  "phase_2": false, "script": "placeholder",
 		"phase": "Phase 10 — Departure Log + Lifecycle Polish",
 		"description": "Chronological history of significant losses (classification regression, lost holdings, defeats, abandonment, ruler change, conquest)."},
@@ -207,6 +208,11 @@ func _restore_substate_and_refresh() -> void:
 	var sub_per_entity: Dictionary = sub.get("sub_tab_per_entity", {})
 	_active_sub_tab_id = String(sub_per_entity.get(_active_entity_id, "overview"))
 	if not _is_valid_sub_tab(_active_sub_tab_id):
+		_active_sub_tab_id = "overview"
+	_refresh_class_specific_tab()
+	# If the active sub-tab is class_specific but it's now hidden for this
+	# entity, fall back to overview.
+	if _active_sub_tab_id == "class_specific" and _is_class_specific_hidden():
 		_active_sub_tab_id = "overview"
 	_sub_tab_bar.current_tab = _sub_tab_index(_active_sub_tab_id)
 	_render_active_content()
@@ -350,6 +356,42 @@ func _sub_tab_at_index(idx: int) -> String:
 	return String(SUB_TABS[idx]["id"])
 
 
+## Refreshes the Class-Specific tab strip entry: hides it when the active
+## entity has no applicable class buckets per ClassBucketResolver, and
+## relabels it dynamically per the entity's bucket count (single bucket =
+## bucket name; multi-bucket = "Class Activities"; bard = "Bardic Patronage").
+##
+## Called after the active entity changes. The TabBar tab indices stay stable;
+## only the title text and `set_tab_hidden` flag change. Per gdd-domain-tab.md
+## §4.4 (updated 2026-05-10).
+func _refresh_class_specific_tab() -> void:
+	if _sub_tab_bar == null:
+		return
+	var idx := _sub_tab_index("class_specific")
+	if idx < 0 or idx >= _sub_tab_bar.tab_count:
+		return
+	var label: String = ClassBucketResolver.sub_tab_label_for(_active_entity_id)
+	var hidden := label.is_empty()
+	_sub_tab_bar.set_tab_hidden(idx, hidden)
+	if not hidden:
+		_sub_tab_bar.set_tab_title(idx, label)
+	else:
+		# Reset to canonical fallback so a future entity-with-buckets sees a
+		# sensible default before the next refresh fires.
+		_sub_tab_bar.set_tab_title(idx, "Class Activities")
+
+
+## Returns true if the Class-Specific tab is currently hidden in the strip
+## (i.e. the active entity has no class buckets).
+func _is_class_specific_hidden() -> bool:
+	if _sub_tab_bar == null:
+		return true
+	var idx := _sub_tab_index("class_specific")
+	if idx < 0 or idx >= _sub_tab_bar.tab_count:
+		return true
+	return _sub_tab_bar.is_tab_hidden(idx)
+
+
 func _ensure_sub_tab_page(sub_tab_id: String) -> Control:
 	if _sub_tab_pages.has(sub_tab_id):
 		return _sub_tab_pages[sub_tab_id]
@@ -369,6 +411,16 @@ func _ensure_sub_tab_page(sub_tab_id: String) -> Control:
 			page = StrongholdSubTabScript.new()
 		"treasury":
 			page = TreasurySubTabScript.new()
+		"decrees_and_remote_orders":
+			page = DecreesAndRemoteOrdersSubTabScript.new()
+		"garrison":
+			page = GarrisonSubTabScript.new()
+		"realm":
+			page = RealmSubTabScript.new()
+		"encounters_threats":
+			page = EncountersThreatsSubTabScript.new()
+		"class_specific":
+			page = ClassSpecificSubTabScript.new()
 		_:
 			page = PlaceholderSubTabScript.new()
 			page.setup(

@@ -363,7 +363,7 @@ static func _has_exit_candidates(
 	for eid in selected_ids:
 		var sid: String = str(eid)
 		var pos = map.get_entity_pos(sid)
-		if pos == Vector2i(-1, -1) or pos == Vector3i(-1, -1, -1):
+		if pos == Vector3i(-1, -1, -1):
 			continue  # Not on the map.
 		if session_state != null:
 			if session_state.has_method("is_exited") and session_state.is_exited(sid):

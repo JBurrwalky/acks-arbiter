@@ -612,6 +612,10 @@ const _MENU_DISMISS := 1
 const _MENU_PROMOTE := 2
 const _MENU_ADJUST_TREATMENT := 3
 const _MENU_PAY_BACK_WAGES := 4
+# Phase 8 — Realm AI / Vassalage menu items (Phase 7 carry-forward).
+const _MENU_MANAGE_DOMAIN := 5
+const _MENU_APPOINT_VASSAL := 6
+const _MENU_REVOKE_VASSALAGE := 7
 
 
 func _on_row_gui_input(event: InputEvent, entity_id: String, _is_dismissed: bool) -> void:
@@ -629,6 +633,18 @@ func _show_row_context_menu(entity_id: String, global_pos: Vector2) -> void:
 	menu.add_separator()
 	menu.add_item("Adjust treatment…", _MENU_ADJUST_TREATMENT)
 	menu.add_item("Pay back wages…", _MENU_PAY_BACK_WAGES)
+	# Phase 8 / Realm AI menu items (Phase 7 carry-forward).
+	menu.add_separator()
+	menu.add_item("Manage domain…", _MENU_MANAGE_DOMAIN)
+	var existing_vassalage: Dictionary = VassalRepository.get_active_assignment_for_vassal(entity_id)
+	if existing_vassalage.is_empty():
+		menu.add_item("Appoint as vassal…", _MENU_APPOINT_VASSAL)
+	else:
+		menu.add_item("Revoke vassalage…", _MENU_REVOKE_VASSALAGE)
+	# Greying: "Manage domain" disabled if henchman owns no domain.
+	var owns_domain: bool = _henchman_owns_domain(entity_id)
+	if not owns_domain:
+		menu.set_item_disabled(menu.get_item_index(_MENU_MANAGE_DOMAIN), true)
 	menu.add_separator()
 	menu.add_item("Dismiss henchman…", _MENU_DISMISS)
 	menu.add_item("Promote to Full Member…", _MENU_PROMOTE)
@@ -664,6 +680,57 @@ func _on_context_menu_pressed(item_id: int, entity_id: String) -> void:
 		_MENU_PAY_BACK_WAGES:
 			# Phase 5: confirm-and-pay flow (binary, reuses ConfirmationPrompt).
 			_open_pay_back_wages_prompt(entity_id)
+		_MENU_MANAGE_DOMAIN:
+			# Phase 8: cross-activate to Domain tab with this henchman as
+			# the active entity. EventBus signal already drives the notebook
+			# active-entity routing.
+			EventBus.notebook_active_entity_requested.emit(entity_id)
+			# The domain tab listens to active-entity and switches to it; the
+			# notebook's tab routing will land on the right surface.
+		_MENU_APPOINT_VASSAL:
+			_open_vassal_appointment_dialog(entity_id)
+		_MENU_REVOKE_VASSALAGE:
+			_revoke_vassalage(entity_id)
+
+
+func _henchman_owns_domain(character_id: String) -> bool:
+	if character_id.is_empty():
+		return false
+	if not CampaignRepository.db.query_with_bindings(
+		"SELECT 1 FROM domains WHERE owner_character_id = ? LIMIT 1", [character_id]):
+		return false
+	return not CampaignRepository.db.query_result.is_empty()
+
+
+# Phase 8: vassal appointment + revocation flow
+const VassalAppointmentDialogScript := preload("res://scenes/ui/notebook/troops/vassal_appointment_dialog.gd")
+
+
+func _open_vassal_appointment_dialog(vassal_character_id: String) -> void:
+	var dlg = VassalAppointmentDialogScript.new()
+	add_child(dlg)
+	dlg.vassal_appointed.connect(_on_vassal_appointed)
+	dlg.appointment_cancelled.connect(dlg.queue_free)
+	dlg.vassal_appointed.connect(func(_id: String) -> void: dlg.queue_free())
+	dlg.configure_for_henchman(vassal_character_id)
+	dlg.popup_centered()
+
+
+func _on_vassal_appointed(_assignment_id: String) -> void:
+	# Refresh the henchmen list (badges may change).
+	_refresh()
+
+
+func _revoke_vassalage(vassal_character_id: String) -> void:
+	var assn: Dictionary = VassalRepository.get_active_assignment_for_vassal(vassal_character_id)
+	if assn.is_empty():
+		return
+	# v1: simple status flip + loyalty roll. The dismissal dialog flow could
+	# be reused for a richer UX in Phase 11 polish; for now we mark the
+	# assignment 'departed' (voluntary lord-side revocation) without a
+	# loyalty cascade. The vassal becomes a free agent, no penalty to lord.
+	VassalRepository.update_status(String(assn.get("id", "")), "departed", 0)
+	_refresh()
 
 
 # ---------------------------------------------------------------------------

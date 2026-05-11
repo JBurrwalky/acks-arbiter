@@ -1,0 +1,56 @@
+{
+  "_source": "rules/ax_domain_level_encounters.xml §domain_encounter_frequency_by_territory_size_and_terrain L70-134",
+  "_classification_rules_source": "rules/ax_domain_level_encounters.xml §classification_rules L13-29",
+  "_description": "Per-territory-size × terrain-band encounter throw die + target. Civilized rolls monthly using settled column; borderlands rolls weekly using terrain column; wilderness rolls daily using terrain column. The territory_size buckets are inclusive ranges of 6-mile hex counts.",
+  "classifications": {
+    "civilized":   { "frequency": "monthly", "default_terrain_band": "city_grass_scrub_settled", "wilderness_encounter_column": "inhabited" },
+    "borderlands": { "frequency": "weekly",  "default_terrain_band": null, "wilderness_encounter_column": "by_terrain" },
+    "wilderness":  { "frequency": "daily",   "default_terrain_band": null, "wilderness_encounter_column": "by_terrain" }
+  },
+  "terrain_bands": {
+    "city_grass_scrub_settled":  ["city", "grass", "grassland", "scrub", "scrubland", "settled", "clear"],
+    "aerial_hills_woods":         ["aerial", "hills", "woods", "forest", "dense_forest"],
+    "barren_desert_jungle_mountains_swamp": ["barren", "desert", "jungle", "mountains", "mountain", "swamp", "badlands"]
+  },
+  "terrain_normalization": {
+    "_note": "Maps the resolver's synthesized terrain_key (derived from hex_cells.biome + elevation + civilization + has_city) onto monster_catalog.terrain_affinity vocabulary. Also accepts a few aspirational keys (forest_light, mountains_or_hills, clear_or_grass) for forward-compatibility with potential future hex schema variants. Values not in this map fall back to 'inhabited' (broadest category, prevents starvation of the eligible-creatures pool).",
+    "clear":               "clear_grass_scrub",
+    "clear_or_grass":      "clear_grass_scrub",
+    "scrub":               "clear_grass_scrub",
+    "grassland":           "clear_grass_scrub",
+    "settled":             "inhabited",
+    "city":                "inhabited",
+    "woods":               "woods",
+    "forest":              "woods",
+    "forest_light":        "woods",
+    "forest_heavy":        "woods",
+    "jungle":              "jungle",
+    "hills":               "mountains_hills",
+    "mountains":           "mountains_hills",
+    "mountains_or_hills":  "mountains_hills",
+    "mountain":            "mountains_hills",
+    "swamp":               "swamp",
+    "marsh":               "swamp",
+    "desert":              "barren_desert",
+    "barren":              "barren_desert",
+    "barren_desert":       "barren_desert",
+    "aerial":              "inhabited",
+    "ocean":               "ocean",
+    "lake":                "lake",
+    "river":               "river",
+    "underground":         "underground",
+    "volcanic":            "barren_desert",
+    "dense_forest":        "woods",
+    "badlands":            "barren_desert"
+  },
+  "table": [
+    { "min_hexes": 1,  "max_hexes": 1,  "die_sides": 100, "city_grass_scrub_settled": 100, "aerial_hills_woods": 99, "barren_desert_jungle_mountains_swamp": 98 },
+    { "min_hexes": 2,  "max_hexes": 2,  "die_sides": 100, "city_grass_scrub_settled": 99,  "aerial_hills_woods": 97, "barren_desert_jungle_mountains_swamp": 95 },
+    { "min_hexes": 3,  "max_hexes": 3,  "die_sides": 100, "city_grass_scrub_settled": 98,  "aerial_hills_woods": 95, "barren_desert_jungle_mountains_swamp": 92 },
+    { "min_hexes": 4,  "max_hexes": 6,  "die_sides": 20,  "city_grass_scrub_settled": 20,  "aerial_hills_woods": 19, "barren_desert_jungle_mountains_swamp": 18 },
+    { "min_hexes": 7,  "max_hexes": 8,  "die_sides": 12,  "city_grass_scrub_settled": 12,  "aerial_hills_woods": 11, "barren_desert_jungle_mountains_swamp": 10 },
+    { "min_hexes": 9,  "max_hexes": 10, "die_sides": 10,  "city_grass_scrub_settled": 10,  "aerial_hills_woods": 9,  "barren_desert_jungle_mountains_swamp": 8 },
+    { "min_hexes": 11, "max_hexes": 13, "die_sides": 8,   "city_grass_scrub_settled": 8,   "aerial_hills_woods": 7,  "barren_desert_jungle_mountains_swamp": 6 },
+    { "min_hexes": 14, "max_hexes": 16, "die_sides": 6,   "city_grass_scrub_settled": 6,   "aerial_hills_woods": 5,  "barren_desert_jungle_mountains_swamp": 4 }
+  ]
+}

@@ -36,6 +36,9 @@ const TERRAIN_MULTIPLIERS := {
 	"jungle": 0.5,
 	"swamp": 0.5,
 	"mountains": 0.5,
+	# Subtype-tier categories — see HexTerrainData / gdd-terrain-system.md §3.4.
+	"dense_forest": 0.5,             # forest_dense: jungle-tier impedance
+	"badlands": 2.0 / 3.0,           # desert_badlands: hills-tier even on flat
 	"ocean": 1.0,   # sea travel uses different rules; placeholder
 	"lake": 1.0,    # same
 }
@@ -245,6 +248,9 @@ const NAVIGATION_TARGETS := {
 	"desert": 11,
 	"jungle": 11,
 	"swamp": 11,
+	# Subtype-tier categories — see HexTerrainData.navigation_target().
+	"dense_forest": 7,   # forest_dense: Forest TN
+	"badlands": 7,       # desert_badlands: broken-hills TN, not desert 11+
 	"ocean": 11,   # open sea
 	"lake": 4,     # coastal/lake travel
 }

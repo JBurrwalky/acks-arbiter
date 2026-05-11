@@ -239,6 +239,79 @@ extends Node
 @onready var _active_adventuring_detector_tests = $ActiveAdventuringDetectorTests
 @onready var _establish_domain_flow_tests = $EstablishDomainFlowTests
 @onready var _treasury_tests = $TreasuryTests
+# Domain Phase 3
+@onready var _activity_catalog_tests = $ActivityCatalogTests
+@onready var _activity_executor_tests = $ActivityTimeCostExecutorTests
+@onready var _strenuous_accountant_tests = $StrenuousAccountantTests
+@onready var _repress_population_tests = $RepressPopulationTests
+# Domain Phase 4
+@onready var _commission_pipeline_rate_bump_tests = $CommissionPipelineRateBumpTests
+@onready var _oversee_construction_handler_tests = $OverseeConstructionHandlerTests
+# Domain Phase 5
+@onready var _troop_unit_repository_tests = $TroopUnitRepositoryTests
+@onready var _follower_arrival_resolver_tests = $FollowerArrivalResolverTests
+@onready var _garrison_expenditure_tests = $GarrisonExpenditureCalculatorTests
+# Phase 6A — DaW Army Warfare composition layer
+@onready var _army_repository_tests = $ArmyRepositoryTests
+@onready var _army_validator_tests = $ArmyValidatorTests
+@onready var _supply_calculator_tests = $SupplyCalculatorTests
+@onready var _army_composer_tests = $ArmyComposerTests
+@onready var _army_disbander_tests = $ArmyDisbanderTests
+@onready var _recruitment_vagaries_resolver_tests = $RecruitmentVagariesResolverTests
+@onready var _encounter_scaler_tests = $EncounterScalerTests
+@onready var _army_collision_detector_tests = $ArmyCollisionDetectorTests
+@onready var _extraction_resistance_heuristic_tests = $ExtractionResistanceHeuristicTests
+# Phase 6B — DaW Field Battle Resolver layer
+@onready var _battle_repository_tests = $BattleRepositoryTests
+@onready var _bpc_table_tests = $BpcTableTests
+@onready var _terrain_advantage_resolver_tests = $TerrainAdvantageResolverTests
+@onready var _bpc_adjustment_matrix_tests = $BpcAdjustmentMatrixTests
+@onready var _army_morale_resolver_tests = $ArmyMoraleResolverTests
+@onready var _heroic_foray_resolver_tests = $HeroicForayResolverTests
+@onready var _vagaries_of_battle_resolver_tests = $VagariesOfBattleResolverTests
+@onready var _field_battle_resolver_tests = $FieldBattleResolverTests
+@onready var _battle_dispatcher_tests = $BattleDispatcherTests
+# Phase 6B part 2 — retreat / XP distribution / lieutenant bonus / siege overrides / interactive driver
+@onready var _retreat_resolver_tests = $RetreatResolverTests
+@onready var _battle_xp_distributor_tests = $BattleXPDistributorTests
+@onready var _field_battle_phase2_tests = $FieldBattlePhase2Tests
+# Phase 6 closing — marcher / supply tracker / activity handlers / foray-in-continue_battle
+@onready var _army_marcher_tests = $ArmyMarcherTests
+@onready var _army_supply_tracker_tests = $ArmySupplyTrackerTests
+@onready var _army_activity_handlers_tests = $ArmyActivityHandlersTests
+@onready var _continue_battle_with_forays_tests = $ContinueBattleWithForaysTests
+# Phase 6 UI session
+@onready var _armies_section_ui_tests = $ArmiesSectionUiTests
+@onready var _field_battle_panel_ui_tests = $FieldBattlePanelUiTests
+# Phase 7 — Realm AI + Realm sub-tab + Vassalage + Tribute
+@onready var _tribute_calculator_tests = $TributeCalculatorTests
+@onready var _realm_title_resolver_tests = $RealmTitleResolverTests
+@onready var _vagaries_of_war_resolver_tests = $VagariesOfWarResolverTests
+@onready var _vassal_repository_tests = $VassalRepositoryTests
+@onready var _realm_graph_tests = $RealmGraphTests
+@onready var _in_enemy_territory_predicate_tests = $InEnemyTerritoryPredicateTests
+@onready var _extraction_resistance_realm_ai_tests = $ExtractionResistanceRealmAiTests
+@onready var _realm_sub_tab_ui_tests = $RealmSubTabUiTests
+# Phase 8 — Favors & Duties + Vassalage UI
+@onready var _vassal_obligations_repository_tests = $VassalObligationsRepositoryTests
+@onready var _favors_duties_resolver_tests = $FavorsDutiesResolverTests
+@onready var _trade_range_resolver_tests = $TradeRangeResolverTests
+@onready var _phase_8_polish_tests = $Phase8PolishTests
+@onready var _phase_9a_tests = $Phase9aTests
+@onready var _phase_9b_tests = $Phase9bTests
+@onready var _phase_9c_tests = $Phase9cTests
+@onready var _monster_catalog_consistency_tests = $MonsterCatalogConsistencyTests
+@onready var _hex_terrain_query_tests = $HexTerrainQueryTests
+@onready var _dragon_data_consistency_tests = $DragonDataConsistencyTests
+@onready var _dragon_variant_resolver_tests = $DragonVariantResolverTests
+# Phase 10A.1 — Class-Specific sub-tab class-bucket detection
+@onready var _class_bucket_resolver_tests = $ClassBucketResolverTests
+# Phase 10A.2 — Faith block (8 handlers + monthly resolver)
+@onready var _faith_block_tests = $FaithBlockTests
+# Phase 10A.3 — Bardic Patronage + proficiency-gated training
+@onready var _phase_10a3_tests = $Phase10A3Tests
+# Phase 10B.1a — Magical Research block (schema + repo + shell)
+@onready var _phase_10b1a_tests = $Phase10B1aTests
 
 
 func _ready() -> void:
@@ -458,7 +531,78 @@ func run() -> void:
 			_stronghold_phase_1_integration_tests,
 			_active_adventuring_detector_tests,
 			_establish_domain_flow_tests,
-			_treasury_tests]:
+			_treasury_tests,
+			_activity_catalog_tests,
+			_activity_executor_tests,
+			_strenuous_accountant_tests,
+			_repress_population_tests,
+			_commission_pipeline_rate_bump_tests,
+			_oversee_construction_handler_tests,
+			_troop_unit_repository_tests,
+			_follower_arrival_resolver_tests,
+			_garrison_expenditure_tests,
+			_army_repository_tests,
+			_army_validator_tests,
+			_supply_calculator_tests,
+			_army_composer_tests,
+			_army_disbander_tests,
+			_recruitment_vagaries_resolver_tests,
+			_encounter_scaler_tests,
+			_army_collision_detector_tests,
+			_extraction_resistance_heuristic_tests,
+			_battle_repository_tests,
+			_bpc_table_tests,
+			_terrain_advantage_resolver_tests,
+			_bpc_adjustment_matrix_tests,
+			_army_morale_resolver_tests,
+			_heroic_foray_resolver_tests,
+			_vagaries_of_battle_resolver_tests,
+			_field_battle_resolver_tests,
+			_battle_dispatcher_tests,
+			_retreat_resolver_tests,
+			_battle_xp_distributor_tests,
+			_field_battle_phase2_tests,
+			_army_marcher_tests,
+			_army_supply_tracker_tests,
+			_army_activity_handlers_tests,
+			_continue_battle_with_forays_tests,
+			_armies_section_ui_tests,
+			_field_battle_panel_ui_tests,
+			# Phase 7 — Realm AI + Realm sub-tab + Vassalage + Tribute
+			_tribute_calculator_tests,
+			_realm_title_resolver_tests,
+			_vagaries_of_war_resolver_tests,
+			_vassal_repository_tests,
+			_realm_graph_tests,
+			_in_enemy_territory_predicate_tests,
+			_extraction_resistance_realm_ai_tests,
+			_realm_sub_tab_ui_tests,
+			# Phase 8 — Favors & Duties Monthly System
+			_vassal_obligations_repository_tests,
+			_favors_duties_resolver_tests,
+			_trade_range_resolver_tests,
+			_phase_8_polish_tests,
+			_phase_9a_tests,
+			# Phase 9B — Full DaW Siege Subsystem
+			_phase_9b_tests,
+			# Phase 9C — Disease + Call to Arms + Hex Icons + 9B Polish
+			_phase_9c_tests,
+			# Phase 9A polish — Monster catalog cross-file consistency
+			_monster_catalog_consistency_tests,
+			# Phase 9C polish round 5 — HexTerrainQuery shared helper
+			_hex_terrain_query_tests,
+			# Phase 9C polish round 7 — Dragon data layer consistency
+			_dragon_data_consistency_tests,
+			# Phase 9C polish round 7 — Dragon variant resolver
+			_dragon_variant_resolver_tests,
+			# Phase 10A.1 — Class-Specific sub-tab class-bucket detection
+			_class_bucket_resolver_tests,
+			# Phase 10A.2 — Faith block
+			_faith_block_tests,
+			# Phase 10A.3 — Bardic Patronage + proficiency-gated training
+			_phase_10a3_tests,
+			# Phase 10B.1a — Magical Research block (schema + repo + shell)
+			_phase_10b1a_tests]:
 		if suite == null:
 			push_error("TestRunner: missing test suite node — check scene tree")
 			failed += 1

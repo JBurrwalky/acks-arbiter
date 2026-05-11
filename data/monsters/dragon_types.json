@@ -1,0 +1,240 @@
+{
+  "_source": "ACKS Core Rulebook Dragon section + acore_monster_catalog_dragons.xml § dragon_attributes_by_habitat. Per-type curated special-abilities pools and elemental_aura damage types are project-designed (Phase 9C polish round 7 2026-05-09) to fit the RAW species descriptions while staying within the 13-ability list.",
+  "_note": "Dragon-type lookup data. Resolver picks dragon TYPE at encounter time via terrain_to_dragon_type; type-specific data (hide colors, breath weapon, special abilities pool, alignment constraints, elemental_aura damage type) lives here. Per-instance state (selected hide_color, alignment, abilities, asleep state, can_speak) is rolled at encounter time and stored on the threat row's payload_json. The 10 dragon age-band catalog entries (dragon_spawn through dragon_venerable) hold age-only stats (HD, AC, damage, save, morale, XP, treasure_type, %_in_lair, spells_per_day_by_level, chance_asleep_pct, chance_speech_pct, special_abilities_count, encounter dice).",
+
+  "types": {
+    "red": {
+      "common_name": "Red Dragon",
+      "habitats": ["volcanoes", "badlands"],
+      "hide_colors": ["flaming red", "burnt orange", "charcoal"],
+      "breath": {
+        "shape": "cone",
+        "dimensions": {"length_ft": 90, "width_ft": 30, "height_ft": 0},
+        "element": "fire",
+        "special_effects": ["ignite_combustibles", "melt_low_mp_metals", "continue_through_breaks"]
+      },
+      "alignment_constraint": null,
+      "is_aquatic": false,
+      "loses_flight": false,
+      "elemental_aura_damage_type": "fire",
+      "special_abilities_pool": [
+        "clutching_claws", "decapitating_bite", "elemental_aura", "fear_aura",
+        "gem_encrusted_hide", "invulnerable", "massive_size", "paralyzing_blows",
+        "polymorph_self", "tail_lash", "wing_claws"
+      ]
+    },
+
+    "blue": {
+      "common_name": "Blue Dragon",
+      "habitats": ["clouds", "mountain peaks"],
+      "hide_colors": ["sky blue", "slate grey", "cloud white"],
+      "breath": {
+        "shape": "line",
+        "dimensions": {"length_ft": 100, "width_ft": 5, "height_ft": 0},
+        "element": "lightning",
+        "special_effects": ["melt_low_mp_metals", "continue_through_breaks"]
+      },
+      "alignment_constraint": null,
+      "is_aquatic": false,
+      "loses_flight": false,
+      "elemental_aura_damage_type": "lightning",
+      "special_abilities_pool": [
+        "clutching_claws", "decapitating_bite", "elemental_aura", "fear_aura",
+        "gem_encrusted_hide", "invulnerable", "massive_size", "paralyzing_blows",
+        "polymorph_self", "tail_lash", "wing_claws"
+      ]
+    },
+
+    "white": {
+      "common_name": "White Dragon",
+      "habitats": ["glaciers", "icy caves"],
+      "hide_colors": ["ivory", "pearl", "snow white"],
+      "breath": {
+        "shape": "cloud",
+        "dimensions": {"length_ft": 90, "width_ft": 30, "height_ft": 20},
+        "element": "cold",
+        "special_effects": ["obscured_area_one_round_minus_2_attack"]
+      },
+      "alignment_constraint": null,
+      "is_aquatic": false,
+      "loses_flight": false,
+      "elemental_aura_damage_type": "cold",
+      "special_abilities_pool": [
+        "clutching_claws", "decapitating_bite", "elemental_aura", "fear_aura",
+        "gem_encrusted_hide", "invulnerable", "massive_size", "paralyzing_blows",
+        "polymorph_self", "tail_lash", "wing_claws"
+      ]
+    },
+
+    "black": {
+      "common_name": "Black Dragon",
+      "habitats": ["swamps", "marshes"],
+      "hide_colors": ["green-grey", "midnight green", "black"],
+      "breath": {
+        "shape": "line",
+        "dimensions": {"length_ft": 100, "width_ft": 5, "height_ft": 0},
+        "element": "acid",
+        "special_effects": ["burn_through_wood_metal_barriers", "corrode_metal_wood_cloth"]
+      },
+      "alignment_constraint": null,
+      "is_aquatic": false,
+      "loses_flight": false,
+      "elemental_aura_damage_type": "acid",
+      "special_abilities_pool": [
+        "clutching_claws", "decapitating_bite", "elemental_aura", "fear_aura",
+        "gem_encrusted_hide", "horrific_stench", "invulnerable", "massive_size",
+        "paralyzing_blows", "poisonous_blood", "polymorph_self", "tail_lash",
+        "wing_claws"
+      ]
+    },
+
+    "green": {
+      "common_name": "Green Dragon",
+      "habitats": ["woods", "jungles"],
+      "hide_colors": ["moss green", "olive", "forest green"],
+      "breath": {
+        "shape": "cloud",
+        "dimensions": {"length_ft": 40, "width_ft": 40, "height_ft": 20},
+        "element": "poison",
+        "special_effects": ["obscured_area_one_round_minus_2_attack"]
+      },
+      "alignment_constraint": null,
+      "is_aquatic": false,
+      "loses_flight": false,
+      "elemental_aura_damage_type": "poison",
+      "special_abilities_pool": [
+        "clutching_claws", "decapitating_bite", "elemental_aura", "fear_aura",
+        "gem_encrusted_hide", "horrific_stench", "invulnerable", "massive_size",
+        "paralyzing_blows", "poisonous_blood", "polymorph_self", "tail_lash",
+        "wing_claws"
+      ]
+    },
+
+    "brown": {
+      "common_name": "Brown Dragon",
+      "habitats": ["deserts", "wastelands"],
+      "hide_colors": ["burnt orange", "copper", "sandy brown"],
+      "breath": {
+        "shape": "cone",
+        "dimensions": {"length_ft": 90, "width_ft": 30, "height_ft": 0},
+        "element": "scouring_wind",
+        "special_effects": ["obscured_area_one_round_minus_2_attack"]
+      },
+      "alignment_constraint": null,
+      "is_aquatic": false,
+      "loses_flight": false,
+      "elemental_aura_damage_type": "bludgeoning",
+      "special_abilities_pool": [
+        "clutching_claws", "decapitating_bite", "elemental_aura", "fear_aura",
+        "gem_encrusted_hide", "invulnerable", "massive_size", "paralyzing_blows",
+        "polymorph_self", "tail_lash", "wing_claws"
+      ]
+    },
+
+    "sea": {
+      "common_name": "Sea Dragon",
+      "habitats": ["oceans", "lakes"],
+      "hide_colors": ["sea green", "teal", "cerulean blue"],
+      "breath": {
+        "shape": "cloud",
+        "dimensions": {"length_ft": 90, "width_ft": 30, "height_ft": 20},
+        "element": "blistering_steam",
+        "special_effects": ["obscured_area_one_round_minus_2_attack"]
+      },
+      "alignment_constraint": null,
+      "is_aquatic": true,
+      "loses_flight": true,
+      "swim_speed": [240, 80],
+      "breathes_underwater": true,
+      "may_glide_above_water_rounds": 6,
+      "never_asleep_above_water": true,
+      "treasure_in_underwater_caverns": true,
+      "elemental_aura_damage_type": "steam",
+      "special_abilities_pool": [
+        "clutching_claws", "decapitating_bite", "elemental_aura", "fear_aura",
+        "gem_encrusted_hide", "invulnerable", "massive_size", "paralyzing_blows",
+        "poisonous_blood", "polymorph_self", "tail_lash"
+      ]
+    },
+
+    "wyrm": {
+      "common_name": "Wyrm",
+      "habitats": ["any sinkhole of evil"],
+      "hide_colors": ["purple taupe", "liver", "charcoal", "black"],
+      "breath": {
+        "shape": "cloud",
+        "dimensions": {"length_ft": 40, "width_ft": 40, "height_ft": 20},
+        "element": "fetid_gas",
+        "special_effects": ["save_vs_breath_or_rotting_disease"]
+      },
+      "alignment_constraint": "chaotic",
+      "is_aquatic": false,
+      "loses_flight": false,
+      "elemental_aura_damage_type": "necrotic",
+      "special_abilities_pool": [
+        "clutching_claws", "decapitating_bite", "elemental_aura", "fear_aura",
+        "gem_encrusted_hide", "horrific_stench", "invulnerable", "massive_size",
+        "paralyzing_blows", "poisonous_blood", "polymorph_self", "tail_lash",
+        "wing_claws"
+      ]
+    },
+
+    "metallic": {
+      "common_name": "Metallic Dragon",
+      "habitats": ["any pinnacle of good"],
+      "hide_colors": ["bronze", "silver", "electrum", "gold"],
+      "breath": {
+        "shape": "cone",
+        "dimensions": {"length_ft": 90, "width_ft": 30, "height_ft": 0},
+        "element": "fire",
+        "special_effects": ["ignite_combustibles", "melt_low_mp_metals", "continue_through_breaks"]
+      },
+      "alignment_constraint": "lawful",
+      "is_aquatic": false,
+      "loses_flight": false,
+      "elemental_aura_damage_type": "fire",
+      "special_abilities_pool": [
+        "clutching_claws", "decapitating_bite", "elemental_aura", "fear_aura",
+        "gem_encrusted_hide", "invulnerable", "massive_size", "polymorph_self",
+        "tail_lash", "wing_claws"
+      ]
+    }
+  },
+
+  "_terrain_to_dragon_type_note": "Synthesized terrain_key (from HexTerrainQuery.synthesize_terrain_key) → weighted dragon-type pick. Weights are rough percentages; the resolver normalizes any sum (33+33+34=100; 67+33=100; etc.). The sentinel '__random_all_colors__' means re-roll uniformly across all 9 dragon types as a sub-roll. Sinkholes_of_evil and pinnacles_of_good are PoI/dungeon-stocker territory — wyrms and metallics are NOT in this terrain table; they spawn via PoI generators when those are built. Volcanic / glacier / arctic_mountains terrain types don't yet exist in hex_cells encoding (red and white live in 'mountains' for now); future polish will add those biomes and refine the mapping.",
+  "terrain_to_dragon_type": {
+    "mountains": [["blue", 50], ["red", 25], ["white", 25]],
+    "hills":     [["brown", 33], ["blue", 33], ["__random_all_colors__", 34]],
+    "desert":    [["brown", 67], ["red", 33]],
+    "ocean":     [["sea", 100]],
+    "lake":      [["sea", 100]],
+    "woods":     [["green", 100]],
+    "jungle":    [["green", 100]],
+    "swamp":     [["black", 100]],
+    "clear":     [["__random_all_colors__", 100]],
+    "settled":   []
+  },
+
+  "_lair_eligibility_note": "Hills and clear are explicitly NOT lair-eligible per RAW intent (dragons there are passing through; no lingering / no settled-lair threat). Resolver forces is_lingering=false for these terrains regardless of the d100-vs-%-In-Lair check. Settled has no dragons at all.",
+  "lair_eligibility": {
+    "mountains": true,
+    "hills":     false,
+    "desert":    true,
+    "ocean":     true,
+    "lake":      true,
+    "woods":     true,
+    "jungle":    true,
+    "swamp":     true,
+    "clear":     false,
+    "settled":   false
+  },
+
+  "_random_all_colors_note": "The 9 dragon types eligible for the random_all_colors sub-roll. Excludes wyrm and metallic (those are PoI-only). Resolver picks uniformly across this list when the terrain weight points to '__random_all_colors__'.",
+  "random_all_colors_pool": ["red", "blue", "white", "black", "green", "brown", "sea"],
+
+  "_alignment_random_note": "For dragon types without an alignment_constraint (red, blue, white, black, green, brown, sea), alignment is rolled uniformly across (lawful, neutral, chaotic) at encounter time. Wyrm forced chaotic; metallic forced lawful.",
+
+  "_offspring_note": "RAW: 3+ dragons = mated pair (adult+) + offspring. Offspring are all from the same clutch (single age roll for the entire offspring batch). Roll uniformly across age bands STRICTLY YOUNGER than the parents' age band. Examples: Adult parents → offspring rolls one of [juvenile, young, very_young, spawn]; Mature Adult parents → one of [adult, juvenile, young, very_young, spawn]; Venerable parents → one of [ancient, very_old, ..., spawn]. All offspring in the encounter share the rolled age. All share the parents' dragon_type (a red mom doesn't have green babies) and alignment (chaotic family vs lawful family).",
+
+  "_spell_bias_note": "Speakers (rolled per chance_speech_pct) cast arcane spells. Per RAW, charm_person (L1), invisibility (L2), mirror_image (L2), haste (L3) are favored. Picker: when the dragon has any L1 slots, ONE goes to charm_person; remaining L1 slots fill from random mage L1 spells in SpellRegistry. Same pattern for L2 (one to invisibility, then random; mirror_image takes the second slot if available — random covers L3+ when haste already placed). L4-L5 slots are pure random mage spells. The bias-favorite gets ONE slot per level when level matches; the rest are random (not all bias-favorites consume all slots)."
+}

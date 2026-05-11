@@ -1131,6 +1131,9 @@ const _DOMAIN_MONTHLY_FIELDS := [
 	"is_active_adventuring_this_month",
 	"is_repressed_this_month", "repression_gp_per_family_this_month",
 	"tribute_out_owed",
+	# Migration 068: pending activity modifiers (Domain Phase 3) — set by
+	# activity handlers, reset by monthly tick after consumption.
+	"administer_domain_completed_this_month", "pending_investment_gp",
 ]
 
 ## Player-mutable settings whitelist (Domain Phase 2). Surfaced via the Domain
@@ -5246,3 +5249,1131 @@ func upsert_survey_progress(data: Dictionary) -> bool:
 		int(data.get("last_estimate", -1)),
 		1 if bool(data.get("last_estimate_correct", true)) else 0,
 	])
+
+
+# ---------------------------------------------------------------------------
+# Activity state (migration 065 — Domain Phase 3)
+# ---------------------------------------------------------------------------
+
+## Player- and executor-mutable fields. Singular and Restricted activities
+## resolve atomically; the executor uses these whitelists for both.
+const _ACTIVITY_STATE_FIELDS := [
+	"status", "location_kind", "location_ref",
+	"time_cost_rounds", "ticks_required", "ticks_accumulated",
+	"absence_accumulated", "started_calendar_day", "last_session_day",
+	"gp_committed", "params_json", "scheduled_event_id",
+]
+
+
+func create_activity_state(record: Dictionary) -> String:
+	var id: String = record.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO activity_state
+			(id, campaign_id, character_id, activity_def_id, frequency_type,
+			 status, location_kind, location_ref, time_cost_rounds,
+			 ticks_required, ticks_accumulated, absence_accumulated,
+			 started_calendar_day, last_session_day, gp_committed,
+			 params_json, scheduled_event_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		record.get("campaign_id", ""),
+		record.get("character_id", ""),
+		record.get("activity_def_id", ""),
+		record.get("frequency_type", "singular"),
+		record.get("status", "active"),
+		record.get("location_kind", "anywhere"),
+		record.get("location_ref", ""),
+		int(record.get("time_cost_rounds", 0)),
+		int(record.get("ticks_required", 1)),
+		int(record.get("ticks_accumulated", 0)),
+		int(record.get("absence_accumulated", 0)),
+		int(record.get("started_calendar_day", 0)),
+		int(record.get("last_session_day", 0)),
+		int(record.get("gp_committed", 0)),
+		record.get("params_json", "{}"),
+		record.get("scheduled_event_id", ""),
+	]):
+		push_error("CampaignRepository.create_activity_state: failed. char=%s def=%s" % [
+			record.get("character_id", "?"), record.get("activity_def_id", "?"),
+		])
+		return ""
+	return id
+
+
+func get_activity_state(activity_state_id: String) -> Dictionary:
+	if activity_state_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+		"SELECT * FROM activity_state WHERE id = ? LIMIT 1",
+		[activity_state_id]
+	):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+func update_activity_state(activity_state_id: String, fields: Dictionary) -> bool:
+	if activity_state_id.is_empty():
+		return false
+	var set_clauses: Array[String] = []
+	var values: Array = []
+	for key in fields:
+		if not _ACTIVITY_STATE_FIELDS.has(key):
+			push_error("CampaignRepository.update_activity_state: rejected non-whitelisted field '%s'" % key)
+			continue
+		set_clauses.append("%s = ?" % key)
+		values.append(fields[key])
+	if set_clauses.is_empty():
+		return false
+	set_clauses.append("updated_at = datetime('now')")
+	values.append(activity_state_id)
+	var sql := "UPDATE activity_state SET %s WHERE id = ?" % ", ".join(set_clauses)
+	if not db.query_with_bindings(sql, values):
+		push_error("CampaignRepository.update_activity_state: failed. id=%s" % activity_state_id)
+		return false
+	return true
+
+
+func list_active_activity_states_for_character(character_id: String) -> Array:
+	if character_id.is_empty():
+		return []
+	if not db.query_with_bindings("""
+		SELECT * FROM activity_state
+		WHERE character_id = ? AND status = 'active'
+		ORDER BY started_calendar_day, id
+	""", [character_id]):
+		return []
+	return db.query_result.duplicate()
+
+
+## Returns all 'active' activity_state rows whose character_id is in the
+## domain's owner / vassal-rulers set. Used by the Decrees & Remote Orders
+## sub-tab to show which decrees/orders are currently in flight on the active
+## domain.
+func list_active_activity_states_for_domain(domain_id: String) -> Array:
+	if domain_id.is_empty():
+		return []
+	if not db.query_with_bindings("""
+		SELECT a.* FROM activity_state a
+		JOIN domains d ON d.owner_character_id = a.character_id
+		WHERE d.id = ? AND a.status = 'active'
+		ORDER BY a.started_calendar_day, a.id
+	""", [domain_id]):
+		return []
+	return db.query_result.duplicate()
+
+
+## Returns all rows for a character regardless of status — used by the Active
+## Projects sub-tab to render history.
+func list_activity_states_for_character(character_id: String) -> Array:
+	if character_id.is_empty():
+		return []
+	if not db.query_with_bindings("""
+		SELECT * FROM activity_state
+		WHERE character_id = ?
+		ORDER BY started_calendar_day DESC, id
+	""", [character_id]):
+		return []
+	return db.query_result.duplicate()
+
+
+# ---------------------------------------------------------------------------
+# Character activity state (migration 066 — Strenuous Accountant)
+# ---------------------------------------------------------------------------
+
+const _CHARACTER_ACTIVITY_STATE_FIELDS := [
+	"strenuous_days_in_streak", "overtime_days_in_streak",
+	"last_rest_day", "attack_throw_penalty", "last_updated_calendar_day",
+]
+
+
+func get_character_activity_state(character_id: String) -> Dictionary:
+	if character_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+		"SELECT * FROM character_activity_state WHERE character_id = ? LIMIT 1",
+		[character_id]
+	):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+func upsert_character_activity_state(character_id: String, fields: Dictionary) -> bool:
+	if character_id.is_empty():
+		return false
+	var existing: Dictionary = get_character_activity_state(character_id)
+	if existing.is_empty():
+		# Insert with defaults overlaid by fields.
+		if not db.query_with_bindings("""
+			INSERT INTO character_activity_state
+				(character_id, strenuous_days_in_streak, overtime_days_in_streak,
+				 last_rest_day, attack_throw_penalty, last_updated_calendar_day)
+			VALUES (?, ?, ?, ?, ?, ?)
+		""", [
+			character_id,
+			int(fields.get("strenuous_days_in_streak", 0)),
+			int(fields.get("overtime_days_in_streak", 0)),
+			int(fields.get("last_rest_day", 0)),
+			int(fields.get("attack_throw_penalty", 0)),
+			int(fields.get("last_updated_calendar_day", 0)),
+		]):
+			push_error("CampaignRepository.upsert_character_activity_state: insert failed for %s" % character_id)
+			return false
+		return true
+	# Update path with whitelist.
+	var set_clauses: Array[String] = []
+	var values: Array = []
+	for key in fields:
+		if not _CHARACTER_ACTIVITY_STATE_FIELDS.has(key):
+			push_error("CampaignRepository.upsert_character_activity_state: rejected non-whitelisted field '%s'" % key)
+			continue
+		set_clauses.append("%s = ?" % key)
+		values.append(int(fields[key]))
+	if set_clauses.is_empty():
+		return false
+	set_clauses.append("updated_at = datetime('now')")
+	values.append(character_id)
+	var sql := "UPDATE character_activity_state SET %s WHERE character_id = ?" % ", ".join(set_clauses)
+	if not db.query_with_bindings(sql, values):
+		push_error("CampaignRepository.upsert_character_activity_state: update failed for %s" % character_id)
+		return false
+	return true
+
+
+# ---------------------------------------------------------------------------
+# Restricted cooldowns (migration 067)
+# ---------------------------------------------------------------------------
+
+func get_restricted_cooldown(character_id: String, activity_def_id: String) -> int:
+	if character_id.is_empty() or activity_def_id.is_empty():
+		return 0
+	if not db.query_with_bindings("""
+		SELECT cooldown_until_round FROM restricted_cooldowns
+		WHERE character_id = ? AND activity_def_id = ?
+		LIMIT 1
+	""", [character_id, activity_def_id]):
+		return 0
+	if db.query_result.is_empty():
+		return 0
+	return int(db.query_result[0].get("cooldown_until_round", 0))
+
+
+func set_restricted_cooldown(
+	character_id: String,
+	activity_def_id: String,
+	cooldown_until_round: int,
+	campaign_id: String = ""
+) -> bool:
+	if character_id.is_empty() or activity_def_id.is_empty():
+		return false
+	# INSERT OR REPLACE — the (character_id, activity_def_id) pair is the PK.
+	return db.query_with_bindings("""
+		INSERT OR REPLACE INTO restricted_cooldowns
+			(campaign_id, character_id, activity_def_id, cooldown_until_round)
+		VALUES (?, ?, ?, ?)
+	""", [
+		campaign_id,
+		character_id,
+		activity_def_id,
+		cooldown_until_round,
+	])
+
+
+
+# ---------------------------------------------------------------------------
+# Faith block (Domain Phase 10A.2) — migration 091
+# ---------------------------------------------------------------------------
+#
+# Public API:
+#   congregants:          get / upsert / list_with_pending_gp_above /
+#                         consume_pending_gp / decrement_count
+#   character_divine_power: get / set / add / spend (CHECK guards non-negative)
+#   consecrated_altars:   create / get / list_for_character / update_completion
+#   pending_divine_effects: create / get / list_pending_due / list_active /
+#                           mark_applied / mark_expired
+
+
+# congregants -----------------------------------------------------------------
+
+func get_congregants(character_id: String) -> Dictionary:
+	if character_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+		"SELECT * FROM congregants WHERE character_id = ? LIMIT 1",
+		[character_id]
+	):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+## Upserts (character_id, fields). If no row exists, creates one with the given
+## fields (count and monthly_growth_pending_gp default to 0 if not supplied).
+func upsert_congregants(character_id: String, fields: Dictionary) -> bool:
+	if character_id.is_empty():
+		return false
+	var existing := get_congregants(character_id)
+	if existing.is_empty():
+		var count: int = int(fields.get("count", 0))
+		var pending: int = int(fields.get("monthly_growth_pending_gp", 0))
+		var last_day: int = int(fields.get("last_resolved_calendar_day", 0))
+		return db.query_with_bindings("""
+			INSERT INTO congregants
+				(character_id, count, monthly_growth_pending_gp, last_resolved_calendar_day)
+			VALUES (?, ?, ?, ?)
+		""", [character_id, count, pending, last_day])
+	# Update path: only whitelisted fields.
+	var allowed := {
+		"count": true,
+		"monthly_growth_pending_gp": true,
+		"last_resolved_calendar_day": true,
+	}
+	var set_clauses: Array[String] = []
+	var values: Array = []
+	for key in fields:
+		if not allowed.has(key):
+			push_error("CampaignRepository.upsert_congregants: rejected non-whitelisted field '%s'" % key)
+			continue
+		set_clauses.append("%s = ?" % key)
+		values.append(fields[key])
+	if set_clauses.is_empty():
+		return false
+	set_clauses.append("updated_at = datetime('now')")
+	values.append(character_id)
+	var sql := "UPDATE congregants SET %s WHERE character_id = ?" % ", ".join(set_clauses)
+	return db.query_with_bindings(sql, values)
+
+
+## Increments congregants.monthly_growth_pending_gp by the given gp amount,
+## creating the row if absent. Used by missionary / charitable-spell /
+## ceremonial-sacrifice handlers.
+func add_congregant_pending_gp(character_id: String, gp_delta: int) -> bool:
+	if character_id.is_empty() or gp_delta <= 0:
+		return false
+	var existing := get_congregants(character_id)
+	if existing.is_empty():
+		return db.query_with_bindings("""
+			INSERT INTO congregants (character_id, count, monthly_growth_pending_gp)
+			VALUES (?, 0, ?)
+		""", [character_id, gp_delta])
+	var new_pending: int = int(existing.get("monthly_growth_pending_gp", 0)) + gp_delta
+	return db.query_with_bindings("""
+		UPDATE congregants
+		SET monthly_growth_pending_gp = ?, updated_at = datetime('now')
+		WHERE character_id = ?
+	""", [new_pending, character_id])
+
+
+## Adjusts congregants.count by delta (positive grows; negative shrinks but
+## floored at 0 per the CHECK constraint).
+func adjust_congregant_count(character_id: String, count_delta: int) -> int:
+	if character_id.is_empty() or count_delta == 0:
+		var row := get_congregants(character_id)
+		return int(row.get("count", 0)) if not row.is_empty() else 0
+	var existing := get_congregants(character_id)
+	if existing.is_empty():
+		if count_delta < 0:
+			return 0
+		db.query_with_bindings("""
+			INSERT INTO congregants (character_id, count, monthly_growth_pending_gp)
+			VALUES (?, ?, 0)
+		""", [character_id, count_delta])
+		return count_delta
+	var new_count: int = max(0, int(existing.get("count", 0)) + count_delta)
+	db.query_with_bindings("""
+		UPDATE congregants
+		SET count = ?, updated_at = datetime('now')
+		WHERE character_id = ?
+	""", [new_count, character_id])
+	return new_count
+
+
+# character_divine_power ------------------------------------------------------
+
+func get_character_divine_power(character_id: String) -> Dictionary:
+	if character_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+		"SELECT * FROM character_divine_power WHERE character_id = ? LIMIT 1",
+		[character_id]
+	):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+## Convenience: returns the current divine_power_gp balance, or 0 if no row.
+func get_divine_power_gp(character_id: String) -> int:
+	var row := get_character_divine_power(character_id)
+	return int(row.get("divine_power_gp", 0)) if not row.is_empty() else 0
+
+
+## Adds gp_delta to the character's divine power balance (creates row if needed).
+## Returns the new balance.
+func add_divine_power(character_id: String, gp_delta: int) -> int:
+	if character_id.is_empty():
+		return 0
+	var existing := get_character_divine_power(character_id)
+	if existing.is_empty():
+		var initial: int = max(0, gp_delta)
+		db.query_with_bindings("""
+			INSERT INTO character_divine_power (character_id, divine_power_gp)
+			VALUES (?, ?)
+		""", [character_id, initial])
+		return initial
+	var new_total: int = max(0, int(existing.get("divine_power_gp", 0)) + gp_delta)
+	db.query_with_bindings("""
+		UPDATE character_divine_power
+		SET divine_power_gp = ?, updated_at = datetime('now')
+		WHERE character_id = ?
+	""", [new_total, character_id])
+	return new_total
+
+
+## Spends `gp` from the character's divine power balance. Returns true on
+## success (sufficient balance), false otherwise (no debit applied).
+func spend_divine_power(character_id: String, gp: int) -> bool:
+	if character_id.is_empty() or gp <= 0:
+		return false
+	var balance := get_divine_power_gp(character_id)
+	if balance < gp:
+		return false
+	add_divine_power(character_id, -gp)
+	return true
+
+
+## Stamps the last_extraction_calendar_day used by the weekly cooldown anchor
+## on extract_divine_power.
+func set_divine_power_last_extraction(character_id: String, calendar_day: int) -> bool:
+	if character_id.is_empty():
+		return false
+	var existing := get_character_divine_power(character_id)
+	if existing.is_empty():
+		return db.query_with_bindings("""
+			INSERT INTO character_divine_power
+				(character_id, divine_power_gp, last_extraction_calendar_day)
+			VALUES (?, 0, ?)
+		""", [character_id, calendar_day])
+	return db.query_with_bindings("""
+		UPDATE character_divine_power
+		SET last_extraction_calendar_day = ?, updated_at = datetime('now')
+		WHERE character_id = ?
+	""", [calendar_day, character_id])
+
+
+# consecrated_altars ----------------------------------------------------------
+
+func create_consecrated_altar(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO consecrated_altars
+			(id, character_id, location_kind, location_ref, gp_invested,
+			 dp_substituted_gp, alignment, aura_size_sq_ft, completion_pct,
+			 status, started_calendar_day, completed_calendar_day)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		data.get("character_id", ""),
+		data.get("location_kind", "stronghold"),
+		data.get("location_ref", ""),
+		int(data.get("gp_invested", 0)),
+		int(data.get("dp_substituted_gp", 0)),
+		data.get("alignment", "lawful"),
+		int(data.get("aura_size_sq_ft", 0)),
+		int(data.get("completion_pct", 0)),
+		data.get("status", "in_progress"),
+		int(data.get("started_calendar_day", 0)),
+		data.get("completed_calendar_day", null),
+	]):
+		push_error("CampaignRepository.create_consecrated_altar: failed. id=%s" % id)
+		return ""
+	return id
+
+
+func get_consecrated_altar(altar_id: String) -> Dictionary:
+	if altar_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+		"SELECT * FROM consecrated_altars WHERE id = ? LIMIT 1",
+		[altar_id]
+	):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+func list_consecrated_altars_for_character(character_id: String) -> Array:
+	if character_id.is_empty():
+		return []
+	if not db.query_with_bindings("""
+		SELECT * FROM consecrated_altars
+		WHERE character_id = ?
+		ORDER BY started_calendar_day, id
+	""", [character_id]):
+		return []
+	return db.query_result.duplicate()
+
+
+func update_consecrated_altar(altar_id: String, fields: Dictionary) -> bool:
+	if altar_id.is_empty():
+		return false
+	var allowed := {
+		"gp_invested": true,
+		"dp_substituted_gp": true,
+		"aura_size_sq_ft": true,
+		"completion_pct": true,
+		"status": true,
+		"completed_calendar_day": true,
+	}
+	var set_clauses: Array[String] = []
+	var values: Array = []
+	for key in fields:
+		if not allowed.has(key):
+			push_error("CampaignRepository.update_consecrated_altar: rejected field '%s'" % key)
+			continue
+		set_clauses.append("%s = ?" % key)
+		values.append(fields[key])
+	if set_clauses.is_empty():
+		return false
+	set_clauses.append("updated_at = datetime('now')")
+	values.append(altar_id)
+	var sql := "UPDATE consecrated_altars SET %s WHERE id = ?" % ", ".join(set_clauses)
+	return db.query_with_bindings(sql, values)
+
+
+# pending_divine_effects ------------------------------------------------------
+
+func create_pending_divine_effect(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO pending_divine_effects
+			(id, domain_id, character_id, effect_kind, effect_payload_json,
+			 issued_calendar_day, applies_at_calendar_day,
+			 expires_at_calendar_day, status)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		data.get("domain_id", null),
+		data.get("character_id", null),
+		data.get("effect_kind", ""),
+		data.get("effect_payload_json", "{}"),
+		int(data.get("issued_calendar_day", 0)),
+		int(data.get("applies_at_calendar_day", 0)),
+		int(data.get("expires_at_calendar_day", 0)),
+		data.get("status", "pending"),
+	]):
+		push_error("CampaignRepository.create_pending_divine_effect: failed. id=%s" % id)
+		return ""
+	return id
+
+
+## Lists 'pending' effects whose applies_at_calendar_day has come due (<= now)
+## for the given domain. Optionally filter by effect_kind.
+func list_pending_divine_effects_due(
+	domain_id: String,
+	calendar_day: int,
+	effect_kind: String = ""
+) -> Array:
+	if domain_id.is_empty():
+		return []
+	var sql: String
+	var args: Array
+	if effect_kind.is_empty():
+		sql = """
+			SELECT * FROM pending_divine_effects
+			WHERE domain_id = ? AND status = 'pending'
+			  AND applies_at_calendar_day <= ?
+			ORDER BY applies_at_calendar_day, id
+		"""
+		args = [domain_id, calendar_day]
+	else:
+		sql = """
+			SELECT * FROM pending_divine_effects
+			WHERE domain_id = ? AND status = 'pending'
+			  AND applies_at_calendar_day <= ?
+			  AND effect_kind = ?
+			ORDER BY applies_at_calendar_day, id
+		"""
+		args = [domain_id, calendar_day, effect_kind]
+	if not db.query_with_bindings(sql, args):
+		return []
+	return db.query_result.duplicate()
+
+
+## Lists 'applied' effects with an unexpired window (expires_at > now). Used
+## by the monthly tick to apply continuous buffs (e.g. consecrate_ruler_buff).
+func list_active_divine_effects(
+	domain_id: String,
+	calendar_day: int,
+	effect_kind: String = ""
+) -> Array:
+	if domain_id.is_empty():
+		return []
+	var sql: String
+	var args: Array
+	if effect_kind.is_empty():
+		sql = """
+			SELECT * FROM pending_divine_effects
+			WHERE domain_id = ? AND status = 'applied'
+			  AND expires_at_calendar_day > ?
+			ORDER BY applies_at_calendar_day, id
+		"""
+		args = [domain_id, calendar_day]
+	else:
+		sql = """
+			SELECT * FROM pending_divine_effects
+			WHERE domain_id = ? AND status = 'applied'
+			  AND expires_at_calendar_day > ?
+			  AND effect_kind = ?
+			ORDER BY applies_at_calendar_day, id
+		"""
+		args = [domain_id, calendar_day, effect_kind]
+	if not db.query_with_bindings(sql, args):
+		return []
+	return db.query_result.duplicate()
+
+
+func update_pending_divine_effect_status(effect_id: String, new_status: String) -> bool:
+	if effect_id.is_empty():
+		return false
+	return db.query_with_bindings("""
+		UPDATE pending_divine_effects
+		SET status = ?, updated_at = datetime('now')
+		WHERE id = ?
+	""", [new_status, effect_id])
+
+
+## One-shot helper: transitions all eligible 'applied' rows past their
+## expires_at_calendar_day to 'expired'. Called once per monthly tick.
+func expire_stale_divine_effects(domain_id: String, calendar_day: int) -> int:
+	if domain_id.is_empty():
+		return 0
+	if not db.query_with_bindings("""
+		UPDATE pending_divine_effects
+		SET status = 'expired', updated_at = datetime('now')
+		WHERE domain_id = ? AND status = 'applied'
+		  AND expires_at_calendar_day > 0
+		  AND expires_at_calendar_day <= ?
+	""", [domain_id, calendar_day]):
+		return 0
+	# SQLite changes() is not exposed by godot-sqlite's wrapper directly; the
+	# updater just returns success/failure. Tests can verify by re-querying.
+	return 1
+
+
+# ---------------------------------------------------------------------------
+# Magical Research block (Domain Phase 10B.1a) — migration 093
+# ---------------------------------------------------------------------------
+#
+# Public API:
+#   magic_research_projects: create / get / list_for_character /
+#                            update / advance_days
+#   libraries:               create / get / list_for_owner / update
+#   workshops:               create / get / list_for_owner / update
+#   followers:               create / get / list_for_owner /
+#                            list_by_source_kind / list_aspirants_due /
+#                            update / promote_to_henchman
+#
+# The handler-level resolvers (10B.1b-h) build on these. 10B.1a tests cover
+# CRUD + enum validation + the promote_to_henchman cross-table operation.
+
+
+# magic_research_projects -----------------------------------------------------
+
+func create_magic_research_project(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO magic_research_projects
+			(id, campaign_id, character_id, project_kind,
+			 target_spell_key, target_spell_level, target_item_kind,
+			 gp_committed, days_total, days_completed, target_value,
+			 library_id, workshop_id, status,
+			 started_calendar_day, completed_calendar_day, params_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		String(data.get("campaign_id", "")),
+		String(data.get("character_id", "")),
+		String(data.get("project_kind", "spell")),
+		String(data.get("target_spell_key", "")),
+		int(data.get("target_spell_level", 0)),
+		String(data.get("target_item_kind", "")),
+		int(data.get("gp_committed", 0)),
+		int(data.get("days_total", 0)),
+		int(data.get("days_completed", 0)),
+		int(data.get("target_value", 18)),
+		data.get("library_id", null),
+		data.get("workshop_id", null),
+		String(data.get("status", "in_progress")),
+		int(data.get("started_calendar_day", 0)),
+		data.get("completed_calendar_day", null),
+		String(data.get("params_json", "{}")),
+	]):
+		push_error("CampaignRepository.create_magic_research_project: failed. id=%s" % id)
+		return ""
+	return id
+
+
+func get_magic_research_project(project_id: String) -> Dictionary:
+	if project_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+		"SELECT * FROM magic_research_projects WHERE id = ? LIMIT 1",
+		[project_id]
+	):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+func list_magic_research_projects_for_character(
+	character_id: String,
+	status_filter: String = ""
+) -> Array:
+	if character_id.is_empty():
+		return []
+	var sql: String
+	var args: Array
+	if status_filter.is_empty():
+		sql = """
+			SELECT * FROM magic_research_projects
+			WHERE character_id = ?
+			ORDER BY started_calendar_day, id
+		"""
+		args = [character_id]
+	else:
+		sql = """
+			SELECT * FROM magic_research_projects
+			WHERE character_id = ? AND status = ?
+			ORDER BY started_calendar_day, id
+		"""
+		args = [character_id, status_filter]
+	if not db.query_with_bindings(sql, args):
+		return []
+	return db.query_result.duplicate()
+
+
+func update_magic_research_project(project_id: String, fields: Dictionary) -> bool:
+	if project_id.is_empty():
+		return false
+	var allowed := {
+		"days_completed": true,
+		"gp_committed": true,
+		"target_value": true,
+		"library_id": true,
+		"workshop_id": true,
+		"status": true,
+		"completed_calendar_day": true,
+		"params_json": true,
+	}
+	var set_clauses: Array[String] = []
+	var values: Array = []
+	for key in fields:
+		if not allowed.has(key):
+			push_error("CampaignRepository.update_magic_research_project: rejected field '%s'" % key)
+			continue
+		set_clauses.append("%s = ?" % key)
+		values.append(fields[key])
+	if set_clauses.is_empty():
+		return false
+	set_clauses.append("updated_at = datetime('now')")
+	values.append(project_id)
+	var sql := "UPDATE magic_research_projects SET %s WHERE id = ?" % ", ".join(set_clauses)
+	return db.query_with_bindings(sql, values)
+
+
+## Monthly-tick helper: advances days_completed by the given delta on every
+## in_progress project for the character. Used by the monthly-tick stub in
+## domain_handlers.gd::_resolve_magic_research_month.
+func advance_magic_research_projects_for_character(character_id: String, day_delta: int) -> int:
+	if character_id.is_empty():
+		return 0
+	if day_delta <= 0:
+		return 0
+	if not db.query_with_bindings("""
+		UPDATE magic_research_projects
+		SET days_completed = days_completed + ?,
+		    updated_at = datetime('now')
+		WHERE character_id = ? AND status = 'in_progress'
+	""", [day_delta, character_id]):
+		return 0
+	return 1
+
+
+# libraries -------------------------------------------------------------------
+
+func create_library(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO libraries
+			(id, campaign_id, owner_character_id, stronghold_id,
+			 structure_kind, gp_invested,
+			 max_spell_level_supported, magic_research_throw_bonus,
+			 status, created_calendar_day)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		String(data.get("campaign_id", "")),
+		String(data.get("owner_character_id", "")),
+		data.get("stronghold_id", null),
+		String(data.get("structure_kind", "sanctum_library")),
+		int(data.get("gp_invested", 0)),
+		int(data.get("max_spell_level_supported", 1)),
+		int(data.get("magic_research_throw_bonus", 0)),
+		String(data.get("status", "operational")),
+		int(data.get("created_calendar_day", 0)),
+	]):
+		push_error("CampaignRepository.create_library: failed. id=%s" % id)
+		return ""
+	return id
+
+
+func get_library(library_id: String) -> Dictionary:
+	if library_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+		"SELECT * FROM libraries WHERE id = ? LIMIT 1", [library_id]
+	):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+func list_libraries_for_owner(character_id: String) -> Array:
+	if character_id.is_empty():
+		return []
+	if not db.query_with_bindings("""
+		SELECT * FROM libraries
+		WHERE owner_character_id = ?
+		ORDER BY created_calendar_day, id
+	""", [character_id]):
+		return []
+	return db.query_result.duplicate()
+
+
+func update_library(library_id: String, fields: Dictionary) -> bool:
+	if library_id.is_empty():
+		return false
+	var allowed := {
+		"gp_invested": true,
+		"max_spell_level_supported": true,
+		"magic_research_throw_bonus": true,
+		"status": true,
+	}
+	var set_clauses: Array[String] = []
+	var values: Array = []
+	for key in fields:
+		if not allowed.has(key):
+			push_error("CampaignRepository.update_library: rejected field '%s'" % key)
+			continue
+		set_clauses.append("%s = ?" % key)
+		values.append(fields[key])
+	if set_clauses.is_empty():
+		return false
+	set_clauses.append("updated_at = datetime('now')")
+	values.append(library_id)
+	var sql := "UPDATE libraries SET %s WHERE id = ?" % ", ".join(set_clauses)
+	return db.query_with_bindings(sql, values)
+
+
+# workshops -------------------------------------------------------------------
+
+func create_workshop(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO workshops
+			(id, campaign_id, owner_character_id, stronghold_id,
+			 structure_kind, gp_invested,
+			 max_item_value_supported_gp, magic_research_throw_bonus,
+			 status, created_calendar_day)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		String(data.get("campaign_id", "")),
+		String(data.get("owner_character_id", "")),
+		data.get("stronghold_id", null),
+		String(data.get("structure_kind", "tower_workshop")),
+		int(data.get("gp_invested", 0)),
+		int(data.get("max_item_value_supported_gp", 0)),
+		int(data.get("magic_research_throw_bonus", 0)),
+		String(data.get("status", "operational")),
+		int(data.get("created_calendar_day", 0)),
+	]):
+		push_error("CampaignRepository.create_workshop: failed. id=%s" % id)
+		return ""
+	return id
+
+
+func get_workshop(workshop_id: String) -> Dictionary:
+	if workshop_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+		"SELECT * FROM workshops WHERE id = ? LIMIT 1", [workshop_id]
+	):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+func list_workshops_for_owner(character_id: String) -> Array:
+	if character_id.is_empty():
+		return []
+	if not db.query_with_bindings("""
+		SELECT * FROM workshops
+		WHERE owner_character_id = ?
+		ORDER BY created_calendar_day, id
+	""", [character_id]):
+		return []
+	return db.query_result.duplicate()
+
+
+func update_workshop(workshop_id: String, fields: Dictionary) -> bool:
+	if workshop_id.is_empty():
+		return false
+	var allowed := {
+		"gp_invested": true,
+		"max_item_value_supported_gp": true,
+		"magic_research_throw_bonus": true,
+		"status": true,
+	}
+	var set_clauses: Array[String] = []
+	var values: Array = []
+	for key in fields:
+		if not allowed.has(key):
+			push_error("CampaignRepository.update_workshop: rejected field '%s'" % key)
+			continue
+		set_clauses.append("%s = ?" % key)
+		values.append(fields[key])
+	if set_clauses.is_empty():
+		return false
+	set_clauses.append("updated_at = datetime('now')")
+	values.append(workshop_id)
+	var sql := "UPDATE workshops SET %s WHERE id = ?" % ", ".join(set_clauses)
+	return db.query_with_bindings(sql, values)
+
+
+# followers -------------------------------------------------------------------
+
+func create_follower(data: Dictionary) -> String:
+	var id: String = data.get("id", "")
+	if id.is_empty():
+		id = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO followers
+			(id, campaign_id, owner_character_id, stronghold_id,
+			 source_kind, intended_class,
+			 name, race, character_class, combat_progression,
+			 level, xp, alignment,
+			 strength, intelligence, wisdom, dexterity, constitution, charisma,
+			 hp_max, hp_current, status,
+			 joined_calendar_day, promotion_eligible_day,
+			 notes, params_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		id,
+		String(data.get("campaign_id", "")),
+		String(data.get("owner_character_id", "")),
+		data.get("stronghold_id", null),
+		String(data.get("source_kind", "generic")),
+		String(data.get("intended_class", "")),
+		String(data.get("name", "Follower")),
+		String(data.get("race", "human")),
+		String(data.get("character_class", "normal_man")),
+		String(data.get("combat_progression", "fighter")),
+		int(data.get("level", 0)),
+		int(data.get("xp", 0)),
+		String(data.get("alignment", "neutral")),
+		int(data.get("strength", 10)),
+		int(data.get("intelligence", 10)),
+		int(data.get("wisdom", 10)),
+		int(data.get("dexterity", 10)),
+		int(data.get("constitution", 10)),
+		int(data.get("charisma", 10)),
+		int(data.get("hp_max", 1)),
+		int(data.get("hp_current", 1)),
+		String(data.get("status", "present")),
+		int(data.get("joined_calendar_day", 0)),
+		data.get("promotion_eligible_day", null),
+		String(data.get("notes", "")),
+		String(data.get("params_json", "{}")),
+	]):
+		push_error("CampaignRepository.create_follower: failed. id=%s" % id)
+		return ""
+	return id
+
+
+func get_follower(follower_id: String) -> Dictionary:
+	if follower_id.is_empty():
+		return {}
+	if not db.query_with_bindings(
+		"SELECT * FROM followers WHERE id = ? LIMIT 1", [follower_id]
+	):
+		return {}
+	if db.query_result.is_empty():
+		return {}
+	return db.query_result[0].duplicate()
+
+
+func list_followers_for_owner(character_id: String, status_filter: String = "") -> Array:
+	if character_id.is_empty():
+		return []
+	var sql: String
+	var args: Array
+	if status_filter.is_empty():
+		sql = """
+			SELECT * FROM followers
+			WHERE owner_character_id = ?
+			ORDER BY joined_calendar_day, id
+		"""
+		args = [character_id]
+	else:
+		sql = """
+			SELECT * FROM followers
+			WHERE owner_character_id = ? AND status = ?
+			ORDER BY joined_calendar_day, id
+		"""
+		args = [character_id, status_filter]
+	if not db.query_with_bindings(sql, args):
+		return []
+	return db.query_result.duplicate()
+
+
+func list_followers_by_source_kind(character_id: String, source_kind: String) -> Array:
+	if character_id.is_empty() or source_kind.is_empty():
+		return []
+	if not db.query_with_bindings("""
+		SELECT * FROM followers
+		WHERE owner_character_id = ? AND source_kind = ?
+		ORDER BY joined_calendar_day, id
+	""", [character_id, source_kind]):
+		return []
+	return db.query_result.duplicate()
+
+
+## Monthly-tick helper: returns all aspirant_in_training rows whose
+## promotion_eligible_day is at or before calendar_day. Used by the
+## sanctum promotion-throw resolver in 10B.1d.
+func list_aspirants_due_for_promotion(calendar_day: int) -> Array:
+	if not db.query_with_bindings("""
+		SELECT * FROM followers
+		WHERE status = 'aspirant_in_training'
+		  AND promotion_eligible_day IS NOT NULL
+		  AND promotion_eligible_day <= ?
+		ORDER BY promotion_eligible_day, id
+	""", [calendar_day]):
+		return []
+	return db.query_result.duplicate()
+
+
+func update_follower(follower_id: String, fields: Dictionary) -> bool:
+	if follower_id.is_empty():
+		return false
+	var allowed := {
+		"character_class": true,
+		"combat_progression": true,
+		"level": true,
+		"xp": true,
+		"hp_max": true,
+		"hp_current": true,
+		"status": true,
+		"departed_day": true,
+		"promoted_to_henchman_id": true,
+		"notes": true,
+		"params_json": true,
+	}
+	var set_clauses: Array[String] = []
+	var values: Array = []
+	for key in fields:
+		if not allowed.has(key):
+			push_error("CampaignRepository.update_follower: rejected field '%s'" % key)
+			continue
+		set_clauses.append("%s = ?" % key)
+		values.append(fields[key])
+	if set_clauses.is_empty():
+		return false
+	set_clauses.append("updated_at = datetime('now')")
+	values.append(follower_id)
+	var sql := "UPDATE followers SET %s WHERE id = ?" % ", ".join(set_clauses)
+	return db.query_with_bindings(sql, values)
+
+
+## Cross-table operation: promotes a follower into the henchmen pool by
+## creating a `characters` row with character_type='henchman',
+## persistence_tier='named', and the follower's stats. Marks the follower
+## row status='promoted_to_henchman' with promoted_to_henchman_id pointing
+## at the new characters.id. Returns the new characters.id, or "" on
+## failure. Henchman-slot eligibility is the caller's responsibility (per
+## Q25 [RESOLVED 2026-05-11], promotion bypasses the standard hiring
+## reaction roll when slots are available).
+func promote_follower_to_henchman(follower_id: String) -> String:
+	if follower_id.is_empty():
+		return ""
+	var follower: Dictionary = get_follower(follower_id)
+	if follower.is_empty():
+		return ""
+	if String(follower.get("status", "")) == "promoted_to_henchman":
+		# Already promoted; return the existing id.
+		return String(follower.get("promoted_to_henchman_id", ""))
+	var new_char_id: String = generate_id()
+	if not db.query_with_bindings("""
+		INSERT INTO characters (
+			id, campaign_id, name,
+			character_type, persistence_tier,
+			race, character_class, combat_progression,
+			level, xp,
+			strength, intelligence, wisdom, dexterity, constitution, charisma,
+			alignment, hp_max, hp_current
+		) VALUES (?, ?, ?, 'henchman', 'named', ?, ?, ?, ?, ?,
+			?, ?, ?, ?, ?, ?, ?, ?, ?)
+	""", [
+		new_char_id,
+		String(follower.get("campaign_id", "")),
+		String(follower.get("name", "Promoted Follower")),
+		String(follower.get("race", "human")),
+		String(follower.get("character_class", "normal_man")),
+		String(follower.get("combat_progression", "fighter")),
+		int(follower.get("level", 1)),
+		int(follower.get("xp", 0)),
+		int(follower.get("strength", 10)),
+		int(follower.get("intelligence", 10)),
+		int(follower.get("wisdom", 10)),
+		int(follower.get("dexterity", 10)),
+		int(follower.get("constitution", 10)),
+		int(follower.get("charisma", 10)),
+		String(follower.get("alignment", "neutral")),
+		int(follower.get("hp_max", 1)),
+		int(follower.get("hp_current", 1)),
+	]):
+		push_error("CampaignRepository.promote_follower_to_henchman: characters insert failed")
+		return ""
+	if not update_follower(follower_id, {
+		"status": "promoted_to_henchman",
+		"promoted_to_henchman_id": new_char_id,
+	}):
+		push_warning(
+			"CampaignRepository.promote_follower_to_henchman: characters row created but "
+			+ "follower update failed; new_char_id=%s, follower_id=%s" % [new_char_id, follower_id]
+		)
+	return new_char_id

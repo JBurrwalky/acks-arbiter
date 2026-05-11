@@ -282,6 +282,61 @@ static func advance_commissions(today_calendar_day: int) -> Array:
 	return milestones
 
 
+## Apply a percentage bonus to a commission's daily construction rate.
+## Called by Phase 3's oversee_construction (+5%) and supervise_construction
+## (+10%) handlers per `ax_campaign_play.xml` §oversee_construction L661-672.
+##
+## The bonus stacks ON TOP of the current rate (i.e. +5% means the new rate
+## is 1.05× the previous rate, not 1.05× the base rate). Returns the new
+## daily_construction_rate_gp; returns 0 if the commission is missing or no
+## longer in_progress. Banker's rounding via XPAwardCalculator.
+##
+## bonus_pct is an integer percentage (5, 10, etc.). Negative bonuses are
+## rejected (this is a one-way bump; rate decreases happen via engineer
+## departure or commission pause).
+static func bump_daily_construction_rate(commission_id: String, bonus_pct: int) -> int:
+	if commission_id.is_empty() or bonus_pct <= 0:
+		return 0
+	var commission: Dictionary = CampaignRepository.get_commission(commission_id)
+	if commission.is_empty():
+		return 0
+	if String(commission.get("status", "")) != "in_progress":
+		return 0
+	var prior_rate: int = int(commission.get("daily_construction_rate_gp", 0))
+	if prior_rate <= 0:
+		return 0
+	var new_rate: int = XPAwardCalculator.bankers_round(
+		float(prior_rate) * (1.0 + float(bonus_pct) / 100.0))
+	if new_rate == prior_rate:
+		# Banker's rounding collapsed the bump (rate too small for rounding to
+		# bite). Force at least +1 gp/day so successive Phase 3 supervisors
+		# accumulate progress.
+		new_rate = prior_rate + 1
+	CampaignRepository.update_commission(commission_id, {
+		"daily_construction_rate_gp": new_rate,
+	})
+	return new_rate
+
+
+## Returns the in-progress commission for a given domain, or empty Dict if
+## the domain has no active construction. Used by Phase 3's oversee /
+## supervise construction handlers to find the commission to bump.
+static func get_in_progress_commission_for_domain(domain_id: String) -> Dictionary:
+	if domain_id.is_empty():
+		return {}
+	if not CampaignRepository.db.query_with_bindings("""
+		SELECT c.* FROM stronghold_commissions c
+		JOIN strongholds s ON s.id = c.stronghold_id
+		WHERE s.domain_id = ? AND c.status = 'in_progress'
+		ORDER BY c.expected_completion_day
+		LIMIT 1
+	""", [domain_id]):
+		return {}
+	if CampaignRepository.db.query_result.is_empty():
+		return {}
+	return CampaignRepository.db.query_result[0].duplicate()
+
+
 ## Re-check engineer requirement for a single commission and pause if
 ## insufficient. Called when an engineer departs (Phase 5 henchman lifecycle)
 ## or when the commission loads on session start. Returns true if paused.

@@ -232,6 +232,65 @@
 [ext_resource type="Script" path="res://tests/test_active_adventuring_detector.gd" id="218_active_adventuring_detector_tests"]
 [ext_resource type="Script" path="res://tests/test_establish_domain_flow.gd" id="219_establish_domain_flow_tests"]
 [ext_resource type="Script" path="res://tests/test_treasury.gd" id="220_treasury_tests"]
+[ext_resource type="Script" path="res://tests/test_activity_catalog.gd" id="221_activity_catalog_tests"]
+[ext_resource type="Script" path="res://tests/test_activity_time_cost_executor.gd" id="222_activity_time_cost_executor_tests"]
+[ext_resource type="Script" path="res://tests/test_strenuous_accountant.gd" id="223_strenuous_accountant_tests"]
+[ext_resource type="Script" path="res://tests/test_repress_population.gd" id="224_repress_population_tests"]
+[ext_resource type="Script" path="res://tests/test_commission_pipeline_rate_bump.gd" id="225_commission_pipeline_rate_bump_tests"]
+[ext_resource type="Script" path="res://tests/test_oversee_construction_handler.gd" id="226_oversee_construction_handler_tests"]
+[ext_resource type="Script" path="res://tests/test_troop_unit_repository.gd" id="227_troop_unit_repository_tests"]
+[ext_resource type="Script" path="res://tests/test_follower_arrival_resolver.gd" id="228_follower_arrival_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_garrison_expenditure_calculator.gd" id="229_garrison_expenditure_calculator_tests"]
+[ext_resource type="Script" path="res://tests/test_army_repository.gd" id="230_army_repository_tests"]
+[ext_resource type="Script" path="res://tests/test_army_validator.gd" id="231_army_validator_tests"]
+[ext_resource type="Script" path="res://tests/test_supply_calculator.gd" id="232_supply_calculator_tests"]
+[ext_resource type="Script" path="res://tests/test_army_composer.gd" id="233_army_composer_tests"]
+[ext_resource type="Script" path="res://tests/test_army_disbander.gd" id="234_army_disbander_tests"]
+[ext_resource type="Script" path="res://tests/test_recruitment_vagaries_resolver.gd" id="235_recruitment_vagaries_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_encounter_scaler.gd" id="236_encounter_scaler_tests"]
+[ext_resource type="Script" path="res://tests/test_army_collision_detector.gd" id="237_army_collision_detector_tests"]
+[ext_resource type="Script" path="res://tests/test_extraction_resistance_heuristic.gd" id="238_extraction_resistance_heuristic_tests"]
+[ext_resource type="Script" path="res://tests/test_battle_repository.gd" id="239_battle_repository_tests"]
+[ext_resource type="Script" path="res://tests/test_bpc_table.gd" id="240_bpc_table_tests"]
+[ext_resource type="Script" path="res://tests/test_terrain_advantage_resolver.gd" id="241_terrain_advantage_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_bpc_adjustment_matrix.gd" id="242_bpc_adjustment_matrix_tests"]
+[ext_resource type="Script" path="res://tests/test_army_morale_resolver.gd" id="243_army_morale_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_heroic_foray_resolver.gd" id="244_heroic_foray_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_vagaries_of_battle_resolver.gd" id="245_vagaries_of_battle_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_field_battle_resolver.gd" id="246_field_battle_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_battle_dispatcher.gd" id="247_battle_dispatcher_tests"]
+[ext_resource type="Script" path="res://tests/test_retreat_resolver.gd" id="248_retreat_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_battle_xp_distributor.gd" id="249_battle_xp_distributor_tests"]
+[ext_resource type="Script" path="res://tests/test_field_battle_phase2.gd" id="250_field_battle_phase2_tests"]
+[ext_resource type="Script" path="res://tests/test_army_marcher.gd" id="251_army_marcher_tests"]
+[ext_resource type="Script" path="res://tests/test_army_supply_tracker.gd" id="252_army_supply_tracker_tests"]
+[ext_resource type="Script" path="res://tests/test_army_activity_handlers.gd" id="253_army_activity_handlers_tests"]
+[ext_resource type="Script" path="res://tests/test_continue_battle_with_forays.gd" id="254_continue_battle_with_forays_tests"]
+[ext_resource type="Script" path="res://tests/test_armies_section_ui.gd" id="255_armies_section_ui_tests"]
+[ext_resource type="Script" path="res://tests/test_field_battle_panel_ui.gd" id="256_field_battle_panel_ui_tests"]
+[ext_resource type="Script" path="res://tests/test_tribute_calculator.gd" id="257_tribute_calculator_tests"]
+[ext_resource type="Script" path="res://tests/test_realm_title_resolver.gd" id="258_realm_title_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_vagaries_of_war_resolver.gd" id="259_vagaries_of_war_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_vassal_repository.gd" id="260_vassal_repository_tests"]
+[ext_resource type="Script" path="res://tests/test_realm_graph.gd" id="261_realm_graph_tests"]
+[ext_resource type="Script" path="res://tests/test_in_enemy_territory_predicate.gd" id="262_in_enemy_territory_predicate_tests"]
+[ext_resource type="Script" path="res://tests/test_extraction_resistance_realm_ai.gd" id="263_extraction_resistance_realm_ai_tests"]
+[ext_resource type="Script" path="res://tests/test_realm_sub_tab_ui.gd" id="264_realm_sub_tab_ui_tests"]
+[ext_resource type="Script" path="res://tests/test_vassal_obligations_repository.gd" id="265_vassal_obligations_repository_tests"]
+[ext_resource type="Script" path="res://tests/test_favors_duties_resolver.gd" id="266_favors_duties_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_trade_range_resolver.gd" id="267_trade_range_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_phase_8_polish.gd" id="268_phase_8_polish_tests"]
+[ext_resource type="Script" path="res://tests/test_phase_9a.gd" id="269_phase_9a_tests"]
+[ext_resource type="Script" path="res://tests/test_phase_9b.gd" id="270_phase_9b_tests"]
+[ext_resource type="Script" path="res://tests/test_phase_9c.gd" id="271_phase_9c_tests"]
+[ext_resource type="Script" path="res://tests/test_monster_catalog_consistency.gd" id="272_monster_catalog_consistency_tests"]
+[ext_resource type="Script" path="res://tests/test_hex_terrain_query.gd" id="273_hex_terrain_query_tests"]
+[ext_resource type="Script" path="res://tests/test_dragon_data_consistency.gd" id="274_dragon_data_consistency_tests"]
+[ext_resource type="Script" path="res://tests/test_dragon_variant_resolver.gd" id="275_dragon_variant_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_class_bucket_resolver.gd" id="276_class_bucket_resolver_tests"]
+[ext_resource type="Script" path="res://tests/test_faith_block.gd" id="277_faith_block_tests"]
+[ext_resource type="Script" path="res://tests/test_phase_10a3.gd" id="278_phase_10a3_tests"]
+[ext_resource type="Script" path="res://tests/test_phase_10b1a.gd" id="279_phase_10b1a_tests"]
 
 [node name="TestRunner" type="Node"]
 script = ExtResource("1_runner")
@@ -928,3 +987,180 @@ script = ExtResource("219_establish_domain_flow_tests")
 
 [node name="TreasuryTests" type="Node" parent="."]
 script = ExtResource("220_treasury_tests")
+
+[node name="ActivityCatalogTests" type="Node" parent="."]
+script = ExtResource("221_activity_catalog_tests")
+
+[node name="ActivityTimeCostExecutorTests" type="Node" parent="."]
+script = ExtResource("222_activity_time_cost_executor_tests")
+
+[node name="StrenuousAccountantTests" type="Node" parent="."]
+script = ExtResource("223_strenuous_accountant_tests")
+
+[node name="RepressPopulationTests" type="Node" parent="."]
+script = ExtResource("224_repress_population_tests")
+
+[node name="CommissionPipelineRateBumpTests" type="Node" parent="."]
+script = ExtResource("225_commission_pipeline_rate_bump_tests")
+
+[node name="OverseeConstructionHandlerTests" type="Node" parent="."]
+script = ExtResource("226_oversee_construction_handler_tests")
+
+[node name="TroopUnitRepositoryTests" type="Node" parent="."]
+script = ExtResource("227_troop_unit_repository_tests")
+
+[node name="FollowerArrivalResolverTests" type="Node" parent="."]
+script = ExtResource("228_follower_arrival_resolver_tests")
+
+[node name="GarrisonExpenditureCalculatorTests" type="Node" parent="."]
+script = ExtResource("229_garrison_expenditure_calculator_tests")
+
+[node name="ArmyRepositoryTests" type="Node" parent="."]
+script = ExtResource("230_army_repository_tests")
+
+[node name="ArmyValidatorTests" type="Node" parent="."]
+script = ExtResource("231_army_validator_tests")
+
+[node name="SupplyCalculatorTests" type="Node" parent="."]
+script = ExtResource("232_supply_calculator_tests")
+
+[node name="ArmyComposerTests" type="Node" parent="."]
+script = ExtResource("233_army_composer_tests")
+
+[node name="ArmyDisbanderTests" type="Node" parent="."]
+script = ExtResource("234_army_disbander_tests")
+
+[node name="RecruitmentVagariesResolverTests" type="Node" parent="."]
+script = ExtResource("235_recruitment_vagaries_resolver_tests")
+
+[node name="EncounterScalerTests" type="Node" parent="."]
+script = ExtResource("236_encounter_scaler_tests")
+
+[node name="ArmyCollisionDetectorTests" type="Node" parent="."]
+script = ExtResource("237_army_collision_detector_tests")
+
+[node name="ExtractionResistanceHeuristicTests" type="Node" parent="."]
+script = ExtResource("238_extraction_resistance_heuristic_tests")
+
+[node name="BattleRepositoryTests" type="Node" parent="."]
+script = ExtResource("239_battle_repository_tests")
+
+[node name="BpcTableTests" type="Node" parent="."]
+script = ExtResource("240_bpc_table_tests")
+
+[node name="TerrainAdvantageResolverTests" type="Node" parent="."]
+script = ExtResource("241_terrain_advantage_resolver_tests")
+
+[node name="BpcAdjustmentMatrixTests" type="Node" parent="."]
+script = ExtResource("242_bpc_adjustment_matrix_tests")
+
+[node name="ArmyMoraleResolverTests" type="Node" parent="."]
+script = ExtResource("243_army_morale_resolver_tests")
+
+[node name="HeroicForayResolverTests" type="Node" parent="."]
+script = ExtResource("244_heroic_foray_resolver_tests")
+
+[node name="VagariesOfBattleResolverTests" type="Node" parent="."]
+script = ExtResource("245_vagaries_of_battle_resolver_tests")
+
+[node name="FieldBattleResolverTests" type="Node" parent="."]
+script = ExtResource("246_field_battle_resolver_tests")
+
+[node name="BattleDispatcherTests" type="Node" parent="."]
+script = ExtResource("247_battle_dispatcher_tests")
+
+[node name="RetreatResolverTests" type="Node" parent="."]
+script = ExtResource("248_retreat_resolver_tests")
+
+[node name="BattleXPDistributorTests" type="Node" parent="."]
+script = ExtResource("249_battle_xp_distributor_tests")
+
+[node name="FieldBattlePhase2Tests" type="Node" parent="."]
+script = ExtResource("250_field_battle_phase2_tests")
+
+[node name="ArmyMarcherTests" type="Node" parent="."]
+script = ExtResource("251_army_marcher_tests")
+
+[node name="ArmySupplyTrackerTests" type="Node" parent="."]
+script = ExtResource("252_army_supply_tracker_tests")
+
+[node name="ArmyActivityHandlersTests" type="Node" parent="."]
+script = ExtResource("253_army_activity_handlers_tests")
+
+[node name="ContinueBattleWithForaysTests" type="Node" parent="."]
+script = ExtResource("254_continue_battle_with_forays_tests")
+
+[node name="ArmiesSectionUiTests" type="Node" parent="."]
+script = ExtResource("255_armies_section_ui_tests")
+
+[node name="FieldBattlePanelUiTests" type="Node" parent="."]
+script = ExtResource("256_field_battle_panel_ui_tests")
+
+[node name="TributeCalculatorTests" type="Node" parent="."]
+script = ExtResource("257_tribute_calculator_tests")
+
+[node name="RealmTitleResolverTests" type="Node" parent="."]
+script = ExtResource("258_realm_title_resolver_tests")
+
+[node name="VagariesOfWarResolverTests" type="Node" parent="."]
+script = ExtResource("259_vagaries_of_war_resolver_tests")
+
+[node name="VassalRepositoryTests" type="Node" parent="."]
+script = ExtResource("260_vassal_repository_tests")
+
+[node name="RealmGraphTests" type="Node" parent="."]
+script = ExtResource("261_realm_graph_tests")
+
+[node name="InEnemyTerritoryPredicateTests" type="Node" parent="."]
+script = ExtResource("262_in_enemy_territory_predicate_tests")
+
+[node name="ExtractionResistanceRealmAiTests" type="Node" parent="."]
+script = ExtResource("263_extraction_resistance_realm_ai_tests")
+
+[node name="RealmSubTabUiTests" type="Node" parent="."]
+script = ExtResource("264_realm_sub_tab_ui_tests")
+
+[node name="VassalObligationsRepositoryTests" type="Node" parent="."]
+script = ExtResource("265_vassal_obligations_repository_tests")
+
+[node name="FavorsDutiesResolverTests" type="Node" parent="."]
+script = ExtResource("266_favors_duties_resolver_tests")
+
+[node name="TradeRangeResolverTests" type="Node" parent="."]
+script = ExtResource("267_trade_range_resolver_tests")
+
+[node name="Phase8PolishTests" type="Node" parent="."]
+script = ExtResource("268_phase_8_polish_tests")
+
+[node name="Phase9aTests" type="Node" parent="."]
+script = ExtResource("269_phase_9a_tests")
+
+[node name="Phase9bTests" type="Node" parent="."]
+script = ExtResource("270_phase_9b_tests")
+
+[node name="Phase9cTests" type="Node" parent="."]
+script = ExtResource("271_phase_9c_tests")
+
+[node name="MonsterCatalogConsistencyTests" type="Node" parent="."]
+script = ExtResource("272_monster_catalog_consistency_tests")
+
+[node name="HexTerrainQueryTests" type="Node" parent="."]
+script = ExtResource("273_hex_terrain_query_tests")
+
+[node name="DragonDataConsistencyTests" type="Node" parent="."]
+script = ExtResource("274_dragon_data_consistency_tests")
+
+[node name="DragonVariantResolverTests" type="Node" parent="."]
+script = ExtResource("275_dragon_variant_resolver_tests")
+
+[node name="ClassBucketResolverTests" type="Node" parent="."]
+script = ExtResource("276_class_bucket_resolver_tests")
+
+[node name="FaithBlockTests" type="Node" parent="."]
+script = ExtResource("277_faith_block_tests")
+
+[node name="Phase10A3Tests" type="Node" parent="."]
+script = ExtResource("278_phase_10a3_tests")
+
+[node name="Phase10B1aTests" type="Node" parent="."]
+script = ExtResource("279_phase_10b1a_tests")

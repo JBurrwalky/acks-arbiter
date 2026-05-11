@@ -1022,6 +1022,17 @@ signal activity_completed(activity_state_id: String, character_id: String, outco
 ##                        "player_cancel" | "absence_exceeded_ticks".
 signal activity_forfeited(activity_state_id: String, character_id: String, reason: String)
 
+## Emitted by ActivityTimeCostExecutor.launch on successful schedule. Consumed
+## by Decrees & Remote Orders sub-tab and Active Projects sub-tab to refresh
+## their card lists without polling.
+signal activity_launched(activity_state_id: String, character_id: String, activity_def_id: String)
+
+## Emitted by the call_to_arms activity handler when a realm ruler musters
+## vassal forces. Phase 6 wires the vassal response (per acore_axioms
+## §muster_delay L373-382). [param delay_rounds] is the muster window per
+## realm size (Baron-Count = Week, Prince-Duke = Month, King-Emperor = Season).
+signal vassal_muster_called(realm_id: String, delay_rounds: int)
+
 
 # ---------------------------------------------------------------------------
 # Voxel presentation signals (Session 8 UX layer)
@@ -1046,3 +1057,375 @@ signal dungeon_focus_level_changed(level: int)
 ## party positions refresh. Keys are character ids, values are int levels.
 ## An empty dict effectively clears level badges (e.g., leaving the dungeon).
 signal party_member_levels_snapshot(levels: Dictionary)
+
+
+# ---------------------------------------------------------------------------
+# Army warfare signals (Phase 6A — see gdd-army-warfare.md §2 / §4 / §5)
+# ---------------------------------------------------------------------------
+
+## Emitted by ArmyComposer.compose() on successful army formation.
+## Fired AFTER all rows (armies / army_officers / army_unit_assignments /
+## army_supply_state) have been inserted in their assembling state. The
+## Troops tab Armies sub-section listens to refresh the army list. The
+## first wire-up consumer is the unified log per gdd-unified-log-panel.md.
+signal army_formed(army_id: String, owner_id: String, command_officer_id: String)
+
+## Emitted by ArmyDisbander.disband() after the army's state transitions
+## to disbanded. reason ∈ {voluntary, departure_no_successor,
+## commander_dead_grace_expired, supply_collapse, annihilation}.
+signal army_disbanded(army_id: String, reason: String)
+
+## Emitted on travel_leg arrival when the army successfully reaches a hex.
+## Phase 6A part 2 (army_marcher) wires this. Consumers: collision detector,
+## supply tracker, army-encounter checker.
+signal army_arrived_at_hex(army_id: String, hex_q: int, hex_r: int, map_id: String)
+
+## Emitted by ArmyCollisionDetector when two HOSTILE armies share a hex.
+## Phase 6B's battle_dispatcher consumes this to route to the field-battle
+## resolver (interactive if PC-involved; silent if NPC-vs-NPC). Friendly-
+## friendly collisions per O-A-2 do NOT emit this signal — coexistence is
+## the default; players merge via the cross-army-transfer UI.
+signal armies_collided(army_a_id: String, army_b_id: String, hex_q: int, hex_r: int)
+
+## Per-army weekly supply tick. Phase 6A part 2 (army_supply_tracker) wires
+## the actual deduction; this signal is the public observation surface.
+signal army_supply_consumed(army_id: String, gp_consumed: int, remaining_gp: int)
+
+## Supply line moved into a threatened state (within 1 hex of a hostile path
+## hex per gdd-army-warfare.md §4.4 PROJECT-DESIGNED affordance — RAW does
+## not define "threatened", but the UI surface needs an amber indicator).
+signal army_supply_threatened(army_id: String, cause: String)
+
+## Supply line cut (out_of_supply_blocked / out_of_supply_overextended /
+## out_of_supply_no_base per supply_calculator.STATUS_*). cause is the same
+## status string for downstream display.
+signal army_supply_cut(army_id: String, cause: String)
+
+## Emitted by RecruitmentVagariesResolver.resolve() for the monthly recruitment
+## roll per daw_vagaries.xml §vagaries_of_recruitment L24-185. Consumers:
+## domain notification surface, unified log, and per-result handlers (Phase 7
+## Realm AI, Phase 8 Favors & Duties, Phase 6A part 2 mercenary-market UI).
+signal recruitment_vagary_resolved(activity_id: String, result_key: String, payload: Dictionary)
+
+## Emitted by EncounterScaler when an army encounters a sub-unit creature pack
+## and the player must choose ignore / engage_with_party / destroy_with_army.
+## Phase 6A part 2 wires the player decision modal; Phase 7 wires the NPC
+## default heuristic.
+signal army_subunit_encounter_decision_required(army_id: String, encounter: Dictionary, options: Array)
+
+
+# ---------------------------------------------------------------------------
+# Field battle signals (Phase 6B — see gdd-army-warfare.md §6.11)
+# ---------------------------------------------------------------------------
+
+## Emitted by FieldBattleResolver.start_battle() after the field_battles row
+## and battle_unit_states rows are inserted. The Inspect-math UI subscribes;
+## the unified log subscribes; Phase 6B part 2's field_battle_panel uses this
+## as its open trigger for player-involved battles.
+signal battle_started(battle_id: String)
+
+## Emitted at every player decision point per gdd-army-warfare.md §6.2 + §6.11.
+## decision_point ∈ {deployment, foray, redeploy, advance_hold_withdraw}.
+## Phase 6B part 2's field_battle_panel listens and presents the appropriate
+## UI; on player Confirm, the panel calls FieldBattleResolver.continue_battle.
+signal battle_pause_for_player(battle_id: String, decision_point: String)
+
+## Emitted on every battle_log row insertion. The inline battle log scrolls;
+## the Inspect-math affordance opens the row's payload tooltip.
+signal battle_log_appended(battle_id: String, log_id: String)
+
+## Emitted when a battle completes (outcome assigned). Consumers: world log,
+## casualty notification, XP-award routing, post-battle army state transition.
+signal battle_concluded(battle_id: String, outcome: String)
+
+
+# ---------------------------------------------------------------------------
+# Realm AI signals (Phase 7 — see docs/domain-roadmap-corrected.md Phase 7,
+# generation/gdd-army-warfare.md §4.9.5, gdd-domain-tab.md §13)
+# ---------------------------------------------------------------------------
+
+## Emitted by VagariesOfWarResolver.roll_and_resolve() each weekly tick when
+## an army is on campaign in enemy territory, out of garrison >30 days, or
+## besieging. Per daw_vagaries.xml §vagaries_of_war L186-540. Consumers:
+## unified log, notebook notification surface, Phase 8 follow-up resolvers
+## for stubbed results (defection, brigands, market-class shifts, etc.).
+##   roll: 1-100 result of the d100 (or worse-of-two during sieges)
+##   result_key: matches `daw_vagaries.xml` row name (e.g. "supply_problems")
+##   payload: handler-specific dict — at minimum {applied: bool, kind, summary}
+signal vagary_of_war_resolved(army_id: String, roll: int, result_key: String, payload: Dictionary)
+
+## Emitted by domain monthly tick when a vassal cannot pay tribute and the
+## resulting Henchman Loyalty roll returns Resignation or Hostility. Consumers:
+## realm sub-tab, unified log, Phase 8 Favors & Duties tracker.
+signal vassal_revolted(vassal_assignment_id: String, vassal_character_id: String, liege_character_id: String)
+
+## Emitted by domain monthly tick after tribute-out succeeds (vassal pays
+## liege). Consumers: realm sub-tab loyalty/status display.
+signal vassal_tribute_paid(vassal_assignment_id: String, gp_paid: int, calendar_day: int)
+
+## Emitted by RealmTitleResolver when a domain's title changes due to realm
+## growth/shrinkage. Consumers: realm sub-tab title card, unified log.
+signal realm_title_changed(domain_id: String, old_title: String, new_title: String)
+
+
+# ---------------------------------------------------------------------------
+# Phase 8 — Favors & Duties Monthly System (gdd-domain-tab.md §11 +
+# acore_axioms_strongholds_and_domains.xml §favors_and_duties L352-372)
+# ---------------------------------------------------------------------------
+
+## Emitted by FavorsDutiesResolver.roll_monthly() each month per active
+## vassal_assignment. Payload includes the d20 roll, result_key (one of
+## construction / scutage / call_to_council / call_to_arms / loan / revoke /
+## charter_of_monopoly / gift / office / troops / grant_of_land), kind, type,
+## magnitude, gp_value, applied (bool), loyalty_outcome, revolted, etc.
+##
+## Consumers: realm sub-tab Favors/Duties card, unified log, Phase 9/10/11
+## downstream subsystems for stubbed mechanical effects (charter_of_monopoly
+## price modulation, troops unit creation, grant_of_land domain creation).
+signal favor_or_duty_resolved(vassal_assignment_id: String, result_key: String, payload: Dictionary)
+
+## Emitted by FavorsDutiesResolver._apply_revoke when a 9-12 d20 result
+## consumes a previously active obligation. kind ∈ {favor, duty}; type is
+## the obligation's type (e.g., "scutage", "charter_of_monopoly"). Consumers:
+## realm sub-tab history list, audit trail.
+signal obligation_revoked(obligation_id: String, kind: String, type: String)
+
+
+# ---------------------------------------------------------------------------
+# Domain encounter / bandit / challenger / market signals (Phase 9A — see
+# docs/domain-roadmap-corrected.md Phase 9 + ax_domain_level_encounters.xml +
+# acore_axioms_strongholds_and_domains.xml §bandits L611-630)
+# ---------------------------------------------------------------------------
+
+## Emitted by DomainEncounterResolver when a wandering-monster incursion
+## triggers in a domain. Encounter dict shape:
+##   {threat_id, creature_key, creature_count, platoon_br, reaction,
+##    is_lair, is_lingering}
+signal domain_encounter_occurred(domain_id: String, encounter: Dictionary)
+
+## Emitted by BanditSpawner when a domain's morale drops to -2 or worse and
+## a bandit_swarm threat materializes (or the existing swarm's count is
+## updated to a worse tier).
+signal bandits_spawned_in_domain(domain_id: String, threat_id: String, bandit_count: int)
+
+## Emitted when bandits are dealt with (defeated, raised-morale dispersed,
+## negotiated). mode ∈ {"defeated_with_troops", "raised_morale_dispersed",
+## "negotiated", "fled"}.
+signal bandits_resolved(domain_id: String, mode: String, count_killed: int, morale_delta: int)
+
+## Emitted by NPCChallengerEmergence when the cumulative monthly chance
+## fires and a challenger character is created from the bandits.
+signal npc_challenger_emerged(domain_id: String, challenger_character_id: String)
+
+## Phase 9C polish round 4 2026-05-09: emitted by DomainEncounterResolver
+## when a wandering monster's % In Lair check passes (lingering=true) and
+## the resolver creates a kind='settled_lair' threat row instead of the
+## migrating-encounter kind='encounter' row. Per RAW
+## ax_domain_level_encounters §dungeons L312-321: settled lairs contribute
+## a per-family-XP morale penalty to the domain's monthly morale roll
+## (computed via DomainEncounterResolver.compute_settled_lair_morale_penalty).
+## Distinct from `domain_encounter_occurred` (which fires for every
+## encounter regardless of lingering vs migrating); UI / log subscribers
+## can use this signal to surface the "monsters have settled in your
+## domain" prompt without filtering encounter-type payloads.
+signal settled_lair_established(domain_id: String, threat_id: String, creature_key: String)
+
+## Emitted by MarketClassModifierResolver when a temporary market-class shift
+## is applied to a settlement (commerce_disrupted/improves). Negative delta
+## = market shrunk; positive = grew. expires_calendar_day is the day at
+## which the modifier auto-expires.
+signal market_class_modifier_applied(settlement_id: String, delta: int, expires_calendar_day: int)
+
+
+# ---------------------------------------------------------------------------
+# Siege signals (Phase 9B — see docs/domain-roadmap-corrected.md Phase 9 +
+# rules/daw_sieges.xml). Emitted by SiegeResolver / SiegeResolverSimplified /
+# SiegeReductionResolver / SiegeMiningResolver / SiegeInterventionHandler.
+# ---------------------------------------------------------------------------
+
+## Emitted when a new siege begins (either resolution mode).
+signal siege_started(siege_id: String, stronghold_id: String, besieging_army_id: String)
+
+## Emitted on every daily tick where a measurable state change occurred
+## (shp damage, breach added, repair, blockade flip). UI listens to refresh
+## the active-siege card on the Encounters & Threats sub-tab.
+signal siege_state_changed(siege_id: String, current_phase: String, current_shp: int, breach_count: int)
+
+## Emitted the moment the besieger's blockade requirement is fully satisfied
+## per RAW §blockade L65-193. Defender's supply line is cut from this point.
+signal siege_blockade_completed(siege_id: String)
+
+## Emitted when SiegeResolver.begin_assault initiates a field battle for the
+## assault per RAW §resolving_assaults L472-499. battle_id is the field_battles row.
+signal siege_assault_began(siege_id: String, battle_id: String)
+
+## Emitted when a siege concludes. outcome ∈ {captured, liberated, destroyed,
+## surrendered, departed, sallied_won, sallied_lost}.
+signal siege_concluded(siege_id: String, outcome: String)
+
+## Emitted when SiegeInterventionHandler escalates a simplified siege to full
+## DaW rules (PC arrived in the hex). new_mode = "full".
+signal siege_escalated(siege_id: String, new_mode: String)
+
+## Emitted when a siege mine suffers a mining accident per RAW L405-408
+## (unmodified loyalty roll of 2). Workers killed, mine destroyed; engineer
+## may have died subject to a save vs Blast.
+signal siege_mining_accident(siege_id: String, mine_id: String)
+
+## Emitted whenever breach_count increases. source ∈ {bombardment, magic,
+## arson, mining, subversion}. Total breaches is the new breach_count.
+signal siege_breach_created(siege_id: String, total_breaches: int, source: String)
+
+
+# ---------------------------------------------------------------------------
+# Disease signals (Phase 9C — see rules/daw_vagaries.xml §disease L294-365).
+# Emitted by DiseaseResolver.
+# ---------------------------------------------------------------------------
+
+## Emitted when a unit becomes diseased after failing its save during a
+## disease vagary. recovery_calendar_day is when the engine will check for
+## death-vs-recovery (per RAW the player's UI hides this date — debug only).
+signal unit_diseased(troop_unit_id: String, disease_type: String, recovery_calendar_day: int)
+
+## Emitted when a diseased unit recovers (either at end-of-duration or via
+## the cure pipeline).
+signal unit_recovered_from_disease(troop_unit_id: String)
+
+## Emitted when a diseased unit dies at end-of-duration. Per RAW L301-302:
+## died = (failed_by >= death_threshold) OR (natural_roll == 1).
+signal unit_died_of_disease(troop_unit_id: String)
+
+
+# ---------------------------------------------------------------------------
+# Call-to-Arms signals (Phase 9C — see rules/daw_armies_recruitment.xml
+# §vassal_troops L656-702). Emitted by CallToArmsHandler.
+# ---------------------------------------------------------------------------
+
+## Emitted when a call to arms is issued. lord_army_id is the receiving army.
+signal call_to_arms_issued(obligation_id: String, lord_army_id: String, target_total_units: int)
+
+## Emitted when a tranche of called troops arrives.
+## tranche ∈ {1, 2, 3}; units_arrived is the count for THIS tranche.
+signal call_to_arms_tranche_arrived(call_to_arms_state_id: String, tranche: int, units_arrived: int)
+
+## Emitted when the third (final) tranche has arrived.
+signal call_to_arms_fully_arrived(call_to_arms_state_id: String)
+
+## Emitted when a call to arms is revoked (favor or duty obligation revoked).
+## units_returned is the count of troops sent back to the vassal's garrison.
+signal call_to_arms_revoked(call_to_arms_state_id: String, units_returned: int)
+
+
+## Phase 9C E5 — Emitted by BanditSpawner.apply_defeat_outcome when a
+## bandit_swarm threat is resolved by force. killed_count + captured_count
+## tally the swarm's disposition. Per RAW acore_axioms §bandits L617-625.
+signal bandits_defeated(threat_id: String, killed_count: int, captured_count: int)
+
+
+# ---------------------------------------------------------------------------
+# Phase 10A.2 — Faith block signals
+# ---------------------------------------------------------------------------
+#
+# Divine-caster surface signals per gdd-domain-tab.md §12.2 and the divine
+# activity handlers in engine/subsystems/activities/handlers/faith/.
+# Consumers: Faith block UI (refresh on emit), unified log (informational
+# entries), Departure Log sub-tab (aspirant departures via congregants_changed
+# with negative delta), monthly-tick handlers.
+
+## Emitted whenever a character's congregant count changes (growth, upkeep
+## attrition, departure). delta is signed (negative = lost congregants).
+signal congregants_changed(character_id: String, new_count: int, delta: int)
+
+## Emitted whenever a character's divine_power_gp balance changes (extraction
+## adds; consecrate_fields/consecrate_ruler/altar-dp-substitution spend).
+## delta is signed.
+signal divine_power_changed(character_id: String, new_total: int, delta: int)
+
+## Emitted when consecrate_altar Ongoing completes. altar_id is the
+## consecrated_altars row id; gp_invested includes any dp_substituted_gp.
+signal altar_consecrated(altar_id: String, character_id: String, gp_invested: int)
+
+## Emitted when consecrate_fields completes (success or natural-1 failure).
+## land_value_delta_per_family is +1 on success, -1 on natural 1, 0 on
+## ordinary failure (no effect, but the DP was consumed).
+signal consecrate_fields_resolved(domain_id: String, success: bool, land_value_delta_per_family: int)
+
+## Emitted when consecrate_ruler completes (success or natural-1 failure).
+## expires_at_day is the calendar_day on which the 12-month buff expires.
+signal consecrate_ruler_resolved(domain_id: String, ruler_character_id: String, success: bool, expires_at_day: int)
+
+## Emitted when dispatch_missionaries completes. gp_committed accrues into
+## next month's congregant growth roll.
+signal missionary_dispatch_recorded(character_id: String, gp_committed: int)
+
+
+# ---------------------------------------------------------------------------
+# Phase 10A.3 — Bardic Patronage + proficiency-gated training signals
+# ---------------------------------------------------------------------------
+#
+# Bardic Patronage class-bucket signals per gdd-domain-tab.md §12.6
+# (rewritten 2026-05-11 per Q14 [RESOLVED 2026-05-11]).
+
+## Emitted when solicit_followers completes successfully. mercenaries_count is
+## the 0-level mercenary headcount (1d4+1 × 10); bards_count is the named-bard
+## applicant count (1d6 at 1st-3rd level).
+signal bard_followers_solicited(character_id: String, mercenaries_count: int, bards_count: int)
+
+## Emitted by morale-roll consumers AFTER applying the Chronicles of Battle
+## +1 morale bonus to a unit's roll. Used by unified log + post-battle review.
+signal chronicles_of_battle_aura_applied(bard_character_id: String, target_unit_id: String, morale_modifier: int)
+
+## Emitted when a troop_unit advances tier (untrained → average → veteran).
+## Replaces the prior `troop_veteran_promoted` signal — this fires for ANY
+## tier advancement, not just veteran promotion. Per Phase 10A.3 train_troops
+## rework.
+signal troop_unit_tier_advanced(troop_unit_id: String, new_tier: String)
+
+## Emitted when oversee_troop_training completes and applies its +1 permanent
+## morale stamp to the overseen units. Replaces the prior
+## `troop_training_completed` signal.
+signal troop_training_completed(troop_unit_id: String, morale_delta: int)
+
+
+# ---------------------------------------------------------------------------
+# Phase 10B.1 — Magical Research block signals
+# ---------------------------------------------------------------------------
+#
+# Arcane-caster / Lightblessed surface signals per gdd-domain-tab.md §12.4
+# and §12.7. The 10B.1a wave defines the signal surface; emission lands in
+# 10B.1b-h as the handlers come online. UI consumers (magical_research_block.gd)
+# subscribe and refresh on emit.
+
+## Emitted when a magic_research_projects row transitions to status=
+## 'in_progress'. project_kind is one of spell/magic_item/construct/monster.
+signal magic_research_project_started(project_id: String, character_id: String, project_kind: String)
+
+## Emitted when a magic_research_projects row transitions to 'completed' or
+## 'failed'. success indicates the final research-throw outcome.
+signal magic_research_project_completed(project_id: String, character_id: String, success: bool)
+
+## Emitted when a libraries row transitions from 'building' to 'operational'
+## (or is created already operational at sanctum founding).
+signal library_built(library_id: String, owner_character_id: String, gp_invested: int)
+
+## Emitted when a workshops row transitions from 'building' to 'operational'.
+signal workshop_built(workshop_id: String, owner_character_id: String, gp_invested: int)
+
+## Emitted when a followers row is created — covers aspirant arrivals, bard
+## recruits, class-attracted followers, race followers. source_kind matches
+## the followers.source_kind enum.
+signal follower_joined(follower_id: String, owner_character_id: String, source_kind: String)
+
+## Emitted when a followers row transitions to 'departed' or 'failed_promotion'.
+## reason is a free-text tag for telemetry / log surfacing.
+signal follower_departed(follower_id: String, owner_character_id: String, reason: String)
+
+## Emitted when an aspirant follower passes their d20+ability_mod 14+ throw at
+## promotion_eligible_day and transitions to a 1st-level classed follower.
+## new_class is the character_class field set on the row (mage, cleric, etc.).
+signal aspirant_promoted_to_first_level(follower_id: String, owner_character_id: String, new_class: String)
+
+## Emitted when promote_follower_to_henchman creates a characters row from a
+## followers row and transitions the follower to 'promoted_to_henchman'.
+## new_character_id is the new characters.id.
+signal follower_promoted_to_henchman(follower_id: String, new_character_id: String, owner_character_id: String)

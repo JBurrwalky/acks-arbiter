@@ -1,0 +1,267 @@
+{
+  "_source": "data/monsters/monster_catalog.json + rules/ax_domain_level_encounters.xml + rules/acore-monster-stocking-rules.xml",
+  "_note": "Category-membership index: each id MUST exist in monster_catalog.json AND have a non-empty domain_encounter block. Per-creature stats live on the catalog entry, not here. The DomainEncounterResolver loads the catalog via MonsterRegistry. d8_columns is the 1d8 wilderness-encounter-by-terrain roll values that map to this category; constructs and summoned have empty d8_columns because they are not reached via the standard wilderness encounter throw.",
+  "categories": {
+    "beastmen_humanoids": {
+      "d8_columns": [
+        1,
+        2
+      ]
+    },
+    "men": {
+      "d8_columns": [
+        3
+      ]
+    },
+    "animals": {
+      "d8_columns": [
+        4,
+        5
+      ]
+    },
+    "vermin": {
+      "d8_columns": [
+        6
+      ]
+    },
+    "fantastic_creatures": {
+      "d8_columns": [
+        7
+      ]
+    },
+    "constructs": {
+      "d8_columns": []
+    },
+    "giants": {
+      "d8_columns": [
+        8
+      ]
+    },
+    "summoned": {
+      "d8_columns": []
+    },
+    "undead": {
+      "d8_columns": [
+        8
+      ]
+    }
+  },
+  "category_membership": {
+    "beastmen_humanoids": [
+      "bugbear",
+      "centaur",
+      "dwarf",
+      "elf",
+      "faerie_pixie",
+      "faerie_sprite",
+      "gnoll",
+      "gnome",
+      "goblin",
+      "halfling",
+      "hobgoblin",
+      "kobold",
+      "lizardman",
+      "merman",
+      "minotaur",
+      "morlock",
+      "neanderthal",
+      "nymph_dryad",
+      "nymph_naiad",
+      "ogre",
+      "orc",
+      "troglodyte"
+    ],
+    "men": [
+      "berserkers",
+      "brigand_bowmen",
+      "brigand_cavalry",
+      "merchants",
+      "nomad_archers",
+      "nomad_cavalry",
+      "pirate_bowmen",
+      "pirate_swordsmen"
+    ],
+    "animals": [
+      "ape_white",
+      "baboon_rock",
+      "bat_giant",
+      "bear_black",
+      "bear_cave",
+      "bear_grizzly",
+      "boar",
+      "boar_giant",
+      "camel",
+      "cat_mountain_lion",
+      "cat_panther",
+      "cat_saber_tooth",
+      "cat_tiger",
+      "crocodile",
+      "crocodile_giant",
+      "crocodile_large",
+      "dire_wolf",
+      "dog_hunting",
+      "dog_war",
+      "elephant",
+      "fish_giant_catfish",
+      "fish_giant_piranha",
+      "fish_giant_rockfish",
+      "fish_giant_sturgeon",
+      "hawk_giant",
+      "hawk_ordinary",
+      "herd_animal_1hd",
+      "herd_animal_2hd",
+      "herd_animal_3hd",
+      "herd_animal_4hd",
+      "horse_heavy",
+      "horse_light",
+      "horse_medium",
+      "lion",
+      "lizard_giant_draco",
+      "lizard_giant_gecko",
+      "lizard_giant_horned",
+      "lizard_giant_tuatara",
+      "mastodon",
+      "octopus_giant",
+      "pteranodon",
+      "pterodactyl",
+      "rhinoceros",
+      "shark_bull",
+      "shark_great_white",
+      "shark_mako",
+      "snake_giant_python",
+      "snake_giant_rattler",
+      "snake_pit_viper",
+      "snake_sea",
+      "snake_spitting_cobra",
+      "squid_giant",
+      "stegosaurus",
+      "titanothere",
+      "toad_giant",
+      "triceratops",
+      "tyrannosaurus_rex",
+      "varmint_giant_ferret",
+      "varmint_giant_rat",
+      "varmint_giant_shrew",
+      "varmint_giant_weasel",
+      "whale_killer",
+      "whale_narwhal",
+      "whale_sperm",
+      "wolf"
+    ],
+    "vermin": [
+      "ankheg",
+      "ant_giant",
+      "bee_giant",
+      "beetle_giant_bombardier",
+      "beetle_giant_fire",
+      "beetle_giant_tiger",
+      "caecilian",
+      "carcass_scavenger",
+      "centipede_giant",
+      "crab_giant",
+      "fly_giant_carnivorous",
+      "purple_worm",
+      "rhagodessa_giant",
+      "scorpion_giant",
+      "spider_giant_black_widow",
+      "spider_giant_crab",
+      "spider_giant_tarantula"
+    ],
+    "fantastic_creatures": [
+      "basilisk",
+      "blink_dog",
+      "chimera",
+      "cockatrice",
+      "demon_boar",
+      "doppelganger",
+      "dragon_adult",
+      "dragon_ancient",
+      "dragon_juvenile",
+      "dragon_mature_adult",
+      "dragon_old",
+      "dragon_spawn",
+      "dragon_turtle",
+      "dragon_venerable",
+      "dragon_very_old",
+      "dragon_very_young",
+      "dragon_young",
+      "gorgon",
+      "griffon",
+      "harpy",
+      "hellhound_greater",
+      "hellhound_lesser",
+      "hippogriff",
+      "hydra_10_head",
+      "hydra_11_head",
+      "hydra_12_head",
+      "hydra_5_head",
+      "hydra_6_head",
+      "hydra_7_head",
+      "hydra_8_head",
+      "hydra_9_head",
+      "lamia",
+      "lammasu",
+      "lycanthrope_werebear",
+      "lycanthrope_wereboar",
+      "lycanthrope_wererat",
+      "lycanthrope_weretiger",
+      "lycanthrope_werewolf",
+      "manticore",
+      "medusa",
+      "owl_bear",
+      "pegasus",
+      "phase_tiger",
+      "remorhaz_10hd",
+      "roc_giant",
+      "roc_large",
+      "roc_small",
+      "rust_monster",
+      "sea_serpent",
+      "shadow",
+      "skittering_maw",
+      "stirge",
+      "throghrin",
+      "treant",
+      "unicorn",
+      "wyvern"
+    ],
+    "constructs": [
+      "gargoyle",
+      "golem_amber",
+      "golem_bone",
+      "golem_bronze",
+      "golem_wood",
+      "statue_animated_crystal",
+      "statue_animated_iron",
+      "statue_animated_stone"
+    ],
+    "giants": [
+      "cyclops",
+      "ettin",
+      "giant_cloud",
+      "giant_fire",
+      "giant_frost",
+      "giant_hill",
+      "giant_stone",
+      "giant_storm",
+      "troll"
+    ],
+    "summoned": [
+      "djinni",
+      "efreeti",
+      "invisible_stalker",
+      "salamander_flame",
+      "salamander_frost"
+    ],
+    "undead": [
+      "ghoul",
+      "mummy",
+      "skeleton",
+      "spectre",
+      "vampire",
+      "wight",
+      "wraith",
+      "zombie"
+    ]
+  }
+}

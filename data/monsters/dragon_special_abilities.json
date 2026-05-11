@@ -1,0 +1,123 @@
+{
+  "_source": "ACKS Core Rulebook Dragon section, Special Abilities subsection (acore_dragons.pdf p. 163-165). All 13 abilities from RAW. Constraints (alignment_required, spellcaster_required, type_specific_damage_lookup) are encoded for the encounter-time picker.",
+  "_note": "Resolver picks N abilities at encounter time per the catalog age band's special_abilities_count. Filters: drop abilities whose alignment_required != dragon_alignment (paralyzing_blows requires chaotic); drop abilities whose spellcaster_required=true if the dragon doesn't speak (polymorph_self). Per-type pools (from dragon_types.json:types[type].special_abilities_pool) further constrain which abilities are eligible for that type. The intersection (per-type pool ∩ constraint-passing) is the final selectable set; resolver picks uniformly without replacement. Note that on a Speaker, polymorph_self is RAW-favored — see _polymorph_self_speaker_priority_note below.",
+
+  "abilities": {
+    "clutching_claws": {
+      "name": "Clutching Claws",
+      "description": "Dragon makes a dive attack with its claws, dealing double damage. If both claw attacks hit a creature smaller than itself, the dragon automatically grabs the struck creature (no save). To escape, the character must save vs Paralysis at -4. Grabbed humanoids and any creatures with less than half the dragon's HD can be carried off.",
+      "alignment_required": null,
+      "spellcaster_required": false,
+      "raw_citation": "ACKS Core Rulebook p.163"
+    },
+    "decapitating_bite": {
+      "name": "Decapitating Bite",
+      "description": "On a natural attack throw of 19 or 20, the dragon's bite may decapitate its target. The bitten character must save vs Death or die. Even on a successful save, the character suffers quadruple damage from the bite.",
+      "alignment_required": null,
+      "spellcaster_required": false,
+      "natural_roll_trigger": [19, 20],
+      "raw_citation": "ACKS Core Rulebook p.163"
+    },
+    "elemental_aura": {
+      "name": "Elemental Aura",
+      "description": "Dragon is surrounded by an aura of elemental energy appropriate to its breath weapon. Characters within 5' of the dragon take 1d4 points of damage per round from this aura. Damage type is per the dragon's type — see dragon_types.json:types[type].elemental_aura_damage_type.",
+      "alignment_required": null,
+      "spellcaster_required": false,
+      "aura_radius_ft": 5,
+      "aura_damage": "1d4",
+      "damage_type_lookup": "dragon_types.json:types[type].elemental_aura_damage_type",
+      "raw_citation": "ACKS Core Rulebook p.164"
+    },
+    "fear_aura": {
+      "name": "Fear Aura",
+      "description": "When the dragon charges or flies overhead, it causes fear in opponents. Creatures with less than 1 HD flee in panic for 4d6 turns. Creatures with 1-3 HD save vs Paralysis or be paralyzed with fear. Creatures with more than 3 HD save vs Paralysis or suffer -1 to attack throws. Fear effects last until the dragon is slain or passes out of sight and sound.",
+      "alignment_required": null,
+      "spellcaster_required": false,
+      "raw_citation": "ACKS Core Rulebook p.164"
+    },
+    "gem_encrusted_hide": {
+      "name": "Gem-Encrusted Hide",
+      "description": "The dragon's hide is coated with gemstones and coins from centuries of lying on its treasure pile. AC bonus: +2 (Adult through Old), +3 (Very Old, Ancient), +4 (Venerable). Movement is reduced by 30 feet. Sea dragons keep this ability, drawing from sunken-vessel treasure caverns rather than terrestrial piles.",
+      "alignment_required": null,
+      "spellcaster_required": false,
+      "ac_bonus_by_age": {
+        "adult": 2, "mature_adult": 2, "old": 2,
+        "very_old": 3, "ancient": 3,
+        "venerable": 4
+      },
+      "movement_penalty_ft": 30,
+      "raw_citation": "ACKS Core Rulebook p.164"
+    },
+    "horrific_stench": {
+      "name": "Horrific Stench",
+      "description": "Characters within 20' of the dragon must save vs Poison or be nauseated by its overwhelming stench. Nauseated characters suffer -3 to attack throws and damage rolls for 1d4+4 rounds after leaving the dragon's vicinity.",
+      "alignment_required": null,
+      "spellcaster_required": false,
+      "stench_radius_ft": 20,
+      "save_type": "Poison",
+      "nausea_attack_damage_penalty": -3,
+      "nausea_duration_rounds": "1d4+4",
+      "raw_citation": "ACKS Core Rulebook p.164"
+    },
+    "invulnerable": {
+      "name": "Invulnerable",
+      "description": "The dragon's innate power protects it from most attacks. The dragon cannot be harmed by non-magical weapons.",
+      "alignment_required": null,
+      "spellcaster_required": false,
+      "immune_to": ["non_magical_weapons"],
+      "raw_citation": "ACKS Core Rulebook p.164"
+    },
+    "massive_size": {
+      "name": "Massive Size",
+      "description": "The dragon is of enormous size for its age. HD increased by 3, with commensurate increases in claw/bite damage and breath weapon damage (1d6 per HD). May be taken multiple times for truly colossal specimens. Venerable dragons attack for 3d6/3d6/6d8 with one stack, 3d8/3d8/6d10 with two stacks. The daw troops table's 'Dragon, Huge Venerable' row IS Venerable + 1 stack of massive_size — see dragon_venerable.br_table_with_abilities in monster_catalog.json.",
+      "alignment_required": null,
+      "spellcaster_required": false,
+      "stackable": true,
+      "hd_increase_per_stack": 3,
+      "raw_citation": "ACKS Core Rulebook p.164"
+    },
+    "paralyzing_blows": {
+      "name": "Paralyzing Blows",
+      "description": "The dragon's claw and bite attacks channel negative energy that causes paralysis for 3d4 turns unless a successful save vs Paralysis is made. Otherwise identical to a ghoul's paralysis. Only chaotic dragons may have this ability.",
+      "alignment_required": "chaotic",
+      "spellcaster_required": false,
+      "save_type": "Paralysis",
+      "paralysis_duration_turns": "3d4",
+      "raw_citation": "ACKS Core Rulebook p.165"
+    },
+    "poisonous_blood": {
+      "name": "Poisonous Blood",
+      "description": "Any opponent who successfully hits the dragon in melee must save vs Poison or be splashed with highly venomous blood. A failed save results in death.",
+      "alignment_required": null,
+      "spellcaster_required": false,
+      "save_type": "Poison",
+      "save_failure": "death",
+      "raw_citation": "ACKS Core Rulebook p.165"
+    },
+    "polymorph_self": {
+      "name": "Polymorph Self",
+      "description": "The dragon may change its shape to any humanoid or animal form at will. Only dragons capable of casting spells (speakers) may have this ability. RAW notes metallic dragons frequently have this ability.",
+      "alignment_required": null,
+      "spellcaster_required": true,
+      "raw_citation": "ACKS Core Rulebook p.165"
+    },
+    "tail_lash": {
+      "name": "Tail Lash",
+      "description": "The dragon may make one additional melee attack each round, lashing out with its tail at targets to its rear. Tail attack inflicts the same damage as the dragon's bite attack.",
+      "alignment_required": null,
+      "spellcaster_required": false,
+      "raw_citation": "ACKS Core Rulebook p.165"
+    },
+    "wing_claws": {
+      "name": "Wing Claws",
+      "description": "The dragon may make two additional melee attacks each round with the claws on its wings. When attacking with its wings, the dragon inflicts the claw damage of a dragon of its own age category.",
+      "alignment_required": null,
+      "spellcaster_required": false,
+      "raw_citation": "ACKS Core Rulebook p.165"
+    }
+  },
+
+  "_polymorph_self_speaker_priority_note": "RAW says metallic dragons FREQUENTLY have polymorph_self. Future picker logic could bias toward this ability for metallic speakers when an ability slot is available. v1: pure uniform pick from constraint-passing pool; bias is a future polish.",
+
+  "_selection_algorithm_note": "Pseudocode for the encounter-time picker (resolver-side, deferred): 1) Look up dragon_type from terrain via dragon_types.json:terrain_to_dragon_type weighted pick. 2) Determine alignment: type's alignment_constraint if set, else uniform 1d3 across (lawful, neutral, chaotic). 3) Roll can_speak per catalog's chance_speech_pct. 4) Build eligible_abilities = type's special_abilities_pool ∩ {abilities passing alignment_required filter} ∩ {abilities passing spellcaster_required filter (skip if !can_speak)}. 5) Pick N abilities uniformly without replacement, where N = catalog's special_abilities_count. 6) Roll is_asleep per catalog's chance_asleep_pct (if encountered in lair OR on ground). 7) Pick hide_color uniformly from type's hide_colors. 8) Store all on threat row's payload_json: {dragon_type, dragon_alignment, can_speak, special_abilities, is_asleep, hide_color_descriptor, spell_picks (if can_speak)}."
+}

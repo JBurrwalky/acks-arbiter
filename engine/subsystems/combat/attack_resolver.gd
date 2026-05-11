@@ -52,6 +52,10 @@ func resolve_melee_attack(
 	var to_hit_bonus := attack_ability_mod + extra_attack_mod
 	if attacker.is_character:
 		to_hit_bonus += attacker.get_weapon_magical_bonus()
+		# Strenuous-day penalty per ax_campaign_play §effort_rules L166-172.
+		# Cumulative -1/day past the 6-day grace window applies to attack
+		# throws, damage, and proficiency throws until rest is taken.
+		to_hit_bonus -= StrenuousAccountant.get_attack_throw_penalty(attacker.id)
 	else:
 		to_hit_bonus += attacker.get_to_hit_modifier(0)
 
@@ -138,8 +142,14 @@ func resolve_melee_attack(
 		if _spell_hooks != null and _spell_hooks.has_method("get_item_attack_bonuses"):
 			item_bonus = _spell_hooks.get_item_attack_bonuses(attacker)
 		var striking_bonus: int = int(item_bonus.get("bonus_damage", 0))
+		# Strenuous-day penalty applies to damage rolls per
+		# ax_campaign_play §effort_rules L168.
+		var strenuous_dmg: int = 0
+		if attacker.is_character:
+			strenuous_dmg = StrenuousAccountant.get_attack_throw_penalty(attacker.id)
 		damage_total = maxi(1, damage_roll.modified_total + str_damage_mod \
-			+ mod_bonus + prof_damage_mod + magic_dmg_bonus + striking_bonus)
+			+ mod_bonus + prof_damage_mod + magic_dmg_bonus + striking_bonus \
+			- strenuous_dmg)
 
 		# Weapon Focus: unmodified natural 20 doubles damage when the character
 		# has Weapon Focus selected for the wielded weapon's family.

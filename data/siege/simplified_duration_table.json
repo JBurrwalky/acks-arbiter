@@ -1,0 +1,26 @@
+{
+  "_source": "rules/daw_sieges.xml §sieges_simplified.duration_of_siege L847-1136",
+  "_format": "rows[].days[N] = days-to-capture for unit_advantage in N-th band; null = '−' (besieger too weak)",
+  "_advantage_bands": [
+    "1_2", "3_4", "5_10", "11_15", "16_30", "31_50", "51_75",
+    "76_100", "101_200", "201_300", "301_400", "401_500", "501_600", "601_plus"
+  ],
+  "rows": [
+    {"shp_band": "1-3000",       "shp_max": 3000,   "days": [45, 23, 9, 6, 3, 2, 1, 1, 0, 0, 0, 0, 0, 0]},
+    {"shp_band": "4-6000",       "shp_max": 6000,   "days": [90, 45, 18, 12, 6, 4, 2, 2, 1, 1, 0, 0, 0, 0]},
+    {"shp_band": "7-9000",       "shp_max": 9000,   "days": [135, 68, 27, 18, 9, 5, 4, 3, 1, 1, 1, 1, 0, 0]},
+    {"shp_band": "10-12000",     "shp_max": 12000,  "days": [180, 90, 36, 24, 12, 7, 5, 4, 2, 1, 1, 1, 1, 1]},
+    {"shp_band": "13-15000",     "shp_max": 15000,  "days": [225, 113, 45, 30, 15, 9, 6, 5, 2, 2, 1, 1, 1, 1]},
+    {"shp_band": "16-20000",     "shp_max": 20000,  "days": [null, 150, 60, 40, 20, 12, 8, 6, 3, 2, 2, 1, 1, 1]},
+    {"shp_band": "21-30000",     "shp_max": 30000,  "days": [null, 225, 90, 60, 30, 18, 12, 9, 5, 3, 2, 2, 2, 1]},
+    {"shp_band": "31-50000",     "shp_max": 50000,  "days": [null, null, 150, 100, 50, 30, 20, 15, 8, 5, 4, 3, 3, 2]},
+    {"shp_band": "51-75000",     "shp_max": 75000,  "days": [null, null, 225, 150, 75, 45, 30, 23, 11, 8, 6, 5, 4, 3]},
+    {"shp_band": "76-100000",    "shp_max": 100000, "days": [null, null, null, 200, 100, 60, 40, 30, 15, 10, 8, 6, 5, 4]},
+    {"shp_band": "101-125000",   "shp_max": 125000, "days": [null, null, null, 250, 125, 75, 50, 38, 19, 13, 9, 8, 6, 5]},
+    {"shp_band": "126-150000",   "shp_max": 150000, "days": [null, null, null, null, 200, 120, 80, 60, 30, 20, 15, 12, 10, 9]},
+    {"shp_band": "151-200000",   "shp_max": 200000, "days": [null, null, null, null, 250, 150, 100, 75, 38, 25, 19, 15, 13, 11]},
+    {"shp_band": "201-250000",   "shp_max": 250000, "days": [null, null, null, null, null, 180, 120, 90, 45, 30, 23, 18, 15, 13]},
+    {"shp_band": "251-300000",   "shp_max": 300000, "days": [null, null, null, null, null, 210, 140, 105, 53, 35, 26, 21, 18, 15]},
+    {"shp_band": "301-350000+",  "shp_max": 350000, "days": [null, null, null, null, null, 240, 160, 120, 60, 40, 30, 24, 20, 17]}
+  ]
+}

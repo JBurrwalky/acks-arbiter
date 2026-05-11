@@ -13,6 +13,26 @@
 
 Define how the player designs, commissions, tracks, and completes stronghold and building construction within the app. This GDD bridges the gap between the ACKS construction rules (which assume a human Judge tracking costs and timelines on paper) and the in-app experience (which needs a visual planner, automated cost calculation, worker hiring pipeline, monthly progress tracking, and integration with domain management).
 
+### 1.1 v1 vs. v1.1+ scope (added 2026-05-06)
+
+The grid-placement planner specified in §4 (5' voxel grid, archetype-driven palettes, accessory sub-menus, level selector, cross-section preview) is **deferred to v1.1+**. v1 strongholds are abstract value-only records: gp_value, shp, unit_capacity, archetype, classification-conformance flag. The commission flow in v1 is the procedural wizard at `scenes/ui/strongholds/commission_wizard.tscn` (archetype → structures-from-defaults → engineers/speed → magic-assistance → confirmation), which produces the abstract record without grid placement.
+
+This deferral is RAW-supported. Per `daw_sieges.xml` §siege_mechanics.unit_capacity L37-41: *"If no map exists, estimate unit capacity as 1 unit per 1,000 shp, rounded up. If mapped, calculate unit capacity by summing the unit capacity of all structures."* v1 uses the no-map formula; v1.1+ swaps in the per-structure-sum formula when the planner ships. The interface is encapsulated in `engine/subsystems/domains/unit_capacity_calculator.gd` so the migration is a one-method replacement, not cross-cutting.
+
+**v1 consequences:**
+
+- All siege resolution is abstract (no battle map). Player-involved sieges resolve via the full DaW: Campaigns rules per `daw_sieges.xml` §blockade / §reduction / §assault. NPC-vs-NPC sieges resolve via the Sieges Simplified duration table at `daw_sieges.xml` §sieges_simplified L813+. PC intervention in an in-progress simplified siege escalates to the full rules with proportional state reconstruction per §off_camera_and_intervention_guidance L838-844. See `docs/domain-roadmap-corrected.md` Phase 8 for the engine implementation plan.
+- All army-level combat is abstract; mapped tactical battles per Domains at War: Battles are out of project scope.
+- The commission wizard's per-structure picker (currently shows archetype defaults only — see the inline note in `commission_wizard.gd`) is part of the v1.1+ planner work.
+- Stronghold archetype-conformance is a display-only flag in v1 per O-D10 (resolved 2026-05-06): non-conforming strongholds attract followers and host activities normally, gated only by gp-value sufficiency per `acore_axioms_strongholds_and_domains.xml` §minimum_stronghold_value L88-94.
+
+**v1.1+ enables:**
+
+- Per-structure unit_capacity (more accurate than the no-map estimate) when mapped strongholds replace abstract value-only records.
+- Visual customization of the stronghold layout for cosmetic / immersion purposes.
+- Spatial siege-mining (which structures sit above tunnels), which the abstract resolver currently omits per the §siege_mining limit at `daw_sieges.xml` L417-421 (solid-rock and moat-girdled strongholds excluded from siege-mining; v1 implementation can apply this limit globally based on archetype tags rather than spatial geometry).
+- Optional Pitched-Battle-style mapped sieges if Domains at War: Battles is ever brought into project scope.
+
 This GDD also defines how the app auto-generates structurally valid strongholds for NPC domains during world simulation.
 
 **Scope:** Strongholds, fortifications, civilian buildings, dungeon construction (underground rooms/corridors built by the PC), and associated accessories. Ships, siege engines, and field fortifications are out of scope — they will be covered in a separate GDD.

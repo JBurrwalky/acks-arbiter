@@ -1,0 +1,36 @@
+{
+  "_source": "rules/acore_axioms_strongholds_and_domains.xml §effects_of_morale L538-609 + §bandits L611-630",
+  "_description": "Per-morale-tier bandit-spawn density. Bandits spawn when morale ≤ -2 (Turbulent or worse). Numerator/denominator give 'one bandit per N families' density; bandit_count = floor(total_families / family_denominator). NPC challenger emergence chance is cumulative monthly per tier.",
+  "tiers": {
+    "Rebellious": {
+      "min_morale": -99,
+      "max_morale": -4,
+      "family_denominator": 1,
+      "comment": "one bandit per family per L557",
+      "challenger_monthly_chance_pct": 10,
+      "vagaries_modifier": -20,
+      "vassal_loyalty_modifier": -2,
+      "income_multiplier": 0.0
+    },
+    "Defiant": {
+      "min_morale": -3,
+      "max_morale": -3,
+      "family_denominator": 2,
+      "comment": "one bandit per two families per L568",
+      "challenger_monthly_chance_pct": 5,
+      "vagaries_modifier": -10,
+      "vassal_loyalty_modifier": -1,
+      "income_multiplier": 0.5
+    },
+    "Turbulent": {
+      "min_morale": -2,
+      "max_morale": -2,
+      "family_denominator": 5,
+      "comment": "one bandit per five families per L576",
+      "challenger_monthly_chance_pct": 1,
+      "vagaries_modifier": -5,
+      "vassal_loyalty_modifier": 0,
+      "income_multiplier": 0.8
+    }
+  }
+}
